@@ -48,14 +48,19 @@ mvn install -DskipTests -pl <module>
 
 ## Testing
 
-**ALL tests go in `platform-tests`. ALWAYS run tests from there:**
+**ALL tests go in `platform-tests`. ALWAYS run tests from there.**
+
+**ALL test commands MUST be piped through `tee` to a known file.** This is the ONLY reliable way to capture ALL output (Java logs, C++ DSP_DIAG, surefire, everything):
 ```bash
-cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && mvn test -Dtest=<TestClass>#<method>
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+  mvn test -Dtest=<TestClass>#<method> 2>&1 | tee /tmp/<descriptive-name>.log
 ```
+
+**To find test output, read the `tee` file.** Do NOT hunt through surefire report files — they split output across multiple files, may omit stdout/stderr, and are unreliable for C++ diagnostic output. The `tee` file has EVERYTHING in one place.
 
 - **NEVER** run `mvn test` from the project root -- it triggers full rebuilds of native code and runs everything.
 - **NEVER** use jemalloc (`LD_PRELOAD=libjemalloc.so`) unless the user explicitly asks for it.
-- Tests run once. Use surefire logs for debugging: `platform-tests/target/surefire-reports/<TestClass>-output.txt`
+- **NEVER** read surefire report files to find test output — use the `tee` log file instead.
 - Never pipe test output through `tail` -- always capture full output to a file.
 
 ### Test Runner Wrapper (`platform-tests/bin/java`)
@@ -80,30 +85,33 @@ Surefire forks a new JVM. Shell environment variables (`ENV=value mvn test`) do 
 
 ### Where Test Output Goes
 
-**Know exactly where to find output. Do NOT guess or search randomly.**
+**USE TEE. ALWAYS USE TEE.** The `tee` log file is the SINGLE SOURCE OF TRUTH for all test output:
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+  mvn test -Dtest=MyTest -Dnd4j.dsp.diagnostics=ALL -Dnd4j.dsp.diagnostics.level=FULL \
+  2>&1 | tee /tmp/my-test.log
+```
+Then read `/tmp/my-test.log`. It contains EVERYTHING: Java logs, C++ DSP_DIAG, surefire summaries, pass/fail, all of it.
+
+**Do NOT read surefire report files** (`target/surefire-reports/*`). They split output across multiple files, may omit stdout/stderr, and are unreliable for C++ diagnostic output. The `tee` file is always complete and reliable.
 
 | Output Type | Location | Notes |
 |---|---|---|
-| **Java stdout/stderr** | `platform-tests/target/surefire-reports/<TestClass>-output.txt` | ALL System.out/err from the forked JVM goes here |
-| **DSP diagnostics (C++)** | `platform-tests/target/surefire-reports/<TestClass>-output.txt` | DSP_DIAG uses `fprintf(stdout, ...)` — captured by surefire |
-| **C++ sd_printf / fprintf(stderr)** | `platform-tests/target/surefire-reports/<TestClass>-output.txt` | Both stdout and stderr are captured |
-| **Test pass/fail XML** | `platform-tests/target/surefire-reports/TEST-<fully.qualified.TestClass>.xml` | JUnit XML results |
-| **Valgrind output** | Written by `bin/java` wrapper — check wrapper script for exact path | Typically in platform-tests/ |
-| **Compute-sanitizer output** | Written by `bin/java` wrapper — check wrapper script for exact path | Typically in platform-tests/ |
+| **ALL test output** | **The `tee` log file** | **USE THIS. Java logs, C++ DSP_DIAG, everything.** |
 | **Native build log** | `libnd4j/blasbuild/cuda/libnd4j-build.log` (when `-Dlibnd4j.log=libnd4j-build.log` is used) | Separate from Maven output |
 
 **To enable DSP diagnostics**, pass via Maven `-D` properties (NOT shell env vars):
 ```bash
 cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
-  mvn test -Dtest=MyTest -Dnd4j.dsp.diagnostics=ALL -Dnd4j.dsp.diagnostics.level=FULL
+  mvn test -Dtest=MyTest -Dnd4j.dsp.diagnostics=ALL -Dnd4j.dsp.diagnostics.level=FULL \
+  2>&1 | tee /tmp/my-test.log
 ```
-Then read the output from: `platform-tests/target/surefire-reports/MyTest-output.txt`
 
 **CRITICAL RULES:**
-- **NEVER** look for DSP_DIAG output in the Maven console — it is in the surefire report file.
+- **ALWAYS pipe test commands through `tee`** — this is MANDATORY, not optional.
+- **ALWAYS read the `tee` log file** for test output — NEVER hunt through surefire report files.
 - **NEVER** use `export ND4J_DSP_DIAGNOSTICS=...` before `mvn test` — surefire replaces env, doesn't merge. Use `-D` properties.
-- **NEVER** use `tail` or `grep` on live test output — read the surefire report file AFTER the test completes.
-- **ALWAYS** read `platform-tests/target/surefire-reports/<TestClass>-output.txt` for ANY test output — Java, C++, DSP_DIAG, all of it.
+- **NEVER** use `tail` or `grep` on live test output — read the `tee` log file AFTER the test completes.
 
 ### Writing Tests
 

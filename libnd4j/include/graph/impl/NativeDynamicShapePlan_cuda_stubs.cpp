@@ -59,9 +59,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
 void NativeDynamicShapePlan::platformPreExecuteSetup(
     NDArray** externalInputs, int numExternalInputs, void* stream) {
-  // No GPU errors to clear, no attention workspace, no stale graph invalidation.
-  // Just flush pending close for memory management.
-  flushPendingClose(stream);
+  // No GPU-specific work on CPU. Arrays persist (one array per slot).
 }
 
 // ── Segment cache retention: check capturability on CPU ─────────────────────
@@ -89,8 +87,7 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
   if (!segment.isCapturable || segment.captureFailed) return false;
-  // Use graph if either CPU or GPU graph backend is available
-  return (getCpuGraphBackend() != nullptr || getGpuGraphBackend() != nullptr);
+  return (getCpuGraphBackend() != nullptr);
 }
 
 // ── Segment execution: CPU backend cascade ──────────────────────────────────
@@ -100,44 +97,37 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     void* stream, bool& usedGraph) {
   usedGraph = false;
 
-  // Try Triton GPU compiler first (for native HIP/Level Zero GPU builds)
-  auto* gpuBackend = getGpuGraphBackend();
-  if (gpuBackend) {
-    auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
+  // CPU graph backend (oneDNN / ACL / MLIR JIT)
+  auto* cpuBackend = getCpuGraphBackend();
+  if (cpuBackend) {
+    auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
     if (status == Status::OK) {
       usedGraph = true;
-      segment.compiledByBackend = "GPU";
+      segment.compiledByBackend = "CPU";
       return Status::OK;
     }
+    // CPU graph backend failed — hard error
+    DSP_DIAG(FALLBACK, "NativeDSP::execute: cpuBackend FAILED for seg[%d-%d] status=%d — hard error",
+             segment.startSlot, segment.endSlot, static_cast<int>(status));
+    return status;
   }
 
-  // Fall back to CPU graph backend (oneDNN/ACL)
-  auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
-  if (status == Status::OK) {
-    usedGraph = true;
-    segment.compiledByBackend = "CPU";
-    return Status::OK;
-  }
-
-  // Create FunctionalReplayHandle on first execution of capturable segment
+  // No graph backend — slot-by-slot with FunctionalReplayHandle for caching
   if (!segment.replayHandle && segment.isCapturable && !segment.captureFailed) {
     segment.replayHandle = GraphReplayFactory::create(0);
     segment.replayHandle->beginCapture(nullptr);
   }
 
-  // Slot-by-slot execution (actual compute always runs on CPU)
-  status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+  auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
-  // Finalize capture after first successful slot-by-slot pass
   if (segment.replayHandle && segment.replayHandle->getState() == ReplayState::CAPTURING) {
     if (status == Status::OK) {
       segment.replayHandle->endCapture(nullptr);
       segment.replayHandle->finalize();
     } else {
-      segment.replayHandle.reset();  // Failed — don't keep broken handle
+      segment.replayHandle.reset();
     }
   } else if (segment.replayHandle && segment.replayHandle->isReady()) {
-    // Track replay statistics (actual compute already ran above)
     segment.replayHandle->replay(nullptr);
   }
 
@@ -192,6 +182,7 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   seg.replayHandle.reset();
+  seg.gapOpsCapturedInGraph = false;
 }
 
 // ── Plan resource cleanup: reset replayHandles on CPU ───────────────────────
@@ -199,6 +190,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     seg.replayHandle.reset();
+    seg.gapOpsCapturedInGraph = false;
   }
 }
 

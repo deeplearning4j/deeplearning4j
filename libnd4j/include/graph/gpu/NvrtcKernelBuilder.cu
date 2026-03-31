@@ -39,7 +39,7 @@ bool canJitSegment(const NativeSlot* slots, int startSlot, int endSlot) {
     const auto& slot = slots[i];
 
     // Skip frozen constants and identity ops — their outputs are pre-set
-    if (slot.frozenConstantSlot || slot.isIdentityOp) continue;
+    if (slot.frozenConstantSlot() || slot.isIdentityOp) continue;
     // Skip fused chain tails — head dispatches the entire chain
     if (slot.isFusedChainTail) continue;
 
@@ -305,7 +305,7 @@ JitKernelSource buildKernelSource(const NativeSlot* slots, int startSlot, int en
 
   for (int i = startSlot; i <= endSlot; i++) {
     const auto& slot = slots[i];
-    if (slot.frozenConstantSlot || slot.isIdentityOp || slot.isFusedChainTail) continue;
+    if (slot.frozenConstantSlot() || slot.isIdentityOp || slot.isFusedChainTail) continue;
 
     auto cat = getOpCategoryFromName(slot.opName);
     if (!isNvrtcJittable(cat)) {

@@ -85,6 +85,19 @@ extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize;
 extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset;
 
 /**
+ * Capture host workspace: pre-allocated PINNED HOST buffer used during CUDA
+ * graph capture as H2D memcpy source. DataBuffer::syncToSpecial and
+ * PointersManager bump-allocate from this workspace instead of using
+ * _primaryBuffer directly. Temporary host arrays (axis/dimension params for
+ * gap ops) get freed after the op completes, but the graph's H2D node bakes
+ * the source address — reading freed memory on replay causes SIGSEGV.
+ * The pinned workspace persists for the graph's lifetime via tl_capturedHostPtrs.
+ */
+extern SD_TLS_EXPORT thread_local void* tl_captureHostWorkspace;
+extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceSize;
+extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset;
+
+/**
  * cuBLAS workspace buffer and size for graph capture.
  * Set by NativeDynamicShapePlan::setCublasWorkspaceForCapture().
  * Read by MmulHelper after cublasSetStream resets workspace.

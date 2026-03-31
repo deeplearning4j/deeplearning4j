@@ -165,14 +165,20 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
 
   NDArray::prepareSpecialUse({Q, R}, {matrix});
 
+  auto stream = context->getCudaStream();
+
   // Allocate C-contiguous work buffer on device
+  // During CUDA graph capture, synchronous calls are illegal.
   T* work = nullptr;
-  auto err = cudaMalloc(&work, M * N * sizeof(T));
+  cudaError_t err;
+  if (tl_graphExecutionActive) {
+    err = cudaMallocAsync(&work, M * N * sizeof(T), *stream);
+  } else {
+    err = cudaMalloc(&work, M * N * sizeof(T));
+  }
   if (err != cudaSuccess) {
     THROW_EXCEPTION("qr: Failed to allocate work buffer on device");
   }
-
-  auto stream = context->getCudaStream();
   // Power-of-2 block size for shared memory reductions
   const int blockSize = 256;
   const int sharedMem = blockSize * sizeof(T);
@@ -185,7 +191,12 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
 
   sd::DebugHelper::checkErrorCode(stream, "qrModifiedGramSchmidtKernel failed");
 
-  cudaFree(work);
+  // During CUDA graph capture, synchronous calls are illegal.
+  if (tl_graphExecutionActive) {
+    cudaFreeAsync(work, *stream);
+  } else {
+    cudaFree(work);
+  }
 
   NDArray::registerSpecialUse({Q, R}, {matrix});
 }

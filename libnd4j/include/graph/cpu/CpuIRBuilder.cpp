@@ -99,7 +99,7 @@ SegmentProfile CpuIRBuilder::profileSegment(NativeSlot* slots, int startSlot, in
 
     if (slots[absSlot].numOutputs > 0) {
       int outIdx = slots[absSlot].outputSlotIndices[0];
-      if (slots[absSlot].shapeCacheValid && !slots[absSlot].cachedOutputShapes.empty()) {
+      if (slots[absSlot].shapeCacheValid() && !slots[absSlot].cachedOutputShapes.empty()) {
         const LongType* shapeInfo = slots[absSlot].cachedOutputShapes[0];
         if (shapeInfo) {
           LongType rank = shape::rank(shapeInfo);

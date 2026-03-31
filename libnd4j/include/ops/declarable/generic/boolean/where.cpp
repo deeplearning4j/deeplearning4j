@@ -198,6 +198,9 @@ DECLARE_SHAPE_FN(Where) {
    for (LongType i = 0; i < condition->lengthOf(); i++)
      if (evaluateCondition(condition, i)) numOfTrue++;
 
+   // Sync back to device so subsequent GPU kernels see current device buffer
+   condition->syncToDevice();
+
    sd_debug("Where shape function: found %lld true values out of %lld total\n", numOfTrue, condition->lengthOf());
 
    LongType * theNewShape;

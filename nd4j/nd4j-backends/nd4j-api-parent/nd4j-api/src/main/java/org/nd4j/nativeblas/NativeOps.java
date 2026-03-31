@@ -1841,6 +1841,41 @@ public interface NativeOps {
   default void setPlanBackendPriority(Pointer planHandle, String priorityList) {}
 
   /**
+   * Get a JSON summary of all segments in the plan, including slot ranges,
+   * execution counts, compilation status, and op counts.
+   * Useful for testing and debugging segment structure after freeze transitions.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @return JSON array of segment info objects
+   */
+  default String getPlanSegmentsSummaryJson(Pointer planHandle) { return "[]"; }
+
+  /**
+   * Set DSP freeze merge segments flag at runtime.
+   * When true, setShapesFrozen(true) merges all segments into one mega-segment.
+   * When false (default), existing segment boundaries are preserved.
+   * @param enable true to enable segment merging on freeze
+   */
+  default void setDspFreezeMergeSegments(boolean enable) {}
+
+  /**
+   * Set DSP freeze recompile flag at runtime.
+   * When true, Triton recompilation is forced after freeze warmup.
+   * When false (default), existing compilations are reused.
+   * @param enable true to force recompilation
+   */
+  default void setDspFreezeRecompile(boolean enable) {}
+
+  /**
+   * Get current DSP freeze merge segments setting.
+   */
+  default boolean getDspFreezeMergeSegments() { return false; }
+
+  /**
+   * Get current DSP freeze recompile setting.
+   */
+  default boolean getDspFreezeRecompile() { return false; }
+
+  /**
    * Export the CUDA graph visualization to Chrome trace format.
    * The output JSON file can be loaded in chrome://tracing for detailed timeline analysis.
    * Similar to PyTorch's torch.cuda.CUDAGraph.debug_dump() functionality.

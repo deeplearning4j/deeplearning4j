@@ -29,6 +29,7 @@
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
 #include <helpers/TransferMetrics.h>
+#include <graph/DspDiagnostics.h>
 #include <chrono>
 
 #include "../DataBuffer.h"
@@ -837,6 +838,9 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     cudaStream_t capturedStream = captureSafeStreamOrDefault();
     auto res = cudaMemcpyAsync(_specialBuffer, h2dSource, getLenInBytes(),
                                cudaMemcpyHostToDevice, capturedStream);
+    DSP_DIAG(EXECUTE, "CAPTURE_H2D(DataBuffer): size=%zu src=%p dst=%p isPinned=%d stream=%p",
+             getLenInBytes(), h2dSource, _specialBuffer,
+             (h2dSource != _primaryBuffer) ? 1 : 0, (void*)capturedStream);
     if (res != cudaSuccess) {
       cudaGetLastError();  // Clear error
     }
@@ -1288,8 +1292,28 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     }
   }
 
-  // Cache the stream reference - must obtain AFTER device switch so we get the correct device's stream
-  cudaStream_t stream = captureSafeStreamOrDefault();
+  // During CUDA graph capture, record a memset graph node on the capture stream.
+  // cudaMemsetAsync on the capture stream is legal and records a memset node in the
+  // graph — this is the correct behavior for zeroing buffers that the graph will use.
+  // For cross-device buffers during capture, skip the zero (the op will overwrite anyway,
+  // and cross-device memset nodes cause cudaGraphInstantiate "invalid argument" errors).
+  cudaStream_t stream;
+  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
+    // During capture, use the capture stream to record a memset node.
+    // Cross-device buffers: skip zero entirely (cross-device nodes break instantiation).
+    if (currentDeviceId != bufferDeviceId) {
+      // Cross-device during capture: skip zero, op will write correct values
+      if (switchedDevice) {
+        cudaSetDevice(currentDeviceId);
+      }
+      writeSpecial();
+      return;
+    }
+    stream = tl_graphCaptureStream;
+  } else {
+    // Cache the stream reference - must obtain AFTER device switch so we get the correct device's stream
+    stream = captureSafeStreamOrDefault();
+  }
   auto res = cudaMemsetAsync(special(), 0, getLenInBytes(), stream);
 
   if (res != cudaSuccess) {
@@ -1298,8 +1322,6 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     }
     throw cuda_exception::build("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed!", res);
   }
-
-  // Event recording removed — syncToPrimary() uses stream 0 for implicit sync.
 
   // Restore original device if we switched
   if (switchedDevice) {
@@ -1386,6 +1408,14 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {
   if (isConstant) {
+    return;
+  }
+
+  // During CUDA graph capture, migration is forbidden. It involves synchronous
+  // driver queries (cudaPointerGetAttributes), cross-device copies (cudaMemcpyPeer),
+  // and new allocations — all of which poison the capture stream. Buffers must be
+  // pre-positioned on the correct device before capture begins. Skip silently.
+  if (tl_graphExecutionActive) {
     return;
   }
 

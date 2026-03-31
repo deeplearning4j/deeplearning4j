@@ -298,6 +298,23 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                 // input dtype. Also the first cast must be only consumed by this second cast.
                 int castTypeB = static_cast<int>(slots[j].iArgs[0]);
                 if (castTypeA == castTypeB) continue;  // same target type = not a reverse cast
+
+                // Only eliminate cast pairs between same-category types.
+                // Float→Int→Float performs truncation (floor) — NOT a no-op.
+                // Int→Float→Int may lose precision for large values — NOT a no-op.
+                // Only Float→Float (e.g., FP16↔FP32) cast pairs are safe to eliminate.
+                auto dtA = static_cast<DataType>(castTypeA);
+                auto dtB = static_cast<DataType>(castTypeB);
+                auto isFloatType = [](DataType dt) {
+                    return dt == FLOAT32 || dt == HALF || dt == DOUBLE ||
+                           dt == BFLOAT16 || dt == FLOAT8;
+                };
+                if (isFloatType(dtA) != isFloatType(dtB)) {
+                    DSP_DIAG(FUSION, "cast elimination: SKIPPING slots %d→%d "
+                             "(mixed float/int pair: %d→%d)", i, j, castTypeA, castTypeB);
+                    continue;  // mixed float/int pair — NOT safe to eliminate
+                }
+
                 if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) break;
 
                 // Mark both as identity ops (skip execution, wire through)

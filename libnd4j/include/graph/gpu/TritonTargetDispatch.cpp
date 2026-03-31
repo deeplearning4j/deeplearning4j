@@ -535,6 +535,19 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
 
 std::string TritonTargetDispatch::getTargetArch() {
   detectTarget();
+#ifdef SD_CUDA
+  // Return the arch for the CURRENT device, not just device 0.
+  // Multi-GPU systems may have different SM versions (e.g., sm_89 + sm_75).
+  // cachedArch_ is always set from device 0; using it for device 1 causes
+  // PTX JIT failures ("SM version specified by .target is higher than default").
+  if (cachedTarget_ == TritonGpuTarget::NVIDIA) {
+    int currentDevice = 0;
+    cudaGetDevice(&currentDevice);
+    cudaDeviceProp props;
+    cudaGetDeviceProperties(&props, currentDevice);
+    return "sm_" + std::to_string(props.major * 10 + props.minor);
+  }
+#endif
   return cachedArch_;
 }
 
@@ -554,7 +567,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   }
 
   const std::string archOverride = env.tritonOverrideArch();
-  std::string targetArch = cachedArch_;
+  std::string targetArch = getTargetArch();  // per-device arch, not cached device 0
   if (!archOverride.empty()) {
     targetArch = archOverride;
     DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: using architecture override '%s'",

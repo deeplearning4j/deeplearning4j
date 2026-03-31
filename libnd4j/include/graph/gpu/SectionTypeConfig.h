@@ -35,14 +35,6 @@ enum class SectionGridType {
   CUSTOM        // section-specific (convolution)
 };
 
-// ── Shared memory strategy ──
-enum class SectionSharedMemStrategy {
-  NONE,            // Pure register/global memory ops
-  TILED_MATMUL,    // A[BM,BK] + B[BK,BN] tiles, multi-buffered
-  ATTENTION,       // Q+K+V tiles via chooseFusedAttentionTileConfig
-  TREE_REDUCTION   // BLOCK_SIZE * sizeof(float) scratch
-};
-
 // ── Per-section-type configuration ──
 // All behavioral properties for a KernelSectionType in one place.
 struct SectionTypeConfig {
@@ -58,9 +50,8 @@ struct SectionTypeConfig {
   // Multi-section kernel behavior
   bool needsGlobalBarrier;  // Cross-block sync when consuming cross-section intermediates
 
-  // Grid and shared memory
+  // Grid skeleton used by fusion scoring and launch planning
   SectionGridType gridType;
-  SectionSharedMemStrategy sharedMemStrategy;
 };
 
 // ── Static configuration table (19 rows, one per section type) ──
@@ -69,26 +60,26 @@ struct SectionTypeConfig {
 // fusionVerified = true for GATHER, GATHER_ND, STACK (tested 65% diversity in merged kernels).
 // SPLIT, CONCAT, CONST_GEN have subtle accuracy regressions when merged — standalone until proven.
 inline constexpr SectionTypeConfig SECTION_TYPE_CONFIGS[] = {
-  //  type                            name              compiled fallback standalone fusionOK barrier grid                       sharedMem
-  { KernelSectionType::ELEMENTWISE,        "ELEMENTWISE",    true,  false, false, true,  false, SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::MATMUL,             "MATMUL",         false, false, false, false, false, SectionGridType::TILED_2D,   SectionSharedMemStrategy::TILED_MATMUL },
-  { KernelSectionType::FUSED_ATTENTION,    "ATTENTION",      false, false, false, false, true,  SectionGridType::ATTENTION,  SectionSharedMemStrategy::ATTENTION },
-  { KernelSectionType::REDUCTION,          "REDUCTION",      false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::TREE_REDUCTION },
-  { KernelSectionType::NORMALIZATION,      "NORMALIZATION",  false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::TREE_REDUCTION },
-  { KernelSectionType::GATHER,             "GATHER",         false, false, false, true,  true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::GATHER_ND,          "GATHER_ND",      false, false, false, true,  true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::CONCAT,             "CONCAT",         false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::SPLIT,              "SPLIT",          false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::SPLIT_V,            "SPLIT_V",        false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::STACK,              "STACK",          false, false, false, true,  true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::STRIDED_SLICE,      "STRIDED_SLICE",  false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::TILE,               "TILE",           false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::SCATTER_ND,         "SCATTER_ND",     false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::SCATTER_ND_UPDATE,  "SCATTER_ND_UPD", false, false, false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::SHAPE_MANIPULATION, "SHAPE_MANIP",    false, true,  false, false, true,  SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::CONSTANT_GENERATION,"CONST_GEN",      false, true,  false, false, false, SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
-  { KernelSectionType::CONVOLUTION,        "CONVOLUTION",    false, false, true,  false, false, SectionGridType::CUSTOM,     SectionSharedMemStrategy::NONE },
-  { KernelSectionType::IDENTITY,           "IDENTITY",       true,  false, false, true,  false, SectionGridType::LINEAR_1D,  SectionSharedMemStrategy::NONE },
+  //  type                            name              compiled fallback standalone fusionOK barrier grid
+  { KernelSectionType::ELEMENTWISE,        "ELEMENTWISE",    true,  false, false, true,  false, SectionGridType::LINEAR_1D },
+  { KernelSectionType::MATMUL,             "MATMUL",         false, false, false, false, false, SectionGridType::TILED_2D },
+  { KernelSectionType::FUSED_ATTENTION,    "ATTENTION",      false, false, false, false, true,  SectionGridType::ATTENTION },
+  { KernelSectionType::REDUCTION,          "REDUCTION",      false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::NORMALIZATION,      "NORMALIZATION",  false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::GATHER,             "GATHER",         false, false, false, true,  true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::GATHER_ND,          "GATHER_ND",      false, false, false, true,  true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::CONCAT,             "CONCAT",         false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::SPLIT,              "SPLIT",          false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::SPLIT_V,            "SPLIT_V",        false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::STACK,              "STACK",          false, false, false, true,  true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::STRIDED_SLICE,      "STRIDED_SLICE",  false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::TILE,               "TILE",           false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::SCATTER_ND,         "SCATTER_ND",     false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::SCATTER_ND_UPDATE,  "SCATTER_ND_UPD", false, false, false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::SHAPE_MANIPULATION, "SHAPE_MANIP",    false, true,  false, false, true,  SectionGridType::LINEAR_1D },
+  { KernelSectionType::CONSTANT_GENERATION,"CONST_GEN",      false, true,  false, false, false, SectionGridType::LINEAR_1D },
+  { KernelSectionType::CONVOLUTION,        "CONVOLUTION",    false, false, true,  false, false, SectionGridType::CUSTOM },
+  { KernelSectionType::IDENTITY,           "IDENTITY",       true,  false, false, true,  false, SectionGridType::LINEAR_1D },
 };
 
 static constexpr int SECTION_TYPE_CONFIG_COUNT = sizeof(SECTION_TYPE_CONFIGS) / sizeof(SECTION_TYPE_CONFIGS[0]);
@@ -129,8 +120,7 @@ inline bool shouldBeStandalone(const SectionTypeConfig& cfg,
     return false;
   }
 
-  // DATA_MOVEMENT types that aren't fusion-verified: standalone to avoid accuracy regressions
-  // (SPLIT, SPLIT_V, CONCAT, CONST_GEN have subtle offset calculation issues when merged)
+  // Types that aren't fusion-verified stay standalone under compile-range fusion.
   if (sectionFusionEnabled) {
     return !cfg.fusionVerified && !cfg.compiledByDefault;
   }

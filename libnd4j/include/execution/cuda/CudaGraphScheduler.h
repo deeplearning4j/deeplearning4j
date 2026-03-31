@@ -370,6 +370,9 @@ private:
     double _captureEndTimeMs = 0.0;
     double _instantiateTimeMs = 0.0;
 
+    // Last CUDA error from instantiate() — used by caller to detect OOM vs other failures
+    int _lastInstantiateError = 0;  // cudaSuccess
+
     // Persistent pinned host buffers used during graph capture for H2D copies.
     // These must persist for the lifetime of the graph because graph replay
     // reads from the recorded host addresses. Freed in cleanup().
@@ -378,6 +381,19 @@ private:
 public:
     // Add persistent pinned host buffers (called during graph capture)
     void addCapturedHostPtr(void* ptr) { _capturedHostPtrs.push_back(ptr); }
+
+    /**
+     * Get the CUDA error code from the last instantiate() call.
+     * Returns 0 (cudaSuccess) if instantiation succeeded or hasn't been attempted.
+     * Useful for distinguishing OOM (cudaErrorMemoryAllocation = 2) from other errors.
+     */
+    int getLastInstantiateError() const { return _lastInstantiateError; }
+
+    /**
+     * Returns true if the last instantiate() failure was due to out-of-memory.
+     * cudaErrorMemoryAllocation = 2
+     */
+    bool wasLastInstantiateOom() const { return _lastInstantiateError == 2; }
 private:
 };
 

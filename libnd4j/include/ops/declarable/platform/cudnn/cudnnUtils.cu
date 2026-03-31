@@ -111,7 +111,8 @@ void pooling2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
                                              indWiC, indWoC, indWkH, indOoH);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
@@ -134,8 +135,8 @@ void pooling2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
   pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -148,8 +149,10 @@ void pooling2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
       STRINGIZE(cudnnPoolingForward),
       cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("pooling2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("pooling2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -165,7 +168,8 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
                                              indWiC, indWoC, indWkH, indOoH);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
@@ -191,8 +195,8 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
   pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -206,8 +210,10 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
       cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x,
                            input->specialBuffer(), beta, x, gradI->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("pooling2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("pooling2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI}, {input, gradO});
 }
@@ -217,7 +223,8 @@ void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
                     const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
                     const int dD, const int dH, const int dW, const bool isNCDHW, const cudnnPoolingMode_t mode) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const int numDims = 5;
 
@@ -289,8 +296,8 @@ void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
   pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -303,8 +310,10 @@ void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
       STRINGIZE(cudnnPoolingForward),
       cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("pooling3dCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("pooling3dCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -315,7 +324,8 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
                       const int pH, const int pW, const int dD, const int dH, const int dW, const bool isNCDHW,
                       const cudnnPoolingMode_t mode) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const int numDims = 5;
 
@@ -358,8 +368,8 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
   pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -392,8 +402,10 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
     NDArray::registerSpecialUse({gradI}, {input, gradO});
   }
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("pooling3dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("pooling3dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 }
 
 }  // namespace platforms

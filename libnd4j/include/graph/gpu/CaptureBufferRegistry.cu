@@ -18,7 +18,6 @@
 
 #include <graph/gpu/CaptureBufferRegistry.h>
 #include <memory/cuda/CudaMemoryPool.h>
-#include <execution/LaunchContext.h>
 #include <graph/DspDiagnostics.h>
 
 #include <cuda_runtime.h>
@@ -43,19 +42,21 @@ class CaptureBufferRegistryImpl {
   std::unordered_map<int, std::vector<RegistryEntry>> entries_;
 
   void* allocate(int segIdx, size_t bytes, int deviceId) {
-    // Get current CUDA stream for pool allocation
-    cudaStream_t stream = nullptr;
-    auto* ctx = LaunchContext::defaultContext();
-    if (ctx != nullptr && ctx->getCudaStream() != nullptr) {
-      stream = *ctx->getCudaStream();
-    }
-
-    void* ptr = memory::CudaMemoryPool::getInstance().allocate(bytes, deviceId, stream);
+    // Track the actual device where memory lands — failover may place it on
+    // a different device than requested. We must store the actual device so
+    // releaseSegment frees on the correct device.
+    int actualDevice = deviceId;
+    void* ptr = memory::CudaMemoryPool::getInstance().allocate(bytes, deviceId, nullptr, &actualDevice);
     if (ptr != nullptr) {
       std::lock_guard<std::mutex> lock(mtx_);
-      entries_[segIdx].push_back({ptr, bytes, deviceId});
-      DSP_DIAG(MEMORY, "CaptureBufferRegistry: allocated %zuMB for seg %d on device %d (ptr=%p)",
-               bytes / (1024 * 1024), segIdx, deviceId, ptr);
+      entries_[segIdx].push_back({ptr, bytes, actualDevice});
+      if (actualDevice != deviceId) {
+        DSP_DIAG(MEMORY, "CaptureBufferRegistry: allocated %zuMB for seg %d on device %d (failover from %d, ptr=%p)",
+                 bytes / (1024 * 1024), segIdx, actualDevice, deviceId, ptr);
+      } else {
+        DSP_DIAG(MEMORY, "CaptureBufferRegistry: allocated %zuMB for seg %d on device %d (ptr=%p)",
+                 bytes / (1024 * 1024), segIdx, actualDevice, ptr);
+      }
     } else {
       DSP_DIAG(MEMORY, "CaptureBufferRegistry: FAILED to allocate %zuMB for seg %d on device %d",
                bytes / (1024 * 1024), segIdx, deviceId);
@@ -68,15 +69,9 @@ class CaptureBufferRegistryImpl {
     auto it = entries_.find(segIdx);
     if (it == entries_.end()) return;
 
-    cudaStream_t stream = nullptr;
-    auto* ctx = LaunchContext::defaultContext();
-    if (ctx != nullptr && ctx->getCudaStream() != nullptr) {
-      stream = *ctx->getCudaStream();
-    }
-
     size_t totalFreed = 0;
     for (auto& e : it->second) {
-      memory::CudaMemoryPool::getInstance().free(e.ptr, e.deviceId, stream);
+      memory::CudaMemoryPool::getInstance().free(e.ptr, e.deviceId, nullptr);
       totalFreed += e.bytes;
     }
 
@@ -88,16 +83,10 @@ class CaptureBufferRegistryImpl {
   void releaseAll() {
     std::lock_guard<std::mutex> lock(mtx_);
 
-    cudaStream_t stream = nullptr;
-    auto* ctx = LaunchContext::defaultContext();
-    if (ctx != nullptr && ctx->getCudaStream() != nullptr) {
-      stream = *ctx->getCudaStream();
-    }
-
     size_t totalFreed = 0;
     for (auto& [segIdx, vec] : entries_) {
       for (auto& e : vec) {
-        memory::CudaMemoryPool::getInstance().free(e.ptr, e.deviceId, stream);
+        memory::CudaMemoryPool::getInstance().free(e.ptr, e.deviceId, nullptr);
         totalFreed += e.bytes;
       }
     }

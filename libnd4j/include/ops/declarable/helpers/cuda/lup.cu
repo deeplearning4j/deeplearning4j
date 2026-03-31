@@ -760,7 +760,8 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
     T initVal = static_cast<T>(1);
     auto outputBuf = reinterpret_cast<T*>(output->specialBuffer()) + offset;
     cudaMemcpyAsync(outputBuf, &initVal, sizeof(T), cudaMemcpyHostToDevice, *stream);
-    cudaStreamSynchronize(*stream);
+    // During CUDA graph capture, synchronous calls are illegal.
+    if (!tl_graphExecutionActive) { cudaStreamSynchronize(*stream); }
 
     // Execute determinant kernel
     auto inputBuf = reinterpret_cast<T*>(matrix->specialBuffer());

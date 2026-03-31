@@ -1451,7 +1451,6 @@ SectionTypeConfig {
   fusionVerified      // safe for mega-kernel fusion
   needsGlobalBarrier  // cross-section synchronization required
   gridType            // LINEAR_1D, TILED_2D, ATTENTION, CUSTOM
-  sharedMemStrategy   // NONE, TILED_MATMUL, ATTENTION, TREE_REDUCTION
 }
 ```
 

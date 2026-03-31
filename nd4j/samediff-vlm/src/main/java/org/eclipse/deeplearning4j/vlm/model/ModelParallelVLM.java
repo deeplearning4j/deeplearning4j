@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
+import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.pipeline.VLMPipelineExecutor;
@@ -720,7 +721,43 @@ public class ModelParallelVLM implements AutoCloseable {
                 }
             }
 
+            closeModel("decoder", decoder);
+            closeModel("embedTokens", embedTokens);
+            closeModel("visionEncoder", visionEncoder);
+
             log.info("ModelParallelVLM closed");
+        }
+    }
+
+    private void closeModel(String label, SameDiff model) {
+        if (model == null) {
+            return;
+        }
+
+        try {
+            model.clearPlaceholders(true);
+        } catch (Exception e) {
+            log.warn("Error clearing placeholders for {}", label, e);
+        }
+        try {
+            model.clearOpInputs();
+        } catch (Exception e) {
+            log.warn("Error clearing op inputs for {}", label, e);
+        }
+        try {
+            model.resetSession();
+        } catch (Exception e) {
+            log.warn("Error resetting session for {}", label, e);
+        }
+        try {
+            SameDiffMemoryUtils.freeModelArrays(model);
+        } catch (Exception e) {
+            log.warn("Error freeing model arrays for {}", label, e);
+        }
+        try {
+            model.close();
+        } catch (Exception e) {
+            log.warn("Error closing {}", label, e);
         }
     }
 }

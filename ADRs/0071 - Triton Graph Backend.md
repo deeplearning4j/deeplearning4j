@@ -285,9 +285,8 @@ Fine-grained control over which fusion passes are applied during IR construction
 |------|---------|---------|
 | `ND4J_TRITON_FUSE_IDENTITY_SHAPES` | true | Fuse identity reshape/expand_dims/squeeze into adjacent ops |
 | `ND4J_TRITON_FUSE_CAST_CHAINS` | true | Merge consecutive cast operations |
-| `ND4J_TRITON_FUSE_TRIVIAL_GATHER` | true | Fuse trivial gather (identity indices) with element-wise |
 | `ND4J_TRITON_SPECIALIZE_PERMUTE_SEQ1` | true | Optimize permutes for seq=1 (decode) |
-| `ND4J_TRITON_ELIMINATE_CONCAT_SPLIT_PAIRS` | true | Remove concat→split no-op pairs |
+| `ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS` | true | Prefer larger compile ranges around attention-adjacent data movement |
 | `ND4J_TRITON_FUSED_MATMUL` | false | Fuse matmul→bias→activation (HIGH RISK — cuBLAS faster for M=1) |
 
 ### Verification & Debugging Infrastructure

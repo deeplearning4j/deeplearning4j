@@ -183,9 +183,15 @@ DECLARE_SHAPE_FN(where_np) {
   } else {
     auto condition = INPUT_VARIABLE(0);
 
+    // Sync condition to host before accessing data via e<T>()
+    condition->syncToHost();
+
     LongType numOfTrue = 0LL;  // condition->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
     for (LongType i = 0; i < condition->lengthOf(); ++i)
       if (condition->e<bool>(i)) numOfTrue++;
+
+    // Sync back to device so subsequent GPU kernels see current device buffer
+    condition->syncToDevice();
 
     // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
     if (numOfTrue) {

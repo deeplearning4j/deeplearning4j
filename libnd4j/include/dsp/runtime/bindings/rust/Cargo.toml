@@ -13,3 +13,7 @@ path = "src/lib.rs"
 default = []
 cuda = []
 amd = []
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"

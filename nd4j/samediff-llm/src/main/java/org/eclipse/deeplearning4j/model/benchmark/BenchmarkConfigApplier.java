@@ -135,9 +135,8 @@ public class BenchmarkConfigApplier {
             // Triton segment fusion optimization flags
             env.setTritonFuseIdentityShapes(config.isTritonFuseIdentityShapes());
             env.setTritonFuseCastChains(config.isTritonFuseCastChains());
-            env.setTritonFuseTrivialGather(config.isTritonFuseTrivialGather());
             env.setTritonSpecializePermuteSeq1(config.isTritonSpecializePermuteSeq1());
-            env.setTritonEliminateConcatSplitPairs(config.isTritonEliminateConcatSplitPairs());
+            env.setTritonFuseAttentionNeighborhoods(config.isTritonFuseAttentionNeighborhoods());
             env.setTritonFusedMatmul(config.isTritonFusedMatmul());
             env.setTritonFusionScoring(config.isTritonFusionScoring());
             env.setTritonFusionMinScore(config.getTritonFusionMinScore());
@@ -239,28 +238,16 @@ public class BenchmarkConfigApplier {
                     "tritonFuseIdentityShapes not applied");
             verify(config.isTritonFuseCastChains() == env.tritonFuseCastChains(),
                     "tritonFuseCastChains not applied");
-            verify(config.isTritonFuseTrivialGather() == env.tritonFuseTrivialGather(),
-                    "tritonFuseTrivialGather not applied");
             verify(config.isTritonSpecializePermuteSeq1() == env.tritonSpecializePermuteSeq1(),
                     "tritonSpecializePermuteSeq1 not applied");
-            verify(config.isTritonEliminateConcatSplitPairs() == env.tritonEliminateConcatSplitPairs(),
-                    "tritonEliminateConcatSplitPairs not applied");
+            verify(config.isTritonFuseAttentionNeighborhoods() == env.tritonFuseAttentionNeighborhoods(),
+                    "tritonFuseAttentionNeighborhoods not applied");
             verify(config.isTritonFusedMatmul() == env.tritonFusedMatmul(),
                     "tritonFusedMatmul not applied");
             verify(config.isTritonFusionScoring() == env.tritonFusionScoring(),
                     "tritonFusionScoring not applied");
             verify(config.getTritonFusionMinScore() == env.tritonFusionMinScore(),
                     "tritonFusionMinScore not applied");
-            verify(config.isTritonFuseIdentityShapes() == env.tritonFuseIdentityShapes(),
-                    "tritonFuseIdentityShapes not applied");
-            verify(config.isTritonFuseCastChains() == env.tritonFuseCastChains(),
-                    "tritonFuseCastChains not applied");
-            verify(config.isTritonFuseTrivialGather() == env.tritonFuseTrivialGather(),
-                    "tritonFuseTrivialGather not applied");
-            verify(config.isTritonSpecializePermuteSeq1() == env.tritonSpecializePermuteSeq1(),
-                    "tritonSpecializePermuteSeq1 not applied");
-            verify(config.isTritonEliminateConcatSplitPairs() == env.tritonEliminateConcatSplitPairs(),
-                    "tritonEliminateConcatSplitPairs not applied");
         } else {
             verify("".equals(env.tritonIncludeTypes()),
                     "tritonIncludeTypes should be empty for non-Triton config");

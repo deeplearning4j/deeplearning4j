@@ -1372,6 +1372,12 @@ void TritonGraphBackend::invalidateCache() {
         kernel.cachedSyncCounterDevice = nullptr;
         kernel.cachedSyncCounterDeviceId = -1;
       }
+      if (kernel.cachedGlobalScratchDevice != nullptr) {
+        cudaFree(kernel.cachedGlobalScratchDevice);
+        kernel.cachedGlobalScratchDevice = nullptr;
+        kernel.cachedGlobalScratchBytes = 0;
+        kernel.cachedGlobalScratchDeviceId = -1;
+      }
       if (kernel.gpuModule) {
         TritonTargetDispatch::unloadModule(kernel.gpuModule);
       }
@@ -1380,6 +1386,87 @@ void TritonGraphBackend::invalidateCache() {
   cache_.clear();
   failedCache_.clear();
   lastCompilationAudit_.clear();
+}
+
+void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<int,int>>& segmentRanges) {
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  int freedEntries = 0;
+  int freedModules = 0;
+
+  auto it = cache_.begin();
+  while (it != cache_.end()) {
+    bool overlaps = false;
+    for (auto& [segStart, segEnd] : segmentRanges) {
+      if (it->first.startSlot >= segStart && it->first.endSlot <= segEnd) {
+        overlaps = true;
+        break;
+      }
+    }
+    if (!overlaps) {
+      ++it;
+      continue;
+    }
+
+    auto& seg = it->second;
+    // Free resources (same logic as invalidateCache)
+    if (seg.useConsolidatedArgTable) {
+      if (seg.consolidatedArgTableDevice != nullptr) {
+        cudaFree(seg.consolidatedArgTableDevice);
+      }
+      if (seg.consolidatedArgTableHostPinned != nullptr) {
+        cudaFreeHost(seg.consolidatedArgTableHostPinned);
+      }
+      for (auto& kernel : seg.subKernels) {
+        kernel.cachedArgTableDevice = nullptr;
+        kernel.cachedArgTableBytes = 0;
+        kernel.cachedArgTableHostPinned = nullptr;
+        kernel.cachedArgTableHostPinnedBytes = 0;
+      }
+    }
+    for (auto& kernel : seg.subKernels) {
+      if (!seg.useConsolidatedArgTable && kernel.cachedArgTableDevice != nullptr) {
+        cudaFree(kernel.cachedArgTableDevice);
+      }
+      if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
+        cudaFreeHost(kernel.cachedArgTableHostPinned);
+      }
+      if (kernel.cachedSyncCounterDevice != nullptr) {
+        cudaFree(kernel.cachedSyncCounterDevice);
+      }
+      if (kernel.cachedGlobalScratchDevice != nullptr) {
+        cudaFree(kernel.cachedGlobalScratchDevice);
+      }
+      if (kernel.gpuModule) {
+        TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        freedModules++;
+      }
+    }
+    freedEntries++;
+    it = cache_.erase(it);
+  }
+
+  // Also remove matching failed cache entries
+  auto fit = failedCache_.begin();
+  while (fit != failedCache_.end()) {
+    bool overlaps = false;
+    for (auto& [segStart, segEnd] : segmentRanges) {
+      if (fit->startSlot >= segStart && fit->endSlot <= segEnd) {
+        overlaps = true;
+        break;
+      }
+    }
+    if (overlaps) {
+      fit = failedCache_.erase(fit);
+    } else {
+      ++fit;
+    }
+  }
+
+  if (freedEntries > 0) {
+    DSP_DIAG(MEMORY, "TritonGraphBackend::invalidateCacheForSegments: freed %d cache entries (%d GPU modules) "
+             "for %d segment ranges",
+             freedEntries, freedModules, static_cast<int>(segmentRanges.size()));
+  }
 }
 
 // ─── Compilation audit ──────────────────────────────────────────────────────

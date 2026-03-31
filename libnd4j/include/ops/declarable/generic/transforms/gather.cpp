@@ -97,6 +97,27 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
       pIndices = nullptr;
     }
 
+    // Diagnostic: dump actual index values when OOB detected
+    if (numOfBadIndx > 0) {
+      sd::LongType axis = intArgs[0];
+      sd::LongType dimSize = input->sizeAt(axis);
+      // Sync indices to host for reading
+      if (indices != nullptr) {
+        indices->syncToHost();
+        sd_printf("GATHER OOB DIAGNOSTIC: axis=%lld dimSize=%lld indicesShape=", axis, dimSize);
+        for (int r = 0; r < indices->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "x" : "", indices->sizeAt(r));
+        }
+        sd_printf(" dtype=%d\n", (int)indices->dataType());
+        sd::LongType dumpCount = std::min(indices->lengthOf(), (sd::LongType)16);
+        for (sd::LongType idx = 0; idx < dumpCount; idx++) {
+          auto val = indices->e<sd::LongType>(idx);
+          sd_printf("  indices[%lld] = %lld %s\n", idx, val,
+                    (val < 0 || val >= dimSize) ? "<-- OOB" : "");
+        }
+      }
+    }
+
     // Check condition after cleanup
     REQUIRE_TRUE(numOfBadIndx == 0, 0,
                  "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",

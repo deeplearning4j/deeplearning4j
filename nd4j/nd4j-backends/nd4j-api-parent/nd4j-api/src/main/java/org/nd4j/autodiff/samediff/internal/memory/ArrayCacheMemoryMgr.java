@@ -61,6 +61,12 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private static AtomicDouble largerArrayMaxMultiple;
     private static AtomicDouble growthFactor;
 
+    // Thread-local scoped growth factor override.
+    // When set (non-null), effectiveGrowthFactor() returns this instead of the global growthFactor.
+    // Used by DSP execution to scope growth factor to DSP path only, preventing leakage
+    // into standard op-by-op execution when DSP returns null (no plan).
+    private static final ThreadLocal<Double> scopedGrowthFactor = new ThreadLocal<>();
+
     private static AtomicLong maxCacheBytes;
     private static AtomicLong totalMemBytes;
     @Getter
@@ -225,6 +231,36 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     public static void setGrowthFactor(double growthFactor) {
         ArrayCacheMemoryMgr.growthFactor.set(growthFactor);
+    }
+
+    /**
+     * Set a thread-local scoped growth factor override.
+     * Returns an AutoCloseable that restores the previous value on close.
+     *
+     * Usage:
+     * <pre>
+     * try (AutoCloseable scope = ArrayCacheMemoryMgr.withGrowthFactor(1.05)) {
+     *     // DSP execution uses 1.05x growth factor
+     * }
+     * // growth factor restored to previous value (global default or outer scope)
+     * </pre>
+     *
+     * This prevents DSP's growth factor from leaking into standard execution
+     * when DSP returns null (no compiled plan).
+     */
+    public static AutoCloseable withGrowthFactor(double factor) {
+        Double previous = scopedGrowthFactor.get();
+        scopedGrowthFactor.set(factor);
+        return () -> scopedGrowthFactor.set(previous);
+    }
+
+    /**
+     * Get the effective growth factor for the current thread.
+     * Returns the scoped override if set, otherwise the global growthFactor.
+     */
+    public static double effectiveGrowthFactor() {
+        Double scoped = scopedGrowthFactor.get();
+        return scoped != null ? scoped : growthFactor.get();
     }
     public static AtomicLong getMaxCacheBytes() {
         return maxCacheBytes;
@@ -437,7 +473,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
      */
     private INDArray allocateWithHeadroom(boolean detached, DataType dataType, long[] shape) {
         long requiredElements = ArrayUtil.prodLong(shape);
-        double gf = growthFactor.get();
+        double gf = effectiveGrowthFactor();
 
         // Only over-allocate for larger arrays (> 10K elements) where growing shapes
         // (e.g. KV cache) benefit from headroom. Small arrays don't grow and there
@@ -673,6 +709,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     Math.round(100.0 * (counters[0] + counters[1]) / total));
         }
 
+        long[] deferredStats = closeDeferredBuffers(protectedBuffers);
+
         // Close unique DataBuffers directly using IdentityHashMap to ensure each
         // physical buffer is closed exactly once.
         Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
@@ -689,6 +727,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
         int skippedProtected = 0;
         int forceClosedConstant = 0;
+        int closedNormal = 0;
+        long closedBytes = 0;
         for (DataBuffer buf : uniqueBuffers.keySet()) {
             if (protectedBuffers != null && protectedBuffers.containsKey(buf)) {
                 skippedProtected++;
@@ -696,7 +736,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             }
             if (buf.closeable()) {
                 try {
+                    closedBytes += buf.length() * buf.getElementSize();
                     buf.close();
+                    closedNormal++;
                 } catch (Exception e) {
                     // Buffer may already be deallocated; ignore
                 }
@@ -705,6 +747,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 // by setCloseable(false) on placeholder arrays, propagated through shared
                 // DataBuffers. Since it's not in protectedBuffers, it's safe to force-close.
                 try {
+                    closedBytes += buf.length() * buf.getElementSize();
                     buf.setConstant(false);
                     buf.close();
                     forceClosedConstant++;
@@ -713,12 +756,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 }
             }
         }
-        if (forceClosedConstant > 0) {
-            log.debug("ArrayCacheMemoryMgr.close: force-closed {} constant-poisoned DataBuffers", forceClosedConstant);
-        }
-        if (skippedProtected > 0) {
-            log.debug("ArrayCacheMemoryMgr.close: skipped {} protected DataBuffers (shared with placeholders/constants)", skippedProtected);
-        }
+        log.info("ArrayCacheMemoryMgr.close: uniqueBuffers={}, closedNormal={}, forceClosedConstant={}, skippedProtected={}, closedBytes={}MB, deferred={}",
+                uniqueBuffers.size(), closedNormal, forceClosedConstant, skippedProtected,
+                closedBytes / (1024 * 1024), deferredStats[0]);
 
         allCapacity.clear();
         getLruCachedValuesForThread().clear();

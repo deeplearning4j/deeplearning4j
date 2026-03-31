@@ -55,7 +55,8 @@ void cudnnCtcLoss(const LaunchContext &context, NDArray&probs, const int32_t *ta
   const int dims[] = {(int)probs.sizeAt(0), (int)probs.sizeAt(1), (int)probs.sizeAt(2)};
   const int strides[] = {(int)probs.strideAt(0), (int)probs.strideAt(1), (int)probs.strideAt(2)};
   auto handle = reinterpret_cast<cudnnHandle_t *>(context.getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context.getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context.getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   CTCLossDesc ctcLossDesc;
   CudnnTensor probsDesc, gradsDesc(nullptr);

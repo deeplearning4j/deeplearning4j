@@ -22,6 +22,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/NDArrayFactory.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/addBias.h>
@@ -167,8 +168,10 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   }
   delete outputNHWC;
 
-  // Synchronize CUDA stream before cleanup
-  cudaStreamSynchronize(*ctx->getCudaStream());
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+  if (!tl_graphExecutionActive) {
+    cudaStreamSynchronize(*ctx->getCudaStream());
+  }
 
   // Clean up NHWC input permutation if created
   if (inputNchw != nullptr) {

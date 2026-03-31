@@ -77,6 +77,42 @@ static thread_local const NDArray* tl_lastCaptureCastSourceB = nullptr;
 static thread_local NDArray* tl_lastCaptureCastArrayA = nullptr;
 static thread_local NDArray* tl_lastCaptureCastArrayB = nullptr;
 
+// Persistent PINNED-HOST cuBLAS scalar parameters for CUDA graph capture.
+// cuBLAS internally enqueues H2D memcpy from the alpha/beta host addresses.
+// During graph capture, these H2D copies are baked into the graph with the
+// original host source pointer.  On replay, the graph re-reads from the SAME
+// host address.  Requirements:
+//   1. Address must be stable across capture and all replays (not stack-local)
+//   2. Memory must be PAGE-LOCKED (pinned) for async H2D in graph replay mode
+//      (unpinned host memory causes graph replay to hang/stall)
+// We allocate a small pinned host buffer per thread containing all scalar types.
+struct CublasScalarsPinned {
+  float  alphaF;
+  float  betaF;
+  double alphaD;
+  double betaD;
+  __half alphaH;
+  __half betaH;
+};
+
+static CublasScalarsPinned* getCublasScalars() {
+  static thread_local CublasScalarsPinned* ptr = nullptr;
+  if (ptr == nullptr) {
+    cudaError_t err = cudaHostAlloc(&ptr, sizeof(CublasScalarsPinned), cudaHostAllocDefault);
+    if (err != cudaSuccess) {
+      // Fallback: use regular heap (will work for non-graph execution)
+      ptr = new CublasScalarsPinned();
+    }
+    ptr->alphaF = 1.0f;
+    ptr->betaF  = 0.0f;
+    ptr->alphaD = 1.0;
+    ptr->betaD  = 0.0;
+    ptr->alphaH = __float2half(1.0f);
+    ptr->betaH  = __float2half(0.0f);
+  }
+  return ptr;
+}
+
 // cuBLAS Lt algorithm cache key: uniquely identifies a GEMM configuration
 struct LtMatmulCacheKey {
   int deviceId;
@@ -281,8 +317,10 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
       if (status == CUBLAS_STATUS_SUCCESS) {
         status = cublasLtMatrixLayoutCreate(&Cdesc, cType, N, M, (int64_t)N);
         if (status == CUBLAS_STATUS_SUCCESS) {
-          float alphaF = static_cast<float>(alpha);
-          float betaF = static_cast<float>(beta);
+          // Use persistent thread-local scalars (not stack locals) so that
+          // the host addresses baked into captured CUDA graphs remain valid on replay.
+          getCublasScalars()->alphaF = static_cast<float>(alpha);
+          getCublasScalars()->betaF  = static_cast<float>(beta);
 
           void* workspace = nullptr;
           size_t actualWorkspaceSize = 0;
@@ -292,10 +330,10 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
           }
 
           // B first (as A in col-major), A second (as B in col-major)
-          status = cublasLtMatmul(*ltHandle, operationDesc, &alphaF,
+          status = cublasLtMatmul(*ltHandle, operationDesc, &getCublasScalars()->alphaF,
                                   pB->specialBuffer(), Bdesc,
                                   pA->specialBuffer(), Adesc,
-                                  &betaF,
+                                  &getCublasScalars()->betaF,
                                   pC->specialBuffer(), Cdesc,
                                   pC->specialBuffer(), Cdesc,
                                   &algo,
@@ -622,22 +660,23 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const LongType* aShapeInfo
    // evaluate C coordinates
    INDEX2COORDS(i, shared.cRank, shared.cShape, cCoords);
 
-   // calculate index of current batch
-   LongType batchInd;
-   if (cBatchDims != nullptr) {
-     COORDS2INDEX(shared.cRank - 2, shared.cStride, cCoords, batchInd);
-   }
-
-   // evaluate A coordinates
+   // Copy batch coordinates directly from C to A and B.
+   // Batch dimensions have matching shapes (validated in mmulNxN).
+   // The old code computed a "batch index" using C's strides, then decomposed
+   // it using A/B's shapes. That is wrong because stride-based offset != linear index
+   // for non-contiguous arrays or when batch strides differ from shape products.
    if (aBatchDims != nullptr) {
-     INDEX2COORDS(batchInd, shared.aRank - 2, shared.aShape, aCoords);
+     for (int d = 0; d < shared.aRank - 2; ++d) {
+       aCoords[d] = cCoords[d];
+     }
    }
    aCoords[aMaxis] = cCoords[cMaxis];
    aCoords[aKaxis] = 0;
 
-   // evaluate B coordinates
    if (bBatchDims != nullptr) {
-     INDEX2COORDS(batchInd, shared.bRank - 2, shared.bShape, bCoords);
+     for (int d = 0; d < shared.bRank - 2; ++d) {
+       bCoords[d] = cCoords[d];
+     }
    }
    bCoords[bKaxis] = 0;
    bCoords[bNaxis] = cCoords[cNaxis];
@@ -932,51 +971,64 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      const int ldcFast = N;
 
      if (typeDouble) {
-       status = cublasDgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &alpha,
+       getCublasScalars()->alphaD = alpha;
+       getCublasScalars()->betaD  = beta;
+       status = cublasDgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaD,
                             (double*)pB->specialBuffer(), ldaFast,
                             (double*)pA->specialBuffer(), ldbFast,
-                            &beta, (double*)pC->specialBuffer(), ldcFast);
+                            &getCublasScalars()->betaD, (double*)pC->specialBuffer(), ldcFast);
      } else if (typeFloat) {
-       float alphaF(alpha), betaF(beta);
-       status = cublasSgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &alphaF,
+       getCublasScalars()->alphaF = static_cast<float>(alpha);
+       getCublasScalars()->betaF  = static_cast<float>(beta);
+       status = cublasSgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaF,
                             (float*)pB->specialBuffer(), ldaFast,
                             (float*)pA->specialBuffer(), ldbFast,
-                            &betaF, (float*)pC->specialBuffer(), ldcFast);
+                            &getCublasScalars()->betaF, (float*)pC->specialBuffer(), ldcFast);
      } else if (typeHalf) {
        float16 alphaH(alpha), betaH(beta);
-       status = cublasHgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &alphaH.data,
+       getCublasScalars()->alphaH = alphaH.data;
+       getCublasScalars()->betaH  = betaH.data;
+       status = cublasHgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaH,
                             (__half*)pB->specialBuffer(), ldaFast,
                             (__half*)pA->specialBuffer(), ldbFast,
-                            &betaH.data, (__half*)pC->specialBuffer(), ldcFast);
+                            &getCublasScalars()->betaH, (__half*)pC->specialBuffer(), ldcFast);
      } else {
-       float alphaF(alpha), betaF(beta);
+       getCublasScalars()->alphaF = static_cast<float>(alpha);
+       getCublasScalars()->betaF  = static_cast<float>(beta);
        status = cublasGemmEx(*handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                             N, 1, K, &alphaF,
+                             N, 1, K, &getCublasScalars()->alphaF,
                              pB->specialBuffer(), CUDA_R_16F, ldaFast,
                              pA->specialBuffer(), CUDA_R_16F, ldbFast,
-                             &betaF,
+                             &getCublasScalars()->betaF,
                              pC->specialBuffer(), CUDA_R_32F, ldcFast,
                              CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
      }
    } else if (typeDouble) {
-     status = cublasDgemm(*handle, transAblas, transBblas, M, N, K, &alpha, (double*)pA->specialBuffer(), lda,
-                          (double*)pB->specialBuffer(), ldb, &beta, (double*)pC->specialBuffer(), ldc);
+     getCublasScalars()->alphaD = alpha;
+     getCublasScalars()->betaD  = beta;
+     status = cublasDgemm(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaD, (double*)pA->specialBuffer(), lda,
+                          (double*)pB->specialBuffer(), ldb, &getCublasScalars()->betaD, (double*)pC->specialBuffer(), ldc);
    } else if (typeFloat) {
-     float alphaF(alpha), betaF(beta);
-     status = cublasSgemm(*handle, transAblas, transBblas, M, N, K, &alphaF, (float*)pA->specialBuffer(), lda,
-                          (float*)pB->specialBuffer(), ldb, &betaF, (float*)pC->specialBuffer(), ldc);
+     getCublasScalars()->alphaF = static_cast<float>(alpha);
+     getCublasScalars()->betaF  = static_cast<float>(beta);
+     status = cublasSgemm(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF, (float*)pA->specialBuffer(), lda,
+                          (float*)pB->specialBuffer(), ldb, &getCublasScalars()->betaF, (float*)pC->specialBuffer(), ldc);
    } else if (typeHalf) {
      float16 alphaH(alpha), betaH(beta);
-     status = cublasHgemm(*handle, transAblas, transBblas, M, N, K, &alphaH.data, (__half*)pA->specialBuffer(), lda,
-                          (__half*)pB->specialBuffer(), ldb, &betaH.data, (__half*)pC->specialBuffer(), ldc);
+     getCublasScalars()->alphaH = alphaH.data;
+     getCublasScalars()->betaH  = betaH.data;
+     status = cublasHgemm(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaH, (__half*)pA->specialBuffer(), lda,
+                          (__half*)pB->specialBuffer(), ldb, &getCublasScalars()->betaH, (__half*)pC->specialBuffer(), ldc);
    } else if (typeIntFloat) {
-     float alphaF(alpha), betaF(beta);
-     status = cublasSgemmEx(*handle, transAblas, transBblas, M, N, K, &alphaF, pA->specialBuffer(), CUDA_R_8I, lda,
-                            pB->specialBuffer(), CUDA_R_8I, ldb, &betaF, pC->specialBuffer(), CUDA_R_32F, ldc);
+     getCublasScalars()->alphaF = static_cast<float>(alpha);
+     getCublasScalars()->betaF  = static_cast<float>(beta);
+     status = cublasSgemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF, pA->specialBuffer(), CUDA_R_8I, lda,
+                            pB->specialBuffer(), CUDA_R_8I, ldb, &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldc);
    } else if (typeHalfFloat) {
-     float alphaF(alpha), betaF(beta);
-     status = cublasSgemmEx(*handle, transAblas, transBblas, M, N, K, &alphaF, pA->specialBuffer(), CUDA_R_16F, lda,
-                            pB->specialBuffer(), CUDA_R_16F, ldb, &betaF, pC->specialBuffer(), CUDA_R_32F, ldc);
+     getCublasScalars()->alphaF = static_cast<float>(alpha);
+     getCublasScalars()->betaF  = static_cast<float>(beta);
+     status = cublasSgemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF, pA->specialBuffer(), CUDA_R_16F, lda,
+                            pB->specialBuffer(), CUDA_R_16F, ldb, &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldc);
    }
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
@@ -1124,24 +1176,28 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
    NDArray::prepareSpecialUse({Y}, {pA, effX});
 
    if (typeDouble) {
-     status = cublasDgemv(*handle, transAblas, transA ? N : M, transA ? M : N, &alpha, (double*)pA->specialBuffer(),
-                          lda, (double*)effX->specialBuffer(), incx, &beta, (double*)Y->specialBuffer(), incy);
+     getCublasScalars()->alphaD = alpha;
+     getCublasScalars()->betaD  = beta;
+     status = cublasDgemv(*handle, transAblas, transA ? N : M, transA ? M : N, &getCublasScalars()->alphaD, (double*)pA->specialBuffer(),
+                          lda, (double*)effX->specialBuffer(), incx, &getCublasScalars()->betaD, (double*)Y->specialBuffer(), incy);
    } else if (typeFloat) {
-     float alphaF(alpha), betaF(beta);
-     status = cublasSgemv(*handle, transAblas, transA ? N : M, transA ? M : N, &alphaF, (float*)pA->specialBuffer(),
-                          lda, (float*)effX->specialBuffer(), incx, &betaF, (float*)Y->specialBuffer(), incy);
+     getCublasScalars()->alphaF = static_cast<float>(alpha);
+     getCublasScalars()->betaF  = static_cast<float>(beta);
+     status = cublasSgemv(*handle, transAblas, transA ? N : M, transA ? M : N, &getCublasScalars()->alphaF, (float*)pA->specialBuffer(),
+                          lda, (float*)effX->specialBuffer(), incx, &getCublasScalars()->betaF, (float*)Y->specialBuffer(), incy);
    } else if (typeHalfFloat) {
      // FP16 GEMV via cublasGemmEx: treat vector X as [N,1] matrix → GEMM [M,N] × [N,1] = [M,1]
      // HALF inputs with FP32 output and FP32 accumulation for precision.
-     float alphaF(alpha), betaF(beta);
+     getCublasScalars()->alphaF = static_cast<float>(alpha);
+     getCublasScalars()->betaF  = static_cast<float>(beta);
      status = cublasGemmEx(*handle, transAblas, CUBLAS_OP_N,
                            transA ? N : M,  // m (rows of op(A))
                            1,               // n = 1 (vector)
                            transA ? M : N,  // k
-                           &alphaF,
+                           &getCublasScalars()->alphaF,
                            pA->specialBuffer(), CUDA_R_16F, lda,
                            effX->specialBuffer(), CUDA_R_16F, N,  // ldb = N (contiguous vector)
-                           &betaF,
+                           &getCublasScalars()->betaF,
                            Y->specialBuffer(), CUDA_R_32F, M,    // ldc = M
                            CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
    }
@@ -1536,40 +1592,42 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   // So we call cublas with (B, A) to get A*B in row-major
 
   if (xType == DataType::DOUBLE) {
+    getCublasScalars()->alphaD = alpha;
+    getCublasScalars()->betaD  = beta;
     status = cublasDgemmStridedBatched(
         *handle,
         CUBLAS_OP_N, CUBLAS_OP_N,
         N, M, K,  // Swapped M,N for row-major
-        &alpha,
+        &getCublasScalars()->alphaD,
         reinterpret_cast<const double*>(B->specialBuffer()), N, strideB,
         reinterpret_cast<const double*>(A->specialBuffer()), K, strideA,
-        &beta,
+        &getCublasScalars()->betaD,
         reinterpret_cast<double*>(C->specialBuffer()), N, strideC,
         batchSize);
   } else if (xType == DataType::FLOAT32) {
-    float alphaF = static_cast<float>(alpha);
-    float betaF = static_cast<float>(beta);
+    getCublasScalars()->alphaF = static_cast<float>(alpha);
+    getCublasScalars()->betaF  = static_cast<float>(beta);
     status = cublasSgemmStridedBatched(
         *handle,
         CUBLAS_OP_N, CUBLAS_OP_N,
         N, M, K,  // Swapped M,N for row-major
-        &alphaF,
+        &getCublasScalars()->alphaF,
         reinterpret_cast<const float*>(B->specialBuffer()), N, strideB,
         reinterpret_cast<const float*>(A->specialBuffer()), K, strideA,
-        &betaF,
+        &getCublasScalars()->betaF,
         reinterpret_cast<float*>(C->specialBuffer()), N, strideC,
         batchSize);
   } else if (xType == DataType::HALF) {
-    __half alphaH = __float2half(static_cast<float>(alpha));
-    __half betaH = __float2half(static_cast<float>(beta));
+    getCublasScalars()->alphaH = __float2half(static_cast<float>(alpha));
+    getCublasScalars()->betaH  = __float2half(static_cast<float>(beta));
     status = cublasHgemmStridedBatched(
         *handle,
         CUBLAS_OP_N, CUBLAS_OP_N,
         N, M, K,  // Swapped M,N for row-major
-        &alphaH,
+        &getCublasScalars()->alphaH,
         reinterpret_cast<const __half*>(B->specialBuffer()), N, strideB,
         reinterpret_cast<const __half*>(A->specialBuffer()), K, strideA,
-        &betaH,
+        &getCublasScalars()->betaH,
         reinterpret_cast<__half*>(C->specialBuffer()), N, strideC,
         batchSize);
   } else {

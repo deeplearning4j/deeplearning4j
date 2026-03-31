@@ -126,8 +126,11 @@ static void histogram_(LaunchContext *context, void *xBuffer, const LongType *xS
       reinterpret_cast<X *>(min_val), reinterpret_cast<X *>(max_val));
   DebugHelper::checkErrorCode(context->getCudaStream(),"histogramKernel failed");
 
-  cudaStreamSynchronize(*context->getCudaStream());
-  delete tmp;
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+  if (!tl_graphExecutionActive) {
+    cudaStreamSynchronize(*context->getCudaStream());
+    delete tmp;
+  }
 }
 
 void histogramHelper(LaunchContext *context, NDArray &input, NDArray &output) {

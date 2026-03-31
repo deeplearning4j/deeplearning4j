@@ -7,6 +7,7 @@
     <artifactId>sdx-runtime-java-bindings</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>SDX Runtime Java Bindings</name>
+    <description>Java wrapper for the SDX runtime C ABI (JNA-based)</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -21,4 +22,18 @@
             <version>5.14.0</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

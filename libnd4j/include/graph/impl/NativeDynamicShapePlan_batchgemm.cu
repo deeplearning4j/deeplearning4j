@@ -131,7 +131,7 @@ const LongType* NativeDynamicShapePlan::resolveInputShapeInfo(
       if (arr != nullptr) return arr->shapeInfo();
     }
     const NativeSlot& srcSlot = slots_[srcIdx];
-    if (srcSlot.shapeCacheValid && !srcSlot.cachedOutputShapes.empty() &&
+    if (srcSlot.shapeCacheValid() && !srcSlot.cachedOutputShapes.empty() &&
         srcSlot.cachedOutputShapes[0] != nullptr) {
       return srcSlot.cachedOutputShapes[0];
     }
@@ -235,7 +235,7 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
     for (int i = seg.startSlot; i <= seg.endSlot; i++) {
       NativeSlot& slot = slots_[i];
       if (!isMatmulOp(slot.opName) || slot.numInputs < 2 ||
-          slot.controlFlowType != CF_NONE || slot.frozenConstantSlot) continue;
+          slot.controlFlowType != CF_NONE || slot.frozenConstantSlot()) continue;
 
       totalMatmuls++;
 
@@ -405,16 +405,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 
   // 0. Pre-populate outputSlots_ for ALL members from slot cache.
   //    This ensures downstream ops can find each member's output array.
-  for (int b = 0; b < batchCount; b++) {
-    int slotIdx = group.slotIndices[b];
-    NativeSlot& slot = slots_[slotIdx];
-    for (int o = 0; o < slot.numOutputs; o++) {
-      int outSlotIdx = slot.outputSlotIndices[o];
-      if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_ && outputSlots_[outSlotIdx] == nullptr) {
-        outputSlots_[outSlotIdx] = slotArrayCache_[outSlotIdx];
-      }
-    }
-  }
+  // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
 
   // 1. Populate host pointer arrays from current slot inputs/outputs
   for (int b = 0; b < batchCount; b++) {

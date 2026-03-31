@@ -183,6 +183,26 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
     } else {
       if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
+      // Fallback: gap slots (CONST_GEN, SHAPE_MANIP, etc.) may have been skipped
+      // by the frozen constant optimization during gap execution, leaving
+      // outputSlots_[si] null. When the pre-exec restoration is also skipped
+      // (seg.executionCount > 2 optimization), the slot stays null. Restore
+      // from slotArrayCache_ which retains the array from the warmup step.
+      if (!arr && slotArrayCache && argMapping.slotIndex < totalOutputSlots) {
+        arr = slotArrayCache[argMapping.slotIndex];
+        if (arr) {
+          // Validate the cached array's DataBuffer is still alive
+          auto* db = arr->dataBuffer();
+          if (db != nullptr && db->isValid()) {
+            outputSlots[argMapping.slotIndex] = arr;
+            DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: restored arg slot %d "
+                      "from slotArrayCache (sub-segment [%d-%d])",
+                      argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_);
+          } else {
+            arr = nullptr;  // Invalid cache entry — still null
+          }
+        }
+      }
     }
 
     if (!arr) {

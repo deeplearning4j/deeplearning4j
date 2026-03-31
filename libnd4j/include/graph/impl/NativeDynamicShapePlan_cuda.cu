@@ -48,6 +48,7 @@
 
 #if HAVE_TRITON
 #include <graph/gpu/TritonGraphBackend.h>
+#include <graph/gpu/OpCategoryTable.h>
 #endif
 
 #include <algorithm>
@@ -234,6 +235,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         auto copyErr = cudaMemcpyAsync(cb.buffer->specialBuffer(), src->specialBuffer(),
                                        srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
         if (copyErr != cudaSuccess) { cudaGetLastError(); ok = false; break; }
+        // Mark device as actual after D2D copy — prevents syncToSpecial()
+        // from recording a stale H2D that overwrites fresh data on replay.
+        cb.buffer->dataBuffer()->writeSpecial();
       }
       cb.lastSourcePtr = currentPtr;
       cb.initialCopyDone = true;
@@ -335,9 +339,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         performReplayVerify(seg, externalInputs, numExternalInputs, stream, "CUDA_GRAPHS");
       }
 
-      if (executeCount_ % 10 == 0) {
-        flushPendingClose(stream);
-      }
+      // pendingClose_ removed: arrays persist (one array per slot)
 
       if (executionTimingEnabled_) {
         auto copyUs = std::chrono::duration_cast<std::chrono::microseconds>(tCopyDone - t0).count();
@@ -379,10 +381,7 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
     }
   }
 
-  // Pre-execution flush
-  flushPendingClose(stream);
-
-  // Clear any CUDA errors from workspace clear or flush
+  // Clear any CUDA errors from workspace clear
   cudaGetLastError();
 
   // Free captured graphs for segments whose shapes have changed
@@ -391,7 +390,7 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
       if (segment.replayHandle) {
         LongType segShapeKey = computeSegmentShapeKey(segment, externalInputs, numExternalInputs);
         if (segment.cachedShapeKey != segShapeKey) {
-          segment.replayHandle.reset();
+          platformCleanupSegmentForRebuild(segment);
         }
       }
     }
@@ -404,7 +403,12 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
   // Keep caches for segments with an instantiated graph that can replay.
-  if (seg.replayHandle != nullptr && !seg.captureFailed) return true;
+  // Check ONLY for replay handle — NOT captureFailed. The captureFailed flag means
+  // the Triton path failed, but the CUDA graph fallback may have succeeded and set
+  // replayHandle. During cleanup between calls, captureFailed is still true (Fix 10
+  // clears it during the NEXT execution). If we also require !captureFailed, cleanup
+  // frees the segment's slots → graph replay D2D copies read freed memory → NaN.
+  if (seg.replayHandle != nullptr) return true;
   return false;
 }
 
@@ -451,6 +455,14 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
            "using %d threads (executeCount=%d)",
            static_cast<int>(tasks.size()), maxPrecompileThreads, executeCount_);
   auto precompileStart = Clock::now();
+
+  // Force-initialize static singleton tables on the main thread BEFORE
+  // launching parallel workers.  getOpCategoryTable() is an inline function
+  // in a header with a static local variable.  Although C++11 "magic statics"
+  // guarantee thread-safe init, NVCC's handling of inline functions with
+  // static locals across multiple .cu translation units can violate this.
+  // Touching it here makes the race impossible.
+  (void)sd::graph::getOpCategoryTable();
 
   std::vector<std::future<bool>> futures;
   futures.reserve(tasks.size());
@@ -504,6 +516,14 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
   if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) return false;
 
+  // Non-frozen execution: use slot-by-slot to avoid memory leaks.
+  // Graph capture/replay with tl_graphExecutionActive=true suppresses cudaFreeAsync
+  // in deleteSpecial(), causing temporary NDArrays created by ops during capture
+  // to leak their GPU memory (~260 MB/step for decoder models). With changing shapes
+  // (KV cache grows each step), each step triggers a new capture, compounding the leak.
+  // Slot-by-slot execution properly frees all temporaries.
+  if (!shapesFrozen_) return false;
+
   bool tryCapture = (segment.isCapturable || (shapesFrozen_ && executeCount_ > 0))
                     && !segment.captureFailed;
   // Check if any graph backend is available. gpuGraphBackend_ is lazily initialized
@@ -524,87 +544,41 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     void* stream, bool& usedGraph) {
   usedGraph = false;
 
-  DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] useGraph=1 isCapturable=%d captureFailed=%d hasGraph=%d",
+  DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] mode=%d isCapturable=%d executionCount=%d",
            segment.startSlot, segment.endSlot,
-           static_cast<int>(segment.isCapturable), static_cast<int>(segment.captureFailed),
-           static_cast<int>(segment.replayHandle != nullptr));
+           static_cast<int>(graphExecutionMode_), static_cast<int>(segment.isCapturable),
+           segment.executionCount);
 
   // Try the selected GPU compiler backend (TRITON / NVRTC / PTX)
   auto* gpuBackend = getGpuGraphBackend();
-  bool gpuBackendHandled = false;
   if (gpuBackend) {
-    const char* backendName = gpuBackend->name();
     auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
     if (status == Status::OK) {
-      gpuBackendHandled = true;
       usedGraph = true;
-    } else {
-      DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d "
-               "executionCount=%d captureFailed=%d",
-               executeCount_, segment.startSlot, segment.endSlot, backendName,
-               static_cast<int>(status), segment.executionCount,
-               static_cast<int>(segment.captureFailed));
-      if (isStrictNoFallbackMode(graphExecutionMode_)) {
-        return status;
-      }
+      return Status::OK;
     }
+    // GPU backend failed — hard error. Do NOT cascade to CUDA graphs or slot-by-slot.
+    DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d — hard error",
+             executeCount_, segment.startSlot, segment.endSlot, gpuBackend->name(),
+             static_cast<int>(status));
+    return status;
   }
 
-  // Try NVRTC JIT
-  bool jitHandled = false;
-  if (!gpuBackendHandled && jitMode_ != JitMode::GRAPH_ONLY && !segment.jitCompileFailed
-      && graphExecutionMode_ != GraphExecutionMode::GEM_CUDA_GRAPHS) {
-    auto status = executeSegmentWithJit(segment, externalInputs, numExternalInputs, stream);
-    if (status == Status::OK) {
-      jitHandled = true;
-      usedGraph = true;
+  // No GPU compiler backend — use CUDA graph capture/replay if enabled
+  if (gpuGraphCaptureEnabled_) {
+    auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
+    if (status != Status::OK) {
+      DSP_DIAG(COMPILE, "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d — hard error",
+               segment.startSlot, segment.endSlot, static_cast<int>(status));
+      segment.captureFailed = true;
+      return status;
     }
+    usedGraph = (segment.replayHandle != nullptr && segment.replayHandle->isReady() && !segment.captureFailed);
+    return Status::OK;
   }
 
-  if (!gpuBackendHandled && !jitHandled) {
-    if (gpuGraphCaptureEnabled_) {
-      // Fall back to CUDA Graphs (captured replay)
-      auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
-      if (status != Status::OK) {
-        DSP_DIAG(FALLBACK, "NativeDSP::execute: graph path failed for seg[%d-%d] status=%d, "
-                 "falling back to slot-by-slot",
-                 segment.startSlot, segment.endSlot, static_cast<int>(status));
-        segment.captureFailed = true;
-        cudaGetLastError();
-        LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-        LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
-        // Clear stale output/cache entries from failed capture
-        for (int s = segment.startSlot; s <= segment.endSlot; s++) {
-          for (int o = 0; o < slots_[s].numOutputs; o++) {
-            int si = slots_[s].outputSlotIndices[o];
-            if (si >= 0 && si < totalOutputSlots_) {
-              outputSlots_[si] = nullptr;
-              slotArrayCache_[si] = nullptr;
-            }
-          }
-        }
-        // Invalidate shape caches so slot-by-slot recomputes them
-        for (int s = segment.startSlot; s <= segment.endSlot; s++) {
-          auto& slot = slots_[s];
-          slot.shapeCacheValid = false;
-          slot.cachedShapeKey = 0;
-          slot.cachedOutputShapes.clear();
-          slot.frozenContextReady = false;
-          slot.frozenConstantSlot = false;
-        }
-        status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-        if (status != Status::OK) return status;
-      } else {
-        usedGraph = (segment.replayHandle != nullptr && segment.replayHandle->isReady() && !segment.captureFailed);
-      }
-    } else {
-      // No graph backends — slot-by-slot fallback
-      auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-      if (status != Status::OK) return status;
-    }
-  }
-
-  return Status::OK;
+  // No graph backends and no graph capture — slot-by-slot is the primary mode
+  return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -681,6 +655,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
     for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
       if (!cb.directReference) delete cb.buffer;
     }
+    seg.replayHandle->getCaptureBuffers().clear();
     // Free capture workspace
     {
       bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
@@ -691,8 +666,10 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
     }
     // Free pinned host pointers
     seg.replayHandle->freeHostPointers();
+    seg.replayHandle->clearExternalAddresses();
     seg.replayHandle.reset();
   }
+  seg.gapOpsCapturedInGraph = false;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -700,6 +677,22 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformFreePlanResources() {
+  // Invalidate Triton singleton cache entries for this plan's segments.
+  // Without this, compiled CUmodule handles accumulate across plan lifetimes
+  // in the singleton's cache_, leaking GPU driver memory that trimPool cannot free.
+#if HAVE_TRITON
+  {
+    std::vector<std::pair<int,int>> segRanges;
+    segRanges.reserve(segments_.size());
+    for (auto& seg : segments_) {
+      segRanges.emplace_back(seg.startSlot, seg.endSlot);
+    }
+    if (!segRanges.empty()) {
+      TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
+    }
+  }
+#endif
+
   bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
                  captureBufferRegistry_ != nullptr;
 
@@ -711,15 +704,15 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
       }
       seg.replayHandle->getCaptureBuffers().clear();
       if (seg.replayHandle->getWorkspacePtr() != nullptr) {
-        if (usePool) {
-          // Pool registry will free via releaseAll below
-        } else {
-          seg.replayHandle->releaseWorkspace(nullptr, seg.startSlot);
-        }
+        seg.replayHandle->releaseWorkspace(
+            usePool ? captureBufferRegistry_ : nullptr,
+            seg.startSlot);
       }
       seg.replayHandle->freeHostPointers();
+      seg.replayHandle->clearExternalAddresses();
       seg.replayHandle.reset();
     }
+    seg.gapOpsCapturedInGraph = false;
     delete seg.jitKernel;
     seg.jitKernel = nullptr;
   }

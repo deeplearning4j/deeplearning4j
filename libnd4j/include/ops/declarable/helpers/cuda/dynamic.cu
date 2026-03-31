@@ -441,8 +441,9 @@ static Status _dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray 
     auto dIndicesShapes = reinterpret_cast<LongType **>(
         pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(LongType *)));
 
+    // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
     // Ensure all pointer replications are complete before kernel launch
-    cudaStreamSynchronize(*context->getCudaStream());
+    if (!tl_graphExecutionActive) { cudaStreamSynchronize(*context->getCudaStream()); }
 
     // Use grid size based on number of inputs, with reasonable thread count
     int numBlocks = static_cast<int>(inputSize);

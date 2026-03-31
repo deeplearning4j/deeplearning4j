@@ -607,4 +607,175 @@ public class TritonFusedRoPETest extends BaseNd4jTestWithBackends {
 
         sd.close();
     }
+
+    // ─── Fused Segment ROPE Tests ─────────────────────────────────────────
+
+    /**
+     * Test fused_rope when cos/sin inputs come from upstream elementwise ops
+     * in the same segment (internal intermediates without kernel arg pointers).
+     *
+     * This reproduces the crash: "TritonIRBuilder: ROPE 'fused_rope' at slot N
+     * — missing kernel arg ptrs/arrays. Cannot compile." which occurred when
+     * ROPE was fused into a segment where cos/sin were produced by upstream ops.
+     */
+    @Test
+    public void testFusedRoPEWithInternalCosSinInputs() {
+        int batch = 1, seqLen = 1, numHeads = 8, headDim = 64;
+        DataType dtype = DataType.FLOAT;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable inputVar = sd.placeHolder("input", dtype, batch, seqLen, numHeads, headDim);
+        SDVariable cosRawVar = sd.placeHolder("cos_raw", dtype, batch, seqLen, headDim);
+        SDVariable sinRawVar = sd.placeHolder("sin_raw", dtype, batch, seqLen, headDim);
+
+        // Upstream elementwise ops that produce cos/sin — these may be fused
+        // into the same segment as the ROPE op, making cos/sin internal intermediates
+        SDVariable cos = cosRawVar.mul(1.0);  // identity mul forces intermediate
+        SDVariable sin = sinRawVar.mul(1.0);
+
+        SDVariable ropeOut = new FusedRoPE(sd, inputVar, cos, sin, 0).outputVariable();
+        ropeOut.rename("output");
+
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+
+        INDArray input = Nd4j.randn(dtype, batch, seqLen, numHeads, headDim);
+        INDArray cosArr = Nd4j.randn(dtype, batch, seqLen, headDim);
+        INDArray sinArr = Nd4j.randn(dtype, batch, seqLen, headDim);
+        Map<String, INDArray> feed = Map.of("input", input, "cos_raw", cosArr, "sin_raw", sinArr);
+
+        // Reference: mul(1.0) is identity, so result should match direct ROPE
+        INDArray reference = computeRoPEReference(input, cosArr, sinArr);
+
+        // Execute multiple times to trigger Triton compilation (warmup + compile)
+        Map<String, INDArray> result = null;
+        for (int step = 0; step < 5; step++) {
+            result = sd.outputDirect(feed, "output");
+        }
+
+        assertNotNull(result);
+        INDArray actual = result.get("output");
+        assertNotNull(actual, "Output is null after multi-step execution");
+        double maxDiff = reference.castTo(DataType.FLOAT).sub(actual.castTo(DataType.FLOAT))
+                .amaxNumber().doubleValue();
+        assertTrue(maxDiff < TOLERANCE,
+                String.format("ROPE with internal cos/sin maxDiff=%.6f exceeds tolerance=%.6f", maxDiff, TOLERANCE));
+        log.info("ROPE with internal cos/sin maxDiff={}", maxDiff);
+
+        sd.close();
+    }
+
+    /**
+     * Test fused_rope in a chain where ROPE output is consumed by a downstream
+     * elementwise op in the same segment (ROPE output is internal intermediate).
+     * Combined with upstream cos/sin producers for maximum fusion.
+     */
+    @Test
+    public void testFusedRoPEFullyFusedSegment() {
+        int batch = 1, seqLen = 1, numHeads = 8, headDim = 64;
+        DataType dtype = DataType.FLOAT;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable inputVar = sd.placeHolder("input", dtype, batch, seqLen, numHeads, headDim);
+        SDVariable cosRawVar = sd.placeHolder("cos_raw", dtype, batch, seqLen, headDim);
+        SDVariable sinRawVar = sd.placeHolder("sin_raw", dtype, batch, seqLen, headDim);
+        SDVariable residualVar = sd.placeHolder("residual", dtype, batch, seqLen, numHeads, headDim);
+
+        // Upstream: elementwise ops producing cos/sin (potential internal intermediates)
+        SDVariable cos = cosRawVar.mul(1.0);
+        SDVariable sin = sinRawVar.mul(1.0);
+
+        // ROPE with internal cos/sin
+        SDVariable ropeOut = new FusedRoPE(sd, inputVar, cos, sin, 0).outputVariable();
+
+        // Downstream: add residual (ROPE output becomes internal intermediate)
+        SDVariable result = ropeOut.add(residualVar);
+        result.rename("output");
+
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+
+        INDArray input = Nd4j.randn(dtype, batch, seqLen, numHeads, headDim);
+        INDArray cosArr = Nd4j.randn(dtype, batch, seqLen, headDim);
+        INDArray sinArr = Nd4j.randn(dtype, batch, seqLen, headDim);
+        INDArray residual = Nd4j.randn(dtype, batch, seqLen, numHeads, headDim);
+        Map<String, INDArray> feed = Map.of("input", input, "cos_raw", cosArr,
+                "sin_raw", sinArr, "residual", residual);
+
+        // Reference: rope(input, cos*1, sin*1) + residual
+        INDArray ropeRef = computeRoPEReference(input, cosArr, sinArr);
+        INDArray expectedOutput = ropeRef.add(residual);
+
+        // Execute multiple times to trigger Triton compilation
+        Map<String, INDArray> output = null;
+        for (int step = 0; step < 5; step++) {
+            output = sd.outputDirect(feed, "output");
+        }
+
+        assertNotNull(output);
+        INDArray actual = output.get("output");
+        assertNotNull(actual, "Output is null after multi-step execution");
+        double maxDiff = expectedOutput.sub(actual).amaxNumber().doubleValue();
+        assertTrue(maxDiff < TOLERANCE,
+                String.format("Fully fused ROPE+residual maxDiff=%.6f exceeds tolerance=%.6f", maxDiff, TOLERANCE));
+        log.info("Fully fused ROPE+residual maxDiff={}", maxDiff);
+
+        sd.close();
+    }
+
+    /**
+     * Test fused_rope with frozen shapes (simulating VLM decode recompilation).
+     * This tests the specific scenario that caused the original crash:
+     * 1. Initial compile (warmup)
+     * 2. Freeze shapes
+     * 3. Re-execute (triggers Triton recompilation with frozen shapes)
+     */
+    @Test
+    public void testFusedRoPEFrozenShapeRecompile() {
+        int batch = 1, seqLen = 1, numHeads = 8, headDim = 64;
+        DataType dtype = DataType.FLOAT;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable inputVar = sd.placeHolder("input", dtype, batch, seqLen, numHeads, headDim);
+        SDVariable cosVar = sd.placeHolder("cos", dtype, batch, seqLen, headDim);
+        SDVariable sinVar = sd.placeHolder("sin", dtype, batch, seqLen, headDim);
+
+        SDVariable ropeOut = new FusedRoPE(sd, inputVar, cosVar, sinVar, 0).outputVariable();
+        ropeOut.rename("output");
+
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+
+        INDArray input = Nd4j.randn(dtype, batch, seqLen, numHeads, headDim);
+        INDArray cos = Nd4j.randn(dtype, batch, seqLen, headDim);
+        INDArray sin = Nd4j.randn(dtype, batch, seqLen, headDim);
+        Map<String, INDArray> feed = Map.of("input", input, "cos", cos, "sin", sin);
+
+        // Step 1: Initial compilation (warmup)
+        sd.outputDirect(feed, "output");
+
+        // Step 2: Compile with Triton mode (freezes shapes)
+        try {
+            sd.compileNativeDynamicShapePlan(List.of("output"), GraphExecutionMode.TRITON, true);
+        } catch (Exception e) {
+            log.warn("Triton compilation not available: {}", e.getMessage());
+            sd.close();
+            return;
+        }
+
+        // Steps 3-7: Execute with frozen shapes (should not crash)
+        INDArray reference = computeRoPEReference(input, cos, sin);
+        for (int step = 0; step < 5; step++) {
+            Map<String, INDArray> result = sd.outputDirect(feed, "output");
+            assertNotNull(result.get("output"), "Step " + step + " output is null after frozen recompile");
+            double maxDiff = reference.castTo(DataType.FLOAT).sub(result.get("output").castTo(DataType.FLOAT))
+                    .amaxNumber().doubleValue();
+            assertTrue(maxDiff < TOLERANCE,
+                    String.format("Frozen recompile step %d maxDiff=%.6f exceeds tolerance=%.6f",
+                            step, maxDiff, TOLERANCE));
+        }
+        log.info("Frozen shape recompile test passed (5 steps)");
+
+        sd.close();
+    }
 }

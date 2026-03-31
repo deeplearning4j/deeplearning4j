@@ -35,7 +35,8 @@ static void logSoftmaxCUDNN(const LaunchContext* context, NDArray* input, NDArra
   // cuDNN log softmax uses CUDNN_SOFTMAX_LOG algorithm
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -62,8 +63,8 @@ static void logSoftmaxCUDNN(const LaunchContext* context, NDArray* input, NDArra
   z.set4D(CUDNN_TENSOR_NCHW, dataType, static_cast<int>(N), static_cast<int>(C), static_cast<int>(H), static_cast<int>(W));
 
   // Scaling factors
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* ptrAlpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* ptrBeta = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -76,8 +77,10 @@ static void logSoftmaxCUDNN(const LaunchContext* context, NDArray* input, NDArra
                           ptrAlpha, x, input->specialBuffer(),
                           ptrBeta, z, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("logSoftmaxCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("logSoftmaxCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }

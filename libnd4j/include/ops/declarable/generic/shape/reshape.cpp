@@ -22,6 +22,7 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reshape)
+#include <helpers/ShapeUtils.h>
 #include <ops/declarable/headers/shape.h>
 #include <cstring>
 namespace sd {
@@ -273,30 +274,8 @@ DECLARE_SHAPE_FN(reshape) {
   } else {
     auto* shapeArr = INPUT_VARIABLE(1);
 
-    // Read shape values directly from the synced host buffer.
-    // getBufferAsVector<T> uses e<T>(i) which goes through buffer() + getOffset(),
-    // and buffer() applies the NDArray offset via primaryAtOffset. On CUDA, there's
-    // a known issue where the element accessor reads wrong values for INT64 arrays
-    // produced by Concat (likely due to DataBuffer dtype mismatch with NDArray dtype).
-    // Reading directly from the synced primary buffer avoids this entirely.
-    shapeArr->syncToHost();
-    auto* db = shapeArr->dataBuffer();
-    auto numEl = shapeArr->lengthOf();
-    auto dtype = shapeArr->dataType();
-
-    auto arrOffset = shapeArr->offset();
-    if (dtype == INT64) {
-      auto* hostLongs = reinterpret_cast<LongType*>(db->primary()) + arrOffset;
-      for (sd::LongType i = 0; i < numEl; i++)
-        reshapeArgs.push_back(hostLongs[i]);
-    } else if (dtype == INT32) {
-      auto* hostInts = reinterpret_cast<int*>(db->primary()) + arrOffset;
-      for (sd::LongType i = 0; i < numEl; i++)
-        reshapeArgs.push_back(static_cast<LongType>(hostInts[i]));
-    } else {
-      // Fall back to element-wise accessor for other types
-      reshapeArgs = shapeArr->getBufferAsVector<LongType>();
-    }
+    // Read shape values using bulk host sync — avoids per-element GPU->CPU copies.
+    reshapeArgs = ShapeUtils::readIntParams(shapeArr);
 
     // VALIDATION: Check for pointer-like values in shape array
     // This catches a corruption bug where pointer addresses are stored as shape values

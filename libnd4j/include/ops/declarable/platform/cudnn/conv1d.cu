@@ -46,7 +46,8 @@ static void conv1dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
   const LongType oW = isNCW ? output->sizeAt(2) : output->sizeAt(1);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
@@ -91,8 +92,8 @@ static void conv1dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
   void* wsData = manager.allocateDevMem(wsSize);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -112,8 +113,10 @@ static void conv1dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
                             cudnnAddTensor(*handle, alpha, b, bias->specialBuffer(), alpha, z, output->specialBuffer()));
   }
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("conv1dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("conv1dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input, weights, bias});
 }
@@ -131,7 +134,8 @@ static void conv1dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
   const LongType oW = isNCW ? gradO->sizeAt(2) : gradO->sizeAt(1);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
@@ -159,8 +163,8 @@ static void conv1dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
   conv.set2D(0, pW, 1, sW, 1, dW, CUDNN_CROSS_CORRELATION, cudnnDataType(gradO->dataType()));
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -222,8 +226,10 @@ static void conv1dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
       cudnnConvolutionBackwardData(*handle, alpha, dw, weights->specialBuffer(), dz, gradO->specialBuffer(),
                                    conv, algoGradI, wsGradIData, wsGradISize, beta, dx, gradI->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("conv1dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("conv1dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});
 }

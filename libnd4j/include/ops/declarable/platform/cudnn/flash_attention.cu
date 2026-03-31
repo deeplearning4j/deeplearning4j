@@ -58,7 +58,8 @@ static void flashAttentionCUDNN(const LaunchContext* context,
                                  NDArray* output, float scale, bool isCausal) {
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(query->dataType());
   const int rank = query->rankOf();
@@ -126,8 +127,8 @@ static void flashAttentionCUDNN(const LaunchContext* context,
   oTensor.set4D(CUDNN_TENSOR_NCHW, dataType, N, C, H, W);
 
   // Scaling factors
-  const float alpha = 1.0f;
-  const float beta = 0.0f;
+  static const float alpha = 1.0f;
+  static const float beta = 0.0f;
 
   NDArray::prepareSpecialUse({outPermuted}, {qPermuted, kPermuted, vPermuted});
 
@@ -269,8 +270,10 @@ static void flashAttentionCUDNN(const LaunchContext* context,
     delete oFlat;
   }
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("flashAttentionCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("flashAttentionCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({outPermuted}, {qPermuted, kPermuted, vPermuted});
 

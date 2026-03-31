@@ -34,7 +34,8 @@ namespace platforms {
 static void instanceNormCUDNN(const LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* beta,
                                NDArray* output, double epsilon, bool isNCHW) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
   const int rank = input->rankOf();
@@ -62,8 +63,8 @@ static void instanceNormCUDNN(const LaunchContext* context, NDArray* input, NDAr
   bnScaleBiasMeanVarDesc.set4D(CUDNN_TENSOR_NCHW, dataType, 1, C, 1, 1);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* pAlpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* pBeta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -87,7 +88,7 @@ static void instanceNormCUDNN(const LaunchContext* context, NDArray* input, NDAr
   void* saveInvVar = manager.allocateDevMem(bS * C * input->sizeOfT());
 
   // Initialize running var to 1
-  cudaMemsetAsync(runningMean, 0, bS * C * input->sizeOfT(), *context->getCudaStream());
+  cudaMemsetAsync(runningMean, 0, bS * C * input->sizeOfT(), stream);
   if (input->sizeOfT() == 4) {
     float one = 1.0f;
     // Would need a kernel to set to 1, for now use memset which sets to 0
@@ -125,8 +126,10 @@ static void instanceNormCUDNN(const LaunchContext* context, NDArray* input, NDAr
           nullptr,  // estimatedVariance
           epsilon));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("instanceNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("instanceNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input, gamma, beta});
 }

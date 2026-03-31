@@ -91,6 +91,13 @@ class TritonGraphBackend : public GraphBackend {
    */
   void clearFailedSegmentCache();
 
+  /**
+   * Remove cache entries whose slot range overlaps with the given segments.
+   * Called from NativeDynamicShapePlan destructor to free compiled GPU modules
+   * that would otherwise leak in the singleton cache across plan lifetimes.
+   */
+  void invalidateCacheForSegments(const std::vector<std::pair<int,int>>& segmentRanges);
+
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
   static TritonGraphBackend& getInstance();

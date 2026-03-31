@@ -297,6 +297,8 @@ public class StaticKvCacheDecodeLoop {
         boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
         DynamicShapePlanExecutor decoderDspExec = null;  // Tracked DSP executor for decode input updates
 
+
+
         // Reusable input arrays — avoids per-step allocation of masks/position_ids
         // Also used for CUDA graph replay: fixed-address buffers for inputs_embeds/input_ids
         // prevent address key mismatch that would invalidate captured graphs.
@@ -478,34 +480,20 @@ public class StaticKvCacheDecodeLoop {
                 // When speculation is enabled, FrozenDecodeStep.compile() handles this
                 // with seqLen=K+1 instead of seqLen=1.
                 if (maxSpeculativeTokens <= 0) {
-                    // The initial compilation (before prefill) saw empty past_key shapes [rank=0],
-                    // causing Triton attention kernels to be compiled with seqK=0 (NaN output).
-                    // With the static KV buffers [1,heads,maxKvLen,dim] now available, recompiling
-                    // gives the attention kernels the correct seqK = maxKvLen.
                     InferenceSession decoderSession = decoder.getOrCreateSession();
                     DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
+
                     if (dspExec != null && dspExec.getCurrentPlan() != null) {
+                        // First page — full compile path.
                         // Associate static KV buffers as placeholder values so compilation sees their shapes
                         Map<String, INDArray> staticKvBuffers = kvCacheManager.getStaticKvBuffers();
                         for (Map.Entry<String, INDArray> e : staticKvBuffers.entrySet()) {
-                            // Static KV buffers are keyed by past_key_values input names.
-                            // Associate them directly with the decoder.
                             String pastName = e.getKey();
                             if (decoder.hasVariable(pastName)) {
                                 decoder.associateArrayWithVariable(e.getValue(), pastName);
                             }
                         }
                         // Clear old plan and recompile with correct KV shapes.
-                        // When C++ KV scatter is enabled AND shapes will be frozen, compile with
-                        // logits-only outputs — C++ scatter reads present KV from internal output
-                        // slots (encodeDirectOutputSlot). With logits-only, present KV stays
-                        // internal which enables CUDA graph capture (fewer output tensors to manage
-                        // in the capture workspace).
-                        // When freeze is disabled (--no-freeze), C++ KV scatter is NOT available
-                        // (it requires frozen shapes + CUDA graph capture). In this case, compile
-                        // with full outputs so Java KV scatter can read present KV from decoder
-                        // outputs. Without this, the DSP returns logits-only, Java scatter gets
-                        // null KV arrays, and the model degenerates (repeats same token).
                         boolean cppKvEnabled = !skipFreeze
                                 && !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
                         String[] recompileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
@@ -517,10 +505,6 @@ public class StaticKvCacheDecodeLoop {
                                     maxKvLen, Arrays.toString(recompileOutputs));
                             decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
                         } else {
-                            // No-freeze mode: disable DSP entirely to avoid ArrayCacheMemoryMgr
-                            // buffer lifecycle issues. DSP slot cache + growth factor creates
-                            // arrays that get freed by the cache cleanup, causing closed-buffer
-                            // errors in KvScatter. Standard op-by-op execution is safer.
                             log.info("  [Perf] No-freeze mode: disabling DSP, using op-by-op execution");
                             decoder.setDspAutoCompileEnabled(false);
                             decoder.setDspNativeAutoCompileEnabled(false);
@@ -529,9 +513,7 @@ public class StaticKvCacheDecodeLoop {
                         decoderSession = decoder.getOrCreateSession();
                         dspExec = decoderSession.getDynamicShapePlanExecutor();
 
-                        // CRITICAL: Freeze shapes IMMEDIATELY after recompile. This ensures Triton
-                        // compilation (which happens on step 2) uses stable shape keys for disk cache.
-                        // Without this, each run gets different shape keys → cache miss → 9s compile.
+                        // CRITICAL: Freeze shapes IMMEDIATELY after recompile.
                         if (dspExec != null && !skipFreeze) {
                             dspExec.setShapesFrozen(true);
                             dspExec.setTraceEnabled(true);
@@ -553,13 +535,9 @@ public class StaticKvCacheDecodeLoop {
                                         plan, presentNames, pastNames, (int) maxKvLen, (int) cachePos);
                                 if (kvConfigured) {
                                     kvScatterInCpp = true;
-                                    // Note: C++ scatter runs on every DSP execution (including
-                                    // output() calls), so Java must NOT also scatter.
                                     log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}, decodeOutputs=logits-only",
                                             presentNames.size(), cachePos);
 
-                                    // Configure C++ decode input updates: input_ids, position_ids, attention_mask
-                                    // are written directly on device memory by C++ — no Java putScalar/assign needed.
                                     dspExec.configureDecodeInputs(plan, (int) maxKvLen);
                                     if (dspExec.isDecodeInputsConfigured()) {
                                         log.info("  [Perf] C++ decode input updates enabled (zero host-device round-trips)");

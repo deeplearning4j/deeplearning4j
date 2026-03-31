@@ -41,7 +41,8 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
   const LongType xRank = input->rankOf();
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   auto* xShapePtr = input->getShapeAsVectorInt();
   const std::vector<int> xShape = *xShapePtr;  // input and output have same shapes
@@ -89,8 +90,8 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* ptrAlpha =
       output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* ptrBeta =
@@ -106,8 +107,10 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
           input->specialBuffer(), z, output->specialBuffer(), params, gamma->specialBuffer(), beta->specialBuffer(),
           mean->specialBuffer(), variance->specialBuffer(), epsilon));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("batchnormCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("batchnormCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
 }
@@ -127,7 +130,8 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
   const int xRank = input->rankOf();
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  cudnnStatus_t err = cudnnSetStream(*handle, stream);
 
   auto* xShapePtr2 = input->getShapeAsVectorInt();
   const std::vector<int> xShape = *xShapePtr2;  // input and output have same shapes
@@ -183,7 +187,7 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
+  static const float alpha32(1), beta32(0);
   double alpha64(1), beta64(0);
   const void* ptrAlpha =
       input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
@@ -202,8 +206,10 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
                                       gamma->specialBuffer(), gradG->specialBuffer(), gradB->specialBuffer(), epsilon,
                                       nullptr /*mean->specialBuffer()*/, nullptr /*variance->specialBuffer()*/));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("batchnormBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("batchnormBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI, gradG, gradB}, {input, mean, variance, gamma, gradO});
 }

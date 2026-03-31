@@ -184,11 +184,9 @@ class SD_LIB_EXPORT Environment {
   // Triton segment fusion optimizations (temporary flags for testing)
   std::atomic<bool> _tritonFuseIdentityShapes{true};     // Fuse identity reshape/expand_dims/squeeze into element-wise
   std::atomic<bool> _tritonFuseCastChains{true};         // Fuse consecutive cast ops into single cast
-  std::atomic<bool> _tritonFuseTrivialGather{true};      // Fuse trivial (identity/offset) gather with element-wise
   std::atomic<bool> _tritonSpecializePermuteSeq1{true};  // Treat identity permute patterns as no-op for seq=1
-  std::atomic<bool> _tritonEliminateConcatSplitPairs{true}; // Eliminate concat→split or split→concat pairs
   std::atomic<bool> _tritonFusedMatmul{false};           // Fuse matmul→bias→activation (HIGH RISK - disabled by default)
-  std::atomic<bool> _tritonFuseAttentionNeighborhoods{true}; // Fuse GATHER/CONCAT/STACK around attention ops
+  std::atomic<bool> _tritonFuseAttentionNeighborhoods{true}; // Prefer larger compile ranges near attention-adjacent data movement
 
   // Comma-separated list of nd4j op names to EXCLUDE from Triton compilation.
   // These ops fall back to cuBLAS/native execution. Typical exclusions:
@@ -232,7 +230,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _dspCastSinkMatmul{false};       // sink FP16→FP32 casts through matmul ops
   std::atomic<bool> _tritonConsolidatedArgTable{false}; // consolidate arg tables into single H2D copy
   std::atomic<bool> _tritonArgDirtyTracking{false};  // skip arg table refresh for static-only sub-kernels
-  std::atomic<bool> _tritonSectionFusion{true};      // ND4J_TRITON_SECTION_FUSION — merge consecutive same-type sections
+  std::atomic<bool> _tritonSectionFusion{true};      // ND4J_TRITON_SECTION_FUSION — enable Triton compile-range fusion and safe post-merges
 
   // Fusion scoring: cost-model-based section merge decisions
   std::atomic<bool> _tritonFusionScoring{true};      // ND4J_TRITON_FUSION_SCORING — use cost model for section merges
@@ -241,6 +239,10 @@ class SD_LIB_EXPORT Environment {
   // Symbolic shape ranges: avoid recompilation when dimensions change within observed bounds
   std::atomic<bool> _dspSymbolicShapes{true};         // ND4J_DSP_SYMBOLIC_SHAPES — enable range-based shape keys
   std::atomic<int>  _dspSymbolicShapeWarmup{2};       // ND4J_DSP_SYMBOLIC_SHAPE_WARMUP — observation steps before ranging
+
+  // Frozen-shape transition behaviour
+  std::atomic<bool> _dspFreezeMergeSegments{false};   // ND4J_DSP_FREEZE_MERGE_SEGMENTS — merge segments on freeze (expensive for large models)
+  std::atomic<bool> _dspFreezeRecompile{false};       // ND4J_DSP_FREEZE_RECOMPILE — force Triton recompilation after freeze warmup
 
   // CUDA graph capture buffer pool sharing via CudaMemoryPool
   std::atomic<bool> _dspCapturePoolEnabled{true};     // ND4J_DSP_CAPTURE_POOL_ENABLED — route capture buffers through pool
@@ -622,12 +624,8 @@ class SD_LIB_EXPORT Environment {
   void setTritonFuseIdentityShapes(bool v) { _tritonFuseIdentityShapes.store(v); }
   bool tritonFuseCastChains() { return _tritonFuseCastChains.load(); }
   void setTritonFuseCastChains(bool v) { _tritonFuseCastChains.store(v); }
-  bool tritonFuseTrivialGather() { return _tritonFuseTrivialGather.load(); }
-  void setTritonFuseTrivialGather(bool v) { _tritonFuseTrivialGather.store(v); }
   bool tritonSpecializePermuteSeq1() { return _tritonSpecializePermuteSeq1.load(); }
   void setTritonSpecializePermuteSeq1(bool v) { _tritonSpecializePermuteSeq1.store(v); }
-  bool tritonEliminateConcatSplitPairs() { return _tritonEliminateConcatSplitPairs.load(); }
-  void setTritonEliminateConcatSplitPairs(bool v) { _tritonEliminateConcatSplitPairs.store(v); }
   bool tritonFusedMatmul() { return _tritonFusedMatmul.load(); }
   void setTritonFusedMatmul(bool v) { _tritonFusedMatmul.store(v); }
   bool tritonFuseAttentionNeighborhoods() { return _tritonFuseAttentionNeighborhoods.load(); }
@@ -687,6 +685,11 @@ class SD_LIB_EXPORT Environment {
   void setDspSymbolicShapeWarmup(int steps);
 
   // Capture buffer pool sharing
+  bool dspFreezeMergeSegments() { return _dspFreezeMergeSegments.load(); }
+  void setDspFreezeMergeSegments(bool v) { _dspFreezeMergeSegments.store(v); }
+  bool dspFreezeRecompile() { return _dspFreezeRecompile.load(); }
+  void setDspFreezeRecompile(bool v) { _dspFreezeRecompile.store(v); }
+
   bool dspCapturePoolEnabled() { return _dspCapturePoolEnabled.load(); }
   void setDspCapturePoolEnabled(bool enabled);
   long long dspCapturePoolMaxBytes() { return _dspCapturePoolMaxBytes.load(); }

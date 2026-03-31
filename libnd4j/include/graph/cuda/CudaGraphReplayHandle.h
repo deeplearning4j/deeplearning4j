@@ -88,6 +88,14 @@ class SD_LIB_EXPORT CudaGraphReplayHandle : public GraphReplayHandle {
   /** Get device ID this handle was created for. */
   int getDeviceId() const { return deviceId_; }
 
+  /**
+   * Returns true if the last finalize() (instantiate) failure was OOM.
+   * Delegates to CudaGraphHandle::wasLastInstantiateOom().
+   */
+  bool wasLastInstantiateOom() const {
+    return handle_ && handle_->wasLastInstantiateOom();
+  }
+
  private:
   std::shared_ptr<sd::cuda::CudaGraphHandle> handle_;
   int deviceId_;

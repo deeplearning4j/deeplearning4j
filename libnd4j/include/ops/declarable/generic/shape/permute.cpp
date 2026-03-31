@@ -64,24 +64,8 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
 
   if (block.width() > 1) {
-    // Read permutation indices directly from synced host buffer to avoid e<T>() bugs on CUDA.
-    auto* permArr = INPUT_VARIABLE(1);
-    permArr->syncToHost();
-    auto* db = permArr->dataBuffer();
-    auto numEl = permArr->lengthOf();
-    auto dtype = permArr->dataType();
-    auto arrOffset = permArr->offset();
-    if (dtype == INT64) {
-      auto* hostLongs = reinterpret_cast<LongType*>(db->primary()) + arrOffset;
-      for (sd::LongType i = 0; i < numEl; i++)
-        permutationVector.push_back(hostLongs[i]);
-    } else if (dtype == INT32) {
-      auto* hostInts = reinterpret_cast<int*>(db->primary()) + arrOffset;
-      for (sd::LongType i = 0; i < numEl; i++)
-        permutationVector.push_back(static_cast<LongType>(hostInts[i]));
-    } else {
-      permutationVector = permArr->asVectorT<LongType>();
-    }
+    // Read permutation indices using bulk host sync — avoids per-element GPU->CPU copies.
+    permutationVector = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
   } else {
     permutationVector = *block.getIArguments();
   }
@@ -201,9 +185,7 @@ DECLARE_SHAPE_FN(permute) {
   if (x->isEmpty()) {
     std::vector<LongType> permVec;
     if (block.width() > 1) {
-      auto* permArr = INPUT_VARIABLE(1);
-      permArr->syncToHost();
-      permVec = permArr->asVectorT<LongType>();
+      permVec = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
     } else if (block.getIArguments()->size() > 0) {
       permVec = *block.getIArguments();
     }
@@ -236,23 +218,8 @@ DECLARE_SHAPE_FN(permute) {
   }
   std::vector<LongType> permutationVector;
   if (block.width() > 1) {
-    auto* permArr = INPUT_VARIABLE(1);
-    permArr->syncToHost();
-    auto* db = permArr->dataBuffer();
-    auto numEl = permArr->lengthOf();
-    auto dtype = permArr->dataType();
-    auto arrOffset = permArr->offset();
-    if (dtype == INT64) {
-      auto* hostLongs = reinterpret_cast<LongType*>(db->primary()) + arrOffset;
-      for (sd::LongType i = 0; i < numEl; i++)
-        permutationVector.push_back(hostLongs[i]);
-    } else if (dtype == INT32) {
-      auto* hostInts = reinterpret_cast<int*>(db->primary()) + arrOffset;
-      for (sd::LongType i = 0; i < numEl; i++)
-        permutationVector.push_back(static_cast<LongType>(hostInts[i]));
-    } else {
-      permutationVector = permArr->asVectorT<LongType>();
-    }
+    // Read permutation indices using bulk host sync — avoids per-element GPU->CPU copies.
+    permutationVector = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
   } else {
     permutationVector = *block.getIArguments();
   }

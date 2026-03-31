@@ -40,6 +40,7 @@
 #include <system/Environment.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <sstream>
 #include <unordered_map>
@@ -151,6 +152,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
           return KernelSectionType::SCATTER_ND;
         return KernelSectionType::GATHER;  // Default data movement
       }
+      case TritonOpCategory::UNSUPPORTED:
+      case TritonOpCategory::FUSED_LLM:
+        // Non-compilable ops must use SHAPE_MANIPULATION section type
+        // (alwaysFallback=true) so they run via native slot-by-slot.
+        return KernelSectionType::SHAPE_MANIPULATION;
       default:
         return KernelSectionType::ELEMENTWISE;
     }
@@ -188,25 +194,6 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     }
   };
 
-  // Helper: check if a section type can merge with attention-adjacent ops.
-  // When tritonFuseAttentionNeighborhoods is enabled, GATHER, GATHER_ND, STACK,
-  // and CONCAT can merge with element-wise ops in attention neighborhoods to
-  // reduce section fragmentation around flash attention.
-  auto canMergeWithAttentionNeighborhood = [](KernelSectionType type) -> bool {
-    if (!sd::Environment::getInstance().tritonFuseAttentionNeighborhoods()) {
-      return false;
-    }
-    switch (type) {
-      case KernelSectionType::GATHER:
-      case KernelSectionType::GATHER_ND:
-      case KernelSectionType::STACK:
-      case KernelSectionType::CONCAT:
-        return true;
-      default:
-        return false;
-    }
-  };
-
   // Helper: compute total output elements for an op's first output
   auto getOutputElements = [&](int slotIdx) -> LongType {
     if (slotIdx < 0 || slotIdx > endSlot) return 0;
@@ -224,6 +211,12 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   currentSection.numOps = 0;
 
   auto firstCat = getOpCategory(slots[startSlot].opName);
+  // Reclassify TERNARY ops with < 3 inputs (e.g., 1-input Where = coordinate
+  // extraction, not element-wise select).  These are data-dependent and cannot
+  // be compiled by Triton — they must run via native fallback.
+  if (firstCat == TritonOpCategory::TERNARY && slots[startSlot].numInputs < 3) {
+    firstCat = TritonOpCategory::UNSUPPORTED;
+  }
   currentSection.type = categoryToSectionType(firstCat, slots[startSlot].opName);
 
   // Track the element count for the current element-wise section.
@@ -275,7 +268,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     if (srcIdx >= 0) {
       for (int s = startSlot; s <= endSlot; s++) {
         auto& producerSlot = slots[s];
-        if (!producerSlot.shapeCacheValid || producerSlot.cachedOutputShapes.empty()) continue;
+        if (!producerSlot.shapeCacheValid() || producerSlot.cachedOutputShapes.empty()) continue;
         for (int o = 0; o < producerSlot.numOutputs; o++) {
           if (o >= static_cast<int>(producerSlot.cachedOutputShapes.size())) break;
           if (producerSlot.outputSlotIndices[o] == srcIdx) {
@@ -286,6 +279,52 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     }
 
     return {};
+  };
+
+  auto normalizedAxisForSectionType = [&](KernelSectionType type,
+                                          const NativeSlot& slot) -> int {
+    if (slot.numIArgs <= 0 || slot.iArgs == nullptr) {
+      return 0;
+    }
+
+    int axis = static_cast<int>(slot.iArgs[0]);
+    std::vector<LongType> shapeVec;
+    if (type == KernelSectionType::CONCAT) {
+      if (slot.numOutputs > 0) {
+        shapeVec = resolveShapeVector(slot.outputSlotIndices[0]);
+      }
+      if (shapeVec.empty() && slot.numInputs > 0) {
+        shapeVec = resolveShapeVector(slot.inputSourceIndices[0]);
+      }
+    } else if (type == KernelSectionType::GATHER || type == KernelSectionType::GATHER_ND) {
+      if (slot.numInputs > 0) {
+        shapeVec = resolveShapeVector(slot.inputSourceIndices[0]);
+      }
+    }
+
+    int rank = static_cast<int>(shapeVec.size());
+    if (rank > 0 && axis < 0) {
+      axis += rank;
+    }
+    if (rank > 0 && (axis < 0 || axis >= rank)) {
+      axis = 0;
+    }
+    return axis;
+  };
+
+  auto canAppendNonElementwiseSlot = [&](const KernelSection& current,
+                                         KernelSectionType nextType,
+                                         const NativeSlot& nextSlot) -> bool {
+    if (current.type != nextType) {
+      return false;
+    }
+    if (nextType == KernelSectionType::CONCAT) {
+      return current.concatAxis == normalizedAxisForSectionType(nextType, nextSlot);
+    }
+    if (nextType == KernelSectionType::GATHER || nextType == KernelSectionType::GATHER_ND) {
+      return current.gatherAxis == normalizedAxisForSectionType(nextType, nextSlot);
+    }
+    return true;
   };
 
   auto getPermutationForSlot = [](const NativeSlot& slot, const std::string& opLower,
@@ -339,7 +378,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     int inputSrcIdx = slot.inputSourceIndices[0];
     std::vector<LongType> inputShape = resolveShapeVector(inputSrcIdx);
     std::vector<LongType> outputShape = resolveShapeVector(slot.outputSlotIndices[0]);
-    if (outputShape.empty() && slot.shapeCacheValid && !slot.cachedOutputShapes.empty()) {
+    if (outputShape.empty() && slot.shapeCacheValid() && !slot.cachedOutputShapes.empty()) {
       outputShape = shapeInfoToVector(slot.cachedOutputShapes[0]);
     }
     if (inputShape.empty() || outputShape.empty() || inputShape.size() != outputShape.size()) {
@@ -381,6 +420,10 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
 
   for (int i = startSlot; i <= endSlot; i++) {
     auto cat = getOpCategory(slots[i].opName);
+    // Reclassify TERNARY ops with < 3 inputs as non-compilable
+    if (cat == TritonOpCategory::TERNARY && slots[i].numInputs < 3) {
+      cat = TritonOpCategory::UNSUPPORTED;
+    }
     auto sectionType = categoryToSectionType(cat, slots[i].opName);
 
     // Check if this is a shape manipulation op
@@ -396,9 +439,15 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     }
 
     bool startNewSection = false;
+    bool currentIsElementwiseLike = canMergeWithElementwise(currentSection.type);
+    bool sectionIsElementwiseLike = canMergeWithElementwise(sectionType);
 
     if (i == startSlot) {
-      // First op — always part of current section
+      // First op — always part of current section. Reassign the section type after
+      // identity-shape detection so the seed type cannot remain SHAPE_MANIPULATION.
+      currentSection.type = sectionType;
+      currentSectionElements = getOutputElements(i);
+      currentSectionHasShapeOp = isShapeOp;
       startNewSection = false;
     } else if (isShapeOp && !isIdentityShape) {
       // Non-identity shape manipulation ops always get their own isolated section.
@@ -426,7 +475,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       if (sd::Environment::getInstance().tritonFuseCastChains()) {
         auto currentCat = getOpCategory(slots[i].opName);
         bool currentIsCast = (currentCat == TritonOpCategory::CAST);
-        bool sectionIsCast = (currentSection.type == KernelSectionType::ELEMENTWISE && currentSection.numOps > 0);
+        bool sectionIsCast = (currentIsElementwiseLike && currentSection.numOps > 0);
         // Check if previous op in section was also a cast
         if (currentIsCast && sectionIsCast && currentSection.numOps > 0) {
           int prevSlot = i - 1;
@@ -455,17 +504,18 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
                  currentSection.type == KernelSectionType::CONVOLUTION) {
         // After a non-element-wise section, start a new one
         startNewSection = true;
-      } else if (!canMergeWithElementwise(currentSection.type) && !canMergeWithAttentionNeighborhood(currentSection.type)) {
+      } else if (!currentIsElementwiseLike) {
         // Non-mergeable section types can still absorb consecutive ops of the SAME type.
-        // This reduces section/barrier count without changing per-op emission semantics.
-        startNewSection = (sectionType != currentSection.type);
-      } else if (!canMergeWithElementwise(sectionType) && !canMergeWithAttentionNeighborhood(sectionType) && currentSection.type != sectionType) {
-        // Data movement ops that don't merge with element-wise
-        // Exception: attention-adjacent ops (GATHER, CONCAT, STACK) can merge when flag is enabled
+        // Keep section-level metadata stable for data-movement ops that later
+        // consult section fields such as concatAxis.
+        startNewSection = !canAppendNonElementwiseSlot(currentSection, sectionType, slots[i]);
+      } else if (!sectionIsElementwiseLike && currentSection.type != sectionType) {
+        // Non-elementwise sections must stay homogeneous. Attention-neighborhood
+        // preferences are handled later by fusion scoring, not by creating mixed
+        // section types that the emitters cannot execute safely.
         startNewSection = true;
-      } else if ((canMergeWithElementwise(currentSection.type) || canMergeWithAttentionNeighborhood(currentSection.type)) &&
-                 (canMergeWithElementwise(sectionType) || canMergeWithAttentionNeighborhood(sectionType))) {
-        // Both are element-wise compatible or attention-adjacent — check element count compatibility.
+      } else if (currentIsElementwiseLike && sectionIsElementwiseLike) {
+        // Both share the 1D elementwise skeleton — check element count compatibility.
         // The 1D kernel uses a single n_elements for the grid and mask.
         // Ops with different output element counts cannot share the same grid:
         // - If n_elements is too small, larger outputs get partially written (stale data)
@@ -536,7 +586,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             for (int s = startSlot; s <= endSlot; s++) {
               for (int o = 0; o < slots[s].numOutputs; o++) {
                 if (slots[s].outputSlotIndices[o] == aSrc &&
-                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty() &&
+                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty() &&
                     o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
                   const LongType* si = slots[s].cachedOutputShapes[o];
                   if (si && shape::rank(si) >= 2) {
@@ -562,7 +612,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             for (int s = startSlot; s <= endSlot; s++) {
               for (int o = 0; o < slots[s].numOutputs; o++) {
                 if (slots[s].outputSlotIndices[o] == outIdx &&
-                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty() &&
+                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty() &&
                     o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
                   const LongType* si = slots[s].cachedOutputShapes[o];
                   if (si && shape::rank(si) >= 2) {
@@ -583,7 +633,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             for (int s = startSlot; s <= endSlot; s++) {
               for (int o = 0; o < slots[s].numOutputs; o++) {
                 if (slots[s].outputSlotIndices[o] == aSrc &&
-                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty() &&
+                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty() &&
                     o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
                   const LongType* si = slots[s].cachedOutputShapes[o];
                   if (si && shape::rank(si) >= 2) {
@@ -660,16 +710,12 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
 
     // Extract gather axis from iArgs
     if (sectionType == KernelSectionType::GATHER || sectionType == KernelSectionType::GATHER_ND) {
-      if (slots[i].numIArgs > 0 && slots[i].iArgs) {
-        currentSection.gatherAxis = static_cast<int>(slots[i].iArgs[0]);
-      }
+      currentSection.gatherAxis = normalizedAxisForSectionType(sectionType, slots[i]);
     }
 
     // Extract concat axis
     if (sectionType == KernelSectionType::CONCAT) {
-      if (slots[i].numIArgs > 0 && slots[i].iArgs) {
-        currentSection.concatAxis = static_cast<int>(slots[i].iArgs[0]);
-      }
+      currentSection.concatAxis = normalizedAxisForSectionType(sectionType, slots[i]);
     }
   }
 
@@ -679,10 +725,37 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   }
 
   // Post-processing: merge consecutive sections of the same type.
-  // This catches cases where section identification was overly conservative
-  // but adjacent sections could safely merge (same grid type, compatible element counts).
-  // Controlled by tritonSectionFusion flag.
+  // Only 1D elementwise-like sections are post-merged here. Other section types
+  // carry section-specific metadata and grid semantics that must stay isolated
+  // unless they are re-analyzed explicitly.
   if (sd::Environment::getInstance().tritonSectionFusion() && sections.size() > 1) {
+    auto sectionMergeElements = [&](const KernelSection& sec) -> LongType {
+      LongType maxElements = 0;
+      for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        LongType opElements = getOutputElements(si);
+        if (opElements > maxElements) {
+          maxElements = opElements;
+        }
+      }
+      return maxElements;
+    };
+
+    auto canPostMergeSections = [&](const KernelSection& a, const KernelSection& b) -> bool {
+      if (a.type != b.type || !canMergeWithElementwise(a.type)) {
+        return false;
+      }
+
+      LongType aElements = sectionMergeElements(a);
+      LongType bElements = sectionMergeElements(b);
+      if (aElements <= 0 || bElements <= 0) {
+        return true;
+      }
+      if (aElements == bElements) {
+        return true;
+      }
+      return aElements == 1 || bElements == 1;
+    };
+
     std::vector<KernelSection> merged;
     merged.reserve(sections.size());
     
@@ -691,11 +764,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       if (current == nullptr) {
         merged.push_back(sec);
         current = &merged.back();
-      } else if (current->type == sec.type &&
-                 current->matmulM == sec.matmulM &&
-                 current->matmulN == sec.matmulN &&
-                 current->matmulK == sec.matmulK) {
-        // Same type and compatible special params — merge by extending end slot
+      } else if (canPostMergeSections(*current, sec)) {
+        // Same 1D elementwise skeleton and compatible element counts.
         current->endSlot = sec.endSlot;
         current->numOps += sec.numOps;
         // Grid requirement will be recomputed below
@@ -772,7 +842,7 @@ int TritonIRBuilder::computeSectionGrid(const KernelSection& section, int blockS
 // Uses a global atomic counter + spin loop: each block atomically increments
 // the counter, then spins until the counter reaches numBlocks.
 
-static int gridSyncCounter_ = 0;
+static std::atomic<int> gridSyncCounter_{0};
 
 void TritonIRBuilder::emitGridSync(mlir::OpBuilder& builder, mlir::Location loc,
                                     mlir::Value syncCounterPtr, mlir::Value numBlocksVal) {

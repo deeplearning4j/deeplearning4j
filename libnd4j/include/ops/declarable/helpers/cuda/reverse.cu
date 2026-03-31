@@ -27,6 +27,7 @@
 #include <ops/declarable/helpers/reverse.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include <helpers/DebugHelper.h>
 
 /* ******************************************************************************
  *
@@ -288,8 +289,8 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
       }
     }
 
-    // Synchronize stream to ensure all kernel launches complete before returning
-    cudaStreamSynchronize(*stream);
+    // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+    if (!tl_graphExecutionActive) { cudaStreamSynchronize(*stream); }
 
     delete dimensions;
   }

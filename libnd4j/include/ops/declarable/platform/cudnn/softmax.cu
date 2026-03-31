@@ -36,7 +36,8 @@ static void softmaxCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
   // We need to reshape our input to fit this format
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -65,9 +66,11 @@ static void softmaxCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
   x.set4D(CUDNN_TENSOR_NCHW, dataType, static_cast<int>(N), static_cast<int>(C), static_cast<int>(H), static_cast<int>(W));
   z.set4D(CUDNN_TENSOR_NCHW, dataType, static_cast<int>(N), static_cast<int>(C), static_cast<int>(H), static_cast<int>(W));
 
-  // Scaling factors
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  // Scaling factors — MUST be static so their addresses persist for CUDA graph replay.
+  // During graph capture, cuDNN records H2D memcpy nodes from these host addresses.
+  // Stack-local scalars would be dangling on replay, causing GPU DMA hang.
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* ptrAlpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* ptrBeta = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -81,8 +84,12 @@ static void softmaxCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
                           ptrAlpha, x, input->specialBuffer(),
                           ptrBeta, z, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("softmaxCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  // During CUDA graph capture, stream synchronization is illegal (error 900).
+  // Operations are only being recorded, not executed — nothing to synchronize.
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("softmaxCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -93,7 +100,8 @@ static void softmaxBpCUDNN(const LaunchContext* context, NDArray* input, NDArray
   // cuDNN softmax backward
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -119,9 +127,9 @@ static void softmaxBpCUDNN(const LaunchContext* context, NDArray* input, NDArray
   dy.set4D(CUDNN_TENSOR_NCHW, dataType, static_cast<int>(N), static_cast<int>(C), static_cast<int>(H), static_cast<int>(W));
   dx.set4D(CUDNN_TENSOR_NCHW, dataType, static_cast<int>(N), static_cast<int>(C), static_cast<int>(H), static_cast<int>(W));
 
-  // Scaling factors
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  // Scaling factors — MUST be static for CUDA graph replay safety (see forward pass comment).
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* ptrAlpha = gradI->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* ptrBeta = gradI->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -134,8 +142,10 @@ static void softmaxBpCUDNN(const LaunchContext* context, NDArray* input, NDArray
                            dy, gradO->specialBuffer(),
                            ptrBeta, dx, gradI->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("softmaxBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("softmaxBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI}, {softmaxOutput, gradO});
 }

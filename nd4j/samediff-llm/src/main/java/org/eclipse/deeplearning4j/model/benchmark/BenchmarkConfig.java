@@ -75,6 +75,7 @@ public class BenchmarkConfig {
     boolean tritonFuseTrivialGather = true;
     boolean tritonSpecializePermuteSeq1 = true;
     boolean tritonEliminateConcatSplitPairs = true;
+    boolean tritonFuseAttentionNeighborhoods = true;
     boolean tritonFusedMatmul = false;  // HIGH RISK - disabled by default
     
     // Triton fusion scoring
@@ -174,6 +175,7 @@ public class BenchmarkConfig {
     public BenchmarkConfig tritonFuseTrivialGather(boolean b) { this.tritonFuseTrivialGather = b; return this; }
     public BenchmarkConfig tritonSpecializePermuteSeq1(boolean b) { this.tritonSpecializePermuteSeq1 = b; return this; }
     public BenchmarkConfig tritonEliminateConcatSplitPairs(boolean b) { this.tritonEliminateConcatSplitPairs = b; return this; }
+    public BenchmarkConfig tritonFuseAttentionNeighborhoods(boolean b) { this.tritonFuseAttentionNeighborhoods = b; return this; }
     public BenchmarkConfig tritonFusedMatmul(boolean b) { this.tritonFusedMatmul = b; return this; }
     public BenchmarkConfig tritonFusionScoring(boolean b) { this.tritonFusionScoring = b; return this; }
     public BenchmarkConfig tritonFusionMinScore(float f) { this.tritonFusionMinScore = f; return this; }
@@ -233,6 +235,7 @@ public class BenchmarkConfig {
     public boolean isTritonFuseTrivialGather() { return tritonFuseTrivialGather; }
     public boolean isTritonSpecializePermuteSeq1() { return tritonSpecializePermuteSeq1; }
     public boolean isTritonEliminateConcatSplitPairs() { return tritonEliminateConcatSplitPairs; }
+    public boolean isTritonFuseAttentionNeighborhoods() { return tritonFuseAttentionNeighborhoods; }
     public boolean isTritonFusedMatmul() { return tritonFusedMatmul; }
     public boolean isTritonFusionScoring() { return tritonFusionScoring; }
     public float getTritonFusionMinScore() { return tritonFusionMinScore; }
@@ -273,6 +276,7 @@ public class BenchmarkConfig {
         if (tritonCompileAll) sb.append(" compileAll");
         if (!tritonExcludeOps.isEmpty()) sb.append(" exclude=").append(tritonExcludeOps);
         if (!tritonEnableFpFusion) sb.append(" noFpFusion");
+        if (!tritonFuseAttentionNeighborhoods) sb.append(" noAttnNeighborhoods");
         if (tritonNumWarps > 0) sb.append(" warps=").append(tritonNumWarps);
         if (tritonNumStages > 0) sb.append(" stages=").append(tritonNumStages);
         if (tritonMaxNreg > 0) sb.append(" maxNreg=").append(tritonMaxNreg);

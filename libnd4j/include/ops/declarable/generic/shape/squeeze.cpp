@@ -23,6 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_squeeze)
 
+#include <helpers/ShapeUtils.h>
 #include <ops/declarable/headers/shape.h>
 
 namespace sd {
@@ -41,9 +42,9 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
       axis.emplace_back(_a);
     }
   else if (block.width() > 1) {
-    auto a = INPUT_VARIABLE(1);
-    for (LongType e = 0; e < a->lengthOf(); e++) {
-      int _a = a->e<LongType>(e);
+    auto axisValues = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
+    for (size_t e = 0; e < axisValues.size(); e++) {
+      int _a = static_cast<int>(axisValues[e]);
 
       if (_a < 0) _a += input->rankOf();
 
@@ -116,9 +117,9 @@ DECLARE_SHAPE_FN(squeeze) {
       axis.emplace_back(_a);
     }
   else if (block.width() > 1) {
-    auto a = INPUT_VARIABLE(1);
-    for (LongType e = 0; e < a->lengthOf(); e++) {
-      LongType _a = a->e<LongType>(e);
+    auto axisValues = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
+    for (size_t e = 0; e < axisValues.size(); e++) {
+      LongType _a = axisValues[e];
 
       if (_a < 0) _a += rank;
 

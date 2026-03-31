@@ -42,8 +42,10 @@ import org.nd4j.autodiff.samediff.config.*;
 import org.nd4j.autodiff.samediff.execution.DevicePlacementPlanner;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.*;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
@@ -87,6 +89,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.nativeblas.OpExecTraceVector;
 import org.nd4j.shade.guava.primitives.Booleans;
 import org.nd4j.shade.guava.primitives.Doubles;
@@ -134,6 +138,15 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Keyed by output set hash to support different output configurations.
      */
     private final Map<Set<String>, DynamicShapePlan> dynamicShapePlanCache = new ConcurrentHashMap<>();
+
+    /**
+     * Cache of compiled native plan handles (C++ Triton kernels + CUDA graph).
+     * Survives session resets so that plans don't need expensive recompilation
+     * when the same output configuration is requested again (e.g., between pages
+     * in multi-page document processing). Keyed by sorted output names.
+     * Freed on close() and clearDynamicShapePlanCache().
+     */
+    private final Map<String, Pointer> nativePlanHandleCache = new ConcurrentHashMap<>();
 
 
     @Getter
@@ -3346,40 +3359,44 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         validateListenerActivations(activeListeners, operation);
 
-        ExecutionResult ret = directExecHelper(placeholders,
-                otherPlaceholders,
-                At.defaultAt(operation),
-                null,Collections.emptyList(),
-                activeListeners,
-                outputs);
+        ExecutionResult ret;
+        try {
+            ret = directExecHelper(placeholders,
+                    otherPlaceholders,
+                    At.defaultAt(operation),
+                    null, Collections.emptyList(),
+                    activeListeners,
+                    outputs);
+        } finally {
+            // Undo the setCloseable(false) poisoning applied to placeholders before execution.
+            // This MUST be in a finally block: if execution throws (e.g., DSP compilation failure,
+            // CUDA OOM), placeholders stay permanently non-closeable causing GPU memory leaks.
+            // The DSP path never closes placeholder arrays during execution, so this is safe.
+            if(placeholders != null)
+                placeholders.values().stream().forEach(arr -> {
+                    try { arr.setCloseable(true); } catch (Exception ignored) {}
+                });
+            if(otherPlaceholders != null)
+                otherPlaceholders.values().stream().forEach(value -> {
+                    try {
+                        switch(value.getSdValueType()) {
+                            case TENSOR:
+                                value.getTensorValue().setCloseable(true);
+                                break;
+                            case LIST:
+                                value.getListValue().stream().forEach(arr -> arr.setCloseable(true));
+                                break;
+                            case DICT:
+                                value.getDictValue().values().stream().forEach(arr -> arr.setCloseable(true));
+                                break;
+                        }
+                    } catch (Exception ignored) {}
+                });
+        }
 
         // Note: TAD cache is already cleared in InferenceSession.output()'s finally block.
         // This additional clearing serves as a safety net for alternative execution paths.
         org.nd4j.linalg.factory.Nd4j.clearTADCache();
-
-        // Undo the setCloseable(false) poisoning applied to placeholders before execution.
-        // Without this, placeholder arrays (e.g., KV cache from previous decode step) become
-        // permanently non-closeable, causing ~66MB/step GPU memory leak in autoregressive decoding.
-        // The DSP path never closes placeholder arrays during execution, so this is safe.
-        if(placeholders != null)
-            placeholders.values().stream().forEach(arr -> arr.setCloseable(true));
-        if(otherPlaceholders != null)
-            otherPlaceholders.values().stream().forEach(value -> {
-                switch(value.getSdValueType()) {
-                    case TENSOR:
-                        value.getTensorValue().setCloseable(true);
-                        break;
-                    case LIST:
-                        value.getListValue().stream().forEach(arr -> arr.setCloseable(true));
-                        break;
-                    case DICT:
-                        value.getDictValue().values().stream().forEach(arr -> arr.setCloseable(true));
-                        break;
-                }
-            });
-
-        // Output arrays should be closeable - users are responsible for closing them after use
-        // Removed setCloseable(false) to prevent memory leaks
 
         for (Listener l : activeListeners) {
             l.operationEnd(this, operation);
@@ -3410,17 +3427,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         if (at == null)
             at = At.defaultAt();
 
-        //ensure arrays passed in are not chaced
-        if(placeholders != null) {
-            placeholders.values().forEach(array -> array.setCloseable(false));
-        }
-
+        // Note: placeholder poisoning (setCloseable(false)) is handled by batchOutputHelper
+        // which calls this method. Don't double-poison here — the un-poisoning in
+        // batchOutputHelper's finally block covers both placeholder and batch arrays.
+        // For callers that bypass batchOutputHelper (training paths), batch arrays
+        // are protected by the InferenceSession's standard path preserveNames set.
         if(batch != null) {
             batch.setCloseable(false);
-        }
-
-        if(otherPlaceHolders != null) {
-            otherPlaceHolders.values().forEach(value -> value.setCloseable(false));
         }
 
 
@@ -4211,7 +4224,109 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Clear all cached DynamicShapePlans. Call when the graph structure changes.
      */
     public void clearDynamicShapePlanCache() {
+        for (DynamicShapePlan plan : dynamicShapePlanCache.values()) {
+            if (plan != null) {
+                try {
+                    plan.close();
+                } catch (Exception e) {
+                    log.warn("Error closing DynamicShapePlan during cache clear: {}", e.getMessage());
+                }
+            }
+        }
         dynamicShapePlanCache.clear();
+        freeAllCachedNativePlanHandles();
+    }
+
+    /**
+     * Cache a compiled native plan handle for later reuse across session resets.
+     * @param cacheKey sorted output names key (from DynamicShapePlan.requestedOutputs)
+     * @param handle  the compiled C++ plan handle (Pointer)
+     */
+    public void cacheNativePlanHandle(String cacheKey, Pointer handle) {
+        if (cacheKey == null || handle == null || handle.isNull()) return;
+        Pointer old = nativePlanHandleCache.put(cacheKey, handle);
+        if (old != null && old != handle && !old.isNull()) {
+            try {
+                NativeOps nativeOps = Nd4j.getNativeOps();
+                nativeOps.freeDynamicShapePlan(old);
+            } catch (Exception e) {
+                log.debug("Error freeing displaced native plan handle: {}", e.getMessage());
+            }
+        }
+        log.debug("Cached native plan handle for key: {}", cacheKey);
+    }
+
+    /**
+     * Retrieve a previously cached native plan handle.
+     * @param cacheKey sorted output names key
+     * @return the cached handle, or null if not cached
+     */
+    public Pointer getCachedNativePlanHandle(String cacheKey) {
+        if (cacheKey == null) return null;
+        Pointer handle = nativePlanHandleCache.remove(cacheKey);
+        if (handle != null && !handle.isNull()) {
+            log.info("Restoring cached native plan handle for key: {}", cacheKey);
+            return handle;
+        }
+        return null;
+    }
+
+    /**
+     * Free all cached native plan handles, releasing associated GPU memory (capture buffers,
+     * workspace allocations, etc.). Called on close() and clearDynamicShapePlanCache().
+     * Can also be called directly when GPU memory must be reclaimed between executions
+     * without closing the SameDiff instance.
+     */
+    public void freeAllCachedNativePlanHandles() {
+        if (nativePlanHandleCache.isEmpty()) return;
+        NativeOps nativeOps = Nd4j.getNativeOps();
+        for (Map.Entry<String, Pointer> entry : nativePlanHandleCache.entrySet()) {
+            Pointer handle = entry.getValue();
+            if (handle != null && !handle.isNull()) {
+                try {
+                    nativeOps.freeDynamicShapePlan(handle);
+                } catch (Exception e) {
+                    log.debug("Error freeing cached native plan handle: {}", e.getMessage());
+                }
+            }
+        }
+        log.info("Freed {} cached native plan handles", nativePlanHandleCache.size());
+        nativePlanHandleCache.clear();
+    }
+
+    /**
+     * Freeze DSP shapes for the current thread's executor, enabling CUDA graph capture
+     * and buffer reuse. The executor must already exist (i.e., at least one output() call
+     * must have been made). Call {@link #setDspShapesFrozen(boolean)} with false to unfreeze.
+     *
+     * @param frozen true to freeze shapes, false to unfreeze
+     */
+    public void setDspShapesFrozen(boolean frozen) {
+        long threadId = Thread.currentThread().getId();
+        InferenceSession session = sessions.get(threadId);
+        if (session == null) {
+            log.warn("setDspShapesFrozen: no session for thread {} — run output() first", threadId);
+            return;
+        }
+        DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
+        if (dsp == null) {
+            log.warn("setDspShapesFrozen: no DSP executor for thread {} — run output() with DSP enabled first", threadId);
+            return;
+        }
+        dsp.setShapesFrozen(frozen);
+        log.info("DSP shapes {}", frozen ? "frozen" : "unfrozen");
+    }
+
+    /**
+     * Check if DSP shapes are frozen for the current thread's executor.
+     * @return true if frozen, false if not frozen or no executor exists
+     */
+    public boolean isDspShapesFrozen() {
+        long threadId = Thread.currentThread().getId();
+        InferenceSession session = sessions.get(threadId);
+        if (session == null) return false;
+        DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
+        return dsp != null && dsp.isShapesFrozen();
     }
 
     /**
@@ -4479,98 +4594,27 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         long threadId = Thread.currentThread().getId();
         InferenceSession session = sessions.remove(threadId);
         if (session != null) {
-            // Collect all unique DataBuffers from intermediate arrays.
-            // Many arrays are views that share a parent DataBuffer. The INDArray-level close()
-            // refuses to close views (isView() check), but we can close the underlying DataBuffer
-            // directly. Using IdentityHashMap ensures each physical buffer is closed exactly once.
-            IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
-            Map<VarId, SDValue> nodeOutputs = session.getNodeValueOutputs();
-            if (nodeOutputs != null) {
-                for (SDValue value : nodeOutputs.values()) {
-                    if (value != null) {
-                        switch (value.getSdValueType()) {
-                            case TENSOR:
-                                INDArray tensor = value.getTensorValue();
-                                if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
-                                    uniqueBuffers.put(tensor.data(), Boolean.TRUE);
-                                }
-                                break;
-                            case LIST:
-                                if (value.getListValue() != null) {
-                                    for (INDArray arr : value.getListValue()) {
-                                        if (arr != null && !arr.wasClosed() && arr.data() != null) {
-                                            uniqueBuffers.put(arr.data(), Boolean.TRUE);
-                                        }
-                                    }
-                                }
-                                break;
-                        }
-                    }
-                }
-                nodeOutputs.clear();
-            }
-
-            // Close each unique DataBuffer directly, bypassing INDArray isView() checks.
-            // This is safe because the entire session is being destroyed - no array from this
-            // session should be used after resetSession(). Callers must dup() arrays they need.
-            int closedCount = 0;
-            int skippedReleased = 0, skippedAttached = 0, skippedConstant = 0;
-            for (DataBuffer buf : uniqueBuffers.keySet()) {
-                if (buf.closeable()) {
-                    try {
-                        buf.close();
-                        closedCount++;
-                    } catch (Exception e) {
-                        // Buffer may already be deallocated; ignore
-                    }
-                } else {
-                    // Log why buffer is not closeable for debugging
-                    if (buf.wasClosed()) skippedReleased++;
-                    else if (buf.isAttached()) skippedAttached++;
-                    else if (buf.isConstant()) skippedConstant++;
-                }
-            }
-            if (skippedReleased > 0 || skippedAttached > 0 || skippedConstant > 0) {
-                log.info("SameDiff resetSession: {} buffers not closeable (released={}, attached={}, constant={})",
-                        skippedReleased + skippedAttached + skippedConstant, skippedReleased, skippedAttached, skippedConstant);
-            }
-
-            // Close active OpContexts
-            Map<String, OpContext> opContexts = session.getOpContexts();
-            if (opContexts != null) {
-                for (OpContext ctx : opContexts.values()) {
-                    if (ctx != null) {
-                        try {
-                            ctx.close();
-                        } catch (Exception e) {
-                            log.warn("Error closing OpContext during resetSession: {}", e.getMessage());
-                        }
-                    }
-                }
-                opContexts.clear();
-            }
-
-            // Close pooled OpContexts and clear accumulated thread-local state.
-            // Without this, pooled contexts accumulate stale native pointers across
-            // repeated session resets, causing double-free crashes.
-            session.closePooledResources();
-
-            // Close the memory manager to free workspace/cache memory
-            SessionMemMgr memMgr = session.getMmgr();
-            if (memMgr != null) {
-                try {
-                    memMgr.close();
-                } catch (Exception e) {
-                    log.warn("Error closing SessionMemMgr during resetSession: {}", e.getMessage());
-                }
-            }
-            log.info("SameDiff: Reset session for thread {} - closed {} unique data buffers, workspace memory released", threadId, closedCount);
+            int closedCount = destroySession(session);
+            log.info("SameDiff: Reset session for thread {} - closed {} unique data buffers, workspace memory released",
+                    threadId, closedCount);
         }
 
-        // Trim CUDA memory pool to release retained allocations back to the OS.
-        // This is critical for multi-page VLM pipelines where pool retains freed memory.
+        // NOTE: Do NOT clear the DSP plan cache here. The compiled native plans are
+        // reusable across sessions — destroying them forces expensive recompilation
+        // on the next output() call (e.g., 1950 ops for the vision encoder).
+        // GPU memory held by native plan intermediates (outputSlots_) is freed during
+        // execution, not cached between calls. Session-specific data (InferenceSession
+        // buffers, workspace memory) is freed by destroySession() + trimSessionMemory().
+
+        trimSessionMemory();
+
+        // Force CUDA pool to release retained memory back to the device allocator.
+        // trimMemoryPoolOnStream only trims stream-local caches; trimMemoryPool does
+        // a full pool-wide trim that reclaims memory across all streams and devices.
+        // Without this, freed GPU memory stays in the pool and is unavailable to other
+        // models or subsequent pages in multi-model pipelines.
         try {
-            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             Nd4j.getExecutioner().commit();
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int d = 0; d < numDevices; d++) {
@@ -4581,12 +4625,136 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
     }
 
+    private int destroySession(InferenceSession session) {
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers =
+                new IdentityHashMap<>(session.getExternalPlaceholderBuffers());
+
+        // Also protect model constant and variable array buffers — these are owned
+        // by the SameDiff graph, not by the session.  Some session intermediates may
+        // share a DataBuffer with a model constant (e.g., view of a constant), so we
+        // must never close those.
+        for (SDVariable v : variables()) {
+            if (v.getVariableType() == VariableType.CONSTANT || v.getVariableType() == VariableType.VARIABLE) {
+                INDArray arr = v.getArr();
+                if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                    protectedBuffers.put(arr.data(), Boolean.TRUE);
+                }
+            }
+        }
+
+        IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
+        Map<VarId, SDValue> nodeOutputs = session.getNodeValueOutputs();
+        if (nodeOutputs != null) {
+            for (SDValue value : nodeOutputs.values()) {
+                if (value == null) {
+                    continue;
+                }
+                switch (value.getSdValueType()) {
+                    case TENSOR:
+                        INDArray tensor = value.getTensorValue();
+                        if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
+                            uniqueBuffers.put(tensor.data(), Boolean.TRUE);
+                        }
+                        break;
+                    case LIST:
+                        if (value.getListValue() != null) {
+                            for (INDArray arr : value.getListValue()) {
+                                if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                                    uniqueBuffers.put(arr.data(), Boolean.TRUE);
+                                }
+                            }
+                        }
+                        break;
+                    case DICT:
+                        if (value.getDictValue() != null) {
+                            for (INDArray arr : value.getDictValue().values()) {
+                                if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                                    uniqueBuffers.put(arr.data(), Boolean.TRUE);
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            nodeOutputs.clear();
+        }
+
+        log.info("destroySession: uniqueBuffers={}, protectedBuffers={}", uniqueBuffers.size(), protectedBuffers.size());
+        int closedCount = 0;
+        int skippedReleased = 0;
+        int skippedAttached = 0;
+        int forceClosedConstant = 0;
+        int skippedProtected = 0;
+        for (DataBuffer buf : uniqueBuffers.keySet()) {
+            if (protectedBuffers.containsKey(buf)) {
+                skippedProtected++;
+                continue;
+            }
+            // Undo setCloseable(false) poisoning.  directExecHelper() marks session
+            // intermediates as non-closeable via setCloseable(false) → setConstant(true).
+            // Without undoing this, destroySession() cannot free ANY session buffers,
+            // leaking all GPU memory from the previous inference run.
+            if (buf.isConstant() && !buf.isAttached() && !buf.wasClosed()) {
+                try {
+                    buf.setConstant(false);
+                    forceClosedConstant++;
+                } catch (Exception ignored) {
+                    // Best-effort cleanup only.
+                }
+            }
+            if (buf.closeable()) {
+                try {
+                    buf.close();
+                    closedCount++;
+                } catch (Exception ignored) {
+                    // Buffer may already be deallocated; ignore.
+                }
+            } else {
+                if (buf.wasClosed()) skippedReleased++;
+                else if (buf.isAttached()) skippedAttached++;
+            }
+        }
+        log.info("SameDiff session cleanup: closed={}, skipped(released={}, attached={}, protected={}), force-unpoisoned={}",
+                closedCount, skippedReleased, skippedAttached, skippedProtected, forceClosedConstant);
+
+        session.closePooledResources();
+
+        SessionMemMgr memMgr = session.getMmgr();
+        if (memMgr != null) {
+            try {
+                if (memMgr instanceof ArrayCacheMemoryMgr) {
+                    ((ArrayCacheMemoryMgr) memMgr).close(protectedBuffers);
+                } else {
+                    memMgr.close();
+                }
+            } catch (Exception e) {
+                log.warn("Error closing SessionMemMgr during session cleanup: {}", e.getMessage());
+            }
+        }
+        return closedCount;
+    }
+
+    private void trimSessionMemory() {
+        try {
+            Nd4j.clearTADCache();
+            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            Nd4j.getExecutioner().commit();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPool(d);
+            }
+        } catch (Exception e) {
+            log.debug("Pool/TAD trim after session cleanup: {}", e.getMessage());
+        }
+    }
+
     /**
      * Close all OpContexts in all cached InferenceSessions and clear the sessions map.
      * This prevents native memory leaks from OpContext objects when sessions are cleared.
      */
     private void closeAllSessions() {
-        // Copy sessions to avoid ConcurrentModificationException during iteration
         java.util.List<InferenceSession> sessionList;
         try {
             sessionList = new java.util.ArrayList<>(sessions.values());
@@ -4599,38 +4767,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         for (InferenceSession session : sessionList) {
             if (session != null) {
                 try {
-                    Map<String, OpContext> opContexts = session.getOpContexts();
-                    if (opContexts != null) {
-                        // Copy to avoid ConcurrentModificationException
-                        java.util.List<OpContext> contextList;
-                        try {
-                            contextList = new java.util.ArrayList<>(opContexts.values());
-                        } catch (Exception e) {
-                            log.warn("Error getting OpContext list for session cleanup: {}", e.getMessage());
-                            continue;
-                        }
-
-                        for (OpContext ctx : contextList) {
-                            if (ctx != null) {
-                                try {
-                                    ctx.close();
-                                } catch (Exception e) {
-                                    log.warn("Error closing OpContext during session cleanup: {}", e.getMessage());
-                                }
-                            }
-                        }
-                        opContexts.clear();
-                    }
-
-                    // Close the session's memory manager to free native workspace resources
-                    SessionMemMgr memMgr = session.getMmgr();
-                    if (memMgr != null) {
-                        try {
-                            memMgr.close();
-                        } catch (Exception e) {
-                            log.warn("Error closing SessionMemMgr during session cleanup: {}", e.getMessage());
-                        }
-                    }
+                    destroySession(session);
                 } catch (Exception e) {
                     log.warn("Error cleaning up session: {}", e.getMessage());
                 }
@@ -4663,6 +4800,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     public void close() {
         log.debug("Closing SameDiff instance");
         closeAllSessions();
+        clearDynamicShapePlanCache();
+        trimSessionMemory();
     }
 
     /**

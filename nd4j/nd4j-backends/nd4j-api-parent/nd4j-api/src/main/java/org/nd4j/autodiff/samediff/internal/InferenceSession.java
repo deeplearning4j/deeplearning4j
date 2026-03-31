@@ -303,7 +303,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // nothing meaningful to return. Only trim periodically and always on step 0/1
     // (prefill→decode transition where large buffers are freed).
     protected int dspStepCount = 0;
-    protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
+    protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 50);
 
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
@@ -387,17 +387,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * Call when the graph structure changes.
      */
     public void clearAllCaches() {
-        dagCache.clear();
-        planCache.clear();
-        cachedConstVarValues = null;
-        cachedInputsList = null;
-        outputShapeCacheTl.get().clear();
-        outputArrayCacheTl.get().clear();
-        latestRequestedOutputsTl.get().clear();
-        // Clear dynamic shape plan
-        if (dynamicShapePlan != null) {
-            dynamicShapePlan.close();
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = snapshotProtectedBuffersForCleanup();
+        DynamicShapePlan sessionPlan = dynamicShapePlan;
+        if (sessionPlan != null) {
+            sessionPlan.close();
             dynamicShapePlan = null;
+        }
+
+        int nodeOutputsClosed = closeNodeValueOutputBuffers();
+        closePooledResources();
+        flushArrayCache(protectedBuffers);
+
+        if (nodeOutputsClosed > 0) {
+            log.info("Session cache invalidation closed {} node output buffers", nodeOutputsClosed);
         }
     }
 
@@ -413,12 +415,150 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return opContextsTl.get();
     }
 
+    private void collectCloseableBuffers(SDValue value, IdentityHashMap<DataBuffer, Boolean> buffers) {
+        if (value == null) {
+            return;
+        }
+
+        switch (value.getSdValueType()) {
+            case TENSOR:
+                INDArray tensor = value.getTensorValue();
+                if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
+                    buffers.put(tensor.data(), Boolean.TRUE);
+                }
+                break;
+            case LIST:
+                if (value.getListValue() != null) {
+                    for (INDArray arr : value.getListValue()) {
+                        if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                            buffers.put(arr.data(), Boolean.TRUE);
+                        }
+                    }
+                }
+                break;
+            case DICT:
+                if (value.getDictValue() != null) {
+                    for (INDArray arr : value.getDictValue().values()) {
+                        if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                            buffers.put(arr.data(), Boolean.TRUE);
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private int closeLatestRequestedOutputBuffers() {
+        Map<String, SDValue> latestOutputs = latestRequestedOutputsTl.get();
+        if (latestOutputs == null || latestOutputs.isEmpty()) {
+            return 0;
+        }
+
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = snapshotProtectedBuffersForCleanup();
+        IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
+        for (SDValue value : latestOutputs.values()) {
+            collectCloseableBuffers(value, uniqueBuffers);
+        }
+
+        int closed = 0;
+        for (DataBuffer buf : uniqueBuffers.keySet()) {
+            if (buf == null || protectedBuffers.containsKey(buf)) {
+                continue;
+            }
+            if (buf.closeable()) {
+                try {
+                    buf.close();
+                    closed++;
+                } catch (Exception ignored) {
+                    // Buffer may already be deallocated or owned elsewhere.
+                }
+            }
+        }
+        latestOutputs.clear();
+        return closed;
+    }
+
+    private IdentityHashMap<DataBuffer, Boolean> snapshotProtectedBuffersForCleanup() {
+        IdentityHashMap<DataBuffer, Boolean> snapshot = new IdentityHashMap<>();
+        snapshot.putAll(externalPlaceholderBuffers);
+        for (SDVariable variable : sameDiff.variables()) {
+            if (variable == null) {
+                continue;
+            }
+            VariableType type = variable.getVariableType();
+            if (type != VariableType.CONSTANT && type != VariableType.VARIABLE) {
+                continue;
+            }
+
+            INDArray arr = variable.getArr();
+            if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                snapshot.put(arr.data(), Boolean.TRUE);
+            }
+        }
+        return snapshot;
+    }
+
+    private int closeNodeValueOutputBuffers() {
+        if (nodeValueOutputs.isEmpty()) {
+            return 0;
+        }
+
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = snapshotProtectedBuffersForCleanup();
+        IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
+        for (SDValue value : nodeValueOutputs.values()) {
+            collectCloseableBuffers(value, uniqueBuffers);
+        }
+
+        int closed = 0;
+        for (DataBuffer buf : uniqueBuffers.keySet()) {
+            if (buf == null || protectedBuffers.containsKey(buf)) {
+                continue;
+            }
+
+            if (buf.isConstant() && !buf.isAttached()) {
+                try {
+                    buf.setConstant(false);
+                } catch (Exception ignored) {
+                    // Best-effort cleanup only.
+                }
+            }
+
+            if (buf.closeable()) {
+                try {
+                    buf.close();
+                    closed++;
+                } catch (Exception ignored) {
+                    // Buffer may already be deallocated or owned elsewhere.
+                }
+            }
+        }
+
+        nodeValueOutputs.clear();
+        return closed;
+    }
+
     /**
      * Close all pooled OpContexts and clear accumulated thread-local state.
      * Must be called during resetSession() to prevent stale native pointers
      * from being reused in subsequent sessions.
      */
     public void closePooledResources() {
+        Map<String, OpContext> activeContexts = opContextsTl.get();
+        int activeClosed = 0;
+        for (OpContext ctx : activeContexts.values()) {
+            if (ctx != null) {
+                try {
+                    ctx.close();
+                    activeClosed++;
+                } catch (Exception e) {
+                    // Already closed or invalid; ignore
+                }
+            }
+        }
+        activeContexts.clear();
+
         // Close pooled OpContexts that were returned via purge() during execution.
         // These hold live native pointers that become stale after session reset.
         Deque<OpContext> pool = opContextPoolTl.get();
@@ -435,21 +575,40 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
         pool.clear();
 
+        PlanExecutor planExecutor = planExecutorTl.get();
+        boolean planExecutorClosed = false;
+        if (planExecutor != null) {
+            try {
+                planExecutor.close();
+                planExecutorClosed = true;
+            } catch (Exception e) {
+                log.warn("Error closing PlanExecutor during session cleanup: {}", e.getMessage());
+            }
+        }
+
         // Clear freed arrays tracker to avoid stale entries
         freedArraysTl.get().clear();
+
+        // Clear dependency tracking and live buffer refs held by this thread's last execution.
+        arrayUseTrackerTl.get().clear();
+        liveDataBufferRefs().clear();
 
         // Clear output shape and array caches
         outputShapeCacheTl.get().clear();
         outputArrayCacheTl.get().clear();
-        latestRequestedOutputsTl.get().clear();
 
         // Reset DSP step counter so the next session starts with immediate trim
         dspStepCount = 0;
 
-        // Keep DynamicShapePlan across session resets: the plan is compiled graph
-        // structure (index maps, liveness schedule) with no mutable runtime state.
-        // Recompiling on every resetSession() costs ~500ms for a 4441-op model.
-        // The plan's opContextPool is empty (executor uses its own rotating pool).
+        // Session-local caches do not survive resetSession(): a new session instance will be
+        // created on the next output() call and can retrieve any reusable DynamicShapePlan
+        // from SameDiff's model-level cache.
+        cachedConstVarValues = null;
+        cachedInputsList = null;
+        currentExecutionDAG = null;
+        dynamicShapePlan = null;
+        dagCache.clear();
+        planCache.clear();
 
         // Close the DynamicShapePlanExecutor (slot cache, native workspace, dedup sets).
         // The executor holds GPU-allocated arrays in its slot cache; closing it frees them
@@ -465,6 +624,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             dynamicShapePlanExecutorTl.remove();
         }
 
+        int latestOutputsClosed = closeLatestRequestedOutputBuffers();
+        externalPlaceholderBuffers.clear();
+
+        opContextsTl.remove();
+        opContextPoolTl.remove();
+        planExecutorTl.remove();
+        freedArraysTl.remove();
+        arrayUseTrackerTl.remove();
+        outputShapeCacheTl.remove();
+        outputArrayCacheTl.remove();
+        latestRequestedOutputsTl.remove();
+        liveDataBufferRefsTl.remove();
+
         // Sync streams and trim pool to release freed memory back to the driver.
         try {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -477,8 +649,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             log.debug("Pool trim during closePooledResources failed: {}", e.getMessage());
         }
 
-        if (pooledClosed > 0) {
-            log.info("Closed {} pooled OpContexts during session cleanup", pooledClosed);
+        if (activeClosed > 0 || pooledClosed > 0 || planExecutorClosed || latestOutputsClosed > 0) {
+            log.info("Session cleanup closed activeCtx={}, pooledCtx={}, planExecutor={}, latestOutputs={}",
+                    activeClosed, pooledClosed, planExecutorClosed, latestOutputsClosed);
         }
     }
 
@@ -494,8 +667,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     public void flushArrayCache(IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
         if (mmgr instanceof ArrayCacheMemoryMgr) {
             ((ArrayCacheMemoryMgr) mmgr).close(protectedBuffers);
-            mmgr = new ArrayCacheMemoryMgr();
-            log.info("Flushed ArrayCacheMemoryMgr (new cache allocated for next phase)");
+            log.info("Flushed ArrayCacheMemoryMgr");
         }
     }
 
@@ -726,8 +898,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // (6000+ in large models) when DSP will handle execution. DSP resolves
             // external inputs directly and doesn't use arrayUseTracker.
             if (DYNAMIC_SHAPE_PLAN_ENABLED &&
-                (otherPlaceHolderValues == null || otherPlaceHolderValues.isEmpty()) &&
-                (listeners == null || listeners.isEmpty())) {
+                (otherPlaceHolderValues == null || otherPlaceHolderValues.isEmpty())) {
                 try {
                     // Lightweight type casting: cast mismatched placeholder dtypes without
                     // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
@@ -763,30 +934,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutorTl.get();
                         boolean frozen = dspExec != null && dspExec.isShapesFrozen();
 
-                        if (!frozen || dspStepCount <= 2) {
-                            // Non-frozen or early steps: full commit + trim
-                            long commitStart = System.nanoTime();
+                        if (dspStepCount % TRIM_INTERVAL == 0 || dspStepCount <= 2) {
+                            // Periodic pool-wide trim to release freed intermediates.
+                            // Uses trimMemoryPool (not trimMemoryPoolOnStream) to sync ALL
+                            // dirty streams before trimming — ensures memory freed on any
+                            // stream is fully released back to the device allocator.
                             Nd4j.getExecutioner().commit();
-                            long commitNs = System.nanoTime() - commitStart;
-                            long trimStart = System.nanoTime();
                             int nDevicesTrim = Nd4j.getAffinityManager().getNumberOfDevices();
+                            NativeOps trimOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                             for (int d = 0; d < nDevicesTrim; d++) {
-                                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(d, null);
-                            }
-                            long trimNs = System.nanoTime() - trimStart;
-                            if (commitNs > 5_000_000 || trimNs > 5_000_000) {
-                                log.info("DSP post-exec overhead: commit={}ms trim={}ms",
-                                        commitNs / 1_000_000, trimNs / 1_000_000);
-                            }
-                        } else if (dspStepCount % TRIM_INTERVAL == 0) {
-                            // Frozen steady-state: periodic trim only (every TRIM_INTERVAL steps)
-                            Nd4j.getExecutioner().commit();
-                            int nDevicesTrimPeriodic = Nd4j.getAffinityManager().getNumberOfDevices();
-                            for (int d = 0; d < nDevicesTrimPeriodic; d++) {
-                                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(d, null);
+                                trimOps.trimMemoryPool(d);
                             }
                         }
-                        // Frozen non-trim steps: skip both commit and trim entirely
+                        // Non-trim steps: skip commit and trim for maximum throughput
 
                         log.debug("DynamicShapePlan-based execution completed successfully");
                         // Do NOT call mmgr.scopeOut() here. The finally block handles both
@@ -842,19 +1002,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Reset growth factor to 1.0 but keep cache ENABLED.
             // The DSP side effect enables cache + growth factor 1.1x before checking if plan exists.
             // Growth factor > 1.0 creates oversized buffers (output arrays become views) and
-            // cuBLAS matmul doesn't fully overwrite the oversized region → stale data leaks into
-            // outputs, causing numerical explosion.
+            // Growth factor is now scoped to DSP execution via withGrowthFactor() in
+            // executeDynamicShapePlanBased(). No need to reset here — the scope auto-restores.
             // IMPORTANT: Do NOT disable the cache here. The cache prevents premature DataBuffer
             // close in the standard executeOperations path — the no-cache cleanup aggressively
             // closes DataBuffers of intermediate variables, which destroys shared buffers for
-            // view-producing ops (reshape_no_copy, permute, etc.). When the vision encoder
-            // dep tracker releases intermediates whose DataBuffer is shared with caller arrays
-            // (e.g., imageInput), the caller's arrays become invalid. Keeping the cache enabled
-            // routes releases through ArrayCacheMemoryMgr.release() which respects closeable()
-            // and defers non-closeable views, preventing premature buffer destruction.
-            if (mmgr instanceof ArrayCacheMemoryMgr) {
-                ArrayCacheMemoryMgr.setGrowthFactor(1.0);
-            }
+            // view-producing ops (reshape_no_copy, permute, etc.).
             Map<String, SDValue> processedOtherPlaceholders = preprocessValuePlaceholders(otherPlaceHolderValues, at);
             // Suppress cross-device routing during execution.
             OpaqueDataBuffer.suppressCrossDeviceRouting(true);
@@ -1162,15 +1315,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                                                Set<String> allRequired,
                                                                List<String> requestedOutputs) {
         // DynamicShapePlan is allocation-heavy: force-enable the ArrayCacheMemoryMgr cache
-        // and growth factor to reduce cudaMalloc churn for growing shapes (KV cache).
-        // NOTE: This must happen before the plan check — the cache also prevents premature
-        // DataBuffer close in the standard executeOperations path (vision encoder dep tracker
-        // has aggressive release that closes arrays still needed by downstream view ops).
+        // to reduce cudaMalloc churn for growing shapes (KV cache).
+        // NOTE: Cache must be enabled before the plan check — it also prevents premature
+        // DataBuffer close in the standard executeOperations path.
+        // Growth factor is scoped to DSP execution only (via withGrowthFactor) to prevent
+        // leaking oversized buffers into standard execution if the plan returns null.
         if (mmgr instanceof ArrayCacheMemoryMgr) {
             ArrayCacheMemoryMgr.setEnableCache(true);
-            if (ArrayCacheMemoryMgr.getGrowthFactor().get() <= 1.0) {
-                ArrayCacheMemoryMgr.setGrowthFactor(1.1);
-            }
         }
 
         DynamicShapePlan plan = getOrCompileDynamicShapePlan(
@@ -1193,8 +1344,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
         }
 
-        // Execute
-        Map<String, INDArray> rawResults = executor.execute(plan, placeholderArrays);
+        // Execute with scoped growth factor.
+        // Growth factor 1.1x is active ONLY during DSP execution — if the plan returned
+        // null above, the growth factor stays at its default (1.0) and standard execution
+        // won't create oversized buffers that leak stale data via cuBLAS partial writes.
+        Map<String, INDArray> rawResults;
+        try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.1)) {
+            rawResults = executor.execute(plan, placeholderArrays);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("DSP execution failed", e);
+        }
 
         // Wrap results as SDValues
         Map<String, SDValue> sdResults = new LinkedHashMap<>();
@@ -3568,21 +3729,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Shape buffers from calculateOutputShape() are CACHED by ConstantShapeHelper - do not close.
         }
         if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
-
-        // Re-sync input arrays to device after calculateOutputShape().
-        // Some shape functions (e.g. Where) call syncToHost() on inputs to read data values,
-        // which marks the host buffer as primary. The GPU kernel then accesses a stale device
-        // buffer, causing cudaErrorIllegalAddress. Re-syncing ensures device buffers are current.
-        if (DATA_DEPENDENT_OUTPUT_OPS.contains(customOp.opName())) {
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            // Note: inputArrays already declared above, reuse for sync loop
-            for (int i = 0; i < inputArrays.size(); i++) {
-                INDArray in = inputArrays.get(i);
-                if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()) {
-                    nativeOps.dbSyncToSpecial(in.data().opaqueBuffer());
-                }
-            }
-        }
 
         // Execute the operation
         // DIAGNOSTIC: check if inputs are closed right before exec

@@ -46,7 +46,8 @@ struct OpTensorDesc {
 static void opTensorCUDNN(const LaunchContext* context, NDArray* a, NDArray* b, NDArray* c,
                           cudnnOpTensorOp_t opType, float alpha1 = 1.0f, float alpha2 = 1.0f, float beta = 0.0f) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(a->dataType());
   const int rank = a->rankOf();
@@ -104,8 +105,10 @@ static void opTensorCUDNN(const LaunchContext* context, NDArray* a, NDArray* b, 
                     pAlpha2, bDesc, b->specialBuffer(),
                     pBeta, cDesc, c->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("opTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("opTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({c}, {a, b});
 }
@@ -294,7 +297,8 @@ PLATFORM_IMPL(sqrt, ENGINE_CUDA) {
   auto output = OUTPUT_VARIABLE(0);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *block.launchContext()->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(block.launchContext()->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
   const int rank = input->rankOf();
@@ -324,8 +328,8 @@ PLATFORM_IMPL(sqrt, ENGINE_CUDA) {
   opDesc.set(CUDNN_OP_TENSOR_SQRT, compType, CUDNN_PROPAGATE_NAN);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -339,8 +343,10 @@ PLATFORM_IMPL(sqrt, ENGINE_CUDA) {
                     alpha, xDesc, input->specialBuffer(),  // B is ignored for SQRT
                     beta, xDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("sqrt CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("sqrt CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 

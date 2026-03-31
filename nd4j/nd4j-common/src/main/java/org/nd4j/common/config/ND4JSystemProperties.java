@@ -813,30 +813,12 @@ public class ND4JSystemProperties {
 
     /**
      * Applicability: Triton section identification (seq=1 decode)<br>
-     * Description: Fuse trivial (identity/offset) gather with following element-wise ops.
-     * Reduces section count by ~100-200 for seq=1 decode patterns.
-     * <p>
-     * Default: true
-     */
-    public static final String TRITON_FUSE_TRIVIAL_GATHER = "nd4j.triton.fuseTrivialGather";
-
-    /**
-     * Applicability: Triton section identification (seq=1 decode)<br>
      * Description: Treat identity permute patterns as no-op for seq=1 decode.
      * Reduces section count by ~60-100 for typical attention patterns.
      * <p>
      * Default: true
      */
     public static final String TRITON_SPECIALIZE_PERMUTE_SEQ1 = "nd4j.triton.specializePermuteSeq1";
-
-    /**
-     * Applicability: Triton section identification<br>
-     * Description: Eliminate concat→split or split→concat pairs (canceling patterns).
-     * Reduces section count by ~50-100 when patterns detected.
-     * <p>
-     * Default: true
-     */
-    public static final String TRITON_ELIMINATE_CONCAT_SPLIT_PAIRS = "nd4j.triton.eliminateConcatSplitPairs";
 
     /**
      * Applicability: Triton section identification (HIGH RISK)<br>
@@ -976,12 +958,12 @@ public class ND4JSystemProperties {
 
     /**
      * Applicability: Triton GPU backend<br>
-     * Description: Enable section fusion for Triton mega-kernel merging.
-     * When enabled, non-elementwise section types (GATHER, CONCAT, CONST_GEN, SPLIT, STACK)
-     * merge with adjacent sections into mega-kernels via buildSectionedModule() DAG analysis.
+     * Description: Enable Triton compile-range fusion and compatible post-merges.
+     * When enabled, the compiler may coalesce adjacent Triton-compatible sections into
+     * larger launch ranges and safely post-merge sections that share a compatible 1D skeleton.
      * Environment variable: ND4J_TRITON_SECTION_FUSION
      * <p>
-     * Default: false
+     * Default: true
      */
     public static final String TRITON_SECTION_FUSION = "nd4j.triton.sectionFusion";
 
@@ -991,7 +973,7 @@ public class ND4JSystemProperties {
      * When enabled, adjacent sections are only merged if the fusion score exceeds the minimum threshold.
      * Environment variable: ND4J_TRITON_FUSION_SCORING
      * <p>
-     * Default: false
+     * Default: true
      */
     public static final String TRITON_FUSION_SCORING = "nd4j.triton.fusionScoring";
 
@@ -1001,7 +983,7 @@ public class ND4JSystemProperties {
      * Only used when fusion scoring is enabled.
      * Environment variable: ND4J_TRITON_FUSION_MIN_SCORE
      * <p>
-     * Default: 1.0
+     * Default: 5.0
      */
     public static final String TRITON_FUSION_MIN_SCORE = "nd4j.triton.fusionMinScore";
 

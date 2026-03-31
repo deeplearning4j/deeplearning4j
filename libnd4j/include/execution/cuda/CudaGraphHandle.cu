@@ -207,6 +207,9 @@ bool CudaGraphHandle::instantiate() {
         ? cudaGraphInstantiateFlagAutoFreeOnLaunch : 0;
     cudaError_t err = cudaGraphInstantiateWithFlags(&_graphExec, _graph, instantiateFlags);
 
+    // Store the error code for the caller to inspect (OOM detection)
+    _lastInstantiateError = static_cast<int>(err);
+
     // Restore device
     if (_deviceId != prevDevice) {
         cudaSetDevice(prevDevice);
@@ -219,6 +222,15 @@ bool CudaGraphHandle::instantiate() {
         size_t numNodes = 0;
         cudaGraphGetNodes(_graph, nullptr, &numNodes);
         sd_printf("  Graph has %zu nodes, deviceId=%d\n", numNodes, _deviceId);
+        // Clear sticky CUDA error state
+        cudaGetLastError();
+        // Destroy the captured graph immediately — it consumes GPU memory even
+        // without a successful instantiation. Keeping it alive leaks GPU memory
+        // proportional to the number of nodes and their associated resources.
+        if (_graph != nullptr) {
+            cudaGraphDestroy(_graph);
+            _graph = nullptr;
+        }
         _state = GraphState::ERROR;
         return false;
     }
@@ -265,6 +277,14 @@ bool CudaGraphHandle::reInstantiate() {
     if (err != cudaSuccess) {
         sd_printf("CudaGraphHandle::reInstantiate failed: %s (err=%d)\n",
                   cudaGetErrorString(err), (int)err);
+        // Clear sticky CUDA error state
+        cudaGetLastError();
+        // Destroy the captured graph — no point keeping it if instantiation failed,
+        // and it holds GPU memory.
+        if (_graph != nullptr) {
+            cudaGraphDestroy(_graph);
+            _graph = nullptr;
+        }
         _state = GraphState::ERROR;
         return false;
     }

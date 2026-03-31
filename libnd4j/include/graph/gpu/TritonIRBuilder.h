@@ -101,7 +101,6 @@ struct KernelSection {
   // Data movement dimensions
   int gatherAxis;             // Gather/scatter axis
   int concatAxis;             // Concat axis
-  std::vector<int> splitSizes; // Split sizes for split_v
 
   // Trailing permute fusion: when an elementwise section is immediately followed
   // by a permute op that reads from this section's output, the permute is absorbed
@@ -142,6 +141,24 @@ struct TritonKernelArg {
   bool isOutput = false;      // true if this is a kernel output (written)
   DataType dtype = FLOAT32;   // Default to FLOAT32 to avoid UB from uninitialized enum
   std::vector<LongType> shape;
+  std::vector<LongType> strides;  // Actual strides from NDArray (empty = C-contiguous)
+
+  /**
+   * Returns true if this arg has non-C-contiguous strides (e.g., permute view).
+   * When true, the Triton kernel must use actual strides for indexing instead
+   * of assuming flat C-order layout.
+   */
+  bool isNonContiguous() const {
+    if (strides.empty() || shape.empty()) return false;
+    int rank = static_cast<int>(shape.size());
+    // Compute expected C-contiguous strides and compare
+    LongType expected = 1;
+    for (int d = rank - 1; d >= 0; d--) {
+      if (strides[d] != expected) return true;
+      expected *= shape[d];
+    }
+    return false;
+  }
 };
 
 /**
@@ -347,6 +364,13 @@ class TritonIRBuilder {
                                     int* requestedOutputSlotIndices = nullptr,
                                     int numRequestedOutputs = 0);
 
+  // ── Analysis (TritonIRBuilder_analysis.cpp) ──
+
+  // Determine optimal tile sizes based on op categories in the segment
+  void selectTileConfig(const std::vector<TritonOpCategory>& categories,
+                        const std::vector<std::vector<LongType>>& shapes,
+                        int& blockSize, int& numWarps, int& numStages);
+
  private:
   // ── Type system (TritonIRBuilder_types.cpp) ──
 
@@ -366,13 +390,6 @@ class TritonIRBuilder {
 
   // Generate a unique kernel name from the segment's op sequence
   std::string generateKernelName(NativeSlot* slots, int startSlot, int endSlot);
-
-  // ── Analysis (TritonIRBuilder_analysis.cpp) ──
-
-  // Determine optimal tile sizes based on op categories in the segment
-  void selectTileConfig(const std::vector<TritonOpCategory>& categories,
-                        const std::vector<std::vector<LongType>>& shapes,
-                        int& blockSize, int& numWarps, int& numStages);
 
   // ── Op emitters (TritonIRBuilder_emitters.cpp) ──
 

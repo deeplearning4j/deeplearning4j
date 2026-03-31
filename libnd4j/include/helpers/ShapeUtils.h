@@ -200,6 +200,13 @@ class SD_LIB_EXPORT ShapeUtils {
    *   comparing of shapes, not strides
    */
   static bool areShapesEqual(const LongType* shapeInfo, const std::vector<LongType>& shapeOnly);
+
+  /**
+   * Read integer values from an NDArray input, handling CUDA sync correctly.
+   * Syncs to host once, reads directly from buffer. No per-element GPU->CPU copies.
+   * Supports INT64, INT32, FLOAT32, and FLOAT64 inputs (truncated to LongType).
+   */
+  static std::vector<LongType> readIntParams(NDArray* paramArray);
 };
 
 

@@ -191,9 +191,14 @@ static void lowerTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
     auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
 
     // For unbatched case, allocate single offset = 0 on device
+    // During CUDA graph capture, synchronous calls are illegal.
     LongType zeroOffset = 0;
     LongType* dOffset;
-    cudaMalloc(&dOffset, sizeof(LongType));
+    if (tl_graphExecutionActive) {
+      cudaMallocAsync(&dOffset, sizeof(LongType), *stream);
+    } else {
+      cudaMalloc(&dOffset, sizeof(LongType));
+    }
     cudaMemcpyAsync(dOffset, &zeroOffset, sizeof(LongType), cudaMemcpyHostToDevice, *stream);
 
     dim3 launchDims = getLaunchDims("triangular_solve");
@@ -207,7 +212,12 @@ static void lowerTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
         1, rows, cols, unitsOnDiag);
     sd::DebugHelper::checkErrorCode(stream, "lowerTriangularSolveKernel failed");
 
-    cudaFree(dOffset);
+    // During CUDA graph capture, synchronous calls are illegal.
+    if (tl_graphExecutionActive) {
+      cudaFreeAsync(dOffset, *stream);
+    } else {
+      cudaFree(dOffset);
+    }
   } else {
     // Batched case: use TADs
     std::vector<LongType> dims = {-2, -1};
@@ -251,9 +261,14 @@ static void upperTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
     auto rightBuf = reinterpret_cast<T const*>(rightInput->specialBuffer());
     auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
 
+    // During CUDA graph capture, synchronous calls are illegal.
     LongType zeroOffset = 0;
     LongType* dOffset;
-    cudaMalloc(&dOffset, sizeof(LongType));
+    if (tl_graphExecutionActive) {
+      cudaMallocAsync(&dOffset, sizeof(LongType), *stream);
+    } else {
+      cudaMalloc(&dOffset, sizeof(LongType));
+    }
     cudaMemcpyAsync(dOffset, &zeroOffset, sizeof(LongType), cudaMemcpyHostToDevice, *stream);
 
     dim3 launchDims = getLaunchDims("triangular_solve");
@@ -267,7 +282,12 @@ static void upperTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
         1, rows, cols, unitsOnDiag);
     sd::DebugHelper::checkErrorCode(stream, "upperTriangularSolveKernel failed");
 
-    cudaFree(dOffset);
+    // During CUDA graph capture, synchronous calls are illegal.
+    if (tl_graphExecutionActive) {
+      cudaFreeAsync(dOffset, *stream);
+    } else {
+      cudaFree(dOffset);
+    }
   } else {
     std::vector<LongType> dims = {-2, -1};
     auto leftTads = ConstantTadHelper::getInstance().tadForDimensions(leftInput->shapeInfo(), &dims);

@@ -22,6 +22,7 @@
 //
 #include <array/DataBuffer.h>
 #include <exceptions/cuda_exception.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/PointersManager.h>
 #include <helpers/StringUtils.h>
 #include <helpers/logger.h>
@@ -31,11 +32,6 @@
 #include "helpers/DebugHelper.h"
 
 namespace sd {
-
-// Extern declarations for capture host workspace (defined in DataBuffer.cu)
-extern SD_TLS_EXPORT thread_local void* tl_captureHostWorkspace;
-extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceSize;
-extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset;
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStream(const LaunchContext* context) {
@@ -59,6 +55,25 @@ PointersManager::PointersManager(const LaunchContext* context, const std::string
 void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
   void* dst = nullptr;
   bool fromCudaMalloc = false;
+
+  // During CUDA graph capture, allocate from the capture workspace (bump allocator).
+  // This memory persists for the graph's lifetime, so device pointers baked into
+  // graph nodes (e.g., TAD shapeInfo/offsets passed to kernels) remain valid on replay.
+  // Without this, CudaMemoryPool allocations get freed by ~PointersManager() after
+  // each gap op completes, but tl_captureReplicateCache still holds the freed pointer.
+  // The next op with identical TAD content gets a cache hit → dangling device pointer →
+  // GPU hang on graph replay (DMA reads from freed/remapped memory).
+  if (tl_graphExecutionActive && tl_captureWorkspace != nullptr) {
+    size_t aligned = (sizeInBytes + 255) & ~255ULL;
+    if (tl_captureWorkspaceOffset + aligned <= tl_captureWorkspaceSize) {
+      dst = static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset;
+      tl_captureWorkspaceOffset += aligned;
+      fromCudaMalloc = false;  // workspace — don't free in destructor
+      _allocatedPointers.emplace_back(dst, fromCudaMalloc);
+      return dst;
+    }
+    // Workspace exhausted — fall through to pool allocation
+  }
 
   if (_context == nullptr || _context->getWorkspace() == nullptr) {
     // Use CUDA memory pool for efficient allocation
@@ -138,6 +153,9 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
 
       cudaStream_t capturedStream = captureSafeStream(_context);
       cudaMemcpyAsync(dst, h2dSrc, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
+      DSP_DIAG(EXECUTE, "CAPTURE_H2D(PointersManager): size=%zu src=%p dst=%p isPinned=%d stream=%p func=%s",
+               numberOfBytes, h2dSrc, dst,
+               (h2dSrc != src) ? 1 : 0, (void*)capturedStream, _funcName.c_str());
 
       // Cache for future calls with same content (only for small arrays)
       if (numberOfBytes <= 256) {

@@ -83,7 +83,7 @@ SegmentProfile TritonIRBuilder::profileSegment(NativeSlot* slots, int startSlot,
       int outIdx = slots[absSlot].outputSlotIndices[0];
 
       // Priority 1: Use NativeSlot's cached shape info (pre-calculated by DSP)
-      if (slots[absSlot].shapeCacheValid && !slots[absSlot].cachedOutputShapes.empty()) {
+      if (slots[absSlot].shapeCacheValid() && !slots[absSlot].cachedOutputShapes.empty()) {
         const LongType* shapeInfo = slots[absSlot].cachedOutputShapes[0];
         if (shapeInfo) {
           LongType rank = shape::rank(shapeInfo);

@@ -22,6 +22,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/NDArrayFactory.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/addBias.h>
@@ -106,8 +107,10 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
   if (bias)
     helpers::addBias(block, *output, *bias, *output, isNCHW);
 
-  // Synchronize CUDA stream before cleanup to ensure all async operations complete
-  cudaStreamSynchronize(*output->getContext()->getCudaStream());
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+  if (!tl_graphExecutionActive) {
+    cudaStreamSynchronize(*output->getContext()->getCudaStream());
+  }
 
   delete zero;
   delete outputReshaped;

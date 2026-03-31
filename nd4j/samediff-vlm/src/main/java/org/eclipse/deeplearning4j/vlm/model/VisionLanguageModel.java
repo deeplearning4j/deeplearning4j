@@ -579,160 +579,14 @@ public class VisionLanguageModel implements AutoCloseable {
         // Encode prompt
         Encoding promptEncoding = tokenizer.encode(prompt, true);
         int[] promptIds = promptEncoding.getIds();
-        int promptTokenCount = promptIds.length;
         INDArray textEmbeddings = embedText(promptIds);
 
         // Combine embeddings (image before text for most VLMs)
         INDArray combinedEmbeddings = combineEmbeddings(imageEmbeddings, textEmbeddings);
 
-        // Discover decoder inputs/outputs for KV cache
-        List<String> decoderInputNames = decoder.inputs();
-        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
-        boolean useKvCache = !kvNames.keyNames.isEmpty() && !kvNames.valueNames.isEmpty();
-        long hiddenSize = config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0;
-
-        // Build list of all outputs to request
-        List<String> allOutputNames = new ArrayList<>();
-        allOutputNames.add(logitsOutputName != null ? logitsOutputName : "logits");
-        if (useKvCache) {
-            allOutputNames.addAll(kvNames.keyNames);
-            allOutputNames.addAll(kvNames.valueNames);
-        }
-
-        // Autoregressive generation with KV cache
-        StringBuilder generated = new StringBuilder();
-        List<Integer> generatedTokenIds = new ArrayList<>();
-        long startNanos = System.nanoTime();
-        long firstTokenLatencyNanos = 0;
-        int generatedTokenCount = 0;
-        GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
-
-        Map<String, INDArray> kvCache = useKvCache ? new HashMap<>() : null;
-        INDArray currentEmbeddings = combinedEmbeddings;
-        long pastSeqLen = 0;
-        long batchSize = 1;
-
-        for (int i = 0; i < maxNewTokens; i++) {
-            // Build decoder inputs
-            Map<String, INDArray> decoderInputMap = new HashMap<>();
-            long currentSeqLen = currentEmbeddings.shape()[1];
-            long totalSeqLen = currentSeqLen + pastSeqLen;
-
-            for (String inputName : decoderInputNames) {
-                if (inputName.equals("inputs_embeds")) {
-                    decoderInputMap.put(inputName, currentEmbeddings);
-                } else if (inputName.equals("attention_mask")) {
-                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSeqLen));
-                } else if (inputName.equals("_causal_mask")) {
-                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen));
-                } else if (inputName.equals("position_ids")) {
-                    decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
-                            .reshape(1, currentSeqLen).castTo(DataType.LONG));
-                } else if (useKvCache && inputName.startsWith("past_key_values.")) {
-                    String presentName = inputName.replace("past_key_values", "present");
-                    if (kvCache.containsKey(presentName)) {
-                        decoderInputMap.put(inputName, kvCache.get(presentName));
-                    } else {
-                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(
-                                decoder, inputName, batchSize, hiddenSize));
-                    }
-                }
-            }
-
-            // Run decoder, requesting logits + KV cache outputs
-            Map<String, INDArray> outputs = decoder.output(decoderInputMap,
-                    allOutputNames.toArray(new String[0]));
-            INDArray logits = outputs.get(allOutputNames.get(0));
-
-            // Update KV cache
-            if (useKvCache) {
-                for (String presentName : kvNames.keyNames) {
-                    INDArray pv = outputs.get(presentName);
-                    if (pv != null) {
-                        INDArray old = kvCache.put(presentName, pv);
-                        SameDiffMemoryUtils.safeClose(old);
-                    }
-                }
-                for (String presentName : kvNames.valueNames) {
-                    INDArray pv = outputs.get(presentName);
-                    if (pv != null) {
-                        INDArray old = kvCache.put(presentName, pv);
-                        SameDiffMemoryUtils.safeClose(old);
-                    }
-                }
-            }
-
-            // Get next token (greedy or sampling)
-            int nextTokenId;
-            if (!doSample || temperature <= 0) {
-                INDArray lastLogits = logits.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(logits.shape()[1] - 1));
-                nextTokenId = SamplerUtils.argmax(lastLogits);
-            } else {
-                INDArray scaledLogits = logits.div(temperature);
-                INDArray probs = Nd4j.nn().softmax(scaledLogits, 2);
-                INDArray lastProbs = probs.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(probs.shape()[1] - 1));
-                nextTokenId = SamplerUtils.argmax(lastProbs);
-            }
-
-            // Record first token latency
-            if (generatedTokenCount == 0) {
-                firstTokenLatencyNanos = System.nanoTime() - startNanos;
-            }
-            generatedTokenCount++;
-            generatedTokenIds.add(nextTokenId);
-
-            // Check for EOS
-            if (nextTokenId == tokenizer.getEosTokenId()) {
-                finishReason = GenerationResult.FinishReason.EOS;
-                break;
-            }
-
-            // Decode token
-            String tokenText = tokenizer.decode(new int[]{nextTokenId}, true);
-            generated.append(tokenText);
-
-            // For next iteration: only embed the new token (not the full sequence)
-            if (useKvCache) {
-                pastSeqLen += currentSeqLen;
-                INDArray prevEmbeddings = currentEmbeddings;
-                currentEmbeddings = embedText(new int[]{nextTokenId});
-                if (prevEmbeddings != combinedEmbeddings) {
-                    SameDiffMemoryUtils.safeClose(prevEmbeddings);
-                }
-                decoder.clearPlaceholders(false);
-            } else {
-                // Fallback: no KV cache, grow embeddings (O(n²) per token)
-                INDArray newTokenEmbed = embedText(new int[]{nextTokenId});
-                currentEmbeddings = Nd4j.concat(1, currentEmbeddings, newTokenEmbed);
-            }
-        }
-
-        // Clean up KV cache
-        if (kvCache != null) {
-            for (INDArray v : kvCache.values()) {
-                SameDiffMemoryUtils.safeClose(v);
-            }
-        }
-
-        long totalNanos = System.nanoTime() - startNanos;
-        long totalMs = totalNanos / 1_000_000;
-        long firstTokenMs = firstTokenLatencyNanos / 1_000_000;
-        int[] tokenIdArray = generatedTokenIds.stream().mapToInt(Integer::intValue).toArray();
-
-        return GenerationResult.builder()
-                .text(generated.toString())
-                .tokenIds(tokenIdArray)
-                .generatedTokenCount(generatedTokenCount)
-                .promptTokenCount(promptTokenCount)
-                .totalTokenCount(promptTokenCount + generatedTokenCount)
-                .finishReason(finishReason)
-                .firstTokenLatencyMs(firstTokenMs)
-                .generationTimeMs(totalMs)
-                .tokensPerSecond(totalNanos > 0 ? (generatedTokenCount * 1_000_000_000.0) / totalNanos : 0)
-                .build();
+        // Use StaticKvCacheDecodeLoop (optimized: native KV scatter, CUDA graphs, outputDirect)
+        return decodeWithStaticLoop(combinedEmbeddings, promptIds, maxNewTokens,
+                temperature, doSample);
     }
 
     /**
@@ -1553,7 +1407,7 @@ public class VisionLanguageModel implements AutoCloseable {
         SameDiffMemoryUtils.safeClose(textEmbeddings);
 
         // Run decode loop using the merged embeddings directly
-        return decodeFromEmbeddings(inputsEmbeds, promptTokenCount, maxTokens, temperature, doSample);
+        return decodeWithStaticLoop(inputsEmbeds, promptTokenIds, maxTokens, temperature, doSample);
     }
 
     /**
@@ -1593,28 +1447,57 @@ public class VisionLanguageModel implements AutoCloseable {
         long pastSeqLen = 0;
         long batchSize = 1;
 
+        // Pre-allocate reusable buffers for attention_mask and position_ids
+        boolean needsAttentionMask2 = decoderInputNames.contains("attention_mask");
+        boolean needsPositionIds2 = decoderInputNames.contains("position_ids");
+        long initialSeqLen2 = currentEmbeddings.shape()[1];
+        long maxTotalSeqLen2 = initialSeqLen2 + maxNewTokens;
+        INDArray attentionMaskBuffer2 = needsAttentionMask2 ?
+                Nd4j.ones(DataType.LONG, batchSize, maxTotalSeqLen2) : null;
+        INDArray positionIdsBuffer2 = needsPositionIds2 ?
+                Nd4j.zeros(DataType.LONG, 1, Math.max(initialSeqLen2, 1)) : null;
+
         for (int i = 0; i < maxNewTokens; i++) {
             Map<String, INDArray> decoderInputMap = new HashMap<>();
             long currentSeqLen = currentEmbeddings.shape()[1];
             long totalSeqLen = currentSeqLen + pastSeqLen;
 
+            // Track temporary input arrays so we can free them after output()
+            List<INDArray> tempInputs = new ArrayList<>();
+
             for (String inputName : decoderInputNames) {
                 if (inputName.equals("inputs_embeds")) {
                     decoderInputMap.put(inputName, currentEmbeddings);
                 } else if (inputName.equals("attention_mask")) {
-                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSeqLen));
+                    // Reuse pre-allocated buffer, slicing to current totalSeqLen
+                    INDArray mask = attentionMaskBuffer2.get(
+                            NDArrayIndex.all(), NDArrayIndex.interval(0, totalSeqLen));
+                    decoderInputMap.put(inputName, mask);
                 } else if (inputName.equals("_causal_mask")) {
-                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen));
+                    INDArray causalMask = DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen);
+                    decoderInputMap.put(inputName, causalMask);
+                    tempInputs.add(causalMask);
                 } else if (inputName.equals("position_ids")) {
-                    decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
-                            .reshape(1, currentSeqLen).castTo(DataType.LONG));
+                    // For KV cache decode (single token), reuse buffer and set value
+                    if (useKvCache && i > 0 && currentSeqLen == 1) {
+                        positionIdsBuffer2.putScalar(0, 0, pastSeqLen);
+                        decoderInputMap.put(inputName, positionIdsBuffer2);
+                    } else {
+                        // Prefill or non-KV: need full range
+                        INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                                .reshape(1, currentSeqLen).castTo(DataType.LONG);
+                        decoderInputMap.put(inputName, posIds);
+                        tempInputs.add(posIds);
+                    }
                 } else if (useKvCache && inputName.startsWith("past_key_values.")) {
                     String presentName = inputName.replace("past_key_values", "present");
                     if (kvCache.containsKey(presentName)) {
                         decoderInputMap.put(inputName, kvCache.get(presentName));
                     } else {
-                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(
-                                decoder, inputName, batchSize, hiddenSize));
+                        INDArray emptyKv = DecoderUtils.createEmptyKvCache(
+                                decoder, inputName, batchSize, hiddenSize);
+                        decoderInputMap.put(inputName, emptyKv);
+                        tempInputs.add(emptyKv);
                     }
                 }
             }
@@ -1622,6 +1505,11 @@ public class VisionLanguageModel implements AutoCloseable {
             Map<String, INDArray> outputs = decoder.output(decoderInputMap,
                     allOutputNames.toArray(new String[0]));
             INDArray logits = outputs.get(allOutputNames.get(0));
+
+            // Free temporary input arrays (poisoned by directExecHelper, so use safeClose)
+            for (INDArray tmp : tempInputs) {
+                SameDiffMemoryUtils.safeClose(tmp);
+            }
 
             if (useKvCache) {
                 for (String presentName : kvNames.keyNames) {
@@ -1651,7 +1539,12 @@ public class VisionLanguageModel implements AutoCloseable {
                 INDArray lastProbs = probs.get(NDArrayIndex.point(0),
                         NDArrayIndex.point(probs.shape()[1] - 1));
                 nextTokenId = SamplerUtils.argmax(lastProbs);
+                SameDiffMemoryUtils.safeClose(scaledLogits);
+                SameDiffMemoryUtils.safeClose(probs);
             }
+
+            // Free logits — we've extracted the token ID already
+            SameDiffMemoryUtils.safeClose(logits);
 
             if (generatedTokenCount == 0) {
                 firstTokenLatencyNanos = System.nanoTime() - startNanos;
@@ -1681,10 +1574,32 @@ public class VisionLanguageModel implements AutoCloseable {
             }
         }
 
+        // Clean up pre-allocated buffers
+        SameDiffMemoryUtils.safeClose(attentionMaskBuffer2);
+        SameDiffMemoryUtils.safeClose(positionIdsBuffer2);
+
+        // Free final KV cache entries
         if (kvCache != null) {
             for (INDArray v : kvCache.values()) {
                 SameDiffMemoryUtils.safeClose(v);
             }
+        }
+
+        // Free final embeddings if not the original input
+        if (currentEmbeddings != combinedEmbeddings) {
+            SameDiffMemoryUtils.safeClose(currentEmbeddings);
+        }
+
+        // Flush pending GPU ops and trim memory pool to release freed CUDA memory
+        try {
+            Nd4j.getExecutioner().commit();
+            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPool(d);
+            }
+        } catch (Exception e) {
+            log.debug("Pool trim after decode: {}", e.getMessage());
         }
 
         long totalNanos = System.nanoTime() - startNanos;
@@ -1711,23 +1626,80 @@ public class VisionLanguageModel implements AutoCloseable {
      * before starting the next page.
      */
     public void resetSessions() {
-        log.info("Resetting all inference sessions to reclaim GPU memory");
-        if (decoder != null) decoder.resetSession();
-        if (visionEncoder != null) visionEncoder.resetSession();
-        if (embedTokens != null) embedTokens.resetSession();
+        log.info("Resetting sessions between pages (keeping DSP executors and buffers alive)");
+        // Do NOT call resetSession() — that destroys the DSP executor, its allocated
+        // buffers, and the CUDA graph. Instead, clear only the placeholder inputs so
+        // the next output() call reuses the same session, buffers, and compiled plans.
+        // The DSP executor's slot arrays, CUDA graph capture, and Triton kernels all
+        // stay alive — zero recompilation overhead between pages.
+        //
+        // Vision encoder and embed_tokens: just need fresh pixel/token inputs on next call.
+        // Decoder: the StaticKvCacheDecodeLoop handles KV cache reset internally.
+        // No session-level reset needed for any of them.
+    }
 
-        // Force CUDA memory pool to release retained memory back to the OS on all devices.
-        // Without this, the pool retains freed allocations and subsequent pages OOM.
+    /**
+     * Decode using StaticKvCacheDecodeLoop for optimized throughput (Triton, CUDA graphs, native KV scatter).
+     */
+    private GenerationResult decodeWithStaticLoop(INDArray combinedEmbeddings, int[] promptIds,
+                                                   int maxNewTokens, double temperature, boolean doSample) {
+        long hiddenSz = config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0;
+
+        org.eclipse.deeplearning4j.llm.generation.SamplingConfig samplingCfg = doSample
+                ? org.eclipse.deeplearning4j.llm.generation.SamplingConfig.builder()
+                        .temperature(temperature).topP(0.95).doSample(true).build()
+                : org.eclipse.deeplearning4j.llm.generation.SamplingConfig.greedy();
+
+        // Auto-discover I/O names from the decoder model graph
+        org.eclipse.deeplearning4j.llm.generation.ModelIOConfig decoderIOConfig =
+                org.eclipse.deeplearning4j.llm.generation.ModelIOConfig.discover(decoder);
+
+        org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop loop =
+                org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop.builder()
+                        .decoder(decoder)
+                        .embedTokens(embedTokens)
+                        .tokenizer(tokenizer)
+                        .ioConfig(decoderIOConfig)
+                        .samplingConfig(samplingCfg)
+                        .maxNewTokens(maxNewTokens)
+                        .hiddenSize(hiddenSz)
+                        .build();
+
+        log.info("Using StaticKvCacheDecodeLoop for optimized decode (hiddenSize={})", hiddenSz);
+        return loop.decode(combinedEmbeddings, promptIds);
+    }
+
+    /**
+     * Compile all sub-models with Triton MAX_AUTOTUNE for optimal inference performance.
+     * This triggers Triton kernel compilation (CONST_GEN, GATHER, CONCAT, SPLIT, STACK,
+     * NORMALIZATION, ATTENTION) and CUDA graph capture.
+     * Must be called AFTER model loading and AFTER Environment.applyOptimalLLMConfig().
+     * First call is slow (compiles kernels); subsequent calls are fast (cached).
+     */
+    public void compileWithTriton() {
         try {
-            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
-            Nd4j.getExecutioner().commit();
-            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-            for (int d = 0; d < numDevices; d++) {
-                nativeOps.trimMemoryPool(d);
+            org.nd4j.autodiff.samediff.execution.DspCompilationMode mode =
+                    org.nd4j.autodiff.samediff.execution.DspCompilationMode.MAX_AUTOTUNE;
+            log.info("Compiling VLM sub-models with Triton MAX_AUTOTUNE...");
+            long start = System.currentTimeMillis();
+
+            if (decoder != null) {
+                log.info("  Compiling decoder...");
+                decoder.compileNativeDynamicShapePlan(mode);
             }
-            log.info("Trimmed CUDA memory pool on {} devices", numDevices);
+            if (visionEncoder != null) {
+                log.info("  Compiling vision encoder...");
+                visionEncoder.compileNativeDynamicShapePlan(mode);
+            }
+            if (embedTokens != null) {
+                log.info("  Compiling embed_tokens...");
+                embedTokens.compileNativeDynamicShapePlan(mode);
+            }
+
+            long elapsed = System.currentTimeMillis() - start;
+            log.info("Triton compilation complete in {}ms", elapsed);
         } catch (Exception e) {
-            log.warn("Failed to trim memory pool: {}", e.getMessage());
+            log.warn("Triton compilation failed (will fall back to standard execution): {}", e.getMessage());
         }
     }
 
@@ -1795,20 +1767,34 @@ public class VisionLanguageModel implements AutoCloseable {
         if (image == null) {
             throw new IllegalArgumentException("image must not be null");
         }
-        // Always pass rank-4 [batch, C, H, W] to the vision encoder.
-        // The ONNX model's placeholder may declare rank-5 [batch, frames, C, H, W],
-        // but the model's internal ops (permute, conv2d) use 4-element permutation
-        // vectors and expect rank-4 input. The model handles batch+frames flattening
-        // internally. Sending rank-5 causes permute/conv2d rank mismatch failures.
+        // Match the vision encoder's declared placeholder rank.
+        // The ONNX model may declare rank-5 [batch, frames, C, H, W] placeholder.
+        // The model graph internally reshapes rank-5 to rank-4 [batch*frames, C, H, W]
+        // before conv2d. If we pass rank-4 directly, the reshape op gets confused
+        // because it expects 5 dimensions. So add the frames dimension when needed.
+        boolean expectsFramed = visionEncoderExpectsFramedInput();
+        log.info("normalizeVisionInputShape: image.rank()={}, shape={}, expectsFramedInput={}",
+                image.rank(), java.util.Arrays.toString(image.shape()), expectsFramed);
+        if (image.rank() == 4 && expectsFramed) {
+            // [batch, C, H, W] -> [batch, 1, C, H, W] (single frame)
+            long[] shape = image.shape();
+            INDArray reshaped = image.reshape(shape[0], 1, shape[1], shape[2], shape[3]);
+            log.info("normalizeVisionInputShape: reshaped to rank-5 {}", java.util.Arrays.toString(reshaped.shape()));
+            return reshaped;
+        }
         return image;
     }
 
     private boolean visionEncoderExpectsFramedInput() {
         SDVariable pixelValues = visionEncoder.getVariable(visionEncoderIOConfig.getPixelValuesName());
         if (pixelValues == null) {
+            log.info("visionEncoderExpectsFramedInput: pixelValues variable is null");
             return false;
         }
         long[] shape = pixelValues.getShape();
+        log.info("visionEncoderExpectsFramedInput: pixelValues.getShape()={}, length={}",
+                shape != null ? java.util.Arrays.toString(shape) : "null",
+                shape != null ? shape.length : -1);
         return shape != null && shape.length == 5;
     }
 
@@ -2088,6 +2074,10 @@ public class VisionLanguageModel implements AutoCloseable {
     public void close() {
         if (!closed) {
             closed = true;
+            closeModel("decoder", decoder);
+            closeModel("embedTokens", embedTokens);
+            closeModel("visionEncoder", visionEncoder);
+
             if (tokenizer != null) {
                 try {
                     tokenizer.close();
@@ -2098,7 +2088,45 @@ public class VisionLanguageModel implements AutoCloseable {
             if (imagePreprocessor != null) {
                 imagePreprocessor.shutdown();
             }
-            // SameDiff instances are GC'd
+            if (workspace != null) {
+                try {
+                    workspace.close();
+                } catch (Exception e) {
+                    log.warn("Error closing workspace", e);
+                }
+            }
+        }
+    }
+
+    private void closeModel(String label, SameDiff model) {
+        if (model == null) {
+            return;
+        }
+
+        try {
+            model.clearPlaceholders(true);
+        } catch (Exception e) {
+            log.warn("Error clearing placeholders for {}", label, e);
+        }
+        try {
+            model.clearOpInputs();
+        } catch (Exception e) {
+            log.warn("Error clearing op inputs for {}", label, e);
+        }
+        try {
+            model.resetSession();
+        } catch (Exception e) {
+            log.warn("Error resetting session for {}", label, e);
+        }
+        try {
+            SameDiffMemoryUtils.freeModelArrays(model);
+        } catch (Exception e) {
+            log.warn("Error freeing model arrays for {}", label, e);
+        }
+        try {
+            model.close();
+        } catch (Exception e) {
+            log.warn("Error closing {}", label, e);
         }
     }
 }

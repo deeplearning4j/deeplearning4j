@@ -1649,11 +1649,11 @@
                         <ND4J_DSP_CAST_SINK_MATMUL>${nd4j.dsp.castSinkMatmul}</ND4J_DSP_CAST_SINK_MATMUL>
                         <ND4J_TRITON_WARMUP_ONLY>${nd4j.triton.warmupOnly}</ND4J_TRITON_WARMUP_ONLY>
                         <ND4J_TRITON_SECTION_FUSION>${nd4j.triton.sectionFusion}</ND4J_TRITON_SECTION_FUSION>
-                        <ND4J_TRITON_FUSE_TRIVIAL_GATHER>${nd4j.triton.fuseTrivialGather}</ND4J_TRITON_FUSE_TRIVIAL_GATHER>
                         <ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>${nd4j.triton.fuseAttentionNeighborhoods}</ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>
                         <CUDA_LOG_FILE>${cuda.log.file}</CUDA_LOG_FILE>
                         <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
                         <ND4J_TRITON_TF32>${nd4j.triton.tf32}</ND4J_TRITON_TF32>
+                        <ND4J_DSP_TRACE_SLOT>${nd4j.dsp.traceSlot}</ND4J_DSP_TRACE_SLOT>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->

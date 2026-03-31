@@ -35,7 +35,8 @@ namespace platforms {
 // Global Average Pooling 2D using cuDNN
 static void globalAvgPool2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* output, bool isNCHW) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -62,8 +63,8 @@ static void globalAvgPool2dCUDNN(const LaunchContext* context, NDArray* input, N
   poolDesc.set2D(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -74,8 +75,10 @@ static void globalAvgPool2dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -84,7 +87,8 @@ static void globalAvgPool2dCUDNN(const LaunchContext* context, NDArray* input, N
 // Global Max Pooling 2D using cuDNN
 static void globalMaxPool2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* output, bool isNCHW) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -111,8 +115,8 @@ static void globalMaxPool2dCUDNN(const LaunchContext* context, NDArray* input, N
   poolDesc.set2D(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -123,8 +127,10 @@ static void globalMaxPool2dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -134,7 +140,8 @@ static void globalMaxPool2dCUDNN(const LaunchContext* context, NDArray* input, N
 static void globalAvgPool2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gradO,
                                     NDArray* output, NDArray* gradI, bool isNCHW) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -166,8 +173,8 @@ static void globalAvgPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
   poolDesc.set2D(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -181,8 +188,10 @@ static void globalAvgPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
                            xDesc, input->specialBuffer(),
                            beta, dxDesc, gradI->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI}, {input, gradO, output});
 }
@@ -192,7 +201,8 @@ static void globalAvgPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
 static void globalMaxPool2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gradO,
                                     NDArray* output, NDArray* gradI, bool isNCHW) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -224,8 +234,8 @@ static void globalMaxPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
   poolDesc.set2D(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -239,8 +249,10 @@ static void globalMaxPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
                            xDesc, input->specialBuffer(),
                            beta, dxDesc, gradI->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI}, {input, gradO, output});
 }
@@ -249,7 +261,8 @@ static void globalMaxPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
 // Global Average Pooling 3D using cuDNN
 static void globalAvgPool3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* output, bool isNCDHW) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -292,8 +305,8 @@ static void globalAvgPool3dCUDNN(const LaunchContext* context, NDArray* input, N
   poolDesc.set(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, 3, &windowDims[0], &padding[0], &stride[0]);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -304,8 +317,10 @@ static void globalAvgPool3dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("globalAvgPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("globalAvgPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -314,7 +329,8 @@ static void globalAvgPool3dCUDNN(const LaunchContext* context, NDArray* input, N
 // Global Max Pooling 3D using cuDNN
 static void globalMaxPool3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* output, bool isNCDHW) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -357,8 +373,8 @@ static void globalMaxPool3dCUDNN(const LaunchContext* context, NDArray* input, N
   poolDesc.set(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, 3, &windowDims[0], &padding[0], &stride[0]);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -369,8 +385,10 @@ static void globalMaxPool3dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("globalMaxPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("globalMaxPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }

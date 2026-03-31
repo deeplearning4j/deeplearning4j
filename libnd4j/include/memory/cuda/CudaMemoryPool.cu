@@ -25,6 +25,7 @@
 #include <system/Environment.h>
 #include <helpers/DebugHelper.h>
 #include <execution/LaunchContext.h>
+#include <graph/DspDiagnostics.h>
 #include <cstring>
 #include <cstdlib>
 #include <algorithm>
@@ -38,6 +39,27 @@ SD_INLINE cudaStream_t resolveCaptureStream(cudaStream_t stream) {
     return tl_graphCaptureStream;
   }
   return stream;
+}
+
+// Guard against re-entrancy when resolving LaunchContext stream.
+// LaunchContext::defaultContext()->getCudaStream() can trigger ContextBuffers::initialize()
+// which calls CudaMemoryPool::allocate() → infinite recursion.
+static thread_local bool tl_resolvingContextStream = false;
+
+// Resolve nullptr stream to a valid CUDA stream. Priority:
+// 1. DSP execution stream (set during DSP plan execution)
+// 2. LaunchContext default stream (if not re-entrant)
+// 3. nullptr (stream 0) as last resort
+SD_INLINE cudaStream_t resolveNullStream(cudaStream_t stream) {
+  if (stream != nullptr) return stream;
+  if (tl_dspExecutionStream != nullptr) return tl_dspExecutionStream;
+  if (!tl_resolvingContextStream) {
+    tl_resolvingContextStream = true;
+    auto* ctxStream = sd::LaunchContext::defaultContext()->getCudaStream();
+    tl_resolvingContextStream = false;
+    if (ctxStream != nullptr) return *ctxStream;
+  }
+  return nullptr;  // Last resort — first-time context init
 }
 
 CudaMemoryPool& CudaMemoryPool::getInstance() {
@@ -165,10 +187,28 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
     return true;  // Already initialized
   }
 
+  // This API is public, so it must not assume the caller already switched to
+  // the target device before querying device-local pool and memory attributes.
+  int savedDev = -1;
+  cudaError_t getDevErr = cudaGetDevice(&savedDev);
+  bool needDeviceRestore = (getDevErr == cudaSuccess && savedDev != deviceId);
+  if (needDeviceRestore) {
+    cudaError_t setDevErr = cudaSetDevice(deviceId);
+    if (setDevErr != cudaSuccess) {
+      cudaGetLastError();
+      return false;
+    }
+  }
+
+  auto restoreDevice = [needDeviceRestore, savedDev]() {
+    if (needDeviceRestore) cudaSetDevice(savedDev);
+  };
+
   // Get the device's default memory pool
   cudaError_t err = cudaDeviceGetDefaultMemPool(&pools_[deviceId], deviceId);
   if (err != cudaSuccess) {
     sd_debug("Failed to get default memory pool for device %d: %s\n", deviceId, cudaGetErrorString(err));
+    restoreDevice();
     return false;
   }
 
@@ -191,6 +231,7 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
 
   poolInitialized_[deviceId] = true;
   sd_debug("CUDA Memory Pool initialized for device %d\n", deviceId, "");
+  restoreDevice();
 
   return true;
 }
@@ -209,10 +250,15 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       if (actualDeviceId) *actualDeviceId = deviceId;
       return ptr;
     }
-    // Workspace exhausted — log and fall through to cudaMallocAsync
+    // Workspace exhausted — return nullptr to abort the current op gracefully.
+    // Falling through to cudaMallocAsync during graph capture corrupts the capture
+    // stream (error 901 / invalid argument), making the entire capture invalid.
+    // Returning nullptr causes the op to fail, which sets captureFailed=true on the
+    // segment and falls back to slot-by-slot execution for this segment.
     sd_printf("CudaMemoryPool: capture workspace exhausted (%zu + %zu > %zu), "
-              "falling back to cudaMallocAsync for %zu bytes\n",
+              "returning nullptr (aborting capture) for %zu bytes\n",
               tl_captureWorkspaceOffset, aligned, tl_captureWorkspaceSize, size);
+    return nullptr;
   }
   if (tl_graphExecutionActive && tl_captureWorkspace == nullptr) {
     static int captureAllocLogCount = 0;
@@ -241,7 +287,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   cudaGetDevice(&savedDev);
   bool needDeviceRestore = (savedDev != deviceId);
   if (needDeviceRestore) {
-    cudaSetDevice(deviceId);
+    cudaError_t setDevErr = cudaSetDevice(deviceId);
+    if (setDevErr != cudaSuccess) {
+      cudaGetLastError();
+      return nullptr;
+    }
   }
 
   // Helper to restore device before returning
@@ -250,6 +300,9 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   };
 
   cudaStream_t allocStream = resolveCaptureStream(stream);
+
+  // Resolve nullptr to a valid stream — prevents cross-stream pool fragmentation.
+  allocStream = resolveNullStream(allocStream);
 
   // If pools not enabled or not supported, fall back to regular cudaMalloc
   if (!enabled_.load() || !supported_) {
@@ -457,6 +510,16 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
               (postTrimFree > currentFreeMem ? (postTrimFree - currentFreeMem) : 0) / (1024*1024),
               postTrimPoolUsed / (1024*1024), postTrimPoolReserved / (1024*1024));
 
+    // trimPool() restores the caller's original device. Switch back to the
+    // requested device before retrying so the retry allocation lands where the
+    // diagnostics and actualDeviceId expect.
+    int retryPrevDev = -1;
+    cudaGetDevice(&retryPrevDev);
+    bool retryNeedRestore = (retryPrevDev != currentDeviceId);
+    if (retryNeedRestore) {
+      cudaSetDevice(currentDeviceId);
+    }
+
     // Try cudaMallocAsync first (reuses pool memory directly)
     // Use nullptr (default stream) to avoid LaunchContext recursion.
     void* ptr = nullptr;
@@ -464,6 +527,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (err == cudaSuccess && ptr != nullptr) {
       sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
+      if (retryNeedRestore) cudaSetDevice(retryPrevDev);
       return ptr;
     }
     cudaGetLastError();  // clear error
@@ -473,8 +537,10 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (err == cudaSuccess && ptr != nullptr) {
       sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc after trim on device %d\n", currentDeviceId);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
+      if (retryNeedRestore) cudaSetDevice(retryPrevDev);
       return ptr;
     }
+    if (retryNeedRestore) cudaSetDevice(retryPrevDev);
     cudaGetLastError();  // clear error
   }
 
@@ -666,8 +732,6 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // External memory is protected by DataBuffer::deleteSpecial() which checks
   // tl_graphExecutionActive and returns early.
 
-  cudaStream_t freeStream = resolveCaptureStream(stream);
-
   // Check host allocations with exception handling
   try {
     std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
@@ -712,8 +776,18 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // This mirrors the save/restore pattern in allocate().
   bool needDeviceRestore = (deviceId >= 0 && savedDev != deviceId);
   if (needDeviceRestore) {
-    cudaSetDevice(deviceId);
+    cudaError_t setDevErr = cudaSetDevice(deviceId);
+    if (setDevErr != cudaSuccess) {
+      cudaGetLastError();
+      return;
+    }
   }
+
+  // Resolve nullptr streams only AFTER switching to the allocation device.
+  // Otherwise LaunchContext/defaultContext can hand us a stream handle from the
+  // caller's device, and cudaFreeAsync would run on a foreign stream/device pair.
+  cudaStream_t freeStream = resolveCaptureStream(stream);
+  freeStream = resolveNullStream(freeStream);
 
   // Device memory: use cudaFreeAsync for stream-ordered deallocation.
   // Works for both pool and non-pool allocations since CUDA 11.2.
@@ -730,6 +804,9 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
+    // Log failed cudaFreeAsync for debugging — this path means memory is LEAKED
+    sd_printf("CudaMemoryPool::free: cudaFreeAsync FAILED for ptr=%p dev=%d stream=%p: %s\n",
+              ptr, deviceId, (void*)freeStream, cudaGetErrorString(err));
     cudaGetLastError();  // clear error
   }
   // Fallback for unsupported or error cases
@@ -762,9 +839,17 @@ void CudaMemoryPool::trimPool(int deviceId) {
   }
 
   int prevDevice = 0;
-  cudaGetDevice(&prevDevice);
+  cudaError_t getDevErr = cudaGetDevice(&prevDevice);
+  if (getDevErr != cudaSuccess) {
+    cudaGetLastError();
+    return;
+  }
   if (prevDevice != deviceId) {
-    cudaSetDevice(deviceId);
+    cudaError_t setDevErr = cudaSetDevice(deviceId);
+    if (setDevErr != cudaSuccess) {
+      cudaGetLastError();
+      return;
+    }
   }
 
   // Sync only the streams that have had cudaFreeAsync issued on them.
@@ -805,11 +890,24 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
   }
 
   int prevDevice = 0;
-  cudaGetDevice(&prevDevice);
+  cudaError_t getDevErr = cudaGetDevice(&prevDevice);
+  if (getDevErr != cudaSuccess) {
+    cudaGetLastError();
+    return;
+  }
 
   if (prevDevice != deviceId) {
-    cudaSetDevice(deviceId);
+    cudaError_t setDevErr = cudaSetDevice(deviceId);
+    if (setDevErr != cudaSuccess) {
+      cudaGetLastError();
+      return;
+    }
   }
+
+  // Diagnostic: pool state BEFORE trim
+  size_t preUsed = 0, preReserved = 0;
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &preUsed);
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &preReserved);
 
   // Sync the provided stream first (caller expects this stream's work to complete).
   if (stream != nullptr) {
@@ -825,6 +923,7 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
   // memory for new allocations on stream 0, causing OOM despite having enough total
   // memory. This matches trimPool()'s behavior but is called more frequently
   // (every periodic flush vs only on allocation failure).
+  int numDirtySynced = 0;
   {
     std::vector<cudaStream_t> streamsToSync;
     {
@@ -834,19 +933,46 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
       dirtyFreeStreams_[deviceId].clear();
     }
     for (auto s : streamsToSync) {
-      if (s == stream) continue;  // already synced above
+      // Only skip if the stream was actually synced above (non-null).
+      // When stream==nullptr, the initial sync block is skipped, so we must
+      // still sync nullptr entries here (default stream frees from destructors).
+      if (s == stream && stream != nullptr) continue;
       cudaError_t err = cudaStreamSynchronize(s);
       if (err != cudaSuccess) {
         cudaGetLastError();  // clear error from stale/destroyed stream
       }
+      numDirtySynced++;
     }
   }
+
+  // Diagnostic: pool state AFTER sync, BEFORE trim
+  size_t postSyncUsed = 0, postSyncReserved = 0;
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &postSyncUsed);
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &postSyncReserved);
 
   // Trim to release unused reserved memory back to the device
   cudaError_t trimErr = cudaMemPoolTrimTo(pools_[deviceId], 0);
   if (trimErr != cudaSuccess) {
     cudaGetLastError();  // clear sticky error
   }
+
+  // Diagnostic: pool state AFTER trim
+  size_t postTrimUsed = 0, postTrimReserved = 0;
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &postTrimUsed);
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &postTrimReserved);
+
+  DSP_DIAG(MEMORY, "trimPoolOnStream(dev=%d stream=%p): "
+            "dirtyStreams=%d | "
+            "pre: used=%zu MB reserved=%zu MB | "
+            "postSync: used=%zu MB (freed %zu MB) | "
+            "postTrim: used=%zu MB reserved=%zu MB (released %zu MB)",
+            deviceId, (void*)stream,
+            numDirtySynced,
+            preUsed/(1024*1024), preReserved/(1024*1024),
+            postSyncUsed/(1024*1024),
+            (preUsed > postSyncUsed) ? (preUsed - postSyncUsed)/(1024*1024) : (size_t)0,
+            postTrimUsed/(1024*1024), postTrimReserved/(1024*1024),
+            (postSyncReserved > postTrimReserved) ? (postSyncReserved - postTrimReserved)/(1024*1024) : (size_t)0);
 
   if (prevDevice != deviceId) {
     cudaSetDevice(prevDevice);

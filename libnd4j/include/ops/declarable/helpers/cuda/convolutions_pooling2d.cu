@@ -373,8 +373,11 @@ void ConvolutionUtils::pooling2d(graph::Context &block, NDArray&input, NDArray &
  output.tickWriteDevice();
  input.tickReadDevice();
 
- auto result = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
- if (result != 0) throw cuda_exception::build("Pooling2D failed", result);
+ // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+ if (!tl_graphExecutionActive) {
+   auto result = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
+   if (result != 0) throw cuda_exception::build("Pooling2D failed", result);
+ }
 }
 
 }  // namespace ops

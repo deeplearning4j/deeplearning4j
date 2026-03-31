@@ -234,11 +234,9 @@ void NativeDynamicShapePlan::maybeSplitUnstableSegments() {
         sub.cachedShapeKey = 0;
 #endif
         for (int s = start; s <= end; s++) {
-          slots_[s].shapeCacheValid = false;
+          slots_[s].state_ = NativeSlot::SlotState::WARMUP;
           slots_[s].cachedShapeKey = 0;
           slots_[s].cachedOutputShapes.clear();
-          slots_[s].frozenContextReady = false;
-          slots_[s].frozenConstantSlot = false;
         }
         result.push_back(std::move(sub));
       };
@@ -451,17 +449,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   if (needsCompile) {
     // Restore outputSlots_ from slotArrayCache_ for the compilation range.
     // When shapes aren't frozen, outputSlots_ was zeroed at the start of execute().
-    // The compiler needs access to warmup arrays for shape resolution.
-    if (slotArrayCache_ != nullptr) {
-      for (int si = seg.startSlot; si <= seg.endSlot && si < totalOutputSlots_; si++) {
-        if (outputSlots_[si] == nullptr && slotArrayCache_[si] != nullptr) {
-          auto* db = slotArrayCache_[si]->dataBuffer();
-          if (db != nullptr && db->isValid()) {
-            outputSlots_[si] = slotArrayCache_[si];
-          }
-        }
-      }
-    }
+    // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                  outputSlots_, totalOutputSlots_, segShapeKey,
                                  numSlots_)) {
@@ -741,16 +729,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           break;
       }
 
-      // Release schedule for CF slots
-      if (stepIdx < numSlots_) {
-        int releaseCount = releaseAtStepCounts_[stepIdx];
-        if (releaseCount > 0) {
-          for (int r = 0; r < releaseCount; r++) {
-            int slotIdx = releaseAtStep_[stepIdx][r];
-            outputSlots_[slotIdx] = nullptr;
-          }
-        }
-      }
+      // Release schedule removed: arrays persist (one array per slot, never nullified)
 
       stepIdx++;
       continue;
@@ -782,14 +761,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           Status batchStatus = executeBatchedGemmGroup(bgIdx, externalArrays, numExt, execStream);
 
           if (batchStatus == Status::OK) {
-            // Process release schedule for the trigger slot
-            int releaseCount = releaseAtStepCounts_[stepIdx];
-            if (releaseCount > 0) {
-              for (int r = 0; r < releaseCount; r++) {
-                int slotIdx2 = releaseAtStep_[stepIdx][r];
-                outputSlots_[slotIdx2] = nullptr;
-              }
-            }
+            // Release schedule removed: arrays persist (one array per slot)
             stepIdx++;
             continue;
           }
@@ -798,14 +770,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                     bgIdx, (int)batchStatus);
         } else {
           // Non-first member: output already computed by the trigger's batch call.
-          // Skip execution but still process the release schedule.
-          int releaseCount = releaseAtStepCounts_[stepIdx];
-          if (releaseCount > 0) {
-            for (int r = 0; r < releaseCount; r++) {
-              int slotIdx2 = releaseAtStep_[stepIdx][r];
-              outputSlots_[slotIdx2] = nullptr;
-            }
-          }
+          // Release schedule removed: arrays persist (one array per slot)
           stepIdx++;
           continue;
         }
@@ -827,14 +792,13 @@ executeSlot_retry:
                                  msg.find("out of memory") != std::string::npos ||
                                  msg.find("Error code: [2]") != std::string::npos)) {
         retriedAfterTrim = true;
-        DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, flushing pending frees and retrying...",
+        DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
                   stepIdx, slots_[stepIdx].opName.c_str());
         cudaGetLastError();
         if (stream) {
           cudaStream_t execStr = *static_cast<cudaStream_t*>(stream);
           cudaStreamSynchronize(execStr);
         }
-        flushPendingClose(stream);
         cudaStreamSynchronize(static_cast<cudaStream_t>(nullptr));
         {
           cudaMemPool_t pool = nullptr;
@@ -876,8 +840,16 @@ executeSlot_retry:
         if (srcIdx >= 0) {
           NDArray* inp = (srcIdx < totalOutputSlots_ ? outputSlots_[srcIdx] : nullptr);
           if (inp != nullptr) {
-            DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: rank=%lld",
-                      i, srcIdx, (long long)inp->rankOf());
+            // Protect rankOf() call — if shapeInfo is null, rankOf() would throw
+            // and propagate out of this catch handler, causing cascading failures.
+            try {
+              DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: rank=%lld shapeInfo=%p db=%p",
+                        i, srcIdx, (long long)inp->rankOf(),
+                        (void*)inp->shapeInfo(), (void*)inp->dataBuffer());
+            } catch (...) {
+              DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: ptr=%p (shapeInfo INVALID)",
+                        i, srcIdx, (void*)inp);
+            }
           } else {
             DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: null", i, srcIdx);
           }
@@ -895,24 +867,31 @@ executeSlot_retry:
       return status;
     }
 
+    // Classify ownership for all outputs produced by this slot.
+    // This populates slotOwnership_[si] with SLOT_OWNED, VIEW_OF_SLOT,
+    // VIEW_OF_WEIGHT, etc., and maintains viewRefCount on parent slots.
+    // Runs in parallel with existing cleanup logic during Phase 1 integration.
+    if (slotOwnership_ != nullptr) {
+      for (int o = 0; o < slot.numOutputs; o++) {
+        int si = slot.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
+          classifyAndUpdateOwnership(
+              slotOwnership_[si], outputSlots_[si], si,
+              externalArrays, numExt,
+              outputSlots_, totalOutputSlots_,
+              slotOwnership_);
+        }
+      }
+    }
+
     // Record op for FunctionalReplayHandle capture
     if (seg.replayHandle && seg.replayHandle->getState() == ReplayState::CAPTURING) {
       auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.replayHandle.get());
       if (funcHandle) funcHandle->recordOp(slot.op, stepIdx);
     }
 
-    int releaseCount = releaseAtStepCounts_[stepIdx];
-    if (releaseCount > 0) {
-      for (int r = 0; r < releaseCount; r++) {
-        int slotIdx = releaseAtStep_[stepIdx][r];
-        outputSlots_[slotIdx] = nullptr;
-      }
-    }
-
-    if (!streamIsCapturing &&
-        ((stepIdx % 100 == 99) || pendingCloseBytes_ > 256ULL * 1024 * 1024)) {
-      flushPendingClose(stream);
-    }
+    // Release schedule removed: arrays persist (one array per slot, never nullified).
+    // Same plan = same shapes. Arrays allocated on first execution, reused forever.
 
     stepIdx++;
   }

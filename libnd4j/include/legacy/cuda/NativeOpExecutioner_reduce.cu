@@ -427,11 +427,15 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext* lc, int opNum, const
                 dimension, dimensionLength, 1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
 
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execReduce3All failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }}
+  // Skip sync during CUDA graph capture — kernels are recorded, not executed.
+  if (!sd::tl_graphExecutionActive) {
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0) {
+      std::string errorMessage = "execReduce3All failed with error code: " + std::to_string(static_cast<int>(res));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const void* hX, const sd::LongType* hXShapeInfo,
@@ -469,9 +473,12 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const
              dimensionLength, 1, allocationPointer, tadShapeInfo, tadOffsets, yTadShapeInfo, yTadOffsets),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
 
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execReduce3TAD failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
+  // Skip sync during CUDA graph capture — kernels are recorded, not executed.
+  if (!sd::tl_graphExecutionActive) {
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0) {
+      std::string errorMessage = "execReduce3TAD failed with error code: " + std::to_string(static_cast<int>(res));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 }

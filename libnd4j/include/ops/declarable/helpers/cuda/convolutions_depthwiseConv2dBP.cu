@@ -22,6 +22,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/NDArrayFactory.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/col2im.h>
@@ -127,8 +128,10 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   helpers::col2im(*input->getContext(), &columns, gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
-  // Synchronize before cleanup for all cases
-  cudaStreamSynchronize(*input->getContext()->getCudaStream());
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+  if (!tl_graphExecutionActive) {
+    cudaStreamSynchronize(*input->getContext()->getCudaStream());
+  }
 
   if (!isNCHW) {
     delete input;

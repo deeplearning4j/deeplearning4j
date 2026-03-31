@@ -1192,15 +1192,6 @@ public interface Environment {
     default void setTritonFuseCastChains(boolean v) {}
 
     /**
-     * Fuse trivial (identity/offset) gather with following element-wise ops.
-     * Reduces section count by ~100-200 for seq=1 decode patterns.
-     * Controlled by ND4J_TRITON_FUSE_TRIVIAL_GATHER env var.
-     * @return true if enabled (default: true)
-     */
-    default boolean tritonFuseTrivialGather() { return true; }
-    default void setTritonFuseTrivialGather(boolean v) {}
-
-    /**
      * Treat identity permute patterns as no-op for seq=1 decode.
      * Reduces section count by ~60-100 for typical attention patterns.
      * Controlled by ND4J_TRITON_SPECIALIZE_PERMUTE_SEQ1 env var.
@@ -1208,15 +1199,6 @@ public interface Environment {
      */
     default boolean tritonSpecializePermuteSeq1() { return true; }
     default void setTritonSpecializePermuteSeq1(boolean v) {}
-
-    /**
-     * Eliminate concat→split or split→concat pairs (canceling patterns).
-     * Reduces section count by ~50-100 when patterns detected.
-     * Controlled by ND4J_TRITON_ELIMINATE_CONCAT_SPLIT_PAIRS env var.
-     * @return true if enabled (default: true)
-     */
-    default boolean tritonEliminateConcatSplitPairs() { return true; }
-    default void setTritonEliminateConcatSplitPairs(boolean v) {}
 
     /**
      * Fuse matmul→bias→activation patterns (HIGH RISK - accuracy issues possible).
@@ -1228,9 +1210,9 @@ public interface Environment {
     default void setTritonFusedMatmul(boolean v) {}
 
     /**
-     * Fuse GATHER/CONCAT/STACK ops around attention neighborhoods.
-     * Reduces section fragmentation around flash attention by merging
-     * attention-adjacent data movement ops into larger Triton ranges.
+     * Bias Triton fusion toward GATHER/CONCAT/STACK ops around attention neighborhoods.
+     * Reduces section fragmentation around flash attention by preferring larger
+     * Triton compile ranges near attention-adjacent data movement patterns.
      * Controlled by ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS env var.
      * @return true if enabled (default: true)
      */
@@ -1382,12 +1364,12 @@ public interface Environment {
     default void setTritonArgDirtyTracking(boolean enabled) {}
 
     /**
-     * Whether section fusion is enabled for Triton mega-kernel merging.
-     * When enabled, non-elementwise section types (GATHER, CONCAT, CONST_GEN, SPLIT, STACK)
-     * can merge with adjacent sections into mega-kernels via buildSectionedModule() DAG analysis.
-     * @return true if section fusion is enabled (default: false)
+     * Whether section fusion is enabled for Triton compile-range fusion.
+     * When enabled, the compiler may coalesce adjacent Triton-compatible sections into
+     * larger launch ranges and safely post-merge sections that share the same 1D skeleton.
+     * @return true if section fusion is enabled (default: true)
      */
-    default boolean tritonSectionFusion() { return false; }
+    default boolean tritonSectionFusion() { return true; }
     default void setTritonSectionFusion(boolean enabled) {}
 
     /**
@@ -1399,9 +1381,9 @@ public interface Environment {
 
     /**
      * Minimum fusion score required to merge two adjacent sections.
-     * @return the minimum score (default: 1.0)
+     * @return the minimum score (default: 5.0)
      */
-    default float tritonFusionMinScore() { return 1.0f; }
+    default float tritonFusionMinScore() { return 5.0f; }
     default void setTritonFusionMinScore(float score) {}
 
     /**

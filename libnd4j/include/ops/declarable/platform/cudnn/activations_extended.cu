@@ -64,7 +64,8 @@ PLATFORM_IMPL(softplus, ENGINE_CUDA) {
   auto output = OUTPUT_VARIABLE(0);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *block.launchContext()->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(block.launchContext()->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -76,8 +77,8 @@ PLATFORM_IMPL(softplus, ENGINE_CUDA) {
   // CUDNN_ACTIVATION_SOFTPLUS is value 8 in cuDNN 8+
   actDesc.set(static_cast<cudnnActivationMode_t>(8), CUDNN_PROPAGATE_NAN, 1.0);
 
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -88,8 +89,10 @@ PLATFORM_IMPL(softplus, ENGINE_CUDA) {
       cudnnActivationForward(*handle, actDesc, alpha, xDesc, input->specialBuffer(),
                              beta, xDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("softplus CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("softplus CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 
@@ -119,7 +122,8 @@ PLATFORM_IMPL(gelu, ENGINE_CUDA) {
   auto output = OUTPUT_VARIABLE(0);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *block.launchContext()->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(block.launchContext()->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -157,8 +161,8 @@ PLATFORM_IMPL(gelu, ENGINE_CUDA) {
   ActivationDescExt actDesc;
   actDesc.set(CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0.0);
 
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -177,8 +181,10 @@ PLATFORM_IMPL(gelu, ENGINE_CUDA) {
   *output *= temp2;
   *output *= 0.5;
 
-  auto cudaErr = cudaStreamSynchronize(*contextPtr->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("gelu CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("gelu CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   return Status::OK;
 }
@@ -206,7 +212,8 @@ PLATFORM_IMPL(mish, ENGINE_CUDA) {
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
   auto contextPtr = block.launchContext();
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *contextPtr->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -231,8 +238,8 @@ PLATFORM_IMPL(mish, ENGINE_CUDA) {
   ActivationDescExt actDesc;
   actDesc.set(CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0.0);
 
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -246,8 +253,10 @@ PLATFORM_IMPL(mish, ENGINE_CUDA) {
   // Multiply by x: output = x * tanh(softplus(x))
   input->applyPairwiseTransform(pairwise::Multiply, &tanhResult, output);
 
-  auto cudaErr = cudaStreamSynchronize(*contextPtr->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("mish CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("mish CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   return Status::OK;
 }
@@ -276,7 +285,8 @@ PLATFORM_IMPL(hardswish, ENGINE_CUDA) {
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
   auto contextPtr = block.launchContext();
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *contextPtr->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -296,8 +306,8 @@ PLATFORM_IMPL(hardswish, ENGINE_CUDA) {
   ActivationDescExt actDesc;
   actDesc.set(CUDNN_ACTIVATION_CLIPPED_RELU, CUDNN_PROPAGATE_NAN, 6.0);
 
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -312,8 +322,10 @@ PLATFORM_IMPL(hardswish, ENGINE_CUDA) {
   input->applyPairwiseTransform(pairwise::Multiply, &relu6Result, output);
   *output /= 6.0;
 
-  auto cudaErr = cudaStreamSynchronize(*contextPtr->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("hardswish CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("hardswish CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   return Status::OK;
 }
@@ -342,7 +354,8 @@ PLATFORM_IMPL(hardsigmoid, ENGINE_CUDA) {
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
   auto contextPtr = block.launchContext();
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *contextPtr->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -359,8 +372,8 @@ PLATFORM_IMPL(hardsigmoid, ENGINE_CUDA) {
   ActivationDescExt actDesc;
   actDesc.set(CUDNN_ACTIVATION_CLIPPED_RELU, CUDNN_PROPAGATE_NAN, 6.0);
 
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -374,8 +387,10 @@ PLATFORM_IMPL(hardsigmoid, ENGINE_CUDA) {
   // Step 3: output = output / 6
   *output /= 6.0;
 
-  auto cudaErr = cudaStreamSynchronize(*contextPtr->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("hardsigmoid CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("hardsigmoid CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   return Status::OK;
 }

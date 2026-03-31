@@ -139,7 +139,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     auto& slot = slots_[s];
 
     // Skip frozen constants — they don't execute
-    if (slot.frozenConstantSlot) continue;
+    if (slot.frozenConstantSlot()) continue;
 
     // Skip identity ops — they wire output=input, no nullify happens
     if (slot.isIdentityOp) { skippedIdentity++; continue; }
@@ -269,24 +269,20 @@ void NativeDynamicShapePlan::launchBatchZero(cudaStream_t stream) {
   int count = static_cast<int>(batchZeroEntries_.size());
   if (count <= 0) return;
 
-  if (sd::Environment::getInstance().dspBatchZeroKernel()) {
-    // Single kernel mode: 1 graph node instead of N, ~797 fewer nodes.
-    // Each thread block zeros one buffer using vectorized int4 writes.
-    int threadsPerBlock = 256;
-    batchZeroKernel<<<count, threadsPerBlock, 0, stream>>>(
-        static_cast<void**>(batchZeroDevicePtrs_),
-        static_cast<int*>(batchZeroDeviceSizes_),
-        count);
-    DSP_DIAG(MEMORY, "launchBatchZero: single kernel (%d buffers, %d blocks)", count, count);
-  } else {
-    // Per-buffer memset mode: N graph nodes but guaranteed same semantics as
-    // per-slot nullify (same CUDA driver path for cudaMemsetAsync).
-    for (int i = 0; i < count; i++) {
-      if (batchZeroEntries_[i].ptr != nullptr && batchZeroEntries_[i].bytes > 0) {
-        cudaMemsetAsync(batchZeroEntries_[i].ptr, 0, batchZeroEntries_[i].bytes, stream);
-      }
-    }
-  }
+  // Always use the single-kernel path. This produces exactly 1 CUDA graph node
+  // instead of N cudaMemsetAsync nodes, which is:
+  //   1. Capture-compatible (no cudaMemsetAsync during stream capture)
+  //   2. Consistent (same execution path every time)
+  //   3. Performant (one kernel launch vs N memset API calls)
+  // The per-buffer cudaMemsetAsync fallback is removed — it was capture-incompatible
+  // (error 901: cudaErrorStreamCaptureUnsupported) and produced inconsistent
+  // captured vs non-captured execution behavior.
+  int threadsPerBlock = 256;
+  batchZeroKernel<<<count, threadsPerBlock, 0, stream>>>(
+      static_cast<void**>(batchZeroDevicePtrs_),
+      static_cast<int*>(batchZeroDeviceSizes_),
+      count);
+  DSP_DIAG(MEMORY, "launchBatchZero: single kernel (%d buffers, %d blocks)", count, count);
 }
 
 void NativeDynamicShapePlan::setBatchZeroActive(bool active) {

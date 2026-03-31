@@ -22,6 +22,7 @@
 //
 #include <cublas_v2.h>
 #include <exceptions/cuda_exception.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <ops/specials_cuda.h>
@@ -198,9 +199,13 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     throw cuda_exception::build("MmulHelper::mmulMxM cuda execution failed !", status);
   }
 
-  auto cudaResult = cudaStreamSynchronize(*stream);
-  if (cudaResult != 0) {
-    throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);
+  // During CUDA graph capture, cudaStreamSynchronize is illegal. Stream
+  // ordering guarantees cuBLAS results are available to downstream kernels.
+  if (!tl_graphExecutionActive) {
+    auto cudaResult = cudaStreamSynchronize(*stream);
+    if (cudaResult != 0) {
+      throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);
+    }
   }
 
   for (int i = 0; i < bS; ++i)

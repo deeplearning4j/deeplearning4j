@@ -24,6 +24,7 @@
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/svd.h>
@@ -483,8 +484,10 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   int svdDevId3 = 0; cudaGetDevice(&svdDevId3);
   devInfo = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType) * bS, svdDevId3, nullptr));
   if (devInfo == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for devInfo");
-  auto status2 = cudaDeviceSynchronize(); // keep existing sync
-  status2 = cudaDeviceSynchronize();
+  // During CUDA graph capture, synchronous calls are illegal.
+  cudaError_t status2 = cudaSuccess;
+  if (!tl_graphExecutionActive) { status2 = cudaDeviceSynchronize(); }
+  if (!tl_graphExecutionActive) { status2 = cudaDeviceSynchronize(); }
   if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
 
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
@@ -520,7 +523,8 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   void* dWork = nullptr;
   dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId3, nullptr);
   if (dWork == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for dWork");
-  status2 = cudaDeviceSynchronize();
+  // During CUDA graph capture, synchronous calls are illegal.
+  if (!tl_graphExecutionActive) { status2 = cudaDeviceSynchronize(); }
   if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
 
   PointersManager manager(context, "svdBatched");

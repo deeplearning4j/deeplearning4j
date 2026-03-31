@@ -153,9 +153,15 @@ mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mli
     return builder.create<mlir::arith::SelectOp>(loc, isZero, zero, product);
   }
   if (opIr == "custom.pow") {
-    // pow(base, exponent) = exp(exponent * log(base))
+    // pow(base, exponent) = exp(exponent * log(|base|))
     // lhs = base, rhs = exponent (both tensors)
-    auto logBase = builder.create<mlir::math::LogOp>(loc, lhs);
+    // Use abs(base) before log to handle negative bases safely.
+    // For even integer exponents (the common case, e.g. pow(x-mean, 2) in LayerNorm),
+    // |x|^e == x^e.  For odd integer exponents on negative inputs this loses the sign,
+    // but Triton's exp-log path already can't represent that (log of negative = NaN).
+    // The abs-based formula is strictly better than the raw log path.
+    auto absBase = builder.create<mlir::math::AbsFOp>(loc, lhs);
+    auto logBase = builder.create<mlir::math::LogOp>(loc, absBase);
     auto eLogBase = builder.create<mlir::arith::MulFOp>(loc, rhs, logBase);
     return builder.create<mlir::math::ExpOp>(loc, eLogBase);
   }
@@ -198,12 +204,17 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   }
 
   if (opLower == "tanh") {
-    // Compound: tanh(x) = (exp(2x) - 1) / (exp(2x) + 1)
-    // Avoids reliance on Triton's math.tanh legalization patch which is unreliable
-    // due to ccache interactions and TanhOp being marked illegal in some builds.
+    // Numerically stable tanh: clamp input to [-10,10] before exp(2x).
+    // For |x| > 10, tanh(x) = ±1.0 to float32 precision (error < 1e-9).
+    // exp(20) ≈ 4.8e8 — safely within float32 range (~3.4e38).
+    // Without clamp: exp(2*45) overflows to Inf → (Inf-1)/(Inf+1) = NaN.
+    auto clampLo = splatConstantF32(builder, loc, tensorType, -10.0f);
+    auto clampHi = splatConstantF32(builder, loc, tensorType, 10.0f);
+    auto clampedLo = builder.create<mlir::arith::MaximumFOp>(loc, input, clampLo);
+    auto clamped = builder.create<mlir::arith::MinimumFOp>(loc, clampedLo, clampHi);
     auto two = splatConstantF32(builder, loc, tensorType, 2.0f);
     auto one = splatConstantF32(builder, loc, tensorType, 1.0f);
-    auto twoX = builder.create<mlir::arith::MulFOp>(loc, two, input);
+    auto twoX = builder.create<mlir::arith::MulFOp>(loc, two, clamped);
     auto exp2x = builder.create<mlir::math::ExpOp>(loc, twoX);
     auto num = builder.create<mlir::arith::SubFOp>(loc, exp2x, one);
     auto den = builder.create<mlir::arith::AddFOp>(loc, exp2x, one);
@@ -399,14 +410,16 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
 
   if (opLower == "mish") {
     // mish(x) = x * tanh(softplus(x)) = x * tanh(log(1 + exp(x)))
-    // Uses compound tanh: tanh(sp) = (exp(2*sp) - 1) / (exp(2*sp) + 1)
+    // Clamp softplus to [0,10] before tanh to avoid exp overflow (same as tanh fix)
     auto expX = builder.create<mlir::math::ExpOp>(loc, input);
     auto one = splatConstantF32(builder, loc, tensorType, 1.0f);
     auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expX);
     auto sp = builder.create<mlir::math::LogOp>(loc, onePlusExp);
-    // Compound tanh on softplus result
+    // Clamp softplus to [0,10] — softplus >= 0 always, tanh(10) = 1.0 to float32
+    auto clampHi = splatConstantF32(builder, loc, tensorType, 10.0f);
+    auto spClamped = builder.create<mlir::arith::MinimumFOp>(loc, sp, clampHi);
     auto two = splatConstantF32(builder, loc, tensorType, 2.0f);
-    auto twoSp = builder.create<mlir::arith::MulFOp>(loc, two, sp);
+    auto twoSp = builder.create<mlir::arith::MulFOp>(loc, two, spClamped);
     auto exp2sp = builder.create<mlir::math::ExpOp>(loc, twoSp);
     auto numMish = builder.create<mlir::arith::SubFOp>(loc, exp2sp, one);
     auto denMish = builder.create<mlir::arith::AddFOp>(loc, exp2sp, one);

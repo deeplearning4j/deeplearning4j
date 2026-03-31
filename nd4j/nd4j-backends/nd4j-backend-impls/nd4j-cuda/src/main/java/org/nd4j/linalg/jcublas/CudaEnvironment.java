@@ -1196,17 +1196,9 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setTritonFuseCastChains(boolean v) { e.setTritonFuseCastChains(v); }
     @Override
-    public boolean tritonFuseTrivialGather() { return e.tritonFuseTrivialGather(); }
-    @Override
-    public void setTritonFuseTrivialGather(boolean v) { e.setTritonFuseTrivialGather(v); }
-    @Override
     public boolean tritonSpecializePermuteSeq1() { return e.tritonSpecializePermuteSeq1(); }
     @Override
     public void setTritonSpecializePermuteSeq1(boolean v) { e.setTritonSpecializePermuteSeq1(v); }
-    @Override
-    public boolean tritonEliminateConcatSplitPairs() { return e.tritonEliminateConcatSplitPairs(); }
-    @Override
-    public void setTritonEliminateConcatSplitPairs(boolean v) { e.setTritonEliminateConcatSplitPairs(v); }
     @Override
     public boolean tritonFusedMatmul() { return e.tritonFusedMatmul(); }
     @Override

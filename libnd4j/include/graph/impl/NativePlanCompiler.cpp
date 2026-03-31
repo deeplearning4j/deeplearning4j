@@ -17,6 +17,8 @@
  ******************************************************************************/
 
 #include <graph/NativePlanCompiler.h>
+#include <graph/PlanDefinition.h>
+#include <graph/ExecutionState.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/generated/graph_generated.h>
 #include <helpers/helper_hash.h>
@@ -42,6 +44,27 @@ std::string normalizeOpName(const std::string& opName) {
   return normalized;
 }
 }  // namespace
+
+// ─── Structural iArg table ──────────────────────────────────────────────────
+
+/**
+ * Returns the number of "structural" iArgs for an op — these are control parameters
+ * (masks, mode flags, axis indices) that are always passed via iArgs regardless of
+ * whether data parameters come from input tensors or from iArgs.
+ * Returns -1 if all iArgs are structural (the default for most ops).
+ */
+static int getStructuralIArgCount(const std::string& opName) {
+    static const std::unordered_map<std::string, int> STRUCTURAL_IARGS = {
+        {"strided_slice", 5},   // 5 mask bits (begin/end/shrink/new_axis/ellipsis)
+        {"concat", 1},          // axis
+        {"split", 1},           // num_splits
+        {"split_v", 1},         // axis
+        {"one_hot", 2},         // axis, depth
+        {"top_k", 1},           // k
+    };
+    auto it = STRUCTURAL_IARGS.find(opName);
+    return (it != STRUCTURAL_IARGS.end()) ? it->second : -1;
+}
 
 // ─── Op classification ─────────────────────────────────────────────────────
 
@@ -475,15 +498,20 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       auto* extraInteger = node->extraInteger();
       if (extraInteger && extraInteger->size() > 0) {
         int numToUse = extraInteger->size();
-        // strided_slice: iArgs are [begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask].
-        // begin/end/strides come as input tensors (inputs 1-3), NOT as iArgs.
-        // If extraInteger has more than 5 values, the op's `iArgs.size() > 5` check
-        // would incorrectly take the static path, interpreting garbage as slice indices.
-        // Cap to 5 mask values so the op correctly reads from input tensors.
-        if (slot.opName == "strided_slice" && numToUse > 5 && slot.numInputs > 1) {
-          DSP_DIAG(COMPILE, "NativePlanCompiler: strided_slice at step %d has %d iArgs but %d inputs — capping iArgs to 5 masks",
-                   stepIdx, numToUse, slot.numInputs);
-          numToUse = 5;
+        // Set structural iArg count from compile-time table
+        auto normalizedForIArgs = normalizeOpName(slot.opName);
+        slot.structuralIArgCount = getStructuralIArgCount(normalizedForIArgs);
+
+        // Cap iArgs when data comes from input tensors.
+        // Generic version of the old strided_slice-specific fix:
+        // When an op has structural iArgs (masks, mode flags, axis) followed by data iArgs
+        // (begin/end/strides, split sizes, etc.), and the data comes from input tensors,
+        // we must cap to only the structural iArgs so the op reads data from inputs.
+        if (slot.structuralIArgCount >= 0 && numToUse > slot.structuralIArgCount
+            && slot.numInputs > 1) {
+          DSP_DIAG(COMPILE, "Capping iArgs for op %s from %d to %d (structural only, data from inputs)",
+                   slot.opName.c_str(), numToUse, slot.structuralIArgCount);
+          numToUse = slot.structuralIArgCount;
         }
         slot.numIArgs = numToUse;
         slot.iArgs = new LongType[slot.numIArgs];
@@ -592,11 +620,13 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->outputSlots_ = new NDArray*[totalOutputSlots];
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * totalOutputSlots);
 
-  plan->slotArrayCache_ = new NDArray*[totalOutputSlots];
-  std::memset(plan->slotArrayCache_, 0, sizeof(NDArray*) * totalOutputSlots);
+  // slotArrayCache_ unified with outputSlots_ (same pointer, Phase 2)
+  plan->slotArrayCache_ = plan->outputSlots_;
 
   plan->slotIsViewProducer_ = new bool[totalOutputSlots];
   std::memset(plan->slotIsViewProducer_, 0, sizeof(bool) * totalOutputSlots);
+
+  plan->slotOwnership_ = new SlotBufferInfo[totalOutputSlots]();  // value-initialized to UNSET
 
   plan->contextPool_ = new Context*[numSteps];
   for (int i = 0; i < numSteps; i++) {
@@ -730,6 +760,34 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
   // Build CUDA graph segments
   plan->buildSegments();
+
+  // ── Phase 3: Build shared immutable PlanDefinition ─────────────────────
+  // Populated alongside existing fields as a behavioral no-op.
+  // Future phases will migrate reads to use planDef_ instead.
+  {
+    auto builder = PlanDefinition::Builder();
+    builder.setNumSlots(plan->numSlots_)
+           .setTotalOutputSlots(plan->totalOutputSlots_)
+           .setNumExternalInputs(plan->numExternalInputs_)
+           .setNumRequestedOutputs(plan->numRequestedOutputs_)
+           .setRequestedOutputSlotIndices(plan->requestedOutputSlotIndices_,
+                                          plan->numRequestedOutputs_)
+           .setExternalInputNames(plan->externalInputNames_)
+           .setExternalInputIsVariable(plan->externalInputIsVariable_)
+           .setHasControlFlow(plan->hasControlFlow_)
+           .setNumLoopRegions(plan->numLoopRegions_)
+           .setBackendPriority(plan->backendPriority_);
+    plan->planDef_ = builder.build();
+    DSP_DIAG(COMPILE, "PlanDefinition created: %d slots, %d outputs, %d ext inputs, refCount=%d",
+             plan->planDef_->numSlots(), plan->planDef_->totalOutputSlots(),
+             plan->planDef_->numExternalInputs(), plan->planDef_->refCount());
+  }
+
+  // ── Phase 4: Create per-instance ExecutionState ────────────────────────
+  // Populated alongside existing fields as a behavioral no-op.
+  // Future phases will migrate mutable state into execState_.
+  plan->execState_ = new ExecutionState(plan->totalOutputSlots_);
+  DSP_DIAG(COMPILE, "ExecutionState created: %d output slots", plan->totalOutputSlots_);
 
   // Diagnostic: count how many slots need zeroed output and compilation summary
   {

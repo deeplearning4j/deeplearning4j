@@ -70,7 +70,8 @@ static void createTensorDescriptor(CudnnTensor& desc, NDArray* arr, cudnnDataTyp
 // Scale tensor: output = alpha * input
 static void scaleTensorCUDNN(const LaunchContext* context, NDArray* input, NDArray* output, double alpha) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -79,7 +80,7 @@ static void scaleTensorCUDNN(const LaunchContext* context, NDArray* input, NDArr
     NDArray::prepareSpecialUse({output}, {input});
     cudaMemcpyAsync(output->specialBuffer(), input->specialBuffer(),
                     input->lengthOf() * input->sizeOfT(), cudaMemcpyDeviceToDevice,
-                    *context->getCudaStream());
+                    stream);
     NDArray::registerSpecialUse({output}, {input});
   }
 
@@ -98,8 +99,10 @@ static void scaleTensorCUDNN(const LaunchContext* context, NDArray* input, NDArr
       STRINGIZE(cudnnScaleTensor),
       cudnnScaleTensor(*handle, yDesc, output->specialBuffer(), pAlpha));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("scaleTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("scaleTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {});
 }
@@ -109,7 +112,8 @@ static void scaleTensorCUDNN(const LaunchContext* context, NDArray* input, NDArr
 static void transformTensorCUDNN(const LaunchContext* context, NDArray* input, NDArray* output,
                                   double alpha = 1.0, double beta = 0.0) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -131,8 +135,10 @@ static void transformTensorCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnTransformTensor(*handle, pAlpha, xDesc, input->specialBuffer(),
                            pBeta, yDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("transformTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("transformTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -207,7 +213,8 @@ PLATFORM_IMPL(leakyrelu, ENGINE_CUDA) {
   const double alpha = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.01;
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *block.launchContext()->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(block.launchContext()->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -259,7 +266,8 @@ PLATFORM_IMPL(selu, ENGINE_CUDA) {
   // scale ≈ 1.0507, alpha ≈ 1.6733
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *block.launchContext()->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(block.launchContext()->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -273,8 +281,8 @@ PLATFORM_IMPL(selu, ENGINE_CUDA) {
   ActivationDesc actDesc;
   actDesc.set(CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, 1.6732632423543772);  // alpha for SELU
 
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -294,8 +302,10 @@ PLATFORM_IMPL(selu, ENGINE_CUDA) {
       STRINGIZE(cudnnScaleTensor),
       cudnnScaleTensor(*handle, xDesc, output->specialBuffer(), scale));
 
-  auto cudaErr = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("selu CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("selu CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 
@@ -323,7 +333,8 @@ PLATFORM_IMPL(swish, ENGINE_CUDA) {
   auto output = OUTPUT_VARIABLE(0);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(block.launchContext()->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *block.launchContext()->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(block.launchContext()->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -333,8 +344,8 @@ PLATFORM_IMPL(swish, ENGINE_CUDA) {
   ActivationDesc actDesc;
   actDesc.set(CUDNN_ACTIVATION_SWISH, CUDNN_PROPAGATE_NAN, 1.0);
 
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -345,8 +356,10 @@ PLATFORM_IMPL(swish, ENGINE_CUDA) {
       cudnnActivationForward(*handle, actDesc, alpha, xDesc, input->specialBuffer(),
                              beta, xDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("swish CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("swish CUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 

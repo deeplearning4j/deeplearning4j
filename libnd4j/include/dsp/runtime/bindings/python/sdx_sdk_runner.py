@@ -11,18 +11,16 @@ import argparse
 import importlib
 import json
 import logging
-import re
 import sys
 import threading
-import time
 import uuid
 from concurrent import futures
 from dataclasses import dataclass
-from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
-from urllib.parse import urlparse
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+
+from fastapi import FastAPI, Header, HTTPException, Request, Response
+from pydantic import BaseModel, Field
 
 from sdx_runtime import ModelOptions, RunOptions, SdxRuntime
 from sdx_tensor_transport import (
@@ -164,253 +162,147 @@ class SdxModelRegistry:
         return named_outputs, _to_execution_report_dict(report)
 
 
-class _SdxRestHandler(BaseHTTPRequestHandler):
-    registry: SdxModelRegistry
+# ---------------------------------------------------------------------------
+# Pydantic request/response models
+# ---------------------------------------------------------------------------
 
-    _LOAD_RE = re.compile(r"^/v1/models:load$")
-    _UNLOAD_RE = re.compile(r"^/v1/models/([A-Za-z0-9_-]+):unload$")
-    _RUN_JSON_RE = re.compile(r"^/v1/models/([A-Za-z0-9_-]+):run$")
-    _RUN_NPZ_RE = re.compile(r"^/v1/models/([A-Za-z0-9_-]+):run-npz$")
 
-    server_version = "SdxSdkRunner/1.0"
+class LoadModelRequest(BaseModel):
+    model_path: str
+    model_options: Optional[Dict[str, Any]] = None
+    requested_outputs: Optional[List[str]] = None
 
-    def do_GET(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
-        if path == "/healthz":
-            self._send_json(
-                HTTPStatus.OK,
-                {
-                    "status": "ok",
-                    "abi_version": self.registry.abi_version(),
-                },
-            )
-            return
 
-        self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
+class LoadModelResponse(BaseModel):
+    model_id: str
+    abi_version: int
 
-    def do_POST(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
 
-        load_match = self._LOAD_RE.match(path)
-        if load_match:
-            self._handle_load_model()
-            return
+class UnloadModelResponse(BaseModel):
+    status: str
+    model_id: str
 
-        unload_match = self._UNLOAD_RE.match(path)
-        if unload_match:
-            self._handle_unload_model(unload_match.group(1))
-            return
 
-        run_json_match = self._RUN_JSON_RE.match(path)
-        if run_json_match:
-            self._handle_run_json(run_json_match.group(1))
-            return
+class RunJsonRequest(BaseModel):
+    inputs: List[Any]
+    outputs: List[Any]
+    run_options: Optional[Dict[str, Any]] = None
 
-        run_npz_match = self._RUN_NPZ_RE.match(path)
-        if run_npz_match:
-            self._handle_run_npz(run_npz_match.group(1))
-            return
 
-        self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
+class RunJsonResponse(BaseModel):
+    outputs: List[Any]
+    report: Dict[str, Any]
 
-    def log_message(self, fmt: str, *args) -> None:
-        logging.info("REST %s - %s", self.client_address[0], fmt % args)
 
-    def _read_body(self) -> bytes:
-        length_raw = self.headers.get("Content-Length")
-        if not length_raw:
-            return b""
-        try:
-            length = int(length_raw)
-        except ValueError as exc:
-            raise ValueError("Invalid Content-Length") from exc
-        if length < 0:
-            raise ValueError("Invalid Content-Length")
-        return self.rfile.read(length)
+class HealthResponse(BaseModel):
+    status: str
+    abi_version: int
 
-    def _read_json(self) -> Mapping[str, object]:
-        body = self._read_body()
-        try:
-            payload = json.loads(body.decode("utf-8"))
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"Invalid JSON payload: {exc}") from exc
-        if not isinstance(payload, dict):
-            raise ValueError("JSON payload must be an object")
-        return payload
 
-    def _send_json(
-        self,
-        status: HTTPStatus,
-        payload: Mapping[str, object],
-        extra_headers: Optional[Mapping[str, str]] = None,
-    ) -> None:
-        blob = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(blob)))
-        if extra_headers:
-            for key, value in extra_headers.items():
-                self.send_header(key, value)
-        self.end_headers()
-        self.wfile.write(blob)
+# ---------------------------------------------------------------------------
+# FastAPI application factory
+# ---------------------------------------------------------------------------
 
-    def _send_binary(
-        self,
-        status: HTTPStatus,
-        body: bytes,
-        content_type: str,
-        extra_headers: Optional[Mapping[str, str]] = None,
-    ) -> None:
-        self.send_response(status)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        if extra_headers:
-            for key, value in extra_headers.items():
-                self.send_header(key, value)
-        self.end_headers()
-        self.wfile.write(body)
 
-    def _handle_load_model(self) -> None:
-        try:
-            payload = self._read_json()
-            model_path = str(payload.get("model_path", "")).strip()
-            if not model_path:
-                raise ValueError("'model_path' is required")
+def create_app(registry: SdxModelRegistry) -> FastAPI:
+    """Create a FastAPI application wired to the given model registry."""
+    app = FastAPI(title="SDX SDK Runner", version="1.0")
 
-            raw_model_options = payload.get("model_options")
-            if raw_model_options is not None and not isinstance(raw_model_options, dict):
-                raise ValueError("'model_options' must be an object")
+    @app.get("/healthz", response_model=HealthResponse)
+    async def health():
+        return {"status": "ok", "abi_version": registry.abi_version()}
 
-            requested_outputs = payload.get("requested_outputs")
-            if requested_outputs is not None:
-                if not isinstance(requested_outputs, list):
-                    raise ValueError("'requested_outputs' must be an array of strings")
-                requested_outputs = [str(x) for x in requested_outputs]
+    @app.post("/v1/models:load", response_model=LoadModelResponse)
+    async def load_model(req: LoadModelRequest):
+        model_path = req.model_path.strip()
+        if not model_path:
+            raise HTTPException(status_code=400, detail="'model_path' is required")
 
-            model_id = self.registry.load_model(
-                model_path=model_path,
-                model_options=_parse_model_options(raw_model_options),
-                requested_outputs=requested_outputs,
-            )
-            self._send_json(
-                HTTPStatus.OK,
-                {
-                    "model_id": model_id,
-                    "abi_version": self.registry.abi_version(),
-                },
-            )
-        except ValueError as exc:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
-        except Exception as exc:  # pragma: no cover - runtime errors
-            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+        model_id = registry.load_model(
+            model_path=model_path,
+            model_options=_parse_model_options(req.model_options),
+            requested_outputs=req.requested_outputs,
+        )
+        return {"model_id": model_id, "abi_version": registry.abi_version()}
 
-    def _handle_unload_model(self, model_id: str) -> None:
-        unloaded = self.registry.unload_model(model_id)
+    @app.post("/v1/models/{model_id}:unload", response_model=UnloadModelResponse)
+    async def unload_model(model_id: str):
+        unloaded = registry.unload_model(model_id)
         if not unloaded:
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": f"Unknown model_id: {model_id}"})
-            return
-        self._send_json(HTTPStatus.OK, {"status": "unloaded", "model_id": model_id})
+            raise HTTPException(status_code=404, detail=f"Unknown model_id: {model_id}")
+        return {"status": "unloaded", "model_id": model_id}
 
-    def _handle_run_json(self, model_id: str) -> None:
+    @app.post("/v1/models/{model_id}:run", response_model=RunJsonResponse)
+    async def run_json(model_id: str, req: RunJsonRequest):
         try:
-            payload = self._read_json()
+            inputs = tensors_from_json_payload(req.inputs)
+            output_specs = parse_output_specs(req.outputs)
 
-            raw_inputs = payload.get("inputs")
-            if not isinstance(raw_inputs, list):
-                raise ValueError("'inputs' must be an array")
-            inputs = tensors_from_json_payload(raw_inputs)
-
-            raw_outputs = payload.get("outputs")
-            if not isinstance(raw_outputs, list):
-                raise ValueError("'outputs' must be an array")
-            output_specs = parse_output_specs(raw_outputs)
-
-            raw_run_options = payload.get("run_options")
-            if raw_run_options is not None and not isinstance(raw_run_options, dict):
-                raise ValueError("'run_options' must be an object")
-
-            outputs, report = self.registry.run(
+            outputs, report = registry.run(
                 model_id=model_id,
                 inputs=inputs,
                 output_specs=output_specs,
-                run_options=_parse_run_options(raw_run_options),
+                run_options=_parse_run_options(req.run_options),
             )
-
-            self._send_json(
-                HTTPStatus.OK,
-                {
-                    "outputs": tensors_to_json_payload(outputs),
-                    "report": report,
-                },
-            )
-        except ValueError as exc:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            return {"outputs": tensors_to_json_payload(outputs), "report": report}
         except KeyError:
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": f"Unknown model_id: {model_id}"})
-        except Exception as exc:  # pragma: no cover - runtime errors
-            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            raise HTTPException(status_code=404, detail=f"Unknown model_id: {model_id}")
 
-    def _handle_run_npz(self, model_id: str) -> None:
+    @app.post("/v1/models/{model_id}:run-npz")
+    async def run_npz(
+        model_id: str,
+        request: Request,
+        x_sdx_output_specs: str = Header(..., alias="X-SDX-Output-Specs"),
+        x_sdx_run_options: Optional[str] = Header(None, alias="X-SDX-Run-Options"),
+        x_sdx_input_order: Optional[str] = Header(None, alias="X-SDX-Input-Order"),
+    ):
+        parsed_specs = parse_json_header(x_sdx_output_specs, "X-SDX-Output-Specs")
+        if not isinstance(parsed_specs, list):
+            raise HTTPException(status_code=400, detail="X-SDX-Output-Specs must be a JSON array")
+        output_specs = parse_output_specs(parsed_specs)
+
+        run_options = None
+        if x_sdx_run_options:
+            parsed_run_options = parse_json_header(x_sdx_run_options, "X-SDX-Run-Options")
+            if not isinstance(parsed_run_options, dict):
+                raise HTTPException(status_code=400, detail="X-SDX-Run-Options must be a JSON object")
+            run_options = _parse_run_options(parsed_run_options)
+
+        body = await request.body()
+        inputs = decode_npz_inputs(body)
+
+        if x_sdx_input_order:
+            parsed_input_order = parse_json_header(x_sdx_input_order, "X-SDX-Input-Order")
+            if not isinstance(parsed_input_order, list) or not all(
+                isinstance(name, str) for name in parsed_input_order
+            ):
+                raise HTTPException(status_code=400, detail="X-SDX-Input-Order must be a JSON string array")
+            inputs = order_named_tensors(inputs, parsed_input_order)
+
         try:
-            raw_specs_header = self.headers.get("X-SDX-Output-Specs")
-            if not raw_specs_header:
-                raise ValueError("Missing required header: X-SDX-Output-Specs")
-
-            parsed_specs = parse_json_header(raw_specs_header, "X-SDX-Output-Specs")
-            if not isinstance(parsed_specs, list):
-                raise ValueError("X-SDX-Output-Specs must be a JSON array")
-            output_specs = parse_output_specs(parsed_specs)
-
-            raw_run_options_header = self.headers.get("X-SDX-Run-Options")
-            run_options = None
-            if raw_run_options_header:
-                parsed_run_options = parse_json_header(raw_run_options_header, "X-SDX-Run-Options")
-                if not isinstance(parsed_run_options, dict):
-                    raise ValueError("X-SDX-Run-Options must be a JSON object")
-                run_options = _parse_run_options(parsed_run_options)
-
-            body = self._read_body()
-            inputs = decode_npz_inputs(body)
-            raw_input_order_header = self.headers.get("X-SDX-Input-Order")
-            if raw_input_order_header:
-                parsed_input_order = parse_json_header(raw_input_order_header, "X-SDX-Input-Order")
-                if not isinstance(parsed_input_order, list) or not all(
-                    isinstance(name, str) for name in parsed_input_order
-                ):
-                    raise ValueError("X-SDX-Input-Order must be a JSON string array")
-                inputs = order_named_tensors(inputs, parsed_input_order)
-
-            outputs, report = self.registry.run(
+            outputs, report = registry.run(
                 model_id=model_id,
                 inputs=inputs,
                 output_specs=output_specs,
                 run_options=run_options,
             )
-
-            report_json = json.dumps(report, separators=(",", ":"))
-            payload = encode_npz_tensors(outputs)
-            self._send_binary(
-                HTTPStatus.OK,
-                payload,
-                content_type="application/x-sdx-npz",
-                extra_headers={"X-SDX-Execution-Report": report_json},
-            )
-        except ValueError as exc:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         except KeyError:
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": f"Unknown model_id: {model_id}"})
-        except Exception as exc:  # pragma: no cover - runtime errors
-            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            raise HTTPException(status_code=404, detail=f"Unknown model_id: {model_id}")
+
+        report_json = json.dumps(report, separators=(",", ":"))
+        payload = encode_npz_tensors(outputs)
+        return Response(
+            content=payload,
+            media_type="application/x-sdx-npz",
+            headers={"X-SDX-Execution-Report": report_json},
+        )
+
+    return app
 
 
-def _start_rest_server(registry: SdxModelRegistry, address: str, port: int) -> ThreadingHTTPServer:
-    handler = _SdxRestHandler
-    handler.registry = registry
-    server = ThreadingHTTPServer((address, port), handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True, name="sdx-rest-server")
-    thread.start()
-    logging.info("REST server listening on http://%s:%d", address, port)
-    return server
+# ---------------------------------------------------------------------------
+# gRPC server (unchanged — uses grpcio directly)
+# ---------------------------------------------------------------------------
 
 
 def _import_grpc_modules() -> Tuple[object, object, object]:
@@ -578,6 +470,11 @@ def _start_grpc_server(
     return server
 
 
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Serve SDX runtime over REST and gRPC")
     parser.add_argument("--library", default=None, help="Path/name of runtime library (libnd4jcpu/libnd4jcuda/libnd4jamd)")
@@ -624,12 +521,22 @@ def main() -> int:
         library_dirs=args.runtime_lib_dir,
         sdk_home=args.runtime_home,
     )
-    rest_server: Optional[ThreadingHTTPServer] = None
     grpc_server = None
 
     try:
         if not args.disable_rest:
-            rest_server = _start_rest_server(registry, args.rest_address, args.rest_port)
+            import uvicorn  # type: ignore
+            app = create_app(registry)
+            config = uvicorn.Config(
+                app,
+                host=args.rest_address,
+                port=args.rest_port,
+                log_level=args.log_level.lower(),
+            )
+            server = uvicorn.Server(config)
+            rest_thread = threading.Thread(target=server.run, daemon=True, name="sdx-rest-server")
+            rest_thread.start()
+            logging.info("REST server (FastAPI/Uvicorn) listening on http://%s:%d", args.rest_address, args.rest_port)
 
         if not args.disable_grpc:
             grpc_server = _start_grpc_server(
@@ -643,6 +550,7 @@ def main() -> int:
         if grpc_server is not None:
             grpc_server.wait_for_termination()
         else:
+            import time
             while True:
                 time.sleep(60)
     except KeyboardInterrupt:
@@ -650,9 +558,6 @@ def main() -> int:
     finally:
         if grpc_server is not None:
             grpc_server.stop(grace=2)
-        if rest_server is not None:
-            rest_server.shutdown()
-            rest_server.server_close()
         registry.close()
 
     return 0

@@ -224,15 +224,32 @@ void ContextBuffers::initialize() {
   auto res = cudaMallocAsync(&_reductionPointer, 1024 * 1024 * 8, 0);
   if (res != cudaSuccess) {
     _reductionPointer = nullptr;
-    throw cuda_exception::build("ContextBuffers: _reductionPointer cudaMallocAsync failed on device " +
-                                std::to_string(_deviceId), res);
+    // OOM on this device — log warning but do NOT throw.
+    // Throwing from ContextBuffers initialization (thread-local storage) causes
+    // terminate() → SIGABRT because the exception propagates through noexcept
+    // boundaries in thread destructors or TLS initialization.
+    // Ops that need reduction buffers will check for null and fail gracefully.
+    sd_printf("WARNING: ContextBuffers: _reductionPointer cudaMallocAsync failed on device %d "
+              "(error %d: %s). Ops requiring reduction/allocation buffers will fail on this device.\n",
+              _deviceId, (int)res, cudaGetErrorString(res));
+    cudaGetLastError();  // clear error
+    _scalarPointer = nullptr;
+    _allocationPointer = nullptr;
+    _initialized = true;
+    return;
   }
 
   res = cudaHostAlloc(reinterpret_cast<void**>(&_scalarPointer), 16, cudaHostAllocDefault);
   if (res != cudaSuccess) {
     cudaFreeAsync(_reductionPointer, 0);
     _reductionPointer = nullptr;
-    throw cuda_exception::build("_scalarPointer allocation failed", res);
+    _scalarPointer = nullptr;
+    _allocationPointer = nullptr;
+    sd_printf("WARNING: ContextBuffers: _scalarPointer allocation failed on device %d "
+              "(error %d: %s)\n", _deviceId, (int)res, cudaGetErrorString(res));
+    cudaGetLastError();
+    _initialized = true;
+    return;
   }
 
   res = cudaMallocAsync(&_allocationPointer, 1024 * 1024 * 8, 0);
@@ -242,8 +259,11 @@ void ContextBuffers::initialize() {
     cudaFreeHost(_scalarPointer);
     _scalarPointer = nullptr;
     _allocationPointer = nullptr;
-    throw cuda_exception::build("ContextBuffers: _allocationPointer cudaMallocAsync failed on device " +
-                                std::to_string(_deviceId), res);
+    sd_printf("WARNING: ContextBuffers: _allocationPointer cudaMallocAsync failed on device %d "
+              "(error %d: %s)\n", _deviceId, (int)res, cudaGetErrorString(res));
+    cudaGetLastError();
+    _initialized = true;
+    return;
   }
   // Sync default stream to ensure async allocations are complete before use.
   cudaStreamSynchronize(0);

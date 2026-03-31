@@ -92,7 +92,7 @@ void cudnn_gru_old(LaunchContext *contextPtr, NDArray *input, NDArray *inputWeig
   bool training = false;
   cudnnHandle_t handle = *(reinterpret_cast<cudnnHandle_t *>(contextPtr->getCuDnnHandle()));
 
-  auto stream = *(contextPtr->getCudaStream());
+  auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
   CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(handle, stream));
 
   CudnnTensorList xDescList(maxSeqLength);
@@ -298,7 +298,7 @@ void cudnn_gru_v8(LaunchContext *contextPtr, NDArray *input, NDArray *seqLengthA
   PointersManager manager(contextPtr, __func__);
   bool training = false;
   cudnnHandle_t handle = *(reinterpret_cast<cudnnHandle_t *>(contextPtr->getCuDnnHandle()));
-  auto stream = *(contextPtr->getCudaStream());
+  auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
   CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(handle, stream));
 
   auto cudnnType = cudnnDataType(input->dataType());

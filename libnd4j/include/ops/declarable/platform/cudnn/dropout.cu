@@ -35,7 +35,8 @@ namespace platforms {
 static void dropoutCUDNN(const LaunchContext* context, NDArray* input, NDArray* output,
                          NDArray* mask, double ratio, uint64_t seed) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -91,8 +92,10 @@ static void dropoutCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
       cudnnDropoutForward(*handle, dropoutDesc, xDesc, input->specialBuffer(),
                           xDesc, output->specialBuffer(), reserveSpace, reserveSpaceSize));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("dropoutCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("dropoutCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -102,7 +105,8 @@ static void dropoutCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
 static void dropoutBpCUDNN(const LaunchContext* context, NDArray* gradO, NDArray* gradI,
                            double ratio, uint64_t seed) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(gradO->dataType());
 
@@ -158,8 +162,10 @@ static void dropoutBpCUDNN(const LaunchContext* context, NDArray* gradO, NDArray
       cudnnDropoutBackward(*handle, dropoutDesc, dyDesc, gradO->specialBuffer(),
                            dyDesc, gradI->specialBuffer(), reserveSpace, reserveSpaceSize));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("dropoutBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("dropoutBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI}, {gradO});
 }

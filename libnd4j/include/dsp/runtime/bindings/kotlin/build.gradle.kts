@@ -11,7 +11,15 @@ repositories {
 }
 
 dependencies {
-    implementation("org.nd4j:sdx-runtime-java-bindings:0.0.1-SNAPSHOT")
+    implementation("net.java.dev.jna:jna:5.14.0")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("../java/src/main/java")
+        }
+    }
 }
 
 kotlin {

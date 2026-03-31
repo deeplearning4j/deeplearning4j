@@ -47,7 +47,8 @@ static void activationCUDNN(const LaunchContext* context, NDArray* input, NDArra
   // cuDNN activation works on 4D tensors, we need to reshape
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -64,8 +65,8 @@ static void activationCUDNN(const LaunchContext* context, NDArray* input, NDArra
   actDesc.set(mode, CUDNN_PROPAGATE_NAN, coef);
 
   // Scaling factors
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* ptrAlpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* ptrBeta = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -76,8 +77,10 @@ static void activationCUDNN(const LaunchContext* context, NDArray* input, NDArra
       cudnnActivationForward(*handle, actDesc, ptrAlpha, x, input->specialBuffer(),
                              ptrBeta, z, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("activationCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("activationCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }
@@ -86,7 +89,8 @@ static void activationCUDNN(const LaunchContext* context, NDArray* input, NDArra
 static void activationBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gradO,
                               NDArray* output, NDArray* gradI, cudnnActivationMode_t mode, double coef = 0.0) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -104,8 +108,8 @@ static void activationBpCUDNN(const LaunchContext* context, NDArray* input, NDAr
   actDesc.set(mode, CUDNN_PROPAGATE_NAN, coef);
 
   // Scaling factors
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* ptrAlpha = gradI->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* ptrBeta = gradI->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -119,8 +123,10 @@ static void activationBpCUDNN(const LaunchContext* context, NDArray* input, NDAr
                               x, input->specialBuffer(),
                               ptrBeta, dx, gradI->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("activationBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("activationBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI}, {input, output, gradO});
 }

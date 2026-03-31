@@ -442,19 +442,22 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
                    v_end->lengthOf());
     }
 
-    for (int e = 0; e < v_begin->lengthOf(); e++) begin->emplace_back(v_begin->e<LongType>(e));
+    // Read begin/end/strides using bulk host sync — avoids per-element GPU->CPU copies.
+    auto beginVals = ShapeUtils::readIntParams(v_begin);
+    auto endVals = ShapeUtils::readIntParams(v_end);
+    for (size_t e = 0; e < beginVals.size(); e++) begin->emplace_back(beginVals[e]);
 
-    for (int e = 0; e < v_end->lengthOf(); e++) {
-      if(v_end->e<int>(e) < 0) {
+    for (size_t e = 0; e < endVals.size(); e++) {
+      if(endVals[e] < 0) {
         // Special case: -1 means "to the end"
-        if(v_end->e<int>(e) == -1) {
+        if(endVals[e] == -1) {
           end->emplace_back(x->sizeAt(e));
         } else {
           // Other negative indices: convert to positive
-          end->emplace_back(v_end->e<LongType>(e) + x->sizeAt(e));
+          end->emplace_back(endVals[e] + x->sizeAt(e));
         }
       } else {
-        end->emplace_back(v_end->e<LongType>(e));
+        end->emplace_back(endVals[e]);
       }
     }
 
@@ -467,7 +470,8 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
                      v_begin->lengthOf(), v_end->lengthOf(), v_stride->lengthOf());
       }
 
-      for (int e = 0; e < v_stride->lengthOf(); e++) strides->emplace_back(v_stride->e<LongType>(e));
+      auto strideVals = ShapeUtils::readIntParams(v_stride);
+      for (size_t e = 0; e < strideVals.size(); e++) strides->emplace_back(strideVals[e]);
     } else {
       for (int e = 0; e < v_begin->lengthOf(); e++) strides->emplace_back(1);
     }
@@ -600,8 +604,9 @@ DECLARE_SHAPE_FN(strided_slice) {
 
   // if that's live - shape will be resolved in runtime
   if (block.width() > 1) {
-    begin = INPUT_VARIABLE(1)->template asVectorT<LongType>();
-    end = INPUT_VARIABLE(2)->template asVectorT<LongType>();
+    // Read begin/end/strides using bulk host sync — avoids per-element GPU->CPU copies.
+    begin = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
+    end = ShapeUtils::readIntParams(INPUT_VARIABLE(2));
     for(size_t  e = 0; e < end.size(); e++) {
       if(end[e] < 0) {
         // Special case: -1 means "to the end"
@@ -613,7 +618,7 @@ DECLARE_SHAPE_FN(strided_slice) {
       }
     }
 
-    strides = INPUT_VARIABLE(3)->template asVectorT<LongType>();
+    strides = ShapeUtils::readIntParams(INPUT_VARIABLE(3));
   } else if (dim_values > 0) {
     // Use stack-based vector
     std::vector<LongType> args;

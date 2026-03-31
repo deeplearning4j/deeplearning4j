@@ -47,7 +47,8 @@ static void reduceTensorCUDNN(const LaunchContext* context, NDArray* input, NDAr
                                const std::vector<LongType>& dimensions, cudnnReduceTensorOp_t reduceOp,
                                bool keepDims) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
   const int rank = input->rankOf();
@@ -123,8 +124,8 @@ static void reduceTensorCUDNN(const LaunchContext* context, NDArray* input, NDAr
   void* wsData = wsSize > 0 ? manager.allocateDevMem(wsSize) : nullptr;
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -137,8 +138,10 @@ static void reduceTensorCUDNN(const LaunchContext* context, NDArray* input, NDAr
                         alpha, xDesc, input->specialBuffer(),
                         beta, yDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("reduceTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("reduceTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input});
 }

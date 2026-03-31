@@ -31,6 +31,8 @@
 #include <ops/declarable/platform/cudnn/CudnnVersionProvider.h>
 #include <system/platform_boilerplate.h>
 
+#include <array/DataBuffer.h>
+
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -239,6 +241,18 @@ DECLARE_PLATFORM(prelu, ENGINE_CUDA);
 DECLARE_PLATFORM(prelu_bp, ENGINE_CUDA);
 DECLARE_PLATFORM(thresholdedrelu, ENGINE_CUDA);
 DECLARE_PLATFORM(thresholdedrelu_bp, ENGINE_CUDA);
+
+//////////////////////////////////////////////////////////////////////////
+// Returns the CUDA graph capture stream when graph capture is active,
+// otherwise returns the normal execution stream from getCudaStream().
+// This ensures cuDNN operations are recorded into the CUDA graph during capture.
+SD_INLINE cudaStream_t cudnnCaptureAwareStream(cudaStream_t* contextStream) {
+  cudaStream_t stream = *contextStream;
+  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
+    stream = tl_graphCaptureStream;
+  }
+  return stream;
+}
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -8,6 +8,10 @@ import com.sun.jna.StringArray;
 import com.sun.jna.Structure;
 import com.sun.jna.ptr.PointerByReference;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -210,6 +214,37 @@ public final class SdxRuntime implements AutoCloseable {
         this.runtimeHandle = runtimeHandle;
     }
 
+    static {
+        autoDetectSdkLibraryPath();
+    }
+
+    /**
+     * Auto-detect SDK layout by looking for binding.json in ancestor directories.
+     * If found, sets jna.library.path to the SDK lib/ directory.
+     */
+    private static void autoDetectSdkLibraryPath() {
+        if (System.getProperty("jna.library.path") != null) {
+            return;
+        }
+        try {
+            Path classLocation = Paths.get(
+                SdxRuntime.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            Path dir = classLocation.getParent();
+            for (int i = 0; i < 6 && dir != null; i++) {
+                if (Files.exists(dir.resolve("binding.json"))) {
+                    Path libDir = dir.resolve("lib");
+                    if (Files.isDirectory(libDir)) {
+                        System.setProperty("jna.library.path", libDir.toAbsolutePath().toString());
+                    }
+                    break;
+                }
+                dir = dir.getParent();
+            }
+        } catch (Exception ignored) {
+            // Not running from SDK layout — fall through to default search
+        }
+    }
+
     public static SdxRuntime create() {
         UnsatisfiedLinkError lastError = null;
         String[] candidates = defaultLibraryCandidates();
@@ -227,6 +262,18 @@ public final class SdxRuntime implements AutoCloseable {
             message.append(" (last error: ").append(lastError.getMessage()).append(")");
         }
         throw new UnsatisfiedLinkError(message.toString());
+    }
+
+    /**
+     * Create a runtime using an explicit SDK root directory.
+     * Sets jna.library.path to sdkRoot/lib/ before loading.
+     */
+    public static SdxRuntime create(Path sdkRoot) {
+        Path libDir = sdkRoot.resolve("lib");
+        if (Files.isDirectory(libDir)) {
+            System.setProperty("jna.library.path", libDir.toAbsolutePath().toString());
+        }
+        return create();
     }
 
     public static SdxRuntime create(String libraryNameOrPath) {

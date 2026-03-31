@@ -202,6 +202,7 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["boolean_xor"]  = {"boolean_xor",  TritonOpCategory::LOGICAL, "arith.xori", false};
   table["boolean_not"]  = {"boolean_not",  TritonOpCategory::LOGICAL, "custom.not", true};
   table["BooleanNot"]   = {"BooleanNot",   TritonOpCategory::LOGICAL, "custom.not", true};
+  table["bool_not"]     = {"bool_not",     TritonOpCategory::LOGICAL, "custom.not", true};
 
   // Ternary/select ops
   table["Where"]    = {"Where",    TritonOpCategory::TERNARY, "arith.select", false};

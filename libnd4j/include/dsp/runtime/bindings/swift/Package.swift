@@ -11,8 +11,13 @@ let package = Package(
         .library(name: "SdxRuntime", targets: ["SdxRuntime"])
     ],
     targets: [
+        .systemLibrary(
+            name: "CSdxRuntime",
+            path: "Sources/CSdxRuntime"
+        ),
         .target(
             name: "SdxRuntime",
+            dependencies: ["CSdxRuntime"],
             path: "Sources/SdxRuntime"
         )
     ]

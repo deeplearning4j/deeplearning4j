@@ -7,13 +7,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # ******************************************************************************
 
-import http.client
 import json
 import pathlib
 import sys
-import threading
 import unittest
-from http.server import ThreadingHTTPServer
 
 import numpy as np
 
@@ -22,7 +19,9 @@ _PARENT = _THIS_DIR.parent
 if str(_PARENT) not in sys.path:
     sys.path.insert(0, str(_PARENT))
 
-from sdx_sdk_runner import _SdxRestHandler
+from fastapi.testclient import TestClient
+
+from sdx_sdk_runner import SdxModelRegistry, create_app
 from sdx_tensor_transport import (
     dtype_code_to_numpy,
     decode_npz_inputs,
@@ -83,64 +82,33 @@ class _FakeRegistry:
 class SdxSdkRunnerRestTests(unittest.TestCase):
     def setUp(self):
         self.registry = _FakeRegistry()
-        _SdxRestHandler.registry = self.registry
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), _SdxRestHandler)
-        self.port = self.server.server_address[1]
-        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
-        self.thread.start()
-
-    def tearDown(self):
-        self.server.shutdown()
-        self.server.server_close()
-        self.thread.join(timeout=2)
-
-    def _request(self, method, path, body=None, headers=None):
-        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
-        try:
-            conn.request(method, path, body=body, headers=headers or {})
-            response = conn.getresponse()
-            payload = response.read()
-            return response.status, dict(response.getheaders()), payload
-        finally:
-            conn.close()
-
-    def _post_json(self, path, payload):
-        body = json.dumps(payload).encode("utf-8")
-        return self._request(
-            "POST",
-            path,
-            body=body,
-            headers={
-                "Content-Type": "application/json",
-                "Content-Length": str(len(body)),
-            },
-        )
+        app = create_app(self.registry)
+        self.client = TestClient(app)
 
     def _load_model(self):
-        status, _headers, payload = self._post_json(
+        response = self.client.post(
             "/v1/models:load",
-            {
+            json={
                 "model_path": "/tmp/mock-model.sdz",
                 "requested_outputs": ["output_0"],
             },
         )
-        self.assertEqual(status, 200)
-        body = json.loads(payload.decode("utf-8"))
-        return body["model_id"]
+        self.assertEqual(response.status_code, 200)
+        return response.json()["model_id"]
 
     def test_health_endpoint(self):
-        status, _headers, payload = self._request("GET", "/healthz")
-        self.assertEqual(status, 200)
-        body = json.loads(payload.decode("utf-8"))
+        response = self.client.get("/healthz")
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
         self.assertEqual(body["status"], "ok")
         self.assertEqual(body["abi_version"], 1)
 
     def test_load_and_unload_model(self):
         model_id = self._load_model()
 
-        status, _headers, payload = self._request("POST", f"/v1/models/{model_id}:unload")
-        self.assertEqual(status, 200)
-        body = json.loads(payload.decode("utf-8"))
+        response = self.client.post(f"/v1/models/{model_id}:unload")
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
         self.assertEqual(body["status"], "unloaded")
 
     def test_run_json(self):
@@ -152,10 +120,10 @@ class SdxSdkRunnerRestTests(unittest.TestCase):
             "outputs": [{"name": "output_0", "dtype": 5, "shape": [1, 4]}],
         }
 
-        status, _headers, payload = self._post_json(f"/v1/models/{model_id}:run", request_payload)
-        self.assertEqual(status, 200)
+        response = self.client.post(f"/v1/models/{model_id}:run", json=request_payload)
+        self.assertEqual(response.status_code, 200)
 
-        body = json.loads(payload.decode("utf-8"))
+        body = response.json()
         outputs = tensors_from_json_payload(body["outputs"])
         self.assertEqual(outputs[0][0], "output_0")
         np.testing.assert_array_equal(outputs[0][1], np.arange(4, dtype=np.float32).reshape(1, 4))
@@ -173,36 +141,34 @@ class SdxSdkRunnerRestTests(unittest.TestCase):
         output_specs = [{"name": "output_0", "dtype": 9, "shape": [1, 2]}]
         input_order = ["token_ids", "mask"]
 
-        status, headers, payload = self._request(
-            "POST",
+        response = self.client.post(
             f"/v1/models/{model_id}:run-npz",
-            body=npz_body,
+            content=npz_body,
             headers={
                 "Content-Type": "application/x-sdx-npz",
-                "Content-Length": str(len(npz_body)),
                 "X-SDX-Output-Specs": json.dumps(output_specs),
                 "X-SDX-Input-Order": json.dumps(input_order),
             },
         )
-        self.assertEqual(status, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(self.registry.last_run_inputs, input_order)
 
-        decoded_outputs = decode_npz_inputs(payload)
+        decoded_outputs = decode_npz_inputs(response.content)
         self.assertEqual(decoded_outputs[0][0], "output_0")
         np.testing.assert_array_equal(decoded_outputs[0][1], np.array([[0, 1]], dtype=np.int32))
 
-        report = json.loads(headers["X-SDX-Execution-Report"])
+        report = json.loads(response.headers["X-SDX-Execution-Report"])
         self.assertEqual(report["status_code"], 0)
 
     def test_run_unknown_model_returns_not_found(self):
-        status, _headers, _payload = self._post_json(
+        response = self.client.post(
             "/v1/models/missing:run",
-            {
+            json={
                 "inputs": tensors_to_json_payload([("input_0", np.array([1], dtype=np.float32))]),
                 "outputs": [{"name": "output_0", "dtype": 5, "shape": [1]}],
             },
         )
-        self.assertEqual(status, 404)
+        self.assertEqual(response.status_code, 404)
 
 
 if __name__ == "__main__":

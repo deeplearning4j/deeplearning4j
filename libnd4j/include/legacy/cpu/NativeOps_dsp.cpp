@@ -967,3 +967,64 @@ const char* dspDiagGetJsonReport() {
 void dspDiagClear() {
     sd::graph::DspDiagnostics::getInstance().clear();
 }
+
+// ─── Freeze config + segment summary ─────────────────────────────────────────
+
+void setDspFreezeMergeSegments(bool enable) {
+    sd::Environment::getInstance().setDspFreezeMergeSegments(enable);
+}
+
+void setDspFreezeRecompile(bool enable) {
+    sd::Environment::getInstance().setDspFreezeRecompile(enable);
+}
+
+bool getDspFreezeMergeSegments() {
+    return sd::Environment::getInstance().dspFreezeMergeSegments();
+}
+
+bool getDspFreezeRecompile() {
+    return sd::Environment::getInstance().dspFreezeRecompile();
+}
+
+const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
+    static thread_local std::string result;
+    if (planHandle == nullptr) { result = "[]"; return result.c_str(); }
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    auto& segs = plan->getSegments();
+    auto* slots = plan->getSlots();
+
+    std::string json = "[";
+    for (int i = 0; i < (int)segs.size(); i++) {
+        auto& seg = segs[i];
+        int numOps = seg.endSlot - seg.startSlot + 1;
+        std::unordered_map<std::string, int> opCounts;
+        if (slots != nullptr) {
+            for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+                opCounts[slots[s].opName]++;
+            }
+        }
+        if (i > 0) json += ",";
+        json += "{";
+        json += "\"index\":" + std::to_string(i);
+        json += ",\"startSlot\":" + std::to_string(seg.startSlot);
+        json += ",\"endSlot\":" + std::to_string(seg.endSlot);
+        json += ",\"numOps\":" + std::to_string(numOps);
+        json += ",\"executionCount\":" + std::to_string(seg.executionCount);
+        json += ",\"isCapturable\":" + std::string(seg.isCapturable ? "true" : "false");
+        json += ",\"captureFailed\":" + std::string(seg.captureFailed ? "true" : "false");
+        json += ",\"hasReplayHandle\":" + std::string(seg.replayHandle ? "true" : "false");
+        json += ",\"shapeKey\":" + std::to_string(seg.shapeKey);
+        json += ",\"ops\":{";
+        bool first = true;
+        for (auto& kv : opCounts) {
+            if (!first) json += ",";
+            json += "\"" + kv.first + "\":" + std::to_string(kv.second);
+            first = false;
+        }
+        json += "}";
+        json += "}";
+    }
+    json += "]";
+    result = json;
+    return result.c_str();
+}

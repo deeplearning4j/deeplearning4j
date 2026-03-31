@@ -1392,5 +1392,42 @@ std::vector<LongType>* ShapeUtils::evalDimsForReduceOp(const LongType rank,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+std::vector<LongType> ShapeUtils::readIntParams(NDArray* paramArray) {
+    if (paramArray == nullptr || paramArray->isEmpty()) return {};
+
+    // Sync to host once — avoids per-element GPU->CPU copies via e<T>(i)
+    paramArray->syncToHost();
+
+    auto len = paramArray->lengthOf();
+    std::vector<LongType> result(len);
+    auto dt = paramArray->dataType();
+
+    if (dt == INT64) {
+        auto buf = paramArray->bufferAsT<LongType>();
+        for (LongType i = 0; i < len; i++) result[i] = buf[i];
+    } else if (dt == INT32) {
+        auto buf = paramArray->bufferAsT<int>();
+        for (LongType i = 0; i < len; i++) result[i] = static_cast<LongType>(buf[i]);
+    } else if (dt == FLOAT32) {
+        auto buf = paramArray->bufferAsT<float>();
+        for (LongType i = 0; i < len; i++) result[i] = static_cast<LongType>(buf[i]);
+    } else if (dt == DOUBLE) {
+        auto buf = paramArray->bufferAsT<double>();
+        for (LongType i = 0; i < len; i++) result[i] = static_cast<LongType>(buf[i]);
+    } else if (dt == HALF) {
+        // Use element access for float16 — not commonly used for shape params
+        for (LongType i = 0; i < len; i++) result[i] = paramArray->e<LongType>(i);
+    } else {
+        // Fallback: generic element access
+        for (LongType i = 0; i < len; i++) result[i] = paramArray->e<LongType>(i);
+    }
+
+    // Sync back to device so subsequent GPU kernels see current data
+    paramArray->syncToDevice();
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 }  // namespace sd

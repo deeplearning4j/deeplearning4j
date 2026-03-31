@@ -26,28 +26,33 @@
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <array/NDArray.h>
+#include <vector>
 
 namespace sd {
 namespace graph {
 
 /**
- * Score the benefit of fusing two adjacent kernel sections.
+ * Score the benefit of extending an existing compile range by one adjacent section.
  *
  * Returns a float score:
  *   Negative = do not merge (grid incompatibility, shared mem overflow)
  *   Positive = merge is beneficial (higher = more beneficial)
  *
  * Factors:
- *   - Grid type compatibility (must match)
+ *   - Grid-type compatibility, with an explicit exception for attention neighborhoods
  *   - Intermediate memory traffic eliminated (bytes saved)
  *   - Kernel launch overhead saved (~15μs per eliminated launch)
  *   - Register pressure penalty for very large fused kernels
- *   - Combined shared memory must fit SM limit
+ *   - Maximum per-section shared memory must fit SM limit
  */
-float scoreSectionFusion(
-    const KernelSection& sectionA,
-    const KernelSection& sectionB,
+float scoreSectionFusionRange(
+    const std::vector<KernelSection>& sections,
+    int rangeStartSectionIdx,
+    int rangeEndSectionIdx,
+    int nextSectionIdx,
     NativeSlot* slots,
+    int segmentStartSlot,
+    int segmentEndSlot,
     NDArray** outputSlots,
     int totalOutputSlots);
 

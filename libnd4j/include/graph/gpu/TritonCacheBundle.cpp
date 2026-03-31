@@ -27,6 +27,7 @@
  */
 
 #include <config.h>
+#include <mutex>
 
 #if HAVE_TRITON
 
@@ -95,18 +96,18 @@ static uint32_t readU32(const unsigned char* p) {
 // ─── CRC-32 (lookup table) ─────────────────────────────────────────────────
 
 static uint32_t crc32Table[256];
-static bool crc32TableInit = false;
+static std::once_flag crc32TableOnce;
 
 static void initCrc32Table() {
-  if (crc32TableInit) return;
-  for (uint32_t i = 0; i < 256; i++) {
-    uint32_t c = i;
-    for (int j = 0; j < 8; j++) {
-      c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
+  std::call_once(crc32TableOnce, []() {
+    for (uint32_t i = 0; i < 256; i++) {
+      uint32_t c = i;
+      for (int j = 0; j < 8; j++) {
+        c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
+      }
+      crc32Table[i] = c;
     }
-    crc32Table[i] = c;
-  }
-  crc32TableInit = true;
+  });
 }
 
 static uint32_t computeCrc32(const void* data, size_t len) {

@@ -34,6 +34,7 @@
 
 #include <llvm/Support/raw_ostream.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -177,14 +178,15 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     }
 
     // Dump MLIR IR of first few compiled kernels for debugging
-    static int irDumpCount = 0;
-    if (irDumpCount < 10) {
+    static std::atomic<int> irDumpCount{0};
+    if (irDumpCount.load(std::memory_order_relaxed) < 10) {
       std::string irDump;
       llvm::raw_string_ostream os(irDump);
       mod->print(os);
       char fname[256];
+      int dumpIdx = irDumpCount.fetch_add(1, std::memory_order_relaxed);
       snprintf(fname, sizeof(fname), "/tmp/triton_ir_dump_%03d_slots_%d_%d.mlir",
-               irDumpCount, startSlot, endSlot);
+               dumpIdx, startSlot, endSlot);
       FILE* f = fopen(fname, "w");
       if (f) {
         fprintf(f, "// Kernel: %s\n", irModule.kernelName.c_str());
@@ -210,7 +212,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
         DSP_DIAG(COMPILE, "TritonGraphBackend: dumped MLIR IR to %s (%d bytes)",
                  fname, static_cast<int>(irDump.size()));
       }
-      irDumpCount++;
+      // irDumpCount already incremented via fetch_add above
     }
   }
 

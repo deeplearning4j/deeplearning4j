@@ -18,6 +18,7 @@
 
 #include <helpers/CutlassGemmHelper.h>
 #include <helpers/CutlassHelper.h>
+#include <helpers/DebugHelper.h>
 #include <config.h>
 
 #if HAVE_CUTLASS
@@ -128,22 +129,40 @@ bool runCutlassGemm(NDArray* A, NDArray* B, NDArray* C,
   // Get workspace size
   size_t workspace_size = gemm_op.get_workspace_size(args);
   void* workspace = nullptr;
-  if (workspace_size > 0) {
-    cudaMalloc(&workspace, workspace_size);
-  }
-
   // Get the CUDA stream from the NDArray context
   auto stream = A->getContext()->getCudaStream();
 
+  if (workspace_size > 0) {
+    // During CUDA graph capture, cudaMalloc/cudaFree are illegal synchronous
+    // calls. Use stream-ordered allocation which records as graph nodes.
+    if (tl_graphExecutionActive) {
+      cudaMallocAsync(&workspace, workspace_size, *stream);
+    } else {
+      cudaMalloc(&workspace, workspace_size);
+    }
+  }
+
   status = gemm_op.initialize(args, workspace, *stream);
   if (status != cutlass::Status::kSuccess) {
-    if (workspace) cudaFree(workspace);
+    if (workspace) {
+      if (tl_graphExecutionActive) {
+        cudaFreeAsync(workspace, *stream);
+      } else {
+        cudaFree(workspace);
+      }
+    }
     return false;
   }
 
   status = gemm_op(*stream);
 
-  if (workspace) cudaFree(workspace);
+  if (workspace) {
+    if (tl_graphExecutionActive) {
+      cudaFreeAsync(workspace, *stream);
+    } else {
+      cudaFree(workspace);
+    }
+  }
 
   return status == cutlass::Status::kSuccess;
 }

@@ -163,6 +163,15 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
     }
     ptr = reinterpret_cast<int8_t*>(
         memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, allocStream, &actualDevice));
+    if (ptr == nullptr && tl_graphExecutionActive) {
+      // During CUDA graph capture, CudaMemoryPool::allocate() uses the capture
+      // workspace (bump allocator). If it returned nullptr, the workspace is
+      // exhausted. The fallback paths (trimPool, cudaMallocHost, pool.free) are
+      // all synchronous or use nullptr stream, which would poison the capture
+      // stream (error 901). Abort immediately — the caller's capture segment
+      // will fall back to slot-by-slot execution.
+      THROW_EXCEPTION("[DEVICE] replicatePointer: capture workspace exhausted during CUDA graph capture");
+    }
     if (ptr == nullptr) {
       // Shape buffers are tiny (~200 bytes). Failure likely means a stale CUDA
       // error is blocking allocations, not true OOM. Clear errors, trim pool, retry.
@@ -220,8 +229,24 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
       // implicitly syncs with ALL named streams (including the captured stream), causing
       // capture invalidation (error 901). Use cudaMemcpyAsync on the CAPTURED stream
       // so it becomes a recorded graph node.
+      //
+      // CRITICAL: The H2D memcpy node bakes the source address into the graph. If `src`
+      // points to stack/temporary memory, graph replay will read garbage (the stack frame
+      // is gone). Copy src into the capture host workspace (persistent pinned memory) first,
+      // matching the pattern in DataBuffer::syncToSpecial().
       cudaStream_t capturedStream = captureSafeStreamOrDefault();
-      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, capturedStream);
+      void* h2dSource = src;
+      if (tl_captureHostWorkspace != nullptr) {
+        size_t aligned = (numBytes + 255) & ~255ULL;
+        if (tl_captureHostWorkspaceOffset + aligned <= tl_captureHostWorkspaceSize) {
+          void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+          tl_captureHostWorkspaceOffset += aligned;
+          std::memcpy(pinnedCopy, src, numBytes);
+          h2dSource = pinnedCopy;
+        }
+        // If workspace exhausted, fall through to use src directly — best effort
+      }
+      auto res = cudaMemcpyAsync(ptr, h2dSource, numBytes, cudaMemcpyHostToDevice, capturedStream);
       if (res != 0) {
         std::string errorMessage = "cudaMemcpyAsync (graph capture) failed with error code " + std::to_string(res);
         THROW_EXCEPTION(errorMessage.c_str());

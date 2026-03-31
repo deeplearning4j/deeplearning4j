@@ -33,8 +33,8 @@
 namespace sd {
 namespace graph {
 
-// Grid type classification — sections with different grid types cannot be fused
-// because they require different launch configurations.
+// Grid type classification used by the fusion cost model. Mixed grid types are
+// generally discouraged, with an explicit allowance for attention neighborhoods.
 static int gridTypeForSection(const KernelSection& sec) {
   return static_cast<int>(getSectionTypeConfig(sec.type).gridType);
 }
@@ -56,6 +56,18 @@ static size_t estimateSharedMemBytes(const KernelSection& sec) {
   }
 }
 
+static bool isAttentionAdjacentType(KernelSectionType type) {
+  switch (type) {
+    case KernelSectionType::GATHER:
+    case KernelSectionType::GATHER_ND:
+    case KernelSectionType::CONCAT:
+    case KernelSectionType::STACK:
+      return true;
+    default:
+      return false;
+  }
+}
+
 // Estimate bytes of a DataType
 static size_t dtypeBytes(DataType dt) {
   switch (dt) {
@@ -68,72 +80,111 @@ static size_t dtypeBytes(DataType dt) {
   }
 }
 
-float scoreSectionFusion(
-    const KernelSection& sectionA,
-    const KernelSection& sectionB,
+float scoreSectionFusionRange(
+    const std::vector<KernelSection>& sections,
+    int rangeStartSectionIdx,
+    int rangeEndSectionIdx,
+    int nextSectionIdx,
     NativeSlot* slots,
+    int segmentStartSlot,
+    int segmentEndSlot,
     NDArray** outputSlots,
     int totalOutputSlots) {
+  if (rangeStartSectionIdx < 0 || rangeEndSectionIdx < rangeStartSectionIdx ||
+      nextSectionIdx <= rangeEndSectionIdx ||
+      nextSectionIdx >= static_cast<int>(sections.size())) {
+    return -1.0f;
+  }
+
+  const auto& nextSection = sections[nextSectionIdx];
+  int rangeStartSlot = sections[rangeStartSectionIdx].startSlot;
+  int rangeEndSlot = sections[rangeEndSectionIdx].endSlot;
+  int combinedEndSlot = nextSection.endSlot;
 
   // 1. Grid compatibility — incompatible grid types cannot merge
-  int gridA = gridTypeForSection(sectionA);
-  int gridB = gridTypeForSection(sectionB);
-  if (gridA != gridB) {
-    DSP_DIAG(FUSION, "FusionScoring: sections [%d-%d] and [%d-%d] grid mismatch (%d vs %d) -> -1.0",
-             sectionA.startSlot, sectionA.endSlot, sectionB.startSlot, sectionB.endSlot, gridA, gridB);
-    return -1.0f;
-  }
+  std::unordered_set<int> rangeGridTypes;
+  std::unordered_set<int> rangeOutputSlots;
+  size_t maxShared = 0;
+  int combinedOps = 0;
+  bool rangeHasAttention = false;
+  bool rangeHasAttnAdj = false;
 
-  // 2. Shared memory check — combined must fit SM limit (typically 96KB-164KB)
-  size_t combinedShared = estimateSharedMemBytes(sectionA) + estimateSharedMemBytes(sectionB);
-  static constexpr size_t SM_SHARED_MEM_LIMIT = 96 * 1024;  // Conservative 96KB
-  if (combinedShared > SM_SHARED_MEM_LIMIT) {
-    DSP_DIAG(FUSION, "FusionScoring: sections [%d-%d]+[%d-%d] combined shared mem %zuKB > limit %zuKB -> -1.0",
-             sectionA.startSlot, sectionA.endSlot, sectionB.startSlot, sectionB.endSlot,
-             combinedShared / 1024, SM_SHARED_MEM_LIMIT / 1024);
-    return -1.0f;
-  }
-
-  // 3. Memory traffic savings — count intermediate bytes eliminated
-  //    Find outputs of A consumed only by B (not by other sections or final outputs)
-  std::unordered_set<int> sectionAOutputSlots;
-  for (int s = sectionA.startSlot; s <= sectionA.endSlot; s++) {
-    NativeSlot& slot = slots[s];
-    for (int i = 0; i < slot.numOutputs; i++) {
-      sectionAOutputSlots.insert(slot.outputSlotIndices[i]);
+  for (int secIdx = rangeStartSectionIdx; secIdx <= rangeEndSectionIdx; secIdx++) {
+    const auto& sec = sections[secIdx];
+    rangeGridTypes.insert(gridTypeForSection(sec));
+    maxShared = std::max(maxShared, estimateSharedMemBytes(sec));
+    combinedOps += sec.numOps;
+    rangeHasAttention = rangeHasAttention || sec.type == KernelSectionType::FUSED_ATTENTION;
+    rangeHasAttnAdj = rangeHasAttnAdj || isAttentionAdjacentType(sec.type);
+    for (int s = sec.startSlot; s <= sec.endSlot; s++) {
+      NativeSlot& slot = slots[s];
+      for (int i = 0; i < slot.numOutputs; i++) {
+        rangeOutputSlots.insert(slot.outputSlotIndices[i]);
+      }
     }
   }
 
-  // Check which A outputs are consumed ONLY by B
+  int nextGrid = gridTypeForSection(nextSection);
+  bool nextIsAttention = nextSection.type == KernelSectionType::FUSED_ATTENTION;
+  bool nextIsAttnAdj = isAttentionAdjacentType(nextSection.type);
+  bool allowAttentionNeighborhoodMismatch =
+      sd::Environment::getInstance().tritonFuseAttentionNeighborhoods() &&
+      ((rangeHasAttention && nextIsAttnAdj) || (nextIsAttention && rangeHasAttnAdj));
+  bool gridCompatible =
+      rangeGridTypes.empty() || (rangeGridTypes.size() == 1 && rangeGridTypes.count(nextGrid) == 1);
+  if (!gridCompatible && !allowAttentionNeighborhoodMismatch) {
+    DSP_DIAG(FUSION, "FusionScoring: range [%d-%d] + [%d-%d] grid mismatch -> -1.0",
+             rangeStartSlot, rangeEndSlot, nextSection.startSlot, nextSection.endSlot);
+    return -1.0f;
+  }
+
+  // 2. Shared memory check — sectioned kernels reserve the max section requirement.
+  maxShared = std::max(maxShared, estimateSharedMemBytes(nextSection));
+  static constexpr size_t SM_SHARED_MEM_LIMIT = 96 * 1024;  // Conservative 96KB
+  if (maxShared > SM_SHARED_MEM_LIMIT) {
+    DSP_DIAG(FUSION, "FusionScoring: range [%d-%d] + [%d-%d] max shared mem %zuKB > limit %zuKB -> -1.0",
+             rangeStartSlot, rangeEndSlot, nextSection.startSlot, nextSection.endSlot,
+             maxShared / 1024, SM_SHARED_MEM_LIMIT / 1024);
+    return -1.0f;
+  }
+
+  // 3. Memory traffic savings — count outputs from the current range that become
+  // internal when the next section is fused, but only if they are not consumed
+  // elsewhere in the surrounding segment.
   size_t intermediateBytes = 0;
-  for (int outSlotIdx : sectionAOutputSlots) {
-    if (outSlotIdx >= totalOutputSlots) continue;
-
-    // Check if this output is a final output (consumed outside any section)
-    // For simplicity, check if any slot outside A+B range consumes it
+  for (int outSlotIdx : rangeOutputSlots) {
+    if (outSlotIdx < 0 || outSlotIdx >= totalOutputSlots) continue;
     bool consumedOutside = false;
-
-    // Simple heuristic: if the output array exists, assume it's intermediate
-    // between A and B. Count it as saved memory traffic.
     NDArray* arr = (outSlotIdx < totalOutputSlots) ? outputSlots[outSlotIdx] : nullptr;
-    if (arr != nullptr) {
-      // Check if B consumes this slot
-      bool consumedByB = false;
-      for (int s = sectionB.startSlot; s <= sectionB.endSlot && !consumedByB; s++) {
-        NativeSlot& bSlot = slots[s];
-        for (int i = 0; i < bSlot.numInputs; i++) {
-          int srcIdx = bSlot.inputSourceIndices[i];
-          if (srcIdx == outSlotIdx) {
-            consumedByB = true;
-            break;
-          }
+    if (arr == nullptr) continue;
+
+    bool consumedByNext = false;
+    for (int s = nextSection.startSlot; s <= nextSection.endSlot && !consumedByNext; s++) {
+      NativeSlot& bSlot = slots[s];
+      for (int i = 0; i < bSlot.numInputs; i++) {
+        int srcIdx = bSlot.inputSourceIndices[i];
+        if (srcIdx == outSlotIdx) {
+          consumedByNext = true;
+          break;
         }
       }
+    }
+    if (!consumedByNext) continue;
 
-      if (consumedByB) {
-        size_t elemBytes = dtypeBytes(arr->dataType());
-        intermediateBytes += arr->lengthOf() * elemBytes;
+    for (int s = segmentStartSlot; s <= segmentEndSlot && !consumedOutside; s++) {
+      if (s >= rangeStartSlot && s <= combinedEndSlot) continue;
+      NativeSlot& otherSlot = slots[s];
+      for (int i = 0; i < otherSlot.numInputs; i++) {
+        if (otherSlot.inputSourceIndices[i] == outSlotIdx) {
+          consumedOutside = true;
+          break;
+        }
       }
+    }
+
+    if (!consumedOutside) {
+      size_t elemBytes = dtypeBytes(arr->dataType());
+      intermediateBytes += arr->lengthOf() * elemBytes;
     }
   }
 
@@ -143,32 +194,17 @@ float scoreSectionFusion(
   float launchScore = 15.0f;
 
   // 5. Register pressure penalty — large merged kernels risk spills
-  int combinedOps = sectionA.numOps + sectionB.numOps;
+  combinedOps += nextSection.numOps;
   float regPenalty = std::max(0.0f, (combinedOps - 256) * 0.1f);
 
-  // 6. Attention neighborhood bonus — prefer fusing around attention ops
-  // GATHER/CONCAT/STACK adjacent to ATTENTION get a significant score boost
-  // to reduce section fragmentation in decode attention patterns.
-  float attnBonus = 0.0f;
-  if (sd::Environment::getInstance().tritonFuseAttentionNeighborhoods()) {
-    bool aIsAttnAdj = (sectionA.type == KernelSectionType::GATHER ||
-                       sectionA.type == KernelSectionType::GATHER_ND ||
-                       sectionA.type == KernelSectionType::CONCAT ||
-                       sectionA.type == KernelSectionType::STACK);
-    bool bIsAttnAdj = (sectionB.type == KernelSectionType::GATHER ||
-                       sectionB.type == KernelSectionType::GATHER_ND ||
-                       sectionB.type == KernelSectionType::CONCAT ||
-                       sectionB.type == KernelSectionType::STACK);
-    // Type-based heuristic: boost fusion score for attention-adjacent op types
-    if (aIsAttnAdj || bIsAttnAdj) {
-      attnBonus = 50.0f;  // Strong boost to prefer fusing attention neighborhood ops together
-    }
-  }
+  // 6. Attention neighborhood bonus — only when the candidate extension is
+  // actually adjacent to an attention section in the current range.
+  float attnBonus = allowAttentionNeighborhoodMismatch ? 50.0f : 0.0f;
 
   float totalScore = memScore * 10.0f + launchScore - regPenalty + attnBonus;
 
-  DSP_DIAG(FUSION, "FusionScoring: [%d-%d]+[%d-%d] memMB=%.2f launch=%.1f regPen=%.1f attnBonus=%.1f -> score=%.2f",
-           sectionA.startSlot, sectionA.endSlot, sectionB.startSlot, sectionB.endSlot,
+  DSP_DIAG(FUSION, "FusionScoring: range [%d-%d]+[%d-%d] memMB=%.2f launch=%.1f regPen=%.1f attnBonus=%.1f -> score=%.2f",
+           rangeStartSlot, rangeEndSlot, nextSection.startSlot, nextSection.endSlot,
            memScore, launchScore, regPenalty, attnBonus, totalScore);
 
   return totalScore;

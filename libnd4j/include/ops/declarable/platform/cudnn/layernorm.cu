@@ -38,7 +38,8 @@ static void layerNormCUDNN(const LaunchContext* context, NDArray* input, NDArray
                            NDArray* output, NDArray* mean, NDArray* variance,
                            const std::vector<LongType>& normAxes, double epsilon) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
   const int rank = input->rankOf();
@@ -80,8 +81,8 @@ static void layerNormCUDNN(const LaunchContext* context, NDArray* input, NDArray
   bnScaleBiasMeanVarDesc.set4D(CUDNN_TENSOR_NCHW, dataType, 1, static_cast<int>(normSize), 1, 1);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* pAlpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* pBeta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -109,8 +110,10 @@ static void layerNormCUDNN(const LaunchContext* context, NDArray* input, NDArray
           saveMean,
           saveInvVar));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("layerNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("layerNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input, gamma, beta});
 }
@@ -122,7 +125,8 @@ static void layerNormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
                               NDArray* gradI, NDArray* gradGamma, NDArray* gradBeta,
                               const std::vector<LongType>& normAxes, double epsilon) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
   const int rank = input->rankOf();
@@ -154,8 +158,8 @@ static void layerNormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
   bnScaleBiasMeanVarDesc.set4D(CUDNN_TENSOR_NCHW, dataType, 1, static_cast<int>(normSize), 1, 1);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* pAlphaData = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* pBetaData = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
   const void* pAlphaParam = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
@@ -180,8 +184,10 @@ static void layerNormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
           mean ? mean->specialBuffer() : nullptr,
           variance ? variance->specialBuffer() : nullptr));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("layerNormBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("layerNormBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI, gradGamma, gradBeta}, {input, gradO, gamma, mean, variance});
 }

@@ -47,7 +47,8 @@ static void sconv2dDepthwiseCUDNN(const LaunchContext* context, NDArray* input, 
   mC = weightsDepth->sizeAt(indWmC);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
   PointersManager manager(context, __func__);
@@ -114,8 +115,8 @@ static void sconv2dDepthwiseCUDNN(const LaunchContext* context, NDArray* input, 
   void* wsData = manager.allocateDevMem(wsSize);
 
   // scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -149,7 +150,8 @@ static void sconv2dPointwiseCUDNN(const LaunchContext* context, NDArray* input, 
   const LongType oC = output->sizeAt(indIOioC);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
   PointersManager manager(context, __func__);
@@ -208,8 +210,8 @@ static void sconv2dPointwiseCUDNN(const LaunchContext* context, NDArray* input, 
   void* wsData = manager.allocateDevMem(wsSize);
 
   // scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -288,10 +290,11 @@ PLATFORM_IMPL(sconv2d, ENGINE_CUDA) {
     // Add bias if present
     if (bias != nullptr) {
       auto handle = reinterpret_cast<cudnnHandle_t*>(contextPtr->getCuDnnHandle());
-      CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *contextPtr->getCudaStream()));
+      auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
+      CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
-      const float alpha32(1);
-      const double alpha64(1);
+      static const float alpha32(1);
+      static const double alpha64(1);
       const void* alpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
 
       CudnnTensor b;

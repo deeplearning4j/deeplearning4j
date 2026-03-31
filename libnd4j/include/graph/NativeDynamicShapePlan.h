@@ -31,9 +31,16 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <graph/GraphReplayHandle.h>
+#include <graph/SlotBufferOwnership.h>
+#include <graph/PlanDefinition.h>
+#include <graph/ExecutionState.h>
+
+// Forward declaration — full definition in DspStreamGuard.h
+// (included only in .cpp/.cu files that use the guard)
 
 #ifdef SD_CUDA
 #include <execution/cuda/CudaGraphScheduler.h>
@@ -169,6 +176,12 @@ struct NativeSlot {
   bool inPlaceFused;                       // In-place fused: output reuses input buffer (set by FusionPass)
   int inPlaceFusedInputIdx;                // Which input index to reuse as output (-1 = not fused)
 
+  // Structural iArg count: first N iArgs are structural (masks, mode flags, axis),
+  // rest are data that could come from input tensors.
+  // -1 = all iArgs are structural (default for most ops).
+  // Used by plan compiler to cap iArgs when data comes from input tensors.
+  int structuralIArgCount;
+
   // Fused elementwise chain: head slot dispatches single fused kernel for entire chain
   bool isFusedChainHead;                     // Head — dispatches fused kernel
   int fusedChainLength;                      // Chain length (including head)
@@ -194,25 +207,38 @@ struct NativeSlot {
   // Per-slot shape cache
   LongType cachedShapeKey;
   std::vector<const LongType*> cachedOutputShapes;   // Cached shape infos (not owned)
-  bool shapeCacheValid;
 
   // Shape static analysis: true if output shape never changes between executions.
   // Determined at plan construction time by analyzing input dependencies.
   // Shape-static slots have their caches preserved across clearShapeCaches() calls.
+  // This is an inherent property, NOT a lifecycle state.
   bool shapeStatic;
 
-  // Frozen context: after the first shapes-frozen execution, the context is
-  // fully configured with the same input/output arrays and arguments.
-  // On subsequent executions, skip all setup and just call op->execute().
-  bool frozenContextReady;
-
-  // Frozen constant: this slot's output never changes between decode steps
-  // with frozen shapes. Both nullify and execution are skipped entirely.
-  // The output buffer retains its value from the warmup step.
-  // Detected transitively: a slot is frozen constant if ALL its inputs come
-  // from either (a) other frozen constant slots or (b) constant/variable arrays
-  // that don't change between steps (i.e., NOT from external placeholders).
-  bool frozenConstantSlot;
+  /**
+   * Slot lifecycle state machine. Replaces 3 independent booleans
+   * (shapeCacheValid, frozenContextReady, frozenConstantSlot) with
+   * explicit ordered states and documented transitions.
+   *
+   * State transitions (ordered — each state includes all prior guarantees):
+   *   UNINITIALIZED → WARMUP:         First execution begins
+   *   WARMUP → SHAPE_CACHED:          Shape cache populated, view status determined
+   *   SHAPE_CACHED → COMPILED:        Segment compiled/captured
+   *   COMPILED → FROZEN:              Shapes frozen, context reuse enabled
+   *   FROZEN → FROZEN_CONSTANT:       Output never changes, skip execution entirely
+   *
+   * Backward transitions:
+   *   Any → WARMUP:                   Plan invalidation (shape change, etc.)
+   *   FROZEN/FROZEN_CONSTANT → SHAPE_CACHED:  Unfreeze
+   */
+  enum class SlotState : uint8_t {
+    UNINITIALIZED = 0,
+    WARMUP,           // First execution (shape inference + view detection)
+    SHAPE_CACHED,     // Shape cache populated, view status determined
+    COMPILED,         // Segment compiled/captured
+    FROZEN,           // Shapes frozen, context reuse enabled
+    FROZEN_CONSTANT,  // Output never changes, skip execution entirely
+  };
+  SlotState state_;
 
   NativeSlot()
       : opHash(0), op(nullptr), numInputs(0), inputSourceIndices(nullptr),
@@ -224,12 +250,19 @@ struct NativeSlot {
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
         isCustomOp(true), isIdentityOp(false), isViewCapableOp(false),
         inPlaceFused(false), inPlaceFusedInputIdx(-1),
+        structuralIArgCount(-1),
         isFusedChainHead(false), fusedChainLength(0), isFusedChainTail(false),
         targetDeviceId(-1),
         controlFlowType(CF_NONE), loopBackTarget(-1), loopRegionIndex(-1),
-        legacyOpType(0), legacyOpNum(-1), frozenConstantSlot(false),
-        cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false),
-        frozenContextReady(false) {}
+        legacyOpType(0), legacyOpNum(-1),
+        cachedShapeKey(0), shapeStatic(false),
+        state_(SlotState::UNINITIALIZED) {}
+
+  // Convenience accessors that map SlotState to the old boolean semantics.
+  // These allow gradual migration — callers can use these until fully converted.
+  bool shapeCacheValid() const { return state_ >= SlotState::SHAPE_CACHED; }
+  bool frozenContextReady() const { return state_ >= SlotState::FROZEN; }
+  bool frozenConstantSlot() const { return state_ == SlotState::FROZEN_CONSTANT; }
 
   ~NativeSlot() {
     delete[] inputSourceIndices;
@@ -348,6 +381,29 @@ struct GraphSegment {
   // Set after first replay confirms all arg table pointers are unchanged.
   // Reset to false on any graph invalidation (replayHandle.reset()).
   bool argTableStable = false;
+
+  // Triton fallback ranges can execute while CUDA graph capture is active.
+  // Those native gap ops become part of the captured graph and must not be
+  // re-executed after replay.
+  bool gapOpsCapturedInGraph = false;
+
+  // Per-segment batch-zero entries: during warmup, we record which buffers
+  // this segment needs zeroed. Stored per-segment so replay zeros the correct
+  // buffers (not the last-captured segment's buffers).
+  struct BatchZeroEntry { void* ptr; int bytes; };
+  std::vector<BatchZeroEntry> segBatchZeroEntries;
+
+  /**
+   * Formal contract for segment integrity. Validated after buildSegments()
+   * and used to detect ownership/device boundary violations.
+   */
+  struct SegmentContract {
+    bool allOpsSameCapturability = true;
+    bool noMidSegmentOwnershipTransitions = true;
+    bool noMidSegmentDeviceTransitions = true;
+    bool shapeKeyStableOrInvalidates = true;
+  };
+  SegmentContract contract;
 
   GraphSegment()
       : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0),
@@ -550,6 +606,23 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<GraphSegment>& getSegmentsMutable() { return segments_; }
 
   /**
+   * Get raw slot array for inspection (read-only).
+   */
+  const NativeSlot* getSlots() const { return slots_; }
+
+  /**
+   * Get the shared immutable PlanDefinition (Phase 3).
+   * Returns nullptr if plan was not compiled via standard path.
+   */
+  PlanDefinition* getPlanDefinition() const { return planDef_; }
+
+  /**
+   * Get the per-instance ExecutionState (Phase 4).
+   * Returns nullptr if plan was not compiled via standard path.
+   */
+  ExecutionState* getExecutionState() const { return execState_; }
+
+  /**
    * Get CUDA Graph execution statistics.
    * Returns number of segments captured as CUDA graphs.
    */
@@ -627,40 +700,31 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     bool wasFrozen = shapesFrozen_;
     shapesFrozen_ = frozen;
     if (frozen && !wasFrozen) {
-      // Merge segments now that value-dep-shape ops are safe to capture
-      // (their input values never change → output shapes are constant).
+      auto& env = Environment::getInstance();
+      bool mergeSegments = env.dspFreezeMergeSegments();
+
       int oldSegCount = (int)segments_.size();
-      
-      // CRITICAL FIX: Preserve Triton kernel cache before rebuilding segments.
-      // The Triton cache is keyed by segment boundaries (startSlot, endSlot).
-      // When segments are merged, the boundaries change and cache lookups fail.
-      // Solution: Skip rebuild if we already have a single merged segment.
-      if (oldSegCount > 1) {
+      if (mergeSegments && oldSegCount > 1) {
         rebuildSegmentsForFrozenShapes();
-        DSP_DIAG(SEGMENT, "setShapesFrozen: merged %d -> %d segments",
+        DSP_DIAG(SEGMENT, "setShapesFrozen: merged %d -> %d segments (ND4J_DSP_FREEZE_MERGE_SEGMENTS=1)",
                   oldSegCount, (int)segments_.size());
-      } else {
-        DSP_DIAG(SEGMENT, "setShapesFrozen: skipping rebuild (already %d segment)",
-                  oldSegCount);
       }
-      
-      DSP_DIAG(EXECUTE, "FROZEN_TRANSITION: unfrozen → FROZEN, executeCount reset, %d segments, %d slots, %d extInputs",
-                (int)segments_.size(), numSlots_, numExternalInputs_);
-      // Log all external input names for discovery
-      for (int i = 0; i < numExternalInputs_ && i < (int)externalInputNames_.size(); i++) {
-        DSP_DIAG(EXECUTE, "EXT_INPUT_DISCOVER: idx=%d key=\"%s\"",
-                  i, externalInputNames_[i].c_str());
-      }
-      // Clear stale cast cache entries from prefill phase so warmup
-      // repopulates with correctly-sized decode buffers
+
+      DSP_DIAG(EXECUTE, "FROZEN_TRANSITION: unfrozen → FROZEN, "
+                "%d segments, %d slots, %d extInputs, mergeSegments=%d, recompile=%d",
+                (int)segments_.size(), numSlots_, numExternalInputs_,
+                mergeSegments ? 1 : 0, env.dspFreezeRecompile() ? 1 : 0);
+
+      // Clear stale cast cache from prefill phase
       MmulHelper::clearCastCache();
-      // Reset executeCount so step 0 = warmup, step 1+ = capture/replay
+
+      // Arrays persist — NO freeing, NO zeroing.
+      // Reset segment state so CUDA graph capture starts fresh.
       executeCount_ = 0;
-      // Also reset per-segment executionCount so Triton capture window check
-      // doesn't reject capture due to stale pre-freeze count.
       for (auto& seg : segments_) {
         seg.executionCount = 0;
-        // Invalidate stale replay handles from pre-freeze execution
+        // Invalidate CUDA graph replay handles — buffer addresses from
+        // non-frozen execution may differ from frozen steady-state.
         if (seg.replayHandle) {
           for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
             if (!cb.directReference) delete cb.buffer;
@@ -669,15 +733,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
           seg.replayHandle.reset();
         }
         seg.argTableStable = false;
-        seg.captureFailed = false;
+        seg.gapOpsCapturedInGraph = false;
         seg.capturedInputAddrKey = 0;
+        seg.captureFailed = false;
       }
     }
     if (!frozen) {
-      // Reset frozen context state when unfreezing — shapes may change
+      // Unfreeze: demote any FROZEN/FROZEN_CONSTANT slots back to SHAPE_CACHED
       for (int i = 0; i < numSlots_; i++) {
-        slots_[i].frozenContextReady = false;
-        slots_[i].frozenConstantSlot = false;
+        if (slots_[i].state_ >= NativeSlot::SlotState::FROZEN) {
+          slots_[i].state_ = NativeSlot::SlotState::SHAPE_CACHED;
+        }
       }
       frozenConstantDetectionDone_ = false;
     }
@@ -791,6 +857,22 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
  private:
   NativeDynamicShapePlan();
 
+  // ── Shared immutable plan definition (Phase 3) ────────────────────────
+  // Contains all data that does NOT change between executions:
+  // numSlots, totalOutputSlots, numExternalInputs, requestedOutputSlotIndices,
+  // externalInputNames, externalInputIsVariable, hasControlFlow, numLoopRegions,
+  // backendPriority. Created during compilation, ref-counted for sharing.
+  // Currently populated alongside existing fields (behavioral no-op).
+  // Future phases will migrate reads to use planDef_ instead.
+  PlanDefinition* planDef_ = nullptr;
+
+  // ── Per-plan-instance mutable execution state (Phase 4) ───────────────
+  // Contains slotArrays, ownership, protectedWeightBuffers, executeCount,
+  // shapesFrozen. Thread-bound (error if called from different thread).
+  // Currently populated alongside existing fields (behavioral no-op).
+  // Future phases will migrate mutable state into execState_.
+  ExecutionState* execState_ = nullptr;
+
   // Slot data
   NativeSlot* slots_;
   int numSlots_;
@@ -809,19 +891,30 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Execution state (reused across calls)
   NDArray** outputSlots_;              // Current output slot values
-  NDArray** slotArrayCache_;           // Per-slot cached arrays for reuse
+  NDArray** slotArrayCache_;           // UNIFIED with outputSlots_ (same pointer, DO NOT delete[] separately)
   bool* slotIsViewProducer_;           // View producer flags (learned from first exec)
-  NDArray** slotViewOutputs_;          // Zero-copy view outputs for view-capable ops (reshape/expand_dims/squeeze)
+  // slotViewOutputs_ removed (Phase 2): views go directly into outputSlots_/slotArrayCache_
   Context** contextPool_;              // Pre-allocated Context pool
   bool viewProducerDetectionDone_;
   bool frozenConstantDetectionDone_;
 
+  // Unified buffer ownership tracking (Phase 1A).
+  // One SlotBufferInfo per totalOutputSlots_. Replaces ad-hoc tracking:
+  //   protectedWeightBuffers_ → ownership == WEIGHT/VIEW_OF_WEIGHT
+  //   slotViewOutputs_ → ownership == VIEW_OF_SLOT with parentSlotIdx
+  //   per-execute dedup HashSet → O(1) ownership check
+  SlotBufferInfo* slotOwnership_;
+
   // Graph segments for CUDA Graphs
   std::vector<GraphSegment> segments_;
 
-  // Memory management: evicted NDArrays awaiting deletion
-  std::vector<NDArray*> pendingClose_;
-  size_t pendingCloseBytes_;
+  // pendingClose_ and deferredClose_ REMOVED: arrays persist (one array per slot).
+  // View wrappers deleted inline in slotexec when replaced. No batched close needed.
+
+  // Protected DataBuffers: model weights and shapeStatic outputs whose
+  // DataBuffers must NEVER be freed during cleanup. Built on first execute().
+  // Mirrors Java-side protectedWeightBuffers in DynamicShapePlanExecutor.
+  std::unordered_set<DataBuffer*> protectedWeightBuffers_;
 
   // GPU graph capture control
   bool gpuGraphCaptureEnabled_;
@@ -897,7 +990,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Internal methods
   void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);
-  void flushPendingClose(void* stream);
+  // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
   void rebuildSegmentsForFrozenShapes();
 

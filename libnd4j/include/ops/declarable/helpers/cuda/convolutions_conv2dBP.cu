@@ -23,6 +23,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/col2im.h>
@@ -160,9 +161,11 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     delete permutedGradI;
   }
 
-  // Synchronize CUDA stream before cleanup to ensure all async operations complete
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
   auto cudaCtx = block.launchContext();
-  cudaStreamSynchronize(*cudaCtx->getCudaStream());
+  if (!tl_graphExecutionActive) {
+    cudaStreamSynchronize(*cudaCtx->getCudaStream());
+  }
 
   // Clean up
   delete permuted;

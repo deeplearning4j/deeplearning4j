@@ -28,6 +28,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/FusionPass.h>
+#include <system/op_boilerplate.h>
 #include <system/Environment.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <helpers/ConstantShapeHelper.h>
@@ -47,6 +48,32 @@ namespace sd {
 namespace graph {
 
 // Verify helpers now in DspVerifyUtils.h (dspLogSlotOutput, dspDumpSlotValues, etc.)
+
+/**
+ * Backfill cachedOutputShapes from the actual output arrays in outputSlots_.
+ * Identity ops, view ops, and frozen constant paths may skip shape inference,
+ * leaving cachedOutputShapes empty. Cross-segment Triton compilation needs
+ * these shapes, so we backfill from the live output arrays after execution.
+ */
+static void backfillCachedOutputShapes(NativeSlot& slot, NDArray** outputSlots, int totalOutputSlots) {
+  if (!slot.cachedOutputShapes.empty()) return;  // already populated
+  if (slot.numOutputs <= 0) return;
+
+  for (int o = 0; o < slot.numOutputs; o++) {
+    int si = slot.outputSlotIndices[o];
+    if (si >= 0 && si < totalOutputSlots && outputSlots[si] != nullptr) {
+      auto* outArr = outputSlots[si];
+      if (outArr->shapeInfo() != nullptr) {
+        auto cached = ConstantShapeHelper::getInstance().createFromExisting(
+            const_cast<LongType*>(outArr->shapeInfo()));
+        slot.cachedOutputShapes.push_back(cached);
+      }
+    }
+  }
+  if (!slot.cachedOutputShapes.empty() && slot.state_ < NativeSlot::SlotState::SHAPE_CACHED) {
+    slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;
+  }
+}
 
 namespace {
 
@@ -186,6 +213,94 @@ static LongType computeStridedSliceViewOffset(const NativeSlot& slot,
   return offset;
 }
 
+/**
+ * Result codes for tryCreateViewForSlot().
+ */
+enum ViewCreateResult {
+  VIEW_NOT_POSSIBLE = 0,      // Input not contiguous or length mismatch — fall through to normal alloc
+  VIEW_CREATED = 1,           // View successfully created and returned
+  VIEW_STRIDED_SLICE_FAIL = -1, // strided_slice offset computation failed (non-unit strides/newAxisMask)
+  VIEW_STALE_EMPTY_SHAPE = 2  // outLen == 0 but inLen > 0 — stale shape, needs re-inference
+};
+
+/**
+ * Try to create a zero-copy view for a view-capable op (reshape, expand_dims,
+ * squeeze, strided_slice, permute).
+ *
+ * On success (VIEW_CREATED), sets *outView to the newly created NDArray view
+ * and *outViewOffset to the byte-element offset used.
+ *
+ * On failure, *outView is nullptr and the result code indicates why:
+ *   VIEW_NOT_POSSIBLE       — input not C-contiguous, or output length > input length
+ *   VIEW_STRIDED_SLICE_FAIL — strided_slice offset computation failed
+ *   VIEW_STALE_EMPTY_SHAPE  — cached output shape is empty but input is non-empty
+ *
+ * The caller is responsible for installing the view into outputSlots_,
+ * slotArrayCache_, slotIsViewProducer_, and context — this helper only
+ * creates the NDArray wrapper.
+ *
+ * @param slot           The NativeSlot for this op
+ * @param input0         The primary input array (must not be null)
+ * @param outShapeInfo   The shape info to use for the output view
+ * @param allInputs      All resolved inputs (needed for strided_slice offset)
+ * @param numInputs      Number of entries in allInputs
+ * @param outView        [out] The created view, or nullptr
+ * @param outViewOffset  [out] The element offset into input0's buffer
+ * @return ViewCreateResult code
+ */
+static ViewCreateResult tryCreateViewForSlot(
+    const NativeSlot& slot,
+    NDArray* input0,
+    const LongType* outShapeInfo,
+    NDArray** allInputs,
+    int numInputs,
+    NDArray** outView,
+    LongType* outViewOffset) {
+
+  *outView = nullptr;
+  *outViewOffset = 0;
+
+  // Check C-contiguity of input
+  if (input0->dataBuffer() == nullptr ||
+      input0->ordering() != 'c' ||
+      !shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
+    return VIEW_NOT_POSSIBLE;
+  }
+
+  // For permute: use permuted strides from input, not contiguous strides
+  const LongType* effectiveShapeInfo = outShapeInfo;
+  bool isPermute = (normalizeOpName_slotexec(slot.opName) == "permute");
+  if (isPermute) {
+    const LongType* permSI = buildPermutedViewShapeInfo(input0, slot);
+    if (permSI != nullptr) effectiveShapeInfo = permSI;
+  }
+
+  // Compute view offset for strided_slice
+  LongType viewOffset = 0;
+  if (slot.opName == "strided_slice") {
+    viewOffset = computeStridedSliceViewOffset(slot, input0, allInputs, numInputs);
+    if (viewOffset < 0) {
+      return VIEW_STRIDED_SLICE_FAIL;
+    }
+  }
+  *outViewOffset = viewOffset;
+
+  LongType outLen = shape::length(effectiveShapeInfo);
+  LongType inLen = input0->lengthOf();
+
+  if (outLen > 0 && outLen <= inLen) {
+    *outView = new NDArray(input0->dataBuffer(),
+                           const_cast<LongType*>(effectiveShapeInfo),
+                           LaunchContext::defaultContext(),
+                           viewOffset);
+    return VIEW_CREATED;
+  } else if (outLen == 0 && inLen > 0) {
+    return VIEW_STALE_EMPTY_SHAPE;
+  }
+
+  return VIEW_NOT_POSSIBLE;
+}
+
 }  // namespace
 
 // ─── Frozen constant detection ──────────────────────────────────────────────
@@ -258,7 +373,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
       }
     }
     if (allOutputsConstant && !sl.isDataDependent) {
-      sl.frozenConstantSlot = true;
+      sl.state_ = NativeSlot::SlotState::FROZEN_CONSTANT;
       frozenConstCount++;
       if (isValueIndependentSlot[s]) valueIndepCount++;
     }
@@ -266,7 +381,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   // Collect frozen output slot indices for quick lookup
   std::unordered_set<int> frozenOutputSlots;
   for (int s = 0; s < numSlots_; s++) {
-    if (slots_[s].frozenConstantSlot) {
+    if (slots_[s].frozenConstantSlot()) {
       for (int o = 0; o < slots_[s].numOutputs; o++) {
         frozenOutputSlots.insert(slots_[s].outputSlotIndices[o]);
       }
@@ -296,6 +411,43 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
 
   DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants (%d value-independent, %d in-place disabled)",
             frozenConstCount, numSlots_, valueIndepCount, disabledInPlace);
+
+  // Log which output slots are frozen constant vs external-dependent for debugging
+  // NaN issues during frozen steady-state execution.
+  if (DSP_DIAG_ENABLED(SHAPE)) {
+    int extDepCount = 0;
+    for (int si = 0; si < totalOutputSlots_; si++) {
+      if (dependsOnExternal[si]) extDepCount++;
+    }
+    fprintf(stdout, "[DSP_DIAG] [FROZEN_CONST] %d/%d output slots depend on external input\n",
+            extDepCount, totalOutputSlots_);
+    // Log specific slots around the known NaN chain for debugging
+    for (int checkSlot : {299, 1214, 1215}) {
+      if (checkSlot < totalOutputSlots_) {
+        bool depExt = dependsOnExternal[checkSlot];
+        // Find which step produces this output slot
+        int producingStep = -1;
+        bool isFrozenConst = false, isShapeStatic = false;
+        for (int s = 0; s < numSlots_; s++) {
+          for (int o = 0; o < slots_[s].numOutputs; o++) {
+            if (slots_[s].outputSlotIndices[o] == checkSlot) {
+              producingStep = s;
+              isFrozenConst = slots_[s].frozenConstantSlot();
+              isShapeStatic = slots_[s].shapeStatic;
+              goto foundStep;
+            }
+          }
+        }
+        foundStep:;
+        fprintf(stdout, "[DSP_DIAG] [FROZEN_CONST] outSlot=%d dependsOnExternal=%d "
+                "producingStep=%d frozenConst=%d shapeStatic=%d opName=%s\n",
+                checkSlot, depExt ? 1 : 0, producingStep,
+                isFrozenConst ? 1 : 0, isShapeStatic ? 1 : 0,
+                producingStep >= 0 ? slots_[producingStep].opName.c_str() : "?");
+      }
+    }
+    fflush(stdout);
+  }
 }
 
 // ─── Shape key computation ──────────────────────────────────────────────────
@@ -378,6 +530,7 @@ Status NativeDynamicShapePlan::executeSlot(
                             outputSlots_, slot.outputSlotIndices, slot.numOutputs, totalOutputSlots_);
       }
 #endif
+      backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
       return Status::OK;
     }
   }
@@ -387,13 +540,30 @@ Status NativeDynamicShapePlan::executeSlot(
   // outputSlots_ is populated from slotArrayCache_ (line 921-922).  When
   // shapesFrozen_=false, outputSlots_ is zeroed — skipping a slot would
   // leave a NULL entry and downstream slots would get NULL inputs.
-  if (slot.frozenConstantSlot && shapesFrozen_ && executeCount_ > 0) {
-#ifdef SD_CUDA
-    if (Environment::getInstance().tritonVerifyKernels()) {
-      DSP_DIAG(VERIFY, "SLOT_EXEC step=%d op=%s [SKIPPED:frozen-const]", stepIdx, slot.opName.c_str());
+  if (slot.frozenConstantSlot() && shapesFrozen_ && executeCount_ > 0) {
+    // Verify all outputs are populated before skipping. If outputSlots_[si]
+    // is null (first execution), fall through to execute the slot so
+    // downstream consumers get a valid array.
+    bool allOutputsPopulated = true;
+    for (int o = 0; o < slot.numOutputs; o++) {
+      int si = slot.outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr) {
+        allOutputsPopulated = false;
+        break;
+      }
     }
+    if (allOutputsPopulated) {
+#ifdef SD_CUDA
+      if (Environment::getInstance().tritonVerifyKernels()) {
+        DSP_DIAG(VERIFY, "SLOT_EXEC step=%d op=%s [SKIPPED:frozen-const]", stepIdx, slot.opName.c_str());
+      }
 #endif
-    return Status::OK;
+      backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
+      return Status::OK;
+    }
+    // Fall through to execute — output slot is null, must re-execute to populate it
+    DSP_DIAG(EXECUTE, "SLOT_EXEC step=%d op=%s frozen-const but output null, re-executing",
+             stepIdx, slot.opName.c_str());
   }
 
   // ── Fused chain tail skip ─────────────────────────────────────────────────
@@ -413,10 +583,7 @@ Status NativeDynamicShapePlan::executeSlot(
     int primarySrcIdx = slot.inputSourceIndices[0];
     if (primarySrcIdx >= 0) {
       primaryInput = outputSlots_[primarySrcIdx];
-      if (primaryInput == nullptr && primarySrcIdx < totalOutputSlots_ && slotArrayCache_[primarySrcIdx] != nullptr) {
-        primaryInput = slotArrayCache_[primarySrcIdx];
-        outputSlots_[primarySrcIdx] = slotArrayCache_[primarySrcIdx];
-      }
+      // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
     } else {
       int extIdx = -(primarySrcIdx + 1);
       if (extIdx < numExt) primaryInput = externalArrays[extIdx];
@@ -455,10 +622,7 @@ Status NativeDynamicShapePlan::executeSlot(
       if (secSrc != INT32_MIN) {
         if (secSrc >= 0) {
           secondaryInputs[ci] = outputSlots_[secSrc];
-          if (secondaryInputs[ci] == nullptr && secSrc < totalOutputSlots_ && slotArrayCache_[secSrc] != nullptr) {
-            secondaryInputs[ci] = slotArrayCache_[secSrc];
-            outputSlots_[secSrc] = slotArrayCache_[secSrc];
-          }
+          // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
         } else {
           int extIdx = -(secSrc + 1);
           if (extIdx < numExt) secondaryInputs[ci] = externalArrays[extIdx];
@@ -506,6 +670,12 @@ Status NativeDynamicShapePlan::executeSlot(
       output = slotArrayCache_[lastOutputSlotIdx];
       if (output != nullptr) {
         if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo)) {
+          // Same plan = same shapes. Shape mismatch is a bug — use a different plan.
+          DSP_DIAG(EXECUTE, "SHAPE MISMATCH at fused chain slot %d (cached vs expected) — "
+                   "same plan should never see different shapes", lastSlotIdx);
+          // Replace inline: delete old, allocate new
+          delete output;
+          slotArrayCache_[lastOutputSlotIdx] = nullptr;
           output = nullptr;
         }
       }
@@ -551,16 +721,26 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 #endif
 
+    // Backfill shapes for head AND all tail slots in the fused chain
+    backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
+    for (int ci = 0; ci < slot.fusedChainLength; ci++) {
+      int chainSlotIdx = slot.fusedChainSlots[ci];
+      if (chainSlotIdx >= 0 && chainSlotIdx < numSlots_) {
+        backfillCachedOutputShapes(slots_[chainSlotIdx], outputSlots_, totalOutputSlots_);
+      }
+    }
+
     return Status::OK;
   }
 
   // ── Fast path: frozen context ────────────────────────────────────────────
-  if (slot.frozenContextReady) {
+  if (slot.frozenContextReady()) {
 
     // ── View-capable fast path (reshape/expand_dims/squeeze/strided_slice) ──
     if (slot.isViewCapableOp && slot.numInputs >= 1 && slot.numOutputs >= 1) {
       int si = slot.outputSlotIndices[0];
       if (si >= 0 && si < totalOutputSlots_) {
+        // Resolve input0 from slot source indices
         int srcIdx = slot.inputSourceIndices[0];
         NDArray* input0 = nullptr;
         if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
@@ -570,79 +750,73 @@ Status NativeDynamicShapePlan::executeSlot(
           if (extIdx < numExt) input0 = externalArrays[extIdx];
         }
 
-        if (input0 != nullptr && input0->dataBuffer() != nullptr &&
-            input0->ordering() == 'c' &&
-            shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
-          // Compute view offset: 0 for reshape/squeeze/expand_dims,
-          // computed from begin indices for strided_slice.
-          LongType viewOffset = 0;
-          bool isStridedSlice = (slot.opName == "strided_slice");
-          if (isStridedSlice) {
-            // Gather begin/end/strides inputs for offset computation
-            static thread_local std::vector<NDArray*> ssInputs;
-            ssInputs.resize(slot.numInputs);
-            ssInputs[0] = input0;
-            for (int ii = 1; ii < slot.numInputs; ii++) {
-              int iiSrc = slot.inputSourceIndices[ii];
-              if (iiSrc >= 0 && iiSrc < totalOutputSlots_) {
-                ssInputs[ii] = outputSlots_[iiSrc];
-              } else if (iiSrc < 0) {
-                int iiExt = -(iiSrc + 1);
-                ssInputs[ii] = (iiExt < numExt) ? externalArrays[iiExt] : nullptr;
-              }
-            }
-            viewOffset = computeStridedSliceViewOffset(slot, input0, ssInputs.data(), slot.numInputs);
-            if (viewOffset < 0) {
-              // Can't create view (non-unit strides or newAxisMask) — fall through to normal execution
-              slot.frozenContextReady = false;
-              goto normalExecution;
+        if (input0 != nullptr && slot.shapeCacheValid() && !slot.cachedOutputShapes.empty()) {
+          // Gather all inputs for strided_slice offset computation
+          static thread_local std::vector<NDArray*> ssInputs;
+          ssInputs.resize(slot.numInputs);
+          ssInputs[0] = input0;
+          for (int ii = 1; ii < slot.numInputs; ii++) {
+            int iiSrc = slot.inputSourceIndices[ii];
+            if (iiSrc >= 0 && iiSrc < totalOutputSlots_) {
+              ssInputs[ii] = outputSlots_[iiSrc];
+            } else if (iiSrc < 0) {
+              int iiExt = -(iiSrc + 1);
+              ssInputs[ii] = (iiExt < numExt) ? externalArrays[iiExt] : nullptr;
             }
           }
 
-          NDArray* currentOut = outputSlots_[si];
-          if (currentOut != nullptr && currentOut->dataBuffer() == input0->dataBuffer()
-              && currentOut->offset() == viewOffset) {
+          NDArray* newView = nullptr;
+          LongType viewOffset = 0;
+          ViewCreateResult vcr = tryCreateViewForSlot(
+              slot, input0, slot.cachedOutputShapes[0],
+              ssInputs.data(), slot.numInputs,
+              &newView, &viewOffset);
+
+          if (vcr == VIEW_STRIDED_SLICE_FAIL) {
+            // Can't create view (non-unit strides or newAxisMask) — fall through to normal execution
+            if (slot.state_ >= NativeSlot::SlotState::FROZEN)
+              slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;
+            goto normalExecution;
+          } else if (vcr == VIEW_STALE_EMPTY_SHAPE) {
+            if (executeCount_ > 1) {
+              REQUIRE_TRUE(false, 0, "Frozen view-capable slot %d (%s) has empty output shape but "
+                           "non-empty input (len=%lld) after warmup (execCount=%d). "
+                           "This indicates a bug in array persistence.",
+                           stepIdx, slot.opName.c_str(), (long long)input0->lengthOf(), executeCount_);
+            }
+            // Stale empty shape from Step 0 — input is now non-empty.
+            // Invalidate frozen state and fall through to normal path
+            // for shape re-inference with actual input shapes.
+            DSP_DIAG_SLOT(SHAPE, stepIdx,
+                "view-capable slot %d (%s): frozen shape empty but input "
+                "non-empty (len=%lld) — re-inferring via normal path (warmup)",
+                stepIdx, slot.opName.c_str(), input0->lengthOf());
+            slot.state_ = NativeSlot::SlotState::WARMUP;
+            goto normalExecution;
+          } else if (vcr == VIEW_CREATED) {
+            // Check if existing view already matches — skip re-creation
+            NDArray* currentOut = outputSlots_[si];
+            if (currentOut != nullptr && currentOut->dataBuffer() == input0->dataBuffer()
+                && currentOut->offset() == viewOffset) {
+              delete newView;  // Discard redundant view
+              backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
+              return Status::OK;
+            }
+            // Install the new view
+            outputSlots_[si] = newView;
+            slotIsViewProducer_[si] = true;
+            auto& ctx2 = *contextPool_[stepIdx];
+            ctx2.setOutputArray(0, newView);
+            ctx2.setInputArray(0, input0);
+            NDArray* old = slotArrayCache_[si];
+            if (old != nullptr && old != newView) {
+              delete old;  // View wrapper only — no GPU memory freed
+            }
+            slotArrayCache_[si] = newView;
+            backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
             return Status::OK;
           }
-          if (slot.shapeCacheValid && !slot.cachedOutputShapes.empty()) {
-            const LongType* outShapeInfo = slot.cachedOutputShapes[0];
-            // For permute: use permuted strides from input, not contiguous strides
-            bool isPermute = (normalizeOpName_slotexec(slot.opName) == "permute");
-            if (isPermute) {
-              const LongType* permSI = buildPermutedViewShapeInfo(input0, slot);
-              if (permSI != nullptr) outShapeInfo = permSI;
-            }
-            LongType outLen = shape::length(outShapeInfo);
-            LongType inLen = input0->lengthOf();
-            if (outLen > 0 && outLen <= inLen) {
-              NDArray* newView = new NDArray(input0->dataBuffer(),
-                                             const_cast<LongType*>(outShapeInfo),
-                                             LaunchContext::defaultContext(),
-                                             viewOffset);
-              outputSlots_[si] = newView;
-              slotIsViewProducer_[si] = true;
-              auto& ctx2 = *contextPool_[stepIdx];
-              ctx2.setOutputArray(0, newView);
-              ctx2.setInputArray(0, input0);
-              NDArray* old = slotArrayCache_[si];
-              if (old != nullptr && old != newView) {
-                pendingClose_.push_back(old);
-              }
-              slotArrayCache_[si] = newView;
-              return Status::OK;
-            } else if (outLen == 0 && inLen > 0) {
-              // Stale empty shape from Step 0 — input is now non-empty.
-              // Invalidate frozen state and fall through to normal path
-              // for shape re-inference with actual input shapes.
-              DSP_DIAG_SLOT(SHAPE, stepIdx,
-                  "view-capable slot %d (%s): frozen shape empty but input "
-                  "non-empty (len=%lld) — re-inferring via normal path",
-                  stepIdx, slot.opName.c_str(), inLen);
-              slot.frozenContextReady = false;
-              slot.shapeCacheValid = false;
-              goto normalExecution;
-            }
-          }
+          // VIEW_NOT_POSSIBLE — fall through to frozen fallback / normal execution below
         }
       }
     }
@@ -669,12 +843,17 @@ Status NativeDynamicShapePlan::executeSlot(
           }
         }
         if (allEmpty) {
+          if (executeCount_ > 1) {
+            REQUIRE_TRUE(false, 0, "Frozen view-capable slot %d (%s) has ALL empty outputs but "
+                         "non-empty input (len=%lld) after warmup (execCount=%d). "
+                         "This indicates a bug in array persistence.",
+                         stepIdx, slot.opName.c_str(), (long long)inp0->lengthOf(), executeCount_);
+          }
           DSP_DIAG_SLOT(SHAPE, stepIdx,
               "view-capable slot %d (%s): frozen outputs empty but input non-empty "
-              "(len=%lld) — re-inferring via normal path (fallback)",
+              "(len=%lld) — re-inferring via normal path (fallback, warmup)",
               stepIdx, slot.opName.c_str(), inp0->lengthOf());
-          slot.frozenContextReady = false;
-          slot.shapeCacheValid = false;
+          slot.state_ = NativeSlot::SlotState::WARMUP;
           goto normalExecution;
         }
       }
@@ -721,11 +900,13 @@ Status NativeDynamicShapePlan::executeSlot(
         }
         if (isView) continue;
 
-        if (isBatchZeroRegistering() && ctxOuts[i]->specialBuffer() != nullptr) {
-          registerBatchZeroBuffer(ctxOuts[i]->specialBuffer(),
-                                  ctxOuts[i]->dataBuffer()->getLenInBytes());
+        if (!isBatchZeroActive()) {
+          if (isBatchZeroRegistering() && ctxOuts[i]->specialBuffer() != nullptr) {
+            registerBatchZeroBuffer(ctxOuts[i]->specialBuffer(),
+                                    ctxOuts[i]->dataBuffer()->getLenInBytes());
+          }
+          ctxOuts[i]->nullify();
         }
-        ctxOuts[i]->nullify();
       }
     }
 
@@ -755,7 +936,7 @@ Status NativeDynamicShapePlan::executeSlot(
         if (si >= 0 && si < totalOutputSlots_) {
           NDArray* oldCached = slotArrayCache_[si];
           if (oldCached != nullptr && oldCached != ctxOuts[i]) {
-            pendingClose_.push_back(oldCached);
+            delete oldCached;  // Replace stale cached array inline
           }
           outputSlots_[si] = ctxOuts[i];
           slotArrayCache_[si] = ctxOuts[i];
@@ -770,6 +951,9 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 #endif
 
+    if (status == Status::OK) {
+      backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
+    }
     return status;
   }
 
@@ -781,10 +965,7 @@ Status NativeDynamicShapePlan::executeSlot(
     int srcIdx = slot.inputSourceIndices[i];
     if (srcIdx >= 0) {
       inputs[i] = outputSlots_[srcIdx];
-      if (inputs[i] == nullptr && srcIdx < totalOutputSlots_ && slotArrayCache_[srcIdx] != nullptr) {
-        inputs[i] = slotArrayCache_[srcIdx];
-        outputSlots_[srcIdx] = slotArrayCache_[srcIdx];
-      }
+      // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
     } else {
       int extIdx = -(srcIdx + 1);
       if (extIdx < numExt) {
@@ -797,6 +978,50 @@ Status NativeDynamicShapePlan::executeSlot(
     if (inputs[i] == nullptr) {
       DSP_DIAG_SLOT(EXECUTE, stepIdx, "NULL input for slot %d (%s) input %d, srcIdx=%d",
                 stepIdx, slot.opName.c_str(), i, slot.inputSourceIndices[i]);
+      return Status::BAD_INPUT;
+    }
+
+    // Validate shapeInfo is present — an NDArray with nullptr _shapeInfo is
+    // uninitialized or destroyed. Using it would crash inside op->execute().
+    // This catches use-after-free and stale cache entries early.
+    {
+      const LongType* si = nullptr;
+      try { si = inputs[i]->shapeInfo(); } catch (...) { si = nullptr; }
+      if (si == nullptr) {
+        DSP_DIAG_SLOT(EXECUTE, stepIdx,
+            "NULL shapeInfo for slot %d (%s) input %d, srcIdx=%d "
+            "ptr=%p db=%p exec=%d",
+            stepIdx, slot.opName.c_str(), i, slot.inputSourceIndices[i],
+            (void*)inputs[i], (void*)inputs[i]->dataBuffer(), executeCount_);
+        // Invalidate the cache entry so future executions don't hit the same bad array
+        int badSrcIdx = slot.inputSourceIndices[i];
+        if (badSrcIdx >= 0 && badSrcIdx < totalOutputSlots_) {
+          outputSlots_[badSrcIdx] = nullptr;
+          slotArrayCache_[badSrcIdx] = nullptr;
+        }
+        return Status::BAD_INPUT;
+      }
+    }
+
+    // Validate GPU buffer is alive — detect freed DataBuffers that would cause
+    // CUDA illegal memory access (error 700) downstream.
+    auto* db = inputs[i]->dataBuffer();
+    if (db != nullptr && db->isClosed()) {
+      DSP_DIAG_SLOT(EXECUTE, stepIdx,
+          "CLOSED DataBuffer for slot %d (%s) input %d, srcIdx=%d "
+          "specialBuf=%p isConst=%d exec=%d",
+          stepIdx, slot.opName.c_str(), i, slot.inputSourceIndices[i],
+          db->special(), db->isConstant ? 1 : 0, executeCount_);
+      return Status::BAD_INPUT;
+    }
+    if (db != nullptr && db->special() == nullptr && !inputs[i]->isEmpty()) {
+      DSP_DIAG_SLOT(EXECUTE, stepIdx,
+          "NULL GPU buffer for slot %d (%s) input %d, srcIdx=%d "
+          "len=%lld isClosed=%d isConst=%d exec=%d fromCache=%d",
+          stepIdx, slot.opName.c_str(), i, slot.inputSourceIndices[i],
+          (long long)inputs[i]->lengthOf(), db->isClosed() ? 1 : 0,
+          db->isConstant ? 1 : 0, executeCount_,
+          (outputSlots_[slot.inputSourceIndices[i]] == nullptr) ? 1 : 0);
       return Status::BAD_INPUT;
     }
   }
@@ -826,10 +1051,11 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 #endif
 
+
   // ── Step 2: Shape inference ──────────────────────────────────────────────
   LongType shapeKey = 0;
   bool cacheHit;
-  if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid &&
+  if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid() &&
       !slot.outputShapeDependsOnInputValues) {
     cacheHit = true;
 
@@ -858,7 +1084,7 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   } else {
     shapeKey = computeShapeKey(slot, inputs.data(), slot.numInputs);
-    cacheHit = slot.shapeCacheValid && (slot.cachedShapeKey == shapeKey);
+    cacheHit = slot.shapeCacheValid() && (slot.cachedShapeKey == shapeKey);
 
     // View-capable ops: even with matching shape key, check for stale empty
     // cached shapes. computeShapeKey does NOT include the ARRAY_EMPTY flag,
@@ -915,11 +1141,25 @@ Status NativeDynamicShapePlan::executeSlot(
     } catch (const std::exception& e) {
       DSP_DIAG_SLOT(SHAPE, stepIdx, "shape inference EXCEPTION at slot %d (%s): %s",
                 stepIdx, slot.opName.c_str(), e.what());
+      // Propagate error detail to Java via errorReference (otherwise Java only sees "status 50")
+      std::string inputShapeStr;
+      for (int ii = 0; ii < slot.numInputs; ii++) {
+        if (ii > 0) inputShapeStr += ", ";
+        inputShapeStr += inputs[ii] ? ShapeUtils::shapeAsString(inputs[ii]) : "null";
+      }
+      char errBuf[1024];
+      snprintf(errBuf, sizeof(errBuf), "slot %d (%s) shape inference failed: %s | inputs=[%s] iArgs=%d",
+               stepIdx, slot.opName.c_str(), e.what(), inputShapeStr.c_str(), slot.numIArgs);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
       return Status::KERNEL_FAILURE;
     }
     if (shapeList == nullptr || shapeList->size() == 0) {
       DSP_DIAG_SLOT(SHAPE, stepIdx, "shape inference returned null for slot %d (%s)",
                 stepIdx, slot.opName.c_str());
+      char errBuf[512];
+      snprintf(errBuf, sizeof(errBuf), "slot %d (%s) shape inference returned null/empty",
+               stepIdx, slot.opName.c_str());
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
       return Status::KERNEL_FAILURE;
     }
 
@@ -939,7 +1179,8 @@ Status NativeDynamicShapePlan::executeSlot(
 
     slot.cachedShapeKey = shapeKey;
     slot.cachedOutputShapes = outputShapes;
-    slot.shapeCacheValid = true;
+    if (slot.state_ < NativeSlot::SlotState::SHAPE_CACHED)
+      slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;
 
     delete shapeList;
   }
@@ -1002,41 +1243,24 @@ Status NativeDynamicShapePlan::executeSlot(
   // ── View-capable ops: share input 0's DataBuffer for output 0 ──────────
   if (slot.isViewCapableOp && slot.numInputs >= 1 && numActualOutputs >= 1) {
     NDArray* input0 = inputs[0];
-    if (input0 != nullptr && input0->dataBuffer() != nullptr &&
-        input0->ordering() == 'c' &&
-        shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
-      const LongType* outShapeInfo = outputShapes[0];
-      // For permute: use permuted strides from input, not contiguous strides
-      bool isPermute = (normalizeOpName_slotexec(slot.opName) == "permute");
-      if (isPermute) {
-        const LongType* permSI = buildPermutedViewShapeInfo(input0, slot);
-        if (permSI != nullptr) outShapeInfo = permSI;
-      }
-      LongType outLen = shape::length(outShapeInfo);
-      LongType inLen = input0->lengthOf();
-
-      // Compute view offset: 0 for reshape/squeeze/expand_dims/permute,
-      // computed from begin indices for strided_slice.
+    if (input0 != nullptr) {
+      NDArray* view = nullptr;
       LongType viewOffset = 0;
-      if (slot.opName == "strided_slice") {
-        viewOffset = computeStridedSliceViewOffset(slot, input0, inputs.data(), slot.numInputs);
-        if (viewOffset < 0) {
-          // Non-unit strides or newAxisMask — can't create contiguous view, fall through
-          goto step3_allocate;
-        }
-      }
+      ViewCreateResult vcr = tryCreateViewForSlot(
+          slot, input0, outputShapes[0],
+          inputs.data(), slot.numInputs,
+          &view, &viewOffset);
 
-      if (outLen > 0 && outLen <= inLen) {
+      if (vcr == VIEW_STRIDED_SLICE_FAIL) {
+        // Non-unit strides or newAxisMask — can't create contiguous view, fall through
+        goto step3_allocate;
+      } else if (vcr == VIEW_CREATED) {
         int slotIdx = slot.outputSlotIndices[0];
-        NDArray* view = new NDArray(input0->dataBuffer(),
-                                     const_cast<LongType*>(outShapeInfo),
-                                     LaunchContext::defaultContext(),
-                                     viewOffset);
         outputs[0] = view;
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
           NDArray* old = slotArrayCache_[slotIdx];
           if (old != nullptr && old != view) {
-            pendingClose_.push_back(old);
+            delete old;  // View wrapper only — no GPU memory freed
           }
           outputSlots_[slotIdx] = view;
           slotArrayCache_[slotIdx] = view;
@@ -1059,6 +1283,7 @@ Status NativeDynamicShapePlan::executeSlot(
         }
         goto step4_execute;
       }
+      // VIEW_NOT_POSSIBLE or VIEW_STALE_EMPTY_SHAPE — fall through to step3_allocate
     }
   }
 
@@ -1108,8 +1333,10 @@ step3_allocate:
         outputSlots_[slotIdx] = cached;
         continue;
       } else {
-        pendingCloseBytes_ += cached->lengthOf() * cached->sizeOfT();
-        pendingClose_.push_back(cached);
+        // Same plan = same shapes. Shape mismatch — replace inline.
+        DSP_DIAG(EXECUTE, "SHAPE MISMATCH at slot %d (cached vs expected) — replacing inline",
+                 slotIdx);
+        delete cached;
         slotArrayCache_[slotIdx] = nullptr;
       }
     }
@@ -1246,7 +1473,7 @@ step3_allocate:
                   "(length=%lld) — forcing execution instead of skip",
                   stepIdx, slot.opName.c_str(), inputs[0]->lengthOf());
         // Invalidate shape cache so next execution re-derives shapes
-        slot.shapeCacheValid = false;
+        slot.state_ = NativeSlot::SlotState::WARMUP;
       } else {
         DSP_DIAG_SLOT(EXECUTE, stepIdx, "skipping slot %d (%s): all %d outputs are empty",
                   stepIdx, slot.opName.c_str(), numActualOutputs);
@@ -1278,7 +1505,7 @@ step3_allocate:
   ctx.setShapeFunctionOverride(true);
 
   // Log shapes for matmul gap slots to diagnose capture shape mismatches
-  if (normalizeOpName_slotexec(slot.opName) == "matmul") {
+  if (DSP_DIAG_ENABLED(EXECUTE) && normalizeOpName_slotexec(slot.opName) == "matmul") {
     std::string inStr, outStr, cachedStr;
     for (int i = 0; i < slot.numInputs; i++) {
       if (i > 0) inStr += ", ";
@@ -1296,6 +1523,18 @@ step3_allocate:
               "cacheHit=%d frozen=%d execCount=%d",
               stepIdx, inStr.c_str(), outStr.c_str(), cachedStr.c_str(),
               (int)cacheHit, (int)shapesFrozen_, executeCount_);
+    for (int i = 0; i < slot.numInputs; i++) {
+      if (inputs[i] != nullptr) {
+        auto* db = inputs[i]->dataBuffer();
+        DSP_DIAG(EXECUTE, "MATMUL INPUT[%d]: slot %d srcIdx=%d addr=%p special=%p len=%lld "
+                  "db=%p closed=%d const=%d",
+                  i, stepIdx, slot.inputSourceIndices[i],
+                  (void*)inputs[i], db ? db->special() : nullptr,
+                  (long long)inputs[i]->lengthOf(),
+                  (void*)db, db ? db->isClosed() : -1,
+                  db ? (int)db->isConstant : -1);
+      }
+    }
   }
 
   Status status;
@@ -1322,6 +1561,14 @@ step3_allocate:
               stepIdx, slot.opName.c_str(), e.what(),
               inputShapes.c_str(), outputShapesStr.c_str(), iArgsStr.c_str(),
               (int)cacheHit, executeCount_, (int)shapesFrozen_);
+    // Propagate error detail to Java via errorReference
+    {
+      char errBuf[1024];
+      snprintf(errBuf, sizeof(errBuf), "slot %d (%s) exec exception: %s | inputs=[%s] outputs=[%s] iArgs=[%s]",
+               stepIdx, slot.opName.c_str(), e.what(),
+               inputShapes.c_str(), outputShapesStr.c_str(), iArgsStr.c_str());
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
+    }
     return Status::KERNEL_FAILURE;
   }
 
@@ -1339,6 +1586,14 @@ step3_allocate:
     for (int i = 0; i < slot.numIArgs; i++) {
       if (i > 0) iArgsStr += ",";
       iArgsStr += std::to_string(slot.iArgs[i]);
+    }
+    // Propagate error detail to Java via errorReference
+    {
+      char errBuf[1024];
+      snprintf(errBuf, sizeof(errBuf), "slot %d (%s) exec failed status=%d | inputs=[%s] outputs=[%s] iArgs=[%s]",
+               stepIdx, slot.opName.c_str(), static_cast<int>(status),
+               inputShapes.c_str(), outputShapesStr.c_str(), iArgsStr.c_str());
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
     }
     DSP_DIAG(EXECUTE, "SLOT EXEC FAIL: slot %d (%s) status=%d, inputs=[%s], outputs=[%s], iArgs=[%s], "
               "cacheHit=%d executeCount=%d shapesFrozen=%d",
@@ -1365,7 +1620,7 @@ step3_allocate:
           slotIsViewProducer_[si] = true;
           NDArray* oldCached = slotArrayCache_[si];
           if (oldCached != nullptr && oldCached != ctxOutputs[i]) {
-            pendingClose_.push_back(oldCached);
+            delete oldCached;  // View wrapper only — no GPU memory freed
           }
           outputSlots_[si] = ctxOutputs[i];
           slotArrayCache_[si] = ctxOutputs[i];
@@ -1373,7 +1628,7 @@ step3_allocate:
       } else if (slotIsViewProducer_[si]) {
         NDArray* oldCached = slotArrayCache_[si];
         if (oldCached != nullptr && oldCached != ctxOutputs[i]) {
-          pendingClose_.push_back(oldCached);
+          delete oldCached;  // View wrapper only — no GPU memory freed
         }
         outputSlots_[si] = ctxOutputs[i];
         slotArrayCache_[si] = ctxOutputs[i];
@@ -1382,7 +1637,8 @@ step3_allocate:
   }
 
   if (shapesFrozen_ && executeCount_ > 0 && status == Status::OK) {
-    slot.frozenContextReady = true;
+    if (slot.state_ < NativeSlot::SlotState::FROZEN)
+      slot.state_ = NativeSlot::SlotState::FROZEN;
   }
 
 #ifdef SD_CUDA

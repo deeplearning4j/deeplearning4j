@@ -48,7 +48,8 @@ struct SpatialTransformerDesc {
 // grid: [N, H, W, 2] sampling grid (x, y coordinates)
 static void gridGeneratorCUDNN(const LaunchContext* context, NDArray* theta, NDArray* grid) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(theta->dataType());
 
@@ -69,8 +70,10 @@ static void gridGeneratorCUDNN(const LaunchContext* context, NDArray* theta, NDA
       STRINGIZE(cudnnSpatialTfGridGeneratorForward),
       cudnnSpatialTfGridGeneratorForward(*handle, stDesc, theta->specialBuffer(), grid->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("gridGeneratorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("gridGeneratorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({grid}, {theta});
 }
@@ -79,7 +82,8 @@ static void gridGeneratorCUDNN(const LaunchContext* context, NDArray* theta, NDA
 // Backward pass for grid generator
 static void gridGeneratorBpCUDNN(const LaunchContext* context, NDArray* gradGrid, NDArray* gradTheta) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(gradGrid->dataType());
 
@@ -100,8 +104,10 @@ static void gridGeneratorBpCUDNN(const LaunchContext* context, NDArray* gradGrid
       STRINGIZE(cudnnSpatialTfGridGeneratorBackward),
       cudnnSpatialTfGridGeneratorBackward(*handle, stDesc, gradGrid->specialBuffer(), gradTheta->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("gridGeneratorBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("gridGeneratorBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradTheta}, {gradGrid});
 }
@@ -113,7 +119,8 @@ static void gridGeneratorBpCUDNN(const LaunchContext* context, NDArray* gradGrid
 // output: [N, C, H_out, W_out]
 static void gridSamplerCUDNN(const LaunchContext* context, NDArray* input, NDArray* grid, NDArray* output) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -140,8 +147,8 @@ static void gridSamplerCUDNN(const LaunchContext* context, NDArray* input, NDArr
   stDesc.set(CUDNN_SAMPLER_BILINEAR, dataType, 4, dims);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -154,8 +161,10 @@ static void gridSamplerCUDNN(const LaunchContext* context, NDArray* input, NDArr
                                     grid->specialBuffer(),
                                     beta, yDesc, output->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("gridSamplerCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("gridSamplerCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input, grid});
 }
@@ -166,7 +175,8 @@ static void gridSamplerBpCUDNN(const LaunchContext* context,
                                 NDArray* input, NDArray* grid, NDArray* gradO,
                                 NDArray* gradI, NDArray* gradGrid) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
@@ -191,8 +201,8 @@ static void gridSamplerBpCUDNN(const LaunchContext* context,
   stDesc.set(CUDNN_SAMPLER_BILINEAR, dataType, 4, dims);
 
   // Scaling parameters
-  const float alpha32 = 1.0f, beta32 = 0.0f;
-  const double alpha64 = 1.0, beta64 = 0.0;
+  static const float alpha32 = 1.0f, beta32 = 0.0f;
+  static const double alpha64 = 1.0, beta64 = 0.0;
   const void* alpha = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta = input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
@@ -207,8 +217,10 @@ static void gridSamplerBpCUDNN(const LaunchContext* context,
                                      grid->specialBuffer(),
                                      beta, gradGrid->specialBuffer()));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("gridSamplerBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  if (!tl_graphExecutionActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("gridSamplerBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI, gradGrid}, {input, grid, gradO});
 }

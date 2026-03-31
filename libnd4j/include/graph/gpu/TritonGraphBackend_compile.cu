@@ -23,11 +23,14 @@
 #include <graph/gpu/TritonGraphBackend.h>
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonIRBuilder.h>
+#include <graph/gpu/TritonIRBuilder_internal.h>
+#include <graph/gpu/OpCategoryTable.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/gpu/SectionTypeConfig.h>
 #include <graph/gpu/FusionScoring.h>
 #include <graph/DspDiagnostics.h>
 #include <system/Environment.h>
+#include <helpers/shape.h>
 #include <helpers/logger.h>
 
 #include <algorithm>
@@ -45,6 +48,7 @@ namespace sd {
 namespace graph {
 
 using namespace triton_internal;
+using namespace ir_builder_internal;
 
 bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         NDArray** externalInputs, int numExternalInputs,
@@ -146,6 +150,233 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   DSP_DIAG_SEG(COMPILE, seg.startSlot, "TritonGraphBackend: segment [%d-%d] has %d ops, %d sections (deviceId=%d)",
                seg.startSlot, seg.endSlot, segmentOps, static_cast<int>(sections.size()),
                compileDevice);
+
+  auto shapeInfoToVector = [](const LongType* shapeInfo) -> std::vector<LongType> {
+    std::vector<LongType> shapeVec;
+    if (shapeInfo == nullptr) return shapeVec;
+    int rank = shape::rank(shapeInfo);
+    shapeVec.reserve(rank);
+    const LongType* dims = shape::shapeOf(shapeInfo);
+    for (int d = 0; d < rank; d++) {
+      shapeVec.push_back(dims[d]);
+    }
+    return shapeVec;
+  };
+
+  auto resolveShape = [&](int slotIdx) -> std::vector<LongType> {
+    if (slotIdx < 0) {
+      int extIdx = -(slotIdx + 1);
+      if (extIdx >= 0 && extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
+        std::vector<LongType> shapeVec;
+        auto* arr = externalInputs[extIdx];
+        shapeVec.reserve(arr->rankOf());
+        for (int d = 0; d < arr->rankOf(); d++) {
+          shapeVec.push_back(arr->sizeAt(d));
+        }
+        return shapeVec;
+      }
+      return {};
+    }
+
+    if (slotIdx < totalOutputSlots && outputSlots && outputSlots[slotIdx]) {
+      std::vector<LongType> shapeVec;
+      auto* arr = outputSlots[slotIdx];
+      shapeVec.reserve(arr->rankOf());
+      for (int d = 0; d < arr->rankOf(); d++) {
+        shapeVec.push_back(arr->sizeAt(d));
+      }
+      return shapeVec;
+    }
+
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      auto& producerSlot = slots[s];
+      if (!producerSlot.shapeCacheValid() || producerSlot.cachedOutputShapes.empty()) continue;
+      for (int o = 0; o < producerSlot.numOutputs; o++) {
+        if (o >= static_cast<int>(producerSlot.cachedOutputShapes.size())) break;
+        if (producerSlot.outputSlotIndices[o] == slotIdx) {
+          return shapeInfoToVector(producerSlot.cachedOutputShapes[o]);
+        }
+      }
+    }
+
+    return {};
+  };
+
+  auto shapeLength = [](const std::vector<LongType>& s) -> LongType {
+    if (s.empty()) return 0;
+    LongType len = 1;
+    for (auto d : s) len *= d;
+    return len;
+  };
+
+  {
+    TritonIRBuilder planningBuilder;
+    std::vector<TritonOpCategory> categories;
+    std::vector<std::vector<LongType>> shapes;
+    categories.reserve(seg.endSlot - seg.startSlot + 1);
+    shapes.reserve(seg.endSlot - seg.startSlot + 1);
+    for (int i = seg.startSlot; i <= seg.endSlot; i++) {
+      categories.push_back(getOpCategoryFromName(slots[i].opName));
+      if (slots[i].numOutputs > 0) {
+        shapes.push_back(resolveShape(slots[i].outputSlotIndices[0]));
+      } else {
+        shapes.push_back({});
+      }
+    }
+
+    int planningBlockSize = 1024;
+    int planningWarps = 4;
+    int planningStages = 1;
+    planningBuilder.selectTileConfig(categories, shapes, planningBlockSize, planningWarps, planningStages);
+    (void) planningWarps;
+    (void) planningStages;
+
+    auto sectionMaxElements = [&](const KernelSection& sec) -> LongType {
+      LongType maxElements = 0;
+      for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        for (int o = 0; o < slots[si].numOutputs; o++) {
+          int outIdx = slots[si].outputSlotIndices[o];
+          LongType elems = shapeLength(resolveShape(outIdx));
+          if (elems > maxElements) maxElements = elems;
+        }
+      }
+      if (maxElements <= 0) {
+        for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+          for (int inp = 0; inp < slots[si].numInputs; inp++) {
+            int srcIdx = slots[si].inputSourceIndices[inp];
+            LongType elems = shapeLength(resolveShape(srcIdx));
+            if (elems > maxElements) maxElements = elems;
+          }
+        }
+      }
+      return maxElements;
+    };
+
+    auto deriveAttentionBlocks = [&](const KernelSection& sec) -> int {
+      int batchSize = std::max(1, sec.batchSize);
+      int numHeads = std::max(1, sec.numHeads);
+      int seqQ = std::max(1, sec.seqQ);
+      int seqK = std::max(1, sec.seqK);
+      int headDim = std::max(1, sec.headDim);
+
+      if (sec.batchSize <= 0 || sec.numHeads <= 0 || sec.seqQ <= 0 || sec.headDim <= 0) {
+        for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+          auto& slot = slots[si];
+          if (getOpCategoryFromName(slot.opName) != TritonOpCategory::FUSED_ATTENTION || slot.numInputs < 1) {
+            continue;
+          }
+
+          std::string opLower = slot.opName;
+          std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+          bool isDpaV2 = (opLower.find("dot_product_attention") != std::string::npos);
+          bool qIsBSHD = isDpaV2;
+          int kInputIdx = isDpaV2 ? 2 : 1;
+
+          auto qShape = resolveShape(slot.inputSourceIndices[0]);
+          if (qShape.size() >= 4) {
+            batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
+            if (qIsBSHD) {
+              seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
+              numHeads = static_cast<int>(std::max<LongType>(1, qShape[2]));
+            } else {
+              numHeads = static_cast<int>(std::max<LongType>(1, qShape[1]));
+              seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
+            }
+            headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
+            if (slot.numInputs > kInputIdx) {
+              auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+              if (kShape.size() >= 3) {
+                int seqKDim = qIsBSHD ? 1 : 2;
+                if (static_cast<int>(kShape.size()) > seqKDim) {
+                  seqK = static_cast<int>(std::max<LongType>(1, kShape[seqKDim]));
+                }
+              }
+            }
+          } else if (qShape.size() == 3) {
+            batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
+            seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
+            int hidden = static_cast<int>(std::max<LongType>(1, qShape[2]));
+            numHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+            if (numHeads <= 0) numHeads = 1;
+            headDim = hidden / numHeads;
+
+            bool hasPastKv = false;
+            if (slot.numInputs > 4) {
+              auto pastKeyShape = resolveShape(slot.inputSourceIndices[4]);
+              if (pastKeyShape.size() == 4 && pastKeyShape[0] > 0 && pastKeyShape[2] > 0) {
+                hasPastKv = true;
+                int pastSeq = static_cast<int>(pastKeyShape[2]);
+                int seqKV = 1;
+                if (slot.numInputs > kInputIdx) {
+                  auto curKShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+                  if (curKShape.size() == 3) {
+                    seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
+                  }
+                }
+                seqK = pastSeq + seqKV;
+              }
+            }
+            if (!hasPastKv && slot.numInputs > kInputIdx) {
+              auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+              if (kShape.size() >= 2) {
+                seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
+              }
+            }
+          }
+          break;
+        }
+      }
+
+      auto attnTile = chooseFusedAttentionTileConfig(batchSize, numHeads, seqQ, seqK, headDim);
+      int blockM = std::max(1, attnTile.blockM);
+      int batchHeads = std::max(1, batchSize * numHeads);
+      int gridQ = std::max(1, (seqQ + blockM - 1) / blockM);
+      LongType blocks64 = static_cast<LongType>(batchHeads) * gridQ;
+      if (blocks64 > static_cast<LongType>(2147483647)) {
+        blocks64 = static_cast<LongType>(2147483647);
+      }
+      return static_cast<int>(std::max<LongType>(1, blocks64));
+    };
+
+    auto computePlanningGrid = [&](const KernelSection& sec) -> int {
+      if (sec.type == KernelSectionType::FUSED_ATTENTION) {
+        return deriveAttentionBlocks(sec);
+      }
+
+      if (sec.type == KernelSectionType::NORMALIZATION) {
+        LongType numRows = 0;
+        for (int si = sec.startSlot; si <= sec.endSlot && numRows <= 0; si++) {
+          if (slots[si].numInputs < 1) continue;
+          auto inputShape = resolveShape(slots[si].inputSourceIndices[0]);
+          LongType totalElements = shapeLength(inputShape);
+          LongType logicalRowLen = inputShape.empty() ? 0 : inputShape.back();
+          if (totalElements > 0 && logicalRowLen > 0) {
+            numRows = std::max<LongType>(1, (totalElements + logicalRowLen - 1) / logicalRowLen);
+          }
+        }
+        if (numRows > static_cast<LongType>(2147483647)) {
+          numRows = static_cast<LongType>(2147483647);
+        }
+        if (numRows > 0) {
+          return static_cast<int>(numRows);
+        }
+      }
+
+      LongType maxElements = sectionMaxElements(sec);
+      if (maxElements <= 0) {
+        return std::max(1, sec.gridRequirement);
+      }
+      LongType blocks64 = (maxElements + planningBlockSize - 1) / planningBlockSize;
+      if (blocks64 > static_cast<LongType>(2147483647)) {
+        blocks64 = static_cast<LongType>(2147483647);
+      }
+      return static_cast<int>(std::max<LongType>(1, blocks64));
+    };
+
+    for (auto& sec : sections) {
+      sec.gridRequirement = computePlanningGrid(sec);
+    }
+  }
 
   // -- Step 1: Build adaptive compile ranges from section graph --
   struct SubSegmentRange {
@@ -361,8 +592,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
            !isStandaloneSection(sections[runEnd + 1]) &&
            !isFallbackSection(sections[runEnd + 1])) {
       if (fusionScoringEnabled) {
-        float score = scoreSectionFusion(sections[runEnd], sections[runEnd + 1],
-                                          slots, outputSlots, totalOutputSlots);
+        float score = scoreSectionFusionRange(sections, runStart, runEnd, runEnd + 1,
+                                             slots, seg.startSlot, seg.endSlot,
+                                             outputSlots, totalOutputSlots);
         if (score < fusionMinScore) {
           DSP_DIAG(FUSION, "TritonGraphBackend: section %d [%d-%d] NOT merged (score=%.2f < min=%.2f)",
                    runEnd + 1, sections[runEnd + 1].startSlot, sections[runEnd + 1].endSlot,
@@ -714,15 +946,22 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   cudaStream_t preallocStream = nullptr;
+  bool ownPreallocStream = false;
+  // Try to trim pool first — release unused reserved memory so stream creation can succeed
+  memory::CudaMemoryPool::getInstance().trimPool(compileDevice);
+  cudaGetLastError();  // clear any trim error
   auto streamErr = cudaStreamCreateWithFlags(&preallocStream, cudaStreamNonBlocking);
   if (streamErr != cudaSuccess) {
-    DSP_DIAG(COMPILE, "TritonGraphBackend: failed to create pre-allocation stream for segment [%d-%d]: %s",
+    // Fall back to default stream (0) when memory is too constrained for a new stream.
+    // Stream creation needs a small device memory allocation for control structures,
+    // which can fail when the CUDA memory pool has reserved nearly all device memory.
+    DSP_DIAG(COMPILE, "TritonGraphBackend: pre-allocation stream creation failed for segment [%d-%d]: %s — using default stream",
               seg.startSlot, seg.endSlot, cudaGetErrorString(streamErr));
     cudaGetLastError();
-    for (auto& kernel : compiledSeg.subKernels) {
-      if (kernel.gpuModule) TritonTargetDispatch::unloadModule(kernel.gpuModule);
-    }
-    return false;
+    preallocStream = 0;  // default stream
+    ownPreallocStream = false;
+  } else {
+    ownPreallocStream = true;
   }
 
   auto cleanupCompiledWorkspace = [&]() {
@@ -762,7 +1001,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       if (k.gpuModule) TritonTargetDispatch::unloadModule(k.gpuModule);
     }
     cudaStreamSynchronize(preallocStream);
-    cudaStreamDestroy(preallocStream);
+    if (ownPreallocStream && preallocStream != nullptr) {
+      cudaStreamDestroy(preallocStream);
+    }
     preallocStream = nullptr;
   };
 
@@ -962,13 +1203,15 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     cleanupCompiledWorkspace();
     return false;
   }
-  auto preallocDestroyErr = cudaStreamDestroy(preallocStream);
-  if (preallocDestroyErr != cudaSuccess) {
-    DSP_DIAG(COMPILE, "TritonGraphBackend: failed destroying pre-allocation stream for segment [%d-%d]: %s",
-              seg.startSlot, seg.endSlot, cudaGetErrorString(preallocDestroyErr));
-    cudaGetLastError();
-    cleanupCompiledWorkspace();
-    return false;
+  if (ownPreallocStream && preallocStream != nullptr) {
+    auto preallocDestroyErr = cudaStreamDestroy(preallocStream);
+    if (preallocDestroyErr != cudaSuccess) {
+      DSP_DIAG(COMPILE, "TritonGraphBackend: failed destroying pre-allocation stream for segment [%d-%d]: %s",
+                seg.startSlot, seg.endSlot, cudaGetErrorString(preallocDestroyErr));
+      cudaGetLastError();
+      cleanupCompiledWorkspace();
+      return false;
+    }
   }
 
   lastCompilationAudit_ = compiledSeg.audit;

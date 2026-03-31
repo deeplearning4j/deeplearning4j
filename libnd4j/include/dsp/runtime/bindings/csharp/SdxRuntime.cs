@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -187,6 +188,23 @@ internal static class NativeMethods
             NativeLibrary.TryLoad(_preferredLibrary, assembly, searchPath, out var preferredHandle))
         {
             return preferredHandle;
+        }
+
+        // Try SDK-relative path: ../../lib/ from assembly location
+        var assemblyDir = Path.GetDirectoryName(typeof(NativeMethods).Assembly.Location);
+        if (!string.IsNullOrEmpty(assemblyDir))
+        {
+            var sdkLib = Path.GetFullPath(Path.Combine(assemblyDir, "..", "..", "lib"));
+            if (Directory.Exists(sdkLib))
+            {
+                foreach (var candidate in DefaultLibraryCandidates())
+                {
+                    if (NativeLibrary.TryLoad(Path.Combine(sdkLib, candidate), out var sdkHandle))
+                    {
+                        return sdkHandle;
+                    }
+                }
+            }
         }
 
         foreach (var candidate in DefaultLibraryCandidates())

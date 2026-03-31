@@ -24,6 +24,7 @@
 #define LIBND4J_MMULHELPER_CPP
 #include "../MmulHelper.h"
 
+#include <array/DataBuffer.h>
 #include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
@@ -1256,12 +1257,27 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     }
 #else
     // CUDA: try cuBLAS strided batched GEMM first (most efficient for 3D/4D)
-    // Falls back to mmulNxN with custom CUDA kernel if cuBLAS can't handle it
     if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
       if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
-        // cuBLAS couldn't handle it (non-contiguous, unsupported type, etc.)
-        // Fall back to custom CUDA kernel
-        mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
+        // cuBLAS couldn't handle it (non-contiguous strides, etc.)
+        // Create contiguous copies and retry cuBLAS before falling back to custom kernel.
+        NDArray* xDup = xT->dup();
+        NDArray* yDup = yT->dup();
+        if (!tryBlasStridedBatched(xDup, yDup, zT, alpha, beta)) {
+          // Still failed (unsupported type, etc.) — fall back to custom CUDA kernel
+          mmulNxN(xDup, yDup, zT, alpha, beta, z->ordering());
+        }
+        // Sync stream before freeing temporary arrays to ensure async GEMM completes.
+        // During CUDA graph capture, stream sync is illegal (poisons the capture).
+        // The dup'd arrays live until end of capture; graph replay uses fixed addresses.
+        if (!tl_graphExecutionActive) {
+          auto* lc = LaunchContext::defaultContext();
+          if (lc->getCudaStream() != nullptr) {
+            cudaStreamSynchronize(*lc->getCudaStream());
+          }
+        }
+        delete xDup;
+        delete yDup;
       }
     } else {
       mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
