@@ -1389,7 +1389,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         if (var != null && (vt == VariableType.CONSTANT
                                 || vt == VariableType.VARIABLE)) {
                             INDArray fresh = var.getArr();
-                            if (fresh != null && !fresh.data().wasClosed()) {
+                            if (fresh != null && fresh.data() != null && !fresh.data().wasClosed()) {
                                 extInputs[i] = fresh;
                                 // DON'T update cachedInputArrays here — let the fast path
                                 // detect the change (extInputs[i] != cachedInputArrays[i])

@@ -2060,36 +2060,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // are recorded into the CUDA graph on the correct stream.
     setCublasWorkspaceForCapture(stream);
 
-    // cuBLAS workspace is shared across all captured segments in the plan.
-    // Once any segment graph is already captured, later captures must preserve
-    // the accumulated workspace contents: earlier captures may have seeded
-    // plans/descriptors that later captures and replays rely on, and wiping the
-    // buffer here invalidates those earlier graphs before their first replay.
+    // cuBLAS workspace preservation during capture.
     //
-    // Zero only for the FIRST captured segment in a fresh frozen session, when
-    // there is no prior graph state to preserve and we still need a deterministic
-    // starting state for the shared workspace.
-    if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
-      bool priorCapturedGraphReady = false;
-      int readyGraphCount = 0;
-      for (const auto& otherSeg : segments_) {
-        if (otherSeg.exec.replayHandle != nullptr && otherSeg.exec.replayHandle->isReady()) {
-          priorCapturedGraphReady = true;
-          readyGraphCount++;
-        }
-      }
-
-      if (!priorCapturedGraphReady) {
-        cudaStream_t captStr = *static_cast<cudaStream_t*>(stream);
-        cudaMemsetAsync(cublasWorkspaceBuffer_, 0, cublasWorkspaceSize_, captStr);
-        DSP_DIAG(MEMORY, "pre-capture: zeroed cuBLAS workspace (%zuMB) on stream %p "
-                 "(first captured segment in session)",
-                 cublasWorkspaceSize_ / (1024*1024), (void*)captStr);
-      } else {
-        DSP_DIAG(MEMORY, "pre-capture: preserved cuBLAS workspace (%zuMB) with %d prior ready graph(s)",
-                 cublasWorkspaceSize_ / (1024*1024), readyGraphCount);
-      }
+    // CRITICAL: Once shapes are frozen (shapesFrozen_ == true), NEVER zero the cuBLAS workspace.
+    // During capture, cuBLAS stores plan/descriptor data in the workspace. Captured CUDA graphs
+    // inherit these cached plans and omit H2D re-upload nodes. Zeroing the workspace destroys
+    // cached plans, causing GEMM kernels to read zeros and hang on replay.
+    //
+    // The workspace content must be preserved across ALL captures and replays once frozen.
+    // cuBLAS plans are stable for fixed shapes, so preservation is safe.
+    //
+    // Pre-frozen (shapes not yet frozen): zeroing is acceptable as no graphs are captured yet.
+    if (shapesFrozen_ && cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
+      DSP_DIAG(MEMORY, "pre-capture: cuBLAS workspace PRESERVED (%zuMB) — shapes frozen, plans stable",
+               cublasWorkspaceSize_ / (1024*1024));
+      // Do NOT zero — preserve cuBLAS plan data for captured graph replay
     }
+    // Note: Pre-frozen zeroing removed entirely — not needed for correctness and
+    // adds unnecessary overhead. cuBLAS handles uninitialized workspace correctly.
 
     // Disable frozen fast path during capture. Same rationale as non-Triton path:
     // capture may re-create views, and the frozen context has stale input/output pointers
