@@ -20,6 +20,7 @@
 // Created by raver119 on 16.10.2017.
 //
 #include <array/NDArrayFactory.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/LegacyScalarBoolOp.h>
 
 #include <ops/declarable/OpRegistrator.h>
@@ -41,9 +42,17 @@ LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum, NDArray &scalar) : LegacyOp(1,
   _scalar = scalar.dup(scalar.ordering(), false);
 }
 
+void LegacyScalarBoolOp::registerTypes() {
+  // Bool ops produce BOOL output regardless of input type — NOT same mode.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({BOOL});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 ShapeList *LegacyScalarBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
-  return SHAPELIST(CONSTANT(inShape));
+  // Bool ops always produce BOOL output regardless of input type
+  return SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape, BOOL));
 }
 
 Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
@@ -87,6 +96,9 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
 
     manager.synchronize();
   } else {
+    REQUIRE_TRUE(_scalar != nullptr, 0,
+                 "LegacyScalarBoolOp: no scalar value provided (neither via tArgs, input[1], nor pre-set _scalar). "
+                 "OpNum=%d. This typically means the DSP plan compiler did not extract the scalar value.", opNum);
     NDArray::prepareSpecialUse({z}, {x, _scalar});
 
     NativeOpExecutioner::execScalarBool(

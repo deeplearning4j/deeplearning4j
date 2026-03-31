@@ -115,6 +115,9 @@ public final class PlanIntrospection {
         // Backend tracking
         private String compiledByBackend = "";
 
+        // Execution phase tracking
+        private int executionPhaseCode = -1;
+
         public int getStartSlot() { return startSlot; }
         public int getEndSlot() { return endSlot; }
         public boolean isCapturable() { return capturable; }
@@ -133,6 +136,13 @@ public final class PlanIntrospection {
         public String getCaptureBuffersJson() { return captureBuffersJson; }
         public int getNumHostPointers() { return numHostPointers; }
         public String getCompiledByBackend() { return compiledByBackend; }
+
+        /** Get the current execution phase as an enum. Returns null if not yet set. */
+        public ExecutionPhase getExecutionPhase() {
+            return ExecutionPhase.fromNativeCode(executionPhaseCode);
+        }
+        /** Get the raw native execution phase code. */
+        public int getExecutionPhaseCode() { return executionPhaseCode; }
 
         public String getReplayStateName() {
             switch (replayState) {
@@ -362,8 +372,27 @@ public final class PlanIntrospection {
             seg.captureBuffersJson = ops.getPlanSegmentCaptureBuffersJson(nativePlanHandle, i);
             seg.numHostPointers = ops.getPlanSegmentNumHostPointers(nativePlanHandle, i);
             seg.compiledByBackend = ops.getPlanSegmentCompiledBackend(nativePlanHandle, i);
+            seg.executionPhaseCode = ops.getPlanSegmentExecutionPhase(nativePlanHandle, i);
         }
         return segments;
+    }
+
+    /**
+     * Get the overall plan execution phase — the MINIMUM phase across all segments.
+     * If any segment is in WARMUP, the plan is in WARMUP. If all are REPLAYING, the plan is REPLAYING.
+     *
+     * @param segments List of SegmentInfo (must have executionPhaseCode populated via getSegmentsWithReplayState)
+     * @return The overall plan phase, or null if no segments or all phases are unknown
+     */
+    public static ExecutionPhase getPlanPhase(List<SegmentInfo> segments) {
+        if (segments == null || segments.isEmpty()) return null;
+        int minCode = Integer.MAX_VALUE;
+        for (SegmentInfo seg : segments) {
+            if (seg.executionPhaseCode >= 0 && seg.executionPhaseCode < minCode) {
+                minCode = seg.executionPhaseCode;
+            }
+        }
+        return minCode == Integer.MAX_VALUE ? null : ExecutionPhase.fromNativeCode(minCode);
     }
 
     /**

@@ -353,7 +353,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                targetDevice, execDevice,
                tritonSkipKernels ? 1 : 0, tritonVerifyKernels ? 1 : 0,
                tritonMaxSubKernelIndex, tritonVerifyFullSnapshot ? 1 : 0,
-               seg.executionCount);
+               seg.exec.executionCount);
 
   // Consolidated arg table: do ONE H2D memcpy for all sub-kernels' arg tables.
   // IMPORTANT: Must pre-allocate output arrays and sync inputs BEFORE populating
@@ -675,7 +675,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       if (!streamCaptureActive) {
         logSlotHashes("GAP", nextSlotToRun, subKernel.startSlot_ - 1, slots,
                       outputSlots, totalOutputSlots,
-                      static_cast<cudaStream_t>(actualStream), seg.executionCount);
+                      static_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
       }
 
       // Debug: dump external input 1331 after gap completes, before Triton kernel launch
@@ -696,7 +696,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           if (ext->lengthOf() > 322)
             cudaMemcpy(&v322, static_cast<char*>(ext->specialBuffer()) + 322*4, 4, cudaMemcpyDeviceToHost);
           DSP_DIAG(VERIFY, "POST_GAP_EXT1331: exec=%d addr=%p len=%lld values: %s [322]=%.6f",
-                   seg.executionCount, ext->specialBuffer(), (long long)ext->lengthOf(), vs.c_str(), v322);
+                   seg.exec.executionCount, ext->specialBuffer(), (long long)ext->lengthOf(), vs.c_str(), v322);
         }
       }
     }
@@ -723,7 +723,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (!streamCaptureActive) {
           logSlotHashes("SKIP", subKernel.startSlot_, subKernel.endSlot_, slots,
                         outputSlots, totalOutputSlots,
-                        static_cast<cudaStream_t>(actualStream), seg.executionCount);
+                        static_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
         }
       }
     } else {
@@ -773,7 +773,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           opNames += std::to_string(si) + ":" + slots[si].opName;
         }
         DSP_DIAG(VERIFY, "TRITON VERIFY ENTRY: subK[%d] [%d-%d] execCount=%d ops: %s",
-                 i, subKernel.startSlot_, subKernel.endSlot_, seg.executionCount, opNames.c_str());
+                 i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount, opNames.c_str());
 
         cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
 
@@ -853,14 +853,14 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
 
       DSP_DIAG(EXECUTE, "SUBKERNEL EXIT OK: subK[%d] [%d-%d] execCount=%d",
-               i, subKernel.startSlot_, subKernel.endSlot_, seg.executionCount);
+               i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount);
 
       // Hash Triton outputs
       if (!streamCaptureActive) {
         cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
         logSlotHashes("TRITON", subKernel.startSlot_, subKernel.endSlot_, slots,
                       outputSlots, totalOutputSlots,
-                      static_cast<cudaStream_t>(actualStream), seg.executionCount);
+                      static_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
       }
 
       // ── Verify mode: run native and compare ──
@@ -1102,11 +1102,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (mismatches == 0) {
           DSP_DIAG(VERIFY, "TRITON VERIFY OK: subK[%d] [%d-%d] %d outputs (maxDiff=%.8e) execCount=%d",
                    i, subKernel.startSlot_, subKernel.endSlot_,
-                   static_cast<int>(tritonRawOutputs.size()), overallMaxDiff, seg.executionCount);
+                   static_cast<int>(tritonRawOutputs.size()), overallMaxDiff, seg.exec.executionCount);
         } else {
           DSP_DIAG(VERIFY, "TRITON VERIFY: subK[%d] [%d-%d] %d/%d MISMATCHED (maxDiff=%.8e) execCount=%d",
                    i, subKernel.startSlot_, subKernel.endSlot_,
-                   mismatches, static_cast<int>(tritonRawOutputs.size()), overallMaxDiff, seg.executionCount);
+                   mismatches, static_cast<int>(tritonRawOutputs.size()), overallMaxDiff, seg.exec.executionCount);
         }
 
         bool keepNative = Environment::getInstance().tritonVerifyKeepNative();
@@ -1126,7 +1126,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
         } else {
           DSP_DIAG(VERIFY, "TRITON VERIFY: keeping NATIVE outputs subK[%d] [%d-%d] execCount=%d",
-                  i, subKernel.startSlot_, subKernel.endSlot_, seg.executionCount);
+                  i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount);
         }
 
         for (auto& kv : savedOutputs) delete kv.second;
@@ -1188,7 +1188,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     if (!streamCaptureActive) {
       logSlotHashes("TRAILING_GAP", nextSlotToRun, seg.endSlot, slots,
                     outputSlots, totalOutputSlots,
-                    static_cast<cudaStream_t>(actualStream), seg.executionCount);
+                    static_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
     }
   }
 
@@ -1266,7 +1266,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   if (!streamCaptureActive && DSP_DIAG_ENABLED(VERIFY)) {
     DSP_DIAG_SEG(VERIFY, seg.startSlot,
         "seg[%d-%d] exec=%d skip=%d attn=%d",
-        seg.startSlot, seg.endSlot, seg.executionCount,
+        seg.startSlot, seg.endSlot, seg.exec.executionCount,
         tritonSkipKernels ? 1 : 0, attnCount);
   }
 

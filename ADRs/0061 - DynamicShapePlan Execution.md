@@ -5,7 +5,7 @@
 Implemented and actively maintained.
 
 Proposed by: Adam Gibson (January 2025)
-Updated by: Runtime maintainers (March 20, 2026)
+Updated by: Runtime maintainers (March 31, 2026)
 
 ## Context
 
@@ -210,12 +210,9 @@ After step 6:  release slot#3,4  (concat outputs consumed by attention)
 
 This enables eager memory reclamation within segments -- intermediates are freed as soon as their last consumer finishes, not at end-of-graph.
 
-#### Adaptive Segment Splitting
+#### Shape Instability Handling
 
-If a capturable segment fails during CUDA graph capture (e.g., an op allocates memory dynamically), the segment is binary-split at its midpoint and each half is retried independently. This continues recursively until:
-
-- sub-segments succeed capture, or
-- sub-segments reach minimum size and are marked `captureFailed` (fall back to slot-by-slot permanently).
+~~Adaptive segment splitting has been removed.~~ Segments with changing shape keys simply recompile via the shape key cache on each execution. The compile-time classification (`VALUE_DEPENDENT_SHAPE_OPS`) already prevents capturable segments from containing ops with unstable output shapes. If a capturable segment's shape key changes, it re-captures or recompiles — no physical splitting needed.
 
 ### End-to-End Visualization: SameDiff Graph to Execution
 
@@ -1349,14 +1346,15 @@ Slots are grouped into contiguous segments for backend dispatch. Each segment ha
 - capturable flag (for CUDA graph capture),
 - per-segment compiled kernel cache.
 
-Segment execution cascade:
+Segment execution — each `GraphExecutionMode` is a complete, non-cascading path:
 
-1. Try GPU JIT backend (Triton → NVRTC → PTX) if available.
-2. Try CUDA graph capture/replay.
-3. Try CPU graph backend (MLX → oneDNN → ACL → NNAPI → ARM_HYBRID → MLIR CPU).
-4. Fall back to slot-by-slot interpreted execution.
+- **GPU (Triton/NVRTC/PTX)**: Selected GPU compiler backend compiles and executes the segment. On failure → hard error.
+- **CUDA graphs**: CUDA graph capture/replay for the segment. On failure → hard error.
+- **CPU backends** (MLX/oneDNN/ACL/NNAPI/ARM_HYBRID/MLIR CPU): Selected CPU backend compiles and executes. On failure → hard error.
+- **Slot-by-slot**: Each op executed individually (baseline, no compilation).
+- **AUTO**: Selects the best available backend ONCE at plan creation time. After selection, behaves like that single mode — no cascade.
 
-Segments that fail capture are adaptively split at midpoint (binary splitting) until they succeed or reach minimum size.
+Backend failure after warmup is always a hard error. There is no silent fallback from one backend to another.
 
 ## Backend and Mode Policy
 
@@ -1382,12 +1380,11 @@ Triton fallback behavior is explicit:
 - and `fallbackToAutoIfTritonUnavailable=true`,
 - mode degrades to `AUTO`; otherwise compilation/execution remains strict.
 
-Native execution fallback chain:
+Native execution — no cascading fallback. Each mode is a hard path:
 
-1. Try configured mode.
-2. If native path fails and CUDA graphs were enabled, disable CUDA graphs and retry once.
-3. If still failing, disable native path for that executor and continue in Java DSP.
-4. If Java DSP also fails, continue in standard interpreted execution.
+1. Execute via configured mode's backend.
+2. Backend failure after warmup → hard error (`KERNEL_FAILURE`). Fix the bug.
+3. Only the first execution (warmup) uses slot-by-slot — this populates shapes for compilation.
 
 ## Backend Infrastructure
 
@@ -1465,6 +1462,32 @@ Key decisions driven by this table:
 
 This replaces scattered conditional branches across backend code.
 
+## Execution Phase Tracking
+
+Each segment tracks its ACTUAL runtime execution mode via `ExecutionPhase`:
+
+| Phase | Value | Meaning |
+|-------|-------|---------|
+| `WARMUP` | 0 | First execution — slot-by-slot for shape population |
+| `COMPILING` | 1 | Backend is compiling (Triton, NVRTC, CUDA graph capture, oneDNN, etc.) |
+| `COMPILED` | 2 | Compiled, first post-compile execution |
+| `REPLAYING` | 3 | Steady state — graph replay or compiled kernel reuse |
+| `SLOT_BY_SLOT` | 4 | Non-capturable segment — always slot-by-slot |
+
+Unlike `GraphExecutionMode` (the user's PREFERENCE), `ExecutionPhase` tracks what a segment is ACTUALLY doing.
+
+Lifecycle for capturable segments: `WARMUP → COMPILING → COMPILED → REPLAYING`
+
+Non-capturable segments stay at `SLOT_BY_SLOT` always.
+
+The plan-level phase is the MINIMUM across all segment phases — if any segment is still in WARMUP, the plan is in WARMUP.
+
+**Query API**:
+- C++: `segment.currentPhase` (per-segment)
+- JNI: `getPlanSegmentExecutionPhase(planHandle, segIdx)` → returns `uint8_t` enum value
+- Java: `PlanIntrospection.SegmentInfo.getExecutionPhase()` → `ExecutionPhase` enum
+- Java: `PlanIntrospection.getPlanPhase(segments)` → min across all segments
+
 ## Execution Flow and Fallbacks
 
 ### Eligibility in `InferenceSession.output(...)`
@@ -1496,19 +1519,17 @@ Native plan compilation is also explicit by default:
 
 ## Memory and Lifecycle Model
 
-DSP uses a precomputed liveness schedule (`releaseAtStep`) to free intermediates as soon as last use is complete rather than waiting for end-of-graph cleanup.
+DSP uses a one-array-per-slot model: each slot has exactly one persistent output array that is reused across executions. Arrays are allocated on first use and persist for the lifetime of the plan.
 
 Key memory mechanisms:
 
-- slot-indexed output storage (flat `INDArray[]` arrays, not maps),
-- slot-array reuse cache across executes,
-- periodic and byte-threshold-driven pending-close flush (`RELEASE_FLUSH_INTERVAL=100`, `FLUSH_BYTE_THRESHOLD=256MB`),
-- per-slot eviction threshold (`PER_SLOT_EVICTION_THRESHOLD=64KB`) for selective cache eviction,
-- optional pool trimming cadence (`nd4j.dsp.trimInterval`),
-- shape cache clear between non-frozen executions,
-- deferred close for arrays with live views.
+- **One array per slot**: `ExecutionState.slotArrays[]` is the single source of truth. No separate cache, no pending-close, no deferred-close.
+- **Ownership tracking**: `ExecutionState.ownership[]` (via `SlotBufferInfo`) drives ALL cleanup decisions — determines whether a slot's array is owned by the plan, is a view, or is an external reference.
+- **Protected weight buffers**: Weight DataBuffers are registered and never freed by the plan.
+- **Shape cache**: Per-slot cached output shapes, cleared between non-frozen executions.
+- **Optional pool trimming**: cadence controlled via `nd4j.dsp.trimInterval`.
 
-GC behavior during Java DSP execution is intentionally adjusted to avoid excessive stop-the-world interference while DSP explicitly manages intermediate buffer lifecycle.
+GC behavior during DSP execution is suppressed (`setAutoGcWindow(Integer.MAX_VALUE)`) to avoid interference with explicit buffer management.
 
 ### Output Zeroing Policy
 
@@ -1895,7 +1916,7 @@ New controls added since the last ADR update:
 - Removes repeated string-keyed graph bookkeeping from hot execution loops.
 - Supports dynamic-shape workloads without static-plan recompilation every step.
 - Provides native single-call execution path with backend policy control.
-- Maintains correctness through layered fallback (native -> Java DSP -> standard).
+- Strict backend commitment — hard errors surface bugs immediately instead of hiding them behind cascades.
 - Supports both inference and training-session integration.
 - Centralized section type configuration eliminates scattered conditional branches.
 - Decomposed compilation units enable independent development and testing of backend stages.

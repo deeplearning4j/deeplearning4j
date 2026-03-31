@@ -1798,6 +1798,12 @@ public interface NativeOps {
   default String getPlanSegmentBackendName(Pointer planHandle, int segmentIdx) { return ""; }
   default String getPlanSegmentStatisticsJson(Pointer planHandle, int segmentIdx) { return ""; }
   default int getPlanSegmentExecutionCount(Pointer planHandle, int segmentIdx) { return 0; }
+  /**
+   * Get the current execution phase for a segment.
+   * Returns the ExecutionPhase ordinal: 0=WARMUP, 1=COMPILING, 2=COMPILED, 3=REPLAYING, 4=SLOT_BY_SLOT.
+   * Returns -1 if the plan handle or segment index is invalid.
+   */
+  default int getPlanSegmentExecutionPhase(Pointer planHandle, int segmentIdx) { return -1; }
   default boolean isPlanSegmentCapturable(Pointer planHandle, int segmentIdx) { return false; }
   default boolean isPlanSegmentCaptureFailed(Pointer planHandle, int segmentIdx) { return false; }
 

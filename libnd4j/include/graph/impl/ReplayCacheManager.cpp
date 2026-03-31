@@ -188,13 +188,13 @@ bool ReplayCacheManager::saveSegmentMetadata(const GraphSegment& seg, LongType s
   entry.startSlot = seg.startSlot;
   entry.endSlot = seg.endSlot;
   entry.shapeKey = shapeKey;
-  entry.backendName = seg.compiledByBackend;
+  entry.backendName = seg.exec.compiledByBackend;
   entry.workspaceHint = 0;
   entry.numCaptureBuffers = 0;
   entry.timestamp = static_cast<int64_t>(std::time(nullptr));
 
-  if (seg.replayHandle) {
-    auto& bufs = seg.replayHandle->getCaptureBuffers();
+  if (seg.exec.replayHandle) {
+    auto& bufs = seg.exec.replayHandle->getCaptureBuffers();
     entry.numCaptureBuffers = static_cast<int>(bufs.size());
   }
 

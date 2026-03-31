@@ -1026,31 +1026,6 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   }
 
-#ifdef SD_CUDA
-  // Debug: dump native slot 354 (pow) input to compare with Triton path
-  if (sd::Environment::getInstance().isDebug() && stepIdx == 354
-      && slot.numInputs > 0 && inputs[0] != nullptr) {
-    auto* inp = inputs[0];
-    DSP_DIAG(VERIFY, "NATIVE_SLOT354: exec=%d srcIdx=%d len=%lld dtype=%d addr=%p pAct=%d sAct=%d",
-             executeCount_, slot.inputSourceIndices[0], (long long)inp->lengthOf(),
-             (int)inp->dataType(), inp->specialBuffer(),
-             inp->dataBuffer() ? (inp->dataBuffer()->isPrimaryActual() ? 1 : 0) : -1,
-             inp->dataBuffer() ? (inp->dataBuffer()->isSpecialActual() ? 1 : 0) : -1);
-    if (inp->specialBuffer() != nullptr && inp->lengthOf() > 0 && inp->dataType() == FLOAT32) {
-      int dc = std::min((int)inp->lengthOf(), 8);
-      std::vector<float> hb(dc);
-      cudaDeviceSynchronize();
-      cudaMemcpy(hb.data(), inp->specialBuffer(), dc * 4, cudaMemcpyDeviceToHost);
-      std::string vs;
-      for (int v = 0; v < dc; v++) {
-        if (v > 0) vs += ",";
-        char buf[32]; snprintf(buf, sizeof(buf), "%.6f", hb[v]); vs += buf;
-      }
-      DSP_DIAG(VERIFY, "NATIVE_SLOT354: exec=%d values: %s", executeCount_, vs.c_str());
-    }
-  }
-#endif
-
 
   // ── Step 2: Shape inference ──────────────────────────────────────────────
   LongType shapeKey = 0;

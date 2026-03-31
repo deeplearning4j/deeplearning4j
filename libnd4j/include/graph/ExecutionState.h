@@ -36,35 +36,23 @@ class PlanDefinition;
 struct GraphSegment;
 
 /**
- * Per-segment mutable execution state.
- * Contains everything that changes between executions for a single segment.
+ * Per-segment device/stream binding state.
+ * The main mutable execution state now lives in GraphSegment::ExecState
+ * (NativeDynamicShapePlan.h). This struct retains device/stream binding
+ * for ExecutionState's segment management.
  */
 struct SegmentExecState {
   int deviceId = -1;               // Which GPU this segment runs on
-  int executionCount = 0;          // How many times this segment has been executed
-  LongType cachedShapeKey = 0;     // Shape key from last execution
-  LongType capturedInputAddrKey = 0;
-  LongType capturedCreateValueKey = 0;
-  bool captureFailed = false;      // Graph capture failed for this segment
-  int captureOomRetries = 0;
-  int captureRetryAfterExec = 0;
-  bool gapOpsCapturedInGraph = false;
-  bool argTableStable = false;     // Fast-replay optimization: arg table unchanged
 
 #ifdef SD_CUDA
   void* stream = nullptr;          // Per-segment CUDA stream (NOT thread-local)
 #endif
 
   void reset() {
-    executionCount = 0;
-    cachedShapeKey = 0;
-    capturedInputAddrKey = 0;
-    capturedCreateValueKey = 0;
-    captureFailed = false;
-    captureOomRetries = 0;
-    captureRetryAfterExec = 0;
-    gapOpsCapturedInGraph = false;
-    argTableStable = false;
+    deviceId = -1;
+#ifdef SD_CUDA
+    stream = nullptr;
+#endif
   }
 };
 

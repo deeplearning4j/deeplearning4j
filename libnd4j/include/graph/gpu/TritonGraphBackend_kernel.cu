@@ -186,7 +186,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       // Fallback: gap slots (CONST_GEN, SHAPE_MANIP, etc.) may have been skipped
       // by the frozen constant optimization during gap execution, leaving
       // outputSlots_[si] null. When the pre-exec restoration is also skipped
-      // (seg.executionCount > 2 optimization), the slot stays null. Restore
+      // (seg.exec.executionCount > 2 optimization), the slot stays null. Restore
       // from slotArrayCache_ which retains the array from the warmup step.
       if (!arr && slotArrayCache && argMapping.slotIndex < totalOutputSlots) {
         arr = slotArrayCache[argMapping.slotIndex];
@@ -1094,11 +1094,11 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
 
   // Mark arg table stable when no pointers changed — enables fast-replay path.
   if (totalChangedPtrs == 0 && refreshedCount > 0) {
-    seg.argTableStable = true;
+    seg.exec.argTableStable = true;
     DSP_DIAG(EXECUTE, "ARG_TABLE_STABLE: seg[%d-%d] %d sub-kernels, fast-replay enabled",
              seg.startSlot, seg.endSlot, refreshedCount);
   } else {
-    seg.argTableStable = false;
+    seg.exec.argTableStable = false;
   }
   return Status::OK;
 }

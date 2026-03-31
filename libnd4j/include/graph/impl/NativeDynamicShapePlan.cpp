@@ -253,9 +253,9 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
 
   // Free symbolic shape range profiles from all segments
   for (auto& seg : segments_) {
-    if (seg.symbolicRangeData != nullptr) {
-      freeSegmentShapeProfile(static_cast<SegmentShapeProfile*>(seg.symbolicRangeData));
-      seg.symbolicRangeData = nullptr;
+    if (seg.exec.symbolicRangeData != nullptr) {
+      freeSegmentShapeProfile(static_cast<SegmentShapeProfile*>(seg.exec.symbolicRangeData));
+      seg.exec.symbolicRangeData = nullptr;
     }
   }
 
@@ -952,7 +952,7 @@ Status NativeDynamicShapePlan::execute(
   // Determine if any segment has a replay handle (used for pre-populate decision below)
   bool hasAnyReplayHandle = false;
   for (auto& seg : segments_) {
-    if (seg.replayHandle != nullptr) {
+    if (seg.exec.replayHandle != nullptr) {
       hasAnyReplayHandle = true;
       break;
     }
@@ -993,15 +993,15 @@ Status NativeDynamicShapePlan::execute(
   // Non-frozen first execution only: reset segment state for warmup
   if (executeCount_ == 0 && !shapesFrozen_) {
     for (auto& segment : segments_) {
-      segment.executionCount = 0;
-      segment.captureFailed = false;
-      segment.captureOomRetries = 0;
-      segment.captureRetryAfterExec = 0;
-      segment.cachedShapeKey = 0;
-      segment.capturedInputAddrKey = 0;
-      segment.capturedCreateValueKey = 0;
-      segment.gapOpsCapturedInGraph = false;
-      if (segment.replayHandle) {
+      segment.exec.executionCount = 0;
+      segment.exec.captureFailed = false;
+      segment.exec.captureOomRetries = 0;
+      segment.exec.captureRetryAfterExec = 0;
+      segment.exec.cachedShapeKey = 0;
+      segment.exec.capturedInputAddrKey = 0;
+      segment.exec.capturedCreateValueKey = 0;
+      segment.exec.gapOpsCapturedInGraph = false;
+      if (segment.exec.replayHandle) {
         platformCleanupSegmentForRebuild(segment);
       }
     }
@@ -1061,7 +1061,7 @@ Status NativeDynamicShapePlan::execute(
       DSP_DIAG(SEGMENT, "  seg[%d]: slots[%d-%d] capturable=%d hasReplay=%d "
                "captureFailed=%d execCount=%d",
                i, s.startSlot, s.endSlot, s.isCapturable,
-               s.replayHandle != nullptr, s.captureFailed, s.executionCount);
+               s.exec.replayHandle != nullptr, s.exec.captureFailed, s.exec.executionCount);
     }
   }
 
@@ -1075,18 +1075,25 @@ Status NativeDynamicShapePlan::execute(
 
     bool useGraph = platformShouldUseGraph(segment);
 
+    // Set initial execution phase before dispatch
+    if (segment.exec.executionCount == 0) {
+      segment.exec.currentPhase = ExecutionPhase::WARMUP;
+    }
+
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     bool segUsedGraph = false;
     int segSlots = segment.endSlot - segment.startSlot + 1;
 
     if (useGraph) {
-      // Platform dispatch handles the full backend cascade:
-      // GPU: compiler backend → JIT → graph capture/replay → slot-by-slot
-      // CPU: GPU backend → CPU graph → slot-by-slot
+      // Platform dispatch: selected backend executes segment
       auto status = platformExecuteSegmentWithBackends(
           segment, externalInputs, numExternalInputs, stream, segUsedGraph);
       if (status != Status::OK) return status;
     } else {
+      // No graph backend applicable — slot-by-slot execution
+      segment.exec.currentPhase = segment.isCapturable
+          ? ExecutionPhase::WARMUP    // Capturable but not yet ready for graph
+          : ExecutionPhase::SLOT_BY_SLOT;  // Non-capturable, always slot-by-slot
       auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) return status;
     }
@@ -1250,7 +1257,7 @@ Status NativeDynamicShapePlan::execute(
                     slot.opName.empty() ? "?" : slot.opName.c_str(), o, si,
                     useGraph ? 1 : 0, executeCount_, (long long)arr->lengthOf(),
                     arr->specialBuffer(), anyInputNaN ? 1 : 0,
-                    segment.replayHandle != nullptr ? 1 : 0,
+                    segment.exec.replayHandle != nullptr ? 1 : 0,
                     slot.frozenConstantSlot() ? 1 : 0, slot.shapeStatic ? 1 : 0);
             fflush(stdout);
             goto nanDetectDone; // only report first NaN
@@ -1289,8 +1296,8 @@ Status NativeDynamicShapePlan::execute(
       }
     }
     for (const auto& seg : segments_) {
-      if (seg.replayHandle && seg.replayHandle->isReady()) replaySegs++;
-      else if (seg.captureFailed) captureFailedSegs++;
+      if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) replaySegs++;
+      else if (seg.exec.captureFailed) captureFailedSegs++;
       else slotBySlotSegsCount++;
     }
     DSP_DIAG(VERIFY, "POST_EXEC exec=%d frozen=%d: slots(live=%d null=%d weightView=%d/%d) "
@@ -1439,10 +1446,10 @@ std::string NativeDynamicShapePlan::getSegmentCompilationAudit(int segIdx) const
   ss << "{\"segmentIdx\":" << segIdx
      << ",\"startSlot\":" << seg.startSlot
      << ",\"endSlot\":" << seg.endSlot
-     << ",\"compiledByBackend\":\"" << seg.compiledByBackend << "\""
+     << ",\"compiledByBackend\":\"" << seg.exec.compiledByBackend << "\""
      << ",\"capturable\":" << (seg.isCapturable ? "true" : "false")
-     << ",\"captureFailed\":" << (seg.captureFailed ? "true" : "false")
-     << ",\"executionCount\":" << seg.executionCount
+     << ",\"captureFailed\":" << (seg.exec.captureFailed ? "true" : "false")
+     << ",\"executionCount\":" << seg.exec.executionCount
      << "}";
   return ss.str();
 }
@@ -1757,10 +1764,8 @@ void NativeDynamicShapePlan::buildSegments() {
   // Merge as many consecutive slots as possible into each capturable segment.
   // Each contiguous capturable run (with the same device) becomes ONE segment.
   // At runtime, if a segment's shapes are stable it gets captured once and
-  // replayed every step. If a segment's shapes change repeatedly (e.g. KV-growing
-  // attention concat), maybeSplitUnstableSegments() splits it at all value-dep
-  // op boundaries. Stable sub-segments get captured; unstable ones become
-  // permanently slot-by-slot, minimizing overhead.
+  // replayed every step. If shapes change, the segment recompiles via the
+  // shape key cache — no physical splitting needed.
   //
   // Capturability: a slot is capturable iff:
   //   1. It is NOT data-dependent (where/unique/nms produce variable-length output)
@@ -1769,11 +1774,6 @@ void NativeDynamicShapePlan::buildSegments() {
   //      segment shape key hashes input SHAPES only — it cannot detect when a
   //      value-dep op's output shape changes. Replaying a captured graph with stale
   //      output shapes produces wrong results.
-  //
-  // At runtime, capturable segments with stable shape keys capture once and replay.
-  // Segments whose shapes change every step (e.g. KV-growing attention) will hit
-  // INSTABILITY_THRESHOLD and be permanently marked slot-by-slot (captureFailed)
-  // via maybeSplitUnstableSegments() → no value-dep ops found → captureFailed.
 
   auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
     // Control flow ops are never capturable — execution path is data-dependent
@@ -1862,9 +1862,9 @@ void NativeDynamicShapePlan::buildSegments() {
   if (Environment::getInstance().dspSymbolicShapes()) {
     int warmup = Environment::getInstance().dspSymbolicShapeWarmup();
     for (auto& seg : segments_) {
-      seg.symbolicShapeEnabled = true;
-      seg.symbolicWarmupRemaining = warmup;
-      seg.symbolicRangeData = createSegmentShapeProfile(warmup);
+      seg.exec.symbolicShapeEnabled = true;
+      seg.exec.symbolicWarmupRemaining = warmup;
+      seg.exec.symbolicRangeData = createSegmentShapeProfile(warmup);
     }
   }
 
@@ -1895,11 +1895,11 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
 
   // Destroy existing cached graphs (they reference old segment boundaries)
   for (auto& seg : segments_) {
-    if (seg.replayHandle) {
+    if (seg.exec.replayHandle) {
       DSP_DIAG_SEG(SEGMENT, seg.startSlot,
                    "destroying replay handle for seg[%d-%d] state=%d replays=%d",
-                   seg.startSlot, seg.endSlot, (int)seg.replayHandle->getState(),
-                   seg.replayHandle->getStatistics().replayCount);
+                   seg.startSlot, seg.endSlot, (int)seg.exec.replayHandle->getState(),
+                   seg.exec.replayHandle->getStatistics().replayCount);
     }
     platformCleanupSegmentForRebuild(seg);
   }
@@ -2033,18 +2033,18 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     int warmup = Environment::getInstance().dspSymbolicShapeWarmup();
     // Free old profiles before rebuild
     for (auto& seg : segments_) {
-      if (seg.symbolicRangeData != nullptr) {
-        freeSegmentShapeProfile(static_cast<SegmentShapeProfile*>(seg.symbolicRangeData));
-        seg.symbolicRangeData = nullptr;
+      if (seg.exec.symbolicRangeData != nullptr) {
+        freeSegmentShapeProfile(static_cast<SegmentShapeProfile*>(seg.exec.symbolicRangeData));
+        seg.exec.symbolicRangeData = nullptr;
       }
     }
     
     // After rebuildSegmentsForFrozenShapes(), segments are merged.
     // For frozen shapes, skip symbolic shape entirely - use standard FNV-1a key.
     for (auto& seg : segments_) {
-      seg.symbolicShapeEnabled = false;  // Disable symbolic shapes for frozen decode
-      seg.symbolicWarmupRemaining = 0;
-      seg.symbolicRangeData = nullptr;
+      seg.exec.symbolicShapeEnabled = false;  // Disable symbolic shapes for frozen decode
+      seg.exec.symbolicWarmupRemaining = 0;
+      seg.exec.symbolicRangeData = nullptr;
     }
     
     DSP_DIAG(SEGMENT, "Disabled symbolic shapes for %d frozen segments (using FNV-1a key)",

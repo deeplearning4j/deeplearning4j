@@ -19,7 +19,7 @@
 /**
  * NativeDynamicShapePlan — Segment Management
  *
- * Contains computeSegmentShapeKey(), maybeSplitUnstableSegments(),
+ * Contains computeSegmentShapeKey(),
  * executeSegmentWithCpuGraph(), and executeSegmentSlotBySlot().
  */
 
@@ -86,8 +86,8 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   // When enabled, collect cross-segment inputs, feed them to the shape
   // profiler, and (after warmup) use range-based hashing that ignores
   // dynamic dimensions.
-  if (seg.symbolicShapeEnabled && seg.symbolicRangeData != nullptr) {
-    auto* profile = static_cast<SegmentShapeProfile*>(seg.symbolicRangeData);
+  if (seg.exec.symbolicShapeEnabled && seg.exec.symbolicRangeData != nullptr) {
+    auto* profile = static_cast<SegmentShapeProfile*>(seg.exec.symbolicRangeData);
 
     // Collect cross-segment input arrays (same logic as standard path below)
     std::unordered_set<int> segOutputSlots;
@@ -133,7 +133,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld",
                seg.startSlot, seg.endSlot, rangeKey);
       // Cache the key for subsequent calls (when shapesFrozen_ is enabled)
-      seg.cachedShapeKey = rangeKey;
+      seg.exec.cachedShapeKey = rangeKey;
       return rangeKey;
     }
     // Fall through to standard path during warmup
@@ -188,69 +188,6 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   }
 
   return key;
-}
-
-// ─── Adaptive segment splitting ─────────────────────────────────────────────
-
-void NativeDynamicShapePlan::maybeSplitUnstableSegments() {
-  bool anySplit = false;
-  for (auto& seg : segments_) {
-    if (seg.needsSplit) { anySplit = true; break; }
-  }
-  if (!anySplit) return;
-
-  std::vector<GraphSegment> result;
-  result.reserve(segments_.size() + 4);
-
-  for (auto& seg : segments_) {
-    if (!seg.needsSplit) {
-      result.push_back(std::move(seg));
-      continue;
-    }
-
-    int segSize = seg.endSlot - seg.startSlot + 1;
-    if (segSize <= GraphSegment::MIN_SPLIT_SIZE) {
-      seg.needsSplit = false;
-      seg.captureFailed = true;
-      seg.consecutiveShapeChanges = 0;
-      result.push_back(std::move(seg));
-      continue;
-    }
-
-    {
-      int mid = seg.startSlot + segSize / 2;
-
-      auto makeSubSeg = [&](int start, int end) {
-        if (start > end) return;
-        GraphSegment sub;
-        sub.startSlot = start;
-        sub.endSlot = end;
-        sub.isCapturable = seg.isCapturable;
-        sub.executionCount = 0;
-        sub.consecutiveShapeChanges = 0;
-        sub.needsSplit = false;
-        sub.slotArrayCache = slotArrayCache_;
-#ifdef SD_CUDA
-        sub.cachedShapeKey = 0;
-#endif
-        for (int s = start; s <= end; s++) {
-          slots_[s].state_ = NativeSlot::SlotState::WARMUP;
-          slots_[s].cachedShapeKey = 0;
-          slots_[s].cachedOutputShapes.clear();
-        }
-        result.push_back(std::move(sub));
-      };
-
-      makeSubSeg(seg.startSlot, mid - 1);
-      makeSubSeg(mid, seg.endSlot);
-
-      DSP_DIAG(SEGMENT, "binary-splitting unstable segment [%d-%d] (%d ops) "
-                "at midpoint %d into 2 sub-segments",
-                seg.startSlot, seg.endSlot, segSize, mid);
-    }
-  }
-
-  segments_ = std::move(result);
 }
 
 // ─── CPU Graph backend selection ────────────────────────────────────────────
@@ -410,7 +347,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   }
   const char* backendName = backend->name();
 
-  if (seg.captureFailed) {
+  if (seg.exec.captureFailed) {
     DSP_DIAG_SEG(FALLBACK, seg.startSlot,
                  "executeSegmentWithCpuGraph: seg[%d-%d] skipped (captureFailed=true, backend=%s)",
                  seg.startSlot, seg.endSlot, backendName);
@@ -423,19 +360,19 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     return Status::KERNEL_FAILURE;
   }
 
-  if (seg.executionCount == 0) {
+  if (seg.exec.executionCount == 0) {
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
-  bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
+  bool needsCompile = (seg.exec.executionCount == 1) || (seg.shapeKey != segShapeKey);
   if (needsCompile) {
     DSP_DIAG_SEG(COMPILE, seg.startSlot,
                  "seg[%d-%d] needs compile: %s (execCount=%d shapeKey=%lld->%lld backend=%s)",
                  seg.startSlot, seg.endSlot,
-                 seg.executionCount == 1 ? "first-compile" : "shape-key-changed",
-                 seg.executionCount,
+                 seg.exec.executionCount == 1 ? "first-compile" : "shape-key-changed",
+                 seg.exec.executionCount,
                  static_cast<long long>(seg.shapeKey),
                  static_cast<long long>(segShapeKey),
                  backendName);
@@ -444,7 +381,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
                  "seg[%d-%d] shape cache HIT (shapeKey=%lld execCount=%d backend=%s)",
                  seg.startSlot, seg.endSlot,
                  static_cast<long long>(segShapeKey),
-                 seg.executionCount, backendName);
+                 seg.exec.executionCount, backendName);
   }
   if (needsCompile) {
     // Restore outputSlots_ from slotArrayCache_ for the compilation range.
@@ -459,7 +396,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     }
   }
 
-  if (seg.executionCount == 1) {
+  if (seg.exec.executionCount == 1) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
     bool allCompiled = true;
@@ -474,7 +411,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
       DSP_DIAG(FALLBACK, "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
                 "Falling back to slot-by-slot.",
                 backendName, seg.startSlot, seg.endSlot);
-      seg.captureFailed = true;
+      seg.exec.captureFailed = true;
       return Status::KERNEL_FAILURE;
     } else {
       DSP_DIAG_SEG(COMPILE, seg.startSlot,
@@ -490,11 +427,11 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   tl_graphExecutionActive = false;
 
   DSP_DIAG(EXECUTE, "executeSegmentWithCpuGraph: exec%d seg[%d-%d]: backend=%s status=%d(%s)",
-            seg.executionCount, seg.startSlot, seg.endSlot, backendName,
+            seg.exec.executionCount, seg.startSlot, seg.endSlot, backendName,
             static_cast<int>(status), statusName_seg(status));
 
   if (status == Status::OK) {
-    seg.executionCount++;
+    seg.exec.executionCount++;
     totalGraphReplays_++;
   }
 
@@ -584,7 +521,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   DSP_DIAG_SEG(EXECUTE, seg.startSlot,
                "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d captureFailed=%d",
                seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
-               seg.executionCount, seg.isCapturable ? 1 : 0, seg.captureFailed ? 1 : 0);
+               seg.exec.executionCount, seg.isCapturable ? 1 : 0, seg.exec.captureFailed ? 1 : 0);
   bool streamIsCapturing = false;
 #ifdef SD_CUDA
   if (stream != nullptr) {
@@ -885,8 +822,8 @@ executeSlot_retry:
     }
 
     // Record op for FunctionalReplayHandle capture
-    if (seg.replayHandle && seg.replayHandle->getState() == ReplayState::CAPTURING) {
-      auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.replayHandle.get());
+    if (seg.exec.replayHandle && seg.exec.replayHandle->getState() == ReplayState::CAPTURING) {
+      auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
       if (funcHandle) funcHandle->recordOp(slot.op, stepIdx);
     }
 
@@ -906,7 +843,7 @@ executeSlot_retry:
               viewCount, totalOutputSlots_);
   }
 
-  seg.executionCount++;
+  seg.exec.executionCount++;
   return Status::OK;
 }
 

@@ -523,8 +523,8 @@ int getPlanSegmentReplayState(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return -1;
   auto& seg = segs[segmentIdx];
-  if (!seg.replayHandle) return -1;
-  return static_cast<int>(seg.replayHandle->getState());
+  if (!seg.exec.replayHandle) return -1;
+  return static_cast<int>(seg.exec.replayHandle->getState());
 }
 
 int getPlanSegmentReplayCount(sd::Pointer planHandle, int segmentIdx) {
@@ -533,8 +533,8 @@ int getPlanSegmentReplayCount(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
   auto& seg = segs[segmentIdx];
-  if (!seg.replayHandle) return 0;
-  return seg.replayHandle->getStatistics().replayCount;
+  if (!seg.exec.replayHandle) return 0;
+  return seg.exec.replayHandle->getStatistics().replayCount;
 }
 
 const char* getPlanSegmentBackendName(sd::Pointer planHandle, int segmentIdx) {
@@ -543,8 +543,8 @@ const char* getPlanSegmentBackendName(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return "";
   auto& seg = segs[segmentIdx];
-  if (!seg.replayHandle) return "";
-  return seg.replayHandle->backendName();
+  if (!seg.exec.replayHandle) return "";
+  return seg.exec.replayHandle->backendName();
 }
 
 const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx) {
@@ -555,17 +555,17 @@ const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx)
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { buf[0] = '\0'; return buf; }
   auto& seg = segs[segmentIdx];
   int numOps = seg.endSlot - seg.startSlot + 1;
-  const char* backend = (seg.replayHandle) ? seg.replayHandle->backendName() : "";
-  int replayCount = (seg.replayHandle) ? seg.replayHandle->getStatistics().replayCount : 0;
-  int replayState = (seg.replayHandle) ? static_cast<int>(seg.replayHandle->getState()) : -1;
+  const char* backend = (seg.exec.replayHandle) ? seg.exec.replayHandle->backendName() : "";
+  int replayCount = (seg.exec.replayHandle) ? seg.exec.replayHandle->getStatistics().replayCount : 0;
+  int replayState = (seg.exec.replayHandle) ? static_cast<int>(seg.exec.replayHandle->getState()) : -1;
   snprintf(buf, sizeof(buf),
            "{\"numOperations\":%d,\"replayCount\":%d,\"replayState\":%d,"
            "\"backendName\":\"%s\",\"executionCount\":%d,"
            "\"capturable\":%s,\"captureFailed\":%s,\"compiledByBackend\":\"%s\"}",
-           numOps, replayCount, replayState, backend, seg.executionCount,
+           numOps, replayCount, replayState, backend, seg.exec.executionCount,
            seg.isCapturable ? "true" : "false",
-           seg.captureFailed ? "true" : "false",
-           seg.compiledByBackend.c_str());
+           seg.exec.captureFailed ? "true" : "false",
+           seg.exec.compiledByBackend.c_str());
   return buf;
 }
 
@@ -574,7 +574,15 @@ int getPlanSegmentExecutionCount(sd::Pointer planHandle, int segmentIdx) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
-  return segs[segmentIdx].executionCount;
+  return segs[segmentIdx].exec.executionCount;
+}
+
+int getPlanSegmentExecutionPhase(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return -1;
+  return static_cast<int>(segs[segmentIdx].exec.currentPhase);
 }
 
 bool isPlanSegmentCapturable(sd::Pointer planHandle, int segmentIdx) {
@@ -590,7 +598,7 @@ bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmentIdx) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return false;
-  return segs[segmentIdx].captureFailed;
+  return segs[segmentIdx].exec.captureFailed;
 }
 
 // =============================================================================
@@ -604,9 +612,9 @@ const char* getPlanSegmentTrackedPointers(sd::Pointer planHandle, int segmentIdx
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { result = "[]"; return result.c_str(); }
   auto& seg = segs[segmentIdx];
-  if (!seg.replayHandle) { result = "[]"; return result.c_str(); }
+  if (!seg.exec.replayHandle) { result = "[]"; return result.c_str(); }
 
-  auto& addrs = seg.replayHandle->getCapturedExternalAddresses();
+  auto& addrs = seg.exec.replayHandle->getCapturedExternalAddresses();
   std::ostringstream ss;
   ss << "[";
   for (size_t i = 0; i < addrs.size(); ++i) {
@@ -626,8 +634,8 @@ int getPlanSegmentNumCaptureBuffers(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
   auto& seg = segs[segmentIdx];
-  if (!seg.replayHandle) return 0;
-  return static_cast<int>(seg.replayHandle->getCaptureBuffers().size());
+  if (!seg.exec.replayHandle) return 0;
+  return static_cast<int>(seg.exec.replayHandle->getCaptureBuffers().size());
 }
 
 const char* getPlanSegmentCaptureBuffersJson(sd::Pointer planHandle, int segmentIdx) {
@@ -637,9 +645,9 @@ const char* getPlanSegmentCaptureBuffersJson(sd::Pointer planHandle, int segment
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { result = "[]"; return result.c_str(); }
   auto& seg = segs[segmentIdx];
-  if (!seg.replayHandle) { result = "[]"; return result.c_str(); }
+  if (!seg.exec.replayHandle) { result = "[]"; return result.c_str(); }
 
-  auto& bufs = seg.replayHandle->getCaptureBuffers();
+  auto& bufs = seg.exec.replayHandle->getCaptureBuffers();
   std::ostringstream ss;
   ss << "[";
   for (size_t i = 0; i < bufs.size(); ++i) {
@@ -660,8 +668,8 @@ int getPlanSegmentNumHostPointers(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
   auto& seg = segs[segmentIdx];
-  if (!seg.replayHandle) return 0;
-  return static_cast<int>(seg.replayHandle->getCapturedHostPtrs().size());
+  if (!seg.exec.replayHandle) return 0;
+  return static_cast<int>(seg.exec.replayHandle->getCapturedHostPtrs().size());
 }
 
 // =============================================================================
@@ -750,7 +758,7 @@ const char* getPlanSegmentCompiledBackend(sd::Pointer planHandle, int segIdx) {
   auto& segs = plan->getSegments();
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return "";
   static thread_local std::string result;
-  result = segs[segIdx].compiledByBackend;
+  result = segs[segIdx].exec.compiledByBackend;
   return result.c_str();
 }
 
@@ -766,11 +774,11 @@ void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   auto& segs = plan->getSegmentsMutable();
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
   auto& seg = segs[segIdx];
-  seg.replayHandle.reset();
-  seg.cachedShapeKey = 0;
-  seg.executionCount = 0;
-  seg.captureFailed = false;
-  seg.compiledByBackend.clear();
+  seg.exec.replayHandle.reset();
+  seg.exec.cachedShapeKey = 0;
+  seg.exec.executionCount = 0;
+  seg.exec.captureFailed = false;
+  seg.exec.compiledByBackend.clear();
 }
 
 void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName) {
@@ -778,11 +786,11 @@ void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   std::string name = backendName ? backendName : "";
   for (auto& seg : plan->getSegmentsMutable()) {
-    if (seg.compiledByBackend == name || name.empty()) {
-      seg.replayHandle.reset();
-      seg.cachedShapeKey = 0;
-      seg.executionCount = 0;
-      seg.compiledByBackend.clear();
+    if (seg.exec.compiledByBackend == name || name.empty()) {
+      seg.exec.replayHandle.reset();
+      seg.exec.cachedShapeKey = 0;
+      seg.exec.executionCount = 0;
+      seg.exec.compiledByBackend.clear();
     }
   }
 }
@@ -794,7 +802,7 @@ const char* getPlanBackendCacheStats(sd::Pointer planHandle) {
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
     int compiled = 0;
     for (const auto& seg : plan->getSegments()) {
-      if (!seg.compiledByBackend.empty() && seg.compiledByBackend != "slot-by-slot") compiled++;
+      if (!seg.exec.compiledByBackend.empty() && seg.exec.compiledByBackend != "slot-by-slot") compiled++;
     }
     std::ostringstream ss;
     ss << "{\"backends\":[{\"name\":\"CPU\",\"compiledSegments\":" << compiled << "}]}";
@@ -1009,10 +1017,10 @@ const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
         json += ",\"startSlot\":" + std::to_string(seg.startSlot);
         json += ",\"endSlot\":" + std::to_string(seg.endSlot);
         json += ",\"numOps\":" + std::to_string(numOps);
-        json += ",\"executionCount\":" + std::to_string(seg.executionCount);
+        json += ",\"executionCount\":" + std::to_string(seg.exec.executionCount);
         json += ",\"isCapturable\":" + std::string(seg.isCapturable ? "true" : "false");
-        json += ",\"captureFailed\":" + std::string(seg.captureFailed ? "true" : "false");
-        json += ",\"hasReplayHandle\":" + std::string(seg.replayHandle ? "true" : "false");
+        json += ",\"captureFailed\":" + std::string(seg.exec.captureFailed ? "true" : "false");
+        json += ",\"hasReplayHandle\":" + std::string(seg.exec.replayHandle ? "true" : "false");
         json += ",\"shapeKey\":" + std::to_string(seg.shapeKey);
         json += ",\"ops\":{";
         bool first = true;

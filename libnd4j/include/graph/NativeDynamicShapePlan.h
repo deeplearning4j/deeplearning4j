@@ -94,6 +94,24 @@ enum class GraphExecutionMode : int {
   GEM_HEXAGON = 14      // Hexagon-MLIR NPU compilation + command list replay
 };
 
+/**
+ * ExecutionPhase — the ACTUAL runtime execution mode of a segment.
+ *
+ * Unlike GraphExecutionMode (which is the user's PREFERENCE), ExecutionPhase
+ * tracks what a segment is ACTUALLY doing right now. This enables programmatic
+ * assertions about execution stage at both C++ and Java levels.
+ *
+ * Lifecycle: WARMUP → COMPILING → COMPILED → REPLAYING (capturable segments)
+ *            SLOT_BY_SLOT (non-capturable segments, always)
+ */
+enum class ExecutionPhase : uint8_t {
+  WARMUP = 0,          // First execution — slot-by-slot for shape population
+  COMPILING = 1,       // Backend is compiling (Triton, NVRTC, CUDA graph capture)
+  COMPILED = 2,        // Compiled, first post-compile execution
+  REPLAYING = 3,       // Steady state — graph replay or compiled kernel reuse
+  SLOT_BY_SLOT = 4,    // Non-capturable segment — always slot-by-slot
+};
+
 // FlatGraph is in the ::graph namespace (FlatBuffer-generated)
 
 /**
@@ -285,113 +303,31 @@ struct NativeSlot {
 };
 
 /**
- * Graph segment for CUDA Graph capture.
- * A contiguous range of slots that can be captured as a single CUDA graph.
+ * Graph segment for graph capture / backend compilation.
+ * A contiguous range of slots that can be captured as a single graph.
  *
- * Lifecycle:
- *   executionCount == 0: warm-up pass (slot-by-slot, populates slot cache)
- *   executionCount == 1: capture pass (ops recorded into CUDA graph, then launched)
- *   executionCount >= 2: replay pass (cached graph launched directly)
+ * Split into:
+ *   - Immutable definition (set at buildSegments time, never changes)
+ *   - Mutable ExecState (changes every execution)
+ *
+ * Lifecycle (via exec.executionCount):
+ *   == 0: warm-up pass (slot-by-slot, populates slot cache)
+ *   == 1: capture pass (ops recorded into graph, then launched)
+ *   >= 2: replay pass (cached graph launched directly)
  */
 struct GraphSegment {
+  // ── Immutable definition (set at buildSegments, never changes) ─────
   int startSlot;
   int endSlot;
   bool isCapturable;
+  LongType shapeKey;                   // Initial shape key from buildSegments
 
-  // Shape key for cache invalidation
-  LongType shapeKey;
-
-  // Execution tracking
-  int executionCount;
-
-  // If true, never attempt graph capture/compilation for this segment.
-  // Set for permanent failures (capture invalidation, host-only ops, address instability).
-  // NOT set for OOM failures — those use the retry mechanism below.
-  bool captureFailed;
-
-
-  // OOM retry mechanism: instead of permanently disabling capture on allocation failures,
-  // retry after a cooldown period. Memory pressure decreases as other segments get captured
-  // (graph replay uses less memory than slot-by-slot due to kernel fusion).
-  int captureOomRetries;              // Number of OOM retries so far
-  int captureRetryAfterExec;          // Don't attempt capture until executionCount >= this
-  static constexpr int MAX_OOM_RETRIES = 3;
-  static constexpr int RETRY_INTERVAL = 4;  // Retry every N executions
-
-  // ── Platform-agnostic graph replay handle ─────────────────────────────
-  // Wraps the capture/instantiate/replay lifecycle for any platform.
-  // CUDA: CudaGraphReplayHandle (wraps cudaGraph_t/cudaGraphExec_t)
-  // CPU: FunctionalReplayHandle (cached op dispatch, skip shape inference)
-  // nullptr until first capture attempt.
-  std::unique_ptr<GraphReplayHandle> replayHandle;
-  LongType cachedShapeKey = 0;
-
-  // Legacy address key (kept for fallback diagnostics)
-  LongType capturedInputAddrKey = 0;
-
-  // Hash of input DATA values for 'create' (ConstantOfShape) ops in this segment.
-  // Create ops produce value-dependent shapes: output shape = input tensor values.
-  // If these values change between capture and replay, the baked-in memset produces
-  // wrong-sized output.  Checked before replay; mismatch triggers re-capture.
-  LongType capturedCreateValueKey = 0;
-
-  // ── NVRTC JIT kernel (CUDA-only, separate from graph replay) ──────────
-#ifdef SD_CUDA
-  NvrtcKernelHandle* jitKernel = nullptr;
-  LongType jitShapeKey = 0;
-  bool jitCompileFailed = false;   // Permanent failure flag (non-fusible segment)
-#endif
-
-  // ── Adaptive splitting for unstable segments ──────────────────────────────
-  // If a segment's shape key changes for INSTABILITY_THRESHOLD consecutive
-  // executions after warmup, it likely contains mixed stable + unstable ops
-  // (e.g. KV-cache-growing concat inside a large FFN+attention block).
-  // Instead of permanently marking it slot-by-slot, split it at the midpoint
-  // so stable halves can eventually capture and unstable halves get further
-  // split until small enough to run slot-by-slot with minimal overhead.
-  // MIN_SPLIT_SIZE prevents infinite splitting: segments at this size or below
-  // are permanently marked slot-by-slot.
-  int consecutiveShapeChanges;
-  bool needsSplit;
-  // Require 2 consecutive shape changes before splitting, to filter one-time
-  // events (e.g., first-step initialization differences).  KV-growing segments
-  // change every step and will reliably trigger at threshold=2.
-  static constexpr int INSTABILITY_THRESHOLD = 2;
-  static constexpr int MIN_SPLIT_SIZE = 5;
-
-  // Pointer to NativeDynamicShapePlan::slotArrayCache_ — allows GPU backends
-  // (e.g. TritonGraphBackend::executeSingleKernel) to update the slot cache
-  // when pre-allocating output arrays, preventing memory leaks when the
-  // release schedule later nullifies outputSlots.
-  NDArray** slotArrayCache = nullptr;
-
-  // Symbolic shape ranges: when enabled, dynamic dimensions are hashed by
-  // rank/dtype only (not exact value) to avoid recompilation.
-  bool symbolicShapeEnabled = false;
-  int symbolicWarmupRemaining = 0;
-  void* symbolicRangeData = nullptr;  // opaque ptr to SegmentShapeProfile
-
-  // ── Backend tracking and override ──────────────────────────────────────
-  // Name of the backend that compiled this segment ("Triton", "oneDNN", "CUDA", "slot-by-slot", etc.)
-  std::string compiledByBackend;
   // User-forced backend override (empty = automatic selection via priority chain)
   std::string backendOverride;
 
-  // Fast-replay: when true, skip arg table refresh and EXT_INPUT_SYNC on replay.
-  // Set after first replay confirms all arg table pointers are unchanged.
-  // Reset to false on any graph invalidation (replayHandle.reset()).
-  bool argTableStable = false;
-
-  // Triton fallback ranges can execute while CUDA graph capture is active.
-  // Those native gap ops become part of the captured graph and must not be
-  // re-executed after replay.
-  bool gapOpsCapturedInGraph = false;
-
-  // Per-segment batch-zero entries: during warmup, we record which buffers
-  // this segment needs zeroed. Stored per-segment so replay zeros the correct
-  // buffers (not the last-captured segment's buffers).
-  struct BatchZeroEntry { void* ptr; int bytes; };
-  std::vector<BatchZeroEntry> segBatchZeroEntries;
+  // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
+  // to update the slot cache when pre-allocating output arrays.
+  NDArray** slotArrayCache = nullptr;
 
   /**
    * Formal contract for segment integrity. Validated after buildSegments()
@@ -405,13 +341,95 @@ struct GraphSegment {
   };
   SegmentContract contract;
 
+  // Constants
+  static constexpr int MAX_OOM_RETRIES = 3;
+  static constexpr int RETRY_INTERVAL = 4;  // Retry every N executions
+
+  // Batch-zero entry definition (used by exec.segBatchZeroEntries)
+  struct BatchZeroEntry { void* ptr; int bytes; };
+
+  // ── Mutable execution state (changes per-execution) ────────────────
+  struct ExecState {
+    int executionCount = 0;
+
+    // If true, never attempt graph capture/compilation for this segment.
+    // Set for permanent failures (capture invalidation, host-only ops, address instability).
+    // NOT set for OOM failures — those use the retry mechanism below.
+    bool captureFailed = false;
+
+    // OOM retry mechanism
+    int captureOomRetries = 0;
+    int captureRetryAfterExec = 0;
+
+    // ── Platform-agnostic graph replay handle ────────────────────────
+    // CUDA: CudaGraphReplayHandle (wraps cudaGraph_t/cudaGraphExec_t)
+    // CPU: FunctionalReplayHandle (cached op dispatch, skip shape inference)
+    // nullptr until first capture attempt.
+    std::unique_ptr<GraphReplayHandle> replayHandle;
+    LongType cachedShapeKey = 0;
+
+    // Legacy address key (kept for fallback diagnostics)
+    LongType capturedInputAddrKey = 0;
+
+    // Hash of input DATA values for 'create' (ConstantOfShape) ops.
+    LongType capturedCreateValueKey = 0;
+
+    // ── NVRTC JIT kernel (CUDA-only) ─────────────────────────────────
+#ifdef SD_CUDA
+    NvrtcKernelHandle* jitKernel = nullptr;
+    LongType jitShapeKey = 0;
+    bool jitCompileFailed = false;
+#endif
+
+    // Symbolic shape ranges
+    bool symbolicShapeEnabled = false;
+    int symbolicWarmupRemaining = 0;
+    void* symbolicRangeData = nullptr;  // opaque ptr to SegmentShapeProfile
+
+    // Backend that compiled this segment ("Triton", "oneDNN", "CUDA", "slot-by-slot", etc.)
+    std::string compiledByBackend;
+
+    // Fast-replay: skip arg table refresh and EXT_INPUT_SYNC on replay.
+    bool argTableStable = false;
+
+    // Triton fallback gap ops captured in graph — must not be re-executed after replay.
+    bool gapOpsCapturedInGraph = false;
+
+    // Per-segment batch-zero entries for replay
+    std::vector<BatchZeroEntry> segBatchZeroEntries;
+
+    // Execution phase tracking — ACTUAL runtime mode (not user preference).
+    ExecutionPhase currentPhase = ExecutionPhase::WARMUP;
+
+    void reset() {
+      executionCount = 0;
+      captureFailed = false;
+      captureOomRetries = 0;
+      captureRetryAfterExec = 0;
+      replayHandle.reset();
+      cachedShapeKey = 0;
+      capturedInputAddrKey = 0;
+      capturedCreateValueKey = 0;
+#ifdef SD_CUDA
+      jitKernel = nullptr;
+      jitShapeKey = 0;
+      jitCompileFailed = false;
+#endif
+      symbolicShapeEnabled = false;
+      symbolicWarmupRemaining = 0;
+      symbolicRangeData = nullptr;
+      compiledByBackend.clear();
+      argTableStable = false;
+      gapOpsCapturedInGraph = false;
+      segBatchZeroEntries.clear();
+      currentPhase = ExecutionPhase::WARMUP;
+    }
+  };
+
+  ExecState exec;
+
   GraphSegment()
-      : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0),
-        executionCount(0), captureFailed(false),
-        captureOomRetries(0), captureRetryAfterExec(0),
-        consecutiveShapeChanges(0), needsSplit(false),
-        symbolicShapeEnabled(false), symbolicWarmupRemaining(0),
-        symbolicRangeData(nullptr)
+      : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0)
   {}
 };
 
@@ -722,20 +740,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       // Reset segment state so CUDA graph capture starts fresh.
       executeCount_ = 0;
       for (auto& seg : segments_) {
-        seg.executionCount = 0;
+        seg.exec.executionCount = 0;
         // Invalidate CUDA graph replay handles — buffer addresses from
         // non-frozen execution may differ from frozen steady-state.
-        if (seg.replayHandle) {
-          for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+        if (seg.exec.replayHandle) {
+          for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
             if (!cb.directReference) delete cb.buffer;
           }
-          seg.replayHandle->getCaptureBuffers().clear();
-          seg.replayHandle.reset();
+          seg.exec.replayHandle->getCaptureBuffers().clear();
+          seg.exec.replayHandle.reset();
         }
-        seg.argTableStable = false;
-        seg.gapOpsCapturedInGraph = false;
-        seg.capturedInputAddrKey = 0;
-        seg.captureFailed = false;
+        seg.exec.argTableStable = false;
+        seg.exec.gapOpsCapturedInGraph = false;
+        seg.exec.capturedInputAddrKey = 0;
+        seg.exec.captureFailed = false;
       }
     }
     if (!frozen) {
@@ -1001,7 +1019,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // ── Segment management (NativeDynamicShapePlan_segments.cpp) ──
   LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
-  void maybeSplitUnstableSegments();
   Status executeSegmentSlotBySlot(GraphSegment& seg, NDArray** externalArrays,
                                   int numExt, void* stream);
   Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,

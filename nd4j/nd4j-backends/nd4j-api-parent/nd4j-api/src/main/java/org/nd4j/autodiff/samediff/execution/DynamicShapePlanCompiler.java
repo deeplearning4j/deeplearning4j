@@ -430,6 +430,13 @@ public class DynamicShapePlanCompiler {
                 if (scalarOp.scalar() != null) {
                     tArgs = new double[]{scalarOp.scalar().getDouble(0)};
                 }
+            } else if (op instanceof BaseScalarBoolOp) {
+                // Scalar bool ops (gt, lt, eq, etc.) also store scalar separately.
+                // BaseScalarBoolOp extends BaseOp (NOT BaseScalarOp), so needs its own branch.
+                BaseScalarBoolOp scalarBoolOp = (BaseScalarBoolOp) op;
+                if (scalarBoolOp.scalar() != null) {
+                    tArgs = new double[]{scalarBoolOp.scalar().getDouble(0)};
+                }
             }
 
             // Reduce ops store dimensions and keepDims separately from iArgs/bArgs.

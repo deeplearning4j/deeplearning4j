@@ -65,8 +65,8 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 // ── Segment cache retention: check capturability on CPU ─────────────────────
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
-  if (seg.replayHandle && seg.replayHandle->isReady()) return true;
-  if (seg.isCapturable && !seg.captureFailed) return true;
+  if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) return true;
+  if (seg.isCapturable && !seg.exec.captureFailed) return true;
   return false;
 }
 
@@ -86,7 +86,7 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
 // ── Graph eligibility: check CPU/GPU graph backends ─────────────────────────
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
-  if (!segment.isCapturable || segment.captureFailed) return false;
+  if (!segment.isCapturable || segment.exec.captureFailed) return false;
   return (getCpuGraphBackend() != nullptr);
 }
 
@@ -97,13 +97,26 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     void* stream, bool& usedGraph) {
   usedGraph = false;
 
-  // CPU graph backend (oneDNN / ACL / MLIR JIT)
+  // Set execution phase for non-capturable segments immediately
+  if (!segment.isCapturable) {
+    segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+  }
+
+  // CPU graph backend (oneDNN / ACL / MLIR JIT / MLX / NNAPI / ARM Hybrid)
   auto* cpuBackend = getCpuGraphBackend();
   if (cpuBackend) {
     auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
     if (status == Status::OK) {
       usedGraph = true;
-      segment.compiledByBackend = "CPU";
+      segment.exec.compiledByBackend = "CPU";
+      // Determine phase based on execution lifecycle
+      if (segment.exec.executionCount <= 1) {
+        segment.exec.currentPhase = ExecutionPhase::COMPILING;
+      } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+        segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+      } else {
+        segment.exec.currentPhase = ExecutionPhase::COMPILED;
+      }
       return Status::OK;
     }
     // CPU graph backend failed — hard error
@@ -113,25 +126,30 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   }
 
   // No graph backend — slot-by-slot with FunctionalReplayHandle for caching
-  if (!segment.replayHandle && segment.isCapturable && !segment.captureFailed) {
-    segment.replayHandle = GraphReplayFactory::create(0);
-    segment.replayHandle->beginCapture(nullptr);
+  if (!segment.exec.replayHandle && segment.isCapturable && !segment.exec.captureFailed) {
+    segment.exec.replayHandle = GraphReplayFactory::create(0);
+    segment.exec.replayHandle->beginCapture(nullptr);
   }
 
   auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
-  if (segment.replayHandle && segment.replayHandle->getState() == ReplayState::CAPTURING) {
+  if (segment.exec.replayHandle && segment.exec.replayHandle->getState() == ReplayState::CAPTURING) {
     if (status == Status::OK) {
-      segment.replayHandle->endCapture(nullptr);
-      segment.replayHandle->finalize();
+      segment.exec.replayHandle->endCapture(nullptr);
+      segment.exec.replayHandle->finalize();
+      segment.exec.currentPhase = ExecutionPhase::COMPILED;
     } else {
-      segment.replayHandle.reset();
+      segment.exec.replayHandle.reset();
+      segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
     }
-  } else if (segment.replayHandle && segment.replayHandle->isReady()) {
-    segment.replayHandle->replay(nullptr);
+  } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+    segment.exec.replayHandle->replay(nullptr);
+    segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+  } else {
+    segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
   }
 
-  segment.compiledByBackend = "slot-by-slot";
+  segment.exec.compiledByBackend = "slot-by-slot";
   return status;
 }
 
@@ -181,16 +199,16 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
 // ── Segment cleanup for rebuild: reset replayHandle on CPU ──────────────────
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
-  seg.replayHandle.reset();
-  seg.gapOpsCapturedInGraph = false;
+  seg.exec.replayHandle.reset();
+  seg.exec.gapOpsCapturedInGraph = false;
 }
 
 // ── Plan resource cleanup: reset replayHandles on CPU ───────────────────────
 
 void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
-    seg.replayHandle.reset();
-    seg.gapOpsCapturedInGraph = false;
+    seg.exec.replayHandle.reset();
+    seg.exec.gapOpsCapturedInGraph = false;
   }
 }
 
@@ -199,7 +217,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
 int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
   int count = 0;
   for (const auto& seg : segments_) {
-    if (seg.replayHandle && seg.replayHandle->isReady()) count++;
+    if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) count++;
   }
   return count;
 }

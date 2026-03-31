@@ -125,11 +125,11 @@ bool TpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   // Create or reuse TpuReplayHandle for this segment
-  if (!seg.replayHandle || std::string(seg.replayHandle->backendName()) != "TPU (PJRT)") {
-    seg.replayHandle = std::make_unique<TpuReplayHandle>(0);
+  if (!seg.exec.replayHandle || std::string(seg.exec.replayHandle->backendName()) != "TPU (PJRT)") {
+    seg.exec.replayHandle = std::make_unique<TpuReplayHandle>(0);
   }
 
-  auto* tpuHandle = static_cast<TpuReplayHandle*>(seg.replayHandle.get());
+  auto* tpuHandle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
 
   // Set the HLO module on the replay handle
   tpuHandle->setHloModule(hloText);
@@ -162,7 +162,7 @@ bool TpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   // Update segment metadata
-  seg.cachedShapeKey = shapeKey;
+  seg.exec.cachedShapeKey = shapeKey;
 
   // Record successful audit entries
   for (int i = start; i < end; ++i) {
@@ -186,13 +186,13 @@ Status TpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                         NDArray** outputSlots,
                                         int totalOutputSlots,
                                         void* stream) {
-  if (!seg.replayHandle || !seg.replayHandle->isReady()) {
+  if (!seg.exec.replayHandle || !seg.exec.replayHandle->isReady()) {
     DSP_DIAG(EXECUTE, "TpuGraphBackend::executeSegment: segment [%d, %d) "
              "not compiled/ready", seg.startSlot, seg.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
-  auto* tpuHandle = static_cast<TpuReplayHandle*>(seg.replayHandle.get());
+  auto* tpuHandle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
 
   int start = seg.startSlot;
   int end = seg.endSlot;
