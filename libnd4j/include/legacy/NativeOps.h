@@ -1501,6 +1501,17 @@ SD_LIB_EXPORT void clearDynamicShapePlanCaches(sd::Pointer planHandle);
 SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
 
 /**
+ * Release all GPU memory held by intermediate computation results while keeping
+ * the plan structure alive. Frees CUDA graph replay handles, capture buffers,
+ * cuBLAS workspace, and non-weight output slot NDArrays. The plan enters a
+ * "cold" state and will re-warm on the next execute() call.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return the number of intermediate NDArrays freed
+ */
+SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle);
+
+/**
  * Configure KV cache retention for a compiled plan.
  * After this call, execute() will scatter new KV entries into static input buffers
  * instead of returning them as outputs, avoiding per-step JNI round-trips.

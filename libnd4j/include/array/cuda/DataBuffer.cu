@@ -1004,6 +1004,21 @@ void DataBuffer::deleteSpecial() {
     }
 
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
+
+    // Secondary guard: check if this buffer is within an active capture workspace.
+    // The primary guard (line 968) only works DURING capture (tl_graphExecutionActive).
+    // After capture ends, workspace-interior pointers from intermediates that outlive
+    // capture would reach RELEASE_SPECIAL_WITH_DEVICE → CudaMemoryPool::free() →
+    // cudaFreeAsync on interior pointer → "invalid argument" → cudaFree fallback →
+    // CUDA context corruption. Short-circuit here to avoid all of that.
+    if (memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(_specialBuffer)) {
+      _specialBuffer = nullptr;
+      _specialDeviceId.store(-1);
+      _isOwnerSpecial = false;
+      if (switchedDevice) cudaSetDevice(currentDeviceId);
+      return;
+    }
+
 #if defined(SD_GCC_FUNCTRACE)
     // Record SPECIAL (device) buffer deallocation before releasing
     array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
@@ -1257,6 +1272,18 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
 
   if (special != nullptr) {
     _deviceId.store(AffinityManager::currentDeviceId());
+  }
+}
+
+void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
+  // Replace _specialBuffer WITHOUT calling deleteSpecial() — caller handles old pointer.
+  // This is used for weight migration: old pool pointer already freed via cudaFreeAsync,
+  // new direct pointer allocated via cudaMalloc.
+  _specialBuffer = newPtr;
+  _isOwnerSpecial = isOwner;
+  if (newPtr != nullptr) {
+    _deviceId.store(AffinityManager::currentDeviceId());
+    _specialDeviceId.store(AffinityManager::currentDeviceId());
   }
 }
 

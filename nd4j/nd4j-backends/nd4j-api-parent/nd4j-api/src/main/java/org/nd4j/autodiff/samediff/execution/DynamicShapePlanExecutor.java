@@ -735,7 +735,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         contextInputRefs = null;
         inputIsPlaceholder = null;
         placeholderIndices = null;
-        closeSlotArrayCache();
+
+        // Release C++ intermediate GPU memory (CUDA graphs, capture buffers, cuBLAS workspace,
+        // non-weight output slot NDArrays). This also calls closeSlotArrayCache() internally.
+        releaseGpuIntermediates();
+
         closeZeroCopyOutputCache();
         if (currentPlan != null) {
             currentPlan.clearAllShapeCaches();
@@ -745,6 +749,22 @@ public class DynamicShapePlanExecutor implements Closeable {
         nativeExecutorFailed = false;
         executionCount = 0;
         nativeExecutionDevice = -1;
+
+        // Clear saved KV cache retention state so that the next page's decode loop
+        // re-configures it fresh with the correct initial position. Without this,
+        // reapplyKvCacheRetention() on cached handle restore uses the stale position
+        // from the previous page, causing KV scatter to write at a position beyond
+        // the destination buffer's sequence length (dstPtr=NULL, dstSeqLen=0).
+        savedKvPresentOutputNames = null;
+        savedKvPastInputNames = null;
+        savedKvMaxLen = 0;
+        savedKvCurrentPos = 0;
+        kvCacheRetentionConfigured = false;
+        kvRetentionOutputNames = null;
+        decodeInputsConfigured = false;
+        decodeInputIdsExtIdx = -1;
+        decodePositionIdsExtIdx = -1;
+        decodeAttentionMaskExtIdx = -1;
     }
 
     /**
@@ -1332,6 +1352,70 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         log.info("    closeSlotArrayCache: DONE");
         System.out.flush(); System.err.flush();
+    }
+
+    /**
+     * Release all GPU memory held by intermediate computation results on the C++ native
+     * plan, while keeping the plan handle alive for reuse. This frees:
+     * <ul>
+     *   <li>Non-weight NDArrays from output slots (SLOT_OWNED buffers)</li>
+     *   <li>Per-segment CUDA graph replay handles (capture buffers, workspaces, host pointers)</li>
+     *   <li>cuBLAS workspace (~256 MB)</li>
+     *   <li>Batch-zero, batch-D2D, and batched-GEMM device arrays</li>
+     *   <li>MmulHelper cast cache (thread-local FP16-to-FP32 staging)</li>
+     * </ul>
+     *
+     * <p>After this call the plan is in a "cold" state — the next {@code execute()} will
+     * re-warm (re-detect view producers, re-capture CUDA graphs, re-allocate workspace, etc.)
+     * just like the very first execution after compilation.</p>
+     *
+     * <p>Use this between VLM decode runs to reclaim GPU memory (~14 GB for large models)
+     * without the cost of plan re-compilation.</p>
+     *
+     * <p>Also clears the Java-side slot array cache and trims the CUDA memory pool.</p>
+     *
+     * @return the number of intermediate NDArrays freed on the C++ side, or 0 if no
+     *         native plan is compiled
+     */
+    public int releaseGpuIntermediates() {
+        log.info("releaseGpuIntermediates: START");
+        System.out.flush(); System.err.flush();
+
+        // Step 1: Clear Java-side slot array cache (frees Java-managed DataBuffers)
+        closeSlotArrayCache();
+
+        // Step 2: Call C++ releaseGpuIntermediates (frees CUDA graphs, capture buffers,
+        //         cuBLAS workspace, and non-weight output slot NDArrays)
+        int freedCount = 0;
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            freedCount = nativeOps.releaseGpuIntermediates(nativePlanHandle);
+            log.info("releaseGpuIntermediates: C++ freed {} intermediate arrays", freedCount);
+
+            // Step 3: Trim CUDA memory pool so freed memory is returned to CUDA
+            Pointer stream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+            if (stream != null) {
+                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                nativeOps.trimMemoryPoolOnStream(currentDevice, stream);
+                int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+                for (int d = 0; d < numDevices; d++) {
+                    if (d != currentDevice) {
+                        nativeOps.trimMemoryPoolOnStream(d, null);
+                    }
+                }
+            }
+        } else {
+            log.info("releaseGpuIntermediates: no native plan handle, skipping C++ release");
+        }
+
+        // Step 4: Reset Java-side execution state for re-warming
+        frozenOutputsInitialized = false;
+        frozenCallCount = 0;
+        closeZeroCopyOutputCache();
+
+        log.info("releaseGpuIntermediates: DONE (freed {} C++ arrays)", freedCount);
+        System.out.flush(); System.err.flush();
+        return freedCount;
     }
 
     /**
@@ -2057,6 +2141,18 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Save to SameDiff's cache for reuse across session resets
             String cacheKey = planCacheKey(nativePlanSource);
             if (sd != null && cacheKey != null) {
+                // Release GPU intermediates (CUDA graphs, capture buffers, cuBLAS workspace,
+                // non-weight output slot NDArrays) BEFORE caching the handle. Without this,
+                // the cached handle retains live GPU pointers that become stale when the
+                // memory pool trims or reallocates that memory. Restoring such a handle
+                // and re-executing it causes CUDA error 700 (illegal memory access).
+                try {
+                    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    int freed = nativeOps.releaseGpuIntermediates(nativePlanHandle);
+                    log.info("    freeNativePlanHandle: released {} GPU intermediates before caching", freed);
+                } catch (Exception e) {
+                    log.info("    freeNativePlanHandle: releaseGpuIntermediates failed: {}", e.getMessage());
+                }
                 log.info("    freeNativePlanHandle: caching handle for reuse (key={})", cacheKey);
                 sd.cacheNativePlanHandle(cacheKey, nativePlanHandle);
             } else {

@@ -544,6 +544,26 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void clearAllShapeCachesForce();
 
   /**
+   * Release all GPU memory held by intermediate computation results while keeping
+   * the plan structure alive. This frees:
+   *  1. Non-weight NDArrays from outputSlots_ (SLOT_OWNED buffers only)
+   *  2. Per-segment CUDA graph replay handles (capture buffers, workspaces, host pointers)
+   *  3. cuBLAS workspace (256 MB)
+   *  4. Batch-zero, batch-D2D, and batched-GEMM device arrays
+   *  5. MmulHelper cast cache (thread-local FP16→FP32 staging)
+   *
+   * After this call the plan is in a "cold" state — the next execute() will
+   * re-warm (re-detect view producers, re-capture CUDA graphs, re-allocate
+   * cuBLAS workspace, etc.) just like the very first execution.
+   *
+   * Use this between VLM decode runs to reclaim ~14 GB of GPU memory without
+   * destroying the plan handle (avoiding costly re-compilation).
+   *
+   * @return the number of intermediate NDArrays freed
+   */
+  int releaseGpuIntermediates();
+
+  /**
    * Configure KV cache retention. After this, execute() will scatter new KV entries
    * from present output slots into static past input buffers, avoiding 60 copyBuffer
    * round-trips per decode step.
@@ -1037,6 +1057,28 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
   LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
   void detectFrozenConstants();
+
+  /**
+   * Check if the given NDArray pointer is referenced by any OTHER output slot
+   * besides the given slotIdx. Used to prevent deleting arrays that are shared
+   * between slots via identity ops or in-place fusion.
+   *
+   * Identity ops (outputSlots_[si] = input) create pointer aliasing between slots
+   * without reference counting. If we blindly delete slotArrayCache_[si] when
+   * replacing it, we may delete an array still referenced by another slot.
+   *
+   * @param arr     The NDArray pointer to check
+   * @param skipIdx The slot index to exclude from the check (-1 to check all)
+   * @return true if any other slot references this pointer
+   */
+  inline bool isSlotArrayShared(const NDArray* arr, int skipIdx) const {
+    if (arr == nullptr || outputSlots_ == nullptr) return false;
+    for (int i = 0; i < totalOutputSlots_; i++) {
+      if (i == skipIdx) continue;
+      if (outputSlots_[i] == arr) return true;
+    }
+    return false;
+  }
 
   // ── Segment management (NativeDynamicShapePlan_segments.cpp) ──
   LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);

@@ -190,6 +190,8 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
         cudaGetLastError();
         THROW_EXCEPTION("[DEVICE] replicatePointer allocation failed (pool + pinned host both failed)");
       }
+      // Register in hostAllocations_ so CudaMemoryPool::free() can route to cudaFreeHost
+      memory::CudaMemoryPool::getInstance().registerHostAllocation(ptr, allocSize);
       usedPinnedHost = true;
       sd_debug("replicatePointer: pool alloc failed for device %d, using pinned host (%zu bytes)\n",
                deviceId, allocSize);
@@ -208,6 +210,8 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
         cudaGetLastError();
         THROW_EXCEPTION("[DEVICE] replicatePointer: pinned host fallback allocation failed");
       }
+      // Register in hostAllocations_ so CudaMemoryPool::free() can route to cudaFreeHost
+      memory::CudaMemoryPool::getInstance().registerHostAllocation(ptr, allocSize);
       usedPinnedHost = true;
       sd_debug("replicatePointer: device %d OOM, using pinned host for constant (%zu bytes)\n",
                deviceId, numBytes);

@@ -666,6 +666,11 @@ public class StaticKvCacheDecodeLoop {
                     } else {
                         reusableInputIds.putScalar(0, 0, nextTokenId);
                     }
+                    // Close old currentInputIds if it's a different allocation (e.g., the initial prompt tensor)
+                    if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
+                        currentInputIds.setCloseable(true);
+                        currentInputIds.close();
+                    }
                     currentInputIds = reusableInputIds;
                 } else {
                     INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
@@ -720,6 +725,20 @@ public class StaticKvCacheDecodeLoop {
                     if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
                 }
                 reusableInputs.clear();
+                // Close fixed-address decode buffers (not in reusableInputs map)
+                if (reusableEmbeddings != null && !reusableEmbeddings.wasClosed()) {
+                    reusableEmbeddings.setCloseable(true);
+                    reusableEmbeddings.close();
+                }
+                if (reusableInputIds != null && !reusableInputIds.wasClosed()) {
+                    reusableInputIds.setCloseable(true);
+                    reusableInputIds.close();
+                }
+                // Close currentInputIds if different from reusableInputIds
+                if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
+                    currentInputIds.setCloseable(true);
+                    currentInputIds.close();
+                }
                 reusableTokenSampler.close();
                 // Re-query maxKvLen — it was -1 at loop entry (before prefill initialized the cache)
                 long specMaxKvLen = kvCacheManager.getMaxKvLen();
@@ -735,6 +754,21 @@ public class StaticKvCacheDecodeLoop {
             if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
         }
         reusableInputs.clear();
+        // Close fixed-address decode buffers (not in reusableInputs map)
+        if (reusableEmbeddings != null && !reusableEmbeddings.wasClosed()) {
+            reusableEmbeddings.setCloseable(true);
+            reusableEmbeddings.close();
+        }
+        if (reusableInputIds != null && !reusableInputIds.wasClosed()) {
+            reusableInputIds.setCloseable(true);
+            reusableInputIds.close();
+        }
+        // Close currentInputIds if it's a different object from reusableInputIds
+        // (e.g., if decode never ran and it's still the initial prompt tensor)
+        if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
+            currentInputIds.setCloseable(true);
+            currentInputIds.close();
+        }
         reusableTokenSampler.close();
 
         // Release KV cache buffers via manager

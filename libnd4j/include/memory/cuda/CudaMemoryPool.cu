@@ -261,11 +261,15 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     return nullptr;
   }
   if (tl_graphExecutionActive && tl_captureWorkspace == nullptr) {
-    static int captureAllocLogCount = 0;
-    if (captureAllocLogCount < 5) {
-      sd_printf("CudaMemoryPool: during capture but NO capture workspace! size=%zu\n", size);
-      captureAllocLogCount++;
-    }
+    // This should be unreachable: the capture code in NativeDynamicShapePlan_gpubackend.cpp
+    // aborts capture if workspace allocation fails. If we get here, it means
+    // capture is active without a workspace — this will corrupt the capture stream.
+    // Fail loudly per design: capture failures must not be silently recovered from.
+    std::string errMsg = "CudaMemoryPool::allocate called during CUDA graph capture but NO capture workspace is set! "
+                         "size=" + std::to_string(size) + " bytes. "
+                         "This indicates a bug in the capture setup — capture should have been aborted "
+                         "when workspace allocation failed.";
+    THROW_EXCEPTION(errMsg.c_str());
   }
 
   // Clear any previous CUDA errors to ensure clean state for allocation
@@ -544,11 +548,14 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     cudaGetLastError();  // clear error
   }
 
-  // Step 2: Try other GPU devices (peer first, then non-peer).
-  // Peer devices allow direct GPU-GPU access. Non-peer devices require staged
-  // D2H+H2D transfers — the higher-level migration code (DataBuffer::migrate,
-  // replicateToDevice) is responsible for using the correct copy path based on
-  // whether peer access is enabled between the source and target devices.
+  // Step 2: Try other GPU devices (PEER-ACCESSIBLE ONLY).
+  // Only devices with peer access enabled are candidates. Non-peer devices would
+  // require staged D2H+H2D transfers, but the calling code (ops, kernels) will use
+  // the returned pointer directly on the requesting device's stream. Without peer
+  // access, this causes "illegal memory access" (CUDA error 700) that permanently
+  // corrupts the CUDA context. On multi-GPU systems without NVLink/NVSwitch (e.g.,
+  // RTX 3070 Ti + RTX 4090 on separate PCIe slots), peer access is typically not
+  // available and cross-device failover would be fatal.
   int deviceCount = 0;
   cudaGetDeviceCount(&deviceCount);
 
@@ -558,6 +565,14 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (d == currentDeviceId) continue;
 
     bool isPeer = peerAccessEnabled_[currentDeviceId][d];
+    // CRITICAL: Skip non-peer devices entirely. Allocating on a non-peer device
+    // and returning the pointer to the caller causes kernels on the requesting
+    // device to access memory they can't reach, resulting in CUDA error 700.
+    // This was causing 7500+ cross-device failovers and CUDA context corruption
+    // in VLM multi-page scenarios.
+    if (!isPeer) {
+      continue;
+    }
     cudaSetDevice(d);
 
     // Trim this device's pool before checking free memory. Without trimming,
@@ -576,9 +591,8 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   }
   cudaSetDevice(prevDev);
 
-  // Sort: peer devices first (direct access), then by free memory descending
+  // Sort by free memory descending (all candidates are peer-accessible)
   std::sort(candidates.begin(), candidates.end(), [](const DeviceInfo& a, const DeviceInfo& b) {
-    if (a.isPeer != b.isPeer) return a.isPeer;  // peer first
     return a.freeMem > b.freeMem;
   });
 
@@ -588,7 +602,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   event.requestedSize = size;
   event.availableMemory = currentFreeMem;
   event.alternativeDeviceId = candidates.empty() ? -1 : candidates[0].id;
-  event.isPeerAccessible = !candidates.empty() && candidates[0].isPeer;
+  event.isPeerAccessible = !candidates.empty();  // all candidates are peer-accessible
   event.recommendedAction = candidates.empty() ?
     MemoryPressureEvent::Action::USE_PINNED_HOST :
     MemoryPressureEvent::Action::FAILOVER;
@@ -616,8 +630,8 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
 
   for (const auto& candidate : candidates) {
     int d = candidate.id;
-    sd_printf("CudaMemoryPool::allocateFailover: Trying %s device %d (free: %zu bytes) for %zu bytes\n",
-              candidate.isPeer ? "peer" : "non-peer", d, candidate.freeMem, size);
+    sd_printf("CudaMemoryPool::allocateFailover: Trying peer device %d (free: %zu bytes) for %zu bytes\n",
+              d, candidate.freeMem, size);
     cudaSetDevice(d);
 
     // Try pool allocation first on this device
@@ -625,8 +639,8 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (supported_ && poolInitialized_[d]) {
       cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
       if (err == cudaSuccess && ptr != nullptr) {
-        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool on %s device %d for %zu bytes\n",
-                  candidate.isPeer ? "peer" : "non-peer", d, size);
+        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n",
+                  d, size);
         if (actualDeviceId) *actualDeviceId = d;
         cudaSetDevice(prevDev);
         return ptr;
@@ -638,8 +652,8 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     // Fall back to cudaMalloc on this device
     cudaError_t err = cudaMalloc(&ptr, size);
     if (err == cudaSuccess && ptr != nullptr) {
-      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on %s device %d for %zu bytes\n",
-                candidate.isPeer ? "peer" : "non-peer", d, size);
+      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on peer device %d for %zu bytes\n",
+                d, size);
       if (actualDeviceId) *actualDeviceId = d;
       cudaSetDevice(prevDev);
       return ptr;
@@ -710,6 +724,17 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     return;
   }
 
+  // Check if this pointer falls within an active capture workspace.
+  // Capture workspaces are single cudaMalloc blocks used as bump allocators during
+  // CUDA graph capture. Interior pointers (sub-allocations) cannot be freed individually —
+  // cudaFreeAsync on them returns "invalid argument", and the cudaFree fallback
+  // corrupts the CUDA context. The workspace block is freed as a whole when the
+  // replay handle is destroyed or releaseGpuIntermediates() is called.
+  // This guard catches frees AFTER capture ends (when tl_graphExecutionActive is false).
+  if (isInCaptureWorkspace(ptr)) {
+    return;  // No-op — managed by workspace lifecycle
+  }
+
   // During CUDA graph capture, skip ALL frees to avoid recording MemFree graph nodes.
   // Workspace addresses: managed by the workspace buffer lifecycle (bump allocator).
   // Non-workspace (graph-external) addresses: cudaFreeAsync records a MemFree graph node
@@ -732,7 +757,10 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // External memory is protected by DataBuffer::deleteSpecial() which checks
   // tl_graphExecutionActive and returns early.
 
-  // Check host allocations with exception handling
+  // Check host allocations with exception handling.
+  // Two checks: (1) exact match for base pointers, (2) range check for interior
+  // pointers (views/sub-allocations into a pinned host block). Interior pointers
+  // cannot be freed individually — only the base allocation can be cudaFreeHost'd.
   try {
     std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
     auto hostIt = hostAllocations_.find(ptr);
@@ -747,6 +775,22 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
 
       cudaFreeHost(ptr);
       return;
+    }
+
+    // Range check: if ptr is an interior pointer into any pinned host block,
+    // skip the free. This happens when NDArray views (subarray, reshape) create
+    // DataBuffers that point into the middle of a pinned host allocation.
+    // cudaFreeAsync on such pointers returns "invalid argument" and the memory
+    // leaks. By detecting them here, we avoid the failed cudaFreeAsync entirely.
+    char* p = static_cast<char*>(ptr);
+    for (const auto& entry : hostAllocations_) {
+      char* base = static_cast<char*>(entry.first);
+      size_t sz = entry.second;
+      if (p > base && p < base + sz) {
+        // Interior pointer — no-op. The base allocation will be freed when
+        // the parent DataBuffer is destroyed.
+        return;
+      }
     }
   } catch (...) {
     // DO NOT call cudaFreeHost(ptr) here — if the map lookup threw, we don't know
@@ -789,6 +833,27 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   cudaStream_t freeStream = resolveCaptureStream(stream);
   freeStream = resolveNullStream(freeStream);
 
+  // Check if this is a direct (cudaMalloc) allocation — these MUST use cudaFree,
+  // NOT cudaFreeAsync. Direct allocations are weight buffers migrated out of the
+  // async pool to prevent pool fragmentation. Using cudaFreeAsync on a cudaMalloc
+  // pointer returns "invalid argument" and leaks the memory.
+  {
+    std::lock_guard<std::mutex> lock(directAllocMutex_);
+    auto directIt = directAllocations_.find(ptr);
+    if (directIt != directAllocations_.end()) {
+      size_t freedSize = directIt->second;
+      directAllocations_.erase(directIt);
+      cudaError_t err = cudaFree(ptr);
+      if (err != cudaSuccess) {
+        sd_printf("CudaMemoryPool::free: cudaFree failed for direct allocation ptr=%p size=%zu: %s\n",
+                  ptr, freedSize, cudaGetErrorString(err));
+        cudaGetLastError();  // clear error
+      }
+      if (needDeviceRestore) cudaSetDevice(savedDev);
+      return;
+    }
+  }
+
   // Device memory: use cudaFreeAsync for stream-ordered deallocation.
   // Works for both pool and non-pool allocations since CUDA 11.2.
   if (enabled_.load() && supported_) {
@@ -804,12 +869,44 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
-    // Log failed cudaFreeAsync for debugging — this path means memory is LEAKED
-    sd_printf("CudaMemoryPool::free: cudaFreeAsync FAILED for ptr=%p dev=%d stream=%p: %s\n",
-              ptr, deviceId, (void*)freeStream, cudaGetErrorString(err));
+    // Log failed cudaFreeAsync for debugging — this path means memory is LEAKED.
+    // CRITICAL: Do NOT call cudaFree() as fallback. cudaFreeAsync failures typically
+    // mean the pointer was allocated by cudaMallocAsync on a different stream or during
+    // graph capture. Calling cudaFree() on such a pointer corrupts the CUDA context
+    // permanently (error 700 "illegal memory access" on all subsequent CUDA calls).
+    // Leaking the memory is vastly preferable to corrupting the entire GPU context.
+    static int cudaFreeAsyncFailCount = 0;
+    if (cudaFreeAsyncFailCount < 10) {
+      sd_printf("CudaMemoryPool::free: cudaFreeAsync FAILED for ptr=%p dev=%d stream=%p: %s (LEAKED, no cudaFree fallback)\n",
+                ptr, deviceId, (void*)freeStream, cudaGetErrorString(err));
+      // Check if this is an interior pointer within a pinned host allocation
+      {
+        std::lock_guard<std::mutex> lock2(fallbackAllocMutex_);
+        char* p = static_cast<char*>(ptr);
+        for (const auto& entry : hostAllocations_) {
+          char* base = static_cast<char*>(entry.first);
+          size_t sz = entry.second;
+          if (p >= base && p < base + sz) {
+            sd_printf("CudaMemoryPool::free: ptr=%p is INTERIOR POINTER into pinned host block base=%p size=%zu (offset=%lld). "
+                      "This DataBuffer is a sub-allocation that was never independently tracked.\n",
+                      ptr, (void*)base, sz, (long long)(p - base));
+            break;
+          }
+        }
+      }
+      cudaFreeAsyncFailCount++;
+      if (cudaFreeAsyncFailCount == 10) {
+        sd_printf("CudaMemoryPool::free: suppressing further cudaFreeAsync failure messages\n", "");
+      }
+    }
     cudaGetLastError();  // clear error
+    if (needDeviceRestore) cudaSetDevice(savedDev);
+    return;
   }
-  // Fallback for unsupported or error cases
+  // Fallback for pools not supported — use synchronous cudaFree.
+  // This path is only reached when CudaMemoryPool is disabled (supported_ == false
+  // or enabled_ == false). The pointer was allocated via cudaMalloc (not cudaMallocAsync),
+  // so cudaFree is the correct deallocator.
   cudaFree(ptr);
   if (needDeviceRestore) cudaSetDevice(savedDev);
 }
@@ -987,6 +1084,50 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
   // pages without touching glibc metadata. RSS stays under control.
 }
 
+void CudaMemoryPool::registerCaptureWorkspace(void* basePtr, size_t bytes) {
+  if (basePtr == nullptr || bytes == 0) return;
+  std::lock_guard<std::mutex> lock(captureWorkspaceMutex_);
+  captureWorkspaceRanges_[basePtr] = bytes;
+  sd_debug("CudaMemoryPool: registered capture workspace %p (%zu bytes, %zu total ranges)\n",
+           basePtr, bytes, captureWorkspaceRanges_.size());
+}
+
+void CudaMemoryPool::unregisterCaptureWorkspace(void* basePtr) {
+  if (basePtr == nullptr) return;
+  std::lock_guard<std::mutex> lock(captureWorkspaceMutex_);
+  auto erased = captureWorkspaceRanges_.erase(basePtr);
+  if (erased > 0) {
+    sd_debug("CudaMemoryPool: unregistered capture workspace %p (%zu remaining ranges)\n",
+             basePtr, captureWorkspaceRanges_.size());
+  }
+}
+
+bool CudaMemoryPool::isInCaptureWorkspace(void* ptr) const {
+  if (ptr == nullptr) return false;
+  std::lock_guard<std::mutex> lock(captureWorkspaceMutex_);
+  char* p = static_cast<char*>(ptr);
+  for (const auto& entry : captureWorkspaceRanges_) {
+    char* wsStart = static_cast<char*>(entry.first);
+    size_t wsSize = entry.second;
+    if (p >= wsStart && p < wsStart + wsSize) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void CudaMemoryPool::registerDirectAllocation(void* ptr, size_t size) {
+  if (ptr == nullptr || size == 0) return;
+  std::lock_guard<std::mutex> lock(directAllocMutex_);
+  directAllocations_[ptr] = size;
+}
+
+bool CudaMemoryPool::isDirectAllocation(void* ptr) const {
+  if (ptr == nullptr) return false;
+  std::lock_guard<std::mutex> lock(directAllocMutex_);
+  return directAllocations_.count(ptr) > 0;
+}
+
 void CudaMemoryPool::releaseAll() {
   if (!supported_) {
     return;
@@ -1027,6 +1168,17 @@ void CudaMemoryPool::releaseAll() {
         trimPool(i);
         poolInitialized_[i] = false;
       }
+    }
+
+    // Free direct (cudaMalloc) allocations — weight buffers migrated out of pool
+    {
+      std::lock_guard<std::mutex> lock(directAllocMutex_);
+      for (const auto& entry : directAllocations_) {
+        if (entry.first != nullptr) {
+          cudaFree(entry.first);
+        }
+      }
+      directAllocations_.clear();
     }
   } catch (...) {
     if (sd::Environment::getInstance().isDebug() || sd::Environment::getInstance().isVerbose()) {

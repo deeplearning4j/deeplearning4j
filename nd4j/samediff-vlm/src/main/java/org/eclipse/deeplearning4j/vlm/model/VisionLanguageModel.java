@@ -43,6 +43,8 @@ import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -496,7 +498,15 @@ public class VisionLanguageModel implements AutoCloseable {
         inputs.put("input_ids", inputIds);
 
         Map<String, INDArray> outputs = embedTokens.output(inputs, "inputs_embeds");
-        return outputs.get("inputs_embeds");
+        INDArray result = outputs.get("inputs_embeds");
+
+        // Close inputIds — no longer needed after embedTokens.output() completes
+        if (inputIds != null && !inputIds.wasClosed()) {
+            inputIds.setCloseable(true);
+            inputIds.close();
+        }
+
+        return result;
     }
 
     /**
@@ -1208,6 +1218,11 @@ public class VisionLanguageModel implements AutoCloseable {
             result = frameEmbeddings.get(0);
         } else {
             result = Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0]));
+            // Close individual frame embeddings — concat created a new array,
+            // so the originals are no longer needed. Without this, ~6-12 MB leaks per page.
+            for (INDArray frameEmb : frameEmbeddings) {
+                SameDiffMemoryUtils.safeClose(frameEmb);
+            }
         }
 
         log.info("Encoded {} frames -> vision embeddings shape={}",
@@ -1407,7 +1422,13 @@ public class VisionLanguageModel implements AutoCloseable {
         SameDiffMemoryUtils.safeClose(textEmbeddings);
 
         // Run decode loop using the merged embeddings directly
-        return decodeWithStaticLoop(inputsEmbeds, promptTokenIds, maxTokens, temperature, doSample);
+        try {
+            return decodeWithStaticLoop(inputsEmbeds, promptTokenIds, maxTokens, temperature, doSample);
+        } finally {
+            // inputsEmbeds is not closed by the decode loop (it treats it as externally owned).
+            // We must close it here to prevent ~5 MB GPU memory leak per page.
+            SameDiffMemoryUtils.safeClose(inputsEmbeds);
+        }
     }
 
     /**
@@ -1626,16 +1647,28 @@ public class VisionLanguageModel implements AutoCloseable {
      * before starting the next page.
      */
     public void resetSessions() {
-        log.info("Resetting sessions between pages (keeping DSP executors and buffers alive)");
-        // Do NOT call resetSession() — that destroys the DSP executor, its allocated
-        // buffers, and the CUDA graph. Instead, clear only the placeholder inputs so
-        // the next output() call reuses the same session, buffers, and compiled plans.
-        // The DSP executor's slot arrays, CUDA graph capture, and Triton kernels all
-        // stay alive — zero recompilation overhead between pages.
-        //
-        // Vision encoder and embed_tokens: just need fresh pixel/token inputs on next call.
-        // Decoder: the StaticKvCacheDecodeLoop handles KV cache reset internally.
-        // No session-level reset needed for any of them.
+        log.info("Resetting sessions between pages (freeing cached intermediates, preserving compiled plans)");
+        // Reset DSP executors on all sub-models. resetForNextPage() frees the slot
+        // array cache and zero-copy output cache (the main GPU memory consumers)
+        // while PRESERVING the native plan handle — so compiled Triton kernels and
+        // CUDA graph captures stay alive with zero recompilation overhead.
+        resetDspForModel("decoder", decoder);
+        resetDspForModel("visionEncoder", visionEncoder);
+        resetDspForModel("embedTokens", embedTokens);
+    }
+
+    /**
+     * Reset the DSP executor for a single SameDiff model, freeing cached
+     * intermediate GPU buffers while preserving the compiled native plan handle.
+     */
+    private void resetDspForModel(String label, SameDiff model) {
+        if (model == null) return;
+        InferenceSession session = model.getOrCreateSession();
+        DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
+        if (dsp != null) {
+            dsp.resetForNextPage();
+            log.debug("DSP resetForNextPage completed for {}", label);
+        }
     }
 
     /**

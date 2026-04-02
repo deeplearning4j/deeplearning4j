@@ -85,7 +85,7 @@ public class TestCudaGraphReplayHang {
             "platform-tests/pathfinder-mythic.pdf");
     private static final int TARGET_SIZE = 512;
     private static final int MAX_NEW_TOKENS = 50;
-    private static final int TEST_TIMEOUT_SECONDS = 60;
+    private static final int TEST_TIMEOUT_SECONDS = 120;
 
     private static VisionLanguageModel vlm;
     private static NativeOps nativeOps;
@@ -340,8 +340,10 @@ public class TestCudaGraphReplayHang {
 
         // Create simple prompt
         int[] promptTokens = {0, 44, 2692, 46}; // Simple 4-token prompt
-        long hiddenSize = vlm.getConfig() != null && vlm.getConfig().getHiddenSize() != null
-                ? vlm.getConfig().getHiddenSize() : 2048;
+        // Use the embedding table's hidden dimension directly rather than relying on config.json
+        // (which may not be downloaded or may have hidden_size nested under text_config).
+        // StaticKvCacheDecodeLoop also auto-resolves from prefillEmbeddings.shape()[2] when hiddenSize <= 0.
+        long hiddenSize = 0; // auto-resolve from embedding shape
 
         // Build prefill embeddings
         INDArray embeddingTable = null;

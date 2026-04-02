@@ -675,7 +675,7 @@ Status NativeDynamicShapePlan::executeSlot(
                    "same plan should never see different shapes", lastSlotIdx);
           // Replace inline: delete old, allocate new
           // During graph capture, don't delete — it's the saved warmup array
-          if (!tl_graphExecutionActive) delete output;
+          if (!tl_graphExecutionActive && !isSlotArrayShared(output, lastOutputSlotIdx)) delete output;
           slotArrayCache_[lastOutputSlotIdx] = nullptr;
           output = nullptr;
         }
@@ -810,11 +810,14 @@ Status NativeDynamicShapePlan::executeSlot(
             ctx2.setInputArray(0, input0);
             NDArray* old = slotArrayCache_[si];
             if (old != nullptr && old != newView && !tl_graphExecutionActive) {
-              delete old;  // View wrapper only — no GPU memory freed
-              // During graph capture, DON'T delete the old view — it's the warmup
-              // array saved for restoration after capture (savedWarmupOutputSlots).
-              // Deleting it here makes the saved pointer dangling → use-after-free
-              // when WARMUP_RESTORE runs.
+              if (!isSlotArrayShared(old, si)) {
+                delete old;  // View wrapper only — no GPU memory freed
+                // During graph capture, DON'T delete the old view — it's the warmup
+                // array saved for restoration after capture (savedWarmupOutputSlots).
+                // Deleting it here makes the saved pointer dangling → use-after-free
+                // when WARMUP_RESTORE runs.
+              }
+              // else: pointer shared with another slot (e.g., identity op alias) — skip delete
             }
             slotArrayCache_[si] = newView;
             backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
@@ -939,8 +942,10 @@ Status NativeDynamicShapePlan::executeSlot(
         if (si >= 0 && si < totalOutputSlots_) {
           NDArray* oldCached = slotArrayCache_[si];
           if (oldCached != nullptr && oldCached != ctxOuts[i] && !tl_graphExecutionActive) {
-            delete oldCached;  // Replace stale cached array inline
-            // During graph capture, don't delete — it's the saved warmup array
+            if (!isSlotArrayShared(oldCached, si)) {
+              delete oldCached;  // Replace stale cached array inline
+              // During graph capture, don't delete — it's the saved warmup array
+            }
           }
           outputSlots_[si] = ctxOuts[i];
           slotArrayCache_[si] = ctxOuts[i];
@@ -1239,8 +1244,10 @@ Status NativeDynamicShapePlan::executeSlot(
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
           NDArray* old = slotArrayCache_[slotIdx];
           if (old != nullptr && old != view && !tl_graphExecutionActive) {
-            delete old;  // View wrapper only — no GPU memory freed
-            // During graph capture, don't delete — it's the saved warmup array
+            if (!isSlotArrayShared(old, slotIdx)) {
+              delete old;  // View wrapper only — no GPU memory freed
+              // During graph capture, don't delete — it's the saved warmup array
+            }
           }
           outputSlots_[slotIdx] = view;
           slotArrayCache_[slotIdx] = view;
@@ -1317,7 +1324,9 @@ step3_allocate:
         // Same plan = same shapes. Shape mismatch — replace inline.
         DSP_DIAG(EXECUTE, "SHAPE MISMATCH at slot %d (cached vs expected) — replacing inline",
                  slotIdx);
-        delete cached;
+        if (!isSlotArrayShared(cached, slotIdx)) {
+          delete cached;
+        }
         slotArrayCache_[slotIdx] = nullptr;
       }
     }
@@ -1604,7 +1613,9 @@ step3_allocate:
           slotIsViewProducer_[si] = true;
           NDArray* oldCached = slotArrayCache_[si];
           if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive) {
-            delete oldCached;  // View wrapper only — no GPU memory freed
+            if (!isSlotArrayShared(oldCached, si)) {
+              delete oldCached;  // View wrapper only — no GPU memory freed
+            }
           }
           outputSlots_[si] = ctxOutputs[i];
           slotArrayCache_[si] = ctxOutputs[i];
@@ -1612,7 +1623,9 @@ step3_allocate:
       } else if (slotIsViewProducer_[si]) {
         NDArray* oldCached = slotArrayCache_[si];
         if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive) {
-          delete oldCached;  // View wrapper only — no GPU memory freed
+          if (!isSlotArrayShared(oldCached, si)) {
+            delete oldCached;  // View wrapper only — no GPU memory freed
+          }
         }
         outputSlots_[si] = ctxOutputs[i];
         slotArrayCache_[si] = ctxOutputs[i];

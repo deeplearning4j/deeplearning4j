@@ -206,6 +206,12 @@ void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle) {
   }
 }
 
+int releaseGpuIntermediates(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  return plan->releaseGpuIntermediates();
+}
+
 void configurePlanKvCacheRetention(
     sd::Pointer planHandle, const int* mappings,
     int numMappings, int maxKvLen, int initialPos) {

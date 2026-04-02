@@ -63,10 +63,12 @@ public class EmbeddingMerger {
 
         // Cast vision embeddings to match text embedding dtype
         INDArray visionFlat = visionEmbeddings.reshape((int) visionSeqLen, (int) visionHiddenSize);
+        INDArray visionCast = null;  // Track castTo() result for cleanup
         if (visionFlat.dataType() != textEmbeddings.dataType()) {
             log.info("Casting vision embeddings from {} to {} to match text embeddings",
                     visionFlat.dataType(), textEmbeddings.dataType());
-            visionFlat = visionFlat.castTo(textEmbeddings.dataType());
+            visionCast = visionFlat.castTo(textEmbeddings.dataType());
+            visionFlat = visionCast;
         }
 
         int seqLen = tokenIds.length;
@@ -75,6 +77,12 @@ public class EmbeddingMerger {
         // Extract raw float data from both embedding sources via host buffers
         float[] textData = textEmbeddings.data().asFloat();
         float[] visionData = visionFlat.data().asFloat();
+
+        // Close the castTo() result now that we've extracted the float data
+        if (visionCast != null && !visionCast.wasClosed()) {
+            visionCast.setCloseable(true);
+            visionCast.close();
+        }
 
         // Build merged float array on the host
         float[] mergedData = new float[seqLen * hiddenDim];

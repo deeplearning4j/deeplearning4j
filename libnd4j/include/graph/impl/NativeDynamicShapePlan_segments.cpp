@@ -28,6 +28,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 #include <helpers/MmulHelper.h>
+#include <helpers/ShapeUtils.h>
 #include <system/Environment.h>
 
 #include <algorithm>
@@ -765,6 +766,70 @@ executeSlot_retry:
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
       status = Status::KERNEL_FAILURE;
     }
+    // ── Diagnostic: per-slot CUDA error check on warmup execution ──────
+    // On the first execution of each segment (warmup), synchronize the device
+    // after every slot to catch latent CUDA kernel errors (error 700) at the
+    // exact slot that caused them, rather than discovering them hundreds of
+    // slots later during an unrelated cudaMallocAsync call.
+    // This is expensive (blocks GPU pipeline) but essential for diagnosing
+    // stale-pointer bugs in restored cached plan handles.
+#ifdef SD_CUDA
+    if (status == Status::OK && seg.exec.executionCount == 0 && !streamIsCapturing) {
+      cudaError_t syncErr = cudaDeviceSynchronize();
+      if (syncErr != cudaSuccess) {
+        char buf[1024];
+        snprintf(buf, sizeof(buf),
+                 "CUDA ERROR 700 DIAGNOSTIC: cudaDeviceSynchronize after slot %d (%s) "
+                 "returned error %d (%s). This kernel accessed invalid GPU memory. "
+                 "seg=[%d-%d] execCount=%d shapesFrozen=%d",
+                 stepIdx, slots_[stepIdx].opName.c_str(),
+                 static_cast<int>(syncErr), cudaGetErrorString(syncErr),
+                 seg.startSlot, seg.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
+        sd_printf("%s\n", buf);
+        // Log all inputs to the failing slot
+        auto& faultSlot = slots_[stepIdx];
+        for (int i = 0; i < faultSlot.numInputs; i++) {
+          int srcIdx = faultSlot.inputSourceIndices[i];
+          NDArray* inp = nullptr;
+          if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+            inp = outputSlots_[srcIdx];
+          } else if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            if (extIdx >= 0 && extIdx < numExt) inp = externalArrays[extIdx];
+          }
+          if (inp != nullptr && inp->dataBuffer() != nullptr) {
+            sd_printf("  FAULT INPUT[%d] srcIdx=%d: shape=%s special=%p primary=%p "
+                      "len=%lld db=%p closed=%d devId=%d\n",
+                      i, srcIdx, ShapeUtils::shapeAsString(inp).c_str(),
+                      inp->dataBuffer()->special(), inp->dataBuffer()->primary(),
+                      (long long)inp->lengthOf(), (void*)inp->dataBuffer(),
+                      inp->dataBuffer()->isClosed() ? 1 : 0,
+                      inp->dataBuffer()->deviceId());
+          } else {
+            sd_printf("  FAULT INPUT[%d] srcIdx=%d: %s\n",
+                      i, srcIdx, inp ? "db=null" : "null");
+          }
+        }
+        // Log outputs of the failing slot
+        for (int i = 0; i < faultSlot.numOutputs; i++) {
+          int si = faultSlot.outputSlotIndices[i];
+          NDArray* out = (si >= 0 && si < totalOutputSlots_) ? outputSlots_[si] : nullptr;
+          if (out != nullptr && out->dataBuffer() != nullptr) {
+            sd_printf("  FAULT OUTPUT[%d] slotIdx=%d: shape=%s special=%p len=%lld\n",
+                      i, si, ShapeUtils::shapeAsString(out).c_str(),
+                      out->dataBuffer()->special(), (long long)out->lengthOf());
+          } else {
+            sd_printf("  FAULT OUTPUT[%d] slotIdx=%d: %s\n", i, si, out ? "db=null" : "null");
+          }
+        }
+        cudaGetLastError(); // clear sticky error
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(syncErr));
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
+        return Status::KERNEL_FAILURE;
+      }
+    }
+#endif
+
     if (status != Status::OK) {
       char buf[512];
       snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",

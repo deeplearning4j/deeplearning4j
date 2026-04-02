@@ -182,6 +182,21 @@ public class Nd4j {
      */
     public static final NDImage image = new NDImage();
 
+    /**
+     * Framework namespace - unified access to ND4J internals.
+     * Provides transparent access to memory management, op profiling,
+     * array lifecycle tracking, and diagnostic facilities.
+     * 
+     * Usage:
+     * <pre>
+     *   Nd4j.framework.memory().stats()
+     *   Nd4j.framework.profiling().enableOpTiming()
+     *   Nd4j.framework.lifecycle().getArrayHistory()
+     *   Nd4j.framework.diagnostics().runLeakDetection()
+     * </pre>
+     */
+    public static final org.nd4j.linalg.framework.Framework framework = org.nd4j.linalg.framework.Framework.getInstance();
+
 
 
     private final static String DATA_BUFFER_OPS = "databufferfactory";

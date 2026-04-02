@@ -48,15 +48,29 @@ class CaptureBufferRegistryImpl {
     int actualDevice = deviceId;
     void* ptr = memory::CudaMemoryPool::getInstance().allocate(bytes, deviceId, nullptr, &actualDevice);
     if (ptr != nullptr) {
+      // CROSS-DEVICE REJECTION: Capture workspaces MUST be on the requested device.
+      // During CUDA graph capture, ops allocate temporaries from the workspace via
+      // bump pointer and execute cudaMemcpyAsync on the capture stream (device 0).
+      // If the workspace memory is on a different device (e.g., device 1 via failover),
+      // cudaMemcpyAsync fails with error code 1 (cudaErrorInvalidValue), poisoning the
+      // capture stream. This latent corruption causes "illegal memory access" (error 700)
+      // on subsequent CUDA operations, even after the capture is aborted.
+      // Fix: reject the allocation and return nullptr so the caller can handle the failure
+      // (skip capture and fall back to slot-by-slot execution).
+      if (actualDevice != deviceId) {
+        DSP_DIAG(MEMORY, "CaptureBufferRegistry: REJECTING cross-device allocation for seg %d: "
+                 "requested device %d but got device %d (ptr=%p, %zuMB). "
+                 "Capture workspace must be on the capture device. "
+                 "This indicates GPU %d is out of memory.",
+                 segIdx, deviceId, actualDevice, ptr, bytes / (1024 * 1024), deviceId);
+        // Free the cross-device allocation immediately
+        memory::CudaMemoryPool::getInstance().free(ptr, actualDevice, nullptr);
+        return nullptr;
+      }
       std::lock_guard<std::mutex> lock(mtx_);
       entries_[segIdx].push_back({ptr, bytes, actualDevice});
-      if (actualDevice != deviceId) {
-        DSP_DIAG(MEMORY, "CaptureBufferRegistry: allocated %zuMB for seg %d on device %d (failover from %d, ptr=%p)",
-                 bytes / (1024 * 1024), segIdx, actualDevice, deviceId, ptr);
-      } else {
-        DSP_DIAG(MEMORY, "CaptureBufferRegistry: allocated %zuMB for seg %d on device %d (ptr=%p)",
-                 bytes / (1024 * 1024), segIdx, actualDevice, ptr);
-      }
+      DSP_DIAG(MEMORY, "CaptureBufferRegistry: allocated %zuMB for seg %d on device %d (ptr=%p)",
+               bytes / (1024 * 1024), segIdx, actualDevice, ptr);
     } else {
       DSP_DIAG(MEMORY, "CaptureBufferRegistry: FAILED to allocate %zuMB for seg %d on device %d",
                bytes / (1024 * 1024), segIdx, deviceId);

@@ -31,6 +31,7 @@
 #include <graph/GraphBackend.h>
 #include <array/DataBuffer.h>
 #include <helpers/ConstantShapeHelper.h>
+#include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/helper_hash.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -1496,6 +1497,433 @@ void NativeDynamicShapePlan::clearAllShapeCachesForce() {
   }
 }
 
+// ─── Release GPU intermediates ───────────────────────────────────────────────
+
+#ifdef SD_CUDA
+// Diagnostic helper: report cudaMemGetInfo + pool stats at each step boundary.
+// Always prints via sd_printf so we can trace the ~800 MB per-page leak.
+static void logGpuMemState(const char* label) {
+  size_t freeMem = 0, totalMem = 0;
+  cudaMemGetInfo(&freeMem, &totalMem);
+  size_t usedMem = totalMem - freeMem;
+
+  // Query the default memory pool for current device
+  cudaMemPool_t pool = nullptr;
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  cudaDeviceGetDefaultMemPool(&pool, deviceId);
+
+  uint64_t poolUsed = 0, poolReserved = 0;
+  if (pool != nullptr) {
+    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrUsedMemCurrent, &poolUsed);
+    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReservedMemCurrent, &poolReserved);
+  }
+
+  // Also count direct allocations from CudaMemoryPool
+  auto& memPool = memory::CudaMemoryPool::getInstance();
+  size_t directAllocBytes = 0;
+  {
+    // Sum direct allocation sizes
+    // We can't access directAllocations_ directly, but we know the weight migration
+    // moves weights there. Use pinnedHostBytesUsed as a proxy for pinned host.
+  }
+
+  sd_printf("  [GPU-MEM %s] dev%d: used=%zu MB, free=%zu MB, total=%zu MB | "
+            "pool: used=%llu MB, reserved=%llu MB, reclaimable=%llu MB\n",
+            label, deviceId,
+            usedMem / (1024*1024), freeMem / (1024*1024), totalMem / (1024*1024),
+            poolUsed / (1024ULL*1024), poolReserved / (1024ULL*1024),
+            (poolReserved - poolUsed) / (1024ULL*1024));
+}
+#endif
+
+int NativeDynamicShapePlan::releaseGpuIntermediates() {
+  DSP_DIAG(MEMORY, "releaseGpuIntermediates: START plan=%p numSlots=%d totalOutputSlots=%d",
+           this, numSlots_, totalOutputSlots_);
+
+  // ── Step 1: Free per-segment GPU resources (CUDA graphs, capture buffers,
+  //            capture workspaces, pinned host pointers) ──────────────────────
+  // This is the same cleanup as the destructor's platformFreePlanResources(),
+  // but we keep the segment metadata (slot ranges, op definitions) intact.
+#ifdef SD_CUDA
+  logGpuMemState("STEP-0-ENTRY");
+  bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
+                 captureBufferRegistry_ != nullptr;
+
+  for (auto& seg : segments_) {
+    if (seg.exec.replayHandle) {
+      // Free capture buffer NDArrays
+      for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
+        if (!cb.directReference) delete cb.buffer;
+      }
+      seg.exec.replayHandle->getCaptureBuffers().clear();
+      // Free capture workspace
+      if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
+        seg.exec.replayHandle->releaseWorkspace(
+            usePool ? captureBufferRegistry_ : nullptr,
+            seg.startSlot);
+      }
+      // Free pinned host pointers
+      seg.exec.replayHandle->freeHostPointers();
+      seg.exec.replayHandle->clearExternalAddresses();
+      seg.exec.replayHandle.reset();
+    }
+    seg.exec.gapOpsCapturedInGraph = false;
+    seg.exec.argTableStable = false;
+    seg.exec.capturedInputAddrKey = 0;
+    seg.exec.compilationFailed = false;
+    seg.exec.executionCount = 0;
+    delete seg.exec.jitKernel;
+    seg.exec.jitKernel = nullptr;
+    // Reset stale state that would cause skipped recompilation/recapture:
+    seg.exec.cachedShapeKey = 0;
+    seg.exec.capturedCreateValueKey = 0;
+    seg.exec.captureOomRetries = 0;
+    seg.exec.captureRetryAfterExec = 0;
+    seg.exec.compiledByBackend.clear();
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    seg.exec.jitShapeKey = 0;
+    seg.exec.jitCompileFailed = false;
+    seg.exec.segBatchZeroEntries.clear();
+    // Reset compile-time shape key so Triton recompilation is triggered
+    seg.shapeKey = 0;
+  }
+
+  // Release pool-managed capture buffers
+  logGpuMemState("STEP-1-AFTER-SEGMENTS");
+  if (usePool) {
+    auto* registry = static_cast<CaptureBufferRegistry*>(captureBufferRegistry_);
+    registry->releaseAll();
+    delete registry;
+    captureBufferRegistry_ = nullptr;
+  }
+
+  // Free cuBLAS workspace (256 MB)
+  if (cublasWorkspaceBuffer_ != nullptr) {
+    cudaFree(cublasWorkspaceBuffer_);
+    cublasWorkspaceBuffer_ = nullptr;
+    cublasWorkspaceSize_ = 0;
+  }
+
+  // Free batch-zero, batch-D2D, and batched-GEMM device arrays
+  freeBatchZeroResources();
+  freeBatchD2DResources();
+  freeBatchedGemmResources();
+  logGpuMemState("STEP-1-AFTER-BATCH-RESOURCES");
+#else
+  // CPU path: reset segment execution state (no CUDA graphs or GPU resources)
+  for (auto& seg : segments_) {
+    if (seg.exec.replayHandle) {
+      seg.exec.replayHandle.reset();
+    }
+    seg.exec.gapOpsCapturedInGraph = false;
+    seg.exec.argTableStable = false;
+    seg.exec.capturedInputAddrKey = 0;
+    seg.exec.compilationFailed = false;
+    seg.exec.executionCount = 0;
+    // Reset stale state that would cause skipped recompilation/recapture:
+    seg.exec.cachedShapeKey = 0;
+    seg.exec.capturedCreateValueKey = 0;
+    seg.exec.captureOomRetries = 0;
+    seg.exec.captureRetryAfterExec = 0;
+    seg.exec.compiledByBackend.clear();
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    seg.exec.segBatchZeroEntries.clear();
+    seg.shapeKey = 0;
+  }
+#endif
+
+  // ── Step 2: Free non-weight NDArrays from outputSlots_ ─────────────────
+  // Only free SLOT_OWNED buffers. Views, weights, and capture buffers are
+  // either already freed (capture buffers above) or externally owned.
+  //
+  // CRITICAL: Re-classify ownership before freeing. After CUDA graph capture,
+  // outputSlots_[] is restored to warmup arrays (line 2716 in gpubackend.cpp)
+  // but slotOwnership_[] still reflects capture-time classification. The warmup
+  // arrays may have different ownership than the capture arrays:
+  //   - Warmup array has unique buffer → should be SLOT_OWNED → must be freed
+  //   - Capture array shared buffer with weight → was VIEW_OF_WEIGHT
+  // Without re-classification, warmup arrays with unique buffers are skipped
+  // (classified as VIEW_OF_WEIGHT from capture), leaking ~1.7 GB per page cycle.
+  int freedCount = 0;
+  std::unordered_set<NDArray*> deleted;
+
+  if (outputSlots_) {
+    // Re-classify ownership for ALL slots based on the CURRENT outputSlots_[] arrays.
+    // This corrects stale ownership from CUDA graph capture-time classification.
+    if (slotOwnership_) {
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        slotOwnership_[i].reset();
+        if (outputSlots_[i] == nullptr) continue;
+        auto* db = outputSlots_[i]->dataBuffer();
+        if (db == nullptr) {
+          slotOwnership_[i].ownership = BufferOwnership::UNSET;
+          continue;
+        }
+        // Check if buffer belongs to a protected weight
+        if (protectedWeightBuffers_.count(db) > 0) {
+          slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_WEIGHT;
+          slotOwnership_[i].dataBuffer = db;
+          continue;
+        }
+        // Check if buffer is shared with an earlier slot (view of another slot)
+        bool isViewOfSlot = false;
+        for (int j = 0; j < i; j++) {
+          if (outputSlots_[j] != nullptr && outputSlots_[j]->dataBuffer() == db) {
+            slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_SLOT;
+            slotOwnership_[i].parentSlotIdx = j;
+            slotOwnership_[i].dataBuffer = db;
+            isViewOfSlot = true;
+            break;
+          }
+        }
+        if (!isViewOfSlot) {
+          // Also check if a LATER slot shares this buffer (this slot is the owner)
+          slotOwnership_[i].ownership = BufferOwnership::SLOT_OWNED;
+          slotOwnership_[i].dataBuffer = db;
+        }
+      }
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: re-classified ownership for %d slots", totalOutputSlots_);
+    }
+
+    if (slotOwnership_) {
+      // First pass: null out all VIEW_OF_SLOT entries (they'll be invalidated
+      // when their parent SLOT_OWNED buffer is freed).
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr &&
+            slotOwnership_[i].ownership == BufferOwnership::VIEW_OF_SLOT) {
+          // Don't delete — the parent owns the buffer. Just null out.
+          outputSlots_[i] = nullptr;
+          slotOwnership_[i].reset();
+        }
+      }
+      // Second pass: free SLOT_OWNED buffers. Force viewRefCount to 0 since
+      // all views were cleared in the first pass — no live references remain.
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr &&
+            slotOwnership_[i].ownership == BufferOwnership::SLOT_OWNED) {
+          slotOwnership_[i].viewRefCount = 0;  // All views already nulled above
+          if (deleted.insert(outputSlots_[i]).second) {
+            delete outputSlots_[i];
+            freedCount++;
+          }
+          outputSlots_[i] = nullptr;
+          slotOwnership_[i].reset();
+        }
+      }
+    } else {
+      // Fallback: no ownership info — use protectedWeightBuffers_ to decide
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr) {
+          auto* db = outputSlots_[i]->dataBuffer();
+          bool isWeight = (db != nullptr && protectedWeightBuffers_.count(db) > 0);
+          if (!isWeight && deleted.insert(outputSlots_[i]).second) {
+            delete outputSlots_[i];
+            freedCount++;
+          }
+          if (!isWeight) {
+            outputSlots_[i] = nullptr;
+          }
+        }
+      }
+    }
+  }
+#ifdef SD_CUDA
+  DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed %d unique intermediate NDArrays", freedCount);
+  sd_printf("  [GPU-MEM] Step 2: freed %d unique intermediate NDArrays\n", freedCount);
+  logGpuMemState("STEP-2-AFTER-INTERMEDIATES");
+
+  // ── Step 3: Free untracked output cache ─────────────────────────────────
+  if (untrackedOutputCache_) {
+    for (int i = 0; i < untrackedOutputCacheSize_; i++) {
+      delete untrackedOutputCache_[i];
+      untrackedOutputCache_[i] = nullptr;
+    }
+  }
+
+  // ── Step 4: Clear MmulHelper cast cache (thread-local FP16→FP32 staging) ─
+  MmulHelper::clearCastCache();
+  logGpuMemState("STEP-4-AFTER-CAST-CACHE");
+
+  // ── Step 4b: Migrate weight buffers out of async pool, then trim ────────
+  // The CUDA async memory pool uses a single default pool per device for BOTH
+  // model weights (long-lived) and intermediates (short-lived). When intermediates
+  // are freed, weight allocations scattered across pool blocks prevent
+  // cudaMemPoolTrimTo from reclaiming the freed memory. This causes a progressive
+  // ~800-1200 MB leak per page cycle.
+  //
+  // Fix: After freeing intermediates and syncing, migrate each weight DataBuffer
+  // from its pool allocation (cudaMallocAsync) to a direct allocation (cudaMalloc).
+  // This removes all weight pointers from the pool, allowing trimPool to fully
+  // reclaim all freed intermediate memory. The migration is a one-time cost per
+  // reset (~2-4 GB memcpy) that eliminates the fragmentation root cause.
+  {
+    cudaError_t syncErr = cudaDeviceSynchronize();
+    if (syncErr != cudaSuccess) {
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: cudaDeviceSynchronize failed: %s",
+               cudaGetErrorString(syncErr));
+      cudaGetLastError();  // clear sticky error
+    }
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+
+    // Migrate weight buffers from async pool to direct cudaMalloc
+    int migratedCount = 0;
+    int skippedDirect = 0;
+    int skippedNonDevice = 0;
+    int failedMigrations = 0;
+    size_t migratedBytes = 0;
+    size_t totalWeightBytes = 0;
+    auto& pool = memory::CudaMemoryPool::getInstance();
+
+    sd_printf("  [GPU-MEM] Weight migration: %zu protected weight buffers to check\n",
+              protectedWeightBuffers_.size());
+
+    for (auto* db : protectedWeightBuffers_) {
+      if (db == nullptr || db->special() == nullptr) continue;
+
+      size_t bufSize = db->getLenInBytes();
+      totalWeightBytes += bufSize;
+
+      // Skip buffers that are already direct allocations (from a previous migration)
+      if (pool.isDirectAllocation(db->special())) {
+        skippedDirect++;
+        continue;
+      }
+
+      // Skip host (pinned) allocations — these aren't in the pool
+      // (detected by checking if the pointer is in hostAllocations_)
+      cudaPointerAttributes ptrAttrs;
+      cudaError_t attrErr = cudaPointerGetAttributes(&ptrAttrs, db->special());
+      if (attrErr != cudaSuccess) {
+        cudaGetLastError();
+        continue;  // Can't query pointer — skip
+      }
+      if (ptrAttrs.type != cudaMemoryTypeDevice) {
+        skippedNonDevice++;
+        continue;  // Not device memory (host/managed/unregistered) — skip
+      }
+
+      if (bufSize == 0) continue;
+
+      // Allocate a new direct (non-pool) buffer via cudaMalloc
+      void* directPtr = nullptr;
+      cudaError_t allocErr = cudaMalloc(&directPtr, bufSize);
+      if (allocErr != cudaSuccess || directPtr == nullptr) {
+        // Can't allocate — skip this buffer (it stays in the pool)
+        cudaGetLastError();
+        failedMigrations++;
+        sd_printf("  [GPU-MEM] Weight migration FAILED for %zu bytes (%zu MB): %s\n",
+                  bufSize, bufSize / (1024*1024), cudaGetErrorString(allocErr));
+        continue;
+      }
+
+      // Copy weight data from pool buffer to direct buffer
+      cudaError_t copyErr = cudaMemcpy(directPtr, db->special(), bufSize, cudaMemcpyDeviceToDevice);
+      if (copyErr != cudaSuccess) {
+        // Copy failed — free the new buffer and skip
+        cudaFree(directPtr);
+        cudaGetLastError();
+        DSP_DIAG(MEMORY, "releaseGpuIntermediates: weight migration memcpy failed for %zu bytes: %s",
+                 bufSize, cudaGetErrorString(copyErr));
+        continue;
+      }
+
+      // Free the old pool-based buffer via cudaFreeAsync (returns memory to pool)
+      void* oldPtr = db->special();
+      cudaFreeAsync(oldPtr, nullptr);
+
+      // Update the DataBuffer to point to the new direct buffer.
+      // replaceSpecialBuffer swaps _specialBuffer without calling deleteSpecial(),
+      // which would try to free the already-freed old pointer.
+      db->replaceSpecialBuffer(directPtr, true);
+
+      // Register the new pointer as a direct allocation so CudaMemoryPool::free()
+      // routes it to cudaFree instead of cudaFreeAsync
+      pool.registerDirectAllocation(directPtr, bufSize);
+
+      migratedCount++;
+      migratedBytes += bufSize;
+    }
+
+    if (migratedCount > 0) {
+      // Sync again to ensure all cudaFreeAsync from old pool buffers complete
+      cudaDeviceSynchronize();
+    }
+
+    sd_printf("  [GPU-MEM] Weight migration summary: total=%zu MB, migrated=%d (%zu MB), "
+              "skippedDirect=%d, skippedNonDevice=%d, failed=%d\n",
+              totalWeightBytes / (1024*1024), migratedCount, migratedBytes / (1024*1024),
+              skippedDirect, skippedNonDevice, failedMigrations);
+
+    pool.trimPool(deviceId);
+    logGpuMemState("STEP-4b-AFTER-MIGRATION-AND-TRIM");
+
+    // ── Step 4c: Clear shape and TAD caches ────────────────────────────────
+    // DirectShapeTrie and DirectTadTrie permanently cache every unique
+    // (shape+strides+dtype+order) and (shape+TAD-dimensions) combination.
+    // In the VLM decoder, seqKV increments by 1 each decode step, creating
+    // ~hundreds of unique shapes per page. Each entry allocates GPU memory
+    // via replicatePointer() → CudaMemoryPool::allocate(). Neither cache
+    // ever evicts entries — they grow monotonically, accounting for ~600-700 MB
+    // of non-reclaimable pool memory per page cycle.
+    //
+    // Fix: Clear both caches between pages. The entries will be recreated
+    // on-demand during the next page's execution. The GPU memory freed here
+    // returns to the async pool, which we then reclaim via a second trimPool().
+    {
+      auto shapeEntriesBefore = ConstantShapeHelper::getInstance().getCachedEntries();
+      auto tadEntriesBefore = ConstantTadHelper::getInstance().getCachedEntries();
+
+      ConstantShapeHelper::getInstance().clearCache();
+      ConstantTadHelper::getInstance().clearCache();
+
+      auto shapeEntriesAfter = ConstantShapeHelper::getInstance().getCachedEntries();
+      auto tadEntriesAfter = ConstantTadHelper::getInstance().getCachedEntries();
+
+      sd_printf("  [GPU-MEM] Shape/TAD cache clear: shapes %lld->%lld, TADs %lld->%lld\n",
+                static_cast<long long>(shapeEntriesBefore), static_cast<long long>(shapeEntriesAfter),
+                static_cast<long long>(tadEntriesBefore), static_cast<long long>(tadEntriesAfter));
+
+      // Sync so all cudaFreeAsync calls from cache clearing complete
+      cudaDeviceSynchronize();
+      // Trim again to reclaim pool memory freed by cache clearing
+      pool.trimPool(deviceId);
+      logGpuMemState("STEP-4c-AFTER-CACHE-CLEAR-AND-TRIM");
+    }
+  }
+#endif
+
+  // ── Step 5: Reset execution state so plan re-warms on next execute() ────
+  viewProducerDetectionDone_ = false;
+  frozenConstantDetectionDone_ = false;
+  executeCount_ = 0;
+  // Reset shapesFrozen_ so the plan goes through the full warmup-capture-replay
+  // lifecycle from scratch. Without this, stale segment state (shapeKey, cachedShapeKey)
+  // causes Triton recompilation to be skipped, and the plan tries to replay
+  // CUDA graphs that were destroyed, leading to error 700.
+  shapesFrozen_ = false;
+
+  // Disable KV cache retention — after releasing intermediates, the output slots
+  // that KV scatter reads from are NULL. The next page's decode loop will
+  // re-configure retention at the correct position via configureKvCacheRetention().
+  // Without this, a restored cached handle runs KV scatter with stale position
+  // against empty destination buffers, causing CUDA error 700.
+  kvCacheRetentionEnabled_ = false;
+  kvCachePosition_ = 0;
+
+  // Clear shape caches so shapes are re-inferred
+  clearAllShapeCachesForce();
+
+  // Clear GPU backend failed-segment cache
+  clearGpuBackendFailedCache();
+
+  DSP_DIAG(MEMORY, "releaseGpuIntermediates: DONE plan=%p, freed %d arrays. "
+           "Plan is now cold — next execute() will re-warm.", this, freedCount);
+
+  return freedCount;
+}
+
 // ─── KV cache retention ──────────────────────────────────────────────────────
 
 void NativeDynamicShapePlan::configureKvCacheRetention(
@@ -1694,14 +2122,36 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
 
     if (presentKv->rankOf() != 4 || staticBuf->rankOf() != 4) { skipped++; continue; }
 
+    // Validate GPU buffer pointers are non-null and sequence dims are non-zero.
+    // After resetForNextPage(), restored cached handles may encounter empty
+    // destination buffers (shape [1,H,0,D]) whose specialBuffer() is nullptr.
+    // Writing to nullptr causes CUDA error 700.
     NDArray::prepareSpecialUse({staticBuf}, {presentKv});
 
+    const void* srcBuf = presentKv->specialBuffer();
+    void* dstBuf = staticBuf->specialBuffer();
+    auto srcSeq = presentKv->sizeAt(2);
+    auto dstSeq = staticBuf->sizeAt(2);
+
+    if (srcBuf == nullptr || dstBuf == nullptr || srcSeq <= 0 || dstSeq <= 0) {
+      NDArray::registerSpecialUse({staticBuf}, {presentKv}); // balance the prepareSpecialUse
+      skipped++;
+      continue;
+    }
+
+    // Validate cachePos is within the destination buffer's bounds
+    if (kvCachePosition_ >= dstSeq) {
+      NDArray::registerSpecialUse({staticBuf}, {presentKv}); // balance the prepareSpecialUse
+      skipped++;
+      continue;
+    }
+
     sd::ops::helpers::KvScatterEntry entry;
-    entry.srcPtr = presentKv->specialBuffer();
-    entry.dstPtr = staticBuf->specialBuffer();
+    entry.srcPtr = srcBuf;
+    entry.dstPtr = dstBuf;
     entry.heads = presentKv->sizeAt(1);
-    entry.srcSeqLen = presentKv->sizeAt(2);
-    entry.dstSeqLen = staticBuf->sizeAt(2);
+    entry.srcSeqLen = srcSeq;
+    entry.dstSeqLen = dstSeq;
     entry.dim = presentKv->sizeAt(3);
     entry.lastPos = entry.srcSeqLen - 1;
     entry.cachePos = kvCachePosition_;
@@ -1716,6 +2166,27 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
   if (scattered > 0) {
     auto* lc = LaunchContext::defaultContext();
     sd::ops::helpers::kvScatterBatched(batchEntries.data(), scattered, batchDtype, lc);
+
+#ifdef SD_CUDA
+    // Diagnostic: sync after KV scatter to catch latent errors from scatter kernel
+    {
+      cudaError_t scatterErr = cudaDeviceSynchronize();
+      if (scatterErr != cudaSuccess) {
+        sd_printf("KV SCATTER CUDA ERROR: cudaDeviceSynchronize after kvScatterBatched "
+                  "returned error %d (%s). scattered=%d pos=%d numMappings=%d\n",
+                  static_cast<int>(scatterErr), cudaGetErrorString(scatterErr),
+                  scattered, kvCachePosition_, kvCacheNumMappings_);
+        // Log first entry pointers for debugging
+        if (!batchEntries.empty()) {
+          auto& e = batchEntries[0];
+          sd_printf("  entry[0]: srcPtr=%p dstPtr=%p heads=%lld srcSeqLen=%lld dstSeqLen=%lld cachePos=%lld\n",
+                    e.srcPtr, e.dstPtr, (long long)e.heads, (long long)e.srcSeqLen,
+                    (long long)e.dstSeqLen, (long long)e.cachePos);
+        }
+        cudaGetLastError(); // clear sticky error
+      }
+    }
+#endif
   }
 
   // Register special use for all pairs

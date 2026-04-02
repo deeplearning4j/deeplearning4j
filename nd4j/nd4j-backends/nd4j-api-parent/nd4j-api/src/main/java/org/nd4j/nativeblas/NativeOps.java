@@ -1417,6 +1417,19 @@ public interface NativeOps {
  }
 
  /**
+  * Release all GPU memory held by intermediate computation results while keeping
+  * the plan structure alive. Frees CUDA graph replay handles, capture buffers,
+  * cuBLAS workspace, and non-weight output slot NDArrays. The plan enters a
+  * "cold" state and will re-warm on the next execute() call.
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return the number of intermediate NDArrays freed
+  */
+ default int releaseGpuIntermediates(Pointer planHandle) {
+     throw new UnsupportedOperationException("releaseGpuIntermediates not implemented in this backend");
+ }
+
+ /**
   * Returns true if Triton backend support is compiled and available at runtime.
   */
  default boolean isTritonAvailable() {

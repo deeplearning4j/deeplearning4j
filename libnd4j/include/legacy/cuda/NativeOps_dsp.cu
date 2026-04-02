@@ -218,6 +218,44 @@ int executeDynamicShapePlan(
     // CudaExecutioner checks lastErrorCode() after execCustomOp2.
     setError(0, "");
 
+    // ── Definitive post-execute CUDA error check ──────────────────────────
+    // Synchronize the device and check for latent CUDA errors (e.g., error 700
+    // from kernels that wrote to invalid GPU memory). This catches errors that
+    // the per-slot diagnostic in executeSegmentSlotBySlot might miss if the error
+    // manifests on a different stream or after all slots complete.
+    // Without this, the latent error surfaces as "cudaMallocAsync failed" when Java
+    // allocates output arrays, making the root cause impossible to identify.
+    {
+      cudaError_t postExecErr = cudaDeviceSynchronize();
+      if (postExecErr != cudaSuccess) {
+        char buf[512];
+        snprintf(buf, sizeof(buf),
+                 "POST-EXECUTE CUDA ERROR: cudaDeviceSynchronize after plan->execute() "
+                 "returned error %d (%s). A kernel during execution accessed invalid GPU memory. "
+                 "numInputs=%d numOutputs=%d",
+                 static_cast<int>(postExecErr), cudaGetErrorString(postExecErr),
+                 numInputs, numOutputs);
+        sd_printf("%s\n", buf);
+        cudaGetLastError(); // clear sticky error
+        setError(static_cast<int>(postExecErr), buf);
+        return static_cast<int>(postExecErr);
+      }
+      // Also check cudaPeekAtLastError for non-synchronous errors
+      cudaError_t peekErr = cudaPeekAtLastError();
+      if (peekErr != cudaSuccess) {
+        char buf[512];
+        snprintf(buf, sizeof(buf),
+                 "POST-EXECUTE CUDA PEEK ERROR: cudaPeekAtLastError after plan->execute() "
+                 "returned error %d (%s). numInputs=%d numOutputs=%d",
+                 static_cast<int>(peekErr), cudaGetErrorString(peekErr),
+                 numInputs, numOutputs);
+        sd_printf("%s\n", buf);
+        cudaGetLastError(); // clear sticky error
+        setError(static_cast<int>(peekErr), buf);
+        return static_cast<int>(peekErr);
+      }
+    }
+
     // Write output arrays back to context so Java can read them
     for (int i = 0; i < numOutputs; i++) {
       if (outputPtrs[i] != nullptr) {
@@ -268,6 +306,12 @@ void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle) {
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
     plan->clearAllShapeCachesForce();
   }
+}
+
+int releaseGpuIntermediates(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  return plan->releaseGpuIntermediates();
 }
 
 void configurePlanKvCacheRetention(

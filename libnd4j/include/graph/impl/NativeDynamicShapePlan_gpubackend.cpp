@@ -1720,14 +1720,17 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // instead of calling cudaMallocAsync (which fails during capture).
     static size_t TRITON_CAPTURE_WORKSPACE_SIZE = []() -> size_t {
       const char* envVal = std::getenv("ND4J_DSP_CAPTURE_WORKSPACE_MB");
-      // Default 32MB: most segments use 0-256 bytes of workspace, but segments
-      // with gap ops (concat, split, etc.) can need 8-16MB.  The previous 8MB
-      // default caused workspace exhaustion for these segments, and the fallback
-      // to cudaMallocAsync corrupted the capture stream (error 901).
-      // cuBLAS workspace is separate (ensureCublasWorkspace), so this only needs
-      // to cover temporary allocations during graph capture.
-      // 60 segments × 32MB = 1.9GB — well within 24GB GPU memory.
-      size_t mb = 32;  // default
+      // Default 128MB: VLM segments (attention, matmul) can need 50-100MB of
+      // temporary workspace per segment.  The previous 32MB default caused
+      // workspace exhaustion for large models, leading to failed captures and
+      // subsequent cudaFreeAsync "invalid argument" errors when intermediates
+      // allocated during the failed capture attempt were freed.
+      // We use 128MB (not 512MB) because workspaces are retained per-segment
+      // until replay handles are destroyed. With ~60 segments, 512MB × 60 = 30GB
+      // would exceed GPU memory. 128MB × 60 = 7.5GB is manageable on a 24GB GPU.
+      // cuBLAS workspace is separate (ensureCublasWorkspace), so this covers
+      // only temporary allocations during graph capture.
+      size_t mb = 128;  // default
       if (envVal != nullptr) {
         int parsed = std::atoi(envVal);
         if (parsed > 0 && parsed <= 4096) mb = static_cast<size_t>(parsed);
@@ -1751,12 +1754,30 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         DSP_DIAG_SEG(MEMORY, seg.startSlot, "allocated %zuMB Triton capture workspace for seg[%d-%d]",
                   TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024), seg.startSlot, seg.endSlot);
       } else {
-        DSP_DIAG(MEMORY, "WARNING - Triton capture workspace allocation failed for seg[%d-%d]",
-                  seg.startSlot, seg.endSlot);
+        // Workspace allocation failed — ABORT capture for this segment.
+        // Without a capture workspace, ops during capture would try cudaMallocAsync
+        // which fails during CUDA graph capture, or (worse) the workspace from a
+        // cross-device failover causes cudaMemcpyAsync errors that permanently
+        // corrupt the CUDA context (error 700 on subsequent operations).
+        // Per design: capture failures block execution loudly, no silent fallbacks.
+        DSP_DIAG(MEMORY, "CAPTURE WORKSPACE ALLOCATION FAILED for seg[%d-%d] on device %d — "
+                  "aborting graph capture. GPU %d does not have %zuMB free for capture workspace. "
+                  "Setting compilationFailed=true, segment will use slot-by-slot execution.",
+                  seg.startSlot, seg.endSlot, deviceId, deviceId,
+                  TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024));
+        seg.exec.compilationFailed = true;
+        // Destroy the replay handle — it was created above but has no workspace.
+        // This sets replayHandle = nullptr, which gates the rest of the capture logic below.
+        platformCleanupSegmentForRebuild(seg);
       }
     }
 
-    // Set thread-local workspace for CudaMemoryPool during capture
+    // Guard: if workspace allocation failed, replayHandle is now nullptr.
+    // Skip ALL capture setup and execution — fall through to slot-by-slot path.
+    if (seg.exec.replayHandle == nullptr) {
+      // No capture — ensure usedTritonGraphCapture stays false
+      // and skip the rest of the capture block.
+    } else {
     tl_captureWorkspace = seg.exec.replayHandle->getWorkspacePtr();
     tl_captureWorkspaceSize = seg.exec.replayHandle->getWorkspaceBytes();
     tl_captureWorkspaceOffset = 0;
@@ -2770,6 +2791,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       slots_[s].state_ = savedSlotStateTriton[s - seg.startSlot];
     }
+    }  // end else (replayHandle != nullptr — workspace allocation succeeded)
   }
 #endif
 

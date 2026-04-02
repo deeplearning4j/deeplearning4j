@@ -221,6 +221,65 @@ class SD_LIB_EXPORT CudaMemoryPool {
    */
   const MemoryPressureEvent& getLastMemoryPressureEvent() const { return lastPressureEvent_; }
 
+  // =========================================================================
+  // Capture Workspace Range Tracking
+  // =========================================================================
+
+  /**
+   * Register an active capture workspace range. CudaMemoryPool::free() will
+   * silently skip any pointer that falls within a registered workspace range.
+   * Call when a capture workspace is allocated and persists for graph lifetime.
+   *
+   * During CUDA graph capture, intermediate allocations are bump-allocated from
+   * a pre-allocated workspace (interior pointers within a single cudaMalloc block).
+   * After capture ends, tl_graphExecutionActive is cleared, so the in-capture
+   * guards in free()/deleteSpecial() no longer fire. When these intermediates
+   * are later destroyed (GC, slot cleanup), cudaFreeAsync on interior pointers
+   * returns "invalid argument", and the cudaFree fallback corrupts the CUDA context.
+   * This registry catches those frees regardless of capture state.
+   *
+   * @param basePtr  Base pointer of the workspace allocation
+   * @param bytes    Size of the workspace in bytes
+   */
+  void registerCaptureWorkspace(void* basePtr, size_t bytes);
+
+  /**
+   * Unregister a capture workspace range (when graph/replay handle is destroyed
+   * or releaseGpuIntermediates frees the workspace).
+   * @param basePtr  Base pointer previously registered
+   */
+  void unregisterCaptureWorkspace(void* basePtr);
+
+  // =========================================================================
+  // Direct (non-pool) Allocation Tracking
+  // =========================================================================
+
+  /**
+   * Register a pointer as a direct cudaMalloc allocation (outside the async pool).
+   * free() will route these to cudaFree instead of cudaFreeAsync.
+   * Used for weight buffer migration: after migrating weight DataBuffers from the
+   * async pool to direct cudaMalloc, we register them here so subsequent frees
+   * use the correct deallocation path.
+   *
+   * @param ptr   Pointer allocated via cudaMalloc
+   * @param size  Size of the allocation in bytes
+   */
+  void registerDirectAllocation(void* ptr, size_t size);
+
+  /**
+   * Check if a pointer was registered as a direct (cudaMalloc) allocation.
+   * @param ptr  Pointer to check
+   * @return true if this pointer was registered via registerDirectAllocation()
+   */
+  bool isDirectAllocation(void* ptr) const;
+
+  /**
+   * Check if a pointer falls within any registered capture workspace.
+   * @param ptr  Pointer to check
+   * @return true if ptr is an interior pointer of an active workspace
+   */
+  bool isInCaptureWorkspace(void* ptr) const;
+
   ~CudaMemoryPool();
 
  private:
@@ -275,6 +334,21 @@ class SD_LIB_EXPORT CudaMemoryPool {
   std::atomic<bool> memoryPressureDetected_{false};
   MemoryPressureEvent lastPressureEvent_;
   std::mutex pressureEventMutex_;
+
+  // Active capture workspace ranges: basePtr → size.
+  // Protected by captureWorkspaceMutex_. Typically 1-4 entries (one per captured segment).
+  // Used by free() to skip cudaFreeAsync on interior pointers of capture workspaces.
+  mutable std::mutex captureWorkspaceMutex_;
+  std::unordered_map<void*, size_t> captureWorkspaceRanges_;
+
+  // Direct (non-pool) allocations: ptr → size.
+  // Pointers allocated via cudaMalloc instead of cudaMallocAsync, registered by
+  // registerDirectAllocation(). free() checks this before cudaFreeAsync and routes
+  // to cudaFree instead. Used for weight buffers migrated out of the async pool
+  // to prevent pool fragmentation (weights pinning pool blocks prevents trimPool
+  // from reclaiming freed intermediate memory).
+  mutable std::mutex directAllocMutex_;
+  std::unordered_map<void*, size_t> directAllocations_;
 };
 
 }  // namespace memory

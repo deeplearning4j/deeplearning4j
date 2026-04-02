@@ -21,6 +21,7 @@
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/gpu/CaptureBufferRegistry.h>
 #include <graph/DspDiagnostics.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <cuda_runtime.h>
 
 namespace sd {
@@ -36,6 +37,8 @@ CudaGraphReplayHandle::~CudaGraphReplayHandle() {
   // Pool-aware callers should call releaseWorkspace(registry, segIdx) explicitly
   // before destroying the handle. This is the safety net for raw allocations.
   if (captureWorkspacePtr_ != nullptr) {
+    // Unregister from CudaMemoryPool so free() no longer skips interior pointers
+    memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(captureWorkspacePtr_);
     cudaFree(captureWorkspacePtr_);
     captureWorkspacePtr_ = nullptr;
     captureWorkspaceBytes_ = 0;
@@ -141,6 +144,8 @@ bool CudaGraphReplayHandle::allocateWorkspace(size_t bytes, int deviceId,
     captureWorkspacePtr_ = registry->allocate(segIdx, bytes, deviceId);
     if (captureWorkspacePtr_ != nullptr) {
       captureWorkspaceBytes_ = bytes;
+      // Register so CudaMemoryPool::free() skips interior pointers from this workspace
+      memory::CudaMemoryPool::getInstance().registerCaptureWorkspace(captureWorkspacePtr_, bytes);
       DSP_DIAG(MEMORY, "CudaGraphReplayHandle: pool-allocated %zuMB workspace (seg %d, device %d)",
                bytes / (1024 * 1024), segIdx, deviceId);
       return true;
@@ -149,10 +154,22 @@ bool CudaGraphReplayHandle::allocateWorkspace(size_t bytes, int deviceId,
              segIdx);
   }
 
-  // Fallback: raw cudaMalloc
+  // Fallback: raw cudaMalloc — ensure we're on the correct device.
+  // cudaMalloc allocates on the CURRENT device. Verify device matches.
+  {
+    int currentDev = -1;
+    cudaGetDevice(&currentDev);
+    if (currentDev != deviceId) {
+      DSP_DIAG(MEMORY, "CudaGraphReplayHandle: switching from device %d to %d for cudaMalloc workspace",
+               currentDev, deviceId);
+      cudaSetDevice(deviceId);
+    }
+  }
   cudaError_t err = cudaMalloc(&captureWorkspacePtr_, bytes);
   if (err == cudaSuccess) {
     captureWorkspaceBytes_ = bytes;
+    // Register so CudaMemoryPool::free() skips interior pointers from this workspace
+    memory::CudaMemoryPool::getInstance().registerCaptureWorkspace(captureWorkspacePtr_, bytes);
     DSP_DIAG(MEMORY, "CudaGraphReplayHandle: cudaMalloc %zuMB workspace (seg %d, device %d)",
              bytes / (1024 * 1024), segIdx, deviceId);
     return true;
@@ -161,12 +178,17 @@ bool CudaGraphReplayHandle::allocateWorkspace(size_t bytes, int deviceId,
   cudaGetLastError();  // Clear error
   captureWorkspacePtr_ = nullptr;
   captureWorkspaceBytes_ = 0;
-  DSP_DIAG(MEMORY, "CudaGraphReplayHandle: workspace alloc failed (%s)", cudaGetErrorString(err));
+  DSP_DIAG(MEMORY, "CudaGraphReplayHandle: workspace alloc FAILED on device %d (%s) — "
+           "capture will be skipped for this segment. GPU %d may be out of memory.",
+           deviceId, cudaGetErrorString(err), deviceId);
   return false;
 }
 
 void CudaGraphReplayHandle::releaseWorkspace(void* registryPtr, int segIdx) {
   if (captureWorkspacePtr_ == nullptr) return;
+
+  // Unregister from CudaMemoryPool before freeing
+  memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(captureWorkspacePtr_);
 
   if (registryPtr != nullptr) {
     auto* registry = static_cast<CaptureBufferRegistry*>(registryPtr);

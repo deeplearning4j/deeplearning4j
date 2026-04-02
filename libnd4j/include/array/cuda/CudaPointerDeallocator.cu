@@ -30,6 +30,14 @@ namespace sd {
 void CudaPointerDeallocator::release(void *ptr) {
   if (ptr == nullptr) return;
 
+  // Check if this pointer is within an active capture workspace before doing anything.
+  // Capture workspace interior pointers can't be freed individually — the workspace
+  // is a single cudaMalloc block used as a bump allocator during CUDA graph capture.
+  // This guard catches frees AFTER capture ends (when tl_graphExecutionActive is false).
+  if (memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(ptr)) {
+    return;  // No-op — managed by workspace lifecycle
+  }
+
   // During CUDA graph capture, cudaPointerGetAttributes() is a synchronous
   // driver query that invalidates the capture (error 901). Skip the attributes
   // check and free directly through CudaMemoryPool. cudaFreeAsync() is
@@ -46,15 +54,21 @@ void CudaPointerDeallocator::release(void *ptr) {
   cudaError_t result = cudaPointerGetAttributes(&attributes, ptr);
 
   if (result == cudaSuccess) {
-    // Only free if it's a device pointer (regular or managed)
     if (attributes.type == cudaMemoryTypeDevice || attributes.type == cudaMemoryTypeManaged) {
       // CRITICAL FIX: Use the device ID from attributes, not the current device!
       // The pointer was allocated on attributes.device, not necessarily the current device.
       // Using the wrong device ID can cause heap corruption when freeing cross-device pointers.
       int deviceId = attributes.device;
       memory::CudaMemoryPool::getInstance().free(ptr, deviceId, nullptr);
+    } else if (attributes.type == cudaMemoryTypeHost) {
+      // Pinned host memory from CudaMemoryPool::allocateFailover()'s cudaMallocHost fallback.
+      // CudaMemoryPool::free() checks hostAllocations_ and routes to cudaFreeHost().
+      // Without this, pinned host pointers would be silently leaked here.
+      int dev;
+      cudaGetDevice(&dev);
+      memory::CudaMemoryPool::getInstance().free(ptr, dev, nullptr);
     }
-    // Don't free other types (host memory, constant memory, etc.)
+    // Don't free other types (unregistered host, constant memory, etc.)
   } else {
     // Clear the error and don't try to free this pointer
     cudaGetLastError();
