@@ -1502,4 +1502,29 @@ public interface Environment {
         setTritonNumWarps(2);
         setTritonNumStages(2);
     }
+
+    // Memory environment methods
+    default double heapPressureThreshold() {
+        String val = System.getProperty("org.nd4j.memory.heap.pressure.threshold");
+        if (val == null) return 0.9;
+        try {
+            return Double.parseDouble(val);
+        } catch (NumberFormatException e) {
+            return 0.9;
+        }
+    }
+
+    default boolean isFuncTracePrintFree() {
+        String val = System.getProperty("org.nd4j.functrace.print.free");
+        return val != null && Boolean.parseBoolean(val);
+    }
+
+    // CUDA limit methods (stubs - actual implementation in CUDA backend)
+    default long cudaGetLimit(int limitType) {
+        return 0L;
+    }
+
+    default void cudaSetLimit(int limitType, long value) {
+        // No-op stub
+    }
 }

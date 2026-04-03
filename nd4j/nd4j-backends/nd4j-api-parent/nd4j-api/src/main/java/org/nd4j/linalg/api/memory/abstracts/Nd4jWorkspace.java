@@ -294,6 +294,14 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     /**
+     * Get the initial size (alias for getInitialBlockSize).
+     * @return initial size in bytes
+     */
+    public long getInitialSize() {
+        return getInitialBlockSize();
+    }
+
+    /**
      * This method returns parent Workspace, if any. Null if there's none.
      *
      * @return

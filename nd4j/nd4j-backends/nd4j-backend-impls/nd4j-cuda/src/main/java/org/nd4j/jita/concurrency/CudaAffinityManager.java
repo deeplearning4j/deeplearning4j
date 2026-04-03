@@ -168,6 +168,16 @@ public class CudaAffinityManager extends BasicAffinityManager {
         return id;
     }
 
+    /**
+     * Set the device ID for the current thread.
+     * @param deviceId the device ID to set
+     */
+    @Override
+    public void setDeviceForCurrentThread(int deviceId) {
+        long threadId = Thread.currentThread().getId();
+        affinityMap.put(threadId, deviceId);
+    }
+
 
     /**
      * Selects the best available GPU device for a new thread by delegating to

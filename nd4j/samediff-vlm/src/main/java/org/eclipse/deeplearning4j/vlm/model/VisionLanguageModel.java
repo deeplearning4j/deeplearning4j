@@ -1658,6 +1658,34 @@ public class VisionLanguageModel implements AutoCloseable {
     }
 
     /**
+     * Reset all inference sessions for DECODE page-to-page reuse with MAXIMAL state preservation.
+     *
+     * <p>This variant is optimized for VLM decode where page shapes are INVARIANT.
+     * It preserves:</p>
+     * <ul>
+     *   <li>External input staging buffers (max-size pre-allocated)</li>
+     *   <li>Output slot arrays (same shapes for decode)</li>
+     *   <li>CUDA graph replay handles</li>
+     *   <li>cuBLAS workspace</li>
+     *   <li>Batch optimization resources</li>
+     * </ul>
+     *
+     * <p>Only resets:</p>
+     * <ul>
+     *   <li>KV cache position</li>
+     *   <li>Pending decode update flag</li>
+     * </ul>
+     *
+     * <p>Call this between pages when decode shapes are invariant (always [1,1] for input_ids/position_ids).</p>
+     */
+    public void resetSessionsForDecode() {
+        log.info("Resetting sessions for decode (preserving decode-invariant state)");
+        resetDspForModelDecode("decoder", decoder);
+        resetDspForModelDecode("visionEncoder", visionEncoder);
+        resetDspForModelDecode("embedTokens", embedTokens);
+    }
+
+    /**
      * Reset the DSP executor for a single SameDiff model, freeing cached
      * intermediate GPU buffers while preserving the compiled native plan handle.
      */
@@ -1668,6 +1696,19 @@ public class VisionLanguageModel implements AutoCloseable {
         if (dsp != null) {
             dsp.resetForNextPage();
             log.debug("DSP resetForNextPage completed for {}", label);
+        }
+    }
+
+    /**
+     * Reset the DSP executor for a single SameDiff model, preserving decode-invariant state.
+     */
+    private void resetDspForModelDecode(String label, SameDiff model) {
+        if (model == null) return;
+        InferenceSession session = model.getOrCreateSession();
+        DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
+        if (dsp != null) {
+            dsp.resetForNextPageDecode();
+            log.debug("DSP resetForNextPageDecode completed for {}", label);
         }
     }
 

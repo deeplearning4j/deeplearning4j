@@ -700,9 +700,61 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             extInputToCaptureIdx[extIdx] = static_cast<int>(seg.exec.replayHandle->getCaptureBuffers().size());
             seg.exec.replayHandle->addCaptureBuffer(std::move(cb));
           } else {
-            auto srcShapeVec = *src->getShapeAsVector();
-            auto* capBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
-                                       sd::LaunchContext::defaultContext());
+            // Detect weight tensors: large inputs (> 1MB) that are NOT the dynamic
+            // decode inputs (position_ids, attention_mask, input_ids, inputs_embeds).
+            // Weights never change between decode steps — using directReference
+            // avoids duplicating ~10GB of model weights in capture buffers.
+            constexpr size_t WEIGHT_THRESHOLD = 1 * 1024 * 1024;  // 1MB
+            
+            // During capture, hasPendingDecodeUpdate_ is false. Check external input
+            // indices directly to identify dynamic decode inputs.
+            // Dynamic decode inputs are small (scalars or 1D/2D tensors).
+            // Weights are typically large (>= 1MB) and rank 2 or 4.
+            bool isDynamicDecodeInput = false;
+            if (isDecodeInputsConfigured()) {
+              isDynamicDecodeInput = (extIdx == decodeInputIdsExtIdx_ ||
+                                      extIdx == decodePositionIdsExtIdx_ ||
+                                      extIdx == decodeAttentionMaskExtIdx_);
+            }
+            
+            // inputs_embeds is typically a rank-3 tensor with shape [batch, seq, hidden]
+            // where seq is the prompt length (varies per inference). Check shape to distinguish.
+            bool isInputsEmbeds = false;
+            if (src->rankOf() == 3) {
+              auto* shape = src->shapeOf();
+              // inputs_embeds has shape [batch, seq, hidden] where seq >= 1
+              // Weight tensors with rank 3 are rare (usually rank 2 or 4)
+              // If seq dim (shape[1]) is large (> 100), likely inputs_embeds
+              if (shape[1] > 100) {
+                isInputsEmbeds = true;
+              }
+            }
+
+            bool isWeight = !isDynamicDecodeInput && !isInputsEmbeds && srcBytes >= WEIGHT_THRESHOLD;
+
+            if (isWeight) {
+              // Weight tensor: use directReference to avoid duplicating GPU memory.
+              // The graph reads directly from the original weight buffer, which
+              // never moves (protected by frozen ref count).
+              src->syncToDevice();
+              ReplayCaptureBuffer cb;
+              cb.buffer = src;
+              cb.externalInputIndex = extIdx;
+              cb.crossSegmentSlotIdx = -1;
+              cb.capturedSize = srcBytes;
+              cb.directReference = true;
+              cb.initialCopyDone = true;
+              cb.lastSourcePtr = src->specialBuffer();
+              extInputToCaptureIdx[extIdx] = static_cast<int>(seg.exec.replayHandle->getCaptureBuffers().size());
+              seg.exec.replayHandle->addCaptureBuffer(std::move(cb));
+              DSP_DIAG(MEMORY, "capture buffer init: extIdx=%d is weight (%zu MB), using directReference",
+                       extIdx, srcBytes / (1024 * 1024));
+            } else {
+              // Regular placeholder (dynamic decode input or small tensor):
+              // create a fixed-address capture buffer
+              auto srcShapeVec = *src->getShapeAsVector();
+              auto* capBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
+                                         sd::LaunchContext::defaultContext());
             if (srcBytes > 0) {
               if (needsHostMirror(src)) {
                 if (!mirrorHostAndDevice(src, capBuf, srcBytes)) {
@@ -769,7 +821,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
             extInputToCaptureIdx[extIdx] = static_cast<int>(seg.exec.replayHandle->getCaptureBuffers().size());
             seg.exec.replayHandle->addCaptureBuffer(std::move(cb));
-          }
+            }  // end else (non-weight: create capture buffer)
+          }  // end else (non-KV-cache)
         }
       } else if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
         if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr &&

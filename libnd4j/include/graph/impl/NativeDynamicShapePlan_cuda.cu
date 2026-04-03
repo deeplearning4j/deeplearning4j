@@ -144,7 +144,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO ||
        graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS);
   bool frozenFastPathInputStable = true;
-  if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1) {
+  if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1) {
     auto& seg0 = segments_[0];
     if (!seg0.exec.replayHandle || seg0.exec.replayHandle->getCaptureBuffers().empty()) {
       // Per-address comparison: catches address changes that the hash may miss
@@ -160,7 +160,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       }
     }
   }
-  if (!(allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1 &&
+  if (!(allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1 &&
         frozenFastPathInputStable && segments_[0].exec.replayHandle != nullptr &&
         segments_[0].exec.replayHandle->isReady())) {
     return Status::MAYBE;  // Fast path not applicable

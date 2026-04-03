@@ -1139,6 +1139,35 @@ SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPa
 SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath);
 
 /**
+ * Get constant cache statistics for a specific device.
+ * @param deviceId The device ID (0 for CPU, 0+ for CUDA devices)
+ * @return Number of bytes cached for constants
+ */
+SD_LIB_EXPORT sd::LongType getConstantCacheBytes(int deviceId);
+
+/**
+ * Get TAD cache statistics.
+ * @return Number of cached TAD entries
+ */
+SD_LIB_EXPORT sd::LongType getTadCacheEntries();
+
+/**
+ * Get TAD cache memory usage in bytes.
+ * @return Number of bytes used by TAD cache
+ */
+SD_LIB_EXPORT sd::LongType getTadCacheBytes();
+
+/**
+ * Clear constant cache for all devices.
+ */
+SD_LIB_EXPORT void clearConstantCache();
+
+/**
+ * Clear TAD cache.
+ */
+SD_LIB_EXPORT void clearTadCache();
+
+/**
  * Generates a comprehensive leak source analysis report combining data from ALL lifecycle trackers.
  *
  * This function analyzes undeleted allocations across all 5 lifecycle trackers:
@@ -1510,6 +1539,17 @@ SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
  * @return the number of intermediate NDArrays freed
  */
 SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle);
+
+/**
+ * Release GPU intermediates with option to preserve decode-invariant state.
+ * When preserveDecodeState=true, preserves external input staging buffers,
+ * output slot arrays, CUDA graph handles, and cuBLAS workspace.
+ *
+ * @param planHandle         Handle from compileDynamicShapePlan()
+ * @param preserveDecodeState If true, preserve decode-invariant state
+ * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
+ */
+SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle, bool preserveDecodeState);
 
 /**
  * Configure KV cache retention for a compiled plan.

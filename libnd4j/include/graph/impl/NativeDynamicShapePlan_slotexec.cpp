@@ -1633,7 +1633,13 @@ step3_allocate:
     }
   }
 
-  if (shapesFrozen_ && executeCount_ > 0 && status == Status::OK) {
+  // Promote slots to FROZEN state after successful execution under frozen shapes.
+  // NOTE: This must run on the first frozen execution (executeCount_==0) too.
+  // Previously gated on executeCount_ > 0, which prevented FROZEN promotion on
+  // the first frozen execution. This forced ALL 2743 slots through normalExecution
+  // on the SECOND frozen execution (step 3) instead of the frozen fast path,
+  // because frozenContextReady() requires state_ >= FROZEN.
+  if (shapesFrozen_ && executeCount_ >= 0 && status == Status::OK) {
     if (slot.state_ < NativeSlot::SlotState::FROZEN)
       slot.state_ = NativeSlot::SlotState::FROZEN;
   }

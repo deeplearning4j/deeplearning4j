@@ -166,6 +166,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (skipDeviceCoherency.get()) return;
         List<DataBuffer> pending = pendingReplicaClose.get();
         if (pending.isEmpty()) return;
+        // Synchronize current device stream before freeing replicas.
+        // The op kernel was dispatched on a CUDA stream and may still be reading
+        // from these replica buffers. Without this sync, cudaFreeAsync returns the
+        // memory while the kernel is still in-flight → use-after-free → SIGSEGV.
+        // commit() synchronizes all pending operations on the current thread's stream.
+        Nd4j.getExecutioner().commit();
         for (DataBuffer buf : pending) {
             if (buf != null && !buf.wasClosed()) {
                 try {
@@ -297,8 +303,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      * Minimum free memory (bytes) a device must have beyond migration needs to be
      * selected as the target. Prevents choosing a device that is too full for
      * computation workspace (cuDNN, intermediates, output allocations).
+     *
+     * Set to 1 GB (was 128 MB). Under memory pressure, cudaMemGetInfo reports free
+     * memory MINUS the async memory pool's reserved set. The pool can reuse freed
+     * entries via cudaMallocAsync even when cudaMemGetInfo reports near-zero free.
+     * A 128 MB threshold caused premature cross-device routing: device 0 had 12.7 GB
+     * pool_used on a 24 GB GPU, cudaMemGetInfo showed ~25 MB free, but the pool had
+     * ~11 GB of reusable entries. Routing to device 1 triggered DIAG-MIGRATE and
+     * subsequent CUDA context corruption.
      */
-    private static final long MIN_FREE_MEMORY_FOR_TARGET = 128L * 1024 * 1024;
+    private static final long MIN_FREE_MEMORY_FOR_TARGET = 1024L * 1024 * 1024;
 
     /**
      * Select the optimal device for op execution, minimizing cross-device data copies.

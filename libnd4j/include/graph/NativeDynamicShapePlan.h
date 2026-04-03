@@ -564,6 +564,26 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int releaseGpuIntermediates();
 
   /**
+   * Release GPU intermediates with option to preserve decode-invariant state.
+   *
+   * @param preserveDecodeState  If true, preserves:
+   *   - externalInputStagingBuffers_[] (max-size pre-allocated input buffers)
+   *   - outputSlots_[] / slotArrayCache_[] (decode has invariant shapes)
+   *   - CUDA graph replay handles (same kernel graph for decode)
+   *   - cuBLAS workspace (same GEMM shapes for decode)
+   *   - Batch-zero, batch-D2D, batched-GEMM device arrays
+   *
+   *   Only resets:
+   *   - KV cache position (kvCachePosition_)
+   *   - Decode input pending updates (hasPendingDecodeUpdate_)
+   *
+   * Use this between VLM pages when decode shapes are invariant.
+   *
+   * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
+   */
+  int releaseGpuIntermediates(bool preserveDecodeState);
+
+  /**
    * Configure KV cache retention. After this, execute() will scatter new KV entries
    * from present output slots into static past input buffers, avoiding 60 copyBuffer
    * round-trips per decode step.
@@ -795,8 +815,50 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
         seg.exec.capturedInputAddrKey = 0;
         seg.exec.compilationFailed = false;
       }
+
+      // Add frozen reference count to all protected weight DataBuffers.
+      // While frozen, these buffers' _specialBuffer addresses are (or will be)
+      // baked into frozen slot contexts and CUDA graph replay handles.
+      // Migrating them would invalidate those addresses → SIGSEGV on replay.
+      // The ref count is decremented in releaseGpuIntermediates() or on unfreeze.
+      for (auto* db : protectedWeightBuffers_) {
+        if (db != nullptr) {
+          db->addFrozenRef();
+        }
+      }
+      
+      // ALSO add frozen ref count to all output slot DataBuffers.
+      // Output slots (KV cache, logits, etc.) have their addresses baked into
+      // CUDA graph replay handles during capture. Migrating them would cause
+      // the graph to write to freed memory → SIGSEGV.
+      if (outputSlots_ != nullptr) {
+        for (int i = 0; i < totalOutputSlots_; i++) {
+          if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+            outputSlots_[i]->dataBuffer()->addFrozenRef();
+          }
+        }
+        DSP_DIAG(MEMORY, "setShapesFrozen: added frozen ref to %d output slot DataBuffers", totalOutputSlots_);
+      }
     }
     if (!frozen) {
+      // Unfreeze: remove frozen reference count from all protected weight buffers.
+      // This allows migration to resume if the device scheduler needs to move them.
+      for (auto* db : protectedWeightBuffers_) {
+        if (db != nullptr) {
+          db->removeFrozenRef();
+        }
+      }
+      
+      // ALSO remove frozen ref count from all output slot DataBuffers.
+      if (outputSlots_ != nullptr) {
+        for (int i = 0; i < totalOutputSlots_; i++) {
+          if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+            outputSlots_[i]->dataBuffer()->removeFrozenRef();
+          }
+        }
+        DSP_DIAG(MEMORY, "setShapesFrozen(false): removed frozen ref from %d output slot DataBuffers", totalOutputSlots_);
+      }
+      
       // Unfreeze: demote any FROZEN/FROZEN_CONSTANT slots back to SHAPE_CACHED
       for (int i = 0; i < numSlots_; i++) {
         if (slots_[i].state_ >= NativeSlot::SlotState::FROZEN) {
@@ -875,6 +937,24 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    *   - For each KV cache output slot, set max size = batch * numHeads * maxSeqLen * headDim
    */
   void setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots);
+
+  /**
+   * Set maximum sizes for external input arrays (staging buffer pre-allocation).
+   *
+   * When set, these external inputs will have max-size staging buffers pre-allocated.
+   * During execute(), actual input data is copied into these staging buffers before
+   * being passed to the graph. This keeps buffer addresses stable across pages.
+   *
+   * @param extIndices    Array of external input indices to pre-allocate
+   * @param maxSizes      Array of maximum sizes (in number of elements)
+   * @param numInputs     Number of entries in the arrays
+   *
+   * Usage for VLM decode:
+   *   - Call once before first page
+   *   - For input_ids/position_ids: max size = batch * maxSeqLen
+   *   - For embeddings: max size = batch * maxSeqLen * hiddenSize
+   */
+  void setExternalInputMaxSizes(const int* extIndices, const LongType* maxSizes, int numInputs);
 
   /**
    * Get the current KV cache sequence position (for slice-based KV cache access).
@@ -1045,6 +1125,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   long long pendingTokenId_ = 0;
   int pendingCachePos_ = 0;
   bool hasPendingDecodeUpdate_ = false;
+
+  // ── External input staging buffers ───────────────────────────────────
+  // Max-size pre-allocated buffers for external inputs with invariant shapes.
+  // Used for page-to-page reuse in VLM decode to eliminate allocation churn.
+  // Java allocates via setExternalInputMaxSizes(), C++ copies actual inputs here.
+  NDArray** externalInputStagingBuffers_ = nullptr;  // [numExternalInputs_]
+  std::vector<LongType> externalInputMaxSizes_;      // max elements per input
+  std::vector<bool> externalInputUseStaging_;        // true if staging buffer allocated
 
   // Internal methods
   void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);

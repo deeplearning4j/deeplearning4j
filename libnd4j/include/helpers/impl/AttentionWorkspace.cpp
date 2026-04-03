@@ -25,10 +25,20 @@
 
 namespace sd {
 
+// RAII wrapper to ensure thread-local AttentionWorkspace is deleted on thread exit.
+// Without this, the raw pointer leaks all cached GPU buffers when the thread terminates.
+struct AttentionWorkspaceTLGuard {
+  AttentionWorkspace* ptr = nullptr;
+  ~AttentionWorkspaceTLGuard() {
+    delete ptr;
+    ptr = nullptr;
+  }
+};
+
 // Thread-local instance accessor (function-local thread_local avoids MSVC C2492)
 AttentionWorkspace*& AttentionWorkspace::instanceRef() {
-  static thread_local AttentionWorkspace* instance_ = nullptr;
-  return instance_;
+  static thread_local AttentionWorkspaceTLGuard guard;
+  return guard.ptr;
 }
 
 AttentionWorkspace* AttentionWorkspace::getInstance() {

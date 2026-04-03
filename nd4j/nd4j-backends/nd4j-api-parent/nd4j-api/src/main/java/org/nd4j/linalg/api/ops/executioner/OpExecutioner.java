@@ -441,4 +441,20 @@ public interface OpExecutioner {
         // No-op by default
     }
 
+    /**
+     * Get the total number of operations executed.
+     * @return operation count
+     */
+    default long getOperationsExecuted() {
+        return 0L;
+    }
+
+    /**
+     * Get the total execution time in milliseconds.
+     * @return execution time in ms
+     */
+    default long getTotalExecutionTime() {
+        return 0L;
+    }
+
 }

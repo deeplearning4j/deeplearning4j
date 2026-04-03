@@ -800,4 +800,52 @@ public class DeallocatorService {
         trackingStartTime.set(Instant.now());
     }
 
+    /**
+     * Get the singleton instance.
+     * @return the deallocator service instance
+     */
+    public static DeallocatorService getInstance() {
+        return Nd4j.getMemoryManager() != null ? Nd4j.getMemoryManager().getDeallocatorService() : null;
+    }
+
+    /**
+     * Check if shutdown is in progress.
+     * @return true if shutdown in progress
+     */
+    public static boolean shutdownInProgress() {
+        return DeallocatorService.shutdownInProgress.get();
+    }
+
+    /**
+     * Set whether to block the deallocator.
+     * @param block true to block
+     */
+    public static void setBlockDeallocator(boolean block) {
+        DeallocatorService.blockDeallocator.set(block);
+    }
+
+    /**
+     * Check if deallocator is blocked.
+     * @return true if blocked
+     */
+    public static boolean isBlockDeallocator() {
+        return DeallocatorService.blockDeallocator.get();
+    }
+
+    /**
+     * Get the number of deallocator threads.
+     * @return number of threads
+     */
+    public int getNumThreads() {
+        return numThreads;
+    }
+
+    /**
+     * Get the deallocated counter.
+     * @return deallocated counter
+     */
+    public Counter<String> getDeallocated() {
+        return deallocated;
+    }
+
 }

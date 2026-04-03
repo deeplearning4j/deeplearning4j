@@ -103,6 +103,12 @@ public class DeviceMemoryManager {
     private final List<MemoryPressureCallback> pressureCallbacks = new ArrayList<>();
     private final ReentrantReadWriteLock callbackLock = new ReentrantReadWriteLock();
 
+    // Additional callbacks for memory pressure (for framework integration)
+    private final List<MemoryPressureCallback> memoryPressureCallbacks = new ArrayList<>();
+
+    // Device routing policy
+    private volatile DeviceRoutingPolicy deviceRoutingPolicy = DeviceRoutingPolicy.MEMORY_PRIORITY;
+
     // Device context provider (SPI — set by backend at init time)
     private volatile DeviceContextProvider contextProvider = new CpuDeviceContextProvider();
 
@@ -1112,5 +1118,58 @@ public class DeviceMemoryManager {
         PREFER_CPU,
         /** Select device with the most actual free memory */
         MOST_FREE
+    }
+
+    /**
+     * Check if a device has memory pressure.
+     * @param device the device to check
+     * @return true if memory pressure detected
+     */
+    public boolean hasMemoryPressure(DeviceDescriptor device) {
+        if (device == null) return false;
+        double utilization = getMemoryUtilization(device);
+        return utilization >= memoryPressureThreshold;
+    }
+
+    /**
+     * Register a callback for memory pressure events.
+     * @param callback the callback to register
+     */
+    public void registerMemoryPressureCallback(MemoryPressureCallback callback) {
+        memoryPressureCallbacks.add(callback);
+    }
+
+    /**
+     * Get the current device routing policy.
+     * @return the current routing policy
+     */
+    public DeviceRoutingPolicy getDeviceRoutingPolicy() {
+        return deviceRoutingPolicy != null ? deviceRoutingPolicy : DeviceRoutingPolicy.MEMORY_PRIORITY;
+    }
+
+    /**
+     * Set the device routing policy.
+     * @param policy the new routing policy
+     */
+    public void setDeviceRoutingPolicy(DeviceRoutingPolicy policy) {
+        this.deviceRoutingPolicy = policy;
+    }
+
+    /**
+     * Get a summary of memory usage across all devices.
+     * @return memory summary string
+     */
+    public String getMemorySummary() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Device Memory Summary:\n");
+        for (Map.Entry<String, AtomicLong> entry : allocatedMemory.entrySet()) {
+            String deviceId = entry.getKey();
+            long allocated = entry.getValue().get();
+            long peak = peakMemory.getOrDefault(deviceId, new AtomicLong(0)).get();
+            long cap = memoryCaps.getOrDefault(deviceId, 0L);
+            sb.append(String.format("  %s: allocated=%d MB, peak=%d MB, cap=%d MB\n",
+                deviceId, allocated / (1024 * 1024), peak / (1024 * 1024), cap / (1024 * 1024)));
+        }
+        return sb.toString();
     }
 }

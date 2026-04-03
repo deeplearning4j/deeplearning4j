@@ -767,6 +767,10 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   TransferMetrics::getInstance().recordTransfer(TransferType::DEVICE_TO_HOST, getLenInBytes(),
                                                  durationNs, bufferDeviceId, -1);
 
+  // DSP diagnostics: D2H transfer
+  DSP_DIAG(TRANSFER, "D2H: %lld bytes, dev=%d, duration=%.2f us",
+           (long long)getLenInBytes(), bufferDeviceId, durationNs / 1000.0);
+
   // Restore original device if we switched
   if (switchedDevice) {
     cudaSetDevice(currentDeviceId);
@@ -947,6 +951,10 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
   TransferMetrics::getInstance().recordTransfer(TransferType::HOST_TO_DEVICE, getLenInBytes(),
                                                  durationNs, -1, bufferDeviceId);
+
+  // DSP diagnostics: H2D transfer
+  DSP_DIAG(TRANSFER, "H2D: %lld bytes, dev=%d, duration=%.2f us",
+           (long long)getLenInBytes(), bufferDeviceId, durationNs / 1000.0);
 
   // Restore original device if we switched
   if (switchedDevice) {
@@ -1446,6 +1454,15 @@ void DataBuffer::migrate() {
     return;
   }
 
+  // When this buffer is registered in a frozen NativeDynamicShapePlan (as an
+  // external input or retained weight), its _specialBuffer address is baked into
+  // frozen slot contexts and/or CUDA graph replay handles. Migrating would free
+  // the old pointer and allocate a new one on a different device, leaving the
+  // frozen plan with a dangling address → SIGSEGV on next replay.
+  if (isFrozenPlanRegistered()) {
+    return;
+  }
+
   auto currentDeviceId = AffinityManager::currentDeviceId();
   // Use _specialDeviceId for the old buffer since we're migrating the special buffer
   // This may differ from _deviceId due to failover during OOM
@@ -1629,10 +1646,18 @@ void DataBuffer::migrate() {
         TransferType::PEER_TO_PEER : TransferType::DEVICE_TO_DEVICE;
     TransferMetrics::getInstance().recordTransfer(transferType, getLenInBytes(), durationNs,
                                                    oldDeviceId, targetDevice);
+
+    // DSP diagnostics: D2D migrate
+    DSP_DIAG(TRANSFER, "D2D migrate: %lld bytes, from=%d to=%d, duration=%.2f us",
+             (long long)getLenInBytes(), oldDeviceId, targetDevice, durationNs / 1000.0);
   } else if (_primaryBuffer != nullptr) {
     // Host to device transfer
     TransferMetrics::getInstance().recordTransfer(TransferType::HOST_TO_DEVICE, getLenInBytes(),
                                                    durationNs, -1, targetDevice);
+
+    // DSP diagnostics: H2D via migrate
+    DSP_DIAG(TRANSFER, "H2D migrate: %lld bytes, to=%d, duration=%.2f us",
+             (long long)getLenInBytes(), targetDevice, durationNs / 1000.0);
   }
 
   if (_isOwnerSpecial && oldBuffer != nullptr) {

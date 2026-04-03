@@ -46,4 +46,12 @@ public interface Deallocator {
         //default is no op. Only databuffer deallocators really need to update
         //their state as constant or not.
     }
+
+    /**
+     * Get the number of bytes associated with this deallocator.
+     * @return byte count
+     */
+    default long getBytes() {
+        return 0;
+    }
 }

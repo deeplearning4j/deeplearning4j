@@ -1130,6 +1130,312 @@ public class ND4JSystemProperties {
      */
     public static final String OP_TIMING = "nd4j.op.timing";
 
+    /**
+     * Applicability: Framework diagnostics<br>
+     * Description: Enable health monitoring for framework subsystems.
+     * <p>
+     * Default: false
+     */
+    public static final String HEALTH_MONITORING_ENABLE = "org.nd4j.framework.health.monitoring.enable";
+
+    /**
+     * Applicability: Framework diagnostics<br>
+     * Description: Health check interval in milliseconds.
+     * <p>
+     * Default: 5000
+     */
+    public static final String HEALTH_CHECK_INTERVAL = "org.nd4j.framework.health.check.interval.ms";
+
+    /**
+     * Applicability: Profiling subsystem<br>
+     * Description: Enable operation profiling.
+     * <p>
+     * Default: false
+     */
+    public static final String PROFILING_ENABLE = "org.nd4j.profiling.enable";
+
+    /**
+     * Applicability: Profiling subsystem<br>
+     * Description: Profiling sample frequency in Hz.
+     * <p>
+     * Default: 1000
+     */
+    public static final String PROFILING_FREQUENCY = "org.nd4j.profiling.frequency";
+
+    /**
+     * Applicability: Workspace subsystem<br>
+     * Description: Default workspace size in bytes.
+     * <p>
+     * Default: 134217728 (128 MB)
+     */
+    public static final String WORKSPACE_DEFAULT_SIZE = "org.nd4j.workspace.default.size";
+
+    /**
+     * Applicability: Workspace subsystem<br>
+     * Description: Initial workspace size in bytes.
+     * <p>
+     * Default: 134217728 (128 MB)
+     */
+    public static final String WORKSPACE_INITIAL_SIZE = "org.nd4j.workspace.initial.size";
+
+    /**
+     * Applicability: Workspace subsystem<br>
+     * Description: Workspace learning mode (NONE, AVERAGE, MAX).
+     * <p>
+     * Default: NONE
+     */
+    public static final String WORKSPACE_LEARNING_MODE = "org.nd4j.workspace.learning.mode";
+
+    /**
+     * Applicability: Workspace subsystem<br>
+     * Description: Enable workspace debug mode.
+     * <p>
+     * Default: false
+     */
+    public static final String WORKSPACE_DEBUG_MODE = "org.nd4j.workspace.debug.mode";
+
+    /**
+     * Applicability: Execution subsystem<br>
+     * Description: Enable kernel selection debug mode.
+     * <p>
+     * Default: false
+     */
+    public static final String KERNEL_SELECTION_DEBUG = "org.nd4j.execution.kernel.selection.debug";
+
+    /**
+     * Applicability: Execution subsystem<br>
+     * Description: Preferred backend (native, cuda, etc.).
+     * <p>
+     * Default: auto
+     */
+    public static final String PREFERRED_BACKEND = "org.nd4j.execution.preferred.backend";
+
+    /**
+     * Applicability: Framework diagnostics<br>
+     * Description: Enable diagnostics for framework subsystems.
+     * <p>
+     * Default: false
+     */
+    public static final String DIAGNOSTICS_ENABLE = "org.nd4j.framework.diagnostics.enable";
+
+    /**
+     * Applicability: Framework diagnostics<br>
+     * Description: Diagnostics level (INFO, DEBUG, VERBOSE).
+     * <p>
+     * Default: INFO
+     */
+    public static final String DIAGNOSTICS_LEVEL = "org.nd4j.framework.diagnostics.level";
+
+    /**
+     * Applicability: Framework diagnostics<br>
+     * Description: Enable verbose diagnostics output.
+     * <p>
+     * Default: false
+     */
+    public static final String DIAGNOSTICS_VERBOSE = "org.nd4j.framework.diagnostics.verbose";
+
+    /**
+     * Applicability: Framework diagnostics<br>
+     * Description: Diagnostics output file path.
+     * <p>
+     * Default: stderr
+     */
+    public static final String DIAGNOSTICS_OUTPUT_FILE = "org.nd4j.framework.diagnostics.output.file";
+
+    /**
+     * Applicability: Function tracing<br>
+     * Description: Enable function tracing.
+     * <p>
+     * Default: false
+     */
+    public static final String FUNCTRACE_ENABLE = "org.nd4j.functrace.enable";
+
+    /**
+     * Applicability: Function tracing<br>
+     * Description: Print allocation events.
+     * <p>
+     * Default: false
+     */
+    public static final String FUNCTRACE_PRINT_ALLOCATE = "org.nd4j.functrace.print.allocate";
+
+    /**
+     * Applicability: Function tracing<br>
+     * Description: Print free events.
+     * <p>
+     * Default: false
+     */
+    public static final String FUNCTRACE_PRINT_FREE = "org.nd4j.functrace.print.free";
+
+    /**
+     * Applicability: Memory environment<br>
+     * Description: Workspace metadata size.
+     * <p>
+     * Default: 1024
+     */
+    public static final String WORKSPACE_META_SIZE = "org.nd4j.workspace.meta.size";
+
+    /**
+     * Applicability: Memory environment<br>
+     * Description: Heap pressure threshold (0.0-1.0).
+     * <p>
+     * Default: 0.9
+     */
+    public static final String HEAP_PRESSURE_THRESHOLD = "org.nd4j.memory.heap.pressure.threshold";
+
+    /**
+     * Applicability: Profiling environment<br>
+     * Description: Enable verbose profiling.
+     * <p>
+     * Default: false
+     */
+    public static final String PROFILING_VERBOSE = "org.nd4j.profiling.verbose";
+
+    /**
+     * Applicability: Profiling environment<br>
+     * Description: Profiling output file path.
+     * <p>
+     * Default: stdout
+     */
+    public static final String PROFILING_OUTPUT_FILE = "org.nd4j.profiling.output.file";
+
+    /**
+     * Applicability: Profiling environment<br>
+     * Description: Enable bandwidth profiling.
+     * <p>
+     * Default: false
+     */
+    public static final String PROFILING_BANDWIDTH = "org.nd4j.profiling.bandwidth";
+
+    /**
+     * Applicability: Workspace environment<br>
+     * Description: Maximum workspace size.
+     * <p>
+     * Default: 2147483648 (2 GB)
+     */
+    public static final String WORKSPACE_MAX_SIZE = "org.nd4j.workspace.max.size";
+
+    /**
+     * Applicability: Workspace environment<br>
+     * Description: Enable workspace preallocation.
+     * <p>
+     * Default: true
+     */
+    public static final String WORKSPACE_PREALLOCATE = "org.nd4j.workspace.preallocate";
+
+    /**
+     * Applicability: Workspace environment<br>
+     * Description: Workspace overallocation limit.
+     * <p>
+     * Default: 0.5
+     */
+    public static final String WORKSPACE_OVERALLOCATION_LIMIT = "org.nd4j.workspace.overallocation.limit";
+
+    /**
+     * Applicability: Device environment<br>
+     * Description: Enable CUDA context per thread.
+     * <p>
+     * Default: false
+     */
+    public static final String CUDA_CONTEXT_PER_THREAD = "org.nd4j.cuda.context.per.thread";
+
+    /**
+     * Applicability: Device environment<br>
+     * Description: Use CUDA stream memory.
+     * <p>
+     * Default: true
+     */
+    public static final String CUDA_USE_STREAM_MEMORY = "org.nd4j.cuda.use.stream.memory";
+
+    /**
+     * Applicability: Lifecycle tracking<br>
+     * Description: Enable lifecycle tracking.
+     * <p>
+     * Default: false
+     */
+    public static final String LIFECYCLE_TRACKING_ENABLE = "org.nd4j.lifecycle.tracking.enable";
+
+    /**
+     * Applicability: Lifecycle tracking<br>
+     * Description: Enable stack trace capture.
+     * <p>
+     * Default: false
+     */
+    public static final String LIFECYCLE_STACK_TRACE_CAPTURE = "org.nd4j.lifecycle.stacktrace.capture";
+
+    /**
+     * Applicability: Lifecycle tracking<br>
+     * Description: Event retention count.
+     * <p>
+     * Default: 10000
+     */
+    public static final String LIFECYCLE_EVENT_RETENTION = "org.nd4j.lifecycle.event.retention";
+
+    /**
+     * Applicability: Leak detection<br>
+     * Description: Enable leak detection.
+     * <p>
+     * Default: false
+     */
+    public static final String LEAK_DETECTION_ENABLE = "org.nd4j.leak.detection.enable";
+
+    /**
+     * Applicability: Leak detection<br>
+     * Description: Age threshold in milliseconds.
+     * <p>
+     * Default: 60000
+     */
+    public static final String LEAK_DETECTION_AGE_THRESHOLD = "org.nd4j.leak.detection.age.threshold";
+
+    /**
+     * Applicability: Leak detection<br>
+     * Description: Size threshold in bytes.
+     * <p>
+     * Default: 104857600 (100 MB)
+     */
+    public static final String LEAK_DETECTION_SIZE_THRESHOLD = "org.nd4j.leak.detection.size.threshold";
+
+    // ==== Device Transfer Management Framework ====
+
+    /**
+     * Applicability: Device transfer management<br>
+     * Description: Enable device transfer tracking and diagnostics.
+     * When enabled, all H2D, D2H, and D2D transfers are recorded with timing and byte counts.
+     * Access via Nd4j.framework.device().transfers().
+     * <p>
+     * Default: false (disabled for zero overhead)
+     */
+    public static final String DEVICE_TRANSFER_TRACKING = "nd4j.device.transfer.tracking";
+
+    /**
+     * Applicability: Device transfer management<br>
+     * Description: Enable per-variable device pinning.
+     * Allows pinning variables to specific devices or policies (STICKY, FOLLOW_THREAD, EXPLICIT).
+     * Access via Nd4j.framework.device().pinning().
+     * <p>
+     * Default: false
+     */
+    public static final String DEVICE_PINNING_ENABLED = "nd4j.device.pinning.enabled";
+
+    /**
+     * Applicability: Device transfer management<br>
+     * Description: Enable replica leak detection.
+     * Tracks replicated arrays across devices and detects leaks when replicas are not properly cleaned up.
+     * Access via Nd4j.framework.device().replicaLeaks().
+     * <p>
+     * Default: false
+     */
+    public static final String DEVICE_REPLICA_LEAK_DETECTION = "nd4j.device.replica.leak.detection";
+
+    /**
+     * Applicability: Device transfer management<br>
+     * Description: Enable pointer stability validation for CUDA graph replay.
+     * Validates that GPU buffer addresses remain stable across graph capture and replay.
+     * Access via Nd4j.framework.device().pointerStability().
+     * <p>
+     * Default: false
+     */
+    public static final String DEVICE_POINTER_STABILITY_CHECK = "nd4j.device.pointerStability.check";
+
     private ND4JSystemProperties() {
     }
 }

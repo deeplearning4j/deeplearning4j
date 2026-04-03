@@ -36,6 +36,11 @@ public enum DeviceType {
     CUDA_GPU("cuda", true),
 
     /**
+     * Generic GPU alias for CUDA_GPU
+     */
+    GPU("cuda", true),
+
+    /**
      * Google TPU (Tensor Processing Unit)
      */
     TPU("tpu", false),

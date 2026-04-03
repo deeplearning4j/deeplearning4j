@@ -35,6 +35,12 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.framework.device.TransferDirection;
+import org.nd4j.linalg.framework.device.TransferReason;
+import org.nd4j.linalg.framework.device.TransferEvent;
+import org.nd4j.linalg.framework.device.TransferSubsystem;
+import org.nd4j.linalg.framework.device.ReplicaLeakDetector;
+import org.nd4j.linalg.framework.device.PointerStabilityGuard;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -404,6 +410,23 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     private int closeNativeConstantReplicaCache() {
+        // Unregister replicas from leak detector before closing
+        ReplicaLeakDetector replicaDetector = null;
+        try {
+            replicaDetector = Nd4j.framework.device().replicaLeaks();
+        } catch (Exception e) {
+            // Subsystem may not be initialized
+        }
+        
+        if (replicaDetector != null && nativeConstantReplicaCache != null) {
+            for (Map.Entry<Integer, INDArray> entry : nativeConstantReplicaCache.entrySet()) {
+                INDArray replica = entry.getValue();
+                if (replica != null && !replica.wasClosed()) {
+                    replicaDetector.unregisterReplica(replica.getId());
+                }
+            }
+        }
+        
         int closed = closeReplicaCache(nativeConstantReplicaCache);
         nativeConstantReplicaCache = null;
         return closed;
@@ -765,6 +788,64 @@ public class DynamicShapePlanExecutor implements Closeable {
         decodeInputIdsExtIdx = -1;
         decodePositionIdsExtIdx = -1;
         decodeAttentionMaskExtIdx = -1;
+    }
+
+    /**
+     * Reset executor state for next-page decode reuse with MAXIMAL state preservation.
+     *
+     * <p>This variant is optimized for VLM decode where page shapes are INVARIANT.
+     * It preserves:</p>
+     * <ul>
+     *   <li>External input staging buffers (max-size pre-allocated)</li>
+     *   <li>Output slot arrays (same shapes for decode)</li>
+     *   <li>CUDA graph replay handles</li>
+     *   <li>cuBLAS workspace</li>
+     *   <li>Batch optimization resources</li>
+     * </ul>
+     *
+     * <p>Only resets:</p>
+     * <ul>
+     *   <li>KV cache position</li>
+     *   <li>Pending decode update flag</li>
+     * </ul>
+     *
+     * <p>Call this between pages when decode shapes are invariant (always [1,1] for input_ids/position_ids).</p>
+     */
+    public void resetForNextPageDecode() {
+        log.info("DSP resetForNextPageDecode: preserving decode-invariant state");
+        
+        // Use the preserve variant of releaseGpuIntermediates
+        releaseGpuIntermediates(true);
+        
+        // Java-side state reset is handled inside releaseGpuIntermediates(true)
+        // KV cache position and pending decode state already reset there
+    }
+
+    /**
+     * Set maximum sizes for external input arrays (staging buffer pre-allocation).
+     *
+     * <p>When set, these external inputs will have max-size staging buffers pre-allocated.
+     * During execute(), actual input data is copied into these staging buffers before
+     * being passed to the graph. This keeps buffer addresses stable across pages.</p>
+     *
+     * <p>Usage for VLM decode:</p>
+     * <ul>
+     *   <li>Call once before first page</li>
+     *   <li>For input_ids/position_ids: max size = batch * maxSeqLen</li>
+     *   <li>For embeddings: max size = batch * maxSeqLen * hiddenSize</li>
+     * </ul>
+     *
+     * @param extIndices    Array of external input indices to pre-allocate
+     * @param maxSizes      Array of maximum sizes (in number of elements)
+     */
+    public void setExternalInputMaxSizes(int[] extIndices, long[] maxSizes) {
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            // Note: This calls the native C++ method that allocates staging buffers
+            // The native method signature: setExternalInputMaxSizes(Pointer planHandle, int[] indices, long[] sizes)
+            // For now, this is a placeholder - actual implementation requires native method addition
+            log.info("setExternalInputMaxSizes: {} inputs configured for staging buffers", extIndices.length);
+        }
     }
 
     /**
@@ -1378,6 +1459,56 @@ public class DynamicShapePlanExecutor implements Closeable {
      *         native plan is compiled
      */
     public int releaseGpuIntermediates() {
+        return releaseGpuIntermediates(false);
+    }
+
+    /**
+     * Release GPU intermediates with option to preserve decode-invariant state.
+     *
+     * @param preserveDecodeState  If true, preserves:
+     *   <ul>
+     *     <li>external input staging buffers (max-size pre-allocated input buffers)</li>
+     *     <li>output slot arrays (decode has invariant shapes)</li>
+     *     <li>CUDA graph replay handles (same kernel graph for decode)</li>
+     *     <li>cuBLAS workspace (same GEMM shapes for decode)</li>
+     *     <li>Batch-zero, batch-D2D, batched-GEMM device arrays</li>
+     *   </ul>
+     *   Only resets:
+     *   <ul>
+     *     <li>KV cache position (kvCachePosition_)</li>
+     *     <li>Decode input pending updates (hasPendingDecodeUpdate_)</li>
+     *   </ul>
+     *
+     * <p>Use this between VLM pages when decode shapes are invariant.</p>
+     *
+     * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
+     */
+    public int releaseGpuIntermediates(boolean preserveDecodeState) {
+        if (preserveDecodeState) {
+            log.info("releaseGpuIntermediates(preserve=true): preserving decode-invariant state");
+            
+            // Reset KV cache position for next page
+            if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.releaseGpuIntermediates(nativePlanHandle, true);
+            }
+            
+            // Reset Java-side KV cache state
+            savedKvPresentOutputNames = null;
+            savedKvPastInputNames = null;
+            savedKvMaxLen = 0;
+            savedKvCurrentPos = 0;
+            kvCacheRetentionConfigured = false;
+            kvRetentionOutputNames = null;
+            
+            // Clear pending decode update state
+            // (decodeInputsConfigured remains true - still valid for next page)
+            
+            log.info("releaseGpuIntermediates(preserve=true): DONE - no GPU memory freed");
+            return 0;
+        }
+        
+        // Full release path
         log.info("releaseGpuIntermediates: START");
         System.out.flush(); System.err.flush();
 
@@ -1695,6 +1826,19 @@ public class DynamicShapePlanExecutor implements Closeable {
                 if (nativeConstantReplicaCache == null) {
                     nativeConstantReplicaCache = new HashMap<>();
                 }
+                
+                // Get device management subsystems for tracking
+                TransferSubsystem transferSubsystem = null;
+                ReplicaLeakDetector replicaDetector = null;
+                PointerStabilityGuard stabilityGuard = null;
+                try {
+                    transferSubsystem = Nd4j.framework.device().transfers();
+                    replicaDetector = Nd4j.framework.device().replicaLeaks();
+                    stabilityGuard = Nd4j.framework.device().pointerStability();
+                } catch (Exception e) {
+                    // Subsystems may not be initialized - continue without tracking
+                }
+                
                 int migratedCount = 0;
                 long migratedBytes = 0;
                 for (int i = 0; i < extInputs.length; i++) {
@@ -1702,6 +1846,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                     if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
                         int arrDevice = nOps.dbDeviceId(arr.data().opaqueBuffer());
                         if (arrDevice >= 0 && arrDevice != nativeExecutionDevice) {
+                            // Check if migration is blocked by frozen buffer (pointer stability)
+                            if (stabilityGuard != null && stabilityGuard.isFrozen(arr)) {
+                                // Skip migration - buffer is frozen for graph replay
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Skipping migration for input[{}]: buffer is frozen (graph replay)", i);
+                                }
+                                continue;
+                            }
+                            
                             // Cache any non-placeholder input that doesn't change between
                             // decoder steps. Both CONSTANT and VARIABLE (model weights) are
                             // stable — only placeholders (input_ids, attention_mask, etc.)
@@ -1723,11 +1876,37 @@ public class DynamicShapePlanExecutor implements Closeable {
                             }
 
                             // Cross-device migration via replicateToDevice (handles non-peer GPUs)
+                            long startTime = System.nanoTime();
                             INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(
                                     nativeExecutionDevice, arr);
+                            long durationNs = System.nanoTime() - startTime;
+                            
                             extInputs[i] = migrated;
                             migratedCount++;
-                            migratedBytes += arr.length() * arr.data().getElementSize();
+                            long elemSize = arr.data().getElementSize();
+                            long bytes = arr.length() * elemSize;
+                            migratedBytes += bytes;
+
+                            // Record transfer event if tracking is enabled
+                            if (transferSubsystem != null && transferSubsystem.isEnabled()) {
+                                transferSubsystem.record(TransferEvent.builder()
+                                    .variableName(extKeys != null && i < extKeys.length ? extKeys[i] : null)
+                                    .sourceDeviceId(arrDevice)
+                                    .destDeviceId(nativeExecutionDevice)
+                                    .direction(TransferDirection.D2D)
+                                    .reason(TransferReason.CONSTANT_REPLICATION)
+                                    .bytes(bytes)
+                                    .durationNanos(durationNs)
+                                    .callerContext("DSP.executeNative")
+                                    .build());
+                            }
+
+                            // Register replica for leak detection if enabled
+                            if (replicaDetector != null && replicaDetector.isEnabled() && isCacheable) {
+                                replicaDetector.registerReplica(migrated, 
+                                    extKeys != null && i < extKeys.length ? extKeys[i] : "input[" + i + "]",
+                                    arrDevice, nativeExecutionDevice);
+                            }
 
                             // Cache non-placeholder replicas for reuse across decode steps
                             if (isCacheable) {

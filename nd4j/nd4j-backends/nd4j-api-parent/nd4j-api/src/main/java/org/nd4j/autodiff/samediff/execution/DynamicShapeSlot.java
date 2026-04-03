@@ -219,6 +219,32 @@ public class DynamicShapeSlot {
     @Builder.Default
     private int targetDeviceId = -1;
 
+    /**
+     * Get the device ID for this slot.
+     * @return device ID (0 for CPU, >=0 for CUDA devices, -1 for default/current device)
+     */
+    public int getDeviceId() {
+        return targetDeviceId >= 0 ? targetDeviceId : 0;
+    }
+
+    /**
+     * Get the op type string.
+     * @return "CUSTOM" for custom ops, "LEGACY" for legacy ops
+     */
+    public String getOpType() {
+        return customOp ? "CUSTOM" : "LEGACY";
+    }
+
+    /**
+     * Check if this slot is capturable for CUDA graph replay.
+     * @return true if capturable
+     */
+    public boolean isCapturable() {
+        // Most ops are capturable; non-capturable ops include those with host-side effects
+        // For now, assume all ops are capturable unless marked otherwise
+        return true;
+    }
+
     /** Pre-allocated input array buffer to avoid per-step allocation. */
     private final transient INDArray[] inputArraysBuffer;
 

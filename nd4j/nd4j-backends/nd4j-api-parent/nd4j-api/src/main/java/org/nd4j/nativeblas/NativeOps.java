@@ -1430,6 +1430,48 @@ public interface NativeOps {
  }
 
  /**
+  * Release GPU intermediates with option to preserve decode-invariant state.
+  * When preserveDecodeState=true, preserves external input staging buffers,
+  * output slot arrays, CUDA graph handles, and cuBLAS workspace.
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param preserveDecodeState if true, preserve decode-invariant state
+  * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
+  */
+ default int releaseGpuIntermediates(Pointer planHandle, boolean preserveDecodeState) {
+     throw new UnsupportedOperationException("releaseGpuIntermediates(preserveDecodeState) not implemented in this backend");
+ }
+
+ /**
+  * Get constant cache bytes for a specific device.
+  * @param deviceId the device ID
+  * @return number of bytes cached for constants
+  */
+ default long getConstantCacheBytes(int deviceId) { return 0L; }
+
+ /**
+  * Get TAD cache entry count.
+  * @return number of cached TAD entries
+  */
+ default long getTadCacheEntries() { return 0L; }
+
+ /**
+  * Get TAD cache memory usage in bytes.
+  * @return number of bytes used by TAD cache
+  */
+ default long getTadCacheBytes() { return 0L; }
+
+ /**
+  * Clear constant cache for all devices.
+  */
+ default void clearConstantCache() {}
+
+ /**
+  * Clear TAD cache.
+  */
+ default void clearTadCache() {}
+
+ /**
   * Returns true if Triton backend support is compiled and available at runtime.
   */
  default boolean isTritonAvailable() {

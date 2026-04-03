@@ -27,6 +27,7 @@
 #if NOT_EXCLUDED(OP_onnx_multi_head_attention)
 
 #include <helpers/FlashAttentionHelper.h>
+#include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/headers/nn.h>
 #include <cmath>
 
@@ -137,12 +138,14 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
 
   // Reshape [batch, seq, hidden] -> [batch, seq, heads, headDim] (BSHD format for FlashAttentionHelper)
   // Q uses numHeads, K/V use numKvHeads (may differ for GQA)
+  // Use reshape with copyToNewBuff=false to force view creation (no GPU allocation).
+  // These inputs are contiguous C-order so view creation always succeeds.
   std::vector<LongType> qShape4d = {batch, seqQ, numHeads, headDim};
   std::vector<LongType> kvShape4d = {batch, seqKV, numKvHeads, headDim};
   
-  NDArray* qReshaped = query->reshape('c', qShape4d);
-  NDArray* kReshaped = key->reshape('c', kvShape4d);
-  NDArray* vReshaped = value->reshape('c', kvShape4d);
+  NDArray* qReshaped = query->reshape('c', qShape4d, false);
+  NDArray* kReshaped = key->reshape('c', kvShape4d, false);
+  NDArray* vReshaped = value->reshape('c', kvShape4d, false);
   
   // Handle past key/value concatenation
   // Use pointers and track ownership
@@ -270,8 +273,11 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   config.numKvHeads = numKvHeads;
   
   // Output in BSHD format [batch, seqQ, numHeads, headDim]
+  // Use AttentionWorkspace to reuse the buffer across invocations instead of
+  // allocating a new GPU buffer every call (30 layers × every decode step).
   std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
-  NDArray attnOut4d('c', outShape4d, query->dataType(), block.launchContext());
+  auto workspace = AttentionWorkspace::getInstance();
+  NDArray* attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
   
   // Cast attention bias to query dtype if needed
   std::unique_ptr<NDArray> attnBiasCastOwner;
@@ -281,13 +287,14 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   }
   
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
-  FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, &attnOut4d, config,
+  FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, attnOut4d, config,
                                 nullptr, nullptr, nullptr,
                                 block.launchContext(), attnBias);
   
   // Reshape output back to [batch, seqQ, hidden]
+  // Use copyToNewBuff=false to create a view (no GPU allocation).
   std::vector<LongType> outShape3d = {batch, seqQ, hidden};
-  NDArray* attnOutFinal = attnOut4d.reshape('c', outShape3d);
+  NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
   output->assign(attnOutFinal);
   delete attnOutFinal;
   

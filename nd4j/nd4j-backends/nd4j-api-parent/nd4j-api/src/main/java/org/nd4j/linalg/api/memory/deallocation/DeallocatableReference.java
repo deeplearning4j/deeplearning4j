@@ -32,6 +32,7 @@ import java.lang.ref.ReferenceQueue;
 public class DeallocatableReference extends PhantomReference<Deallocatable> {
     private long id;
     private Deallocator deallocator;
+    private final long timestamp = System.currentTimeMillis();
 
     public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {
         super(referent, q);
@@ -41,6 +42,22 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
         if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {
           Nd4j.getDeallocatorService().registerDeallocatbleToListener(this);
         }
+    }
+
+    /**
+     * Get the timestamp when this reference was created.
+     * @return timestamp in milliseconds
+     */
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    /**
+     * Get the number of bytes associated with this reference.
+     * @return byte count
+     */
+    public long getBytes() {
+        return deallocator != null ? deallocator.getBytes() : 0;
     }
 
     public void deallocate() {

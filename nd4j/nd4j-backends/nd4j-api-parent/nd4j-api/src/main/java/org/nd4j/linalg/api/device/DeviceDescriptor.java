@@ -56,6 +56,22 @@ public interface DeviceDescriptor {
     String getDeviceName();
 
     /**
+     * Get the human-readable name of the device (alias for getDeviceName)
+     * @return device name
+     */
+    default String getName() {
+        return getDeviceName();
+    }
+
+    /**
+     * Get the type of this device (alias for getDeviceType)
+     * @return device type
+     */
+    default DeviceType getType() {
+        return getDeviceType();
+    }
+
+    /**
      * Get the total memory available on this device in bytes
      * @return total memory in bytes
      */

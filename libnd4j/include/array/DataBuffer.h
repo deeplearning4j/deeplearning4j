@@ -175,6 +175,21 @@ class SD_LIB_EXPORT DataBuffer {
 
   bool closed = false;
 
+  /**
+   * Frozen plan reference count. When > 0, this DataBuffer's _specialBuffer is
+   * registered in one or more frozen NativeDynamicShapePlan contexts. Migrating
+   * (i.e., freeing and re-allocating _specialBuffer on a different device) would
+   * invalidate the baked-in GPU addresses that frozen slot contexts or CUDA graphs
+   * rely on for replay. DataBuffer::migrate() skips migration when this count > 0.
+   *
+   * Lifecycle:
+   *   - Incremented by NativeDynamicShapePlan when a buffer is registered as an
+   *     external input or retained weight for frozen execution.
+   *   - Decremented by releaseGpuIntermediates() when the frozen plan is torn down.
+   *   - Atomic because multiple plans could theoretically share the same buffer.
+   */
+  std::atomic<int> _frozenRefCount{0};
+
   // Helper template function for printing host buffer content (implementation in .cpp)
   template <typename T>
   void printHostBufferContent(void* buffer, sd::LongType offset, sd::LongType length);
@@ -305,6 +320,31 @@ class SD_LIB_EXPORT DataBuffer {
   SD_INLINE T *specialAsT();
 
   void markConstant(bool reallyConstant);
+
+  /**
+   * Increment the frozen plan reference count. Call when this buffer is
+   * registered in a frozen NativeDynamicShapePlan as an external input
+   * or retained weight. While the count is > 0, migrate() is blocked to
+   * prevent invalidating baked-in GPU addresses used by frozen replay.
+   */
+  void addFrozenRef() { _frozenRefCount.fetch_add(1, std::memory_order_relaxed); }
+
+  /**
+   * Decrement the frozen plan reference count. Call during
+   * releaseGpuIntermediates() when the frozen plan is torn down.
+   */
+  void removeFrozenRef() {
+    auto prev = _frozenRefCount.fetch_sub(1, std::memory_order_relaxed);
+    if (prev <= 0) {
+      _frozenRefCount.store(0, std::memory_order_relaxed);  // Clamp to 0
+    }
+  }
+
+  /**
+   * Check whether this buffer is registered in any frozen plan.
+   * @return true if frozen ref count > 0
+   */
+  bool isFrozenPlanRegistered() const { return _frozenRefCount.load(std::memory_order_relaxed) > 0; }
 
   void syncToPrimary(const LaunchContext *context, const bool forceSync = false);
   void syncToSpecial(const bool forceSync = false);

@@ -5357,6 +5357,109 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         return variables.containsKey(name);
     }
 
+    // =========================================================================
+    // Device Pinning API
+    // =========================================================================
+
+    /**
+     * Pin a variable to a specific device ID.
+     * This prevents the variable from being migrated to other devices during execution.
+     * Useful for keeping model weights on a specific GPU in multi-GPU setups.
+     *
+     * @param variableName Name of the variable to pin
+     * @param deviceId Target device ID
+     * @return this SameDiff instance for chaining
+     */
+    public SameDiff pinVariable(String variableName, int deviceId) {
+        if (variableName != null && !variableName.isEmpty()) {
+            Nd4j.framework.device().pinning().pin(variableName, deviceId);
+        }
+        return this;
+    }
+
+    /**
+     * Pin a variable with a specific policy.
+     *
+     * @param variableName Name of the variable to pin
+     * @param policy Pin policy (STICKY, FOLLOW_THREAD, or EXPLICIT)
+     * @return this SameDiff instance for chaining
+     */
+    public SameDiff pinVariable(String variableName, org.nd4j.linalg.framework.device.DevicePinPolicy policy) {
+        if (variableName != null && !variableName.isEmpty()) {
+            Nd4j.framework.device().pinning().pin(variableName, policy);
+        }
+        return this;
+    }
+
+    /**
+     * Pin a variable to stay on its current device (STICKY policy).
+     *
+     * @param variableName Name of the variable to pin
+     * @return this SameDiff instance for chaining
+     */
+    public SameDiff pinVariableSticky(String variableName) {
+        return pinVariable(variableName, org.nd4j.linalg.framework.device.DevicePinPolicy.STICKY);
+    }
+
+    /**
+     * Pin a variable to follow the current thread's device (FOLLOW_THREAD policy).
+     *
+     * @param variableName Name of the variable to pin
+     * @return this SameDiff instance for chaining
+     */
+    public SameDiff pinVariableFollowThread(String variableName) {
+        return pinVariable(variableName, org.nd4j.linalg.framework.device.DevicePinPolicy.FOLLOW_THREAD);
+    }
+
+    /**
+     * Remove pinning for a variable.
+     *
+     * @param variableName Name of the variable to unpin
+     * @return this SameDiff instance for chaining
+     */
+    public SameDiff unpinVariable(String variableName) {
+        if (variableName != null && !variableName.isEmpty()) {
+            Nd4j.framework.device().pinning().unpin(variableName);
+        }
+        return this;
+    }
+
+    /**
+     * Get the pinning status for a variable.
+     *
+     * @param variableName Name of the variable
+     * @return DevicePinning record if pinned, null otherwise
+     */
+    public org.nd4j.linalg.framework.device.DevicePinning getVariablePinning(String variableName) {
+        if (variableName == null || variableName.isEmpty()) {
+            return null;
+        }
+        return Nd4j.framework.device().pinning().getPinning(variableName);
+    }
+
+    /**
+     * Pin all variables in the graph to their current devices (STICKY policy).
+     * This is useful before DSP compilation to ensure stable device placement.
+     *
+     * @return this SameDiff instance for chaining
+     */
+    public SameDiff pinAllVariablesSticky() {
+        for (String varName : variables.keySet()) {
+            pinVariableSticky(varName);
+        }
+        return this;
+    }
+
+    /**
+     * Clear all variable pinnings.
+     *
+     * @return this SameDiff instance for chaining
+     */
+    public SameDiff clearAllVariablePinnings() {
+        Nd4j.framework.device().pinning().clear();
+        return this;
+    }
+
 
     /**
      * Get the gradient for the variable with the specified name.<br>

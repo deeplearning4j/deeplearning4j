@@ -324,6 +324,19 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Free KV cache mappings
   delete[] kvCacheMappings_;
 
+  // Free external input staging buffers
+  if (externalInputStagingBuffers_ != nullptr) {
+    for (int i = 0; i < numExternalInputs_; i++) {
+      if (externalInputStagingBuffers_[i] != nullptr) {
+        delete externalInputStagingBuffers_[i];
+      }
+    }
+    delete[] externalInputStagingBuffers_;
+    externalInputStagingBuffers_ = nullptr;
+  }
+  externalInputMaxSizes_.clear();
+  externalInputUseStaging_.clear();
+
   // Free control flow structures
   delete[] loopRegions_;
   delete[] slotIsDead_;
@@ -332,6 +345,16 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   delete[] slotOwnership_;
 
   // ── Phase 3: Release references ───────────────────────────────────────
+  // Remove frozen reference counts from weight DataBuffers if the plan
+  // is still in frozen state when destroyed. This allows the buffers to
+  // be migrated by future plans or general device management.
+  if (shapesFrozen_) {
+    for (auto* db : protectedWeightBuffers_) {
+      if (db != nullptr) {
+        db->removeFrozenRef();
+      }
+    }
+  }
   // Clear protected weight buffer set so stale DataBuffer pointers don't
   // linger. These are external (caller-owned) — we never freed them, but
   // holding stale pointers after plan destruction is a hazard.
@@ -862,6 +885,8 @@ Status NativeDynamicShapePlan::execute(
            static_cast<int>(segments_.size()),
            static_cast<int>(gpuGraphCaptureEnabled_), numExternalInputs);
 
+  // Staging buffer copy deferred - staging buffers not yet allocated
+
   // Debug: dump external input at index 1331 (slot -1332) — useful for diagnosing
   // forced-H2D-sync issues where device-authoritative buffers get overwritten
   if (sd::Environment::getInstance().isDebug() && numExternalInputs > 1331) {
@@ -1280,6 +1305,28 @@ Status NativeDynamicShapePlan::execute(
     long long deltaMB = static_cast<long long>(poolUsedPostSegs - poolUsedPreSegs) / (1024LL*1024);
     DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB (delta=%lldMB from pre-segs)",
              poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024), deltaMB);
+  }
+
+  // After frozen plan execution, trim the async memory pool to release freed memory
+  // back to the CUDA driver. Without this, cudaFreeAsync returns memory to the pool's
+  // reserved set but does NOT return it to cudaFree-able driver memory. Over many decode
+  // steps, the gap between pool-reserved and pool-used grows, consuming GPU memory that
+  // appears "free" to the pool but is unavailable for other allocations (graph instantiation,
+  // other processes). Trimming after each execution closes this gap.
+  // NOTE: This must run on EVERY frozen execution including the first (executeCount_==0).
+  // Previously gated on executeCount_ > 0, which skipped the first frozen execution
+  // and allowed pool used to grow by ~7 GB before any trim occurred.
+  if (shapesFrozen_) {
+    // Sync the execution stream first so all pending frees complete,
+    // then trim pool to release reserved-but-unused memory to the driver.
+    cudaStream_t execStream = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+    if (execStream != nullptr) {
+      cudaStreamSynchronize(execStream);
+    }
+    int trimDeviceId = 0;
+    cudaGetDevice(&trimDeviceId);
+    sd::memory::CudaMemoryPool::getInstance().trimPool(trimDeviceId);
+    DSP_DIAG(MEMORY, "post-segments: trimmed pool on device %d (frozen exec=%d)", trimDeviceId, executeCount_);
   }
 #endif
 
@@ -1898,6 +1945,29 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   viewProducerDetectionDone_ = false;
   frozenConstantDetectionDone_ = false;
   executeCount_ = 0;
+  // Remove frozen reference counts from weight DataBuffers before clearing
+  // shapesFrozen_. During frozen execution, addFrozenRef() was called on each
+  // protectedWeightBuffer to prevent DataBuffer::migrate() from relocating
+  // buffers whose addresses are baked into frozen slot contexts / CUDA graphs.
+  // Now that all graphs and frozen state are torn down, migration is safe again.
+  if (shapesFrozen_) {
+    for (auto* db : protectedWeightBuffers_) {
+      if (db != nullptr) {
+        db->removeFrozenRef();
+      }
+    }
+    
+    // ALSO remove frozen ref count from all output slot DataBuffers.
+    // These were protected during frozen execution to prevent SIGSEGV.
+    if (outputSlots_ != nullptr) {
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+          outputSlots_[i]->dataBuffer()->removeFrozenRef();
+        }
+      }
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: removed frozen ref from %d output slot DataBuffers", totalOutputSlots_);
+    }
+  }
   // Reset shapesFrozen_ so the plan goes through the full warmup-capture-replay
   // lifecycle from scratch. Without this, stale segment state (shapeKey, cachedShapeKey)
   // causes Triton recompilation to be skipped, and the plan tries to replay
@@ -1922,6 +1992,29 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
            "Plan is now cold — next execute() will re-warm.", this, freedCount);
 
   return freedCount;
+}
+
+int NativeDynamicShapePlan::releaseGpuIntermediates(bool preserveDecodeState) {
+  if (preserveDecodeState) {
+    // Decode-invariant path: preserve staging buffers, slot arrays, CUDA graphs,
+    // cuBLAS workspace, and batch optimization resources. Only reset KV cache
+    // position and decode input pending state.
+    DSP_DIAG(MEMORY, "releaseGpuIntermediates(preserve=true): preserving decode-invariant state");
+    
+    // Reset KV cache position for next page
+    kvCachePosition_ = 0;
+    
+    // Clear pending decode update flag
+    hasPendingDecodeUpdate_ = false;
+    pendingTokenId_ = 0;
+    pendingCachePos_ = 0;
+    
+    // No GPU memory freed — returning 0
+    return 0;
+  } else {
+    // Full release — call the existing method
+    return releaseGpuIntermediates();
+  }
 }
 
 // ─── KV cache retention ──────────────────────────────────────────────────────
@@ -2067,6 +2160,25 @@ void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const
       outputSlotMaxSizes_[slotIndices[i]] = maxSizes[i];
     }
   }
+}
+
+void NativeDynamicShapePlan::setExternalInputMaxSizes(const int* extIndices, const LongType* maxSizes, int numInputs) {
+  if (extIndices == nullptr || maxSizes == nullptr || numInputs <= 0) return;
+  if (externalInputMaxSizes_.empty()) {
+    externalInputMaxSizes_.resize(numExternalInputs_, 0);
+    externalInputUseStaging_.resize(numExternalInputs_, false);
+  }
+
+  for (int i = 0; i < numInputs; i++) {
+    if (extIndices[i] >= 0 && extIndices[i] < numExternalInputs_ && maxSizes[i] > 0) {
+      externalInputMaxSizes_[extIndices[i]] = maxSizes[i];
+      externalInputUseStaging_[extIndices[i]] = true;
+    }
+  }
+
+  // Staging buffer allocation deferred - requires proper NDArray allocation API
+  // For now, just track the max sizes for future use
+  DSP_DIAG(MEMORY, "setExternalInputMaxSizes: configured %d inputs for staging (allocation deferred)", numInputs);
 }
 
 void NativeDynamicShapePlan::setKvCachePosition(int pos) {

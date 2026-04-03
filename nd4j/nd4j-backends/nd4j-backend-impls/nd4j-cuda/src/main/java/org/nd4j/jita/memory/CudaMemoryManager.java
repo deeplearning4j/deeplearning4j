@@ -471,4 +471,59 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public static void clearFallbackTracking() {
         hostFallbackAllocations.clear();
     }
+
+    /**
+     * Get the deallocator service.
+     * @return deallocator service instance
+     */
+    @Override
+    public org.nd4j.linalg.api.memory.deallocation.DeallocatorService getDeallocatorService() {
+        return org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getInstance();
+    }
+
+    /**
+     * Calls GC if heap memory is pressured (above threshold).
+     * No-op in CUDA memory manager - GC is handled by the allocator.
+     */
+    @Override
+    public void gcIfHeapPressured() {
+        // No-op - CUDA memory management doesn't use heap pressure GC
+    }
+
+    /**
+     * Get the periodic GC frequency.
+     * @return frequency value (no-op in CUDA)
+     */
+    @Override
+    public int getFrequency() {
+        return 0;
+    }
+
+    /**
+     * Set the periodic GC frequency.
+     * No-op in CUDA memory manager - GC is handled by the allocator.
+     * @param frequency the frequency value
+     */
+    @Override
+    public void setFrequency(int frequency) {
+        // No-op - CUDA memory management doesn't use periodic GC
+    }
+
+    /**
+     * Start periodic GC.
+     * No-op in CUDA memory manager - GC is handled by the allocator.
+     */
+    @Override
+    public void startPeriodicGc() {
+        // No-op - CUDA memory management doesn't use periodic GC
+    }
+
+    /**
+     * Stop periodic GC.
+     * No-op in CUDA memory manager - GC is handled by the allocator.
+     */
+    @Override
+    public void stopPeriodicGc() {
+        // No-op - CUDA memory management doesn't use periodic GC
+    }
 }

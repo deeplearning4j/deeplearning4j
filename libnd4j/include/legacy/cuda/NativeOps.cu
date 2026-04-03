@@ -1451,3 +1451,25 @@ sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle) 
     return mbwGetTotalAllocatedSize(handle);
 }
 
+// Constant Cache Statistics API (CUDA)
+SD_LIB_EXPORT sd::LongType getConstantCacheBytes(int deviceId) {
+    return sd::ConstantHelper::getInstance().getCachedAmount(deviceId);
+}
+
+SD_LIB_EXPORT sd::LongType getTadCacheEntries() {
+    return sd::ConstantTadHelper::getInstance().getCachedEntries();
+}
+
+SD_LIB_EXPORT sd::LongType getTadCacheBytes() {
+    return sd::ConstantTadHelper::getInstance().getCachedBytes();
+}
+
+SD_LIB_EXPORT void clearConstantCache() {
+    // ConstantHelper doesn't have a purge method - constants are cached for lifetime
+    // This is a no-op for now
+}
+
+SD_LIB_EXPORT void clearTadCache() {
+    sd::ConstantTadHelper::getInstance().clearCache();
+}
+

@@ -48,6 +48,12 @@ public interface AffinityManager {
     Integer getDeviceForCurrentThread();
 
     /**
+     * This method sets the device ID for the current thread
+     * @param deviceId the device ID to set
+     */
+    void setDeviceForCurrentThread(int deviceId);
+
+    /**
      * This method returns deviceId for a given thread
      * @return
      */

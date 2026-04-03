@@ -140,6 +140,20 @@ public final class PlanIntrospection {
         public int getNumHostPointers() { return numHostPointers; }
         public String getCompiledByBackend() { return compiledByBackend; }
 
+        // Setters for copying state
+        public void setReplayBackendName(String name) { this.replayBackendName = name; }
+        public void setReplayState(int state) { this.replayState = state; }
+        public void setReplayCount(int count) { this.replayCount = count; }
+        public void setExecutionCount(int count) { this.executionCount = count; }
+        public void setCompilationFailed(boolean failed) { this.compilationFailed = failed; }
+        public void setStatisticsJson(String json) { this.statisticsJson = json; }
+        public void setTrackedPointersJson(String json) { this.trackedPointersJson = json; }
+        public void setNumCaptureBuffers(int num) { this.numCaptureBuffers = num; }
+        public void setCaptureBuffersJson(String json) { this.captureBuffersJson = json; }
+        public void setNumHostPointers(int num) { this.numHostPointers = num; }
+        public void setCompiledByBackend(String backend) { this.compiledByBackend = backend; }
+        public void setExecutionPhaseCode(int code) { this.executionPhaseCode = code; }
+
         /** Get the current execution phase as an enum. Returns null if not yet set. */
         public ExecutionPhase getExecutionPhase() {
             return ExecutionPhase.fromNativeCode(executionPhaseCode);

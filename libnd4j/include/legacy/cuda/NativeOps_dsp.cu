@@ -314,6 +314,12 @@ int releaseGpuIntermediates(sd::Pointer planHandle) {
   return plan->releaseGpuIntermediates();
 }
 
+int releaseGpuIntermediates(sd::Pointer planHandle, bool preserveDecodeState) {
+  if (planHandle == nullptr) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  return plan->releaseGpuIntermediates(preserveDecodeState);
+}
+
 void configurePlanKvCacheRetention(
     sd::Pointer planHandle, const int* mappings,
     int numMappings, int maxKvLen, int initialPos) {

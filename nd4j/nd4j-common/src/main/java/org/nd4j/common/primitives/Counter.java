@@ -44,6 +44,15 @@ public class Counter<T> implements Serializable {
         return t.get();
     }
 
+    /**
+     * Alias for getCount() - returns the count for the given element.
+     * @param element the element to get count for
+     * @return the count, or 0.0 if not present
+     */
+    public double get(T element) {
+        return getCount(element);
+    }
+
     public void incrementCount(T element, double inc) {
         AtomicDouble t = map.get(element);
         if (t != null)
