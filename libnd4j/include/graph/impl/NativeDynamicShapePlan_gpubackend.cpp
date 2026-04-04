@@ -49,6 +49,7 @@
 #include <graph/gpu/PtxGraphBackend.h>
 #include <graph/gpu/CaptureBufferRegistry.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #endif
 #ifdef SD_TPU
 #include <graph/tpu/TpuGraphBackend.h>
@@ -113,6 +114,7 @@ static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& 
   }
 }
 
+#ifdef SD_CUDA
 static bool isCurrentDevicePointer(void* ptr, int currentDeviceId) {
   if (ptr == nullptr) return false;
 
@@ -125,12 +127,129 @@ static bool isCurrentDevicePointer(void* ptr, int currentDeviceId) {
 
   return attrs.type == cudaMemoryTypeDevice && attrs.device == currentDeviceId;
 }
+#else
+static bool isCurrentDevicePointer(void* /*ptr*/, int /*currentDeviceId*/) {
+  return false;
+}
+#endif
+
+// ── GPU CONTEXT PROBE ──────────────────────────────────────────────────────
+// Shared helper that dumps multi-device memory state + CUDA context health.
+// Called by all error handlers to detect downstream/pre-existing errors.
+#ifdef SD_CUDA
+static void dumpGpuContextState(int failedDeviceId, const char* errorType) {
+  // 1. Check for pre-existing CUDA error (downstream error detection)
+  cudaError_t preExisting = cudaPeekAtLastError();
+  if (preExisting != cudaSuccess) {
+    DSP_DIAG(MEMORY, "%s: PRE-EXISTING CUDA ERROR on device %d: %d (%s) — "
+             "this may be a downstream error from a previous operation",
+             errorType, failedDeviceId,
+             static_cast<int>(preExisting), cudaGetErrorString(preExisting));
+  }
+
+  // 2. Failed device: full detail
+  {
+    cudaDeviceProp props;
+    cudaGetDeviceProperties(&props, failedDeviceId);
+    size_t gpuFree = 0, gpuTotal = 0;
+    cudaSetDevice(failedDeviceId);
+    cudaMemGetInfo(&gpuFree, &gpuTotal);
+    DSP_DIAG(MEMORY, "%s: device %d '%s' (cc=%d.%d): free=%zuMB total=%zuMB used=%zuMB "
+             "multiProcessorCount=%d",
+             errorType, failedDeviceId, props.name,
+             props.major, props.minor,
+             gpuFree / (1024*1024), gpuTotal / (1024*1024),
+             (gpuTotal - gpuFree) / (1024*1024),
+             props.multiProcessorCount);
+  }
+
+  // 3. Other devices: one-line summary each
+  int deviceCount = 0;
+  cudaGetDeviceCount(&deviceCount);
+  for (int d = 0; d < deviceCount; d++) {
+    if (d == failedDeviceId) continue;
+    cudaSetDevice(d);
+    size_t otherFree = 0, otherTotal = 0;
+    cudaMemGetInfo(&otherFree, &otherTotal);
+    cudaError_t otherErr = cudaPeekAtLastError();
+    DSP_DIAG(MEMORY, "%s: device %d: free=%zuMB total=%zuMB%s",
+             errorType, d, otherFree / (1024*1024), otherTotal / (1024*1024),
+             otherErr != cudaSuccess ?
+               (std::string(" CUDA_ERROR=") + cudaGetErrorString(otherErr)).c_str() : "");
+  }
+
+  // 4. Restore original device
+  cudaSetDevice(failedDeviceId);
+
+  // 5. Report graph execution active state
+  DSP_DIAG(MEMORY, "%s: tl_graphExecutionActive=%d",
+           errorType, tl_graphExecutionActive ? 1 : 0);
+}
+
+// ── DISTINCT ERROR HANDLERS ────────────────────────────────────────────────
+
+static Status reportOomError(GraphSegment& seg, const char* phase,
+                             size_t requestedBytes, int deviceId) {
+  dumpGpuContextState(deviceId, "OOM");
+  size_t gpuFree = 0, gpuTotal = 0;
+  cudaMemGetInfo(&gpuFree, &gpuTotal);
+  DSP_DIAG(MEMORY,
+    "OOM ERROR in seg[%d-%d] during '%s' on device %d: "
+    "requested=%zuMB gpuFree=%zuMB gpuTotal=%zuMB gpuUsed=%zuMB "
+    "executionCount=%d phase=%d",
+    seg.startSlot, seg.endSlot, phase, deviceId,
+    requestedBytes / (1024*1024), gpuFree / (1024*1024),
+    gpuTotal / (1024*1024), (gpuTotal - gpuFree) / (1024*1024),
+    seg.exec.executionCount, static_cast<int>(seg.exec.currentPhase));
+  seg.exec.compilationFailed = true;
+  return Status::KERNEL_FAILURE;
+}
+
+static Status reportCaptureError(GraphSegment& seg, const char* step,
+                                 cudaError_t cudaErr, int deviceId) {
+  dumpGpuContextState(deviceId, "CAPTURE");
+  size_t gpuFree = 0, gpuTotal = 0;
+  cudaMemGetInfo(&gpuFree, &gpuTotal);
+  DSP_DIAG(EXECUTE,
+    "CAPTURE ERROR in seg[%d-%d] at step '%s' on device %d: "
+    "cudaError=%d (%s) gpuFree=%zuMB gpuTotal=%zuMB "
+    "executionCount=%d numOps=%d compiledBy='%s'",
+    seg.startSlot, seg.endSlot, step, deviceId,
+    static_cast<int>(cudaErr), cudaGetErrorString(cudaErr),
+    gpuFree / (1024*1024), gpuTotal / (1024*1024),
+    seg.exec.executionCount, seg.endSlot - seg.startSlot + 1,
+    seg.exec.compiledByBackend.c_str());
+  seg.exec.compilationFailed = true;
+  cudaGetLastError(); // clear error state
+  return Status::KERNEL_FAILURE;
+}
+
+static Status reportReplayError(GraphSegment& seg, const char* step,
+                                cudaError_t cudaErr, int deviceId) {
+  dumpGpuContextState(deviceId, "REPLAY");
+  size_t gpuFree = 0, gpuTotal = 0;
+  cudaMemGetInfo(&gpuFree, &gpuTotal);
+  DSP_DIAG(EXECUTE,
+    "REPLAY ERROR in seg[%d-%d] at step '%s' on device %d: "
+    "cudaError=%d (%s) gpuFree=%zuMB gpuTotal=%zuMB "
+    "executionCount=%d hasReplayHandle=%d",
+    seg.startSlot, seg.endSlot, step, deviceId,
+    static_cast<int>(cudaErr), cudaGetErrorString(cudaErr),
+    gpuFree / (1024*1024), gpuTotal / (1024*1024),
+    seg.exec.executionCount,
+    seg.exec.replayHandle != nullptr ? 1 : 0);
+  seg.exec.compilationFailed = true;
+  cudaGetLastError(); // clear error state
+  return Status::KERNEL_FAILURE;
+}
+#endif  // SD_CUDA
 
 // Capture buffers are dense fixed-address staging arrays. We only use a raw D2D
 // memcpy for the narrow case where both source and destination already resolve to
 // device-local pointers on the current GPU. Anything view-backed, host-mirrored,
 // or cross-device falls back to assign() so the normal prepare/register/migration
 // path preserves tensor semantics and multi-device handling.
+#ifdef SD_CUDA
 static void copyIntoCaptureBuffer(NDArray* dst, NDArray* src, cudaStream_t cudaStr,
                                   bool mirrorHost, const char* kind, int index,
                                   int segStart, int segEnd) {
@@ -173,6 +292,17 @@ static void copyIntoCaptureBuffer(NDArray* dst, NDArray* src, cudaStream_t cudaS
     dst->dataBuffer()->writeSpecial();
   }
 }
+#else
+static void copyIntoCaptureBuffer(NDArray* dst, NDArray* src, void* /*cudaStr*/,
+                                  bool mirrorHost, const char* /*kind*/, int /*index*/,
+                                  int /*segStart*/, int /*segEnd*/) {
+  if (dst == nullptr || src == nullptr) return;
+  dst->assign(src);
+  if (mirrorHost) {
+    dst->syncToHost();
+  }
+}
+#endif
 
 // Strict mode: fail fast instead of silently degrading to slot-by-slot.
 static bool isStrictNoFallbackMode_gpu(GraphExecutionMode mode) {
@@ -772,7 +902,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       // everything via fallbackRangeExecutor_.
       // Mark compilationFailed to prevent CUDA graph capture for these segments.
       DSP_DIAG(COMPILE, "%s: segment [%d-%d] has only fallback sections (no compilation needed). "
-                "compilationFailed=true to prevent CUDA graph capture.",
+                "Setting compilationFailed=true to prevent CUDA graph capture for this segment. "
+                "Execution proceeds via fallback path.",
                 backendName, seg.startSlot, seg.endSlot);
       seg.exec.compilationFailed = true;
     }
@@ -884,6 +1015,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         ? externalAddrsMatch(seg, externalArrays, numExt)
         : (seg.exec.capturedInputAddrKey != 0 && seg.exec.capturedInputAddrKey == segInputAddrKey);
     createValueKey = computeCreateOpValueKey(seg, externalArrays, numExt);
+    DSP_DIAG(EXECUTE, "ADDR_CHECK_SLOW: seg[%d-%d] extAddrsStable=%d addrKey=%lld (cached=%lld)",
+             seg.startSlot, seg.endSlot, extAddrsStable ? 1 : 0,
+             (long long)segInputAddrKey, (long long)seg.exec.capturedInputAddrKey);
   }
   bool createValuesStable = (createValueKey == 0) ||  // no create ops
                             (seg.exec.capturedCreateValueKey == createValueKey);
@@ -938,13 +1072,25 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       createValuesStable &&
       (hasTritonCaptureBuffers || extAddrsStable)) {
 
+    DSP_DIAG(EXECUTE, "TRITON_REPLAY_ENTER: seg[%d-%d] extAddrsStable=%d argTableStable=%d "
+             "hasTritonCaptureBuffers=%d captureBufferCount=%d",
+             seg.startSlot, seg.endSlot, extAddrsStable ? 1 : 0,
+             seg.exec.argTableStable ? 1 : 0, hasTritonCaptureBuffers ? 1 : 0,
+             hasTritonCaptureBuffers ? (int)seg.exec.replayHandle->getCaptureBuffers().size() : 0);
+
     // ── Lineage validation: verify directReference addresses haven't drifted ──
     // DirectReference entries (weights, KV cache) assume the graph reads from
     // the original buffer address. If the address changed (freed/reallocated),
     // the graph reads garbage. Detect and invalidate.
-    // OPTIMIZATION: Skip when argTableStable is true — all addresses are known-stable.
+    // OPTIMIZATION: Skip when argTableStable is true AND external addresses are stable.
+    // When extAddrsStable is false, external input buffers may have been reallocated,
+    // so directReference entries could point to freed memory. MUST check lineage.
     bool lineageInvalidated = false;
-    if (hasTritonCaptureBuffers && !(seg.exec.argTableStable && allowTritonCudaGraphReplay)) {
+    if (hasTritonCaptureBuffers && (!(seg.exec.argTableStable && allowTritonCudaGraphReplay) || !extAddrsStable)) {
+      DSP_DIAG(EXECUTE, "LINEAGE_CHECK_ENTER: seg[%d-%d] reason=%s (argTableStable=%d extAddrsStable=%d)",
+               seg.startSlot, seg.endSlot,
+               !extAddrsStable ? "extAddrsUnstable" : "argTableNotStable",
+               seg.exec.argTableStable ? 1 : 0, extAddrsStable ? 1 : 0);
       bool addressDrift = false;
       for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
         if (!cb.directReference) continue;
@@ -966,6 +1112,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         }
       }
       if (addressDrift) {
+        DSP_DIAG(EXECUTE, "LINEAGE_DRIFT_INVALIDATE: seg[%d-%d] → cleaning up for re-capture",
+                 seg.startSlot, seg.endSlot);
         platformCleanupSegmentForRebuild(seg);
         seg.exec.argTableStable = false;
         batchD2DCount_ = 0;
@@ -974,7 +1122,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         seg.exec.compilationFailed = false;
         hasTritonCaptureBuffers = false;
         lineageInvalidated = true;
+      } else {
+        DSP_DIAG(EXECUTE, "LINEAGE_CHECK_PASS: seg[%d-%d] all directReference addresses match",
+                 seg.startSlot, seg.endSlot);
       }
+    } else {
+      DSP_DIAG(EXECUTE, "LINEAGE_CHECK_SKIP: seg[%d-%d] argTableStable=%d extAddrsStable=%d "
+               "→ skipped (both stable, addresses known-good)",
+               seg.startSlot, seg.endSlot,
+               seg.exec.argTableStable ? 1 : 0, extAddrsStable ? 1 : 0);
     }
 
     // Fast-replay: when arg table pointers are stable (all unchanged since last
@@ -982,6 +1138,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // Only D2D capture buffer copies + graph launch needed.
     bool useFastReplay = hasTritonCaptureBuffers && seg.exec.argTableStable
                          && !Environment::getInstance().tritonVerifyKernels();
+    DSP_DIAG(EXECUTE, "REPLAY_PATH: seg[%d-%d] useFastReplay=%d (hasCapBufs=%d argStable=%d verify=%d) "
+             "lineageInvalidated=%d",
+             seg.startSlot, seg.endSlot, useFastReplay ? 1 : 0,
+             hasTritonCaptureBuffers ? 1 : 0, seg.exec.argTableStable ? 1 : 0,
+             Environment::getInstance().tritonVerifyKernels() ? 1 : 0,
+             lineageInvalidated ? 1 : 0);
 
     // CRITICAL FIX: Set tl_dspExecutionStream for ALL Triton executions, not just capture replay.
     // Without this, syncToSpecial() calls fall back to stream 0 and do full cudaStreamSynchronize,
@@ -1017,14 +1179,33 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           size_t srcBytes = src->lengthOf() * src->sizeOfT();
           if (srcBytes == 0) continue;
           if (srcBytes != cb.capturedSize) {
-            // Size mismatch — data-dependent shape changed. Must invalidate graph.
+            // Size mismatch — shape changed since capture. The CUDA graph has
+            // baked-in tensor dimensions, so we must invalidate and re-capture.
+            // But first: reallocate the staging buffer to the new size so the
+            // re-capture will use a correctly-sized buffer (no churn on next exec).
             if (cb.crossSegmentSlotIdx >= 0) {
               DSP_DIAG(EXECUTE, "CROSS_SEG_SIZE_MISMATCH: slot#%d captured=%zu current=%zu → invalidate",
                        cb.crossSegmentSlotIdx, cb.capturedSize, srcBytes);
-              crossSegSizeMismatch = true;
-              break;
+            } else {
+              // Reallocate staging buffer to match new input size.
+              // This is the "patching path" — ideally callers pad inputs to max size
+              // so this never fires. But when it does, one realloc stabilizes the buffer.
+              auto srcShapeVec = *src->getShapeAsVector();
+              NDArray* newBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
+                                            sd::LaunchContext::defaultContext());
+              DSP_DIAG(EXECUTE, "EXT_STAGING_REALLOC: ext#%d captured=%zu current=%zu → "
+                       "reallocated staging buffer for seg[%d-%d] (ideally pad inputs to max size)",
+                       cb.externalInputIndex, cb.capturedSize, srcBytes,
+                       seg.startSlot, seg.endSlot);
+              // Free old buffer and swap in new one
+              if (cb.buffer != nullptr) {
+                delete cb.buffer;
+              }
+              cb.buffer = newBuf;
+              cb.capturedSize = srcBytes;
             }
-            continue;  // External input size mismatch — skip (existing behavior)
+            crossSegSizeMismatch = true;
+            break;
           }
 
           // Cross-segment outputs were just written on cudaStr by the previous
@@ -1057,9 +1238,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // NOTE: tl_dspExecutionStream is managed by DspStreamGuard in this function and in execute().
     // It remains set during replay for syncToSpecial() to use the correct stream.
 
-    // Cross-segment size mismatch: invalidate graph and fall through to re-capture
+    // Capture buffer size mismatch: invalidate graph and fall through to re-capture.
+    // For external inputs, the staging buffer was already reallocated above.
+    // For cross-segment, the slot data shape changed (data-dependent).
     if (crossSegSizeMismatch && seg.exec.replayHandle) {
-      DSP_DIAG(EXECUTE, "GRAPH INVALIDATED: cross-segment data size changed for seg[%d-%d]",
+      DSP_DIAG(EXECUTE, "GRAPH INVALIDATED: capture buffer size mismatch for seg[%d-%d] → re-capture",
                seg.startSlot, seg.endSlot);
       platformCleanupSegmentForRebuild(seg);
       seg.exec.argTableStable = false;
@@ -1314,6 +1497,118 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         }
       }
 
+      // ── TRIPWIRE: validate all pointers before graph launch ──────────────
+      // NULL dereference in libcuda.so during cudaGraphLaunch means a kernel
+      // arg or memcpy source/dest is NULL. Check everything we can reach.
+      if (seg.exec.replayHandle && hasTritonCaptureBuffers) {
+        int nullCapBufs = 0, nullCapBufDevPtrs = 0, nullDirectRefPtrs = 0;
+        int totalCapBufs = 0;
+        auto& tripCBs = seg.exec.replayHandle->getCaptureBuffers();
+        for (size_t cbi = 0; cbi < tripCBs.size(); cbi++) {
+          auto& cb = tripCBs[cbi];
+          totalCapBufs++;
+          if (cb.buffer == nullptr) {
+            nullCapBufs++;
+            DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_CAPBUF: seg[%d-%d] cb[%zu] buffer=NULL "
+                     "extIdx=%d crossSlot=%d directRef=%d",
+                     seg.startSlot, seg.endSlot, cbi,
+                     cb.externalInputIndex, cb.crossSegmentSlotIdx,
+                     cb.directReference ? 1 : 0);
+          } else if (cb.buffer->specialBuffer() == nullptr) {
+            nullCapBufDevPtrs++;
+            DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_CAPBUF_DEVPTR: seg[%d-%d] cb[%zu] "
+                     "buffer=%p specialBuffer=NULL extIdx=%d crossSlot=%d "
+                     "directRef=%d len=%lld dtype=%d",
+                     seg.startSlot, seg.endSlot, cbi, (void*)cb.buffer,
+                     cb.externalInputIndex, cb.crossSegmentSlotIdx,
+                     cb.directReference ? 1 : 0,
+                     (long long)cb.buffer->lengthOf(),
+                     (int)cb.buffer->dataType());
+          }
+          if (cb.directReference && cb.buffer != nullptr &&
+              cb.buffer->specialBuffer() == nullptr) {
+            nullDirectRefPtrs++;
+            // This is the most dangerous case: directReference means the graph
+            // reads from this buffer's device address directly
+            DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_DIRECTREF: seg[%d-%d] cb[%zu] "
+                     "extIdx=%d — graph will dereference NULL!",
+                     seg.startSlot, seg.endSlot, cbi, cb.externalInputIndex);
+          }
+        }
+        // Check output slot device pointers for this segment's range
+        int nullSlots = 0;
+        for (int si = seg.startSlot; si <= seg.endSlot && si < numSlots_; si++) {
+          for (int oi = 0; oi < slots_[si].numOutputs; oi++) {
+            int slotIdx = slots_[si].outputSlotIndices[oi];
+            if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+              NDArray* slotArr = slotArrayCache_[slotIdx];
+              if (slotArr == nullptr || slotArr->specialBuffer() == nullptr) {
+                nullSlots++;
+                DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_SLOT: seg[%d-%d] step=%d "
+                         "outputSlot=%d arr=%p devPtr=%p",
+                         seg.startSlot, seg.endSlot, si, slotIdx,
+                         (void*)slotArr,
+                         slotArr ? slotArr->specialBuffer() : nullptr);
+              }
+            }
+          }
+        }
+        // Check workspace pointer
+        void* wsPtr = seg.exec.replayHandle->getWorkspacePtr();
+        size_t wsBytes = seg.exec.replayHandle->getWorkspaceBytes();
+        if (wsBytes > 0 && wsPtr == nullptr) {
+          DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_WORKSPACE: seg[%d-%d] wsBytes=%zu "
+                   "wsPtr=NULL — graph H2D nodes will crash!",
+                   seg.startSlot, seg.endSlot, wsBytes);
+        }
+        // Check captured host pointers
+        auto& hostPtrs = seg.exec.replayHandle->getCapturedHostPtrs();
+        int nullHostPtrs = 0;
+        for (size_t hi = 0; hi < hostPtrs.size(); hi++) {
+          if (hostPtrs[hi] == nullptr) {
+            nullHostPtrs++;
+            DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_HOSTPTR: seg[%d-%d] hostPtr[%zu]=NULL",
+                     seg.startSlot, seg.endSlot, hi);
+          }
+        }
+        // Check key external inputs that the segment uses
+        int nullExtInputs = 0;
+        for (int ei = 0; ei < numExt; ei++) {
+          if (externalArrays[ei] != nullptr &&
+              externalArrays[ei]->specialBuffer() == nullptr) {
+            nullExtInputs++;
+            if (nullExtInputs <= 5) {
+              std::string name = (ei < (int)externalInputNames_.size())
+                                 ? externalInputNames_[ei] : "?";
+              DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_EXT_DEVPTR: seg[%d-%d] ext[%d]=\"%s\" "
+                       "len=%lld dtype=%d — device pointer is NULL",
+                       seg.startSlot, seg.endSlot, ei, name.c_str(),
+                       (long long)externalArrays[ei]->lengthOf(),
+                       (int)externalArrays[ei]->dataType());
+            }
+          }
+        }
+        // Summary
+        if (nullCapBufs > 0 || nullCapBufDevPtrs > 0 || nullDirectRefPtrs > 0 ||
+            nullSlots > 0 || nullHostPtrs > 0 || nullExtInputs > 0 ||
+            (wsBytes > 0 && wsPtr == nullptr)) {
+          DSP_DIAG(EXECUTE, "TRIPWIRE_SUMMARY: seg[%d-%d] DANGER — "
+                   "nullCapBufs=%d nullCapBufDevPtrs=%d nullDirectRef=%d "
+                   "nullSlots=%d nullHostPtrs=%d nullExtDevPtrs=%d "
+                   "wsPtr=%p wsBytes=%zu totalCapBufs=%d",
+                   seg.startSlot, seg.endSlot,
+                   nullCapBufs, nullCapBufDevPtrs, nullDirectRefPtrs,
+                   nullSlots, nullHostPtrs, nullExtInputs,
+                   wsPtr, wsBytes, totalCapBufs);
+        } else {
+          DSP_DIAG(EXECUTE, "TRIPWIRE_OK: seg[%d-%d] all %d capBufs, "
+                   "%d hostPtrs, ws=%p/%zuMB — no NULL pointers detected",
+                   seg.startSlot, seg.endSlot, totalCapBufs,
+                   (int)hostPtrs.size(), wsPtr, wsBytes / (1024*1024));
+        }
+      }
+      // ── END TRIPWIRE ─────────────────────────────────────────────────────
+
       bool replayOk = false;
       if (lineageInvalidated || crossSegSizeMismatch || !seg.exec.replayHandle) {
         // Graph was invalidated — skip replay, fall through to re-capture/slot-by-slot
@@ -1552,13 +1847,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
       // Launch failed — this is a fatal error. Graph replay failure means
       // the captured graph is corrupt or the CUDA runtime is in a bad state.
-      DSP_DIAG_SEG(FALLBACK, seg.startSlot, "Triton graph replay FAILED for seg[%d-%d]",
-                seg.startSlot, seg.endSlot);
       {
-        std::string msg = "CUDA graph replay failed for seg[" +
-            std::to_string(seg.startSlot) + "-" +
-            std::to_string(seg.endSlot) + "] — aborting execution";
-        THROW_EXCEPTION(msg.c_str());
+        int deviceId = 0;
+        cudaGetDevice(&deviceId);
+        platformCleanupSegmentForRebuild(seg);
+        return reportReplayError(seg, "graph_replay", cudaGetLastError(), deviceId);
       }
     }
   }
@@ -1707,6 +2000,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                                      !seg.exec.compilationFailed &&
                                      execCountInWindowNow &&
                                      hasCudaStream;
+  // PRE-CAPTURE MEMORY CHECK removed: speculative OOM estimation was causing
+  // false negatives (blocking capture with 13GB free). Actual allocation calls
+  // (workspace, cuBLAS) will fail with real OOM if memory is insufficient.
+
   if (shouldCaptureTritonGraphNow) {
     DSP_DIAG_SEG(COMPILE, seg.startSlot,
                  "GRAPH CAPTURE BEGIN: seg[%d-%d] size=%d execCount=%d shapesFrozen=%d",
@@ -1748,28 +2045,47 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     if (seg.exec.replayHandle->getWorkspacePtr() == nullptr) {
       int deviceId = 0;
       cudaGetDevice(&deviceId);
-      bool allocated = seg.exec.replayHandle->allocateWorkspace(
-          TRITON_CAPTURE_WORKSPACE_SIZE, deviceId, captureBufferRegistry_, seg.startSlot);
-      if (allocated) {
-        DSP_DIAG_SEG(MEMORY, seg.startSlot, "allocated %zuMB Triton capture workspace for seg[%d-%d]",
-                  TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024), seg.startSlot, seg.endSlot);
+
+      // Shared workspace: allocate once, reuse across all segments.
+      // Segments execute sequentially (cudaGraphLaunch + cudaStreamSynchronize),
+      // and workspace offset resets each capture, so sharing is safe.
+      if (sharedCaptureWorkspace_ == nullptr) {
+        // First segment — allocate the shared workspace
+        if (captureBufferRegistry_ != nullptr) {
+          auto* registry = static_cast<CaptureBufferRegistry*>(captureBufferRegistry_);
+          sharedCaptureWorkspace_ = registry->allocate(-1, TRITON_CAPTURE_WORKSPACE_SIZE, deviceId);
+        }
+        if (sharedCaptureWorkspace_ == nullptr) {
+          // Fallback to raw cudaMalloc
+          cudaError_t err = cudaMalloc(&sharedCaptureWorkspace_, TRITON_CAPTURE_WORKSPACE_SIZE);
+          if (err != cudaSuccess) {
+            cudaGetLastError();
+            sharedCaptureWorkspace_ = nullptr;
+          }
+        }
+        if (sharedCaptureWorkspace_ != nullptr) {
+          sharedCaptureWorkspaceBytes_ = TRITON_CAPTURE_WORKSPACE_SIZE;
+          sharedCaptureWorkspaceDevice_ = deviceId;
+          memory::CudaMemoryPool::getInstance().registerCaptureWorkspace(
+              sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
+          DSP_DIAG_SEG(MEMORY, seg.startSlot,
+                    "allocated SHARED capture workspace: %zuMB on device %d",
+                    TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024), deviceId);
+        } else {
+          // Shared allocation failed — ABORT capture for this segment.
+          platformCleanupSegmentForRebuild(seg);
+          return reportOomError(seg, "shared_workspace_allocation",
+                                TRITON_CAPTURE_WORKSPACE_SIZE, deviceId);
+        }
       } else {
-        // Workspace allocation failed — ABORT capture for this segment.
-        // Without a capture workspace, ops during capture would try cudaMallocAsync
-        // which fails during CUDA graph capture, or (worse) the workspace from a
-        // cross-device failover causes cudaMemcpyAsync errors that permanently
-        // corrupt the CUDA context (error 700 on subsequent operations).
-        // Per design: capture failures block execution loudly, no silent fallbacks.
-        DSP_DIAG(MEMORY, "CAPTURE WORKSPACE ALLOCATION FAILED for seg[%d-%d] on device %d — "
-                  "aborting graph capture. GPU %d does not have %zuMB free for capture workspace. "
-                  "Setting compilationFailed=true, segment will use slot-by-slot execution.",
-                  seg.startSlot, seg.endSlot, deviceId, deviceId,
-                  TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024));
-        seg.exec.compilationFailed = true;
-        // Destroy the replay handle — it was created above but has no workspace.
-        // This sets replayHandle = nullptr, which gates the rest of the capture logic below.
-        platformCleanupSegmentForRebuild(seg);
+        DSP_DIAG_SEG(MEMORY, seg.startSlot,
+                  "using shared workspace for seg[%d-%d]",
+                  seg.startSlot, seg.endSlot);
       }
+
+      // Point this segment's replay handle at the shared workspace
+      seg.exec.replayHandle->useExternalWorkspace(
+          sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
     }
 
     // Guard: if workspace allocation failed, replayHandle is now nullptr.
@@ -1974,9 +2290,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
 
       if (warmupStatus != Status::OK) {
-        DSP_DIAG(EXECUTE, "Triton pre-capture warmup FAILED for seg[%d-%d], falling back. "
-                  "Destroying replayHandle to free GPU memory.",
-                  seg.startSlot, seg.endSlot);
+        DSP_DIAG(EXECUTE, "FATAL: Triton pre-capture warmup FAILED for seg[%d-%d] status=%d. "
+                  "BLOCKING EXECUTION.",
+                  seg.startSlot, seg.endSlot, static_cast<int>(warmupStatus));
         seg.exec.compilationFailed = true;
         // Destroy the replay handle created before warmup — it holds workspace
         // memory even though capture never started.
@@ -2377,6 +2693,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
     }
 
+    // POST-ALLOCATION MEMORY GATE removed: speculative OOM estimation was
+    // causing false negatives. If workspace + cuBLAS allocation succeeded,
+    // proceed with capture. Real failures are caught by beginCapture/instantiate.
+
     auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get());
     auto handle = cudaReplay->getNativeHandle();
     bool captureOk = handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed);
@@ -2502,7 +2822,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       if (captureStatus == Status::OK) {
         endOk = handle->endCapture(cudaStr);
       } else {
-        DSP_DIAG(FALLBACK, "Triton capture execution FAILED status=%d for seg[%d-%d]",
+        DSP_DIAG(EXECUTE, "FATAL: Triton capture execution FAILED status=%d for seg[%d-%d]. "
+                  "BLOCKING EXECUTION.",
                   static_cast<int>(captureStatus), seg.startSlot, seg.endSlot);
         fflush(stdout); fflush(stderr);
         if (handle->isCapturing()) {
@@ -2601,23 +2922,36 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         fflush(stdout); fflush(stderr);
       }
 
-      // ── SKIP graph launch after initial capture ─────────────────────────
-      // The warmup already produced correct results in outputSlots_[].
-      // Launching the graph immediately after capture would overwrite those
-      // warmup results because the capture bakes warmup buffer addresses —
-      // the graph launch writes to those same addresses, corrupting the
-      // warmup data that downstream segments need for THEIR warmup/capture.
-      //
-      // Instead, the graph is instantiated (ready for launch) but NOT
-      // launched on this pass. On the NEXT execution, the replay path
-      // launches the graph with fresh D2D-copied capture buffer data.
-      // The warmup results are used for this pass's downstream segments.
-      bool launchOk = instantiateOk;  // treat instantiate as success
-      if (instantiateOk) {
-        DSP_DIAG(EXECUTE, "Triton graph instantiated for seg[%d-%d] — SKIPPING "
-                  "initial launch (warmup results serve this pass, graph will "
-                  "replay on next execution)",
-                  seg.startSlot, seg.endSlot);
+      if (!instantiateOk) {
+        int deviceId = 0;
+        cudaGetDevice(&deviceId);
+        platformCleanupSegmentForRebuild(seg);
+        return reportCaptureError(seg, "instantiate", cudaGetLastError(), deviceId);
+      }
+
+      // POST-INSTANTIATE MEMORY CHECK removed: the validation launch immediately
+      // below will reveal if the graph is usable. No speculative memory gate needed.
+
+      // Graph instantiated — launch to validate the graph is not corrupted.
+      // Warmup results are restored from savedWarmupOutputSlots below regardless.
+      bool launchOk = false;
+      {
+        int deviceId = 0;
+        cudaGetDevice(&deviceId);
+        cudaGetLastError();
+        bool replayResult = seg.exec.replayHandle->replay(stream);
+        if (!replayResult) {
+          platformCleanupSegmentForRebuild(seg);
+          return reportReplayError(seg, "validation_launch", cudaGetLastError(), deviceId);
+        }
+        cudaError_t syncErr = cudaStreamSynchronize(cudaStr);
+        if (syncErr != cudaSuccess) {
+          platformCleanupSegmentForRebuild(seg);
+          return reportReplayError(seg, "validation_sync", syncErr, deviceId);
+        }
+        DSP_DIAG(EXECUTE, "VALIDATION LAUNCH OK: seg[%d-%d] graph launched and synced successfully",
+                 seg.startSlot, seg.endSlot);
+        launchOk = true;
       }
 
       if (launchOk) {
@@ -2733,29 +3067,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           DSP_DIAG(EXECUTE, "FORCE_RECAPTURE: invalidated after capture+launch execCount=%d", seg.exec.executionCount);
         }
       } else {
-        DSP_DIAG(FALLBACK, "Triton graph capture/instantiate/launch FAILED for seg[%d-%d] "
-                  "(endOk=%d instantiateOk=%d launchOk=%d) — setting compilationFailed=true, "
-                  "destroying replayHandle to free GPU memory",
-                  seg.startSlot, seg.endSlot,
-                  static_cast<int>(endOk), static_cast<int>(instantiateOk),
-                  static_cast<int>(launchOk));
-        seg.exec.compilationFailed = true;
-        cudaGetLastError();
-        // Destroy the replay handle to free GPU memory (captured cudaGraph_t,
-        // capture workspace, capture buffers, pinned host pointers). Without this,
-        // failed graph handles accumulate and exhaust GPU memory — each holds ~32MB
-        // workspace plus the cudaGraph_t resources.
+        int deviceId = 0;
+        cudaGetDevice(&deviceId);
         platformCleanupSegmentForRebuild(seg);
+        return reportCaptureError(seg, "execute_during_capture", cudaGetLastError(), deviceId);
       }
     } else {
-      DSP_DIAG(FALLBACK, "Triton graph capture beginCapture FAILED for seg[%d-%d] "
-                "— setting compilationFailed=true, destroying replayHandle to free GPU memory",
-                seg.startSlot, seg.endSlot);
-      seg.exec.compilationFailed = true;
-      cudaGetLastError();
-      // Destroy the replay handle — it was created before beginCapture (line 1750)
-      // and holds workspace memory even though capture never started.
+      int deviceId = 0;
+      cudaGetDevice(&deviceId);
       platformCleanupSegmentForRebuild(seg);
+      return reportCaptureError(seg, "beginCapture", cudaGetLastError(), deviceId);
     }
 
     // ── Restore warmup output slots for downstream segment visibility ──

@@ -369,6 +369,18 @@ bool CudaGraphHandle::launchAsync(cudaStream_t stream, cudaEvent_t completionEve
     // Clear any sticky error before launch (e.g., from updateStatistics graph queries)
     cudaGetLastError();
 
+    // ── TRIPWIRE: validate graph exec handle before launch ──
+    if (_graphExec == nullptr) {
+        sd_printf("TRIPWIRE: cudaGraphLaunch — _graphExec is NULL! device=%d state=%d\n",
+                  _deviceId, (int)_state);
+        _state = GraphState::ERROR;
+        return false;
+    }
+    if (stream == nullptr) {
+        sd_printf("TRIPWIRE: cudaGraphLaunch — stream is NULL! device=%d\n", _deviceId);
+    }
+    // ── END TRIPWIRE ───────────────────────────────────────────────────
+
     cudaError_t err = cudaGraphLaunch(_graphExec, stream);
 
     double endTime = std::chrono::duration<double, std::milli>(

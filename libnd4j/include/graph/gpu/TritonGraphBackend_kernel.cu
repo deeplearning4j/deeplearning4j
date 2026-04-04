@@ -1092,6 +1092,43 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
              seg.startSlot, seg.endSlot);
   }
 
+  // ── TRIPWIRE: scan arg tables for NULL (0) pointer entries ──────────
+  // A NULL device pointer in the arg table will cause SIGSEGV at address 0x0
+  // during cudaGraphLaunch when the kernel tries to dereference it.
+  {
+    int nullArgEntries = 0;
+    for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
+      auto& subKernel = compiledSeg->subKernels[ki];
+      if (!subKernel.useIndirectArgs || subKernel.cachedArgTableHostPinned == nullptr) continue;
+      auto* argTableHostPinned = static_cast<int64_t*>(subKernel.cachedArgTableHostPinned);
+      int numBufferArgs = static_cast<int>(subKernel.argSlotMapping.size());
+      for (int i = 0; i < numBufferArgs; i++) {
+        if (argTableHostPinned[i] == 0) {
+          auto& argMapping = subKernel.argSlotMapping[i];
+          int slotIdx = argMapping.slotIndex;
+          const char* kind = (slotIdx < 0) ? "ext" : "slot";
+          int resolvedIdx = (slotIdx < 0) ? -(slotIdx + 1) : slotIdx;
+          NDArray* arr = nullptr;
+          if (slotIdx < 0 && resolvedIdx < numExternalInputs) {
+            arr = externalInputs[resolvedIdx];
+          } else if (slotIdx >= 0 && slotIdx < totalOutputSlots) {
+            arr = outputSlots[slotIdx];
+          }
+          DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_ARGTABLE: seg[%d-%d] subK[%zu] arg[%d]=%s#%d "
+                   "value=0 (NULL device ptr) arr=%p specialBuf=%p — graph will SIGSEGV!",
+                   seg.startSlot, seg.endSlot, ki, i, kind, resolvedIdx,
+                   (void*)arr, arr ? arr->specialBuffer() : nullptr);
+          nullArgEntries++;
+        }
+      }
+    }
+    if (nullArgEntries > 0) {
+      DSP_DIAG(EXECUTE, "TRIPWIRE_ARGTABLE_SUMMARY: seg[%d-%d] %d NULL arg table entries detected!",
+               seg.startSlot, seg.endSlot, nullArgEntries);
+    }
+  }
+  // ── END TRIPWIRE ───────────────────────────────────────────────────
+
   // Mark arg table stable when no pointers changed — enables fast-replay path.
   if (totalChangedPtrs == 0 && refreshedCount > 0) {
     seg.exec.argTableStable = true;
@@ -1106,6 +1143,9 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
 void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream) {
   int currentDevice = -1;
   cudaGetDevice(&currentDevice);
+
+  // Dereference void* → cudaStream_t (stream is a pointer-to-cudaStream_t)
+  cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   auto& refreshEnv = Environment::getInstance();
   SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice,
@@ -1128,13 +1168,13 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
       compiledSeg->consolidatedArgTableHostPinned &&
       compiledSeg->consolidatedArgTableDevice &&
       compiledSeg->consolidatedArgTableBytes > 0) {
-    
+
     auto memcpyErr = cudaMemcpyAsync(
         compiledSeg->consolidatedArgTableDevice,
         compiledSeg->consolidatedArgTableHostPinned,
         compiledSeg->consolidatedArgTableBytes,
         cudaMemcpyHostToDevice,
-        static_cast<cudaStream_t>(stream));
+        cudaStr);
     
     if (memcpyErr != cudaSuccess) {
       DSP_DIAG(MEMORY, "TritonGraphBackend: consolidated arg table H2D failed (%zu bytes): %s",
