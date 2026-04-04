@@ -43,6 +43,7 @@ import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
@@ -58,6 +59,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.IdentityHashMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -1718,7 +1720,11 @@ public class VisionLanguageModel implements AutoCloseable {
         // Drain ArrayCacheMemoryMgr: deferred close buffers and cached arrays accumulate
         // across pages. resetDspForModel() calls resetForNextPage() which now drains them,
         // but also drain here for non-DSP execution paths (slot-based, standard op-by-op).
-        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.closeDeferredBuffers(null);
+        // IMPORTANT: Pass model constant/variable buffers as protected so that force-closing
+        // "constant-poisoned" intermediates doesn't destroy buffers the native DSP plan still
+        // references. Without this, CUDA graph replay fails (0 replays, ~13x slowdown).
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = collectAllModelProtectedBuffers();
+        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.closeDeferredBuffers(protectedBuffers);
         org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.clearCacheState();
         org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.setEnableCache(false);
 
@@ -1914,6 +1920,33 @@ public class VisionLanguageModel implements AutoCloseable {
         if (dsp != null) {
             dsp.resetForNextPageDecode();
             log.debug("DSP resetForNextPageDecode completed for {}", label);
+        }
+    }
+
+    /**
+     * Collect DataBuffers from ALL sub-models' constants and variables that must NOT be
+     * force-closed during ArrayCacheMemoryMgr cleanup. This prevents "constant-poisoned"
+     * intermediates that share DataBuffers with model weights from being destroyed,
+     * which would leave the native DSP plan with stale pointers and break CUDA graph replay.
+     */
+    private IdentityHashMap<DataBuffer, Boolean> collectAllModelProtectedBuffers() {
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+        collectModelBuffers(decoder, protectedBuffers);
+        collectModelBuffers(visionEncoder, protectedBuffers);
+        collectModelBuffers(embedTokens, protectedBuffers);
+        return protectedBuffers;
+    }
+
+    private static void collectModelBuffers(SameDiff model, IdentityHashMap<DataBuffer, Boolean> out) {
+        if (model == null) return;
+        for (SDVariable variable : model.variables()) {
+            if (variable == null) continue;
+            VariableType type = variable.getVariableType();
+            if (type != VariableType.CONSTANT && type != VariableType.VARIABLE) continue;
+            INDArray arr = variable.getArr();
+            if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                out.put(arr.data(), Boolean.TRUE);
+            }
         }
     }
 

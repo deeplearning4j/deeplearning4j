@@ -469,6 +469,27 @@ public class DynamicShapePlanExecutor implements Closeable {
         return closed;
     }
 
+    /**
+     * Collect DataBuffers from the model's constants and variables that must NOT be
+     * force-closed during ArrayCacheMemoryMgr cleanup. Without this, "constant-poisoned"
+     * intermediates that happen to share DataBuffers with model weights get force-closed,
+     * leaving the native DSP plan with stale pointers and preventing CUDA graph replay.
+     */
+    private IdentityHashMap<DataBuffer, Boolean> collectProtectedModelBuffers() {
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+        if (sd == null) return protectedBuffers;
+        for (SDVariable variable : sd.variables()) {
+            if (variable == null) continue;
+            VariableType type = variable.getVariableType();
+            if (type != VariableType.CONSTANT && type != VariableType.VARIABLE) continue;
+            INDArray arr = variable.getArr();
+            if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                protectedBuffers.put(arr.data(), Boolean.TRUE);
+            }
+        }
+        return protectedBuffers;
+    }
+
     private static final int DIRECT_SLOT_MAPPING_OFFSET = 2;
 
     private static int encodeDirectOutputSlot(int slotIdx) {
@@ -770,7 +791,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         // because nothing drains them between page boundaries. The cache itself holds arrays
         // that will never be reused (different shapes per page). Disable the cache flag so
         // the next executeDynamicShapePlanBased() starts from a clean state.
-        ArrayCacheMemoryMgr.closeDeferredBuffers(null);
+        // IMPORTANT: Pass model constant/variable buffers as protected so that force-closing
+        // "constant-poisoned" intermediates doesn't destroy buffers the native DSP plan still
+        // references. Without this, 60+ model constants get closed → stale buffer scan fails
+        // → CUDA graph replay can't proceed → 13x slowdown.
+        IdentityHashMap<DataBuffer, Boolean> protectedModelBuffers = collectProtectedModelBuffers();
+        ArrayCacheMemoryMgr.closeDeferredBuffers(protectedModelBuffers);
         ArrayCacheMemoryMgr.clearCacheState();
         ArrayCacheMemoryMgr.setEnableCache(false);
         if (currentPlan != null) {
