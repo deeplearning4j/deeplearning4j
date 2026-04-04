@@ -6598,26 +6598,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.closeable = closeable;
 
         if (!closeable) {
-            // Only mark the data buffer as constant if this is NOT a view.
-            // Views share the data buffer with their parent; marking the shared
-            // buffer constant would poison the parent's closeable() check too.
-            if (!isView()) {
-                DataBuffer dataBuffer = data();
-                if (dataBuffer != null && !dataBuffer.wasClosed()) {
-                    // Only change constant state if the buffer wasn't already constant.
-                    // Tracking this prevents setCloseable(true) from destroying the
-                    // constant protection on buffers that were constant before we touched them
-                    // (e.g., empty/zero-length buffers, shared constant buffers).
-                    if (!dataBuffer.isConstant()) {
-                        dataBuffer.setConstant(true);
-                        constantSetByCloseable = true;
-                    }
+            // Mark the data buffer as constant to protect it from deallocation
+            // during SameDiff execution (batchOutputHelper brackets execution with
+            // setCloseable(false) / setCloseable(true)).  This applies to views too:
+            // views share the DataBuffer with their parent, but constantSetByCloseable
+            // tracks that WE set the flag, so setCloseable(true) safely undoes it.
+            DataBuffer dataBuffer = data();
+            if (dataBuffer != null && !dataBuffer.wasClosed()) {
+                // Only change constant state if the buffer wasn't already constant.
+                // Tracking this prevents setCloseable(true) from destroying the
+                // constant protection on buffers that were constant before we touched them
+                // (e.g., empty/zero-length buffers, shared constant buffers).
+                if (!dataBuffer.isConstant()) {
+                    dataBuffer.setConstant(true);
+                    constantSetByCloseable = true;
                 }
+            }
 
-                DataBuffer shapeBuffer = shapeInfoDataBuffer();
-                if (shapeBuffer != null && !shapeBuffer.wasClosed()) {
-                    shapeBuffer.setConstant(true);
-                }
+            DataBuffer shapeBuffer = shapeInfoDataBuffer();
+            if (shapeBuffer != null && !shapeBuffer.wasClosed()) {
+                shapeBuffer.setConstant(true);
             }
         } else {
             // Restore closeable state: undo the constant marking set by setCloseable(false).

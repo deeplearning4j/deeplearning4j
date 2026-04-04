@@ -126,6 +126,13 @@ else()
     string(REPLACE "#cmakedefine01 HAVE_FLATBUFFERS" "#define HAVE_FLATBUFFERS 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 endif()
 
+# HAVE_TRITON_CPU must be replaced BEFORE HAVE_TRITON to avoid substring match
+if(HAVE_TRITON_CPU)
+    string(REPLACE "#cmakedefine01 HAVE_TRITON_CPU" "#define HAVE_TRITON_CPU 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_TRITON_CPU" "#define HAVE_TRITON_CPU 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
 if(HAVE_TRITON)
     string(REPLACE "#cmakedefine01 HAVE_TRITON" "#define HAVE_TRITON 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 else()
@@ -154,6 +161,12 @@ if(HAVE_CUTLASS)
     string(REPLACE "#cmakedefine01 HAVE_CUTLASS" "#define HAVE_CUTLASS 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 else()
     string(REPLACE "#cmakedefine01 HAVE_CUTLASS" "#define HAVE_CUTLASS 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(HAVE_OPENVINO)
+    string(REPLACE "#cmakedefine01 HAVE_OPENVINO" "#define HAVE_OPENVINO 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_OPENVINO" "#define HAVE_OPENVINO 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 endif()
 
 if(SD_SELECTIVE_TYPES)

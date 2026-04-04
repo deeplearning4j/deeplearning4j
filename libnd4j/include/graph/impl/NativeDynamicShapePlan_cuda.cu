@@ -499,6 +499,26 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   DSP_DIAG(COMPILE, "NativeDSP::execute: parallel precompilation done in %lld ms "
            "(ok=%d, failed=%d)",
            static_cast<long long>(precompileMs), precompileOk, precompileFail);
+
+  // Report per-device Triton module memory budget
+  {
+    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(gpuBackend);
+    if (tritonBackend != nullptr) {
+      int numDevices = 0;
+      cudaGetDeviceCount(&numDevices);
+      for (int d = 0; d < std::min(numDevices, TritonGraphBackend::kMaxTritonDevices); d++) {
+        size_t tritonMem = tritonBackend->getTritonModuleMemory(d);
+        if (tritonMem == 0) continue;
+        size_t gpuFree = 0, gpuTotal = 0;
+        int prevDev; cudaGetDevice(&prevDev);
+        cudaSetDevice(d);
+        cudaMemGetInfo(&gpuFree, &gpuTotal);
+        cudaSetDevice(prevDev);
+        DSP_DIAG(MEMORY, "TRITON_BUDGET device=%d: modules=%zuMB gpuFree=%zuMB gpuTotal=%zuMB",
+                 d, tritonMem / (1024 * 1024), gpuFree / (1024 * 1024), gpuTotal / (1024 * 1024));
+      }
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -507,6 +527,126 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
 
 bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segment) {
   return bindSegmentCudaDevice(segment, slots_, numSlots_, "segmentExec");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Platform dispatch: Cross-device input migration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+void NativeDynamicShapePlan::platformMigrateSegmentInputs(
+    const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs) {
+  // Get target device for this segment
+  int targetDevice = -1;
+  if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
+    targetDevice = slots_[seg.startSlot].targetDeviceId;
+  }
+  if (targetDevice < 0) return;  // Auto device — no migration needed
+
+  migratedInputs_.clear();
+
+  // Collect unique input slot indices that this segment reads from prior segments
+  std::unordered_set<int> neededInputSlots;
+  for (int s = seg.startSlot; s <= seg.endSlot && s < numSlots_; s++) {
+    const NativeSlot& slot = slots_[s];
+    for (int i = 0; i < slot.numInputs; i++) {
+      int srcIdx = slot.inputSourceIndices[i];
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+        // This is an internal input from a prior slot's output
+        // Only migrate if the source slot is on a different device
+        if (outputSlots_[srcIdx] != nullptr) {
+          neededInputSlots.insert(srcIdx);
+        }
+      }
+      // External inputs (srcIdx < 0) are handled by the caller
+    }
+  }
+
+  int migrated = 0;
+  for (int slotIdx : neededInputSlots) {
+    NDArray* arr = outputSlots_[slotIdx];
+    if (arr == nullptr || arr->isEmpty()) continue;
+
+    // Check if this array's GPU data is on a different device
+    auto* db = arr->dataBuffer();
+    if (db == nullptr) continue;
+
+    // The array may be on a different device. We check by trying to determine
+    // where the special (GPU) buffer lives. If targetDevice differs from where
+    // the data was produced, we need to migrate.
+    // Find which device produced this output by checking the source slot's targetDeviceId
+    int sourceDevice = -1;
+    // Walk backwards to find which slot produced this output
+    for (int s = 0; s < numSlots_; s++) {
+      const NativeSlot& srcSlot = slots_[s];
+      for (int o = 0; o < srcSlot.numOutputs; o++) {
+        if (srcSlot.outputSlotIndices[o] == slotIdx) {
+          sourceDevice = srcSlot.targetDeviceId;
+          break;
+        }
+      }
+      if (sourceDevice >= 0) break;
+    }
+
+    if (sourceDevice < 0) sourceDevice = 0;  // External or auto — assume device 0
+    if (sourceDevice == targetDevice) continue;  // Same device, no migration needed
+
+    // Migrate: sync to host on source device, create copy on target device
+    // Save current device, switch to source to sync
+    int savedDevice = -1;
+    cudaGetDevice(&savedDevice);
+
+    // Step 1: Ensure data is on host (sync from source device)
+    cudaSetDevice(sourceDevice);
+    arr->syncToHost();
+
+    // Step 2: Switch to target device and create a copy
+    cudaSetDevice(targetDevice);
+
+    // Create new array on target device with same shape and data type
+    std::vector<LongType> shapeVec(*arr->getShapeAsVector());
+    auto* copy = new NDArray(arr->ordering(), shapeVec, arr->dataType(),
+                             LaunchContext::defaultContext());
+
+    // Copy host data to the new array's host buffer, then sync to target device
+    auto srcLen = arr->lengthOf() * DataTypeUtils::sizeOf(arr->dataType());
+    if (srcLen > 0 && arr->buffer() != nullptr && copy->buffer() != nullptr) {
+      std::memcpy(copy->buffer(), arr->buffer(), srcLen);
+    }
+    copy->tickWriteHost();
+    copy->syncToDevice();
+
+    // Restore to target device (should already be there)
+    if (savedDevice != targetDevice) {
+      cudaSetDevice(targetDevice);
+    }
+
+    // Record migration and replace in outputSlots_
+    MigratedInput mi;
+    mi.outputSlotIdx = slotIdx;
+    mi.original = arr;
+    mi.migrated = copy;
+    migratedInputs_.push_back(mi);
+
+    outputSlots_[slotIdx] = copy;
+    migrated++;
+  }
+
+  if (migrated > 0) {
+    DSP_DIAG(EXECUTE, "NativeDSP::execute: migrated %d input arrays from device(s) to device %d "
+             "for seg[%d-%d] (host-staged D→H→D)",
+             migrated, targetDevice, seg.startSlot, seg.endSlot);
+  }
+}
+
+void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
+  // Restore original arrays in outputSlots_ and delete migrated copies
+  for (auto& mi : migratedInputs_) {
+    if (mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
+      outputSlots_[mi.outputSlotIdx] = mi.original;
+    }
+    delete mi.migrated;
+  }
+  migratedInputs_.clear();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -698,6 +838,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
     seg.exec.replayHandle.reset();
   }
   seg.exec.gapOpsCapturedInGraph = false;
+  seg.resolvedCpuBackend = nullptr;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -705,11 +846,13 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformFreePlanResources() {
-  // Invalidate Triton singleton cache entries for this plan's segments.
-  // Without this, compiled CUmodule handles accumulate across plan lifetimes
-  // in the singleton's cache_, leaking GPU driver memory that trimPool cannot free.
+  // Optionally invalidate Triton singleton cache entries for this plan's segments.
+  // Default OFF: compiled kernels are reused across plan lifetimes (the disk
+  // cache key no longer includes slot numbers, so modules stay valid).
+  // Set ND4J_TRITON_INVALIDATE_ON_PLAN_FREE=1 to enable aggressive cleanup
+  // if GPU driver memory from accumulated CUmodule handles becomes a concern.
 #if HAVE_TRITON
-  {
+  if (Environment::getInstance().tritonInvalidateOnPlanFree()) {
     std::vector<std::pair<int,int>> segRanges;
     segRanges.reserve(segments_.size());
     for (auto& seg : segments_) {
@@ -741,8 +884,20 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
       seg.exec.replayHandle.reset();
     }
     seg.exec.gapOpsCapturedInGraph = false;
+    seg.resolvedCpuBackend = nullptr;
     delete seg.exec.jitKernel;
     seg.exec.jitKernel = nullptr;
+  }
+
+  // Free shared capture workspace (allocated once, shared across all segments)
+  if (sharedCaptureWorkspace_ != nullptr) {
+    memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(sharedCaptureWorkspace_);
+    cudaFree(sharedCaptureWorkspace_);
+    DSP_DIAG(MEMORY, "platformFreePlanResources: freed SHARED capture workspace %zuMB on device %d",
+             sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
+    sharedCaptureWorkspace_ = nullptr;
+    sharedCaptureWorkspaceBytes_ = 0;
+    sharedCaptureWorkspaceDevice_ = -1;
   }
 
   // Release all pool-managed capture buffers at once

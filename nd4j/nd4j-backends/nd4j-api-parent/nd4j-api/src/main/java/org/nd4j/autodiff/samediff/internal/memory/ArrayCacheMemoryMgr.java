@@ -114,7 +114,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
     }
 
-    static IdentityHashMap<DataBuffer, Boolean> getDeferredCloseBuffers() {
+    public static IdentityHashMap<DataBuffer, Boolean> getDeferredCloseBuffers() {
         IdentityHashMap<DataBuffer, Boolean> map = deferredCloseBuffers.get();
         if (map == null) {
             map = new IdentityHashMap<>();
@@ -393,9 +393,24 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 // arrays (views). If a cached array shares a DataBuffer with a force-closed
                 // view (parent-view relationship), the shared buffer is destroyed but the
                 // cached INDArray doesn't know. We must check data().wasClosed() to catch this.
+                // Also check the native OpaqueDataBuffer pointer: the GC deallocator
+                // (OpaqueDataBufferDeallocator) can free the native memory and call
+                // buffer.setNull() while the Java DataBuffer is still alive and released=false.
+                // This leaves wasClosed()=false but the native pointer at address 0, causing
+                // a "dataBuffer is null" crash in native dbSetDeviceId/dbClose calls.
                 DataBuffer arrBuf = arr.data();
+                boolean nativePointerInvalid = false;
+                if (arrBuf != null && !arrBuf.wasClosed()) {
+                    try {
+                        var opaque = arrBuf.opaqueBuffer();
+                        nativePointerInvalid = (opaque == null || opaque.isNull());
+                    } catch (IllegalStateException e) {
+                        // opaqueBuffer() throws if released - treat as invalid
+                        nativePointerInvalid = true;
+                    }
+                }
                 if (!arr.closeable() || arr.wasClosed() || arr.isView()
-                        || arrBuf == null || arrBuf.wasClosed()) {
+                        || arrBuf == null || arrBuf.wasClosed() || nativePointerInvalid) {
                     lru.remove(arr.getId());
                     long skippedBytes = arrBuf != null && !arrBuf.wasClosed() ? dataType.width() * arrBuf.length() : 0;
                     currentCacheSize.addAndGet(-skippedBytes);
@@ -440,8 +455,20 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
                 ((BaseNDArray) arr).assignNewId();
                 // Reset native sync counters for cached buffer reuse.
+                // Guard against null native pointer: the GC deallocator can free the
+                // OpaqueDataBuffer (setting its native pointer to 0/null) while the Java
+                // DataBuffer object is still alive. Passing a null pointer to dbSetDeviceId
+                // crashes with "dataBuffer is null" from the C++ side.
                 if (arr.data() != null) {
-                    Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
+                    try {
+                        var opaque = arr.data().opaqueBuffer();
+                        if (opaque != null && !opaque.isNull()) {
+                            Nd4j.getNativeOps().dbSetDeviceId(opaque, -1);
+                        }
+                    } catch (IllegalStateException e) {
+                        // opaqueBuffer() throws if DataBuffer was released - skip
+                        log.debug("Cached array's DataBuffer was released before dbSetDeviceId - skipping");
+                    }
                 }
                 // Always zero cached arrays to prevent stale data from previous forward
                 // passes from leaking into computation. The cache is kept enabled during

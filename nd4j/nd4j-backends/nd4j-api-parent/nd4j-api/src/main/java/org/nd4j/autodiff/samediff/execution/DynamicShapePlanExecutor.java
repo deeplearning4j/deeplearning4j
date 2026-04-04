@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
@@ -764,6 +765,14 @@ public class DynamicShapePlanExecutor implements Closeable {
         releaseGpuIntermediates();
 
         closeZeroCopyOutputCache();
+
+        // Drain ArrayCacheMemoryMgr state: deferred close buffers accumulate across pages
+        // because nothing drains them between page boundaries. The cache itself holds arrays
+        // that will never be reused (different shapes per page). Disable the cache flag so
+        // the next executeDynamicShapePlanBased() starts from a clean state.
+        ArrayCacheMemoryMgr.closeDeferredBuffers(null);
+        ArrayCacheMemoryMgr.clearCacheState();
+        ArrayCacheMemoryMgr.setEnableCache(false);
         if (currentPlan != null) {
             currentPlan.clearAllShapeCaches();
         }
@@ -771,7 +780,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         frozenCallCount = 0;
         nativeExecutorFailed = false;
         executionCount = 0;
-        nativeExecutionDevice = -1;
+        // Do NOT reset nativeExecutionDevice here. CUDA graphs are device-specific —
+        // once captured on device N, all subsequent executions must stay on device N.
+        // Resetting to -1 causes selectBestGpu() to pick a different device (e.g., device 1)
+        // on the next page, but captured graphs only exist on the original device, causing
+        // status 50 (REPLAY ERROR: hasReplayHandle=0) on the new device.
 
         // Clear saved KV cache retention state so that the next page's decode loop
         // re-configures it fresh with the correct initial position. Without this,
@@ -1769,22 +1782,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
 
-                // Default to the device with the most TOTAL memory (the primary GPU).
-                // Do NOT use previousDevice or data-locality heuristics because:
-                // - previousDevice may be a small secondary GPU set during warmup
-                // - dbDeviceId() is unreliable (often reports 0MB for device 0 even
-                //   when GB of model weights are there)
-                // The primary GPU (most VRAM) is always the safest choice: it can
-                // hold model constants + workspace without OOM.
-                int bestDevice = 0;
-                long bestTotal = nOps.getDeviceTotalMemory(0);
-                for (int d = 1; d < numDevices; d++) {
-                    long totalMem = nOps.getDeviceTotalMemory(d);
-                    if (totalMem > bestTotal) {
-                        bestDevice = d;
-                        bestTotal = totalMem;
-                    }
-                }
+                // Select the device with the most FREE memory (pool-aware).
+                // Previously used TOTAL memory, which always picked the largest GPU
+                // even when it was nearly full from other processes or model weights.
+                // Using FREE memory (via DeviceMemoryManager.selectBestGpu()) handles:
+                // - Multi-process GPU sharing (staging server, main app)
+                // - Post-vision-encoder memory release (secondary GPU now has more room)
+                // - Asymmetric GPU memory usage from model weight placement
+                // Pool-aware: accounts for cudaMallocAsync reusable pool memory, not
+                // just cudaMemGetInfo free, so devices that ran large graphs (vision
+                // encoder) correctly report reusable memory as available.
+                int bestDevice = DeviceMemoryManager.getInstance().selectBestGpu();
                 long bestFree = nOps.getDeviceFreeMemory(bestDevice);
                 nativeExecutionDevice = bestDevice;
                 {
@@ -2138,6 +2146,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                 throw new RuntimeException("Native plan execution failed with status " + status +
                         ": " + (errMsg != null ? errMsg : "unknown error"));
             }
+
+            executionCount++;
 
             DspDiagnostics.recordTimed(DspDiagnostics.EXECUTE, -1, -1, "executeNative",
                     execMs * 1000, "Java: native execution OK " + execMs + "ms" +

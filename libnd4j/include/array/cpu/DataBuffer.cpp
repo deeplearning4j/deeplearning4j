@@ -48,6 +48,10 @@ SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
 SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
 
+void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
+  // No-op on CPU: there is no device (special) buffer to replace.
+}
+
 void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer

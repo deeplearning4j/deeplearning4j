@@ -711,22 +711,34 @@ public class DeviceMemoryManager {
                 return 0;
             }
 
-            // Pick the GPU with the most FREE memory. This handles the common case
-            // where a large model has already been loaded on one device (e.g., 4090
-            // with 24GB total but only 36MB free after SmolDocling), and a second
-            // model needs to go to the device that actually has room.
-            long bestFree = -1;
+            // Pick the GPU with the most AVAILABLE memory (pool-aware).
+            // cudaMemGetInfo reports free memory MINUS pool reserved, but
+            // cudaMallocAsync can reuse reserved pool memory. Without pool-aware
+            // accounting, devices that previously ran a large graph (e.g., vision
+            // encoder) appear nearly full even though their pool has GB of reusable
+            // memory. available = cudaFree + max(0, poolReserved - poolUsed)
+            long bestAvailable = -1;
             int bestDevice = 0;
             for (int i = 0; i < numDevices; i++) {
-                long freeMem = nativeOps.getDeviceFreeMemory(i);
-                if (freeMem > bestFree) {
-                    bestFree = freeMem;
+                long cudaFree = nativeOps.getDeviceFreeMemory(i);
+                long poolReusable = 0;
+                try {
+                    org.bytedeco.javacpp.LongPointer usedPtr = new org.bytedeco.javacpp.LongPointer(1);
+                    org.bytedeco.javacpp.LongPointer reservedPtr = new org.bytedeco.javacpp.LongPointer(1);
+                    nativeOps.getMemoryPoolStats(i, usedPtr, reservedPtr);
+                    long poolUsed = usedPtr.get();
+                    long poolReserved = reservedPtr.get();
+                    poolReusable = Math.max(0, poolReserved - poolUsed);
+                } catch (Exception ignored) {}
+                long available = cudaFree + poolReusable;
+                if (available > bestAvailable) {
+                    bestAvailable = available;
                     bestDevice = i;
                 }
             }
 
-            log.debug("selectBestGpu: device [{}] selected with {} MB free out of {} devices",
-                    bestDevice, bestFree / (1024 * 1024), numDevices);
+            log.debug("selectBestGpu: device [{}] selected with {} MB available (pool-aware) out of {} devices",
+                    bestDevice, bestAvailable / (1024 * 1024), numDevices);
             return bestDevice;
         } catch (Exception e) {
             log.warn("Failed to query GPU free memory, defaulting to device 0: {}", e.getMessage());
@@ -750,6 +762,8 @@ public class DeviceMemoryManager {
         Integer simId = simulationDeviceId(device);
         if (memorySimulationEnabled && simId != null && simulatedFreeMemory.containsKey(simId)) {
             recordSimulatedAllocation(simId, bytes);
+            // Still check memory pressure with the simulated utilization
+            checkMemoryPressure(device);
             return;
         }
 
@@ -804,11 +818,20 @@ public class DeviceMemoryManager {
 
     /**
      * Get memory utilization ratio for a device.
+     * When simulation mode is enabled, computes utilization from simulated free memory
+     * rather than the tracked allocation counter (which is routed to the simulation map).
      *
      * @param device the device
      * @return utilization (0.0 to 1.0)
      */
     public double getMemoryUtilization(DeviceDescriptor device) {
+        Integer simId = simulationDeviceId(device);
+        if (memorySimulationEnabled && simId != null && simulatedFreeMemory.containsKey(simId)) {
+            long totalMem = device.getTotalMemory();
+            if (totalMem <= 0) return 0;
+            long effectiveFree = getEffectiveFreeMemory(simId, device.getAvailableMemory());
+            return 1.0 - ((double) effectiveFree / totalMem);
+        }
         long cap = getMemoryCap(device);
         long total = cap > 0 ? cap : device.getTotalMemory();
         if (total <= 0) return 0;
@@ -925,6 +948,84 @@ public class DeviceMemoryManager {
                     stats.cap / (1024 * 1024),
                     stats.utilization * 100);
         }
+    }
+
+    // =========================================================================
+    // Stub Topology for Testing
+    // =========================================================================
+
+    // Reference to stub provider if configured
+    private volatile StubDeviceContextProvider stubContextProvider;
+
+    /**
+     * Configure a stub multi-device topology for testing.
+     * Clears all existing devices, registers stubs, injects StubDeviceContextProvider,
+     * and auto-configures simulated memory from stub values.
+     *
+     * @param stubs list of stub device descriptors to configure
+     */
+    public void configureStubTopology(List<StubDeviceDescriptor> stubs) {
+        if (stubs == null || stubs.isEmpty()) {
+            throw new IllegalArgumentException("Must provide at least one stub device");
+        }
+
+        clearDevices();
+
+        for (StubDeviceDescriptor stub : stubs) {
+            registerDevice(stub);
+            // Configure simulated memory from stub
+            Integer simId = simulationDeviceId(stub);
+            if (simId != null) {
+                simulatedFreeMemory.put(simId, stub.getAvailableMemory());
+            }
+        }
+
+        // Set first GPU as default, first CPU as fallback
+        StubDeviceDescriptor firstGpu = null;
+        StubDeviceDescriptor firstCpu = null;
+        for (StubDeviceDescriptor stub : stubs) {
+            if (stub.getDeviceType().isGpu() && firstGpu == null) {
+                firstGpu = stub;
+            }
+            if (stub.getDeviceType() == DeviceType.CPU && firstCpu == null) {
+                firstCpu = stub;
+            }
+        }
+        if (firstGpu != null) {
+            setDefaultDevice(firstGpu);
+        }
+        if (firstCpu != null) {
+            setFallbackDevice(firstCpu);
+        }
+
+        // Create and inject stub context provider
+        stubContextProvider = new StubDeviceContextProvider(stubs);
+        setContextProvider(stubContextProvider);
+
+        // Enable simulation mode
+        memorySimulationEnabled = true;
+
+        log.info("Configured stub topology with {} devices", stubs.size());
+    }
+
+    /**
+     * Get the StubDeviceContextProvider if a stub topology is configured.
+     *
+     * @return the stub context provider, or null if not configured
+     */
+    public StubDeviceContextProvider getStubContextProvider() {
+        return stubContextProvider;
+    }
+
+    /**
+     * Clear the stub topology and restore default CpuDeviceContextProvider.
+     */
+    public void clearStubTopology() {
+        stubContextProvider = null;
+        setContextProvider(new CpuDeviceContextProvider());
+        clearAllMemorySimulation();
+        clearDevices();
+        log.info("Cleared stub topology, restored CPU context provider");
     }
 
     // =========================================================================

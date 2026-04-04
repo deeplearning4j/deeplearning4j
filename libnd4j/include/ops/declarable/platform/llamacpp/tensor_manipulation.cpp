@@ -352,6 +352,9 @@ PLATFORM_IMPL(transpose, ENGINE_CPU) {
 
     if (input->isEmpty()) return sd::Status::OK;
 
+    // DSP view path: output shares input's buffer with transposed strides.
+    if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
+
     transposeLlamaCpp(input, output);
     return sd::Status::OK;
 }
@@ -393,6 +396,9 @@ PLATFORM_IMPL(permute, ENGINE_CPU) {
     auto output = OUTPUT_VARIABLE(0);
 
     if (input->isEmpty()) return sd::Status::OK;
+
+    // DSP view path: output shares input's buffer with permuted strides.
+    if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
 
     // Get permutation axes
     int axis0 = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;

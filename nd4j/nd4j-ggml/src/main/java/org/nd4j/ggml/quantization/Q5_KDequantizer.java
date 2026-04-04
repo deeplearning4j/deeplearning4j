@@ -21,9 +21,6 @@
 package org.nd4j.ggml.quantization;
 
 import org.nd4j.ggml.format.GGMLDataType;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -164,18 +161,6 @@ public class Q5_KDequantizer implements Dequantizer {
         } else {
             return (((q[j + 4] & 0xFF) >> 4) & 0xF) | ((((q[j] & 0xFF) >> 6) & 3) << 4);
         }
-    }
-
-    @Override
-    public INDArray dequantizeToArray(byte[] quantizedData, long[] shape, DataType targetType) {
-        long numElements = calculateNumElements(shape);
-        float[] floatData = dequantize(quantizedData, numElements);
-
-        INDArray array = Nd4j.create(floatData, shape);
-        if (targetType != DataType.FLOAT) {
-            array = array.castTo(targetType);
-        }
-        return array;
     }
 
     @Override

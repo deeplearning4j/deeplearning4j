@@ -509,8 +509,13 @@ CblasSgemm BlasHelper::sgemm() {
 }
 
 CblasSgemmBatch BlasHelper::sgemmBatched() {
-#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
+#if __EXTERNAL_BLAS__
   return (CblasSgemmBatch)&cblas_sgemm_batch;
+#elif HAVE_OPENBLAS
+  // OpenBLAS does not reliably provide cblas_sgemm_batch.
+  // hasBatchedGEMM<float>() already returns false for OpenBLAS,
+  // so callers should never reach here. Return nullptr as a safeguard.
+  return nullptr;
 #else
   return this->cblasSgemmBatch;
 #endif
@@ -539,8 +544,13 @@ CblasDgemm BlasHelper::dgemm() {
 }
 
 CblasDgemmBatch BlasHelper::dgemmBatched() {
-#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
+#if __EXTERNAL_BLAS__
   return (CblasDgemmBatch)&cblas_dgemm_batch;
+#elif HAVE_OPENBLAS
+  // OpenBLAS does not reliably provide cblas_dgemm_batch.
+  // hasBatchedGEMM<double>() already returns false for OpenBLAS,
+  // so callers should never reach here. Return nullptr as a safeguard.
+  return nullptr;
 #else
   return this->cblasDgemmBatch;
 #endif

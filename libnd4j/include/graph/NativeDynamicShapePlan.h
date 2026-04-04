@@ -38,6 +38,7 @@
 #include <graph/SlotBufferOwnership.h>
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
+#include <system/Environment.h>
 
 // Forward declaration — full definition in DspStreamGuard.h
 // (included only in .cpp/.cu files that use the guard)
@@ -91,7 +92,9 @@ enum class GraphExecutionMode : int {
   GEM_VULKAN = 11,      // Vulkan compute command buffer replay
   GEM_METAL = 12,       // Metal indirect command buffer replay (Apple GPU)
   GEM_TPU = 13,         // TPU HLO compilation + PJRT execution caching
-  GEM_HEXAGON = 14      // Hexagon-MLIR NPU compilation + command list replay
+  GEM_HEXAGON = 14,     // Hexagon-MLIR NPU compilation + command list replay
+  GEM_OPENVINO = 15,    // Force OpenVINO CPU graph backend (Intel x86, broad op coverage)
+  GEM_TVM = 16          // Deprecated: TVM removed, use triton-cpu instead
 };
 
 /**
@@ -343,6 +346,10 @@ struct GraphSegment {
   // For capturable: resolved from graphExecutionMode_ at build time.
   SelectedBackend selectedBackend = SelectedBackend::SLOT_BY_SLOT;
 
+  // Per-segment resolved CPU backend — set on first successful compile via cascade.
+  // Subsequent executions reuse this without re-cascading.
+  GraphBackend* resolvedCpuBackend = nullptr;
+
   // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
   // to update the slot cache when pre-allocating output arrays.
   NDArray** slotArrayCache = nullptr;
@@ -359,9 +366,9 @@ struct GraphSegment {
   };
   SegmentContract contract;
 
-  // Constants
-  static constexpr int MAX_OOM_RETRIES = 3;
-  static constexpr int RETRY_INTERVAL = 4;  // Retry every N executions
+  // Runtime-configurable OOM retry constants (read from Environment)
+  static int maxOomRetries() { return sd::Environment::getInstance().dspCaptureOomMaxRetries(); }
+  static int retryInterval() { return sd::Environment::getInstance().dspCaptureOomRetryInterval(); }
 
   // Batch-zero entry definition (used by exec.segBatchZeroEntries)
   // outputSlotIndex tracks which slot the pointer came from, enabling
@@ -380,6 +387,10 @@ struct GraphSegment {
     // OOM retry mechanism
     int captureOomRetries = 0;
     int captureRetryAfterExec = 0;
+
+    // LRU tracking: last executeCount_ at which this segment was replayed.
+    // Used by proactive eviction to target least-recently-used graphs.
+    int lastReplayExecCount = 0;
 
     // ── Platform-agnostic graph replay handle ────────────────────────
     // CUDA: CudaGraphReplayHandle (wraps cudaGraph_t/cudaGraphExec_t)
@@ -426,6 +437,7 @@ struct GraphSegment {
       compilationFailed = false;
       captureOomRetries = 0;
       captureRetryAfterExec = 0;
+      lastReplayExecCount = 0;
       replayHandle.reset();
       cachedShapeKey = 0;
       capturedInputAddrKey = 0;
@@ -447,6 +459,9 @@ struct GraphSegment {
   };
 
   ExecState exec;
+
+  // Reset resolvedCpuBackend when exec state is reset (e.g., shape change rebuild)
+  void resetCpuBackend() { resolvedCpuBackend = nullptr; }
 
   GraphSegment()
       : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0)
@@ -749,6 +764,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     gpuGraphBackend_ = nullptr;
     cpuGraphBackendChecked_ = false;
     cpuGraphBackend_ = nullptr;
+    cpuGraphBackendChainBuilt_ = false;
+    cpuGraphBackendChain_.clear();
     // Enable GPU graph capture as fallback for all modes except SLOT_BY_SLOT.
     // JIT backends (Triton/NVRTC/PTX) need graph capture fallback when they
     // can't handle a segment (unsupported ops, etc).
@@ -1161,9 +1178,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   inline bool isSlotArrayShared(const NDArray* arr, int skipIdx) const {
     if (arr == nullptr || outputSlots_ == nullptr) return false;
+    auto* db = const_cast<NDArray*>(arr)->dataBuffer();
     for (int i = 0; i < totalOutputSlots_; i++) {
       if (i == skipIdx) continue;
+      if (outputSlots_[i] == nullptr) continue;
+      // Check pointer identity (identity ops create aliases)
       if (outputSlots_[i] == arr) return true;
+      // Check DataBuffer sharing (views share underlying GPU buffer).
+      // Without this, deleting the original frees the DataBuffer while
+      // views still reference it → dangling DataBuffer → heap corruption.
+      if (db != nullptr && outputSlots_[i]->dataBuffer() == db) return true;
     }
     return false;
   }
@@ -1175,6 +1199,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
   GraphBackend* getCpuGraphBackend();
+  const std::vector<GraphBackend*>& getCpuGraphBackendChain();
+  Status executeSegmentWithSpecificBackend(GraphSegment& seg, GraphBackend* backend,
+                                           NDArray** externalArrays, int numExt, void* stream);
 
   // ── CUDA graph capture/replay (NativeDynamicShapePlan_cudagraph.cu) ──
 #ifdef SD_CUDA
@@ -1214,6 +1241,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool platformShouldKeepSegmentCache(const GraphSegment& seg) const;
   void platformPrecompileSegments(NDArray** externalInputs, int numExternalInputs);
   bool platformBindSegmentDevice(const GraphSegment& seg);
+  void platformMigrateSegmentInputs(const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs);
+  void platformCleanupMigratedInputs();
   bool platformShouldUseGraph(const GraphSegment& seg);
   Status platformExecuteSegmentWithBackends(GraphSegment& seg, NDArray** externalInputs,
                                              int numExternalInputs, void* stream, bool& usedGraph);
@@ -1232,10 +1261,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                                     int numExt, void* stream);
   GraphBackend* getGpuGraphBackend();
   void clearGpuBackendFailedCache();
+#ifdef SD_CUDA
+  void proactivePreCaptureMemoryCleanup(GraphSegment& seg, int segIdx, void* stream);
+  int evictLruGraphs(int segIdx, size_t neededBytes, void* stream);
+#endif
 
   // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)
   GraphBackend* cpuGraphBackend_;
   bool cpuGraphBackendChecked_;
+
+  // Prioritized chain of all available CPU graph backends for per-segment cascade
+  std::vector<GraphBackend*> cpuGraphBackendChain_;
+  bool cpuGraphBackendChainBuilt_ = false;
 
   // GPU graph backend (Triton GPU compiler)
   GraphBackend* gpuGraphBackend_;
@@ -1253,6 +1290,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setCublasWorkspaceForWarmup();
   void restoreCublasWorkspaceAfterCapture(void* stream);
 #endif
+
+  // Cross-device input migration: tracks arrays copied to a different device
+  // for segment execution. Cleaned up after each segment completes.
+  struct MigratedInput {
+    int outputSlotIdx;       // Which outputSlots_[] entry was replaced
+    NDArray* original;       // Original array (on source device) - restore after segment
+    NDArray* migrated;       // Migrated copy (on target device) - delete after segment
+  };
+  std::vector<MigratedInput> migratedInputs_;
 
   // Max-allocation mode for KV cache outputs
   // Maps output slot index -> max number of elements to pre-allocate
@@ -1293,6 +1339,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Capture buffer pool sharing: routes capture workspace allocation
   // through CudaMemoryPool for cross-segment reuse.
   void* captureBufferRegistry_ = nullptr;  // opaque ptr to CaptureBufferRegistry
+
+  // Shared capture workspace: all segments share one 128MB workspace
+  // instead of each allocating their own. Since segments execute sequentially
+  // and the workspace is scratch space (offset resets each capture), sharing
+  // is safe. The pointer is baked into CUDA graph nodes during capture,
+  // so all segments must capture with the same address (guaranteed by
+  // allocating once and reusing).
+  void* sharedCaptureWorkspace_ = nullptr;
+  size_t sharedCaptureWorkspaceBytes_ = 0;
+  int sharedCaptureWorkspaceDevice_ = -1;
 
   // ── Batch D2D copy optimization ─────────────────────────────────────────
   // Replaces ~357 individual cudaMemcpyAsync D2D calls for capture buffer

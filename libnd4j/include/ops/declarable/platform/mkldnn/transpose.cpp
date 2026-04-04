@@ -83,14 +83,12 @@ static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>&
   dnnl::memory dst_mem(dst_md, engine, z->buffer());
 
   // Create reorder primitive with permutation
-  // For transpose, we need to create a memory descriptor with permuted strides
+  // For transpose, we need to create a memory descriptor with permuted strides.
+  // Use actual strides from the input (not hardcoded contiguous) to handle
+  // non-contiguous views (e.g., output of a previous permute).
   dnnl::memory::dims srcStrides(xRank);
-  dnnl::memory::dims dstStrides(xRank);
-
-  // Calculate source strides
-  srcStrides[xRank - 1] = 1;
-  for (int i = xRank - 2; i >= 0; i--) {
-    srcStrides[i] = srcStrides[i + 1] * srcDims[i + 1];
+  for (int i = 0; i < xRank; i++) {
+    srcStrides[i] = x->strideAt(i);
   }
 
   // Calculate permuted strides for the source view
@@ -115,6 +113,13 @@ static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>&
 PLATFORM_IMPL(transpose, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
+
+  // DSP view path: output is a view of input with transposed strides already set.
+  // The shape info is correct — no data movement needed. Calling transposeMKLDNN
+  // would corrupt the shared buffer by reordering in-place.
+  if (input->dataBuffer() == output->dataBuffer()) {
+    return sd::Status::OK;
+  }
 
   auto xRank = input->rankOf();
   REQUIRE_TRUE(xRank <= 6, 0, "TRANSPOSE_MKLDNN OP: rank must be <= 6, but got rank = %i", xRank);
@@ -167,6 +172,13 @@ PLATFORM_CHECK(transpose, ENGINE_CPU) {
 PLATFORM_IMPL(permute, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
+
+  // DSP view path: output is a view of input with permuted strides already set.
+  // The shape info is correct — no data movement needed. Calling transposeMKLDNN
+  // would corrupt the shared buffer by reordering in-place.
+  if (input->dataBuffer() == output->dataBuffer()) {
+    return sd::Status::OK;
+  }
 
   auto xRank = input->rankOf();
   REQUIRE_TRUE(xRank <= 6, 0, "PERMUTE_MKLDNN OP: rank must be <= 6, but got rank = %i", xRank);

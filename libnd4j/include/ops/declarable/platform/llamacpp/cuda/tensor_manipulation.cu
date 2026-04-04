@@ -348,6 +348,9 @@ PLATFORM_IMPL(transpose, ENGINE_CUDA) {
 
     if (input->isEmpty()) return sd::Status::OK;
 
+    // DSP view path: output shares input's buffer with transposed strides.
+    if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
+
     transposeCuda(input, output);
     return sd::Status::OK;
 }
@@ -390,6 +393,9 @@ PLATFORM_IMPL(permute, ENGINE_CUDA) {
     auto output = OUTPUT_VARIABLE(0);
 
     if (input->isEmpty()) return sd::Status::OK;
+
+    // DSP view path: output shares input's buffer with permuted strides.
+    if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
 
     int axis0 = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
     int axis1 = block.getIArguments()->size() > 1 ? INT_ARG(1) : 1;

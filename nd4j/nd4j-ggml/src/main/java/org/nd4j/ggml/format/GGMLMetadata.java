@@ -198,8 +198,8 @@ public class GGMLMetadata {
     private static int inferRopeType(String architecture) {
         if (architecture == null) return 0;
         String arch = architecture.toLowerCase();
-        // LLaMA and Gemma use split-half (standard) RoPE
-        if (arch.contains("llama") || arch.contains("gemma")) {
+        // LLaMA, Gemma, and Granite use split-half (standard) RoPE
+        if (arch.contains("llama") || arch.contains("gemma") || arch.contains("granite")) {
             return 0;
         }
         // Qwen, Mistral, Phi, and most other modern models use interleaved (NeoX) RoPE

@@ -115,6 +115,20 @@ public class ModelIOConfig {
      */
     private final DecoderUtils.KVCacheNames kvCacheNames;
 
+    // ========== Encoder-Decoder ==========
+
+    /** Name of the encoder hidden states input (for encoder-decoder models like Whisper). */
+    @Builder.Default
+    private final String encoderHiddenStatesName = "encoder_hidden_states";
+
+    /** Name of the encoder attention mask input (for encoder-decoder models). May be null. */
+    @Builder.Default
+    private final String encoderAttentionMaskName = "encoder_attention_mask";
+
+    /** Whether this model is an encoder-decoder architecture (e.g., Whisper, T5). */
+    @Builder.Default
+    private final boolean encoderDecoder = false;
+
     // ========== Special Nodes ==========
 
     /**
@@ -174,7 +188,29 @@ public class ModelIOConfig {
      * (i.e., not embeddings, input_ids, or KV cache entries).
      */
     public boolean isPerStepDisposableInput(String name) {
-        return !isInputEmbeddings(name) && !isInputIds(name) && !isKvCacheInput(name);
+        return !isInputEmbeddings(name) && !isInputIds(name) && !isKvCacheInput(name)
+                && !isEncoderHiddenStates(name) && !isEncoderAttentionMask(name);
+    }
+
+    /**
+     * Check whether a given input name is the encoder hidden states variable.
+     */
+    public boolean isEncoderHiddenStates(String name) {
+        return encoderHiddenStatesName != null && encoderHiddenStatesName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the encoder attention mask variable.
+     */
+    public boolean isEncoderAttentionMask(String name) {
+        return encoderAttentionMaskName != null && encoderAttentionMaskName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is an encoder-related input.
+     */
+    public boolean isEncoderInput(String name) {
+        return isEncoderHiddenStates(name) || isEncoderAttentionMask(name);
     }
 
     /**
@@ -238,9 +274,16 @@ public class ModelIOConfig {
         String posName = null;
         String kvPrefix = null;
         String attnReformat = null;
+        String encoderHiddenName = null;
+        String encoderMaskName = null;
 
         for (String input : inputs) {
-            if (embedName == null && input.contains("embed")) {
+            // Encoder inputs must be checked first (they also contain "attention_mask" etc.)
+            if (encoderHiddenName == null && (input.contains("encoder_hidden") || input.contains("encoder_output"))) {
+                encoderHiddenName = input;
+            } else if (encoderMaskName == null && input.contains("encoder") && input.contains("attention_mask")) {
+                encoderMaskName = input;
+            } else if (embedName == null && input.contains("embed")) {
                 embedName = input;
             } else if (idsName == null && input.contains("input_id")) {
                 idsName = input;
@@ -290,6 +333,8 @@ public class ModelIOConfig {
         String logitsName = DecoderUtils.findLogitsOutputName(model);
         DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(model);
 
+        boolean isEncoderDecoder = encoderHiddenName != null;
+
         ModelIOConfig config = ModelIOConfig.builder()
                 .inputEmbeddingsName(embedName != null ? embedName : "inputs_embeds")
                 .inputIdsName(idsName)
@@ -300,15 +345,20 @@ public class ModelIOConfig {
                 .kvPresentToInputReplace(replacement)
                 .logitsOutputName(logitsName != null ? logitsName : "logits")
                 .kvCacheNames(kvNames)
+                .encoderHiddenStatesName(encoderHiddenName != null ? encoderHiddenName : "encoder_hidden_states")
+                .encoderAttentionMaskName(encoderMaskName)
+                .encoderDecoder(isEncoderDecoder)
                 .attnMaskReformatOutput(attnReformat)
                 .build();
 
         log.info("ModelIOConfig.discover(): embeddings={}, inputIds={}, attentionMask={}, causalMask={}, " +
-                        "positionIds={}, kvPrefix={}, logits={}, kvLayers={}, attnReformat={}",
+                        "positionIds={}, kvPrefix={}, logits={}, kvLayers={}, attnReformat={}, " +
+                        "encoderDecoder={}, encoderHidden={}, encoderMask={}",
                 config.inputEmbeddingsName, config.inputIdsName, config.attentionMaskName,
                 config.causalMaskName, config.positionIdsName, config.kvCachePrefix,
                 config.logitsOutputName, kvNames != null ? kvNames.keyNames.size() : 0,
-                config.attnMaskReformatOutput);
+                config.attnMaskReformatOutput,
+                config.encoderDecoder, config.encoderHiddenStatesName, config.encoderAttentionMaskName);
 
         return config;
     }

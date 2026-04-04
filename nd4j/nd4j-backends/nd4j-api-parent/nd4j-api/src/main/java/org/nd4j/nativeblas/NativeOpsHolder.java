@@ -107,6 +107,11 @@ public class NativeOpsHolder {
                // try to load the same backend again when multi-backend mode is enabled.
                registerWithMultiBackendHolder(name);
 
+               // Load any native plugin libraries from the plugin directory.
+               // This must happen AFTER the main native library is initialized,
+               // since plugins may depend on symbols from the primary backend.
+               NativePluginLoader.loadPlugins();
+
                // Register shutdown hook to set the shutdown flag EARLY.
                // This prevents SIGSEGV crashes if any code accidentally calls
                // clearTADCache() during JVM shutdown (e.g., finalizers, GC, or other hooks).

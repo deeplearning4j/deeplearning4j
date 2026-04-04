@@ -64,6 +64,9 @@ PLATFORM_IMPL(reshape, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  // DSP view path: output shares input's buffer with reshaped shape info.
+  if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
+
   REQUIRE_TRUE(input->lengthOf() == output->lengthOf(), 0,
                "RESHAPE_MKLDNN OP: input and output must have same number of elements");
 
@@ -86,6 +89,9 @@ PLATFORM_CHECK(reshape, ENGINE_CPU) {
 PLATFORM_IMPL(squeeze, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
+
+  // DSP view path: output shares input's buffer with squeezed shape info.
+  if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
 
   REQUIRE_TRUE(input->lengthOf() == output->lengthOf(), 0,
                "SQUEEZE_MKLDNN OP: input and output must have same number of elements");

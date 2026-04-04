@@ -84,7 +84,7 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
 
   if (useCublasWorkspace) {
-    ensureCublasWorkspace(256 * 1024 * 1024);
+    ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
     cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
     tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
     tl_cublasWorkspaceSize = cublasWorkspaceSize_;
@@ -105,7 +105,7 @@ void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
   if (handlePtr == nullptr) return;
 
-  ensureCublasWorkspace(256 * 1024 * 1024);
+  ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
   cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
 
   tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;

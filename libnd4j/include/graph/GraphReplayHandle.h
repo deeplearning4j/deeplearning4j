@@ -199,9 +199,25 @@ class SD_LIB_EXPORT GraphReplayHandle {
   /** Get capture workspace size in bytes. */
   size_t getWorkspaceBytes() const { return captureWorkspaceBytes_; }
 
+  /**
+   * Use an externally-owned workspace instead of allocating per-handle.
+   * The caller retains ownership — this handle will NOT free the pointer.
+   * All segments sharing a workspace must capture with the same pointer
+   * address (guaranteed since we allocate once and reuse).
+   */
+  void useExternalWorkspace(void* ptr, size_t bytes) {
+    captureWorkspacePtr_ = ptr;
+    captureWorkspaceBytes_ = bytes;
+    workspaceIsExternal_ = true;
+  }
+
+  /** Returns true if this handle's workspace is externally owned. */
+  bool isWorkspaceExternal() const { return workspaceIsExternal_; }
+
  protected:
   void* captureWorkspacePtr_ = nullptr;
   size_t captureWorkspaceBytes_ = 0;
+  bool workspaceIsExternal_ = false;
   std::vector<ReplayCaptureBuffer> captureBuffers_;
   std::vector<void*> capturedExternalAddrs_;
   std::vector<void*> capturedHostPtrs_;

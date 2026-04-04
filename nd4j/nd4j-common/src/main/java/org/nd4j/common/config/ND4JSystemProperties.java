@@ -601,7 +601,8 @@ public class ND4JSystemProperties {
      * Applicability: DSP execution engine<br>
      * Description: Graph execution mode controlling which backend is used.<br>
      * Values: "AUTO" (default), "SLOT_BY_SLOT", "CUDA_GRAPHS", "NVRTC_JIT", "PTX_JIT", "TRITON",
-     *         "MLX", "ARM_HYBRID", "NNAPI"
+     *         "MLX", "ARM_HYBRID", "NNAPI", "HIP_GRAPHS", "LEVEL_ZERO", "VULKAN", "METAL",
+     *         "TPU", "HEXAGON", "OPENVINO", "TVM"
      */
     public static final String DSP_GRAPH_EXECUTION_MODE = "nd4j.dsp.graphExecutionMode";
 

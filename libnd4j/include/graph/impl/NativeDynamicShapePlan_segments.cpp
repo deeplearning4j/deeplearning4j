@@ -59,7 +59,9 @@
 #if HAVE_MLX
 #include <graph/cpu/MlxGraphBackend.h>
 #endif
-
+#if HAVE_OPENVINO
+#include <graph/cpu/OpenVinoGraphBackend.h>
+#endif
 namespace sd {
 namespace graph {
 
@@ -131,7 +133,29 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       LongType rangeKey = computeRangeBasedShapeKey(
           profile, crossInputs.data(), static_cast<int>(crossInputs.size()),
           seg.startSlot, seg.endSlot);
-      DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld",
+
+      // Mix op names, iArgs, and tArgs into the range-based key so different
+      // plans with the same input shapes but different ops produce unique keys
+      // in singleton backend caches (OpenVINO, OneDNN Graph). v2-cache-fix.
+      auto mixRange = [&rangeKey](LongType val) {
+        rangeKey ^= val;
+        rangeKey *= 0x100000001b3ULL;
+      };
+      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+        NativeSlot& slot = slots_[s];
+        if (!slot.opName.empty()) {
+          for (const char* p = slot.opName.c_str(); *p != '\0'; p++) {
+            mixRange(static_cast<LongType>(*p));
+          }
+        }
+        mixRange(static_cast<LongType>(slot.numIArgs));
+        for (int a = 0; a < slot.numIArgs; a++) {
+          mixRange(static_cast<LongType>(slot.iArgs[a]));
+        }
+        mixRange(static_cast<LongType>(slot.numTArgs));
+      }
+
+      DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld (with-op-mix)",
                seg.startSlot, seg.endSlot, rangeKey);
       // Cache the key for subsequent calls (when shapesFrozen_ is enabled)
       seg.exec.cachedShapeKey = rangeKey;
@@ -162,6 +186,26 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
 
   mix(seg.startSlot);
   mix(seg.endSlot);
+
+  // Mix op names so different plans with same slot indices + shapes don't collide
+  // in singleton backend caches (e.g. OpenVINO, OneDNN Graph)
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    NativeSlot& slot = slots_[s];
+    if (!slot.opName.empty()) {
+      for (const char* p = slot.opName.c_str(); *p != '\0'; p++) {
+        mix(static_cast<LongType>(*p));
+      }
+    }
+    mix(static_cast<LongType>(slot.numInputs));
+    mix(static_cast<LongType>(slot.numOutputs));
+    mix(static_cast<LongType>(slot.numIArgs));
+    // Mix actual iArg values (e.g. reshape target shape, axis indices)
+    for (int a = 0; a < slot.numIArgs; a++) {
+      mix(static_cast<LongType>(slot.iArgs[a]));
+    }
+    // Mix tArg count (float args like epsilon, scale)
+    mix(static_cast<LongType>(slot.numTArgs));
+  }
 
   std::unordered_set<int> segOutputSlots;
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
@@ -198,20 +242,41 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   cpuGraphBackendChecked_ = true;
   const auto mode = graphExecutionMode_;
 
-  if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
-      mode == GraphExecutionMode::GEM_TRITON ||
+  if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+#ifdef SD_CUDA
+  if (mode == GraphExecutionMode::GEM_TRITON ||
       mode == GraphExecutionMode::GEM_NVRTC_JIT ||
       mode == GraphExecutionMode::GEM_PTX_JIT ||
       mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
       mode == GraphExecutionMode::GEM_LEVELZERO ||
       mode == GraphExecutionMode::GEM_VULKAN ||
-      mode == GraphExecutionMode::GEM_METAL) {
+      mode == GraphExecutionMode::GEM_METAL ||
+      mode == GraphExecutionMode::GEM_TPU ||
+      mode == GraphExecutionMode::GEM_HEXAGON) {
     cpuGraphBackend_ = nullptr;
     return nullptr;
   }
+#endif
 
+#ifdef SD_CUDA
   const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
                              mode == GraphExecutionMode::GEM_CUDA_GRAPHS);
+#else
+  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
+                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS ||
+                             mode == GraphExecutionMode::GEM_TRITON ||
+                             mode == GraphExecutionMode::GEM_NVRTC_JIT ||
+                             mode == GraphExecutionMode::GEM_PTX_JIT ||
+                             mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
+                             mode == GraphExecutionMode::GEM_LEVELZERO ||
+                             mode == GraphExecutionMode::GEM_VULKAN ||
+                             mode == GraphExecutionMode::GEM_METAL ||
+                             mode == GraphExecutionMode::GEM_TPU ||
+                             mode == GraphExecutionMode::GEM_HEXAGON);
+#endif
 
 #if HAVE_MLX
   if (mode == GraphExecutionMode::GEM_MLX || autoLikeMode) {
@@ -250,6 +315,32 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   }
 #endif
 
+#if HAVE_OPENVINO
+  if (mode == GraphExecutionMode::GEM_OPENVINO || autoLikeMode) {
+    auto& ov = OpenVinoGraphBackend::getInstance();
+    if (ov.isAvailable()) {
+      cpuGraphBackend_ = &ov;
+      if (mode == GraphExecutionMode::GEM_OPENVINO) {
+        DSP_DIAG(BACKEND, "using OpenVINO CPU backend (forced)");
+      } else {
+        DSP_DIAG(BACKEND, "using OpenVINO CPU backend");
+      }
+      return cpuGraphBackend_;
+    }
+    if (mode == GraphExecutionMode::GEM_OPENVINO) {
+      DSP_DIAG(BACKEND, "GEM_OPENVINO requested but OpenVINO not available");
+      cpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+#else
+  if (mode == GraphExecutionMode::GEM_OPENVINO) {
+    DSP_DIAG(BACKEND, "GEM_OPENVINO requested but HAVE_OPENVINO=0");
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+#endif
+
 #if HAVE_ARMCOMPUTE
   if (autoLikeMode) {
     auto& acl = AclGraphBackend::getInstance();
@@ -260,6 +351,12 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
     }
   }
 #endif
+
+  if (mode == GraphExecutionMode::GEM_TVM) {
+    DSP_DIAG(BACKEND, "GEM_TVM requested but TVM backend removed (use triton-cpu instead)");
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
 
 #if HAVE_NNAPI
   if (mode == GraphExecutionMode::GEM_NNAPI || autoLikeMode) {
@@ -334,36 +431,211 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   return nullptr;
 }
 
-// ─── Segment execution: CPU graph backend ───────────────────────────────────
+// ─── CPU Graph backend chain (prioritized list of all available backends) ────
+
+const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChain() {
+  if (cpuGraphBackendChainBuilt_) return cpuGraphBackendChain_;
+  cpuGraphBackendChainBuilt_ = true;
+  cpuGraphBackendChain_.clear();
+
+  const auto mode = graphExecutionMode_;
+
+  // If mode is explicitly non-CPU-graph, return empty chain
+  // On CPU builds (no SD_CUDA), TRITON/NVRTC/PTX/HIP/etc. have no GPU backends,
+  // so fall through to the CPU backend chain (oneDNN, OpenVINO, etc.) instead of
+  // returning empty and forcing slot-by-slot.
+  if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    return cpuGraphBackendChain_;
+  }
+#ifdef SD_CUDA
+  if (mode == GraphExecutionMode::GEM_TRITON ||
+      mode == GraphExecutionMode::GEM_NVRTC_JIT ||
+      mode == GraphExecutionMode::GEM_PTX_JIT ||
+      mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
+      mode == GraphExecutionMode::GEM_LEVELZERO ||
+      mode == GraphExecutionMode::GEM_VULKAN ||
+      mode == GraphExecutionMode::GEM_METAL ||
+      mode == GraphExecutionMode::GEM_TPU ||
+      mode == GraphExecutionMode::GEM_HEXAGON) {
+    return cpuGraphBackendChain_;
+  }
+#endif
+
+#ifdef SD_CUDA
+  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
+                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS);
+#else
+  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
+                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS ||
+                             mode == GraphExecutionMode::GEM_TRITON ||
+                             mode == GraphExecutionMode::GEM_NVRTC_JIT ||
+                             mode == GraphExecutionMode::GEM_PTX_JIT ||
+                             mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
+                             mode == GraphExecutionMode::GEM_LEVELZERO ||
+                             mode == GraphExecutionMode::GEM_VULKAN ||
+                             mode == GraphExecutionMode::GEM_METAL ||
+                             mode == GraphExecutionMode::GEM_TPU ||
+                             mode == GraphExecutionMode::GEM_HEXAGON);
+#endif
+
+  // If a specific backend is forced, only return that one
+  bool forcedMode = !autoLikeMode;
+
+#if HAVE_MLX
+  if (mode == GraphExecutionMode::GEM_MLX || autoLikeMode) {
+    auto& mlx = MlxGraphBackend::getInstance();
+    if (mlx.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&mlx);
+      if (forcedMode) return cpuGraphBackendChain_;
+    }
+  }
+#endif
+
+#if HAVE_ONEDNN
+  if (autoLikeMode) {
+    auto& onednn = OneDnnGraphBackend::getInstance();
+    if (onednn.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&onednn);
+    }
+  }
+#endif
+
+#if HAVE_OPENVINO
+  if (mode == GraphExecutionMode::GEM_OPENVINO || autoLikeMode) {
+    auto& ov = OpenVinoGraphBackend::getInstance();
+    if (ov.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&ov);
+      if (forcedMode) return cpuGraphBackendChain_;
+    }
+  }
+#endif
+
+#if HAVE_ARMCOMPUTE
+  if (autoLikeMode) {
+    auto& acl = AclGraphBackend::getInstance();
+    if (acl.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&acl);
+    }
+  }
+#endif
+
+#if HAVE_NNAPI
+  if (mode == GraphExecutionMode::GEM_NNAPI || autoLikeMode) {
+    auto& nnapi = NnapiGraphBackend::getInstance();
+    if (nnapi.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&nnapi);
+      if (forcedMode) return cpuGraphBackendChain_;
+    }
+  }
+#endif
+
+#if HAVE_MLIR
+#if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
+  if (mode == GraphExecutionMode::GEM_ARM_HYBRID || autoLikeMode) {
+    auto& armHybrid = ArmHybridGraphBackend::getInstance();
+    if (armHybrid.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&armHybrid);
+      if (forcedMode) return cpuGraphBackendChain_;
+    }
+  }
+#endif
+
+  if (autoLikeMode) {
+    auto& mlirBackend = MlirCpuGraphBackend::getInstance();
+    if (mlirBackend.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&mlirBackend);
+    }
+  }
+#endif
+
+  if (!cpuGraphBackendChain_.empty()) {
+    DSP_DIAG(BACKEND, "CPU backend chain built: %d backends available", (int)cpuGraphBackendChain_.size());
+    for (size_t i = 0; i < cpuGraphBackendChain_.size(); i++) {
+      DSP_DIAG(BACKEND, "  chain[%d] = %s", (int)i, cpuGraphBackendChain_[i]->name());
+    }
+  }
+
+  return cpuGraphBackendChain_;
+}
+
+// ─── Segment execution: CPU graph backend (with per-segment cascade) ────────
 
 Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
 
-  auto* backend = getCpuGraphBackend();
-  if (backend == nullptr) {
-    DSP_DIAG_SEG(BACKEND, seg.startSlot,
-                 "executeSegmentWithCpuGraph: no CPU graph backend available for seg[%d-%d]",
+  // If all backends have been exhausted for this segment, skip immediately
+  if (seg.exec.compilationFailed) {
+    DSP_DIAG_SEG(FALLBACK, seg.startSlot,
+                 "executeSegmentWithCpuGraph: seg[%d-%d] skipped (compilationFailed=true, all backends exhausted)",
                  seg.startSlot, seg.endSlot);
     return Status::KERNEL_FAILURE;
   }
-  const char* backendName = backend->name();
 
-  if (seg.exec.compilationFailed) {
-    DSP_DIAG_SEG(FALLBACK, seg.startSlot,
-                 "executeSegmentWithCpuGraph: seg[%d-%d] skipped (compilationFailed=true, backend=%s)",
-                 seg.startSlot, seg.endSlot, backendName);
+  // If we already resolved a backend for this segment, use it directly
+  if (seg.resolvedCpuBackend != nullptr) {
+    return executeSegmentWithSpecificBackend(seg, seg.resolvedCpuBackend, externalArrays, numExt, stream);
+  }
+
+  // Cascade through the backend chain to find one that works
+  const auto& chain = getCpuGraphBackendChain();
+  if (chain.empty()) {
+    DSP_DIAG_SEG(BACKEND, seg.startSlot,
+                 "executeSegmentWithCpuGraph: no CPU graph backends available for seg[%d-%d]",
+                 seg.startSlot, seg.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
-  if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
-    DSP_DIAG(BACKEND, "executeSegmentWithCpuGraph: backend=%s cannot fuse seg[%d-%d]",
-              backendName, seg.startSlot, seg.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
+  // Warmup must happen before any backend tries to compile (needs output shapes)
   if (seg.exec.executionCount == 0) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_DIAG(EXECUTE, "executeSegmentWithCpuGraph: warmup %s for seg[%d-%d], executionCount→%d",
+             warmupStatus == Status::OK ? "OK" : "FAILED",
+             seg.startSlot, seg.endSlot, seg.exec.executionCount);
+    if (warmupStatus != Status::OK) {
+      return warmupStatus;
+    }
   }
+
+  // Try each backend in priority order
+  for (size_t i = 0; i < chain.size(); i++) {
+    GraphBackend* backend = chain[i];
+    const char* backendName = backend->name();
+
+    if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
+      DSP_DIAG(BACKEND, "cascade: backend=%s cannot fuse seg[%d-%d], trying next",
+                backendName, seg.startSlot, seg.endSlot);
+      continue;
+    }
+
+    // Attempt compile + validate + execute with this backend
+    auto status = executeSegmentWithSpecificBackend(seg, backend, externalArrays, numExt, stream);
+    if (status == Status::OK) {
+      // Cache the resolved backend for future executions
+      seg.resolvedCpuBackend = backend;
+      DSP_DIAG(BACKEND, "cascade: seg[%d-%d] resolved to backend=%s (chain position %d/%d)",
+                seg.startSlot, seg.endSlot, backendName, (int)i + 1, (int)chain.size());
+      return Status::OK;
+    }
+
+    DSP_DIAG(BACKEND, "cascade: backend=%s failed for seg[%d-%d] (status=%d), trying next",
+              backendName, seg.startSlot, seg.endSlot, static_cast<int>(status));
+    // Reset compilationFailed so next backend gets a fresh try
+    seg.exec.compilationFailed = false;
+  }
+
+  // ALL backends exhausted — mark as permanently failed
+  seg.exec.compilationFailed = true;
+  DSP_DIAG(FALLBACK, "cascade: ALL %d backends failed for seg[%d-%d], falling back to slot-by-slot",
+            (int)chain.size(), seg.startSlot, seg.endSlot);
+  return Status::KERNEL_FAILURE;
+}
+
+// ─── Execute segment with a specific backend (shared logic) ─────────────────
+
+Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
+    GraphSegment& seg, GraphBackend* backend, NDArray** externalArrays, int numExt, void* stream) {
+
+  const char* backendName = backend->name();
 
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
@@ -385,13 +657,10 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
                  seg.exec.executionCount, backendName);
   }
   if (needsCompile) {
-    // Restore outputSlots_ from slotArrayCache_ for the compilation range.
-    // When shapes aren't frozen, outputSlots_ was zeroed at the start of execute().
-    // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                  outputSlots_, totalOutputSlots_, segShapeKey,
                                  numSlots_)) {
-      DSP_DIAG(COMPILE, "executeSegmentWithCpuGraph: backend=%s compile failed for seg[%d-%d]",
+      DSP_DIAG(COMPILE, "executeSegmentWithSpecificBackend: backend=%s compile failed for seg[%d-%d]",
                 backendName, seg.startSlot, seg.endSlot);
       return Status::KERNEL_FAILURE;
     }
@@ -409,8 +678,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
       }
     }
     if (!allCompiled) {
-      DSP_DIAG(FALLBACK, "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
-                "Falling back to slot-by-slot.",
+      DSP_DIAG(FALLBACK, "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend.",
                 backendName, seg.startSlot, seg.endSlot);
       seg.exec.compilationFailed = true;
       return Status::KERNEL_FAILURE;
@@ -427,7 +695,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
                                          outputSlots_, totalOutputSlots_, stream);
   tl_graphExecutionActive = false;
 
-  DSP_DIAG(EXECUTE, "executeSegmentWithCpuGraph: exec%d seg[%d-%d]: backend=%s status=%d(%s)",
+  DSP_DIAG(EXECUTE, "executeSegmentWithSpecificBackend: exec%d seg[%d-%d]: backend=%s status=%d(%s)",
             seg.exec.executionCount, seg.startSlot, seg.endSlot, backendName,
             static_cast<int>(status), statusName_seg(status));
 

@@ -680,6 +680,32 @@ public class DecoderUtils {
             boolean usingStaticKv, long hiddenSize,
             Map<String, INDArray> reusableInputs,
             boolean dspActive, boolean nativeDecodeInputs) {
+        return buildDecoderInputMap(ioConfig, decoderInputNames, decoder, embeddings, inputIds,
+                pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
+                usingStaticKv, hiddenSize, reusableInputs, dspActive, nativeDecodeInputs,
+                null, null);
+    }
+
+    /**
+     * Build the complete decoder input map with encoder-decoder support.
+     *
+     * <p>For encoder-decoder models (e.g., Whisper), encoder hidden states and encoder
+     * attention mask are passed as additional inputs at every decode step. These are
+     * constant across decode steps (computed once by the encoder).</p>
+     *
+     * @param encoderOutputs encoder hidden states [batch, encoderSeqLen, hiddenSize], null for decoder-only
+     * @param encoderAttentionMask encoder attention mask [batch, encoderSeqLen], null if not needed
+     */
+    public static Map<String, INDArray> buildDecoderInputMap(
+            ModelIOConfig ioConfig,
+            List<String> decoderInputNames, SameDiff decoder,
+            INDArray embeddings, INDArray inputIds,
+            long pastSeqLen, long currentSeqLen,
+            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
+            boolean usingStaticKv, long hiddenSize,
+            Map<String, INDArray> reusableInputs,
+            boolean dspActive, boolean nativeDecodeInputs,
+            INDArray encoderOutputs, INDArray encoderAttentionMask) {
 
         Map<String, INDArray> decoderInputMap = new HashMap<>();
         boolean canReuse = reusableInputs != null && usingStaticKv && currentSeqLen == 1;
@@ -793,6 +819,20 @@ public class DecoderUtils {
                     }
                 } else {
                     decoderInputMap.put(inputName, createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                }
+            } else if (ioConfig.isEncoderHiddenStates(inputName)) {
+                // Encoder-decoder: pass encoder outputs at every step (constant across decode steps)
+                if (encoderOutputs != null) {
+                    decoderInputMap.put(inputName, encoderOutputs);
+                }
+            } else if (ioConfig.isEncoderAttentionMask(inputName)) {
+                // Encoder-decoder: pass encoder attention mask at every step
+                if (encoderAttentionMask != null) {
+                    decoderInputMap.put(inputName, encoderAttentionMask);
+                } else if (encoderOutputs != null) {
+                    // Default: all-ones mask matching encoder sequence length
+                    long encoderSeqLen = encoderOutputs.size(1);
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, encoderSeqLen));
                 }
             } else if (inputName.equals(ioConfig.getAttnMaskReformatOutput())) {
                 // Placeholder override for attn_mask_reformat — provide the 4D additive

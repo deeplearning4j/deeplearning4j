@@ -27,8 +27,8 @@ package org.nd4j.autodiff.samediff.execution;
  * <p>Backends are tried in priority order when AUTO is selected.</p>
  * <p>CUDA builds: Triton → NVRTC → PTX → CUDA Graphs → slot-by-slot.</p>
  * <p>ROCm builds: HIP Graphs (mirror of CUDA graph capture/replay).</p>
- * <p>Non-CUDA builds: Triton (if compiled) → MLX (Apple Silicon) → oneDNN → ACL → NNAPI
- * → ARM_HYBRID → MLIR CPU JIT → slot-by-slot.</p>
+ * <p>Non-CUDA builds: Triton (if compiled) → MLX (Apple Silicon) → oneDNN → OpenVINO → ACL
+ * → NNAPI → ARM_HYBRID → MLIR CPU JIT → slot-by-slot.</p>
  * <p>Cross-platform GPU: Level Zero (Intel), Vulkan (cross-vendor), Metal (Apple).</p>
  * <p>Forcing a specific mode skips the others.</p>
  */
@@ -142,7 +142,23 @@ public enum GraphExecutionMode {
      * stages data through TCM (Tightly Coupled Memory), and dispatches
      * HVX vector operations. Qualcomm Snapdragon SoCs only.
      */
-    HEXAGON(14);
+    HEXAGON(14),
+
+    /**
+     * OpenVINO CPU graph backend. Uses Intel OpenVINO Runtime to compile
+     * and execute fusible segments. Offers broader op coverage than oneDNN Graph
+     * (~200 vs ~80 ops), including Gather, ScatterND, Where/Select, Split, Slice.
+     * Uses Snippets JIT for element-wise fusion and oneDNN BRGEMM for matmul/conv.
+     * Intel x86 CPUs (also works on ARM via OpenVINO ARM plugin).
+     */
+    OPENVINO(15),
+
+    /**
+     * @deprecated TVM backend removed. Use triton-cpu instead.
+     * Kept for backward compatibility of serialized enum values.
+     */
+    @Deprecated
+    TVM(16);
 
     private final int nativeCode;
 

@@ -709,7 +709,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // GC of closed DataBuffer objects and causing Java heap growth.
         externalPlaceholderBuffers.clear();
         if (placeholderValues != null) {
-            for (INDArray arr : placeholderValues.values()) {
+            for (Map.Entry<String, INDArray> phEntry : placeholderValues.entrySet()) {
+                INDArray arr = phEntry.getValue();
                 if (arr != null && !arr.wasClosed() && arr.data() != null) {
                     externalPlaceholderBuffers.put(arr.data(), Boolean.TRUE);
                 }
@@ -1328,6 +1329,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 dag, requestedOutputs, sameDiff.isDspAutoCompileEnabled());
         if (plan == null) {
             log.debug("DynamicShapePlan not available (auto-compile disabled or compilation unsupported), using standard path");
+            // Undo the cache enable — standard executeOperations() must NOT cache arrays
+            // because nothing drains the cache between operations in the standard path.
+            if (mmgr instanceof ArrayCacheMemoryMgr) {
+                ArrayCacheMemoryMgr.setEnableCache(false);
+            }
             return null;
         }
 
@@ -1340,7 +1346,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             dynamicShapePlanExecutorTl.set(executor);
         }
 
-        if (sameDiff.isDspNativeAutoCompileEnabled() && !executor.isNativePlanCompiled(plan)) {
+        if (!executor.isNativePlanCompiled(plan)) {
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
         }
 
@@ -1825,9 +1831,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 switch (value.getSdValueType()) {
                     case TENSOR:
                         INDArray tensor = value.getTensorValue();
-                        if (tensor != null && !tensor.wasClosed() && tensor.data() != null
-                                && !protectedBuffers.containsKey(tensor.data())) {
-                            uniqueBuffers.put(tensor.data(), Boolean.TRUE);
+                        if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
+                            boolean isProtected = protectedBuffers.containsKey(tensor.data());
+                            if (!isProtected) {
+                                uniqueBuffers.put(tensor.data(), Boolean.TRUE);
+                            }
                         }
                         break;
                     case LIST:

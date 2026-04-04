@@ -139,6 +139,20 @@ dg::logical_tensor::data_type OneDnnGraphBackend::mapDataType(DataType dt) {
 
 // ─── Segment fusibility check ───────────────────────────────────────────────
 
+// Ops that benefit from backend execution even as a single op (optimized kernels)
+static bool isSingleOpWorthCompiling(const std::string& opName) {
+  static const std::unordered_set<std::string> worthwhile = {
+    "matmul", "Matmul", "MatMul",
+    "softmax", "Softmax",
+    "layer_norm", "LayerNorm",
+    "batch_norm", "BatchNorm", "batchnorm",
+    "conv2d", "Conv2d",
+    "avgpool2d", "Avgpool2d",
+    "maxpool2d", "Maxpool2d",
+  };
+  return worthwhile.count(opName) > 0;
+}
+
 bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (!isAvailable()) return false;
 
@@ -152,7 +166,12 @@ bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
     }
   }
 
-  // Only worthwhile if at least 50% of ops are mappable and there are >=2 ops
+  // Single-op segments: accept if the op has an optimized backend kernel
+  if (totalOps == 1 && mappableOps == 1) {
+    return isSingleOpWorthCompiling(slots[start].opName);
+  }
+
+  // Multi-op segments: at least 50% of ops must be mappable and there are >=2 mappable ops
   return mappableOps >= 2 && mappableOps >= totalOps / 2;
 }
 
@@ -288,21 +307,45 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
         dgOp.set_attr<float>(dg::op::attr::min, minVal);
         dgOp.set_attr<float>(dg::op::attr::max, maxVal);
       } else if (kind == dg::op::kind::StaticReshape) {
-        // Reshape needs target shape from iArgs
+        // Reshape needs target shape from iArgs, skipping ordering marker
+        // ND4J encodes iArgs as [-order, dim0, dim1, ...] where -99=C, -102=F
         if (slot.numIArgs > 0) {
-          std::vector<int64_t> shape(slot.numIArgs);
-          for (int i = 0; i < slot.numIArgs; i++) {
-            shape[i] = static_cast<int64_t>(slot.iArgs[i]);
+          int startIdx = 0;
+          if (slot.iArgs[0] < 0 && (slot.iArgs[0] == -99 || slot.iArgs[0] == -102)) {
+            startIdx = 1;
+          }
+          std::vector<int64_t> shape(slot.numIArgs - startIdx);
+          for (int i = startIdx; i < slot.numIArgs; i++) {
+            shape[i - startIdx] = static_cast<int64_t>(slot.iArgs[i]);
           }
           dgOp.set_attr<std::vector<int64_t>>(dg::op::attr::shape, shape);
         }
       } else if (kind == dg::op::kind::StaticTranspose) {
         // Transpose needs permutation from iArgs
+        std::vector<int64_t> order;
         if (slot.numIArgs > 0) {
-          std::vector<int64_t> order(slot.numIArgs);
+          order.resize(slot.numIArgs);
           for (int i = 0; i < slot.numIArgs; i++) {
             order[i] = static_cast<int64_t>(slot.iArgs[i]);
           }
+        } else {
+          // No iArgs = simple transpose: reverse dimensions
+          // Get rank from input source (prior slot output or external input)
+          int rank = 0;
+          if (slot.numInputs > 0) {
+            int srcIdx = slot.inputSourceIndices[0];
+            if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots[srcIdx] != nullptr) {
+              rank = outputSlots[srcIdx]->rankOf();
+            } else if (srcIdx < 0) {
+              int extIdx = -(srcIdx + 1);
+              if (extIdx < numExternalInputs && externalInputs[extIdx] != nullptr) {
+                rank = externalInputs[extIdx]->rankOf();
+              }
+            }
+          }
+          for (int d = rank - 1; d >= 0; d--) order.push_back(d);
+        }
+        if (!order.empty()) {
           dgOp.set_attr<std::vector<int64_t>>(dg::op::attr::order, order);
         }
       } else if (kind == dg::op::kind::ReduceSum || kind == dg::op::kind::ReduceMean ||
@@ -362,14 +405,16 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
       result.compilationAudit.push_back(std::move(auditEntry));
     }
 
-    if (opsAdded < 2) {
-      // Not enough ops mapped to justify graph compilation
+    if (opsAdded < 1) {
+      // No ops mapped — nothing to compile
       return result;
     }
 
     g.finalize();
 
     auto partitions = g.get_partitions();
+    DSP_DIAG(COMPILE, "OneDnnGraphBackend: segment [%d-%d] finalized graph with %d ops → %d partitions",
+              startSlot, endSlot, opsAdded, static_cast<int>(partitions.size()));
     if (partitions.empty()) {
       DSP_DIAG(COMPILE, "OneDnnGraphBackend: no partitions found for segment [%d-%d]",
                 startSlot, endSlot);
@@ -377,8 +422,16 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
     }
 
     // Compile each partition
+    int supportedCount = 0, unsupportedCount = 0;
     for (auto& partition : partitions) {
-      if (!partition.is_supported()) continue;
+      if (!partition.is_supported()) {
+        unsupportedCount++;
+        DSP_DIAG(COMPILE, "OneDnnGraphBackend: partition %d unsupported (num_ops=%zu)",
+                  supportedCount + unsupportedCount,
+                  partition.get_ops_num());
+        continue;
+      }
+      supportedCount++;
 
       auto inIds = partition.get_input_ports();
       auto outIds = partition.get_output_ports();
@@ -412,6 +465,9 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
     }
 
     result.valid = !result.partitions.empty();
+    DSP_DIAG(COMPILE, "OneDnnGraphBackend: segment [%d-%d] partition summary: %d supported, %d unsupported, compiled=%d",
+              startSlot, endSlot, supportedCount, unsupportedCount,
+              static_cast<int>(result.partitions.size()));
     if (result.valid) {
       DSP_DIAG(COMPILE, "OneDnnGraphBackend: compiled segment [%d-%d] into %d partitions (%d ops)",
                 startSlot, endSlot,

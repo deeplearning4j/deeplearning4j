@@ -1023,6 +1023,9 @@ Status NativeDynamicShapePlan::executeSlot(
           db->special(), db->isConstant ? 1 : 0, executeCount_);
       return Status::BAD_INPUT;
     }
+#if defined(SD_CUDA)
+    // On CUDA, a null special (device) buffer indicates a freed or unsynced DataBuffer
+    // that would cause illegal memory access (error 700). On CPU, special() is always null.
     if (db != nullptr && db->special() == nullptr && !inputs[i]->isEmpty()) {
       DSP_DIAG_SLOT(EXECUTE, stepIdx,
           "NULL GPU buffer for slot %d (%s) input %d, srcIdx=%d "
@@ -1033,6 +1036,19 @@ Status NativeDynamicShapePlan::executeSlot(
           (outputSlots_[slot.inputSourceIndices[i]] == nullptr) ? 1 : 0);
       return Status::BAD_INPUT;
     }
+#else
+    // On CPU, validate the primary (host) buffer instead.
+    if (db != nullptr && db->primary() == nullptr && !inputs[i]->isEmpty()) {
+      DSP_DIAG_SLOT(EXECUTE, stepIdx,
+          "NULL host buffer for slot %d (%s) input %d, srcIdx=%d "
+          "len=%lld isClosed=%d isConst=%d exec=%d fromCache=%d",
+          stepIdx, slot.opName.c_str(), i, slot.inputSourceIndices[i],
+          (long long)inputs[i]->lengthOf(), db->isClosed() ? 1 : 0,
+          db->isConstant ? 1 : 0, executeCount_,
+          (outputSlots_[slot.inputSourceIndices[i]] == nullptr) ? 1 : 0);
+      return Status::BAD_INPUT;
+    }
+#endif
   }
 
 

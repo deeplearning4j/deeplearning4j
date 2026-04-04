@@ -84,6 +84,7 @@ option(HELPERS_vlm "Enable VLM (Vision-Language Model) helper" OFF)
 option(HELPERS_cutlass "Enable CUTLASS helper for optimized GEMM operations" OFF)
 option(HELPERS_nccl "Enable NCCL helper for multi-GPU collective communications" OFF)
 option(HELPERS_nnapi "Enable Android NNAPI helper for hardware acceleration (Android only)" OFF)
+# NOTE: OpenVINO is triggered by SD_TRITON=ON (via -Dlibnd4j.triton=ON), not via helpers.
 # --- Multi-Backend Helper Configuration ---
 # HELPERS_LIST: Semicolon-separated list of helpers to enable (alternative to individual flags)
 # Example: -DHELPERS_LIST="onednn;cudnn" or from pom.xml: -Dlibnd4j.helpers=onednn,cudnn
@@ -189,6 +190,7 @@ set(HAVE_MLX OFF CACHE BOOL "MLX availability" FORCE)
 set(HAVE_CUTLASS OFF CACHE BOOL "CUTLASS availability" FORCE)
 set(HAVE_NCCL OFF CACHE BOOL "NCCL availability" FORCE)
 set(HAVE_NNAPI OFF CACHE BOOL "Android NNAPI availability" FORCE)
+set(HAVE_OPENVINO OFF CACHE BOOL "OpenVINO availability" FORCE)
 
 # --- Triton GPU Compiler Options ---
 set(TRITON_GPU_TARGET "AUTO" CACHE STRING "Triton target: AUTO, NVIDIA, AMD, INTEL")
@@ -233,6 +235,7 @@ function(print_helper_configuration)
     message(STATUS "  CUTLASS:      REQUESTED=${HELPERS_cutlass}, AVAILABLE=${HAVE_CUTLASS}")
     message(STATUS "  NCCL:         REQUESTED=${HELPERS_nccl}, AVAILABLE=${HAVE_NCCL}")
     message(STATUS "  NNAPI:        REQUESTED=${HELPERS_nnapi}, AVAILABLE=${HAVE_NNAPI}")
+    message(STATUS "  OpenVINO:     SD_TRITON=${SD_TRITON}, AVAILABLE=${HAVE_OPENVINO}")
     message(STATUS "")
     message(STATUS "Enabled Helpers: ${SD_ENABLED_HELPERS}")
     message(STATUS "====================================")

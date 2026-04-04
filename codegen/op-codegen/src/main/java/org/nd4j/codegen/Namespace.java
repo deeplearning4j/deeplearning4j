@@ -34,7 +34,8 @@ public enum Namespace {
     BASE,
     LOSS,
     LINALG,
-    SIGNAL;
+    SIGNAL,
+    AUDIO;
 
 
     public static Namespace fromString(String in){
@@ -62,6 +63,8 @@ public enum Namespace {
                 return LINALG;
             case "signal":
                 return SIGNAL;
+            case "audio":
+                return AUDIO;
             default:
                 return null;
         }
@@ -91,6 +94,8 @@ public enum Namespace {
                 return "NDLinalg";
             case SIGNAL:
                 return "NDSignal";
+            case AUDIO:
+                return "NDAudio";
         }
         throw new IllegalStateException("No java class name defined for: " + this);
     }
@@ -121,6 +126,8 @@ public enum Namespace {
                 return "SDLinalg";
             case SIGNAL:
                 return "SDSignal";
+            case AUDIO:
+                return "SDAudio";
         }
         throw new IllegalStateException("No java SameDiff class name defined for: " + this);
     }
@@ -149,6 +156,8 @@ public enum Namespace {
                 return LinalgKt.Linalg();
             case SIGNAL:
                 return SignalKt.SDSignal();
+            case AUDIO:
+                return AudioKt.SDAudio();
         }
         throw new IllegalStateException("No namespace definition available for: " + this);
     }

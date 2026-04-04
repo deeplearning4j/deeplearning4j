@@ -480,7 +480,26 @@ public class VisionLanguageModel implements AutoCloseable {
         }
 
         Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
-        return outputs.get(visionEncoderIOConfig.getPrimaryOutputName());
+        INDArray result = outputs.get(visionEncoderIOConfig.getPrimaryOutputName());
+
+        // Close input arrays that we created (mask, normalizedImage if it differs from input).
+        // These are only needed during visionEncoder.output() and leak GPU memory if not freed.
+        if (visionEncoderIOConfig.hasPixelAttentionMask()) {
+            INDArray mask = inputs.get(visionEncoderIOConfig.getPixelAttentionMaskName());
+            if (mask != null && !mask.wasClosed()) {
+                mask.setCloseable(true);
+                mask.close();
+            }
+        }
+        // Close non-primary outputs from the vision encoder
+        for (var entry : outputs.entrySet()) {
+            if (entry.getValue() != result && entry.getValue() != null && !entry.getValue().wasClosed()) {
+                entry.getValue().setCloseable(true);
+                entry.getValue().close();
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -593,6 +612,9 @@ public class VisionLanguageModel implements AutoCloseable {
 
         // Combine embeddings (image before text for most VLMs)
         INDArray combinedEmbeddings = combineEmbeddings(imageEmbeddings, textEmbeddings);
+
+        // Release vision encoder GPU intermediates before decode
+        releaseVisionEncoderGpuMemory();
 
         // Use StaticKvCacheDecodeLoop (optimized: native KV scatter, CUDA graphs, outputDirect)
         return decodeWithStaticLoop(combinedEmbeddings, promptIds, maxNewTokens,
@@ -826,6 +848,19 @@ public class VisionLanguageModel implements AutoCloseable {
             INDArray logits = outputs.get(allOutputNames.get(0));
             long tDecodeNs = System.nanoTime() - t0;
 
+            // Close per-step input arrays (attention_mask, position_ids, causal_mask).
+            // These are freshly allocated every step and leak GPU memory if not freed.
+            // Skip inputs_embeds (owned by caller) and past_key_values (managed by kvCache).
+            for (var entry : decoderInputMap.entrySet()) {
+                String name = entry.getKey();
+                if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
+                INDArray arr = entry.getValue();
+                if (arr != null && !arr.wasClosed()) {
+                    arr.setCloseable(true);
+                    arr.close();
+                }
+            }
+
             // Update KV cache
             long t1 = System.nanoTime();
             if (useKvCache) {
@@ -931,6 +966,18 @@ public class VisionLanguageModel implements AutoCloseable {
 
                     Map<String, INDArray> specOutputs = decoder.output(specDecoderInputMap,
                             allOutputNames.toArray(new String[0]));
+
+                    // Close speculative pass input arrays (attention_mask, position_ids, causal_mask)
+                    for (var entry : specDecoderInputMap.entrySet()) {
+                        String name = entry.getKey();
+                        if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
+                        INDArray arr = entry.getValue();
+                        if (arr != null && !arr.wasClosed()) {
+                            arr.setCloseable(true);
+                            arr.close();
+                        }
+                    }
+
                     INDArray specLogits = specOutputs.get(allOutputNames.get(0));
 
                     // Verify speculation for sequence 0 (representative for greedy decoding)
@@ -1279,6 +1326,13 @@ public class VisionLanguageModel implements AutoCloseable {
                 continue;
             }
 
+            // Reset sessions between pages to free DSP intermediates and CUDA pool memory.
+            // Without this, ~14 GB of GPU memory accumulates across pages.
+            if (i > 0) {
+                log.info("Page {}/{}: resetting sessions to reclaim GPU memory", i + 1, pageSplitResults.size());
+                resetSessions();
+            }
+
             INDArray visionEmbeddings = encodeImageTiled(splitResult, targetSize);
             try {
                 int totalFrames = splitResult.getTotalFrames();
@@ -1420,6 +1474,11 @@ public class VisionLanguageModel implements AutoCloseable {
         INDArray inputsEmbeds = EmbeddingMerger.mergeEmbeddings(
                 textEmbeddings, visionEmbeddings, promptTokenIds, imageTokenId);
         SameDiffMemoryUtils.safeClose(textEmbeddings);
+
+        // Release vision encoder GPU intermediates before decode.
+        // Vision encoder is done — its DSP capture buffers, CUDA graphs, and workspace
+        // (~4-5 GB) can be freed to make room for the decoder's CUDA graph capture.
+        releaseVisionEncoderGpuMemory();
 
         // Run decode loop using the merged embeddings directly
         try {
@@ -1655,34 +1714,180 @@ public class VisionLanguageModel implements AutoCloseable {
         resetDspForModel("decoder", decoder);
         resetDspForModel("visionEncoder", visionEncoder);
         resetDspForModel("embedTokens", embedTokens);
+
+        // Drain ArrayCacheMemoryMgr: deferred close buffers and cached arrays accumulate
+        // across pages. resetDspForModel() calls resetForNextPage() which now drains them,
+        // but also drain here for non-DSP execution paths (slot-based, standard op-by-op).
+        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.closeDeferredBuffers(null);
+        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.clearCacheState();
+        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.setEnableCache(false);
+
+        // Force CUDA memory pool to release retained memory back to device allocator.
+        // Without this, freed GPU allocations stay in the pool (not visible to cudaMemGetInfo)
+        // and subsequent pages fail with OOM even though the memory is logically free.
+        try {
+            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            Nd4j.getExecutioner().commit();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPool(d);
+            }
+            log.info("Trimmed CUDA memory pool on {} devices", numDevices);
+        } catch (Exception e) {
+            log.debug("Pool trim after session reset: {}", e.getMessage());
+        }
     }
 
     /**
-     * Reset all inference sessions for DECODE page-to-page reuse with MAXIMAL state preservation.
+     * GPU memory usage threshold (as fraction of total) above which decoder CUDA graphs
+     * are fully reset instead of preserved. Default: 0.80 (80%).
      *
-     * <p>This variant is optimized for VLM decode where page shapes are INVARIANT.
-     * It preserves:</p>
+     * <p>Configurable via system property {@code kompile.vlm.gpu.memory.threshold}
+     * or environment variable {@code KOMPILE_VLM_GPU_MEMORY_THRESHOLD}.</p>
+     */
+    private static final double GPU_MEMORY_PRESERVE_THRESHOLD;
+    static {
+        String prop = System.getProperty("kompile.vlm.gpu.memory.threshold");
+        if (prop == null) {
+            prop = System.getenv("KOMPILE_VLM_GPU_MEMORY_THRESHOLD");
+        }
+        double threshold = 0.80;
+        if (prop != null) {
+            try {
+                threshold = Double.parseDouble(prop);
+                if (threshold <= 0.0 || threshold > 1.0) {
+                    threshold = 0.80;
+                }
+            } catch (NumberFormatException ignored) {
+                // use default
+            }
+        }
+        GPU_MEMORY_PRESERVE_THRESHOLD = threshold;
+    }
+
+    /** Tracks whether a full decoder reset was forced due to memory pressure on the previous page. */
+    private boolean lastDecoderResetWasFull = false;
+
+    /**
+     * Reset all inference sessions for DECODE page-to-page reuse with memory-budgeted
+     * decoder graph preservation.
+     *
+     * <p><b>Strategy:</b></p>
      * <ul>
-     *   <li>External input staging buffers (max-size pre-allocated)</li>
-     *   <li>Output slot arrays (same shapes for decode)</li>
-     *   <li>CUDA graph replay handles</li>
-     *   <li>cuBLAS workspace</li>
-     *   <li>Batch optimization resources</li>
+     *   <li>Vision encoder and embedTokens always get a full reset (shapes change per page)</li>
+     *   <li>Decoder uses preserve mode ({@code resetForNextPageDecode}) by default, keeping
+     *       CUDA graphs, staging buffers, and slot arrays alive (saves ~5s re-capture per page)</li>
+     *   <li>After preserve, GPU free memory is checked against a configurable threshold
+     *       (default 80% usage). If usage exceeds the threshold, the decoder falls back to
+     *       a full reset for this page to reclaim memory</li>
+     *   <li>On subsequent pages after a forced full reset, the decoder returns to preserve
+     *       mode (re-captured graphs from that page are reusable)</li>
      * </ul>
      *
-     * <p>Only resets:</p>
+     * <p>The threshold is configurable via:</p>
      * <ul>
-     *   <li>KV cache position</li>
-     *   <li>Pending decode update flag</li>
+     *   <li>System property: {@code -Dkompile.vlm.gpu.memory.threshold=0.80}</li>
+     *   <li>Environment variable: {@code KOMPILE_VLM_GPU_MEMORY_THRESHOLD=0.80}</li>
      * </ul>
      *
      * <p>Call this between pages when decode shapes are invariant (always [1,1] for input_ids/position_ids).</p>
      */
     public void resetSessionsForDecode() {
-        log.info("Resetting sessions for decode (preserving decode-invariant state)");
-        resetDspForModelDecode("decoder", decoder);
-        resetDspForModelDecode("visionEncoder", visionEncoder);
-        resetDspForModelDecode("embedTokens", embedTokens);
+        // Vision encoder and embedTokens: ALWAYS full reset (shapes change per page)
+        resetDspForModel("visionEncoder", visionEncoder);
+        resetDspForModel("embedTokens", embedTokens);
+
+        // Decoder: attempt to preserve CUDA graphs (shapes are invariant at [1,1])
+        boolean decoderPreserved = false;
+        try {
+            resetDspForModelDecode("decoder", decoder);
+            decoderPreserved = true;
+            log.info("Decoder CUDA graphs PRESERVED (skipping ~5s re-capture)");
+        } catch (Exception e) {
+            log.warn("Decoder preserve failed, falling back to full reset: {}", e.getMessage());
+            resetDspForModel("decoder", decoder);
+            lastDecoderResetWasFull = true;
+            return;
+        }
+
+        // Check GPU memory pressure after preserving decoder graphs.
+        // If usage exceeds threshold, fall back to full decoder reset.
+        if (decoderPreserved && isGpuMemoryPressureHigh()) {
+            log.warn("GPU memory usage exceeds {}% threshold after decoder preserve — "
+                    + "falling back to full decoder reset to prevent OOM",
+                    (int)(GPU_MEMORY_PRESERVE_THRESHOLD * 100));
+            resetDspForModel("decoder", decoder);
+            lastDecoderResetWasFull = true;
+        } else {
+            lastDecoderResetWasFull = false;
+            if (decoderPreserved) {
+                logGpuMemoryStatus("after decoder preserve");
+            }
+        }
+    }
+
+    /**
+     * Query GPU memory and determine if usage exceeds the preservation threshold.
+     *
+     * <p>Uses {@code NativeOps.getDeviceFreeMemory()} and {@code getDeviceTotalMemory()}
+     * to compute usage fraction. If the query fails (e.g., CPU-only mode), returns false
+     * (assumes memory is fine).</p>
+     *
+     * @return true if GPU memory usage exceeds {@link #GPU_MEMORY_PRESERVE_THRESHOLD}
+     */
+    private boolean isGpuMemoryPressureHigh() {
+        try {
+            org.nd4j.nativeblas.NativeOps nativeOps =
+                    org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            // Flush pending ops so free memory reflects actual state
+            Nd4j.getExecutioner().commit();
+
+            int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            long totalMem = nativeOps.getDeviceTotalMemory(device);
+            long freeMem = nativeOps.getDeviceFreeMemory(device);
+
+            if (totalMem <= 0) {
+                log.debug("GPU memory query returned totalMem={}, skipping pressure check", totalMem);
+                return false;
+            }
+
+            double usageFraction = 1.0 - ((double) freeMem / totalMem);
+            long usedMB = (totalMem - freeMem) / (1024 * 1024);
+            long totalMB = totalMem / (1024 * 1024);
+            long freeMB = freeMem / (1024 * 1024);
+
+            log.info("GPU memory: used={}MB / total={}MB (free={}MB, usage={}%, threshold={}%)",
+                    usedMB, totalMB, freeMB,
+                    String.format("%.1f", usageFraction * 100),
+                    String.format("%.1f", GPU_MEMORY_PRESERVE_THRESHOLD * 100));
+
+            return usageFraction > GPU_MEMORY_PRESERVE_THRESHOLD;
+        } catch (Exception e) {
+            log.debug("GPU memory pressure check failed (CPU mode?): {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Log current GPU memory status with a context label.
+     */
+    private void logGpuMemoryStatus(String context) {
+        try {
+            org.nd4j.nativeblas.NativeOps nativeOps =
+                    org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            long totalMem = nativeOps.getDeviceTotalMemory(device);
+            long freeMem = nativeOps.getDeviceFreeMemory(device);
+            if (totalMem > 0) {
+                long usedMB = (totalMem - freeMem) / (1024 * 1024);
+                long totalMB = totalMem / (1024 * 1024);
+                double usagePct = (1.0 - (double) freeMem / totalMem) * 100;
+                log.info("GPU memory {}: used={}MB / total={}MB ({}%)", context, usedMB, totalMB,
+                        String.format("%.1f", usagePct));
+            }
+        } catch (Exception e) {
+            // silent
+        }
     }
 
     /**
@@ -1709,6 +1914,31 @@ public class VisionLanguageModel implements AutoCloseable {
         if (dsp != null) {
             dsp.resetForNextPageDecode();
             log.debug("DSP resetForNextPageDecode completed for {}", label);
+        }
+    }
+
+    /**
+     * Release GPU memory held by the vision encoder's DSP intermediates.
+     * Called after vision encoding is complete, before decode starts.
+     * Frees CUDA graph capture buffers, cuBLAS workspace, and non-weight output slots
+     * (~4-5 GB for SmolDocling). The vision encoder will re-warm on next use.
+     */
+    private void releaseVisionEncoderGpuMemory() {
+        if (visionEncoder == null) return;
+        InferenceSession session = visionEncoder.getOrCreateSession();
+        DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
+        if (dsp != null) {
+            int freed = dsp.releaseGpuIntermediates();
+            log.info("Released vision encoder GPU intermediates: {} arrays freed", freed);
+        }
+        // Also release embedTokens — small but no longer needed until next page
+        if (embedTokens != null) {
+            InferenceSession embedSession = embedTokens.getOrCreateSession();
+            DynamicShapePlanExecutor embedDsp = embedSession.getDynamicShapePlanExecutor();
+            if (embedDsp != null) {
+                int embedFreed = embedDsp.releaseGpuIntermediates();
+                log.info("Released embedTokens GPU intermediates: {} arrays freed", embedFreed);
+            }
         }
     }
 

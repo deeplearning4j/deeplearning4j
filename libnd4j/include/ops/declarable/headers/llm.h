@@ -775,6 +775,145 @@ DECLARE_CUSTOM_OP(gated_delta_net_block, 7, 3, false, 0, 3);
 DECLARE_CUSTOM_OP(ggml_dequantize, 1, 1, false, 0, 1);
 #endif
 
+/**
+ * per_layer_embedding - Per-Layer Embedding (Gemma 4)
+ *
+ * Adds a per-layer residual from a second embedding table to the hidden states.
+ * Each decoder layer gets a small additive signal from a dedicated embedding table
+ * indexed by the original token IDs. This is computed once before multimodal
+ * features merge into the embedding sequence.
+ *
+ * output = hidden_states + ple_weight[token_ids] * scale
+ *
+ * Input:
+ *   0: hidden_states [batch, seq_len, hidden_dim]
+ *   1: ple_weight [vocab_size, hidden_dim] - per-layer embedding table
+ *   2: token_ids [batch, seq_len] (INT64 or INT32)
+ *
+ * Output:
+ *   0: output [batch, seq_len, hidden_dim]
+ *
+ * Float arguments:
+ *   0: scale (default: 1.0)
+ */
+#if NOT_EXCLUDED(OP_per_layer_embedding)
+DECLARE_CUSTOM_OP(per_layer_embedding, 3, 1, false, 0, 0);
+#endif
+
+/**
+ * shared_kv_attention - Attention with Shared KV from Earlier Layer (Gemma 4)
+ *
+ * The last N layers do not compute their own K and V projections. Instead they
+ * reuse K/V tensors produced by an earlier layer (the last non-shared layer of
+ * the same attention type). This reduces memory and compute cost with minimal
+ * quality impact.
+ *
+ * Computes standard scaled dot-product attention but takes pre-computed K/V
+ * from a donor layer rather than projecting from the current hidden state.
+ *
+ * Input:
+ *   0: query [batch, seq_len, num_heads, head_dim] - projected from current layer
+ *   1: shared_key [batch, kv_seq_len, num_kv_heads, head_dim] - from donor layer
+ *   2: shared_value [batch, kv_seq_len, num_kv_heads, head_dim] - from donor layer
+ *   3: attention_mask [batch, 1, seq_len, kv_seq_len] (optional)
+ *
+ * Output:
+ *   0: attention_output [batch, seq_len, num_heads, head_dim]
+ *
+ * Integer arguments:
+ *   0: num_heads (query heads)
+ *   1: num_kv_heads
+ *   2: causal (0=bidirectional, 1=causal, default: 1)
+ *   3: sliding_window_size (0=full context, >0=local window, default: 0)
+ *
+ * Float arguments:
+ *   0: attention_scale (default: 1/sqrt(head_dim))
+ */
+#if NOT_EXCLUDED(OP_shared_kv_attention)
+DECLARE_CUSTOM_OP(shared_kv_attention, 3, 1, false, 0, 0);
+#endif
+
+/**
+ * squared_relu - Squared ReLU Activation Function
+ *
+ * Implements Squared ReLU: squared_relu(x) = max(0, x)^2
+ * Used in Nemotron and other NVIDIA model architectures as an alternative
+ * to SiLU/GELU in FFN layers.
+ *
+ * Input:
+ *   0: input tensor
+ *
+ * Output:
+ *   0: output tensor with squared ReLU applied
+ */
+#if NOT_EXCLUDED(OP_squared_relu)
+DECLARE_CUSTOM_OP(squared_relu, 1, 1, true, 0, 0);
+DECLARE_CUSTOM_OP(squared_relu_bp, 2, 1, true, 0, 0);
+#endif
+
+/**
+ * mamba2_ssm - Mamba-2 State Space Model (SSD)
+ *
+ * Implements the Mamba-2 SSD (State Space Duality) recurrence.
+ * Unlike Mamba-1 selective_scan which uses per-element diagonal state,
+ * Mamba-2 uses head-structured state with scalar per-head decay:
+ *
+ *   A_bar = exp(A * dt)           (per-head scalar decay)
+ *   h_t = A_bar * h_{t-1} + (B_t * dt) outer x_t
+ *   y_t = C_t * h_t + D * x_t    (skip connection)
+ *
+ * Input:
+ *   0: x [B, L, D] - input after conv+activation
+ *   1: A [H] - per-head scalar decay (log-space)
+ *   2: B [B, L, N] - input-dependent state expansion
+ *   3: C [B, L, N] - input-dependent state contraction
+ *   4: dt [B, L, H] - discretization timestep (post-softplus)
+ *   5: D [H] - skip connection (optional)
+ *   6: state_in [B, H, N, P] - previous state (optional)
+ *
+ * Output:
+ *   0: y [B, L, D] - output
+ *   1: state_out [B, H, N, P] - final state
+ *
+ * Integer arguments:
+ *   0: num_heads (H)
+ *   1: head_dim (P = D/H)
+ *   2: state_dim (N)
+ */
+#if NOT_EXCLUDED(OP_mamba2_ssm)
+DECLARE_CUSTOM_OP(mamba2_ssm, 5, 2, false, 0, 3);
+#endif
+
+/**
+ * dual_rope - Dual Rotary Position Embedding (Gemma 4)
+ *
+ * Applies two different RoPE configurations depending on attention type:
+ * - Standard RoPE for sliding-window (local) attention layers
+ * - Proportional RoPE with a different freq_base for global full-context layers
+ *
+ * This enables longer context windows by using different position encoding
+ * frequencies for local vs global attention.
+ *
+ * Input:
+ *   0: input tensor [batch, seq_len, num_heads, head_dim]
+ *
+ * Output:
+ *   0: tensor with rotary embeddings applied [batch, seq_len, num_heads, head_dim]
+ *
+ * Integer arguments:
+ *   0: attention_type (0=sliding/local, 1=global/full-context)
+ *   1: position_offset (for KV cache continuation, default: 0)
+ *
+ * Float arguments:
+ *   0: local_freq_base (for sliding window layers, default: 10000.0)
+ *   1: global_freq_base (for full-context layers, default: 1000000.0)
+ *   2: local_freq_scale (default: 1.0)
+ *   3: global_freq_scale (default: 1.0)
+ */
+#if NOT_EXCLUDED(OP_dual_rope)
+DECLARE_CUSTOM_OP(dual_rope, 1, 1, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

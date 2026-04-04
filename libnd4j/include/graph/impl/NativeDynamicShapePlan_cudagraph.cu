@@ -512,6 +512,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         }
       }
 
+      // LRU tracking: record when this segment was last replayed for eviction ordering
+      seg.exec.lastReplayExecCount = executeCount_;
+
       // Phase 2: slotArrayCache_ == outputSlots_ (unified), no restore needed
       totalGraphReplays_++;
       seg.exec.executionCount++;
@@ -642,7 +645,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  static const size_t CUBLAS_WORKSPACE_SIZE = 256 * 1024 * 1024;
+  const size_t CUBLAS_WORKSPACE_SIZE = Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
   ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
   setCublasWorkspaceForCapture(stream);
 
@@ -1126,12 +1129,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       cudaGetLastError();
     }
 
-    if (captureOomFailure && seg.exec.captureOomRetries < GraphSegment::MAX_OOM_RETRIES) {
+    if (captureOomFailure && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
       seg.exec.captureOomRetries++;
-      seg.exec.captureRetryAfterExec = seg.exec.executionCount + GraphSegment::RETRY_INTERVAL;
+      seg.exec.captureRetryAfterExec = seg.exec.executionCount + GraphSegment::retryInterval();
       DSP_DIAG_SEG(MEMORY, segIdx, "graph capture OOM for seg[%d-%d], retry %d/%d after exec %d",
                    seg.startSlot, seg.endSlot,
-                   seg.exec.captureOomRetries, GraphSegment::MAX_OOM_RETRIES,
+                   seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                    seg.exec.captureRetryAfterExec);
     } else {
       seg.exec.compilationFailed = true;
@@ -1201,12 +1204,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     int numEvicted = 0;
     if (handle->wasLastInstantiateOom()) {
       DSP_DIAG(MEMORY, "graph instantiate OOM for seg[%d-%d], attempting eviction (up to %d segments)",
-               seg.startSlot, seg.endSlot, GraphSegment::MAX_OOM_RETRIES);
+               seg.startSlot, seg.endSlot, GraphSegment::maxOomRetries());
 
       bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
                      captureBufferRegistry_ != nullptr;
 
-      for (int evictAttempt = 0; evictAttempt < GraphSegment::MAX_OOM_RETRIES; evictAttempt++) {
+      for (int evictAttempt = 0; evictAttempt < GraphSegment::maxOomRetries(); evictAttempt++) {
         // Find the segment with the smallest captured graph (fewest nodes) to evict.
         // Skip the current segment being instantiated.
         int evictIdx = -1;
@@ -1235,7 +1238,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         auto& evictSeg = segments_[evictIdx];
         DSP_DIAG(MEMORY, "evicting graph for seg[%d-%d] (%zu nodes) to free memory for seg[%d-%d] (attempt %d/%d)",
                  evictSeg.startSlot, evictSeg.endSlot, smallestNodes,
-                 seg.startSlot, seg.endSlot, evictAttempt + 1, GraphSegment::MAX_OOM_RETRIES);
+                 seg.startSlot, seg.endSlot, evictAttempt + 1, GraphSegment::maxOomRetries());
 
         // Free capture buffer NDArrays before destroying the handle.
         // Owned buffers (directReference=false) must be deleted to free their
@@ -1288,17 +1291,17 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // failure.
     cudaGetLastError();
 
-    if (handle->wasLastInstantiateOom() && seg.exec.captureOomRetries < GraphSegment::MAX_OOM_RETRIES) {
+    if (handle->wasLastInstantiateOom() && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
       // Use the OOM retry mechanism: defer re-capture to a future execution.
       // If we evicted segments above, retry on the very next execution (interval=1)
       // since the freed memory should be immediately available. Otherwise use
       // the standard retry interval to wait for memory pressure to decrease.
       seg.exec.captureOomRetries++;
-      int retryInterval = (numEvicted > 0) ? 1 : GraphSegment::RETRY_INTERVAL;
+      int retryInterval = (numEvicted > 0) ? 1 : GraphSegment::retryInterval();
       seg.exec.captureRetryAfterExec = seg.exec.executionCount + retryInterval;
       DSP_DIAG(MEMORY, "graph instantiate OOM for seg[%d-%d], will retry %d/%d after exec %d (evicted %d segments)",
                seg.startSlot, seg.endSlot,
-               seg.exec.captureOomRetries, GraphSegment::MAX_OOM_RETRIES,
+               seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                seg.exec.captureRetryAfterExec, numEvicted);
     } else {
       DSP_DIAG(FALLBACK, "graph instantiate failed for seg[%d-%d] (oom=%s, retries=%d, evicted=%d)",

@@ -33,6 +33,9 @@ PLATFORM_IMPL(transpose, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  // DSP view path: output shares input's buffer with transposed strides.
+  if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
+
   const int rank = input->rankOf();
 
   // Get permutation from arguments or default to reverse

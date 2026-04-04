@@ -326,9 +326,21 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
 
   // Use OneDNN for all supported types and ranks - no size threshold needed
   // OneDNN is well-optimized and competitive with OpenBLAS for all matrix sizes
-  
+
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE);
+
+  // OneDNN matmul requires matching ranks (or vector cases handled below).
+  // For rank-mismatched cases like x[batch, M, K] @ y[K, N] (ONNX broadcast),
+  // fall through to the generic matmul which reshapes before calling MmulHelper.
+  auto xRank = x->rankOf();
+  auto yRank = y->rankOf();
+  if (xRank > 2 && yRank != xRank) {
+    req.expectTrue(makeInfoVariable(false, "ONEDNN MATMUL: rank mismatch x>2, need generic broadcast path"), NO_MSG);
+  }
+  if (yRank > 2 && xRank != yRank) {
+    req.expectTrue(makeInfoVariable(false, "ONEDNN MATMUL: rank mismatch y>2, need generic broadcast path"), NO_MSG);
+  }
 
   // OneDNN matmul supports:
   // - f32 x f32 -> f32

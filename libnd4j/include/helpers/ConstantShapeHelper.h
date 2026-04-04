@@ -133,7 +133,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   LongType* vectorShapeInfo(LongType length, DataType dataType);
   LongType* createShapeInfo(ShapeDescriptor *descriptor);
   LongType* createShapeInfo(DataType dataType, char order, const std::vector<LongType>& shape);
-  LongType* createShapeInfo(DataType dataType, const char order, const int rank,  LongType* shape, LongType extraProperties);
+  LongType* createShapeInfo(DataType dataType, const char order, const int rank,  LongType* shape, LongType extraProperties = 0);
   LongType* createShapeInfo(DataType dataType,  LongType* shapeInfo);
   LongType* createFromExisting(LongType* shapeInfo);
 

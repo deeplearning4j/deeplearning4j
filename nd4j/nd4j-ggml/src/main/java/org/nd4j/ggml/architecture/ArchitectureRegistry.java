@@ -39,6 +39,16 @@ public class ArchitectureRegistry {
     static {
         // Register built-in architectures
         register(new LLaMAArchitecture());
+        register(new GraniteArchitecture());
+        register(new MistralArchitecture());
+        register(new GemmaArchitecture());
+        register(new NemotronArchitecture());
+        register(new LFM2Architecture());
+        register(new OLMoArchitecture());
+        register(new PhiArchitecture());
+        register(new OpenELMArchitecture());
+        register(new GptOssArchitecture());
+        register(new WhisperArchitecture());
         register(new GenericArchitecture());
     }
 

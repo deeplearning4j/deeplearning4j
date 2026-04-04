@@ -894,7 +894,36 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
       bufferDeviceId = ptrAttrsSync.device;
     }
   } else {
-    cudaGetLastError();
+    // cudaPointerGetAttributes failed — _specialBuffer is NOT a valid CUDA pointer.
+    // This can happen if the buffer was freed/corrupted between allocations.
+    // Previously we silently continued and passed the bogus pointer to cudaMemcpyAsync,
+    // which caused SIGSEGV inside libcuda.so when the driver tried to resolve the address.
+    cudaGetLastError();  // clear sticky error
+    DSP_DIAG(MEMORY, "syncToSpecial: _specialBuffer=%p failed cudaPointerGetAttributes "
+             "(err=%d: %s). len=%zu deviceId=%d isClosed=%d — attempting realloc",
+             _specialBuffer, static_cast<int>(attrResSync), cudaGetErrorString(attrResSync),
+             getLenInBytes(), bufferDeviceId, isClosed() ? 1 : 0);
+    cudaGetLastError();  // clear error from the GetErrorString
+    // Attempt to reallocate the special buffer on the correct device
+    _specialBuffer = nullptr;
+    _specialAllocBytes = 0;
+    allocateSpecial();
+    if (_specialBuffer == nullptr) {
+      DSP_DIAG(MEMORY, "syncToSpecial: reallocation of _specialBuffer FAILED — aborting H2D copy");
+      return;  // Cannot proceed without a valid device buffer
+    }
+    DSP_DIAG(MEMORY, "syncToSpecial: reallocated _specialBuffer=%p (%zu bytes)",
+             _specialBuffer, _specialAllocBytes);
+    // Re-verify the new allocation
+    auto attrResRetry = cudaPointerGetAttributes(&ptrAttrsSync, _specialBuffer);
+    if (attrResRetry != cudaSuccess) {
+      cudaGetLastError();
+      DSP_DIAG(MEMORY, "syncToSpecial: reallocated buffer also failed pointer check — aborting");
+      return;
+    }
+    if (ptrAttrsSync.type == cudaMemoryTypeDevice) {
+      bufferDeviceId = ptrAttrsSync.device;
+    }
   }
 
   bool switchedDevice = false;
@@ -914,6 +943,32 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // device-specific — using a device 1 stream for a device 0 memcpy is invalid.
   bool useDspStream = (tl_dspExecutionStream != nullptr && !switchedDevice);
   cudaStream_t stream = useDspStream ? tl_dspExecutionStream : 0;
+
+  // Validate stream and check for latent CUDA errors before cudaMemcpyAsync.
+  // Catches: stale/destroyed streams, latent errors from prior ops.
+  {
+    cudaError_t prevErr = cudaGetLastError();
+    if (prevErr != cudaSuccess) {
+      DSP_DIAG(TRANSFER, "syncToSpecial: LATENT CUDA error before memcpy: %d (%s) "
+               "dst=%p src=%p len=%zu stream=%p device=%d",
+               (int)prevErr, cudaGetErrorString(prevErr),
+               _specialBuffer, _primaryBuffer, getLenInBytes(), (void*)stream, bufferDeviceId);
+      cudaGetLastError();  // clear so cudaMemcpyAsync doesn't inherit it
+    }
+    if (stream != 0) {
+      cudaError_t streamErr = cudaStreamQuery(stream);
+      // cudaSuccess or cudaErrorNotReady both mean stream is valid
+      if (streamErr != cudaSuccess && streamErr != cudaErrorNotReady) {
+        DSP_DIAG(TRANSFER, "syncToSpecial: INVALID stream=%p err=%d (%s) — falling back to stream 0. "
+                 "dst=%p src=%p len=%zu device=%d",
+                 (void*)stream, (int)streamErr, cudaGetErrorString(streamErr),
+                 _specialBuffer, _primaryBuffer, getLenInBytes(), bufferDeviceId);
+        cudaGetLastError();  // clear
+        stream = 0;  // fall back to default stream
+      }
+    }
+  }
+
   auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
   if (res != cudaSuccess) {
     // Restore device before throwing
@@ -1279,7 +1334,20 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
   _isOwnerSpecial = isOwnerSpecial;
 
   if (special != nullptr) {
-    _deviceId.store(AffinityManager::currentDeviceId());
+    // Determine the ACTUAL device the pointer lives on, not the thread's current device.
+    // Multi-GPU routing can allocate on device 0 while the thread affinity says device 1.
+    // Using AffinityManager::currentDeviceId() here would store the wrong device, causing
+    // migrate() to attempt cudaMemcpyPeer from a device the pointer isn't actually on.
+    int actualDevice = AffinityManager::currentDeviceId();  // fallback
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, special);
+    if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+      actualDevice = ptrAttrs.device;
+    } else if (attrRes != cudaSuccess) {
+      cudaGetLastError();  // Clear error
+    }
+    _deviceId.store(actualDevice);
+    _specialDeviceId.store(actualDevice);
   }
 }
 
@@ -1290,8 +1358,17 @@ void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
   _specialBuffer = newPtr;
   _isOwnerSpecial = isOwner;
   if (newPtr != nullptr) {
-    _deviceId.store(AffinityManager::currentDeviceId());
-    _specialDeviceId.store(AffinityManager::currentDeviceId());
+    // Determine actual device from CUDA pointer attributes, not thread affinity.
+    int actualDevice = AffinityManager::currentDeviceId();  // fallback
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, newPtr);
+    if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+      actualDevice = ptrAttrs.device;
+    } else if (attrRes != cudaSuccess) {
+      cudaGetLastError();  // Clear error
+    }
+    _deviceId.store(actualDevice);
+    _specialDeviceId.store(actualDevice);
   }
 }
 
@@ -1574,6 +1651,35 @@ void DataBuffer::migrate() {
   if (_specialBuffer != nullptr) {
     // Copy from old device to new device
     if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
+      // Belt-and-suspenders: re-validate source pointer device right before the copy.
+      // Metadata (_specialDeviceId / _deviceId) can become stale if setSpecial() was
+      // called from a thread whose affinity doesn't match the pointer's actual device.
+      // The earlier pre-check at line ~1572 may have been too far from this copy point.
+      {
+        cudaPointerAttributes preCopyAttrs;
+        auto preCopyRes = cudaPointerGetAttributes(&preCopyAttrs, _specialBuffer);
+        if (preCopyRes == cudaSuccess && preCopyAttrs.type == cudaMemoryTypeDevice) {
+          if (preCopyAttrs.device != oldDeviceId) {
+            sd_printf("DataBuffer::migrate: PRE-COPY device correction! metadata=%d, CUDA=%d for ptr=%p, bytes=%zu\n",
+                      oldDeviceId, preCopyAttrs.device, _specialBuffer, getLenInBytes());
+            oldDeviceId = preCopyAttrs.device;
+            // If corrected source == target, skip the copy entirely — just use same-device memcpy
+            if (oldDeviceId == targetDevice) {
+              cudaSetDevice(targetDevice);
+              auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
+              if (res != cudaSuccess) {
+                std::string err = "DataBuffer::migrate: same-device cudaMemcpy D2D failed after correction! Error: " +
+                                  std::string(cudaGetErrorString(res)) + ", bytes: " + std::to_string(getLenInBytes());
+                THROW_EXCEPTION(err.c_str());
+              }
+              goto copyDone;
+            }
+          }
+        } else if (preCopyRes != cudaSuccess) {
+          cudaGetLastError();  // Clear error
+        }
+      }
+
       // Cross-device copy via cudaMemcpyPeer — handles staging internally
       // (uses peer DMA if available, otherwise stages through host automatically).
       // Synchronize source device first to ensure prior operations complete.
@@ -1635,6 +1741,8 @@ void DataBuffer::migrate() {
       THROW_EXCEPTION(err.c_str());
     }
   }
+
+  copyDone:  // Target for pre-copy device correction (same-device copy after metadata fix)
 
   auto endTime = std::chrono::high_resolution_clock::now();
   auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();

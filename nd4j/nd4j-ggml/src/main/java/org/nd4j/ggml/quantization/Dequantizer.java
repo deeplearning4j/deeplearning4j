@@ -23,6 +23,7 @@ package org.nd4j.ggml.quantization;
 import org.nd4j.ggml.format.GGMLDataType;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Interface for dequantizing GGML quantized tensors to full precision.
@@ -45,7 +46,10 @@ public interface Dequantizer {
     int getBytesPerBlock();
 
     /**
-     * Dequantize raw bytes to float array
+     * Dequantize raw bytes to float array.
+     * Limited to Integer.MAX_VALUE elements due to Java array size limits.
+     * For larger tensors, use {@link DequantizerFactory#dequantizeToArray} which
+     * delegates to the native ggml_dequantize C++ op.
      *
      * @param quantizedData the quantized data bytes
      * @param numElements   the expected number of output elements
@@ -54,14 +58,36 @@ public interface Dequantizer {
     float[] dequantize(byte[] quantizedData, long numElements);
 
     /**
-     * Dequantize to an INDArray with the specified shape and target type
+     * Dequantize to an INDArray with the specified shape and target type.
+     * Default implementation uses the float[] dequantize method for small tensors.
+     * For tensors exceeding Integer.MAX_VALUE elements, use the native
+     * ggml_dequantize op via {@link DequantizerFactory#dequantizeToArray}.
      *
      * @param quantizedData the quantized data bytes
      * @param shape         the target shape
      * @param targetType    the target data type
      * @return dequantized INDArray
      */
-    INDArray dequantizeToArray(byte[] quantizedData, long[] shape, DataType targetType);
+    default INDArray dequantizeToArray(byte[] quantizedData, long[] shape, DataType targetType) {
+        long numElements = 1;
+        for (long dim : shape) numElements *= dim;
+
+        if (numElements > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                "Tensor has " + numElements + " elements, exceeding Java array limit. " +
+                "Use DequantizerFactory.dequantizeToArray() which delegates to the native " +
+                "ggml_dequantize op for large tensors.");
+        }
+
+        float[] floatData = dequantize(quantizedData, numElements);
+        INDArray array = Nd4j.create(floatData, shape);
+        if (targetType != DataType.FLOAT) {
+            INDArray casted = array.castTo(targetType);
+            array.close();
+            array = casted;
+        }
+        return array;
+    }
 
     /**
      * Extract quantization metadata from the raw data

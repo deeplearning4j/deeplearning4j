@@ -26,6 +26,9 @@
 #include <graph/gpu/CaptureBufferRegistry.h>
 #endif
 #include <graph/DspDiagnostics.h>
+#if HAVE_TRITON && defined(SD_CUDA)
+#include <graph/gpu/TritonGraphBackend.h>
+#endif
 #include <graph/FusionPass.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <graph/GraphBackend.h>
@@ -885,6 +888,21 @@ Status NativeDynamicShapePlan::execute(
            static_cast<int>(segments_.size()),
            static_cast<int>(gpuGraphCaptureEnabled_), numExternalInputs);
 
+#ifdef SD_CUDA
+  // Sync DSP stream at the start of execution to ensure all async CUDA operations
+  // from the previous execution and from Java-side inter-step operations (DataBuffer
+  // closes, syncToSpecial H2D copies) have completed. Without this, shape-change
+  // transitions (e.g., prefill→decode) that delete/reallocate slot arrays can race
+  // with in-flight CUDA ops on different streams, causing heap corruption
+  // ("double free or corruption (!prev)").
+  // This sync is cheap (~0μs when the stream is already idle) and critical for
+  // correctness during shape transitions.
+  if (stream != nullptr) {
+    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
+    cudaStreamSynchronize(cudaStr);
+  }
+#endif
+
   // Staging buffer copy deferred - staging buffers not yet allocated
 
   // Debug: dump external input at index 1331 (slot -1332) — useful for diagnosing
@@ -1099,6 +1117,9 @@ Status NativeDynamicShapePlan::execute(
       return Status::KERNEL_FAILURE;
     }
 
+    // Migrate inputs that are on a different device than this segment's target
+    platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+
     bool useGraph = platformShouldUseGraph(segment);
 
     // Set initial execution phase before dispatch
@@ -1136,6 +1157,12 @@ Status NativeDynamicShapePlan::execute(
         slotBySlotSlots += segSlots;
       }
     }
+
+    // Restore original arrays in outputSlots_ and delete migrated copies.
+    // Must happen AFTER segment execution but BEFORE post-segment checks so
+    // downstream segments see the original (source-device) arrays, not the
+    // migrated copies which are about to be deleted.
+    platformCleanupMigratedInputs();
 
     // Post-segment check: on GPU, detects sticky errors from async execution.
     // On CPU, always returns OK.
@@ -1203,11 +1230,12 @@ Status NativeDynamicShapePlan::execute(
     }
 #endif
 
-    // NaN detection: on ALL frozen executions, check ALL output slots
-    // in this segment for NaN, and if found, also check inputs.
-    // Enabled on ALL frozen calls (not just executeCount_ > 0) to compare
-    // Call 2 (warmup) vs Call 3 (steady-state).
-    if (shapesFrozen_) {
+    // NaN detection: check output slots for NaN when verify mode is enabled.
+    // GATED behind tritonVerifyKernels because syncToHost() on every output slot
+    // in every segment causes thousands of GPU→CPU syncs per token (~4592 segments),
+    // which is the single biggest performance bottleneck when left always-on.
+    // Enable with: ND4J_TRITON_VERIFY_KERNELS=true
+    if (shapesFrozen_ && Environment::getInstance().tritonVerifyKernels()) {
       for (int stepIdx = segment.startSlot; stepIdx <= segment.endSlot; stepIdx++) {
         auto& slot = slots_[stepIdx];
         for (int o = 0; o < slot.numOutputs; o++) {
@@ -1215,7 +1243,11 @@ Status NativeDynamicShapePlan::execute(
           if (si < 0 || si >= totalOutputSlots_ || outputSlots_[si] == nullptr) continue;
           auto* arr = outputSlots_[si];
           auto* db = arr->dataBuffer();
+#if defined(SD_CUDA)
           if (db == nullptr || db->special() == nullptr || arr->lengthOf() == 0) continue;
+#else
+          if (db == nullptr || db->primary() == nullptr || arr->lengthOf() == 0) continue;
+#endif
           bool dbClosed = db->isClosed();
           if (dbClosed) {
             fprintf(stdout, "[DSP_DIAG] [NaN_CLOSED_DB] seg[%d-%d] slot=%d opName=%s outSlot=%d "
@@ -1418,6 +1450,13 @@ Status NativeDynamicShapePlan::execute(
   // Track execution count for shapes-frozen optimization
   if (shapesFrozen_) executeCount_++;
 
+  // Eager precompilation: after warmup (executeCount_ just became 1), all shapes
+  // are populated in outputSlots_. Compile all Triton modules now so the 2nd
+  // execute() goes straight to replay instead of blocking on compilation.
+  if (shapesFrozen_ && executeCount_ == 1) {
+    platformPrecompileSegments(externalInputs, numExternalInputs);
+  }
+
   // Frozen constant detection (extracted to NativeDynamicShapePlan_slotexec.cpp)
   detectFrozenConstants();
 
@@ -1509,6 +1548,8 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
   gpuGraphBackend_ = nullptr;
   cpuGraphBackendChecked_ = false;
   cpuGraphBackend_ = nullptr;
+  cpuGraphBackendChainBuilt_ = false;
+  cpuGraphBackendChain_.clear();
 }
 
 // ─── Memory management ─────────────────────────────────────────────────────
@@ -1987,6 +2028,23 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
 
   // Clear GPU backend failed-segment cache
   clearGpuBackendFailedCache();
+
+  // Clear Triton compiled kernel cache (singleton) to free CUmodule GPU memory.
+  // The Triton cache accumulates ~100-150MB/page of CUmodule handles because
+  // cache keys include shapeKey which changes per page. Kernels re-load from
+  // disk cache in <100ms, so the re-compilation cost is minimal.
+#if HAVE_TRITON && defined(SD_CUDA)
+  {
+    std::vector<std::pair<int,int>> segRanges;
+    segRanges.reserve(segments_.size());
+    for (auto& seg : segments_) {
+      segRanges.emplace_back(seg.startSlot, seg.endSlot);
+    }
+    if (!segRanges.empty()) {
+      TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
+    }
+  }
+#endif
 
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: DONE plan=%p, freed %d arrays. "
            "Plan is now cold — next execute() will re-warm.", this, freedCount);

@@ -117,6 +117,41 @@ public class ReplayProfileManager {
         }
     }
 
+    /**
+     * Capture a profile enriched with transfer analytics data.
+     * Merges per-segment transfer stats from the analytics report into each SegmentReplayInfo.
+     */
+    public static ReplayProfile captureProfileWithAnalytics(
+            Pointer nativePlanHandle, Map<String, long[]> shapes,
+            DspReplayTransferAnalytics analytics) {
+
+        ReplayProfile profile = captureProfile(nativePlanHandle, shapes);
+
+        if (analytics != null) {
+            DspReplayTransferAnalytics.ReplayTransferReport report = analytics.getReport();
+
+            for (ReplayProfile.SegmentReplayInfo seg : profile.getSegments()) {
+                DspReplayTransferAnalytics.SegmentTransferSummary segSummary =
+                        report.getSegmentSummaries().get(seg.getSegIdx());
+                if (segSummary != null) {
+                    seg.setTransferBytes(segSummary.getTotalTransferBytes());
+                    seg.setTransferCount(segSummary.getTotalTransferCount());
+                    seg.setTransferDurationNanos(segSummary.getTotalTransferDurationNanos());
+
+                    Map<String, Long> reasonMap = new HashMap<>();
+                    for (Map.Entry<org.nd4j.linalg.framework.device.TransferReason,
+                            DspReplayTransferAnalytics.TransferBreakdown> entry :
+                            segSummary.getBreakdownByReason().entrySet()) {
+                        reasonMap.put(entry.getKey().name(), entry.getValue().getBytes());
+                    }
+                    seg.setTransferBytesByReason(reasonMap);
+                }
+            }
+        }
+
+        return profile;
+    }
+
     // ── Multi-profile management ──
 
     /**
@@ -170,12 +205,20 @@ public class ReplayProfileManager {
         private long captureTimestamp;
         private String backendName;
 
+        // Analytics-enriched fields (backward-compatible: default to 0/null)
+        private int primaryDeviceId;
+        private Map<Integer, Long> deviceMemoryAtCapture;
+
         public long getShapeHash() { return shapeHash; }
         public Map<String, long[]> getShapes() { return shapes; }
         public int getNumSegments() { return numSegments; }
         public List<SegmentReplayInfo> getSegments() { return segments; }
         public long getCaptureTimestamp() { return captureTimestamp; }
         public String getBackendName() { return backendName; }
+        public int getPrimaryDeviceId() { return primaryDeviceId; }
+        public void setPrimaryDeviceId(int deviceId) { this.primaryDeviceId = deviceId; }
+        public Map<Integer, Long> getDeviceMemoryAtCapture() { return deviceMemoryAtCapture; }
+        public void setDeviceMemoryAtCapture(Map<Integer, Long> mem) { this.deviceMemoryAtCapture = mem; }
 
         public static class SegmentReplayInfo {
             int segIdx;
@@ -185,11 +228,28 @@ public class ReplayProfileManager {
             int numCaptureBuffers;
             String statisticsJson;
 
+            // Analytics-enriched fields
+            int executionDeviceId;
+            long transferBytes;
+            long transferCount;
+            long transferDurationNanos;
+            Map<String, Long> transferBytesByReason;
+
             public int getSegIdx() { return segIdx; }
             public boolean isCapturable() { return capturable; }
             public int getReplayState() { return replayState; }
             public int getReplayCount() { return replayCount; }
             public int getNumCaptureBuffers() { return numCaptureBuffers; }
+            public int getExecutionDeviceId() { return executionDeviceId; }
+            public void setExecutionDeviceId(int id) { this.executionDeviceId = id; }
+            public long getTransferBytes() { return transferBytes; }
+            public void setTransferBytes(long b) { this.transferBytes = b; }
+            public long getTransferCount() { return transferCount; }
+            public void setTransferCount(long c) { this.transferCount = c; }
+            public long getTransferDurationNanos() { return transferDurationNanos; }
+            public void setTransferDurationNanos(long d) { this.transferDurationNanos = d; }
+            public Map<String, Long> getTransferBytesByReason() { return transferBytesByReason; }
+            public void setTransferBytesByReason(Map<String, Long> m) { this.transferBytesByReason = m; }
         }
 
         /**
@@ -201,6 +261,19 @@ public class ReplayProfileManager {
             sb.append(",\"numSegments\":").append(numSegments);
             sb.append(",\"captureTimestamp\":").append(captureTimestamp);
             sb.append(",\"backendName\":\"").append(backendName != null ? backendName : "").append("\"");
+            sb.append(",\"primaryDeviceId\":").append(primaryDeviceId);
+
+            // Device memory at capture
+            sb.append(",\"deviceMemoryAtCapture\":{");
+            if (deviceMemoryAtCapture != null) {
+                boolean dmFirst = true;
+                for (Map.Entry<Integer, Long> dm : deviceMemoryAtCapture.entrySet()) {
+                    if (!dmFirst) sb.append(",");
+                    dmFirst = false;
+                    sb.append("\"").append(dm.getKey()).append("\":").append(dm.getValue());
+                }
+            }
+            sb.append("}");
 
             // Shapes
             sb.append(",\"shapes\":{");
@@ -231,6 +304,10 @@ public class ReplayProfileManager {
                     sb.append(",\"replayState\":").append(info.replayState);
                     sb.append(",\"replayCount\":").append(info.replayCount);
                     sb.append(",\"numCaptureBuffers\":").append(info.numCaptureBuffers);
+                    sb.append(",\"executionDeviceId\":").append(info.executionDeviceId);
+                    sb.append(",\"transferBytes\":").append(info.transferBytes);
+                    sb.append(",\"transferCount\":").append(info.transferCount);
+                    sb.append(",\"transferDurationNanos\":").append(info.transferDurationNanos);
                     sb.append("}");
                 }
             }
@@ -248,6 +325,7 @@ public class ReplayProfileManager {
             profile.numSegments = (int) extractLong(json, "numSegments");
             profile.captureTimestamp = extractLong(json, "captureTimestamp");
             profile.backendName = extractString(json, "backendName");
+            profile.primaryDeviceId = (int) extractLong(json, "primaryDeviceId");
             profile.shapes = new HashMap<>();
             profile.segments = new ArrayList<>();
 
@@ -268,6 +346,10 @@ public class ReplayProfileManager {
                         info.replayState = (int) extractLongFromEntry(entry, "replayState");
                         info.replayCount = (int) extractLongFromEntry(entry, "replayCount");
                         info.numCaptureBuffers = (int) extractLongFromEntry(entry, "numCaptureBuffers");
+                        info.executionDeviceId = (int) extractLongFromEntry(entry, "executionDeviceId");
+                        info.transferBytes = extractLongFromEntry(entry, "transferBytes");
+                        info.transferCount = extractLongFromEntry(entry, "transferCount");
+                        info.transferDurationNanos = extractLongFromEntry(entry, "transferDurationNanos");
                         profile.segments.add(info);
                     }
                 }

@@ -9,10 +9,12 @@
 #cmakedefine01 HAVE_OPENBLAS
 #cmakedefine01 HAVE_FLATBUFFERS
 #cmakedefine01 HAVE_TRITON
+#cmakedefine01 HAVE_TRITON_CPU
 #cmakedefine01 HAVE_MLIR
 #cmakedefine01 HAVE_MLX
 #cmakedefine01 HAVE_NNAPI
 #cmakedefine01 HAVE_CUTLASS
+#cmakedefine01 HAVE_OPENVINO
 
 #define SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
 #define OPENBLAS_PATH "@OPENBLAS_PATH@"

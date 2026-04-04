@@ -166,6 +166,16 @@ public class StaticKvCacheDecodeLoop {
     /** Model I/O configuration for variable name resolution. Auto-discovered if not provided. */
     private final ModelIOConfig ioConfig;
 
+    /** Optional encoder model for encoder-decoder architectures (e.g., Whisper). */
+    private final SameDiff encoder;
+
+    /** Pre-computed encoder outputs. If null and encoder is set, encoder runs once at decode start. */
+    private final INDArray encoderOutputs;
+
+    /** Whether this is an encoder-decoder model. When true, encoder outputs are fed to decoder at each step. */
+    @Builder.Default
+    private final boolean encoderDecoder = false;
+
     /**
      * Create the appropriate KvCacheManager based on the configured strategy.
      *
@@ -291,6 +301,28 @@ public class StaticKvCacheDecodeLoop {
         long lateSteadyTotalNs = 0;
         int lateSteadySteps = 0;
 
+        // Encoder-decoder: run encoder once and store outputs for all decode steps
+        INDArray resolvedEncoderOutputs = encoderOutputs;
+        if (encoderDecoder && resolvedEncoderOutputs == null && encoder != null) {
+            log.info("Running encoder for encoder-decoder model...");
+            long encoderStart = System.currentTimeMillis();
+            // Run encoder with prefill embeddings as input features
+            Map<String, INDArray> encoderInputMap = new HashMap<>();
+            // Auto-detect encoder input name
+            List<String> encoderInputNames = encoder.inputs();
+            if (!encoderInputNames.isEmpty()) {
+                encoderInputMap.put(encoderInputNames.get(0), prefillEmbeddings);
+            }
+            // Run encoder and get the first output (hidden states)
+            String[] encoderOutputNames = encoder.outputs().toArray(new String[0]);
+            Map<String, INDArray> encoderResult = encoder.output(encoderInputMap, encoderOutputNames);
+            resolvedEncoderOutputs = encoderResult.values().iterator().next();
+            log.info("Encoder completed in {}ms, output shape: {}",
+                    System.currentTimeMillis() - encoderStart,
+                    java.util.Arrays.toString(resolvedEncoderOutputs.shape()));
+        }
+        final INDArray encoderOutputsForDecode = resolvedEncoderOutputs;
+
         // KV cache management — delegated to KvCacheManager
         KvCacheManager kvCacheManager = createKvCacheManager(resolvedIOConfig);
         boolean usingStaticKv = false;
@@ -341,7 +373,8 @@ public class StaticKvCacheDecodeLoop {
                     pastSeqLen, currentSeqLen,
                     kvCacheManager.getStaticKvBuffers(), maxKvLen, cachePos,
                     usingStaticKv, resolvedHiddenSize,
-                    reusableInputs, dspActive, nativeDecodeInputs);
+                    reusableInputs, dspActive, nativeDecodeInputs,
+                    encoderOutputsForDecode, null);
 
             long tAfterInputBuild = System.nanoTime();
 
@@ -525,6 +558,12 @@ public class StaticKvCacheDecodeLoop {
                         // Re-fetch executor after recompilation
                         decoderSession = decoder.getOrCreateSession();
                         dspExec = decoderSession.getDynamicShapePlanExecutor();
+
+                        // Reassign device placement with fresh memory budgets.
+                        // Vision encoder may have been freed, releasing GB of GPU memory.
+                        // Without this, all ops stay on the primary GPU even if a secondary
+                        // device now has ample free memory for graph capture.
+                        decoder.reassignDynamicShapePlanDevices();
 
                         // CRITICAL: Freeze shapes IMMEDIATELY after recompile.
                         if (dspExec != null && !skipFreeze) {

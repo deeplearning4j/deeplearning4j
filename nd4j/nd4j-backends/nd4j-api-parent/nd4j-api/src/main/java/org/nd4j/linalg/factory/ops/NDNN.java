@@ -695,6 +695,144 @@ public class NDNN {
   }
 
   /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param positionOffset Position offset for KV cache continuation
+   * @param localFreqBase RoPE frequency base for local/sliding-window layers
+   * @param globalFreqBase RoPE frequency base for global/full-context layers
+   * @param localFreqScale RoPE frequency scale for local layers
+   * @param globalFreqScale RoPE frequency scale for global layers
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input, int attentionType, int positionOffset,
+      double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, 0, 0, 10000.0, 1000000.0, 1.0, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input, int attentionType) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param positionOffset Position offset for KV cache continuation
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input, int attentionType, int positionOffset) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Element-wise exponential linear unit (ELU) function:<br>
    * out = x if x > 0<br>
    * out = a * (exp(x) - 1) if x <= 0<br>
@@ -1812,6 +1950,38 @@ public class NDNN {
   }
 
   /**
+   * Mamba-2 State Space Model (SSD) - head-structured recurrence.<br>
+   * <br>
+   * Implements the Mamba-2 SSD recurrence with scalar per-head decay:<br>
+   *   h_t = exp(A * dt) * h_{t-1} + (B * dt) outer x_t<br>
+   *   y_t = C * h_t + D * x_t<br>
+   * <br>
+   * Unlike Mamba-1 (selective_scan) which uses per-element diagonal state,<br>
+   * Mamba-2 uses head-structured state for improved hardware utilization.<br>
+   * <br>
+   * See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through<br>
+   * Structured State Space Duality" (https://arxiv.org/abs/2405.21060)<br>
+   *
+   * @param x Input tensor [batch, seqLen, D] where D = numHeads * headDim (NUMERIC type)
+   * @param A Per-head scalar decay in log-space [numHeads] (NUMERIC type)
+   * @param B Input-dependent state expansion [batch, seqLen, stateDim] (NUMERIC type)
+   * @param C Input-dependent state contraction [batch, seqLen, stateDim] (NUMERIC type)
+   * @param dt Discretization timestep (post-softplus) [batch, seqLen, numHeads] (NUMERIC type)
+   * @param numHeads Number of SSM heads (H)
+   * @param headDim Dimension per head (P = D/H)
+   * @param stateDim State dimension (N)
+   */
+  public INDArray[] mamba2Ssm(INDArray x, INDArray A, INDArray B, INDArray C, INDArray dt,
+      int numHeads, int headDim, int stateDim) {
+    NDValidation.validateNumerical("mamba2Ssm", "x", x);
+    NDValidation.validateNumerical("mamba2Ssm", "A", A);
+    NDValidation.validateNumerical("mamba2Ssm", "B", B);
+    NDValidation.validateNumerical("mamba2Ssm", "C", C);
+    NDValidation.validateNumerical("mamba2Ssm", "dt", dt);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM(x, A, B, C, dt, numHeads, headDim, stateDim));
+  }
+
+  /**
    * Computes the mean of squared values. Used in RMSNorm and similar operations.<br>
    *
    * @param input Input tensor (NUMERIC type)
@@ -1969,6 +2139,85 @@ public class NDNN {
   }
 
   /**
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
+   * <br>
+   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
+   * processes every token unconditionally using SwiGLU activation, while<br>
+   * routed experts are selected via top-K gating.<br>
+   * <br>
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
+   * <br>
+   * where shared_expert uses SwiGLU:<br>
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
+   * <br>
+   * Used in:<br>
+   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
+   * - DeepSeek V2/V3 (shared expert variant)<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numRoutedExperts] (NUMERIC type)
+   * @param routedExpertWeights Routed expert weight matrices. Shape: [numRoutedExperts, hiddenSize, expertHidden] (NUMERIC type)
+   * @param sharedGateProj Shared expert gate projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedUpProj Shared expert up projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedDownProj Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize] (NUMERIC type)
+   * @param numRoutedExperts Number of routed experts
+   * @param topK Number of experts to route to per token
+   */
+  public INDArray[] moeSharedExperts(INDArray input, INDArray routerWeights,
+      INDArray routedExpertWeights, INDArray sharedGateProj, INDArray sharedUpProj,
+      INDArray sharedDownProj, int numRoutedExperts, int topK) {
+    NDValidation.validateNumerical("moeSharedExperts", "input", input);
+    NDValidation.validateNumerical("moeSharedExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "routedExpertWeights", routedExpertWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, true, 1.0));
+  }
+
+  /**
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
+   * <br>
+   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
+   * processes every token unconditionally using SwiGLU activation, while<br>
+   * routed experts are selected via top-K gating.<br>
+   * <br>
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
+   * <br>
+   * where shared_expert uses SwiGLU:<br>
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
+   * <br>
+   * Used in:<br>
+   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
+   * - DeepSeek V2/V3 (shared expert variant)<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numRoutedExperts] (NUMERIC type)
+   * @param routedExpertWeights Routed expert weight matrices. Shape: [numRoutedExperts, hiddenSize, expertHidden] (NUMERIC type)
+   * @param sharedGateProj Shared expert gate projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedUpProj Shared expert up projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedDownProj Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize] (NUMERIC type)
+   * @param routedExpertBias Optional routed expert biases (NUMERIC type)
+   * @param numRoutedExperts Number of routed experts
+   * @param topK Number of experts to route to per token
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param capacityFactor Expert capacity factor for load balancing
+   */
+  public INDArray[] moeSharedExperts(INDArray input, INDArray routerWeights,
+      INDArray routedExpertWeights, INDArray sharedGateProj, INDArray sharedUpProj,
+      INDArray sharedDownProj, INDArray routedExpertBias, int numRoutedExperts, int topK,
+      boolean normalizeProbs, double capacityFactor) {
+    NDValidation.validateNumerical("moeSharedExperts", "input", input);
+    NDValidation.validateNumerical("moeSharedExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "routedExpertWeights", routedExpertWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
+    NDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor));
+  }
+
+  /**
    * This performs multi-headed dot product attention on the given timeseries input<br>
    * out = concat(head_1, head_2, ..., head_n) * Wo<br>
    * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)<br>
@@ -2086,6 +2335,76 @@ public class NDNN {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode.CONSTANT, constant));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Per-Layer Embedding (Gemma 4).<br>
+   * <br>
+   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
+   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
+   * <br>
+   * Each decoder layer receives a small additive signal from a dedicated<br>
+   * embedding table indexed by the original token IDs. This is computed once<br>
+   * before multimodal features merge into the embedding sequence, since PLE<br>
+   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   *
+   * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param pleWeight Per-layer embedding table [vocabSize, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token IDs [batch, seqLen] (INT type)
+   * @param scale Scale factor for the embedding addition
+   * @return output Output [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public INDArray perLayerEmbedding(INDArray hiddenStates, INDArray pleWeight, INDArray tokenIds,
+      double scale) {
+    NDValidation.validateNumerical("perLayerEmbedding", "hiddenStates", hiddenStates);
+    NDValidation.validateNumerical("perLayerEmbedding", "pleWeight", pleWeight);
+    NDValidation.validateInteger("perLayerEmbedding", "tokenIds", tokenIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Per-Layer Embedding (Gemma 4).<br>
+   * <br>
+   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
+   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
+   * <br>
+   * Each decoder layer receives a small additive signal from a dedicated<br>
+   * embedding table indexed by the original token IDs. This is computed once<br>
+   * before multimodal features merge into the embedding sequence, since PLE<br>
+   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   *
+   * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param pleWeight Per-layer embedding table [vocabSize, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token IDs [batch, seqLen] (INT type)
+   * @return output Output [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public INDArray perLayerEmbedding(INDArray hiddenStates, INDArray pleWeight, INDArray tokenIds) {
+    NDValidation.validateNumerical("perLayerEmbedding", "hiddenStates", hiddenStates);
+    NDValidation.validateNumerical("perLayerEmbedding", "pleWeight", pleWeight);
+    NDValidation.validateInteger("perLayerEmbedding", "tokenIds", tokenIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, 1.0));
     try {
       return __tmp[0];
     } finally {
@@ -2539,6 +2858,166 @@ public class NDNN {
   }
 
   /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param mask Attention mask [batch, 1, seqLen, kvSeqLen] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @param causal Causal masking (0=bidirectional, 1=causal)
+   * @param slidingWindowSize Sliding window size (0=disabled)
+   * @param scale Attention scale (0=auto: 1/sqrt(headDim))
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      INDArray mask, int numHeads, int numKvHeads, int causal, int slidingWindowSize,
+      double scale) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, null, numHeads, numKvHeads, 1, 0, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param mask Attention mask [batch, 1, seqLen, kvSeqLen] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      INDArray mask, int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, 1, 0, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param mask Attention mask [batch, 1, seqLen, kvSeqLen] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @param causal Causal masking (0=bidirectional, 1=causal)
+   * @param slidingWindowSize Sliding window size (0=disabled)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      INDArray mask, int numHeads, int numKvHeads, int causal, int slidingWindowSize) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))<br>
    *
    * @param x Input variable (NUMERIC type)
@@ -2739,6 +3218,29 @@ public class NDNN {
   public INDArray softsignDerivative(INDArray x) {
     NDValidation.validateNumerical("softsignDerivative", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative(x));
+  }
+
+  /**
+   * Squared ReLU activation function: out = max(0, x)^2.<br>
+   * Used in Nemotron and other NVIDIA model architectures.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray squaredRelu(INDArray x) {
+    NDValidation.validateNumerical("squaredRelu", "x", x);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SquaredReLU(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**

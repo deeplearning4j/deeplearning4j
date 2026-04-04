@@ -822,9 +822,15 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT START", compileId);
   {
     // Register LLVM dialect inliner interface (required by GluonInline pass in 3.6.0)
-    mlir::DialectRegistry phase4Registry;
-    mlir::LLVM::registerInlinerInterface(phase4Registry);
-    moduleOp->getContext()->appendDialectRegistry(phase4Registry);
+    // Thread-safety: appendDialectRegistry modifies MLIR context global state.
+    // Must be serialized across concurrent compilation threads.
+    {
+      static std::mutex mlirRegistryMtx;
+      std::lock_guard<std::mutex> lock(mlirRegistryMtx);
+      mlir::DialectRegistry phase4Registry;
+      mlir::LLVM::registerInlinerInterface(phase4Registry);
+      moduleOp->getContext()->appendDialectRegistry(phase4Registry);
+    }
     mlir::PassManager pm(moduleOp->getContext());
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
@@ -971,9 +977,15 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   }
 
   // Register ALL dialect translation interfaces — builtin.module, NVVM, GPU, etc.
-  mlir::DialectRegistry registry;
-  mlir::registerAllToLLVMIRTranslations(registry);
-  moduleOp->getContext()->appendDialectRegistry(registry);
+  // Thread-safety: registerAllToLLVMIRTranslations and appendDialectRegistry
+  // modify global MLIR state. Must be serialized across concurrent threads.
+  {
+    static std::mutex mlirTranslationMtx;
+    std::lock_guard<std::mutex> lock(mlirTranslationMtx);
+    mlir::DialectRegistry registry;
+    mlir::registerAllToLLVMIRTranslations(registry);
+    moduleOp->getContext()->appendDialectRegistry(registry);
+  }
   llvm::LLVMContext llvmCtx;
 
   std::unique_ptr<llvm::Module> llvmModule;
@@ -1070,9 +1082,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   // Initialize LLVM targets
   const auto phase6Start = std::chrono::steady_clock::now();
   DSP_DIAG(JIT, "TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM START", compileId);
-  llvm::InitializeAllTargets();
-  llvm::InitializeAllTargetMCs();
-  llvm::InitializeAllAsmPrinters();
+  // Thread-safety: LLVM target initialization modifies global state
+  // (TargetRegistry linked list). Must only be called once across all threads.
+  static std::once_flag llvmInitFlag;
+  std::call_once(llvmInitFlag, []() {
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+  });
 
   std::string triple;
   std::string proc;

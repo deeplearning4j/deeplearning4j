@@ -888,6 +888,49 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("moeSharedExperts") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "MoeSharedExperts"
+        val input = Input(NUMERIC, "input") { description = "Input embeddings. Shape: [batch, seqLen, hiddenSize]" }
+        val routerWeights = Input(NUMERIC, "routerWeights") { description = "Router projection weights. Shape: [hiddenSize, numRoutedExperts]" }
+        val routedExpertWeights = Input(NUMERIC, "routedExpertWeights") { description = "Routed expert weight matrices. Shape: [numRoutedExperts, hiddenSize, expertHidden]" }
+        val sharedGateProj = Input(NUMERIC, "sharedGateProj") { description = "Shared expert gate projection. Shape: [hiddenSize, sharedIntermediateSize]" }
+        val sharedUpProj = Input(NUMERIC, "sharedUpProj") { description = "Shared expert up projection. Shape: [hiddenSize, sharedIntermediateSize]" }
+        val sharedDownProj = Input(NUMERIC, "sharedDownProj") { description = "Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize]" }
+        val routedExpertBias = Input(NUMERIC, "routedExpertBias") { description = "Optional routed expert biases"; defaultValue = null }
+
+        val numRoutedExperts = Arg(INT, "numRoutedExperts") { description = "Number of routed experts" }
+        val topK = Arg(INT, "topK") { defaultValue = 2; description = "Number of experts to route to per token" }
+        val normalizeProbs = Arg(BOOL, "normalizeProbs") { defaultValue = true; description = "Whether to normalize router probabilities for selected experts" }
+        val capacityFactor = Arg(FLOATING_POINT, "capacityFactor") { defaultValue = 1.0; description = "Expert capacity factor for load balancing" }
+
+        Output(NUMERIC, "output") { description = "Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize]" }
+        Output(NUMERIC, "routerProbs") { description = "Router probabilities. Shape: [batch, seqLen, numRoutedExperts]" }
+        Output(NUMERIC, "expertIndices") { description = "Selected expert indices. Shape: [batch, seqLen, topK]" }
+
+        Signature(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, numRoutedExperts, topK)
+        Signature(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).
+
+             Extends MoE with an always-on shared expert pathway. The shared expert
+             processes every token unconditionally using SwiGLU activation, while
+             routed experts are selected via top-K gating.
+
+             output = shared_expert(input) + weighted_sum(routed_experts(input))
+
+             where shared_expert uses SwiGLU:
+             shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))
+
+             Used in:
+             - IBM Granite 4.0 (granitemoeshared architecture)
+             - DeepSeek V2/V3 (shared expert variant)
+            """.trimIndent()
+        }
+    }
+
     Op("ctcGreedyDecoder") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "CTCGreedyDecoder"
@@ -1673,6 +1716,104 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("perLayerEmbedding") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "PerLayerEmbedding"
+        val hiddenStates = Input(NUMERIC, "hiddenStates") { description = "Hidden states [batch, seqLen, hiddenDim]" }
+        val pleWeight = Input(NUMERIC, "pleWeight") { description = "Per-layer embedding table [vocabSize, hiddenDim]" }
+        val tokenIds = Input(INT, "tokenIds") { description = "Token IDs [batch, seqLen]" }
+        val scale = Arg(FLOATING_POINT, "scale") { description = "Scale factor for the embedding addition"; defaultValue = 1.0 }
+
+        Output(NUMERIC, "output") { description = "Output [batch, seqLen, hiddenDim]" }
+
+        AllParamSignature()
+        Signature(hiddenStates, pleWeight, tokenIds)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Per-Layer Embedding (Gemma 4).
+
+             Adds a per-layer residual from a second embedding table to the hidden states:
+               output = hiddenStates + pleWeight[tokenIds] * scale
+
+             Each decoder layer receives a small additive signal from a dedicated
+             embedding table indexed by the original token IDs. This is computed once
+             before multimodal features merge into the embedding sequence, since PLE
+             relies on token IDs that are lost once multimodal features replace placeholders.
+            """.trimIndent()
+        }
+    }
+
+    Op("sharedKvAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "SharedKvAttention"
+        val query = Input(NUMERIC, "query") { description = "Query [batch, seqLen, numHeads, headDim]" }
+        val sharedKey = Input(NUMERIC, "sharedKey") { description = "Key from donor layer [batch, kvSeqLen, numKvHeads, headDim]" }
+        val sharedValue = Input(NUMERIC, "sharedValue") { description = "Value from donor layer [batch, kvSeqLen, numKvHeads, headDim]" }
+        val mask = Input(NUMERIC, "mask") { description = "Attention mask [batch, 1, seqLen, kvSeqLen]"; defaultValue = null }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of query heads" }
+        val numKvHeads = Arg(INT, "numKvHeads") { description = "Number of key-value heads (for GQA)" }
+        val causal = Arg(INT, "causal") { description = "Causal masking (0=bidirectional, 1=causal)"; defaultValue = 1 }
+        val slidingWindowSize = Arg(INT, "slidingWindowSize") { description = "Sliding window size (0=disabled)"; defaultValue = 0 }
+        val scale = Arg(FLOATING_POINT, "scale") { description = "Attention scale (0=auto: 1/sqrt(headDim))"; defaultValue = 0.0 }
+
+        Output(NUMERIC, "output") { description = "Attention output [batch, seqLen, numHeads, headDim]" }
+
+        AllParamSignature()
+        Signature(query, sharedKey, sharedValue, numHeads, numKvHeads)
+        Signature(query, sharedKey, sharedValue, mask, numHeads, numKvHeads)
+        Signature(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Shared KV Attention (Gemma 4).
+
+             Grouped-query attention where K/V come from a donor layer rather than
+             being projected from the current hidden state. The last N layers reuse
+             K/V tensors produced by an earlier layer (the last non-shared layer of
+             the same attention type: sliding or full). This reduces memory and
+             compute with minimal quality impact.
+
+             Supports causal masking and optional sliding window for local attention.
+            """.trimIndent()
+        }
+    }
+
+    Op("dualRoPE") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "DualRoPE"
+        val input = Input(NUMERIC, "input") { description = "Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even" }
+        val attentionType = Arg(INT, "attentionType") { description = "Attention type (0=local/sliding-window, 1=global/full-context)"; defaultValue = 0 }
+        val positionOffset = Arg(INT, "positionOffset") { description = "Position offset for KV cache continuation"; defaultValue = 0 }
+        val localFreqBase = Arg(FLOATING_POINT, "localFreqBase") { description = "RoPE frequency base for local/sliding-window layers"; defaultValue = 10000.0 }
+        val globalFreqBase = Arg(FLOATING_POINT, "globalFreqBase") { description = "RoPE frequency base for global/full-context layers"; defaultValue = 1000000.0 }
+        val localFreqScale = Arg(FLOATING_POINT, "localFreqScale") { description = "RoPE frequency scale for local layers"; defaultValue = 1.0 }
+        val globalFreqScale = Arg(FLOATING_POINT, "globalFreqScale") { description = "RoPE frequency scale for global layers"; defaultValue = 1.0 }
+
+        Output(NUMERIC, "output") { description = "Output with rotary embeddings applied [batch, seqLen, numHeads, headDim]" }
+
+        AllParamSignature()
+        Signature(input)
+        Signature(input, attentionType)
+        Signature(input, attentionType, positionOffset)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Dual Rotary Position Embedding (Gemma 4).
+
+             Applies two different RoPE configurations depending on attention type:
+             - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+             - Proportional RoPE (globalFreqBase) for global full-context attention layers
+
+             This enables longer context windows by using different position encoding
+             frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+               theta_i = freqBase ^ (-2i / headDim) * freqScale
+               output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+               output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
+            """.trimIndent()
+        }
+    }
+
     Op("turboQuantAttention") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "TurboQuantAttention"
@@ -1705,6 +1846,55 @@ fun NN() = Namespace("NN") {
 
              Keys use full two-stage compression (MSE + QJL) for asymmetric attention.
              Values use MSE-only decompression (error averages out in softmax-weighted sum).
+            """.trimIndent()
+        }
+    }
+
+    Op("squaredRelu") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "SquaredReLU"
+        Input(NUMERIC, "x") { description = "Input variable" }
+        Output(NUMERIC, "output") { description = "Output variable" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Squared ReLU activation function: out = max(0, x)^2.
+             Used in Nemotron and other NVIDIA model architectures.
+            """.trimIndent()
+        }
+    }
+
+    Op("mamba2Ssm") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "Mamba2SSM"
+        val x = Input(NUMERIC, "x") { description = "Input tensor [batch, seqLen, D] where D = numHeads * headDim" }
+        val a = Input(NUMERIC, "A") { description = "Per-head scalar decay in log-space [numHeads]" }
+        val b = Input(NUMERIC, "B") { description = "Input-dependent state expansion [batch, seqLen, stateDim]" }
+        val c = Input(NUMERIC, "C") { description = "Input-dependent state contraction [batch, seqLen, stateDim]" }
+        val dt = Input(NUMERIC, "dt") { description = "Discretization timestep (post-softplus) [batch, seqLen, numHeads]" }
+
+        val numHeads = Arg(INT, "numHeads") { description = "Number of SSM heads (H)" }
+        val headDim = Arg(INT, "headDim") { description = "Dimension per head (P = D/H)" }
+        val stateDim = Arg(INT, "stateDim") { description = "State dimension (N)" }
+
+        Output(NUMERIC, "output") { description = "SSM output [batch, seqLen, D]" }
+        Output(NUMERIC, "stateOut") { description = "Final recurrent state [batch, numHeads, stateDim, headDim]" }
+
+        Signature(x, a, b, c, dt, numHeads, headDim, stateDim)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Mamba-2 State Space Model (SSD) - head-structured recurrence.
+
+             Implements the Mamba-2 SSD recurrence with scalar per-head decay:
+               h_t = exp(A * dt) * h_{t-1} + (B * dt) outer x_t
+               y_t = C * h_t + D * x_t
+
+             Unlike Mamba-1 (selective_scan) which uses per-element diagonal state,
+             Mamba-2 uses head-structured state for improved hardware utilization.
+
+             See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through
+             Structured State Space Duality" (https://arxiv.org/abs/2405.21060)
             """.trimIndent()
         }
     }

@@ -395,6 +395,43 @@ DECLARE_CUSTOM_OP(mixture_of_experts, 3, 3, false, -2, 3);
 #endif
 
 /**
+ * Mixture of Experts with Shared Experts
+ *
+ * Extends MoE with an always-on shared expert pathway (IBM Granite 4.0 pattern).
+ * The shared expert processes every token unconditionally, while routed experts
+ * are selected via top-K gating.
+ *
+ * output = shared_expert(input) + weighted_sum(routed_experts(input))
+ *
+ * Shared expert uses SwiGLU: down_proj(silu(gate_proj(x)) * up_proj(x))
+ *
+ * Inputs:
+ *   0: input [batch, seq_len, hidden_size]
+ *   1: router_weights [hidden_size, num_routed_experts]
+ *   2: routed_expert_weights [num_routed_experts, hidden_size, expert_hidden]
+ *   3: shared_gate_proj [hidden_size, shared_intermediate_size]
+ *   4: shared_up_proj [hidden_size, shared_intermediate_size]
+ *   5: shared_down_proj [shared_intermediate_size, hidden_size]
+ *   6: routed_expert_bias (optional)
+ *
+ * Integer args:
+ *   0: num_routed_experts - number of routed experts
+ *   1: top_k - number of experts to route to per token (default 2)
+ *   2: normalize_probs - whether to normalize router probs (default 1)
+ *
+ * T args:
+ *   0: capacity_factor - expert capacity factor (default 1.0)
+ *
+ * Outputs:
+ *   0: output [batch, seq_len, hidden_size] - combined output
+ *   1: router_probs [batch, seq_len, num_routed_experts] - router probabilities
+ *   2: expert_indices [batch, seq_len, top_k] - selected expert indices
+ */
+#if NOT_EXCLUDED(OP_moe_shared_experts)
+DECLARE_CUSTOM_OP(moe_shared_experts, 6, 3, false, -2, 3);
+#endif
+
+/**
  * Deformable Convolution 2D
  *
  * Implements deformable convolution where learned offsets are added to
@@ -640,6 +677,8 @@ DECLARE_CUSTOM_OP(paged_attention_forward, 5, 1, false, 1, 4);
 #if NOT_EXCLUDED(OP_paged_kv_append)
 DECLARE_CUSTOM_OP(paged_kv_append, 6, 1, false, 0, 1);
 #endif
+
+// dual_rope, shared_kv_attention, squared_relu, and mamba2_ssm are declared in headers/llm.h
 
 }  // namespace ops
 }  // namespace sd

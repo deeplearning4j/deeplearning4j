@@ -628,6 +628,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
         return Status::KERNEL_FAILURE;
       }
       if (compiled.cachedArgTableDevice != nullptr) {
+        recordModuleFree(compiled.cachedArgTableDeviceId >= 0 ? compiled.cachedArgTableDeviceId : currentDevice,
+                         compiled.cachedArgTableBytes);
         auto freeErr = freeDeviceBufferAsync(compiled.cachedArgTableDevice, cudaExecStream);
         if (freeErr != cudaSuccess) {
           DSP_DIAG(MEMORY, "TritonGraphBackend: failed to free stale arg table for [%d-%d]: %s",
@@ -646,6 +648,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       }
       compiled.cachedArgTableBytes = tableBytes;
       compiled.cachedArgTableDeviceId = currentDevice;
+      recordModuleAlloc(currentDevice, tableBytes);
     }
 
     // Use persistent PINNED host buffer for the arg table source.
@@ -738,6 +741,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                   compiled.startSlot_, compiled.endSlot_);
         return Status::KERNEL_FAILURE;
       }
+      recordModuleFree(compiled.cachedSyncCounterDeviceId >= 0 ? compiled.cachedSyncCounterDeviceId : currentDevice,
+                       sizeof(int));
       auto freeErr = freeDeviceBufferAsync(compiled.cachedSyncCounterDevice, cudaExecStream);
       if (freeErr != cudaSuccess) {
         DSP_DIAG(MEMORY, "TritonGraphBackend: failed to free stale cooperative sync counter for [%d-%d]: %s",
@@ -760,6 +765,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
         return Status::KERNEL_FAILURE;
       }
       compiled.cachedSyncCounterDeviceId = currentDevice;
+      recordModuleAlloc(currentDevice, sizeof(int));
     }
     syncCounterDevice = compiled.cachedSyncCounterDevice;
 
@@ -810,6 +816,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
         return Status::KERNEL_FAILURE;
       }
       if (compiled.cachedGlobalScratchDevice != nullptr) {
+        recordModuleFree(compiled.cachedGlobalScratchDeviceId >= 0 ? compiled.cachedGlobalScratchDeviceId : currentDevice,
+                         compiled.cachedGlobalScratchBytes);
         freeDeviceBufferAsync(compiled.cachedGlobalScratchDevice, cudaExecStream);
         compiled.cachedGlobalScratchDevice = nullptr;
         compiled.cachedGlobalScratchBytes = 0;
@@ -825,6 +833,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       }
       compiled.cachedGlobalScratchBytes = totalScratchBytes;
       compiled.cachedGlobalScratchDeviceId = currentDevice;
+      recordModuleAlloc(currentDevice, totalScratchBytes);
     }
     globalScratchPtr = compiled.cachedGlobalScratchDevice;
   }
@@ -1019,8 +1028,11 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     auto it = cache_.find(key);
     if (it == cache_.end()) {
       DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
-                "(shapeKey=%lld, device=%d)",
+                "(shapeKey=%lld, device=%d) → marking argTableStable (no arg tables to refresh)",
                 seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice);
+      // No Triton sub-kernels = no arg tables to refresh. Mark stable so fast replay
+      // path can be used (skip iterating over all external inputs for sync checks).
+      seg.exec.argTableStable = true;
       return Status::KERNEL_FAILURE;
     }
     compiledSeg = &it->second;

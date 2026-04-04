@@ -136,6 +136,58 @@ public class ArchitectureConfig {
      */
     private int ropeType;
 
+    // ========================================================================
+    // MoE configuration
+    // ========================================================================
+
+    /**
+     * Number of routed experts for MoE models. 0 = dense (no MoE).
+     */
+    private int numExperts;
+
+    /**
+     * Number of experts selected per token for MoE routing.
+     */
+    @Builder.Default
+    private int numExpertsPerToken = 2;
+
+    /**
+     * Shared expert intermediate size. 0 = no shared experts.
+     */
+    private int sharedIntermediateSize;
+
+    // ========================================================================
+    // muP (maximal update parametrization) scaling multipliers
+    // ========================================================================
+
+    /**
+     * Embedding multiplier (muP). Applied after token embedding gather.
+     * Default 1.0 means no scaling.
+     */
+    @Builder.Default
+    private double embeddingMultiplier = 1.0;
+
+    /**
+     * Attention multiplier (muP). Replaces 1/sqrt(d_k) scaling.
+     * Default 0.0 means use standard 1/sqrt(d_k).
+     */
+    @Builder.Default
+    private double attentionMultiplier = 0.0;
+
+    /**
+     * Residual multiplier (muP). Applied to residual connections.
+     * Default 1.0 means no scaling.
+     */
+    @Builder.Default
+    private double residualMultiplier = 1.0;
+
+    /**
+     * Logits scaling (muP). Applied to final logits before softmax.
+     * Default 1.0 means no scaling.
+     */
+    @Builder.Default
+    private double logitsScaling = 1.0;
+
     /**
      * Get the head dimension. Prefers explicit headDim when set,
      * otherwise falls back to hiddenSize / numAttentionHeads.

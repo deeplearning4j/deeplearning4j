@@ -36,10 +36,14 @@ CudaGraphReplayHandle::~CudaGraphReplayHandle() {
   // Release workspace (raw cudaFree — no registry available at destruction time).
   // Pool-aware callers should call releaseWorkspace(registry, segIdx) explicitly
   // before destroying the handle. This is the safety net for raw allocations.
-  if (captureWorkspacePtr_ != nullptr) {
+  if (captureWorkspacePtr_ != nullptr && !workspaceIsExternal_) {
     // Unregister from CudaMemoryPool so free() no longer skips interior pointers
     memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(captureWorkspacePtr_);
     cudaFree(captureWorkspacePtr_);
+    captureWorkspacePtr_ = nullptr;
+    captureWorkspaceBytes_ = 0;
+  } else if (workspaceIsExternal_) {
+    // External workspace — just clear our reference, owner frees it
     captureWorkspacePtr_ = nullptr;
     captureWorkspaceBytes_ = 0;
   }
@@ -186,6 +190,13 @@ bool CudaGraphReplayHandle::allocateWorkspace(size_t bytes, int deviceId,
 
 void CudaGraphReplayHandle::releaseWorkspace(void* registryPtr, int segIdx) {
   if (captureWorkspacePtr_ == nullptr) return;
+
+  if (workspaceIsExternal_) {
+    // External workspace — just clear our reference, owner frees it
+    captureWorkspacePtr_ = nullptr;
+    captureWorkspaceBytes_ = 0;
+    return;
+  }
 
   // Unregister from CudaMemoryPool before freeing
   memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(captureWorkspacePtr_);

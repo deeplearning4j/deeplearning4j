@@ -282,4 +282,12 @@ public class CpuAffinityManager extends BasicAffinityManager {
         // CPU backend - just duplicate the buffer
         return buffer.dup();
     }
+
+    @Override
+    public void setDeviceForCurrentThread(int deviceId) {
+        long threadId = Thread.currentThread().getId();
+        affinityMap.put(threadId, INTERNAL_CPU_DEVICE_ID);
+        logger.debug("setDeviceForCurrentThread({}) called for thread {} - mapped to CPU internal device {}",
+                deviceId, threadId, INTERNAL_CPU_DEVICE_ID);
+    }
 }

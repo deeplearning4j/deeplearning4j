@@ -124,6 +124,14 @@ public class DequantizerFactory {
 
                 return result;
             } catch (Exception e) {
+                long numElements = 1;
+                for (long dim : shape) numElements *= dim;
+                if (numElements > Integer.MAX_VALUE) {
+                    throw new RuntimeException(
+                        "Native ggml_dequantize failed for " + type + " with " + numElements +
+                        " elements. Java fallback cannot handle tensors this large. " +
+                        "Native error: " + e.getMessage(), e);
+                }
                 log.debug("Native ggml_dequantize failed for {}, falling back to Java dequantizer: {}",
                           type, e.getMessage());
             }

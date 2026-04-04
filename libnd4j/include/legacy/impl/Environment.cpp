@@ -1068,6 +1068,12 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
    }
  }
 
+ const char* tritonInvalidateVar = std::getenv("ND4J_TRITON_INVALIDATE_ON_PLAN_FREE");
+ if (tritonInvalidateVar != nullptr) {
+   std::string val(tritonInvalidateVar);
+   setTritonInvalidateOnPlanFree(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
  const char* tritonKernelDumpVar = std::getenv("ND4J_TRITON_KERNEL_DUMP");
  if (tritonKernelDumpVar != nullptr) {
    std::string kernelDumpStr(tritonKernelDumpVar);
@@ -1330,6 +1336,25 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
   const char* v = std::getenv("ND4J_DSP_CAPTURE_POOL_MAX_BYTES");
   if (v != nullptr) { long long n = std::atoll(v); if (n > 0) setDspCapturePoolMaxBytes(n); }
 }
+// CUDA graph capture OOM retry and memory management
+{
+  const char* v = std::getenv("ND4J_DSP_CAPTURE_OOM_MAX_RETRIES");
+  if (v != nullptr) { int n = std::atoi(v); if (n >= 0) setDspCaptureOomMaxRetries(n); }
+}
+{
+  const char* v = std::getenv("ND4J_DSP_CAPTURE_OOM_RETRY_INTERVAL");
+  if (v != nullptr) { int n = std::atoi(v); if (n >= 1) setDspCaptureOomRetryInterval(n); }
+}
+{
+  const char* v = std::getenv("ND4J_DSP_CUBLAS_WORKSPACE_MB");
+  if (v != nullptr) { int n = std::atoi(v); if (n > 0) setDspCublasWorkspaceMb(n); }
+}
+{
+  const char* v = std::getenv("ND4J_DSP_GRAPH_METADATA_SAFETY_MB");
+  if (v != nullptr) { int n = std::atoi(v); if (n >= 0) setDspGraphMetadataSafetyMb(n); }
+}
+{ int v = readBoolEnv("ND4J_DSP_PROACTIVE_EVICT");            if (v >= 0) setDspProactiveEvictBeforeCapture(v); }
+{ int v = readBoolEnv("ND4J_DSP_LRU_EVICTION");               if (v >= 0) setDspLruEviction(v); }
 }
 #endif
 
@@ -1697,6 +1722,10 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setTritonAlwaysCompile(bool alwaysCompile) {
     _tritonAlwaysCompile.store(alwaysCompile);
+  }
+
+  void Environment::setTritonInvalidateOnPlanFree(bool invalidate) {
+    _tritonInvalidateOnPlanFree.store(invalidate);
   }
 
   void Environment::setTritonKernelDump(bool kernelDump) {

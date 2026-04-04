@@ -512,6 +512,16 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     return result;
   }
 
+  // Track estimated GPU memory for the loaded module (binary size as proxy)
+  result.estimatedModuleBytes = binary.size;
+  {
+    int currentDevice = 0;
+#ifdef SD_CUDA
+    cudaGetDevice(&currentDevice);
+#endif
+    recordModuleAlloc(currentDevice, binary.size);
+  }
+
   // Get kernel function
   result.kernelFunction = TritonTargetDispatch::getKernelFunction(result.gpuModule, irModule.kernelName);
   if (!result.kernelFunction) {

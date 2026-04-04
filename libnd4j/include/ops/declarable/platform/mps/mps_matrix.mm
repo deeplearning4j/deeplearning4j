@@ -91,6 +91,9 @@ PLATFORM_IMPL(transpose, ENGINE_CPU) {
 
     if (input->isEmpty()) return sd::Status::OK;
 
+    // DSP view path: output shares input's buffer with transposed strides.
+    if (input->dataBuffer() == output->dataBuffer()) return sd::Status::OK;
+
     std::vector<LongType> permutation;
     if (block.width() > 1) {
         auto permArr = INPUT_VARIABLE(1);

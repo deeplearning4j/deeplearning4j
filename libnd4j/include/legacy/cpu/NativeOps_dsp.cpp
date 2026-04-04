@@ -144,6 +144,15 @@ int executeDynamicShapePlan(
         setError(4, buf);
         return 4;
       }
+      // Validate DataBuffer integrity before passing to plan->execute()
+      auto* db = inputPtrs[i]->dataBuffer();
+      if (db != nullptr) {
+        DSP_DIAG(EXECUTE, "executeDSP: input[%d] ndarray=%p db=%p closed=%d const=%d special=%p primary=%p destroyed=%d valid=%d lenBytes=%lld",
+                 i, (void*)inputPtrs[i], (void*)db, db->isClosed() ? 1 : 0,
+                 db->isConstant ? 1 : 0, db->special(), db->primary(),
+                 db->isDestroyed() ? 1 : 0, db->isValid() ? 1 : 0,
+                 (long long)db->getLenInBytes());
+      }
     }
 
     std::vector<NDArray*> outputPtrs(numOutputs);

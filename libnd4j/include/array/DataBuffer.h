@@ -358,17 +358,16 @@ class SD_LIB_EXPORT DataBuffer {
   void setPrimaryBuffer(void *buffer, size_t length);
   void setSpecialBuffer(void *buffer, size_t length);
 
-#if defined(SD_CUDA)
   /**
    * Replace the special (device) buffer pointer WITHOUT freeing the old pointer.
    * The caller is responsible for freeing the old pointer separately.
    * Used by weight migration: the old pool-based pointer is freed via cudaFreeAsync,
    * then this method sets the new direct-allocated pointer.
+   * On CPU this is a no-op since there is no device buffer.
    * @param newPtr  New special buffer pointer (caller must manage ownership)
    * @param isOwner Whether this DataBuffer owns (should free) the new pointer
    */
   void replaceSpecialBuffer(void* newPtr, bool isOwner);
-#endif
 
 
   void  showBufferLimited();

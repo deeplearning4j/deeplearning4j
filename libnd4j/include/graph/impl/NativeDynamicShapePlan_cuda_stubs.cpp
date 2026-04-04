@@ -83,14 +83,25 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
   return true;
 }
 
+// ── Cross-device migration: no-op on CPU ────────────────────────────────────
+
+void NativeDynamicShapePlan::platformMigrateSegmentInputs(
+    const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs) {
+  // No cross-device migration needed on CPU
+}
+
+void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
+  // No-op on CPU
+}
+
 // ── Graph eligibility: check CPU/GPU graph backends ─────────────────────────
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
-  if (!segment.isCapturable || segment.exec.compilationFailed) return false;
+  if (!segment.isCapturable) return false;
   return (segment.selectedBackend == SelectedBackend::CPU_GRAPH);
 }
 
-// ── Segment execution: Switch-based CPU dispatch (no cascade) ───────────────
+// ── Segment execution: Cascading CPU dispatch ───────────────────────────────
 
 Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     GraphSegment& segment, NDArray** externalInputs, int numExternalInputs,
@@ -104,27 +115,28 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 
   switch (segment.selectedBackend) {
     case SelectedBackend::CPU_GRAPH: {
-      auto* cpuBackend = getCpuGraphBackend();
-      if (cpuBackend) {
-        auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
-        if (status == Status::OK) {
-          usedGraph = true;
+      // Use cascading backend selection — executeSegmentWithCpuGraph iterates the
+      // backend chain and caches the resolved backend per-segment.
+      auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
+      if (status == Status::OK) {
+        usedGraph = true;
+        if (segment.resolvedCpuBackend) {
+          segment.exec.compiledByBackend = segment.resolvedCpuBackend->name();
+        } else {
           segment.exec.compiledByBackend = "CPU";
-          if (segment.exec.executionCount <= 1) {
-            segment.exec.currentPhase = ExecutionPhase::COMPILING;
-          } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-            segment.exec.currentPhase = ExecutionPhase::REPLAYING;
-          } else {
-            segment.exec.currentPhase = ExecutionPhase::COMPILED;
-          }
-          return Status::OK;
         }
-        // CPU graph backend failed — hard error. No cascade.
-        DSP_DIAG(FALLBACK, "NativeDSP::execute: cpuBackend FAILED for seg[%d-%d] status=%d — hard error",
-                 segment.startSlot, segment.endSlot, static_cast<int>(status));
-        return status;
+        if (segment.exec.executionCount <= 1) {
+          segment.exec.currentPhase = ExecutionPhase::COMPILING;
+        } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+          segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+        } else {
+          segment.exec.currentPhase = ExecutionPhase::COMPILED;
+        }
+        return Status::OK;
       }
-      // Backend resolved at build time but not available at runtime — slot-by-slot
+      // All backends in the cascade failed — fall through to slot-by-slot
+      DSP_DIAG(FALLBACK, "NativeDSP::execute: all CPU backends failed for seg[%d-%d] — falling back to slot-by-slot",
+               segment.startSlot, segment.endSlot);
       goto slot_by_slot;
     }
 
@@ -137,7 +149,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     default:
 slot_by_slot:
       // Slot-by-slot with FunctionalReplayHandle for caching
-      if (!segment.exec.replayHandle && segment.isCapturable && !segment.exec.compilationFailed) {
+      if (!segment.exec.replayHandle && segment.isCapturable) {
         segment.exec.replayHandle = GraphReplayFactory::create(0);
         segment.exec.replayHandle->beginCapture(nullptr);
       }
@@ -215,6 +227,7 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   seg.exec.replayHandle.reset();
   seg.exec.gapOpsCapturedInGraph = false;
+  seg.resolvedCpuBackend = nullptr;
 }
 
 // ── Plan resource cleanup: reset replayHandles on CPU ───────────────────────
@@ -223,6 +236,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     seg.exec.replayHandle.reset();
     seg.exec.gapOpsCapturedInGraph = false;
+    seg.resolvedCpuBackend = nullptr;
   }
 }
 

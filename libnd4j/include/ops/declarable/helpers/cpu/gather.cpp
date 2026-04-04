@@ -124,117 +124,54 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       }
 
     } else {
-      // Standard gather implementation
+      // Standard gather implementation using getSubArrShapeAndOffsets
       //
       // For gather with axis=A on input shape [..., dimA, ...] and indices shape [I1, I2, ...]:
       // - Output shape is: input[0:A] + indices_shape + input[A+1:]
-      // - Input TADs: iterate along axis A, each TAD has shape input[A+1:]
-      // - Output TADs: iterate along indices dimensions, each TAD has same shape as input TAD
+      // - We split input along axis into sub-arrays, then copy the indexed ones to output
       //
-      // tadForDimensions takes dimensions to KEEP in each TAD (not to exclude)
-      // It then internally calls evalDimsToExclude to find which dims to iterate over
+      // This approach uses getSubArrShapeAndOffsets which correctly handles all rank combinations.
 
-      std::vector<sd::LongType> axesVec = {axis};
-      auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, axesVec.data());
-
-      // For output TADs, we want the same shape as input TADs
-      // Input TAD shape = all dims except axis
-      // Output shape = input[0:axis] + indices_shape + input[axis+1:]
-      // Output TAD dims should be: dims 0 to axis-1, then dims axis+indicesRank to end
-      // This gives TAD shape matching input's TAD shape
       const sd::LongType indicesRank = indices->rankOf();
-      const sd::LongType outputRank = output->rankOf();
-
-      std::vector<sd::LongType> outputTadDims;
-      outputTadDims.reserve(outputRank - indicesRank);
-
-      // Add dimensions before the indices dimensions (0 to axis-1)
-      for (sd::LongType d = 0; d < axis; d++) {
-        outputTadDims.push_back(d);
-      }
-      // Add dimensions after the indices dimensions (axis+indicesRank to outputRank-1)
-      for (sd::LongType d = axis + indicesRank; d < outputRank; d++) {
-        outputTadDims.push_back(d);
-      }
-
-      // If outputTadDims is empty, it means each TAD is a scalar - handle this case
-      // by using the same approach as input (which would also have empty TAD dims)
-
-      // Get TAD packs - these are cached and should not be deleted
-      auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-      auto tadPackOut = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &outputTadDims);
-
-      // Validate TAD packs before use
-      if (tadPack == nullptr || tadPackOut == nullptr) {
-        if (dimensions) delete dimensions;
-        THROW_EXCEPTION("gather: Failed to create TAD packs");
-      }
-
-      // Now safe to delete dimensions as TAD helper has made internal copy
-      delete dimensions;
-
-      auto tadShapeInfo = tadPack->primaryShapeInfo();
-      auto tadOffsets = tadPack->primaryOffsets();
-      auto tadShapeInfoOut = tadPackOut->primaryShapeInfo();
-      auto tadOffsetsOut = tadPackOut->primaryOffsets();
-
-      // Validate that input and output TAD shapes match
-      auto inputTadLength = shape::length(tadShapeInfo);
-      auto outputTadLength = shape::length(tadShapeInfoOut);
-      if (inputTadLength != outputTadLength) {
-        std::string error = "gather: TAD shape mismatch - input TAD length ";
-        error += std::to_string(inputTadLength);
-        error += " != output TAD length ";
-        error += std::to_string(outputTadLength);
-        error += ". Input shape: ";
-        error += ShapeUtils::shapeAsString(input->shapeInfo());
-        error += ", Output shape: ";
-        error += ShapeUtils::shapeAsString(output->shapeInfo());
-        error += ", Indices shape: ";
-        error += ShapeUtils::shapeAsString(indices->shapeInfo());
-        error += ", axis: ";
-        error += std::to_string(axis);
-        THROW_EXCEPTION(error.c_str());
-      }
-
-      auto tadShapeInfoCast = const_cast<sd::LongType *>(tadShapeInfo);
-      auto tadShapeInfoOutCast = const_cast<sd::LongType *>(tadShapeInfoOut);
-
-      // Calculate the number of gather operations (equal to indices length)
       const sd::LongType numGatherOps = indices->lengthOf();
+      const sd::LongType numInputSlices = input->sizeAt(axis);
 
-      // Validate bounds before parallel execution
-      if (numGatherOps > tadPackOut->numberOfTads()) {
-        std::string error = "gather: indices length ";
-        error += std::to_string(numGatherOps);
-        error += " exceeds output TAD count ";
-        error += std::to_string(tadPackOut->numberOfTads());
-        THROW_EXCEPTION(error.c_str());
-      }
+      // Build output dimension list: the indices-shaped dimensions in output
+      std::vector<sd::LongType> dimsOut(indicesRank);
+      std::iota(dimsOut.begin(), dimsOut.end(), axis);  // axis, axis+1, ... axis+indicesRank-1
 
-      auto numInputTads = tadPack->numberOfTads();
+      sd::LongType *inSubArrShapeInfo(nullptr), *outSubArrShapeInfo(nullptr);
+      sd::LongType *inSubArrOffsets(nullptr), *outSubArrOffsets(nullptr);
 
-      // Check if we can use memcpy (contiguous TADs with same type)
-      bool canUseMemcpy = isTadContiguous(tadShapeInfo) &&
-                          isTadContiguous(tadShapeInfoOut) &&
+      input->getSubArrShapeAndOffsets({axis}, inSubArrShapeInfo, inSubArrOffsets);
+      output->getSubArrShapeAndOffsets(dimsOut, outSubArrShapeInfo, outSubArrOffsets);
+
+      auto inSubArrLen = shape::length(inSubArrShapeInfo);
+      auto outSubArrLen = shape::length(outSubArrShapeInfo);
+
+      // Both sub-array lengths should match (they represent the same slice shape)
+      auto copyLen = std::min(inSubArrLen, outSubArrLen);
+
+      // Check if we can use memcpy (contiguous sub-arrays with same type)
+      bool inContiguous = isTadContiguous(inSubArrShapeInfo);
+      bool outContiguous = isTadContiguous(outSubArrShapeInfo);
+      bool canUseMemcpy = inContiguous && outContiguous &&
                           input->dataType() == output->dataType();
-      auto tadLength = shape::length(tadShapeInfo);
-      auto bytesToCopy = tadLength * input->sizeOfT();
+      auto elementSize = input->sizeOfT();
+      auto bytesToCopy = copyLen * elementSize;
 
-      // Cache buffer pointers for faster access in loop
       auto inputBuffer = input->buffer();
       auto outputBuffer = output->buffer();
-      auto elementSize = input->sizeOfT();
 
       if (canUseMemcpy) {
-        // Fast path: use memcpy for contiguous TADs
+        // Fast path: memcpy for contiguous sub-arrays
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
             auto idx = indicesVec[i];
-            if (idx >= numInputTads || idx < 0) continue;
+            if (idx < 0 || idx >= numInputSlices) continue;
 
-            auto offsetIn = tadOffsets[idx];
-            auto offsetOut = tadOffsetsOut[i];
+            auto offsetIn = inSubArrOffsets[idx];
+            auto offsetOut = outSubArrOffsets[i];
             std::memcpy(reinterpret_cast<int8_t*>(outputBuffer) + offsetOut * elementSize,
                        reinterpret_cast<const int8_t*>(inputBuffer) + offsetIn * elementSize,
                        bytesToCopy);
@@ -242,20 +179,23 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         };
         samediff::Threads::parallel_tad(func, 0, numGatherOps);
       } else {
-        // Fallback: use NativeOpExecutioner
+        // Fallback: element-by-element copy using NativeOpExecutioner
+        auto inShapeCast = const_cast<sd::LongType*>(inSubArrShapeInfo);
+        auto outShapeCast = const_cast<sd::LongType*>(outSubArrShapeInfo);
+
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
             auto idx = indicesVec[i];
-            if (idx >= numInputTads || idx < 0) continue;
+            if (idx < 0 || idx >= numInputSlices) continue;
 
-            auto offsetIn = tadOffsets[idx];
-            auto offsetOut = tadOffsetsOut[i];
+            auto offsetIn = inSubArrOffsets[idx];
+            auto offsetOut = outSubArrOffsets[i];
 
             NativeOpExecutioner::execTransformAny(input->getContext(),
                                                   transform::Assign,
-                                                  input->bufferWithOffset(offsetIn), tadShapeInfoCast,
+                                                  input->bufferWithOffset(offsetIn), inShapeCast,
                                                   nullptr, nullptr,
-                                                  output->bufferWithOffset(offsetOut), tadShapeInfoOutCast,
+                                                  output->bufferWithOffset(offsetOut), outShapeCast,
                                                   nullptr, nullptr,
                                                   nullptr, false);
           }

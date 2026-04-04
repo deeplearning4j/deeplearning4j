@@ -41,7 +41,7 @@
 #include <unordered_set>
 
 // GPU graph backends (conditional)
-#if HAVE_TRITON
+#if HAVE_TRITON && defined(SD_CUDA)
 #include <graph/gpu/TritonGraphBackend.h>
 #endif
 #ifdef SD_CUDA
@@ -70,6 +70,18 @@ static size_t TRITON_CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
   if (envVal != nullptr) {
     int parsed = std::atoi(envVal);
     if (parsed > 0 && parsed <= 1024) mb = static_cast<size_t>(parsed);
+  }
+  return mb * 1024ULL * 1024ULL;
+}();
+
+// Default capture workspace size for Triton capture buffers (128MB).
+// Configurable via ND4J_DSP_CAPTURE_WORKSPACE_MB env var.
+static size_t TRITON_CAPTURE_WORKSPACE_SIZE = []() -> size_t {
+  const char* envVal = std::getenv("ND4J_DSP_CAPTURE_WORKSPACE_MB");
+  size_t mb = 128;
+  if (envVal != nullptr) {
+    int parsed = std::atoi(envVal);
+    if (parsed > 0 && parsed <= 4096) mb = static_cast<size_t>(parsed);
   }
   return mb * 1024ULL * 1024ULL;
 }();
@@ -242,6 +254,180 @@ static Status reportReplayError(GraphSegment& seg, const char* step,
   cudaGetLastError(); // clear error state
   return Status::KERNEL_FAILURE;
 }
+
+// ── LRU GRAPH EVICTION ──────────────────────────────────────────────────────
+// Evicts captured graphs to free GPU memory. Returns number of graphs evicted.
+// When dspLruEviction is true, evicts least-recently-replayed graphs first.
+// Otherwise evicts smallest (fewest nodes) first (legacy behavior).
+int NativeDynamicShapePlan::evictLruGraphs(int segIdx, size_t neededBytes, void* stream) {
+  auto cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
+                 captureBufferRegistry_ != nullptr;
+  bool lruMode = Environment::getInstance().dspLruEviction();
+  int maxEvictions = Environment::getInstance().dspCaptureOomMaxRetries();
+  int numEvicted = 0;
+
+  for (int evictAttempt = 0; evictAttempt < maxEvictions; evictAttempt++) {
+    // Check if we have enough memory already
+    size_t gpuFree = 0, gpuTotal = 0;
+    cudaMemGetInfo(&gpuFree, &gpuTotal);
+    if (gpuFree >= neededBytes) {
+      DSP_DIAG(MEMORY, "evictLruGraphs: have enough memory after %d evictions (%zuMB free >= %zuMB needed)",
+               numEvicted, gpuFree / (1024*1024), neededBytes / (1024*1024));
+      break;
+    }
+
+    // Find the best candidate to evict
+    int evictIdx = -1;
+    if (lruMode) {
+      // LRU: find segment with smallest lastReplayExecCount (least recently used)
+      int lruExecCount = INT_MAX;
+      for (size_t si = 0; si < segments_.size(); si++) {
+        if (static_cast<int>(si) == segIdx) continue;
+        auto& candidate = segments_[si];
+        if (!candidate.exec.replayHandle || !candidate.exec.replayHandle->isReady()) continue;
+        if (candidate.exec.lastReplayExecCount < lruExecCount) {
+          lruExecCount = candidate.exec.lastReplayExecCount;
+          evictIdx = static_cast<int>(si);
+        }
+      }
+    } else {
+      // Smallest-first: find segment with fewest CUDA graph nodes
+      size_t smallestNodes = SIZE_MAX;
+      for (size_t si = 0; si < segments_.size(); si++) {
+        if (static_cast<int>(si) == segIdx) continue;
+        auto& candidate = segments_[si];
+        if (!candidate.exec.replayHandle || !candidate.exec.replayHandle->isReady()) continue;
+        auto* cudaReplay = dynamic_cast<CudaGraphReplayHandle*>(candidate.exec.replayHandle.get());
+        size_t nodeCount = cudaReplay ? cudaReplay->getNumNodes() : 1;
+        if (nodeCount == 0) nodeCount = 1;
+        if (nodeCount < smallestNodes) {
+          smallestNodes = nodeCount;
+          evictIdx = static_cast<int>(si);
+        }
+      }
+    }
+
+    if (evictIdx < 0) {
+      DSP_DIAG(MEMORY, "evictLruGraphs: no more evictable segments (evicted %d)", numEvicted);
+      break;
+    }
+
+    // Evict the selected segment
+    auto& evictSeg = segments_[evictIdx];
+    DSP_DIAG(MEMORY, "evictLruGraphs: evicting seg[%d-%d] (lruExec=%d, mode=%s) for seg idx=%d (attempt %d/%d)",
+             evictSeg.startSlot, evictSeg.endSlot, evictSeg.exec.lastReplayExecCount,
+             lruMode ? "LRU" : "smallest", segIdx, evictAttempt + 1, maxEvictions);
+
+    // Free capture buffer NDArrays
+    for (auto& cb : evictSeg.exec.replayHandle->getCaptureBuffers()) {
+      if (!cb.directReference) delete cb.buffer;
+    }
+    evictSeg.exec.replayHandle->getCaptureBuffers().clear();
+
+    // Release capture workspace
+    evictSeg.exec.replayHandle->releaseWorkspace(
+        usePool ? captureBufferRegistry_ : nullptr,
+        evictSeg.startSlot);
+
+    // Free pinned host pointers
+    evictSeg.exec.replayHandle->freeHostPointers();
+    evictSeg.exec.replayHandle->clearExternalAddresses();
+
+    // Destroy replay handle (frees cudaGraphExec + cudaGraph)
+    evictSeg.exec.replayHandle.reset();
+
+    // Reset evicted segment for future re-capture
+    evictSeg.exec.cachedShapeKey = 0;
+    evictSeg.exec.capturedInputAddrKey = 0;
+    evictSeg.exec.capturedCreateValueKey = 0;
+    evictSeg.exec.compilationFailed = false;
+    evictSeg.exec.gapOpsCapturedInGraph = false;
+    evictSeg.exec.argTableStable = false;
+    evictSeg.exec.compiledByBackend.clear();
+    evictSeg.exec.executionCount = 0;
+    evictSeg.exec.lastReplayExecCount = 0;
+
+    numEvicted++;
+
+    // Sync to ensure GPU memory is freed
+    if (cudaStr != nullptr) {
+      cudaStreamSynchronize(cudaStr);
+    }
+    cudaGetLastError();
+  }
+
+  // Final pool trim after evictions
+  if (numEvicted > 0) {
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+    DSP_DIAG(MEMORY, "evictLruGraphs: evicted %d segments, trimmed pool on device %d", numEvicted, deviceId);
+  }
+
+  return numEvicted;
+}
+
+// ── PROACTIVE PRE-CAPTURE MEMORY CLEANUP ───────────────────────────────────
+// Called before workspace allocation when about to capture a graph.
+// Frees cached-but-unused GPU memory and evicts LRU graphs if needed.
+void NativeDynamicShapePlan::proactivePreCaptureMemoryCleanup(GraphSegment& seg, int segIdx, void* stream) {
+  auto cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+
+  // 1. Trim CUDA memory pool — cheap, can reclaim hundreds of MB
+  DSP_DIAG(MEMORY, "proactive cleanup: trimming pool on device %d for seg[%d-%d]",
+           deviceId, seg.startSlot, seg.endSlot);
+  memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+  if (cudaStr != nullptr) {
+    memory::CudaMemoryPool::getInstance().trimPoolOnStream(deviceId, cudaStr);
+  }
+
+  // 2. Check if we have enough memory
+  size_t gpuFree = 0, gpuTotal = 0;
+  cudaMemGetInfo(&gpuFree, &gpuTotal);
+
+  // Estimate needed: capture workspace + cuBLAS workspace (if not allocated) + safety margin
+  size_t neededBytes = 0;
+  if (sharedCaptureWorkspace_ == nullptr) {
+    neededBytes += TRITON_CAPTURE_WORKSPACE_SIZE;  // 128MB default
+  }
+  if (cublasWorkspaceBuffer_ == nullptr) {
+    neededBytes += Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
+  }
+  neededBytes += Environment::getInstance().dspGraphMetadataSafetyMb() * 1024ULL * 1024ULL;
+
+  DSP_DIAG(MEMORY, "proactive cleanup: gpuFree=%zuMB, needed=%zuMB (ws=%zuMB, cublas=%zuMB, safety=%dMB) for seg[%d-%d]",
+           gpuFree / (1024*1024), neededBytes / (1024*1024),
+           (sharedCaptureWorkspace_ == nullptr ? TRITON_CAPTURE_WORKSPACE_SIZE : 0) / (1024*1024),
+           (cublasWorkspaceBuffer_ == nullptr ? (size_t)(Environment::getInstance().dspCublasWorkspaceMb()) : 0),
+           Environment::getInstance().dspGraphMetadataSafetyMb(),
+           seg.startSlot, seg.endSlot);
+
+  if (gpuFree >= neededBytes) {
+    DSP_DIAG(MEMORY, "proactive cleanup: sufficient memory (%zuMB >= %zuMB), no eviction needed",
+             gpuFree / (1024*1024), neededBytes / (1024*1024));
+    return;
+  }
+
+  // 3. LRU eviction
+  DSP_DIAG(MEMORY, "proactive cleanup: insufficient memory (%zuMB < %zuMB), starting LRU eviction",
+           gpuFree / (1024*1024), neededBytes / (1024*1024));
+  int numEvicted = evictLruGraphs(segIdx, neededBytes, stream);
+
+  // 4. Final trim after evictions
+  if (numEvicted > 0) {
+    memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+  }
+
+  // Log final state
+  cudaMemGetInfo(&gpuFree, &gpuTotal);
+  DSP_DIAG(MEMORY, "proactive cleanup complete: evicted=%d, gpuFree=%zuMB/%zuMB for seg[%d-%d]",
+           numEvicted, gpuFree / (1024*1024), gpuTotal / (1024*1024),
+           seg.startSlot, seg.endSlot);
+}
+
 #endif  // SD_CUDA
 
 // Capture buffers are dense fixed-address staging arrays. We only use a raw D2D
@@ -327,7 +513,7 @@ static const char* sourceTypeName(int8_t st) {
 #endif  // SD_CUDA
 
 void NativeDynamicShapePlan::clearGpuBackendFailedCache() {
-#if HAVE_TRITON
+#if HAVE_TRITON && defined(SD_CUDA)
   TritonGraphBackend::getInstance().clearFailedSegmentCache();
 #endif
 }
@@ -349,7 +535,7 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
     return nullptr;
   }
 
-#if HAVE_TRITON
+#if HAVE_TRITON && defined(SD_CUDA)
   if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON ||
       graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
     auto& triton = TritonGraphBackend::getInstance();
@@ -460,6 +646,12 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
 
 Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+
+  // Derive segIdx for proactive eviction and OOM retry.
+  int segIdx = -1;
+  for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
+    if (&segments_[si] == &seg) { segIdx = si; break; }
+  }
 
   {
     const char* mode = "unknown";
@@ -897,15 +1089,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       return Status::KERNEL_FAILURE;
     }
     if (compiledCount == 0 && failedCount == 0) {
-      // All sections are intentional fallback (e.g., all non-elementwise).
+      // All sections are intentional fallback (e.g., all non-elementwise/matmul).
       // The compiled segment has 0 sub-kernels; executeSegment will run
       // everything via fallbackRangeExecutor_.
-      // Mark compilationFailed to prevent CUDA graph capture for these segments.
+      // DO NOT set compilationFailed — allow these segments to be captured as
+      // CUDA graphs. During Triton graph capture, gap ops (cuBLAS matmuls) are
+      // recorded into the graph via the fallback lambda, enabling single-launch
+      // replay instead of per-op kernel dispatch overhead.
       DSP_DIAG(COMPILE, "%s: segment [%d-%d] has only fallback sections (no compilation needed). "
-                "Setting compilationFailed=true to prevent CUDA graph capture for this segment. "
-                "Execution proceeds via fallback path.",
+                "Segment eligible for CUDA graph capture via fallback path.",
                 backendName, seg.startSlot, seg.endSlot);
-      seg.exec.compilationFailed = true;
     }
     if (failedCount > 0) {
       // Partial compilation failure — hard error. Fix the kernel.
@@ -1359,7 +1552,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // to capture buffer addresses so the arg table gets the addresses baked into
     // the graph. This covers both placeholder external inputs AND cross-segment
     // output slots.
-#if HAVE_TRITON
+#if HAVE_TRITON && defined(SD_CUDA)
     {
       std::vector<std::pair<int, NDArray*>> savedForArgRefresh;
       std::vector<std::pair<int, NDArray*>> savedSlotsForArgRefresh;
@@ -1641,6 +1834,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                      seg.startSlot, seg.endSlot, replayOk ? "OK" : "FAILED");
       }
       if (replayOk) {
+        // LRU tracking: record when this segment was last replayed for eviction ordering
+        seg.exec.lastReplayExecCount = executeCount_;
+
         // Find the ACTUAL final output slot index (not the step index)
         int finalOutputSlot = -1;
         if (seg.endSlot < numSlots_ && slots_[seg.endSlot].numOutputs > 0) {
@@ -1784,7 +1980,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                    seg.startSlot, seg.endSlot);
         }
         if (replaySyncOk) {
-#if HAVE_TRITON
+#if HAVE_TRITON && defined(SD_CUDA)
           auto* tritonBE = dynamic_cast<TritonGraphBackend*>(backend);
           if (tritonBE != nullptr) {
             if (seg.exec.gapOpsCapturedInGraph) {
@@ -1878,7 +2074,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   }
 #endif
 
-#if HAVE_TRITON
+#if HAVE_TRITON && defined(SD_CUDA)
   struct TritonFallbackGuard {
     bool active = false;
     ~TritonFallbackGuard() {
@@ -2000,9 +2196,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                                      !seg.exec.compilationFailed &&
                                      execCountInWindowNow &&
                                      hasCudaStream;
-  // PRE-CAPTURE MEMORY CHECK removed: speculative OOM estimation was causing
-  // false negatives (blocking capture with 13GB free). Actual allocation calls
-  // (workspace, cuBLAS) will fail with real OOM if memory is insufficient.
+  // OOM retry deferred check: if a previous capture attempt failed with OOM and
+  // we haven't reached the retry-after execution count, skip capture and fall
+  // through to slot-by-slot execution (same pattern as cudagraph.cu).
+  if (seg.exec.captureOomRetries > 0 &&
+      seg.exec.executionCount < seg.exec.captureRetryAfterExec) {
+    DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+                 "OOM RETRY DEFERRED: seg[%d-%d] retries=%d execCount=%d retryAfter=%d — slot-by-slot",
+                 seg.startSlot, seg.endSlot, seg.exec.captureOomRetries,
+                 seg.exec.executionCount, seg.exec.captureRetryAfterExec);
+    shouldCaptureTritonGraphNow = false;
+  }
+
+  // Proactive memory cleanup before capture: trim pool, evict LRU graphs if needed.
+  if (shouldCaptureTritonGraphNow && Environment::getInstance().dspProactiveEvictBeforeCapture()) {
+    proactivePreCaptureMemoryCleanup(seg, segIdx, stream);
+  }
 
   if (shouldCaptureTritonGraphNow) {
     DSP_DIAG_SEG(COMPILE, seg.startSlot,
@@ -2015,25 +2224,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // Fallback ops (matmul, attention, concat) need temporary buffers during execution.
     // With tl_graphExecutionActive=true, CudaMemoryPool allocates from this workspace
     // instead of calling cudaMallocAsync (which fails during capture).
-    static size_t TRITON_CAPTURE_WORKSPACE_SIZE = []() -> size_t {
-      const char* envVal = std::getenv("ND4J_DSP_CAPTURE_WORKSPACE_MB");
-      // Default 128MB: VLM segments (attention, matmul) can need 50-100MB of
-      // temporary workspace per segment.  The previous 32MB default caused
-      // workspace exhaustion for large models, leading to failed captures and
-      // subsequent cudaFreeAsync "invalid argument" errors when intermediates
-      // allocated during the failed capture attempt were freed.
-      // We use 128MB (not 512MB) because workspaces are retained per-segment
-      // until replay handles are destroyed. With ~60 segments, 512MB × 60 = 30GB
-      // would exceed GPU memory. 128MB × 60 = 7.5GB is manageable on a 24GB GPU.
-      // cuBLAS workspace is separate (ensureCublasWorkspace), so this covers
-      // only temporary allocations during graph capture.
-      size_t mb = 128;  // default
-      if (envVal != nullptr) {
-        int parsed = std::atoi(envVal);
-        if (parsed > 0 && parsed <= 4096) mb = static_cast<size_t>(parsed);
-      }
-      return mb * 1024ULL * 1024ULL;
-    }();
+    // TRITON_CAPTURE_WORKSPACE_SIZE is now at file scope (above).
 
     // Create the replayHandle BEFORE capture — it must exist to store workspace, host ptrs, etc.
     {
@@ -2138,7 +2329,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
     // graph capture on a named stream, this cross-stream allocation breaks capture,
     // producing invalid graph nodes that SIGSEGV on cudaGraphLaunch.
-    static const size_t CUBLAS_WORKSPACE_SIZE = 256 * 1024 * 1024;  // 256 MB
+    const size_t CUBLAS_WORKSPACE_SIZE = Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
     ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
     // NOTE: setCublasWorkspaceForCapture is deferred to AFTER warmup (see below).
     // Calling it here sets cublasSetStream_v2 to the capture stream, which causes
@@ -2178,7 +2369,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         DSP_DIAG(MEMORY, "batch-zero registration empty, falling back to collectBatchZeroTargets");
         std::unordered_set<int> gapSlots;
         if (Environment::getInstance().dspBatchZeroGapOnly()) {
-#if HAVE_TRITON
+#if HAVE_TRITON && defined(SD_CUDA)
           auto* tritonBE = dynamic_cast<TritonGraphBackend*>(backend);
           if (tritonBE != nullptr) {
             gapSlots = tritonBE->getGapSlots(seg, slots_);
@@ -2693,9 +2884,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
     }
 
-    // POST-ALLOCATION MEMORY GATE removed: speculative OOM estimation was
-    // causing false negatives. If workspace + cuBLAS allocation succeeded,
-    // proceed with capture. Real failures are caught by beginCapture/instantiate.
+    // POST-ALLOCATION MEMORY GATE: workspace + cuBLAS are allocated. Check that
+    // enough headroom remains for CUDA driver graph metadata before starting capture.
+    // This is tight and accurate — only graph metadata overhead remains.
+    {
+      size_t gpuFree = 0, gpuTotal = 0;
+      cudaMemGetInfo(&gpuFree, &gpuTotal);
+      size_t safetyBytes = Environment::getInstance().dspGraphMetadataSafetyMb() * 1024ULL * 1024ULL;
+      if (gpuFree < safetyBytes) {
+        int deviceId = 0;
+        cudaGetDevice(&deviceId);
+        DSP_DIAG_SEG(MEMORY, seg.startSlot,
+                     "POST-ALLOC GATE FAILED: free=%zuMB < safety=%zuMB for seg[%d-%d]",
+                     gpuFree / (1024*1024), safetyBytes / (1024*1024),
+                     seg.startSlot, seg.endSlot);
+        platformCleanupSegmentForRebuild(seg);
+        return reportOomError(seg, "post_alloc_gate", safetyBytes, deviceId);
+      }
+    }
 
     auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get());
     auto handle = cudaReplay->getNativeHandle();
@@ -2925,6 +3131,30 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       if (!instantiateOk) {
         int deviceId = 0;
         cudaGetDevice(&deviceId);
+
+        // Check if instantiation failed due to OOM — retry with eviction if possible.
+        auto* cudaReplayForOom = seg.exec.replayHandle
+            ? dynamic_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get()) : nullptr;
+        bool isOom = cudaReplayForOom && cudaReplayForOom->wasLastInstantiateOom();
+        if (isOom && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
+          seg.exec.captureOomRetries++;
+          seg.exec.captureRetryAfterExec = seg.exec.executionCount + GraphSegment::retryInterval();
+          DSP_DIAG_SEG(MEMORY, seg.startSlot,
+                       "INSTANTIATE OOM — retry %d/%d, evicting LRU graphs. retryAfterExec=%d",
+                       seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                       seg.exec.captureRetryAfterExec);
+
+          // Evict LRU graphs to free memory for the next attempt
+          evictLruGraphs(segIdx, TRITON_CAPTURE_WORKSPACE_SIZE, stream);
+
+          // Cleanup this failed attempt but do NOT set compilationFailed
+          platformCleanupSegmentForRebuild(seg);
+          cudaGetLastError();  // Clear sticky error
+          // Fall through to slot-by-slot for this execution
+          return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+        }
+
+        // Not OOM or retries exhausted — permanent failure
         platformCleanupSegmentForRebuild(seg);
         return reportCaptureError(seg, "instantiate", cudaGetLastError(), deviceId);
       }
@@ -2951,6 +3181,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         }
         DSP_DIAG(EXECUTE, "VALIDATION LAUNCH OK: seg[%d-%d] graph launched and synced successfully",
                  seg.startSlot, seg.endSlot);
+        // LRU tracking: record when this segment was last replayed for eviction ordering
+        seg.exec.lastReplayExecCount = executeCount_;
         launchOk = true;
       }
 
@@ -3075,8 +3307,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     } else {
       int deviceId = 0;
       cudaGetDevice(&deviceId);
+
+      // Check if beginCapture failed due to OOM — retry with eviction if possible.
+      cudaError_t beginErr = cudaGetLastError();
+      bool isOom = (beginErr == cudaErrorMemoryAllocation);
+      if (isOom && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
+        seg.exec.captureOomRetries++;
+        seg.exec.captureRetryAfterExec = seg.exec.executionCount + GraphSegment::retryInterval();
+        DSP_DIAG_SEG(MEMORY, seg.startSlot,
+                     "BEGIN_CAPTURE OOM — retry %d/%d, evicting LRU graphs. retryAfterExec=%d",
+                     seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                     seg.exec.captureRetryAfterExec);
+        evictLruGraphs(segIdx, TRITON_CAPTURE_WORKSPACE_SIZE, stream);
+        platformCleanupSegmentForRebuild(seg);
+        return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      }
+
       platformCleanupSegmentForRebuild(seg);
-      return reportCaptureError(seg, "beginCapture", cudaGetLastError(), deviceId);
+      return reportCaptureError(seg, "beginCapture", beginErr, deviceId);
     }
 
     // ── Restore warmup output slots for downstream segment visibility ──

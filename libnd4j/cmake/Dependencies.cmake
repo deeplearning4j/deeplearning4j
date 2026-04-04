@@ -385,6 +385,7 @@ endfunction()
 function(setup_flatbuffers)
     set(FLATBUFFERS_VERSION "25.2.10")
     set(FLATBUFFERS_URL "https://github.com/google/flatbuffers/archive/v${FLATBUFFERS_VERSION}.tar.gz")
+    set(FLATBUFFERS_URL_HASH "SHA256=b9c2df49707c57a48fc0923d52b8c73beb72d675f9d44b2211e4569be40a7421")
 
     # --- Dependency cache check ---
     if(SD_DEP_CACHE AND NOT CMAKE_CROSSCOMPILING)
@@ -471,6 +472,7 @@ function(setup_flatbuffers)
 
         ExternalProject_Add(flatbuffers_host
                 URL               ${FLATBUFFERS_URL}
+                URL_HASH          ${FLATBUFFERS_URL_HASH}
                 SOURCE_DIR        "${FLATC_HOST_DIR}"
                 BINARY_DIR        "${FLATC_HOST_BUILD_DIR}"
                 CMAKE_ARGS        ${HOST_CMAKE_ARGS}
@@ -540,9 +542,11 @@ function(setup_flatbuffers)
 
         ExternalProject_Add(flatbuffers_target
                 URL               ${FLATBUFFERS_URL}
+                URL_HASH          ${FLATBUFFERS_URL_HASH}
                 SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-src"
                 BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-build"
                 CMAKE_ARGS        ${TARGET_CMAKE_ARGS}
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build . --config Release --parallel ${DEP_PARALLEL_JOBS}
                 INSTALL_COMMAND   ""
                 BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-build/libflatbuffers.a"
                 DEPENDS           flatbuffers_host
@@ -626,6 +630,7 @@ function(setup_flatbuffers)
 
         ExternalProject_Add(flatbuffers_external
                 URL               ${FLATBUFFERS_URL}
+                URL_HASH          ${FLATBUFFERS_URL_HASH}
                 SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
                 BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
                 CMAKE_ARGS        ${NATIVE_CMAKE_ARGS}
@@ -822,6 +827,7 @@ function(setup_onednn)
 
     # Use URL download instead of git clone for more robust downloads
     set(ONEDNN_URL "https://github.com/uxlfoundation/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz")
+    set(ONEDNN_URL_HASH "SHA256=4b0638061a789a1efbefdcd2e85eb257c7b432b3b6a71ba8909e19d75f50b163")
 
     # Build CMAKE_ARGS list for OneDNN
     if(WIN32)
@@ -882,6 +888,7 @@ function(setup_onednn)
     ExternalProject_Add(onednn_external
             PREFIX            "${ONEDNN_PREFIX}"
             URL               "${ONEDNN_URL}"
+            URL_HASH          "${ONEDNN_URL_HASH}"
             DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
             SOURCE_DIR        "${ONEDNN_PREFIX}/src/oneDNN-${ONEDNN_VERSION}"
             BINARY_DIR        "${ONEDNN_PREFIX}/build"
@@ -946,6 +953,7 @@ function(setup_armcompute)
         set(ARMCOMPUTE_FLAVOR "cpu")
         set(ARMCOMPUTE_PKG_NAME "arm_compute-${ARMCOMPUTE_VERSION}-${ARMCOMPUTE_PLATFORM}-${ARMCOMPUTE_ARCH}-${ARMCOMPUTE_FLAVOR}-bin")
         set(ARMCOMPUTE_URL "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PKG_NAME}.tar.gz")
+        set(ARMCOMPUTE_URL_HASH "SHA256=c7296ddb163a14da239b896b44dcb4b5d73d79623c4ba83c8ad1b8e653a99c92")
 
         # --- Dependency cache check ---
         if(SD_DEP_CACHE)
@@ -971,6 +979,7 @@ function(setup_armcompute)
         ExternalProject_Add(armcompute_external
                 PREFIX      "${CMAKE_BINARY_DIR}/armcompute_external"
                 URL         "${ARMCOMPUTE_URL}"
+                URL_HASH    "${ARMCOMPUTE_URL_HASH}"
                 DOWNLOAD_DIR "${CMAKE_BINARY_DIR}/downloads"
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND     ""
@@ -1369,17 +1378,24 @@ function(setup_triton)
         set(TRITON "" PARENT_SCOPE)
         return()
     endif()
+    # Triton supports both GPU (CUDA/HIP/Level-Zero) and CPU backends.
+    # On CPU builds, triton-cpu provides LLVM-based CPU codegen.
+    # SD_TRITON=ON is valid for all build types.
+    set(_TRITON_CPU_ONLY FALSE)
     if(NOT SD_CUDA AND NOT SD_HIP AND NOT SD_LEVEL_ZERO)
-        message(STATUS "Triton disabled (requires GPU build: SD_CUDA, SD_HIP, or SD_LEVEL_ZERO)")
-        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
-        set(TRITON "" PARENT_SCOPE)
-        return()
+        set(_TRITON_CPU_ONLY TRUE)
     endif()
 
     # Check if Triton and LLVM are already built from a previous run.
     # After CMake cache clean, targets don't persist but install dirs do.
-    set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
-    set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
+    # Use different install dirs for CPU vs GPU triton to avoid conflicts.
+    if(_TRITON_CPU_ONLY)
+        set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_cpu_install")
+        set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_cpu_llvm_install")
+    else()
+        set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
+        set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
+    endif()
 
     set(_TRITON_LIB_EXISTS FALSE)
     if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR
@@ -1390,6 +1406,11 @@ function(setup_triton)
        EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
         message(STATUS "Triton helper: reusing existing install at ${TRITON_INSTALL_DIR}")
         set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
+        set(HAVE_TRITON ON PARENT_SCOPE)
+        if(_TRITON_CPU_ONLY)
+            set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
+            set(HAVE_TRITON_CPU ON PARENT_SCOPE)
+        endif()
         # Create a dummy triton_external target so MainBuildFlow's dependency block picks us up
         if(NOT TARGET triton_external)
             add_custom_target(triton_external)
@@ -1427,8 +1448,10 @@ function(setup_triton)
                     ${_TRITON_MLIR_CAPI_LIBS}
                     zlib.lib zstd.lib
                 )
-                # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
-                target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+                if(NOT _TRITON_CPU_ONLY)
+                    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
+                    target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+                endif()
             else()
                 target_link_libraries(triton_interface INTERFACE
                     -Wl,--start-group
@@ -1438,8 +1461,10 @@ function(setup_triton)
                     -Wl,--end-group
                     -lz -lzstd -lrt -ldl -lm -lpthread
                 )
-                # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
-                target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+                if(NOT _TRITON_CPU_ONLY)
+                    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
+                    target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+                endif()
             endif()
             list(LENGTH _TRITON_MLIR_LIBS _mlir_count)
             list(LENGTH _TRITON_LLVM_LIBS _llvm_count)
@@ -1455,14 +1480,28 @@ function(setup_triton)
         return()
     endif()
 
-    message(STATUS "Triton helper is enabled")
+    message(STATUS "Triton helper is enabled (CPU_ONLY=${_TRITON_CPU_ONLY})")
     set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
+    set(HAVE_TRITON ON PARENT_SCOPE)
+    if(_TRITON_CPU_ONLY)
+        set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
+        set(HAVE_TRITON_CPU ON PARENT_SCOPE)
+    endif()
     set(HELPERS_triton ON PARENT_SCOPE)
-    set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
-    set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_external")
-    set(TRITON_VERSION "3.6.0")
+
+    # triton-cpu pinned commit (declared early so TRITON_VERSION can reference it)
+    set(TRITON_CPU_COMMIT "c4ccb98970bfe0fa17548b5b32def8d0de2bdc53")
+
+    if(_TRITON_CPU_ONLY)
+        # triton-cpu: experimental CPU backend from triton-lang/triton-cpu
+        # Uses a different LLVM pin and adds third_party/cpu backend
+        set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_cpu_external")
+        set(TRITON_VERSION "cpu-${TRITON_CPU_COMMIT}")  # Pinned commit, no tagged releases
+    else()
+        set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_external")
+        set(TRITON_VERSION "3.6.0")
+    endif()
     set(TRITON_STAMP_DIR "${TRITON_PREFIX}/stamp")
-    set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
 
     # Ensure directories exist
     file(MAKE_DIRECTORY "${TRITON_STAMP_DIR}")
@@ -1479,17 +1518,25 @@ function(setup_triton)
         endforeach()
     endif()
 
-    if(WIN32)
+    if(_TRITON_CPU_ONLY)
+        # triton-cpu pinned to a specific commit for reproducibility (commit set above)
+        set(TRITON_URL "https://github.com/triton-lang/triton-cpu/archive/${TRITON_CPU_COMMIT}.tar.gz")
+        set(TRITON_URL_HASH "SHA256=29bbed27580d8785605216fe628759165b195cfcf81ee7bc2a3ef681c4f161b3")
+    elseif(WIN32)
         set(TRITON_URL "https://github.com/triton-lang/triton-windows/archive/refs/heads/release/3.6.x-windows.tar.gz")
     else()
         set(TRITON_URL "https://github.com/triton-lang/triton/archive/refs/tags/v${TRITON_VERSION}.tar.gz")
+        set(TRITON_URL_HASH "SHA256=be270ed11ca5a8fbd9d7941c5bbe9a23a9f6e2ffd372c8398346928bee464774")
     endif()
 
     # Determine codegen backends based on TRITON_GPU_TARGET and build config.
     # This MUST be done before the LLVM build so LLVM_TARGETS_TO_BUILD can be set correctly.
     set(TRITON_CODEGEN_BACKENDS "")
 
-    if(TRITON_GPU_TARGET STREQUAL "AUTO")
+    if(_TRITON_CPU_ONLY)
+        # CPU-only build: use triton-cpu's CPU backend
+        set(TRITON_CODEGEN_BACKENDS "cpu")
+    elseif(TRITON_GPU_TARGET STREQUAL "AUTO")
         # NVIDIA backend: always for CUDA builds (pure or ZLUDA)
         if(SD_CUDA)
             list(APPEND TRITON_CODEGEN_BACKENDS "nvidia")
@@ -1518,20 +1565,30 @@ function(setup_triton)
     string(REPLACE ";" "\\;" TRITON_BACKENDS_STR "${TRITON_CODEGEN_BACKENDS}")
     message(STATUS "   Triton codegen backends: ${TRITON_CODEGEN_BACKENDS}")
 
-    # Triton v3.6.0 requires a specific LLVM version (pinned commit f6ded0be).
-    # We build LLVM/MLIR from source at that commit to ensure ABI compatibility.
-    # This is a one-time cost — subsequent builds reuse the installed artifacts.
-    set(TRITON_LLVM_COMMIT "f6ded0be897e2878612dd903f7e8bb85448269e5")
-    set(TRITON_LLVM_PREFIX "${CMAKE_BINARY_DIR}/triton_llvm")
-
-    # Determine LLVM targets based on which Triton codegen backends are needed.
-    # Always include host and NVPTX (for CUDA). Only add AMDGPU if "amd" backend is selected.
-    set(TRITON_LLVM_TARGETS "host$<SEMICOLON>NVPTX")
-    if("amd" IN_LIST TRITON_CODEGEN_BACKENDS)
-        set(TRITON_LLVM_TARGETS "${TRITON_LLVM_TARGETS}$<SEMICOLON>AMDGPU")
-        message(STATUS "   LLVM targets: host, NVPTX, AMDGPU (AMD backend requested)")
+    # Each Triton variant pins a specific LLVM commit for ABI compatibility.
+    # We build LLVM/MLIR from source at that commit.
+    if(_TRITON_CPU_ONLY)
+        # triton-cpu pins a different LLVM commit than GPU triton
+        set(TRITON_LLVM_COMMIT "20902f0b721ba6cf2fb134362d27144bd8584d53")
+        set(TRITON_LLVM_URL_HASH "SHA256=1736af3127e73eab0f2a2f489275c9509d5b60f80c050c42be3a1f85843993e2")
+        set(TRITON_LLVM_PREFIX "${CMAKE_BINARY_DIR}/triton_cpu_llvm")
+        # CPU-only: just need host target for LLVM CPU codegen
+        set(TRITON_LLVM_TARGETS "host")
+        message(STATUS "   LLVM targets: host (CPU-only triton-cpu)")
     else()
-        message(STATUS "   LLVM targets: host, NVPTX (no AMD backend)")
+        # GPU triton v3.6.0 pins f6ded0be
+        set(TRITON_LLVM_COMMIT "f6ded0be897e2878612dd903f7e8bb85448269e5")
+        set(TRITON_LLVM_URL_HASH "SHA256=f63c624aa63eda73508b9df2be2a6945ea4fddbee58615fbe1cd747b6884dd5e")
+        set(TRITON_LLVM_PREFIX "${CMAKE_BINARY_DIR}/triton_llvm")
+        # Determine LLVM targets based on which Triton codegen backends are needed.
+        # Always include host and NVPTX (for CUDA). Only add AMDGPU if "amd" backend is selected.
+        set(TRITON_LLVM_TARGETS "host$<SEMICOLON>NVPTX")
+        if("amd" IN_LIST TRITON_CODEGEN_BACKENDS)
+            set(TRITON_LLVM_TARGETS "${TRITON_LLVM_TARGETS}$<SEMICOLON>AMDGPU")
+            message(STATUS "   LLVM targets: host, NVPTX, AMDGPU (AMD backend requested)")
+        else()
+            message(STATUS "   LLVM targets: host, NVPTX (no AMD backend)")
+        endif()
     endif()
 
     # --- Dependency cache: restore Triton LLVM and Triton into build dirs ---
@@ -1539,7 +1596,7 @@ function(setup_triton)
     # the existing fast-path logic picks up restored files naturally.
     if(SD_DEP_CACHE)
         # Check Triton LLVM cache
-        set(TRITON_LLVM_COMMIT_SHORT "f6ded0be")
+        string(SUBSTRING "${TRITON_LLVM_COMMIT}" 0 8 TRITON_LLVM_COMMIT_SHORT)
         sd_dep_cache_key("triton_llvm" "${TRITON_LLVM_COMMIT_SHORT}" "TARGETS=${TRITON_LLVM_TARGETS}" _tllvm_cache_key)
         sd_dep_cache_check("triton_llvm" "${_tllvm_cache_key}" _tllvm_hit _tllvm_cache_path)
         if(_tllvm_hit AND NOT EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
@@ -1547,7 +1604,7 @@ function(setup_triton)
         endif()
 
         # Check Triton cache
-        set(_triton_ver "3.6.0")
+        set(_triton_ver "${TRITON_VERSION}")
         string(REPLACE ";" "_" _triton_backends_str "${TRITON_CODEGEN_BACKENDS}")
         sd_dep_cache_key("triton" "${_triton_ver}" "BACKENDS=${_triton_backends_str}" _triton_cache_key)
         sd_dep_cache_check("triton" "${_triton_cache_key}" _triton_hit _triton_cache_path)
@@ -1630,6 +1687,7 @@ function(setup_triton)
         ExternalProject_Add(triton_llvm_external
                 PREFIX            "${TRITON_LLVM_PREFIX}"
                 URL               "${TRITON_LLVM_URL}"
+                URL_HASH          "${TRITON_LLVM_URL_HASH}"
                 DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
                 DOWNLOAD_EXTRACT_TIMESTAMP TRUE
                 SOURCE_SUBDIR     llvm
@@ -1757,12 +1815,14 @@ function(setup_triton)
     set(TRITON_CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${TRITON_INSTALL_DIR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${TRITON_INSTALL_DIR}/lib
             -DTRITON_BUILD_PYTHON_MODULE=OFF
             -DTRITON_BUILD_TESTING=OFF
             -DTRITON_BUILD_TUTORIALS=OFF
             -DTRITON_BUILD_PROTON=OFF
             -DTRITON_BUILD_UT=OFF
             -DTRITON_CODEGEN_BACKENDS=${TRITON_BACKENDS_STR}
+            -DTRITON_CACHE_PATH=${CMAKE_BINARY_DIR}/.triton_cache
             -DMLIR_DIR=${TRITON_MLIR_DIR}
             -DLLVM_DIR=${TRITON_LLVM_DIR}
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -1806,18 +1866,32 @@ function(setup_triton)
     )
     message(STATUS "   Triton smart ccache segment=triton shape=${TRITON_SHAPE_KEY}")
 
+    # Source dir name depends on variant (GitHub tarball extraction naming)
+    if(_TRITON_CPU_ONLY)
+        set(TRITON_SOURCE_DIR "${TRITON_PREFIX}/src/triton-cpu-${TRITON_CPU_COMMIT}")
+    else()
+        set(TRITON_SOURCE_DIR "${TRITON_PREFIX}/src/triton-${TRITON_VERSION}")
+    endif()
+
     # Cross-platform patch script (replaces bash-only patch_triton_no_amd.sh).
     # Triton's bin/RegisterTritonDialects.h unconditionally includes AMD dialect
     # headers, even when only the nvidia backend is selected via TRITON_CODEGEN_BACKENDS.
     # When the AMD backend isn't built, the .h.inc files don't get generated, causing
     # compilation failures. The CMake patch script removes AMD-specific code and adds
     # NegFOp/TanhOp patterns needed by our IR.
-    set(TRITON_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton.cmake")
-    set(_TRITON_PATCH_ARGS
-        -DSOURCE_DIR=${TRITON_PREFIX}/src/triton-${TRITON_VERSION}
-    )
-    if(NOT "amd" IN_LIST TRITON_CODEGEN_BACKENDS)
-        list(APPEND _TRITON_PATCH_ARGS -DREMOVE_AMD=ON)
+    # For CPU triton-cpu builds, the source tree is different — skip GPU-specific patches.
+    if(_TRITON_CPU_ONLY)
+        # triton-cpu has its own dialect structure; no GPU-specific patching needed
+        set(_TRITON_PATCH_COMMAND "")
+    else()
+        set(TRITON_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton.cmake")
+        set(_TRITON_PATCH_ARGS
+            -DSOURCE_DIR=${TRITON_SOURCE_DIR}
+        )
+        if(NOT "amd" IN_LIST TRITON_CODEGEN_BACKENDS)
+            list(APPEND _TRITON_PATCH_ARGS -DREMOVE_AMD=ON)
+        endif()
+        set(_TRITON_PATCH_COMMAND ${CMAKE_COMMAND} ${_TRITON_PATCH_ARGS} -P "${TRITON_PATCH_SCRIPT}")
     endif()
 
     # Cross-platform install script (replaces bash-only install_triton.sh).
@@ -1832,16 +1906,38 @@ function(setup_triton)
         set(_TRITON_LIB_BYPRODUCT "${TRITON_INSTALL_DIR}/lib/libtriton.a")
     endif()
 
+    # For CPU triton-cpu, PATCH_COMMAND strips Python dependency from CMakeLists.txt.
+    # triton-cpu unconditionally calls find_package(Python3 REQUIRED) to run build_helpers.py
+    # which generates LLVM/JSON cmake vars. We pre-generate this file and patch CMakeLists.txt
+    # to skip the Python-dependent block entirely.
+    if(_TRITON_CPU_ONLY)
+        set(_TRITON_CPU_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton_cpu.cmake")
+        set(_TRITON_EP_PATCH_CMD ${CMAKE_COMMAND}
+            -DSOURCE_DIR=<SOURCE_DIR>
+            -DLLVM_INSTALL_DIR=${TRITON_LLVM_INSTALL_DIR}
+            -DDOWNLOAD_DIR=${CMAKE_BINARY_DIR}/downloads
+            -P "${_TRITON_CPU_PATCH_SCRIPT}")
+    else()
+        set(_TRITON_EP_PATCH_CMD ${_TRITON_PATCH_COMMAND})
+    endif()
+
+    # URL_HASH for download caching (skip for Windows which uses unpinned branch)
+    set(_TRITON_EP_URL_HASH "")
+    if(DEFINED TRITON_URL_HASH)
+        set(_TRITON_EP_URL_HASH "${TRITON_URL_HASH}")
+    endif()
+
     ExternalProject_Add(triton_external
             PREFIX            "${TRITON_PREFIX}"
             URL               "${TRITON_URL}"
+            URL_HASH          "${_TRITON_EP_URL_HASH}"
             DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-            SOURCE_DIR        "${TRITON_PREFIX}/src/triton-${TRITON_VERSION}"
+            SOURCE_DIR        "${TRITON_SOURCE_DIR}"
             BINARY_DIR        "${TRITON_PREFIX}/build"
             STAMP_DIR         "${TRITON_STAMP_DIR}"
             DOWNLOAD_NO_PROGRESS FALSE
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-            PATCH_COMMAND     ${CMAKE_COMMAND} ${_TRITON_PATCH_ARGS} -P "${TRITON_PATCH_SCRIPT}"
+            PATCH_COMMAND     ${_TRITON_EP_PATCH_CMD}
             CMAKE_ARGS        ${TRITON_CMAKE_ARGS}
             BUILD_COMMAND     ${TRITON_BUILD_COMMAND}
             INSTALL_COMMAND   ${CMAKE_COMMAND} -DBINARY_DIR=<BINARY_DIR> -DSOURCE_DIR=<SOURCE_DIR> -DINSTALL_DIR=${TRITON_INSTALL_DIR} -P "${TRITON_INSTALL_SCRIPT}"
@@ -1896,7 +1992,9 @@ function(setup_triton)
                 ${_TRITON_LLVM_LIBS}
                 zlib.lib zstd.lib
             )
-            target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+            if(NOT _TRITON_CPU_ONLY)
+                target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+            endif()
         else()
             target_link_libraries(triton_interface INTERFACE
                 -Wl,--start-group
@@ -1905,7 +2003,9 @@ function(setup_triton)
                 -Wl,--end-group
                 -lz -lzstd -lrt -ldl -lm -lpthread
             )
-            target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+            if(NOT _TRITON_CPU_ONLY)
+                target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+            endif()
         endif()
         message(STATUS "Triton linking ${_mlir_count} MLIR + ${_llvm_count} LLVM static libraries (globbed)")
     else()
@@ -2056,11 +2156,13 @@ function(setup_triton)
         endif()
     endif()
 
-    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
-    if(WIN32)
-        target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
-    else()
-        target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends (GPU only)
+    if(NOT _TRITON_CPU_ONLY)
+        if(WIN32)
+            target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+        else()
+            target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+        endif()
     endif()
 
     add_dependencies(triton_interface triton_external)
@@ -2113,11 +2215,13 @@ function(setup_cutlass)
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
 
     set(CUTLASS_URL "https://github.com/NVIDIA/cutlass/archive/refs/tags/v${CUTLASS_VERSION}.tar.gz")
+    set(CUTLASS_URL_HASH "SHA256=dfcafb7435a1b114ce32faee4f3257e276caf08f55fea04fa8bf3efa3a83c814")
 
     # CUTLASS is header-only for templates — we only need to download and install headers
     ExternalProject_Add(cutlass_external
             PREFIX            "${CUTLASS_PREFIX}"
             URL               "${CUTLASS_URL}"
+            URL_HASH          "${CUTLASS_URL_HASH}"
             DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             CONFIGURE_COMMAND ""
@@ -2206,11 +2310,26 @@ function(setup_mlx)
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
 
     set(MLX_URL "https://github.com/ml-explore/mlx/archive/refs/tags/v${MLX_VERSION}.tar.gz")
+    set(MLX_URL_HASH "SHA256=c8c890f450a4c09704b2597c56e111fbd4eb2c75d66a9c8f1fb1096c3e2b2cbe")
+
+    # Build ccache args for MLX
+    set(MLX_CCACHE_ARGS "")
+    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+        list(APPEND MLX_CCACHE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND MLX_CCACHE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+    endif()
+    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+        list(APPEND MLX_CCACHE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND MLX_CCACHE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+    endif()
 
     include(ExternalProject)
     ExternalProject_Add(mlx_external
         PREFIX            "${MLX_PREFIX}"
         URL               "${MLX_URL}"
+        URL_HASH          "${MLX_URL_HASH}"
         DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CMAKE_ARGS
@@ -2221,6 +2340,10 @@ function(setup_mlx)
             -DMLX_BUILD_EXAMPLES=OFF
             -DMLX_BUILD_PYTHON_BINDINGS=OFF
             -DMLX_BUILD_BENCHMARKS=OFF
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            ${MLX_CCACHE_ARGS}
+        BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${DEP_PARALLEL_JOBS}
         TIMEOUT           600
         LOG_DOWNLOAD      OFF
         LOG_CONFIGURE     OFF
@@ -2285,3 +2408,401 @@ function(setup_nccl)
 
     message(STATUS "✅ NCCL setup complete (HAVE_NCCL=${HAVE_NCCL})")
 endfunction()
+
+# =============================================================================
+# OpenVINO (Intel CPU graph backend — Snippets JIT + oneDNN BRGEMM)
+# Builds ENTIRELY from source like Triton: downloads OpenVINO + all submodule
+# dependencies (oneDNN, xbyak, pugixml, flatbuffers, ittapi, nlohmann_json,
+# TBB), patches out Python, compiles C++ only with static linking.
+# We manage every dependency ourselves for full control over optimizations
+# and libc compatibility.
+# =============================================================================
+function(setup_openvino)
+    set(HAVE_OPENVINO FALSE PARENT_SCOPE)
+
+    # OpenVINO is triggered by SD_TRITON=ON (via -Dlibnd4j.triton=ON), not helpers.
+    # It's an independent internal variable but part of the "triton" build umbrella.
+    if(NOT SD_TRITON)
+        message(STATUS "OpenVINO disabled (SD_TRITON is OFF, use -Dlibnd4j.triton=ON)")
+        return()
+    endif()
+
+    if(SD_CUDA)
+        message(STATUS "OpenVINO is CPU-only (skipping for CUDA build)")
+        return()
+    endif()
+
+    # ── Versions and pinned commits (from OpenVINO 2026.0.0 .gitmodules) ──
+    set(OPENVINO_VERSION "2026.0.0")
+    # Submodule pinned commits for 2026.0.0
+    set(OV_ONEDNN_COMMIT   "c6b79c1207bd5f20b9395536dab1d71a47cfcb1d")
+    set(OV_XBYAK_COMMIT    "0d67fd1530016b7c56f3cd74b3fca920f4c3e2b4")
+    set(OV_PUGIXML_COMMIT  "ee86beb30e4973f5feffe3ce63bfa4fbadf72f38")
+    set(OV_FLATBUF_COMMIT  "595bf0007ab1929570c7671f091313c8fc20644e")
+    set(OV_ITTAPI_COMMIT   "ca45fef1a12cef3316e6ff362a4d36571270e392")
+    set(OV_JSON_COMMIT     "9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03")
+    set(OV_ZLIB_COMMIT     "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf")
+    # TBB: OpenVINO 2026.0 uses oneAPI TBB 2021.13.1
+    set(OV_TBB_VERSION     "2021.13.1")
+
+    set(OPENVINO_INSTALL_DIR "${CMAKE_BINARY_DIR}/openvino_install")
+    set(OPENVINO_PREFIX "${CMAKE_BINARY_DIR}/openvino_external")
+    set(OPENVINO_SOURCE_DIR "${OPENVINO_PREFIX}/src/openvino-${OPENVINO_VERSION}")
+    set(OPENVINO_STAMP_DIR "${OPENVINO_PREFIX}/stamp")
+
+    # ── Check if OpenVINO is already built from a previous run ──
+    set(_OV_CONFIG_EXISTS FALSE)
+    foreach(_cfg_path
+            "${OPENVINO_INSTALL_DIR}/runtime/lib/cmake/OpenVINO/OpenVINOConfig.cmake"
+            "${OPENVINO_INSTALL_DIR}/runtime/cmake/OpenVINOConfig.cmake"
+            "${OPENVINO_INSTALL_DIR}/lib/cmake/OpenVINO/OpenVINOConfig.cmake")
+        if(EXISTS "${_cfg_path}")
+            set(_OV_CONFIG_EXISTS TRUE)
+            break()
+        endif()
+    endforeach()
+
+    if(_OV_CONFIG_EXISTS)
+        message(STATUS "OpenVINO: reusing existing install at ${OPENVINO_INSTALL_DIR}")
+        set(HAVE_OPENVINO ON CACHE BOOL "OpenVINO availability" FORCE)
+        set(HAVE_OPENVINO ON PARENT_SCOPE)
+
+        # Ensure TBB cmake config is present (may be missing from first install)
+        set(_TBB_SRC_CMAKE "${OPENVINO_PREFIX}/tbb_install/lib64/cmake/TBB")
+        set(_TBB_DST_CMAKE "${OPENVINO_INSTALL_DIR}/runtime/3rdparty/tbb/lib64/cmake/TBB")
+        if(EXISTS "${_TBB_SRC_CMAKE}/TBBConfig.cmake" AND NOT EXISTS "${_TBB_DST_CMAKE}/TBBConfig.cmake")
+            message(STATUS "  Copying TBB cmake config into OpenVINO install")
+            file(MAKE_DIRECTORY "${_TBB_DST_CMAKE}")
+            file(GLOB _tbb_cmake_files "${_TBB_SRC_CMAKE}/*.cmake")
+            foreach(_f IN LISTS _tbb_cmake_files)
+                get_filename_component(_fname "${_f}" NAME)
+                file(COPY "${_f}" DESTINATION "${_TBB_DST_CMAKE}")
+            endforeach()
+        endif()
+
+        if(NOT TARGET openvino_external)
+            add_custom_target(openvino_external)
+        endif()
+
+        if(NOT TARGET openvino_interface)
+            _openvino_create_interface_from_install("${OPENVINO_INSTALL_DIR}")
+        endif()
+
+        set(OPENVINO_LIB openvino_interface PARENT_SCOPE)
+        sd_register_helper("openvino")
+        message(STATUS "OpenVINO setup complete (HAVE_OPENVINO=ON, reused)")
+        return()
+    endif()
+
+    if(TARGET openvino_external)
+        message(STATUS "OpenVINO helper is enabled (target already exists)")
+        set(HAVE_OPENVINO ON CACHE BOOL "OpenVINO availability" FORCE)
+        set(HAVE_OPENVINO ON PARENT_SCOPE)
+        set(OPENVINO_LIB openvino_interface PARENT_SCOPE)
+        return()
+    endif()
+
+    # ── Dependency cache: restore if available ──
+    if(SD_DEP_CACHE)
+        sd_dep_cache_key("openvino" "${OPENVINO_VERSION}" "" _ov_cache_key)
+        sd_dep_cache_check("openvino" "${_ov_cache_key}" _ov_hit _ov_cache_path)
+        if(_ov_hit AND NOT _OV_CONFIG_EXISTS)
+            sd_dep_cache_restore("openvino" "${_ov_cache_path}" "${OPENVINO_INSTALL_DIR}")
+            foreach(_cfg_path
+                    "${OPENVINO_INSTALL_DIR}/runtime/lib/cmake/OpenVINO/OpenVINOConfig.cmake"
+                    "${OPENVINO_INSTALL_DIR}/runtime/cmake/OpenVINOConfig.cmake"
+                    "${OPENVINO_INSTALL_DIR}/lib/cmake/OpenVINO/OpenVINOConfig.cmake")
+                if(EXISTS "${_cfg_path}")
+                    message(STATUS "OpenVINO restored from dependency cache")
+                    setup_openvino()
+                    return()
+                endif()
+            endforeach()
+        endif()
+    endif()
+
+    # ── Build from source ──
+    message(STATUS "")
+    message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+    message(STATUS "║  Building OpenVINO ${OPENVINO_VERSION} from source (C++ only)             ║")
+    message(STATUS "║  All dependencies managed by us — no system packages required      ║")
+    message(STATUS "║  This is a one-time build (~15-25 min). ${DEP_PARALLEL_JOBS} parallel jobs             ║")
+    message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+    message(STATUS "")
+
+    set(HAVE_OPENVINO ON CACHE BOOL "OpenVINO availability" FORCE)
+    set(HAVE_OPENVINO ON PARENT_SCOPE)
+    # OpenVINO is driven by SD_TRITON, not helpers
+
+    file(MAKE_DIRECTORY "${OPENVINO_STAMP_DIR}")
+    file(MAKE_DIRECTORY "${OPENVINO_PREFIX}/src")
+    file(MAKE_DIRECTORY "${OPENVINO_PREFIX}/build")
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
+
+    # Clean stale stamp files
+    if(EXISTS "${OPENVINO_STAMP_DIR}")
+        file(GLOB _OV_STALE_STAMPS "${OPENVINO_STAMP_DIR}/*.txt")
+        foreach(stamp ${_OV_STALE_STAMPS})
+            file(REMOVE "${stamp}")
+        endforeach()
+    endif()
+
+    set(OPENVINO_URL "https://github.com/openvinotoolkit/openvino/archive/refs/tags/${OPENVINO_VERSION}.tar.gz")
+    set(OPENVINO_URL_HASH "SHA256=529ce766bcca30991c21d0e065886e175b5210d81d6f6b3d7cdaaa89fe22ea8a")
+
+    # ── Submodule URLs (downloaded by patch_openvino.cmake into source tree) ──
+    # We pass these as cmake args to the patch script so it can fetch them.
+    set(OV_SUBMODULE_URLS
+        "ONEDNN_URL=https://github.com/openvinotoolkit/oneDNN/archive/${OV_ONEDNN_COMMIT}.tar.gz"
+        "XBYAK_URL=https://github.com/herumi/xbyak/archive/${OV_XBYAK_COMMIT}.tar.gz"
+        "PUGIXML_URL=https://github.com/zeux/pugixml/archive/${OV_PUGIXML_COMMIT}.tar.gz"
+        "FLATBUF_URL=https://github.com/google/flatbuffers/archive/${OV_FLATBUF_COMMIT}.tar.gz"
+        "ITTAPI_URL=https://github.com/intel/ittapi/archive/${OV_ITTAPI_COMMIT}.tar.gz"
+        "JSON_URL=https://github.com/nlohmann/json/archive/${OV_JSON_COMMIT}.tar.gz"
+        "ZLIB_URL=https://github.com/madler/zlib/archive/${OV_ZLIB_COMMIT}.tar.gz"
+    )
+
+    # ── Build cmake args: C++ inference runtime ONLY ──
+    set(OPENVINO_CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${OPENVINO_INSTALL_DIR}
+        -DCMAKE_BUILD_TYPE=Release
+        # Static libs for embedding into libnd4j
+        -DBUILD_SHARED_LIBS=OFF
+        # ── Disable Python entirely ──
+        -DENABLE_PYTHON=OFF
+        -DENABLE_WHEEL=OFF
+        -DENABLE_GIL_PYTHON_API=OFF
+        # ── Disable tests, samples, docs ──
+        -DENABLE_TESTS=OFF
+        -DENABLE_SAMPLES=OFF
+        -DENABLE_FUNCTIONAL_TESTS=OFF
+        -DENABLE_DOCS=OFF
+        # ── CPU plugin ONLY ──
+        -DENABLE_INTEL_CPU=ON
+        -DENABLE_INTEL_GPU=OFF
+        -DENABLE_INTEL_NPU=OFF
+        -DENABLE_INTEL_NPU_INTERNAL=OFF
+        # ── Disable ALL model frontends (we build ov::Model programmatically) ──
+        -DENABLE_OV_ONNX_FRONTEND=OFF
+        -DENABLE_OV_TF_FRONTEND=OFF
+        -DENABLE_OV_TF_LITE_FRONTEND=OFF
+        -DENABLE_OV_PADDLE_FRONTEND=OFF
+        -DENABLE_OV_PYTORCH_FRONTEND=OFF
+        -DENABLE_OV_JAX_FRONTEND=OFF
+        -DENABLE_OV_IR_FRONTEND=ON
+        # ── Disable multi-device plugins ──
+        -DENABLE_MULTI=OFF
+        -DENABLE_AUTO=OFF
+        -DENABLE_AUTO_BATCH=OFF
+        -DENABLE_HETERO=OFF
+        -DENABLE_TEMPLATE=OFF
+        -DENABLE_PROXY=OFF
+        # ── Disable JS bindings ──
+        -DENABLE_JS=OFF
+        # ── CPU performance: Snippets JIT (core reason for OpenVINO) ──
+        -DENABLE_SNIPPETS_LIBXSMM_TPP=OFF
+        -DENABLE_MLAS_FOR_CPU=OFF
+        # ── Threading: TBB (bundled, not system) ──
+        -DTHREADING=TBB
+        -DENABLE_SYSTEM_TBB=OFF
+        -DENABLE_TBBBIND_2_5=OFF
+        # ── Use bundled deps (we fetched them) ──
+        -DENABLE_SYSTEM_PUGIXML=OFF
+        -DENABLE_SYSTEM_FLATBUFFERS=OFF
+        -DENABLE_SYSTEM_PROTOBUF=OFF
+        -DENABLE_SYSTEM_SNAPPY=OFF
+        -DENABLE_SNAPPY_COMPRESSION=OFF
+        # ── Binary size / debug ──
+        -DENABLE_LTO=OFF
+        -DENABLE_DEBUG_CAPS=OFF
+        -DENABLE_CPU_DEBUG_CAPS=OFF
+        -DENABLE_SNIPPETS_DEBUG_CAPS=OFF
+        -DENABLE_PROFILING_FIRST_INFERENCE=OFF
+        # ── Compilers ──
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    )
+
+    # Pass ccache
+    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+        list(APPEND OPENVINO_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND OPENVINO_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+    endif()
+    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+        list(APPEND OPENVINO_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND OPENVINO_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+    endif()
+
+    # Smart ccache partition key
+    set(_OV_SHAPE_KEY_RAW "${OPENVINO_VERSION}-cpu-static-Release")
+    string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" OV_SHAPE_KEY "${_OV_SHAPE_KEY_RAW}")
+    set(OPENVINO_BUILD_COMMAND
+        ${CMAKE_COMMAND} -E env
+        "SD_SMART_CCACHE_SEGMENT=openvino"
+        "SD_SMART_CCACHE_SHAPE_KEY=${OV_SHAPE_KEY}"
+        ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${DEP_PARALLEL_JOBS}
+    )
+    message(STATUS "   Smart ccache segment=openvino shape=${OV_SHAPE_KEY}")
+
+    # ── Main ExternalProject: download OpenVINO source + populate submodules ──
+    # PATCH_COMMAND runs patch_openvino.cmake which downloads and extracts all
+    # submodule dependencies into their expected paths in the source tree.
+    ExternalProject_Add(openvino_external
+        PREFIX            "${OPENVINO_PREFIX}"
+        URL               "${OPENVINO_URL}"
+        URL_HASH          "${OPENVINO_URL_HASH}"
+        DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        SOURCE_DIR        "${OPENVINO_SOURCE_DIR}"
+        BINARY_DIR        "${OPENVINO_PREFIX}/build"
+        STAMP_DIR         "${OPENVINO_STAMP_DIR}"
+        PATCH_COMMAND     ${CMAKE_COMMAND}
+                          -DSOURCE_DIR=${OPENVINO_SOURCE_DIR}
+                          -DDOWNLOAD_DIR=${CMAKE_BINARY_DIR}/downloads
+                          -DTBB_INSTALL_DIR=${OPENVINO_PREFIX}/tbb_install
+                          -DTBB_VERSION=${OV_TBB_VERSION}
+                          -DPARALLEL_JOBS=${DEP_PARALLEL_JOBS}
+                          -DCCACHE_PATH=${SD_PLAIN_CCACHE_PATH}
+                          -DONEDNN_URL=https://github.com/openvinotoolkit/oneDNN/archive/${OV_ONEDNN_COMMIT}.tar.gz
+                          -DONEDNN_COMMIT=${OV_ONEDNN_COMMIT}
+                          -DXBYAK_URL=https://github.com/herumi/xbyak/archive/${OV_XBYAK_COMMIT}.tar.gz
+                          -DXBYAK_COMMIT=${OV_XBYAK_COMMIT}
+                          -DPUGIXML_URL=https://github.com/zeux/pugixml/archive/${OV_PUGIXML_COMMIT}.tar.gz
+                          -DPUGIXML_COMMIT=${OV_PUGIXML_COMMIT}
+                          -DFLATBUF_URL=https://github.com/google/flatbuffers/archive/${OV_FLATBUF_COMMIT}.tar.gz
+                          -DFLATBUF_COMMIT=${OV_FLATBUF_COMMIT}
+                          -DITTAPI_URL=https://github.com/intel/ittapi/archive/${OV_ITTAPI_COMMIT}.tar.gz
+                          -DITTAPI_COMMIT=${OV_ITTAPI_COMMIT}
+                          -DJSON_URL=https://github.com/nlohmann/json/archive/${OV_JSON_COMMIT}.tar.gz
+                          -DJSON_COMMIT=${OV_JSON_COMMIT}
+                          -DZLIB_URL=https://github.com/madler/zlib/archive/${OV_ZLIB_COMMIT}.tar.gz
+                          -DZLIB_COMMIT=${OV_ZLIB_COMMIT}
+                          -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_openvino.cmake"
+        CMAKE_ARGS        ${OPENVINO_CMAKE_ARGS}
+                          -DTBBROOT=${OPENVINO_PREFIX}/tbb_install
+        BUILD_COMMAND     ${OPENVINO_BUILD_COMMAND}
+        INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config Release
+        TIMEOUT           2700  # 45 minutes (includes submodule downloads)
+        LOG_DOWNLOAD      TRUE
+        LOG_CONFIGURE     TRUE
+        LOG_BUILD         TRUE
+        LOG_INSTALL       TRUE
+    )
+
+    # ── Copy TBB cmake config into OpenVINO install so find_package(OpenVINO) can find TBB ──
+    set(_TBB_SRC_CMAKE "${OPENVINO_PREFIX}/tbb_install/lib64/cmake/TBB")
+    set(_TBB_DST_CMAKE "${OPENVINO_INSTALL_DIR}/runtime/3rdparty/tbb/lib64/cmake/TBB")
+    ExternalProject_Add_Step(openvino_external copy_tbb_cmake
+        COMMENT "Copying TBB cmake config into OpenVINO install"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_TBB_DST_CMAKE}"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${_TBB_SRC_CMAKE}" "${_TBB_DST_CMAKE}"
+        DEPENDEES install
+    )
+
+    # ── Create interface library for linking ──
+    if(NOT TARGET openvino_interface)
+        add_library(openvino_interface INTERFACE)
+        add_dependencies(openvino_interface openvino_external)
+
+        # Headers
+        target_include_directories(openvino_interface SYSTEM INTERFACE
+            "${OPENVINO_INSTALL_DIR}/runtime/include"
+            "${OPENVINO_INSTALL_DIR}/include"
+        )
+
+        # Static OpenVINO install produces libs under runtime/lib/intel64/ (Linux x86_64).
+        # We link with --whole-archive for the core runtime to ensure plugin registration
+        # symbols are not stripped. All static deps (oneDNN, pugixml, TBB) are bundled.
+        set(_OV_LIB_DIR "${OPENVINO_INSTALL_DIR}/runtime/lib/intel64")
+        set(_OV_LIB_DIR_ALT "${OPENVINO_INSTALL_DIR}/runtime/lib")
+        set(_OV_LIB_3P "${OPENVINO_INSTALL_DIR}/runtime/3rdparty/lib")
+
+        if(WIN32)
+            target_link_libraries(openvino_interface INTERFACE
+                "${_OV_LIB_DIR}/openvino.lib"
+                "${_OV_LIB_DIR}/openvino_intel_cpu_plugin.lib"
+            )
+        else()
+            # Use a post-build step (install_openvino.cmake) to glob all static
+            # libs and create a proper link line. For now, link the known main libs.
+            # The install produces: libopenvino.a, libopenvino_intel_cpu_plugin.a,
+            # libopenvino_ir_frontend.a, libopenvino_reference.a, plus 3rdparty
+            # deps (libdnnl.a, libpugixml.a, libtbb.a, etc.)
+            target_link_libraries(openvino_interface INTERFACE
+                -Wl,--start-group
+                "${_OV_LIB_DIR}/libopenvino.a"
+                "${_OV_LIB_DIR}/libopenvino_intel_cpu_plugin.a"
+                "${_OV_LIB_DIR}/libopenvino_ir_frontend.a"
+                "${_OV_LIB_DIR}/libopenvino_reference.a"
+                "${_OV_LIB_DIR}/libopenvino_shape_inference.a"
+                -Wl,--end-group
+                -lpthread -ldl -lm -lrt
+            )
+        endif()
+    endif()
+
+    set(OPENVINO_LIB openvino_interface PARENT_SCOPE)
+    sd_register_helper("openvino")
+
+    # ── Save to dependency cache ──
+    if(SD_DEP_CACHE)
+        sd_dep_cache_key("openvino" "${OPENVINO_VERSION}" "" _ov_cache_key)
+        sd_dep_cache_store("openvino" "${_ov_cache_key}" "${OPENVINO_INSTALL_DIR}" "openvino_external")
+    endif()
+
+    message(STATUS "OpenVINO setup complete (HAVE_OPENVINO=ON, building from source)")
+endfunction()
+
+# Helper: create openvino_interface from an existing install directory.
+# Used by both the "reuse existing" and "restored from cache" paths.
+function(_openvino_create_interface_from_install _install_dir)
+    add_library(openvino_interface INTERFACE)
+
+    # Find cmake config dir
+    set(_ov_cfg_found FALSE)
+    foreach(_ov_cfg_dir
+            "${_install_dir}/runtime/lib/cmake/OpenVINO"
+            "${_install_dir}/runtime/cmake"
+            "${_install_dir}/lib/cmake/OpenVINO")
+        if(EXISTS "${_ov_cfg_dir}/OpenVINOConfig.cmake")
+            set(OpenVINO_DIR "${_ov_cfg_dir}")
+            set(_ov_cfg_found TRUE)
+            break()
+        endif()
+    endforeach()
+
+    if(_ov_cfg_found)
+        # Use OpenVINO's own cmake config — handles all transitive deps
+        find_package(OpenVINO REQUIRED CONFIG PATHS "${OpenVINO_DIR}" NO_DEFAULT_PATH)
+        target_link_libraries(openvino_interface INTERFACE openvino::runtime)
+    else()
+        # Fallback: manual linking (shouldn't happen with proper install)
+        message(WARNING "OpenVINO cmake config not found, using manual linking")
+        set(_OV_LIB_DIR "${_install_dir}/runtime/lib/intel64")
+        if(WIN32)
+            target_link_libraries(openvino_interface INTERFACE
+                "${_OV_LIB_DIR}/openvino.lib")
+        else()
+            # Glob all .a files
+            file(GLOB _OV_ALL_LIBS "${_OV_LIB_DIR}/*.a")
+            if(_OV_ALL_LIBS)
+                target_link_libraries(openvino_interface INTERFACE
+                    -Wl,--start-group ${_OV_ALL_LIBS} -Wl,--end-group
+                    -lpthread -ldl -lm -lrt)
+            endif()
+        endif()
+    endif()
+
+    # Add include dirs explicitly
+    foreach(_ov_inc_dir
+            "${_install_dir}/runtime/include"
+            "${_install_dir}/include")
+        if(EXISTS "${_ov_inc_dir}/openvino/openvino.hpp")
+            target_include_directories(openvino_interface SYSTEM INTERFACE "${_ov_inc_dir}")
+            break()
+        endif()
+    endforeach()
+endfunction()
+

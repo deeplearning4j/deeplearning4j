@@ -1415,6 +1415,32 @@ public interface Environment {
     default long dspCapturePoolMaxBytes() { return 1073741824L; }
     default void setDspCapturePoolMaxBytes(long bytes) {}
 
+    // ============== CUDA Graph Capture OOM Retry / Memory Management ==============
+
+    /** Max OOM retry attempts before permanent failure (default: 3) */
+    default int dspCaptureOomMaxRetries() { return 3; }
+    default void setDspCaptureOomMaxRetries(int retries) {}
+
+    /** Executions between OOM retry attempts (default: 4) */
+    default int dspCaptureOomRetryInterval() { return 4; }
+    default void setDspCaptureOomRetryInterval(int interval) {}
+
+    /** cuBLAS workspace size in MB for graph capture (default: 256) */
+    default int dspCublasWorkspaceMb() { return 256; }
+    default void setDspCublasWorkspaceMb(int mb) {}
+
+    /** Post-alloc safety margin in MB for CUDA driver graph metadata (default: 16) */
+    default int dspGraphMetadataSafetyMb() { return 16; }
+    default void setDspGraphMetadataSafetyMb(int mb) {}
+
+    /** Enable proactive eviction of LRU graphs before capture (default: true) */
+    default boolean dspProactiveEvictBeforeCapture() { return true; }
+    default void setDspProactiveEvictBeforeCapture(boolean enabled) {}
+
+    /** Use LRU eviction ordering (true) or smallest-first (false) (default: true) */
+    default boolean dspLruEviction() { return true; }
+    default void setDspLruEviction(boolean enabled) {}
+
     // ============== LLM Benchmark Config Presets ==============
 
     /**
@@ -1430,16 +1456,19 @@ public interface Environment {
      * @see org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig#optimal()
      */
     default void applyOptimalLLMConfig() {
-        // Reset all Triton/DSP flags to defaults
+        // ── Reset ALL Triton/DSP flags to clean state ──
+        // Mirrors BenchmarkConfigApplier.apply() reset block exactly
         setTritonGraphCapture(false);
         setTritonSectionFusion(false);
         setTritonConsolidatedArgTable(false);
         setTritonArgDirtyTracking(false);
         setTritonSkipKernels(false);
         setTritonVerifyKernels(false);
+        setTritonVerifyKeepNative(false);
         setTritonVerifyFullSnapshot(false);
         setTritonForceRecapture(false);
         setTritonIncludeTypes("");
+        setTritonCaptureMinExec(1);
         setTritonCompileAll(false);
         setTritonExcludeOps("");
         setTritonCooperativeLaunch(false);
@@ -1452,8 +1481,10 @@ public interface Environment {
         setDspBatchZeroKernel(false);
         setDspBatchedGemm(false);
         setDspCastSinkMatmul(false);
+        setDspFp16Compute(false);
+        setDspCastElimination(false);
 
-        // Apply BALANCED profile baseline
+        // ── BALANCED profile baseline (same as BenchmarkConfigApplier.applyTritonProfile("BALANCED")) ──
         setTritonCacheEnabled(true);
         setTritonAlwaysCompile(false);
         setTritonDisableLineInfo(true);
@@ -1463,7 +1494,16 @@ public interface Environment {
         setTritonNumCTAs(1);
         setTritonEnableFpFusion(true);
 
-        // Apply optimal overrides (matches BenchmarkConfig.optimal())
+        // ── Segment fusion optimization flags (all ON by default for optimal performance) ──
+        setTritonFuseIdentityShapes(true);
+        setTritonFuseCastChains(true);
+        setTritonSpecializePermuteSeq1(true);
+        setTritonFuseAttentionNeighborhoods(true);
+        setTritonFusedMatmul(false);  // HIGH RISK — disabled by default
+
+        // ── Optimal overrides (matches BenchmarkConfig.optimal() exactly) ──
+        // NEVER compile MATMUL (cuBLAS 2.8x faster)
+        // Flash attention (+ATTENTION) gives +30% decode speed with CUDA graph capture
         setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION");
         setTritonSectionFusion(true);
         setTritonCompileAll(true);
@@ -1475,6 +1515,7 @@ public interface Environment {
         setTritonNumWarps(4);
         setTritonNumStages(1);
         setCublasTf32Enabled(true);
+        setTritonTf32Enabled(true);
         setDspBatchedGemm(true);
     }
 

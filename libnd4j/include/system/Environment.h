@@ -163,6 +163,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<int> _tritonAttentionBlockN{0};  // 0 = auto (use chooseFusedAttentionTileConfig heuristic)
   std::atomic<bool> _tritonEnableFpFusion{true};
   std::atomic<bool> _tritonDisableLineInfo{false};
+  std::atomic<bool> _tritonInvalidateOnPlanFree{false};  // aggressive cache invalidation on plan destruction (default OFF)
   std::string _tritonCacheDir;
   std::string _tritonDumpDir;
   std::string _tritonOverrideDir;
@@ -247,6 +248,14 @@ class SD_LIB_EXPORT Environment {
   // CUDA graph capture buffer pool sharing via CudaMemoryPool
   std::atomic<bool> _dspCapturePoolEnabled{true};     // ND4J_DSP_CAPTURE_POOL_ENABLED — route capture buffers through pool
   std::atomic<long long> _dspCapturePoolMaxBytes{1073741824LL}; // ND4J_DSP_CAPTURE_POOL_MAX_BYTES — 1GB default
+
+  // CUDA graph capture OOM retry and memory management
+  std::atomic<int> _dspCaptureOomMaxRetries{3};       // ND4J_DSP_CAPTURE_OOM_MAX_RETRIES — max eviction+retry attempts
+  std::atomic<int> _dspCaptureOomRetryInterval{4};    // ND4J_DSP_CAPTURE_OOM_RETRY_INTERVAL — executions between retries
+  std::atomic<int> _dspCublasWorkspaceMb{256};        // ND4J_DSP_CUBLAS_WORKSPACE_MB — cuBLAS workspace size in MB
+  std::atomic<int> _dspGraphMetadataSafetyMb{16};     // ND4J_DSP_GRAPH_METADATA_SAFETY_MB — post-alloc headroom for driver
+  std::atomic<bool> _dspProactiveEvictBeforeCapture{true};  // ND4J_DSP_PROACTIVE_EVICT — evict before capture
+  std::atomic<bool> _dspLruEviction{true};            // ND4J_DSP_LRU_EVICTION — LRU vs smallest-first eviction
 
   Environment();
 
@@ -555,6 +564,8 @@ class SD_LIB_EXPORT Environment {
   void setTritonLogAllPatterns(bool logAllPatterns);
   bool tritonAlwaysCompile() { return _tritonAlwaysCompile.load(); }
   void setTritonAlwaysCompile(bool alwaysCompile);
+  bool tritonInvalidateOnPlanFree() { return _tritonInvalidateOnPlanFree.load(); }
+  void setTritonInvalidateOnPlanFree(bool invalidate);
   bool tritonKernelDump() { return _tritonKernelDump.load(); }
   void setTritonKernelDump(bool kernelDump);
   bool tritonKernelOverride() { return _tritonKernelOverride.load(); }
@@ -694,6 +705,20 @@ class SD_LIB_EXPORT Environment {
   void setDspCapturePoolEnabled(bool enabled);
   long long dspCapturePoolMaxBytes() { return _dspCapturePoolMaxBytes.load(); }
   void setDspCapturePoolMaxBytes(long long bytes);
+
+  // CUDA graph capture OOM retry and memory management
+  int dspCaptureOomMaxRetries() { return _dspCaptureOomMaxRetries.load(); }
+  void setDspCaptureOomMaxRetries(int retries) { _dspCaptureOomMaxRetries.store(retries); }
+  int dspCaptureOomRetryInterval() { return _dspCaptureOomRetryInterval.load(); }
+  void setDspCaptureOomRetryInterval(int interval) { _dspCaptureOomRetryInterval.store(interval); }
+  int dspCublasWorkspaceMb() { return _dspCublasWorkspaceMb.load(); }
+  void setDspCublasWorkspaceMb(int mb) { _dspCublasWorkspaceMb.store(mb); }
+  int dspGraphMetadataSafetyMb() { return _dspGraphMetadataSafetyMb.load(); }
+  void setDspGraphMetadataSafetyMb(int mb) { _dspGraphMetadataSafetyMb.store(mb); }
+  bool dspProactiveEvictBeforeCapture() { return _dspProactiveEvictBeforeCapture.load(); }
+  void setDspProactiveEvictBeforeCapture(bool v) { _dspProactiveEvictBeforeCapture.store(v); }
+  bool dspLruEviction() { return _dspLruEviction.load(); }
+  void setDspLruEviction(bool v) { _dspLruEviction.store(v); }
 
   // Process environment path helpers used by native backends.
   std::string homeDirectory() const;

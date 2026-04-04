@@ -43,7 +43,7 @@ import java.util.Set;
  *
  * Handles the broad family of decoder-only transformers that share the
  * LLaMA pattern: RMSNorm, GQA, SwiGLU FFN, RoPE.  This includes LLaMA 1-3,
- * Mistral, Mixtral, Qwen (all versions), Yi, DeepSeek, InternLM, and any
+ * Qwen (all versions), Yi, DeepSeek, InternLM, and any
  * future model that follows the same tensor naming convention in GGUF.
  *
  * <p>Qwen3.5 hybrid models are supported with two layer types:</p>
@@ -57,7 +57,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
     private static final Set<String> SUPPORTED_VARIANTS = Set.of(
             "llama", "llama2", "llama3", "codellama",
-            "mistral", "mixtral", "yi", "deepseek",
+            "yi", "deepseek",
             "qwen", "qwen2", "qwen3", "qwen3.5", "qwen35",
             "internlm", "internlm2"
     );
@@ -80,7 +80,6 @@ public class LLaMAArchitecture implements ModelArchitecture {
         String archLower = arch.toLowerCase();
         return SUPPORTED_VARIANTS.contains(archLower) ||
                archLower.contains("llama") ||
-               archLower.contains("mistral") ||
                archLower.contains("qwen");
     }
 

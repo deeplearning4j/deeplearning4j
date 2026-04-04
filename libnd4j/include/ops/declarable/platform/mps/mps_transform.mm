@@ -169,6 +169,9 @@ PLATFORM_IMPL(permute, ENGINE_CPU) {
 
     if (x->isEmpty()) return sd::Status::OK;
 
+    // DSP view path: output shares input's buffer with permuted strides.
+    if (x->dataBuffer() == z->dataBuffer()) return sd::Status::OK;
+
     @autoreleasepool {
         auto permutationAxes = block.getIArguments();
         int rank = x->rankOf();

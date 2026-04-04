@@ -417,9 +417,12 @@ void cblas_zher2k(enum CBLAS_ORDER Order, enum CBLAS_UPLO Uplo, enum CBLAS_TRANS
 
 /*
  * ===========================================================================
- * Prototypes for batch GEMM (extension supported by OpenBLAS, MKL, etc.)
+ * Prototypes for batch GEMM (MKL / __EXTERNAL_BLAS__ extension only)
+ * OpenBLAS does NOT reliably provide these symbols -- omit declarations
+ * to avoid undefined-symbol errors at link time.
  * ===========================================================================
  */
+#if defined(HAVE_MKL) || defined(__EXTERNAL_BLAS__)
 void cblas_sgemm_batch(enum CBLAS_ORDER Order, enum CBLAS_TRANSPOSE *TransA_Array, enum CBLAS_TRANSPOSE *TransB_Array,
                        int *M_Array, int *N_Array, int *K_Array, float *alpha_Array, float **A_Array, int *lda_Array,
                        float **B_Array, int *ldb_Array, float *beta_Array, float **C_Array, int *ldc_Array,
@@ -428,6 +431,7 @@ void cblas_dgemm_batch(enum CBLAS_ORDER Order, enum CBLAS_TRANSPOSE *TransA_Arra
                        int *M_Array, int *N_Array, int *K_Array, double *alpha_Array, double **A_Array, int *lda_Array,
                        double **B_Array, int *ldb_Array, double *beta_Array, double **C_Array, int *ldc_Array,
                        int group_count, int *group_size);
+#endif
 
 int cblas_errprn(int ierr, int info, char *form, ...);
 #ifdef __cplusplus

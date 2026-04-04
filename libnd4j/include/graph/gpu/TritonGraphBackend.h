@@ -29,6 +29,7 @@
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 
+#include <atomic>
 #include <functional>
 #include <cstddef>
 #include <memory>
@@ -151,6 +152,8 @@ class TritonGraphBackend : public GraphBackend {
     bool useMultiPhaseLaunch;   // true if kernel uses multi-phase launch (phase_id arg)
     std::vector<TritonIRModule::LaunchPhase> launchPhases;  // Phase boundaries + grid sizes
 
+    size_t estimatedModuleBytes;  // Approximate GPU memory for loaded CUmodule (binary size proxy)
+
     // Sub-segment range (absolute slot indices)
     int startSlot_;
     int endSlot_;
@@ -189,6 +192,7 @@ class TritonGraphBackend : public GraphBackend {
           useDynamicGrid(true),
           useIndirectArgs(false),
           useMultiPhaseLaunch(false),
+          estimatedModuleBytes(0),
           startSlot_(-1), endSlot_(-1)
 #ifdef SD_CUDA
           , cachedArgTableDevice(nullptr), cachedArgTableBytes(0),
@@ -275,6 +279,16 @@ class TritonGraphBackend : public GraphBackend {
   std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
   mutable std::mutex cacheMtx_;
 
+ public:
+  // Per-device GPU memory consumed by compiled Triton modules (arg tables, scratch, modules)
+  static constexpr int kMaxTritonDevices = 16;
+  void recordModuleAlloc(int deviceId, size_t bytes);
+  void recordModuleFree(int deviceId, size_t bytes);
+  size_t getTritonModuleMemory(int deviceId) const;
+  size_t getTotalTritonModuleMemory() const;
+
+ private:
+  std::atomic<size_t> tritonDeviceMemory_[kMaxTritonDevices]{};
   // Most recent compilation audit
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
 

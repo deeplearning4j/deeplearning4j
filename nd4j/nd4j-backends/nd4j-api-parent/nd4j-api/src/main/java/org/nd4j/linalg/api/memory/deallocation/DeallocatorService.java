@@ -802,10 +802,12 @@ public class DeallocatorService {
 
     /**
      * Get the singleton instance.
+     * Uses Nd4j.getDeallocatorService() directly to avoid infinite recursion through
+     * MemoryManager.getDeallocatorService() which may call back to this method.
      * @return the deallocator service instance
      */
     public static DeallocatorService getInstance() {
-        return Nd4j.getMemoryManager() != null ? Nd4j.getMemoryManager().getDeallocatorService() : null;
+        return Nd4j.getDeallocatorService();
     }
 
     /**

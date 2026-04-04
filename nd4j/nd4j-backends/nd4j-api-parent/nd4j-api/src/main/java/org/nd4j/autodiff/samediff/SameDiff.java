@@ -280,6 +280,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public final SDSignal signal = new SDSignal(this);
 
+    /**
+     * Op creator object for audio processing operations
+     */
+    public final SDAudio audio = new SDAudio(this);
+
     public final static String INFERENCE_FACTORY_CLASS = "inferencefactory.class";
     private static InferenceFactory INFERENCE_FACTORY;
 
@@ -432,6 +437,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public SDSignal signal(){
         return signal;
+    }
+
+    public SDAudio audio(){
+        return audio;
     }
 
 

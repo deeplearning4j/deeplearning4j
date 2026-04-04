@@ -1331,10 +1331,17 @@ void TritonGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(cacheMtx_);
   for (auto& entry : cache_) {
     auto& seg = entry.second;
+    // Determine device for memory tracking
+    int segDeviceId = 0;
+    if (!seg.subKernels.empty() && seg.subKernels[0].cachedArgTableDeviceId >= 0)
+      segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
+
     // Free consolidated arg table buffers FIRST (before per-kernel cleanup,
     // because per-kernel pointers are offsets into these buffers).
     if (seg.useConsolidatedArgTable) {
       if (seg.consolidatedArgTableDevice != nullptr) {
+        recordModuleFree(seg.consolidatedArgTableDeviceId >= 0 ? seg.consolidatedArgTableDeviceId : segDeviceId,
+                         seg.consolidatedArgTableBytes);
         cudaFree(seg.consolidatedArgTableDevice);
         seg.consolidatedArgTableDevice = nullptr;
         seg.consolidatedArgTableBytes = 0;
@@ -1354,9 +1361,11 @@ void TritonGraphBackend::invalidateCache() {
       }
     }
     for (auto& kernel : seg.subKernels) {
+      int kDevId = kernel.cachedArgTableDeviceId >= 0 ? kernel.cachedArgTableDeviceId : segDeviceId;
       // Only free per-kernel arg tables if NOT consolidated (consolidated
       // arg tables were freed above; per-kernel pointers are interior offsets).
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableDevice != nullptr) {
+        recordModuleFree(kDevId, kernel.cachedArgTableBytes);
         cudaFree(kernel.cachedArgTableDevice);
         kernel.cachedArgTableDevice = nullptr;
         kernel.cachedArgTableBytes = 0;
@@ -1368,17 +1377,22 @@ void TritonGraphBackend::invalidateCache() {
         kernel.cachedArgTableHostPinnedBytes = 0;
       }
       if (kernel.cachedSyncCounterDevice != nullptr) {
+        recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : segDeviceId,
+                         sizeof(int));
         cudaFree(kernel.cachedSyncCounterDevice);
         kernel.cachedSyncCounterDevice = nullptr;
         kernel.cachedSyncCounterDeviceId = -1;
       }
       if (kernel.cachedGlobalScratchDevice != nullptr) {
+        recordModuleFree(kernel.cachedGlobalScratchDeviceId >= 0 ? kernel.cachedGlobalScratchDeviceId : segDeviceId,
+                         kernel.cachedGlobalScratchBytes);
         cudaFree(kernel.cachedGlobalScratchDevice);
         kernel.cachedGlobalScratchDevice = nullptr;
         kernel.cachedGlobalScratchBytes = 0;
         kernel.cachedGlobalScratchDeviceId = -1;
       }
       if (kernel.gpuModule) {
+        recordModuleFree(kDevId, kernel.estimatedModuleBytes);
         TritonTargetDispatch::unloadModule(kernel.gpuModule);
       }
     }
@@ -1408,9 +1422,16 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
     }
 
     auto& seg = it->second;
+    // Determine device for memory tracking (use first kernel's cached device, or 0)
+    int segDeviceId = 0;
+    if (!seg.subKernels.empty() && seg.subKernels[0].cachedArgTableDeviceId >= 0)
+      segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
+
     // Free resources (same logic as invalidateCache)
     if (seg.useConsolidatedArgTable) {
       if (seg.consolidatedArgTableDevice != nullptr) {
+        recordModuleFree(seg.consolidatedArgTableDeviceId >= 0 ? seg.consolidatedArgTableDeviceId : segDeviceId,
+                         seg.consolidatedArgTableBytes);
         cudaFree(seg.consolidatedArgTableDevice);
       }
       if (seg.consolidatedArgTableHostPinned != nullptr) {
@@ -1424,19 +1445,26 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       }
     }
     for (auto& kernel : seg.subKernels) {
+      int kDevId = kernel.cachedArgTableDeviceId >= 0 ? kernel.cachedArgTableDeviceId : segDeviceId;
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableDevice != nullptr) {
+        recordModuleFree(kDevId, kernel.cachedArgTableBytes);
         cudaFree(kernel.cachedArgTableDevice);
       }
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
         cudaFreeHost(kernel.cachedArgTableHostPinned);
       }
       if (kernel.cachedSyncCounterDevice != nullptr) {
+        recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : segDeviceId,
+                         sizeof(int));
         cudaFree(kernel.cachedSyncCounterDevice);
       }
       if (kernel.cachedGlobalScratchDevice != nullptr) {
+        recordModuleFree(kernel.cachedGlobalScratchDeviceId >= 0 ? kernel.cachedGlobalScratchDeviceId : segDeviceId,
+                         kernel.cachedGlobalScratchBytes);
         cudaFree(kernel.cachedGlobalScratchDevice);
       }
       if (kernel.gpuModule) {
+        recordModuleFree(kDevId, kernel.estimatedModuleBytes);
         TritonTargetDispatch::unloadModule(kernel.gpuModule);
         freedModules++;
       }
@@ -1467,6 +1495,31 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
              "for %d segment ranges",
              freedEntries, freedModules, static_cast<int>(segmentRanges.size()));
   }
+}
+
+// ─── Per-device Triton module memory tracking ───────────────────────────────
+
+void TritonGraphBackend::recordModuleAlloc(int deviceId, size_t bytes) {
+  if (deviceId >= 0 && deviceId < kMaxTritonDevices)
+    tritonDeviceMemory_[deviceId].fetch_add(bytes, std::memory_order_relaxed);
+}
+
+void TritonGraphBackend::recordModuleFree(int deviceId, size_t bytes) {
+  if (deviceId >= 0 && deviceId < kMaxTritonDevices)
+    tritonDeviceMemory_[deviceId].fetch_sub(bytes, std::memory_order_relaxed);
+}
+
+size_t TritonGraphBackend::getTritonModuleMemory(int deviceId) const {
+  if (deviceId >= 0 && deviceId < kMaxTritonDevices)
+    return tritonDeviceMemory_[deviceId].load(std::memory_order_relaxed);
+  return 0;
+}
+
+size_t TritonGraphBackend::getTotalTritonModuleMemory() const {
+  size_t total = 0;
+  for (int i = 0; i < kMaxTritonDevices; i++)
+    total += tritonDeviceMemory_[i].load(std::memory_order_relaxed);
+  return total;
 }
 
 // ─── Compilation audit ──────────────────────────────────────────────────────

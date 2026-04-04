@@ -166,16 +166,42 @@ int executeDynamicShapePlan(
       // Output arrays may be null — plan will allocate them
     }
 
-    // Debug: print input shapes
-    for (int i = 0; i < numInputs; i++) {
-      auto* arr = inputPtrs[i];
-      fprintf(stdout, "DSP_DEBUG: input[%d] rank=%d shape=[", i, arr->rankOf());
-      for (int d = 0; d < arr->rankOf(); d++) {
-        fprintf(stdout, "%lld%s", (long long)arr->sizeAt(d), d < arr->rankOf()-1 ? "," : "");
+    // Validate external input GPU pointers before execution.
+    // Detect corrupted/freed _specialBuffer pointers that would cause SIGSEGV
+    // in cudaMemcpyAsync during slot execution.
+    {
+      int badCount = 0;
+      for (int i = 0; i < numInputs; i++) {
+        auto* arr = inputPtrs[i];
+        if (arr == nullptr) continue;
+        auto* db = arr->dataBuffer();
+        if (db == nullptr || db->isClosed()) continue;
+        void* specialBuf = db->special();
+        if (specialBuf == nullptr) continue;  // null is OK — will be allocated on demand
+
+        cudaPointerAttributes attrs;
+        auto attrRes = cudaPointerGetAttributes(&attrs, specialBuf);
+        if (attrRes != cudaSuccess) {
+          cudaGetLastError();  // clear sticky error
+          if (badCount < 5) {
+            DSP_DIAG(MEMORY, "input[%d] INVALID _specialBuffer=%p (err=%d: %s) "
+                     "rank=%d len=%lld dtype=%d pAct=%d sAct=%d",
+                     i, specialBuf, static_cast<int>(attrRes), cudaGetErrorString(attrRes),
+                     arr->rankOf(), (long long)arr->lengthOf(),
+                     static_cast<int>(arr->dataType()),
+                     db->isPrimaryActual() ? 1 : 0, db->isSpecialActual() ? 1 : 0);
+            cudaGetLastError();  // clear error from GetErrorString
+          }
+          badCount++;
+          // Null out the invalid pointer so syncToSpecial can reallocate
+          db->setSpecialBuffer(nullptr, 0);
+        }
       }
-      fprintf(stdout, "] len=%lld\n", (long long)arr->lengthOf());
+      if (badCount > 0) {
+        DSP_DIAG(MEMORY, "%d of %d inputs had invalid GPU pointers (nulled for recovery)",
+                 badCount, numInputs);
+      }
     }
-    fflush(stdout);
 
     void* cudaStream = (stream != nullptr) ? reinterpret_cast<void*>(stream) : nullptr;
 
