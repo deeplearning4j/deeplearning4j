@@ -66,6 +66,21 @@ static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
   return mb * 1024ULL * 1024ULL;
 }();
 
+// ─── Slot output address fingerprinting ─────────────────────────────────────
+// FNV-1a hash of slot output specialBuffer() addresses for a segment.
+// Verified before replay — mismatch means output buffers were reallocated
+// and the CUDA graph has stale baked-in addresses (would SIGSEGV or corrupt).
+static LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
+  LongType hash = 0xcbf29ce484222325ULL;  // FNV-1a offset basis
+  for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
+    void* addr = (outputSlots[si] != nullptr) ? outputSlots[si]->specialBuffer() : nullptr;
+    LongType bits = reinterpret_cast<uintptr_t>(addr);
+    hash ^= bits;
+    hash *= 0x100000001b3ULL;  // FNV-1a prime
+  }
+  return hash;
+}
+
 // ─── Segment input address key computation ──────────────────────────────────
 
 LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
@@ -497,6 +512,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             cbDumpCount++;
           }
         }
+      }
+    }
+
+    // Address fingerprinting: verify slot output GPU addresses match capture-time addresses.
+    // Stale addresses in a captured CUDA graph cause SIGSEGV or silent data corruption.
+    if (captureBuffersOk && seg.exec.capturedSlotAddrHash != 0) {
+      LongType currentAddrHash = computeSlotAddrHash(
+          outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
+      if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
+        captureBuffersOk = false;
+        DSP_DIAG(FALLBACK, "SLOT ADDRESS FINGERPRINT MISMATCH for seg[%d-%d]: "
+                 "captured=0x%llx current=0x%llx — output buffers reallocated, invalidating graph",
+                 seg.startSlot, seg.endSlot,
+                 (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
       }
     }
 
@@ -1358,6 +1387,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   // replayHandle is already set (created before capture began)
   seg.exec.cachedShapeKey = segShapeKey;
+  seg.exec.capturedSlotAddrHash = computeSlotAddrHash(
+      outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
   seg.exec.executionCount++;
   totalGraphReplays_++;
 

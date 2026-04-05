@@ -338,6 +338,7 @@ struct GraphSegment {
   int startSlot;
   int endSlot;
   bool isCapturable;
+  bool hasValueDepOps = false;         // True if any slot has outputShapeDependsOnInputValues
   LongType shapeKey;                   // Initial shape key from buildSegments
 
   // User-forced backend override (empty = automatic selection via priority chain)
@@ -407,6 +408,11 @@ struct GraphSegment {
     // Hash of input DATA values for 'create' (ConstantOfShape) ops.
     LongType capturedCreateValueKey = 0;
 
+    // Hash of slot output specialBuffer() addresses at capture time.
+    // Verified before replay — mismatch means output buffers were reallocated
+    // and the CUDA graph has stale baked-in addresses (would SIGSEGV or corrupt).
+    LongType capturedSlotAddrHash = 0;
+
     // ── NVRTC JIT kernel (CUDA-only) ─────────────────────────────────
 #ifdef SD_CUDA
     NvrtcKernelHandle* jitKernel = nullptr;
@@ -444,6 +450,7 @@ struct GraphSegment {
       cachedShapeKey = 0;
       capturedInputAddrKey = 0;
       capturedCreateValueKey = 0;
+      capturedSlotAddrHash = 0;
 #ifdef SD_CUDA
       jitKernel = nullptr;
       jitShapeKey = 0;

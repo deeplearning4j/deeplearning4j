@@ -126,6 +126,22 @@ static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& 
   }
 }
 
+/**
+ * Compute FNV-1a hash of slot output specialBuffer() addresses for a segment.
+ * Used to verify that output buffers haven't been reallocated between capture
+ * and replay — stale addresses in a CUDA graph cause SIGSEGV or corruption.
+ */
+static LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
+  LongType hash = 0xcbf29ce484222325ULL;  // FNV-1a offset basis
+  for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
+    void* addr = (outputSlots[si] != nullptr) ? outputSlots[si]->specialBuffer() : nullptr;
+    LongType bits = reinterpret_cast<uintptr_t>(addr);
+    hash ^= bits;
+    hash *= 0x100000001b3ULL;  // FNV-1a prime
+  }
+  return hash;
+}
+
 #ifdef SD_CUDA
 static bool isCurrentDevicePointer(void* ptr, int currentDeviceId) {
   if (ptr == nullptr) return false;
@@ -823,8 +839,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // Compute shape key for cache lookup.
   // When shapes are frozen and the key was already computed, reuse it — the shapes
   // cannot change so the hash is stable. Saves iterating all cross-segment inputs.
+  // EXCEPTION: segments with value-dependent ops must ALWAYS recompute the shape key
+  // because input VALUES (hashed by computeSegmentShapeKey for small inputs ≤32 elements)
+  // can change even when shapes are frozen. Without this guard, the cached key would
+  // miss value changes in reshape targets, broadcast dims, etc., causing CUDA graph
+  // replay with stale output shapes.
   LongType segShapeKey;
-  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
+  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0 && !seg.hasValueDepOps) {
     segShapeKey = seg.exec.cachedShapeKey;
   } else {
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
@@ -1801,6 +1822,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         }
       }
       // ── END TRIPWIRE ─────────────────────────────────────────────────────
+
+      // Address fingerprinting: verify slot output GPU addresses match capture-time.
+      if (seg.exec.capturedSlotAddrHash != 0) {
+        LongType currentAddrHash = computeSlotAddrHash(
+            outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
+        if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
+          DSP_DIAG(FALLBACK, "SLOT ADDRESS FINGERPRINT MISMATCH for seg[%d-%d]: "
+                   "captured=0x%llx current=0x%llx — invalidating graph for re-capture",
+                   seg.startSlot, seg.endSlot,
+                   (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
+          lineageInvalidated = true;
+          platformCleanupSegmentForRebuild(seg);
+        }
+      }
 
       bool replayOk = false;
       if (lineageInvalidated || crossSegSizeMismatch || !seg.exec.replayHandle) {
@@ -3206,6 +3241,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         seg.exec.cachedShapeKey = segShapeKey;
         seg.exec.capturedInputAddrKey = segInputAddrKey;
         seg.exec.capturedCreateValueKey = createValueKey;
+        seg.exec.capturedSlotAddrHash = computeSlotAddrHash(
+            outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
         snapshotExternalAddrs(seg, externalArrays, numExt);
 
         // Export graph stats and DOT file for diagnostics

@@ -1983,10 +1983,7 @@ public class SameDiffSerializer {
 
             // --- Check if Data Already Loaded ---
             if (var.getArr() != null) {
-                // This could happen if the same variable (e.g., a constant) was somehow included
-                // in multiple shards' manifests or loaded as small inline AND appended.
-                log.warn("Variable '{}' already has an array in target SameDiff instance. Skipping append load for this entry (Offset={}, Length={}). Check save logic if this is unexpected.", name, offset, lengthBytes);
-                continue;
+                throw new IOException("Duplicate manifest entry: variable '" + name + "' already has an array in target SameDiff instance (Offset=" + offset + ", Length=" + lengthBytes + "). This indicates corrupted save data or a serialization bug.");
             }
 
             // --- Get Metadata from SDVariable AND FlatVariable ---

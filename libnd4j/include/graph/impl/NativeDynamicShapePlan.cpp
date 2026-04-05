@@ -19,6 +19,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
+#include <system/op_boilerplate.h>
 #include <graph/DspStreamGuard.h>
 #include <sstream>
 #include <graph/gpu/SymbolicShapeRanges.h>
@@ -459,6 +460,17 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   plan->numExternalInputs_ = reader.read<int32_t>();
   plan->numRequestedOutputs_ = reader.read<int32_t>();
 
+  REQUIRE_TRUE(plan->numSlots_ > 0 && plan->numSlots_ < 100000, 0,
+               "NativeDynamicShapePlan::fromSerializedPlan: invalid numSlots %d", plan->numSlots_);
+  REQUIRE_TRUE(plan->totalOutputSlots_ >= plan->numSlots_ && plan->totalOutputSlots_ < 500000, 0,
+               "NativeDynamicShapePlan::fromSerializedPlan: invalid totalOutputSlots %d (numSlots=%d)",
+               plan->totalOutputSlots_, plan->numSlots_);
+  REQUIRE_TRUE(plan->numExternalInputs_ >= 0 && plan->numExternalInputs_ < 100000, 0,
+               "NativeDynamicShapePlan::fromSerializedPlan: invalid numExternalInputs %d", plan->numExternalInputs_);
+  REQUIRE_TRUE(plan->numRequestedOutputs_ >= 0 && plan->numRequestedOutputs_ <= plan->totalOutputSlots_, 0,
+               "NativeDynamicShapePlan::fromSerializedPlan: invalid numRequestedOutputs %d (totalOutputSlots=%d)",
+               plan->numRequestedOutputs_, plan->totalOutputSlots_);
+
   // Allocate slots
   plan->slots_ = new NativeSlot[plan->numSlots_];
 
@@ -470,9 +482,23 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     slot.numInputs = reader.read<int32_t>();
     slot.numOutputs = reader.read<int32_t>();
 
+    REQUIRE_TRUE(slot.numInputs >= 0 && slot.numInputs < 10000, 0,
+                 "NativeDynamicShapePlan::fromSerializedPlan: slot %d has invalid numInputs %d", s, slot.numInputs);
+    REQUIRE_TRUE(slot.numOutputs >= 0 && slot.numOutputs < 10000, 0,
+                 "NativeDynamicShapePlan::fromSerializedPlan: slot %d has invalid numOutputs %d", s, slot.numOutputs);
+
     // Input wiring
     slot.inputSourceIndices = new int[slot.numInputs];
     reader.readArray(slot.inputSourceIndices, slot.numInputs);
+
+    // Validate each inputSourceIndex is in valid range
+    for (int i = 0; i < slot.numInputs; i++) {
+      REQUIRE_TRUE(slot.inputSourceIndices[i] >= -(plan->numExternalInputs_ + 1) &&
+                   slot.inputSourceIndices[i] < plan->totalOutputSlots_, 0,
+                   "NativeDynamicShapePlan::fromSerializedPlan: slot %d inputSourceIndices[%d]=%d out of range [%d, %d)",
+                   s, i, slot.inputSourceIndices[i], -(plan->numExternalInputs_ + 1), plan->totalOutputSlots_);
+    }
+
     slot.inputSourceTypes = new int8_t[slot.numInputs];
     reader.readArray(slot.inputSourceTypes, slot.numInputs);
 
@@ -2495,11 +2521,11 @@ void NativeDynamicShapePlan::buildSegments() {
   //
   // Capturability: a slot is capturable iff:
   //   1. It is NOT data-dependent (where/unique/nms produce variable-length output)
-  //   2. It is NOT a value-dep-shape op (reshape/concat/gather whose output SHAPE
-  //      depends on runtime VALUES). Such ops always run slot-by-slot because the
-  //      segment shape key hashes input SHAPES only — it cannot detect when a
-  //      value-dep op's output shape changes. Replaying a captured graph with stale
-  //      output shapes produces wrong results.
+  //   2. Value-dep-shape ops (reshape/concat/gather whose output SHAPE depends on
+  //      runtime VALUES) are now capturable — computeSegmentShapeKey hashes actual
+  //      data values of small inputs (≤32 elements), so value changes are detected.
+  //      Segments containing these ops have hasValueDepOps=true, which forces shape
+  //      key recomputation even when shapes are frozen.
 
   auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
     // Control flow ops are never capturable — execution path is data-dependent
@@ -2576,12 +2602,22 @@ void NativeDynamicShapePlan::buildSegments() {
              static_cast<int>(segments_.size()) - maxLoggedSegments);
   }
 
-  // Propagate slotArrayCache_ and resolve backend for all segments.
+  // Propagate slotArrayCache_, resolve backend, and detect value-dep ops for all segments.
   for (auto& seg : segments_) {
     seg.slotArrayCache = slotArrayCache_;
     seg.selectedBackend = resolveBackendForSegment(seg.isCapturable);
-    DSP_DIAG_SEG(SEGMENT, seg.startSlot, "segment[%d-%d] selectedBackend=%d",
-                 seg.startSlot, seg.endSlot, static_cast<int>(seg.selectedBackend));
+    // Scan slots for value-dependent ops — these require shape key recomputation
+    // even when shapes are frozen, because input VALUES (not just shapes) affect output shape.
+    seg.hasValueDepOps = false;
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      if (slots_[s].outputShapeDependsOnInputValues) {
+        seg.hasValueDepOps = true;
+        break;
+      }
+    }
+    DSP_DIAG_SEG(SEGMENT, seg.startSlot, "segment[%d-%d] selectedBackend=%d hasValueDepOps=%d",
+                 seg.startSlot, seg.endSlot, static_cast<int>(seg.selectedBackend),
+                 seg.hasValueDepOps ? 1 : 0);
   }
 
   // Initialize symbolic shape ranges if enabled
@@ -2746,10 +2782,20 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
            oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount,
            static_cast<int>(matmulSegmentation));
 
-  // Propagate slotArrayCache_ and resolve backend for all rebuilt segments.
+  // Propagate slotArrayCache_, resolve backend, and detect value-dep ops for all rebuilt segments.
   for (auto& seg : segments_) {
     seg.slotArrayCache = slotArrayCache_;
     seg.selectedBackend = resolveBackendForSegment(seg.isCapturable);
+    // Scan slots for value-dependent ops — even in frozen mode, segments containing
+    // these ops must recompute the shape key (not use cached) because input VALUES
+    // could change even when shapes are stable.
+    seg.hasValueDepOps = false;
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      if (slots_[s].outputShapeDependsOnInputValues) {
+        seg.hasValueDepOps = true;
+        break;
+      }
+    }
   }
 
   // CRITICAL FIX: When shapes are frozen, skip symbolic shape warmup.
