@@ -1493,12 +1493,10 @@ Status NativeDynamicShapePlan::execute(
   DspDiagnostics::getInstance().endStep(executeCount_);
 
   // Synchronize the DSP execution stream before returning to Java.
-  // Without this, async GPU work (slot ops, graph replay) may still be in-flight
-  // when Java's next decode step frees intermediates via the non-frozen cache clear.
-  // The frees use stream 0 (via RELEASE_SPECIAL), which completes immediately since
-  // stream 0 has no pending work — allowing the pool to reuse memory that the DSP
-  // stream is still reading. This causes use-after-free / garbage data in subsequent
-  // allocations (e.g., position_ids for gather).
+  // Required because Java reads the output (argmax on logits) on the default CUDA
+  // stream (stream 0), which is different from the DSP execution stream. Without
+  // this sync, stream 0 ops could start reading before the DSP stream finishes.
+  // TODO: Use CUDA events instead of full stream sync for lower overhead (~0.5ms).
 #ifdef SD_CUDA
   if (stream != nullptr) {
     cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
