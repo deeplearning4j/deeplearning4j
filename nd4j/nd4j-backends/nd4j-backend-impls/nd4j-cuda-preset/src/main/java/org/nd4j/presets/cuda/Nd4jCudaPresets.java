@@ -335,6 +335,14 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 "sd::ops::platforms::HelperVersionRegistry::getAllHelperInfo").skip());
         infoMap.put(new Info("sd::ops::platforms::HelperVersion::toString").javaNames("toVersionString"));
         infoMap.put(new Info("sd::ops::platforms::HelperInfo::getDetailedStatus").javaNames("getDetailedStatusString"));
+        // Skip subsystem config classes — C++ internal API, not needed from Java.
+        // Java callers use Environment's legacy forwarding methods instead.
+        infoMap.put(new Info("sd::config::CoreConfig", "sd::config::CudaDeviceConfig",
+                "sd::config::TritonConfig", "sd::config::DspConfig",
+                "sd::config::LifecycleConfig", "sd::config::PrintConfig",
+                "sd::Environment::core", "sd::Environment::cuda",
+                "sd::Environment::triton", "sd::Environment::dsp",
+                "sd::Environment::lifecycle", "sd::Environment::print").skip());
 
 
     }

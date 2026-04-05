@@ -79,12 +79,16 @@ class SD_LIB_EXPORT Environment {
   static Environment& getInstance();
 
   // ===== Subsystem accessors (stable API — new code should use these) =====
+  // Hidden from JavaCPP parser: these return C++ config classes that have no Java mapping.
+  // Java callers use the legacy forwarding methods below instead.
+#ifndef SWIG
   config::CoreConfig& core() { return _core; }
   config::CudaDeviceConfig& cuda() { return _cuda; }
   config::TritonConfig& triton() { return _triton; }
   config::DspConfig& dsp() { return _dsp; }
   config::LifecycleConfig& lifecycle() { return _lifecycle; }
   config::PrintConfig& print() { return _print; }
+#endif
 
   // ===== Legacy forwarding methods (backward compat — all delegate to subsystems) =====
   // These exist so that all 93+ files that call env.isVerbose(), env.tritonBuildThreads(),
