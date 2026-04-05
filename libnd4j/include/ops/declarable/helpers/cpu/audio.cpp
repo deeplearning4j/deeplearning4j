@@ -845,7 +845,7 @@ static void whisperMelSpectrogram_(LaunchContext* context, NDArray* input,
                      static_cast<sd::LongType>(rawNumFrames)};
     }
 
-    NDArray tempMel(input->ordering(), tempShape, input->dataType(), context->getWorkspace());
+    NDArray tempMel(input->ordering(), tempShape, input->dataType(), context);
 
     // Reuse existing melSpectrogram_ for the heavy lifting (STFT + filterbank)
     melSpectrogram_<T>(context, input, sampleRate, fftSize, hopLength, numMelBins,
