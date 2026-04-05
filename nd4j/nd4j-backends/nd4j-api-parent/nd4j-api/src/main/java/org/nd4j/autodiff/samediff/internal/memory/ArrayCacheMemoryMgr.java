@@ -437,20 +437,36 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 boolean isExactSize = (arr.data().length() == requiredElements);
                 boolean isExactShape = isExactSize && Arrays.equals(arr.shape(), shape);
 
+                // Always reset strides to contiguous layout. Cached arrays may have
+                // broadcast strides (e.g. [1,1] for shape [1,1024]) from prior assign(scalar)
+                // operations. These non-contiguous strides cause buffer overruns in downstream
+                // ops like scatter_nd_update that iterate using physical strides.
+                long[] newStrides = Nd4j.getStrides(shape, arr.ordering());
                 if (!isExactShape) {
-                    // Shape differs (even if element count matches, e.g. scalar [] vs [1]).
-                    // Reshape in-place to the requested shape.
-                    long[] newStrides = Nd4j.getStrides(shape, arr.ordering());
                     int[] intShape = ArrayUtil.toInts(shape);
                     int[] intStrides = ArrayUtil.toInts(newStrides);
                     ((BaseNDArray) arr).setShapeAndStride(intShape, intStrides);
                     if (isExactSize) {
-                        counters[0]++; // exact size hit (same element count, different shape)
+                        counters[0]++;
                     } else {
-                        counters[1]++; // capacity hit (larger buffer reused)
+                        counters[1]++;
                     }
                 } else {
-                    counters[0]++; // exact hit (same size and shape)
+                    // Even for exact shape match, verify strides are contiguous
+                    long[] currentStrides = arr.stride();
+                    boolean stridesMatch = true;
+                    for (int s = 0; s < currentStrides.length; s++) {
+                        if (currentStrides[s] != newStrides[s]) {
+                            stridesMatch = false;
+                            break;
+                        }
+                    }
+                    if (!stridesMatch) {
+                        int[] intShape = ArrayUtil.toInts(shape);
+                        int[] intStrides = ArrayUtil.toInts(newStrides);
+                        ((BaseNDArray) arr).setShapeAndStride(intShape, intStrides);
+                    }
+                    counters[0]++;
                 }
 
                 ((BaseNDArray) arr).assignNewId();

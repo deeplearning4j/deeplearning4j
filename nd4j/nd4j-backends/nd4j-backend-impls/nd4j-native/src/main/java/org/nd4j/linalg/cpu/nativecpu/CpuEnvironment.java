@@ -19,6 +19,7 @@
  */
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu;
 import org.nd4j.linalg.factory.Environment;
 
@@ -767,4 +768,126 @@ public class CpuEnvironment implements Environment {
     public void setOpContextTracking(boolean enabled) {
         e.setOpContextTracking(enabled);
     }
+
+    // ─── Triton settings (delegated to native C++ Environment) ─────────────────
+    @Override public int tritonBuildThreads() { return e.tritonBuildThreads(); }
+    @Override public void setTritonBuildThreads(int v) { e.setTritonBuildThreads(v); }
+    @Override public boolean tritonCacheEnabled() { return e.tritonCacheEnabled(); }
+    @Override public void setTritonCacheEnabled(boolean v) { e.setTritonCacheEnabled(v); }
+    @Override public boolean tritonCooperativeLaunch() { return e.tritonCooperativeLaunch(); }
+    @Override public void setTritonCooperativeLaunch(boolean v) { e.setTritonCooperativeLaunch(v); }
+    @Override public int tritonCoopTargetBlocks() { return e.tritonCoopTargetBlocks(); }
+    @Override public void setTritonCoopTargetBlocks(int v) { e.setTritonCoopTargetBlocks(v); }
+    @Override public int tritonMaxSubsegmentOps() { return e.tritonMaxSubsegmentOps(); }
+    @Override public void setTritonMaxSubsegmentOps(int v) { e.setTritonMaxSubsegmentOps(v); }
+    @Override public int tritonMaxSubsegmentSections() { return e.tritonMaxSubsegmentSections(); }
+    @Override public void setTritonMaxSubsegmentSections(int v) { e.setTritonMaxSubsegmentSections(v); }
+    @Override public boolean tritonVerbose() { return e.tritonVerbose(); }
+    @Override public void setTritonVerbose(boolean v) { e.setTritonVerbose(v); }
+    @Override public boolean tritonDumpSections() { return e.tritonDumpSections(); }
+    @Override public void setTritonDumpSections(boolean v) { e.setTritonDumpSections(v); }
+    @Override public boolean tritonDumpArgs() { return e.tritonDumpArgs(); }
+    @Override public void setTritonDumpArgs(boolean v) { e.setTritonDumpArgs(v); }
+    @Override public boolean tritonLogAllPatterns() { return e.tritonLogAllPatterns(); }
+    @Override public void setTritonLogAllPatterns(boolean v) { e.setTritonLogAllPatterns(v); }
+    @Override public boolean tritonAlwaysCompile() { return e.tritonAlwaysCompile(); }
+    @Override public void setTritonAlwaysCompile(boolean v) { e.setTritonAlwaysCompile(v); }
+    @Override public boolean tritonKernelDump() { return e.tritonKernelDump(); }
+    @Override public void setTritonKernelDump(boolean v) { e.setTritonKernelDump(v); }
+    @Override public boolean tritonKernelOverride() { return e.tritonKernelOverride(); }
+    @Override public void setTritonKernelOverride(boolean v) { e.setTritonKernelOverride(v); }
+    @Override public int tritonNumWarps() { return e.tritonNumWarps(); }
+    @Override public void setTritonNumWarps(int v) { e.setTritonNumWarps(v); }
+    @Override public int tritonNumStages() { return e.tritonNumStages(); }
+    @Override public void setTritonNumStages(int v) { e.setTritonNumStages(v); }
+    @Override public int tritonNumCTAs() { return e.tritonNumCTAs(); }
+    @Override public void setTritonNumCTAs(int v) { e.setTritonNumCTAs(v); }
+    @Override public int tritonMaxNreg() { return e.tritonMaxNreg(); }
+    @Override public void setTritonMaxNreg(int v) { e.setTritonMaxNreg(v); }
+    @Override public int tritonAttentionBlockN() { return e.tritonAttentionBlockN(); }
+    @Override public void setTritonAttentionBlockN(int v) { e.setTritonAttentionBlockN(v); }
+    @Override public boolean tritonEnableFpFusion() { return e.tritonEnableFpFusion(); }
+    @Override public void setTritonEnableFpFusion(boolean v) { e.setTritonEnableFpFusion(v); }
+    @Override public boolean tritonDisableLineInfo() { return e.tritonDisableLineInfo(); }
+    @Override public void setTritonDisableLineInfo(boolean v) { e.setTritonDisableLineInfo(v); }
+    @Override public String tritonCacheDir() { BytePointer p = e.tritonCacheDir(); return p == null ? "" : p.getString(); }
+    @Override public void setTritonCacheDir(String v) { e.setTritonCacheDir(v); }
+    @Override public String tritonDumpDir() { BytePointer p = e.tritonDumpDir(); return p == null ? "" : p.getString(); }
+    @Override public void setTritonDumpDir(String v) { e.setTritonDumpDir(v); }
+    @Override public String tritonOverrideDir() { BytePointer p = e.tritonOverrideDir(); return p == null ? "" : p.getString(); }
+    @Override public void setTritonOverrideDir(String v) { e.setTritonOverrideDir(v); }
+    @Override public String tritonOverrideArch() { BytePointer p = e.tritonOverrideArch(); return p == null ? "" : p.getString(); }
+    @Override public void setTritonOverrideArch(String v) { e.setTritonOverrideArch(v); }
+    @Override public boolean tritonAllowFallbackCapture() { return e.tritonAllowFallbackCapture(); }
+    @Override public void setTritonAllowFallbackCapture(boolean v) { e.setTritonAllowFallbackCapture(v); }
+    @Override public boolean tritonGraphCapture() { return e.tritonGraphCapture(); }
+    @Override public void setTritonGraphCapture(boolean v) { e.setTritonGraphCapture(v); }
+    @Override public boolean tritonDumpGraphDot() { return e.tritonDumpGraphDot(); }
+    @Override public void setTritonDumpGraphDot(boolean v) { e.setTritonDumpGraphDot(v); }
+    @Override public boolean tritonSkipKernels() { return e.tritonSkipKernels(); }
+    @Override public void setTritonSkipKernels(boolean v) { e.setTritonSkipKernels(v); }
+    @Override public boolean tritonVerifyKernels() { return e.tritonVerifyKernels(); }
+    @Override public void setTritonVerifyKernels(boolean v) { e.setTritonVerifyKernels(v); }
+    @Override public boolean tritonVerifyKeepNative() { return e.tritonVerifyKeepNative(); }
+    @Override public void setTritonVerifyKeepNative(boolean v) { e.setTritonVerifyKeepNative(v); }
+    @Override public int tritonMaxSubKernelIndex() { return e.tritonMaxSubKernelIndex(); }
+    @Override public void setTritonMaxSubKernelIndex(int v) { e.setTritonMaxSubKernelIndex(v); }
+    @Override public boolean tritonVerifyFullSnapshot() { return e.tritonVerifyFullSnapshot(); }
+    @Override public void setTritonVerifyFullSnapshot(boolean v) { e.setTritonVerifyFullSnapshot(v); }
+    @Override public boolean tritonForceRecapture() { return e.tritonForceRecapture(); }
+    @Override public void setTritonForceRecapture(boolean v) { e.setTritonForceRecapture(v); }
+    @Override public int tritonCaptureMinExec() { return e.tritonCaptureMinExec(); }
+    @Override public void setTritonCaptureMinExec(int v) { e.setTritonCaptureMinExec(v); }
+    @Override public boolean tritonCompileAll() { return e.tritonCompileAll(); }
+    @Override public void setTritonCompileAll(boolean v) { e.setTritonCompileAll(v); }
+    @Override public String tritonExcludeOps() { BytePointer p = e.tritonExcludeOps(); return p == null ? "" : p.getString(); }
+    @Override public void setTritonExcludeOps(String v) { e.setTritonExcludeOps(v); }
+    @Override public String tritonIncludeTypes() { BytePointer p = e.tritonIncludeTypes(); return p == null ? "" : p.getString(); }
+    @Override public void setTritonIncludeTypes(String v) { e.setTritonIncludeTypes(v); }
+    @Override public boolean tritonFusionScoring() { return e.tritonFusionScoring(); }
+    @Override public void setTritonFusionScoring(boolean v) { e.setTritonFusionScoring(v); }
+    @Override public float tritonFusionMinScore() { return e.tritonFusionMinScore(); }
+    @Override public void setTritonFusionMinScore(float v) { e.setTritonFusionMinScore(v); }
+    @Override public boolean tritonFuseIdentityShapes() { return e.tritonFuseIdentityShapes(); }
+    @Override public void setTritonFuseIdentityShapes(boolean v) { e.setTritonFuseIdentityShapes(v); }
+    @Override public boolean tritonFuseCastChains() { return e.tritonFuseCastChains(); }
+    @Override public void setTritonFuseCastChains(boolean v) { e.setTritonFuseCastChains(v); }
+    @Override public boolean tritonSpecializePermuteSeq1() { return e.tritonSpecializePermuteSeq1(); }
+    @Override public void setTritonSpecializePermuteSeq1(boolean v) { e.setTritonSpecializePermuteSeq1(v); }
+    @Override public boolean tritonFusedMatmul() { return e.tritonFusedMatmul(); }
+    @Override public void setTritonFusedMatmul(boolean v) { e.setTritonFusedMatmul(v); }
+    @Override public boolean tritonFuseAttentionNeighborhoods() { return e.tritonFuseAttentionNeighborhoods(); }
+    @Override public void setTritonFuseAttentionNeighborhoods(boolean v) { e.setTritonFuseAttentionNeighborhoods(v); }
+    @Override public boolean tritonSectionFusion() { return e.tritonSectionFusion(); }
+    @Override public void setTritonSectionFusion(boolean v) { e.setTritonSectionFusion(v); }
+    @Override public boolean tritonConsolidatedArgTable() { return e.tritonConsolidatedArgTable(); }
+    @Override public void setTritonConsolidatedArgTable(boolean v) { e.setTritonConsolidatedArgTable(v); }
+    @Override public boolean tritonArgDirtyTracking() { return e.tritonArgDirtyTracking(); }
+    @Override public void setTritonArgDirtyTracking(boolean v) { e.setTritonArgDirtyTracking(v); }
+
+    // ─── DSP settings ──────────────────────────────────────────────────────────
+    @Override public boolean dspBatchZero() { return e.dspBatchZero(); }
+    @Override public void setDspBatchZero(boolean v) { e.setDspBatchZero(v); }
+    @Override public boolean dspBatchZeroVerbose() { return e.dspBatchZeroVerbose(); }
+    @Override public void setDspBatchZeroVerbose(boolean v) { e.setDspBatchZeroVerbose(v); }
+    @Override public boolean dspBatchZeroGapOnly() { return e.dspBatchZeroGapOnly(); }
+    @Override public void setDspBatchZeroGapOnly(boolean v) { e.setDspBatchZeroGapOnly(v); }
+    @Override public boolean dspBatchZeroKernel() { return e.dspBatchZeroKernel(); }
+    @Override public void setDspBatchZeroKernel(boolean v) { e.setDspBatchZeroKernel(v); }
+    @Override public boolean dspBatchedGemm() { return e.dspBatchedGemm(); }
+    @Override public void setDspBatchedGemm(boolean v) { e.setDspBatchedGemm(v); }
+    @Override public boolean dspCastElimination() { return e.dspCastElimination(); }
+    @Override public void setDspCastElimination(boolean v) { e.setDspCastElimination(v); }
+    @Override public boolean dspMatmulSegmentation() { return e.dspMatmulSegmentation(); }
+    @Override public void setDspMatmulSegmentation(boolean v) { e.setDspMatmulSegmentation(v); }
+    @Override public boolean dspFp16Compute() { return e.dspFp16Compute(); }
+    @Override public void setDspFp16Compute(boolean v) { e.setDspFp16Compute(v); }
+    @Override public boolean cublasTf32Enabled() { return e.cublasTf32Enabled(); }
+    @Override public void setCublasTf32Enabled(boolean v) { e.setCublasTf32Enabled(v); }
+    @Override public boolean tritonTf32Enabled() { return e.tritonTf32Enabled(); }
+    @Override public void setTritonTf32Enabled(boolean v) { e.setTritonTf32Enabled(v); }
+    @Override public boolean cublasCaptureWorkspace() { return e.cublasCaptureWorkspace(); }
+    @Override public void setCublasCaptureWorkspace(boolean v) { e.setCublasCaptureWorkspace(v); }
+    @Override public boolean dspCastSinkMatmul() { return e.dspCastSinkMatmul(); }
+    @Override public void setDspCastSinkMatmul(boolean v) { e.setDspCastSinkMatmul(v); }
 }

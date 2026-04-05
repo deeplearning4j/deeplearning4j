@@ -39,7 +39,7 @@ OP_IMPL(scatter_nd_update, 3, 1, true) {
   auto output = OUTPUT_VARIABLE(0);
 
   const bool lock = block.getBArguments()->empty() ? true : B_ARG(0);
-  const bool checkIndices = block.getBArguments()->size() <= 1 ? true : B_ARG(1);
+  const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
 
   const int inRank = input->rankOf();
   const int indRank = indices->rankOf();
@@ -81,30 +81,9 @@ OP_IMPL(scatter_nd_update, 3, 1, true) {
         numOfBadIndx);
   }
 
-  // Ensure input is contiguous before copying to output — broadcast views from
-  // assign(scalar) have strides like [1,1] for shape [1,1024] which cause buffer
-  // overflows in the copy/scatter operations.
-  if (!block.isInplace()) {
-    if (!shape::strideDescendingCAscendingF(input->shapeInfo())) {
-      NDArray contiguousInput = input->dup();
-      output->assign(contiguousInput);
-    } else {
-      output->assign(input);
-    }
-  }
+  if (!block.isInplace()) output->assign(input);
 
-  // Ensure updates array is contiguous — broadcast views (strides all 1) from
-  // assign(scalar) crash in scatterND's pairwise copy.
-  NDArray* safeUpdates = updates;
-  NDArray* dupUpdates = nullptr;
-  if (!updates->isActualOnHostSide() || !shape::strideDescendingCAscendingF(updates->shapeInfo())) {
-    dupUpdates = new NDArray(updates->dup());
-    safeUpdates = dupUpdates;
-  }
-
-  helpers::scatterND(block.launchContext(), pairwise::CopyPws, *indices, *safeUpdates, *output, lock);
-
-  delete dupUpdates;
+  helpers::scatterND(block.launchContext(), pairwise::CopyPws, *indices, *updates, *output, lock);
 
   return Status::OK;
 }

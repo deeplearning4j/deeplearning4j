@@ -421,40 +421,60 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
     {
       std::shared_ptr<ov::Node> node;
 
+      // OpenVINO elementwise ops require matching input types.
+      // Auto-cast mismatched binary inputs to the higher-precision type.
+      auto harmonizeBinaryTypes = [](ov::Output<ov::Node>& a, ov::Output<ov::Node>& b) {
+        auto ta = a.get_element_type();
+        auto tb = b.get_element_type();
+        if (ta != tb) {
+          // Pick the "wider" floating type, or float32 as fallback
+          ov::element::Type target = ov::element::f32;
+          if (ta.is_real() && tb.is_real()) {
+            target = (ta.bitwidth() >= tb.bitwidth()) ? ta : tb;
+          } else if (ta.is_real()) {
+            target = ta;
+          } else if (tb.is_real()) {
+            target = tb;
+          }
+          if (ta != target) a = std::make_shared<ov::op::v0::Convert>(a, target)->output(0);
+          if (tb != target) b = std::make_shared<ov::op::v0::Convert>(b, target)->output(0);
+        }
+      };
+
       // ── Binary elementwise ──
       if (opName == "add" || opName == "Add") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::Add>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Add>(inputs[0], inputs[1]); }
       } else if (opName == "subtract" || opName == "Sub") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::Subtract>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Subtract>(inputs[0], inputs[1]); }
       } else if (opName == "multiply" || opName == "Mul") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::Multiply>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Multiply>(inputs[0], inputs[1]); }
       } else if (opName == "divide" || opName == "Div" || opName == "RealDiv") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::Divide>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Divide>(inputs[0], inputs[1]); }
       } else if (opName == "pow" || opName == "Pow") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::Power>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Power>(inputs[0], inputs[1]); }
       } else if (opName == "minimum" || opName == "Min") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::Minimum>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Minimum>(inputs[0], inputs[1]); }
       } else if (opName == "maximum" || opName == "Max") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::Maximum>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Maximum>(inputs[0], inputs[1]); }
       } else if (opName == "floormod" || opName == "FloorMod") {
-        if (inputs.size() >= 2) node = std::make_shared<ov::op::v1::FloorMod>(inputs[0], inputs[1]);
+        if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::FloorMod>(inputs[0], inputs[1]); }
       } else if (opName == "squaredsubtract" || opName == "SquaredSubtract" || opName == "SquaredDifference") {
-        // Compose: (a - b)^2
         if (inputs.size() >= 2) {
+          harmonizeBinaryTypes(inputs[0], inputs[1]);
           auto sub = std::make_shared<ov::op::v1::Subtract>(inputs[0], inputs[1]);
           node = std::make_shared<ov::op::v1::Multiply>(sub->output(0), sub->output(0));
         }
       } else if (opName == "mod" || opName == "Mod") {
-        // Compose: a - floor(a/b) * b
         if (inputs.size() >= 2) {
+          harmonizeBinaryTypes(inputs[0], inputs[1]);
           auto div = std::make_shared<ov::op::v1::Divide>(inputs[0], inputs[1]);
           auto fl = std::make_shared<ov::op::v0::Floor>(div->output(0));
           auto mul = std::make_shared<ov::op::v1::Multiply>(fl->output(0), inputs[1]);
           node = std::make_shared<ov::op::v1::Subtract>(inputs[0], mul->output(0));
         }
       } else if (opName == "atan2" || opName == "Atan2") {
-        // Approximate: atan(a/b) — valid for graph compilation, not full atan2 semantics
         if (inputs.size() >= 2) {
+          harmonizeBinaryTypes(inputs[0], inputs[1]);
           auto div = std::make_shared<ov::op::v1::Divide>(inputs[0], inputs[1]);
           node = std::make_shared<ov::op::v0::Atan>(div->output(0));
         }
@@ -1744,6 +1764,10 @@ Status OpenVinoGraphBackend::executeSegment(
       DSP_DIAG(EXECUTE, "OpenVINO: missing input array for source %d", srcIdx);
       return Status::BAD_INPUT;
     }
+    if (arr->buffer() == nullptr) {
+      DSP_DIAG(EXECUTE, "OpenVINO: input array for source %d has NULL buffer", srcIdx);
+      return Status::KERNEL_FAILURE;
+    }
 
     int rank = arr->rankOf();
     ov::Shape shape(rank);
@@ -1762,6 +1786,10 @@ Status OpenVinoGraphBackend::executeSegment(
       return Status::BAD_OUTPUT;
     }
     NDArray* arr = outputSlots[outIdx];
+    if (arr->buffer() == nullptr) {
+      DSP_DIAG(EXECUTE, "OpenVINO: output slot %d has NULL buffer", outIdx);
+      return Status::KERNEL_FAILURE;
+    }
     int rank = arr->rankOf();
     ov::Shape shape(rank);
     for (int d = 0; d < rank; d++) {

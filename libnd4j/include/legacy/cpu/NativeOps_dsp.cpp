@@ -995,8 +995,14 @@ int ncclGroupEnd() {
     return -1;
 }
 
-// Triton counters — CPU backend always returns 0
-bool isTritonAvailable() { return false; }
+// Triton availability — check compile-time flag
+bool isTritonAvailable() {
+#if HAVE_TRITON
+  return true;
+#else
+  return false;
+#endif
+}
 sd::LongType getTritonKernelLaunchCount() { return 0; }
 sd::LongType getTritonCacheHitCount() { return 0; }
 void resetTritonCounters() {}

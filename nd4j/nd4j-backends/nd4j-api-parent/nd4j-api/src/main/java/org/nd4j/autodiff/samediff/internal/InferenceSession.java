@@ -1565,7 +1565,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         case TENSOR: {
                             INDArray arr = value.getTensorValue();
                             if (arr == null || arr.wasClosed() || freedArrays().contains(arr.getId())) break;
-                            if (arr.data() != null && arr.data().isConstant()) break; // never close constants
+                            if (arr.data() != null && arr.data().isConstant()) {
+                                // Never close constants, but DO untrack so ref counts stay accurate
+                                untrackLiveBuffer(arr);
+                                break;
+                            }
                             // Safe to close only when this array's DataBuffer is not shared with
                             // any other live tracked array (view safety check).
                             if (isBufferExclusivelyOwned(arr)) {
@@ -2323,11 +2327,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      */
     private void addConsumerDependencies(SDValue outputValue, String varName, Set<String> allRequired) {
         // Track this array's DataBuffer for mid-execution release safety.
-        // Constants and variables are excluded — they have infinite lifetime and
-        // their DataBuffers may be shared with many consumers without needing tracking.
+        // ALL arrays are tracked (including those marked constant) to ensure
+        // correct ref counting for shared buffers (reshape/permute views).
+        // Without this, a view's parent buffer gets released while the view
+        // is still live — causing use-after-free SIGSEGV.
         if (outputValue != null && outputValue.getSdValueType() == SDValueType.TENSOR) {
             INDArray arr = outputValue.getTensorValue();
-            if (arr != null && arr.data() != null && !arr.data().isConstant()) {
+            if (arr != null && arr.data() != null) {
                 trackLiveBuffer(arr);
             }
         }
@@ -3669,7 +3675,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Special handling for reshape: check if view is possible
         boolean isReshapeOp = "reshape".equals(customOp.opName()) || "reshape_no_copy".equals(customOp.opName());
-        boolean reshapeViewPossible = false;
+        boolean reshapeViewPossible = false; // DISABLED: view optimization causes use-after-free on CPU (shared buffer released while view alive)
         char reshapeOrder = 'c';
         if (isReshapeOp && inputArrays != null && !inputArrays.isEmpty() && outShape.size() == 1) {
             if (TIMING_ENABLED) timingReshapeTotal++;
