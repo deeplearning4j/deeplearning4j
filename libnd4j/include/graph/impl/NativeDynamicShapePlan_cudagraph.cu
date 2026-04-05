@@ -478,7 +478,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 #endif
 
     // ── DIAGNOSTIC: dump capture buffers and final output to verify replay correctness ──
-    {
+    // Gated by DSP_DIAG EXECUTE to avoid GPU→CPU sync overhead on every replay.
+    if (DSP_DIAG_ENABLED(EXECUTE)) {
       int cbDumpCount = 0;
       for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
         if (cb.directReference || cb.buffer == nullptr || cbDumpCount >= 3) continue;
@@ -500,18 +501,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
 
     if (captureBuffersOk && seg.exec.replayHandle->replay(stream)) {
-      {
-        int finalSlot = seg.endSlot;
-        if (finalSlot >= 0 && finalSlot < totalOutputSlots_ && slotArrayCache_[finalSlot] != nullptr) {
-          NDArray* finalOut = slotArrayCache_[finalSlot];
-          printf("REPLAY_OUTPUT seg[%d-%d] slot=%d execCount=%d: ",
-                  seg.startSlot, seg.endSlot, finalSlot, seg.exec.executionCount);
-          fflush(stdout);
-          finalOut->printIndexedBuffer("logits", 10);
-          fflush(stdout);
-        }
-      }
-
       // LRU tracking: record when this segment was last replayed for eviction ordering
       seg.exec.lastReplayExecCount = executeCount_;
 
