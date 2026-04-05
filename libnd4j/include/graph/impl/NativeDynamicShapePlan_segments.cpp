@@ -182,6 +182,30 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
     mix(static_cast<LongType>(arr->lengthOf()));
     mix(static_cast<LongType>(arr->dataType()));
+
+    // Hash actual DATA VALUES for small inputs (≤32 elements).
+    // This makes the shape key sensitive to value changes in shape tensors,
+    // axis constants, broadcast targets, reshape dims, etc. — eliminating the
+    // need for a hardcoded "value-dependent shape op" list.
+    // Only small inputs are hashed to avoid GPU→CPU sync overhead on large tensors.
+    // The sync is safe here because shape key computation runs BEFORE graph capture
+    // (during warmup or shape-change detection), not during replay.
+    LongType len = arr->lengthOf();
+    if (len > 0 && len <= 32) {
+      arr->syncToHost();
+      auto dt = arr->dataType();
+      for (LongType e = 0; e < len; e++) {
+        if (dt == INT32 || dt == INT64 || dt == BOOL) {
+          mix(arr->e<LongType>(e));
+        } else {
+          // Float values: cast to int64 bit pattern for hashing
+          double v = arr->e<double>(e);
+          LongType bits;
+          std::memcpy(&bits, &v, sizeof(bits));
+          mix(bits);
+        }
+      }
+    }
   };
 
   mix(seg.startSlot);

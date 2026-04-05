@@ -124,17 +124,24 @@ bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
 }
 
 bool NativePlanCompiler::isValueDependentShapeOp(const std::string& opName) {
+  // Ops whose OUTPUT SHAPE depends on input DATA VALUES (not just input shapes).
+  // These must run slot-by-slot (not via CUDA graph replay) because the captured
+  // graph bakes in the output shape from the first execution — if the shape-
+  // determining input value changes, the graph produces wrong-sized output.
+  // This list must be complete: a missing op causes shape mismatch errors or
+  // garbage output. Add any op where a non-shape input determines output shape.
   static const std::unordered_set<std::string> VALUE_DEPENDENT_OPS = {
+      // Shape manipulation — output shape comes from a shape/indices input
       "reshape", "reshape_no_copy", "squeeze", "expand_dims",
-      "slice", "strided_slice", "gather", "gather_nd",
+      "slice", "strided_slice",
+      "gather", "gather_nd",
       "tile", "repeat", "pad", "fill",
+      "broadcast_to",  // output shape = second input's VALUES
+      // Generation — output shape derived from input values
       "range", "linspace",
+      "create",         // ConstantOfShape (ONNX): output shape = input values
+      // Introspection — output depends on input content
       "shape_of", "size_at", "rank",
-      // ConstantOfShape (ONNX) → SameDiff "create": output shape is determined
-      // by input DATA values, not input shapes.  Must NOT be captured into a
-      // CUDA graph because the baked-in memset size becomes stale when the
-      // shape input changes between steps (e.g. position-dependent tensors).
-      "create",
   };
   return VALUE_DEPENDENT_OPS.count(normalizeOpName(opName)) > 0;
 }

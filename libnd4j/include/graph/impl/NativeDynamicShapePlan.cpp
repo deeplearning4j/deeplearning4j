@@ -2496,13 +2496,11 @@ void NativeDynamicShapePlan::buildSegments() {
     // Control flow ops are never capturable — execution path is data-dependent
     if (slot.controlFlowType != CF_NONE) return false;
     if (slot.isDataDependent) return false;
-    // Value-dep-shape ops must always run slot-by-slot, regardless of input source.
-    // Their output shapes depend on runtime VALUES (not just shapes), so the segment
-    // shape key (which hashes input shapes) can't detect when their output shapes change.
-    // A graph replay with stale output shapes produces wrong results.
-    // The adaptive splitting will detect KV-growing segments (no value-dep ops,
-    // shapes change every step) and permanently mark them slot-by-slot via compilationFailed.
-    if (slot.outputShapeDependsOnInputValues) return false;
+    // Value-dependent-shape ops (broadcast_to, reshape, etc.) are now capturable
+    // because computeSegmentShapeKey hashes actual DATA VALUES of small inputs
+    // (≤32 elements). If a shape-determining input value changes between steps,
+    // the shape key changes → graph is invalidated → re-captured with correct shape.
+    // No hardcoded op list needed.
     return true;
   };
 
