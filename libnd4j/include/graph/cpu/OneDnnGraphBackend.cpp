@@ -106,8 +106,8 @@ dg::op::kind OneDnnGraphBackend::mapOpKind(const std::string& opName) {
   if (opName == "batchnorm" || opName == "BatchNorm") return dg::op::kind::BatchNormInference;
 
   // Shape operations
-  if (opName == "reshape" || opName == "Reshape") return dg::op::kind::StaticReshape;
-  if (opName == "transpose" || opName == "Transpose" || opName == "permute") return dg::op::kind::StaticTranspose;
+  if (opName == "reshape" || opName == "Reshape" || opName == "reshape_no_copy" || opName == "ReshapeNoCopy") return dg::op::kind::StaticReshape;
+  if (opName == "transpose" || opName == "Transpose" || opName == "permute" || opName == "Permute") return dg::op::kind::StaticTranspose;
 
   // Concat
   if (opName == "concat" || opName == "Concat" || opName == "concat_v2") return dg::op::kind::Concat;
@@ -394,8 +394,14 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
       }
       dgOp.add_outputs(outputTensors);
 
-      g.add_op(dgOp);
-      opsAdded++;
+      try {
+        g.add_op(dgOp);
+        opsAdded++;
+      } catch (const std::exception& e) {
+        DSP_DIAG(COMPILE, "OneDNN Graph: add_op failed for slot %d op '%s': %s",
+                 s, slot.opName, e.what());
+        return result;  // Return invalid result
+      }
 
       // Record successful compilation in audit
       CompilationAuditEntry auditEntry;
