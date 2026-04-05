@@ -536,4 +536,78 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
                 sd.getVariableOutputOp("pool").getClass(),
                 deserialized.getVariableOutputOp("pool").getClass());
     }
+
+    /**
+     * Verify that multiple empty/scalar constants get unique DataBuffers after
+     * SDZ serialization round-trip. Previously, the deserializer returned a shared
+     * singleton from Nd4j.empty()/NDArrayFactory.empty(), causing all constants
+     * to share the same DataBuffer. Closing one would close all of them.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.SAMEDIFF)
+    public void testEmptyConstantsGetUniqueDataBuffers(Nd4jBackend backend) throws Exception {
+        SameDiff sd = SameDiff.create();
+
+        // Create a graph with multiple empty/scalar constants — simulates the
+        // SmolDocling decoder which has 60+ small metadata constants (axes, reshape dims)
+        int numConstants = 10;
+        SDVariable[] constants = new SDVariable[numConstants];
+        for (int i = 0; i < numConstants; i++) {
+            INDArray emptyArr = Nd4j.create(DataType.FLOAT, new long[0]);
+            constants[i] = sd.constant("const_" + i, emptyArr);
+        }
+
+        // Add a trivial op so the graph is valid
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 10);
+        SDVariable output = input.add("output", constants[0].castTo(DataType.FLOAT));
+
+        // Save to SDZ
+        File tempFile = testDir.resolve("test_empty_constants.sdz").toFile();
+        SDZSerializer.save(sd, tempFile, false, null);
+
+        // Load back
+        SameDiff loaded = SDZSerializer.load(tempFile, false);
+
+        // Verify each constant has its own DataBuffer (not shared)
+        java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, String> seenBuffers =
+                new java.util.IdentityHashMap<>();
+        int closedCount = 0;
+
+        for (int i = 0; i < numConstants; i++) {
+            String name = "const_" + i;
+            SDVariable var = loaded.getVariable(name);
+            assertNotNull(var, "Variable " + name + " not found after load");
+            assertEquals(VariableType.CONSTANT, var.getVariableType(),
+                    name + " should be CONSTANT type");
+
+            INDArray arr = var.getArr();
+            assertNotNull(arr, name + " array should not be null");
+            assertNotNull(arr.data(), name + " DataBuffer should not be null");
+            assertFalse(arr.data().wasClosed(),
+                    name + " DataBuffer should NOT be closed after deserialization");
+
+            // Check uniqueness — no two constants should share the same DataBuffer instance
+            String prevOwner = seenBuffers.put(arr.data(), name);
+            assertNull(prevOwner,
+                    name + " shares DataBuffer with " + prevOwner +
+                    " — each constant must have its own DataBuffer to prevent" +
+                    " cascade closure (array id=" + arr.getId() + ")");
+        }
+
+        // Verify that closing one constant's DataBuffer does NOT affect others.
+        // Constants are marked non-closeable, so we need to un-protect first.
+        INDArray first = loaded.getVariable("const_0").getArr();
+        first.data().setConstant(false);
+        first.setCloseable(true);
+        first.data().close();
+        assertTrue(first.data().wasClosed(), "const_0 DataBuffer should be closed after explicit close");
+
+        for (int i = 1; i < numConstants; i++) {
+            INDArray arr = loaded.getVariable("const_" + i).getArr();
+            assertFalse(arr.data().wasClosed(),
+                    "const_" + i + " DataBuffer should NOT be closed when const_0 is closed" +
+                    " — constants must not share DataBuffers");
+        }
+    }
 }

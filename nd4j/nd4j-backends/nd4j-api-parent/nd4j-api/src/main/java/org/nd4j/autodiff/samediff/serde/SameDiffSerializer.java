@@ -2985,15 +2985,15 @@ public class SameDiffSerializer {
                 log.debug("LOAD_INLINE [{}]: True empty array has unrecognized dtype ({}). Defaulting to FLOAT.", varName, dtypeByte);
                 dataType = DataType.FLOAT;
             }
-            log.debug("LOAD_INLINE [{}]: Creating true empty array with fresh instance (DataType={})", varName, dataType);
-            // Create a FRESH empty array (not the cached Nd4j.empty() singleton) to ensure the EMPTY flag
-            // is definitely preserved. Using the NDArrayFactory directly creates a new instance each time.
-            // This avoids any potential issues with the cached instance having its shape info modified.
-            INDArray emptyArr = Nd4j.getNDArrayFactory().empty(dataType);
-            // Log isEmpty() status to help debug any issues
-            log.debug("LOAD_INLINE [{}]: Created empty array isEmpty()={}, rank={}, shape={}, shapeInfo={}",
+            log.debug("LOAD_INLINE [{}]: Creating true empty array with FRESH instance (DataType={})", varName, dataType);
+            // Create a FRESH empty array with its own DataBuffer — NOT the Nd4j.empty() singleton
+            // or NDArrayFactory.empty() which may return a shared/cached instance.
+            // When multiple constants share the same singleton, closing one DataBuffer closes
+            // all of them, causing 60+ dead constants and garbage model output.
+            INDArray emptyArr = Nd4j.create(dataType, new long[0]);
+            log.debug("LOAD_INLINE [{}]: Created empty array isEmpty()={}, rank={}, shape={}, id={}",
                     varName, emptyArr.isEmpty(), emptyArr.rank(), Arrays.toString(emptyArr.shape()),
-                    Arrays.toString(emptyArr.shapeInfoDataBuffer().asLong()));
+                    emptyArr.getId());
             return emptyArr;
         }
 

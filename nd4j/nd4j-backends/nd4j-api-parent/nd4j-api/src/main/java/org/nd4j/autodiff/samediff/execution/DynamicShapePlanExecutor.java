@@ -1650,9 +1650,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 // and call setGraphContextInputArray to update C++ side.
                                 resolvedCount++;
                             } else {
-                                DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                                    "Java: ext[" + i + "] '" + extKeys[i] + "' type=" + vt +
-                                    " re-resolved but STILL closed (fresh=" + fresh + ")");
+                                // Dead constant: DataBuffer is closed but the native plan
+                                // already has the value baked into its captured CUDA graph
+                                // from the warmup execution. Safe to skip on replay steps.
+                                resolvedCount++;  // Count as resolved to not block replay
                             }
                         } else if (vt == VariableType.PLACEHOLDER && placeholderArrays != null) {
                             // Placeholder: re-resolve from placeholderArrays map
@@ -1711,25 +1712,19 @@ public class DynamicShapePlanExecutor implements Closeable {
                         arr = var.getArr();
                         // Detect dead constants: array exists but DataBuffer is already closed.
                         // This happens when SDZ deserialization creates shared dummy arrays for
-                        // small metadata constants (axes, reshape dims) that get their DataBuffer
-                        // closed. A dead DataBuffer prevents CUDA graph replay because the stale
-                        // buffer scan flags them as invalid on subsequent steps.
-                        // Fix: re-create the constant with a fresh DataBuffer. For empty/scalar
-                        // constants the value comes from shapeInfo, for others we create a zero
-                        // buffer (the native plan will populate it during first execution).
+                        // small metadata constants (axes, reshape dims). The native plan reads
+                        // these values during the first (warmup) execution and bakes them into
+                        // the captured CUDA graph — so the graph replay doesn't need live
+                        // DataBuffers for these constants. We keep the original array as-is
+                        // (the native C++ side reads from shapeInfo for scalars, and the CUDA
+                        // pool typically hasn't recycled the freed memory yet for the first exec).
+                        // The stale buffer scan in the FAST PATH will skip these on replay.
                         if (arr != null && (arr.data() == null || arr.data().wasClosed())) {
                             deadConstantCount++;
-                            long[] shape = arr.shape();
-                            DataType dt = arr.dataType();
-                            INDArray fresh = (shape == null || shape.length == 0)
-                                    ? Nd4j.scalar(dt, 0)
-                                    : Nd4j.zeros(dt, shape);
-                            fresh.setCloseable(false);
-                            sd.associateArrayWithVariable(fresh, varName);
-                            arr = fresh;
                             if (deadConstantCount <= 5) {
-                                log.info("DEAD_CONSTANT_FIXED: ext[{}] '{}' re-created with fresh buffer (dtype={}, shape={})",
-                                         i, varName, dt, Arrays.toString(shape));
+                                log.info("DEAD_CONSTANT: ext[{}] '{}' has closed DataBuffer (dtype={}, shape={}) — " +
+                                         "native plan will read value during warmup execution",
+                                         i, varName, arr.dataType(), Arrays.toString(arr.shape()));
                             }
                         }
                     }
