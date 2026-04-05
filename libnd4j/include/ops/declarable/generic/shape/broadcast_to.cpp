@@ -48,6 +48,19 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
   std::vector<LongType> shapeBuff = shape->getBufferAsVector<LongType>();
   std::vector<LongType> outShape(shapeBuff.begin(), shapeBuff.end());
 
+  // ONNX Expand semantics (numpy broadcast rules):
+  // - Target dim == -1: keep original input dimension
+  // - Target dim == 1 and input dim > 1: keep input dimension (no-op broadcast)
+  // - Target dim > 1 and input dim == 1: broadcast input to target dim
+  // - Target dim == input dim: no-op
+  for (int i = 1; i <= inputRank; ++i) {
+    LongType& dim = outShape[shapeLen - i];
+    LongType inputDim = input->sizeAt(inputRank - i);
+    if (dim == -1 || (dim == 1 && inputDim > 1)) {
+      dim = inputDim;
+    }
+  }
+
   for (int i = 1; i <= inputRank; ++i)
     REQUIRE_TRUE(input->sizeAt(inputRank - i) == outShape[shapeLen - i] || input->sizeAt(inputRank - i) == 1, 0,
                  "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !",
@@ -90,6 +103,17 @@ DECLARE_SHAPE_FN(broadcast_to) {
 
   std::vector<LongType> shapeBuff = shape->getBufferAsVector<LongType>();
   std::vector<LongType> outShape(shapeBuff.begin(), shapeBuff.end());
+
+  // ONNX Expand semantics (numpy broadcast rules):
+  // - Target dim == -1: keep original input dimension
+  // - Target dim == 1 and input dim > 1: keep input dimension (no-op broadcast)
+  for (int i = 1; i <= inputRank; ++i) {
+    LongType& dim = outShape[shapeLen - i];
+    LongType inputDim = inputShapeInfo[inputRank + 1 - i];
+    if (dim == -1 || (dim == 1 && inputDim > 1)) {
+      dim = inputDim;
+    }
+  }
 
   for (int i = 1; i <= inputRank; ++i)
     REQUIRE_TRUE(inputShapeInfo[inputRank + 1 - i] == outShape[shapeLen - i] || inputShapeInfo[inputRank + 1 - i] == 1,

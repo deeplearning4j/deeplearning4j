@@ -3738,6 +3738,23 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
         if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
 
+        // Re-sync input arrays to device after calculateOutputShape().
+        // Shape functions (e.g. Where) call syncToHost() on inputs to read data values,
+        // which marks the host buffer as primary. The GPU kernel then accesses a stale
+        // device buffer, producing wrong results (e.g. Where selects wrong branch →
+        // broadcast_to gets [1,1] instead of [1,32]). Re-syncing ensures device buffers
+        // are current before the kernel launches.
+        if (isDataDependent) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            List<INDArray> syncInputs = opContext.getInputArrays();
+            for (int si = 0; si < syncInputs.size(); si++) {
+                INDArray in = syncInputs.get(si);
+                if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()) {
+                    nativeOps.dbSyncToSpecial(in.data().opaqueBuffer());
+                }
+            }
+        }
+
         // Execute the operation
         // DIAGNOSTIC: check if inputs are closed right before exec
         {
