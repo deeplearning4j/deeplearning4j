@@ -39,7 +39,7 @@ OP_IMPL(scatter_nd_update, 3, 1, true) {
   auto output = OUTPUT_VARIABLE(0);
 
   const bool lock = block.getBArguments()->empty() ? true : B_ARG(0);
-  const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
+  const bool checkIndices = block.getBArguments()->size() <= 1 ? true : B_ARG(1);
 
   const int inRank = input->rankOf();
   const int indRank = indices->rankOf();

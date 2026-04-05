@@ -706,11 +706,11 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           }
           return Status::OK;
         }
-        // GPU backend failed — fall back to slot-by-slot.
-        DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d — falling back to slot-by-slot",
+        // GPU backend failed — hard error. No cascade.
+        DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d — hard error",
                  executeCount_, segment.startSlot, segment.endSlot, gpuBackend->name(),
                  static_cast<int>(status));
-        goto slot_by_slot;
+        return status;
       }
       // GEM_AUTO resolved to GPU_COMPILER but no backend available at runtime.
       // Fall through to CUDA graphs if enabled, otherwise slot-by-slot.
@@ -724,10 +724,10 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 cuda_graphs:
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        DSP_DIAG(COMPILE, "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d — falling back to slot-by-slot",
+        DSP_DIAG(COMPILE, "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d — hard error",
                  segment.startSlot, segment.endSlot, static_cast<int>(status));
         segment.exec.compilationFailed = true;
-        goto slot_by_slot;
+        return status;
       }
       usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.compilationFailed);
       if (usedGraph) {

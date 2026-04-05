@@ -2655,14 +2655,16 @@ void NativeDynamicShapePlan::buildSegments() {
   //      key recomputation even when shapes are frozen.
 
   auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
-    // Control flow ops are never capturable — execution path is data-dependent
     if (slot.controlFlowType != CF_NONE) return false;
     if (slot.isDataDependent) return false;
-    // Value-dependent-shape ops (broadcast_to, reshape, etc.) are now capturable
-    // because computeSegmentShapeKey hashes actual DATA VALUES of small inputs
-    // (≤32 elements). If a shape-determining input value changes between steps,
-    // the shape key changes → graph is invalidated → re-captured with correct shape.
-    // No hardcoded op list needed.
+    // Value-dependent-shape ops must run slot-by-slot because their output SHAPE
+    // depends on input VALUES. Even though the shape key hashes small input values,
+    // the captured graph bakes in allocation sizes from capture time. If the output
+    // shape changes, the graph's allocations are wrong → crashes or garbage.
+    // The shape key detects the change and invalidates, but re-capture with different
+    // allocation sizes creates address mismatches. Keeping these ops slot-by-slot
+    // is the correct architecture (matches the 86 tok/s baseline).
+    if (slot.outputShapeDependsOnInputValues) return false;
     return true;
   };
 
