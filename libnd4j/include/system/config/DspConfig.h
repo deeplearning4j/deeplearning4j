@@ -55,7 +55,7 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<int> _symbolicShapeWarmup{2};
 
   // Frozen-shape transition
-  std::atomic<bool> _freezeMergeSegments{false};
+  std::atomic<bool> _freezeMergeSegments{true};
   std::atomic<bool> _freezeRecompile{false};
 
   // Capture buffer pool

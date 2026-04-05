@@ -890,16 +890,15 @@ Status NativeDynamicShapePlan::execute(
 
 #ifdef SD_CUDA
   // Sync DSP stream at the start of execution to ensure all async CUDA operations
-  // from the previous execution and from Java-side inter-step operations (DataBuffer
-  // closes, syncToSpecial H2D copies) have completed. Without this, shape-change
-  // transitions (e.g., prefill→decode) that delete/reallocate slot arrays can race
-  // with in-flight CUDA ops on different streams, causing heap corruption
-  // ("double free or corruption (!prev)").
-  // This sync is cheap (~0μs when the stream is already idle) and critical for
-  // correctness during shape transitions.
-  if (stream != nullptr) {
-    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
-    cudaStreamSynchronize(cudaStr);
+  // Sync DSP stream on the first execution and shape transitions to ensure
+  // Java-side inter-step operations (DataBuffer closes, H2D copies) complete
+  // before array manipulation. On frozen replay steps (executeCount_ > 1),
+  // the previous step's end-of-execution sync already guarantees this.
+  if (!shapesFrozen_ || executeCount_ <= 1) {
+    if (stream != nullptr) {
+      cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
+      cudaStreamSynchronize(cudaStr);
+    }
   }
 #endif
 
