@@ -3895,6 +3895,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             timingOpCount++;
         }
 
+        // Trace removed — use --debug flag for InferenceSession tracing
+
         // Store result and track for deallocation
         long tStore0 = TIMING_ENABLED ? System.nanoTime() : 0;
         if (!outputNames.isEmpty()) {

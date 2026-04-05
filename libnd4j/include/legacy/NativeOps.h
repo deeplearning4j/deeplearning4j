@@ -1891,6 +1891,35 @@ SD_LIB_EXPORT bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmen
 SD_LIB_EXPORT int getPlanSegmentExecutionPhase(sd::Pointer planHandle, int segmentIdx);
 
 // =============================================================================
+// Plan-Level Phase Tracking
+// =============================================================================
+
+/**
+ * Get the plan-level phase.
+ * Returns PlanPhase as int: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=POINTERS_STABLE, 3=REPLAYING
+ */
+SD_LIB_EXPORT int getPlanPhase(sd::Pointer planHandle);
+
+/**
+ * Check if all buffer pointers are stable (same addresses across executions).
+ * Returns 1 if stable, 0 if not, -1 if invalid handle.
+ */
+SD_LIB_EXPORT int getPlanPointersStable(sd::Pointer planHandle);
+
+/**
+ * Get the number of executions since shapes were frozen.
+ * Returns -1 if shapes are not frozen.
+ */
+SD_LIB_EXPORT int getPlanFrozenExecutionCount(sd::Pointer planHandle);
+
+/**
+ * Get the slot state for a specific slot.
+ * Returns SlotState as int: 0=UNINITIALIZED, 1=WARMUP, 2=SHAPE_CACHED,
+ *   3=COMPILED, 4=FROZEN, 5=FROZEN_CONSTANT. Returns -1 if invalid.
+ */
+SD_LIB_EXPORT int getPlanSlotState(sd::Pointer planHandle, int slotIdx);
+
+// =============================================================================
 // Per-Segment Pointer Tracking
 // =============================================================================
 

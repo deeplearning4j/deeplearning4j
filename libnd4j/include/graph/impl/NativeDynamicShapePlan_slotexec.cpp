@@ -1110,6 +1110,19 @@ Status NativeDynamicShapePlan::executeSlot(
   if (cacheHit) {
     outputShapes = slot.cachedOutputShapes;
   } else {
+    // ── Phase violation: shape change during SHAPES_FROZEN ──
+    // If shapes are frozen and we get a cache miss (shape changed), this is
+    // a phase contract violation. Log it prominently so callers know their
+    // frozen assumption is broken.
+    if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid()) {
+      DSP_DIAG(SHAPE, "PHASE_VIOLATION: shape cache MISS at slot %d (%s) during "
+                "SHAPES_FROZEN (execCount=%d, planPhase=%d). Shapes were assumed "
+                "constant but input shapes changed. oldKey=0x%llx newKey=0x%llx",
+                stepIdx, slot.opName.c_str(), executeCount_,
+                static_cast<int>(planPhase_),
+                (long long)slot.cachedShapeKey, (long long)shapeKey);
+    }
+
     auto& ctx = *contextPool_[stepIdx];
 
     for (int i = 0; i < slot.numInputs; i++) {

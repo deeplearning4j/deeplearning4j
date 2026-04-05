@@ -1859,6 +1859,32 @@ public interface NativeOps {
    * Returns -1 if the plan handle or segment index is invalid.
    */
   default int getPlanSegmentExecutionPhase(Pointer planHandle, int segmentIdx) { return -1; }
+
+  /**
+   * Get the plan-level phase.
+   * Returns PlanPhase as int: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=POINTERS_STABLE, 3=REPLAYING
+   */
+  default int getPlanPhase(Pointer planHandle) { return -1; }
+
+  /**
+   * Check if all buffer pointers are stable (same addresses across executions).
+   * Returns 1 if stable, 0 if not, -1 if invalid handle.
+   */
+  default int getPlanPointersStable(Pointer planHandle) { return -1; }
+
+  /**
+   * Get the number of executions since shapes were frozen.
+   * Returns -1 if shapes are not frozen.
+   */
+  default int getPlanFrozenExecutionCount(Pointer planHandle) { return -1; }
+
+  /**
+   * Get the slot state for a specific slot.
+   * Returns SlotState as int: 0=UNINITIALIZED, 1=WARMUP, 2=SHAPE_CACHED,
+   *   3=COMPILED, 4=FROZEN, 5=FROZEN_CONSTANT. Returns -1 if invalid.
+   */
+  default int getPlanSlotState(Pointer planHandle, int slotIdx) { return -1; }
+
   default boolean isPlanSegmentCapturable(Pointer planHandle, int segmentIdx) { return false; }
   default boolean isPlanSegmentCaptureFailed(Pointer planHandle, int segmentIdx) { return false; }
 

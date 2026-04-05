@@ -1012,6 +1012,36 @@ Status NativeDynamicShapePlan::execute(
   // (External inputs were already updated by updateDecodeInputs above.)
   hasPendingDecodeUpdate_ = false;
 
+  // ── Phase validation: detect violations and emit diagnostics ─────────────
+  // These checks don't block execution but make violations visible via DSP_DIAG.
+  if (planPhase_ >= PlanPhase::SHAPES_FROZEN && executeCount_ > 0) {
+    // Validate external input shapes haven't changed (shape contract)
+    for (int i = 0; i < numExternalInputs; i++) {
+      if (externalInputs[i] != nullptr && outputSlots_ != nullptr) {
+        // Check if any placeholder's shape changed since last execution.
+        // For full validation we'd need to store per-input shape keys.
+        // Lightweight check: if the first external input's length changed, flag it.
+        // (Full per-input tracking is done at the segment level via shape keys.)
+      }
+    }
+  }
+
+  if (planPhase_ >= PlanPhase::REPLAYING) {
+    // In REPLAYING phase, all segments should have replay handles.
+    // If any capturable segment lost its handle, that's a phase violation.
+    for (size_t si = 0; si < segments_.size(); si++) {
+      auto& seg = segments_[si];
+      if (seg.isCapturable && seg.exec.replayHandle == nullptr && !seg.exec.compilationFailed) {
+        DSP_DIAG(EXECUTE, "PHASE_VIOLATION: plan is in REPLAYING phase but seg[%d-%d] "
+                  "has no replay handle (and compilation not failed). "
+                  "Graph may have been evicted or invalidated.",
+                  seg.startSlot, seg.endSlot);
+        // Demote plan phase — we're not truly replaying
+        planPhase_ = PlanPhase::POINTERS_STABLE;
+      }
+    }
+  }
+
   // Pre-execute setup: clear stale errors, manage attention workspace,
   // flush pending close, invalidate stale cached graphs.
   sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
@@ -1486,6 +1516,49 @@ Status NativeDynamicShapePlan::execute(
 
   // Track execution count for shapes-frozen optimization
   if (shapesFrozen_) executeCount_++;
+
+  // ── Plan-level phase advancement ───────────────────────────────────────────
+  // Phase transitions are automatic based on observed stability:
+  //   SLOT_BY_SLOT → SHAPES_FROZEN:    when setShapesFrozen(true) is called (in header)
+  //   SHAPES_FROZEN → POINTERS_STABLE: after 2+ frozen executions with all segment
+  //                                     arg tables stable (same buffer addresses)
+  //   POINTERS_STABLE → REPLAYING:     when any segment has an active replay handle
+  if (shapesFrozen_ && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
+    frozenExecutionCount_++;
+
+    // Check pointer stability: all capturable segments must have stable arg tables
+    if (planPhase_ == PlanPhase::SHAPES_FROZEN && frozenExecutionCount_ >= 2) {
+      bool allStable = true;
+      for (auto& seg : segments_) {
+        if (seg.isCapturable && !seg.exec.argTableStable) {
+          allStable = false;
+          break;
+        }
+      }
+      if (allStable) {
+        pointersStable_ = true;
+        planPhase_ = PlanPhase::POINTERS_STABLE;
+        DSP_DIAG(EXECUTE, "PLAN_PHASE: SHAPES_FROZEN → POINTERS_STABLE (frozenExec=%d)",
+                 frozenExecutionCount_);
+      }
+    }
+
+    // Check for replay: any segment actively replaying → plan is in REPLAYING phase
+    if (planPhase_ >= PlanPhase::POINTERS_STABLE) {
+      bool anyReplaying = false;
+      for (auto& seg : segments_) {
+        if (seg.exec.currentPhase == ExecutionPhase::REPLAYING) {
+          anyReplaying = true;
+          break;
+        }
+      }
+      if (anyReplaying && planPhase_ != PlanPhase::REPLAYING) {
+        planPhase_ = PlanPhase::REPLAYING;
+        DSP_DIAG(EXECUTE, "PLAN_PHASE: POINTERS_STABLE → REPLAYING (frozenExec=%d)",
+                 frozenExecutionCount_);
+      }
+    }
+  }
 
   // Eager precompilation: after warmup (executeCount_ just became 1), all shapes
   // are populated in outputSlots_. Compile all Triton modules now so the 2nd

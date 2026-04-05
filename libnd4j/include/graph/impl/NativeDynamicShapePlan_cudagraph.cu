@@ -564,6 +564,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   // ── CAPTURE ──
+  // Phase enforcement: log if graph capture starts before pointers are stable.
+  // This is informational — capture may still succeed on first try, but unstable
+  // pointers mean the captured graph may need re-capture on the next execution.
+  if (planPhase_ < PlanPhase::POINTERS_STABLE) {
+    DSP_DIAG(SEGMENT, "PHASE_INFO: graph capture starting for seg[%d-%d] at planPhase=%d "
+              "(before POINTERS_STABLE). Capture buffers may need re-population.",
+              seg.startSlot, seg.endSlot, static_cast<int>(planPhase_));
+  }
+
   if (seg.exec.replayHandle && seg.exec.cachedShapeKey != segShapeKey) {
     platformCleanupSegmentForRebuild(seg);
   }

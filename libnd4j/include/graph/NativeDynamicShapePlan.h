@@ -113,6 +113,30 @@ enum class SelectedBackend : uint8_t {
 };
 
 /**
+ * PlanPhase — plan-level lifecycle phase for the entire NativeDynamicShapePlan.
+ *
+ * Enforces a strict progression that makes assumptions easier at each level:
+ *   SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING
+ *
+ * Each phase guarantees everything from prior phases plus additional invariants:
+ *   SLOT_BY_SLOT:      No assumptions. Shapes may change, pointers may move.
+ *   SHAPES_FROZEN:     All output shapes are constant. Shape inference skipped.
+ *   POINTERS_STABLE:   Shapes frozen + all buffer pointers stable across steps.
+ *                      Graph capture is safe.
+ *   REPLAYING:         Shapes frozen + pointers stable + graph replay active.
+ *                      Only D2D copies + graph launch needed.
+ *
+ * Phase is automatically advanced by execute() based on observed stability.
+ * Can be manually set backward (e.g., unfreeze → SLOT_BY_SLOT).
+ */
+enum class PlanPhase : uint8_t {
+  SLOT_BY_SLOT = 0,      // No guarantees — shapes and pointers may change
+  SHAPES_FROZEN = 1,     // Shapes are constant across executions
+  POINTERS_STABLE = 2,   // Shapes frozen + buffer pointers stable
+  REPLAYING = 3,         // Steady state — graph replay active
+};
+
+/**
  * ExecutionPhase — the ACTUAL runtime execution mode of a segment.
  *
  * Unlike GraphExecutionMode (which is the user's PREFERENCE), ExecutionPhase
@@ -814,6 +838,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                   oldSegCount, (int)segments_.size());
       }
 
+      // Advance plan phase to SHAPES_FROZEN
+      planPhase_ = PlanPhase::SHAPES_FROZEN;
+      pointersStable_ = false;
+      frozenExecutionCount_ = 0;
+
       DSP_DIAG(EXECUTE, "FROZEN_TRANSITION: unfrozen → FROZEN, "
                 "%d segments, %d slots, %d extInputs, mergeSegments=%d, recompile=%d",
                 (int)segments_.size(), numSlots_, numExternalInputs_,
@@ -892,9 +921,42 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
         }
       }
       frozenConstantDetectionDone_ = false;
+
+      // Reset plan phase back to SLOT_BY_SLOT
+      planPhase_ = PlanPhase::SLOT_BY_SLOT;
+      pointersStable_ = false;
+      frozenExecutionCount_ = 0;
     }
   }
   bool isShapesFrozen() const { return shapesFrozen_; }
+
+  /**
+   * Get the current plan-level phase.
+   * Phase progresses: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING
+   */
+  PlanPhase getPlanPhase() const { return planPhase_; }
+
+  /**
+   * Get the plan-level phase as an integer (for JNI).
+   */
+  int getPlanPhaseCode() const { return static_cast<int>(planPhase_); }
+
+  /**
+   * Check if all buffer pointers are stable (same addresses as previous execution).
+   * Pointer stability is a prerequisite for graph capture/replay.
+   * Returns true only after at least 2 executions with frozen shapes where
+   * all segment arg tables have stable pointers.
+   */
+  bool arePointersStable() const { return pointersStable_; }
+
+  /**
+   * Get the slot state for a specific slot index (for JNI).
+   * Returns -1 if slotIdx is out of range.
+   */
+  int getSlotStateCode(int slotIdx) const {
+    if (slotIdx < 0 || slotIdx >= numSlots_) return -1;
+    return static_cast<int>(slots_[slotIdx].state_);
+  }
 
   /**
    * Enable/disable per-execution timing breakdown logging.
@@ -1095,6 +1157,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Use when all external input shapes are guaranteed constant (e.g., static KV decode).
   bool shapesFrozen_;
   int executeCount_;  // Tracks executions since shapes were frozen
+
+  // ── Plan-level phase tracking ──────────────────────────────────────────
+  // Automatically advanced by execute() based on observed stability.
+  // Phase progression: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING
+  PlanPhase planPhase_ = PlanPhase::SLOT_BY_SLOT;
+  bool pointersStable_ = false;         // All segment arg tables have stable pointers
+  int frozenExecutionCount_ = 0;        // Executions since shapes were frozen (for pointer stability detection)
 
 #ifdef SD_CUDA
   // CUDA event for lightweight cross-stream synchronization.

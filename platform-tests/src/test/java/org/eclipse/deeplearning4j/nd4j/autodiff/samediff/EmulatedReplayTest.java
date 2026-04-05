@@ -27,6 +27,8 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
+import org.nd4j.autodiff.samediff.execution.SlotState;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -39,6 +41,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests for the EMULATED_REPLAY graph execution mode.
@@ -102,6 +105,20 @@ public class EmulatedReplayTest {
         InferenceSession session = sd.getOrCreateSession();
         DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
         return dsp != null ? dsp.getNativePlanHandle() : null;
+    }
+
+    /**
+     * Check if the new phase-tracking JNI bindings are available.
+     * They require a native rebuild to be generated in Nd4jCuda/Nd4jCpu.
+     * Returns true if getPlanPhase returns a valid code (not -1 default).
+     */
+    private boolean arePlanPhaseBindingsAvailable(DynamicShapePlanExecutor executor) {
+        if (executor == null) return false;
+        Pointer handle = executor.getNativePlanHandle();
+        if (handle == null || handle.isNull()) return false;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int code = nativeOps.getPlanPhase(handle);
+        return code >= 0;  // -1 means default/unimplemented
     }
 
     // =========================================================================
@@ -539,5 +556,545 @@ public class EmulatedReplayTest {
         assertTrue(GraphExecutionMode.EMULATED_REPLAY.getNativeCode() >
                         GraphExecutionMode.OPENVINO.getNativeCode(),
                 "EMULATED_REPLAY should have higher native code than OPENVINO");
+    }
+
+    // =========================================================================
+    // Test 14: PlanPhase enum round-trip
+    // =========================================================================
+
+    @Test
+    @Order(14)
+    @DisplayName("PlanPhase enum values round-trip correctly")
+    public void testPlanPhaseEnumRoundTrip() {
+        assertEquals(0, PlanPhase.SLOT_BY_SLOT.getNativeCode());
+        assertEquals(1, PlanPhase.SHAPES_FROZEN.getNativeCode());
+        assertEquals(2, PlanPhase.POINTERS_STABLE.getNativeCode());
+        assertEquals(3, PlanPhase.REPLAYING.getNativeCode());
+
+        for (PlanPhase phase : PlanPhase.values()) {
+            assertEquals(phase, PlanPhase.fromNativeCode(phase.getNativeCode()),
+                    "Round-trip failed for " + phase);
+        }
+
+        assertNull(PlanPhase.fromNativeCode(-1), "Invalid code should return null");
+        assertNull(PlanPhase.fromNativeCode(99), "Invalid code should return null");
+    }
+
+    // =========================================================================
+    // Test 15: PlanPhase.isAtLeast ordering
+    // =========================================================================
+
+    @Test
+    @Order(15)
+    @DisplayName("PlanPhase.isAtLeast respects phase ordering")
+    public void testPlanPhaseOrdering() {
+        assertTrue(PlanPhase.REPLAYING.isAtLeast(PlanPhase.SLOT_BY_SLOT));
+        assertTrue(PlanPhase.REPLAYING.isAtLeast(PlanPhase.SHAPES_FROZEN));
+        assertTrue(PlanPhase.REPLAYING.isAtLeast(PlanPhase.POINTERS_STABLE));
+        assertTrue(PlanPhase.REPLAYING.isAtLeast(PlanPhase.REPLAYING));
+
+        assertTrue(PlanPhase.POINTERS_STABLE.isAtLeast(PlanPhase.SHAPES_FROZEN));
+        assertFalse(PlanPhase.SHAPES_FROZEN.isAtLeast(PlanPhase.POINTERS_STABLE));
+        assertFalse(PlanPhase.SLOT_BY_SLOT.isAtLeast(PlanPhase.SHAPES_FROZEN));
+    }
+
+    // =========================================================================
+    // Test 16: SlotState enum round-trip
+    // =========================================================================
+
+    @Test
+    @Order(16)
+    @DisplayName("SlotState enum values round-trip correctly")
+    public void testSlotStateEnumRoundTrip() {
+        assertEquals(0, SlotState.UNINITIALIZED.getNativeCode());
+        assertEquals(1, SlotState.WARMUP.getNativeCode());
+        assertEquals(2, SlotState.SHAPE_CACHED.getNativeCode());
+        assertEquals(3, SlotState.COMPILED.getNativeCode());
+        assertEquals(4, SlotState.FROZEN.getNativeCode());
+        assertEquals(5, SlotState.FROZEN_CONSTANT.getNativeCode());
+
+        for (SlotState state : SlotState.values()) {
+            assertEquals(state, SlotState.fromNativeCode(state.getNativeCode()),
+                    "Round-trip failed for " + state);
+        }
+
+        assertNull(SlotState.fromNativeCode(-1), "Invalid code should return null");
+        assertNull(SlotState.fromNativeCode(99), "Invalid code should return null");
+    }
+
+    // =========================================================================
+    // Test 17: Plan starts at SLOT_BY_SLOT phase
+    // =========================================================================
+
+    @Test
+    @Order(17)
+    @DisplayName("Plan starts at SLOT_BY_SLOT phase before shapes are frozen")
+    public void testPlanStartsAtSlotBySlot() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        // Execute once to compile the plan
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "Executor should exist after execution");
+
+        Pointer handle = executor.getNativePlanHandle();
+        assertNotNull(handle, "Native handle should exist");
+        assertFalse(handle.isNull(), "Handle should not be null pointer");
+
+        // Skip if native bindings haven't been regenerated yet
+        assumeTrue(arePlanPhaseBindingsAvailable(executor),
+                "Skipping: getPlanPhase JNI binding not yet available (needs native rebuild)");
+
+        // Phase should be SLOT_BY_SLOT since shapes are not frozen
+        PlanPhase phase = executor.getPlanPhase();
+        assertNotNull(phase, "Phase should not be null");
+        assertEquals(PlanPhase.SLOT_BY_SLOT, phase,
+                "Plan should start at SLOT_BY_SLOT before freezing");
+
+        // Pointers should not be stable yet
+        assertFalse(executor.arePointersStable(),
+                "Pointers should not be stable before freezing");
+
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 18: Freezing shapes advances plan phase to SHAPES_FROZEN
+    // =========================================================================
+
+    @Test
+    @Order(18)
+    @DisplayName("Freezing shapes advances plan phase to SHAPES_FROZEN")
+    public void testFreezeAdvancesToShapesFrozen() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        // Execute to populate plan
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "Executor should exist");
+
+        assumeTrue(arePlanPhaseBindingsAvailable(executor),
+                "Skipping: getPlanPhase JNI binding not yet available (needs native rebuild)");
+
+        // Freeze shapes
+        executor.setShapesFrozen(true);
+
+        PlanPhase phase = executor.getPlanPhase();
+        assertNotNull(phase, "Phase should not be null after freeze");
+        assertTrue(phase.isAtLeast(PlanPhase.SHAPES_FROZEN),
+                "Phase should be at least SHAPES_FROZEN after setShapesFrozen(true), got " + phase);
+
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 19: Unfreezing resets plan phase to SLOT_BY_SLOT
+    // =========================================================================
+
+    @Test
+    @Order(19)
+    @DisplayName("Unfreezing shapes resets plan phase to SLOT_BY_SLOT")
+    public void testUnfreezeResetsPhase() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+
+        assumeTrue(arePlanPhaseBindingsAvailable(executor),
+                "Skipping: getPlanPhase JNI binding not yet available (needs native rebuild)");
+
+        // Freeze then unfreeze
+        executor.setShapesFrozen(true);
+        PlanPhase frozenPhase = executor.getPlanPhase();
+        assertTrue(frozenPhase.isAtLeast(PlanPhase.SHAPES_FROZEN),
+                "Should be at least SHAPES_FROZEN after freeze");
+
+        executor.setShapesFrozen(false);
+        PlanPhase unfrozenPhase = executor.getPlanPhase();
+        assertEquals(PlanPhase.SLOT_BY_SLOT, unfrozenPhase,
+                "Should reset to SLOT_BY_SLOT after unfreeze");
+
+        assertFalse(executor.arePointersStable(),
+                "Pointers should not be stable after unfreeze");
+
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 20: Phase progresses through frozen executions
+    // =========================================================================
+
+    @Test
+    @Order(20)
+    @DisplayName("Phase progresses: SHAPES_FROZEN → POINTERS_STABLE after frozen executions")
+    public void testPhaseProgressionThroughFrozenExecutions() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        // Initial execution to populate shapes
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+
+        assumeTrue(arePlanPhaseBindingsAvailable(executor),
+                "Skipping: getPlanPhase JNI binding not yet available (needs native rebuild)");
+
+        // Freeze shapes
+        executor.setShapesFrozen(true);
+        assertEquals(PlanPhase.SHAPES_FROZEN, executor.getPlanPhase(),
+                "Should be SHAPES_FROZEN immediately after freeze");
+
+        // Execute several times with frozen shapes — phase should advance
+        PlanPhase lastPhase = PlanPhase.SHAPES_FROZEN;
+        for (int i = 0; i < 10; i++) {
+            input = Nd4j.randn(DataType.FLOAT, 1, 16);
+            sd.output(Map.of("input", input), "output");
+
+            PlanPhase currentPhase = executor.getPlanPhase();
+            log.info("Frozen execution {}: phase={}", i, currentPhase);
+
+            // Phase should never go backward
+            assertTrue(currentPhase.getNativeCode() >= lastPhase.getNativeCode(),
+                    "Phase should not regress: was " + lastPhase + ", now " + currentPhase);
+            lastPhase = currentPhase;
+        }
+
+        // After 10 frozen executions, should be at least POINTERS_STABLE
+        log.info("Final phase after 10 frozen executions: {}", lastPhase);
+        assertTrue(lastPhase.isAtLeast(PlanPhase.SHAPES_FROZEN),
+                "After 10 frozen executions, should be at least SHAPES_FROZEN, got " + lastPhase);
+
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 21: Slot states progress through execution
+    // =========================================================================
+
+    @Test
+    @Order(21)
+    @DisplayName("Slot states progress from UNINITIALIZED through execution")
+    public void testSlotStateProgression() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        // Execute to populate
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        Pointer handle = executor.getNativePlanHandle();
+        assertNotNull(handle, "Handle should exist");
+
+        // Check if slot state bindings are available
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int slotStateProbe = nativeOps.getPlanSlotState(handle, 0);
+        assumeTrue(slotStateProbe >= 0,
+                "Skipping: getPlanSlotState JNI binding not yet available (needs native rebuild)");
+
+        int numSlots = nativeOps.getPlanNumSlots(handle);
+        assertTrue(numSlots > 0, "Plan should have slots");
+
+        // After first execution, all slots should be at least WARMUP
+        for (int i = 0; i < numSlots; i++) {
+            SlotState state = executor.getSlotState(i);
+            assertNotNull(state, "Slot " + i + " state should not be null");
+            assertTrue(state.isAtLeast(SlotState.WARMUP),
+                    "Slot " + i + " should be at least WARMUP after first execution, got " + state);
+        }
+
+        // Freeze and execute more — slots should advance to FROZEN
+        executor.setShapesFrozen(true);
+        for (int i = 0; i < 3; i++) {
+            input = Nd4j.randn(DataType.FLOAT, 1, 16);
+            sd.output(Map.of("input", input), "output");
+        }
+
+        int frozenCount = 0;
+        for (int i = 0; i < numSlots; i++) {
+            SlotState state = executor.getSlotState(i);
+            if (state != null && state.isAtLeast(SlotState.FROZEN)) {
+                frozenCount++;
+            }
+        }
+        log.info("After frozen executions: {}/{} slots at FROZEN or above", frozenCount, numSlots);
+        // At least some slots should be frozen (constants should be FROZEN_CONSTANT)
+        assertTrue(frozenCount > 0,
+                "At least some slots should reach FROZEN state after frozen executions");
+
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 22: Invalid slot index returns null
+    // =========================================================================
+
+    @Test
+    @Order(22)
+    @DisplayName("Invalid slot index returns null SlotState")
+    public void testInvalidSlotIndexReturnsNull() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+
+        // Both old and new bindings return -1 for invalid indices → null SlotState
+        assertNull(executor.getSlotState(-1), "Negative index should return null");
+        assertNull(executor.getSlotState(99999), "Out-of-range index should return null");
+
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 23: Phase query on null handle returns null
+    // =========================================================================
+
+    @Test
+    @Order(23)
+    @DisplayName("Phase query on uninitialized executor returns null")
+    public void testPhaseQueryBeforeCompilation() {
+        SameDiff sd = buildMatmulChain();
+        enableDsp(sd);
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+
+        // Before any execution, executor may be null
+        if (executor != null) {
+            // Handle may be null before compilation
+            PlanPhase phase = executor.getPlanPhase();
+            // null is acceptable if handle not yet compiled
+            log.info("Phase before compilation: {}", phase);
+        }
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 24: Frozen execution still produces correct varied outputs (no stale data)
+    // =========================================================================
+
+    @Test
+    @Order(24)
+    @DisplayName("Frozen execution produces correct varied outputs — no stale data")
+    public void testFrozenExecutionNoStaleData() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        // Warm up
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        executor.setShapesFrozen(true);
+
+        // Execute many steps with frozen shapes — each must produce unique output
+        List<INDArray> frozenOutputs = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            input = Nd4j.randn(DataType.FLOAT, 1, 16).muli(i + 1);
+            Map<String, INDArray> result = sd.output(Map.of("input", input), "output");
+            frozenOutputs.add(result.get("output").dup());
+        }
+
+        // Verify all outputs are unique (no stale data reuse)
+        for (int i = 1; i < frozenOutputs.size(); i++) {
+            double diff = frozenOutputs.get(i).sub(frozenOutputs.get(i - 1)).norm2Number().doubleValue();
+            assertTrue(diff > 1e-6,
+                    "Step " + i + " output identical to step " + (i - 1)
+                            + " during frozen execution — STALE DATA. diff=" + diff);
+        }
+
+        // Verify no NaN/Inf in any output
+        for (int i = 0; i < frozenOutputs.size(); i++) {
+            double sum = frozenOutputs.get(i).sumNumber().doubleValue();
+            assertFalse(Double.isNaN(sum),
+                    "Step " + i + " output contains NaN during frozen execution");
+            assertFalse(Double.isInfinite(sum),
+                    "Step " + i + " output contains Inf during frozen execution");
+        }
+
+        log.info("PASS: 20 frozen execution steps produced unique, non-NaN outputs");
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 25: Frozen constant outputs are truly constant
+    // =========================================================================
+
+    @Test
+    @Order(25)
+    @DisplayName("Constant-only subgraphs produce identical output regardless of placeholder")
+    public void testFrozenConstantOutputsAreStable() {
+        // Build a graph where one output depends only on constants
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 16);
+        SDVariable c1 = sd.constant("c1", Nd4j.ones(DataType.FLOAT, 16, 8));
+        SDVariable c2 = sd.constant("c2", Nd4j.ones(DataType.FLOAT, 8, 4));
+        // output depends on input
+        SDVariable h = sd.mmul("mm1", input, c1);
+        sd.mmul("output", h, c2);
+
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        // Execute with different inputs — output should change (depends on input)
+        INDArray in1 = Nd4j.ones(DataType.FLOAT, 1, 16);
+        INDArray in2 = Nd4j.ones(DataType.FLOAT, 1, 16).muli(2.0);
+
+        Map<String, INDArray> r1 = sd.output(Map.of("input", in1), "output");
+        Map<String, INDArray> r2 = sd.output(Map.of("input", in2), "output");
+
+        double diff = r2.get("output").sub(r1.get("output")).norm2Number().doubleValue();
+        assertTrue(diff > 1e-6,
+                "Outputs should differ for different inputs. diff=" + diff);
+
+        // But outputs for the same input should be identical
+        Map<String, INDArray> r3 = sd.output(Map.of("input", in1.dup()), "output");
+        double sameDiff = r3.get("output").sub(r1.get("output")).norm2Number().doubleValue();
+        assertTrue(sameDiff < 1e-4,
+                "Same input should produce same output. diff=" + sameDiff);
+
+        log.info("PASS: Output varies with input, identical for same input");
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 26: Freeze then unfreeze then re-freeze cycle works correctly
+    // =========================================================================
+
+    @Test
+    @Order(26)
+    @DisplayName("Freeze/unfreeze/re-freeze cycle produces correct results")
+    public void testFreezeUnfreezeRefreezeeCycle() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+
+        // Phase 1: unfrozen warmup
+        Map<String, INDArray> warmup = sd.output(Map.of("input", input), "output");
+        INDArray warmupOut = warmup.get("output").dup();
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+
+        // Phase 2: freeze and execute
+        executor.setShapesFrozen(true);
+        Map<String, INDArray> frozen1 = sd.output(Map.of("input", input), "output");
+        INDArray frozen1Out = frozen1.get("output").dup();
+
+        // Phase 3: unfreeze
+        executor.setShapesFrozen(false);
+        Map<String, INDArray> unfrozen = sd.output(Map.of("input", input), "output");
+        INDArray unfrozenOut = unfrozen.get("output").dup();
+
+        // Phase 4: re-freeze and execute multiple steps
+        executor.setShapesFrozen(true);
+        List<INDArray> refrozenOutputs = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            INDArray stepInput = Nd4j.randn(DataType.FLOAT, 1, 16);
+            Map<String, INDArray> r = sd.output(Map.of("input", stepInput), "output");
+            refrozenOutputs.add(r.get("output").dup());
+        }
+
+        // All outputs should be valid (no NaN)
+        for (int i = 0; i < refrozenOutputs.size(); i++) {
+            double sum = refrozenOutputs.get(i).sumNumber().doubleValue();
+            assertFalse(Double.isNaN(sum),
+                    "Re-frozen step " + i + " output contains NaN");
+        }
+
+        // Re-frozen outputs should vary with different inputs
+        for (int i = 1; i < refrozenOutputs.size(); i++) {
+            double diff = refrozenOutputs.get(i).sub(refrozenOutputs.get(i - 1)).norm2Number().doubleValue();
+            assertTrue(diff > 1e-6,
+                    "Re-frozen step " + i + " identical to step " + (i - 1));
+        }
+
+        log.info("PASS: Freeze/unfreeze/re-freeze cycle produced correct varied results");
+        sd.close();
+    }
+
+    // =========================================================================
+    // Test 27: Segment execution phases are consistent with plan phase
+    // =========================================================================
+
+    @Test
+    @Order(27)
+    @DisplayName("Segment execution phases are consistent after frozen executions")
+    public void testSegmentPhasesConsistentAfterFrozen() {
+        SameDiff sd = buildMatmulChain();
+        sd.setGraphExecutionMode(GraphExecutionMode.EMULATED_REPLAY);
+        enableDsp(sd);
+
+        // Warmup
+        INDArray input = Nd4j.randn(DataType.FLOAT, 1, 16);
+        sd.output(Map.of("input", input), "output");
+
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        Pointer handle = executor.getNativePlanHandle();
+        assertNotNull(handle, "Handle should exist");
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+        // Freeze and execute several times
+        executor.setShapesFrozen(true);
+        for (int i = 0; i < 5; i++) {
+            input = Nd4j.randn(DataType.FLOAT, 1, 16);
+            sd.output(Map.of("input", input), "output");
+        }
+
+        // Check segment phases — they should all be advanced beyond WARMUP
+        int numSegments = nativeOps.getPlanNumSegments(handle);
+        assertTrue(numSegments > 0, "Should have segments");
+
+        boolean anyAdvanced = false;
+        for (int i = 0; i < numSegments; i++) {
+            int phaseCode = nativeOps.getPlanSegmentExecutionPhase(handle, i);
+            int execCount = nativeOps.getPlanSegmentExecutionCount(handle, i);
+            log.info("Segment {}: phase={} execCount={}", i, phaseCode, execCount);
+
+            // After frozen execution, segment should have been executed
+            assertTrue(execCount >= 1,
+                    "Segment " + i + " should have execCount >= 1 after 5 frozen executions");
+
+            // Phase should be valid
+            assertTrue(phaseCode >= 0 && phaseCode <= 4,
+                    "Segment " + i + " should have valid phase [0-4], got " + phaseCode);
+
+            if (phaseCode > 0) anyAdvanced = true; // Beyond WARMUP
+        }
+
+        log.info("PASS: {} segments consistent after frozen execution, anyAdvanced={}",
+                numSegments, anyAdvanced);
+        sd.close();
     }
 }

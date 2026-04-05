@@ -36,9 +36,10 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Uses the native broadcast_to op directly, which handles all broadcasting semantics
  * (dimension expansion, repeat along size-1 dims) in a single op execution.
  *
- * This replaces the previous multiply-by-ones approach (create → assign(1.0) → multiply)
- * which created fragile intermediate arrays vulnerable to cache memory corruption during
- * multi-step autoregressive decode.
+ * The C++ broadcast_to op applies numpy broadcast rules: for each dimension,
+ * result = max(input_dim, target_dim). This handles ONNX models that use
+ * Where(shape == -1, 1, shape) patterns for dynamic dimensions — target shape
+ * may contain 1 for dimensions that should keep the input's size.
  *
  * @author Adam Gibson
  */

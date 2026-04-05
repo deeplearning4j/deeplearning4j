@@ -765,6 +765,56 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Get the current plan-level phase from the native C++ plan.
+     * Returns the phase that represents the overall plan lifecycle:
+     * SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING.
+     *
+     * @return the current PlanPhase, or null if no native plan is compiled
+     */
+    public PlanPhase getPlanPhase() {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) return null;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int code = nativeOps.getPlanPhase(nativePlanHandle);
+        return PlanPhase.fromNativeCode(code);
+    }
+
+    /**
+     * Check if all buffer pointers are stable across executions.
+     * Pointer stability is required before graph capture/replay can begin.
+     *
+     * @return true if pointers are stable, false otherwise
+     */
+    public boolean arePointersStable() {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) return false;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        return nativeOps.getPlanPointersStable(nativePlanHandle) == 1;
+    }
+
+    /**
+     * Get the slot state for a specific slot in the native plan.
+     *
+     * @param slotIdx the slot index
+     * @return the SlotState, or null if invalid
+     */
+    public SlotState getSlotState(int slotIdx) {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) return null;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int code = nativeOps.getPlanSlotState(nativePlanHandle, slotIdx);
+        return SlotState.fromNativeCode(code);
+    }
+
+    /**
+     * Get the number of executions since shapes were frozen.
+     *
+     * @return frozen execution count, or -1 if shapes are not frozen
+     */
+    public int getFrozenExecutionCount() {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) return -1;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        return nativeOps.getPlanFrozenExecutionCount(nativePlanHandle);
+    }
+
+    /**
      * Reset executor state for next-page reuse WITHOUT destroying the native plan handle.
      * Clears all cached inputs, slot arrays, and unfreezes shapes so the next execution
      * does full shape inference (needed for prefill with different seq_len).
