@@ -44,6 +44,7 @@ import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
@@ -1724,9 +1725,9 @@ public class VisionLanguageModel implements AutoCloseable {
         // "constant-poisoned" intermediates doesn't destroy buffers the native DSP plan still
         // references. Without this, CUDA graph replay fails (0 replays, ~13x slowdown).
         IdentityHashMap<DataBuffer, Boolean> protectedBuffers = collectAllModelProtectedBuffers();
-        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.closeDeferredBuffers(protectedBuffers);
-        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.clearCacheState();
-        org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.setEnableCache(false);
+        ArrayCacheMemoryMgr.closeDeferredBuffers(protectedBuffers);
+        ArrayCacheMemoryMgr.clearCacheState();
+        ArrayCacheMemoryMgr.setEnableCache(false);
 
         // Force CUDA memory pool to release retained memory back to device allocator.
         // Without this, freed GPU allocations stay in the pool (not visible to cudaMemGetInfo)

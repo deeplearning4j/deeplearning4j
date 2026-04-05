@@ -1696,6 +1696,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             DspDiagnostics.record(DspDiagnostics.EXECUTE,
                     "Java: external inputs SLOW PATH (resolving " + extKeys.length + " inputs fresh)");
             extInputs = new INDArray[extKeys.length];
+            int deadConstantCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
                 String varName = extKeys[i];
                 INDArray arr = null;
@@ -1708,6 +1709,29 @@ public class DynamicShapePlanExecutor implements Closeable {
                             (var.getVariableType() == VariableType.CONSTANT ||
                                     var.getVariableType() == VariableType.VARIABLE)) {
                         arr = var.getArr();
+                        // Detect dead constants: array exists but DataBuffer is already closed.
+                        // This happens when SDZ deserialization creates shared dummy arrays for
+                        // small metadata constants (axes, reshape dims) that get their DataBuffer
+                        // closed. A dead DataBuffer prevents CUDA graph replay because the stale
+                        // buffer scan flags them as invalid on subsequent steps.
+                        // Fix: re-create the constant with a fresh DataBuffer. For empty/scalar
+                        // constants the value comes from shapeInfo, for others we create a zero
+                        // buffer (the native plan will populate it during first execution).
+                        if (arr != null && (arr.data() == null || arr.data().wasClosed())) {
+                            deadConstantCount++;
+                            long[] shape = arr.shape();
+                            DataType dt = arr.dataType();
+                            INDArray fresh = (shape == null || shape.length == 0)
+                                    ? Nd4j.scalar(dt, 0)
+                                    : Nd4j.zeros(dt, shape);
+                            fresh.setCloseable(false);
+                            sd.associateArrayWithVariable(fresh, varName);
+                            arr = fresh;
+                            if (deadConstantCount <= 5) {
+                                log.info("DEAD_CONSTANT_FIXED: ext[{}] '{}' re-created with fresh buffer (dtype={}, shape={})",
+                                         i, varName, dt, Arrays.toString(shape));
+                            }
+                        }
                     }
                 }
                 if (arr == null) {
@@ -1716,6 +1740,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                             "All external inputs must be resolved. No fallback permitted.");
                 }
                 extInputs[i] = arr;
+            }
+            if (deadConstantCount > 0) {
+                log.warn("DEAD_CONSTANT_SUMMARY: {} of {} external inputs have closed DataBuffers at INIT. " +
+                         "CUDA graph replay will be blocked until these are fixed.", deadConstantCount, extKeys.length);
             }
         }
 
