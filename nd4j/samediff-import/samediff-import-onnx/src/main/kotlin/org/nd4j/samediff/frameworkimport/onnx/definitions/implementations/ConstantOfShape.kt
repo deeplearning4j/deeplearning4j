@@ -58,10 +58,17 @@ class ConstantOfShape : PreImportHook  {
             outputVar = sd.create(outputVarName,inputShape, DataType.FLOAT,"c",true)
         } else {
             val firstVal = attributes["value"] as INDArray
-            outputVar = sd.create(inputShape,firstVal.dataType(),"c",false)
             val firstValue = firstVal.getDouble(0)
-            outputVar = sd.assign(outputVar,sd.constant(firstValue)).castTo(outputVarName,firstVal.dataType())
-
+            if (firstValue == 0.0) {
+                // Zero fill — just create with init=true (zeroed)
+                outputVar = sd.create(outputVarName, inputShape, firstVal.dataType(), "c", true)
+            } else {
+                // Non-zero fill: create zeroed, then add the constant value.
+                // Using add instead of assign avoids broadcast-view strides that
+                // corrupt downstream ops like scatter_nd_update.
+                outputVar = sd.create(inputShape, firstVal.dataType(), "c", true)
+                outputVar = outputVar.add(sd.constant(firstValue)).castTo(outputVarName, firstVal.dataType())
+            }
         }
 
         return mapOf(outputVar.name() to listOf(outputVar))

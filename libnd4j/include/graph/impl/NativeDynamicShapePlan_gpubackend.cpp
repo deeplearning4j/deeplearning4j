@@ -3081,6 +3081,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                      segSize > 0 ? (double)numGraphNodes / segSize : 0.0);
         DSP_DIAG(EXECUTE, "Triton capture endOk: graph has %zu nodes", numGraphNodes);
 
+        // Empty graphs (0 nodes) have no GPU work — skip replay to avoid
+        // spurious fingerprint mismatches when slot addresses change.
+        if (numGraphNodes == 0) {
+          DSP_DIAG_SEG(COMPILE, seg.startSlot,
+                       "empty Triton graph for seg[%d-%d] (0 nodes) — marking as non-capturable",
+                       seg.startSlot, seg.endSlot);
+          seg.exec.compilationFailed = true;
+          seg.exec.replayHandle.reset();
+          seg.exec.executionCount++;
+          return Status::OK;
+        }
+
         // Sample final output AFTER endCapture (stream no longer capturing, safe)
         if (seg.endSlot < totalOutputSlots_ && outputSlots_[seg.endSlot] != nullptr) {
           auto* finalOut = outputSlots_[seg.endSlot];

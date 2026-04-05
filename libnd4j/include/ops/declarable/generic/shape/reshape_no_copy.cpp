@@ -72,6 +72,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       THROW_EXCEPTION("reshape_no_copy: Shape argument (input 1) has length 0 - cannot determine target shape");
     }
 
+    shapeArg->syncToHost();
     auto shapeBuffLong = shapeArg->getBufferAsVector<sd::LongType>();
 
     // Validate that we actually got shape values
