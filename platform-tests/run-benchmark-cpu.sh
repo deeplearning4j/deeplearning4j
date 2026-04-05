@@ -6,6 +6,11 @@
 #
 # Options (same as run-benchmark.sh except CUDA-specific ones):
 #   --debug           Enable DSP diagnostics, verbose tracing
+#   --diag-replay     Enable GRAPH_REPLAY diagnostics (capture/instantiate/launch/address validation)
+#   --diag-stream     Enable STREAM_SYNC diagnostics (stream ordering, event waits, sync points)
+#   --diag-device     Enable MULTI_DEVICE diagnostics (device selection, P2P, migrations)
+#   --diag-all        Enable ALL diagnostic categories at FULL level with JSON report
+#   --diag-json FILE  Write structured JSON diagnostic report to FILE
 #   --tokens N        Override max decode tokens (default: 250)
 #   --config NAME     Override benchmark config name (default: OPTIMAL)
 #   --fp16            Enable FP16 weight pre-casting via GraphOptimizer (DEFAULT: ON)
@@ -55,6 +60,11 @@ CLEAR_DECODER=true
 NO_FREEZE=false
 NO_ATTN_OVERRIDE=false
 NO_DIRECT=false
+DIAG_REPLAY=false
+DIAG_STREAM=false
+DIAG_DEVICE=false
+DIAG_ALL=false
+DIAG_JSON=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -130,12 +140,33 @@ while [[ $# -gt 0 ]]; do
             NO_DIRECT=true
             shift
             ;;
+        --diag-replay)
+            DIAG_REPLAY=true
+            shift
+            ;;
+        --diag-stream)
+            DIAG_STREAM=true
+            shift
+            ;;
+        --diag-device)
+            DIAG_DEVICE=true
+            shift
+            ;;
+        --diag-all)
+            DIAG_ALL=true
+            shift
+            ;;
+        --diag-json)
+            DIAG_JSON="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             echo "Usage: ./run-benchmark-cpu.sh [--debug] [--op-timing] [--tokens N] [--config NAME]"
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
             echo "       [--no-freeze] [--no-attn-override] [--no-direct]"
+            echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
             exit 1
             ;;
     esac
@@ -162,6 +193,11 @@ $NO_OPTIMIZER && echo "  Optimizer: DISABLED"
 $OPTIMIZER_LOG && echo "  Optimizer: logging applied transforms"
 $DEBUG_MODE   && echo "  Mode:    DEBUG (DSP diagnostics)"
 $NO_FREEZE    && echo "  Freeze:  DISABLED"
+$DIAG_REPLAY  && echo "  Diag:    GRAPH_REPLAY (capture/instantiate/launch phases)"
+$DIAG_STREAM  && echo "  Diag:    STREAM_SYNC (stream ordering, event waits)"
+$DIAG_DEVICE  && echo "  Diag:    MULTI_DEVICE (device selection, P2P, migrations)"
+$DIAG_ALL     && echo "  Diag:    ALL categories at FULL level"
+[ -n "$DIAG_JSON" ] && echo "  Diag JSON: $DIAG_JSON"
 $OP_TIMING    && echo "  OpTiming: ON"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
@@ -204,6 +240,35 @@ if $DEBUG_MODE; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.native.dumpOutputs=true"
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.summary=true"
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.debug=true"
+fi
+
+# Targeted diagnostic modes — can be combined
+if $DIAG_ALL; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=ALL"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=full"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.summary=true"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.debug=true"
+    if [ -z "$DIAG_JSON" ]; then
+        DIAG_JSON="$SCRIPT_DIR/dsp-diagnostics-cpu.json"
+    fi
+else
+    DIAG_CATS=""
+    if $DIAG_REPLAY; then
+        DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}GRAPH_REPLAY,SEGMENT,EXECUTE"
+    fi
+    if $DIAG_STREAM; then
+        DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}STREAM_SYNC,EXECUTE,TIMING"
+    fi
+    if $DIAG_DEVICE; then
+        DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}MULTI_DEVICE,TRANSFER,BACKEND,MEMORY"
+    fi
+    if [ -n "$DIAG_CATS" ]; then
+        EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=$DIAG_CATS"
+        EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=full"
+    fi
+fi
+if [ -n "$DIAG_JSON" ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.file=$DIAG_JSON"
 fi
 
 if $OP_TIMING; then
@@ -333,4 +398,39 @@ if $DEBUG_MODE; then
     echo "  Debug files:"
     echo "    Benchmark log:   $LOG_FILE"
     echo "    Surefire report: $SUREFIRE_OUT"
+fi
+
+# Show diagnostic summary if any diag mode was enabled
+if $DIAG_REPLAY || $DIAG_STREAM || $DIAG_DEVICE || $DIAG_ALL; then
+    echo ""
+    echo "  ─── DSP Diagnostics Summary (CPU) ───────────────────"
+
+    if $DIAG_REPLAY || $DIAG_ALL; then
+        echo "  Graph Replay:"
+        CAPTURE_FAIL=$(grep -c "CAPTURE_FAILED\|capture failed\|captureFailed=true" "$LOG_FILE" 2>/dev/null || true)
+        REPLAY_OK=$(grep -c "REPLAYING\|graph replay active" "$LOG_FILE" 2>/dev/null || true)
+        echo "    Capture failures: $CAPTURE_FAIL"
+        echo "    Replay active:    $REPLAY_OK events"
+        grep -E "GRAPH_REPLAY.*phase|capture.*fail|replay.*error" "$LOG_FILE" 2>/dev/null | tail -10
+    fi
+
+    if $DIAG_STREAM || $DIAG_ALL; then
+        echo "  Stream Sync:"
+        SYNC_EVENTS=$(grep -c "STREAM_SYNC\|stream.*sync" "$LOG_FILE" 2>/dev/null || true)
+        echo "    Sync events: $SYNC_EVENTS"
+        grep -E "STREAM_SYNC|stream.*stall|sync.*miss" "$LOG_FILE" 2>/dev/null | tail -10
+    fi
+
+    if $DIAG_DEVICE || $DIAG_ALL; then
+        echo "  Multi-Device:"
+        TRANSFERS=$(grep -c "TRANSFER\|D2D\|H2D\|D2H" "$LOG_FILE" 2>/dev/null || true)
+        echo "    Transfer events: $TRANSFERS"
+        grep -E "MULTI_DEVICE|memory.*pressure|reroute" "$LOG_FILE" 2>/dev/null | tail -10
+    fi
+
+    if [ -n "$DIAG_JSON" ] && [ -f "$DIAG_JSON" ]; then
+        echo ""
+        echo "  JSON diagnostic report: $DIAG_JSON"
+    fi
+    echo "  ─────────────────────────────────────────────────────"
 fi

@@ -53,9 +53,12 @@ enum DspDiagCategory : uint32_t {
   DSP_DIAG_FALLBACK = (1u << 11),  // Fallback events, error recovery
   DSP_DIAG_TRANSFER = (1u << 12),  // Device transfers (H2D, D2H, D2D)
   DSP_DIAG_EMULATED_REPLAY = (1u << 13),  // Emulated graph replay lifecycle diagnostics
+  DSP_DIAG_STREAM_SYNC     = (1u << 14),  // Stream synchronization events (cudaStreamSync, event waits, ordering)
+  DSP_DIAG_MULTI_DEVICE    = (1u << 15),  // Multi-device orchestration (device selection, P2P, migrations)
+  DSP_DIAG_GRAPH_REPLAY    = (1u << 16),  // Graph replay phases (capture, instantiate, launch, address validation)
 
   DSP_DIAG_NONE     = 0u,
-  DSP_DIAG_ALL      = 0x3FFFu      // All 14 categories
+  DSP_DIAG_ALL      = 0x1FFFFu     // All 17 categories
 };
 
 // ─── Detail level ────────────────────────────────────────────────────────────
@@ -85,7 +88,7 @@ struct DspDiagEvent {
 
 // ─── Per-category aggregate stats ────────────────────────────────────────────
 
-static constexpr int DSP_DIAG_NUM_CATEGORIES = 14;
+static constexpr int DSP_DIAG_NUM_CATEGORIES = 17;
 
 struct DspDiagCategoryStats {
   int64_t eventCount;

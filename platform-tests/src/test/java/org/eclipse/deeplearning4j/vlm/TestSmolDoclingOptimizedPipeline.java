@@ -1365,11 +1365,6 @@ public class TestSmolDoclingOptimizedPipeline {
         assertFalse(imageInput.wasClosed(), "Image tensor closed after preprocessing");
 
         // Vision encoder - process each frame sequentially
-        if (Nd4j.getBackend().getClass().getSimpleName().contains("Cpu") ||
-            Nd4j.getBackend().getClass().getSimpleName().contains("Native")) {
-            Nd4j.getEnvironment().setDebug(true);
-            Nd4j.getEnvironment().setVerbose(true);
-        }
         long visionStart = System.currentTimeMillis();
         log.info("Running vision encoder on {} frames...", ctx.visionFrames);
         List<String> visionInputNames = visionEncoder.inputs();

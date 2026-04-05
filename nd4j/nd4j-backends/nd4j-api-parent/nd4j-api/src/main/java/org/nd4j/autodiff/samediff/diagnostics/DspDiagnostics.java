@@ -68,8 +68,11 @@ public class DspDiagnostics {
     public static final int FALLBACK = (1 << 11);
     public static final int TRANSFER = (1 << 12);
     public static final int EMULATED_REPLAY = (1 << 13);
+    public static final int STREAM_SYNC    = (1 << 14);
+    public static final int MULTI_DEVICE   = (1 << 15);
+    public static final int GRAPH_REPLAY   = (1 << 16);
     public static final int NONE     = 0;
-    public static final int ALL      = 0x3FFF;
+    public static final int ALL      = 0x1FFFF;
 
     // Detail levels matching C++ DspDiagLevel
     public static final int LEVEL_SUMMARY  = 0;
@@ -80,7 +83,8 @@ public class DspDiagnostics {
         "COMPILE", "JIT", "EXECUTE", "TIMING",
         "MEMORY", "BACKEND", "SHAPE", "SEGMENT",
         "FUSION", "VERIFY", "KV_CACHE", "FALLBACK",
-        "TRANSFER", "EMULATED_REPLAY"
+        "TRANSFER", "EMULATED_REPLAY",
+        "STREAM_SYNC", "MULTI_DEVICE", "GRAPH_REPLAY"
     };
 
     private static volatile boolean initialized = false;

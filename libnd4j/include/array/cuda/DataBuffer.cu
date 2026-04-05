@@ -1537,6 +1537,12 @@ void DataBuffer::migrate() {
   // the old pointer and allocate a new one on a different device, leaving the
   // frozen plan with a dangling address → SIGSEGV on next replay.
   if (isFrozenPlanRegistered()) {
+    // Log blocked migration so silent device violations are visible.
+    // This fires at MEMORY level — enable with ND4J_DSP_DIAGNOSTICS=MEMORY.
+    DSP_DIAG(MEMORY, "FROZEN_MIGRATION_BLOCKED: DataBuffer %p (device=%d, specialBuf=%p, "
+              "frozenRefCount=%d) — migration attempt skipped, buffer registered in frozen plan",
+              static_cast<void*>(this), _deviceId.load(), _specialBuffer,
+              _frozenRefCount.load(std::memory_order_relaxed));
     return;
   }
 

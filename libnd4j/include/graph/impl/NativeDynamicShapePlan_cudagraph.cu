@@ -1368,6 +1368,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    "This WILL cause graph launch failure",
                    stats.numMemAllocs, stats.numMemFrees);
     }
+    // Empty graphs (0 kernels, 0 memcpys, 0 memsets) have no GPU work.
+    // Don't replay them — the slot-by-slot warmup already produced the correct
+    // output, and replaying an empty graph just wastes launch overhead + causes
+    // spurious fingerprint mismatches when slot addresses change.
+    if (stats.numKernels == 0 && stats.numMemcpyH2D == 0 && stats.numMemsets == 0) {
+      DSP_DIAG_SEG(COMPILE, segIdx, "empty graph for seg[%d-%d] (0 kernels) — skipping replay, "
+                   "marking segment as non-capturable",
+                   seg.startSlot, seg.endSlot);
+      seg.exec.compilationFailed = true;
+      seg.exec.replayHandle.reset();
+      seg.exec.executionCount++;
+      return Status::OK;
+    }
   }
 
   if (!handle->launchAsync(cudaStr)) {

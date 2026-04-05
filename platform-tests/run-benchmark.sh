@@ -20,6 +20,11 @@
 #
 # Execution options:
 #   --debug           Enable DSP diagnostics, CUDA driver log, verbose tracing
+#   --diag-replay     Enable GRAPH_REPLAY diagnostics (capture/instantiate/launch/address validation)
+#   --diag-stream     Enable STREAM_SYNC diagnostics (stream ordering, event waits, sync points)
+#   --diag-device     Enable MULTI_DEVICE diagnostics (device selection, P2P, migrations)
+#   --diag-all        Enable ALL diagnostic categories at FULL level with JSON report
+#   --diag-json FILE  Write structured JSON diagnostic report to FILE
 #   --op-timing       Enable decode-only native op timing and export CSV per config
 #   --op-timing-detailed
 #                     Enable per-phase op timing breakdown data
@@ -93,6 +98,11 @@ TRITON_TF32=false
 NO_ATTN_OVERRIDE=false
 NO_DIRECT=false
 NO_TRITON=false
+DIAG_REPLAY=false
+DIAG_STREAM=false
+DIAG_DEVICE=false
+DIAG_ALL=false
+DIAG_JSON=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -203,6 +213,26 @@ while [[ $# -gt 0 ]]; do
             NO_TRITON=true
             shift
             ;;
+        --diag-replay)
+            DIAG_REPLAY=true
+            shift
+            ;;
+        --diag-stream)
+            DIAG_STREAM=true
+            shift
+            ;;
+        --diag-device)
+            DIAG_DEVICE=true
+            shift
+            ;;
+        --diag-all)
+            DIAG_ALL=true
+            shift
+            ;;
+        --diag-json)
+            DIAG_JSON="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--op-timing-detailed]"
@@ -211,6 +241,7 @@ while [[ $# -gt 0 ]]; do
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
             echo "       [--draft] [--speculative K] [--no-native-decode] [--no-cublas-workspace] [--no-freeze]"
             echo "       [--triton-tf32] [--no-triton-tf32]"
+            echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
             exit 1
             ;;
     esac
@@ -244,6 +275,11 @@ $NO_ATTN_OVERRIDE    && echo "  AttnOverride:       DISABLED (use model's attn_m
 $NO_DIRECT           && echo "  Direct exec:        DISABLED (use output() instead of outputDirect())"
 $NO_TRITON           && echo "  Triton:             DISABLED (native CUDA ops only)"
 $TRITON_TF32         && echo "  Triton TF32:        ON  (10-bit mantissa for Triton DotOps)"
+$DIAG_REPLAY  && echo "  Diag:     GRAPH_REPLAY (capture/instantiate/launch phases)"
+$DIAG_STREAM  && echo "  Diag:     STREAM_SYNC (stream ordering, event waits)"
+$DIAG_DEVICE  && echo "  Diag:     MULTI_DEVICE (device selection, P2P, migrations)"
+$DIAG_ALL     && echo "  Diag:     ALL categories at FULL level"
+[ -n "$DIAG_JSON" ] && echo "  Diag JSON: $DIAG_JSON"
 $OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
 $OP_TIMING_DETAILED && echo "  OpTiming: detailed phase breakdown ON"
 [ -n "$OP_BREAKDOWN_OPS" ] && echo "  Op breakdowns: $OP_BREAKDOWN_OPS"
@@ -327,6 +363,35 @@ if $DEBUG_MODE; then
     EXTRA_ARGS="$EXTRA_ARGS -Dcuda.log.file=$CUDA_LOG"
     # Export CUDA_LOG_FILE for the CUDA driver (picked up by surefire env)
     export CUDA_LOG_FILE="$CUDA_LOG"
+fi
+
+# Targeted diagnostic modes — can be combined
+if $DIAG_ALL; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=ALL"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=full"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.summary=true"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.debug=true"
+    if [ -z "$DIAG_JSON" ]; then
+        DIAG_JSON="$SCRIPT_DIR/dsp-diagnostics.json"
+    fi
+else
+    DIAG_CATS=""
+    if $DIAG_REPLAY; then
+        DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}GRAPH_REPLAY,SEGMENT,EXECUTE"
+    fi
+    if $DIAG_STREAM; then
+        DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}STREAM_SYNC,EXECUTE,TIMING"
+    fi
+    if $DIAG_DEVICE; then
+        DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}MULTI_DEVICE,TRANSFER,BACKEND,MEMORY"
+    fi
+    if [ -n "$DIAG_CATS" ]; then
+        EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=$DIAG_CATS"
+        EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=full"
+    fi
+fi
+if [ -n "$DIAG_JSON" ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.file=$DIAG_JSON"
 fi
 
 if $OP_TIMING; then
@@ -494,4 +559,41 @@ if $DEBUG_MODE; then
         echo "  Lineage/Frozen/ExtInput tracking (last 30 lines):"
         grep -E "LINEAGE|FROZEN|EXT_INPUT_DISCOVER" "$LOG_FILE" | tail -30
     fi
+fi
+
+# Show diagnostic summary if any diag mode was enabled
+if $DIAG_REPLAY || $DIAG_STREAM || $DIAG_DEVICE || $DIAG_ALL; then
+    echo ""
+    echo "  ─── DSP Diagnostics Summary ─────────────────────────"
+
+    if $DIAG_REPLAY || $DIAG_ALL; then
+        echo "  Graph Replay:"
+        CAPTURE_FAIL=$(grep -c "CAPTURE_FAILED\|capture failed\|captureFailed=true" "$LOG_FILE" 2>/dev/null || true)
+        REPLAY_OK=$(grep -c "REPLAYING\|graph replay active" "$LOG_FILE" 2>/dev/null || true)
+        echo "    Capture failures: $CAPTURE_FAIL"
+        echo "    Replay active:    $REPLAY_OK events"
+        grep -E "GRAPH_REPLAY.*phase|capture.*fail|replay.*error" "$LOG_FILE" 2>/dev/null | tail -10
+    fi
+
+    if $DIAG_STREAM || $DIAG_ALL; then
+        echo "  Stream Sync:"
+        SYNC_EVENTS=$(grep -c "STREAM_SYNC\|stream.*sync\|cudaStreamSynchronize" "$LOG_FILE" 2>/dev/null || true)
+        echo "    Sync events: $SYNC_EVENTS"
+        grep -E "STREAM_SYNC|stream.*stall|sync.*miss" "$LOG_FILE" 2>/dev/null | tail -10
+    fi
+
+    if $DIAG_DEVICE || $DIAG_ALL; then
+        echo "  Multi-Device:"
+        TRANSFERS=$(grep -c "TRANSFER\|D2D\|H2D\|D2H" "$LOG_FILE" 2>/dev/null || true)
+        DEVICE_SWITCH=$(grep -c "MULTI_DEVICE\|device.*switch\|switchDevice" "$LOG_FILE" 2>/dev/null || true)
+        echo "    Transfer events:  $TRANSFERS"
+        echo "    Device switches:  $DEVICE_SWITCH"
+        grep -E "MULTI_DEVICE|memory.*pressure|reroute" "$LOG_FILE" 2>/dev/null | tail -10
+    fi
+
+    if [ -n "$DIAG_JSON" ] && [ -f "$DIAG_JSON" ]; then
+        echo ""
+        echo "  JSON diagnostic report: $DIAG_JSON"
+    fi
+    echo "  ─────────────────────────────────────────────────────"
 fi

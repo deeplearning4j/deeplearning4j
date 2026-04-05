@@ -19,6 +19,9 @@
 #include <graph/SlotBufferOwnership.h>
 #include <graph/DspDiagnostics.h>
 #include <array/NDArray.h>
+#ifdef SD_CUDA
+#include <cuda_runtime.h>
+#endif
 
 namespace sd {
 namespace graph {
@@ -173,16 +176,28 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
   totalSlots = numSlots;
   numExternalInputs = numExt;
 
+#ifdef SD_CUDA
+  int currentDevice = -1;
+  cudaGetDevice(&currentDevice);
+  capturedDeviceId = currentDevice;
+#else
+  capturedDeviceId = 0;
+#endif
+
   if (numSlots > 0) {
     slotGpuAddresses = new void*[numSlots];
     slotDataBuffers = new DataBuffer*[numSlots];
+    slotDeviceIds = new int[numSlots];
     for (int i = 0; i < numSlots; i++) {
       if (outputSlots[i] != nullptr) {
         slotGpuAddresses[i] = outputSlots[i]->specialBuffer();
         slotDataBuffers[i] = outputSlots[i]->dataBuffer();
+        slotDeviceIds[i] = outputSlots[i]->dataBuffer() != nullptr
+            ? outputSlots[i]->dataBuffer()->deviceId() : -1;
       } else {
         slotGpuAddresses[i] = nullptr;
         slotDataBuffers[i] = nullptr;
+        slotDeviceIds[i] = -1;
       }
     }
   }
@@ -190,13 +205,17 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
   if (numExt > 0) {
     extGpuAddresses = new void*[numExt];
     extDataBuffers = new DataBuffer*[numExt];
+    extDeviceIds = new int[numExt];
     for (int i = 0; i < numExt; i++) {
       if (externalInputs[i] != nullptr) {
         extGpuAddresses[i] = externalInputs[i]->specialBuffer();
         extDataBuffers[i] = externalInputs[i]->dataBuffer();
+        extDeviceIds[i] = externalInputs[i]->dataBuffer() != nullptr
+            ? externalInputs[i]->dataBuffer()->deviceId() : -1;
       } else {
         extGpuAddresses[i] = nullptr;
         extDataBuffers[i] = nullptr;
+        extDeviceIds[i] = -1;
       }
     }
   }
@@ -247,6 +266,18 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
                i, slotGpuAddresses[i], currentGpu);
       return false;
     }
+
+    // Device ID check: detect buffer migration during frozen execution
+    if (slotDeviceIds != nullptr && slotDeviceIds[i] >= 0 && currentDb != nullptr) {
+      int currentDevId = currentDb->deviceId();
+      if (currentDevId != slotDeviceIds[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d buffer migrated from device %d to device %d "
+                 "during frozen execution — CUDA graph captured on device %d will access wrong memory",
+                 i, slotDeviceIds[i], currentDevId, capturedDeviceId);
+        return false;
+      }
+    }
   }
 
   // Check external input pointers
@@ -279,7 +310,34 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
                i, extGpuAddresses[i], currentGpu);
       return false;
     }
+
+    // Device ID check: detect weight migration during frozen execution
+    if (extDeviceIds != nullptr && extDeviceIds[i] >= 0 && currentDb != nullptr) {
+      int currentDevId = currentDb->deviceId();
+      if (currentDevId != extDeviceIds[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d buffer migrated from device %d to device %d "
+                 "during frozen execution — frozen refs should have prevented migration",
+                 i, extDeviceIds[i], currentDevId);
+        return false;
+      }
+    }
   }
+
+  // Execution device check: validate current device matches capture device
+#ifdef SD_CUDA
+  if (capturedDeviceId >= 0) {
+    int currentDevice = -1;
+    cudaGetDevice(&currentDevice);
+    if (currentDevice != capturedDeviceId) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: execution device changed from %d (at capture) to %d "
+               "— CUDA graphs captured on device %d cannot replay on device %d",
+               capturedDeviceId, currentDevice, capturedDeviceId, currentDevice);
+      return false;
+    }
+  }
+#endif
 
   return true;
 }

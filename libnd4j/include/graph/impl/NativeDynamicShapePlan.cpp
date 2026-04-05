@@ -925,15 +925,27 @@ Status NativeDynamicShapePlan::execute(
            static_cast<int>(gpuGraphCaptureEnabled_), numExternalInputs);
 
 #ifdef SD_CUDA
-  // Sync DSP stream at the start of execution to ensure all async CUDA operations
-  // Sync DSP stream on the first execution and shape transitions to ensure
-  // Java-side inter-step operations (DataBuffer closes, H2D copies) complete
-  // before array manipulation. On frozen replay steps (executeCount_ > 1),
-  // the previous step's end-of-execution sync already guarantees this.
-  if (!shapesFrozen_ || executeCount_ <= 1) {
-    if (stream != nullptr) {
-      cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
+  // Stream ordering: ensure all async CUDA operations from Java (DataBuffer
+  // closes, H2D copies, allocations on stream 0) complete before DSP execution.
+  //
+  // Non-frozen / first frozen: full cudaStreamSynchronize (safe, ~1ms)
+  // Frozen replay (executeCount_ > 1): event-based ordering from stream 0.
+  //   Java ops between execute() calls happen on stream 0 (the default stream).
+  //   Without this, the DSP execution stream could start reading buffers that
+  //   stream 0 is still writing to (e.g., putScalar for input_ids).
+  //   Record event on stream 0, wait on it from DSP stream.
+  if (stream != nullptr) {
+    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
+    if (!shapesFrozen_ || executeCount_ <= 1) {
       cudaStreamSynchronize(cudaStr);
+    } else {
+      // Lightweight cross-stream ordering: stream 0 → DSP stream.
+      // cudaStreamSynchronize(0) would be ~1ms. Event wait is ~0.01ms.
+      cudaEvent_t defaultStreamEvent;
+      cudaEventCreateWithFlags(&defaultStreamEvent, cudaEventDisableTiming);
+      cudaEventRecord(defaultStreamEvent, nullptr);  // Record on stream 0 (default)
+      cudaStreamWaitEvent(cudaStr, defaultStreamEvent, 0);  // DSP stream waits
+      cudaEventDestroy(defaultStreamEvent);
     }
   }
 #endif

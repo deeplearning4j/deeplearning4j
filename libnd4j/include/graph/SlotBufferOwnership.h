@@ -201,9 +201,12 @@ struct BufferPointerSnapshot {
   int totalSlots = 0;
   void** slotGpuAddresses = nullptr;    // GPU (special) buffer address per slot
   DataBuffer** slotDataBuffers = nullptr; // DataBuffer* identity per slot
+  int* slotDeviceIds = nullptr;          // Device ID where each slot buffer lives
   int numExternalInputs = 0;
   void** extGpuAddresses = nullptr;     // GPU address per external input
   DataBuffer** extDataBuffers = nullptr; // DataBuffer* identity per external input
+  int* extDeviceIds = nullptr;           // Device ID where each ext input buffer lives
+  int capturedDeviceId = -1;             // Device ID where the plan was executing at capture time
   bool valid = false;                    // True if snapshot has been captured
 
   ~BufferPointerSnapshot() {
@@ -213,15 +216,19 @@ struct BufferPointerSnapshot {
   void clear() {
     delete[] slotGpuAddresses; slotGpuAddresses = nullptr;
     delete[] slotDataBuffers; slotDataBuffers = nullptr;
+    delete[] slotDeviceIds; slotDeviceIds = nullptr;
     delete[] extGpuAddresses; extGpuAddresses = nullptr;
     delete[] extDataBuffers; extDataBuffers = nullptr;
+    delete[] extDeviceIds; extDeviceIds = nullptr;
     totalSlots = 0;
     numExternalInputs = 0;
+    capturedDeviceId = -1;
     valid = false;
   }
 
   /**
    * Capture current buffer state as the baseline.
+   * Records GPU addresses, DataBuffer identities, and device IDs.
    */
   void capture(NDArray** outputSlots, int numSlots,
                NDArray** externalInputs, int numExt);
@@ -237,6 +244,7 @@ struct BufferPointerSnapshot {
    *   3. External input GPU addresses unchanged
    *   4. External input DataBuffers not closed
    *   5. No null slots that were previously non-null (freed)
+   *   6. Device IDs unchanged (no buffer migration)
    */
   bool validate(NDArray** outputSlots, int numSlots,
                 NDArray** externalInputs, int numExt,

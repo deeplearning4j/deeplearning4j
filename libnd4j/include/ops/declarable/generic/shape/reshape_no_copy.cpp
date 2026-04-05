@@ -211,10 +211,18 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
   // Calculate the -1 dimension if present
   if (negativeOneCount == 1) {
-    if (totalElements == 0 || hasZeroDim) {
-      // Input is empty or has zero dims — inferred dim should be 0
+    if (hasZeroDim) {
+      // Has explicit zero dims — inferred dim should be 0
+      newShape[negativeOneIndex] = 0;
+    } else if (totalElements == 0 && shape::isEmptyConst(inShape)) {
+      // Input is genuinely empty (ARRAY_EMPTY flag set) — inferred dim is 0
       newShape[negativeOneIndex] = 0;
       hasZeroDim = true;
+    } else if (totalElements == 0) {
+      // Input has unknown/unresolved shape (e.g. dynamic dims at import time).
+      // Use 1 as a placeholder — the shape will be recomputed at execution time
+      // when actual input dimensions are known.
+      newShape[negativeOneIndex] = 1;
     } else if (totalElements % knownDimProduct != 0) {
       std::string errorMessage = "Cannot reshape array of size ";
       errorMessage += std::to_string(totalElements);
