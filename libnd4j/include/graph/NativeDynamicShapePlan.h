@@ -1087,6 +1087,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool shapesFrozen_;
   int executeCount_;  // Tracks executions since shapes were frozen
 
+#ifdef SD_CUDA
+  // CUDA event for lightweight cross-stream synchronization.
+  // Recorded on the DSP execution stream after graph replay, then waited on by
+  // the default stream (stream 0) before argmax/sampling. This replaces full
+  // cudaStreamSynchronize (~1.4ms) with event-based ordering (~0.1ms).
+  void* executionCompleteEvent_ = nullptr;  // cudaEvent_t (stored as void* to avoid cuda header)
+#endif
+
   // Per-execution timing breakdown (enabled by setExecutionTimingEnabled)
   bool executionTimingEnabled_;
 

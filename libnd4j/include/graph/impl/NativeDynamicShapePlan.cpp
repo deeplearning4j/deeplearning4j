@@ -247,6 +247,16 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   DspDiagnostics::getInstance().printPlanReport();
   DspDiagnostics::getInstance().flushJsonReport();
 
+#ifdef SD_CUDA
+  // Free CUDA event used for cross-stream sync
+  if (executionCompleteEvent_ != nullptr) {
+    cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+    cudaEventDestroy(evt);
+    delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
+    executionCompleteEvent_ = nullptr;
+  }
+#endif
+
   // ── Phase 1: Free GPU resources FIRST ─────────────────────────────────
   // Platform GPU resources (capture buffers, replay handles, JIT kernels,
   // cuBLAS workspace, batch-zero) may hold directReference pointers into
@@ -1492,15 +1502,30 @@ Status NativeDynamicShapePlan::execute(
 
   DspDiagnostics::getInstance().endStep(executeCount_);
 
-  // Synchronize the DSP execution stream before returning to Java.
-  // Required because Java reads the output (argmax on logits) on the default CUDA
-  // stream (stream 0), which is different from the DSP execution stream. Without
-  // this sync, stream 0 ops could start reading before the DSP stream finishes.
-  // TODO: Use CUDA events instead of full stream sync for lower overhead (~0.5ms).
+  // Cross-stream synchronization: the DSP execution stream must complete before
+  // Java reads outputs on the default stream (stream 0) for argmax/sampling.
+  // On frozen replay steps, use a lightweight CUDA event (~0.1ms) instead of full
+  // cudaStreamSynchronize (~1.4ms). The event is recorded on the DSP stream and
+  // the default stream waits on it before any output reads.
+  // On non-frozen steps, use full sync for safety (shape transitions may free arrays).
 #ifdef SD_CUDA
   if (stream != nullptr) {
     cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
-    cudaStreamSynchronize(cudaStr);
+    if (shapesFrozen_ && executeCount_ > 1) {
+      // Lightweight event-based sync for frozen replay steps
+      if (executionCompleteEvent_ == nullptr) {
+        cudaEvent_t evt;
+        cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+        executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+      }
+      cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+      cudaEventRecord(evt, cudaStr);
+      // Make the default stream (stream 0) wait for the DSP stream to finish
+      cudaStreamWaitEvent(nullptr, evt, 0);
+    } else {
+      // Full sync for non-frozen steps (shape transitions, warmup, capture)
+      cudaStreamSynchronize(cudaStr);
+    }
   }
   // tl_dspExecutionStream is restored automatically by DspStreamGuard (dspStreamGuardPtr)
   // when it goes out of scope at function exit.
