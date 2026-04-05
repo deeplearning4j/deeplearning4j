@@ -1920,6 +1920,40 @@ SD_LIB_EXPORT int getPlanFrozenExecutionCount(sd::Pointer planHandle);
 SD_LIB_EXPORT int getPlanSlotState(sd::Pointer planHandle, int slotIdx);
 
 // =============================================================================
+// Per-Slot Op Detail (for DSP Debug Framework)
+// =============================================================================
+
+/**
+ * Get the op name for a specific slot. Returns "" if invalid.
+ * Caller must NOT free the returned string (static lifetime).
+ */
+SD_LIB_EXPORT const char* getPlanSlotOpName(sd::Pointer planHandle, int slotIdx);
+
+/**
+ * Get per-slot flags as a bitmask:
+ *   bit 0: isViewCapableOp
+ *   bit 1: isDataDependent
+ *   bit 2: outputShapeDependsOnInputValues
+ *   bit 3: isIdentityOp
+ *   bit 4: inPlaceFused
+ *   bit 5: isFusedChainHead
+ *   bit 6: isFusedChainTail
+ *   bit 7: needsZeroedOutput
+ *   bit 8: needsIntLongSync
+ *   bit 9: shapeStatic
+ *   bit 10: frozenConstantSlot (state >= FROZEN_CONSTANT)
+ * Returns -1 if invalid.
+ */
+SD_LIB_EXPORT int getPlanSlotFlags(sd::Pointer planHandle, int slotIdx);
+
+/**
+ * Get input/output counts for a slot. Returns via out params.
+ * Returns 0 on success, -1 if invalid.
+ */
+SD_LIB_EXPORT int getPlanSlotIOCounts(sd::Pointer planHandle, int slotIdx,
+                                       int* numInputsOut, int* numOutputsOut);
+
+// =============================================================================
 // Per-Segment Pointer Tracking
 // =============================================================================
 

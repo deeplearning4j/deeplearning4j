@@ -1885,6 +1885,17 @@ public interface NativeOps {
    */
   default int getPlanSlotState(Pointer planHandle, int slotIdx) { return -1; }
 
+  /** Get the op name for a specific slot. */
+  default String getPlanSlotOpName(Pointer planHandle, int slotIdx) { return ""; }
+
+  /**
+   * Get per-slot flags as a bitmask. See NativeOps.h for bit definitions.
+   * bit 0: viewCapable, 1: dataDependent, 2: shapeDependsOnValues,
+   * 3: identity, 4: inPlaceFused, 5: fusedChainHead, 6: fusedChainTail,
+   * 7: needsZeroedOutput, 8: needsIntLongSync, 9: shapeStatic, 10: frozenConstant
+   */
+  default int getPlanSlotFlags(Pointer planHandle, int slotIdx) { return -1; }
+
   default boolean isPlanSegmentCapturable(Pointer planHandle, int segmentIdx) { return false; }
   default boolean isPlanSegmentCaptureFailed(Pointer planHandle, int segmentIdx) { return false; }
 

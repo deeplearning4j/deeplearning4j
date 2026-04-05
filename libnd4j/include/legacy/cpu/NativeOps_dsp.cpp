@@ -637,6 +637,44 @@ int getPlanSlotState(sd::Pointer planHandle, int slotIdx) {
   return plan->getSlotStateCode(slotIdx);
 }
 
+const char* getPlanSlotOpName(sd::Pointer planHandle, int slotIdx) {
+  if (planHandle == nullptr) return "";
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  if (slotIdx < 0 || slotIdx >= plan->getNumSlots()) return "";
+  return plan->getSlots()[slotIdx].opName.c_str();
+}
+
+int getPlanSlotFlags(sd::Pointer planHandle, int slotIdx) {
+  if (planHandle == nullptr) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  if (slotIdx < 0 || slotIdx >= plan->getNumSlots()) return -1;
+  auto& slot = plan->getSlots()[slotIdx];
+  int flags = 0;
+  if (slot.isViewCapableOp)               flags |= (1 << 0);
+  if (slot.isDataDependent)               flags |= (1 << 1);
+  if (slot.outputShapeDependsOnInputValues) flags |= (1 << 2);
+  if (slot.isIdentityOp)                  flags |= (1 << 3);
+  if (slot.inPlaceFused)                  flags |= (1 << 4);
+  if (slot.isFusedChainHead)              flags |= (1 << 5);
+  if (slot.isFusedChainTail)              flags |= (1 << 6);
+  if (slot.needsZeroedOutput)             flags |= (1 << 7);
+  if (slot.needsIntLongSync)              flags |= (1 << 8);
+  if (slot.shapeStatic)                   flags |= (1 << 9);
+  if (slot.state_ >= NativeSlot::SlotState::FROZEN_CONSTANT) flags |= (1 << 10);
+  return flags;
+}
+
+int getPlanSlotIOCounts(sd::Pointer planHandle, int slotIdx,
+                         int* numInputsOut, int* numOutputsOut) {
+  if (planHandle == nullptr) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  if (slotIdx < 0 || slotIdx >= plan->getNumSlots()) return -1;
+  auto& slot = plan->getSlots()[slotIdx];
+  if (numInputsOut) *numInputsOut = slot.numInputs;
+  if (numOutputsOut) *numOutputsOut = slot.numOutputs;
+  return 0;
+}
+
 bool isPlanSegmentCapturable(sd::Pointer planHandle, int segmentIdx) {
   if (planHandle == nullptr) return false;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
