@@ -188,6 +188,83 @@ void classifyAndUpdateOwnership(
     NDArray** outputSlots, int totalOutputSlots,
     SlotBufferInfo* ownershipArray);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Phase-Aware Lifecycle Validation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Snapshot of buffer pointers at a phase transition point.
+ * Captured when shapes are frozen; compared on every subsequent execute().
+ * Pointer drift (address changed) during frozen execution is a hard error.
+ */
+struct BufferPointerSnapshot {
+  int totalSlots = 0;
+  void** slotGpuAddresses = nullptr;    // GPU (special) buffer address per slot
+  DataBuffer** slotDataBuffers = nullptr; // DataBuffer* identity per slot
+  int numExternalInputs = 0;
+  void** extGpuAddresses = nullptr;     // GPU address per external input
+  DataBuffer** extDataBuffers = nullptr; // DataBuffer* identity per external input
+  bool valid = false;                    // True if snapshot has been captured
+
+  ~BufferPointerSnapshot() {
+    clear();
+  }
+
+  void clear() {
+    delete[] slotGpuAddresses; slotGpuAddresses = nullptr;
+    delete[] slotDataBuffers; slotDataBuffers = nullptr;
+    delete[] extGpuAddresses; extGpuAddresses = nullptr;
+    delete[] extDataBuffers; extDataBuffers = nullptr;
+    totalSlots = 0;
+    numExternalInputs = 0;
+    valid = false;
+  }
+
+  /**
+   * Capture current buffer state as the baseline.
+   */
+  void capture(NDArray** outputSlots, int numSlots,
+               NDArray** externalInputs, int numExt);
+
+  /**
+   * Validate that current buffer state matches the snapshot.
+   * Returns true if all pointers match. On mismatch, populates errMsg
+   * with a description of the first violation found.
+   *
+   * Checks:
+   *   1. Slot GPU addresses unchanged (pointer stability)
+   *   2. Slot DataBuffer identities unchanged (no replacement)
+   *   3. External input GPU addresses unchanged
+   *   4. External input DataBuffers not closed
+   *   5. No null slots that were previously non-null (freed)
+   */
+  bool validate(NDArray** outputSlots, int numSlots,
+                NDArray** externalInputs, int numExt,
+                char* errMsg, int errMsgLen) const;
+};
+
+/**
+ * Phase-aware lifecycle validation. Checks that the current state of all
+ * output slots and external inputs is consistent with the plan phase.
+ *
+ * Called at the start of execute() and after each segment.
+ * Returns true if valid; on violation, populates errMsg and returns false.
+ *
+ * Phase-specific checks:
+ *   SLOT_BY_SLOT: ownership consistency only
+ *   SHAPES_FROZEN: + no closed DataBuffers in live slots
+ *   POINTERS_STABLE: + buffer addresses match snapshot
+ *   REPLAYING: + replay handles intact, no capture buffer drift
+ */
+bool validateLifecycleForPhase(
+    int planPhase,  // PlanPhase as int (to avoid circular include)
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots,
+    NDArray** externalInputs, int numExternalInputs,
+    const std::unordered_set<DataBuffer*>& protectedWeightBuffers,
+    const BufferPointerSnapshot* snapshot,
+    char* errMsg, int errMsgLen);
+
 }  // namespace graph
 }  // namespace sd
 

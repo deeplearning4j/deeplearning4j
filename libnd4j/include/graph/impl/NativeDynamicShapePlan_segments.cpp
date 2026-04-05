@@ -1282,41 +1282,244 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
            seg.startSlot, seg.endSlot, phaseName, execCount, segSize,
            seg.isCapturable ? 1 : 0, shapesFrozen_ ? 1 : 0);
 
-  // ── Compute shape key ────────────────────────────────────────────────────
-  LongType currentShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-  LongType currentAddrKey = computeSegmentInputAddrKeyPortable(seg, externalArrays, numExt);
+  // ── Gap 1: Fast path — skip key recomputation when stable ──────────────
+  // When argTableStable was set on the previous execution (both shape and addr
+  // keys matched), skip the expensive hash computations and go straight to
+  // slot-by-slot execution. This eliminates shape key overhead (~5-10us per
+  // segment) that real graph replay also avoids.
+  bool fastPath = false;
+  if (execCount >= 2 && seg.exec.argTableStable) {
+    fastPath = true;
+    DSP_DIAG(EMULATED_REPLAY,
+             "  FAST PATH: argTableStable=true from previous step, skipping key recomputation");
+  }
+
+  LongType currentShapeKey = 0;
+  LongType currentAddrKey = 0;
+
+  if (!fastPath) {
+    // ── Compute shape key ──────────────────────────────────────────────────
+    currentShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+    currentAddrKey = computeSegmentInputAddrKeyPortable(seg, externalArrays, numExt);
+  }
 
   if (execCount == 0) {
-    // Warmup: cache baseline keys
+    // ══════════════════════════════════════════════════════════════════════
+    // WARMUP: baseline keys + fusion analysis + capture buffer sizing + DOT
+    // ══════════════════════════════════════════════════════════════════════
     seg.exec.cachedShapeKey = currentShapeKey;
     seg.exec.capturedInputAddrKey = currentAddrKey;
+    seg.exec.argTableStable = false;
 
     DSP_DIAG(EMULATED_REPLAY,
              "  WARMUP baseline: shapeKey=0x%llx addrKey=0x%llx",
              (long long)currentShapeKey, (long long)currentAddrKey);
 
-    // Count external inputs by type for capture buffer analysis
+    // ── Gap 3: Capture buffer sizing (byte-level) ────────────────────────
     int numPlaceholders = 0, numConstants = 0, numVariables = 0;
+    size_t placeholderBytes = 0, constantBytes = 0, variableBytes = 0;
+    // Track unique external indices to avoid double-counting
+    std::unordered_set<int> seenExt;
+
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       NativeSlot& slot = slots_[s];
       for (int i = 0; i < slot.numInputs; i++) {
         int srcIdx = slot.inputSourceIndices[i];
         if (srcIdx < 0) {
+          int extIdx = -(srcIdx + 1);
+          if (seenExt.count(extIdx)) continue;
+          seenExt.insert(extIdx);
+
           int8_t srcType = slot.inputSourceTypes[i];
-          if (srcType == SOURCE_PLACEHOLDER) numPlaceholders++;
-          else if (srcType == SOURCE_CONSTANT) numConstants++;
-          else if (srcType == SOURCE_VARIABLE) numVariables++;
+          size_t bytes = 0;
+          if (extIdx < numExt && externalArrays[extIdx] != nullptr) {
+            bytes = externalArrays[extIdx]->lengthOf() * externalArrays[extIdx]->sizeOfT();
+          }
+
+          if (srcType == SOURCE_PLACEHOLDER) {
+            numPlaceholders++;
+            placeholderBytes += bytes;
+          } else if (srcType == SOURCE_CONSTANT) {
+            numConstants++;
+            constantBytes += bytes;
+          } else if (srcType == SOURCE_VARIABLE) {
+            numVariables++;
+            variableBytes += bytes;
+          }
         }
       }
     }
 
     DSP_DIAG(EMULATED_REPLAY,
-             "  capture buffer candidates: %d placeholders (need staging), "
-             "%d constants (direct ref), %d variables (direct ref if frozen)",
-             numPlaceholders, numConstants, numVariables);
+             "  capture buffers: %d placeholders (%zuKB staging needed), "
+             "%d constants (%zuKB direct ref), %d variables (%zuKB direct ref if frozen)",
+             numPlaceholders, placeholderBytes / 1024,
+             numConstants, constantBytes / 1024,
+             numVariables, variableBytes / 1024);
 
-  } else {
-    // Post-warmup: check stability
+    // Per-placeholder detail for large inputs
+    if (DSP_DIAG_ENABLED(EMULATED_REPLAY)) {
+      seenExt.clear();
+      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+        NativeSlot& slot = slots_[s];
+        for (int i = 0; i < slot.numInputs; i++) {
+          int srcIdx = slot.inputSourceIndices[i];
+          if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            if (seenExt.count(extIdx)) continue;
+            seenExt.insert(extIdx);
+            if (slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER &&
+                extIdx < numExt && externalArrays[extIdx] != nullptr) {
+              auto* arr = externalArrays[extIdx];
+              size_t bytes = arr->lengthOf() * arr->sizeOfT();
+              DSP_DIAG(EMULATED_REPLAY,
+                       "    ext[%d] PLACEHOLDER shape=[%s] dtype=%d bytes=%zu",
+                       extIdx, ShapeUtils::shapeAsString(arr).c_str(),
+                       (int)arr->dataType(), bytes);
+            }
+          }
+        }
+      }
+    }
+
+    // ── Gap 2: Kernel fusion analysis ────────────────────────────────────
+    int numIdentity = 0, numViewOps = 0, numFusedChains = 0, numFusedTails = 0;
+    int numInPlaceFused = 0, numDataDependent = 0, numControlFlow = 0;
+    int numMatmul = 0, numElementwise = 0, numOther = 0;
+    int totalFusedChainOps = 0;
+
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      NativeSlot& slot = slots_[s];
+      if (slot.isIdentityOp)     numIdentity++;
+      if (slot.isViewCapableOp)  numViewOps++;
+      if (slot.isFusedChainHead) { numFusedChains++; totalFusedChainOps += slot.fusedChainLength; }
+      if (slot.isFusedChainTail) numFusedTails++;
+      if (slot.inPlaceFused)     numInPlaceFused++;
+      if (slot.isDataDependent)  numDataDependent++;
+      if (slot.controlFlowType != CF_NONE) numControlFlow++;
+
+      // Classify by op name heuristic
+      const auto& name = slot.opName;
+      if (name.find("matmul") != std::string::npos || name.find("mmul") != std::string::npos ||
+          name.find("gemm") != std::string::npos || name.find("batched_gemm") != std::string::npos) {
+        numMatmul++;
+      } else if (slot.isIdentityOp || slot.isViewCapableOp || slot.isFusedChainTail) {
+        // Already counted above — these are "free" ops
+      } else {
+        // Heuristic: ops with no iArgs, 1-2 inputs, and no data dependency are likely elementwise
+        if (!slot.isDataDependent && slot.numInputs <= 2 && slot.numOutputs == 1) {
+          numElementwise++;
+        } else {
+          numOther++;
+        }
+      }
+    }
+
+    int eliminatedOps = numIdentity + numFusedTails;
+    int effectiveOps = segSize - eliminatedOps;
+
+    DSP_DIAG(EMULATED_REPLAY,
+             "  fusion analysis: %d total ops, %d effective (-%d identity, -%d fused tails)",
+             segSize, effectiveOps, numIdentity, numFusedTails);
+    DSP_DIAG(EMULATED_REPLAY,
+             "    matmul=%d elementwise=%d view=%d inPlaceFused=%d dataDep=%d controlFlow=%d other=%d",
+             numMatmul, numElementwise, numViewOps, numInPlaceFused,
+             numDataDependent, numControlFlow, numOther);
+    if (numFusedChains > 0) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "    fused chains: %d chains covering %d ops (avg %.1f ops/chain)",
+               numFusedChains, totalFusedChainOps,
+               numFusedChains > 0 ? (float)totalFusedChainOps / numFusedChains : 0.0f);
+    }
+
+    // Segment pattern classification
+    const char* pattern = "MIXED";
+    if (numDataDependent > 0)           pattern = "DATA_DEPENDENT (non-capturable)";
+    else if (numMatmul > 0 && numElementwise > 0) pattern = "MATMUL_EPILOGUE (best for graph capture)";
+    else if (numMatmul > 0)             pattern = "PURE_MATMUL (cuBLAS graph capture)";
+    else if (numElementwise == effectiveOps) pattern = "PURE_ELEMENTWISE (best for kernel fusion)";
+    else if (numViewOps == segSize)      pattern = "PURE_VIEW (zero compute, identity graph)";
+
+    DSP_DIAG(EMULATED_REPLAY, "    segment pattern: %s", pattern);
+
+    // ── Gap 4: DOT graph topology ────────────────────────────────────────
+    if (DSP_DIAG_ENABLED(EMULATED_REPLAY)) {
+      DSP_DIAG(EMULATED_REPLAY, "  DOT_BEGIN seg[%d-%d]", seg.startSlot, seg.endSlot);
+      DSP_DIAG(EMULATED_REPLAY, "  digraph segment_%d_%d {", seg.startSlot, seg.endSlot);
+      DSP_DIAG(EMULATED_REPLAY, "    rankdir=TB;");
+      DSP_DIAG(EMULATED_REPLAY, "    node [shape=box, fontsize=10];");
+
+      // External input nodes
+      std::unordered_set<int> emittedExt;
+      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+        NativeSlot& slot = slots_[s];
+        for (int i = 0; i < slot.numInputs; i++) {
+          int srcIdx = slot.inputSourceIndices[i];
+          if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            if (emittedExt.count(extIdx)) continue;
+            emittedExt.insert(extIdx);
+            const char* srcLabel = "EXT";
+            if (slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) srcLabel = "PH";
+            else if (slot.inputSourceTypes[i] == SOURCE_CONSTANT) srcLabel = "CONST";
+            else if (slot.inputSourceTypes[i] == SOURCE_VARIABLE) srcLabel = "VAR";
+            DSP_DIAG(EMULATED_REPLAY,
+                     "    ext_%d [label=\"%s[%d]\", shape=ellipse, style=filled, fillcolor=lightblue];",
+                     extIdx, srcLabel, extIdx);
+          }
+        }
+      }
+
+      // Op nodes
+      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+        NativeSlot& slot = slots_[s];
+        const char* color = "white";
+        if (slot.isIdentityOp)         color = "gray90";
+        else if (slot.isFusedChainHead) color = "lightyellow";
+        else if (slot.isFusedChainTail) color = "lightyellow";
+        else if (slot.isViewCapableOp)  color = "honeydew";
+        else if (slot.isDataDependent)  color = "mistyrose";
+
+        DSP_DIAG(EMULATED_REPLAY,
+                 "    slot_%d [label=\"[%d] %s\", style=filled, fillcolor=%s];",
+                 s, s, slot.opName.empty() ? "?" : slot.opName.c_str(), color);
+      }
+
+      // Edges
+      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+        NativeSlot& slot = slots_[s];
+        for (int i = 0; i < slot.numInputs; i++) {
+          int srcIdx = slot.inputSourceIndices[i];
+          if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            DSP_DIAG(EMULATED_REPLAY, "    ext_%d -> slot_%d;", extIdx, s);
+          } else if (srcIdx >= 0) {
+            // Find which slot produces this output
+            for (int ps = seg.startSlot; ps < s; ps++) {
+              NativeSlot& pslot = slots_[ps];
+              for (int o = 0; o < pslot.numOutputs; o++) {
+                if (pslot.outputSlotIndices[o] == srcIdx) {
+                  DSP_DIAG(EMULATED_REPLAY, "    slot_%d -> slot_%d;", ps, s);
+                  goto nextInput;
+                }
+              }
+            }
+            // Cross-segment input
+            DSP_DIAG(EMULATED_REPLAY, "    cross_%d [label=\"slot[%d]\", shape=diamond];", srcIdx, srcIdx);
+            DSP_DIAG(EMULATED_REPLAY, "    cross_%d -> slot_%d;", srcIdx, s);
+            nextInput:;
+          }
+        }
+      }
+
+      DSP_DIAG(EMULATED_REPLAY, "  }");
+      DSP_DIAG(EMULATED_REPLAY, "  DOT_END seg[%d-%d]", seg.startSlot, seg.endSlot);
+    }
+
+  } else if (!fastPath) {
+    // ══════════════════════════════════════════════════════════════════════
+    // POST-WARMUP: stability checks (not on fast path)
+    // ══════════════════════════════════════════════════════════════════════
     bool shapeStable = (currentShapeKey == seg.exec.cachedShapeKey);
     bool addrStable = (currentAddrKey == seg.exec.capturedInputAddrKey);
 
@@ -1354,7 +1557,6 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
         }
       }
 
-      // Update cached key for next comparison
       seg.exec.cachedShapeKey = currentShapeKey;
     }
 
@@ -1362,43 +1564,61 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       DSP_DIAG(EMULATED_REPLAY,
                "  ** ADDRESS KEY CHANGED: capture buffer D2D copies needed. "
                "Placeholders with new addresses require staging buffer updates.");
-
-      // Update cached addr key
       seg.exec.capturedInputAddrKey = currentAddrKey;
     }
 
     // Replay readiness assessment
     if (shapeStable && addrStable) {
+      seg.exec.argTableStable = true;  // Enable fast path on next step
       DSP_DIAG(EMULATED_REPLAY,
                "  REPLAY READY: shapes and addresses stable — "
-               "CUDA graph replay would succeed without re-capture.");
-    } else if (shapeStable && !addrStable) {
-      DSP_DIAG(EMULATED_REPLAY,
-               "  REPLAY with D2D: shapes stable but addresses changed — "
-               "CUDA graph would replay after capture buffer D2D copies.");
+               "CUDA graph replay would succeed without re-capture. (fast path enabled)");
     } else {
-      DSP_DIAG(EMULATED_REPLAY,
-               "  RE-CAPTURE needed: shape change requires full graph re-capture.");
+      seg.exec.argTableStable = false;  // Disable fast path
+      if (shapeStable && !addrStable) {
+        DSP_DIAG(EMULATED_REPLAY,
+                 "  REPLAY with D2D: shapes stable but addresses changed — "
+                 "CUDA graph would replay after capture buffer D2D copies.");
+      } else {
+        DSP_DIAG(EMULATED_REPLAY,
+                 "  RE-CAPTURE needed: shape change requires full graph re-capture.");
+      }
     }
   }
+  // else: fast path — no key computation, no stability check, just execute
 
   // ── Execute ops slot-by-slot ────────────────────────────────────────────
   auto tSlotStart = std::chrono::high_resolution_clock::now();
 
-  // Delegate to the standard slot-by-slot executor for actual computation
   auto status = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
 
   auto tSlotEnd = std::chrono::high_resolution_clock::now();
   auto slotUs = std::chrono::duration_cast<std::chrono::microseconds>(tSlotEnd - tSlotStart).count();
 
+  // Dispatch overhead estimate: ~15us per effective op (shape inference + dispatch)
+  // Identity/fused-tail ops are skipped by executeSlot, so don't count them.
+  int estimatedSkippedOps = 0;
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    if (slots_[s].isIdentityOp || slots_[s].isFusedChainTail) estimatedSkippedOps++;
+  }
+  int effectiveDispatchOps = segSize - estimatedSkippedOps;
+  long long estimatedDispatchUs = effectiveDispatchOps * 15LL;
+
   DSP_DIAG(EMULATED_REPLAY,
-           "  slot-by-slot time: %lldus (%d ops) — "
-           "graph replay would eliminate ~%lldus of dispatch overhead",
-           (long long)slotUs, segSize,
-           // Rough estimate: ~20us per op of shape inference + dispatch overhead
-           (long long)(segSize * 20));
+           "  execution: %lldus total (%d ops, %d dispatched, %d skipped)%s",
+           (long long)slotUs, segSize, effectiveDispatchOps, estimatedSkippedOps,
+           fastPath ? " [FAST PATH]" : "");
+  DSP_DIAG(EMULATED_REPLAY,
+           "  overhead estimate: ~%lldus dispatch + ~%lldus compute = %lldus. "
+           "Graph replay would save ~%lldus (%.0f%%)",
+           estimatedDispatchUs,
+           (long long)slotUs - estimatedDispatchUs,
+           (long long)slotUs,
+           estimatedDispatchUs,
+           slotUs > 0 ? (100.0 * estimatedDispatchUs / slotUs) : 0.0);
 
   if (status != Status::OK) {
+    seg.exec.argTableStable = false;  // Force stability re-check on next step
     DSP_DIAG(EMULATED_REPLAY,
              "  ** EXECUTION FAILED: status=%d — graph capture would also fail here",
              (int)status);

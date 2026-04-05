@@ -217,6 +217,14 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  first few calls (warmup + Triton compile) to prevent stale OpaqueNDArray pointers. */
     private int frozenCallCount;
 
+    /** Frozen external input buffer identities: DataBuffer references captured on first
+     *  frozen execution. Used to detect buffer replacement/closure between frozen steps.
+     *  Violations are IllegalStateException (hard error, not log). */
+    private DataBuffer[] frozenExtBufferSnapshot;
+    /** Frozen external input shapes: shape arrays captured on first frozen execution.
+     *  Used to detect shape changes during frozen execution. */
+    private long[][] frozenExtShapeSnapshot;
+
     /** Cached execution stream pointer. Avoids 2 JNI calls per step. */
     private Pointer cachedExecStream;
     private boolean execStreamCached;
@@ -753,6 +761,8 @@ public class DynamicShapePlanExecutor implements Closeable {
             frozenCallCount = 0;
             cachedExecStream = null;
             execStreamCached = false;
+            frozenExtBufferSnapshot = null;
+            frozenExtShapeSnapshot = null;
         }
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -2227,6 +2237,57 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             // Track frozen call count for input re-set logic
             if (shapesFrozen) frozenCallCount++;
+
+            // ── Java-side lifecycle validation (frozen execution) ──────────────
+            // On first frozen execution: capture buffer snapshot.
+            // On subsequent frozen executions: validate buffers haven't been
+            // closed, replaced, or had their shapes change.
+            // Violations are IllegalStateException (hard error, not log).
+            if (shapesFrozen && frozenCallCount == 1) {
+                // Capture snapshot of external input buffers and shapes
+                frozenExtBufferSnapshot = new DataBuffer[extInputs.length];
+                frozenExtShapeSnapshot = new long[extInputs.length][];
+                for (int i = 0; i < extInputs.length; i++) {
+                    if (extInputs[i] != null) {
+                        frozenExtBufferSnapshot[i] = extInputs[i].data();
+                        frozenExtShapeSnapshot[i] = extInputs[i].shape();
+                    }
+                }
+                log.info("LIFECYCLE: captured frozen external input snapshot ({} inputs)", extInputs.length);
+            } else if (shapesFrozen && frozenCallCount > 1
+                       && frozenExtBufferSnapshot != null) {
+                // Validate: no buffer closed, no shape change for non-placeholders
+                for (int i = 0; i < Math.min(extInputs.length, frozenExtBufferSnapshot.length); i++) {
+                    if (frozenExtBufferSnapshot[i] == null) continue;
+                    if (extInputs[i] == null) {
+                        throw new IllegalStateException(
+                                "LIFECYCLE_ERROR: external input " + i + " (" + extKeys[i] +
+                                ") was non-null at freeze but is NULL now — buffer freed during frozen execution");
+                    }
+                    DataBuffer currentDb = extInputs[i].data();
+                    if (currentDb != null && currentDb.wasClosed()) {
+                        throw new IllegalStateException(
+                                "LIFECYCLE_ERROR: external input " + i + " (" + extKeys[i] +
+                                ") DataBuffer is CLOSED during frozen execution — " +
+                                "use-after-free will occur. Close frozen session before freeing buffers.");
+                    }
+                    // Shape check for non-placeholders only (placeholders may have same shape
+                    // but different data, which is fine)
+                    if (inputIsPlaceholder != null && !inputIsPlaceholder[i]
+                            && frozenExtShapeSnapshot[i] != null && extInputs[i].shape() != null) {
+                        long[] snapShape = frozenExtShapeSnapshot[i];
+                        long[] currShape = extInputs[i].shape();
+                        if (!java.util.Arrays.equals(snapShape, currShape)) {
+                            throw new IllegalStateException(
+                                    "LIFECYCLE_ERROR: external input " + i + " (" + extKeys[i] +
+                                    ") shape changed during frozen execution: " +
+                                    java.util.Arrays.toString(snapShape) + " → " +
+                                    java.util.Arrays.toString(currShape) +
+                                    ". Unfreeze shapes before changing constant/variable shapes.");
+                        }
+                    }
+                }
+            }
 
             // Execute the plan in C++
             long execStart = System.nanoTime();

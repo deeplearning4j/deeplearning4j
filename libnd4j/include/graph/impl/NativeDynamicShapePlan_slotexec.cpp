@@ -1112,15 +1112,21 @@ Status NativeDynamicShapePlan::executeSlot(
   } else {
     // ── Phase violation: shape change during SHAPES_FROZEN ──
     // If shapes are frozen and we get a cache miss (shape changed), this is
-    // a phase contract violation. Log it prominently so callers know their
-    // frozen assumption is broken.
+    // a phase contract violation. Return a hard error — the caller's frozen
+    // assumption is broken and continuing would produce wrong results or crash.
     if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid()) {
-      DSP_DIAG(SHAPE, "PHASE_VIOLATION: shape cache MISS at slot %d (%s) during "
-                "SHAPES_FROZEN (execCount=%d, planPhase=%d). Shapes were assumed "
-                "constant but input shapes changed. oldKey=0x%llx newKey=0x%llx",
-                stepIdx, slot.opName.c_str(), executeCount_,
-                static_cast<int>(planPhase_),
-                (long long)slot.cachedShapeKey, (long long)shapeKey);
+      char errBuf[512];
+      snprintf(errBuf, sizeof(errBuf),
+               "LIFECYCLE_ERROR: shape changed at slot %d (%s) during SHAPES_FROZEN phase "
+               "(execCount=%d). Shapes were assumed constant but input shapes changed. "
+               "oldKey=0x%llx newKey=0x%llx. Unfreeze shapes before changing input shapes.",
+               stepIdx, slot.opName.c_str(), executeCount_,
+               (long long)slot.cachedShapeKey, (long long)shapeKey);
+      DSP_DIAG(SHAPE, "%s", errBuf);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+          static_cast<int>(Status::KERNEL_FAILURE));
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
+      return Status::KERNEL_FAILURE;
     }
 
     auto& ctx = *contextPool_[stepIdx];

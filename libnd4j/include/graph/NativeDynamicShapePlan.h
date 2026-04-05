@@ -926,6 +926,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       planPhase_ = PlanPhase::SLOT_BY_SLOT;
       pointersStable_ = false;
       frozenExecutionCount_ = 0;
+      frozenSnapshot_.clear();
     }
   }
   bool isShapesFrozen() const { return shapesFrozen_; }
@@ -1164,6 +1165,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   PlanPhase planPhase_ = PlanPhase::SLOT_BY_SLOT;
   bool pointersStable_ = false;         // All segment arg tables have stable pointers
   int frozenExecutionCount_ = 0;        // Executions since shapes were frozen (for pointer stability detection)
+
+  // ── Lifecycle validation ──────────────────────────────────────────────
+  // Buffer pointer snapshot captured when shapes freeze. Used to detect
+  // pointer drift (buffer migrated/freed/replaced) during frozen execution.
+  // Violations are hard errors, not diagnostic logs.
+  BufferPointerSnapshot frozenSnapshot_;
 
 #ifdef SD_CUDA
   // CUDA event for lightweight cross-stream synchronization.

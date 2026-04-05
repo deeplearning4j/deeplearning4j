@@ -1012,32 +1012,38 @@ Status NativeDynamicShapePlan::execute(
   // (External inputs were already updated by updateDecodeInputs above.)
   hasPendingDecodeUpdate_ = false;
 
-  // ── Phase validation: detect violations and emit diagnostics ─────────────
-  // These checks don't block execution but make violations visible via DSP_DIAG.
+  // ── Phase-aware lifecycle validation ─────────────────────────────────────
+  // Hard errors (not logs) when buffer lifecycle is violated during frozen execution.
+  // This catches: freed buffers, pointer drift, stale ownership, dangling views.
   if (planPhase_ >= PlanPhase::SHAPES_FROZEN && executeCount_ > 0) {
-    // Validate external input shapes haven't changed (shape contract)
-    for (int i = 0; i < numExternalInputs; i++) {
-      if (externalInputs[i] != nullptr && outputSlots_ != nullptr) {
-        // Check if any placeholder's shape changed since last execution.
-        // For full validation we'd need to store per-input shape keys.
-        // Lightweight check: if the first external input's length changed, flag it.
-        // (Full per-input tracking is done at the segment level via shape keys.)
-      }
+    char errMsg[512] = {};
+    bool lifecycleOk = validateLifecycleForPhase(
+        static_cast<int>(planPhase_),
+        slotOwnership_, totalOutputSlots_,
+        outputSlots_,
+        externalInputs, numExternalInputs,
+        protectedWeightBuffers_,
+        frozenSnapshot_.valid ? &frozenSnapshot_ : nullptr,
+        errMsg, sizeof(errMsg));
+    if (!lifecycleOk) {
+      DSP_DIAG(FALLBACK, "LIFECYCLE_VALIDATION_FAILED: %s", errMsg);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+          static_cast<int>(Status::KERNEL_FAILURE));
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg);
+      return Status::KERNEL_FAILURE;
     }
   }
 
   if (planPhase_ >= PlanPhase::REPLAYING) {
-    // In REPLAYING phase, all segments should have replay handles.
-    // If any capturable segment lost its handle, that's a phase violation.
+    // In REPLAYING phase, all capturable segments must have replay handles.
+    // If any lost its handle, that's a phase violation — demote.
     for (size_t si = 0; si < segments_.size(); si++) {
       auto& seg = segments_[si];
       if (seg.isCapturable && seg.exec.replayHandle == nullptr && !seg.exec.compilationFailed) {
-        DSP_DIAG(EXECUTE, "PHASE_VIOLATION: plan is in REPLAYING phase but seg[%d-%d] "
-                  "has no replay handle (and compilation not failed). "
-                  "Graph may have been evicted or invalidated.",
+        DSP_DIAG(EXECUTE, "PHASE_VIOLATION: plan REPLAYING but seg[%d-%d] has no replay handle — demoting",
                   seg.startSlot, seg.endSlot);
-        // Demote plan phase — we're not truly replaying
         planPhase_ = PlanPhase::POINTERS_STABLE;
+        break;
       }
     }
   }
@@ -1525,6 +1531,16 @@ Status NativeDynamicShapePlan::execute(
   //   POINTERS_STABLE → REPLAYING:     when any segment has an active replay handle
   if (shapesFrozen_ && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
     frozenExecutionCount_++;
+
+    // Capture buffer pointer snapshot after first frozen execution.
+    // At this point all slots are populated with valid arrays.
+    // Subsequent executions validate against this snapshot.
+    if (frozenExecutionCount_ == 1 && !frozenSnapshot_.valid) {
+      frozenSnapshot_.capture(outputSlots_, totalOutputSlots_,
+                               externalInputs, numExternalInputs);
+      DSP_DIAG(EXECUTE, "LIFECYCLE: captured buffer pointer snapshot (%d slots, %d extInputs)",
+               totalOutputSlots_, numExternalInputs);
+    }
 
     // Check pointer stability: all capturable segments must have stable arg tables
     if (planPhase_ == PlanPhase::SHAPES_FROZEN && frozenExecutionCount_ >= 2) {

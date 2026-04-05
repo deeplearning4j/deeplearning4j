@@ -639,12 +639,16 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
 }
 
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
+  if (migratedInputs_.empty()) return;
   // Restore original arrays in outputSlots_ and delete migrated copies
   for (auto& mi : migratedInputs_) {
-    if (mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
+    if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
       outputSlots_[mi.outputSlotIdx] = mi.original;
     }
-    delete mi.migrated;
+    if (mi.migrated != nullptr) {
+      delete mi.migrated;
+      mi.migrated = nullptr;
+    }
   }
   migratedInputs_.clear();
 }

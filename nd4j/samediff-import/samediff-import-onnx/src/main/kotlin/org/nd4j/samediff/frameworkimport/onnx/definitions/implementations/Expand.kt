@@ -33,13 +33,10 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 /**
  * ONNX Expand: broadcasts the input tensor to a target shape using numpy-style broadcasting rules.
  *
- * Uses the native broadcast_to op directly, which handles all broadcasting semantics
- * (dimension expansion, repeat along size-1 dims) in a single op execution.
- *
- * The C++ broadcast_to op applies numpy broadcast rules: for each dimension,
- * result = max(input_dim, target_dim). This handles ONNX models that use
- * Where(shape == -1, 1, shape) patterns for dynamic dimensions — target shape
- * may contain 1 for dimensions that should keep the input's size.
+ * Uses the native broadcast_to op which applies numpy broadcast rules in C++:
+ * for each dimension, result = max(input_dim, target_dim). This handles ONNX models
+ * that use Where(shape == -1, 1, shape) patterns where target dims may be 1 for
+ * dimensions that should keep the input's larger size.
  *
  * @author Adam Gibson
  */

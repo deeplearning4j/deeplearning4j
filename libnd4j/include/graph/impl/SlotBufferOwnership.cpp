@@ -163,5 +163,232 @@ void classifyAndUpdateOwnership(
            slotIdx, bufferOwnershipName(info.ownership));
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// BufferPointerSnapshot
+// ═══════════════════════════════════════════════════════════════════════════════
+
+void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
+                                     NDArray** externalInputs, int numExt) {
+  clear();
+  totalSlots = numSlots;
+  numExternalInputs = numExt;
+
+  if (numSlots > 0) {
+    slotGpuAddresses = new void*[numSlots];
+    slotDataBuffers = new DataBuffer*[numSlots];
+    for (int i = 0; i < numSlots; i++) {
+      if (outputSlots[i] != nullptr) {
+        slotGpuAddresses[i] = outputSlots[i]->specialBuffer();
+        slotDataBuffers[i] = outputSlots[i]->dataBuffer();
+      } else {
+        slotGpuAddresses[i] = nullptr;
+        slotDataBuffers[i] = nullptr;
+      }
+    }
+  }
+
+  if (numExt > 0) {
+    extGpuAddresses = new void*[numExt];
+    extDataBuffers = new DataBuffer*[numExt];
+    for (int i = 0; i < numExt; i++) {
+      if (externalInputs[i] != nullptr) {
+        extGpuAddresses[i] = externalInputs[i]->specialBuffer();
+        extDataBuffers[i] = externalInputs[i]->dataBuffer();
+      } else {
+        extGpuAddresses[i] = nullptr;
+        extDataBuffers[i] = nullptr;
+      }
+    }
+  }
+
+  valid = true;
+}
+
+bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
+                                      NDArray** externalInputs, int numExt,
+                                      char* errMsg, int errMsgLen) const {
+  if (!valid) return true;  // No snapshot to compare against
+
+  // Check slot pointers
+  int checkSlots = std::min(totalSlots, numSlots);
+  for (int i = 0; i < checkSlots; i++) {
+    if (slotDataBuffers[i] == nullptr) continue;  // Was null at snapshot time
+
+    if (outputSlots[i] == nullptr) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: slot %d was non-null at freeze (db=%p gpu=%p) "
+               "but is NULL now — buffer was freed or slot was cleared",
+               i, (void*)slotDataBuffers[i], slotGpuAddresses[i]);
+      return false;
+    }
+
+    DataBuffer* currentDb = outputSlots[i]->dataBuffer();
+    if (currentDb != slotDataBuffers[i]) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: slot %d DataBuffer replaced during frozen execution "
+               "(snapshot=%p current=%p) — ownership violated",
+               i, (void*)slotDataBuffers[i], (void*)currentDb);
+      return false;
+    }
+
+    if (currentDb != nullptr && currentDb->isClosed()) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: slot %d DataBuffer %p is CLOSED during frozen execution "
+               "— use-after-free will occur on next access",
+               i, (void*)currentDb);
+      return false;
+    }
+
+    void* currentGpu = outputSlots[i]->specialBuffer();
+    if (slotGpuAddresses[i] != nullptr && currentGpu != slotGpuAddresses[i]) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: slot %d GPU address changed during frozen execution "
+               "(snapshot=%p current=%p) — pointer drift, CUDA graph replay will use stale address",
+               i, slotGpuAddresses[i], currentGpu);
+      return false;
+    }
+  }
+
+  // Check external input pointers
+  int checkExt = std::min(numExternalInputs, numExt);
+  for (int i = 0; i < checkExt; i++) {
+    if (extDataBuffers[i] == nullptr) continue;
+
+    if (externalInputs[i] == nullptr) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: external input %d was non-null at freeze but is NULL now "
+               "— weight/constant was freed",
+               i);
+      return false;
+    }
+
+    DataBuffer* currentDb = externalInputs[i]->dataBuffer();
+    if (currentDb != nullptr && currentDb->isClosed()) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: external input %d DataBuffer %p is CLOSED during frozen "
+               "execution — model weight/constant was freed",
+               i, (void*)currentDb);
+      return false;
+    }
+
+    void* currentGpu = externalInputs[i]->specialBuffer();
+    if (extGpuAddresses[i] != nullptr && currentGpu != extGpuAddresses[i]) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: external input %d GPU address changed during frozen "
+               "execution (snapshot=%p current=%p) — weight buffer migrated or reallocated",
+               i, extGpuAddresses[i], currentGpu);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Phase-Aware Lifecycle Validation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+bool validateLifecycleForPhase(
+    int planPhase,
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots,
+    NDArray** externalInputs, int numExternalInputs,
+    const std::unordered_set<DataBuffer*>& protectedWeightBuffers,
+    const BufferPointerSnapshot* snapshot,
+    char* errMsg, int errMsgLen) {
+
+  // ── Level 0: SLOT_BY_SLOT — ownership consistency ──
+  if (ownership != nullptr && outputSlots != nullptr) {
+    for (int i = 0; i < totalSlots; i++) {
+      const auto& info = ownership[i];
+      if (info.ownership == BufferOwnership::UNSET) continue;
+
+      // VIEW_OF_SLOT must have valid parent
+      if (info.ownership == BufferOwnership::VIEW_OF_SLOT) {
+        if (info.parentSlotIdx < 0 || info.parentSlotIdx >= totalSlots) {
+          snprintf(errMsg, errMsgLen,
+                   "LIFECYCLE_ERROR: slot %d is VIEW_OF_SLOT but parentSlotIdx=%d is invalid "
+                   "(totalSlots=%d)",
+                   i, info.parentSlotIdx, totalSlots);
+          return false;
+        }
+        // Parent must still exist and own a buffer
+        if (outputSlots[info.parentSlotIdx] == nullptr) {
+          snprintf(errMsg, errMsgLen,
+                   "LIFECYCLE_ERROR: slot %d is VIEW_OF_SLOT(parent=%d) but parent slot "
+                   "is NULL — parent was freed while view still alive (dangling view)",
+                   i, info.parentSlotIdx);
+          return false;
+        }
+      }
+
+      // DataBuffer identity check: tracked buffer must match actual
+      if (info.dataBuffer != nullptr && outputSlots[i] != nullptr) {
+        DataBuffer* actualDb = outputSlots[i]->dataBuffer();
+        if (actualDb != info.dataBuffer) {
+          snprintf(errMsg, errMsgLen,
+                   "LIFECYCLE_ERROR: slot %d ownership tracks DataBuffer %p but actual is %p "
+                   "— stale ownership, slot was replaced without re-classification",
+                   i, (void*)info.dataBuffer, (void*)actualDb);
+          return false;
+        }
+      }
+    }
+  }
+
+  // ── Level 1: SHAPES_FROZEN — no closed DataBuffers ──
+  if (planPhase >= 1) {  // SHAPES_FROZEN
+    // Check output slots for closed buffers
+    if (outputSlots != nullptr) {
+      for (int i = 0; i < totalSlots; i++) {
+        if (outputSlots[i] == nullptr) continue;
+        DataBuffer* db = outputSlots[i]->dataBuffer();
+        if (db != nullptr && db->isClosed()) {
+          snprintf(errMsg, errMsgLen,
+                   "LIFECYCLE_ERROR: slot %d has CLOSED DataBuffer %p during SHAPES_FROZEN+ "
+                   "phase — buffer was freed while shapes assumed stable",
+                   i, (void*)db);
+          return false;
+        }
+      }
+    }
+
+    // Check external inputs for closed buffers
+    for (int i = 0; i < numExternalInputs; i++) {
+      if (externalInputs[i] == nullptr) continue;
+      DataBuffer* db = externalInputs[i]->dataBuffer();
+      if (db != nullptr && db->isClosed()) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d has CLOSED DataBuffer %p during "
+                 "SHAPES_FROZEN+ phase — weight/constant was freed",
+                 i, (void*)db);
+        return false;
+      }
+    }
+
+    // Check that no protected weight buffer was closed
+    for (auto* db : protectedWeightBuffers) {
+      if (db != nullptr && db->isClosed()) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: protected weight DataBuffer %p is CLOSED during "
+                 "SHAPES_FROZEN+ phase — model weight was freed while plan active",
+                 (void*)db);
+        return false;
+      }
+    }
+  }
+
+  // ── Level 2: POINTERS_STABLE — buffer addresses match snapshot ──
+  if (planPhase >= 2 && snapshot != nullptr) {  // POINTERS_STABLE
+    if (!snapshot->validate(outputSlots, totalSlots,
+                            externalInputs, numExternalInputs,
+                            errMsg, errMsgLen)) {
+      return false;  // errMsg already populated by snapshot->validate()
+    }
+  }
+
+  return true;
+}
+
 }  // namespace graph
 }  // namespace sd
