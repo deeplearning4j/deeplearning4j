@@ -1523,6 +1523,44 @@ Status NativeDynamicShapePlan::execute(
   // Track execution count for shapes-frozen optimization
   if (shapesFrozen_) executeCount_++;
 
+  // Re-classify slot ownership after the first frozen execution (capture step).
+  // The capture execution replaces slot arrays (new allocations for different shapes),
+  // which invalidates the compile-time ownership classification. Without this,
+  // the next execution's lifecycle validation fails with "stale ownership".
+  if (shapesFrozen_ && executeCount_ == 2 && slotOwnership_ != nullptr && outputSlots_ != nullptr) {
+    for (int i = 0; i < totalOutputSlots_; i++) {
+      if (outputSlots_[i] == nullptr) {
+        slotOwnership_[i].reset();
+        continue;
+      }
+      auto* db = outputSlots_[i]->dataBuffer();
+      if (db == nullptr) {
+        slotOwnership_[i].ownership = BufferOwnership::UNSET;
+        slotOwnership_[i].dataBuffer = nullptr;
+        continue;
+      }
+      if (protectedWeightBuffers_.count(db) > 0) {
+        slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_WEIGHT;
+        slotOwnership_[i].dataBuffer = db;
+        continue;
+      }
+      bool isView = false;
+      for (int j = 0; j < i; j++) {
+        if (outputSlots_[j] != nullptr && outputSlots_[j]->dataBuffer() == db) {
+          slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_SLOT;
+          slotOwnership_[i].parentSlotIdx = j;
+          slotOwnership_[i].dataBuffer = db;
+          isView = true;
+          break;
+        }
+      }
+      if (!isView) {
+        slotOwnership_[i].ownership = BufferOwnership::SLOT_OWNED;
+        slotOwnership_[i].dataBuffer = db;
+      }
+    }
+  }
+
   // ── Plan-level phase advancement ───────────────────────────────────────────
   // Phase transitions are automatic based on observed stability:
   //   SLOT_BY_SLOT → SHAPES_FROZEN:    when setShapesFrozen(true) is called (in header)

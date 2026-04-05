@@ -133,14 +133,6 @@ DECLARE_SHAPE_FN(broadcast_to) {
 
   auto outShape = resolveTargetShape(inputShapeInfo, shapeArr);
 
-  // DEBUG: trace shape resolution
-  printf("BROADCAST_TO SHAPE_FN: inputRank=%lld inputShape=[", inputRank);
-  for (LongType i = 0; i < inputRank; i++) printf("%s%lld", i?",":"", inputShapeInfo[i+1]);
-  printf("] shapeLen=%lld target=[", shapeLen);
-  for (size_t i = 0; i < outShape.size(); i++) printf("%s%lld", i?",":"", outShape[i]);
-  printf("]\n");
-  fflush(stdout);
-
   for (LongType i = 1; i <= inputRank; ++i) {
     LongType inputDim = inputShapeInfo[inputRank + 1 - i];
     LongType targetDim = outShape[outShape.size() - i];

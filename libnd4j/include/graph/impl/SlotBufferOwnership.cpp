@@ -322,7 +322,9 @@ bool validateLifecycleForPhase(
         }
       }
 
-      // DataBuffer identity check: tracked buffer must match actual
+      // DataBuffer identity check: tracked buffer must match actual.
+      // If this fires, a slot's output array was replaced without updating
+      // ownership. Find the allocation site and add re-classification there.
       if (info.dataBuffer != nullptr && outputSlots[i] != nullptr) {
         DataBuffer* actualDb = outputSlots[i]->dataBuffer();
         if (actualDb != info.dataBuffer) {
