@@ -284,6 +284,7 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/cuda/*.cu)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
+        file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
         file(GLOB_RECURSE GRAPH_CUDA_SOURCES ./include/graph/*.cu)
         # Exclude Triton .cu files when Triton is not available (they require MLIR headers)
         if(NOT HAVE_TRITON)
@@ -300,7 +301,7 @@ function(collect_all_sources out_source_list)
         list(APPEND ALL_SOURCES_LIST
                 ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
                 ${HELPERS_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES_CUDA}
-                ${GRAPH_CUDA_SOURCES} ${VALIDATION_SOURCES}
+                ${GRAPH_CUDA_SOURCES} ${VALIDATION_SOURCES} ${SYSTEM_CONFIG_SOURCES}
         )
         list(REMOVE_ITEM ALL_SOURCES_LIST ${CPU_HELPERS_TO_EXCLUDE})
 
@@ -326,11 +327,12 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp)
+        file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
 
         list(APPEND ALL_SOURCES_LIST
                 ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
                 ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES}
-                ${LOOPS_SOURCES}
+                ${LOOPS_SOURCES} ${SYSTEM_CONFIG_SOURCES}
         )
 
         # --- Multi-Helper Source Collection (CPU Build) ---

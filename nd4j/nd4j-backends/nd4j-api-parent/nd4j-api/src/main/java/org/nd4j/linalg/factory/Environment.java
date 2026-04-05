@@ -19,18 +19,36 @@
  */
 package org.nd4j.linalg.factory;
 
+import org.nd4j.linalg.factory.config.CoreEnvironmentConfig;
+import org.nd4j.linalg.factory.config.CudaEnvironmentConfig;
+import org.nd4j.linalg.factory.config.TritonEnvironmentConfig;
+import org.nd4j.linalg.factory.config.DspEnvironmentConfig;
+import org.nd4j.linalg.factory.config.LifecycleEnvironmentConfig;
+import org.nd4j.linalg.factory.config.PrintEnvironmentConfig;
+
 /**
  * This interface describes environment for ND4J.
  * It's used to control memory, profiling, debugging and other options.
  * It's also used to store backend-specific information, like BLAS version, etc
- * <p>
- *     PLEASE NOTE: This interface is NOT supposed to be used by users directly.
- * </p>
  *
+ * <p>Configuration is organized into subsystem groups accessible via typed sub-interfaces:
+ * <ul>
+ *   <li>{@link CoreEnvironmentConfig} - verbose/debug, threading, memory, BLAS</li>
+ *   <li>{@link CudaEnvironmentConfig} - CUDA device settings and limits</li>
+ *   <li>{@link TritonEnvironmentConfig} - Triton compiler settings</li>
+ *   <li>{@link DspEnvironmentConfig} - DSP optimization flags</li>
+ *   <li>{@link LifecycleEnvironmentConfig} - lifecycle tracking</li>
+ *   <li>{@link PrintEnvironmentConfig} - NDArray print options</li>
+ * </ul>
  *
+ * <p>All methods remain on this interface for backward compatibility.
+ * New code may reference the sub-interfaces for clarity.</p>
  *
+ * <p>PLEASE NOTE: This interface is NOT supposed to be used by users directly.</p>
  */
-public interface Environment {
+public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfig,
+    TritonEnvironmentConfig, DspEnvironmentConfig, LifecycleEnvironmentConfig,
+    PrintEnvironmentConfig {
 
     // CUDA limit type definitions
     public static final int

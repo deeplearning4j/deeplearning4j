@@ -1,6 +1,5 @@
 /* ******************************************************************************
  *
- *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -16,13 +15,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// CUDA configuration setters — now delegated to CudaDeviceConfig subsystem.
-// This file is kept for build system compatibility but is effectively empty.
-// All CUDA config methods are inline forwarders in Environment.h that
-// delegate to Environment::cuda().
-//
+#include <system/config/PrintConfig.h>
 
-#include <system/Environment.h>
+namespace sd {
+namespace config {
 
-// Nothing to implement — all methods are inline forwarders in Environment.h
+void PrintConfig::setEdgeItems(int v) {
+  if (v > 0) _edgeItems.store(v);
+}
+
+void PrintConfig::setThreshold(int v) {
+  if (v > 0) _threshold.store(v);
+}
+
+void PrintConfig::setLineWidth(int v) {
+  if (v > 0) _lineWidth.store(v);
+}
+
+void PrintConfig::setPrecision(int v) {
+  if (v >= 0 && v <= 20) _precision.store(v);
+}
+
+void PrintConfig::initFromEnvironment() {
+  // No env vars for print config currently.
+  // Future: ND4J_PRINT_EDGE_ITEMS, etc.
+}
+
+}  // namespace config
+}  // namespace sd

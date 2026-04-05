@@ -1339,26 +1339,22 @@ Status NativeDynamicShapePlan::execute(
              poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024), deltaMB);
   }
 
-  // After frozen plan execution, trim the async memory pool to release freed memory
-  // back to the CUDA driver. Without this, cudaFreeAsync returns memory to the pool's
-  // reserved set but does NOT return it to cudaFree-able driver memory. Over many decode
-  // steps, the gap between pool-reserved and pool-used grows, consuming GPU memory that
-  // appears "free" to the pool but is unavailable for other allocations (graph instantiation,
-  // other processes). Trimming after each execution closes this gap.
-  // NOTE: This must run on EVERY frozen execution including the first (executeCount_==0).
-  // Previously gated on executeCount_ > 0, which skipped the first frozen execution
-  // and allowed pool used to grow by ~7 GB before any trim occurred.
+  // Periodically trim the async memory pool to release freed memory back to the
+  // CUDA driver. Without this, cudaFreeAsync returns memory to the pool's reserved
+  // set but does NOT return it to cudaFree-able driver memory. Over many decode
+  // steps, the gap between pool-reserved and pool-used grows.
+  // Trim on the first frozen execution and then every trimInterval steps (default 5).
+  // The end-of-execution cudaStreamSynchronize (below) ensures all pending frees
+  // complete before the next step, so we do NOT need a redundant sync here.
   if (shapesFrozen_) {
-    // Sync the execution stream first so all pending frees complete,
-    // then trim pool to release reserved-but-unused memory to the driver.
-    cudaStream_t execStream = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
-    if (execStream != nullptr) {
-      cudaStreamSynchronize(execStream);
+    int trimInterval = Environment::getInstance().dspTrimInterval();
+    if (trimInterval > 0 && (executeCount_ == 0 || (executeCount_ % trimInterval) == 0)) {
+      int trimDeviceId = 0;
+      cudaGetDevice(&trimDeviceId);
+      sd::memory::CudaMemoryPool::getInstance().trimPool(trimDeviceId);
+      DSP_DIAG(MEMORY, "post-segments: trimmed pool on device %d (frozen exec=%d, interval=%d)",
+               trimDeviceId, executeCount_, trimInterval);
     }
-    int trimDeviceId = 0;
-    cudaGetDevice(&trimDeviceId);
-    sd::memory::CudaMemoryPool::getInstance().trimPool(trimDeviceId);
-    DSP_DIAG(MEMORY, "post-segments: trimmed pool on device %d (frozen exec=%d)", trimDeviceId, executeCount_);
   }
 #endif
 
