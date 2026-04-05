@@ -269,5 +269,27 @@ std::vector<DataType> OpDescriptor::getInputTypesForInput(int index) {
   else
     return std::vector<DataType>();
 }
+OpDescriptor* OpDescriptor::setTraits(uint32_t traits) {
+  _traits = traits;
+  return this;
+}
+
+OpDescriptor* OpDescriptor::addTraits(uint32_t traits) {
+  _traits |= traits;
+  return this;
+}
+
+bool OpDescriptor::hasAllTraits(uint32_t traits) const {
+  return (_traits & traits) == traits;
+}
+
+bool OpDescriptor::hasAnyTrait(uint32_t traits) const {
+  return (_traits & traits) != 0;
+}
+
+uint32_t OpDescriptor::getTraits() const {
+  return _traits;
+}
+
 }  // namespace ops
 }  // namespace sd

@@ -34,6 +34,33 @@
 
 namespace sd {
 namespace ops {
+
+/**
+ * Op trait flags — intrinsic properties of ops that replace scattered hardcoded lists.
+ *
+ * Set once at op registration time (auto-derived from class hierarchy or from the
+ * centralized OpTraitTable). Consumers query traits via OpDescriptor instead of
+ * maintaining their own brittle op name sets.
+ */
+enum OpTraits : uint32_t {
+  OP_TRAIT_NONE                   = 0,
+  OP_TRAIT_UNARY_ELEMENTWISE      = 1 << 0,
+  OP_TRAIT_BINARY_ELEMENTWISE     = 1 << 1,
+  OP_TRAIT_TERNARY_ELEMENTWISE    = 1 << 2,
+  OP_TRAIT_REDUCTION              = 1 << 3,
+  OP_TRAIT_NORMALIZATION          = 1 << 4,
+  OP_TRAIT_MATMUL                 = 1 << 5,
+  OP_TRAIT_FULLY_WRITING          = 1 << 6,
+  OP_TRAIT_VIEW_PRODUCING         = 1 << 7,
+  OP_TRAIT_VALUE_DEPENDENT_SHAPE  = 1 << 8,
+  OP_TRAIT_DATA_DEPENDENT         = 1 << 9,
+  OP_TRAIT_SHAPE_ONLY_OUTPUT      = 1 << 10,
+  OP_TRAIT_ACTIVATION             = 1 << 11,
+  OP_TRAIT_COMPARISON             = 1 << 12,
+  OP_TRAIT_LOGICAL                = 1 << 13,
+  OP_TRAIT_IDENTITY               = 1 << 14,
+};
+
 class SD_LIB_EXPORT OpExecTrace {
  public:
   std::vector<const LongType*> *inputShapeBuffers;
@@ -196,6 +223,9 @@ class SD_LIB_EXPORT OpDescriptor {
   // field for ops that allow data type override at runtime
   bool _dtypeOverride = false;
 
+  // Op trait flags (see OpTraits enum)
+  uint32_t _traits = 0;
+
   bool checkDataTypesMatch(DataType needle, std::vector<DataType>& haystack) const;
 
  public:
@@ -291,6 +321,13 @@ class SD_LIB_EXPORT OpDescriptor {
   bool isSameMode();
 
   bool isInherit(int index);
+
+  // ─── Op trait accessors ────────────────────────────────────────────────
+  OpDescriptor* setTraits(uint32_t traits);
+  OpDescriptor* addTraits(uint32_t traits);
+  bool hasAllTraits(uint32_t traits) const;
+  bool hasAnyTrait(uint32_t traits) const;
+  uint32_t getTraits() const;
 
   // Padded operator new/delete to protect adjacent glibc chunks from overruns.
   static void* operator new(size_t size) {

@@ -61,14 +61,8 @@ class SD_LIB_EXPORT NativePlanCompiler {
       const std::vector<std::string>& requestedOutputs);
 
  private:
-  // Sets of ops known to be data-dependent (output shape depends on input values)
-  static bool isDataDependentOp(const std::string& opName);
-
-  // Sets of ops known to fully write every output element (safe to skip zeroing)
-  static bool isFullyWritingOp(const std::string& opName);
-
-  // Sets of ops whose output shape depends on input values (not just shapes)
-  static bool isValueDependentShapeOp(const std::string& opName);
+  // Op classification is now driven by OpDescriptor traits (see OpTraitTable.h).
+  // No more private static methods with hardcoded op lists.
 };
 
 }  // namespace graph

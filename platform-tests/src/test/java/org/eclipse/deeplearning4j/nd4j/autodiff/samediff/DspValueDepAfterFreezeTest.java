@@ -25,12 +25,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,9 +64,7 @@ public class DspValueDepAfterFreezeTest extends BaseNd4jTestWithBackends {
 
     @AfterEach
     public void resetEnvironment() {
-        Environment env = Nd4j.getEnvironment();
-        env.setDspAutoCompileEnabled(false);
-        env.setDspNativeAutoCompileEnabled(false);
+        // No global state to reset — DSP enable/disable is per-SameDiff instance
     }
 
     /**
@@ -93,7 +89,7 @@ public class DspValueDepAfterFreezeTest extends BaseNd4jTestWithBackends {
         // Enable DSP
         sd.setDspAutoCompileEnabled(true);
         sd.setDspNativeAutoCompileEnabled(true);
-        sd.setGraphExecutionMode(GraphExecutionMode.GRAPH_CAPTURE_AND_REPLAY);
+        sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
 
         INDArray input = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(1, 12);
 
@@ -156,7 +152,7 @@ public class DspValueDepAfterFreezeTest extends BaseNd4jTestWithBackends {
 
         sd.setDspAutoCompileEnabled(true);
         sd.setDspNativeAutoCompileEnabled(true);
-        sd.setGraphExecutionMode(GraphExecutionMode.GRAPH_CAPTURE_AND_REPLAY);
+        sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
 
         // Data: row i has all values = (i+1)*10
         INDArray dataArr = Nd4j.zeros(DataType.FLOAT, 4, 8);
@@ -218,7 +214,7 @@ public class DspValueDepAfterFreezeTest extends BaseNd4jTestWithBackends {
 
         sd.setDspAutoCompileEnabled(true);
         sd.setDspNativeAutoCompileEnabled(true);
-        sd.setGraphExecutionMode(GraphExecutionMode.GRAPH_CAPTURE_AND_REPLAY);
+        sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
 
         INDArray input = Nd4j.ones(DataType.FLOAT, 1, 24).mul(3.0f);
         // Expected sum: 24 elements * 3.0 * 2.0 = 144.0 (regardless of reshape)

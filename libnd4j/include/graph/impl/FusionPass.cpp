@@ -24,6 +24,7 @@
 #include <graph/DspDiagnostics.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
+#include <ops/OpTraitTable.h>
 #include <system/Environment.h>
 
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
@@ -37,66 +38,9 @@
 namespace sd {
 namespace graph {
 
-// Op name hashes for element-wise operations.
-// These are computed via sd::ops::HashHelper::getLongHash() at registration time.
-// We use op names for readability and look up hashes dynamically.
-
-static std::unordered_set<std::string> unaryElementwiseOps = {
-    "relu", "sigmoid", "tanh", "gelu",
-    "exp", "log", "abs", "neg",
-    "square", "sqrt", "swish", "silu", "mish",
-    "ceil", "floor", "round",
-    "sin", "cos", "asin", "acos", "atan",
-    "sinh", "cosh", "asinh", "acosh", "atanh",
-    "reciprocal", "sign", "elu",
-    "erfc", "log1p", "rsqrt",
-    "relu6", "leakyrelu", "selu",
-    "softplus", "softsign", "hard_sigmoid", "hardtanh",
-    // Logical unary
-    "boolean_not", "logical_not",
-    // Identity/copy
-    "identity", "assign",
-    // Cast
-    "cast",
-};
-
-static std::unordered_set<std::string> binaryElementwiseOps = {
-    "add", "subtract", "multiply", "divide",
-    "maximum", "minimum", "pow",
-    "floormod", "floordiv",
-    "atan2", "reversedivide", "reversesubtract",
-    "squaredsubtract", "multiply_no_nan",
-    "min_pairwise", "max_pairwise", "mod",
-    "swish_mul",
-    // Comparison ops
-    "greater", "greater_equal", "less", "less_equal",
-    "equals", "not_equals",
-    // Logical binary
-    "boolean_and", "boolean_or", "boolean_xor",
-    "logical_and", "logical_or",
-};
-
-static std::unordered_set<std::string> ternaryElementwiseOps = {
-    "where", "select",
-};
-
-static std::unordered_set<std::string> reductionOps = {
-    "reduce_sum", "reduce_mean", "reduce_max", "reduce_min", "reduce_prod",
-    "reduce_norm1", "reduce_norm2", "reduce_logsumexp", "reduce_variance", "reduce_stdev",
-    "sum", "mean", "max", "min", "prod", "norm1", "norm2", "normmax",
-    "argmax", "argmin",
-};
-
-static std::unordered_set<std::string> normalizationOps = {
-    "softmax", "log_softmax", "layer_norm", "batch_norm", "rms_norm",
-    "normalize_moments",
-};
-
-static std::unordered_set<std::string> activationOps = {
-    "relu", "sigmoid", "tanh", "gelu",
-    "swish", "silu", "mish", "elu",
-    "softplus", "softsign",
-};
+// Op classification is now driven by OpDescriptor traits (see OpTraitTable.h).
+// No more static op name sets — all classification comes from the centralized
+// trait table, populated once at init time.
 
 /**
  * Get the op name for a given op hash by looking it up in the OpRegistrator.
@@ -113,8 +57,7 @@ static std::string getOpName(sd::LongType opHash) {
 }
 
 /**
- * Resolve op name directly from slot metadata. This avoids hash lookup for legacy
- * ops that are executable but not present in OpRegistrator hash map.
+ * Resolve op name directly from slot metadata.
  */
 static std::string getOpName(const NativeSlot& slot) {
     if (!slot.opName.empty()) {
@@ -123,50 +66,49 @@ static std::string getOpName(const NativeSlot& slot) {
                        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return name;
     }
-
-    // Fallback for legacy plans that may not persist opName.
     return getOpName(slot.opHash);
 }
 
+/**
+ * Query traits from a slot's resolved op descriptor.
+ */
+static bool slotHasTrait(const NativeSlot& slot, uint32_t trait) {
+    if (slot.op && slot.op->getOpDescriptor()) {
+        return slot.op->getOpDescriptor()->hasAnyTrait(trait);
+    }
+    return false;
+}
+
 bool FusionPass::isUnaryElementwise(sd::LongType opHash) {
-    std::string name = getOpName(opHash);
-    return !name.empty() && unaryElementwiseOps.count(name) > 0;
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(opHash);
+    return op && op->getOpDescriptor() &&
+           op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_UNARY_ELEMENTWISE);
 }
 
 bool FusionPass::isBinaryElementwise(sd::LongType opHash) {
-    std::string name = getOpName(opHash);
-    return !name.empty() && binaryElementwiseOps.count(name) > 0;
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(opHash);
+    return op && op->getOpDescriptor() &&
+           op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_BINARY_ELEMENTWISE);
 }
 
 bool FusionPass::isActivation(sd::LongType opHash) {
-    std::string name = getOpName(opHash);
-    return !name.empty() && activationOps.count(name) > 0;
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(opHash);
+    return op && op->getOpDescriptor() &&
+           op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_ACTIVATION);
 }
 
-/**
- * Check if a slot is element-wise (unary, binary, or ternary).
- */
 static bool isElementwiseSlot(const NativeSlot& slot) {
-    std::string name = getOpName(slot);
-    return unaryElementwiseOps.count(name) > 0
-        || binaryElementwiseOps.count(name) > 0
-        || ternaryElementwiseOps.count(name) > 0;
+    return slotHasTrait(slot, sd::ops::OP_TRAIT_UNARY_ELEMENTWISE |
+                              sd::ops::OP_TRAIT_BINARY_ELEMENTWISE |
+                              sd::ops::OP_TRAIT_TERNARY_ELEMENTWISE);
 }
 
-/**
- * Check if a slot is a reduction op.
- */
 static bool isReductionSlot(const NativeSlot& slot) {
-    std::string name = getOpName(slot);
-    return reductionOps.count(name) > 0;
+    return slotHasTrait(slot, sd::ops::OP_TRAIT_REDUCTION);
 }
 
-/**
- * Check if a slot is a normalization op.
- */
 static bool isNormalizationSlot(const NativeSlot& slot) {
-    std::string name = getOpName(slot);
-    return normalizationOps.count(name) > 0;
+    return slotHasTrait(slot, sd::ops::OP_TRAIT_NORMALIZATION);
 }
 
 /**
@@ -185,10 +127,8 @@ static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
     if (slotB.isDataDependent || slotB.outputShapeDependsOnInputValues) return false;
 
     // Check that B has exactly the right number of inputs
-    std::string bName = getOpName(slotB);
-    bool bIsBinary = binaryElementwiseOps.count(bName) > 0;
-
-    bool bIsTernary = ternaryElementwiseOps.count(bName) > 0;
+    bool bIsBinary = slotHasTrait(slotB, sd::ops::OP_TRAIT_BINARY_ELEMENTWISE);
+    bool bIsTernary = slotHasTrait(slotB, sd::ops::OP_TRAIT_TERNARY_ELEMENTWISE);
 
     if (bIsTernary) {
         // Ternary op (where/select): needs exactly 3 inputs
@@ -471,8 +411,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         // Find activation consuming this add's output
         for (int j = i + 1; j < numSlots; j++) {
             if (fused[j]) continue;
-            std::string nextName = getOpName(slots[j]);
-            if (nextName.empty() || activationOps.count(nextName) == 0) continue;
+            if (!slotHasTrait(slots[j], sd::ops::OP_TRAIT_ACTIVATION)) continue;
             if (slots[j].numInputs != 1) continue;
             if (slots[j].inputSourceIndices[0] != outputIdx) continue;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
@@ -529,8 +468,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
 
             for (int a = j + 1; a < numSlots; a++) {
                 if (fused[a]) continue;
-                std::string actName = getOpName(slots[a]);
-                if (actName.empty() || activationOps.count(actName) == 0) continue;
+                if (!slotHasTrait(slots[a], sd::ops::OP_TRAIT_ACTIVATION)) continue;
                 if (slots[a].numInputs != 1) continue;
                 if (slots[a].inputSourceIndices[0] != addOutputIdx) continue;
                 if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, j)) continue;
@@ -792,7 +730,7 @@ int FusionPass::applyFusions(
                             // For binary ops, find the secondary input source
                             // (the one that does NOT come from the previous chain slot)
                             secondarySources[ci] = INT32_MIN;  // INT32_MIN = unary, no secondary (-1 is external input 0!)
-                            if (binaryElementwiseOps.count(name) > 0 && slots[si].numInputs == 2) {
+                            if (slotHasTrait(slots[si], sd::ops::OP_TRAIT_BINARY_ELEMENTWISE) && slots[si].numInputs == 2) {
                                 int prevOutputSlotIdx = -1;
                                 if (ci > 0) {
                                     prevOutputSlotIdx = slots[fusion.slotIndices[ci - 1]].outputSlotIndices[0];

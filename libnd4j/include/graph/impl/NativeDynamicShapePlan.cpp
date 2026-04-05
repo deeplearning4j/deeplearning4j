@@ -2829,28 +2829,17 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   // (e.g., reduce_mean of shape_of), the cached frozen value gets corrupted during warmup.
   // detectFrozenConstants() runs AFTER the warmup (executeCount_==1), but by then the
   // cached values are already wrong. Fix: pre-identify frozen candidates using the same
-  // graph analysis (VALUE_INDEPENDENT_OPS + transitive consumer analysis) and disable
+  // graph analysis (SHAPE_ONLY_OUTPUT trait + transitive consumer analysis) and disable
   // in-place fusion for their consumers before the warmup runs.
-  static const std::unordered_set<std::string> VALUE_INDEPENDENT_OPS = {
-      "shape_of", "size_at", "rank",
-      "zeros_like", "zeros_as", "zeroslike",
-      "ones_like", "ones_as", "oneslike",
-      "create",
-  };
-
-  auto normalizeOp = [](const std::string& opName) -> std::string {
-    std::string n = opName;
-    std::transform(n.begin(), n.end(), n.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return n;
-  };
 
   // Propagate external dependency through the graph (same logic as detectFrozenConstants).
   std::vector<bool> dependsOnExternal(totalOutputSlots_, false);
   for (int s = 0; s < numSlots_; s++) {
     auto& sl = slots_[s];
-    auto normalized = normalizeOp(sl.opName);
-    if (VALUE_INDEPENDENT_OPS.count(normalized) > 0) continue; // doesn't propagate dependency
+    // Shape-only-output ops don't propagate external dependency
+    bool isShapeOnly = (sl.op && sl.op->getOpDescriptor() &&
+                        sl.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT));
+    if (isShapeOnly) continue; // doesn't propagate dependency
 
     bool anyExternal = false;
     for (int i = 0; i < sl.numInputs; i++) {

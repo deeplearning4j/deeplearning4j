@@ -28,6 +28,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/FusionPass.h>
+#include <ops/OpTraitTable.h>
 #include <system/op_boilerplate.h>
 #include <system/Environment.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
@@ -315,12 +316,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
 
   // Ops whose output depends ONLY on input shapes, not input values.
   // When shapes are frozen, these produce identical output every step.
-  static const std::unordered_set<std::string> VALUE_INDEPENDENT_OPS = {
-      "shape_of", "size_at", "rank",
-      "zeros_like", "zeros_as", "zeroslike",
-      "ones_like", "ones_as", "oneslike",
-      "create",
-  };
+  // Classification now comes from OpDescriptor traits (OP_TRAIT_SHAPE_ONLY_OUTPUT).
 
   std::vector<bool> dependsOnExternal(totalOutputSlots_, false);
   std::vector<bool> isValueIndependentSlot(numSlots_, false);
@@ -331,9 +327,10 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   for (int s = 0; s < numSlots_; s++) {
     auto& sl = slots_[s];
 
-    // Check if this op is value-independent
-    auto normalized = normalizeOpName_slotexec(sl.opName);
-    if (VALUE_INDEPENDENT_OPS.count(normalized) > 0) {
+    // Check if this op is value-independent via trait
+    bool isShapeOnly = (sl.op && sl.op->getOpDescriptor() &&
+                        sl.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT));
+    if (isShapeOnly) {
       isValueIndependentSlot[s] = true;
       continue;
     }

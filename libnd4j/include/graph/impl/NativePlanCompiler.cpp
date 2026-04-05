@@ -23,6 +23,7 @@
 #include <graph/generated/graph_generated.h>
 #include <helpers/helper_hash.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <ops/OpTraitTable.h>
 
 #include <algorithm>
 #include <cctype>
@@ -45,105 +46,22 @@ std::string normalizeOpName(const std::string& opName) {
 }
 }  // namespace
 
-// ─── Structural iArg table ──────────────────────────────────────────────────
-
-/**
- * Returns the number of "structural" iArgs for an op — these are control parameters
- * (masks, mode flags, axis indices) that are always passed via iArgs regardless of
- * whether data parameters come from input tensors or from iArgs.
- * Returns -1 if all iArgs are structural (the default for most ops).
- */
-static int getStructuralIArgCount(const std::string& opName) {
-    static const std::unordered_map<std::string, int> STRUCTURAL_IARGS = {
-        {"strided_slice", 5},   // 5 mask bits (begin/end/shrink/new_axis/ellipsis)
-        {"concat", 1},          // axis
-        {"split", 1},           // num_splits
-        {"split_v", 1},         // axis
-        {"one_hot", 2},         // axis, depth
-        {"top_k", 1},           // k
-    };
-    auto it = STRUCTURAL_IARGS.find(opName);
-    return (it != STRUCTURAL_IARGS.end()) ? it->second : -1;
-}
-
 // ─── Op classification ─────────────────────────────────────────────────────
+//
+// Op classification is now driven by OpDescriptor traits (see OpTraitTable.h).
+// The centralized OpTraitTable replaces the scattered hardcoded lists that
+// previously lived here. Traits are populated once via initOpTraits() and
+// queried via op->getOpDescriptor()->hasAnyTrait(...).
+//
+// For ops not resolved via OpRegistrator (e.g., control flow ops without a
+// DeclarableOp), we fall back to the trait table lookup by name.
+//
 
-bool NativePlanCompiler::isDataDependentOp(const std::string& opName) {
-  static const std::unordered_set<std::string> DATA_DEPENDENT_OPS = {
-      "where", "unique", "non_max_suppression", "non_max_suppression_v3"
-  };
-  return DATA_DEPENDENT_OPS.count(normalizeOpName(opName)) > 0;
-}
-
-bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
-  // Conservative list: only ops that ALWAYS fully overwrite their output buffer.
-  // Data-movement ops (reshape, permute, gather, concat, etc.) are excluded because
-  // they may have edge cases where output isn't fully written (e.g., views, partial copies).
-  // This list is used to skip unnecessary nullify() in the frozen fast path.
-  static const std::unordered_set<std::string> FULLY_WRITING_OPS = {
-      // Matrix ops — BLAS contractually writes all output elements
-      "matmul", "mmul", "batched_gemm", "tensormmul",
-      // Elementwise binary — output[i] = f(a[i], b[i]) for every i (with broadcasting)
-      "add", "subtract", "multiply", "divide",
-      "floormod", "floordiv", "reversedivide", "reversesubtract", "squaredsubtract",
-      "add_scalar", "subtract_scalar", "multiply_scalar", "divide_scalar",
-      "pow", "min_pairwise", "max_pairwise", "atan2",
-      // Elementwise unary math
-      "abs", "neg", "exp", "log", "log1p", "sqrt", "rsqrt", "square", "reciprocal",
-      "ceil", "floor", "round", "sign", "erf", "erfc",
-      // Activation functions — elementwise, writes every element
-      "relu", "relu6", "leakyrelu", "elu", "selu", "gelu", "sigmoid", "tanh",
-      "softsign", "softplus", "swish", "mish", "hard_sigmoid", "hardtanh",
-      // Comparison ops — elementwise boolean output
-      "equals", "not_equals", "less", "less_equal", "greater", "greater_equal",
-      "boolean_and", "boolean_or", "boolean_not", "boolean_xor",
-      // Reduction ops — fully computes every output element
-      "reduce_sum", "reduce_mean", "reduce_max", "reduce_min", "reduce_prod",
-      "reduce_norm1", "reduce_norm2", "reduce_logsumexp", "reduce_variance", "reduce_stdev",
-      "sum", "mean", "max", "min", "prod", "norm1", "norm2", "normmax",
-      "argmax", "argmin",
-      // Softmax — normalizes every element across axis
-      "softmax", "log_softmax",
-      // Type conversion — converts every element
-      "cast",
-      // Clip — elementwise
-      "clipbyvalue",
-      // Normalization ops — write every output element
-      "rms_norm", "layer_norm", "fused_layer_norm", "batchnorm", "fused_rope",
-      // Attention ops — fully compute attention output
-      "onnx_multi_head_attention", "dot_product_attention_v2",
-      "flash_attention", "multi_head_dot_product_attention",
-      // Data movement — copies every element to a NEW buffer (not views)
-      "assign",
-      // Activation functions (additional)
-      "silu", "fused_gelu",
-      // Token sampling — writes output token
-      "token_sample",
-  };
-  return FULLY_WRITING_OPS.count(normalizeOpName(opName)) > 0;
-}
-
-bool NativePlanCompiler::isValueDependentShapeOp(const std::string& opName) {
-  // Ops whose OUTPUT SHAPE depends on input DATA VALUES (not just input shapes).
-  // These must run slot-by-slot (not via CUDA graph replay) because the captured
-  // graph bakes in the output shape from the first execution — if the shape-
-  // determining input value changes, the graph produces wrong-sized output.
-  // This list must be complete: a missing op causes shape mismatch errors or
-  // garbage output. Add any op where a non-shape input determines output shape.
-  static const std::unordered_set<std::string> VALUE_DEPENDENT_OPS = {
-      // Shape manipulation — output shape comes from a shape/indices input
-      "reshape", "reshape_no_copy", "squeeze", "expand_dims",
-      "slice", "strided_slice",
-      "gather", "gather_nd",
-      "tile", "repeat", "pad", "fill",
-      "broadcast_to",  // output shape = second input's VALUES
-      // Generation — output shape derived from input values
-      "range", "linspace",
-      "create",         // ConstantOfShape (ONNX): output shape = input values
-      // Introspection — output depends on input content
-      "shape_of", "size_at", "rank",
-  };
-  return VALUE_DEPENDENT_OPS.count(normalizeOpName(opName)) > 0;
+static bool hasOpTrait(sd::ops::DeclarableOp* op, uint32_t trait) {
+  if (op && op->getOpDescriptor()) {
+    return op->getOpDescriptor()->hasAnyTrait(trait);
+  }
+  return false;
 }
 
 // ─── Compile FlatGraph → NativeDynamicShapePlan ─────────────────────────────
@@ -152,6 +70,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     const ::graph::FlatGraph* graph,
     const std::unordered_map<std::string, NDArray*>& variables,
     const std::vector<std::string>& requestedOutputs) {
+
+  // Ensure all op traits are populated from the centralized table
+  sd::ops::initOpTraits();
 
   if (!graph) return nullptr;
 
@@ -337,25 +258,20 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     auto* inputPaired = node->inputPaired();
     int numInputs = inputPaired ? inputPaired->size() : 0;
 
-    // Classify op (after numInputs is known so we can disambiguate Where)
+    // Classify op via OpDescriptor traits (set by OpTraitTable at init time).
     // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
     // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
-    bool isDataDep = isDataDependentOp(slot.opName);
+    bool isDataDep = hasOpTrait(slot.op, sd::ops::OP_TRAIT_DATA_DEPENDENT);
     if (isDataDep && normalizeOpName(slot.opName) == "where" && numInputs == 3) {
       isDataDep = false;
     }
     slot.isDataDependent = isDataDep;
-    slot.isIdentityOp = (normalizeOpName(slot.opName) == "identity");
-    {
-      auto normalized = normalizeOpName(slot.opName);
-      slot.isViewCapableOp = (normalized == "reshape" || normalized == "reshape_no_copy" ||
-                              normalized == "expand_dims" || normalized == "squeeze" ||
-                              normalized == "permute" || normalized == "strided_slice");
-    }
+    slot.isIdentityOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_IDENTITY);
+    slot.isViewCapableOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
     // View-capable ops share input buffer → no zeroing needed (would corrupt input data).
     // Non-view-capable data-movement ops still need zeroing for safety.
     slot.needsZeroedOutput = slot.isViewCapableOp ? false
-                             : (!isFullyWritingOp(slot.opName) || isDataDep);
+                             : (!hasOpTrait(slot.op, sd::ops::OP_TRAIT_FULLY_WRITING) || isDataDep);
     slot.numInputs = numInputs;
     slot.inputSourceIndices = new int[numInputs];
     slot.inputSourceTypes = new int8_t[numInputs];
@@ -466,14 +382,13 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
     }
     slot.needsIntLongSync = hasIntLong || isDataDep;
-    // Mark ops with INT/LONG inputs as value-dependent for shape inference.
-    // This ensures shapeStatic=false propagates through the graph so ops like
-    // broadcast_to (which reads target shape from an INT64 input) always run
-    // fresh shape inference instead of using stale cached shapes.
-    // Combined with the shape key value-hashing (mixArraySignature hashes data
-    // values for small inputs), this provides both correct first-execution AND
-    // correct graph invalidation on value changes.
-    slot.outputShapeDependsOnInputValues = hasIntLong || isDataDep;
+    // Use OpTraitTable's VALUE_DEPENDENT_SHAPE trait to determine which ops have
+    // output shapes that depend on input VALUES (not just shapes). This drives
+    // shapeStatic=false propagation AND shape key value-hashing for graph replay.
+    // The trait table is the single source of truth — no more hardcoded lists or
+    // hasIntLong heuristics. If an op is missing from the table, add it there.
+    bool isValueDepShape = hasOpTrait(slot.op, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+    slot.outputShapeDependsOnInputValues = isValueDepShape || isDataDep;
 
     // Build output wiring
     auto* outputNames = node->outputNames();
@@ -508,9 +423,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       auto* extraInteger = node->extraInteger();
       if (extraInteger && extraInteger->size() > 0) {
         int numToUse = extraInteger->size();
-        // Set structural iArg count from compile-time table
-        auto normalizedForIArgs = normalizeOpName(slot.opName);
-        slot.structuralIArgCount = getStructuralIArgCount(normalizedForIArgs);
+        // Set structural iArg count from centralized OpTraitTable
+        slot.structuralIArgCount = sd::ops::getStructuralIArgCount(slot.opName);
 
         // Cap iArgs when data comes from input tensors.
         // Generic version of the old strided_slice-specific fix:

@@ -33,7 +33,25 @@ namespace sd {
 namespace ops {
 namespace helpers {
 inline bool evaluateConditionValue(NDArray& condition, LongType index) {
-  return condition.e<double>(index) != 0.0;
+  switch (condition.dataType()) {
+    case DataType::BOOL:
+    case DataType::INT8:
+      return condition.e<int8_t>(index) != 0;
+    case DataType::UINT8:
+      return condition.e<uint8_t>(index) != 0;
+    case DataType::INT16:
+      return condition.e<int16_t>(index) != 0;
+    case DataType::INT32:
+      return condition.e<int32_t>(index) != 0;
+    case DataType::INT64:
+      return condition.e<LongType>(index) != 0;
+    case DataType::FLOAT32:
+      return condition.e<float>(index) != 0.0f;
+    case DataType::DOUBLE:
+      return condition.e<double>(index) != 0.0;
+    default:
+      return condition.e<int32_t>(index) != 0;
+  }
 }
 
 template <typename T>
