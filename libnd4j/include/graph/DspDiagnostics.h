@@ -52,9 +52,10 @@ enum DspDiagCategory : uint32_t {
   DSP_DIAG_KV_CACHE = (1u << 10),  // KV cache config, retention, scattering
   DSP_DIAG_FALLBACK = (1u << 11),  // Fallback events, error recovery
   DSP_DIAG_TRANSFER = (1u << 12),  // Device transfers (H2D, D2H, D2D)
+  DSP_DIAG_EMULATED_REPLAY = (1u << 13),  // Emulated graph replay lifecycle diagnostics
 
   DSP_DIAG_NONE     = 0u,
-  DSP_DIAG_ALL      = 0x1FFFu      // All 13 categories
+  DSP_DIAG_ALL      = 0x3FFFu      // All 14 categories
 };
 
 // ─── Detail level ────────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ struct DspDiagEvent {
 
 // ─── Per-category aggregate stats ────────────────────────────────────────────
 
-static constexpr int DSP_DIAG_NUM_CATEGORIES = 13;
+static constexpr int DSP_DIAG_NUM_CATEGORIES = 14;
 
 struct DspDiagCategoryStats {
   int64_t eventCount;

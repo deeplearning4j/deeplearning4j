@@ -94,7 +94,8 @@ enum class GraphExecutionMode : int {
   GEM_TPU = 13,         // TPU HLO compilation + PJRT execution caching
   GEM_HEXAGON = 14,     // Hexagon-MLIR NPU compilation + command list replay
   GEM_OPENVINO = 15,    // Force OpenVINO CPU graph backend (Intel x86, broad op coverage)
-  GEM_TVM = 16          // Deprecated: TVM removed, use triton-cpu instead
+  GEM_TVM = 16,         // Deprecated: TVM removed, use triton-cpu instead
+  GEM_EMULATED_REPLAY = 17  // Emulated graph replay: slot-by-slot with replay lifecycle diagnostics
 };
 
 /**
@@ -108,6 +109,7 @@ enum class SelectedBackend : uint8_t {
   CUDA_GRAPHS = 1,     // CUDA graph capture/replay
   GPU_COMPILER = 2,    // Triton/NVRTC/PTX/TPU/Hexagon compiler backend
   CPU_GRAPH = 3,       // CPU graph backend (oneDNN/ACL/MLIR/MLX/NNAPI/ARM)
+  EMULATED_REPLAY = 4, // Emulated graph replay: slot-by-slot with replay lifecycle tracking
 };
 
 /**
@@ -1210,6 +1212,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   const std::vector<GraphBackend*>& getCpuGraphBackendChain();
   Status executeSegmentWithSpecificBackend(GraphSegment& seg, GraphBackend* backend,
                                            NDArray** externalArrays, int numExt, void* stream);
+
+  // ── Emulated graph replay (NativeDynamicShapePlan_segments.cpp) ──
+  Status executeSegmentEmulatedReplay(GraphSegment& seg, NDArray** externalArrays,
+                                      int numExt, void* stream);
+  LongType computeSegmentInputAddrKeyPortable(GraphSegment& seg, NDArray** externalInputs, int numExt);
 
   // ── CUDA graph capture/replay (NativeDynamicShapePlan_cudagraph.cu) ──
 #ifdef SD_CUDA

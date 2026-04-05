@@ -101,6 +101,16 @@ class OneDnnGraphBackend : public GraphBackend {
       dg::compiled_partition compiledPartition;
       std::vector<size_t> inputTensorIds;   // Logical tensor IDs for inputs
       std::vector<size_t> outputTensorIds;  // Logical tensor IDs for outputs
+
+      // Cached tensor wrappers — avoids recreating logical_tensor + tensor every execution.
+      // On stable shapes, only buffer pointers change; we rebuild tensors only if
+      // buffer address differs from lastBufferPtrs[i].
+      struct CachedTensor {
+        dg::logical_tensor lt;
+        void* lastBuffer = nullptr;
+      };
+      std::vector<CachedTensor> cachedInputTensors;
+      std::vector<CachedTensor> cachedOutputTensors;
     };
     std::vector<PartitionEntry> partitions;
 

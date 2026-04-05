@@ -158,7 +158,26 @@ public enum GraphExecutionMode {
      * Kept for backward compatibility of serialized enum values.
      */
     @Deprecated
-    TVM(16);
+    TVM(16),
+
+    /**
+     * Emulated graph replay mode. Executes ops slot-by-slot (like SLOT_BY_SLOT)
+     * but with the full graph replay lifecycle: shape key tracking, address
+     * stability monitoring, capture buffer identification, and segment timing.
+     *
+     * <p>Emits rich DSP diagnostics (category EMULATED_REPLAY) about what would
+     * happen in real CUDA graph replay, making it a diagnostic stepping stone
+     * between SLOT_BY_SLOT and CUDA_GRAPHS. Use this mode to:</p>
+     * <ul>
+     *   <li>Diagnose why CUDA graph capture/replay fails</li>
+     *   <li>Identify which segments have stable shapes and addresses</li>
+     *   <li>Profile slot-by-slot overhead that graph replay would eliminate</li>
+     *   <li>Detect shape key / address key changes that would invalidate graphs</li>
+     * </ul>
+     *
+     * <p>Works on both CPU and CUDA builds — no GPU graph APIs required.</p>
+     */
+    EMULATED_REPLAY(17);
 
     private final int nativeCode;
 

@@ -466,13 +466,14 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
     }
     slot.needsIntLongSync = hasIntLong || isDataDep;
-    // Use the hardcoded VALUE_DEPENDENT_OPS set to determine which ops have shapes
-    // that depend on input VALUES (not just input shapes). Only these ops need to
-    // bypass the frozen-shape fast-path and CUDA graph capture.
-    // The previous hasIntLong-based detection was over-aggressive: it marked ANY op
-    // with INT/LONG inputs (position_ids, cache indices, attention masks) as value-
-    // dependent, causing 67% of ops to be non-capturable and a 15x slowdown.
-    slot.outputShapeDependsOnInputValues = isValueDependentShapeOp(slot.opName) || isDataDep;
+    // Mark ops with INT/LONG inputs as value-dependent for shape inference.
+    // This ensures shapeStatic=false propagates through the graph so ops like
+    // broadcast_to (which reads target shape from an INT64 input) always run
+    // fresh shape inference instead of using stale cached shapes.
+    // Combined with the shape key value-hashing (mixArraySignature hashes data
+    // values for small inputs), this provides both correct first-execution AND
+    // correct graph invalidation on value changes.
+    slot.outputShapeDependsOnInputValues = hasIntLong || isDataDep;
 
     // Build output wiring
     auto* outputNames = node->outputNames();

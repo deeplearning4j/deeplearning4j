@@ -661,9 +661,19 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   const char* backendName = backend->name();
 
-  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+  // Fast path: after successful compilation, if shapes are frozen (stable symbolic
+  // ranges), skip shape key recomputation entirely. The cached key is valid because
+  // frozen shapes guarantee input dimensions don't change.
+  LongType segShapeKey;
+  bool needsCompile;
+  if (seg.exec.executionCount > 1 && shapesFrozen_ && seg.shapeKey != 0) {
+    segShapeKey = seg.shapeKey;
+    needsCompile = false;
+  } else {
+    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+    needsCompile = (seg.exec.executionCount == 1) || (seg.shapeKey != segShapeKey);
+  }
 
-  bool needsCompile = (seg.exec.executionCount == 1) || (seg.shapeKey != segShapeKey);
   if (needsCompile) {
     DSP_DIAG_SEG(COMPILE, seg.startSlot,
                  "seg[%d-%d] needs compile: %s (execCount=%d shapeKey=%lld->%lld backend=%s)",
@@ -673,12 +683,6 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
                  static_cast<long long>(seg.shapeKey),
                  static_cast<long long>(segShapeKey),
                  backendName);
-  } else {
-    DSP_DIAG_SEG(COMPILE, seg.startSlot,
-                 "seg[%d-%d] shape cache HIT (shapeKey=%lld execCount=%d backend=%s)",
-                 seg.startSlot, seg.endSlot,
-                 static_cast<long long>(segShapeKey),
-                 seg.exec.executionCount, backendName);
   }
   if (needsCompile) {
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
@@ -1202,6 +1206,206 @@ executeSlot_retry:
 
   seg.exec.executionCount++;
   return Status::OK;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Emulated Graph Replay
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Executes ops slot-by-slot but emulates the full graph replay lifecycle:
+//   executionCount == 0 (WARMUP): Record baseline shape key + address snapshot
+//   executionCount == 1 (EMULATED_CAPTURE): Verify shape/address stability
+//   executionCount >= 2 (EMULATED_REPLAY): Steady-state with stability tracking
+//
+// Emits DSP_DIAG_EMULATED_REPLAY diagnostics at every phase, reporting what a
+// real CUDA graph replay backend would see. This lets users diagnose graph
+// replay failures without needing actual CUDA graph capture.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
+    GraphSegment& seg, NDArray** externalInputs, int numExt) {
+  // FNV-1a hash of buffer addresses for all segment inputs (external + cross-segment).
+  // On CUDA, uses specialBuffer(); on CPU, uses primaryBuffer().
+  // Address changes between executions indicate the graph would have stale pointers.
+  LongType hash = 0xcbf29ce484222325ULL;
+  auto mix = [&hash](uintptr_t val) {
+    hash ^= val;
+    hash *= 0x100000001b3ULL;
+  };
+
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    NativeSlot& slot = slots_[s];
+    for (int i = 0; i < slot.numInputs; i++) {
+      int srcIdx = slot.inputSourceIndices[i];
+      NDArray* arr = nullptr;
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < numExt) arr = externalInputs[extIdx];
+      } else if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+        arr = outputSlots_[srcIdx];
+      }
+      if (arr != nullptr) {
+#if defined(SD_CUDA)
+        mix(reinterpret_cast<uintptr_t>(arr->specialBuffer()));
+#else
+        mix(reinterpret_cast<uintptr_t>(arr->buffer()));
+#endif
+      } else {
+        mix(0);  // nullptr sentinel
+      }
+    }
+  }
+  return hash;
+}
+
+Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
+    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+
+  int segSize = seg.endSlot - seg.startSlot + 1;
+  int execCount = seg.exec.executionCount;
+
+  // ── Phase determination ─────────────────────────────────────────────────
+  const char* phaseName;
+  if (execCount == 0) {
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    phaseName = "WARMUP";
+  } else if (execCount == 1) {
+    seg.exec.currentPhase = ExecutionPhase::COMPILING;  // "capture" equivalent
+    phaseName = "EMULATED_CAPTURE";
+  } else {
+    seg.exec.currentPhase = ExecutionPhase::REPLAYING;
+    phaseName = "EMULATED_REPLAY";
+  }
+
+  DSP_DIAG(EMULATED_REPLAY,
+           "EMULATED seg[%d-%d] phase=%s execCount=%d slots=%d capturable=%d frozen=%d",
+           seg.startSlot, seg.endSlot, phaseName, execCount, segSize,
+           seg.isCapturable ? 1 : 0, shapesFrozen_ ? 1 : 0);
+
+  // ── Compute shape key ────────────────────────────────────────────────────
+  LongType currentShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+  LongType currentAddrKey = computeSegmentInputAddrKeyPortable(seg, externalArrays, numExt);
+
+  if (execCount == 0) {
+    // Warmup: cache baseline keys
+    seg.exec.cachedShapeKey = currentShapeKey;
+    seg.exec.capturedInputAddrKey = currentAddrKey;
+
+    DSP_DIAG(EMULATED_REPLAY,
+             "  WARMUP baseline: shapeKey=0x%llx addrKey=0x%llx",
+             (long long)currentShapeKey, (long long)currentAddrKey);
+
+    // Count external inputs by type for capture buffer analysis
+    int numPlaceholders = 0, numConstants = 0, numVariables = 0;
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      NativeSlot& slot = slots_[s];
+      for (int i = 0; i < slot.numInputs; i++) {
+        int srcIdx = slot.inputSourceIndices[i];
+        if (srcIdx < 0) {
+          int8_t srcType = slot.inputSourceTypes[i];
+          if (srcType == SOURCE_PLACEHOLDER) numPlaceholders++;
+          else if (srcType == SOURCE_CONSTANT) numConstants++;
+          else if (srcType == SOURCE_VARIABLE) numVariables++;
+        }
+      }
+    }
+
+    DSP_DIAG(EMULATED_REPLAY,
+             "  capture buffer candidates: %d placeholders (need staging), "
+             "%d constants (direct ref), %d variables (direct ref if frozen)",
+             numPlaceholders, numConstants, numVariables);
+
+  } else {
+    // Post-warmup: check stability
+    bool shapeStable = (currentShapeKey == seg.exec.cachedShapeKey);
+    bool addrStable = (currentAddrKey == seg.exec.capturedInputAddrKey);
+
+    const char* shapeVerdict = shapeStable ? "STABLE" : "CHANGED";
+    const char* addrVerdict = addrStable ? "STABLE" : "CHANGED";
+
+    DSP_DIAG(EMULATED_REPLAY,
+             "  stability: shape=%s (0x%llx vs cached 0x%llx) addr=%s (0x%llx vs cached 0x%llx)",
+             shapeVerdict,
+             (long long)currentShapeKey, (long long)seg.exec.cachedShapeKey,
+             addrVerdict,
+             (long long)currentAddrKey, (long long)seg.exec.capturedInputAddrKey);
+
+    if (!shapeStable) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  ** SHAPE KEY CHANGED: CUDA graph would INVALIDATE and re-capture. "
+               "Identify which input shapes changed between executions.");
+
+      // Detailed: find which external inputs changed shape
+      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+        NativeSlot& slot = slots_[s];
+        for (int i = 0; i < slot.numInputs; i++) {
+          int srcIdx = slot.inputSourceIndices[i];
+          if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            if (extIdx < numExt && externalArrays[extIdx] != nullptr) {
+              auto* arr = externalArrays[extIdx];
+              DSP_DIAG(EMULATED_REPLAY,
+                       "    ext[%d] type=%d shape=[%s] dtype=%d",
+                       extIdx, (int)slot.inputSourceTypes[i],
+                       ShapeUtils::shapeAsString(arr).c_str(),
+                       (int)arr->dataType());
+            }
+          }
+        }
+      }
+
+      // Update cached key for next comparison
+      seg.exec.cachedShapeKey = currentShapeKey;
+    }
+
+    if (!addrStable) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  ** ADDRESS KEY CHANGED: capture buffer D2D copies needed. "
+               "Placeholders with new addresses require staging buffer updates.");
+
+      // Update cached addr key
+      seg.exec.capturedInputAddrKey = currentAddrKey;
+    }
+
+    // Replay readiness assessment
+    if (shapeStable && addrStable) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  REPLAY READY: shapes and addresses stable — "
+               "CUDA graph replay would succeed without re-capture.");
+    } else if (shapeStable && !addrStable) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  REPLAY with D2D: shapes stable but addresses changed — "
+               "CUDA graph would replay after capture buffer D2D copies.");
+    } else {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  RE-CAPTURE needed: shape change requires full graph re-capture.");
+    }
+  }
+
+  // ── Execute ops slot-by-slot ────────────────────────────────────────────
+  auto tSlotStart = std::chrono::high_resolution_clock::now();
+
+  // Delegate to the standard slot-by-slot executor for actual computation
+  auto status = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+
+  auto tSlotEnd = std::chrono::high_resolution_clock::now();
+  auto slotUs = std::chrono::duration_cast<std::chrono::microseconds>(tSlotEnd - tSlotStart).count();
+
+  DSP_DIAG(EMULATED_REPLAY,
+           "  slot-by-slot time: %lldus (%d ops) — "
+           "graph replay would eliminate ~%lldus of dispatch overhead",
+           (long long)slotUs, segSize,
+           // Rough estimate: ~20us per op of shape inference + dispatch overhead
+           (long long)(segSize * 20));
+
+  if (status != Status::OK) {
+    DSP_DIAG(EMULATED_REPLAY,
+             "  ** EXECUTION FAILED: status=%d — graph capture would also fail here",
+             (int)status);
+  }
+
+  // Note: executeSegmentSlotBySlot already increments seg.exec.executionCount
+  return status;
 }
 
 }  // namespace graph

@@ -551,75 +551,74 @@ Status OneDnnGraphBackend::executeSegment(
 
   auto& strm = getThreadStream();
 
+  // Helper: resolve NDArray from slot index
+  auto resolveArray = [&](int slotIdx) -> NDArray* {
+    if (slotIdx < 0) {
+      int extIdx = -(slotIdx + 1);
+      return (extIdx < numExternalInputs) ? externalInputs[extIdx] : nullptr;
+    }
+    return (slotIdx < totalOutputSlots) ? outputSlots[slotIdx] : nullptr;
+  };
+
   // Execute each compiled partition
   for (auto& part : compiled->partitions) {
-    // Build input tensors
-    std::vector<dg::tensor> inputTensors;
-    for (size_t tid : part.inputTensorIds) {
-      auto slotIt = compiled->tensorIdToSlotMap.find(tid);
-      if (slotIt == compiled->tensorIdToSlotMap.end()) {
-        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: unknown tensor ID %zu", tid);
-        return Status::KERNEL_FAILURE;
+    // Initialize tensor cache on first execution
+    if (part.cachedInputTensors.empty()) {
+      part.cachedInputTensors.resize(part.inputTensorIds.size());
+      for (size_t i = 0; i < part.inputTensorIds.size(); i++) {
+        size_t tid = part.inputTensorIds[i];
+        auto slotIt = compiled->tensorIdToSlotMap.find(tid);
+        if (slotIt == compiled->tensorIdToSlotMap.end()) return Status::KERNEL_FAILURE;
+        NDArray* arr = resolveArray(slotIt->second);
+        if (!arr) return Status::KERNEL_FAILURE;
+        int rank = arr->rankOf();
+        std::vector<int64_t> shape(rank), strides(rank);
+        for (int d = 0; d < rank; d++) {
+          shape[d] = arr->sizeAt(d);
+          strides[d] = arr->strideAt(d);
+        }
+        part.cachedInputTensors[i].lt = dg::logical_tensor(tid, mapDataType(arr->dataType()), shape, strides);
+        part.cachedInputTensors[i].lastBuffer = arr->buffer();
       }
-
-      int slotIdx = slotIt->second;
-      NDArray* arr = nullptr;
-      if (slotIdx < 0) {
-        // External input
-        int extIdx = -(slotIdx + 1);
-        if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
-      } else {
-        // Output slot
-        if (slotIdx < totalOutputSlots) arr = outputSlots[slotIdx];
+    }
+    if (part.cachedOutputTensors.empty()) {
+      part.cachedOutputTensors.resize(part.outputTensorIds.size());
+      for (size_t i = 0; i < part.outputTensorIds.size(); i++) {
+        size_t tid = part.outputTensorIds[i];
+        auto slotIt = compiled->tensorIdToSlotMap.find(tid);
+        if (slotIt == compiled->tensorIdToSlotMap.end()) return Status::KERNEL_FAILURE;
+        NDArray* arr = resolveArray(slotIt->second);
+        if (!arr) return Status::KERNEL_FAILURE;
+        int rank = arr->rankOf();
+        std::vector<int64_t> shape(rank), strides(rank);
+        for (int d = 0; d < rank; d++) {
+          shape[d] = arr->sizeAt(d);
+          strides[d] = arr->strideAt(d);
+        }
+        part.cachedOutputTensors[i].lt = dg::logical_tensor(tid, mapDataType(arr->dataType()), shape, strides);
+        part.cachedOutputTensors[i].lastBuffer = arr->buffer();
       }
-
-      if (arr == nullptr) {
-        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: null array for tensor %zu (slot %d)", tid, slotIdx);
-        return Status::KERNEL_FAILURE;
-      }
-
-      auto dtype = mapDataType(arr->dataType());
-      int rank = arr->rankOf();
-      std::vector<int64_t> shape(rank), strides(rank);
-      for (int d = 0; d < rank; d++) {
-        shape[d] = arr->sizeAt(d);
-        strides[d] = arr->strideAt(d);
-      }
-
-      auto lt = dg::logical_tensor(tid, dtype, shape, strides);
-      inputTensors.emplace_back(lt, engine_, arr->buffer());
     }
 
-    // Build output tensors
+    // Build input tensors — reuse cached logical_tensors, only update buffer if changed
+    std::vector<dg::tensor> inputTensors;
+    inputTensors.reserve(part.inputTensorIds.size());
+    for (size_t i = 0; i < part.inputTensorIds.size(); i++) {
+      auto slotIt = compiled->tensorIdToSlotMap.find(part.inputTensorIds[i]);
+      NDArray* arr = resolveArray(slotIt->second);
+      if (!arr) return Status::KERNEL_FAILURE;
+      // Logical tensor is stable (same shape key = same shapes) — just wrap current buffer
+      inputTensors.emplace_back(part.cachedInputTensors[i].lt, engine_, arr->buffer());
+    }
+
+    // Build output tensors — same optimization
     std::vector<dg::tensor> outputTensors;
-    for (size_t tid : part.outputTensorIds) {
-      auto slotIt = compiled->tensorIdToSlotMap.find(tid);
-      if (slotIt == compiled->tensorIdToSlotMap.end()) {
-        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: unknown output tensor ID %zu", tid);
-        return Status::KERNEL_FAILURE;
-      }
-
-      int slotIdx = slotIt->second;
-      NDArray* arr = nullptr;
-      if (slotIdx >= 0 && slotIdx < totalOutputSlots) {
-        arr = outputSlots[slotIdx];
-      }
-
-      if (arr == nullptr) {
-        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: null output array for tensor %zu (slot %d)", tid, slotIdx);
-        return Status::KERNEL_FAILURE;
-      }
-
-      auto dtype = mapDataType(arr->dataType());
-      int rank = arr->rankOf();
-      std::vector<int64_t> shape(rank), strides(rank);
-      for (int d = 0; d < rank; d++) {
-        shape[d] = arr->sizeAt(d);
-        strides[d] = arr->strideAt(d);
-      }
-
-      auto lt = dg::logical_tensor(tid, dtype, shape, strides);
-      outputTensors.emplace_back(lt, engine_, arr->buffer());
+    outputTensors.reserve(part.outputTensorIds.size());
+    for (size_t i = 0; i < part.outputTensorIds.size(); i++) {
+      auto slotIt = compiled->tensorIdToSlotMap.find(part.outputTensorIds[i]);
+      NDArray* arr = resolveArray(slotIt->second);
+      if (!arr) return Status::KERNEL_FAILURE;
+      outputTensors.emplace_back(part.cachedOutputTensors[i].lt, engine_, arr->buffer());
     }
 
     try {

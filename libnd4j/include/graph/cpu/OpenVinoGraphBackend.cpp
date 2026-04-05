@@ -1730,6 +1730,7 @@ Status OpenVinoGraphBackend::executeSegment(
   auto& request = *compiled.request;
 
   // Set input tensors (zero-copy from NDArray host buffers)
+  auto ovDtype = [](DataType dt) { return mapDataType(dt); };
   for (size_t i = 0; i < compiled.inputSlotMap.size(); i++) {
     int srcIdx = compiled.inputSlotMap[i];
     NDArray* arr = nullptr;
@@ -1744,15 +1745,13 @@ Status OpenVinoGraphBackend::executeSegment(
       return Status::BAD_INPUT;
     }
 
-    // Sync to host if needed
-    arr->syncToHost();
-
-    auto shape = ov::Shape();
-    for (int d = 0; d < arr->rankOf(); d++) {
-      shape.push_back(static_cast<size_t>(arr->sizeAt(d)));
+    int rank = arr->rankOf();
+    ov::Shape shape(rank);
+    for (int d = 0; d < rank; d++) {
+      shape[d] = static_cast<size_t>(arr->sizeAt(d));
     }
-    auto tensor = ov::Tensor(mapDataType(arr->dataType()), shape, arr->buffer());
-    request.set_input_tensor(static_cast<int>(i), tensor);
+    request.set_input_tensor(static_cast<int>(i),
+        ov::Tensor(ovDtype(arr->dataType()), shape, arr->buffer()));
   }
 
   // Set output tensors (zero-copy into NDArray host buffers)
@@ -1763,28 +1762,15 @@ Status OpenVinoGraphBackend::executeSegment(
       return Status::BAD_OUTPUT;
     }
     NDArray* arr = outputSlots[outIdx];
-    auto shape = ov::Shape();
-    for (int d = 0; d < arr->rankOf(); d++) {
-      shape.push_back(static_cast<size_t>(arr->sizeAt(d)));
+    int rank = arr->rankOf();
+    ov::Shape shape(rank);
+    for (int d = 0; d < rank; d++) {
+      shape[d] = static_cast<size_t>(arr->sizeAt(d));
     }
 
-    // Get the model's expected output shape for diagnostics
-    auto modelOutput = compiled.compiled->output(static_cast<int>(i));
-    DSP_DIAG(EXECUTE, "OpenVINO: output[%zu] slotIdx=%d ndarray shape=[%s] model shape=%s",
-             i, outIdx,
-             [&]() -> std::string {
-               std::string s;
-               for (int d = 0; d < arr->rankOf(); d++) {
-                 if (d > 0) s += ",";
-                 s += std::to_string(arr->sizeAt(d));
-               }
-               return s;
-             }().c_str(),
-             modelOutput.get_partial_shape().to_string().c_str());
-
-    auto tensor = ov::Tensor(mapDataType(arr->dataType()), shape, arr->buffer());
     try {
-      request.set_output_tensor(static_cast<int>(i), tensor);
+      request.set_output_tensor(static_cast<int>(i),
+          ov::Tensor(ovDtype(arr->dataType()), shape, arr->buffer()));
     } catch (const std::exception& e) {
       DSP_DIAG(EXECUTE, "OpenVINO: set_output_tensor[%zu] FAILED for slot %d: %s",
                i, outIdx, e.what());

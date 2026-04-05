@@ -66,8 +66,10 @@ public class DspDiagnostics {
     public static final int VERIFY   = (1 << 9);
     public static final int KV_CACHE = (1 << 10);
     public static final int FALLBACK = (1 << 11);
+    public static final int TRANSFER = (1 << 12);
+    public static final int EMULATED_REPLAY = (1 << 13);
     public static final int NONE     = 0;
-    public static final int ALL      = 0xFFF;
+    public static final int ALL      = 0x3FFF;
 
     // Detail levels matching C++ DspDiagLevel
     public static final int LEVEL_SUMMARY  = 0;
@@ -77,7 +79,8 @@ public class DspDiagnostics {
     private static final String[] CATEGORY_NAMES = {
         "COMPILE", "JIT", "EXECUTE", "TIMING",
         "MEMORY", "BACKEND", "SHAPE", "SEGMENT",
-        "FUSION", "VERIFY", "KV_CACHE", "FALLBACK"
+        "FUSION", "VERIFY", "KV_CACHE", "FALLBACK",
+        "TRANSFER", "EMULATED_REPLAY"
     };
 
     private static volatile boolean initialized = false;

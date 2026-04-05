@@ -1140,7 +1140,13 @@ Status NativeDynamicShapePlan::execute(
     bool segUsedGraph = false;
     int segSlots = segment.endSlot - segment.startSlot + 1;
 
-    if (useGraph) {
+    if (segment.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
+      // Emulated graph replay: slot-by-slot with full replay lifecycle diagnostics
+      auto status = executeSegmentEmulatedReplay(segment, externalInputs, numExternalInputs, stream);
+      if (status != Status::OK) return status;
+      // Emulated replay counts as "graph" for timing purposes (tracks replay overhead)
+      segUsedGraph = true;
+    } else if (useGraph) {
       // Platform dispatch: selected backend executes segment
       auto status = platformExecuteSegmentWithBackends(
           segment, externalInputs, numExternalInputs, stream, segUsedGraph);
@@ -2448,6 +2454,9 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturab
     case GraphExecutionMode::GEM_ARM_HYBRID:
     case GraphExecutionMode::GEM_NNAPI:
       return SelectedBackend::CPU_GRAPH;
+
+    case GraphExecutionMode::GEM_EMULATED_REPLAY:
+      return SelectedBackend::EMULATED_REPLAY;
 
     case GraphExecutionMode::GEM_AUTO: {
       // Resolve best available backend. Check order: GPU compiler → CUDA graphs → CPU graph → slot-by-slot

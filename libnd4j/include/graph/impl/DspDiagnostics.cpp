@@ -43,7 +43,7 @@ static const char* const sCategoryNames[DSP_DIAG_NUM_CATEGORIES] = {
     "COMPILE", "JIT",      "EXECUTE",  "TIMING",
     "MEMORY",  "BACKEND",  "SHAPE",    "SEGMENT",
     "FUSION",  "VERIFY",   "KV_CACHE", "FALLBACK",
-    "TRANSFER"
+    "TRANSFER", "EMULATED_REPLAY"
 };
 
 // ─── Singleton ───────────────────────────────────────────────────────────────
