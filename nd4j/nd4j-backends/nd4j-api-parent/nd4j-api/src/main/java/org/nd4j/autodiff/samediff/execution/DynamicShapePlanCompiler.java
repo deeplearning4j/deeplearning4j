@@ -65,7 +65,10 @@ import java.util.*;
 @Slf4j
 public class DynamicShapePlanCompiler {
 
-    // Ops with data-dependent output shapes that can't be cached
+    // Data-dependent ops no longer block capturability — the shapeKey system
+    // handles dynamic shapes via value hashing and recompilation on cache miss.
+    // This set is kept only for the needsZeroedOutput flag (data-dependent ops
+    // need zeroed output buffers since they may not write all elements).
     private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("where", "unique");
 
     /**
@@ -281,10 +284,10 @@ public class DynamicShapePlanCompiler {
             String[] inputVarNames = new String[numInputs];
 
             boolean hasIntLongInputs = false;
-            // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
-            // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
-            boolean isDataDependent = DATA_DEPENDENT_OUTPUT_OPS.contains(opNameLower)
-                    && !(opNameLower.equals("where") && numInputs == 3);
+            // isDataDependent no longer blocks capturability — the shapeKey system
+            // handles dynamic shapes via value hashing and backend recompilation.
+            // We still track it for needsZeroedOutput (data-dependent ops may not write all elements).
+            boolean isDataDependent = false;
 
             for (int i = 0; i < numInputs; i++) {
                 String inputVar = inputVars.get(i);

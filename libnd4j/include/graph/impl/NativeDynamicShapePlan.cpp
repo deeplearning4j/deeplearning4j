@@ -2791,15 +2791,15 @@ void NativeDynamicShapePlan::buildSegments() {
   //      Segments containing these ops have hasValueDepOps=true, which forces shape
   //      key recomputation even when shapes are frozen.
 
-  auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
+  // ALL ops are capturable. The shapeKey system handles dynamic shapes:
+  // - computeSegmentShapeKey hashes input values for small arrays
+  // - hasValueDepOps forces recomputation even when frozen
+  // - cache miss triggers recompilation with correct shapes
+  // The old isDataDependent exclusion was for CUDA graph capture which
+  // required fixed output shapes. CPU backends (OneDNN/OpenVINO) and
+  // the shapeKey system handle recompilation transparently.
+  auto isSlotCapturable = [](const NativeSlot& slot, int) -> bool {
     if (slot.controlFlowType != CF_NONE) return false;
-    if (slot.isDataDependent) return false;
-    // Value-dependent-shape ops (reshape, gather, broadcast_to, etc.) ARE capturable.
-    // Their output shapes depend on input VALUES, but once shapes are frozen (which
-    // happens before the first decode step), output shapes are constant. The shape
-    // key hashes input values to detect changes and invalidate if needed.
-    // Only truly data-dependent ops (Where, unique with variable-length output)
-    // remain non-capturable.
     return true;
   };
 
@@ -2819,10 +2819,10 @@ void NativeDynamicShapePlan::buildSegments() {
 
   GraphSegment current;
   current.startSlot = 0;
-  current.isCapturable = isSlotCapturable(slots_[0]);
+  current.isCapturable = isSlotCapturable(slots_[0], 0);
 
   for (int i = 1; i < numSlots_; i++) {
-    bool thisCapturable = isSlotCapturable(slots_[i]);
+    bool thisCapturable = isSlotCapturable(slots_[i], i);
     bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
     int currentSize = i - current.startSlot;
     bool sizeLimit = (current.isCapturable && currentSize >= MAX_SEGMENT_SIZE);
@@ -2976,7 +2976,7 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   static constexpr int MAX_FROZEN_SEGMENT_SIZE = 200;
 
   auto isSlotCapturableFrozen = [this](int idx) -> bool {
-    return !slots_[idx].isDataDependent && slots_[idx].controlFlowType == CF_NONE;
+    return slots_[idx].controlFlowType == CF_NONE;
   };
 
   // Matmul segmentation: when enabled, break segments at matmul/attention ops.
@@ -3102,7 +3102,6 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   // Reset executeCount_ so the merged plan goes through the full
   // warmup → capture → replay lifecycle from scratch.
   executeCount_ = 0;
-  DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: cleared shape caches and output slots for %d slots", numSlots_);
 
   // CRITICAL FIX: When shapes are frozen, skip symbolic shape warmup.
   // Frozen shapes are constant, so symbolic shape ranges are unnecessary.
