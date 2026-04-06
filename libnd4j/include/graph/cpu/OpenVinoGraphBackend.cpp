@@ -365,17 +365,16 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
         if (!arr) continue;
 
-        // Create parameter with partial shape — use dynamic dims for dimensions
-        // that may change between executions (e.g. KV cache sequence length).
-        // Any dimension that is 0 or varies across steps is marked dynamic (-1).
+        // Create parameter with fully dynamic partial shape.
+        // OpenVINO compiles the graph with symbolic shapes and resolves
+        // them at inference time via set_input_tensor. This handles:
+        // - KV cache dim changing from 0 (prefill) to N (decode)
+        // - Sequence length changing between steps
+        // - Batch size varying
+        // The shapeKey system ensures recompilation when shapes change.
         ov::PartialShape pshape;
         for (int d = 0; d < arr->rankOf(); d++) {
-          auto dimVal = arr->sizeAt(d);
-          if (dimVal == 0) {
-            pshape.push_back(ov::Dimension::dynamic());
-          } else {
-            pshape.push_back(static_cast<int64_t>(dimVal));
-          }
+          pshape.push_back(ov::Dimension::dynamic());
         }
         auto param = std::make_shared<ov::op::v0::Parameter>(
             mapDataType(arr->dataType()), pshape);
@@ -1316,8 +1315,17 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
 
       // ── Cast ──
       else if (opName == "cast" || opName == "Cast") {
-        if (inputs.size() >= 1 && slots[s].numDArgs > 0) {
-          auto targetType = mapDataType(slots[s].dArgs[0]);
+        if (inputs.size() >= 1) {
+          ov::element::Type targetType;
+          if (slots[s].numDArgs > 0) {
+            targetType = mapDataType(slots[s].dArgs[0]);
+          } else if (slots[s].numIArgs > 0) {
+            // Cast op stores target type as iArg (FlatBuffersMapper byte encoding)
+            targetType = mapDataType(static_cast<DataType>(slots[s].iArgs[0]));
+          } else {
+            // Fallback: same type as input (identity cast)
+            targetType = inputs[0].get_element_type();
+          }
           node = std::make_shared<ov::op::v0::Convert>(inputs[0], targetType);
         }
       }

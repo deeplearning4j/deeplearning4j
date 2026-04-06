@@ -306,36 +306,25 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Dedup set to prevent double-free (identity ops can share pointers across slots)
   std::unordered_set<NDArray*> deleted;
 
-  // Free slot arrays. Only free OWNED intermediates — never free borrowed arrays
-  // (external inputs, weights) because the model owns those.
-  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing outputSlots_ (%d slots)", totalOutputSlots_);
+  // Free slot arrays. Only delete arrays that the plan created (in planOwnedArrays_).
+  // Arrays from external inputs or model variables are NOT plan-owned and must survive.
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing outputSlots_ (%d slots, %zu plan-owned)",
+           totalOutputSlots_, planOwnedArrays_.size());
   if (outputSlots_) {
-    int freedOwned = 0, skippedBorrowed = 0;
+    int freedOwned = 0, skippedExternal = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
       if (outputSlots_[i] == nullptr) continue;
-      if (!deleted.insert(outputSlots_[i]).second) continue;  // already freed (shared pointer)
+      if (!deleted.insert(outputSlots_[i]).second) continue;
 
-      // Check if this array is borrowed (external input / weight)
-      bool borrowed = false;
-      if (slotOwnership_ && slotOwnership_[i].ownership == BufferOwnership::VIEW_OF_WEIGHT) {
-        borrowed = true;
-      } else {
-        // Also check protectedWeightBuffers_ directly — covers external inputs
-        auto* db = outputSlots_[i]->dataBuffer();
-        if (db != nullptr && protectedWeightBuffers_.count(db) > 0) {
-          borrowed = true;
-        }
-      }
-
-      if (borrowed) {
-        skippedBorrowed++;
-      } else {
+      if (planOwnedArrays_.count(outputSlots_[i]) > 0) {
         freedOwned++;
         delete outputSlots_[i];
+      } else {
+        skippedExternal++;
       }
     }
-    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed %d owned, skipped %d borrowed from outputSlots_",
-             freedOwned, skippedBorrowed);
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed %d plan-owned, skipped %d external from outputSlots_",
+             freedOwned, skippedExternal);
     delete[] outputSlots_;
   }
   // slotArrayCache_ is an alias of outputSlots_ — do NOT delete[] separately
@@ -2065,13 +2054,15 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
           slotOwnership_[i].reset();
         }
       }
-      // Second pass: free SLOT_OWNED buffers. Force viewRefCount to 0 since
-      // all views were cleared in the first pass — no live references remain.
+      // Second pass: free SLOT_OWNED buffers that are plan-owned.
+      // Only delete arrays the plan created (in planOwnedArrays_).
       for (int i = 0; i < totalOutputSlots_; i++) {
         if (outputSlots_[i] != nullptr &&
             slotOwnership_[i].ownership == BufferOwnership::SLOT_OWNED) {
-          slotOwnership_[i].viewRefCount = 0;  // All views already nulled above
-          if (deleted.insert(outputSlots_[i]).second) {
+          slotOwnership_[i].viewRefCount = 0;
+          if (planOwnedArrays_.count(outputSlots_[i]) > 0 &&
+              deleted.insert(outputSlots_[i]).second) {
+            planOwnedArrays_.erase(outputSlots_[i]);
             delete outputSlots_[i];
             freedCount++;
           }
@@ -2080,18 +2071,15 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
         }
       }
     } else {
-      // Fallback: no ownership info — use protectedWeightBuffers_ to decide
+      // Fallback: no ownership info — only free plan-owned arrays
       for (int i = 0; i < totalOutputSlots_; i++) {
-        if (outputSlots_[i] != nullptr) {
-          auto* db = outputSlots_[i]->dataBuffer();
-          bool isWeight = (db != nullptr && protectedWeightBuffers_.count(db) > 0);
-          if (!isWeight && deleted.insert(outputSlots_[i]).second) {
+        if (outputSlots_[i] != nullptr && planOwnedArrays_.count(outputSlots_[i]) > 0) {
+          if (deleted.insert(outputSlots_[i]).second) {
+            planOwnedArrays_.erase(outputSlots_[i]);
             delete outputSlots_[i];
             freedCount++;
           }
-          if (!isWeight) {
-            outputSlots_[i] = nullptr;
-          }
+          outputSlots_[i] = nullptr;
         }
       }
     }
