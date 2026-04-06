@@ -344,6 +344,27 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
     }
   }
 
+  // Scan for concat ops in the segment and collect which (srcIdx, dim) pairs
+  // need dynamic dims. Concat inputs on the concat axis may have different sizes
+  // (e.g. KV cache [1,3,0,64] vs new token [1,3,679,64]) — marking that axis
+  // dynamic prevents OpenVINO's concat shape inference from failing.
+  std::unordered_map<int, std::unordered_set<int>> dynamicDims;  // srcIdx -> set of dim indices
+  for (int s = startSlot; s <= endSlot; s++) {
+    const std::string& op = slots[s].opName;
+    if (op == "concat" || op == "Concat" || op == "concat_v2") {
+      int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+      for (int inp = 0; inp < slots[s].numInputs; inp++) {
+        int srcIdx = slots[s].inputSourceIndices[inp];
+        if (axis < 0) {
+          // Negative axis — resolve later when we know rank
+          dynamicDims[srcIdx].insert(-1);  // sentinel: mark all dims dynamic
+        } else {
+          dynamicDims[srcIdx].insert(axis);
+        }
+      }
+    }
+  }
+
   // Create OV parameters for external inputs and pre-segment slot outputs
   ov::ParameterVector params;
   std::vector<int> inputSourceMap;  // maps param index -> source index
@@ -364,16 +385,20 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         } else {
           if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
         }
-        // Create parameter with actual shapes. Using fully dynamic dims causes
-        // OpenVINO compile_model to fail (Exception from core.cpp:110) because
-        // some ops can't validate with unknown ranks. Use actual dims from the
-        // current arrays — the shapeKey cache handles recompilation when shapes change.
+        // Use actual shapes but mark concat-axis dims as dynamic to prevent
+        // shape merge failures in OpenVINO's concat inference.
+        auto& dynSet = dynamicDims[srcIdx];
+        bool allDynamic = dynSet.count(-1) > 0;
         ov::PartialShape pshape;
         ov::element::Type dtype = ov::element::f32;
         if (arr) {
           for (int d = 0; d < arr->rankOf(); d++) {
             auto dimVal = arr->sizeAt(d);
-            pshape.push_back(dimVal > 0 ? static_cast<int64_t>(dimVal) : ov::Dimension::dynamic());
+            if (dimVal <= 0 || allDynamic || dynSet.count(d) > 0) {
+              pshape.push_back(ov::Dimension::dynamic());
+            } else {
+              pshape.push_back(static_cast<int64_t>(dimVal));
+            }
           }
           dtype = mapDataType(arr->dataType());
         } else if (!isExternal && srcIdx >= 0 && srcIdx < totalOutputSlots) {
@@ -1196,8 +1221,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           for (int d = 0; d < argsPerDim && d < rank; d++) {
             begin.push_back(slots[s].iArgs[d]);
             end.push_back(slots[s].iArgs[argsPerDim + d]);
-            strides.push_back((2 * argsPerDim + d < slots[s].numIArgs)
-                              ? slots[s].iArgs[2 * argsPerDim + d] : 1);
+            int64_t stride = (2 * argsPerDim + d < slots[s].numIArgs)
+                              ? slots[s].iArgs[2 * argsPerDim + d] : 1;
+            if (stride == 0) stride = 1;  // OpenVINO rejects stride=0
+            strides.push_back(stride);
           }
           auto begin_const = ov::op::v0::Constant::create(ov::element::i64, {begin.size()}, begin);
           auto end_const = ov::op::v0::Constant::create(ov::element::i64, {end.size()}, end);
