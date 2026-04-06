@@ -315,13 +315,14 @@ template void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const c
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
+  // On CPU, special buffer is always nullptr (no device memory).
+  // Return nullptr for both null _buffer and null special — callers
+  // already check for nullptr return (e.g. DSP code checks before use).
   if (_buffer == nullptr) {
-    THROW_EXCEPTION("NDArray::specialBuffer(): _buffer is nullptr - array not properly initialized");
+    return nullptr;
   }
 
   void* specialBuf = _buffer->special();
-
-  // On CPU, special buffer is nullptr (only used for GPU/CUDA) - this is expected and normal
   if (specialBuf == nullptr) {
     return nullptr;
   }

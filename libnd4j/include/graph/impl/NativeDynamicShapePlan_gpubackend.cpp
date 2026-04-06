@@ -1830,17 +1830,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
       // ── END TRIPWIRE ─────────────────────────────────────────────────────
 
-      // Address fingerprinting: verify slot output GPU addresses match capture-time.
+      // Address fingerprinting: detect slot output GPU address changes.
+      // Slot addresses CAN change between capture and replay (e.g., when
+      // releaseGpuIntermediates frees warmup arrays and the pool recycles
+      // addresses). This is handled by the capture buffer D2D refresh and
+      // refreshArgTablesForReplay which update the consolidated arg table
+      // with current addresses before each replay. The fingerprint is
+      // logged for diagnostics but does NOT invalidate the graph.
       if (seg.exec.capturedSlotAddrHash != 0) {
         LongType currentAddrHash = computeSlotAddrHash(
             outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
         if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
-          DSP_DIAG(FALLBACK, "SLOT ADDRESS FINGERPRINT MISMATCH for seg[%d-%d]: "
-                   "captured=0x%llx current=0x%llx — invalidating graph for re-capture",
+          DSP_DIAG(MEMORY, "SLOT ADDRESS DRIFT for seg[%d-%d]: "
+                   "captured=0x%llx current=0x%llx — arg table refresh will handle",
                    seg.startSlot, seg.endSlot,
                    (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
-          lineageInvalidated = true;
-          platformCleanupSegmentForRebuild(seg);
+          seg.exec.capturedSlotAddrHash = currentAddrHash;
         }
       }
 

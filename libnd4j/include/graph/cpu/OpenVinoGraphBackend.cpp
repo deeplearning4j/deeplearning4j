@@ -1741,8 +1741,9 @@ Status OpenVinoGraphBackend::executeSegment(
 
   auto it = cache_.find(cacheKey);
   if (it == cache_.end() || !it->second.valid) {
-    DSP_DIAG(EXECUTE, "OpenVINO: no compiled segment for [%d-%d]",
-             seg.startSlot, seg.endSlot);
+    DSP_DIAG(EXECUTE, "OpenVINO: no compiled segment for [%d-%d] shapeKey=%lld cacheSize=%d found=%d",
+             seg.startSlot, seg.endSlot, (long long)seg.shapeKey,
+             (int)cache_.size(), it != cache_.end() ? 1 : 0);
     return Status::KERNEL_FAILURE;
   }
 
