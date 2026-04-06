@@ -364,22 +364,28 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         } else {
           if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
         }
-        // Create parameter — use array for dtype/rank if available,
-        // else try cached shape info from the source slot.
+        // Create parameter with actual shapes. Using fully dynamic dims causes
+        // OpenVINO compile_model to fail (Exception from core.cpp:110) because
+        // some ops can't validate with unknown ranks. Use actual dims from the
+        // current arrays — the shapeKey cache handles recompilation when shapes change.
         ov::PartialShape pshape;
         ov::element::Type dtype = ov::element::f32;
         if (arr) {
-          for (int d = 0; d < arr->rankOf(); d++)
-            pshape.push_back(ov::Dimension::dynamic());
+          for (int d = 0; d < arr->rankOf(); d++) {
+            auto dimVal = arr->sizeAt(d);
+            pshape.push_back(dimVal > 0 ? static_cast<int64_t>(dimVal) : ov::Dimension::dynamic());
+          }
           dtype = mapDataType(arr->dataType());
         } else if (!isExternal && srcIdx >= 0 && srcIdx < totalOutputSlots) {
-          // Pre-segment slot: get rank/dtype from the slot's cached output shape
+          // Pre-segment slot: get rank/dtype/dims from the slot's cached output shape
           auto& srcSlot = slots[srcIdx];
           if (!srcSlot.cachedOutputShapes.empty() && srcSlot.cachedOutputShapes[0] != nullptr) {
             const LongType* si = srcSlot.cachedOutputShapes[0];
             int rank = shape::rank(si);
-            for (int d = 0; d < rank; d++)
-              pshape.push_back(ov::Dimension::dynamic());
+            for (int d = 0; d < rank; d++) {
+              auto dimVal = shape::shapeOf(si)[d];
+              pshape.push_back(dimVal > 0 ? static_cast<int64_t>(dimVal) : ov::Dimension::dynamic());
+            }
             dtype = mapDataType(ArrayOptions::dataType(si));
           } else {
             // Last resort: scalar placeholder
@@ -435,15 +441,19 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         ov::PartialShape pshape;
         ov::element::Type dtype = ov::element::f32;
         if (fallbackArr) {
-          for (int d = 0; d < fallbackArr->rankOf(); d++)
-            pshape.push_back(ov::Dimension::dynamic());
+          for (int d = 0; d < fallbackArr->rankOf(); d++) {
+            auto dv = fallbackArr->sizeAt(d);
+            pshape.push_back(dv > 0 ? static_cast<int64_t>(dv) : ov::Dimension::dynamic());
+          }
           dtype = mapDataType(fallbackArr->dataType());
         } else if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
           auto& srcSlot = slots[srcIdx];
           if (!srcSlot.cachedOutputShapes.empty() && srcSlot.cachedOutputShapes[0]) {
             const LongType* si = srcSlot.cachedOutputShapes[0];
-            for (int d = 0; d < shape::rank(si); d++)
-              pshape.push_back(ov::Dimension::dynamic());
+            for (int d = 0; d < shape::rank(si); d++) {
+              auto dv = shape::shapeOf(si)[d];
+              pshape.push_back(dv > 0 ? static_cast<int64_t>(dv) : ov::Dimension::dynamic());
+            }
             dtype = mapDataType(ArrayOptions::dataType(si));
           } else {
             pshape.push_back(ov::Dimension::dynamic());
@@ -1742,7 +1752,12 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
     DSP_DIAG(COMPILE, "OpenVINO: compiled model with %zu params, %zu results",
              params.size(), results.size());
   } catch (const std::exception& e) {
-    DSP_DIAG(COMPILE, "OpenVINO: compile_model failed: %s", e.what());
+    // OpenVINO exceptions often have multiline messages with nested cause.
+    // Log full message to stderr for visibility.
+    fprintf(stderr, "OpenVINO compile_model FAILED seg[%d-%d]: %s\n", startSlot, endSlot, e.what());
+    fflush(stderr);
+    DSP_DIAG(COMPILE, "OpenVINO: compile_model FAILED seg[%d-%d] (%zu params, %zu results)",
+             startSlot, endSlot, params.size(), results.size());
     result.valid = false;
   }
 
