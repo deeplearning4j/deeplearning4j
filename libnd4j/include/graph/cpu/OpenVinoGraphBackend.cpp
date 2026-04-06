@@ -23,6 +23,7 @@
 #include <graph/cpu/OpenVinoGraphBackend.h>
 #include <graph/DspDiagnostics.h>
 #include <helpers/shape.h>
+#include <array/ArrayOptions.h>
 
 #include <algorithm>
 #include <unordered_set>
@@ -363,17 +364,28 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         } else {
           if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
         }
-        if (!arr) continue;
-
-        // Create parameter with fully dynamic partial shape.
-        // OpenVINO compiles the graph with symbolic shapes and resolves
-        // them at inference time via set_input_tensor. This handles:
-        // - KV cache dim changing from 0 (prefill) to N (decode)
-        // - Sequence length changing between steps
-        // - Batch size varying
-        // The shapeKey system ensures recompilation when shapes change.
+        // Create parameter — use array for dtype/rank if available,
+        // else try cached shape info from the source slot.
         ov::PartialShape pshape;
-        for (int d = 0; d < arr->rankOf(); d++) {
+        ov::element::Type dtype = ov::element::f32;
+        if (arr) {
+          for (int d = 0; d < arr->rankOf(); d++)
+            pshape.push_back(ov::Dimension::dynamic());
+          dtype = mapDataType(arr->dataType());
+        } else if (!isExternal && srcIdx >= 0 && srcIdx < totalOutputSlots) {
+          // Pre-segment slot: get rank/dtype from the slot's cached output shape
+          auto& srcSlot = slots[srcIdx];
+          if (!srcSlot.cachedOutputShapes.empty() && srcSlot.cachedOutputShapes[0] != nullptr) {
+            const LongType* si = srcSlot.cachedOutputShapes[0];
+            int rank = shape::rank(si);
+            for (int d = 0; d < rank; d++)
+              pshape.push_back(ov::Dimension::dynamic());
+            dtype = mapDataType(ArrayOptions::dataType(si));
+          } else {
+            // Last resort: scalar placeholder
+            pshape.push_back(ov::Dimension::dynamic());
+          }
+        } else {
           pshape.push_back(ov::Dimension::dynamic());
         }
         auto param = std::make_shared<ov::op::v0::Parameter>(
@@ -409,6 +421,42 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
     for (int inp = 0; inp < slots[s].numInputs; inp++) {
       int srcIdx = slots[s].inputSourceIndices[inp];
       auto it = tensorMap.find(srcIdx);
+      if (it == tensorMap.end()) {
+        // Missing from tensorMap — create an on-the-fly Parameter.
+        // This handles within-segment cascades (prior op failed to compile)
+        // and any missed pre-segment inputs.
+        NDArray* fallbackArr = nullptr;
+        if (srcIdx < 0) {
+          int extIdx = -(srcIdx + 1);
+          if (extIdx < numExternalInputs) fallbackArr = externalInputs[extIdx];
+        } else if (srcIdx < totalOutputSlots) {
+          fallbackArr = outputSlots[srcIdx];
+        }
+        ov::PartialShape pshape;
+        ov::element::Type dtype = ov::element::f32;
+        if (fallbackArr) {
+          for (int d = 0; d < fallbackArr->rankOf(); d++)
+            pshape.push_back(ov::Dimension::dynamic());
+          dtype = mapDataType(fallbackArr->dataType());
+        } else if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
+          auto& srcSlot = slots[srcIdx];
+          if (!srcSlot.cachedOutputShapes.empty() && srcSlot.cachedOutputShapes[0]) {
+            const LongType* si = srcSlot.cachedOutputShapes[0];
+            for (int d = 0; d < shape::rank(si); d++)
+              pshape.push_back(ov::Dimension::dynamic());
+            dtype = mapDataType(ArrayOptions::dataType(si));
+          } else {
+            pshape.push_back(ov::Dimension::dynamic());
+          }
+        } else {
+          pshape.push_back(ov::Dimension::dynamic());
+        }
+        auto param = std::make_shared<ov::op::v0::Parameter>(dtype, pshape);
+        params.push_back(param);
+        tensorMap[srcIdx] = param->output(0);
+        inputSourceMap.push_back(srcIdx);
+        it = tensorMap.find(srcIdx);
+      }
       if (it == tensorMap.end()) {
         audit.wasCompiled = false;
         audit.reason = "missing input source " + std::to_string(srcIdx);
