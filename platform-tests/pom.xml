@@ -1626,6 +1626,8 @@
                         <CUDA_LAUNCH_BLOCKING>${cuda.launch.blocking}</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>${omp.num.threads}</OMP_NUM_THREADS>
+                        <OPENBLAS_NUM_THREADS>${omp.num.threads}</OPENBLAS_NUM_THREADS>
+                        <ND4J_OPENBLAS_THREADS>${omp.num.threads}</ND4J_OPENBLAS_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <PRINT_MATH_FUNCTION_NAME></PRINT_MATH_FUNCTION_NAME>
