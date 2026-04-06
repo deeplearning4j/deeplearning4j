@@ -632,6 +632,13 @@ function(create_and_link_library)
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
 
+        # OpenMP: add compile flags to the OBJECT target so source files get -fopenmp.
+        # Without this, _OPENMP is undefined → omp_set_num_threads is a no-op macro
+        # → all linear algebra runs single-threaded.
+        if(OpenMP_CXX_FOUND)
+            target_link_libraries(${OBJECT_LIB_NAME} PUBLIC OpenMP::OpenMP_CXX)
+        endif()
+
         # Generated instantiation sources compile into nested object directories
         # under CMakeFiles/<target>.dir. Create those paths up front so clean
         # parallel Makefile builds do not race the first generated compiles.
