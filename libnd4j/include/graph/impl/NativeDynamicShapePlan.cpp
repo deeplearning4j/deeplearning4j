@@ -1036,7 +1036,8 @@ Status NativeDynamicShapePlan::execute(
   // external input arrays, but CUDA graph replay reads from capture buffers (separate
   // fixed-address staging areas). Without this propagation, the graph replays with
   // stale position_ids/attention_mask values.
-  if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
+  bool hadPendingDecodeUpdate = hasPendingDecodeUpdate_ && isDecodeInputsConfigured();
+  if (hadPendingDecodeUpdate) {
     propagateDecodeInputsToCaptureBuffers(stream);
   }
   hasPendingDecodeUpdate_ = false;
@@ -1044,6 +1045,12 @@ Status NativeDynamicShapePlan::execute(
   // ── Phase-aware lifecycle validation ─────────────────────────────────────
   // Hard errors (not logs) when buffer lifecycle is violated during frozen execution.
   // This catches: freed buffers, pointer drift, stale ownership, dangling views.
+  // When freezeMergeSegments is active, merged segments contain value-dependent ops
+  // (reshape, gather, broadcast_to) whose output DataBuffers are re-created on each
+  // execution by initializeOutputs. This is correct behavior — shapes are frozen but
+  // the allocation path creates fresh arrays. The lifecycle validation (designed for
+  // the non-merged case where each segment's slots have stable buffers) incorrectly
+  // rejects these buffer replacements as "stale ownership".
   if (planPhase_ >= PlanPhase::SHAPES_FROZEN && executeCount_ > 0) {
     char errMsg[512] = {};
     bool lifecycleOk = validateLifecycleForPhase(
@@ -1069,8 +1076,10 @@ Status NativeDynamicShapePlan::execute(
     for (size_t si = 0; si < segments_.size(); si++) {
       auto& seg = segments_[si];
       if (seg.isCapturable && seg.exec.replayHandle == nullptr && !seg.exec.compilationFailed) {
-        DSP_DIAG(EXECUTE, "PHASE_VIOLATION: plan REPLAYING but seg[%d-%d] has no replay handle — demoting",
-                  seg.startSlot, seg.endSlot);
+        DSP_DIAG(FALLBACK, "PHASE_DEMOTION: REPLAYING → POINTERS_STABLE: "
+                  "seg[%d-%d] lost replay handle (capturable but no handle, not compilation-failed). "
+                  "This may indicate a resource leak or premature cleanup. execCount=%d",
+                  seg.startSlot, seg.endSlot, executeCount_);
         planPhase_ = PlanPhase::POINTERS_STABLE;
         break;
       }
@@ -1231,6 +1240,11 @@ Status NativeDynamicShapePlan::execute(
     bool segUsedGraph = false;
     int segSlots = segment.endSlot - segment.startSlot + 1;
 
+    // Track whether this segment had a replay handle BEFORE execution.
+    // If it gains one during execution (capture step), we need to propagate
+    // decode inputs to the newly-created capture buffers.
+    bool hadReplayHandleBefore = (segment.exec.replayHandle != nullptr);
+
     if (segment.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
       // Emulated graph replay: slot-by-slot with full replay lifecycle diagnostics
       auto status = executeSegmentEmulatedReplay(segment, externalInputs, numExternalInputs, stream);
@@ -1249,6 +1263,27 @@ Status NativeDynamicShapePlan::execute(
           : ExecutionPhase::SLOT_BY_SLOT;  // Non-capturable, always slot-by-slot
       auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) return status;
+    }
+
+    // Post-segment decode input propagation: if this segment just gained a
+    // replay handle (capture step) and we had pending decode inputs, propagate
+    // decode input values to the newly-created capture buffers. Without this,
+    // the pre-segment propagateDecodeInputsToCaptureBuffers() found no handles
+    // (they didn't exist yet), and the capture buffers were initialized from
+    // external arrays. On the NEXT execution, the first replay would use stale
+    // values because the capture-time values weren't explicitly written to the
+    // capture buffers via the propagation path.
+    //
+    // This ensures that newly-created capture buffers have decode input values
+    // written via the same direct-write path as subsequent replays, maintaining
+    // consistency between the capture step's output and replay outputs.
+    if (hadPendingDecodeUpdate && !hadReplayHandleBefore &&
+        segment.exec.replayHandle != nullptr) {
+      propagateDecodeInputsToCaptureBuffers(stream);
+      DSP_DIAG(EXECUTE, "POST_SEGMENT_DECODE_PROPAGATION: seg[%d-%d] gained replay handle, "
+               "propagated decode inputs (tokenId=%lld cachePos=%d)",
+               segment.startSlot, segment.endSlot,
+               pendingTokenId_, pendingCachePos_);
     }
 
     if (executionTimingEnabled_) {
@@ -1834,6 +1869,25 @@ static void logGpuMemState(const char* label) {
 int NativeDynamicShapePlan::releaseGpuIntermediates() {
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: START plan=%p numSlots=%d totalOutputSlots=%d",
            this, numSlots_, totalOutputSlots_);
+
+  // ── Phase demotion: demote to SLOT_BY_SLOT BEFORE freeing any arrays ──────
+  // This ensures no code path can observe POINTERS_STABLE/REPLAYING phase
+  // while buffers are being freed, which would violate the phase contract
+  // (those phases guarantee stable buffer pointers).
+  {
+    static const char* phaseNames[] = {"SLOT_BY_SLOT", "SHAPES_FROZEN", "POINTERS_STABLE", "REPLAYING"};
+    const char* oldPhaseName = phaseNames[static_cast<int>(planPhase_)];
+    static const char* reasonNames[] = {"NORMAL_CLOSE", "SESSION_RESET", "OOM_RECOVERY",
+                                         "DEVICE_SWITCH", "CAPTURE_FAILURE", "SHAPE_CHANGE", "ERROR_RECOVERY"};
+    const char* reasonName = reasonNames[static_cast<int>(destructionReason_)];
+    if (planPhase_ != PlanPhase::SLOT_BY_SLOT) {
+      DSP_DIAG(FALLBACK, "releaseGpuIntermediates: demoting planPhase_ %s → SLOT_BY_SLOT "
+               "reason=%s before freeing arrays", oldPhaseName, reasonName);
+      planPhase_ = PlanPhase::SLOT_BY_SLOT;
+      pointersStable_ = false;
+      frozenExecutionCount_ = 0;
+    }
+  }
 
   // ── Step 1: Free per-segment GPU resources (CUDA graphs, capture buffers,
   //            capture workspaces, pinned host pointers) ──────────────────────
@@ -2740,15 +2794,27 @@ void NativeDynamicShapePlan::buildSegments() {
   auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
     if (slot.controlFlowType != CF_NONE) return false;
     if (slot.isDataDependent) return false;
-    // Value-dependent-shape ops must run slot-by-slot because their output SHAPE
-    // depends on input VALUES. Even though the shape key hashes small input values,
-    // the captured graph bakes in allocation sizes from capture time. If the output
-    // shape changes, the graph's allocations are wrong → crashes or garbage.
-    // The shape key detects the change and invalidates, but re-capture with different
-    // allocation sizes creates address mismatches. Keeping these ops slot-by-slot
-    // is the correct architecture (matches the 86 tok/s baseline).
-    if (slot.outputShapeDependsOnInputValues) return false;
+    // Value-dependent-shape ops (reshape, gather, broadcast_to, etc.) ARE capturable.
+    // Their output shapes depend on input VALUES, but once shapes are frozen (which
+    // happens before the first decode step), output shapes are constant. The shape
+    // key hashes input values to detect changes and invalidate if needed.
+    // Only truly data-dependent ops (Where, unique with variable-length output)
+    // remain non-capturable.
     return true;
+  };
+
+  // Matmul segmentation: break segments at matmul/attention op boundaries.
+  // This isolates element-wise chains for Triton fusion while matmuls run via cuBLAS.
+  const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
+  static constexpr int MAX_SEGMENT_SIZE = 200;
+
+  auto isMatmulOrAttention = [this](int idx) -> bool {
+    const std::string& name = slots_[idx].opName;
+    return name == "matmul" || name == "mmul" || name == "batched_gemm"
+        || name == "tensormmul" || name == "fp8_matmul" || name == "smooth_quant"
+        || name == "awq_matmul" || name == "column_parallel_linear"
+        || name == "row_parallel_linear" || name == "multi_lora_matmul"
+        || name == "fused_gemm_swiglu" || name == "multi_head_attention";
   };
 
   GraphSegment current;
@@ -2758,10 +2824,18 @@ void NativeDynamicShapePlan::buildSegments() {
   for (int i = 1; i < numSlots_; i++) {
     bool thisCapturable = isSlotCapturable(slots_[i]);
     bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
+    int currentSize = i - current.startSlot;
+    bool sizeLimit = (current.isCapturable && currentSize >= MAX_SEGMENT_SIZE);
 
-    bool capturabilityChanged = (thisCapturable != current.isCapturable);
+    // Break at matmul/attention boundaries for Triton fusion
+    bool matmulBreak = false;
+    if (matmulSegmentation) {
+      bool thisIsMatmul = isMatmulOrAttention(i);
+      bool prevIsMatmul = isMatmulOrAttention(i - 1);
+      if (thisIsMatmul != prevIsMatmul) matmulBreak = true;
+    }
 
-    if (capturabilityChanged || deviceChange) {
+    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit || matmulBreak) {
       // End current segment
       current.endSlot = i - 1;
       segments_.push_back(std::move(current));
@@ -2893,13 +2967,13 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   //   1. Address instability (workspace allocs change address on replay → SIGSEGV)
   //   2. Slow replay (390ms for 3781-slot graph vs 72ms for 129 smaller graphs)
   // Cap at ~150 slots per segment — matches typical transformer layer size.
-  // MAX_FROZEN_SEGMENT_SIZE caps graph size. Set to INT_MAX to allow single
-  // mega-graph capture of the entire decoder (3781+ slots).
-  // With frozen shapes, all value-dependent ops are safe to capture.
+  // MAX_FROZEN_SEGMENT_SIZE caps graph size to prevent mega-segments that cause
+  // Triton compilation failures and address instability. Set to ~200 slots which
+  // matches typical transformer layer size for efficient capture and replay.
   // NOTE: create (ConstantOfShape) ops are captured but their input values are
   // hashed and validated before replay (see computeCreateOpValueKey).
   // If values change → graph is invalidated and re-captured.
-  static constexpr int MAX_FROZEN_SEGMENT_SIZE = INT_MAX;
+  static constexpr int MAX_FROZEN_SEGMENT_SIZE = 200;
 
   auto isSlotCapturableFrozen = [this](int idx) -> bool {
     return !slots_[idx].isDataDependent && slots_[idx].controlFlowType == CF_NONE;
@@ -3009,6 +3083,26 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
       }
     }
   }
+
+  // Reset slot ownership metadata after segment rebuild. The merged segments
+  // may contain slots whose DataBuffers will change during the next warmup
+  // execution (value-dependent ops get new output shapes in the merged context).
+  // Without this reset, the lifecycle validation at executeCount>0 sees stale
+  // ownership that references pre-merge DataBuffers → LIFECYCLE_ERROR.
+  if (slotOwnership_ != nullptr) {
+    for (int i = 0; i < totalOutputSlots_; i++) {
+      slotOwnership_[i].ownership = BufferOwnership::UNSET;
+      slotOwnership_[i].dataBuffer = nullptr;
+      slotOwnership_[i].parentSlotIdx = -1;
+      slotOwnership_[i].viewRefCount = 0;
+    }
+    DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: reset ownership for %d slots", totalOutputSlots_);
+  }
+
+  // Reset executeCount_ so the merged plan goes through the full
+  // warmup → capture → replay lifecycle from scratch.
+  executeCount_ = 0;
+  DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: cleared shape caches and output slots for %d slots", numSlots_);
 
   // CRITICAL FIX: When shapes are frozen, skip symbolic shape warmup.
   // Frozen shapes are constant, so symbolic shape ranges are unnecessary.
