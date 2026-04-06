@@ -316,13 +316,9 @@ bool OpenVinoGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end)
     }
   }
 
-  // Single-op segments: accept if the op has an optimized backend kernel
-  if (totalOps == 1 && mappableOps == 1) {
-    return isOvSingleOpWorthCompiling(slots[start].opName);
-  }
-
-  // Multi-op segments: at least 2 mappable ops and >=50% coverage
-  return mappableOps >= 2 && mappableOps >= totalOps / 2;
+  // Accept any segment where all ops are mappable — no minimum op count.
+  // Every mappable op benefits from OpenVINO compilation.
+  return mappableOps == totalOps && mappableOps >= 1;
 }
 
 // ─── buildModel ─────────────────────────────────────────────────────────────
@@ -1748,8 +1744,13 @@ Status OpenVinoGraphBackend::executeSegment(
   }
 
   auto& compiled = it->second;
+  if (!compiled.request) {
+    DSP_DIAG(EXECUTE, "OpenVINO: compiled segment for [%d-%d] has null request", seg.startSlot, seg.endSlot);
+    return Status::KERNEL_FAILURE;
+  }
   auto& request = *compiled.request;
 
+  try {
   // Set input tensors (zero-copy from NDArray host buffers)
   auto ovDtype = [](DataType dt) { return mapDataType(dt); };
   for (size_t i = 0; i < compiled.inputSlotMap.size(); i++) {
@@ -1824,6 +1825,12 @@ Status OpenVinoGraphBackend::executeSegment(
   }
 
   return Status::OK;
+
+  } catch (const std::exception& e) {
+    DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] uncaught exception: %s",
+             seg.startSlot, seg.endSlot, e.what());
+    return Status::KERNEL_FAILURE;
+  }
 }
 
 // ─── invalidateCache ────────────────────────────────────────────────────────

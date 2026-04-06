@@ -166,13 +166,8 @@ bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
     }
   }
 
-  // Single-op segments: accept if the op has an optimized backend kernel
-  if (totalOps == 1 && mappableOps == 1) {
-    return isSingleOpWorthCompiling(slots[start].opName);
-  }
-
-  // Multi-op segments: at least 50% of ops must be mappable and there are >=2 mappable ops
-  return mappableOps >= 2 && mappableOps >= totalOps / 2;
+  // Accept any segment where all ops are mappable — no minimum op count.
+  return mappableOps == totalOps && mappableOps >= 1;
 }
 
 // ─── Graph building ─────────────────────────────────────────────────────────
