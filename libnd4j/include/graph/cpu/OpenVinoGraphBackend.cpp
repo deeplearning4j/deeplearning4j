@@ -365,13 +365,20 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
         if (!arr) continue;
 
-        // Create parameter with the array's shape and type
-        auto shape = ov::Shape();
+        // Create parameter with partial shape — use dynamic dims for dimensions
+        // that may change between executions (e.g. KV cache sequence length).
+        // Any dimension that is 0 or varies across steps is marked dynamic (-1).
+        ov::PartialShape pshape;
         for (int d = 0; d < arr->rankOf(); d++) {
-          shape.push_back(static_cast<size_t>(arr->sizeAt(d)));
+          auto dimVal = arr->sizeAt(d);
+          if (dimVal == 0) {
+            pshape.push_back(ov::Dimension::dynamic());
+          } else {
+            pshape.push_back(static_cast<int64_t>(dimVal));
+          }
         }
         auto param = std::make_shared<ov::op::v0::Parameter>(
-            mapDataType(arr->dataType()), shape);
+            mapDataType(arr->dataType()), pshape);
         params.push_back(param);
         tensorMap[srcIdx] = param->output(0);
         inputSourceMap.push_back(srcIdx);
@@ -1707,9 +1714,20 @@ bool OpenVinoGraphBackend::compileSegment(
     return true;
   }
 
-  auto compiled = buildModel(slots, seg.startSlot, seg.endSlot,
-                             externalInputs, numExternalInputs,
-                             outputSlots, totalOutputSlots);
+  CompiledSegment compiled;
+  try {
+    compiled = buildModel(slots, seg.startSlot, seg.endSlot,
+                          externalInputs, numExternalInputs,
+                          outputSlots, totalOutputSlots);
+  } catch (const std::exception& e) {
+    DSP_DIAG(COMPILE, "OpenVINO: buildModel[%d-%d] exception: %s",
+             seg.startSlot, seg.endSlot, e.what());
+    return false;
+  } catch (...) {
+    DSP_DIAG(COMPILE, "OpenVINO: buildModel[%d-%d] unknown exception",
+             seg.startSlot, seg.endSlot);
+    return false;
+  }
   compiled.shapeKey = shapeKey;
 
   lastCompilationAudit_ = compiled.compilationAudit;
@@ -1839,8 +1857,12 @@ Status OpenVinoGraphBackend::executeSegment(
   return Status::OK;
 
   } catch (const std::exception& e) {
-    DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] uncaught exception: %s",
+    DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] exception: %s",
              seg.startSlot, seg.endSlot, e.what());
+    return Status::KERNEL_FAILURE;
+  } catch (...) {
+    DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] unknown exception",
+             seg.startSlot, seg.endSlot);
     return Status::KERNEL_FAILURE;
   }
 }
