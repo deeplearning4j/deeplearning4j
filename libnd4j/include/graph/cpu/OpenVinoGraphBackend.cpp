@@ -47,8 +47,12 @@ OpenVinoGraphBackend::OpenVinoGraphBackend() {
     int numThreads = sd::Environment::getInstance().maxMasterThreads();
     if (numThreads <= 0) numThreads = std::thread::hardware_concurrency();
     core_.set_property("CPU", ov::inference_num_threads(numThreads));
-    core_.set_property("CPU", ov::hint::performance_mode(ov::hint::PerformanceMode::THROUGHPUT));
-    DSP_DIAG(COMPILE, "OpenVINO: configured CPU with %d threads, THROUGHPUT mode", numThreads);
+    // LATENCY mode = single stream, all threads for intra-op parallelism.
+    // THROUGHPUT mode replicates model buffers per stream → OOM on large models.
+    // For autoregressive decode (single request), LATENCY with many threads
+    // gives maximum parallelism within each matmul/attention op.
+    core_.set_property("CPU", ov::hint::performance_mode(ov::hint::PerformanceMode::LATENCY));
+    DSP_DIAG(COMPILE, "OpenVINO: configured CPU with %d threads, LATENCY mode", numThreads);
   } catch (const std::exception& e) {
     DSP_DIAG(COMPILE, "OpenVINO: failed to set threading properties: %s", e.what());
   }
