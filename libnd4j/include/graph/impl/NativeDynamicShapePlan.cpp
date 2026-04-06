@@ -306,17 +306,36 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Dedup set to prevent double-free (identity ops can share pointers across slots)
   std::unordered_set<NDArray*> deleted;
 
-  // Free slot arrays (slotArrayCache_ is unified with outputSlots_ — same pointer)
+  // Free slot arrays. Only free OWNED intermediates — never free borrowed arrays
+  // (external inputs, weights) because the model owns those.
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing outputSlots_ (%d slots)", totalOutputSlots_);
   if (outputSlots_) {
-    int cacheCount = 0;
+    int freedOwned = 0, skippedBorrowed = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
-      if (outputSlots_[i] != nullptr && deleted.insert(outputSlots_[i]).second) {
-        cacheCount++;
+      if (outputSlots_[i] == nullptr) continue;
+      if (!deleted.insert(outputSlots_[i]).second) continue;  // already freed (shared pointer)
+
+      // Check if this array is borrowed (external input / weight)
+      bool borrowed = false;
+      if (slotOwnership_ && slotOwnership_[i].ownership == BufferOwnership::VIEW_OF_WEIGHT) {
+        borrowed = true;
+      } else {
+        // Also check protectedWeightBuffers_ directly — covers external inputs
+        auto* db = outputSlots_[i]->dataBuffer();
+        if (db != nullptr && protectedWeightBuffers_.count(db) > 0) {
+          borrowed = true;
+        }
+      }
+
+      if (borrowed) {
+        skippedBorrowed++;
+      } else {
+        freedOwned++;
         delete outputSlots_[i];
       }
     }
-    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: deleted %d unique arrays from outputSlots_", cacheCount);
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed %d owned, skipped %d borrowed from outputSlots_",
+             freedOwned, skippedBorrowed);
     delete[] outputSlots_;
   }
   // slotArrayCache_ is an alias of outputSlots_ — do NOT delete[] separately
@@ -1998,7 +2017,10 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
 
   if (outputSlots_) {
     // Re-classify ownership for ALL slots based on the CURRENT outputSlots_[] arrays.
-    // This corrects stale ownership from CUDA graph capture-time classification.
+    // protectedWeightBuffers_ contains DataBuffers from ALL external inputs (built
+    // during execute()). Any slot whose DataBuffer matches an external input is
+    // BORROWED (model-owned, never freed by the plan). Everything else is an
+    // intermediate (plan-owned, freed here).
     if (slotOwnership_) {
       for (int i = 0; i < totalOutputSlots_; i++) {
         slotOwnership_[i].reset();
@@ -2008,13 +2030,11 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
           slotOwnership_[i].ownership = BufferOwnership::UNSET;
           continue;
         }
-        // Check if buffer belongs to a protected weight
         if (protectedWeightBuffers_.count(db) > 0) {
           slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_WEIGHT;
           slotOwnership_[i].dataBuffer = db;
           continue;
         }
-        // Check if buffer is shared with an earlier slot (view of another slot)
         bool isViewOfSlot = false;
         for (int j = 0; j < i; j++) {
           if (outputSlots_[j] != nullptr && outputSlots_[j]->dataBuffer() == db) {
@@ -2026,12 +2046,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
           }
         }
         if (!isViewOfSlot) {
-          // Also check if a LATER slot shares this buffer (this slot is the owner)
           slotOwnership_[i].ownership = BufferOwnership::SLOT_OWNED;
           slotOwnership_[i].dataBuffer = db;
         }
       }
-      DSP_DIAG(MEMORY, "releaseGpuIntermediates: re-classified ownership for %d slots", totalOutputSlots_);
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: re-classified ownership for %d slots "
+               "(%zu protected external buffers)", totalOutputSlots_, protectedWeightBuffers_.size());
     }
 
     if (slotOwnership_) {
@@ -2808,6 +2828,21 @@ void NativeDynamicShapePlan::buildSegments() {
   const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
   static constexpr int MAX_SEGMENT_SIZE = 200;
 
+#ifndef SD_CUDA
+  // On CPU, break segments at ops with no traits registered in OpTraitTable.
+  // Ops with traits (elementwise, reduction, matmul, normalization, etc.) are
+  // compilable by OneDNN/OpenVINO. Ops without traits (custom/unknown ops) are
+  // isolated into 1-slot segments for slot-by-slot execution.
+  auto& registrator = sd::ops::OpRegistrator::getInstance();
+  auto hasRegisteredTraits = [&registrator, this](int idx) -> bool {
+    auto* op = registrator.getOperation(slots_[idx].opName.c_str());
+    if (op == nullptr) return false;
+    auto* desc = op->getOpDescriptor();
+    if (desc == nullptr) return false;
+    return desc->getTraits() != 0;
+  };
+#endif
+
   auto isMatmulOrAttention = [this](int idx) -> bool {
     const std::string& name = slots_[idx].opName;
     return name == "matmul" || name == "mmul" || name == "batched_gemm"
@@ -2835,7 +2870,20 @@ void NativeDynamicShapePlan::buildSegments() {
       if (thisIsMatmul != prevIsMatmul) matmulBreak = true;
     }
 
-    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit || matmulBreak) {
+#ifndef SD_CUDA
+    // On CPU, break at trait boundaries — ops with registered traits are
+    // compilable by OneDNN/OpenVINO, ops without traits run slot-by-slot.
+    bool cpuTraitBreak = false;
+    {
+      bool thisHasTraits = hasRegisteredTraits(i);
+      bool prevHasTraits = hasRegisteredTraits(i - 1);
+      if (thisHasTraits != prevHasTraits) cpuTraitBreak = true;
+    }
+#else
+    bool cpuTraitBreak = false;
+#endif
+
+    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit || matmulBreak || cpuTraitBreak) {
       // End current segment
       current.endSlot = i - 1;
       segments_.push_back(std::move(current));
