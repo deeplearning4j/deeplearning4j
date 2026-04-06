@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.samediff.optimize.optimizations;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -28,12 +29,17 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Swish;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Activation function fusion optimizations inspired by Luminal's RowSwishMul.
@@ -259,6 +265,181 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
                 log.warn("Failed to fuse SwiGLU pattern: {}", e.getMessage());
                 return false;
             }
+        }
+    }
+
+    /**
+     * Fuses GatedMLP pattern: swish_mul(matmul(x, W_gate), matmul(x, W_up)) -> fused_gemm_swiglu(x, W_gate, W_up)
+     *
+     * This pattern occurs in LLaMA/Mistral feed-forward blocks after the earlier passes
+     * have already fused sigmoid(x)*x -> swish and swish(x)*y -> swish_mul.
+     * The resulting graph has:
+     *   swish_mul(matmul(x, W_gate), matmul(x, W_up))
+     *
+     * where both matmuls share the same first input x. We fuse this into a single
+     * fused_gemm_swiglu op that computes both GEMMs and the SwiGLU activation in one kernel.
+     *
+     * FusedGemmSwiglu semantics: output = (x @ W_gate) * silu(x @ W_up)
+     * SwishMul semantics: silu(input0) * input1
+     * Therefore: SwishMul.input0 = matmul(x, W_up) [silu path], SwishMul.input1 = matmul(x, W_gate) [direct path]
+     */
+    public static class FuseGatedMLPPattern implements Optimizer {
+
+        @Override
+        public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
+            return Collections.singleton(SwishMul.class);
+        }
+
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (!(op.getOp() instanceof SwishMul)) {
+                return false;
+            }
+
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null || inputs.size() != 2) {
+                return false;
+            }
+
+            // SwishMul(input0, input1) = silu(input0) * input1
+            // input0 is the silu path (produces x @ W_up in the FusedGemmSwiglu formula)
+            // input1 is the direct multiply path (produces x @ W_gate in the FusedGemmSwiglu formula)
+            String siluPathVar = inputs.get(0);   // output of matmul(x, W_up)
+            String directPathVar = inputs.get(1);  // output of matmul(x, W_gate)
+
+            // Strip through trivial ops (cast, identity, reshape) to find the actual matmul outputs
+            String strippedSiluPath = stripTrivialOps(sd, helper, siluPathVar);
+            String strippedDirectPath = stripTrivialOps(sd, helper, directPathVar);
+
+            // Find the producing ops for both paths
+            SameDiffOp siluMatmulOp = getProducingMatmulOp(sd, helper, strippedSiluPath);
+            SameDiffOp directMatmulOp = getProducingMatmulOp(sd, helper, strippedDirectPath);
+
+            if (siluMatmulOp == null || directMatmulOp == null) {
+                return false;
+            }
+
+            // Both matmuls must have exactly 2 inputs: (x, W)
+            List<String> siluMatmulInputs = siluMatmulOp.getInputsToOp();
+            List<String> directMatmulInputs = directMatmulOp.getInputsToOp();
+            if (siluMatmulInputs == null || siluMatmulInputs.size() != 2) {
+                return false;
+            }
+            if (directMatmulInputs == null || directMatmulInputs.size() != 2) {
+                return false;
+            }
+
+            // Verify both matmuls share the same first input (x), stripping through trivial ops
+            String siluMatmulX = stripTrivialOps(sd, helper, siluMatmulInputs.get(0));
+            String directMatmulX = stripTrivialOps(sd, helper, directMatmulInputs.get(0));
+            if (!siluMatmulX.equals(directMatmulX)) {
+                return false;
+            }
+
+            // Extract weight variables
+            // siluMatmulOp computes x @ W_up (silu path), directMatmulOp computes x @ W_gate (direct path)
+            String wUpVar = siluMatmulInputs.get(1);
+            String wGateVar = directMatmulInputs.get(1);
+
+            // The shared input x — use the actual (non-stripped) input from one of the matmuls
+            String xVar = siluMatmulInputs.get(0);
+
+            // Check that the matmul outputs have no other consumers (safe to remove)
+            boolean siluMatmulExclusive = isExclusivelyConsumed(sd, helper, strippedSiluPath, op.getName());
+            boolean directMatmulExclusive = isExclusivelyConsumed(sd, helper, strippedDirectPath, op.getName());
+
+            // Get the SwishMul output variable
+            List<String> swishMulOutputs = op.getOutputsOfOp();
+            if (swishMulOutputs == null || swishMulOutputs.isEmpty()) {
+                return false;
+            }
+            String swishMulOutputVar = swishMulOutputs.get(0);
+
+            log.info("Fusing GatedMLP: swish_mul(mmul({}, {}), mmul({}, {})) -> fused_gemm_swiglu({}, {}, {})",
+                    xVar, wUpVar, xVar, wGateVar, xVar, wGateVar, wUpVar);
+
+            try {
+                SDVariable x = sd.getVariable(xVar);
+                SDVariable wGate = sd.getVariable(wGateVar);
+                SDVariable wUp = sd.getVariable(wUpVar);
+                if (x == null || wGate == null || wUp == null) {
+                    return false;
+                }
+
+                // Create fused_gemm_swiglu: output = (x @ wGate) * silu(x @ wUp)
+                SDVariable fusedOutput = new FusedGemmSwiglu(sd, x, wGate, wUp).outputVariable();
+
+                // Replace all uses of SwishMul output with fused output
+                OptimizationUtils.replaceOpInputsWith(sd, helper, swishMulOutputVar, fusedOutput.name());
+
+                // Remove the SwishMul op
+                OptimizationUtils.removeOp(sd, helper, op.getName());
+                OptimizationUtils.removeVariable(sd, helper, swishMulOutputVar);
+
+                // Remove matmul ops if they have no other consumers
+                if (siluMatmulExclusive) {
+                    OptimizationUtils.removeOp(sd, helper, siluMatmulOp.getName());
+                    OptimizationUtils.removeVariable(sd, helper, strippedSiluPath);
+                    // Also remove intermediate trivial op variables between matmul and SwishMul
+                    if (!strippedSiluPath.equals(siluPathVar)) {
+                        OptimizationUtils.removeVariable(sd, helper, siluPathVar);
+                    }
+                }
+                if (directMatmulExclusive) {
+                    OptimizationUtils.removeOp(sd, helper, directMatmulOp.getName());
+                    OptimizationUtils.removeVariable(sd, helper, strippedDirectPath);
+                    if (!strippedDirectPath.equals(directPathVar)) {
+                        OptimizationUtils.removeVariable(sd, helper, directPathVar);
+                    }
+                }
+
+                return true;
+            } catch (Exception e) {
+                log.warn("Failed to fuse GatedMLP pattern: {}", e.getMessage());
+                return false;
+            }
+        }
+
+        /**
+         * Finds the producing op for a variable if it is a matmul (Mmul or TensorMmul).
+         * Returns null if the variable is not produced by a matmul.
+         */
+        private SameDiffOp getProducingMatmulOp(SameDiff sd, OptimizationHelper helper, String varName) {
+            Variable v = helper != null ? helper.getVariable(varName) : sd.getVariables().get(varName);
+            if (v == null) return null;
+
+            String producerOpName = v.getOutputOfOp();
+            if (producerOpName == null) return null;
+
+            SameDiffOp producerOp = sd.getOps().get(producerOpName);
+            if (producerOp == null || producerOp.getOp() == null) return null;
+
+            if (producerOp.getOp() instanceof Mmul || producerOp.getOp() instanceof TensorMmul) {
+                return producerOp;
+            }
+            return null;
+        }
+
+        /**
+         * Checks if the given variable is exclusively consumed by the specified op
+         * (i.e., no other ops use this variable as input). This determines whether
+         * the producing op can be safely removed.
+         */
+        private boolean isExclusivelyConsumed(SameDiff sd, OptimizationHelper helper, String varName, String consumerOpName) {
+            Variable v = helper != null ? helper.getVariable(varName) : sd.getVariables().get(varName);
+            if (v == null) return false;
+
+            List<String> consumers = v.getInputsForOp();
+            if (consumers == null) return true;
+
+            // The variable should only be consumed by the SwishMul op (or trivial ops leading to it)
+            for (String consumer : consumers) {
+                if (!consumer.equals(consumerOpName)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 

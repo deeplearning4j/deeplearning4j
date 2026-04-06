@@ -62,7 +62,7 @@ struct SectionTypeConfig {
 inline constexpr SectionTypeConfig SECTION_TYPE_CONFIGS[] = {
   //  type                            name              compiled fallback standalone fusionOK barrier grid
   { KernelSectionType::ELEMENTWISE,        "ELEMENTWISE",    true,  false, false, true,  false, SectionGridType::LINEAR_1D },
-  { KernelSectionType::MATMUL,             "MATMUL",         false, false, false, false, false, SectionGridType::TILED_2D },
+  { KernelSectionType::MATMUL,             "MATMUL",         false, false, false, true,  false, SectionGridType::TILED_2D },
   { KernelSectionType::FUSED_ATTENTION,    "ATTENTION",      false, false, false, false, true,  SectionGridType::ATTENTION },
   { KernelSectionType::REDUCTION,          "REDUCTION",      false, false, false, false, true,  SectionGridType::LINEAR_1D },
   { KernelSectionType::NORMALIZATION,      "NORMALIZATION",  false, false, false, false, true,  SectionGridType::LINEAR_1D },

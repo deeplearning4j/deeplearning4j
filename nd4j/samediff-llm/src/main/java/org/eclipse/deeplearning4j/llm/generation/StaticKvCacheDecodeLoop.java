@@ -222,7 +222,9 @@ public class StaticKvCacheDecodeLoop {
         DecoderUtils.KVCacheNames kvNames = resolvedIOConfig.getKvCacheNames() != null
                 ? resolvedIOConfig.getKvCacheNames()
                 : DecoderUtils.findKVCacheOutputNames(decoder);
-        List<String> decoderInputNames = decoder.inputs();
+        // Get ALL external inputs — placeholders, constants, variables, and array-type
+        // variables that the graph reads. This matches what the DSP compiler discovers.
+        List<String> decoderInputNames = decoder.externalInputs();
         log.info("  Decoder input names: {}", decoderInputNames);
 
         String resolvedEmbedInputName = embedInputName;
@@ -355,16 +357,40 @@ public class StaticKvCacheDecodeLoop {
         OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try {
 
+        // Pin thread to the decoder's execution device before the loop.
+        // Vision encoder or model loading may have left the thread on a different
+        // device. All arrays created during input building (position_ids, masks)
+        // must be on the execution device to avoid cross-device migration.
+        {
+            InferenceSession session = decoder.getOrCreateSession();
+            DynamicShapePlanExecutor dspExec = session.getDynamicShapePlanExecutor();
+            if (dspExec != null) {
+                dspExec.ensureExecutionDevice();
+            }
+        }
+
         for (int step = 0; step < maxNewTokens; step++) {
             long stepStart = System.nanoTime();
             long currentSeqLen = currentEmbeddings.shape()[1];
+
+            // Re-pin to execution device at the start of each step.
+            // Token sampling / embedding ops between steps can change the thread's device.
+            {
+                InferenceSession session = decoder.getOrCreateSession();
+                DynamicShapePlanExecutor dspExec = session.getDynamicShapePlanExecutor();
+                if (dspExec != null) {
+                    dspExec.ensureExecutionDevice();
+                }
+            }
 
             // Build input map (with reusable input cache for decode steps)
             // dspActive = padded mode with frozen shapes (enables native C++ input updates)
             boolean dspActive = usingStaticKv
                     && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noPadded"));
-            boolean nativeDecodeInputs = decoderDspExec != null && decoderDspExec.isDecodeInputsConfigured()
-                    && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noNativeDecodeInputs"));
+            // All graph inputs are managed by Java through the normal placeholder path.
+            // No split authority — Java sets values, frozen fast path syncs to device,
+            // capture buffer D2D refresh propagates to captured graphs.
+            boolean nativeDecodeInputs = false;
             long maxKvLen = kvCacheManager.getMaxKvLen();
             long cachePos = kvCacheManager.getCachePosition();
             Map<String, INDArray> decoderInputMap = DecoderUtils.buildDecoderInputMap(
@@ -378,13 +404,8 @@ public class StaticKvCacheDecodeLoop {
 
             long tAfterInputBuild = System.nanoTime();
 
-            // Tell C++ the next token and cache position for device-side input updates.
-            // C++ will write input_ids, position_ids, and attention_mask directly on device
-            // memory during execute() — no Java putScalar/assign host-device round-trips.
-            if (nativeDecodeInputs && step >= 1) {
-                long tokenId = currentInputIds.getLong(0, 0);
-                decoderDspExec.setNextDecodeToken(tokenId, (int) cachePos);
-            }
+            // All input updates are handled by Java via buildDecoderInputMap + syncToSpecial.
+            // No C++ decode input management needed.
 
             // Diagnostic logging for steps 1-3
             if (step >= 1 && step <= 3) {
@@ -539,12 +560,17 @@ public class StaticKvCacheDecodeLoop {
                                 decoder.associateArrayWithVariable(e.getValue(), pastName);
                             }
                         }
+                        // No graph topology changes needed. Internal variables (like input_ids)
+                        // get correct values via associateArrayWithVariable in buildDecoderInputMap.
                         // Clear old plan and recompile with correct KV shapes.
                         boolean cppKvEnabled = !skipFreeze
                                 && !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
                         String[] recompileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
                         decoder.clearDynamicShapePlanCache();
-                        decoderSession.clearAllCaches();
+                        // Don't call clearAllCaches — it destroys the executor and frees
+                        // GPU arrays that back model variables (like input_ids). The plan
+                        // cache clear above removes the old compiled plan. A new executor
+                        // will be created on the next output() call.
                         dspExec = null;  // old executor invalidated
                         if (!skipFreeze) {
                             log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={})",
@@ -590,10 +616,8 @@ public class StaticKvCacheDecodeLoop {
                                     log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}, decodeOutputs=logits-only",
                                             presentNames.size(), cachePos);
 
-                                    dspExec.configureDecodeInputs(plan, (int) maxKvLen);
-                                    if (dspExec.isDecodeInputsConfigured()) {
-                                        log.info("  [Perf] C++ decode input updates enabled (zero host-device round-trips)");
-                                    }
+                                    // Decode inputs managed by Java — no C++ configureDecodeInputs needed.
+                                    // All inputs flow through buildDecoderInputMap → syncToSpecial → capture buffer D2D.
                                 } else {
                                     decoderDspExec = null;
                                     decoder.clearDynamicShapePlanCache();
@@ -604,6 +628,10 @@ public class StaticKvCacheDecodeLoop {
                         }
                     }
                 } // end if (maxSpeculativeTokens <= 0) — DSP recompile guard
+
+                // Re-read input names: the attn_mask_reformat placeholder override
+                // may have added a new external input to the graph.
+                decoderInputNames = decoder.externalInputs();
             }
 
             long tAfterKvUpdate = System.nanoTime();

@@ -508,6 +508,209 @@ public class DspDebugger {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // Phase Contract Validation
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Validate the phase contract of the current plan.
+     *
+     * <p>Checks:</p>
+     * <ul>
+     *   <li>All capturable segments have replay handles (no orphans)</li>
+     *   <li>Plan phase is monotonically advancing (no demotions)</li>
+     *   <li>No slot writes after freeze</li>
+     * </ul>
+     *
+     * @return a PhaseContractReport with any violations found
+     */
+    public PhaseContractReport validatePhaseContract() {
+        PlanReport planReport = analyzePlan();
+        PhaseContractReport contractReport = new PhaseContractReport();
+
+        if (planReport.errorMessage != null) {
+            contractReport.addViolation(reportPhaseViolation(
+                    PhaseViolationType.PLAN_DESTRUCTION,
+                    planReport.planPhase, -1, -1,
+                    "Plan not available: " + planReport.errorMessage));
+            return contractReport;
+        }
+
+        NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        Pointer handle = getHandle();
+        if (handle == null || handle.isNull()) {
+            contractReport.addViolation(reportPhaseViolation(
+                    PhaseViolationType.PLAN_DESTRUCTION,
+                    null, -1, -1,
+                    "Native plan handle is null or destroyed"));
+            return contractReport;
+        }
+
+        PlanPhase currentPlanPhase = planReport.planPhase;
+
+        // Check 1: All capturable segments should have replay handles (no orphans)
+        for (SegmentReport seg : planReport.segments) {
+            if (seg.capturable && !seg.captureFailed) {
+                // A capturable segment that has executed enough should have a replay handle
+                if (seg.executionCount > 2 && seg.phase != null
+                        && seg.phase != ExecutionPhase.REPLAYING
+                        && seg.phase != ExecutionPhase.COMPILING) {
+                    contractReport.addViolation(reportPhaseViolation(
+                            PhaseViolationType.ADDRESS_DRIFT,
+                            currentPlanPhase, -1, seg.index,
+                            "Capturable segment[" + seg.index + "] has executed " +
+                            seg.executionCount + " times but is in phase " + seg.phase +
+                            " — expected COMPILING or REPLAYING"));
+                }
+            }
+        }
+
+        // Check 2: Plan phase should be monotonically advancing.
+        // If we have a frozen plan but the phase is SLOT_BY_SLOT, that's a demotion.
+        int pointersStable = ops.getPlanPointersStable(handle);
+        int frozenExecCount = ops.getPlanFrozenExecutionCount(handle);
+        if (frozenExecCount > 3 && currentPlanPhase == PlanPhase.SLOT_BY_SLOT) {
+            contractReport.addViolation(reportPhaseViolation(
+                    PhaseViolationType.PHASE_DEMOTION,
+                    currentPlanPhase, -1, -1,
+                    "Plan has " + frozenExecCount + " frozen executions but phase is still " +
+                    "SLOT_BY_SLOT — expected at least SHAPES_FROZEN"));
+        }
+
+        // Check 3: If pointers are stable but phase hasn't reached POINTERS_STABLE
+        if (pointersStable == 1 && currentPlanPhase != null
+                && !currentPlanPhase.isAtLeast(PlanPhase.POINTERS_STABLE)) {
+            contractReport.addViolation(reportPhaseViolation(
+                    PhaseViolationType.PHASE_DEMOTION,
+                    currentPlanPhase, -1, -1,
+                    "Pointers are stable but plan phase is " + currentPlanPhase +
+                    " — expected at least POINTERS_STABLE"));
+        }
+
+        // Check 4: Frozen slots should not have dynamic state
+        if (currentPlanPhase != null && currentPlanPhase.isAtLeast(PlanPhase.SHAPES_FROZEN)) {
+            for (SlotInfo slot : planReport.slots) {
+                if (slot.isFrozenConstant() && slot.state != null
+                        && !slot.state.isAtLeast(SlotState.FROZEN)) {
+                    contractReport.addViolation(reportPhaseViolation(
+                            PhaseViolationType.SLOT_WRITE_AFTER_FREEZE,
+                            currentPlanPhase, slot.index, -1,
+                            "Slot[" + slot.index + "] '" + slot.opName +
+                            "' has FLAG_FROZEN_CONSTANT but state is " + slot.state +
+                            " — expected at least FROZEN"));
+                }
+            }
+        }
+
+        return contractReport;
+    }
+
+    /**
+     * Create a structured phase violation report.
+     *
+     * @param type      violation type
+     * @param phase     current plan phase (may be null)
+     * @param slotIndex affected slot index, or -1 if not applicable
+     * @param segmentIndex affected segment index, or -1 if not applicable
+     * @param reason    human-readable description of the violation
+     * @return a PhaseViolation describing the issue
+     */
+    public PhaseViolation reportPhaseViolation(PhaseViolationType type,
+                                                PlanPhase phase,
+                                                int slotIndex,
+                                                int segmentIndex,
+                                                String reason) {
+        return new PhaseViolation(type, phase, slotIndex, segmentIndex, reason);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Phase Contract Report Classes
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /** Types of phase contract violations. */
+    public enum PhaseViolationType {
+        /** A slot was written to after the plan was frozen */
+        SLOT_WRITE_AFTER_FREEZE,
+        /** A buffer address drifted (changed) when pointers should be stable */
+        ADDRESS_DRIFT,
+        /** The plan phase went backward (e.g., SHAPES_FROZEN -> SLOT_BY_SLOT) */
+        PHASE_DEMOTION,
+        /** The plan was destroyed unexpectedly */
+        PLAN_DESTRUCTION
+    }
+
+    /** A single phase contract violation. */
+    public static class PhaseViolation {
+        public final PhaseViolationType type;
+        public final PlanPhase currentPhase;
+        public final int slotIndex;
+        public final int segmentIndex;
+        public final String reason;
+
+        PhaseViolation(PhaseViolationType type, PlanPhase currentPhase,
+                       int slotIndex, int segmentIndex, String reason) {
+            this.type = type;
+            this.currentPhase = currentPhase;
+            this.slotIndex = slotIndex;
+            this.segmentIndex = segmentIndex;
+            this.reason = reason;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[").append(type.name()).append("]");
+            if (currentPhase != null) sb.append(" phase=").append(currentPhase.name());
+            if (slotIndex >= 0) sb.append(" slot=").append(slotIndex);
+            if (segmentIndex >= 0) sb.append(" segment=").append(segmentIndex);
+            sb.append(" : ").append(reason);
+            return sb.toString();
+        }
+    }
+
+    /** Report from validatePhaseContract(). Contains all violations found. */
+    public static class PhaseContractReport {
+        private final List<PhaseViolation> violations = new ArrayList<>();
+
+        void addViolation(PhaseViolation violation) {
+            violations.add(violation);
+        }
+
+        public boolean hasViolations() {
+            return !violations.isEmpty();
+        }
+
+        public List<PhaseViolation> getViolations() {
+            return Collections.unmodifiableList(violations);
+        }
+
+        public List<PhaseViolation> getViolationsOfType(PhaseViolationType type) {
+            List<PhaseViolation> filtered = new ArrayList<>();
+            for (PhaseViolation v : violations) {
+                if (v.type == type) filtered.add(v);
+            }
+            return filtered;
+        }
+
+        public int countByType(PhaseViolationType type) {
+            return getViolationsOfType(type).size();
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("PhaseContractReport: ").append(violations.size()).append(" violation(s)\n");
+            if (violations.isEmpty()) {
+                sb.append("  No phase contract violations detected.\n");
+            } else {
+                for (PhaseViolation v : violations) {
+                    sb.append("  ").append(v).append("\n");
+                }
+            }
+            return sb.toString();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // Graph Replay Analysis
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -1361,5 +1564,157 @@ public class DspDebugger {
 
             return sb.toString();
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Decode Input Stale Value Detection
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /** Snapshot of decode input values from a single step. */
+    public static class DecodeInputSnapshot {
+        public final int step;
+        public final long positionIdsValue;
+        public final long attentionMaskSum;
+        public final long inputIdsValue;
+
+        DecodeInputSnapshot(int step, long positionIdsValue, long attentionMaskSum, long inputIdsValue) {
+            this.step = step;
+            this.positionIdsValue = positionIdsValue;
+            this.attentionMaskSum = attentionMaskSum;
+            this.inputIdsValue = inputIdsValue;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("step=%d posIds=%d maskSum=%d inputIds=%d",
+                    step, positionIdsValue, attentionMaskSum, inputIdsValue);
+        }
+    }
+
+    /** Report from multi-step decode input validation. */
+    public static class DecodeInputReport {
+        private final List<DecodeInputSnapshot> snapshots = new ArrayList<>();
+        private final List<String> errors = new ArrayList<>();
+
+        public void addSnapshot(DecodeInputSnapshot snap) { snapshots.add(snap); }
+        public void addError(String msg) { errors.add(msg); }
+        public boolean hasErrors() { return !errors.isEmpty(); }
+        public List<String> getErrors() { return errors; }
+        public List<DecodeInputSnapshot> getSnapshots() { return snapshots; }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("DecodeInputReport: ").append(snapshots.size()).append(" steps, ")
+              .append(errors.size()).append(" errors\n");
+            for (DecodeInputSnapshot snap : snapshots) {
+                sb.append("  ").append(snap).append("\n");
+            }
+            for (String err : errors) {
+                sb.append("  [ERROR] ").append(err).append("\n");
+            }
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Validate that decode inputs (position_ids, attention_mask) change correctly
+     * across multiple decode steps.
+     *
+     * <p>Detects stale values that indicate capture buffer refresh failures:</p>
+     * <ul>
+     *   <li>position_ids stays constant across steps (should increment)</li>
+     *   <li>attention_mask sum stays constant (should grow by 1 per step)</li>
+     * </ul>
+     *
+     * @param placeholders Base placeholder map (must include position_ids and attention_mask)
+     * @param positionIdsName Name of position_ids placeholder
+     * @param attentionMaskName Name of attention_mask placeholder
+     * @param numSteps Number of decode steps to simulate
+     * @param outputs Output names to request
+     * @return Report with snapshots and errors
+     * @throws IllegalStateException if stale values detected (hard error, no fallback)
+     */
+    public DecodeInputReport validateDecodeInputProgression(
+            Map<String, INDArray> placeholders,
+            String positionIdsName,
+            String attentionMaskName,
+            int numSteps,
+            String... outputs) {
+
+        DecodeInputReport report = new DecodeInputReport();
+
+        for (int step = 0; step < numSteps; step++) {
+            // Update position_ids for this step
+            INDArray posIds = placeholders.get(positionIdsName);
+            if (posIds != null) {
+                long expectedPos = posIds.getLong(0) + step;
+                posIds.putScalar(0, expectedPos);
+            }
+
+            // Update attention_mask — add one more 1
+            INDArray mask = placeholders.get(attentionMaskName);
+            if (mask != null && step > 0) {
+                long maskLen = mask.length();
+                long currentSum = mask.sumNumber().longValue();
+                if (currentSum < maskLen) {
+                    mask.putScalar(currentSum, 1);
+                }
+            }
+
+            try {
+                Map<String, INDArray> result = sd.output(placeholders, outputs);
+
+                // Snapshot the actual values passed to the native plan
+                long posVal = posIds != null ? posIds.getLong(0) : -1;
+                long maskSum = mask != null ? mask.sumNumber().longValue() : -1;
+                long idsVal = -1;  // input_ids not always present
+
+                DecodeInputSnapshot snap = new DecodeInputSnapshot(step, posVal, maskSum, idsVal);
+                report.addSnapshot(snap);
+
+                // Check for stale values vs previous step
+                if (step > 0) {
+                    DecodeInputSnapshot prev = report.getSnapshots().get(step - 1);
+
+                    if (posVal == prev.positionIdsValue && posIds != null) {
+                        String err = String.format(
+                                "STALE position_ids at step %d: value=%d (same as step %d). " +
+                                "Expected increment. Capture buffer refresh likely failed.",
+                                step, posVal, step - 1);
+                        report.addError(err);
+                    }
+
+                    if (maskSum == prev.attentionMaskSum && mask != null && step > 1) {
+                        String err = String.format(
+                                "STALE attention_mask at step %d: sum=%d (same as step %d). " +
+                                "Expected sum to grow by 1.",
+                                step, maskSum, step - 1);
+                        report.addError(err);
+                    }
+                }
+
+                // Check output isn't NaN
+                for (Map.Entry<String, INDArray> e : result.entrySet()) {
+                    if (e.getValue() != null && !e.getValue().wasClosed()) {
+                        double sum = e.getValue().sumNumber().doubleValue();
+                        if (Double.isNaN(sum)) {
+                            report.addError("NaN in output '" + e.getKey() + "' at step " + step);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                report.addError("Execution failed at step " + step + ": " + e.getMessage());
+            }
+        }
+
+        if (report.hasErrors()) {
+            throw new IllegalStateException(
+                    "Decode input validation FAILED — stale values detected. " +
+                    "This indicates capture buffer refresh is broken. No fallback.\n" +
+                    report);
+        }
+
+        return report;
     }
 }

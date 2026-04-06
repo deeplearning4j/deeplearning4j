@@ -1612,6 +1612,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray assign(final INDArray arr) {
+        // DSP lifecycle diagnostic: detect stale GPU pointers before CUDA kernel launch
+        if (this.data() != null && this.data().wasClosed()) {
+            throw new IllegalStateException("assign() destination has CLOSED DataBuffer. " +
+                "Variable lifecycle violation: array was freed but still referenced. " +
+                "dst.shape=" + java.util.Arrays.toString(this.shape()) +
+                " dst.dtype=" + this.dataType() +
+                " dst.id=" + this.getId() +
+                " dst.dataBuffer=" + System.identityHashCode(this.data()));
+        }
+        if (arr != null && arr.data() != null && arr.data().wasClosed()) {
+            throw new IllegalStateException("assign() source has CLOSED DataBuffer. " +
+                "Variable lifecycle violation: array was freed but still referenced. " +
+                "src.shape=" + java.util.Arrays.toString(arr.shape()) +
+                " src.dtype=" + arr.dataType() +
+                " src.id=" + arr.getId());
+        }
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.any.Assign(arr, this));
         return this;
     }
@@ -3974,6 +3990,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray assign(Number value) {
         Preconditions.checkState(dataType() != DataType.BOOL || value.doubleValue() == 0.0 || value.doubleValue() == 1.0, "Only values 0 or 1 are allowed for scalar " +
                 "assign on boolean arrays: got value %s on to assign to boolean array with shape %ndShape", value, this);
+        if (this.data() != null && this.data().wasClosed()) {
+            throw new IllegalStateException("assign(Number) destination has CLOSED DataBuffer. " +
+                "Variable lifecycle violation: array was freed but still referenced. " +
+                "dst.shape=" + java.util.Arrays.toString(this.shape()) +
+                " dst.dtype=" + this.dataType() +
+                " dst.id=" + this.getId());
+        }
         Nd4j.getExecutioner().exec(new ScalarSet(this, value));
         return this;
     }

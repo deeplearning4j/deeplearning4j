@@ -130,9 +130,23 @@ float scoreSectionFusionRange(
   bool allowAttentionNeighborhoodMismatch =
       sd::Environment::getInstance().tritonFuseAttentionNeighborhoods() &&
       ((rangeHasAttention && nextIsAttnAdj) || (nextIsAttention && rangeHasAttnAdj));
+
+  // Allow matmul/normalization epilogue fusion: a MATMUL or NORMALIZATION section
+  // followed by ELEMENTWISE ops can fuse (the section builder already absorbed the
+  // epilogue ops into the section, but fusion scoring still validates the merge).
+  bool rangeHasMatmul = false;
+  bool rangeHasNorm = false;
+  for (int secIdx = rangeStartSectionIdx; secIdx <= rangeEndSectionIdx; secIdx++) {
+    if (sections[secIdx].type == KernelSectionType::MATMUL) rangeHasMatmul = true;
+    if (sections[secIdx].type == KernelSectionType::NORMALIZATION) rangeHasNorm = true;
+  }
+  bool nextIsElementwise = (nextSection.type == KernelSectionType::ELEMENTWISE ||
+                            nextSection.type == KernelSectionType::IDENTITY);
+  bool allowEpilogueFusion = (rangeHasMatmul || rangeHasNorm) && nextIsElementwise;
+
   bool gridCompatible =
       rangeGridTypes.empty() || (rangeGridTypes.size() == 1 && rangeGridTypes.count(nextGrid) == 1);
-  if (!gridCompatible && !allowAttentionNeighborhoodMismatch) {
+  if (!gridCompatible && !allowAttentionNeighborhoodMismatch && !allowEpilogueFusion) {
     DSP_DIAG(FUSION, "FusionScoring: range [%d-%d] + [%d-%d] grid mismatch -> -1.0",
              rangeStartSlot, rangeEndSlot, nextSection.startSlot, nextSection.endSlot);
     return -1.0f;
@@ -201,11 +215,16 @@ float scoreSectionFusionRange(
   // actually adjacent to an attention section in the current range.
   float attnBonus = allowAttentionNeighborhoodMismatch ? 50.0f : 0.0f;
 
-  float totalScore = memScore * 10.0f + launchScore - regPenalty + attnBonus;
+  // 7. Matmul/normalization epilogue bonus — fusing elementwise ops into
+  // matmul/normalization epilogue eliminates global memory round-trip.
+  // This is a high-value fusion (data stays in registers/SMEM).
+  float epilogueBonus = allowEpilogueFusion ? 40.0f : 0.0f;
 
-  DSP_DIAG(FUSION, "FusionScoring: range [%d-%d]+[%d-%d] memMB=%.2f launch=%.1f regPen=%.1f attnBonus=%.1f -> score=%.2f",
+  float totalScore = memScore * 10.0f + launchScore - regPenalty + attnBonus + epilogueBonus;
+
+  DSP_DIAG(FUSION, "FusionScoring: range [%d-%d]+[%d-%d] memMB=%.2f launch=%.1f regPen=%.1f attnBonus=%.1f epilogueBonus=%.1f -> score=%.2f",
            rangeStartSlot, rangeEndSlot, nextSection.startSlot, nextSection.endSlot,
-           memScore, launchScore, regPenalty, attnBonus, totalScore);
+           memScore, launchScore, regPenalty, attnBonus, epilogueBonus, totalScore);
 
   return totalScore;
 }

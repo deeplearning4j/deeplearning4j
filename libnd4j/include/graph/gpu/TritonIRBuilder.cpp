@@ -270,6 +270,12 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["LayerNormalization"]   = {"LayerNormalization",   TritonOpCategory::NORMALIZATION, "custom.layer_norm",   true};
   table["rms_norm"]             = {"rms_norm",             TritonOpCategory::NORMALIZATION, "custom.rms_norm",     true};
   table["RmsNorm"]              = {"RmsNorm",              TritonOpCategory::NORMALIZATION, "custom.rms_norm",     true};
+  // rms_norm_linear: fused norm+matmul, falls back to native (decomposed) for now
+  table["rms_norm_linear"]      = {"rms_norm_linear",      TritonOpCategory::FUSED_LLM,     "custom.rms_norm_linear", true};
+  table["RmsNormLinear"]        = {"RmsNormLinear",        TritonOpCategory::FUSED_LLM,     "custom.rms_norm_linear", true};
+  // fused_gemm_swiglu: GatedMLP, treated as MATMUL for segment/section handling
+  table["fused_gemm_swiglu"]    = {"fused_gemm_swiglu",    TritonOpCategory::MATMUL,        "custom.fused_gemm_swiglu", true};
+  table["FusedGemmSwiglu"]      = {"FusedGemmSwiglu",      TritonOpCategory::MATMUL,        "custom.fused_gemm_swiglu", true};
   table["batch_norm"]           = {"batch_norm",           TritonOpCategory::NORMALIZATION, "custom.batch_norm",   true};
   table["BatchNorm"]            = {"BatchNorm",            TritonOpCategory::NORMALIZATION, "custom.batch_norm",   true};
   table["normalize_moments"]    = {"normalize_moments",    TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};

@@ -1459,6 +1459,16 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     default boolean dspLruEviction() { return true; }
     default void setDspLruEviction(boolean enabled) {}
 
+    // ============== DSP Freeze / Merge ==============
+
+    /** Whether to merge value-dependent ops into capturable segments after shapes freeze (default: false) */
+    default boolean dspFreezeMergeSegments() { return false; }
+    default void setDspFreezeMergeSegments(boolean enabled) {}
+
+    /** Whether to recompile segments when shapes freeze (default: false) */
+    default boolean dspFreezeRecompile() { return false; }
+    default void setDspFreezeRecompile(boolean enabled) {}
+
     // ============== LLM Benchmark Config Presets ==============
 
     /**

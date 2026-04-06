@@ -171,6 +171,20 @@ class SD_LIB_EXPORT MmulHelper {
                      NDArray* realFinalResult = nullptr);
 
   /**
+   * Set cublasLt epilogue state for the next matmul call on this thread.
+   * Used by DSP executor to fuse bias+activation into the matmul kernel.
+   * @param type 0=none, 1=bias, 2=bias+relu, 3=bias+gelu
+   * @param biasPtr Device pointer to bias data
+   * @param biasSize Size in bytes of the bias buffer
+   */
+  static void setLtEpilogue(int type, const void* biasPtr, int64_t biasSize);
+
+  /**
+   * Clear cublasLt epilogue state after matmul execution.
+   */
+  static void clearLtEpilogue();
+
+  /**
    * Reset the mixed-precision cast cache indices to 0.
    * Must be called before CUDA graph capture to ensure cached buffers are
    * reused in the same order as the non-capture warmup execution.

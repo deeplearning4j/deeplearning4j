@@ -32,7 +32,8 @@
     NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_mean_square) || \
     NOT_EXCLUDED(OP_column_parallel_linear) || NOT_EXCLUDED(OP_row_parallel_linear) || \
     NOT_EXCLUDED(OP_kv_cache_quantize) || NOT_EXCLUDED(OP_kv_cache_dequantize) || \
-    NOT_EXCLUDED(OP_ggml_dequantize)
+    NOT_EXCLUDED(OP_ggml_dequantize) || NOT_EXCLUDED(OP_fused_gemm_swiglu) || \
+    NOT_EXCLUDED(OP_rms_norm_linear)
 
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
@@ -834,6 +835,311 @@ CONFIGURABLE_OP_IMPL(swish_mul_bp, 3, 2, true, 0, 0) {
 }
 
 DECLARE_TYPES(swish_mul_bp) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// fused_gemm_swiglu - Fused GatedMLP: silu(X @ W_gate) * (X @ W_up)
+// Eliminates one read of X from HBM by computing both GEMMs on the same input.
+// For now, implemented as two matmuls + swish_mul. The CUDA kernel fusion
+// (concatenated GEMM) will be added as a platform-specific op.
+#if NOT_EXCLUDED(OP_fused_gemm_swiglu)
+CUSTOM_OP_IMPL(fused_gemm_swiglu, 3, 1, false, 0, 0) {
+    auto x = INPUT_VARIABLE(0);       // [M, K] input activations
+    auto wGate = INPUT_VARIABLE(1);   // [K, N] gate weight matrix
+    auto wUp = INPUT_VARIABLE(2);     // [K, N] up weight matrix
+    auto output = OUTPUT_VARIABLE(0); // [M, N]
+
+    REQUIRE_TRUE(x->rankOf() >= 2, 0, "fused_gemm_swiglu: input must be rank >= 2, got %d", x->rankOf());
+    REQUIRE_TRUE(wGate->rankOf() == 2, 0, "fused_gemm_swiglu: wGate must be rank 2, got %d", wGate->rankOf());
+    REQUIRE_TRUE(wUp->rankOf() == 2, 0, "fused_gemm_swiglu: wUp must be rank 2, got %d", wUp->rankOf());
+
+    // gate = X @ W_gate
+    auto gate = MmulHelper::mmul(x, wGate, nullptr, 1.0, 0.0);
+
+    // up = X @ W_up
+    auto up = MmulHelper::mmul(x, wUp, nullptr, 1.0, 0.0);
+
+    // out = silu(gate) * up = gate * sigmoid(gate) * up
+    NDArray* sigmoid = gate->transform(transform::Sigmoid);
+    NDArray* silu = (*gate) * (*sigmoid);
+    delete sigmoid;
+    delete gate;
+
+    NDArray* result = (*silu) * (*up);
+    delete silu;
+    delete up;
+
+    output->assign(result);
+    delete result;
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(fused_gemm_swiglu) {
+    auto xShape = inputShape->at(0);
+    auto wGateShape = inputShape->at(1);
+
+    auto M = shape::shapeOf(xShape)[0];
+    auto N = shape::shapeOf(wGateShape)[1];
+    auto dtype = ArrayOptions::dataType(xShape);
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {M, N}));
+}
+
+DECLARE_TYPES(fused_gemm_swiglu) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+CUSTOM_OP_IMPL(fused_gemm_swiglu_bp, 4, 3, false, 0, 0) {
+    auto x = INPUT_VARIABLE(0);       // [M, K]
+    auto wGate = INPUT_VARIABLE(1);   // [K, N]
+    auto wUp = INPUT_VARIABLE(2);     // [K, N]
+    auto gradOut = INPUT_VARIABLE(3); // [M, N]
+    auto dX = OUTPUT_VARIABLE(0);     // [M, K]
+    auto dWGate = OUTPUT_VARIABLE(1); // [K, N]
+    auto dWUp = OUTPUT_VARIABLE(2);   // [K, N]
+
+    // Recompute forward intermediates
+    auto gate = MmulHelper::mmul(x, wGate, nullptr, 1.0, 0.0);    // [M, N]
+    auto up = MmulHelper::mmul(x, wUp, nullptr, 1.0, 0.0);        // [M, N]
+
+    // silu(gate) = gate * sigmoid(gate)
+    NDArray* sigmoid = gate->transform(transform::Sigmoid);
+    NDArray* siluGate = (*gate) * (*sigmoid);
+
+    // d_up = gradOut * silu(gate)
+    NDArray* dUpVal = (*gradOut) * (*siluGate);
+
+    // silu'(gate) = sigmoid(gate) + gate * sigmoid(gate) * (1 - sigmoid(gate))
+    NDArray* gateSig = (*gate) * (*sigmoid);          // gate * sigmoid
+    NDArray* oneMinusSig = (*sigmoid) * (-1.0f);      // -sigmoid
+    *oneMinusSig += 1.0f;                              // 1 - sigmoid
+    NDArray* gsOms = (*gateSig) * (*oneMinusSig);     // gate * sigmoid * (1-sigmoid)
+    delete gateSig;
+    delete oneMinusSig;
+    NDArray* siluDeriv = (*sigmoid) + (*gsOms);       // sigmoid + gate*sigmoid*(1-sigmoid)
+    delete gsOms;
+
+    // d_gate = gradOut * up * silu'(gate)
+    NDArray* gradTimesUp = (*gradOut) * (*up);
+    NDArray* dGateVal = (*gradTimesUp) * (*siluDeriv);
+    delete gradTimesUp;
+    delete siluDeriv;
+    delete sigmoid;
+    delete siluGate;
+
+    // d_W_gate = x^T @ d_gate
+    MmulHelper::matmul(x, dGateVal, dWGate, true, false, 1.0, 0.0);
+
+    // d_W_up = x^T @ d_up
+    MmulHelper::matmul(x, dUpVal, dWUp, true, false, 1.0, 0.0);
+
+    // d_x = d_gate @ W_gate^T + d_up @ W_up^T
+    auto dXGate = new NDArray(dX->shapeInfo(), false, x->getContext());
+    MmulHelper::matmul(dGateVal, const_cast<NDArray*>(wGate), dXGate, false, true, 1.0, 0.0);
+    auto dXUp = new NDArray(dX->shapeInfo(), false, x->getContext());
+    MmulHelper::matmul(dUpVal, const_cast<NDArray*>(wUp), dXUp, false, true, 1.0, 0.0);
+    *dXGate += *dXUp;
+    dX->assign(dXGate);
+    delete dXGate;
+    delete dXUp;
+
+    delete dGateVal;
+    delete dUpVal;
+    delete gate;
+    delete up;
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(fused_gemm_swiglu_bp) {
+    auto xShape = inputShape->at(0);
+    auto wGateShape = inputShape->at(1);
+    auto wUpShape = inputShape->at(2);
+
+    auto dXShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(xShape), 'c', shape::shapeOf(xShape), shape::rank(xShape));
+    auto dWGateShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(wGateShape), 'c', shape::shapeOf(wGateShape), shape::rank(wGateShape));
+    auto dWUpShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(wUpShape), 'c', shape::shapeOf(wUpShape), shape::rank(wUpShape));
+
+    return SHAPELIST(dXShape, dWGateShape, dWUpShape);
+}
+
+DECLARE_TYPES(fused_gemm_swiglu_bp) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// rms_norm_linear - Fused RMSNorm + Linear: matmul(rms_norm(x, gamma, eps), W)
+// Single-pass kernel computes both the normalization and linear projection,
+// eliminating the intermediate normalized tensor from HBM.
+// For now, implemented as rms_norm + matmul. The CUDA kernel with joint
+// Σx² and Σx·W accumulation will be added as a platform-specific op.
+#if NOT_EXCLUDED(OP_rms_norm_linear)
+CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
+    auto x = INPUT_VARIABLE(0);       // [M, K] input
+    auto gamma = INPUT_VARIABLE(1);   // [K] scale
+    auto w = INPUT_VARIABLE(2);       // [K, N] weight matrix
+    auto output = OUTPUT_VARIABLE(0); // [M, N]
+
+    float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-6f;
+
+    REQUIRE_TRUE(x->rankOf() >= 2, 0, "rms_norm_linear: input must be rank >= 2, got %d", x->rankOf());
+    REQUIRE_TRUE(w->rankOf() == 2, 0, "rms_norm_linear: weight must be rank 2, got %d", w->rankOf());
+
+    // Step 1: RMS normalization
+    // rms_norm(x) = x * rsqrt(mean(x^2) + eps) * gamma
+    auto K = x->sizeAt(-1);
+    std::vector<LongType> lastDim = {x->rankOf() - 1};
+
+    NDArray* xSquared = (*x) * (*x);
+    NDArray* meanSquared = xSquared->reduceAlongDimension(reduce::Mean, &lastDim, true);
+    delete xSquared;
+
+    // Add epsilon and compute rsqrt
+    NDArray* meanPlusEps = (*meanSquared) + epsilon;
+    delete meanSquared;
+    NDArray* sqrtVal = meanPlusEps->transform(transform::Sqrt);
+    delete meanPlusEps;
+    NDArray* rsqrtVal = sqrtVal->transform(transform::Reciprocal);
+    delete sqrtVal;
+
+    // Normalize: x * rsqrt * gamma
+    NDArray* normalized = (*x) * (*rsqrtVal);
+    delete rsqrtVal;
+    NDArray* scaled = (*normalized) * (*gamma);
+    delete normalized;
+
+    // Step 2: Linear projection
+    auto result = MmulHelper::mmul(scaled, w, nullptr, 1.0, 0.0);
+    delete scaled;
+
+    output->assign(result);
+    delete result;
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(rms_norm_linear) {
+    auto xShape = inputShape->at(0);
+    auto wShape = inputShape->at(2);
+
+    auto M = shape::shapeOf(xShape)[0];
+    auto N = shape::shapeOf(wShape)[1];
+    auto dtype = ArrayOptions::dataType(xShape);
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {M, N}));
+}
+
+DECLARE_TYPES(rms_norm_linear) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+CUSTOM_OP_IMPL(rms_norm_linear_bp, 4, 3, false, 0, 0) {
+    auto x = INPUT_VARIABLE(0);       // [M, K]
+    auto gamma = INPUT_VARIABLE(1);   // [K]
+    auto w = INPUT_VARIABLE(2);       // [K, N]
+    auto gradOut = INPUT_VARIABLE(3); // [M, N]
+    auto dX = OUTPUT_VARIABLE(0);     // [M, K]
+    auto dGamma = OUTPUT_VARIABLE(1); // [K]
+    auto dW = OUTPUT_VARIABLE(2);     // [K, N]
+
+    float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-6f;
+
+    // Step 1: Recompute normalized = rms_norm(x, gamma, eps)
+    auto K = x->sizeAt(-1);
+    std::vector<LongType> lastDim = {x->rankOf() - 1};
+
+    NDArray* xSquared = (*x) * (*x);
+    NDArray* meanSquared = xSquared->reduceAlongDimension(reduce::Mean, &lastDim, true);
+    delete xSquared;
+    NDArray* meanPlusEps = (*meanSquared) + epsilon;
+    delete meanSquared;
+    NDArray* sqrtVal = meanPlusEps->transform(transform::Sqrt);
+    delete meanPlusEps;
+    NDArray* rsqrtVal = sqrtVal->transform(transform::Reciprocal);
+    delete sqrtVal;
+    NDArray* normalized = (*x) * (*rsqrtVal);  // x * rsqrt(mean(x^2) + eps)
+    NDArray* scaled = (*normalized) * (*gamma); // normalized * gamma
+
+    // Step 2: mmul backward
+    // d_normalized_scaled = gradOut @ W^T
+    auto dScaled = new NDArray(x->shapeInfo(), false, x->getContext());
+    MmulHelper::matmul(gradOut, const_cast<NDArray*>(w), dScaled, false, true, 1.0, 0.0);
+
+    // d_W = scaled^T @ gradOut
+    MmulHelper::matmul(scaled, gradOut, dW, true, false, 1.0, 0.0);
+    delete scaled;
+
+    // Step 3: rms_norm backward (gamma scaling)
+    // d_normalized = d_scaled / gamma (element-wise, broadcast along last dim)
+    // But actually d_scaled = d(normalized * gamma) so d_normalized = d_scaled * gamma
+    // and d_gamma = sum(d_scaled * normalized, axis=0..rank-2)
+    NDArray* dNormalized = (*dScaled) * (*gamma);
+    // d_gamma = sum over batch dims of (d_scaled * normalized)
+    NDArray* dGammaFull = (*dScaled) * (*normalized);
+    delete dScaled;
+
+    if (x->rankOf() > 1) {
+        std::vector<LongType> batchDims;
+        for (int d = 0; d < x->rankOf() - 1; d++) batchDims.push_back(d);
+        NDArray* dGammaReduced = dGammaFull->reduceAlongDimension(reduce::Sum, &batchDims, false);
+        dGamma->assign(dGammaReduced);
+        delete dGammaReduced;
+    } else {
+        dGamma->assign(dGammaFull);
+    }
+    delete dGammaFull;
+
+    // Step 4: rms_norm backward (input gradient)
+    // normalized = x * rsqrt, so d_x involves the rsqrt derivative
+    // d_x = rsqrt * (d_normalized - normalized * mean(d_normalized * normalized))
+    NDArray* dnTimesNorm = (*dNormalized) * (*normalized);
+    NDArray* meanDnNorm = dnTimesNorm->reduceAlongDimension(reduce::Mean, &lastDim, true);
+    delete dnTimesNorm;
+
+    NDArray* correction = (*normalized) * (*meanDnNorm);
+    delete meanDnNorm;
+    NDArray* adjusted = (*dNormalized) - (*correction);
+    delete correction;
+    delete dNormalized;
+
+    NDArray* dXCalc = (*adjusted) * (*rsqrtVal);
+    delete adjusted;
+    delete rsqrtVal;
+    delete normalized;
+
+    dX->assign(dXCalc);
+    delete dXCalc;
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(rms_norm_linear_bp) {
+    auto xShape = inputShape->at(0);
+    auto gammaShape = inputShape->at(1);
+    auto wShape = inputShape->at(2);
+
+    auto dXShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(xShape), 'c', shape::shapeOf(xShape), shape::rank(xShape));
+    auto dGammaShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(gammaShape), 'c', shape::shapeOf(gammaShape), shape::rank(gammaShape));
+    auto dWShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(wShape), 'c', shape::shapeOf(wShape), shape::rank(wShape));
+
+    return SHAPELIST(dXShape, dGammaShape, dWShape);
+}
+
+DECLARE_TYPES(rms_norm_linear_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

@@ -43,6 +43,12 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Square;
 
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear;
+
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -544,6 +550,193 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 log.warn("Failed to fuse mean(x^2) pattern: {}", e.getMessage());
                 return false;
             }
+        }
+    }
+
+    /**
+     * Fuse rms_norm(x, gamma, eps) followed by matmul(normalized, W) into a single
+     * rms_norm_linear(x, gamma, W, eps) op.
+     *
+     * This pattern is extremely common in transformer models where every RMSNorm
+     * is immediately followed by a linear projection (Q/K/V projections, FFN layers).
+     * The fused op avoids materializing the intermediate normalized tensor.
+     *
+     * Detection starts from Mmul/TensorMmul and walks backward to find an RmsNorm producer.
+     * Cast/identity ops between rms_norm and matmul are stripped (mixed-precision models
+     * insert FP16/FP32 casts).
+     */
+    public static class FuseRMSNormLinearPattern implements Optimizer {
+
+        @Override
+        public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
+            Set<Class<? extends DifferentialFunction>> types = new HashSet<>();
+            types.add(Mmul.class);
+            types.add(TensorMmul.class);
+            return types;
+        }
+
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (op == null || op.getOp() == null) {
+                return false;
+            }
+            DifferentialFunction func = op.getOp();
+            if (!(func instanceof Mmul) && !(func instanceof TensorMmul)) {
+                return false;
+            }
+
+            List<String> matmulInputs = op.getInputsToOp();
+            List<String> matmulOutputs = op.getOutputsOfOp();
+            if (matmulInputs == null || matmulInputs.size() != 2 || matmulOutputs == null || matmulOutputs.isEmpty()) {
+                return false;
+            }
+
+            String matmulOutputVar = matmulOutputs.get(0);
+
+            // Try both input positions: rms_norm output could be either input to matmul
+            for (int i = 0; i < 2; i++) {
+                String rmsNormCandidateVar = matmulInputs.get(i);
+                String weightVar = matmulInputs.get(1 - i);
+
+                // Strip through cast/identity ops between rms_norm and matmul
+                String strippedVar = rmsNormCandidateVar;
+                Set<String> intermediateOps = new LinkedHashSet<>();
+                Set<String> intermediateVars = new LinkedHashSet<>();
+                for (int depth = 0; depth < 4; depth++) {
+                    SameDiffOp producer = producerOp(sd, helper, strippedVar);
+                    if (producer == null || producer.getOp() == null) break;
+                    String producerOpName = producer.getOp().opName();
+                    if (producerOpName == null) break;
+                    producerOpName = producerOpName.toLowerCase();
+                    if ("cast".equals(producerOpName) || "identity".equals(producerOpName)) {
+                        List<String> pInputs = producer.getInputsToOp();
+                        if (pInputs == null || pInputs.isEmpty()) break;
+                        // Only strip if this intermediate has exactly 1 consumer
+                        if (!hasOnlyConsumer(sd, helper, strippedVar, depth == 0 ? op.getName() : getConsumerOpName(intermediateOps))) {
+                            break;
+                        }
+                        intermediateOps.add(producer.getName());
+                        intermediateVars.add(strippedVar);
+                        strippedVar = pInputs.get(0);
+                    } else {
+                        break;
+                    }
+                }
+
+                // Check if the (possibly stripped) variable is produced by an RmsNorm op
+                SameDiffOp rmsNormOp = producerOp(sd, helper, strippedVar);
+                if (rmsNormOp == null || !(rmsNormOp.getOp() instanceof RmsNorm)) {
+                    continue;
+                }
+
+                // Verify the rms_norm output feeds ONLY into this matmul (through intermediates)
+                String rmsNormOutVar = strippedVar;
+                String expectedConsumer = intermediateOps.isEmpty() ? op.getName() :
+                        intermediateOps.iterator().next(); // first intermediate op consumes rms_norm output
+                // If there are intermediates, rms_norm output should feed the first intermediate
+                // If no intermediates, rms_norm output should feed the matmul directly
+                if (intermediateOps.isEmpty()) {
+                    if (!hasOnlyConsumer(sd, helper, rmsNormOutVar, op.getName())) {
+                        continue;
+                    }
+                } else {
+                    // rms_norm output feeds the deepest intermediate (last one stripped)
+                    // We need to check that rms_norm output has only 1 consumer
+                    Variable rmsOutVariable = helper != null ? helper.getVariable(rmsNormOutVar) : sd.getVariables().get(rmsNormOutVar);
+                    if (rmsOutVariable == null) continue;
+                    List<String> rmsOutUsers = rmsOutVariable.getInputsForOp();
+                    if (rmsOutUsers == null || rmsOutUsers.size() != 1) {
+                        continue;
+                    }
+                }
+
+                // Extract RmsNorm components
+                RmsNorm rmsNorm = (RmsNorm) rmsNormOp.getOp();
+                double epsilon = rmsNorm.getEpsilon();
+                List<String> rmsNormInputs = rmsNormOp.getInputsToOp();
+                if (rmsNormInputs == null || rmsNormInputs.size() < 2) {
+                    // Need both x and gamma
+                    continue;
+                }
+
+                String xVar = rmsNormInputs.get(0);
+                String gammaVar = rmsNormInputs.get(1);
+
+                try {
+                    SDVariable x = sd.getVariable(xVar);
+                    SDVariable gamma = sd.getVariable(gammaVar);
+                    SDVariable w = sd.getVariable(weightVar);
+                    if (x == null || gamma == null || w == null) {
+                        continue;
+                    }
+
+                    // Create fused RmsNormLinear op
+                    SDVariable fused = sd.nn().rmsNormLinear(x, gamma, w, epsilon);
+
+                    // Replace all uses of matmul output with fused output
+                    OptimizationUtils.replaceOpInputsWith(sd, helper, matmulOutputVar, fused.name());
+
+                    // Remove the old matmul op
+                    OptimizationUtils.removeOp(sd, helper, op.getName());
+
+                    // Remove intermediate cast/identity ops and vars
+                    for (String intermediateOp : intermediateOps) {
+                        OptimizationUtils.removeOp(sd, helper, intermediateOp);
+                    }
+                    for (String intermediateVar : intermediateVars) {
+                        OptimizationUtils.removeVariable(sd, helper, intermediateVar);
+                    }
+
+                    // Remove the rms_norm op and its output variable (if not used elsewhere)
+                    OptimizationUtils.removeOp(sd, helper, rmsNormOp.getName());
+                    if (!rmsNormOutVar.equals(xVar) && !rmsNormOutVar.equals(gammaVar)) {
+                        OptimizationUtils.removeVariable(sd, helper, rmsNormOutVar);
+                    }
+
+                    // Remove matmul output variable
+                    OptimizationUtils.removeVariable(sd, helper, matmulOutputVar);
+
+                    log.info("Fused RMSNorm+Linear pattern: x={}, gamma={}, W={}, eps={}",
+                            xVar, gammaVar, weightVar, epsilon);
+                    return true;
+                } catch (Exception e) {
+                    log.debug("Failed to fuse RMSNorm+Linear pattern at op {}: {}", op.getName(), e.getMessage());
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private String getConsumerOpName(Set<String> ops) {
+            // Return the last op in the set (the one closest to rms_norm)
+            String last = null;
+            for (String s : ops) {
+                last = s;
+            }
+            return last;
+        }
+
+        private boolean hasOnlyConsumer(SameDiff sd, OptimizationHelper helper, String varName, String expectedConsumerOp) {
+            Variable v = helper != null ? helper.getVariable(varName) : null;
+            if (v == null) {
+                v = sd.getVariables().get(varName);
+            }
+            if (v == null) return false;
+            List<String> users = v.getInputsForOp();
+            return users != null && users.size() == 1 && expectedConsumerOp.equals(users.get(0));
+        }
+
+        private SameDiffOp producerOp(SameDiff sd, OptimizationHelper helper, String varName) {
+            Variable v = helper != null ? helper.getVariable(varName) : null;
+            if (v == null) {
+                v = sd.getVariables().get(varName);
+            }
+            if (v == null) return null;
+            String opName = v.getOutputOfOp();
+            if (opName == null) return null;
+            return sd.getOps().get(opName);
         }
     }
 

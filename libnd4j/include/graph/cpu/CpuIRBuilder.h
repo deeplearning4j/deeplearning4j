@@ -22,6 +22,7 @@
 #if HAVE_MLIR
 
 #include <array/NDArray.h>
+#include <graph/GraphAnalysisUtils.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/SegmentAnalysisTypes.h>
 #include <mlir/runtime/MLIREngine.h>
@@ -85,7 +86,7 @@ class CpuIRBuilder {
 
   /**
    * Pass 1: Profile a segment — build dataflow graph, count categories.
-   * Same logic as TritonIRBuilder::profileSegment().
+   * Delegates to GraphAnalysisUtils::profileSegment() (shared with TritonIRBuilder).
    */
   static SegmentProfile profileSegment(NativeSlot* slots, int startSlot, int endSlot,
                                        NDArray** outputSlots, int totalOutputSlots);
@@ -123,6 +124,7 @@ class CpuIRBuilder {
   /**
    * Compute the set of output slots that are externally visible.
    * Public so MlirCpuGraphBackend can reconstruct the arg mapping.
+   * Delegates to GraphAnalysisUtils::computeExternallyVisibleOutputs().
    */
   static std::unordered_set<int> computeExternallyVisibleOutputs(
       NativeSlot* slots, int startSlot, int endSlot, int totalSlots);

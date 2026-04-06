@@ -606,6 +606,24 @@ public class ND4JSystemProperties {
      */
     public static final String DSP_GRAPH_EXECUTION_MODE = "nd4j.dsp.graphExecutionMode";
 
+    /**
+     * Applicability: DSP execution engine<br>
+     * Description: When true, merge value-dependent ops into capturable segments after
+     * shapes freeze (SHAPES_FROZEN phase). Enables higher capture rate but may cause
+     * issues with cross-device migration.
+     * <p>
+     * Default: false (C++ default may differ; this controls Java-side propagation)
+     */
+    public static final String DSP_FREEZE_MERGE_SEGMENTS = "nd4j.dsp.freezeMergeSegments";
+
+    /**
+     * Applicability: DSP execution engine<br>
+     * Description: When true, recompile segments when shapes freeze.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_FREEZE_RECOMPILE = "nd4j.dsp.freezeRecompile";
+
     // ---- VLM speculative decoding properties ----
 
     /**

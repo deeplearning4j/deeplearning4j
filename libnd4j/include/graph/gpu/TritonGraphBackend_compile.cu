@@ -703,7 +703,6 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
              seg.startSlot, seg.endSlot, launchIndex, range.startSlot, range.endSlot,
              range.opsCount, sectionCount, inflightNow);
     result.compiled = compileToGpuBinary(slots, range.startSlot, range.endSlot,
-                                         shapeKey,
                                          totalSlots,
                                          externalInputs, numExternalInputs,
                                          outputSlots, totalOutputSlots);

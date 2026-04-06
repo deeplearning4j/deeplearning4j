@@ -103,6 +103,10 @@ public class DspDiagnostics {
         try {
             // Read system properties
             String categories = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS);
+            // Fallback to env var (surefire passes properties as env vars)
+            if (categories == null || categories.isEmpty()) {
+                categories = System.getenv("ND4J_DSP_DIAGNOSTICS");
+            }
             if (categories != null && !categories.isEmpty()) {
                 int mask = parseCategories(categories);
                 Nd4j.getNativeOps().dspDiagSetCategories(mask);
@@ -112,12 +116,14 @@ public class DspDiagnostics {
             }
 
             String level = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL);
+            if (level == null) level = System.getenv("ND4J_DSP_DIAGNOSTICS_LEVEL");
             if (level != null) {
                 int lvl = parseLevelString(level);
                 Nd4j.getNativeOps().dspDiagSetLevel(lvl);
             }
 
             String file = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_FILE);
+            if (file == null) file = System.getenv("ND4J_DSP_DIAGNOSTICS_FILE");
             if (file != null && !file.isEmpty()) {
                 Nd4j.getNativeOps().dspDiagSetJsonPath(file);
             }

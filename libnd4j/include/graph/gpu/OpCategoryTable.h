@@ -288,6 +288,15 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"BatchNorm",         TritonOpCategory::NORMALIZATION},
     {"rms_norm",          TritonOpCategory::NORMALIZATION},
     {"RmsNorm",           TritonOpCategory::NORMALIZATION},
+    // rms_norm_linear is a fused norm+matmul — handled as FUSED_LLM for native fallback
+    // until the single-pass CUDA kernel is implemented, at which point it becomes a
+    // first-class section type. Falls back to decomposed rms_norm + matmul via native path.
+    {"rms_norm_linear",   TritonOpCategory::FUSED_LLM},
+    {"RmsNormLinear",     TritonOpCategory::FUSED_LLM},
+    // fused_gemm_swiglu: GatedMLP — handled as MATMUL category so it gets proper
+    // segment treatment (cuBLAS fallback for the two internal GEMMs).
+    {"fused_gemm_swiglu", TritonOpCategory::MATMUL},
+    {"FusedGemmSwiglu",   TritonOpCategory::MATMUL},
     // normalize_moments has two outputs — unsupported in single-output Triton emission
     {"normalize_moments", TritonOpCategory::UNSUPPORTED},
     {"NormalizeMoments",  TritonOpCategory::UNSUPPORTED},

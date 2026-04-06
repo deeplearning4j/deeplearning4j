@@ -133,6 +133,20 @@ class TritonGraphBackend : public GraphBackend {
   LongType getTotalCacheHits() const { return totalCacheHits_; }
   void resetCounters() { totalKernelLaunches_ = 0; totalCacheHits_ = 0; }
 
+  // ── Auto-tune profiling ──
+  // On first execution of a segment, record kernel execution time.
+  // If the time exceeds a threshold for the problem size, the segment is
+  // marked for recompilation with alternative tile configurations.
+  // This enables profile-guided optimization without upfront multi-variant compile.
+  struct AutoTuneEntry {
+    float firstExecTimeMs = 0.0f;    // Time of first execution (ms)
+    int configIndex = 0;              // Which tile config was used (0 = default)
+    int numAttempts = 0;              // Number of configs tried so far
+    bool settled = false;             // True once the best config is found
+    static constexpr int MAX_ATTEMPTS = 3;
+  };
+  std::unordered_map<LongType, AutoTuneEntry> autoTuneCache_;  // shapeKey → entry
+
  private:
   LongType totalKernelLaunches_ = 0;
   LongType totalCacheHits_ = 0;
@@ -298,7 +312,19 @@ class TritonGraphBackend : public GraphBackend {
   // Minimum number of mappable ops for Triton to be worthwhile
   static constexpr int MIN_MAPPABLE_OPS = 1;
 
-  // Default max parallel compilations
+  // Default max parallel compilations for inner sub-range parallelism
+  // within a single segment's compileSegment() call.
+  //
+  // Thread safety is ensured by per-thread isolation of compilation state:
+  //   - Each sub-segment creates its own MLIRContext (in TritonIRBuilder)
+  //   - Each compile() call creates stack-local LLVMContext, TargetMachine,
+  //     and PassManager instances
+  //   - Shared global state is protected by targeted mutexes:
+  //     * LLVM target init: std::once_flag
+  //     * MLIR dialect registry: mlirRegistryMtx / mlirTranslationMtx
+  //     * cuModuleLoadDataEx: loadModuleMtx (CUDA driver JIT is not thread-safe)
+  //
+  // Override with ND4J_TRITON_BUILD_THREADS=N environment variable.
   static constexpr int DEFAULT_MAX_PARALLEL_COMPILATIONS = 8;
 
   // Configurable max parallel compilations (set via ND4J_TRITON_BUILD_THREADS env var)
@@ -329,7 +355,6 @@ class TritonGraphBackend : public GraphBackend {
 
   // Compile TTIR module to GPU binary, load, and extract kernel
   CompiledKernel compileToGpuBinary(NativeSlot* slots, int startSlot, int endSlot,
-                                    LongType segmentShapeKey,
                                     int totalSlots,
                                     NDArray** externalInputs, int numExternalInputs,
                                     NDArray** outputSlots, int totalOutputSlots);
@@ -337,9 +362,7 @@ class TritonGraphBackend : public GraphBackend {
   // Disk cache helpers for compiled PTX
   std::string getDiskCacheDir() const;
   bool ensureDiskCacheDir(const std::string& cacheDir) const;
-  std::string computeDiskCacheHash(int startSlot, int endSlot,
-                                   LongType segmentShapeKey,
-                                   const std::string& ttirText,
+  std::string computeDiskCacheHash(const std::string& ttirText,
                                    int numWarps, int numStages) const;
   bool loadBinaryFromDiskCache(int startSlot, int endSlot,
                                const std::string& cacheHash,

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -83,6 +84,13 @@ public class FusedGemmSwiglu extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         return Collections.singletonList(inputDataTypes.get(0));
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients) {
+        // Use the fused backward op which recomputes intermediates internally
+        return Arrays.asList(new FusedGemmSwigluBp(sameDiff, arg(0), arg(1), arg(2),
+            gradients.get(0)).outputVariables());
     }
 
     @Override

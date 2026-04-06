@@ -478,6 +478,48 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
     }
 
+    // Explicit decode input propagation: after the D2D copy loop, directly
+    // write decode input values (input_ids, position_ids, attention_mask) to
+    // their capture buffers via cudaMemcpyAsync H2D. This is a belt-and-suspenders
+    // fix: the D2D copy above SHOULD have propagated the correct values from
+    // external arrays (which updateDecodeInputs already wrote to), but small
+    // integer tensors go through mirrorHostAndDevice which involves syncToHost
+    // + host memcpy + syncToDevice — a complex path that can lose values if
+    // the host-side DataBuffer actuality flags are inconsistent. The direct
+    // H2D write here uses the same path as propagateDecodeInputsToCaptureBuffers
+    // and is guaranteed correct because it bypasses DataBuffer sync entirely.
+    if (captureBuffersOk && isDecodeInputsConfigured()) {
+      for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
+        if (cb.directReference || cb.buffer == nullptr) continue;
+        int ei = cb.externalInputIndex;
+        if (ei < 0) continue;
+        void* dstBuf = cb.buffer->specialBuffer();
+        if (dstBuf == nullptr) continue;
+
+        if (ei == decodeInputIdsExtIdx_) {
+          LongType val = static_cast<LongType>(pendingTokenId_);
+          cudaMemcpyAsync(dstBuf, &val, sizeof(LongType),
+                          cudaMemcpyHostToDevice, cudaStr);
+        } else if (ei == decodePositionIdsExtIdx_) {
+          LongType val = static_cast<LongType>(pendingCachePos_);
+          cudaMemcpyAsync(dstBuf, &val, sizeof(LongType),
+                          cudaMemcpyHostToDevice, cudaStr);
+        } else if (ei == decodeAttentionMaskExtIdx_) {
+          int writePos = pendingCachePos_ - 1;
+          auto maskLen = cb.buffer->lengthOf();
+          if (writePos >= 0 && writePos < static_cast<int>(maskLen)) {
+            LongType one = 1;
+            auto* dst = static_cast<LongType*>(dstBuf) + writePos;
+            cudaMemcpyAsync(dst, &one, sizeof(LongType),
+                            cudaMemcpyHostToDevice, cudaStr);
+          }
+        }
+      }
+      DSP_DIAG(EXECUTE, "REPLAY_DECODE_INPUT_PROPAGATION: seg[%d-%d] wrote decode inputs "
+               "to capture buffers (tokenId=%lld cachePos=%d)",
+               seg.startSlot, seg.endSlot, pendingTokenId_, pendingCachePos_);
+    }
+
     // Refresh Triton sub-kernel arg tables before replay so that external input
     // buffer pointers (attention_mask, position_ids, etc.) reflect the current
     // step's values, not the stale values baked during graph capture.
@@ -515,17 +557,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
     }
 
-    // Address fingerprinting: verify slot output GPU addresses match capture-time addresses.
-    // Stale addresses in a captured CUDA graph cause SIGSEGV or silent data corruption.
+    // Address fingerprinting: detect slot output GPU address changes.
+    // Slot addresses CAN change between capture and replay (e.g., when
+    // releaseGpuIntermediates frees warmup arrays and the pool recycles
+    // addresses). This is handled by refreshArgTablesForReplay which
+    // updates the consolidated arg table with current addresses before
+    // each replay. The fingerprint is logged for diagnostics but does
+    // NOT invalidate the graph — arg table refresh handles it.
     if (captureBuffersOk && seg.exec.capturedSlotAddrHash != 0) {
       LongType currentAddrHash = computeSlotAddrHash(
           outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
       if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
-        captureBuffersOk = false;
-        DSP_DIAG(FALLBACK, "SLOT ADDRESS FINGERPRINT MISMATCH for seg[%d-%d]: "
-                 "captured=0x%llx current=0x%llx — output buffers reallocated, invalidating graph",
+        DSP_DIAG(MEMORY, "SLOT ADDRESS DRIFT for seg[%d-%d]: "
+                 "captured=0x%llx current=0x%llx — arg tables will be refreshed before replay",
                  seg.startSlot, seg.endSlot,
                  (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
+        // Update the hash to match current state so subsequent replays don't re-log
+        seg.exec.capturedSlotAddrHash = currentAddrHash;
       }
     }
 

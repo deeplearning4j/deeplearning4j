@@ -1304,6 +1304,26 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public boolean dspFreezeMergeSegments() {
+        return e.dspFreezeMergeSegments();
+    }
+
+    @Override
+    public void setDspFreezeMergeSegments(boolean enabled) {
+        e.setDspFreezeMergeSegments(enabled);
+    }
+
+    @Override
+    public boolean dspFreezeRecompile() {
+        return e.dspFreezeRecompile();
+    }
+
+    @Override
+    public void setDspFreezeRecompile(boolean enabled) {
+        e.setDspFreezeRecompile(enabled);
+    }
+
+    @Override
     public boolean tritonConsolidatedArgTable() {
         return e.tritonConsolidatedArgTable();
     }

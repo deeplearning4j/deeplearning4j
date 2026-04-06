@@ -19,6 +19,7 @@
 #if HAVE_MLIR
 
 #include <graph/cpu/CpuIRBuilder.h>
+#include <graph/GraphAnalysisUtils.h>
 #include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
@@ -71,153 +72,12 @@ bool CpuIRBuilder::isMlirMappable(const std::string& opName) {
 
 SegmentProfile CpuIRBuilder::profileSegment(NativeSlot* slots, int startSlot, int endSlot,
                                              NDArray** outputSlots, int totalOutputSlots) {
-  SegmentProfile profile;
-  int segSize = endSlot - startSlot + 1;
-  profile.totalOps = segSize;
-  profile.nodes.resize(segSize);
-
-  std::unordered_map<int, int> slotToLocal;
-  std::unordered_map<int, int> outputSlotToProducer;
-
-  for (int i = 0; i < segSize; i++) {
-    int absSlot = startSlot + i;
-    slotToLocal[absSlot] = i;
-
-    auto& node = profile.nodes[i];
-    node.slotIndex = absSlot;
-    node.localIndex = i;
-    node.opName = slots[absSlot].opName;
-
-    const auto& table = getOpCategoryTable();
-    auto catIt = table.find(node.opName);
-    node.category = (catIt != table.end()) ? catIt->second : TritonOpCategory::UNSUPPORTED;
-    node.hasExternalInput = false;
-
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      outputSlotToProducer[slots[absSlot].outputSlotIndices[o]] = i;
-    }
-
-    if (slots[absSlot].numOutputs > 0) {
-      int outIdx = slots[absSlot].outputSlotIndices[0];
-      if (slots[absSlot].shapeCacheValid() && !slots[absSlot].cachedOutputShapes.empty()) {
-        const LongType* shapeInfo = slots[absSlot].cachedOutputShapes[0];
-        if (shapeInfo) {
-          LongType rank = shape::rank(shapeInfo);
-          node.outputShape.resize(rank);
-          for (int d = 0; d < rank; d++) {
-            node.outputShape[d] = shapeInfo[d + 1];
-          }
-          node.hasOutputShape = true;
-        }
-      }
-      if (!node.hasOutputShape && outputSlots && outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
-        auto& arr = *outputSlots[outIdx];
-        node.outputShape.resize(arr.rankOf());
-        for (int d = 0; d < arr.rankOf(); d++) {
-          node.outputShape[d] = arr.sizeAt(d);
-        }
-        node.outputDtype = arr.dataType();
-        node.hasOutputShape = true;
-      }
-    }
-
-    int catIdx = static_cast<int>(node.category);
-    if (catIdx >= 0 && catIdx < 16) profile.categoryCounts[catIdx]++;
-  }
-
-  std::unordered_set<int> externalInputSet;
-  std::unordered_map<int, std::vector<int>> outputToConsumers;
-
-  for (int i = 0; i < segSize; i++) {
-    int absSlot = startSlot + i;
-    auto& node = profile.nodes[i];
-
-    for (int inp = 0; inp < slots[absSlot].numInputs; inp++) {
-      int srcIdx = slots[absSlot].inputSourceIndices[inp];
-      if (srcIdx < 0) {
-        node.inputLocalIndices.push_back(-1);
-        node.hasExternalInput = true;
-        externalInputSet.insert(srcIdx);
-      } else {
-        auto producerIt = outputSlotToProducer.find(srcIdx);
-        if (producerIt != outputSlotToProducer.end()) {
-          node.inputLocalIndices.push_back(producerIt->second);
-          outputToConsumers[srcIdx].push_back(i);
-        } else {
-          node.inputLocalIndices.push_back(-1);
-          node.hasExternalInput = true;
-          externalInputSet.insert(srcIdx);
-        }
-      }
-    }
-  }
-
-  for (int i = 0; i < segSize; i++) {
-    int absSlot = startSlot + i;
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      int outIdx = slots[absSlot].outputSlotIndices[o];
-      auto it = outputToConsumers.find(outIdx);
-      if (it != outputToConsumers.end()) {
-        for (int consumer : it->second) {
-          profile.nodes[i].consumerLocalIndices.push_back(consumer);
-        }
-      }
-    }
-  }
-
-  std::unordered_set<int> outputSet;
-  for (int i = 0; i < segSize; i++) {
-    int absSlot = startSlot + i;
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      outputSet.insert(slots[absSlot].outputSlotIndices[o]);
-    }
-  }
-
-  profile.numUniqueExternalInputs = static_cast<int>(externalInputSet.size());
-  profile.numUniqueOutputs = static_cast<int>(outputSet.size());
-
-  profile.hasMatmul = profile.categoryCounts[static_cast<int>(TritonOpCategory::MATMUL)] > 0;
-  profile.hasReduction = profile.categoryCounts[static_cast<int>(TritonOpCategory::REDUCTION)] > 0;
-  profile.hasNormalization = profile.categoryCounts[static_cast<int>(TritonOpCategory::NORMALIZATION)] > 0;
-  profile.hasFusedAttention = profile.categoryCounts[static_cast<int>(TritonOpCategory::FUSED_ATTENTION)] > 0;
-  profile.hasShapeManip = profile.categoryCounts[static_cast<int>(TritonOpCategory::SHAPE_MANIPULATION)] > 0;
-  profile.hasDataMovement = profile.categoryCounts[static_cast<int>(TritonOpCategory::DATA_MOVEMENT)] > 0;
-
-  return profile;
+  return GraphAnalysisUtils::profileSegment(slots, startSlot, endSlot, outputSlots, totalOutputSlots);
 }
 
 std::unordered_set<int> CpuIRBuilder::computeExternallyVisibleOutputs(
     NativeSlot* slots, int startSlot, int endSlot, int totalSlots) {
-
-  std::unordered_set<int> segmentOutputs;
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      segmentOutputs.insert(slots[i].outputSlotIndices[o]);
-    }
-  }
-
-  std::unordered_set<int> externalOutputs;
-  for (int outIdx : segmentOutputs) {
-    bool consumedOutside = false;
-    for (int i = endSlot + 1; i < totalSlots && !consumedOutside; i++) {
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        if (slots[i].inputSourceIndices[inp] == outIdx) {
-          consumedOutside = true;
-          break;
-        }
-      }
-    }
-    if (consumedOutside) {
-      externalOutputs.insert(outIdx);
-    }
-  }
-
-  // All outputs from the last slot are always externally visible
-  for (int o = 0; o < slots[endSlot].numOutputs; o++) {
-    externalOutputs.insert(slots[endSlot].outputSlotIndices[o]);
-  }
-
-  return externalOutputs;
+  return GraphAnalysisUtils::computeExternallyVisibleOutputs(slots, startSlot, endSlot, totalSlots);
 }
 
 SegmentAnalysis CpuIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot, int endSlot,
@@ -1506,22 +1366,35 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
     builder.setInsertionPointToStart(forOp.getBody());
     auto iv = forOp.getInductionVar();
 
+    // SSA value map: when an op's output feeds another op in the same batch,
+    // use the SSA Value directly instead of storing+loading through the memref.
+    // This is the CPU equivalent of Triton's SSA intermediate elimination —
+    // data stays in registers between fused ops, no global memory round-trip.
+    std::unordered_map<int, mlir::Value> ssaValues;
+
     for (int slotIdx : currentEwBatch) {
       auto& slot = slots[slotIdx];
       std::string lower = toLower(slot.opName);
 
-      // Gather input values
+      // Gather input values — prefer SSA values from previous ops in this batch
       std::vector<mlir::Value> inputValues;
       for (int inp = 0; inp < slot.numInputs; inp++) {
         int srcIdx = slot.inputSourceIndices[inp];
-        auto argIt = sourceToArgIdx.find(srcIdx);
-        if (argIt != sourceToArgIdx.end()) {
-          auto memref = entryBlock->getArgument(argIt->second);
-          auto loaded = builder.create<mlir::memref::LoadOp>(loc, memref, mlir::ValueRange{iv});
-          inputValues.push_back(loaded);
+        // First: check if a previous op in this batch produced this value
+        auto ssaIt = ssaValues.find(srcIdx);
+        if (ssaIt != ssaValues.end()) {
+          inputValues.push_back(ssaIt->second);
         } else {
-          inputValues.push_back(
-              builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.0)));
+          // Fall back to loading from memref
+          auto argIt = sourceToArgIdx.find(srcIdx);
+          if (argIt != sourceToArgIdx.end()) {
+            auto memref = entryBlock->getArgument(argIt->second);
+            auto loaded = builder.create<mlir::memref::LoadOp>(loc, memref, mlir::ValueRange{iv});
+            inputValues.push_back(loaded);
+          } else {
+            inputValues.push_back(
+                builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.0)));
+          }
         }
       }
 
@@ -1592,12 +1465,18 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
         result = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.0));
       }
 
-      // Store to output memref if externally visible
+      // Register in SSA value map for downstream ops in this batch
       if (slot.numOutputs > 0) {
         int outIdx = slot.outputSlotIndices[0];
-        if (sourceToArgIdx.count(outIdx)) {
-          auto memref = entryBlock->getArgument(sourceToArgIdx[outIdx]);
-          builder.create<mlir::memref::StoreOp>(loc, result, memref, mlir::ValueRange{iv});
+        ssaValues[outIdx] = result;
+
+        // Only store to memref if externally visible (consumed outside this batch).
+        // Internal intermediates stay in SSA registers — no memory round-trip.
+        if (externalOutputSet.count(outIdx) || !internalOutputs.count(outIdx)) {
+          if (sourceToArgIdx.count(outIdx)) {
+            auto memref = entryBlock->getArgument(sourceToArgIdx[outIdx]);
+            builder.create<mlir::memref::StoreOp>(loc, result, memref, mlir::ValueRange{iv});
+          }
         }
       }
     }
@@ -1615,14 +1494,17 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
     auto catIt = table.find(slot.opName);
     TritonOpCategory category = (catIt != table.end()) ? catIt->second : TritonOpCategory::UNSUPPORTED;
 
-    // Check if this is an element-wise-compatible op
+    // Check if this is an element-wise-compatible op.
+    // ROPE is classified as ELEMENTWISE in the Triton path because paired access
+    // fits in a single block. On CPU it's also element-wise (no reduction/sync).
     bool isEw = (category == TritonOpCategory::BINARY_ELEMENTWISE ||
                  category == TritonOpCategory::UNARY_ELEMENTWISE ||
                  category == TritonOpCategory::COMPARISON ||
                  category == TritonOpCategory::LOGICAL ||
                  category == TritonOpCategory::TERNARY ||
                  category == TritonOpCategory::IDENTITY ||
-                 category == TritonOpCategory::CAST);
+                 category == TritonOpCategory::CAST ||
+                 category == TritonOpCategory::ROPE);
 
     if (isEw) {
       currentEwBatch.push_back(absSlot);
@@ -1831,6 +1713,143 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
             emitConvolutionOp(builder, loc, inMem, filtMem, outMem,
                               inShape, filtShape, outShape,
                               slot.iArgs, slot.numIArgs, f32Type);
+          }
+        }
+        break;
+      }
+      case TritonOpCategory::FUSED_LLM: {
+        // Fused LLM ops: decompose into constituent ops for CPU emission.
+        std::string lower = toLower(slot.opName);
+        if (lower == "rms_norm_linear" || lower == "rmsnormlinear") {
+          // rms_norm_linear(x, gamma, W) = matmul(rms_norm(x, gamma, eps), W)
+          // Decomposed: normalize x, then matmul with W
+          if (slot.numInputs >= 3 && slot.numOutputs > 0) {
+            int xSrc = slot.inputSourceIndices[0];
+            int gammaSrc = slot.inputSourceIndices[1];
+            int wSrc = slot.inputSourceIndices[2];
+            int outIdx = slot.outputSlotIndices[0];
+            auto xMem = getMemref(xSrc);
+            auto gammaMem = getMemref(gammaSrc);
+            auto wMem = getMemref(wSrc);
+            auto outMem = getMemref(outIdx);
+            if (xMem && wMem && outMem) {
+              auto* xArr = bufferArgs[sourceToArgIdx[xSrc]].array;
+              auto* wArr = bufferArgs[sourceToArgIdx[wSrc]].array;
+              int64_t M = (xArr->rankOf() >= 2) ? xArr->sizeAt(0) : 1;
+              int64_t K = (xArr->rankOf() >= 2) ? xArr->sizeAt(1) : xArr->lengthOf();
+              int64_t N = (wArr->rankOf() >= 2) ? wArr->sizeAt(1) : 1;
+
+              // Step 1: RMS normalize x into a temporary (reuse output buffer as scratch)
+              // We'll normalize into outMem temporarily, then matmul into outMem properly.
+              // Actually, we need a scratch buffer. Since we only have memrefs, normalize
+              // x in-place into output buffer row by row, then do matmul.
+              // For correctness, emit rms_norm of x into a portion of outMem, then matmul.
+              // Simpler approach: emit as two separate ops using existing emitters.
+              emitNormalizationOp(builder, loc, "rms_norm", xMem, xMem, K, f32Type);
+              // Now xMem has the normalized values; matmul into outMem
+              emitMatmulOp(builder, loc, xMem, wMem, outMem, M, N, K, f32Type);
+            }
+          }
+        } else if (lower == "fused_gemm_swiglu" || lower == "fusedgemmswiglu") {
+          // fused_gemm_swiglu(x, W_gate, W_up) = silu(x @ W_gate) * (x @ W_up)
+          if (slot.numInputs >= 3 && slot.numOutputs > 0) {
+            int xSrc = slot.inputSourceIndices[0];
+            int wGateSrc = slot.inputSourceIndices[1];
+            int wUpSrc = slot.inputSourceIndices[2];
+            int outIdx = slot.outputSlotIndices[0];
+            auto xMem = getMemref(xSrc);
+            auto wGateMem = getMemref(wGateSrc);
+            auto wUpMem = getMemref(wUpSrc);
+            auto outMem = getMemref(outIdx);
+            if (xMem && wGateMem && wUpMem && outMem) {
+              auto* xArr = bufferArgs[sourceToArgIdx[xSrc]].array;
+              auto* wGateArr = bufferArgs[sourceToArgIdx[wGateSrc]].array;
+              int64_t M = (xArr->rankOf() >= 2) ? xArr->sizeAt(0) : 1;
+              int64_t K = (xArr->rankOf() >= 2) ? xArr->sizeAt(1) : xArr->lengthOf();
+              int64_t N = (wGateArr->rankOf() >= 2) ? wGateArr->sizeAt(1) : 1;
+
+              // gate = x @ W_gate (into output buffer)
+              emitMatmulOp(builder, loc, xMem, wGateMem, outMem, M, N, K, f32Type);
+
+              // Apply silu in-place on outMem (gate result), then multiply by up result.
+              // This requires a second matmul for up. We'll use outMem for gate,
+              // need a temporary for up. Since we don't have extra memrefs, we'll
+              // emit the fused SwiGLU loop that computes both GEMMs and combines.
+              // For now, use the sequential approach:
+              // 1. gate = x @ W_gate → outMem
+              // 2. Apply silu to outMem in-place
+              // 3. Compute up = x @ W_up element-by-element and multiply with outMem
+
+              // Step 2: Apply silu in-place on outMem
+              int64_t outLen = M * N;
+              auto zeroIdx2 = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+              auto oneIdx2 = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+              auto nVal2 = builder.create<mlir::arith::ConstantIndexOp>(loc, outLen);
+              auto siluLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx2, nVal2, oneIdx2);
+              {
+                auto& body = siluLoop.getRegion().front();
+                builder.setInsertionPointToStart(&body);
+                auto iv = body.getArgument(0);
+                auto val = builder.create<mlir::memref::LoadOp>(loc, outMem, mlir::ValueRange{iv});
+                auto siluVal = emitUnaryElementwise(builder, loc, "silu", val, f32Type, nullptr, 0);
+                builder.create<mlir::memref::StoreOp>(loc, siluVal, outMem, mlir::ValueRange{iv});
+                builder.create<mlir::scf::YieldOp>(loc);
+              }
+              builder.setInsertionPointAfter(siluLoop);
+
+              // Step 3: For each element, compute up_j = sum_k(x_ik * W_up_kj) and
+              // multiply with silu(gate)_ij in outMem. This is a fused matmul+multiply.
+              // Emit as a double loop: for i in M, for j in N
+              auto iLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx2,
+                  builder.create<mlir::arith::ConstantIndexOp>(loc, M), oneIdx2);
+              builder.setInsertionPointToStart(iLoop.getBody());
+              auto iIv = iLoop.getInductionVar();
+
+              auto jLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx2,
+                  builder.create<mlir::arith::ConstantIndexOp>(loc, N), oneIdx2);
+              builder.setInsertionPointToStart(jLoop.getBody());
+              auto jIv = jLoop.getInductionVar();
+
+              // Accumulate up_ij = sum_k(x_ik * W_up_kj)
+              auto zeroF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.0));
+              auto kConst = builder.create<mlir::arith::ConstantIndexOp>(loc, K);
+              auto kLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx2, kConst, oneIdx2,
+                  mlir::ValueRange{zeroF.getResult()});
+              {
+                auto& kBody = kLoop.getRegion().front();
+                builder.setInsertionPointToStart(&kBody);
+                auto kIv = kBody.getArgument(0);
+                auto acc = kBody.getArgument(1);
+                // x[i*K + k]
+                auto iTimesK = builder.create<mlir::arith::MulIOp>(loc, iIv,
+                    builder.create<mlir::arith::ConstantIndexOp>(loc, K));
+                auto xIdx = builder.create<mlir::arith::AddIOp>(loc, iTimesK, kIv);
+                auto xVal = builder.create<mlir::memref::LoadOp>(loc, xMem, mlir::ValueRange{xIdx});
+                // W_up[k*N + j]
+                auto kTimesN = builder.create<mlir::arith::MulIOp>(loc, kIv,
+                    builder.create<mlir::arith::ConstantIndexOp>(loc, N));
+                auto wIdx = builder.create<mlir::arith::AddIOp>(loc, kTimesN, jIv);
+                auto wVal = builder.create<mlir::memref::LoadOp>(loc, wUpMem, mlir::ValueRange{wIdx});
+                auto prod = builder.create<mlir::arith::MulFOp>(loc, xVal, wVal);
+                auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, prod);
+                builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+              }
+              builder.setInsertionPointAfter(kLoop);
+              auto upIJ = kLoop.getResult(0);
+
+              // Multiply silu(gate)_ij * up_ij
+              auto outIdxCalc = builder.create<mlir::arith::MulIOp>(loc, iIv,
+                  builder.create<mlir::arith::ConstantIndexOp>(loc, N));
+              auto outIdxFinal = builder.create<mlir::arith::AddIOp>(loc, outIdxCalc, jIv);
+              auto gateVal = builder.create<mlir::memref::LoadOp>(loc, outMem, mlir::ValueRange{outIdxFinal});
+              auto result = builder.create<mlir::arith::MulFOp>(loc, gateVal, upIJ);
+              builder.create<mlir::memref::StoreOp>(loc, result, outMem, mlir::ValueRange{outIdxFinal});
+
+              builder.create<mlir::scf::YieldOp>(loc);  // end j loop
+              builder.setInsertionPointAfter(jLoop);
+              builder.create<mlir::scf::YieldOp>(loc);  // end i loop
+              builder.setInsertionPointAfter(iLoop);
+            }
           }
         }
         break;

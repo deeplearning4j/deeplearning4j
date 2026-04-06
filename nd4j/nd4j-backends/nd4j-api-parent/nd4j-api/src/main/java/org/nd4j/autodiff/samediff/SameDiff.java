@@ -1859,6 +1859,34 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Returns ALL external inputs — variables that the graph reads but does not produce.
+     * This includes PLACEHOLDERs, CONSTANTs, VARIABLEs, and ARRAY-type variables that
+     * have no producing op (graph inputs that aren't typed as PLACEHOLDER).
+     *
+     * This matches what the DSP compiler discovers as external inputs. Use this instead
+     * of {@link #inputs()} when building input maps for DSP execution.
+     */
+    public List<String> externalInputs() {
+        List<String> out = new ArrayList<>();
+        for (Map.Entry<String, Variable> entry : variables.entrySet()) {
+            String name = entry.getKey();
+            SDVariable var = entry.getValue().getVariable();
+            if (var == null) continue;
+            VariableType vt = var.getVariableType();
+            if (vt == VariableType.PLACEHOLDER || vt == VariableType.CONSTANT || vt == VariableType.VARIABLE) {
+                out.add(name);
+            } else if (vt == VariableType.ARRAY) {
+                // ARRAY variables with no producing op are implicit external inputs
+                Variable v = entry.getValue();
+                if (v.getOutputOfOp() == null || v.getOutputOfOp().isEmpty()) {
+                    out.add(name);
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
      * Outputs are the names of the predictions of the network.
      * Note that the outputs must be set using {@link #setOutputs(List)} first
      *

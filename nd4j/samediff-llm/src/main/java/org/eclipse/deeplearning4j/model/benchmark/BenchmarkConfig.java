@@ -94,6 +94,8 @@ public class BenchmarkConfig {
     boolean dspBatchZero;
     boolean dspBatchZeroKernel;
     boolean dspBatchedGemm;
+    boolean dspFreezeMergeSegments;
+    boolean dspFreezeRecompile;
 
     // Draft model speculation
     boolean useDraftModel;
@@ -194,6 +196,8 @@ public class BenchmarkConfig {
     public BenchmarkConfig dspBatchZero(boolean b) { this.dspBatchZero = b; return this; }
     public BenchmarkConfig dspBatchZeroKernel(boolean b) { this.dspBatchZeroKernel = b; return this; }
     public BenchmarkConfig dspBatchedGemm(boolean b) { this.dspBatchedGemm = b; return this; }
+    public BenchmarkConfig dspFreezeMergeSegments(boolean b) { this.dspFreezeMergeSegments = b; return this; }
+    public BenchmarkConfig dspFreezeRecompile(boolean b) { this.dspFreezeRecompile = b; return this; }
     public BenchmarkConfig useDraftModel(boolean b) { this.useDraftModel = b; return this; }
     public BenchmarkConfig draftModelK(int n) { this.draftModelK = n; return this; }
     public BenchmarkConfig validationMode(boolean b) { this.validationMode = b; return this; }
@@ -254,6 +258,8 @@ public class BenchmarkConfig {
     public boolean isDspBatchZero() { return dspBatchZero; }
     public boolean isDspBatchZeroKernel() { return dspBatchZeroKernel; }
     public boolean isDspBatchedGemm() { return dspBatchedGemm; }
+    public boolean isDspFreezeMergeSegments() { return dspFreezeMergeSegments; }
+    public boolean isDspFreezeRecompile() { return dspFreezeRecompile; }
     public boolean isUseDraftModel() { return useDraftModel; }
     public int getDraftModelK() { return draftModelK; }
     public boolean isValidationMode() { return validationMode; }

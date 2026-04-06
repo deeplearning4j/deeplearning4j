@@ -890,4 +890,8 @@ public class CpuEnvironment implements Environment {
     @Override public void setCublasCaptureWorkspace(boolean v) { e.setCublasCaptureWorkspace(v); }
     @Override public boolean dspCastSinkMatmul() { return e.dspCastSinkMatmul(); }
     @Override public void setDspCastSinkMatmul(boolean v) { e.setDspCastSinkMatmul(v); }
+    @Override public boolean dspFreezeMergeSegments() { return e.dspFreezeMergeSegments(); }
+    @Override public void setDspFreezeMergeSegments(boolean v) { e.setDspFreezeMergeSegments(v); }
+    @Override public boolean dspFreezeRecompile() { return e.dspFreezeRecompile(); }
+    @Override public void setDspFreezeRecompile(boolean v) { e.setDspFreezeRecompile(v); }
 }

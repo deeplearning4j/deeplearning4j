@@ -99,21 +99,23 @@ bool TritonGraphBackend::ensureDiskCacheDir(const std::string& cacheDir) const {
   return true;
 }
 
-std::string TritonGraphBackend::computeDiskCacheHash(int startSlot, int endSlot,
-                                                     LongType segmentShapeKey,
-                                                     const std::string& ttirText,
+std::string TritonGraphBackend::computeDiskCacheHash(const std::string& ttirText,
                                                      int numWarps, int numStages) const {
   const auto& env = sd::Environment::getInstance();
   uint64_t hash = FNV1A64_OFFSET_BASIS;
-  // NOTE: startSlot/endSlot are intentionally EXCLUDED from the disk cache hash.
-  // Slot numbers are plan-lifetime-specific; the same kernel ops get different
-  // slot assignments when a plan is destroyed and recreated (e.g. between pages
-  // in a VLM pipeline).  Including them caused 100% disk cache misses across
-  // plan lifetimes, forcing full recompilation of every kernel on every page.
+  // NOTE: startSlot/endSlot and segmentShapeKey are intentionally EXCLUDED from
+  // the disk cache hash.  Slot numbers are plan-lifetime-specific; the same
+  // kernel ops get different slot assignments when a plan is destroyed and
+  // recreated (e.g. between pages in a VLM pipeline).  segmentShapeKey is
+  // derived from the shapes of slots in the current plan and also changes
+  // between plan lifetimes even when the kernel is identical.  Including either
+  // caused 100% disk cache misses across plan lifetimes, forcing full
+  // recompilation of every kernel on every page.
+  //
   // The ttirText (which contains the kernel name derived from op names, all
-  // tensor shapes, and the full MLIR IR) plus segmentShapeKey and compile
-  // params already uniquely identify the compiled binary.
-  mixFNV1a(hash, &segmentShapeKey, sizeof(segmentShapeKey));
+  // tensor shapes, and the full MLIR IR) plus compile params and target arch
+  // already uniquely identify the compiled binary.  Two kernels with different
+  // shapes produce different TTIR text, so shapes are implicitly captured.
   mixFNV1a(hash, &numWarps, sizeof(numWarps));
   mixFNV1a(hash, &numStages, sizeof(numStages));
   int numCTAs = std::max(1, env.tritonNumCTAs());

@@ -102,6 +102,23 @@ struct KernelSection {
   int gatherAxis;             // Gather/scatter axis
   int concatAxis;             // Concat axis
 
+  // Matmul epilogue fusion: when a MATMUL section is immediately followed by
+  // ELEMENTWISE ops that only consume the matmul output, those ops are absorbed
+  // into the matmul section as epilogue ops. The Triton emitter fuses them into
+  // the matmul tile loop (bias add, activation, cast) so the result stays in
+  // registers — no global memory round-trip between matmul and epilogue.
+  // The matmul section's endSlot is extended to cover the epilogue ops.
+  int matmulEpilogueStartSlot = -1;  // First epilogue slot (-1 = no epilogue)
+  int matmulEpilogueEndSlot = -1;    // Last epilogue slot (inclusive)
+  int matmulEpilogueCount = 0;       // Number of epilogue ops absorbed
+
+  // Normalization epilogue fusion: similar to matmul epilogue, when a
+  // NORMALIZATION section is immediately followed by ELEMENTWISE ops that
+  // only consume the normalization output, those ops are absorbed.
+  int normEpilogueStartSlot = -1;
+  int normEpilogueEndSlot = -1;
+  int normEpilogueCount = 0;
+
   // Trailing permute fusion: when an elementwise section is immediately followed
   // by a permute op that reads from this section's output, the permute is absorbed
   // into the section as a transposed store. This eliminates the permute section

@@ -1985,6 +1985,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         new CudaPointer(dimension == null ? 0 : dimension.length),
                         retHostShape);
 
+        // DSP lifecycle diagnostic: detect closed DataBuffers before kernel launch.
+        if (op.getOpType() == Op.Type.TRANSFORM_ANY) {
+            if (z != null && z.data() != null && z.data().wasClosed()) {
+                throw new IllegalStateException(String.format(
+                    "TRANSFORM_ANY: destination has CLOSED DataBuffer. " +
+                    "z.shape=%s z.dtype=%s z.id=%d op=%s",
+                    java.util.Arrays.toString(z.shape()), z.dataType(), z.getId(), op.opName()));
+            }
+            if (x != null && x.data() != null && x.data().wasClosed()) {
+                throw new IllegalStateException(String.format(
+                    "TRANSFORM_ANY: source has CLOSED DataBuffer. " +
+                    "x.shape=%s x.dtype=%s x.id=%d op=%s",
+                    java.util.Arrays.toString(x.shape()), x.dataType(), x.getId(), op.opName()));
+            }
+        }
+
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);

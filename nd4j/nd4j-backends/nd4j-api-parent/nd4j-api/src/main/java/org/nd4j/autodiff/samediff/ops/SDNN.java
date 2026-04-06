@@ -4223,6 +4223,82 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Fused RMSNorm + Linear (MatMul) operation:<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Q/K/V projections or FFN layers.<br>
+   *
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param gamma RMSNorm scale weights [features] (NUMERIC type)
+   * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
+   */
+  public SDVariable rmsNormLinear(SDVariable input, SDVariable gamma, SDVariable weights, double epsilon) {
+    SDValidation.validateNumerical("rmsNormLinear", "input", input);
+    SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
+    SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, epsilon).outputVariable();
+  }
+
+  /**
+   * Fused RMSNorm + Linear (MatMul) operation:<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Q/K/V projections or FFN layers.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param gamma RMSNorm scale weights [features] (NUMERIC type)
+   * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
+   */
+  public SDVariable rmsNormLinear(String name, SDVariable input, SDVariable gamma, SDVariable weights, double epsilon) {
+    SDValidation.validateNumerical("rmsNormLinear", "input", input);
+    SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
+    SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused RMSNorm + Linear (MatMul) operation with default epsilon (1e-6):<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor.<br>
+   *
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param gamma RMSNorm scale weights [features] (NUMERIC type)
+   * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
+   * @return output Result of rms_norm(input, gamma) @ weights (NUMERIC type)
+   */
+  public SDVariable rmsNormLinear(SDVariable input, SDVariable gamma, SDVariable weights) {
+    SDValidation.validateNumerical("rmsNormLinear", "input", input);
+    SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
+    SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, 1.0E-6).outputVariable();
+  }
+
+  /**
+   * Fused RMSNorm + Linear (MatMul) operation with default epsilon (1e-6):<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param gamma RMSNorm scale weights [features] (NUMERIC type)
+   * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
+   * @return output Result of rms_norm(input, gamma) @ weights (NUMERIC type)
+   */
+  public SDVariable rmsNormLinear(String name, SDVariable input, SDVariable gamma, SDVariable weights) {
+    SDValidation.validateNumerical("rmsNormLinear", "input", input);
+    SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
+    SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, 1.0E-6).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Applies Rotary Position Embedding (RoPE) to the input tensor.<br>
    * Encodes position information by rotating pairs of dimensions in the input.<br>
    *

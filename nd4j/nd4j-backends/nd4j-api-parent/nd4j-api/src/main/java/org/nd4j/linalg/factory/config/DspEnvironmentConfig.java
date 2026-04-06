@@ -71,4 +71,9 @@ public interface DspEnvironmentConfig {
     default void setDspProactiveEvictBeforeCapture(boolean enabled) {}
     default boolean dspLruEviction() { return true; }
     default void setDspLruEviction(boolean enabled) {}
+
+    default boolean dspFreezeMergeSegments() { return false; }
+    default void setDspFreezeMergeSegments(boolean enabled) {}
+    default boolean dspFreezeRecompile() { return false; }
+    default void setDspFreezeRecompile(boolean enabled) {}
 }

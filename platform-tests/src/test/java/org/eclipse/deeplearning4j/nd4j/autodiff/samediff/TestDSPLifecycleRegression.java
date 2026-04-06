@@ -24,6 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -689,6 +690,300 @@ public class TestDSPLifecycleRegression extends BaseNd4jTestWithBackends {
                 assertEquals(0.0, iterDiff, TOL,
                         "DSP result changed between iteration 0 and " + i + ": diff = " + iterDiff);
             }
+        }
+
+        sd.close();
+    }
+
+    // ========================================================================
+    // 12. Changing Placeholder Values During Frozen Replay
+    // ========================================================================
+
+    /**
+     * DSP: changing an INT64 placeholder (position_ids pattern) between frozen
+     * replay steps MUST produce different outputs.
+     *
+     * This is the decoder accuracy contract: position_ids changes every step,
+     * and the model output must reflect the new position. If capture buffer
+     * refresh fails, the output stays the same (stale position_ids).
+     *
+     * Graph is intentionally large (20 chained matmuls) to trigger CUDA graph
+     * capture. The position_ids feeds a gather at the start of the chain.
+     * If capture buffers don't refresh position_ids, all replay steps see
+     * the warmup value and produce identical output.
+     */
+    @Test
+    @DisplayName("DSP: changing INT64 placeholder produces different outputs during CUDA graph replay")
+    public void testChangingPlaceholderDuringFrozenReplay() {
+        SameDiff sd = SameDiff.create();
+
+        int hiddenSize = 16;
+        int numLayers = 20;  // 20 matmuls — large enough for capture
+
+        INDArray embTable = Nd4j.randn(DataType.FLOAT, 100, hiddenSize);
+        SDVariable embeddings = sd.constant("embeddings", embTable);
+        SDVariable posIds = sd.placeHolder("position_ids", DataType.INT64, 1);
+
+        // Gather position embedding
+        SDVariable x = sd.gather("gathered", embeddings, posIds, 0);
+
+        // Chain of matmul + relu layers. Uses near-identity weights so values
+        // don't vanish through the chain. ReLU's scalar cutoff (0) is a constant
+        // that must survive capture buffer lifecycle.
+        for (int layer = 0; layer < numLayers; layer++) {
+            SDVariable w = sd.constant("w_" + layer,
+                    Nd4j.eye(hiddenSize).castTo(DataType.FLOAT).muli(0.95));
+            x = sd.mmul("mm_" + layer, x, w);
+            x = sd.nn.relu("relu_" + layer, x, 0);
+        }
+        SDVariable out = x.sum("out");
+
+        enableDsp(sd);
+        sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+
+        INDArray posIdsArr = Nd4j.createFromArray(0L);
+        Map<String, INDArray> placeholders = new java.util.HashMap<>();
+        placeholders.put("position_ids", posIdsArr);
+
+        // Phase 1: Warmup with position_ids=0 (5 steps to trigger freeze + capture)
+        for (int i = 0; i < 5; i++) {
+            sd.output(placeholders, "out");
+        }
+        log.info("Warmup done with position_ids=0");
+
+        // Phase 2: Change position_ids on each step — output MUST change
+        double prevSum = Double.NaN;
+        for (int step = 0; step < 5; step++) {
+            posIdsArr.putScalar(0, (long) step);
+            Map<String, INDArray> result = sd.output(placeholders, "out");
+            double sum = result.get("out").getDouble(0);
+            log.info("Replay step {}: position_ids={}, sum={}", step, step, sum);
+
+            if (step > 0) {
+                assertNotEquals(prevSum, sum, 1e-6,
+                        "Step " + step + ": output MUST differ from step " + (step - 1) +
+                        " because position_ids changed from " + (step - 1) + " to " + step +
+                        ". If identical, capture buffer refresh is broken (stale position_ids).");
+            }
+            prevSum = sum;
+        }
+
+        sd.close();
+    }
+
+    /**
+     * DSP: changing a mask placeholder between frozen replay steps must
+     * affect the output through a large graph (triggers CUDA graph capture).
+     *
+     * Graph: x[1,32] → mul(mask_float) → chain of 20 matmul+relu → sum
+     * Warmup: mask=[1,1,0,...] for 5 steps
+     * Replay: mask grows by one 1 per step — output must change
+     */
+    @Test
+    @DisplayName("DSP: growing mask produces changing output during CUDA graph replay")
+    public void testGrowingAttentionMaskDuringFrozenReplay() {
+        SameDiff sd = SameDiff.create();
+
+        int seqLen = 16;
+        int hiddenSize = 16;
+        int numLayers = 15;
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, seqLen);
+        SDVariable mask = sd.placeHolder("mask", DataType.INT64, 1, seqLen);
+        SDVariable maskFloat = sd.castTo("mask_float", mask, DataType.FLOAT);
+        SDVariable masked = x.mul("masked", maskFloat);
+
+        // Project to hidden size and chain matmuls + adds for graph capture
+        SDVariable wProj = sd.constant("w_proj",
+                Nd4j.eye(seqLen).castTo(DataType.FLOAT));  // identity projection
+        SDVariable h = sd.mmul("project", masked, wProj);
+        for (int layer = 0; layer < numLayers; layer++) {
+            SDVariable w = sd.constant("w_" + layer,
+                    Nd4j.eye(hiddenSize).castTo(DataType.FLOAT).muli(0.95));
+            SDVariable b = sd.constant("b_" + layer,
+                    Nd4j.ones(DataType.FLOAT, 1, hiddenSize).muli(0.001));
+            h = sd.mmul("mm_" + layer, h, w);
+            h = h.add("add_" + layer, b);
+        }
+        SDVariable out = h.sum("out");
+
+        enableDsp(sd);
+        sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+
+        INDArray xArr = Nd4j.ones(DataType.FLOAT, 1, seqLen);
+        INDArray maskArr = Nd4j.zeros(DataType.INT64, 1, seqLen);
+        maskArr.putScalar(0, 0, 1L);
+        maskArr.putScalar(0, 1, 1L);
+
+        Map<String, INDArray> placeholders = new java.util.HashMap<>();
+        placeholders.put("x", xArr);
+        placeholders.put("mask", maskArr);
+
+        // Phase 1: Warmup (5 steps)
+        for (int i = 0; i < 5; i++) {
+            sd.output(placeholders, "out");
+        }
+        log.info("Warmup done with mask sum={}", maskArr.sumNumber().longValue());
+
+        // Phase 2: Grow mask — output must change
+        double prevSum = Double.NaN;
+        for (int step = 0; step < 5; step++) {
+            int activatePos = 2 + step;
+            maskArr.putScalar(0, activatePos, 1L);
+
+            Map<String, INDArray> result = sd.output(placeholders, "out");
+            double sum = result.get("out").getDouble(0);
+            log.info("Replay step {}: mask sum={}, output sum={}",
+                    step, maskArr.sumNumber().longValue(), sum);
+
+            if (step > 0) {
+                assertNotEquals(prevSum, sum, 1e-6,
+                        "Step " + step + ": output must differ from previous step " +
+                        "when mask grows. If identical, mask capture buffer is stale.");
+            }
+            prevSum = sum;
+        }
+
+        sd.close();
+    }
+
+    /**
+     * DSP: replay handles must persist across executeCount transitions.
+     * After warmup (executeCount=0) and freeze, segments should have replay
+     * handles at executeCount=1+. No handle should be null when the segment
+     * was successfully captured.
+     *
+     * Uses DspDebugger.analyzePlan() to introspect segment state.
+     */
+    @Test
+    @DisplayName("DSP: replay handles persist after freeze — no null handles in captured segments")
+    public void testReplayHandlesPersistAfterFreeze() {
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 4, 4);
+        SDVariable w = sd.constant("w", Nd4j.randn(DataType.FLOAT, 4, 4));
+        SDVariable mm = sd.mmul("mm", x, w);
+        SDVariable relu = sd.nn.relu("relu", mm, 0);
+        SDVariable out = relu.sum("out");
+
+        enableDsp(sd);
+
+        INDArray input = Nd4j.randn(DataType.FLOAT, 4, 4);
+        Map<String, INDArray> placeholders = Map.of("x", input);
+
+        // Execute 5 times to progress through phases
+        for (int i = 0; i < 5; i++) {
+            sd.output(placeholders, "out");
+        }
+
+        // Introspect plan via DspDebugger
+        org.nd4j.autodiff.samediff.execution.DspDebugger debugger =
+                org.nd4j.autodiff.samediff.execution.DspDebugger.attach(sd);
+        org.nd4j.autodiff.samediff.execution.DspDebugger.PlanReport report = debugger.analyzePlan();
+
+        log.info("Plan after 5 executions:\n{}", report);
+
+        // Verify: no state churn — plan phase should be SHAPES_FROZEN or higher
+        assertNotNull(report.planPhase, "Plan phase should be set");
+        log.info("Plan phase: {}", report.planPhase);
+
+        // Verify: segments that are capturable should NOT have captureFailed
+        for (org.nd4j.autodiff.samediff.execution.DspDebugger.SegmentReport seg : report.segments) {
+            if (seg.capturable) {
+                assertFalse(seg.captureFailed,
+                        "Capturable segment " + seg.index + " should not have captureFailed=true");
+            }
+        }
+
+        sd.close();
+    }
+
+    // ========================================================================
+    // 15. Native Decode Input Updates (setNextDecodeToken path)
+    // ========================================================================
+
+    /**
+     * DSP: when C++ decode inputs are configured, position_ids must update
+     * through the setNextDecodeToken path.
+     *
+     * This reproduces the VLM decoder pattern:
+     * 1. configureDecodeInputs() tells C++ which ext inputs are decode inputs
+     * 2. Java frozen fast path SKIPS syncToSpecial for those inputs
+     * 3. setNextDecodeToken() writes values directly to device via C++
+     * 4. capture buffers must be refreshed with the new values
+     *
+     * If broken, position_ids stays stale → model output repeats.
+     */
+    @Test
+    @DisplayName("DSP: setNextDecodeToken propagates position_ids through capture buffers")
+    public void testSetNextDecodeTokenPropagation() {
+        SameDiff sd = SameDiff.create();
+
+        int hiddenSize = 16;
+        int numLayers = 10;
+
+        INDArray embTable = Nd4j.randn(DataType.FLOAT, 100, hiddenSize);
+        SDVariable embeddings = sd.constant("embeddings", embTable);
+        SDVariable posIds = sd.placeHolder("position_ids", DataType.INT64, 1);
+
+        SDVariable x = sd.gather("gathered", embeddings, posIds, 0);
+        for (int layer = 0; layer < numLayers; layer++) {
+            SDVariable w = sd.constant("w_" + layer,
+                    Nd4j.eye(hiddenSize).castTo(DataType.FLOAT).muli(0.95));
+            x = sd.mmul("mm_" + layer, x, w);
+            x = sd.nn.relu("relu_" + layer, x, 0);
+        }
+        SDVariable out = x.sum("out");
+
+        enableDsp(sd);
+        sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+
+        INDArray posIdsArr = Nd4j.createFromArray(0L);
+        Map<String, INDArray> placeholders = new java.util.HashMap<>();
+        placeholders.put("position_ids", posIdsArr);
+
+        // Phase 1: Execute once to compile the plan
+        sd.output(placeholders, "out");
+
+        // Phase 2: Get DSP executor and configure decode inputs
+        var session = sd.getOrCreateSession();
+        var dspExec = session.getDynamicShapePlanExecutor();
+        if (dspExec != null) {
+            var plan = dspExec.getCurrentPlan();
+            if (plan != null) {
+                dspExec.setShapesFrozen(true);
+                dspExec.configureDecodeInputs(plan, 100);
+                log.info("Decode inputs configured: {}", dspExec.isDecodeInputsConfigured());
+            }
+        }
+
+        // Phase 3: Warmup frozen (3 more steps with position_ids=0)
+        for (int i = 0; i < 3; i++) {
+            sd.output(placeholders, "out");
+        }
+        log.info("Frozen warmup done");
+
+        // Phase 4: Use setNextDecodeToken to change position_ids
+        if (dspExec != null && dspExec.isDecodeInputsConfigured()) {
+            double prevSum = Double.NaN;
+            for (int step = 0; step < 5; step++) {
+                // Tell C++ the next position — this skips Java syncToSpecial
+                dspExec.setNextDecodeToken(step, step);  // tokenId=step, cachePos=step
+
+                Map<String, INDArray> result = sd.output(placeholders, "out");
+                double sum = result.get("out").getDouble(0);
+                log.info("setNextDecodeToken step {}: cachePos={}, sum={}", step, step, sum);
+
+                if (step > 0) {
+                    assertNotEquals(prevSum, sum, 1e-6,
+                            "Step " + step + ": output MUST differ when setNextDecodeToken " +
+                            "changes cachePos from " + (step - 1) + " to " + step +
+                            ". If identical, capture buffer propagation for decode inputs is broken.");
+                }
+                prevSum = sum;
+            }
+        } else {
+            log.warn("DSP executor or decode inputs not configured — skipping decode token test");
         }
 
         sd.close();

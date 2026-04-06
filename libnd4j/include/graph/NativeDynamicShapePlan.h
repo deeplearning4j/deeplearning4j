@@ -113,6 +113,21 @@ enum class SelectedBackend : uint8_t {
 };
 
 /**
+ * PlanDestructionReason — records WHY a plan was destroyed or reset.
+ * Set via setDestructionReason() before releasing resources.
+ * Useful for post-mortem diagnostics and distinguishing expected vs unexpected teardown.
+ */
+enum class PlanDestructionReason : uint8_t {
+  NORMAL_CLOSE = 0,       // Normal plan lifecycle end
+  SESSION_RESET = 1,      // Session reset (e.g., new page, new prompt)
+  OOM_RECOVERY = 2,       // Out-of-memory recovery — freeing resources to reclaim GPU memory
+  DEVICE_SWITCH = 3,      // Switching to a different GPU device
+  CAPTURE_FAILURE = 4,    // CUDA graph capture failed — plan must be rebuilt
+  SHAPE_CHANGE = 5,       // Input shapes changed — plan invalidated
+  ERROR_RECOVERY = 6,     // Error recovery (e.g., CUDA error 700) — plan must be rebuilt
+};
+
+/**
  * PlanPhase — plan-level lifecycle phase for the entire NativeDynamicShapePlan.
  *
  * Enforces a strict progression that makes assumptions easier at each level:
@@ -236,6 +251,11 @@ struct NativeSlot {
   bool inPlaceFused;                       // In-place fused: output reuses input buffer (set by FusionPass)
   int inPlaceFusedInputIdx;                // Which input index to reuse as output (-1 = not fused)
 
+  // cublasLt epilogue fusion: when MATMUL_BIAS_ACTIVATION is detected,
+  // the matmul slot stores epilogue info so MmulHelper can fuse bias+activation.
+  int ltEpilogueType;                      // 0=none, 1=bias, 2=bias+relu, 3=bias+gelu
+  int ltEpilogueBiasSourceIdx;             // inputSourceIndices-style index for bias array (-1 = none)
+
   // Structural iArg count: first N iArgs are structural (masks, mode flags, axis),
   // rest are data that could come from input tensors.
   // -1 = all iArgs are structural (default for most ops).
@@ -310,6 +330,7 @@ struct NativeSlot {
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
         isCustomOp(true), isIdentityOp(false), isViewCapableOp(false),
         inPlaceFused(false), inPlaceFusedInputIdx(-1),
+        ltEpilogueType(0), ltEpilogueBiasSourceIdx(-1),
         structuralIArgCount(-1),
         isFusedChainHead(false), fusedChainLength(0), isFusedChainTail(false),
         targetDeviceId(-1),
@@ -683,6 +704,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                            long long tokenId, int cachePos, void* stream);
 
   /**
+   * Propagate pending decode input values to ALL segment capture buffers.
+   * Called from execute() after updateDecodeInputs() and before segment dispatch.
+   * This is the SINGLE code path for decode→capture buffer propagation.
+   */
+  void propagateDecodeInputsToCaptureBuffers(void* stream);
+
+  /**
    * Set the next decode token and cache position for automatic device-side update.
    * Call before execute(). If decode inputs are configured, execute() will
    * write these values directly to device memory before graph replay.
@@ -699,7 +727,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   /**
    * Check if decode inputs have been configured.
    */
-  bool isDecodeInputsConfigured() const { return decodeInputIdsExtIdx_ >= 0 || decodeAttentionMaskExtIdx_ >= 0; }
+  bool isDecodeInputsConfigured() const {
+    return decodeInputIdsExtIdx_ >= 0 || decodePositionIdsExtIdx_ >= 0 || decodeAttentionMaskExtIdx_ >= 0;
+  }
 
   /**
    * Get the number of external inputs expected by this plan.
@@ -831,12 +861,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       auto& env = Environment::getInstance();
       bool mergeSegments = env.dspFreezeMergeSegments();
 
-      int oldSegCount = (int)segments_.size();
-      if (mergeSegments && oldSegCount > 1) {
-        rebuildSegmentsForFrozenShapes();
-        DSP_DIAG(SEGMENT, "setShapesFrozen: merged %d -> %d segments (ND4J_DSP_FREEZE_MERGE_SEGMENTS=1)",
-                  oldSegCount, (int)segments_.size());
-      }
+      // No segment rebuild needed. buildSegments() already uses the frozen
+      // capturability classification (value-dependent ops are capturable).
+      // One build phase, no rebuild, no stale shape caches.
+      DSP_DIAG(SEGMENT, "setShapesFrozen: %d segments (single build, no rebuild)",
+                (int)segments_.size());
 
       // Advance plan phase to SHAPES_FROZEN
       planPhase_ = PlanPhase::SHAPES_FROZEN;
@@ -941,6 +970,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Get the plan-level phase as an integer (for JNI).
    */
   int getPlanPhaseCode() const { return static_cast<int>(planPhase_); }
+
+  /**
+   * Set the reason for plan destruction/reset (for diagnostics).
+   * Should be called before releaseGpuIntermediates() or destroy().
+   */
+  void setDestructionReason(PlanDestructionReason reason) { destructionReason_ = reason; }
+  PlanDestructionReason getDestructionReason() const { return destructionReason_; }
 
   /**
    * Check if all buffer pointers are stable (same addresses as previous execution).
@@ -1107,6 +1143,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numExternalInputs_;
   std::vector<std::string> externalInputNames_;  // name for each external input index
   std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
+  std::vector<int> variableExternalInputIndices_;  // cached indices where externalInputIsVariable_[i]=true (replay optimization)
+  bool variableIndicesCached_ = false;             // true once variableExternalInputIndices_ is populated
 
   // Release schedule: releaseAtStep_[stepIdx] = array of slot indices to release
   int** releaseAtStep_;
@@ -1143,6 +1181,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Mirrors Java-side protectedWeightBuffers in DynamicShapePlanExecutor.
   std::unordered_set<DataBuffer*> protectedWeightBuffers_;
 
+  // Arrays created by this plan (via new NDArray in slot execution).
+  // The destructor ONLY deletes arrays in this set. Arrays that were
+  // passed in as external inputs or that back model variables are NOT
+  // in this set and are NOT deleted by the plan.
+  std::unordered_set<NDArray*> planOwnedArrays_;
+
+  // Register a newly allocated NDArray as plan-owned. Returns the pointer for inline use.
+  SD_INLINE NDArray* registerOwned(NDArray* arr) {
+    if (arr != nullptr) planOwnedArrays_.insert(arr);
+    return arr;
+  }
+
   // GPU graph capture control
   bool gpuGraphCaptureEnabled_;
   int totalGraphReplays_;
@@ -1165,6 +1215,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   PlanPhase planPhase_ = PlanPhase::SLOT_BY_SLOT;
   bool pointersStable_ = false;         // All segment arg tables have stable pointers
   int frozenExecutionCount_ = 0;        // Executions since shapes were frozen (for pointer stability detection)
+
+  // Tracks why the plan was destroyed/reset (for diagnostics)
+  PlanDestructionReason destructionReason_ = PlanDestructionReason::NORMAL_CLOSE;
 
   // ── Lifecycle validation ──────────────────────────────────────────────
   // Buffer pointer snapshot captured when shapes freeze. Used to detect

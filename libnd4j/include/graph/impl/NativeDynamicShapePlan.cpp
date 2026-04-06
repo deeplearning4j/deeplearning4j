@@ -1686,15 +1686,20 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
+  // Frozen constant detection MUST run BEFORE Triton precompilation.
+  // detectFrozenConstants() marks shape_of and other constant-producing slots as
+  // FROZEN_CONSTANT. The Triton IR builder checks frozenConstantSlot() and skips
+  // these slots — preventing the compiled kernel from overwriting frozen constant
+  // device buffers during graph replay. If precompilation runs first, the Triton
+  // kernel includes frozen constant ops, and replay corrupts their device data.
+  detectFrozenConstants();
+
   // Eager precompilation: after warmup (executeCount_ just became 1), all shapes
   // are populated in outputSlots_. Compile all Triton modules now so the 2nd
   // execute() goes straight to replay instead of blocking on compilation.
   if (shapesFrozen_ && executeCount_ == 1) {
     platformPrecompileSegments(externalInputs, numExternalInputs);
   }
-
-  // Frozen constant detection (extracted to NativeDynamicShapePlan_slotexec.cpp)
-  detectFrozenConstants();
 
 #ifdef SD_CUDA
   // Batched GEMM group detection: after first shapes-frozen warmup, scan for

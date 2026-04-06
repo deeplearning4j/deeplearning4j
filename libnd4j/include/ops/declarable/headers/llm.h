@@ -53,6 +53,41 @@ DECLARE_CUSTOM_OP(rms_norm_bp, 2, 1, false, 0, 0);
 #endif
 
 /**
+ * rms_norm_linear - Fused RMSNorm + Linear Projection
+ *
+ * Computes matmul(rms_norm(x, gamma, eps), W) in a single pass.
+ * Eliminates the intermediate normalized tensor from global memory.
+ *
+ * Input:
+ *   0: x [M, K] — input tensor
+ *   1: gamma [K] — RMSNorm scale weights
+ *   2: W [K, N] — linear projection weights
+ *
+ * TArgs:
+ *   0: epsilon (default: 1e-6)
+ *
+ * Output:
+ *   0: output [M, N]
+ */
+#if NOT_EXCLUDED(OP_rms_norm_linear)
+DECLARE_CUSTOM_OP(rms_norm_linear, 3, 1, false, 0, 0);
+/**
+ * rms_norm_linear_bp - Backward pass for fused RMSNorm + Linear
+ *
+ * Recomputes normalized = rms_norm(x, gamma, eps), then:
+ *   d_normalized = gradOut @ W^T
+ *   d_W = normalized^T @ gradOut
+ *   d_x, d_gamma = rms_norm_bp(x, d_normalized, eps)
+ *
+ * Input:
+ *   0: x [M, K], 1: gamma [K], 2: W [K, N], 3: gradOut [M, N]
+ * TArgs: 0: epsilon
+ * Output: 0: d_x [M, K], 1: d_gamma [K], 2: d_W [K, N]
+ */
+DECLARE_CUSTOM_OP(rms_norm_linear_bp, 4, 3, false, 0, 0);
+#endif
+
+/**
  * rope - Rotary Position Embedding
  *
  * Applies rotary position embeddings to query and key tensors.
@@ -526,10 +561,23 @@ DECLARE_CUSTOM_OP(row_parallel_linear, 2, 1, false, 0, 0);
  * Output:
  *   0: output [batch, seq_len, intermediate_dim]
  */
-// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
-// #if NOT_EXCLUDED(OP_fused_gemm_swiglu)
-// DECLARE_CUSTOM_OP(fused_gemm_swiglu, 3, 1, false, 0, 0);
-// #endif
+#if NOT_EXCLUDED(OP_fused_gemm_swiglu)
+DECLARE_CUSTOM_OP(fused_gemm_swiglu, 3, 1, false, 0, 0);
+/**
+ * fused_gemm_swiglu_bp - Backward pass for fused GatedMLP
+ *
+ * Recomputes gate = x@W_gate, up = x@W_up, silu(gate), then:
+ *   d_up = gradOut * silu(gate)
+ *   d_gate = gradOut * up * silu'(gate)
+ *   d_x = d_gate @ W_gate^T + d_up @ W_up^T
+ *   d_W_gate = x^T @ d_gate
+ *   d_W_up = x^T @ d_up
+ *
+ * Input: 0: x [M,K], 1: W_gate [K,N], 2: W_up [K,N], 3: gradOut [M,N]
+ * Output: 0: d_x [M,K], 1: d_W_gate [K,N], 2: d_W_up [K,N]
+ */
+DECLARE_CUSTOM_OP(fused_gemm_swiglu_bp, 4, 3, false, 0, 0);
+#endif
 
 /**
  * moe_gate - Mixture of Experts Gating

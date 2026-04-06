@@ -307,6 +307,15 @@ public class ModelIOConfig {
             }
         }
 
+        // If input_ids exists as a variable but wasn't found in inputs(),
+        // record it so callers can associate correct values before each execution.
+        // No graph topology change (no addPlaceholderOverride) — just track the name.
+        if (idsName == null && model.hasVariable("input_ids")) {
+            idsName = "input_ids";
+            log.info("ModelIOConfig.discover(): found 'input_ids' as internal variable (not placeholder). "
+                    + "Will associate correct values via associateArrayWithVariable before each step.");
+        }
+
         // Detect attn_mask_reformat output node
         String defaultAttnReformat = "/model/attn_mask_reformat/Tile/output_0";
         if (model.hasVariable(defaultAttnReformat)) {

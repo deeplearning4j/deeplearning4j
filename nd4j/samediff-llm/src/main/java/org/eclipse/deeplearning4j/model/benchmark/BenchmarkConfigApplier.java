@@ -158,6 +158,10 @@ public class BenchmarkConfigApplier {
         env.setDspBatchZeroKernel(config.isDspBatchZeroKernel());
         env.setDspBatchedGemm(config.isDspBatchedGemm());
 
+        // DSP freeze/merge
+        env.setDspFreezeMergeSegments(config.isDspFreezeMergeSegments());
+        env.setDspFreezeRecompile(config.isDspFreezeRecompile());
+
         // Enable DSP diagnostics for graph capture configs.
         // EXECUTE is NOT auto-enabled — it triggers per-step cudaStreamSynchronize
         // for argmax logging (~5ms penalty per decode step). Enable explicitly via

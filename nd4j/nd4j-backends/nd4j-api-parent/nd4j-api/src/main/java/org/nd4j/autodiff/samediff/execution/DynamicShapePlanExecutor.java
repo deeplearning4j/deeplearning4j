@@ -236,6 +236,30 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  -1 means not yet determined. */
     private int nativeExecutionDevice = -1;
 
+    /**
+     * Ensure the current thread is on this plan's execution device.
+     * Call this before building decoder inputs (position_ids, attention_mask, etc.)
+     * so that Nd4j array allocations land on the correct GPU. On multi-GPU systems,
+     * ops that run between decode steps (token sampling, embedding) can leave the
+     * thread on a different device, causing wrong-device allocations that require
+     * cross-device migration and produce CUDA error 700 on non-peer GPUs.
+     *
+     * <p>If the execution device hasn't been determined yet (first call),
+     * selects the best GPU via {@link DeviceMemoryManager#selectBestGpu()}.
+     */
+    public void ensureExecutionDevice() {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        if (numDevices <= 1) return;
+        if (nativeExecutionDevice < 0) {
+            nativeExecutionDevice = DeviceMemoryManager.getInstance().selectBestGpu();
+        }
+        int currentDevice = DeviceMemoryManager.getInstance().getCurrentDeviceId();
+        if (currentDevice != nativeExecutionDevice) {
+            DeviceMemoryManager.getInstance().switchDevice(nativeExecutionDevice,
+                    "DSP.ensureExecutionDevice", "pin-to-plan-device");
+        }
+    }
+
     /** Cache of constant replicas for the native execution path. Keyed by external input
      *  index. When constants live on a different device than nativeExecutionDevice (e.g.,
      *  draft model weights on device 1, execution on device 0), replicateToDevice() copies
@@ -1668,6 +1692,21 @@ public class DynamicShapePlanExecutor implements Closeable {
     private Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
+        // Pin thread to the plan's execution device at the VERY START, before any
+        // input resolution or array allocation. Without this, ops that ran between
+        // decode steps (token sampling, embedding) can leave the thread on a different
+        // device, causing Nd4j.create* / arange / scalar calls during input resolution
+        // to allocate arrays on the wrong GPU. On non-peer multi-GPU systems, those
+        // wrong-device arrays then require cross-device migration which can produce
+        // stale pointers and CUDA error 700.
+        if (nativeExecutionDevice >= 0) {
+            int currentDevice = DeviceMemoryManager.getInstance().getCurrentDeviceId();
+            if (currentDevice != nativeExecutionDevice) {
+                DeviceMemoryManager.getInstance().switchDevice(nativeExecutionDevice,
+                        "DSP.executeNative", "pin-to-plan-device");
+            }
+        }
+
         // Native plan compilation is explicit (or controlled by InferenceSession auto-compile).
         if (!isNativePlanCompiled(plan)) {
             throw new RuntimeException("Native executor: plan not precompiled for native execution. " +
@@ -1789,7 +1828,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                     SDVariable var = sd.getVariable(varName);
                     if (var != null &&
                             (var.getVariableType() == VariableType.CONSTANT ||
-                                    var.getVariableType() == VariableType.VARIABLE)) {
+                                    var.getVariableType() == VariableType.VARIABLE ||
+                                    var.getVariableType() == VariableType.ARRAY)) {
                         arr = var.getArr();
                         // Detect dead constants: array exists but DataBuffer is already closed.
                         // This happens when SDZ deserialization creates shared dummy arrays for
@@ -1807,7 +1847,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             // can read the array without crashing.
                             INDArray fresh = Nd4j.zeros(arr.dataType(), arr.shape());
                             // Copy the SDVariable's stored value if available
-                            SDVariable sdVar = sameDiff.getVariable(varName);
+                            SDVariable sdVar = sd.getVariable(varName);
                             if (sdVar != null && sdVar.getArr() != null && sdVar.getArr().data() != null
                                     && !sdVar.getArr().data().wasClosed()) {
                                 fresh.assign(sdVar.getArr());
@@ -2026,11 +2066,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                             }
 
                             // Cross-device migration via replicateToDevice (handles non-peer GPUs)
+                            log.info("DSP MIGRATE: ext[{}] '{}' shape={} dtype={} from device {} to {} (placeholder={}, view={})",
+                                    i, extKeys != null && i < extKeys.length ? extKeys[i] : "?",
+                                    java.util.Arrays.toString(arr.shape()), arr.dataType(),
+                                    arrDevice, nativeExecutionDevice, isPlaceholder, arr.isView());
                             long startTime = System.nanoTime();
                             INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(
                                     nativeExecutionDevice, arr);
                             long durationNs = System.nanoTime() - startTime;
-                            
+
                             extInputs[i] = migrated;
                             migratedCount++;
                             long elemSize = arr.data().getElementSize();
@@ -2063,9 +2107,27 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 nativeConstantReplicaCache.put(i, migrated);
                             }
 
-                            // Update frozen cache
+                            // Update frozen cache AND invalidate cached opaque pointer.
+                            // The frozen fast path compares extInputs[i] identity against
+                            // cachedInputArrays[i] to decide whether to re-set the C++ opContext.
+                            // Migration changes both to the same migrated object, so identity
+                            // matches and the stale C++ pointer is never updated.
+                            // Nulling cachedInputOpaques[i] forces the frozen path to re-set it.
                             if (cachedInputArrays != null && i < cachedInputArrays.length) {
                                 cachedInputArrays[i] = migrated;
+                            }
+                            if (cachedInputOpaques != null && i < cachedInputOpaques.length) {
+                                cachedInputOpaques[i] = null;
+                            }
+                            // Track migrated non-placeholder for opContext re-set in frozen path.
+                            // The frozen fast path only iterates placeholderIndices — migrated
+                            // constants/variables would be skipped, leaving C++ with stale pointers.
+                            if (!isPlaceholder) {
+                                if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
+                                if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
+                                    staleNonPlaceholderIndices = java.util.Arrays.copyOf(
+                                            staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
+                                staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
                             }
                         }
                     }
@@ -2557,11 +2619,17 @@ public class DynamicShapePlanExecutor implements Closeable {
             return results;
         }
         } finally {
-            // Restore original device if we switched for multi-GPU coherency
-            if (deviceSwitched) {
-                DeviceMemoryManager.getInstance().switchDevice(previousDevice,
-                        "DSP.executeNative", "restore-device");
-            }
+            // DO NOT restore to previousDevice. Stay on the plan's execution device
+            // (nativeExecutionDevice) so that arrays created between decode steps
+            // (position_ids, attention_mask, input_ids) are allocated on the correct
+            // device. Restoring to previousDevice causes allocations on the wrong
+            // device, requiring cross-device migration on the next step, which leads
+            // to CUDA error 700 on non-peer GPU configurations.
+            //
+            // The thread's device affinity is a global resource — CudaExecutioner's
+            // per-op device routing can change it at any time. By staying on the plan's
+            // device after execution, we ensure the decode loop's allocations land on
+            // the device where they'll be consumed.
         }
     }
 
@@ -2591,17 +2659,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             String cacheKey = planCacheKey(nativePlanSource);
             if (sd != null && cacheKey != null) {
                 // Release GPU intermediates (CUDA graphs, capture buffers, cuBLAS workspace,
-                // non-weight output slot NDArrays) BEFORE caching the handle. Without this,
-                // the cached handle retains live GPU pointers that become stale when the
-                // memory pool trims or reallocates that memory. Restoring such a handle
-                // and re-executing it causes CUDA error 700 (illegal memory access).
-                try {
-                    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                    int freed = nativeOps.releaseGpuIntermediates(nativePlanHandle);
-                    log.info("    freeNativePlanHandle: released {} GPU intermediates before caching", freed);
-                } catch (Exception e) {
-                    log.info("    freeNativePlanHandle: releaseGpuIntermediates failed: {}", e.getMessage());
-                }
+                // Do NOT call releaseGpuIntermediates before caching. The plan's
+                // planOwnedArrays_ set tracks which arrays the plan created — only those
+                // will be freed when the cached handle is later destroyed. Arrays that
+                // back model variables are NOT plan-owned and survive across plan lifetimes.
                 log.info("    freeNativePlanHandle: caching handle for reuse (key={})", cacheKey);
                 sd.cacheNativePlanHandle(cacheKey, nativePlanHandle);
             } else {

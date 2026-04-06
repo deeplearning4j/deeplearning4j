@@ -56,6 +56,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <future>
+#include <thread>
+#include <atomic>
 #include <numeric>
 #include <unordered_set>
 
@@ -78,44 +80,59 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
   }
   if (targetDevice < 0) return true;
 
-  int deviceCount = 0;
-  cudaError_t countErr = cudaGetDeviceCount(&deviceCount);
-  if (countErr != cudaSuccess || deviceCount <= 0) {
-    DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] targetDeviceId=%d but CUDA device query failed: %s",
-             phase, segment.startSlot, segment.endSlot, targetDevice,
-             cudaGetErrorString(countErr));
-    cudaGetLastError();
-    return false;
+  // REPLAY OPTIMIZATION: Cache device count and current device to avoid
+  // calling cudaGetDeviceCount + cudaGetDevice for every segment (656 per step).
+  // Each CUDA runtime call has ~5-10us overhead. Caching saves ~6-13ms per step.
+  // Device count never changes during a process lifetime. Current device is
+  // tracked via the cached value and only refreshed after cudaSetDevice.
+  static thread_local int cachedDeviceCount = -1;
+  static thread_local int cachedCurrentDevice = -1;
+
+  if (cachedDeviceCount < 0) {
+    int deviceCount = 0;
+    cudaError_t countErr = cudaGetDeviceCount(&deviceCount);
+    if (countErr != cudaSuccess || deviceCount <= 0) {
+      DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] targetDeviceId=%d but CUDA device query failed: %s",
+               phase, segment.startSlot, segment.endSlot, targetDevice,
+               cudaGetErrorString(countErr));
+      cudaGetLastError();
+      return false;
+    }
+    cachedDeviceCount = deviceCount;
   }
-  if (targetDevice >= deviceCount) {
+  if (targetDevice >= cachedDeviceCount) {
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] invalid targetDeviceId=%d (deviceCount=%d)",
-             phase, segment.startSlot, segment.endSlot, targetDevice, deviceCount);
+             phase, segment.startSlot, segment.endSlot, targetDevice, cachedDeviceCount);
     return false;
   }
 
-  int currentDevice = -1;
-  cudaError_t getErr = cudaGetDevice(&currentDevice);
-  if (getErr != cudaSuccess) {
-    DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s",
-             phase, segment.startSlot, segment.endSlot, cudaGetErrorString(getErr));
-    cudaGetLastError();
-    return false;
+  if (cachedCurrentDevice < 0) {
+    int currentDevice = -1;
+    cudaError_t getErr = cudaGetDevice(&currentDevice);
+    if (getErr != cudaSuccess) {
+      DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s",
+               phase, segment.startSlot, segment.endSlot, cudaGetErrorString(getErr));
+      cudaGetLastError();
+      return false;
+    }
+    cachedCurrentDevice = currentDevice;
   }
 
-  if (currentDevice != targetDevice) {
+  if (cachedCurrentDevice != targetDevice) {
     cudaError_t setErr = cudaSetDevice(targetDevice);
     if (setErr != cudaSuccess) {
       DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to switch CUDA device %d->%d: %s",
                phase, segment.startSlot, segment.endSlot,
-               currentDevice, targetDevice, cudaGetErrorString(setErr));
+               cachedCurrentDevice, targetDevice, cudaGetErrorString(setErr));
       cudaGetLastError();
       return false;
     }
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] switched CUDA device %d->%d",
-             phase, segment.startSlot, segment.endSlot, currentDevice, targetDevice);
+             phase, segment.startSlot, segment.endSlot, cachedCurrentDevice, targetDevice);
+    cachedCurrentDevice = targetDevice;
   } else {
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] using CUDA device %d",
-             phase, segment.startSlot, segment.endSlot, currentDevice);
+             phase, segment.startSlot, segment.endSlot, cachedCurrentDevice);
   }
   return true;
 }
@@ -448,57 +465,67 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
 
   if (tasks.size() <= 1) return;
 
-  const int maxPrecompileThreads = std::min(
-      static_cast<int>(tasks.size()),
-      std::max(1, sd::Environment::getInstance().tritonBuildThreads()));
-  DSP_DIAG(COMPILE, "NativeDSP::execute: parallel precompilation of %d segments "
-           "using %d threads (executeCount=%d)",
-           static_cast<int>(tasks.size()), maxPrecompileThreads, executeCount_);
+  // Determine thread count for parallel precompilation.
+  // Inner sub-segment parallelism is handled by compileSegment (DEFAULT_MAX_PARALLEL_COMPILATIONS).
+  // Outer segment-level parallelism is safe because:
+  // - Each compilation creates its own MLIRContext (via getMlirContextMutex-protected factory)
+  // - cuModuleLoadDataEx is serialized via loadModuleMtx
+  // - LLVM init is done via std::once_flag
+  int numThreads = std::min(8, static_cast<int>(tasks.size()));
+  DSP_DIAG(COMPILE, "NativeDSP::execute: parallel precompilation of %d segments using %d threads "
+           "(executeCount=%d)",
+           static_cast<int>(tasks.size()), numThreads, executeCount_);
   auto precompileStart = Clock::now();
 
   // Force-initialize static singleton tables on the main thread BEFORE
-  // launching parallel workers.  getOpCategoryTable() is an inline function
-  // in a header with a static local variable.  Although C++11 "magic statics"
-  // guarantee thread-safe init, NVCC's handling of inline functions with
-  // static locals across multiple .cu translation units can violate this.
-  // Touching it here makes the race impossible.
+  // any worker threads start.
   (void)sd::graph::getOpCategoryTable();
 
-  std::vector<std::future<bool>> futures;
-  futures.reserve(tasks.size());
-  for (const auto& task : tasks) {
-    futures.emplace_back(std::async(std::launch::async,
-        [this, gpuBackend, externalInputs, numExternalInputs, task]() -> bool {
-          cudaError_t setDevErr = cudaSetDevice(task.targetDevice);
-          if (setDevErr != cudaSuccess) {
-            DSP_DIAG(FALLBACK, "NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s",
-                     task.targetDevice, task.segIdx, cudaGetErrorString(setDevErr));
-            cudaGetLastError();
-            return false;
-          }
-          auto& seg = segments_[task.segIdx];
-          return gpuBackend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
+  std::atomic<int> precompileOk{0};
+  std::atomic<int> precompileFail{0};
+  std::atomic<size_t> nextTask{0};
+
+  auto workerFn = [&]() {
+    while (true) {
+      size_t i = nextTask.fetch_add(1);
+      if (i >= tasks.size()) break;
+
+      const auto& task = tasks[i];
+      cudaError_t setDevErr = cudaSetDevice(task.targetDevice);
+      if (setDevErr != cudaSuccess) {
+        DSP_DIAG(FALLBACK, "NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s",
+                 task.targetDevice, task.segIdx, cudaGetErrorString(setDevErr));
+        cudaGetLastError();
+        precompileFail++;
+        continue;
+      }
+      auto& seg = segments_[task.segIdx];
+      bool ok = gpuBackend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
                                             outputSlots_, totalOutputSlots_, task.shapeKey,
                                             numSlots_);
-        }));
-  }
-
-  int precompileOk = 0, precompileFail = 0;
-  for (size_t i = 0; i < futures.size(); i++) {
-    bool ok = futures[i].get();
-    if (ok) {
-      segments_[tasks[i].segIdx].shapeKey = tasks[i].shapeKey;
-      precompileOk++;
-    } else {
-      precompileFail++;
+      if (ok) {
+        segments_[task.segIdx].shapeKey = task.shapeKey;
+        precompileOk++;
+      } else {
+        precompileFail++;
+      }
     }
+  };
+
+  // Launch worker threads
+  std::vector<std::thread> workers;
+  for (int t = 0; t < numThreads; t++) {
+    workers.emplace_back(workerFn);
+  }
+  for (auto& w : workers) {
+    w.join();
   }
 
   auto precompileMs = std::chrono::duration_cast<std::chrono::milliseconds>(
       Clock::now() - precompileStart).count();
   DSP_DIAG(COMPILE, "NativeDSP::execute: parallel precompilation done in %lld ms "
            "(ok=%d, failed=%d)",
-           static_cast<long long>(precompileMs), precompileOk, precompileFail);
+           static_cast<long long>(precompileMs), precompileOk.load(), precompileFail.load());
 
   // Report per-device Triton module memory budget
   {

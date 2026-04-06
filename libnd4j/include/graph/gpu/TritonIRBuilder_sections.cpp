@@ -369,8 +369,13 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   // reshape/squeeze/expand_dims are identity only when their logical shape is unchanged.
   // permute/transpose are identity only when they move singleton dimensions and preserve
   // the relative order of all non-singleton axes (the seq=1 decode fast path).
+  // Identity shape ops are UNCONDITIONALLY SSA-forwarded. These are true no-ops
+  // (same physical layout) and fusing them into elementwise sections is always safe.
+  // Previously gated behind tritonFuseIdentityShapes() — now always on because:
+  // 1. Element count is unchanged by definition
+  // 2. No data movement — same buffer, just different view metadata
+  // 3. Reduces section breaks and kernel launches for no cost
   auto isIdentityShapeOp = [&](const NativeSlot& slot) -> bool {
-    if (!sd::Environment::getInstance().tritonFuseIdentityShapes()) return false;
     auto cat = getOpCategory(slot.opName);
     if (cat != TritonOpCategory::SHAPE_MANIPULATION) return false;
 
@@ -525,9 +530,25 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         // excluded from ELEMENTWISE sections entirely — they run via native fallback.
         LongType opElements = getOutputElements(i);
         if (opElements > 0 && currentSectionElements > 0 && opElements != currentSectionElements) {
-          // Element count changed — must start new section
-          // Exception: scalar ops (1 element) are broadcast-compatible with any size
-          if (opElements != 1 && currentSectionElements != 1) {
+          // Element count changed — check if broadcast-compatible.
+          // The 1D kernel uses a single n_elements (the larger of the two).
+          // Broadcast-compatible cases:
+          //   1. Scalar (1 element) is always broadcast-compatible
+          //   2. One count evenly divides the other (e.g., [N] op on [B,N] data
+          //      where output is [B,N]) — the larger count is used for the grid
+          //      and the smaller operand is broadcast via modular indexing.
+          bool broadcastCompatible = false;
+          if (opElements == 1 || currentSectionElements == 1) {
+            broadcastCompatible = true;
+          } else {
+            // Check if one divides the other (broadcast along batch dimensions)
+            LongType larger = std::max(opElements, currentSectionElements);
+            LongType smaller = std::min(opElements, currentSectionElements);
+            if (smaller > 0 && larger % smaller == 0) {
+              broadcastCompatible = true;
+            }
+          }
+          if (!broadcastCompatible) {
             startNewSection = true;
           }
         }
@@ -779,6 +800,133 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       DSP_DIAG(COMPILE, "TritonIRBuilder::identifySections: post-merge reduced %zu sections to %zu",
                sections.size(), merged.size());
       sections = std::move(merged);
+    }
+  }
+
+  // ── Matmul/Normalization epilogue absorption ──
+  // When a MATMUL or NORMALIZATION section is immediately followed by an
+  // ELEMENTWISE section whose ops ONLY consume the prior section's output,
+  // absorb those elementwise ops as an epilogue. This eliminates the global
+  // memory round-trip: the Triton emitter can fuse bias-add/activation/cast
+  // into the matmul tile loop or normalization epilogue.
+  //
+  // Conditions for absorption:
+  //   1. Next section is ELEMENTWISE
+  //   2. ALL inputs of each epilogue op either come from the prior section's
+  //      output slots OR from external inputs (constants/weights)
+  //   3. The prior section's output is consumed ONLY by the epilogue ops
+  //      (no other sections or ops outside this range consume it)
+  //   4. Epilogue chain is short (≤ 8 ops) to avoid register pressure
+  if (sections.size() > 1) {
+    // Build a set of all output slot indices produced by each section
+    auto sectionOutputSlots = [&](const KernelSection& sec) -> std::unordered_set<int> {
+      std::unordered_set<int> outputs;
+      for (int s = sec.startSlot; s <= sec.endSlot; s++) {
+        for (int o = 0; o < slots[s].numOutputs; o++) {
+          outputs.insert(slots[s].outputSlotIndices[o]);
+        }
+      }
+      return outputs;
+    };
+
+    // Check if all inputs of an elementwise section come from the producer
+    // section's outputs or from external inputs (negative source indices)
+    auto allInputsFromProducerOrExternal = [&](const KernelSection& ewSec,
+                                                const std::unordered_set<int>& producerOutputs) -> bool {
+      for (int s = ewSec.startSlot; s <= ewSec.endSlot; s++) {
+        for (int inp = 0; inp < slots[s].numInputs; inp++) {
+          int srcIdx = slots[s].inputSourceIndices[inp];
+          if (srcIdx < 0) continue;  // External input (constant/weight) — always OK
+          if (producerOutputs.count(srcIdx) == 0) {
+            // This input comes from a slot output NOT produced by the producer section.
+            // Check if it's produced within the epilogue section itself (chain dependency).
+            bool producedWithinEpilogue = false;
+            for (int es = ewSec.startSlot; es < s; es++) {
+              for (int eo = 0; eo < slots[es].numOutputs; eo++) {
+                if (slots[es].outputSlotIndices[eo] == srcIdx) {
+                  producedWithinEpilogue = true;
+                  break;
+                }
+              }
+              if (producedWithinEpilogue) break;
+            }
+            if (!producedWithinEpilogue) return false;
+          }
+        }
+      }
+      return true;
+    };
+
+    // Check that the producer section's outputs are not consumed by any section
+    // other than the epilogue candidate
+    auto outputsOnlyConsumedByNext = [&](const KernelSection& producerSec,
+                                          const KernelSection& nextSec,
+                                          const std::unordered_set<int>& producerOutputs) -> bool {
+      for (int outSlot : producerOutputs) {
+        // Check all slots outside [producerSec.start, nextSec.end]
+        for (int s = startSlot; s <= endSlot; s++) {
+          if (s >= producerSec.startSlot && s <= nextSec.endSlot) continue;
+          for (int inp = 0; inp < slots[s].numInputs; inp++) {
+            if (slots[s].inputSourceIndices[inp] == outSlot) {
+              return false;  // Consumed outside the fused range
+            }
+          }
+        }
+      }
+      return true;
+    };
+
+    static constexpr int MAX_EPILOGUE_OPS = 8;
+
+    std::vector<KernelSection> absorbed;
+    absorbed.reserve(sections.size());
+    std::unordered_set<int> skipIndices;
+
+    for (size_t si = 0; si < sections.size(); si++) {
+      if (skipIndices.count(static_cast<int>(si))) continue;
+
+      auto& sec = sections[si];
+      bool isMatmul = (sec.type == KernelSectionType::MATMUL);
+      bool isNorm = (sec.type == KernelSectionType::NORMALIZATION);
+
+      if ((isMatmul || isNorm) && si + 1 < sections.size()) {
+        auto& nextSec = sections[si + 1];
+        if (nextSec.type == KernelSectionType::ELEMENTWISE &&
+            nextSec.numOps <= MAX_EPILOGUE_OPS) {
+          auto prodOutputs = sectionOutputSlots(sec);
+          if (allInputsFromProducerOrExternal(nextSec, prodOutputs) &&
+              outputsOnlyConsumedByNext(sec, nextSec, prodOutputs)) {
+            // Absorb: extend the section to cover the epilogue ops
+            KernelSection fused = sec;
+            if (isMatmul) {
+              fused.matmulEpilogueStartSlot = nextSec.startSlot;
+              fused.matmulEpilogueEndSlot = nextSec.endSlot;
+              fused.matmulEpilogueCount = nextSec.numOps;
+              DSP_DIAG(COMPILE, "identifySections: absorbed %d ELEMENTWISE epilogue ops into MATMUL section [%d-%d] -> [%d-%d]",
+                       nextSec.numOps, sec.startSlot, sec.endSlot, sec.startSlot, nextSec.endSlot);
+            } else {
+              fused.normEpilogueStartSlot = nextSec.startSlot;
+              fused.normEpilogueEndSlot = nextSec.endSlot;
+              fused.normEpilogueCount = nextSec.numOps;
+              DSP_DIAG(COMPILE, "identifySections: absorbed %d ELEMENTWISE epilogue ops into NORMALIZATION section [%d-%d] -> [%d-%d]",
+                       nextSec.numOps, sec.startSlot, sec.endSlot, sec.startSlot, nextSec.endSlot);
+            }
+            fused.endSlot = nextSec.endSlot;
+            fused.numOps += nextSec.numOps;
+            absorbed.push_back(fused);
+            skipIndices.insert(static_cast<int>(si + 1));
+            continue;
+          }
+        }
+      }
+
+      absorbed.push_back(sec);
+    }
+
+    if (absorbed.size() < sections.size()) {
+      DSP_DIAG(COMPILE, "identifySections: epilogue absorption reduced %zu sections to %zu",
+               sections.size(), absorbed.size());
+      sections = std::move(absorbed);
     }
   }
 

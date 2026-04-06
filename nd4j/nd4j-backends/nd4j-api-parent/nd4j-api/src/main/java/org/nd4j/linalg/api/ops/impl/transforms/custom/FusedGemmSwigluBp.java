@@ -1,0 +1,59 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
+
+import lombok.NoArgsConstructor;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Backward pass for fused GatedMLP (GEMM + SwiGLU).
+ *
+ * Input: 0: x [M,K], 1: W_gate [K,N], 2: W_up [K,N], 3: gradOut [M,N]
+ * Output: 0: d_x [M,K], 1: d_W_gate [K,N], 2: d_W_up [K,N]
+ */
+@NoArgsConstructor
+public class FusedGemmSwigluBp extends DynamicCustomOp {
+
+    public FusedGemmSwigluBp(SameDiff sd, SDVariable x, SDVariable wGate, SDVariable wUp,
+                             SDVariable gradOut) {
+        super(null, sd, new SDVariable[]{x, wGate, wUp, gradOut}, false);
+    }
+
+    @Override
+    public String opName() {
+        return "fused_gemm_swiglu_bp";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(1), inputDataTypes.get(2));
+    }
+
+    @Override
+    public int getNumOutputs() {
+        return 3;
+    }
+}

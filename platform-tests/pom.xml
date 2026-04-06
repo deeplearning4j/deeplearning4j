@@ -1684,6 +1684,9 @@
                         <!-- VLM speculative decoding -->
                         <vlm.speculative.tokens>${vlm.speculative.tokens}</vlm.speculative.tokens>
                         <vlm.speculative.draft>${vlm.speculative.draft}</vlm.speculative.draft>
+                        <!-- DSP freeze/merge -->
+                        <nd4j.dsp.freezeMergeSegments>${nd4j.dsp.freezeMergeSegments}</nd4j.dsp.freezeMergeSegments>
+                        <nd4j.dsp.freezeRecompile>${nd4j.dsp.freezeRecompile}</nd4j.dsp.freezeRecompile>
                     </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>

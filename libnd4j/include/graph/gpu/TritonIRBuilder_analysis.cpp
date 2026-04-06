@@ -835,11 +835,33 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
     // for the small tile loads in single-token decode (blockM=1).
     numStages = 1;
   } else if (hasMatmul) {
-    int length = static_cast<int>(std::min(maxOutputLen, static_cast<LongType>(INT_MAX)));
-    dim3 dims = getMMulDims(length > 0 ? length : 1, sizeof(float));
-    blockSize = 128;
-    numWarps = std::max(1, static_cast<int>(dims.y) / 32);
-    numStages = 3;
+    // Auto-tune matmul tile config based on problem size.
+    // Extract M, N, K from the largest matmul output shape.
+    int approxM = 0, approxN = 0;
+    for (size_t i = 0; i < categories.size(); i++) {
+      if (categories[i] == TritonOpCategory::MATMUL && shapes[i].size() >= 2) {
+        int m = static_cast<int>(shapes[i][shapes[i].size() - 2]);
+        int n = static_cast<int>(shapes[i][shapes[i].size() - 1]);
+        if (m * n > approxM * approxN) { approxM = m; approxN = n; }
+      }
+    }
+
+    if (approxM <= 16) {
+      // Small M (decode): fewer warps, smaller tiles to reduce overhead
+      blockSize = 64;
+      numWarps = 2;
+      numStages = 2;
+    } else if (approxM <= 64) {
+      // Medium M: balanced config
+      blockSize = 128;
+      numWarps = 4;
+      numStages = 3;
+    } else {
+      // Large M (prefill): maximize throughput with large tiles
+      blockSize = 128;
+      numWarps = 8;
+      numStages = 4;
+    }
   } else if (hasReduction || hasNormalization) {
     int xLength = static_cast<int>(std::min(maxOutputLen, static_cast<LongType>(INT_MAX)));
     int p = 64;

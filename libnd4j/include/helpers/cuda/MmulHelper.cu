@@ -56,6 +56,23 @@ extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
 
 namespace sd {
 
+// Thread-local cublasLt epilogue state — set by DSP executor before matmul dispatch
+static thread_local int tl_ltEpilogueType = 0;
+static thread_local const void* tl_ltEpilogueBiasPtr = nullptr;
+static thread_local int64_t tl_ltEpilogueBiasSize = 0;
+
+void MmulHelper::setLtEpilogue(int type, const void* biasPtr, int64_t biasSize) {
+  tl_ltEpilogueType = type;
+  tl_ltEpilogueBiasPtr = biasPtr;
+  tl_ltEpilogueBiasSize = biasSize;
+}
+
+void MmulHelper::clearLtEpilogue() {
+  tl_ltEpilogueType = 0;
+  tl_ltEpilogueBiasPtr = nullptr;
+  tl_ltEpilogueBiasSize = 0;
+}
+
 // Re-apply cuBLAS workspace after cublasSetStream whenever DSP configured one.
 static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
   if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
@@ -120,11 +137,13 @@ struct LtMatmulCacheKey {
   int M, N, K;
   cudaDataType aType, bType, cType;
   cublasOperation_t transA, transB;
+  int epilogueType;  // 0=none, 1=bias, 2=bias+relu, 3=bias+gelu
 
   bool operator==(const LtMatmulCacheKey& other) const {
     return deviceId == other.deviceId && M == other.M && N == other.N && K == other.K &&
            aType == other.aType && bType == other.bType && cType == other.cType &&
-           transA == other.transA && transB == other.transB;
+           transA == other.transA && transB == other.transB &&
+           epilogueType == other.epilogueType;
   }
 };
 
@@ -141,6 +160,7 @@ struct LtMatmulCacheKeyHash {
     h ^= std::hash<int>{}(key.cType) + 0x9e3779b9 + (h << 6) + (h >> 2);
     h ^= std::hash<int>{}(key.transA) + 0x9e3779b9 + (h << 6) + (h >> 2);
     h ^= std::hash<int>{}(key.transB) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.epilogueType) + 0x9e3779b9 + (h << 6) + (h >> 2);
     return h;
   }
 };
@@ -189,14 +209,18 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
                        NDArray* pA, NDArray* pB, NDArray* pC,
                        int M, int N, int K,
                        bool transA, bool transB,
-                       cudaDataType aType, cudaDataType bType, cudaDataType cType) {
-  // Tight gating: only for decoder row-vector logits projection
-  if (M != 1) return false;
-  if (cType != CUDA_R_32F) return false;
-  if (bType != CUDA_R_16F) return false;
-  if (aType != CUDA_R_32F && aType != CUDA_R_16F) return false;
-  if (N < 16384) return false;  // Only for large vocab projections
-  if (transA || !transB) return false;  // Expect row-major [1,K] x [K,N]
+                       cudaDataType aType, cudaDataType bType, cudaDataType cType,
+                       int epilogueType = 0, const void* biasPtr = nullptr, int64_t biasSize = 0) {
+  // When epilogue fusion is requested, relax the gating — cublasLt handles general matmul.
+  // Without epilogue, keep tight gating for the decoder logits projection fast path.
+  if (epilogueType == 0) {
+    if (M != 1) return false;
+    if (cType != CUDA_R_32F) return false;
+    if (bType != CUDA_R_16F) return false;
+    if (aType != CUDA_R_32F && aType != CUDA_R_16F) return false;
+    if (N < 16384) return false;  // Only for large vocab projections
+    if (transA || !transB) return false;  // Expect row-major [1,K] x [K,N]
+  }
 
   // Get cuBLAS Lt handle
   auto ltHandlePtr = CublasHelper::getInstance().ltHandle();
@@ -215,6 +239,7 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
   key.cType = cType;
   key.transA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
   key.transB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
+  key.epilogueType = epilogueType;
 
   // Look up cached algorithm
   auto cacheIt = tl_ltAlgoCache.find(key);
@@ -251,6 +276,23 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
         status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSB, &opTransB, sizeof(opTransB));
       }
 
+      // Set cublasLt epilogue for fused bias+activation
+      if (status == CUBLAS_STATUS_SUCCESS && epilogueType > 0 && biasPtr != nullptr) {
+        cublasLtEpilogue_t epilogue = CUBLASLT_EPILOGUE_DEFAULT;
+        if (epilogueType == 1) epilogue = CUBLASLT_EPILOGUE_BIAS;
+        else if (epilogueType == 2) epilogue = CUBLASLT_EPILOGUE_RELU_BIAS;
+        else if (epilogueType == 3) epilogue = CUBLASLT_EPILOGUE_GELU_BIAS;
+
+        if (epilogue != CUBLASLT_EPILOGUE_DEFAULT) {
+          status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_EPILOGUE,
+                                                   &epilogue, sizeof(epilogue));
+          if (status == CUBLAS_STATUS_SUCCESS) {
+            status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_BIAS_POINTER,
+                                                     &biasPtr, sizeof(biasPtr));
+          }
+        }
+      }
+
       // Layouts for column-major interpretation of row-major data:
       // B is [K,N] row-major -> treat as [N,K] column-major with ld=N
       // A is [1,K] row-major -> treat as [K,1] column-major with ld=K
@@ -268,7 +310,7 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
               size_t maxWorkspace = tl_cublasWorkspaceSize;
               status = cublasLtMatmulPreferenceSetAttribute(preference, CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,
                                                             &maxWorkspace, sizeof(maxWorkspace));
-              
+
               if (status == CUBLAS_STATUS_SUCCESS) {
                 // Note: B is first operand (as A in col-major), A is second operand (as B in col-major)
                 status = cublasLtMatmulAlgoGetHeuristic(*ltHandle, operationDesc, Bdesc, Adesc, Cdesc, Cdesc,
@@ -308,6 +350,23 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
     status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSA, &opTransA, sizeof(opTransA));
     if (status == CUBLAS_STATUS_SUCCESS) {
       status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSB, &opTransB, sizeof(opTransB));
+    }
+
+    // Set cublasLt epilogue for fused bias+activation (execution path)
+    if (status == CUBLAS_STATUS_SUCCESS && epilogueType > 0 && biasPtr != nullptr) {
+      cublasLtEpilogue_t epilogue = CUBLASLT_EPILOGUE_DEFAULT;
+      if (epilogueType == 1) epilogue = CUBLASLT_EPILOGUE_BIAS;
+      else if (epilogueType == 2) epilogue = CUBLASLT_EPILOGUE_RELU_BIAS;
+      else if (epilogueType == 3) epilogue = CUBLASLT_EPILOGUE_GELU_BIAS;
+
+      if (epilogue != CUBLASLT_EPILOGUE_DEFAULT) {
+        status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_EPILOGUE,
+                                                 &epilogue, sizeof(epilogue));
+        if (status == CUBLAS_STATUS_SUCCESS) {
+          status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_BIAS_POINTER,
+                                                   &biasPtr, sizeof(biasPtr));
+        }
+      }
     }
 
     if (status == CUBLAS_STATUS_SUCCESS) {
@@ -950,7 +1009,8 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    const cudaDataType ltBType = effBType == HALF ? CUDA_R_16F : CUDA_R_32F;
    const cudaDataType ltCType = CUDA_R_32F;
 
-   if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType)) {
+   if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType,
+                   tl_ltEpilogueType, tl_ltEpilogueBiasPtr, tl_ltEpilogueBiasSize)) {
      NDArray::registerSpecialUse({pC}, {pA, pB});
      if (C != pC) C->assign(pC);
      for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];

@@ -835,11 +835,41 @@ int FusionPass::applyFusions(
             }
 
             case FusionCandidate::MATMUL_BIAS_ACTIVATION: {
-                // matmul → add(bias) → activation
-                // The add and activation ops run in-place on the matmul's output.
+                // matmul → add(bias) → optional activation
+                // Use cublasLt epilogue to fuse bias+activation INTO the matmul kernel.
                 if (fusion.slotIndices.size() < 2) break;
 
-                // Apply in-place starting from the second op (add)
+                int matmulSlotIdx = fusion.slotIndices[0];
+                int addSlotIdx = fusion.slotIndices[1];
+                NativeSlot& matmulSlot = slots[matmulSlotIdx];
+                NativeSlot& addSlot = slots[addSlotIdx];
+
+                // Find the bias input source index on the add slot
+                // (the input that is NOT from the matmul output)
+                int biasSourceIdx = -1;
+                int matmulOutputSlot = matmulSlot.outputSlotIndices[0];
+                for (int k = 0; k < addSlot.numInputs; k++) {
+                    if (addSlot.inputSourceIndices[k] != matmulOutputSlot) {
+                        biasSourceIdx = addSlot.inputSourceIndices[k];
+                        break;
+                    }
+                }
+
+                // Determine epilogue type based on optional activation
+                int epilogueType = 1;  // bias only
+                if (fusion.slotIndices.size() >= 3) {
+                    int actSlotIdx = fusion.slotIndices[2];
+                    std::string actName = getOpName(slots[actSlotIdx]);
+                    if (actName == "relu") epilogueType = 2;        // bias + relu
+                    else if (actName == "gelu") epilogueType = 3;   // bias + gelu
+                    // else: unknown activation, just fuse bias
+                }
+
+                matmulSlot.ltEpilogueType = epilogueType;
+                matmulSlot.ltEpilogueBiasSourceIdx = biasSourceIdx;
+
+                // Mark subsequent ops (add, activation) to be SKIPPED entirely
+                // since the matmul will handle them via cublasLt epilogue
                 for (size_t i = 1; i < fusion.slotIndices.size(); i++) {
                     int slotIdx = fusion.slotIndices[i];
                     if (slotIdx < 0 || slotIdx >= numSlots) continue;
@@ -863,8 +893,8 @@ int FusionPass::applyFusions(
                 }
 
                 applied++;
-                DSP_DIAG(FUSION, "applied MATMUL_BIAS_ACTIVATION fusion, slots %d-%d",
-                          fusion.startSlot, fusion.endSlot);
+                DSP_DIAG(FUSION, "applied MATMUL_BIAS_ACTIVATION Lt epilogue fusion type=%d biasSource=%d, slots %d-%d",
+                          epilogueType, biasSourceIdx, fusion.startSlot, fusion.endSlot);
                 break;
             }
         }

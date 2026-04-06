@@ -3974,11 +3974,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             totalBufferArgs, useIndirectArgs ? " (INDIRECT)" : " (direct)");
 
   // ── Step 3: Create MLIR module and function ──
-  auto mlirContext = new mlir::MLIRContext();
-  mlirContext->loadDialect<mlir::triton::TritonDialect>();
-  mlirContext->loadDialect<mlir::arith::ArithDialect>();
-  mlirContext->loadDialect<mlir::math::MathDialect>();
-  mlirContext->loadDialect<mlir::scf::SCFDialect>();
+  // Use thread-safe factory (loadDialect touches global DialectRegistry)
+  auto* mlirContext = createMlirContextWithDialects();
 
   mlir::OpBuilder builder(mlirContext);
   auto loc = builder.getUnknownLoc();
@@ -5059,6 +5056,82 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
 
             for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+
+            // ── Normalization epilogue: emit absorbed elementwise ops ──
+            // These ops (residual add, dropout, cast, etc.) operate on the
+            // normalization output which is now in the SSA value map.
+            // They run per-row within the same scf.if block, so data stays
+            // in registers (no global memory round-trip for the intermediate).
+            if (sec.normEpilogueCount > 0 && sec.normEpilogueStartSlot >= 0) {
+              DSP_DIAG(COMPILE, "buildSectionedModule: emitting %d norm epilogue ops [%d-%d]",
+                        sec.normEpilogueCount, sec.normEpilogueStartSlot, sec.normEpilogueEndSlot);
+              for (int epi = sec.normEpilogueStartSlot; epi <= sec.normEpilogueEndSlot; epi++) {
+                auto& epiSlot = slots[epi];
+                auto epiCat = getOpCategory(epiSlot.opName);
+                auto epiIt = opTable.find(epiSlot.opName);
+                if (epiIt == opTable.end()) continue;
+                const auto& epiMapping = epiIt->second;
+
+                // Ensure all inputs are in SSA value map (load per-row from global memory if needed)
+                for (int inp = 0; inp < epiSlot.numInputs; inp++) {
+                  int srcIdx = epiSlot.inputSourceIndices[inp];
+                  if (!ssaValues.count(srcIdx)) {
+                    mlir::Value loaded = loadNormInput(srcIdx, true);
+                    if (loaded) ssaValues[srcIdx] = loaded;
+                  }
+                }
+
+                mlir::Value epiResult;
+                if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiSlot.numInputs >= 2) {
+                  auto lhsIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+                  auto rhsIt = ssaValues.find(epiSlot.inputSourceIndices[1]);
+                  if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
+                    epiResult = emitBinaryElementwise(builder, loc, epiMapping, lhsIt->second, rhsIt->second);
+                  }
+                } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.numInputs >= 1) {
+                  auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+                  if (inputIt != ssaValues.end()) {
+                    epiResult = emitUnaryElementwise(builder, loc, epiMapping, epiSlot, inputIt->second, static_cast<int>(paddedRowLen));
+                  }
+                } else if ((epiCat == TritonOpCategory::IDENTITY || epiCat == TritonOpCategory::CAST)
+                           && epiSlot.numInputs >= 1) {
+                  auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+                  if (inputIt != ssaValues.end()) epiResult = inputIt->second;
+                }
+
+                if (epiResult) {
+                  for (int o = 0; o < epiSlot.numOutputs; o++) {
+                    ssaValues[epiSlot.outputSlotIndices[o]] = epiResult;
+                  }
+                  // Store epilogue result per-row using the same row addressing
+                  auto epiOutSlotIdx = epiSlot.outputSlotIndices[0];
+                  auto epiOutArgIt = slotToArgIdx.find(epiOutSlotIdx);
+                  if (epiOutArgIt != slotToArgIdx.end()) {
+                    auto epiOutFuncArg = getBufferArg(epiOutArgIt->second);
+                    auto epiOutPtrType = mlir::cast<mlir::triton::PointerType>(epiOutFuncArg.getType());
+                    auto epiOutElemType = epiOutPtrType.getPointeeType();
+                    auto epiOutPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, epiOutPtrType);
+                    auto epiRowRange = builder.create<mlir::triton::MakeRangeOp>(loc, rowRangeType, 0, paddedRowLen);
+                    auto epiRowBaseSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, rowBase);
+                    auto epiRowOffsets = builder.create<mlir::arith::AddIOp>(loc, epiRowBaseSplat, epiRowRange);
+                    auto epiRowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+                    auto epiRowLenSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, epiRowLenConst);
+                    auto epiRowMask = builder.create<mlir::arith::CmpIOp>(
+                        loc, mlir::arith::CmpIPredicate::slt, epiRowRange, epiRowLenSplat);
+                    auto epiSplatPtr = builder.create<mlir::triton::SplatOp>(loc, epiOutPtrTensorType, epiOutFuncArg);
+                    auto epiPtrs = builder.create<mlir::triton::AddPtrOp>(loc, epiOutPtrTensorType, epiSplatPtr, epiRowOffsets);
+                    auto epiStoreVal = castTo(builder, loc, epiResult, epiOutElemType);
+                    builder.create<mlir::triton::StoreOp>(loc, epiPtrs, epiStoreVal, epiRowMask,
+                        mlir::triton::CacheModifier::NONE,
+                        mlir::triton::EvictionPolicy::NORMAL);
+                    customStoredOutputs.insert(epiOutSlotIdx);
+                  }
+                  DSP_DIAG(COMPILE, "  norm epilogue op '%s' at slot %d emitted successfully",
+                            epiSlot.opName.c_str(), epi);
+                }
+              }
+            }
+
             builder.create<mlir::scf::YieldOp>(loc);
             builder.setInsertionPointAfter(rowIf);
           } else if (cat == TritonOpCategory::ROPE) {
@@ -5400,9 +5473,15 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       }
 
       case KernelSectionType::MATMUL: {
-        // ── Matmul section: per-element scalar K-loop ──
-        // For each matmul op in this section, emit scalar matmul and store/load back
-        for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        // ── Matmul section: per-element scalar K-loop + optional epilogue ──
+        // For each matmul op in this section, emit scalar matmul and store/load back.
+        // If the section has absorbed epilogue ops (bias add, activation), those are
+        // processed as elementwise ops after the matmul, reading the matmul output
+        // from the SSA value map.
+        int matmulEndSlot = (sec.matmulEpilogueStartSlot >= 0)
+                              ? sec.matmulEpilogueStartSlot - 1
+                              : sec.endSlot;
+        for (int si = sec.startSlot; si <= matmulEndSlot; si++) {
           auto& slot = slots[si];
           if (getOpCategory(slot.opName) != TritonOpCategory::MATMUL) continue;
           if (slot.numInputs < 2 || slot.numOutputs < 1) continue;
@@ -5446,6 +5525,122 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 " aPtr=" + (aPtr ? "OK" : "NULL") + " bPtr=" + (bPtr ? "OK" : "NULL") + " cPtr=" + (cPtr ? "OK" : "NULL") +
                 " — invalid dimensions or missing args. Cannot compile.";
             THROW_EXCEPTION(msg.c_str());
+          }
+        }
+
+        // ── Matmul epilogue: emit absorbed elementwise ops ──
+        // These ops (bias add, activation, cast) operate on the matmul output
+        // which is already in the SSA value map from the store/load above.
+        // Uses the same emitter functions as the main elementwise section.
+        if (sec.matmulEpilogueCount > 0 && sec.matmulEpilogueStartSlot >= 0) {
+          DSP_DIAG(COMPILE, "buildSectionedModule: emitting %d matmul epilogue ops [%d-%d]",
+                    sec.matmulEpilogueCount, sec.matmulEpilogueStartSlot, sec.matmulEpilogueEndSlot);
+
+          // Create 1D offsets and mask for epilogue loads/stores.
+          // The matmul section uses a 2D grid (pid_m, pid_n) but the epilogue
+          // operates on the linearized output, so we create a 1D block for it.
+          auto epiI32Type = builder.getI32Type();
+          auto epiI1Type = builder.getI1Type();
+          auto epiI32BsType = mlir::RankedTensorType::get({blockSize}, epiI32Type);
+          auto epiI1BsType = mlir::RankedTensorType::get({blockSize}, epiI1Type);
+          auto epiPidScalar = builder.create<mlir::triton::GetProgramIdOp>(
+              loc, epiI32Type, mlir::triton::ProgramIDDim::X);
+          auto epiBlockSizeConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockSize, 32);
+          auto epiBlockOffset = builder.create<mlir::arith::MulIOp>(loc, epiPidScalar, epiBlockSizeConst);
+          auto epiRange = builder.create<mlir::triton::MakeRangeOp>(loc, epiI32BsType, 0, blockSize);
+          auto epiBlockOffsetSplat = builder.create<mlir::triton::SplatOp>(loc, epiI32BsType, epiBlockOffset);
+          auto epiOffsets = builder.create<mlir::arith::AddIOp>(loc, epiBlockOffsetSplat, epiRange);
+
+          // Determine n_elements for the epilogue (from first epilogue slot's output)
+          int64_t epiNElements = 0;
+          for (int esi = sec.matmulEpilogueStartSlot; esi <= sec.matmulEpilogueEndSlot && epiNElements == 0; esi++) {
+            if (slots[esi].numOutputs > 0) {
+              int epiOutIdx = slots[esi].outputSlotIndices[0];
+              NDArray* epiOutArr = (epiOutIdx >= 0 && epiOutIdx < totalOutputSlots) ? outputSlots[epiOutIdx] : nullptr;
+              if (epiOutArr) epiNElements = epiOutArr->lengthOf();
+            }
+          }
+          if (epiNElements <= 0) epiNElements = static_cast<int64_t>(sec.matmulM) * sec.matmulN;
+          auto epiNElemConst = builder.create<mlir::arith::ConstantIntOp>(loc, static_cast<int>(epiNElements), 32);
+          auto epiNElemSplat = builder.create<mlir::triton::SplatOp>(loc, epiI32BsType, epiNElemConst);
+          auto epiMask = builder.create<mlir::arith::CmpIOp>(
+              loc, mlir::arith::CmpIPredicate::slt, epiOffsets, epiNElemSplat);
+
+          for (int si = sec.matmulEpilogueStartSlot; si <= sec.matmulEpilogueEndSlot; si++) {
+            auto& epiSlot = slots[si];
+            auto epiCat = getOpCategory(epiSlot.opName);
+            auto epiIt = opTable.find(epiSlot.opName);
+            if (epiIt == opTable.end()) continue;
+            const auto& epiMapping = epiIt->second;
+
+            // Ensure all inputs are in SSA value map (load from global memory if needed)
+            for (int inp = 0; inp < epiSlot.numInputs; inp++) {
+              int srcIdx = epiSlot.inputSourceIndices[inp];
+              if (!ssaValues.count(srcIdx)) {
+                auto argIt = slotToArgIdx.find(srcIdx);
+                if (argIt != slotToArgIdx.end()) {
+                  auto bufferArg = getBufferArg(argIt->second);
+                  if (bufferArg) {
+                    auto ptrType = mlir::cast<mlir::triton::PointerType>(bufferArg.getType());
+                    auto elemType = ptrType.getPointeeType();
+                    auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+                    auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, bufferArg);
+                    auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, epiOffsets);
+                    auto loaded = builder.create<mlir::triton::LoadOp>(loc,
+                        ptrs.getResult(), epiMask.getResult(), mlir::Value(),
+                        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+                    ssaValues[srcIdx] = loaded;
+                  }
+                }
+              }
+            }
+
+            mlir::Value epiResult;
+            if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiSlot.numInputs >= 2) {
+              auto lhsIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+              auto rhsIt = ssaValues.find(epiSlot.inputSourceIndices[1]);
+              if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
+                epiResult = emitBinaryElementwise(builder, loc, epiMapping, lhsIt->second, rhsIt->second);
+              }
+            } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.numInputs >= 1) {
+              auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+              if (inputIt != ssaValues.end()) {
+                epiResult = emitUnaryElementwise(builder, loc, epiMapping, epiSlot, inputIt->second, blockSize);
+              }
+            } else if (epiCat == TritonOpCategory::COMPARISON && epiSlot.numInputs >= 2) {
+              auto lhsIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+              auto rhsIt = ssaValues.find(epiSlot.inputSourceIndices[1]);
+              if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
+                epiResult = emitComparisonOp(builder, loc, epiSlot.opName, lhsIt->second, rhsIt->second, blockSize);
+              }
+            } else if ((epiCat == TritonOpCategory::IDENTITY || epiCat == TritonOpCategory::CAST)
+                       && epiSlot.numInputs >= 1) {
+              auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+              if (inputIt != ssaValues.end()) epiResult = inputIt->second;
+            }
+
+            if (epiResult) {
+              for (int o = 0; o < epiSlot.numOutputs; o++) {
+                ssaValues[epiSlot.outputSlotIndices[o]] = epiResult;
+              }
+              // Store epilogue result to output buffer
+              auto outSlotIdx = epiSlot.outputSlotIndices[0];
+              auto outArgIt = slotToArgIdx.find(outSlotIdx);
+              if (outArgIt != slotToArgIdx.end()) {
+                auto outFuncArg = getBufferArg(outArgIt->second);
+                auto outPtrType = mlir::cast<mlir::triton::PointerType>(outFuncArg.getType());
+                auto outElemType = outPtrType.getPointeeType();
+                auto outPtrTensorType = mlir::RankedTensorType::get({blockSize}, outPtrType);
+                auto splatOutPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outFuncArg);
+                auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, splatOutPtr, epiOffsets);
+                mlir::Value storeVal = castTo(builder, loc, epiResult, outElemType);
+                builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, epiMask,
+                    mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+                customStoredOutputs.insert(outSlotIdx);
+              }
+              DSP_DIAG(COMPILE, "  matmul epilogue op '%s' at slot %d emitted successfully",
+                        epiSlot.opName.c_str(), si);
+            }
           }
         }
         break;

@@ -104,7 +104,6 @@ static void reportMLIRVerificationFailure(mlir::ModuleOp mod, int startSlot, int
 
 TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     NativeSlot* slots, int startSlot, int endSlot,
-    LongType segmentShapeKey,
     int totalSlots,
     NDArray** externalInputs, int numExternalInputs,
     NDArray** outputSlots, int totalOutputSlots) {
@@ -323,7 +322,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
              irModule.numStages, compileNumStages);
   }
 
-  const std::string cacheHash = computeDiskCacheHash(startSlot, endSlot, segmentShapeKey, ttirText,
+  const std::string cacheHash = computeDiskCacheHash(ttirText,
                                                       compileNumWarps, compileNumStages);
 
   TritonCompiledBinary binary = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", compileNumWarps, 0};

@@ -553,7 +553,32 @@ std::string TritonTargetDispatch::getTargetArch() {
 
 // ─── Compilation ────────────────────────────────────────────────────────────
 
+// TTIR -> PTX compilation pipeline.
+//
+// Thread safety: Each call uses its own stack-local state (LLVMContext,
+// TargetMachine, PassManager) and operates on a per-sub-segment MLIRContext
+// created in TritonIRBuilder::buildModule(). Shared global state is protected
+// by targeted mutexes:
+//   - LLVM target init:           std::once_flag (llvmInitFlag)
+//   - MLIR dialect registry:      mlirRegistryMtx (phase 4)
+//   - MLIR translation registry:  mlirTranslationMtx (phase 5)
+//   - MLIR context creation:      getMlirContextMutex() (TritonIRBuilder)
+//   - cuModuleLoadDataEx:         loadModuleMtx (loadModule())
+//
+// Multiple compile() calls can safely run in parallel from the worker
+// thread pool in TritonGraphBackend_compile.cu.
 TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarps, int numStages) {
+  // Global compile mutex: LLVM's code generation pipeline (TargetMachine creation,
+  // PassManager, MCCodeEmitter) has thread-unsafe global state that causes heap
+  // corruption ("malloc_consolidate(): invalid chunk size") under concurrent access.
+  // Per-thread LLVMContext isolation is insufficient — LLVM's target registry,
+  // pass registry, and MCInst pools have shared mutable state.
+  // Serializing compile() is the correct fix. The outer loop in
+  // NativeDynamicShapePlan_cuda.cu still runs 8 parallel threads for segment
+  // dispatch, but actual LLVM codegen is serialized here.
+  static std::mutex compileMtx;
+  std::lock_guard<std::mutex> compileLock(compileMtx);
+
   TritonCompiledBinary result = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", 0, 0, 0, 128};
   auto& env = sd::Environment::getInstance();
   const bool tritonVerbose = env.tritonVerbose();
@@ -1181,6 +1206,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
 void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
   if (!binary.data || binary.size == 0) return nullptr;
+
+  // Serialize module loading. cuModuleLoadDataEx performs PTX JIT compilation
+  // using internal CUDA driver allocators that are not thread-safe under
+  // concurrent calls. This is the ONLY serialization point in the Triton
+  // compilation pipeline — all MLIR/LLVM compilation runs in parallel with
+  // per-thread isolated contexts.
+  static std::mutex loadModuleMtx;
+  std::lock_guard<std::mutex> lock(loadModuleMtx);
 
   switch (binary.target) {
 
