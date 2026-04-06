@@ -2230,12 +2230,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // raw NDArray* pointers to them. Without this, closeable arrays (variables,
                 // placeholders) whose OpaqueNDArrays are not marked constant can be deleted
                 // by the DeallocatorService between steps, causing db=(nil) SIGSEGV.
-                contextInputRefs = new OpaqueNDArray[extInputs.length];
+                // IMPORTANT: Keep old refs alive until ALL new refs are populated.
+                // If we replace contextInputRefs before the loop completes, old OpaqueNDArrays
+                // become GC-eligible and the DeallocatorService can delete C++ NDArrays while
+                // the opContext still holds raw pointers to them → _buffer becomes nullptr.
+                OpaqueNDArray[] oldRefs = contextInputRefs;  // prevent GC of old wrappers
+                OpaqueNDArray[] newRefs = new OpaqueNDArray[extInputs.length];
                 for (int i = 0; i < extInputs.length; i++) {
                     OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
                     nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
-                    contextInputRefs[i] = opaqueIn;
+                    newRefs[i] = opaqueIn;
                 }
+                contextInputRefs = newRefs;  // atomically swap after all refs are set
                 // Cache for subsequent frozen calls
                 if (shapesFrozen) {
                     cachedInputOpaques = new OpaqueNDArray[extInputs.length];

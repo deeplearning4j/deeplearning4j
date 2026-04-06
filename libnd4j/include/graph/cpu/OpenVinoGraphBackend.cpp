@@ -1767,7 +1767,19 @@ Status OpenVinoGraphBackend::executeSegment(
       return Status::BAD_INPUT;
     }
     if (arr->buffer() == nullptr) {
-      DSP_DIAG(EXECUTE, "OpenVINO: input array for source %d has NULL buffer", srcIdx);
+      if (arr->isEmpty() || arr->lengthOf() == 0) {
+        // Empty array (e.g. KV cache on first decode step with seq_len=0).
+        // OpenVINO requires non-null data pointer — provide a dummy.
+        static int8_t dummyBuf[8] = {0};
+        int rank = arr->rankOf();
+        ov::Shape shape(rank);
+        for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
+        request.set_input_tensor(static_cast<int>(i),
+            ov::Tensor(ovDtype(arr->dataType()), shape, dummyBuf));
+        continue;
+      }
+      DSP_DIAG(EXECUTE, "OpenVINO: input array for source %d has NULL buffer (len=%lld)",
+               srcIdx, (long long)arr->lengthOf());
       return Status::KERNEL_FAILURE;
     }
 
