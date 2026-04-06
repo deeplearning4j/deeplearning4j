@@ -288,6 +288,11 @@ if $OP_TIMING; then
     fi
 fi
 
+# Use all available cores for OpenBLAS/MKL BLAS operations.
+# Default pom.xml sets OMP_NUM_THREADS=1 for test reproducibility;
+# override here for benchmark performance.
+OMP_THREADS=$(nproc)
+
 $MVN test \
   -Dtest="${TEST_CLASS}#${TEST_METHOD}" \
   -Dvlm.test.maxTokens="$MAX_TOKENS" \
@@ -295,6 +300,7 @@ $MVN test \
   -Dvlm.test.pdf.page=10 \
   -Dvlm.test.configs="$CONFIG" \
   -Dbackend.artifactId=nd4j-native \
+  -Domp.num.threads="$OMP_THREADS" \
   $EXTRA_ARGS \
   2>&1 | tee "$LOG_FILE"
 

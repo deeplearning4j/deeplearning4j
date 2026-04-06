@@ -117,6 +117,7 @@
             sudo sysctl vm.mmap_rnd_bits=28
             sudo sysctl -w kernel.randomize_va_space=0
         -->
+        <omp.num.threads>1</omp.num.threads>
         <preload></preload>
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
@@ -1624,7 +1625,7 @@
                     <environmentVariables>
                         <CUDA_LAUNCH_BLOCKING>${cuda.launch.blocking}</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
-                        <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
+                        <OMP_NUM_THREADS>${omp.num.threads}</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <PRINT_MATH_FUNCTION_NAME></PRINT_MATH_FUNCTION_NAME>
