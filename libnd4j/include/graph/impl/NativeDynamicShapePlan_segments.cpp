@@ -26,6 +26,13 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
+
+// Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
+#ifdef SD_CUDA
+#define DSP_BUF(arr) ((arr)->specialBuffer())
+#else
+#define DSP_BUF(arr) ((arr)->buffer())
+#endif
 #include <graph/cpu/FunctionalReplayHandle.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
@@ -805,7 +812,7 @@ inline void verifyCfSlotWrite(int stepIdx, const char* cfType, const char* opNam
       DSP_DIAG(VERIFY, "SLOT_WRITE slot=%d tag=CF_FORWARD cf=%s op=%s dtype=%s len=%lld addr=%p",
                 si, cfType, opName,
                 DataTypeUtils::asString(out->dataType()).c_str(),
-                (long long)out->lengthOf(), out->specialBuffer());
+                (long long)out->lengthOf(), DSP_BUF(out));
     }
   }
 }

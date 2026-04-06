@@ -23,6 +23,15 @@
 #include <array/NDArray.h>
 #include <graph/DspDiagnostics.h>
 #include <system/common.h>
+
+// Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
+#ifndef DSP_BUF
+#ifdef SD_CUDA
+#define DSP_BUF(arr) ((arr)->specialBuffer())
+#else
+#define DSP_BUF(arr) ((arr)->buffer())
+#endif
+#endif
 #include <types/types.h>
 
 #include <algorithm>
@@ -218,7 +227,7 @@ inline void dspLogSlotOutput(int stepIdx, const char* opName, const char* tag,
     if (si < 0 || si >= totalOutputSlots) continue;
     NDArray* out = outputSlots[si];
     if (out == nullptr) continue;
-    std::string vals = dspDumpSlotValues(out->specialBuffer(), out->dataType(), out->lengthOf());
+    std::string vals = dspDumpSlotValues(DSP_BUF(out), out->dataType(), out->lengthOf());
     DSP_DIAG(VERIFY, "SLOT_EXEC step=%d op=%s tag=%s -> output slot#%d dtype=%s len=%lld shape=%s vals=%s",
               stepIdx, opName, tag, si,
               DataTypeUtils::asString(out->dataType()).c_str(),
@@ -447,7 +456,7 @@ inline std::unordered_map<int, void*> dspDumpAddressMap(NDArray** externalArrays
   for (int ei = 0; ei < numExt; ei++) {
     NDArray* arr = externalArrays[ei];
     if (arr == nullptr) continue;
-    void* devAddr = arr->specialBuffer();
+    void* devAddr = DSP_BUF(arr);
     addrMap[ei] = devAddr;
     std::string name = (ei < (int)names.size() && !names[ei].empty()) ? names[ei] : "?";
     auto* db = arr->dataBuffer();

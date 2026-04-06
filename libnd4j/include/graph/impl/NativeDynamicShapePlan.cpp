@@ -27,6 +27,17 @@
 #include <graph/gpu/CaptureBufferRegistry.h>
 #endif
 #include <graph/DspDiagnostics.h>
+
+// Portable buffer accessor for DSP: specialBuffer() on CUDA, buffer() on CPU.
+// CPU specialBuffer() throws when _buffer is nullptr (freed arrays) because
+// CPU has no separate device buffer. Use buffer() on CPU instead.
+#ifdef SD_CUDA
+#define DSP_BUF(arr) ((arr)->specialBuffer())
+#else
+#define DSP_BUF(arr) ((arr)->buffer())
+#endif
+// Null-safe version
+#define DSP_BUF_SAFE(arr) ((arr) != nullptr ? DSP_BUF(arr) : nullptr)
 #if HAVE_TRITON && defined(SD_CUDA)
 #include <graph/gpu/TritonGraphBackend.h>
 #endif
@@ -962,17 +973,17 @@ Status NativeDynamicShapePlan::execute(
                executeCount_, (int)ext1331->dataType(),
                (long long)(ext1331->rankOf() > 0 ? ext1331->sizeAt(0) : 0),
                (long long)ext1331->lengthOf(),
-               ext1331->specialBuffer(), ext1331->buffer(),
+               DSP_BUF(ext1331), ext1331->buffer(),
                static_cast<void*>(ext1331->dataBuffer()),
                ext1331->dataBuffer() ? (ext1331->dataBuffer()->isPrimaryActual() ? 1 : 0) : -1,
                ext1331->dataBuffer() ? (ext1331->dataBuffer()->isSpecialActual() ? 1 : 0) : -1);
 #ifdef SD_CUDA
-      if (ext1331->specialBuffer() != nullptr && ext1331->lengthOf() > 0
+      if (DSP_BUF(ext1331) != nullptr && ext1331->lengthOf() > 0
           && ext1331->dataType() == FLOAT32) {
         int dumpCount = std::min((int)ext1331->lengthOf(), 8);
         std::vector<float> hostBuf(dumpCount);
         cudaDeviceSynchronize();
-        cudaMemcpy(hostBuf.data(), ext1331->specialBuffer(), dumpCount * 4, cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostBuf.data(), DSP_BUF(ext1331), dumpCount * 4, cudaMemcpyDeviceToHost);
         std::string valStr;
         for (int v = 0; v < dumpCount; v++) {
           if (v > 0) valStr += ",";
@@ -984,11 +995,11 @@ Status NativeDynamicShapePlan::execute(
 #endif
     }
     // Check if externalInputs[1331] shares a buffer with any output slot in the cache
-    if (ext1331 != nullptr && ext1331->specialBuffer() != nullptr && slotArrayCache_ != nullptr) {
-      void* extAddr = ext1331->specialBuffer();
+    if (ext1331 != nullptr && DSP_BUF(ext1331) != nullptr && slotArrayCache_ != nullptr) {
+      void* extAddr = DSP_BUF(ext1331);
       int aliasCount = 0;
       for (int si = 0; si < totalOutputSlots_; si++) {
-        if (slotArrayCache_[si] != nullptr && slotArrayCache_[si]->specialBuffer() == extAddr) {
+        if (slotArrayCache_[si] != nullptr && DSP_BUF(slotArrayCache_[si]) == extAddr) {
           DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=1331 addr=%p == slotArrayCache[%d] (len=%lld)",
                    extAddr, si, (long long)slotArrayCache_[si]->lengthOf());
           aliasCount++;
@@ -1020,8 +1031,14 @@ Status NativeDynamicShapePlan::execute(
       externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream);
   if (fastPathResult != Status::MAYBE) return fastPathResult;
 
-  // Frozen path didn't handle execution — clear the pending flag for fallback path.
-  // (External inputs were already updated by updateDecodeInputs above.)
+  // Frozen path didn't handle execution — propagate decode inputs to ALL segment
+  // capture buffers, then clear the pending flag. updateDecodeInputs() wrote to the
+  // external input arrays, but CUDA graph replay reads from capture buffers (separate
+  // fixed-address staging areas). Without this propagation, the graph replays with
+  // stale position_ids/attention_mask values.
+  if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
+    propagateDecodeInputsToCaptureBuffers(stream);
+  }
   hasPendingDecodeUpdate_ = false;
 
   // ── Phase-aware lifecycle validation ─────────────────────────────────────
@@ -1274,7 +1291,7 @@ Status NativeDynamicShapePlan::execute(
         auto* arr = outputSlots_[traceSlot];
         if (arr != nullptr) {
           auto* db = arr->dataBuffer();
-          void* gpuPtr = arr->specialBuffer();
+          void* gpuPtr = DSP_BUF(arr);
           float firstVals[4] = {0, 0, 0, 0};
           if (gpuPtr != nullptr && arr->lengthOf() > 0 && arr->dataType() == FLOAT32) {
             int n = std::min((int)arr->lengthOf(), 4);
@@ -1390,7 +1407,7 @@ Status NativeDynamicShapePlan::execute(
                         "anyNaN=%d anyInf=%d addr=%p len=%lld dbClosed=%d "
                         "srcStep=%d srcFrozenConst=%d srcShapeStatic=%d\n",
                         stepIdx, inp, srcIdx, inpVal, inpHasNaN ? 1 : 0, inpHasInf ? 1 : 0,
-                        srcArr->specialBuffer(), (long long)srcArr->lengthOf(), srcClosed ? 1 : 0,
+                        DSP_BUF(srcArr), (long long)srcArr->lengthOf(), srcClosed ? 1 : 0,
                         srcStepIdx, srcFrozenConst ? 1 : 0, srcShapeStatic ? 1 : 0);
               } else {
                 fprintf(stdout, "[DSP_DIAG] [NaN_TRACE] slot=%d input[%d] srcIdx=%d arr=%p (null or empty)\n",
@@ -1403,7 +1420,7 @@ Status NativeDynamicShapePlan::execute(
                     segment.startSlot, segment.endSlot, stepIdx,
                     slot.opName.empty() ? "?" : slot.opName.c_str(), o, si,
                     useGraph ? 1 : 0, executeCount_, (long long)arr->lengthOf(),
-                    arr->specialBuffer(), anyInputNaN ? 1 : 0,
+                    DSP_BUF(arr), anyInputNaN ? 1 : 0,
                     segment.exec.replayHandle != nullptr ? 1 : 0,
                     slot.frozenConstantSlot() ? 1 : 0, slot.shapeStatic ? 1 : 0);
             fflush(stdout);
@@ -1500,7 +1517,7 @@ Status NativeDynamicShapePlan::execute(
             i, (long long)arr->lengthOf(), (int)arr->dataType(), arr->rankOf());
 #ifdef SD_CUDA
         // For logits-sized outputs, find argmax on GPU side
-        void* sbuf = arr->specialBuffer();
+        void* sbuf = DSP_BUF(arr);
         if (sbuf && arr->dataType() == FLOAT32 && arr->lengthOf() >= 49280) {
           auto len = arr->lengthOf();
           std::vector<float> fullBuf(len);
@@ -2344,10 +2361,10 @@ void NativeDynamicShapePlan::updateDecodeInputs(
   if (decodeInputIdsExtIdx_ >= 0 && decodeInputIdsExtIdx_ < numExt) {
     NDArray* ids = externalInputs[decodeInputIdsExtIdx_];
     DSP_DIAG(EXECUTE, "updateDecodeInputs: ids NDArray=%p specialBuf=%p len=%lld",
-             ids, ids ? ids->specialBuffer() : nullptr, ids ? (long long)ids->lengthOf() : -1);
-    if (ids != nullptr && ids->specialBuffer() != nullptr) {
+             ids, ids ? DSP_BUF(ids) : nullptr, ids ? (long long)ids->lengthOf() : -1);
+    if (ids != nullptr && DSP_BUF(ids) != nullptr) {
       LongType val = static_cast<LongType>(tokenId);
-      cudaMemcpyAsync(ids->specialBuffer(), &val, sizeof(LongType),
+      cudaMemcpyAsync(DSP_BUF(ids), &val, sizeof(LongType),
                       cudaMemcpyHostToDevice, cudaStr);
       ids->dataBuffer()->writeSpecial();
     }
@@ -2357,10 +2374,10 @@ void NativeDynamicShapePlan::updateDecodeInputs(
   if (decodePositionIdsExtIdx_ >= 0 && decodePositionIdsExtIdx_ < numExt) {
     NDArray* pos = externalInputs[decodePositionIdsExtIdx_];
     DSP_DIAG(EXECUTE, "updateDecodeInputs: pos NDArray=%p specialBuf=%p len=%lld",
-             pos, pos ? pos->specialBuffer() : nullptr, pos ? (long long)pos->lengthOf() : -1);
-    if (pos != nullptr && pos->specialBuffer() != nullptr) {
+             pos, pos ? DSP_BUF(pos) : nullptr, pos ? (long long)pos->lengthOf() : -1);
+    if (pos != nullptr && DSP_BUF(pos) != nullptr) {
       LongType val = static_cast<LongType>(cachePos);
-      cudaMemcpyAsync(pos->specialBuffer(), &val, sizeof(LongType),
+      cudaMemcpyAsync(DSP_BUF(pos), &val, sizeof(LongType),
                       cudaMemcpyHostToDevice, cudaStr);
       pos->dataBuffer()->writeSpecial();
     }
@@ -2373,15 +2390,15 @@ void NativeDynamicShapePlan::updateDecodeInputs(
     NDArray* mask = externalInputs[decodeAttentionMaskExtIdx_];
     int writePos = cachePos - 1;
     DSP_DIAG(EXECUTE, "updateDecodeInputs: mask NDArray=%p specialBuf=%p len=%lld cachePos=%d writePos=%d",
-             mask, mask ? mask->specialBuffer() : nullptr, mask ? (long long)mask->lengthOf() : -1,
+             mask, mask ? DSP_BUF(mask) : nullptr, mask ? (long long)mask->lengthOf() : -1,
              cachePos, writePos);
-    if (mask != nullptr && mask->specialBuffer() != nullptr) {
+    if (mask != nullptr && DSP_BUF(mask) != nullptr) {
       LongType one = 1;
       auto maskLen = mask->lengthOf();
       if (writePos < maskLen) {
-        auto* dst = static_cast<LongType*>(mask->specialBuffer()) + writePos;
+        auto* dst = static_cast<LongType*>(DSP_BUF(mask)) + writePos;
         DSP_DIAG(EXECUTE, "updateDecodeInputs: mask dst=%p (base=%p + %d * %d)",
-                 dst, mask->specialBuffer(), writePos, (int)sizeof(LongType));
+                 dst, DSP_BUF(mask), writePos, (int)sizeof(LongType));
         cudaMemcpyAsync(dst, &one, sizeof(LongType),
                         cudaMemcpyHostToDevice, cudaStr);
         mask->dataBuffer()->writeSpecial();
@@ -2393,6 +2410,60 @@ void NativeDynamicShapePlan::updateDecodeInputs(
   }
 
   DSP_DIAG(EXECUTE, "updateDecodeInputs: tokenId=%lld cachePos=%d", tokenId, cachePos);
+#endif
+}
+
+void NativeDynamicShapePlan::propagateDecodeInputsToCaptureBuffers(void* stream) {
+#ifdef SD_CUDA
+  cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+  int propagated = 0;
+
+  // Iterate ALL segments with replay handles and write decode input values
+  // directly to any capture buffers that reference decode input external indices.
+  // This is the SINGLE code path for decode input propagation — replaces the
+  // frozen fast path's special-case code and ensures both frozen and segment-by-segment
+  // paths get correct values in capture buffers.
+  for (auto& seg : segments_) {
+    if (!seg.exec.replayHandle) continue;
+
+    auto& captureBuffers = seg.exec.replayHandle->getCaptureBuffers();
+    for (auto& cb : captureBuffers) {
+      if (cb.directReference || cb.buffer == nullptr) continue;
+      int ei = cb.externalInputIndex;
+      if (ei < 0) continue;
+
+      // input_ids capture buffer: write pendingTokenId_
+      if (ei == decodeInputIdsExtIdx_ && DSP_BUF(cb.buffer) != nullptr) {
+        LongType val = static_cast<LongType>(pendingTokenId_);
+        cudaMemcpyAsync(DSP_BUF(cb.buffer), &val, sizeof(LongType),
+                        cudaMemcpyHostToDevice, cudaStr);
+        propagated++;
+      }
+      // position_ids capture buffer: write pendingCachePos_
+      else if (ei == decodePositionIdsExtIdx_ && DSP_BUF(cb.buffer) != nullptr) {
+        LongType val = static_cast<LongType>(pendingCachePos_);
+        cudaMemcpyAsync(DSP_BUF(cb.buffer), &val, sizeof(LongType),
+                        cudaMemcpyHostToDevice, cudaStr);
+        propagated++;
+      }
+      // attention_mask capture buffer: write 1 at cachePos - 1
+      else if (ei == decodeAttentionMaskExtIdx_ && DSP_BUF(cb.buffer) != nullptr) {
+        int writePos = pendingCachePos_ - 1;
+        auto maskLen = cb.buffer->lengthOf();
+        if (writePos >= 0 && writePos < maskLen) {
+          LongType one = 1;
+          auto* dst = static_cast<LongType*>(DSP_BUF(cb.buffer)) + writePos;
+          cudaMemcpyAsync(dst, &one, sizeof(LongType),
+                          cudaMemcpyHostToDevice, cudaStr);
+          propagated++;
+        }
+      }
+    }
+  }
+
+  DSP_DIAG(EXECUTE, "propagateDecodeInputsToCaptureBuffers: propagated %d capture buffers "
+           "(tokenId=%lld cachePos=%d segments=%d)",
+           propagated, pendingTokenId_, pendingCachePos_, (int)segments_.size());
 #endif
 }
 
@@ -2487,8 +2558,8 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
     // Writing to nullptr causes CUDA error 700.
     NDArray::prepareSpecialUse({staticBuf}, {presentKv});
 
-    const void* srcBuf = presentKv->specialBuffer();
-    void* dstBuf = staticBuf->specialBuffer();
+    const void* srcBuf = DSP_BUF(presentKv);
+    void* dstBuf = DSP_BUF(staticBuf);
     auto srcSeq = presentKv->sizeAt(2);
     auto dstSeq = staticBuf->sizeAt(2);
 

@@ -32,6 +32,13 @@
 #include <system/Environment.h>
 #include <config.h>
 
+// Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
+#ifdef SD_CUDA
+#define DSP_BUF(arr) ((arr)->specialBuffer())
+#else
+#define DSP_BUF(arr) ((arr)->buffer())
+#endif
+
 #include <algorithm>
 #include <chrono>
 #include <thread>
@@ -122,7 +129,7 @@ static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& 
   out.resize(count);
   for (int i = 0; i < count; i++) {
     out[i] = (arrays != nullptr && arrays[i] != nullptr)
-             ? arrays[i]->specialBuffer() : nullptr;
+             ? DSP_BUF(arrays[i]) : nullptr;
   }
 }
 
@@ -134,7 +141,7 @@ static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& 
 static LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
   LongType hash = 0xcbf29ce484222325ULL;  // FNV-1a offset basis
   for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
-    void* addr = (outputSlots[si] != nullptr) ? outputSlots[si]->specialBuffer() : nullptr;
+    void* addr = (outputSlots[si] != nullptr) ? DSP_BUF(outputSlots[si]) : nullptr;
     LongType bits = reinterpret_cast<uintptr_t>(addr);
     hash ^= bits;
     hash *= 0x100000001b3ULL;  // FNV-1a prime
@@ -460,8 +467,8 @@ static void copyIntoCaptureBuffer(NDArray* dst, NDArray* src, cudaStream_t cudaS
   const size_t srcBytes = src->lengthOf() * src->sizeOfT();
   if (srcBytes == 0) return;
 
-  void* srcSpecial = src->specialBuffer();
-  void* dstSpecial = dst->specialBuffer();
+  void* srcSpecial = DSP_BUF(src);
+  void* dstSpecial = DSP_BUF(dst);
   const int currentDeviceId = AffinityManager::currentDeviceId();
   const bool canUseRawDeviceCopy = !mirrorHost && !src->isView() &&
                                    isCurrentDevicePointer(srcSpecial, currentDeviceId) &&
@@ -707,7 +714,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                   i, DataTypeUtils::asString(externalArrays[i]->dataType()).c_str(),
                   (long long)externalArrays[i]->lengthOf(),
                   db->isPrimaryActual() ? 1 : 0, db->isSpecialActual() ? 1 : 0,
-                  externalArrays[i]->specialBuffer());
+                  DSP_BUF(externalArrays[i]));
       }
     }
     if (numExt > 8) {
@@ -1032,7 +1039,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           if (Environment::getInstance().tritonVerifyKernels()) {
             DSP_DIAG(VERIFY, "SLOT_WRITE slot=%d tag=ALLOC dtype=%s len=%lld addr=%p",
                       slotIdx, DataTypeUtils::asString(dt).c_str(),
-                      (long long)arr->lengthOf(), arr->specialBuffer());
+                      (long long)arr->lengthOf(), DSP_BUF(arr));
           }
         }
       }
@@ -1311,10 +1318,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         const void* currentPtr = nullptr;
         if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExt) {
           NDArray* current = externalArrays[cb.externalInputIndex];
-          currentPtr = current ? current->specialBuffer() : nullptr;
+          currentPtr = current ? DSP_BUF(current) : nullptr;
         } else if (cb.crossSegmentSlotIdx >= 0 && cb.crossSegmentSlotIdx < totalOutputSlots_) {
           NDArray* current = outputSlots_[cb.crossSegmentSlotIdx];
-          currentPtr = current ? current->specialBuffer() : nullptr;
+          currentPtr = current ? DSP_BUF(current) : nullptr;
         }
         if (currentPtr != cb.lastSourcePtr) {
           DSP_DIAG(EXECUTE, "LINEAGE_DRIFT: %s#%d addr changed %p → %p → invalidate seg[%d-%d]",
@@ -1428,8 +1435,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           if (cb.externalInputIndex >= 0) {
             src->syncToDevice();
           }
-          const void* srcPtr = src->specialBuffer();
-          if (!srcPtr || !cb.buffer->specialBuffer()) continue;
+          const void* srcPtr = DSP_BUF(src);
+          if (!srcPtr || !DSP_BUF(cb.buffer)) continue;
 
           // Always refresh — GPU memory pools reuse addresses, so pointer comparison
           // cannot detect stale data. Dense sources use raw D2D; view-backed sources
@@ -1520,11 +1527,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         bool isSmall = arr->lengthOf() <= 16;
         std::string name = (ei < (int)externalInputNames_.size()) ? externalInputNames_[ei] : "?";
         std::string vals = "?";
-        if (isSmall && arr->specialBuffer()) {
+        if (isSmall && DSP_BUF(arr)) {
           int n = std::min((int)arr->lengthOf(), 4);
           int elemSize = DataTypeUtils::sizeOf(arr->dataType());
           std::vector<uint8_t> devBytes(n * elemSize);
-          cudaMemcpy(devBytes.data(), arr->specialBuffer(), n * elemSize, cudaMemcpyDeviceToHost);
+          cudaMemcpy(devBytes.data(), DSP_BUF(arr), n * elemSize, cudaMemcpyDeviceToHost);
           vals = "";
           for (int j = 0; j < n; j++) {
             if (j > 0) vals += ",";
@@ -1550,7 +1557,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           DSP_DIAG(EXECUTE, "EXT_DATA[%d]:\"%s\" type=%d rank=%d len=%lld addr=%p vals=[%s] execCount=%d",
                    ei, name.c_str(), (int)arr->dataType(), (int)arr->rankOf(),
                    (long long)arr->lengthOf(),
-                   arr->specialBuffer(), vals.c_str(), seg.exec.executionCount);
+                   DSP_BUF(arr), vals.c_str(), seg.exec.executionCount);
         }
       }
       } // end tritonVerifyKernels() EXT_DATA dump
@@ -1641,7 +1648,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           int elemSize = DataTypeUtils::sizeOf(arr->dataType());
           std::vector<uint8_t> hostBytes(n * elemSize), devBytes(n * elemSize);
           if (db && db->primary()) std::memcpy(hostBytes.data(), static_cast<char*>(arr->buffer()), n * elemSize);
-          if (arr->specialBuffer()) cudaMemcpy(devBytes.data(), arr->specialBuffer(), n * elemSize, cudaMemcpyDeviceToHost);
+          if (DSP_BUF(arr)) cudaMemcpy(devBytes.data(), DSP_BUF(arr), n * elemSize, cudaMemcpyDeviceToHost);
           float hv[8]={0}, dv[8]={0};
           dspBytesToFloat(hostBytes.data(), arr->dataType(), hv, n);
           dspBytesToFloat(devBytes.data(), arr->dataType(), dv, n);
@@ -1673,8 +1680,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       for (auto& entry : segBZ) {
         if (entry.outputSlotIndex >= 0 && entry.outputSlotIndex < totalOutputSlots_) {
           NDArray* cached = slotArrayCache_[entry.outputSlotIndex];
-          if (cached != nullptr && cached->specialBuffer() != nullptr) {
-            entry.ptr = cached->specialBuffer();
+          if (cached != nullptr && DSP_BUF(cached) != nullptr) {
+            entry.ptr = DSP_BUF(cached);
             entry.bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
           }
         }
@@ -1728,7 +1735,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                      seg.startSlot, seg.endSlot, cbi,
                      cb.externalInputIndex, cb.crossSegmentSlotIdx,
                      cb.directReference ? 1 : 0);
-          } else if (cb.buffer->specialBuffer() == nullptr) {
+          } else if (DSP_BUF(cb.buffer) == nullptr) {
             nullCapBufDevPtrs++;
             DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_CAPBUF_DEVPTR: seg[%d-%d] cb[%zu] "
                      "buffer=%p specialBuffer=NULL extIdx=%d crossSlot=%d "
@@ -1740,7 +1747,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                      (int)cb.buffer->dataType());
           }
           if (cb.directReference && cb.buffer != nullptr &&
-              cb.buffer->specialBuffer() == nullptr) {
+              DSP_BUF(cb.buffer) == nullptr) {
             nullDirectRefPtrs++;
             // This is the most dangerous case: directReference means the graph
             // reads from this buffer's device address directly
@@ -1756,13 +1763,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             int slotIdx = slots_[si].outputSlotIndices[oi];
             if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
               NDArray* slotArr = slotArrayCache_[slotIdx];
-              if (slotArr == nullptr || slotArr->specialBuffer() == nullptr) {
+              if (slotArr == nullptr || DSP_BUF(slotArr) == nullptr) {
                 nullSlots++;
                 DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_SLOT: seg[%d-%d] step=%d "
                          "outputSlot=%d arr=%p devPtr=%p",
                          seg.startSlot, seg.endSlot, si, slotIdx,
                          (void*)slotArr,
-                         slotArr ? slotArr->specialBuffer() : nullptr);
+                         slotArr ? DSP_BUF(slotArr) : nullptr);
               }
             }
           }
@@ -1789,7 +1796,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         int nullExtInputs = 0;
         for (int ei = 0; ei < numExt; ei++) {
           if (externalArrays[ei] != nullptr &&
-              externalArrays[ei]->specialBuffer() == nullptr) {
+              DSP_BUF(externalArrays[ei]) == nullptr) {
             nullExtInputs++;
             if (nullExtInputs <= 5) {
               std::string name = (ei < (int)externalInputNames_.size())
@@ -1969,16 +1976,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           auto* finalOut = outputSlots_[finalOutputSlot];
           if (finalOut->dataType() == FLOAT32) {
             DSP_DIAG_DUMP_SLOT("replay", finalOutputSlot,
-                               finalOut->specialBuffer(), finalOut->lengthOf());
+                               DSP_BUF(finalOut), finalOut->lengthOf());
           }
           if (finalOut->dataType() == FLOAT32 && finalOut->lengthOf() > 0) {
-            DSP_DIAG_DUMP_SEG_OUTPUT("GRAPH_REPLAY", finalOutputSlot, finalOut->specialBuffer(),
+            DSP_DIAG_DUMP_SEG_OUTPUT("GRAPH_REPLAY", finalOutputSlot, DSP_BUF(finalOut),
                                      finalOut->lengthOf(), seg.exec.executionCount, stream);
           }
           if (DSP_DIAG_ENABLED(EXECUTE)) {
-            int replayArgmax = dspArgmax(finalOut->specialBuffer(), finalOut->dataType(),
+            int replayArgmax = dspArgmax(DSP_BUF(finalOut), finalOut->dataType(),
                                          finalOut->lengthOf());
-            std::string firstVals = dspDumpSlotValues(finalOut->specialBuffer(), finalOut->dataType(),
+            std::string firstVals = dspDumpSlotValues(DSP_BUF(finalOut), finalOut->dataType(),
                                                        finalOut->lengthOf(), 4);
             DSP_DIAG(EXECUTE, "GRAPH_REPLAY ARGMAX: slot=%d argmax=%d len=%lld vals=%s execCount=%d",
                      finalOutputSlot, replayArgmax, (long long)finalOut->lengthOf(),
@@ -2445,7 +2452,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                     db ? (db->isPrimaryActual() ? 1 : 0) : -1,
                     db ? (db->isSpecialActual() ? 1 : 0) : -1,
                     (long long)externalArrays[ei]->lengthOf(),
-                    externalArrays[ei]->specialBuffer());
+                    DSP_BUF(externalArrays[ei]));
         }
         externalArrays[ei]->syncToDevice();
       }
@@ -2559,9 +2566,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             outputSlots_[finalOutputSlot] != nullptr) {
           auto* warmupOut = outputSlots_[finalOutputSlot];
           if (warmupOut->dataType() == FLOAT32 && warmupOut->lengthOf() > 0) {
-            int warmupArgmax = dspArgmax(warmupOut->specialBuffer(), warmupOut->dataType(),
+            int warmupArgmax = dspArgmax(DSP_BUF(warmupOut), warmupOut->dataType(),
                                           warmupOut->lengthOf());
-            std::string warmupVals = dspDumpSlotValues(warmupOut->specialBuffer(), warmupOut->dataType(),
+            std::string warmupVals = dspDumpSlotValues(DSP_BUF(warmupOut), warmupOut->dataType(),
                                                         warmupOut->lengthOf(), 4);
             DSP_DIAG(EXECUTE, "WARMUP ARGMAX: slot=%d argmax=%d len=%lld vals=%s execCount=%d",
                      finalOutputSlot, warmupArgmax, (long long)warmupOut->lengthOf(),
@@ -2698,7 +2705,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           cb.capturedSize = srcBytes;
           cb.directReference = true;
           cb.initialCopyDone = true;
-          cb.lastSourcePtr = src->specialBuffer();
+          cb.lastSourcePtr = DSP_BUF(src);
           seg.exec.replayHandle->addCaptureBuffer(std::move(cb));
           // Do NOT save/replace externalArrays — graph uses src directly
         } else {
@@ -2758,7 +2765,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             cb.capturedSize = srcBytes;
             cb.directReference = true;
             cb.initialCopyDone = true;
-            cb.lastSourcePtr = src->specialBuffer();
+            cb.lastSourcePtr = DSP_BUF(src);
             seg.exec.replayHandle->addCaptureBuffer(std::move(cb));
             DSP_DIAG(MEMORY, "CAPTURE: extIdx=%d is weight (%zu MB), using directReference (no copy)",
                      ei, srcBytes / (1024 * 1024));
@@ -3098,7 +3105,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           auto* finalOut = outputSlots_[seg.endSlot];
           if (finalOut->dataType() == FLOAT32) {
             DSP_DIAG_DUMP_SLOT("capture-post-endCapture", seg.endSlot,
-                               finalOut->specialBuffer(), finalOut->lengthOf());
+                               DSP_BUF(finalOut), finalOut->lengthOf());
           }
         }
         // Dump top logit from capture execution via DSP_DIAG
@@ -3116,7 +3123,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
               outputSlots_[captureOutputSlot] != nullptr) {
             auto* out = outputSlots_[captureOutputSlot];
             if (out->dataType() == FLOAT32 && out->lengthOf() > 0) {
-              DSP_DIAG_DUMP_SEG_OUTPUT("CAPTURE_EXEC", captureOutputSlot, out->specialBuffer(),
+              DSP_DIAG_DUMP_SEG_OUTPUT("CAPTURE_EXEC", captureOutputSlot, DSP_BUF(out),
                                        out->lengthOf(), seg.exec.executionCount, stream);
             }
           }
@@ -3238,14 +3245,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           auto* finalOut = outputSlots_[seg.endSlot];
           if (finalOut->dataType() == FLOAT32) {
             DSP_DIAG_DUMP_SLOT("capture-post-launch", seg.endSlot,
-                               finalOut->specialBuffer(), finalOut->lengthOf());
+                               DSP_BUF(finalOut), finalOut->lengthOf());
           }
         }
         // Dump top logit from first replay (graph launch after capture) via DSP_DIAG
         if (seg.endSlot < totalOutputSlots_ && outputSlots_[seg.endSlot] != nullptr) {
           auto* out = outputSlots_[seg.endSlot];
           if (out->dataType() == FLOAT32 && out->lengthOf() > 0) {
-            DSP_DIAG_DUMP_SEG_OUTPUT("REPLAY_LAUNCH", seg.endSlot, out->specialBuffer(),
+            DSP_DIAG_DUMP_SEG_OUTPUT("REPLAY_LAUNCH", seg.endSlot, DSP_BUF(out),
                                      out->lengthOf(), seg.exec.executionCount, stream);
           }
         }
@@ -3528,7 +3535,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                     db ? (db->isPrimaryActual() ? 1 : 0) : -1,
                     db ? (db->isSpecialActual() ? 1 : 0) : -1,
                     (long long)externalArrays[ei]->lengthOf(),
-                    externalArrays[ei]->specialBuffer());
+                    DSP_BUF(externalArrays[ei]));
         }
         externalArrays[ei]->syncToDevice();
       }
@@ -3600,7 +3607,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     auto* finalOut = outputSlots_[seg.endSlot];
     if (finalOut->dataType() == FLOAT32) {
       DSP_DIAG_DUMP_SLOT("direct", seg.endSlot,
-                         finalOut->specialBuffer(), finalOut->lengthOf());
+                         DSP_BUF(finalOut), finalOut->lengthOf());
     }
   }
   // Always-on diagnostic: dump top logit for non-capture Triton execution
@@ -3608,7 +3615,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       seg.endSlot < totalOutputSlots_ && outputSlots_[seg.endSlot] != nullptr) {
     auto* out = outputSlots_[seg.endSlot];
     if (out->dataType() == FLOAT32 && out->lengthOf() > 0) {
-      DSP_DIAG_DUMP_SEG_OUTPUT("DIRECT_TRITON", seg.endSlot, out->specialBuffer(),
+      DSP_DIAG_DUMP_SEG_OUTPUT("DIRECT_TRITON", seg.endSlot, DSP_BUF(out),
                                out->lengthOf(), seg.exec.executionCount, stream);
     }
   }

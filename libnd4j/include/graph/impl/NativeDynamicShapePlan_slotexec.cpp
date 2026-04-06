@@ -36,6 +36,13 @@
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/OpRegistrator.h>
 
+// Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
+#ifdef SD_CUDA
+#define DSP_BUF(arr) ((arr)->specialBuffer())
+#else
+#define DSP_BUF(arr) ((arr)->buffer())
+#endif
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -682,8 +689,8 @@ Status NativeDynamicShapePlan::executeSlot(
         slotArrayCache_[lastOutputSlotIdx] = output;
       }
       if (!isBatchZeroActive()) {
-        if (isBatchZeroRegistering() && output->specialBuffer() != nullptr) {
-          registerBatchZeroBuffer(output->specialBuffer(),
+        if (isBatchZeroRegistering() && DSP_BUF(output) != nullptr) {
+          registerBatchZeroBuffer(DSP_BUF(output),
                                   output->dataBuffer()->getLenInBytes(),
                                   lastOutputSlotIdx);
         }
@@ -903,8 +910,8 @@ Status NativeDynamicShapePlan::executeSlot(
         if (isView) continue;
 
         if (!isBatchZeroActive()) {
-          if (isBatchZeroRegistering() && ctxOuts[i]->specialBuffer() != nullptr) {
-            registerBatchZeroBuffer(ctxOuts[i]->specialBuffer(),
+          if (isBatchZeroRegistering() && DSP_BUF(ctxOuts[i]) != nullptr) {
+            registerBatchZeroBuffer(DSP_BUF(ctxOuts[i]),
                                     ctxOuts[i]->dataBuffer()->getLenInBytes(),
                                     si);
           }
@@ -1342,8 +1349,8 @@ step3_allocate:
       if (shape::equalsSoft(cachedShape, shapeInfo) &&
           ArrayOptions::dataType(cachedShape) == dt) {
         if (!isBatchZeroActive()) {
-          if (isBatchZeroRegistering() && cached->specialBuffer() != nullptr) {
-            registerBatchZeroBuffer(cached->specialBuffer(),
+          if (isBatchZeroRegistering() && DSP_BUF(cached) != nullptr) {
+            registerBatchZeroBuffer(DSP_BUF(cached),
                                     cached->dataBuffer()->getLenInBytes(),
                                     slotIdx);
           }
@@ -1413,8 +1420,8 @@ step3_allocate:
         try {
           maxOut = new NDArray(order, maxShape, dt);
           if (!isBatchZeroActive()) {
-            if (isBatchZeroRegistering() && maxOut->specialBuffer() != nullptr) {
-              registerBatchZeroBuffer(maxOut->specialBuffer(),
+            if (isBatchZeroRegistering() && DSP_BUF(maxOut) != nullptr) {
+              registerBatchZeroBuffer(DSP_BUF(maxOut),
                                       maxOut->dataBuffer()->getLenInBytes(),
                                       slotIdx);
             }
@@ -1425,8 +1432,8 @@ step3_allocate:
                     stepIdx, slot.opName.c_str(), e.what());
           maxOut = new NDArray(order, shape, dt);
           if (slot.needsZeroedOutput && !isBatchZeroActive()) {
-            if (isBatchZeroRegistering() && maxOut->specialBuffer() != nullptr) {
-              registerBatchZeroBuffer(maxOut->specialBuffer(),
+            if (isBatchZeroRegistering() && DSP_BUF(maxOut) != nullptr) {
+              registerBatchZeroBuffer(DSP_BUF(maxOut),
                                       maxOut->dataBuffer()->getLenInBytes(),
                                       slotIdx);
             }
@@ -1452,8 +1459,8 @@ step3_allocate:
     try {
       out = new NDArray(order, shape, dt);
       if (slot.needsZeroedOutput && !isBatchZeroActive()) {
-        if (isBatchZeroRegistering() && out->specialBuffer() != nullptr) {
-          registerBatchZeroBuffer(out->specialBuffer(),
+        if (isBatchZeroRegistering() && DSP_BUF(out) != nullptr) {
+          registerBatchZeroBuffer(DSP_BUF(out),
                                   out->dataBuffer()->getLenInBytes(),
                                   slotIdx);
         }
