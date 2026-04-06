@@ -1675,9 +1675,11 @@ step3_allocate:
       if (extIdx < numExt) biasArray = externalArrays[extIdx];
     }
     if (biasArray != nullptr) {
+#ifdef SD_CUDA
       biasArray->syncToDevice();
       MmulHelper::setLtEpilogue(slot.ltEpilogueType, biasArray->specialBuffer(),
                                  biasArray->lengthOf() * biasArray->sizeOfT());
+#endif
       DSP_DIAG(FUSION, "set Lt epilogue type=%d bias=%p size=%lld for slot %d (%s)",
                 slot.ltEpilogueType, biasArray->specialBuffer(),
                 (long long)(biasArray->lengthOf() * biasArray->sizeOfT()),
@@ -1718,12 +1720,16 @@ step3_allocate:
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
     }
     // Clear epilogue state even on exception
+#ifdef SD_CUDA
     if (slot.ltEpilogueType > 0) MmulHelper::clearLtEpilogue();
+#endif
     return Status::KERNEL_FAILURE;
   }
 
   // Clear epilogue state after matmul execution
+#ifdef SD_CUDA
   if (slot.ltEpilogueType > 0) MmulHelper::clearLtEpilogue();
+#endif
 
   if (status != Status::OK) {
     std::string inputShapes, outputShapesStr;
