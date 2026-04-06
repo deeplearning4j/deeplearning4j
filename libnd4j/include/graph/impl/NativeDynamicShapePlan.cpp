@@ -251,13 +251,8 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       {}
 
 NativeDynamicShapePlan::~NativeDynamicShapePlan() {
-  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d",
-           this, numSlots_, totalOutputSlots_);
-
-  // Finalize diagnostics report
-  DspDiagnostics::getInstance().endPlanExecution();
-  DspDiagnostics::getInstance().printPlanReport();
-  DspDiagnostics::getInstance().flushJsonReport();
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d planOwned=%zu",
+           this, numSlots_, totalOutputSlots_, planOwnedArrays_.size());
 
 #ifdef SD_CUDA
   // Free CUDA event used for cross-stream sync
@@ -402,6 +397,11 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   execState_ = nullptr;
 
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: DONE plan=%p", this);
+
+  // Finalize diagnostics AFTER all cleanup so destructor logging is captured
+  DspDiagnostics::getInstance().endPlanExecution();
+  DspDiagnostics::getInstance().printPlanReport();
+  DspDiagnostics::getInstance().flushJsonReport();
 }
 
 // ─── Deserialization from binary plan ─────────────────────────────────────────
