@@ -26,7 +26,10 @@
 #include <array/ArrayOptions.h>
 
 #include <algorithm>
+#include <thread>
 #include <unordered_set>
+#include <openvino/runtime/properties.hpp>
+#include <system/Environment.h>
 
 namespace sd {
 namespace graph {
@@ -39,7 +42,16 @@ OpenVinoGraphBackend& OpenVinoGraphBackend::getInstance() {
 }
 
 OpenVinoGraphBackend::OpenVinoGraphBackend() {
-  // ov::Core is initialized in its constructor
+  // Configure OpenVINO threading from Environment (controlled via -Domp.num.threads).
+  try {
+    int numThreads = sd::Environment::getInstance().maxMasterThreads();
+    if (numThreads <= 0) numThreads = std::thread::hardware_concurrency();
+    core_.set_property("CPU", ov::inference_num_threads(numThreads));
+    core_.set_property("CPU", ov::hint::performance_mode(ov::hint::PerformanceMode::THROUGHPUT));
+    DSP_DIAG(COMPILE, "OpenVINO: configured CPU with %d threads, THROUGHPUT mode", numThreads);
+  } catch (const std::exception& e) {
+    DSP_DIAG(COMPILE, "OpenVINO: failed to set threading properties: %s", e.what());
+  }
 }
 
 OpenVinoGraphBackend::~OpenVinoGraphBackend() = default;
@@ -162,6 +174,7 @@ bool OpenVinoGraphBackend::isOpenVinoMappable(const std::string& opName) {
     "tensormmul", "TensorMmul",
     "batched_gemm", "BatchedGemm",
     "xw_plus_b", "XwPlusB",
+    "fused_gemm_swiglu", "FusedGemmSwiglu",
 
     // ── Normalization ──
     "softmax", "Softmax",
@@ -169,6 +182,7 @@ bool OpenVinoGraphBackend::isOpenVinoMappable(const std::string& opName) {
     "layer_norm", "LayerNorm",
     "layer_normalization",
     "rms_norm", "RmsNorm",
+    "rms_norm_linear", "RmsNormLinear",
     "batchnorm", "BatchNorm", "batchnorm_inference", "batch_norm",
     "fused_layer_norm", "FusedLayerNorm",
 
@@ -297,6 +311,8 @@ static bool isOvSingleOpWorthCompiling(const std::string& opName) {
     "softmax", "Softmax",
     "layer_norm", "LayerNorm",
     "rms_norm", "RmsNorm",
+    "rms_norm_linear", "RmsNormLinear",
+    "fused_gemm_swiglu", "FusedGemmSwiglu",
     "batch_norm", "BatchNorm", "batchnorm",
     "conv2d", "Conv2d",
     "avgpool2d", "Avgpool2d",
@@ -526,6 +542,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       };
 
+      try {
       // ── Binary elementwise ──
       if (opName == "add" || opName == "Add") {
         if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Add>(inputs[0], inputs[1]); }
@@ -795,6 +812,19 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           auto mm = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], false, false);
           node = std::make_shared<ov::op::v1::Add>(mm->output(0), inputs[2]);
         }
+      } else if (opName == "fused_gemm_swiglu" || opName == "FusedGemmSwiglu") {
+        // Compose: silu(x @ W_gate) * (x @ W_up)
+        // Input 0: x [M, K], Input 1: W_gate [K, N], Input 2: W_up [K, N]
+        if (inputs.size() >= 3) {
+          // gate = x @ W_gate
+          auto gate = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], false, false);
+          // up = x @ W_up
+          auto up = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[2], false, false);
+          // silu(gate) = gate * sigmoid(gate)
+          auto silu = std::make_shared<ov::op::v4::Swish>(gate->output(0));
+          // output = silu(gate) * up
+          node = std::make_shared<ov::op::v1::Multiply>(silu->output(0), up->output(0));
+        }
       }
 
       // ── Softmax ──
@@ -861,6 +891,28 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           } else {
             node = normed;
           }
+        }
+      } else if (opName == "rms_norm_linear" || opName == "RmsNormLinear") {
+        // Compose: matmul(rms_norm(x, gamma, eps), W)
+        // = matmul(x / sqrt(mean(x^2) + eps) * gamma, W)
+        // Input 0: x, Input 1: gamma, Input 2: W
+        if (inputs.size() >= 3) {
+          double eps = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1e-6;
+          int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
+          std::vector<int64_t> axes = {rank - 1};
+          auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
+
+          // RMSNorm: x / sqrt(mean(x^2) + eps) * gamma
+          auto x_sq = std::make_shared<ov::op::v1::Multiply>(inputs[0], inputs[0]);
+          auto mean_sq = std::make_shared<ov::op::v1::ReduceMean>(x_sq->output(0), axes_const, true);
+          auto eps_const = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(eps)});
+          auto mean_eps = std::make_shared<ov::op::v1::Add>(mean_sq->output(0), eps_const);
+          auto rms = std::make_shared<ov::op::v0::Sqrt>(mean_eps->output(0));
+          auto normed = std::make_shared<ov::op::v1::Divide>(inputs[0], rms->output(0));
+          auto scaled = std::make_shared<ov::op::v1::Multiply>(normed->output(0), inputs[1]);
+
+          // Linear: scaled @ W
+          node = std::make_shared<ov::op::v0::MatMul>(scaled->output(0), inputs[2], false, false);
         }
       } else if (opName == "batchnorm" || opName == "BatchNorm" || opName == "batchnorm_inference" || opName == "batch_norm") {
         // BatchNormInference: input, gamma, beta, mean, variance
@@ -1200,6 +1252,11 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "concat" || opName == "Concat") {
         if (inputs.size() >= 2) {
           int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          // Log input shapes for diagnosis
+          for (size_t ci = 0; ci < inputs.size(); ci++) {
+            DSP_DIAG(COMPILE, "OpenVINO: concat slot %d input[%zu] shape=%s",
+                     s, ci, inputs[ci].get_partial_shape().to_string().c_str());
+          }
           ov::OutputVector concatInputs(inputs.begin(), inputs.end());
           node = std::make_shared<ov::op::v0::Concat>(concatInputs, axis);
         }
@@ -1738,6 +1795,18 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
 
       audit.wasCompiled = true;
       result.compilationAudit.push_back(audit);
+
+      } catch (const std::exception& nodeEx) {
+        fprintf(stderr, "OpenVINO: node creation FAILED at slot %d op '%s': %s\n",
+                s, opName.c_str(), nodeEx.what());
+        fflush(stderr);
+        DSP_DIAG(COMPILE, "OpenVINO: node creation THREW at slot %d op '%s': %s",
+                 s, opName.c_str(), nodeEx.what());
+        audit.wasCompiled = false;
+        audit.reason = std::string("node creation exception: ") + nodeEx.what();
+        result.compilationAudit.push_back(audit);
+        goto next_slot;
+      }
     }
     next_slot:;
   }

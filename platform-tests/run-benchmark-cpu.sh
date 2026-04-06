@@ -291,7 +291,10 @@ fi
 # Use all available cores for OpenBLAS/MKL BLAS operations.
 # Default pom.xml sets OMP_NUM_THREADS=1 for test reproducibility;
 # override here for benchmark performance.
-OMP_THREADS=$(nproc)
+# Default to half of available cores to balance parallelism vs memory.
+# OpenVINO THROUGHPUT mode replicates buffers per stream; too many threads OOMs.
+# Override with: ./run-benchmark-cpu.sh (then set OMP_THREADS before running)
+OMP_THREADS=${OMP_THREADS:-$(( $(nproc) / 2 ))}
 
 $MVN test \
   -Dtest="${TEST_CLASS}#${TEST_METHOD}" \
