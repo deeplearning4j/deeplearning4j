@@ -297,7 +297,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // workspace ~512MB, cuBLAS workspace ~256MB, captured graph state, output
             // slot arrays). Without this, resetSession() recovers almost no GPU memory
             // and subsequent pages OOM.
-            freeNativePlanHandle();
+            freeNativePlanHandle("SESSION_RESET");
             nativeExecutorFailed = false;
             executionCount = 0;
             shapesFrozen = false;
@@ -315,7 +315,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         pendingClose = new ArrayList<>();
         slotArrayCache = new INDArray[totalSlots];
         // Reset native executor state for new plan
-        freeNativePlanHandle();
+        freeNativePlanHandle("PLAN_CHANGED");
         nativeExecutorFailed = false;
 
         // Cache device count once.
@@ -713,7 +713,13 @@ public class DynamicShapePlanExecutor implements Closeable {
      * @param cachePos  Current cache position
      */
     public void setNextDecodeToken(long tokenId, int cachePos) {
-        if (!decodeInputsConfigured || nativePlanHandle == null) return;
+        if (!decodeInputsConfigured || nativePlanHandle == null) {
+            log.warn("setNextDecodeToken SKIPPED: configured={} handle={}",
+                    decodeInputsConfigured, nativePlanHandle != null ? "non-null" : "NULL");
+            return;
+        }
+        log.info("setNextDecodeToken: tokenId={} cachePos={} handle={}", tokenId, cachePos,
+                nativePlanHandle.address());
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         nativeOps.setPlanNextDecodeToken(nativePlanHandle, tokenId, cachePos);
     }
@@ -1064,7 +1070,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 cudaGraphsFailed = false;
             }
 
-            freeNativePlanHandle();
+            freeNativePlanHandle("PLAN_RECOMPILATION");
 
             // Check SameDiff's cache for a previously compiled handle with the same outputs
             String cacheKey = planCacheKey(plan);
@@ -1680,6 +1686,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             log.info("EXT_INPUT_1331: name='{}' total={}", extKeys[1331], extKeys.length);
         }
         INDArray[] extInputs;
+        // Track indices of stale non-placeholder inputs refreshed in the fast path.
+        // Declared here (outer scope) so the frozen fast path can access them.
+        int[] staleNonPlaceholderIndices = null;
+        int staleNonPlaceholderCount = 0;
         if (shapesFrozen && cachedInputArrays != null && cachedInputArrays.length == extKeys.length) {
             DspDiagnostics.record(DspDiagnostics.EXECUTE,
                     "Java: external inputs FAST PATH (frozen, " + extKeys.length + " cached)");
@@ -1693,6 +1703,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             // close evicts constant DataBuffers during long Triton compilations.
             int staleCount = 0;
             int resolvedCount = 0;
+            int staleConstantCount = 0;
+            int stalePlaceholderCount = 0;
+            int staleOtherCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
                 if (extInputs[i] != null) {
                     DataBuffer db = extInputs[i].data();
@@ -1702,12 +1715,16 @@ public class DynamicShapePlanExecutor implements Closeable {
                         VariableType vt = var != null ? var.getVariableType() : null;
                         if (var != null && (vt == VariableType.CONSTANT
                                 || vt == VariableType.VARIABLE)) {
+                            staleConstantCount++;
                             INDArray fresh = var.getArr();
                             if (fresh != null && fresh.data() != null && !fresh.data().wasClosed()) {
                                 extInputs[i] = fresh;
-                                // DON'T update cachedInputArrays here — let the fast path
-                                // detect the change (extInputs[i] != cachedInputArrays[i])
-                                // and call setGraphContextInputArray to update C++ side.
+                                cachedInputArrays[i] = fresh;
+                                // Track for frozen fast path — must call setGraphContextInputArray
+                                if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
+                                if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
+                                    staleNonPlaceholderIndices = java.util.Arrays.copyOf(staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
+                                staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
                                 resolvedCount++;
                             } else {
                                 // Dead constant: DataBuffer is closed but the native plan
@@ -1716,6 +1733,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 resolvedCount++;  // Count as resolved to not block replay
                             }
                         } else if (vt == VariableType.PLACEHOLDER && placeholderArrays != null) {
+                            stalePlaceholderCount++;
                             // Placeholder: re-resolve from placeholderArrays map
                             INDArray ph = placeholderArrays.get(extKeys[i]);
                             if (ph != null && ph.data() != null && !ph.data().wasClosed()) {
@@ -1730,6 +1748,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     " STALE, placeholder not available in map");
                             }
                         } else {
+                            staleOtherCount++;
                             DspDiagnostics.record(DspDiagnostics.FALLBACK,
                                 "Java: ext[" + i + "] '" + extKeys[i] + "' type=" + vt +
                                 " STALE but not CONST/VAR/PLACEHOLDER — cannot re-resolve!");
@@ -1741,6 +1760,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                 DspDiagnostics.record(DspDiagnostics.MEMORY,
                     "Java: external inputs fast path: " + staleCount + " stale, " +
                     resolvedCount + " resolved, " + (staleCount - resolvedCount) + " unresolvable");
+                log.info("STALE_BUFFER_SCAN: total={} constants={} placeholders={} other={} resolved={}",
+                        staleCount, staleConstantCount, stalePlaceholderCount, staleOtherCount, resolvedCount);
             }
             if (placeholderArrays != null && !placeholderArrays.isEmpty()
                     && inputIsPlaceholder != null) {
@@ -1780,10 +1801,22 @@ public class DynamicShapePlanExecutor implements Closeable {
                         // pool typically hasn't recycled the freed memory yet for the first exec).
                         // The stale buffer scan in the FAST PATH will skip these on replay.
                         if (arr != null && (arr.data() == null || arr.data().wasClosed())) {
+                            // Recreate the closed DataBuffer. This happens when SDZ
+                            // deserialization shares dummy buffers for small metadata
+                            // constants. Allocate a fresh zero buffer so the native plan
+                            // can read the array without crashing.
+                            INDArray fresh = Nd4j.zeros(arr.dataType(), arr.shape());
+                            // Copy the SDVariable's stored value if available
+                            SDVariable sdVar = sameDiff.getVariable(varName);
+                            if (sdVar != null && sdVar.getArr() != null && sdVar.getArr().data() != null
+                                    && !sdVar.getArr().data().wasClosed()) {
+                                fresh.assign(sdVar.getArr());
+                            }
+                            extInputs[i] = fresh;
+                            arr = fresh;
                             deadConstantCount++;
                             if (deadConstantCount <= 5) {
-                                log.info("DEAD_CONSTANT: ext[{}] '{}' has closed DataBuffer (dtype={}, shape={}) — " +
-                                         "native plan will read value during warmup execution",
+                                log.info("DEAD_CONSTANT_FIXED: ext[{}] '{}' recreated DataBuffer (dtype={}, shape={})",
                                          i, varName, arr.dataType(), Arrays.toString(arr.shape()));
                             }
                         }
@@ -2078,8 +2111,27 @@ public class DynamicShapePlanExecutor implements Closeable {
                     for (int i = 0; i < inputIsPlaceholder.length; i++) {
                         if (inputIsPlaceholder[i]) placeholderIndices[idx++] = i;
                     }
-                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})", 
+                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})",
                             count, extInputs.length);
+                    // Validate: check that all non-constant external inputs are in placeholderIndices.
+                    // If a PLACEHOLDER variable is missing, it won't get synced on the frozen fast path.
+                    int missingCount = 0;
+                    for (int i = 0; i < extKeys.length; i++) {
+                        if (!inputIsPlaceholder[i]) {
+                            SDVariable var = sd.getVariable(extKeys[i]);
+                            if (var != null && var.getVariableType() == VariableType.PLACEHOLDER) {
+                                missingCount++;
+                                log.warn("PLACEHOLDER_SYNC_GAP: ext[{}] '{}' is type PLACEHOLDER " +
+                                        "but not in placeholderIndices — will be skipped on frozen fast path",
+                                        i, extKeys[i]);
+                            }
+                        }
+                    }
+                    if (missingCount > 0) {
+                        log.warn("PLACEHOLDER_SYNC_GAP: {} placeholder(s) missing from placeholderIndices " +
+                                "(total extInputs={}, placeholderIndices={}). These inputs will NOT be " +
+                                "synced during frozen execution.", missingCount, extKeys.length, count);
+                    }
                 }
                 
                 // Frozen fast path: only iterate placeholder indices (not all 1332 inputs)
@@ -2114,6 +2166,23 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 if (odb != null && !odb.isNull()) {
                                     odb.syncToSpecial();
                                 }
+                            }
+                        }
+                    }
+                    // Re-set any stale non-placeholder inputs (constants/variables) that
+                    // were refreshed in the stale buffer scan above. The placeholder loop
+                    // only iterates placeholderIndices, so these would otherwise be skipped,
+                    // leaving C++ with stale pointers to freed GPU memory.
+                    if (staleNonPlaceholderIndices != null && staleNonPlaceholderCount > 0) {
+                        for (int sc = 0; sc < staleNonPlaceholderCount; sc++) {
+                            int ci = staleNonPlaceholderIndices[sc];
+                            INDArray arr = extInputs[ci];
+                            if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                                OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                                nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
+                                cachedInputOpaques[ci] = opaqueIn;
+                                DspDiagnostics.record(DspDiagnostics.MEMORY,
+                                    "Java: FROZEN_FAST_PATH re-set stale constant ext[" + ci + "] '" + extKeys[ci] + "'");
                             }
                         }
                     }
@@ -2188,8 +2257,26 @@ public class DynamicShapePlanExecutor implements Closeable {
                     for (int i = 0; i < extInputs.length; i++) {
                         if (inputIsPlaceholder[i]) placeholderIndices[idx++] = i;
                     }
-                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})", 
+                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})",
                             placeholderCount, extInputs.length);
+                    // Validate: check that all non-constant external inputs are in placeholderIndices.
+                    int missingCount = 0;
+                    for (int i = 0; i < extInputs.length; i++) {
+                        if (!inputIsPlaceholder[i]) {
+                            SDVariable var = sd.getVariable(extKeys[i]);
+                            if (var != null && var.getVariableType() == VariableType.PLACEHOLDER) {
+                                missingCount++;
+                                log.warn("PLACEHOLDER_SYNC_GAP: ext[{}] '{}' is type PLACEHOLDER " +
+                                        "but not in placeholderIndices — will be skipped on frozen fast path",
+                                        i, extKeys[i]);
+                            }
+                        }
+                    }
+                    if (missingCount > 0) {
+                        log.warn("PLACEHOLDER_SYNC_GAP: {} placeholder(s) missing from placeholderIndices " +
+                                "(total extInputs={}, placeholderIndices={}). These inputs will NOT be " +
+                                "synced during frozen execution.", missingCount, extInputs.length, placeholderCount);
+                    }
                 }
             }
 
@@ -2473,10 +2560,17 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Release the native plan handle. If a SameDiff cache is available, saves the handle
-     * there for reuse by future sessions. Otherwise frees it immediately.
+     * Release the native plan handle with a descriptive reason for diagnostics.
+     * If a SameDiff cache is available, saves the handle there for reuse by future sessions.
+     * Otherwise frees it immediately.
+     *
+     * @param reason descriptive reason for plan destruction (e.g., "SESSION_RESET", "PLAN_RECOMPILATION")
      */
-    private void freeNativePlanHandle() {
+    private void freeNativePlanHandle(String reason) {
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            log.info("PLAN_DESTRUCTION: reason='{}' handle={} execCount={} frozen={}",
+                    reason, nativePlanHandle.address(), executionCount, shapesFrozen);
+        }
         // Free cached OpaqueContext first (it references the plan)
         if (cachedOpContext != null) {
             log.info("    freeNativePlanHandle: deleteGraphContext");
@@ -2593,7 +2687,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Free native C++ plan handle if compiled
         log.info("  DSP close() step 6: freeNativePlanHandle");
         System.out.flush(); System.err.flush();
-        freeNativePlanHandle();
+        freeNativePlanHandle("EXECUTOR_CLOSE");
 
         currentPlan = null;
         // Clear saved KV retention params — executor is fully closed, no re-apply possible

@@ -726,9 +726,13 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   seg.shapeKey = segShapeKey;
   tl_graphExecutionActive = true;
+  DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
+           seg.startSlot, seg.endSlot, backendName, (long long)segShapeKey);
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
   tl_graphExecutionActive = false;
+  DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
+           seg.startSlot, seg.endSlot, backendName, (int)status);
 
   DSP_DIAG(EXECUTE, "executeSegmentWithSpecificBackend: exec%d seg[%d-%d]: backend=%s status=%d(%s)",
             seg.exec.executionCount, seg.startSlot, seg.endSlot, backendName,
