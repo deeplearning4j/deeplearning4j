@@ -43,22 +43,6 @@
 #define DSP_BUF(arr) ((arr)->buffer())
 #endif
 
-// ── DSP_SLOT_WRITE: guarded slot write macro ────────────────────────────────
-// Wraps all `outputSlots_[si] = value` assignments. In POINTERS_STABLE+ phase
-// with executeCount > 2, logs a DSP_DIAG FALLBACK warning if the NEW value has
-// a different DataBuffer than the OLD value. This detects post-freeze buffer
-// replacement that would corrupt captured CUDA graphs.
-// Diagnostic only — logs and continues (not a hard error).
-// DSP_SLOT_WRITE: ALL output slot writes go through writeOutputSlot().
-// Phase validation, stale write detection, ownership tracking, and diagnostics
-// are centralized in one method on NativeDynamicShapePlan. No scattered guards.
-#define DSP_SLOT_WRITE(si, value, tag) \
-  writeOutputSlot((si), (value), (tag))
-
-// DSP_NEW_ARRAY: plain allocation. Registration as plan-owned happens in
-// DSP_SLOT_WRITE when the array is assigned to an output slot.
-#define DSP_NEW_ARRAY(...) new NDArray(__VA_ARGS__)
-
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -661,7 +645,7 @@ static ViewCreateResult tryCreateViewForSlot(
       outLen <= (sourceBufferElems - absoluteOffset);
 
   if (elementCountCompatible && fitsBackingBuffer) {
-    *outView = DSP_NEW_ARRAY(input0->dataBuffer(),
+    *outView = new NDArray(input0->dataBuffer(),
                            const_cast<LongType*>(effectiveShapeInfo),
                            LaunchContext::defaultContext(),
                            absoluteOffset);
@@ -1048,7 +1032,7 @@ Status NativeDynamicShapePlan::executeSlot(
       for (int i = 0; i < slot.wiring.numOutputs; i++) {
         int si = slot.wiring.outputSlotIndices[i];
         if (si >= 0 && si < totalOutputSlots_) {
-          DSP_SLOT_WRITE(si, input, "identity-alias");  // expected: alias, not new allocation
+          writeOutputSlot(si, input, "identity-alias");  // expected: alias, not new allocation
         }
       }
 #ifdef SD_CUDA
@@ -1205,7 +1189,7 @@ Status NativeDynamicShapePlan::executeSlot(
         }
       }
       if (output == nullptr) {
-        output = DSP_NEW_ARRAY(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
+        output = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
         slotArrayCache_[lastOutputSlotIdx] = output;
       }
       if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture()) {
@@ -1230,12 +1214,12 @@ Status NativeDynamicShapePlan::executeSlot(
     output->tickWriteDevice();
 
     // 6. Register result at all chain slots' output indices
-    DSP_SLOT_WRITE(lastOutputSlotIdx, output, "fused-chain-head");
+    writeOutputSlot(lastOutputSlotIdx, output, "fused-chain-head");
     for (int ci = 0; ci < slot.fusedChain.fusedChainLength - 1; ci++) {
       int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
       int chainOutputSlotIdx = slots_[chainSlotIdx].wiring.outputSlotIndices[0];
       if (chainOutputSlotIdx >= 0 && chainOutputSlotIdx < totalOutputSlots_) {
-        DSP_SLOT_WRITE(chainOutputSlotIdx, output, "fused-chain-member");
+        writeOutputSlot(chainOutputSlotIdx, output, "fused-chain-member");
       }
     }
 
@@ -1350,7 +1334,7 @@ Status NativeDynamicShapePlan::executeSlot(
               return Status::OK;
             }
             // Install the new view
-            DSP_SLOT_WRITE(si, newView, "view-install");
+            writeOutputSlot(si, newView, "view-install");
             slotIsViewProducer_[si] = true;
             auto& ctx2 = *contextPool_[stepIdx];
             ctx2.setOutputArray(0, newView);
@@ -1506,7 +1490,7 @@ Status NativeDynamicShapePlan::executeSlot(
               // During graph capture, don't delete — it's the saved warmup array
             }
           }
-          DSP_SLOT_WRITE(si, ctxOuts[i], "frozen-op-exec");
+          writeOutputSlot(si, ctxOuts[i], "frozen-op-exec");
           slotArrayCache_[si] = ctxOuts[i];
         }
       }
@@ -1579,7 +1563,7 @@ Status NativeDynamicShapePlan::executeSlot(
         // Invalidate the cache entry so future executions don't hit the same bad array
         int badSrcIdx = slot.wiring.inputSourceIndices[i];
         if (badSrcIdx >= 0 && badSrcIdx < totalOutputSlots_) {
-          DSP_SLOT_WRITE(badSrcIdx, nullptr, "null-bad-input");
+          writeOutputSlot(badSrcIdx, nullptr, "null-bad-input");
           slotArrayCache_[badSrcIdx] = nullptr;
         }
         return Status::BAD_INPUT;
@@ -1972,7 +1956,7 @@ Status NativeDynamicShapePlan::executeSlot(
         outputs[0] = inPlaceBuffer;
         int slotIdx = slot.wiring.outputSlotIndices[0];
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          DSP_SLOT_WRITE(slotIdx, inPlaceBuffer, "in-place-fused");
+          writeOutputSlot(slotIdx, inPlaceBuffer, "in-place-fused");
         }
 
         for (int i = 1; i < numActualOutputs; i++) {
@@ -1989,7 +1973,7 @@ Status NativeDynamicShapePlan::executeSlot(
               delete cached;
               untrackedOutputCache_[cacheIdx] = nullptr;
             }
-            outputs[i] = DSP_NEW_ARRAY(const_cast<LongType*>(outputShapes[i]), true);
+            outputs[i] = new NDArray(const_cast<LongType*>(outputShapes[i]), true);
             if (cacheIdx < untrackedOutputCacheSize_) {
               untrackedOutputCache_[cacheIdx] = outputs[i];
             }
@@ -2001,8 +1985,8 @@ Status NativeDynamicShapePlan::executeSlot(
           LongType rank = shape::rank(shapeInfo);
           std::vector<LongType> shape(rank);
           for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
-          outputs[i] = DSP_NEW_ARRAY(order, shape, dt);
-          DSP_SLOT_WRITE(si, outputs[i], "alloc-output");
+          outputs[i] = new NDArray(order, shape, dt);
+          writeOutputSlot(si, outputs[i], "alloc-output");
           slotArrayCache_[si] = outputs[i];
         }
 
@@ -2111,7 +2095,7 @@ Status NativeDynamicShapePlan::executeSlot(
               // During graph capture, don't delete — it's the saved warmup array
             }
           }
-          DSP_SLOT_WRITE(slotIdx, view, "view-op-install");
+          writeOutputSlot(slotIdx, view, "view-op-install");
           slotArrayCache_[slotIdx] = view;
           slotIsViewProducer_[slotIdx] = true;
         }
@@ -2124,9 +2108,9 @@ Status NativeDynamicShapePlan::executeSlot(
           LongType rank = shape::rank(shapeInfo);
           std::vector<LongType> shape(rank);
           for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
-          outputs[i] = DSP_NEW_ARRAY(order, shape, dt);
+          outputs[i] = new NDArray(order, shape, dt);
           if (si >= 0 && si < totalOutputSlots_) {
-            DSP_SLOT_WRITE(si, outputs[i], "view-secondary-alloc");
+            writeOutputSlot(si, outputs[i], "view-secondary-alloc");
             slotArrayCache_[si] = outputs[i];
           }
         }
@@ -2154,7 +2138,7 @@ step3_allocate:
           untrackedOutputCache_[cacheIdx] = nullptr;
         }
       }
-      outputs[i] = DSP_NEW_ARRAY(const_cast<LongType*>(outputShapes[i]), true);
+      outputs[i] = new NDArray(const_cast<LongType*>(outputShapes[i]), true);
       if (cacheIdx < untrackedOutputCacheSize_) {
         untrackedOutputCache_[cacheIdx] = outputs[i];
       }
@@ -2184,7 +2168,7 @@ step3_allocate:
           cached->nullify();
         }
         outputs[i] = cached;
-        DSP_SLOT_WRITE(slotIdx, cached, "cached-reuse");
+        writeOutputSlot(slotIdx, cached, "cached-reuse");
         continue;
       } else {
         // Same plan = same shapes. Shape mismatch — replace inline.
@@ -2202,9 +2186,9 @@ step3_allocate:
       if (shapeInfo[d + 1] == 0) { hasZeroDim = true; break; }
     }
     if (shape::isEmpty(const_cast<LongType*>(shapeInfo)) || hasZeroDim) {
-      NDArray* emptyOut = DSP_NEW_ARRAY(const_cast<LongType*>(shapeInfo), true);
+      NDArray* emptyOut = new NDArray(const_cast<LongType*>(shapeInfo), true);
       outputs[i] = emptyOut;
-      DSP_SLOT_WRITE(slotIdx, emptyOut, "empty-output-alloc");
+      writeOutputSlot(slotIdx, emptyOut, "empty-output-alloc");
       slotArrayCache_[slotIdx] = emptyOut;
       continue;
     }
@@ -2242,7 +2226,7 @@ step3_allocate:
 
         NDArray* maxOut = nullptr;
         try {
-          maxOut = DSP_NEW_ARRAY(order, maxShape, dt);
+          maxOut = new NDArray(order, maxShape, dt);
           if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture()) {
             if (isBatchZeroRegistering() && DSP_BUF(maxOut) != nullptr) {
               registerBatchZeroBuffer(DSP_BUF(maxOut),
@@ -2254,7 +2238,7 @@ step3_allocate:
         } catch (const std::exception& e) {
           DSP_DIAG_SLOT(MEMORY, stepIdx, "max-allocation FAILED at slot %d (%s): %s",
                     stepIdx, slot.ident.opName.c_str(), e.what());
-          maxOut = DSP_NEW_ARRAY(order, shape, dt);
+          maxOut = new NDArray(order, shape, dt);
           if (slot.flags.needsZeroedOutput && !isBatchZeroActive() &&
               !shouldPreserveWarmupOutputsDuringCapture()) {
             if (isBatchZeroRegistering() && DSP_BUF(maxOut) != nullptr) {
@@ -2267,7 +2251,7 @@ step3_allocate:
         }
 
         outputs[i] = maxOut;
-        DSP_SLOT_WRITE(slotIdx, maxOut, "max-alloc-output");
+        writeOutputSlot(slotIdx, maxOut, "max-alloc-output");
         slotArrayCache_[slotIdx] = maxOut;
         maxAllocatedSlots_.insert(slotIdx);
         continue;
@@ -2276,14 +2260,14 @@ step3_allocate:
                                                    "maxalloc-reuse-validate");
       if (cached2 != nullptr) {
         outputs[i] = cached2;
-        DSP_SLOT_WRITE(slotIdx, cached2, "cached2-reuse");
+        writeOutputSlot(slotIdx, cached2, "cached2-reuse");
         continue;
       }
     }
 
     NDArray* out = nullptr;
     try {
-      out = DSP_NEW_ARRAY(order, shape, dt);
+      out = new NDArray(order, shape, dt);
       // Register output for batch-zero if needed.
       // CRITICAL: Skip registration for view-capable slots. Their output buffers
       // share data with inputs (views), and zeroing them would corrupt the input
@@ -2305,7 +2289,7 @@ step3_allocate:
     }
 
     outputs[i] = out;
-    DSP_SLOT_WRITE(slotIdx, out, "normal-alloc-output");
+    writeOutputSlot(slotIdx, out, "normal-alloc-output");
     slotArrayCache_[slotIdx] = out;
   }
 
@@ -2564,7 +2548,7 @@ step3_allocate:
               delete oldCached;  // View wrapper only — no GPU memory freed
             }
           }
-          DSP_SLOT_WRITE(si, ctxOutputs[i], "view-producer-detect");
+          writeOutputSlot(si, ctxOutputs[i], "view-producer-detect");
           slotArrayCache_[si] = ctxOutputs[i];
         }
       } else if (slotIsViewProducer_[si]) {
@@ -2576,7 +2560,7 @@ step3_allocate:
             delete oldCached;  // View wrapper only — no GPU memory freed
           }
         }
-        DSP_SLOT_WRITE(si, ctxOutputs[i], "view-producer-update");
+        writeOutputSlot(si, ctxOutputs[i], "view-producer-update");
         slotArrayCache_[si] = ctxOutputs[i];
       }
     }
