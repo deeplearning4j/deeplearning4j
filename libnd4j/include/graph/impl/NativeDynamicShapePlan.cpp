@@ -1940,6 +1940,113 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // flushPendingClose REMOVED: arrays persist (one array per slot).
 // View wrappers deleted inline in slotexec. No batched/deferred close needed.
 
+void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
+  bool wasFrozen = shapesFrozen_;
+  shapesFrozen_ = frozen;
+  if (frozen && !wasFrozen) {
+    auto& env = Environment::getInstance();
+    bool mergeSegments = env.dspFreezeMergeSegments();
+
+    // ── Fusion pass (slot-by-slot → freeze transition) ──────────────────
+    if (numSlots_ > 1) {
+      auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_);
+      if (!fusions.empty()) {
+        DSP_DIAG(FUSION, "detected %d fusion candidates (post-warmup)",
+                 (int)fusions.size());
+        int applied = FusionPass::applyFusions(slots_, numSlots_, fusions);
+        DSP_DIAG(FUSION, "applied %d of %d fusion candidates",
+                 applied, (int)fusions.size());
+      }
+    }
+
+    DSP_DIAG(SEGMENT, "setShapesFrozen: %d segments (single build, no rebuild)",
+              (int)segments_.size());
+
+    planPhase_ = PlanPhase::SHAPES_FROZEN;
+    pointersStable_ = false;
+    frozenExecutionCount_ = 0;
+
+    DSP_DIAG(EXECUTE, "FROZEN_TRANSITION: unfrozen → FROZEN, "
+              "%d segments, %d slots, %d extInputs, mergeSegments=%d, recompile=%d",
+              (int)segments_.size(), numSlots_, numExternalInputs_,
+              mergeSegments ? 1 : 0, env.dspFreezeRecompile() ? 1 : 0);
+
+    MmulHelper::clearCastCache();
+
+    executeCount_ = 0;
+    for (auto& seg : segments_) {
+      seg.exec.executionCount = 0;
+      if (seg.exec.replayHandle) {
+        platformCleanupSegmentForRebuild(seg);
+      }
+      seg.exec.argTableStable = false;
+      seg.exec.gapOpsCapturedInGraph = false;
+      seg.exec.cachedShapeKey = 0;
+      seg.exec.capturedInputAddrKey = 0;
+      seg.exec.capturedCreateValueKey = 0;
+      seg.exec.compilationFailed = false;
+      seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    }
+
+    for (auto* db : protectedWeightBuffers_) {
+      if (db != nullptr) db->addFrozenRef();
+    }
+
+    if (outputSlots_ != nullptr) {
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+          outputSlots_[i]->dataBuffer()->addFrozenRef();
+        }
+      }
+      DSP_DIAG(MEMORY, "setShapesFrozen: added frozen ref to %d output slot DataBuffers", totalOutputSlots_);
+    }
+  }
+  if (!frozen) {
+    for (auto* db : protectedWeightBuffers_) {
+      if (db != nullptr) db->removeFrozenRef();
+    }
+
+    if (outputSlots_ != nullptr) {
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+          outputSlots_[i]->dataBuffer()->removeFrozenRef();
+        }
+      }
+      DSP_DIAG(MEMORY, "setShapesFrozen(false): removed frozen ref from %d output slot DataBuffers", totalOutputSlots_);
+    }
+
+    for (int i = 0; i < numSlots_; i++) {
+      if (slots_[i].state_ >= NativeSlot::SlotState::FROZEN) {
+        slots_[i].state_ = NativeSlot::SlotState::SHAPE_CACHED;
+      }
+    }
+    frozenConstantDetectionDone_ = false;
+
+    planPhase_ = PlanPhase::SLOT_BY_SLOT;
+    pointersStable_ = false;
+    frozenExecutionCount_ = 0;
+    executeCount_ = 0;
+    for (auto& seg : segments_) {
+      if (seg.exec.replayHandle) {
+        platformCleanupSegmentForRebuild(seg);
+      }
+      seg.exec.executionCount = 0;
+      seg.exec.argTableStable = false;
+      seg.exec.gapOpsCapturedInGraph = false;
+      seg.exec.cachedShapeKey = 0;
+      seg.exec.capturedInputAddrKey = 0;
+      seg.exec.capturedCreateValueKey = 0;
+      seg.exec.compilationFailed = false;
+      seg.exec.captureOomRetries = 0;
+      seg.exec.captureRetryAfterExec = 0;
+      seg.exec.lastReplayExecCount = 0;
+      seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    }
+    clearAllShapeCachesForce();
+    frozenSnapshot_.clear();
+  }
+}
+
 void NativeDynamicShapePlan::clearShapeCaches() {
   // When shapes are frozen, skip clearing entirely after first execution.
   // All cached shapes remain valid since external input shapes are constant.
