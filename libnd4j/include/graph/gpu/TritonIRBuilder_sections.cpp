@@ -95,10 +95,10 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   };
 
   auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
-    if (slot.op == nullptr || slot.op->getOpDescriptor() == nullptr) {
+    if (slot.ident.op == nullptr || slot.ident.op->getOpDescriptor() == nullptr) {
       return sd::ops::OP_TRAIT_NONE;
     }
-    return slot.op->getOpDescriptor()->getTraits();
+    return slot.ident.op->getOpDescriptor()->getTraits();
   };
 
   auto slotHasTrait = [&](const NativeSlot& slot, uint32_t traits) -> bool {
@@ -227,8 +227,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   auto getOutputElements = [&](int slotIdx) -> LongType {
     if (slotIdx < 0 || slotIdx > endSlot) return 0;
     auto& slot = slots[slotIdx];
-    if (slot.numOutputs <= 0) return 0;
-    int outIdx = slot.outputSlotIndices[0];
+    if (slot.wiring.numOutputs <= 0) return 0;
+    int outIdx = slot.wiring.outputSlotIndices[0];
     NDArray* outArr = resolveArray(outIdx);
     if (outArr) return outArr->lengthOf();
     return 0;
@@ -239,11 +239,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   currentSection.endSlot = startSlot;
   currentSection.numOps = 0;
 
-  auto firstCat = getOpCategory(slots[startSlot].opName);
+  auto firstCat = getOpCategory(slots[startSlot].ident.opName);
   // Reclassify TERNARY ops with < 3 inputs (e.g., 1-input Where = coordinate
   // extraction, not element-wise select).  These are data-dependent and cannot
   // be compiled by Triton — they must stay in native ordered execution.
-  if (firstCat == TritonOpCategory::TERNARY && slots[startSlot].numInputs < 3) {
+  if (firstCat == TritonOpCategory::TERNARY && slots[startSlot].wiring.numInputs < 3) {
     firstCat = TritonOpCategory::UNSUPPORTED;
   }
   currentSection.type = categoryToSectionType(firstCat, slots[startSlot]);
@@ -268,7 +268,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   //    resolution issues between Triton kernels and ND4J view-based DataBuffers
   auto isShapeManipOp = [&](const NativeSlot& slot) -> bool {
     return slotHasTrait(slot, sd::ops::OP_TRAIT_VIEW_PRODUCING) ||
-           getOpCategory(slot.opName) == TritonOpCategory::SHAPE_MANIPULATION;
+           getOpCategory(slot.ident.opName) == TritonOpCategory::SHAPE_MANIPULATION;
   };
 
   auto shapeInfoToVector = [](const LongType* shapeInfo) -> std::vector<LongType> {
@@ -297,11 +297,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     if (srcIdx >= 0) {
       for (int s = startSlot; s <= endSlot; s++) {
         auto& producerSlot = slots[s];
-        if (!producerSlot.shapeCacheValid() || producerSlot.cachedOutputShapes.empty()) continue;
-        for (int o = 0; o < producerSlot.numOutputs; o++) {
-          if (o >= static_cast<int>(producerSlot.cachedOutputShapes.size())) break;
-          if (producerSlot.outputSlotIndices[o] == srcIdx) {
-            return shapeInfoToVector(producerSlot.cachedOutputShapes[o]);
+        if (!producerSlot.shapeCacheValid() || producerSlot.shapeCache.cachedOutputShapes.empty()) continue;
+        for (int o = 0; o < producerSlot.wiring.numOutputs; o++) {
+          if (o >= static_cast<int>(producerSlot.shapeCache.cachedOutputShapes.size())) break;
+          if (producerSlot.wiring.outputSlotIndices[o] == srcIdx) {
+            return shapeInfoToVector(producerSlot.shapeCache.cachedOutputShapes[o]);
           }
         }
       }
@@ -312,22 +312,22 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
 
   auto normalizedAxisForSectionType = [&](KernelSectionType type,
                                           const NativeSlot& slot) -> int {
-    if (slot.numIArgs <= 0 || slot.iArgs == nullptr) {
+    if (slot.args.numIArgs <= 0 || slot.args.iArgs == nullptr) {
       return 0;
     }
 
-    int axis = static_cast<int>(slot.iArgs[0]);
+    int axis = static_cast<int>(slot.args.iArgs[0]);
     std::vector<LongType> shapeVec;
     if (type == KernelSectionType::CONCAT) {
-      if (slot.numOutputs > 0) {
-        shapeVec = resolveShapeVector(slot.outputSlotIndices[0]);
+      if (slot.wiring.numOutputs > 0) {
+        shapeVec = resolveShapeVector(slot.wiring.outputSlotIndices[0]);
       }
-      if (shapeVec.empty() && slot.numInputs > 0) {
-        shapeVec = resolveShapeVector(slot.inputSourceIndices[0]);
+      if (shapeVec.empty() && slot.wiring.numInputs > 0) {
+        shapeVec = resolveShapeVector(slot.wiring.inputSourceIndices[0]);
       }
     } else if (type == KernelSectionType::GATHER || type == KernelSectionType::GATHER_ND) {
-      if (slot.numInputs > 0) {
-        shapeVec = resolveShapeVector(slot.inputSourceIndices[0]);
+      if (slot.wiring.numInputs > 0) {
+        shapeVec = resolveShapeVector(slot.wiring.inputSourceIndices[0]);
       }
     }
 
@@ -359,10 +359,10 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   auto getPermutationForSlot = [](const NativeSlot& slot, const std::string& opLower,
                                   int rank) -> std::vector<int> {
     std::vector<int> permutation;
-    if (slot.numIArgs > 0 && slot.iArgs != nullptr) {
-      permutation.reserve(slot.numIArgs);
-      for (int d = 0; d < slot.numIArgs; d++) {
-        permutation.push_back(static_cast<int>(slot.iArgs[d]));
+    if (slot.args.numIArgs > 0 && slot.args.iArgs != nullptr) {
+      permutation.reserve(slot.args.numIArgs);
+      for (int d = 0; d < slot.args.numIArgs; d++) {
+        permutation.push_back(static_cast<int>(slot.args.iArgs[d]));
       }
     }
     if (permutation.empty() && opLower == "transpose") {
@@ -405,21 +405,21 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   // 2. No data movement — same buffer, just different view metadata
   // 3. Reduces section breaks and kernel launches for no cost
   auto isIdentityShapeOp = [&](const NativeSlot& slot) -> bool {
-    auto cat = getOpCategory(slot.opName);
+    auto cat = getOpCategory(slot.ident.opName);
     if (cat != TritonOpCategory::SHAPE_MANIPULATION) return false;
 
-    if (slot.numInputs <= 0 || slot.numOutputs <= 0) return false;
-    int inputSrcIdx = slot.inputSourceIndices[0];
+    if (slot.wiring.numInputs <= 0 || slot.wiring.numOutputs <= 0) return false;
+    int inputSrcIdx = slot.wiring.inputSourceIndices[0];
     std::vector<LongType> inputShape = resolveShapeVector(inputSrcIdx);
-    std::vector<LongType> outputShape = resolveShapeVector(slot.outputSlotIndices[0]);
-    if (outputShape.empty() && slot.shapeCacheValid() && !slot.cachedOutputShapes.empty()) {
-      outputShape = shapeInfoToVector(slot.cachedOutputShapes[0]);
+    std::vector<LongType> outputShape = resolveShapeVector(slot.wiring.outputSlotIndices[0]);
+    if (outputShape.empty() && slot.shapeCacheValid() && !slot.shapeCache.cachedOutputShapes.empty()) {
+      outputShape = shapeInfoToVector(slot.shapeCache.cachedOutputShapes[0]);
     }
     if (inputShape.empty() || outputShape.empty() || inputShape.size() != outputShape.size()) {
       return false;
     }
 
-    std::string opLower = slot.opName;
+    std::string opLower = slot.ident.opName;
     std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
     bool isPermuteLike = (opLower == "permute" || opLower == "transpose");
 
@@ -453,9 +453,9 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   }
 
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = getOpCategory(slots[i].opName);
+    auto cat = getOpCategory(slots[i].ident.opName);
     // Reclassify TERNARY ops with < 3 inputs as non-compilable
-    if (cat == TritonOpCategory::TERNARY && slots[i].numInputs < 3) {
+    if (cat == TritonOpCategory::TERNARY && slots[i].wiring.numInputs < 3) {
       cat = TritonOpCategory::UNSUPPORTED;
     }
     auto sectionType = categoryToSectionType(cat, slots[i]);
@@ -507,14 +507,14 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       // Controlled by tritonFuseCastChains flag (default: true).
       bool isCastChain = false;
       if (sd::Environment::getInstance().tritonFuseCastChains()) {
-        auto currentCat = getOpCategory(slots[i].opName);
+        auto currentCat = getOpCategory(slots[i].ident.opName);
         bool currentIsCast = (currentCat == TritonOpCategory::CAST);
         bool sectionIsCast = (currentIsElementwiseLike && currentSection.numOps > 0);
         // Check if previous op in section was also a cast
         if (currentIsCast && sectionIsCast && currentSection.numOps > 0) {
           int prevSlot = i - 1;
           if (prevSlot >= startSlot) {
-            auto prevCat = getOpCategory(slots[prevSlot].opName);
+            auto prevCat = getOpCategory(slots[prevSlot].ident.opName);
             if (prevCat == TritonOpCategory::CAST) {
               isCastChain = true;
             }
@@ -594,7 +594,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     if (!startNewSection && currentSection.numOps > 0) {
       // Check if this is a gather/concat ladder pattern
       bool isGatherConcatLadder = false;
-      const auto prevType = categoryToSectionType(getOpCategory(slots[i - 1].opName), slots[i - 1]);
+      const auto prevType = categoryToSectionType(getOpCategory(slots[i - 1].ident.opName), slots[i - 1]);
       const auto curType = sectionType;
 
       if ((isGatherLikeSectionType(prevType) && isConcatLikeSectionType(curType)) ||
@@ -648,9 +648,9 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     // Extract matmul dimensions
     if (sectionType == KernelSectionType::MATMUL) {
       currentSection.type = KernelSectionType::MATMUL;
-      if (slots[i].numInputs >= 2) {
-        NDArray* aArr = resolveArray(slots[i].inputSourceIndices[0]);
-        NDArray* bArr = resolveArray(slots[i].inputSourceIndices[1]);
+      if (slots[i].wiring.numInputs >= 2) {
+        NDArray* aArr = resolveArray(slots[i].wiring.inputSourceIndices[0]);
+        NDArray* bArr = resolveArray(slots[i].wiring.inputSourceIndices[1]);
         if (aArr && aArr->rankOf() >= 2) {
           currentSection.matmulM = static_cast<int>(aArr->sizeAt(aArr->rankOf() - 2));
           currentSection.matmulK = static_cast<int>(aArr->sizeAt(aArr->rankOf() - 1));
@@ -662,14 +662,14 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         }
         // Secondary path: resolve M from input A's producing slot's cached output shape
         if (currentSection.matmulM == 0) {
-          int aSrc = slots[i].inputSourceIndices[0];
+          int aSrc = slots[i].wiring.inputSourceIndices[0];
           if (aSrc >= 0 && aSrc < totalOutputSlots) {
             for (int s = startSlot; s <= endSlot; s++) {
-              for (int o = 0; o < slots[s].numOutputs; o++) {
-                if (slots[s].outputSlotIndices[o] == aSrc &&
-                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty() &&
-                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
-                  const LongType* si = slots[s].cachedOutputShapes[o];
+              for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                if (slots[s].wiring.outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid() && !slots[s].shapeCache.cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].shapeCache.cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].shapeCache.cachedOutputShapes[o];
                   if (si && shape::rank(si) >= 2) {
                     currentSection.matmulM = static_cast<int>(shape::shapeOf(si)[shape::rank(si) - 2]);
                     break;
@@ -681,8 +681,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
           }
         }
         // Secondary path: resolve M from output shape (output of matmul is [..., M, N])
-        if (currentSection.matmulM == 0 && slots[i].numOutputs > 0) {
-          int outIdx = slots[i].outputSlotIndices[0];
+        if (currentSection.matmulM == 0 && slots[i].wiring.numOutputs > 0) {
+          int outIdx = slots[i].wiring.outputSlotIndices[0];
           NDArray* outArr = resolveArray(outIdx);
           if (outArr && outArr->rankOf() >= 2) {
             currentSection.matmulM = static_cast<int>(outArr->sizeAt(outArr->rankOf() - 2));
@@ -691,11 +691,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
           } else if (outIdx >= 0 && outIdx < totalOutputSlots) {
             // Try the producing slot's cached output shape for outIdx
             for (int s = startSlot; s <= endSlot; s++) {
-              for (int o = 0; o < slots[s].numOutputs; o++) {
-                if (slots[s].outputSlotIndices[o] == outIdx &&
-                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty() &&
-                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
-                  const LongType* si = slots[s].cachedOutputShapes[o];
+              for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                if (slots[s].wiring.outputSlotIndices[o] == outIdx &&
+                    slots[s].shapeCacheValid() && !slots[s].shapeCache.cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].shapeCache.cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].shapeCache.cachedOutputShapes[o];
                   if (si && shape::rank(si) >= 2) {
                     currentSection.matmulM = static_cast<int>(shape::shapeOf(si)[shape::rank(si) - 2]);
                     if (currentSection.matmulN == 0)
@@ -709,14 +709,14 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         }
         // Secondary path: resolve K from input A's producing slot's cached output shape
         if (currentSection.matmulK == 0) {
-          int aSrc = slots[i].inputSourceIndices[0];
+          int aSrc = slots[i].wiring.inputSourceIndices[0];
           if (aSrc >= 0 && aSrc < totalOutputSlots) {
             for (int s = startSlot; s <= endSlot; s++) {
-              for (int o = 0; o < slots[s].numOutputs; o++) {
-                if (slots[s].outputSlotIndices[o] == aSrc &&
-                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty() &&
-                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
-                  const LongType* si = slots[s].cachedOutputShapes[o];
+              for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                if (slots[s].wiring.outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid() && !slots[s].shapeCache.cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].shapeCache.cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].shapeCache.cachedOutputShapes[o];
                   if (si && shape::rank(si) >= 2) {
                     currentSection.matmulK = static_cast<int>(shape::shapeOf(si)[shape::rank(si) - 1]);
                   }
@@ -732,8 +732,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     // Extract attention dimensions
     if (sectionType == KernelSectionType::FUSED_ATTENTION) {
       currentSection.type = KernelSectionType::FUSED_ATTENTION;
-      if (slots[i].numInputs >= 1) {
-        NDArray* qArr = resolveArray(slots[i].inputSourceIndices[0]);
+      if (slots[i].wiring.numInputs >= 1) {
+        NDArray* qArr = resolveArray(slots[i].wiring.inputSourceIndices[0]);
         if (qArr && qArr->rankOf() >= 3) {
           int rank = qArr->rankOf();
           if (rank >= 4) {
@@ -750,7 +750,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             currentSection.batchSize = static_cast<int>(qArr->sizeAt(0));
             currentSection.seqQ = static_cast<int>(qArr->sizeAt(1));
             int hidden = static_cast<int>(qArr->sizeAt(2));
-            int nh = (slots[i].numIArgs > 0 && slots[i].iArgs) ? static_cast<int>(slots[i].iArgs[0]) : 1;
+            int nh = (slots[i].args.numIArgs > 0 && slots[i].args.iArgs) ? static_cast<int>(slots[i].args.iArgs[0]) : 1;
             if (nh <= 0) nh = 1;
             currentSection.numHeads = nh;
             currentSection.headDim = hidden / nh;
@@ -762,8 +762,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         // Determine effective K source: use past_key (input 4) if available
         bool hasPastKv = false;
         int effectiveKInputIdx = 1;
-        if (slots[i].numInputs > 4) {
-          NDArray* pastKeyArr = resolveArray(slots[i].inputSourceIndices[4]);
+        if (slots[i].wiring.numInputs > 4) {
+          NDArray* pastKeyArr = resolveArray(slots[i].wiring.inputSourceIndices[4]);
           if (pastKeyArr && pastKeyArr->rankOf() == 4) {
             auto pastKeyLen = pastKeyArr->sizeAt(pastKeyArr->rankOf() - 2);
             if (pastKeyLen > 1) {
@@ -773,8 +773,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
           }
         }
 
-        NDArray* kArr = (effectiveKInputIdx < slots[i].numInputs) ?
-            resolveArray(slots[i].inputSourceIndices[effectiveKInputIdx]) : nullptr;
+        NDArray* kArr = (effectiveKInputIdx < slots[i].wiring.numInputs) ?
+            resolveArray(slots[i].wiring.inputSourceIndices[effectiveKInputIdx]) : nullptr;
         if (kArr && kArr->rankOf() >= 2) {
           currentSection.seqK = static_cast<int>(kArr->sizeAt(kArr->rankOf() - 2));
           currentSection.attnKIsBSHD = hasPastKv ? false : currentSection.attnQIsBSHD;
@@ -882,8 +882,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     auto sectionOutputSlots = [&](const KernelSection& sec) -> std::unordered_set<int> {
       std::unordered_set<int> outputs;
       for (int s = sec.startSlot; s <= sec.endSlot; s++) {
-        for (int o = 0; o < slots[s].numOutputs; o++) {
-          outputs.insert(slots[s].outputSlotIndices[o]);
+        for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+          outputs.insert(slots[s].wiring.outputSlotIndices[o]);
         }
       }
       return outputs;
@@ -894,16 +894,16 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     auto allInputsFromProducerOrExternal = [&](const KernelSection& ewSec,
                                                 const std::unordered_set<int>& producerOutputs) -> bool {
       for (int s = ewSec.startSlot; s <= ewSec.endSlot; s++) {
-        for (int inp = 0; inp < slots[s].numInputs; inp++) {
-          int srcIdx = slots[s].inputSourceIndices[inp];
+        for (int inp = 0; inp < slots[s].wiring.numInputs; inp++) {
+          int srcIdx = slots[s].wiring.inputSourceIndices[inp];
           if (srcIdx < 0) continue;  // External input (constant/weight) — always OK
           if (producerOutputs.count(srcIdx) == 0) {
             // This input comes from a slot output NOT produced by the producer section.
             // Check if it's produced within the epilogue section itself (chain dependency).
             bool producedWithinEpilogue = false;
             for (int es = ewSec.startSlot; es < s; es++) {
-              for (int eo = 0; eo < slots[es].numOutputs; eo++) {
-                if (slots[es].outputSlotIndices[eo] == srcIdx) {
+              for (int eo = 0; eo < slots[es].wiring.numOutputs; eo++) {
+                if (slots[es].wiring.outputSlotIndices[eo] == srcIdx) {
                   producedWithinEpilogue = true;
                   break;
                 }
@@ -926,8 +926,8 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         // Check all slots outside [producerSec.start, nextSec.end]
         for (int s = startSlot; s <= endSlot; s++) {
           if (s >= producerSec.startSlot && s <= nextSec.endSlot) continue;
-          for (int inp = 0; inp < slots[s].numInputs; inp++) {
-            if (slots[s].inputSourceIndices[inp] == outSlot) {
+          for (int inp = 0; inp < slots[s].wiring.numInputs; inp++) {
+            if (slots[s].wiring.inputSourceIndices[inp] == outSlot) {
               return false;  // Consumed outside the fused range
             }
           }

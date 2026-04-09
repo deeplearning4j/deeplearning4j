@@ -443,7 +443,7 @@ std::string TritonIRBuilder::generateKernelName(NativeSlot* slots, int startSlot
   std::ostringstream ss;
   ss << "triton_fused";
   for (int i = startSlot; i <= endSlot; i++) {
-    ss << "_" << slots[i].opName;
+    ss << "_" << slots[i].ident.opName;
   }
   std::string name = ss.str();
   if (name.size() > 200) {

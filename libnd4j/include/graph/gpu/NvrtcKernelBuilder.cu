@@ -39,12 +39,12 @@ bool canJitSegment(const NativeSlot* slots, int startSlot, int endSlot) {
     const auto& slot = slots[i];
 
     // Skip frozen constants and identity ops — their outputs are pre-set
-    if (slot.frozenConstantSlot() || slot.isIdentityOp) continue;
+    if (slot.frozenConstantSlot() || slot.flags.isIdentityOp) continue;
     // Skip fused chain tails — head dispatches the entire chain
-    if (slot.isFusedChainTail) continue;
+    if (slot.fusedChain.isFusedChainTail) continue;
 
     // Use the unified op category system
-    auto cat = getOpCategoryFromName(slot.opName);
+    auto cat = getOpCategoryFromName(slot.ident.opName);
     if (!isNvrtcJittable(cat)) {
       return false;
     }
@@ -167,26 +167,26 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
   if (opName == "leakyrelu" || opName == "LeakyRelu") {
     // Alpha from tArgs[0], default 0.01
     std::string alpha = "0.01f";
-    if (slot.numTArgs > 0) {
-      alpha = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    if (slot.args.numTArgs > 0) {
+      alpha = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     }
     return "(" + val + " >= 0.0f ? " + val + " : " + val + " * " + alpha + ")";
   }
   // Scalar ops: second operand from tArgs[0]
   if (opName == "add_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return val + " + " + scalar;
   }
   if (opName == "subtract_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return val + " - " + scalar;
   }
   if (opName == "multiply_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return val + " * " + scalar;
   }
   if (opName == "divide_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " / " + scalar + ")";
   }
   // Fallback
@@ -305,9 +305,9 @@ JitKernelSource buildKernelSource(const NativeSlot* slots, int startSlot, int en
 
   for (int i = startSlot; i <= endSlot; i++) {
     const auto& slot = slots[i];
-    if (slot.frozenConstantSlot() || slot.isIdentityOp || slot.isFusedChainTail) continue;
+    if (slot.frozenConstantSlot() || slot.flags.isIdentityOp || slot.fusedChain.isFusedChainTail) continue;
 
-    auto cat = getOpCategoryFromName(slot.opName);
+    auto cat = getOpCategoryFromName(slot.ident.opName);
     if (!isNvrtcJittable(cat)) {
       result.valid = false;
       return result;
@@ -317,12 +317,12 @@ JitKernelSource buildKernelSource(const NativeSlot* slots, int startSlot, int en
     as.slotIdx = i;
     as.slotArrayIdx = i;
     as.category = cat;
-    as.opName = slot.opName;
-    as.inputCount = getInputCount(cat, slot.opName);
-    as.primaryInputSource = (slot.numInputs > 0) ? slot.inputSourceIndices[0] : -1;
-    as.secondaryInputSource = (slot.numInputs > 1 && as.inputCount >= 2) ? slot.inputSourceIndices[1] : -1;
-    as.tertiaryInputSource = (slot.numInputs > 2 && as.inputCount >= 3) ? slot.inputSourceIndices[2] : -1;
-    as.outputSlotIdx = (slot.numOutputs > 0) ? slot.outputSlotIndices[0] : -1;
+    as.opName = slot.ident.opName;
+    as.inputCount = getInputCount(cat, slot.ident.opName);
+    as.primaryInputSource = (slot.wiring.numInputs > 0) ? slot.wiring.inputSourceIndices[0] : -1;
+    as.secondaryInputSource = (slot.wiring.numInputs > 1 && as.inputCount >= 2) ? slot.wiring.inputSourceIndices[1] : -1;
+    as.tertiaryInputSource = (slot.wiring.numInputs > 2 && as.inputCount >= 3) ? slot.wiring.inputSourceIndices[2] : -1;
+    as.outputSlotIdx = (slot.wiring.numOutputs > 0) ? slot.wiring.outputSlotIndices[0] : -1;
     activeSlots.push_back(as);
   }
 

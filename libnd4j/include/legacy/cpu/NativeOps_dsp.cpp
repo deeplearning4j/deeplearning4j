@@ -673,7 +673,7 @@ const char* getPlanSlotOpName(sd::Pointer planHandle, int slotIdx) {
   if (planHandle == nullptr) return "";
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   if (slotIdx < 0 || slotIdx >= plan->getNumSlots()) return "";
-  return plan->getSlots()[slotIdx].opName.c_str();
+  return plan->getSlots()[slotIdx].ident.opName.c_str();
 }
 
 int getPlanSlotFlags(sd::Pointer planHandle, int slotIdx) {
@@ -682,16 +682,16 @@ int getPlanSlotFlags(sd::Pointer planHandle, int slotIdx) {
   if (slotIdx < 0 || slotIdx >= plan->getNumSlots()) return -1;
   auto& slot = plan->getSlots()[slotIdx];
   int flags = 0;
-  if (slot.isViewCapableOp)               flags |= (1 << 0);
-  if (slot.isDataDependent)               flags |= (1 << 1);
-  if (slot.outputShapeDependsOnInputValues) flags |= (1 << 2);
-  if (slot.isIdentityOp)                  flags |= (1 << 3);
-  if (slot.inPlaceFused)                  flags |= (1 << 4);
-  if (slot.isFusedChainHead)              flags |= (1 << 5);
-  if (slot.isFusedChainTail)              flags |= (1 << 6);
-  if (slot.needsZeroedOutput)             flags |= (1 << 7);
-  if (slot.needsIntLongSync)              flags |= (1 << 8);
-  if (slot.shapeStatic)                   flags |= (1 << 9);
+  if (slot.flags.isViewCapableOp)               flags |= (1 << 0);
+  if (slot.flags.isDataDependent)               flags |= (1 << 1);
+  if (slot.flags.outputShapeDependsOnInputValues) flags |= (1 << 2);
+  if (slot.flags.isIdentityOp)                  flags |= (1 << 3);
+  if (slot.flags.inPlaceFused)                  flags |= (1 << 4);
+  if (slot.fusedChain.isFusedChainHead)              flags |= (1 << 5);
+  if (slot.fusedChain.isFusedChainTail)              flags |= (1 << 6);
+  if (slot.flags.needsZeroedOutput)             flags |= (1 << 7);
+  if (slot.flags.needsIntLongSync)              flags |= (1 << 8);
+  if (slot.shapeCache.shapeStatic)                   flags |= (1 << 9);
   if (slot.state_ >= NativeSlot::SlotState::FROZEN_CONSTANT) flags |= (1 << 10);
   return flags;
 }
@@ -702,8 +702,8 @@ int getPlanSlotIOCounts(sd::Pointer planHandle, int slotIdx,
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   if (slotIdx < 0 || slotIdx >= plan->getNumSlots()) return -1;
   auto& slot = plan->getSlots()[slotIdx];
-  if (numInputsOut) *numInputsOut = slot.numInputs;
-  if (numOutputsOut) *numOutputsOut = slot.numOutputs;
+  if (numInputsOut) *numInputsOut = slot.wiring.numInputs;
+  if (numOutputsOut) *numOutputsOut = slot.wiring.numOutputs;
   return 0;
 }
 
@@ -1125,7 +1125,7 @@ const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
         std::unordered_map<std::string, int> opCounts;
         if (slots != nullptr) {
             for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-                opCounts[slots[s].opName]++;
+                opCounts[slots[s].ident.opName]++;
             }
         }
         if (i > 0) json += ",";

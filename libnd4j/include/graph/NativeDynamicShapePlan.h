@@ -213,88 +213,172 @@ struct LoopRegion {
 };
 
 /**
+ * Slot sub-structs — extracted from the monolithic NativeSlot to reduce
+ * cognitive load and make the header navigable.
+ *
+ * Access pattern after refactor:
+ *   slot.ident.opHash      (was slot.opHash)
+ *   slot.wiring.numInputs  (was slot.numInputs)
+ *   slot.args.iArgs        (was slot.iArgs)
+ *   slot.flags.isDataDependent  (was slot.isDataDependent)
+ *   slot.fusedChain.isFusedChainHead  (was slot.isFusedChainHead)
+ *   slot.cf.controlFlowType  (was slot.controlFlowType)
+ *   slot.legacy.legacyOpType (was slot.legacyOpType)
+ *   slot.shapeCache.cachedShapeKey (was slot.cachedShapeKey)
+ */
+
+static constexpr int MAX_FUSED_CHAIN = 8;  // Max ops in a fused elementwise chain
+
+/** Op identification. */
+struct SlotIdent {
+  LongType opHash = 0;
+  sd::ops::DeclarableOp* op = nullptr;  // Resolved at compile time (not owned)
+  std::string opName;                    // For diagnostics
+};
+
+/** Input/output wiring. */
+struct SlotWiring {
+  int numInputs = 0;
+  int* inputSourceIndices = nullptr;     // >=0: prior slot, <0: external (-(idx+1))
+  int8_t* inputSourceTypes = nullptr;    // NativeSourceType values
+  int numOutputs = 0;
+  int* outputSlotIndices = nullptr;      // Flat slot indices for each output
+
+  ~SlotWiring() {
+    delete[] inputSourceIndices;
+    delete[] inputSourceTypes;
+    delete[] outputSlotIndices;
+  }
+  SlotWiring() = default;
+  SlotWiring(SlotWiring&& o) noexcept
+      : numInputs(o.numInputs), inputSourceIndices(o.inputSourceIndices),
+        inputSourceTypes(o.inputSourceTypes), numOutputs(o.numOutputs),
+        outputSlotIndices(o.outputSlotIndices) {
+    o.numInputs = 0; o.inputSourceIndices = nullptr; o.inputSourceTypes = nullptr;
+    o.numOutputs = 0; o.outputSlotIndices = nullptr;
+  }
+  SlotWiring& operator=(SlotWiring&& o) noexcept {
+    if (this != &o) {
+      delete[] inputSourceIndices; delete[] inputSourceTypes; delete[] outputSlotIndices;
+      numInputs = o.numInputs; inputSourceIndices = o.inputSourceIndices;
+      inputSourceTypes = o.inputSourceTypes; numOutputs = o.numOutputs;
+      outputSlotIndices = o.outputSlotIndices;
+      o.numInputs = 0; o.inputSourceIndices = nullptr; o.inputSourceTypes = nullptr;
+      o.numOutputs = 0; o.outputSlotIndices = nullptr;
+    }
+    return *this;
+  }
+  SlotWiring(const SlotWiring&) = delete;
+  SlotWiring& operator=(const SlotWiring&) = delete;
+};
+
+/** Frozen op arguments. */
+struct SlotArgs {
+  LongType* iArgs = nullptr;  int numIArgs = 0;
+  double* tArgs = nullptr;    int numTArgs = 0;
+  bool* bArgs = nullptr;      int numBArgs = 0;
+  DataType* dArgs = nullptr;  int numDArgs = 0;
+  std::string* sArgs = nullptr; int numSArgs = 0;
+
+  ~SlotArgs() {
+    delete[] iArgs; delete[] tArgs; delete[] bArgs; delete[] dArgs; delete[] sArgs;
+  }
+  SlotArgs() = default;
+  SlotArgs(SlotArgs&& o) noexcept
+      : iArgs(o.iArgs), numIArgs(o.numIArgs), tArgs(o.tArgs), numTArgs(o.numTArgs),
+        bArgs(o.bArgs), numBArgs(o.numBArgs), dArgs(o.dArgs), numDArgs(o.numDArgs),
+        sArgs(o.sArgs), numSArgs(o.numSArgs) {
+    o.iArgs = nullptr; o.numIArgs = 0; o.tArgs = nullptr; o.numTArgs = 0;
+    o.bArgs = nullptr; o.numBArgs = 0; o.dArgs = nullptr; o.numDArgs = 0;
+    o.sArgs = nullptr; o.numSArgs = 0;
+  }
+  SlotArgs& operator=(SlotArgs&& o) noexcept {
+    if (this != &o) {
+      delete[] iArgs; delete[] tArgs; delete[] bArgs; delete[] dArgs; delete[] sArgs;
+      iArgs = o.iArgs; numIArgs = o.numIArgs; tArgs = o.tArgs; numTArgs = o.numTArgs;
+      bArgs = o.bArgs; numBArgs = o.numBArgs; dArgs = o.dArgs; numDArgs = o.numDArgs;
+      sArgs = o.sArgs; numSArgs = o.numSArgs;
+      o.iArgs = nullptr; o.numIArgs = 0; o.tArgs = nullptr; o.numTArgs = 0;
+      o.bArgs = nullptr; o.numBArgs = 0; o.dArgs = nullptr; o.numDArgs = 0;
+      o.sArgs = nullptr; o.numSArgs = 0;
+    }
+    return *this;
+  }
+  SlotArgs(const SlotArgs&) = delete;
+  SlotArgs& operator=(const SlotArgs&) = delete;
+};
+
+/** Execution flags and fusion metadata. */
+struct SlotFlags {
+  bool needsZeroedOutput = true;
+  bool isDataDependent = false;
+  bool outputShapeDependsOnInputValues = false;
+  bool needsIntLongSync = false;
+  bool isCustomOp = true;
+  bool isIdentityOp = false;
+  bool isViewCapableOp = false;
+  bool inPlaceFused = false;
+  int inPlaceFusedInputIdx = -1;
+  // cublasLt epilogue fusion
+  int ltEpilogueType = 0;            // 0=none, 1=bias, 2=bias+relu, 3=bias+gelu
+  int ltEpilogueBiasSourceIdx = -1;
+  // Structural iArg count
+  int structuralIArgCount = -1;       // -1 = all iArgs are structural
+};
+
+/** Fused elementwise chain metadata. */
+struct FusedChain {
+  bool isFusedChainHead = false;
+  int fusedChainLength = 0;
+  int fusedChainOpCodes[MAX_FUSED_CHAIN] = {};
+  int fusedChainSlots[MAX_FUSED_CHAIN] = {};
+  int fusedChainSecondaryInputSources[MAX_FUSED_CHAIN] = {};
+  bool isFusedChainTail = false;
+};
+
+/** Control flow support. */
+struct ControlFlowInfo {
+  ControlFlowType controlFlowType = CF_NONE;
+  int loopBackTarget = -1;
+  int loopRegionIndex = -1;
+};
+
+/** Legacy op support for ops not registered in OpRegistrator. */
+struct LegacyOpInfo {
+  int legacyOpType = 0;   // 0=not legacy, 1=TransformSame, 2=TransformStrict, ...
+  int legacyOpNum = -1;
+};
+
+/** Per-slot shape cache and static analysis. */
+struct ShapeCache {
+  LongType cachedShapeKey = 0;
+  std::vector<const LongType*> cachedOutputShapes;   // Cached shape infos (not owned)
+  bool shapeStatic = false;  // True if output shape never changes between executions
+};
+
+/**
  * Per-op descriptor with pre-compiled wiring for the native plan executor.
  * Mirrors DynamicShapeSlot.java but uses C++ types.
  *
  * Index conventions for inputSourceIndices:
  *   >= 0: index into the flat outputSlots array (from a prior op's output)
  *   <  0: index into external arrays: -(index + 1) into the external input array
+ *
+ * Sub-structs extracted to reduce cognitive load (was 50+ flat fields).
  */
 struct NativeSlot {
-  // Op identification
-  LongType opHash;                         // Op hash for lookup
-  sd::ops::DeclarableOp* op;       // Resolved at compile time (not owned)
-  std::string opName;                      // For diagnostics
+  // ── Sub-structs (extracted for organization) ──────────────────────
+  SlotIdent ident;
+  SlotWiring wiring;
+  SlotArgs args;
+  SlotFlags flags;
+  FusedChain fusedChain;
+  ControlFlowInfo cf;
+  LegacyOpInfo legacy;
+  ShapeCache shapeCache;
 
-  // Input wiring
-  int numInputs;
-  int* inputSourceIndices;                 // >=0: prior slot, <0: external (-(idx+1))
-  int8_t* inputSourceTypes;               // NativeSourceType values
-
-  // Output wiring
-  int numOutputs;
-  int* outputSlotIndices;                  // Flat slot indices for each output
-
-  // Frozen op arguments
-  LongType* iArgs;    int numIArgs;
-  double* tArgs;      int numTArgs;
-  bool* bArgs;        int numBArgs;
-  DataType* dArgs;    int numDArgs;
-  std::string* sArgs; int numSArgs;
-
-  // Execution flags
-  bool needsZeroedOutput;
-  bool isDataDependent;
-  bool outputShapeDependsOnInputValues;
-  bool needsIntLongSync;
-  bool isCustomOp;
-  bool isIdentityOp;                       // Identity: output = input, skip execution
-  bool isViewCapableOp;                    // View-capable: reshape/expand_dims/squeeze — output can share input buffer
-  bool inPlaceFused;                       // In-place fused: output reuses input buffer (set by FusionPass)
-  int inPlaceFusedInputIdx;                // Which input index to reuse as output (-1 = not fused)
-
-  // cublasLt epilogue fusion: when MATMUL_BIAS_ACTIVATION is detected,
-  // the matmul slot stores epilogue info so MmulHelper can fuse bias+activation.
-  int ltEpilogueType;                      // 0=none, 1=bias, 2=bias+relu, 3=bias+gelu
-  int ltEpilogueBiasSourceIdx;             // inputSourceIndices-style index for bias array (-1 = none)
-
-  // Structural iArg count: first N iArgs are structural (masks, mode flags, axis),
-  // rest are data that could come from input tensors.
-  // -1 = all iArgs are structural (default for most ops).
-  // Used by plan compiler to cap iArgs when data comes from input tensors.
-  int structuralIArgCount;
-
-  // Fused elementwise chain: head slot dispatches single fused kernel for entire chain
-  bool isFusedChainHead;                     // Head — dispatches fused kernel
-  int fusedChainLength;                      // Chain length (including head)
-  int fusedChainOpCodes[8] = {};              // FusedElemOp codes for each op in chain
-  int fusedChainSlots[8] = {};               // Slot indices of all chain members
-  int fusedChainSecondaryInputSources[8] = {};  // inputSourceIndices for binary ops' 2nd input (-1 if unary)
-  bool isFusedChainTail;                     // Tail — skip execution entirely (head already computed result)
-
-  int targetDeviceId;                      // -1 = auto
-
-  // Control flow support
-  ControlFlowType controlFlowType;         // CF_NONE for regular ops
-  int loopBackTarget;                      // For NextIteration: step index of Merge to jump back to (-1 otherwise)
-  int loopRegionIndex;                     // Index into loopRegions_ (-1 if not in a loop)
-
-  // Legacy op support for ops not registered in OpRegistrator
-  // (exp, log, abs, neg, sqrt, sin, cos, etc.)
-  // legacyOpType: 0=not legacy, 1=TransformSame, 2=TransformStrict,
-  //               3=TransformFloat, 4=TransformBool, 5=Scalar, 6=PairwiseTransform
-  int legacyOpType;
-  int legacyOpNum;
-
-  // Per-slot shape cache
-  LongType cachedShapeKey;
-  std::vector<const LongType*> cachedOutputShapes;   // Cached shape infos (not owned)
-
-  // Shape static analysis: true if output shape never changes between executions.
-  // Determined at plan construction time by analyzing input dependencies.
-  // Shape-static slots have their caches preserved across clearShapeCaches() calls.
-  // This is an inherent property, NOT a lifecycle state.
-  bool shapeStatic;
+  // ── Top-level fields (not grouped) ────────────────────────────────
+  int targetDeviceId = -1;             // -1 = auto
 
   /**
    * Slot lifecycle state machine. Replaces 3 independent booleans
@@ -320,51 +404,22 @@ struct NativeSlot {
     FROZEN,           // Shapes frozen, context reuse enabled
     FROZEN_CONSTANT,  // Output never changes, skip execution entirely
   };
-  SlotState state_;
+  SlotState state_ = SlotState::UNINITIALIZED;
 
-  NativeSlot()
-      : opHash(0), op(nullptr), numInputs(0), inputSourceIndices(nullptr),
-        inputSourceTypes(nullptr), numOutputs(0), outputSlotIndices(nullptr),
-        iArgs(nullptr), numIArgs(0), tArgs(nullptr), numTArgs(0),
-        bArgs(nullptr), numBArgs(0), dArgs(nullptr), numDArgs(0),
-        sArgs(nullptr), numSArgs(0),
-        needsZeroedOutput(true), isDataDependent(false),
-        outputShapeDependsOnInputValues(false), needsIntLongSync(false),
-        isCustomOp(true), isIdentityOp(false), isViewCapableOp(false),
-        inPlaceFused(false), inPlaceFusedInputIdx(-1),
-        ltEpilogueType(0), ltEpilogueBiasSourceIdx(-1),
-        structuralIArgCount(-1),
-        isFusedChainHead(false), fusedChainLength(0), isFusedChainTail(false),
-        targetDeviceId(-1),
-        controlFlowType(CF_NONE), loopBackTarget(-1), loopRegionIndex(-1),
-        legacyOpType(0), legacyOpNum(-1),
-        cachedShapeKey(0), shapeStatic(false),
-        state_(SlotState::UNINITIALIZED) {}
+  NativeSlot() = default;
 
   // Convenience accessors that map SlotState to the old boolean semantics.
-  // These allow gradual migration — callers can use these until fully converted.
   bool shapeCacheValid() const { return state_ >= SlotState::SHAPE_CACHED; }
   bool frozenContextReady() const { return state_ >= SlotState::FROZEN; }
   bool frozenConstantSlot() const { return state_ == SlotState::FROZEN_CONSTANT; }
 
-  ~NativeSlot() {
-    delete[] inputSourceIndices;
-    delete[] inputSourceTypes;
-    delete[] outputSlotIndices;
-    delete[] iArgs;
-    delete[] tArgs;
-    delete[] bArgs;
-    delete[] dArgs;
-    delete[] sArgs;
-  }
+  ~NativeSlot() = default;
 
-  // No copy
+  // No copy, no move (sub-structs manage their own memory)
   NativeSlot(const NativeSlot&) = delete;
   NativeSlot& operator=(const NativeSlot&) = delete;
-
-  // Move OK
-  NativeSlot(NativeSlot&& other) noexcept;
-  NativeSlot& operator=(NativeSlot&& other) noexcept;
+  NativeSlot(NativeSlot&&) = delete;
+  NativeSlot& operator=(NativeSlot&&) = delete;
 };
 
 /**

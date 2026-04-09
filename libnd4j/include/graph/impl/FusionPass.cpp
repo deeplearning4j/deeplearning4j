@@ -61,13 +61,13 @@ static std::string getOpName(sd::LongType opHash) {
  * Resolve op name directly from slot metadata.
  */
 static std::string getOpName(const NativeSlot& slot) {
-    if (!slot.opName.empty()) {
-        std::string name = slot.opName;
+    if (!slot.ident.opName.empty()) {
+        std::string name = slot.ident.opName;
         std::transform(name.begin(), name.end(), name.begin(),
                        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return name;
     }
-    return getOpName(slot.opHash);
+    return getOpName(slot.ident.opHash);
 }
 
 /**
@@ -134,10 +134,10 @@ static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
     if (bIsTernary) {
         // Ternary op (where/select): needs exactly 3 inputs
         // At least one input must come from A's output
-        if (slotB.numInputs != 3) return false;
+        if (slotB.wiring.numInputs != 3) return false;
         bool foundAOutput = false;
-        for (int i = 0; i < slotB.numInputs; i++) {
-            if (slotB.inputSourceIndices[i] == slotAOutputIdx) {
+        for (int i = 0; i < slotB.wiring.numInputs; i++) {
+            if (slotB.wiring.inputSourceIndices[i] == slotAOutputIdx) {
                 foundAOutput = true;
                 break;
             }
@@ -145,13 +145,13 @@ static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
         return foundAOutput;
     } else if (bIsBinary) {
         // Binary op: needs exactly 2 inputs
-        if (slotB.numInputs != 2) return false;
+        if (slotB.wiring.numInputs != 2) return false;
 
         // One input must come from A's output, the other must be external
         bool foundAOutput = false;
         bool foundExternal = false;
-        for (int i = 0; i < slotB.numInputs; i++) {
-            int srcIdx = slotB.inputSourceIndices[i];
+        for (int i = 0; i < slotB.wiring.numInputs; i++) {
+            int srcIdx = slotB.wiring.inputSourceIndices[i];
             if (srcIdx == slotAOutputIdx) {
                 foundAOutput = true;
             } else if (srcIdx < 0) {
@@ -162,8 +162,8 @@ static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
         return foundAOutput && foundExternal;
     } else {
         // Unary op: needs exactly 1 input from A's output
-        if (slotB.numInputs != 1) return false;
-        return slotB.inputSourceIndices[0] == slotAOutputIdx;
+        if (slotB.wiring.numInputs != 1) return false;
+        return slotB.wiring.inputSourceIndices[0] == slotAOutputIdx;
     }
 }
 
@@ -175,8 +175,8 @@ static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
 static std::unordered_map<int, int> buildConsumerCounts(const NativeSlot* slots, int numSlots) {
     std::unordered_map<int, int> counts;
     for (int s = 0; s < numSlots; s++) {
-        for (int i = 0; i < slots[s].numInputs; i++) {
-            int srcIdx = slots[s].inputSourceIndices[i];
+        for (int i = 0; i < slots[s].wiring.numInputs; i++) {
+            int srcIdx = slots[s].wiring.inputSourceIndices[i];
             if (srcIdx >= 0) {  // Only count internal slot references, not external inputs
                 counts[srcIdx]++;
             }
@@ -192,7 +192,7 @@ static std::unordered_map<int, int> buildConsumerCounts(const NativeSlot* slots,
 static bool isOnlyConsumedOnce(const std::unordered_map<int, int>& consumerCounts,
                                 const NativeSlot* slots, int numSlots, int slotIdx) {
     if (slotIdx < 0 || slotIdx >= numSlots) return false;
-    int outputSlotIdx = slots[slotIdx].outputSlotIndices[0];
+    int outputSlotIdx = slots[slotIdx].wiring.outputSlotIndices[0];
     auto it = consumerCounts.find(outputSlotIdx);
     return it != consumerCounts.end() && it->second == 1;
 }
@@ -219,26 +219,26 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             if (fused[i]) continue;
             std::string nameI = getOpName(slots[i]);
             if (nameI != "cast") continue;
-            if (slots[i].numOutputs != 1 || slots[i].numInputs != 1) continue;
-            if (slots[i].numIArgs < 1) continue;
+            if (slots[i].wiring.numOutputs != 1 || slots[i].wiring.numInputs != 1) continue;
+            if (slots[i].args.numIArgs < 1) continue;
 
-            int castTypeA = static_cast<int>(slots[i].iArgs[0]);  // target dtype of first cast
-            int outputIdx = slots[i].outputSlotIndices[0];
+            int castTypeA = static_cast<int>(slots[i].args.iArgs[0]);  // target dtype of first cast
+            int outputIdx = slots[i].wiring.outputSlotIndices[0];
 
             // Find the consumer of this cast's output
             for (int j = i + 1; j < numSlots; j++) {
                 if (fused[j]) continue;
                 std::string nameJ = getOpName(slots[j]);
                 if (nameJ != "cast") continue;
-                if (slots[j].numInputs != 1 || slots[j].numOutputs != 1) continue;
-                if (slots[j].numIArgs < 1) continue;
-                if (slots[j].inputSourceIndices[0] != outputIdx) continue;
+                if (slots[j].wiring.numInputs != 1 || slots[j].wiring.numOutputs != 1) continue;
+                if (slots[j].args.numIArgs < 1) continue;
+                if (slots[j].wiring.inputSourceIndices[0] != outputIdx) continue;
 
                 // Verify this is actually a reverse cast: first cast converts A→B (castTypeA = B),
                 // second cast must convert back B→A. The second cast's target type (iArgs[0])
                 // must differ from the first cast's target type AND must match the first cast's
                 // input dtype. Also the first cast must be only consumed by this second cast.
-                int castTypeB = static_cast<int>(slots[j].iArgs[0]);
+                int castTypeB = static_cast<int>(slots[j].args.iArgs[0]);
                 if (castTypeA == castTypeB) continue;  // same target type = not a reverse cast
 
                 // Only eliminate cast pairs between same-category types.
@@ -292,15 +292,15 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             std::string nameI = getOpName(slots[i]);
             if (nameI != "cast") continue;
             totalCasts++;
-            if (slots[i].numOutputs != 1 || slots[i].numInputs != 1) { castsMultiIO++; continue; }
-            if (slots[i].numIArgs < 1) { castsNoIArgs++; continue; }
+            if (slots[i].wiring.numOutputs != 1 || slots[i].wiring.numInputs != 1) { castsMultiIO++; continue; }
+            if (slots[i].args.numIArgs < 1) { castsNoIArgs++; continue; }
 
-            int targetType = static_cast<int>(slots[i].iArgs[0]);
+            int targetType = static_cast<int>(slots[i].args.iArgs[0]);
             // Only sink FP16→FP32 casts (target must be FLOAT32=5)
             if (targetType != static_cast<int>(FLOAT32)) continue;
             castsFp32Target++;
 
-            int outputIdx = slots[i].outputSlotIndices[0];
+            int outputIdx = slots[i].wiring.outputSlotIndices[0];
 
             // Check ALL consumers of this cast's output — every one must be a matmul
             bool allConsumersAreMatmul = true;
@@ -308,8 +308,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             for (int j = i + 1; j < numSlots; j++) {
                 if (fused[j]) continue;
                 bool consumesOutput = false;
-                for (int k = 0; k < slots[j].numInputs; k++) {
-                    if (slots[j].inputSourceIndices[k] == outputIdx) {
+                for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+                    if (slots[j].wiring.inputSourceIndices[k] == outputIdx) {
                         consumesOutput = true;
                         break;
                     }
@@ -348,7 +348,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isElementwiseSlot(slots[i])) continue;
-        if (slots[i].numOutputs != 1) continue;  // Only single-output ops
+        if (slots[i].wiring.numOutputs != 1) continue;  // Only single-output ops
 
         // Try to extend a chain starting at slot i
         std::vector<int> chain;
@@ -356,14 +356,14 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         int current = i;
 
         while (chain.size() < static_cast<size_t>(MAX_CHAIN_LENGTH)) {
-            int outputIdx = slots[current].outputSlotIndices[0];
+            int outputIdx = slots[current].wiring.outputSlotIndices[0];
 
             // Find the next slot that consumes this output
             int nextSlot = -1;
             for (int j = current + 1; j < numSlots; j++) {
                 if (fused[j]) continue;
-                for (int k = 0; k < slots[j].numInputs; k++) {
-                    if (slots[j].inputSourceIndices[k] == outputIdx) {
+                for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+                    if (slots[j].wiring.inputSourceIndices[k] == outputIdx) {
                         nextSlot = j;
                         break;
                     }
@@ -376,7 +376,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             // Check fusibility
             if (!canChainAfter(slots[current], slots[nextSlot], outputIdx)) break;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, current)) break;
-            if (slots[nextSlot].numOutputs != 1) break;
+            if (slots[nextSlot].wiring.numOutputs != 1) break;
 
             chain.push_back(nextSlot);
             current = nextSlot;
@@ -406,16 +406,16 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
 
         std::string opName = getOpName(slots[i]);
         if (opName != "add") continue;
-        if (slots[i].numOutputs != 1) continue;
+        if (slots[i].wiring.numOutputs != 1) continue;
 
-        int outputIdx = slots[i].outputSlotIndices[0];
+        int outputIdx = slots[i].wiring.outputSlotIndices[0];
 
         // Find activation consuming this add's output
         for (int j = i + 1; j < numSlots; j++) {
             if (fused[j]) continue;
             if (!slotHasTrait(slots[j], sd::ops::OP_TRAIT_ACTIVATION)) continue;
-            if (slots[j].numInputs != 1) continue;
-            if (slots[j].inputSourceIndices[0] != outputIdx) continue;
+            if (slots[j].wiring.numInputs != 1) continue;
+            if (slots[j].wiring.inputSourceIndices[0] != outputIdx) continue;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
 
             FusionCandidate candidate;
@@ -442,16 +442,16 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             && opName != "awq_matmul" && opName != "column_parallel_linear"
             && opName != "row_parallel_linear" && opName != "multi_lora_matmul"
             && opName != "fused_gemm_swiglu") continue;
-        if (slots[i].numOutputs != 1) continue;
+        if (slots[i].wiring.numOutputs != 1) continue;
 
-        int matmulOutputIdx = slots[i].outputSlotIndices[0];
+        int matmulOutputIdx = slots[i].wiring.outputSlotIndices[0];
 
         // Find add consuming matmul's output
         for (int j = i + 1; j < numSlots; j++) {
             if (fused[j]) continue;
             std::string addName = getOpName(slots[j]);
             if (addName != "add") continue;
-            if (slots[j].numInputs != 2) continue;
+            if (slots[j].wiring.numInputs != 2) continue;
 
             // One input must be matmul output, other must be a 1D bias vector.
             // 2D residuals (e.g., transformer x + matmul(x)) are NOT bias and
@@ -461,16 +461,16 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             // externalInputRanks observed during slot-by-slot warmup.
             bool foundMatmulOutput = false;
             int externalSrcIdx = INT_MIN;  // raw inputSourceIndices value (negative)
-            for (int k = 0; k < slots[j].numInputs; k++) {
-                if (slots[j].inputSourceIndices[k] == matmulOutputIdx) {
+            for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+                if (slots[j].wiring.inputSourceIndices[k] == matmulOutputIdx) {
                     foundMatmulOutput = true;
-                } else if (slots[j].inputSourceIndices[k] < 0) {
-                    externalSrcIdx = slots[j].inputSourceIndices[k];
+                } else if (slots[j].wiring.inputSourceIndices[k] < 0) {
+                    externalSrcIdx = slots[j].wiring.inputSourceIndices[k];
                 }
             }
             if (!foundMatmulOutput || externalSrcIdx == INT_MIN) continue;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
-            if (slots[j].numOutputs != 1) continue;
+            if (slots[j].wiring.numOutputs != 1) continue;
 
             // Convert source index to external input array index: srcIdx = -(extIdx+1)
             int extIdx = -(externalSrcIdx + 1);
@@ -480,13 +480,13 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
 
             // Found matmul → add. Now check for optional activation.
             std::vector<int> chain = {i, j};
-            int addOutputIdx = slots[j].outputSlotIndices[0];
+            int addOutputIdx = slots[j].wiring.outputSlotIndices[0];
 
             for (int a = j + 1; a < numSlots; a++) {
                 if (fused[a]) continue;
                 if (!slotHasTrait(slots[a], sd::ops::OP_TRAIT_ACTIVATION)) continue;
-                if (slots[a].numInputs != 1) continue;
-                if (slots[a].inputSourceIndices[0] != addOutputIdx) continue;
+                if (slots[a].wiring.numInputs != 1) continue;
+                if (slots[a].wiring.inputSourceIndices[0] != addOutputIdx) continue;
                 if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, j)) continue;
 
                 chain.push_back(a);
@@ -513,9 +513,9 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isReductionSlot(slots[i])) continue;
-        if (slots[i].numOutputs != 1) continue;
+        if (slots[i].wiring.numOutputs != 1) continue;
 
-        int outputIdx = slots[i].outputSlotIndices[0];
+        int outputIdx = slots[i].wiring.outputSlotIndices[0];
         std::vector<int> chain;
         chain.push_back(i);
 
@@ -523,19 +523,19 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         for (int j = i + 1; j < numSlots && chain.size() < static_cast<size_t>(MAX_CHAIN_LENGTH); j++) {
             if (fused[j]) continue;
             if (!isElementwiseSlot(slots[j])) break;
-            if (slots[j].numInputs < 1) break;
+            if (slots[j].wiring.numInputs < 1) break;
 
             bool consumesPrev = false;
-            int prevOutputIdx = slots[chain.back()].outputSlotIndices[0];
-            for (int k = 0; k < slots[j].numInputs; k++) {
-                if (slots[j].inputSourceIndices[k] == prevOutputIdx) {
+            int prevOutputIdx = slots[chain.back()].wiring.outputSlotIndices[0];
+            for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+                if (slots[j].wiring.inputSourceIndices[k] == prevOutputIdx) {
                     consumesPrev = true;
                     break;
                 }
             }
             if (!consumesPrev) break;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, static_cast<int>(chain.back()))) break;
-            if (slots[j].numOutputs != 1) break;
+            if (slots[j].wiring.numOutputs != 1) break;
 
             chain.push_back(j);
         }
@@ -556,7 +556,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isNormalizationSlot(slots[i])) continue;
-        if (slots[i].numOutputs != 1) continue;
+        if (slots[i].wiring.numOutputs != 1) continue;
 
         std::vector<int> chain;
         chain.push_back(i);
@@ -564,19 +564,19 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         for (int j = i + 1; j < numSlots && chain.size() < static_cast<size_t>(MAX_CHAIN_LENGTH); j++) {
             if (fused[j]) continue;
             if (!isElementwiseSlot(slots[j])) break;
-            if (slots[j].numInputs < 1) break;
+            if (slots[j].wiring.numInputs < 1) break;
 
-            int prevOutputIdx = slots[chain.back()].outputSlotIndices[0];
+            int prevOutputIdx = slots[chain.back()].wiring.outputSlotIndices[0];
             bool consumesPrev = false;
-            for (int k = 0; k < slots[j].numInputs; k++) {
-                if (slots[j].inputSourceIndices[k] == prevOutputIdx) {
+            for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+                if (slots[j].wiring.inputSourceIndices[k] == prevOutputIdx) {
                     consumesPrev = true;
                     break;
                 }
             }
             if (!consumesPrev) break;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, static_cast<int>(chain.back()))) break;
-            if (slots[j].numOutputs != 1) break;
+            if (slots[j].wiring.numOutputs != 1) break;
 
             chain.push_back(j);
         }
@@ -598,49 +598,49 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         if (fused[i]) continue;
         std::string op0 = getOpName(slots[i]);
         if (op0 != "reduce_max") continue;
-        if (slots[i].numOutputs != 1) continue;
+        if (slots[i].wiring.numOutputs != 1) continue;
 
-        int out0 = slots[i].outputSlotIndices[0];
+        int out0 = slots[i].wiring.outputSlotIndices[0];
         // Find sub consuming reduce_max output
         int subSlot = -1;
         for (int j = i + 1; j < numSlots; j++) {
             if (fused[j]) continue;
             std::string opJ = getOpName(slots[j]);
             if (opJ != "subtract") continue;
-            for (int k = 0; k < slots[j].numInputs; k++) {
-                if (slots[j].inputSourceIndices[k] == out0) { subSlot = j; break; }
+            for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+                if (slots[j].wiring.inputSourceIndices[k] == out0) { subSlot = j; break; }
             }
             if (subSlot >= 0) break;
         }
         if (subSlot < 0) continue;
 
-        int outSub = slots[subSlot].outputSlotIndices[0];
+        int outSub = slots[subSlot].wiring.outputSlotIndices[0];
         // Find exp consuming sub output
         int expSlot = -1;
         for (int j = subSlot + 1; j < numSlots; j++) {
             if (fused[j]) continue;
             std::string opJ = getOpName(slots[j]);
             if (opJ != "exp") continue;
-            if (slots[j].numInputs >= 1 && slots[j].inputSourceIndices[0] == outSub) {
+            if (slots[j].wiring.numInputs >= 1 && slots[j].wiring.inputSourceIndices[0] == outSub) {
                 expSlot = j; break;
             }
         }
         if (expSlot < 0) continue;
 
-        int outExp = slots[expSlot].outputSlotIndices[0];
+        int outExp = slots[expSlot].wiring.outputSlotIndices[0];
         // Find reduce_sum consuming exp output
         int sumSlot = -1;
         for (int j = expSlot + 1; j < numSlots; j++) {
             if (fused[j]) continue;
             std::string opJ = getOpName(slots[j]);
             if (opJ != "reduce_sum") continue;
-            if (slots[j].numInputs >= 1 && slots[j].inputSourceIndices[0] == outExp) {
+            if (slots[j].wiring.numInputs >= 1 && slots[j].wiring.inputSourceIndices[0] == outExp) {
                 sumSlot = j; break;
             }
         }
         if (sumSlot < 0) continue;
 
-        int outSum = slots[sumSlot].outputSlotIndices[0];
+        int outSum = slots[sumSlot].wiring.outputSlotIndices[0];
         // Find div consuming exp and sum outputs
         int divSlot = -1;
         for (int j = sumSlot + 1; j < numSlots; j++) {
@@ -648,9 +648,9 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             std::string opJ = getOpName(slots[j]);
             if (opJ != "divide") continue;
             bool hasExp = false, hasSum = false;
-            for (int k = 0; k < slots[j].numInputs; k++) {
-                if (slots[j].inputSourceIndices[k] == outExp) hasExp = true;
-                if (slots[j].inputSourceIndices[k] == outSum) hasSum = true;
+            for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+                if (slots[j].wiring.inputSourceIndices[k] == outExp) hasExp = true;
+                if (slots[j].wiring.inputSourceIndices[k] == outSum) hasSum = true;
             }
             if (hasExp && hasSum) { divSlot = j; break; }
         }
@@ -707,19 +707,19 @@ int FusionPass::applyFusions(
 
                     // Find which input comes from the previous op in the chain
                     int prevSlotIdx = fusion.slotIndices[i - 1];
-                    int prevOutputSlot = slots[prevSlotIdx].outputSlotIndices[0];
+                    int prevOutputSlot = slots[prevSlotIdx].wiring.outputSlotIndices[0];
 
                     int fusedInputIdx = -1;
-                    for (int k = 0; k < slot.numInputs; k++) {
-                        if (slot.inputSourceIndices[k] == prevOutputSlot) {
+                    for (int k = 0; k < slot.wiring.numInputs; k++) {
+                        if (slot.wiring.inputSourceIndices[k] == prevOutputSlot) {
                             fusedInputIdx = k;
                             break;
                         }
                     }
 
                     if (fusedInputIdx >= 0) {
-                        slot.inPlaceFused = true;
-                        slot.inPlaceFusedInputIdx = fusedInputIdx;
+                        slot.flags.inPlaceFused = true;
+                        slot.flags.inPlaceFusedInputIdx = fusedInputIdx;
                     }
                 }
 
@@ -746,25 +746,25 @@ int FusionPass::applyFusions(
                             // For binary ops, find the secondary input source
                             // (the one that does NOT come from the previous chain slot)
                             secondarySources[ci] = INT32_MIN;  // INT32_MIN = unary, no secondary (-1 is external input 0!)
-                            if (slotHasTrait(slots[si], sd::ops::OP_TRAIT_BINARY_ELEMENTWISE) && slots[si].numInputs == 2) {
+                            if (slotHasTrait(slots[si], sd::ops::OP_TRAIT_BINARY_ELEMENTWISE) && slots[si].wiring.numInputs == 2) {
                                 int prevOutputSlotIdx = -1;
                                 if (ci > 0) {
-                                    prevOutputSlotIdx = slots[fusion.slotIndices[ci - 1]].outputSlotIndices[0];
+                                    prevOutputSlotIdx = slots[fusion.slotIndices[ci - 1]].wiring.outputSlotIndices[0];
                                 }
 
                                 if (ci == 0) {
                                     // Head binary op: check if both inputs come from the same source
                                     // (e.g., mul(y,y) for squaring). In that case, secondary = primary.
-                                    int src0 = slots[si].inputSourceIndices[0];
-                                    int src1 = slots[si].inputSourceIndices[1];
+                                    int src0 = slots[si].wiring.inputSourceIndices[0];
+                                    int src1 = slots[si].wiring.inputSourceIndices[1];
                                     if (src0 == src1) {
                                         // Self-op (e.g., x*x): secondary is the same as primary
                                         secondarySources[ci] = src0;
                                     } else {
                                         // Head binary op: secondary is the external input (srcIdx < 0)
                                         // or the non-primary internal input
-                                        for (int k = 0; k < slots[si].numInputs; k++) {
-                                            int srcIdx = slots[si].inputSourceIndices[k];
+                                        for (int k = 0; k < slots[si].wiring.numInputs; k++) {
+                                            int srcIdx = slots[si].wiring.inputSourceIndices[k];
                                             if (srcIdx < 0) {
                                                 secondarySources[ci] = srcIdx;
                                                 break;
@@ -778,8 +778,8 @@ int FusionPass::applyFusions(
                                     }
                                 } else {
                                     // Non-head: secondary is whichever input is NOT from prev chain slot
-                                    for (int k = 0; k < slots[si].numInputs; k++) {
-                                        int srcIdx = slots[si].inputSourceIndices[k];
+                                    for (int k = 0; k < slots[si].wiring.numInputs; k++) {
+                                        int srcIdx = slots[si].wiring.inputSourceIndices[k];
                                         if (srcIdx != prevOutputSlotIdx) {
                                             secondarySources[ci] = srcIdx;
                                             break;
@@ -793,12 +793,12 @@ int FusionPass::applyFusions(
                             // Populate head slot
                             int headIdx = fusion.slotIndices[0];
                             NativeSlot& headSlot = slots[headIdx];
-                            headSlot.isFusedChainHead = true;
-                            headSlot.fusedChainLength = chainLen;
-                            std::memcpy(headSlot.fusedChainOpCodes, opCodes, sizeof(int) * chainLen);
-                            std::memcpy(headSlot.fusedChainSecondaryInputSources, secondarySources, sizeof(int) * chainLen);
+                            headSlot.fusedChain.isFusedChainHead = true;
+                            headSlot.fusedChain.fusedChainLength = chainLen;
+                            std::memcpy(headSlot.fusedChain.fusedChainOpCodes, opCodes, sizeof(int) * chainLen);
+                            std::memcpy(headSlot.fusedChain.fusedChainSecondaryInputSources, secondarySources, sizeof(int) * chainLen);
                             for (int ci = 0; ci < chainLen; ci++) {
-                                headSlot.fusedChainSlots[ci] = fusion.slotIndices[ci];
+                                headSlot.fusedChain.fusedChainSlots[ci] = fusion.slotIndices[ci];
                             }
 
                             // Mark tail slots (all except head)
@@ -829,20 +829,20 @@ int FusionPass::applyFusions(
                 if (addSlotIdx < 0 || addSlotIdx >= numSlots) break;
 
                 NativeSlot& actSlot = slots[actSlotIdx];
-                int addOutputSlot = slots[addSlotIdx].outputSlotIndices[0];
+                int addOutputSlot = slots[addSlotIdx].wiring.outputSlotIndices[0];
 
                 // Find which input of the activation comes from the add
                 int fusedInputIdx = -1;
-                for (int k = 0; k < actSlot.numInputs; k++) {
-                    if (actSlot.inputSourceIndices[k] == addOutputSlot) {
+                for (int k = 0; k < actSlot.wiring.numInputs; k++) {
+                    if (actSlot.wiring.inputSourceIndices[k] == addOutputSlot) {
                         fusedInputIdx = k;
                         break;
                     }
                 }
 
                 if (fusedInputIdx >= 0) {
-                    actSlot.inPlaceFused = true;
-                    actSlot.inPlaceFusedInputIdx = fusedInputIdx;
+                    actSlot.flags.inPlaceFused = true;
+                    actSlot.flags.inPlaceFusedInputIdx = fusedInputIdx;
                     applied++;
                     DSP_DIAG(FUSION, "applied BIAS_ACTIVATION fusion, slots %d-%d",
                               fusion.startSlot, fusion.endSlot);
@@ -863,10 +863,10 @@ int FusionPass::applyFusions(
                 // Find the bias input source index on the add slot
                 // (the input that is NOT from the matmul output)
                 int biasSourceIdx = -1;
-                int matmulOutputSlot = matmulSlot.outputSlotIndices[0];
-                for (int k = 0; k < addSlot.numInputs; k++) {
-                    if (addSlot.inputSourceIndices[k] != matmulOutputSlot) {
-                        biasSourceIdx = addSlot.inputSourceIndices[k];
+                int matmulOutputSlot = matmulSlot.wiring.outputSlotIndices[0];
+                for (int k = 0; k < addSlot.wiring.numInputs; k++) {
+                    if (addSlot.wiring.inputSourceIndices[k] != matmulOutputSlot) {
+                        biasSourceIdx = addSlot.wiring.inputSourceIndices[k];
                         break;
                     }
                 }
@@ -881,8 +881,8 @@ int FusionPass::applyFusions(
                     // else: unknown activation, just fuse bias
                 }
 
-                matmulSlot.ltEpilogueType = epilogueType;
-                matmulSlot.ltEpilogueBiasSourceIdx = biasSourceIdx;
+                matmulSlot.flags.ltEpilogueType = epilogueType;
+                matmulSlot.flags.ltEpilogueBiasSourceIdx = biasSourceIdx;
 
                 // Mark subsequent ops (add, activation) to be SKIPPED entirely
                 // since the matmul will handle them via cublasLt epilogue
@@ -892,19 +892,19 @@ int FusionPass::applyFusions(
 
                     NativeSlot& slot = slots[slotIdx];
                     int prevSlotIdx = fusion.slotIndices[i - 1];
-                    int prevOutputSlot = slots[prevSlotIdx].outputSlotIndices[0];
+                    int prevOutputSlot = slots[prevSlotIdx].wiring.outputSlotIndices[0];
 
                     int fusedInputIdx = -1;
-                    for (int k = 0; k < slot.numInputs; k++) {
-                        if (slot.inputSourceIndices[k] == prevOutputSlot) {
+                    for (int k = 0; k < slot.wiring.numInputs; k++) {
+                        if (slot.wiring.inputSourceIndices[k] == prevOutputSlot) {
                             fusedInputIdx = k;
                             break;
                         }
                     }
 
                     if (fusedInputIdx >= 0) {
-                        slot.inPlaceFused = true;
-                        slot.inPlaceFusedInputIdx = fusedInputIdx;
+                        slot.flags.inPlaceFused = true;
+                        slot.flags.inPlaceFusedInputIdx = fusedInputIdx;
                     }
                 }
 

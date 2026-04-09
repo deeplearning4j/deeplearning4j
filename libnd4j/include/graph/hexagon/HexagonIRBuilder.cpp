@@ -93,7 +93,7 @@ size_t HexagonIRBuilder::estimateTcmUsage(NativeSlot* slots, int start, int end)
     const auto& slot = slots[i];
 
     // Sum input buffer sizes
-    for (int j = 0; j < slot.numInputs; j++) {
+    for (int j = 0; j < slot.wiring.numInputs; j++) {
       if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
         // Cross-slot reference — already counted from producing slot
         continue;
@@ -122,11 +122,11 @@ void HexagonIRBuilder::emitElementwise(std::string& mlirBuffer,
   // Skeletal MLIR emission for elementwise ops targeting Hexagon HVX.
   // The actual MLIR dialect depends on the hexagon-mlir SDK version.
   std::ostringstream oss;
-  oss << "  // slot " << slotIndex << ": " << (slot.opName ? slot.opName : "unknown")
+  oss << "  // slot " << slotIndex << ": " << (slot.ident.opName.empty() ? std::string("unknown") : slot.ident.opName)
       << " (elementwise -> HVX)\n";
   oss << "  %out_" << slotIndex << " = \"hexagon.hvx_elementwise\"(";
 
-  for (int j = 0; j < slot.numInputs; j++) {
+  for (int j = 0; j < slot.wiring.numInputs; j++) {
     if (j > 0) oss << ", ";
     if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
       oss << "%out_" << slot.inputSlotIndices[j];
@@ -135,7 +135,7 @@ void HexagonIRBuilder::emitElementwise(std::string& mlirBuffer,
     }
   }
 
-  oss << ") {op = \"" << (slot.opName ? slot.opName : "unknown") << "\"}"
+  oss << ") {op = \"" << (slot.ident.opName.empty() ? std::string("unknown") : slot.ident.opName) << "\"}"
       << " : () -> tensor<*xf32>\n";
 
   mlirBuffer += oss.str();
@@ -148,7 +148,7 @@ void HexagonIRBuilder::emitMatmul(std::string& mlirBuffer,
   oss << "  // slot " << slotIndex << ": matmul -> HVX VMPY+VACC\n";
   oss << "  %out_" << slotIndex << " = \"hexagon.hvx_matmul\"(";
 
-  if (slot.numInputs >= 2) {
+  if (slot.wiring.numInputs >= 2) {
     for (int j = 0; j < 2; j++) {
       if (j > 0) oss << ", ";
       if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
@@ -169,7 +169,7 @@ void HexagonIRBuilder::emitDmaOps(std::string& mlirBuffer,
   std::ostringstream oss;
 
   // Load inputs from DDR to TCM
-  for (int j = 0; j < slot.numInputs; j++) {
+  for (int j = 0; j < slot.wiring.numInputs; j++) {
     if (slot.inputSlotIndices == nullptr || slot.inputSlotIndices[j] < 0) {
       oss << "  %tcm_in_" << slotIndex << "_" << j
           << " = \"hexagon.dma_load\"(%ext_input_" << slotIndex << "_" << j
@@ -206,7 +206,8 @@ std::vector<uint8_t> HexagonIRBuilder::buildModule(NativeSlot* slots, int start,
 
   for (int i = start; i < end; i++) {
     const auto& slot = slots[i];
-    const char* opName = slot.opName ? slot.opName : "";
+    const std::string& opNameStr = slot.ident.opName;
+    const char* opName = opNameStr.c_str();
 
     if (!isHexagonMappable(opName)) {
       DSP_DIAG(COMPILE, "HexagonIRBuilder::buildModule: slot %d op '%s' not mappable, "

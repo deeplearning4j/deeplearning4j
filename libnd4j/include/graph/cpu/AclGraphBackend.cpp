@@ -103,17 +103,17 @@ arm_compute::ActivationLayerInfo::ActivationFunction AclGraphBackend::mapActivat
 bool AclGraphBackend::canFuseActivation(NativeSlot* slots, int idx, int endSlot) {
   if (idx + 1 > endSlot) return false;
 
-  auto actFn = mapActivation(slots[idx + 1].opName);
+  auto actFn = mapActivation(slots[idx + 1].ident.opName);
   if (actFn == arm_compute::ActivationLayerInfo::ActivationFunction::IDENTITY) return false;
 
   // The activation must take the current op's output as its only input
-  if (slots[idx + 1].numInputs != 1) return false;
-  if (slots[idx + 1].numOutputs != 1) return false;
+  if (slots[idx + 1].wiring.numInputs != 1) return false;
+  if (slots[idx + 1].wiring.numOutputs != 1) return false;
 
   // Input to activation must be this slot's output
-  if (slots[idx].numOutputs < 1) return false;
-  int outSlotIdx = slots[idx].outputSlotIndices[0];
-  int actInputIdx = slots[idx + 1].inputSourceIndices[0];
+  if (slots[idx].wiring.numOutputs < 1) return false;
+  int outSlotIdx = slots[idx].wiring.outputSlotIndices[0];
+  int actInputIdx = slots[idx + 1].wiring.inputSourceIndices[0];
   return (actInputIdx == outSlotIdx);
 }
 
@@ -125,7 +125,7 @@ bool AclGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   // Check if we have at least one ACL-accelerable pattern
   int aclOps = 0;
   for (int i = start; i <= end; i++) {
-    const auto& name = slots[i].opName;
+    const auto& name = slots[i].ident.opName;
     // ACL supports these as individual functions
     if (name == "matmul" || name == "mmul" || name == "MatMul" ||
         name == "add" || name == "Add" ||
@@ -195,10 +195,10 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
       NativeSlot& slot = slots[s];
 
       // Get input arrays
-      std::vector<NDArray*> inputArrays(slot.numInputs);
-      std::vector<std::shared_ptr<arm_compute::Tensor>> inputTensors(slot.numInputs);
-      for (int i = 0; i < slot.numInputs; i++) {
-        int srcIdx = slot.inputSourceIndices[i];
+      std::vector<NDArray*> inputArrays(slot.wiring.numInputs);
+      std::vector<std::shared_ptr<arm_compute::Tensor>> inputTensors(slot.wiring.numInputs);
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        int srcIdx = slot.wiring.inputSourceIndices[i];
         if (srcIdx >= 0) {
           inputArrays[i] = (srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
           inputTensors[i] = getOrCreateTensor(srcIdx, inputArrays[i]);
@@ -210,7 +210,7 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
       }
 
       // Get output array
-      int outSlotIdx = (slot.numOutputs > 0) ? slot.outputSlotIndices[0] : -1;
+      int outSlotIdx = (slot.wiring.numOutputs > 0) ? slot.wiring.outputSlotIndices[0] : -1;
       NDArray* outArr = (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots)
                             ? outputSlots[outSlotIdx] : nullptr;
       auto outTensor = getOrCreateTensor(outSlotIdx, outArr);
@@ -218,14 +218,14 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
       // Check for fusible activation pattern
       arm_compute::ActivationLayerInfo actInfo;
       if (canFuseActivation(slots, s, endSlot)) {
-        auto actFn = mapActivation(slots[s + 1].opName);
+        auto actFn = mapActivation(slots[s + 1].ident.opName);
         float alpha = 0.0f, beta = 0.0f;
-        if (slots[s + 1].numTArgs > 0) alpha = static_cast<float>(slots[s + 1].tArgs[0]);
-        if (slots[s + 1].numTArgs > 1) beta = static_cast<float>(slots[s + 1].tArgs[1]);
+        if (slots[s + 1].args.numTArgs > 0) alpha = static_cast<float>(slots[s + 1].args.tArgs[0]);
+        if (slots[s + 1].args.numTArgs > 1) beta = static_cast<float>(slots[s + 1].args.tArgs[1]);
         actInfo = arm_compute::ActivationLayerInfo(actFn, alpha, beta);
 
         // The output goes to the activation's output slot instead
-        int actOutSlot = slots[s + 1].outputSlotIndices[0];
+        int actOutSlot = slots[s + 1].wiring.outputSlotIndices[0];
         NDArray* actOutArr = (actOutSlot >= 0 && actOutSlot < totalOutputSlots)
                                  ? outputSlots[actOutSlot] : nullptr;
         outTensor = getOrCreateTensor(actOutSlot, actOutArr);
@@ -234,8 +234,8 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
       FunctionEntry entry;
       bool built = false;
 
-      if (slot.opName == "matmul" || slot.opName == "mmul" || slot.opName == "MatMul") {
-        if (slot.numInputs >= 2 && inputArrays[0] != nullptr && inputArrays[1] != nullptr) {
+      if (slot.ident.opName == "matmul" || slot.ident.opName == "mmul" || slot.ident.opName == "MatMul") {
+        if (slot.wiring.numInputs >= 2 && inputArrays[0] != nullptr && inputArrays[1] != nullptr) {
           auto* gemm = new arm_compute::NEGEMM();
           float alpha = 1.0f, beta = 0.0f;
           gemm->configure(inputTensors[0].get(), inputTensors[1].get(), nullptr,
@@ -244,8 +244,8 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
           entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
           built = true;
         }
-      } else if (slot.opName == "add" || slot.opName == "Add") {
-        if (slot.numInputs >= 2) {
+      } else if (slot.ident.opName == "add" || slot.ident.opName == "Add") {
+        if (slot.wiring.numInputs >= 2) {
           auto* addLayer = new arm_compute::NEArithmeticAddition();
           addLayer->configure(inputTensors[0].get(), inputTensors[1].get(),
                               outTensor.get(), arm_compute::ConvertPolicy::SATURATE);
@@ -253,8 +253,8 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
           entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
           built = true;
         }
-      } else if (slot.opName == "multiply" || slot.opName == "Mul") {
-        if (slot.numInputs >= 2) {
+      } else if (slot.ident.opName == "multiply" || slot.ident.opName == "Mul") {
+        if (slot.wiring.numInputs >= 2) {
           auto* mulLayer = new arm_compute::NEPixelWiseMultiplication();
           mulLayer->configure(inputTensors[0].get(), inputTensors[1].get(),
                               outTensor.get(), 1.0f, arm_compute::ConvertPolicy::SATURATE,
@@ -263,8 +263,8 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
           entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
           built = true;
         }
-      } else if (slot.opName == "softmax" || slot.opName == "Softmax") {
-        if (slot.numInputs >= 1) {
+      } else if (slot.ident.opName == "softmax" || slot.ident.opName == "Softmax") {
+        if (slot.wiring.numInputs >= 1) {
           auto* smLayer = new arm_compute::NESoftmaxLayer();
           float beta = 1.0f;
           smLayer->configure(inputTensors[0].get(), outTensor.get(), beta);
@@ -274,12 +274,12 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
         }
       } else {
         // Check if it's a pure activation
-        auto actFn = mapActivation(slot.opName);
+        auto actFn = mapActivation(slot.ident.opName);
         if (actFn != arm_compute::ActivationLayerInfo::ActivationFunction::IDENTITY &&
-            slot.numInputs >= 1) {
+            slot.wiring.numInputs >= 1) {
           float alpha = 0.0f, beta = 0.0f;
-          if (slot.numTArgs > 0) alpha = static_cast<float>(slot.tArgs[0]);
-          if (slot.numTArgs > 1) beta = static_cast<float>(slot.tArgs[1]);
+          if (slot.args.numTArgs > 0) alpha = static_cast<float>(slot.args.tArgs[0]);
+          if (slot.args.numTArgs > 1) beta = static_cast<float>(slot.args.tArgs[1]);
           auto* actLayer = new arm_compute::NEActivationLayer();
           actLayer->configure(inputTensors[0].get(), outTensor.get(),
                               arm_compute::ActivationLayerInfo(actFn, alpha, beta));
@@ -296,7 +296,7 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
         // Record successful compilation in audit
         CompilationAuditEntry auditEntry;
         auditEntry.slotIndex = s;
-        auditEntry.opName = slot.opName;
+        auditEntry.opName = slot.ident.opName;
         auditEntry.wasCompiled = true;
         result.compilationAudit.push_back(std::move(auditEntry));
 
@@ -305,7 +305,7 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
           // Record fused activation in audit
           CompilationAuditEntry fusedEntry;
           fusedEntry.slotIndex = s + 1;
-          fusedEntry.opName = slots[s + 1].opName;
+          fusedEntry.opName = slots[s + 1].ident.opName;
           fusedEntry.wasCompiled = true;
           fusedEntry.reason = "fused with previous op";
           result.compilationAudit.push_back(std::move(fusedEntry));
@@ -315,7 +315,7 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
         // Record skipped op in audit
         CompilationAuditEntry auditEntry;
         auditEntry.slotIndex = s;
-        auditEntry.opName = slot.opName;
+        auditEntry.opName = slot.ident.opName;
         auditEntry.wasCompiled = false;
         auditEntry.reason = "unsupported op";
         result.compilationAudit.push_back(std::move(auditEntry));

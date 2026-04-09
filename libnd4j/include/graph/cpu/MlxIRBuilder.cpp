@@ -151,7 +151,7 @@ SegmentProfile MlxIRBuilder::profileSegment(NativeSlot* slots, int startSlot, in
   profile.unsupportedOps = 0;
 
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = OpCategoryTable::categorize(slots[i].opName);
+    auto cat = OpCategoryTable::categorize(slots[i].ident.opName);
     switch (cat) {
       case TritonOpCategory::BINARY_ELEMENTWISE:
       case TritonOpCategory::UNARY_ELEMENTWISE:
@@ -208,8 +208,8 @@ SegmentAnalysis MlxIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot, i
 
   // Verify all inputs are available
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
         if (extIdx >= numExternalInputs || !externalInputs || !externalInputs[extIdx]) {
@@ -228,8 +228,8 @@ std::unordered_set<int> MlxIRBuilder::computeExternallyVisibleOutputs(
     NativeSlot* slots, int startSlot, int endSlot, int totalSlots) {
   std::unordered_set<int> internalOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -238,8 +238,8 @@ std::unordered_set<int> MlxIRBuilder::computeExternallyVisibleOutputs(
     bool consumedOutside = false;
     for (int i = 0; i < totalSlots; i++) {
       if (i >= startSlot && i <= endSlot) continue;
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        if (slots[i].inputSourceIndices[inp] == outIdx) {
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        if (slots[i].wiring.inputSourceIndices[inp] == outIdx) {
           consumedOutside = true;
           break;
         }
@@ -250,8 +250,8 @@ std::unordered_set<int> MlxIRBuilder::computeExternallyVisibleOutputs(
       externalOutputs.insert(outIdx);
     }
     if (!consumedOutside) {
-      for (int o = 0; o < slots[endSlot].numOutputs; o++) {
-        if (slots[endSlot].outputSlotIndices[o] == outIdx) {
+      for (int o = 0; o < slots[endSlot].wiring.numOutputs; o++) {
+        if (slots[endSlot].wiring.outputSlotIndices[o] == outIdx) {
           externalOutputs.insert(outIdx);
         }
       }
@@ -1752,12 +1752,12 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
 
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
-    auto cat = OpCategoryTable::categorize(slot.opName);
+    auto cat = OpCategoryTable::categorize(slot.ident.opName);
 
     // Resolve inputs from SSA map or external inputs
     std::vector<std::shared_ptr<void>> inputs;
-    for (int inp = 0; inp < slot.numInputs; inp++) {
-      int srcIdx = slot.inputSourceIndices[inp];
+    for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+      int srcIdx = slot.wiring.inputSourceIndices[inp];
       std::shared_ptr<void> mlxInput;
 
       if (srcIdx < 0) {
@@ -1776,7 +1776,7 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
 
       if (!mlxInput) {
         DSP_DIAG(COMPILE, "MlxIRBuilder: null input %d for slot %d (op=%s)",
-                  inp, si, slot.opName);
+                  inp, si, slot.ident.opName);
         graph.valid = false;
         return graph;
       }
@@ -1785,8 +1785,8 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
 
     // Get the output NDArray for shape reference (needed by some ops)
     NDArray* outArr = nullptr;
-    if (slot.numOutputs > 0) {
-      int outIdx = slot.outputSlotIndices[0];
+    if (slot.wiring.numOutputs > 0) {
+      int outIdx = slot.wiring.outputSlotIndices[0];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) {
         outArr = outputSlots[outIdx];
       }
@@ -1799,32 +1799,32 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
       // ── Phase 1: Element-wise ──
       case TritonOpCategory::BINARY_ELEMENTWISE:
         if (inputs.size() >= 2) {
-          result = emitBinaryElementwise(slot.opName, inputs[0], inputs[1]);
+          result = emitBinaryElementwise(slot.ident.opName, inputs[0], inputs[1]);
         }
         break;
 
       case TritonOpCategory::UNARY_ELEMENTWISE:
         if (inputs.size() >= 1) {
-          result = emitUnaryElementwise(slot.opName, inputs[0], slot.tArgs, slot.numTArgs);
+          result = emitUnaryElementwise(slot.ident.opName, inputs[0], slot.args.tArgs, slot.args.numTArgs);
         }
         break;
 
       case TritonOpCategory::COMPARISON:
         if (inputs.size() >= 2) {
-          result = emitComparisonOp(slot.opName, inputs[0], inputs[1]);
+          result = emitComparisonOp(slot.ident.opName, inputs[0], inputs[1]);
         }
         break;
 
       case TritonOpCategory::LOGICAL:
         if (inputs.size() >= 1) {
           auto rhs = (inputs.size() >= 2) ? inputs[1] : nullptr;
-          result = emitLogicalOp(slot.opName, inputs[0], rhs);
+          result = emitLogicalOp(slot.ident.opName, inputs[0], rhs);
         }
         break;
 
       case TritonOpCategory::TERNARY:
         if (inputs.size() >= 3) {
-          result = emitTernaryOp(slot.opName, inputs[0], inputs[1], inputs[2]);
+          result = emitTernaryOp(slot.ident.opName, inputs[0], inputs[1], inputs[2]);
         }
         break;
 
@@ -1844,83 +1844,83 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
       case TritonOpCategory::REDUCTION:
         if (inputs.size() >= 1) {
           // keepDims is typically bArgs[0]
-          bool keepDims = (slot.numBArgs > 0 && slot.bArgs) ? slot.bArgs[0] : false;
-          result = emitReductionOp(slot.opName, inputs[0],
-                                   slot.iArgs, slot.numIArgs, keepDims);
+          bool keepDims = (slot.args.numBArgs > 0 && slot.args.bArgs) ? slot.args.bArgs[0] : false;
+          result = emitReductionOp(slot.ident.opName, inputs[0],
+                                   slot.args.iArgs, slot.args.numIArgs, keepDims);
         }
         break;
 
       case TritonOpCategory::MATMUL:
-        result = emitMatmulOp(slot.opName, inputs,
-                               slot.tArgs, slot.numTArgs,
-                               slot.iArgs, slot.numIArgs);
+        result = emitMatmulOp(slot.ident.opName, inputs,
+                               slot.args.tArgs, slot.args.numTArgs,
+                               slot.args.iArgs, slot.args.numIArgs);
         break;
 
       case TritonOpCategory::NORMALIZATION:
-        result = emitNormalizationOp(slot.opName, inputs,
-                                      slot.iArgs, slot.numIArgs,
-                                      slot.tArgs, slot.numTArgs);
+        result = emitNormalizationOp(slot.ident.opName, inputs,
+                                      slot.args.iArgs, slot.args.numIArgs,
+                                      slot.args.tArgs, slot.args.numTArgs);
         break;
 
       case TritonOpCategory::SHAPE_MANIPULATION:
         if (inputs.size() >= 1) {
-          result = emitShapeManipOp(slot.opName, inputs[0],
-                                    slot.iArgs, slot.numIArgs, outArr);
+          result = emitShapeManipOp(slot.ident.opName, inputs[0],
+                                    slot.args.iArgs, slot.args.numIArgs, outArr);
         }
         break;
 
       case TritonOpCategory::DATA_MOVEMENT:
-        result = emitDataMovementOp(slot.opName, inputs,
-                                     slot.iArgs, slot.numIArgs,
-                                     slot.tArgs, slot.numTArgs, outArr);
+        result = emitDataMovementOp(slot.ident.opName, inputs,
+                                     slot.args.iArgs, slot.args.numIArgs,
+                                     slot.args.tArgs, slot.args.numTArgs, outArr);
         break;
 
       case TritonOpCategory::CONSTANT_GENERATION:
-        result = emitConstantGenOp(slot.opName, inputs,
-                                    slot.tArgs, slot.numTArgs,
-                                    slot.iArgs, slot.numIArgs, outArr);
+        result = emitConstantGenOp(slot.ident.opName, inputs,
+                                    slot.args.tArgs, slot.args.numTArgs,
+                                    slot.args.iArgs, slot.args.numIArgs, outArr);
         break;
 
       // ── Phase 3: Compute-intensive ops ──
       case TritonOpCategory::CONVOLUTION:
-        result = emitConvolutionOp(slot.opName, inputs,
-                                    slot.iArgs, slot.numIArgs, outArr);
+        result = emitConvolutionOp(slot.ident.opName, inputs,
+                                    slot.args.iArgs, slot.args.numIArgs, outArr);
         break;
 
       case TritonOpCategory::FUSED_ATTENTION:
-        result = emitFusedAttentionOp(slot.opName, inputs,
-                                       slot.tArgs, slot.numTArgs,
-                                       slot.iArgs, slot.numIArgs);
+        result = emitFusedAttentionOp(slot.ident.opName, inputs,
+                                       slot.args.tArgs, slot.args.numTArgs,
+                                       slot.args.iArgs, slot.args.numIArgs);
         break;
 
       // ── LLM-specific ops ──
       case TritonOpCategory::ROPE:
-        result = emitRopeOp(slot.opName, inputs,
-                             slot.tArgs, slot.numTArgs,
-                             slot.iArgs, slot.numIArgs);
+        result = emitRopeOp(slot.ident.opName, inputs,
+                             slot.args.tArgs, slot.args.numTArgs,
+                             slot.args.iArgs, slot.args.numIArgs);
         break;
 
       case TritonOpCategory::FUSED_LLM:
-        result = emitFusedLlmOp(slot.opName, inputs,
-                                  slot.tArgs, slot.numTArgs,
-                                  slot.iArgs, slot.numIArgs);
+        result = emitFusedLlmOp(slot.ident.opName, inputs,
+                                  slot.args.tArgs, slot.args.numTArgs,
+                                  slot.args.iArgs, slot.args.numIArgs);
         break;
 
       default:
-        DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported category for op '%s'", slot.opName);
+        DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported category for op '%s'", slot.ident.opName);
         graph.valid = false;
         return graph;
     }
 
     if (!result) {
-      DSP_DIAG(COMPILE, "MlxIRBuilder: emit failed for slot %d (op=%s)", si, slot.opName);
+      DSP_DIAG(COMPILE, "MlxIRBuilder: emit failed for slot %d (op=%s)", si, slot.ident.opName);
       graph.valid = false;
       return graph;
     }
 
     // Register outputs in SSA map
-    for (int o = 0; o < slot.numOutputs; o++) {
-      int outIdx = slot.outputSlotIndices[o];
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      int outIdx = slot.wiring.outputSlotIndices[o];
       ssaMap[outIdx] = result;
     }
   }
@@ -1936,8 +1936,8 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
 
   // Also include all outputs of the segment (conservative)
   for (int si = startSlot; si <= endSlot; si++) {
-    for (int o = 0; o < slots[si].numOutputs; o++) {
-      int outIdx = slots[si].outputSlotIndices[o];
+    for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+      int outIdx = slots[si].wiring.outputSlotIndices[o];
       if (graph.outputArrays.find(outIdx) == graph.outputArrays.end()) {
         auto it = ssaMap.find(outIdx);
         if (it != ssaMap.end()) {

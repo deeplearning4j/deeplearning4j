@@ -118,8 +118,8 @@ float scoreSectionFusionRange(
     rangeHasAttnAdj = rangeHasAttnAdj || isAttentionAdjacentType(sec.type);
     for (int s = sec.startSlot; s <= sec.endSlot; s++) {
       NativeSlot& slot = slots[s];
-      for (int i = 0; i < slot.numOutputs; i++) {
-        rangeOutputSlots.insert(slot.outputSlotIndices[i]);
+      for (int i = 0; i < slot.wiring.numOutputs; i++) {
+        rangeOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
       }
     }
   }
@@ -175,8 +175,8 @@ float scoreSectionFusionRange(
     bool consumedByNext = false;
     for (int s = nextSection.startSlot; s <= nextSection.endSlot && !consumedByNext; s++) {
       NativeSlot& bSlot = slots[s];
-      for (int i = 0; i < bSlot.numInputs; i++) {
-        int srcIdx = bSlot.inputSourceIndices[i];
+      for (int i = 0; i < bSlot.wiring.numInputs; i++) {
+        int srcIdx = bSlot.wiring.inputSourceIndices[i];
         if (srcIdx == outSlotIdx) {
           consumedByNext = true;
           break;
@@ -188,8 +188,8 @@ float scoreSectionFusionRange(
     for (int s = segmentStartSlot; s <= segmentEndSlot && !consumedOutside; s++) {
       if (s >= rangeStartSlot && s <= combinedEndSlot) continue;
       NativeSlot& otherSlot = slots[s];
-      for (int i = 0; i < otherSlot.numInputs; i++) {
-        if (otherSlot.inputSourceIndices[i] == outSlotIdx) {
+      for (int i = 0; i < otherSlot.wiring.numInputs; i++) {
+        if (otherSlot.wiring.inputSourceIndices[i] == outSlotIdx) {
           consumedOutside = true;
           break;
         }

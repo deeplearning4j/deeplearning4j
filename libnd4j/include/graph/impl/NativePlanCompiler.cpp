@@ -191,41 +191,41 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
     // Op identification.
     // NOTE: FlatGraph opNum hashes can differ from native HashHelper hashes.
-    // Resolve by op name first, then normalize slot.opHash to native hash.
+    // Resolve by op name first, then normalize slot.ident.opHash to native hash.
     LongType serializedOpHash = node->opNum();
-    slot.opHash = serializedOpHash;
-    slot.opName = node->opName() ? node->opName()->str() :
+    slot.ident.opHash = serializedOpHash;
+    slot.ident.opName = node->opName() ? node->opName()->str() :
                   (node->name() ? node->name()->str() : "unknown");
-    slot.isCustomOp = (node->opType() == OpType_CUSTOM);
+    slot.flags.isCustomOp = (node->opType() == OpType_CUSTOM);
 
     // Early control flow detection — CF ops are not registered as declarable ops
     // in OpRegistrator, so we must identify them before op resolution.
     {
-      auto normalized = normalizeOpName(slot.opName);
-      slot.controlFlowType = CF_NONE;
-      slot.loopBackTarget = -1;
-      slot.loopRegionIndex = -1;
+      auto normalized = normalizeOpName(slot.ident.opName);
+      slot.cf.controlFlowType = CF_NONE;
+      slot.cf.loopBackTarget = -1;
+      slot.cf.loopRegionIndex = -1;
       if (normalized == "switch") {
-        slot.controlFlowType = CF_SWITCH;
+        slot.cf.controlFlowType = CF_SWITCH;
       } else if (normalized == "merge") {
-        slot.controlFlowType = CF_MERGE;
+        slot.cf.controlFlowType = CF_MERGE;
       } else if (normalized == "enter") {
-        slot.controlFlowType = CF_ENTER;
+        slot.cf.controlFlowType = CF_ENTER;
       } else if (normalized == "exit") {
-        slot.controlFlowType = CF_EXIT;
+        slot.cf.controlFlowType = CF_EXIT;
       } else if (normalized == "next_iteration") {
-        slot.controlFlowType = CF_NEXT_ITERATION;
+        slot.cf.controlFlowType = CF_NEXT_ITERATION;
       } else if (normalized == "loop_cond") {
-        slot.controlFlowType = CF_LOOP_COND;
+        slot.cf.controlFlowType = CF_LOOP_COND;
       }
     }
 
     // Resolve op — skip for control flow ops (they're handled by CF dispatch,
     // not as declarable ops, and may not be registered in OpRegistrator).
     slot.op = nullptr;
-    if (slot.controlFlowType == CF_NONE) {
-      if (!slot.opName.empty()) {
-        slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.opName.c_str());
+    if (slot.cf.controlFlowType == CF_NONE) {
+      if (!slot.ident.opName.empty()) {
+        slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.ident.opName.c_str());
       }
       // Fallback to serialized hash for graphs that carry native hashes already.
       if (!slot.op) {
@@ -233,25 +233,25 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
       if (!slot.op) {
         DSP_DIAG(COMPILE, "NativePlanCompiler: cannot resolve op hash=%lld name=%s",
-                  serializedOpHash, slot.opName.c_str());
+                  serializedOpHash, slot.ident.opName.c_str());
         delete plan;
         return nullptr;
       }
-      slot.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.opName);
+      slot.ident.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.ident.opName);
     } else {
       // CF ops don't need an op pointer or hash — they're pure data routing.
-      slot.opHash = 0;
+      slot.ident.opHash = 0;
       DSP_DIAG(COMPILE, "slot %d: control flow op '%s' (type=%d)",
-                stepIdx, slot.opName.c_str(), (int)slot.controlFlowType);
+                stepIdx, slot.ident.opName.c_str(), (int)slot.cf.controlFlowType);
     }
 
-    slot.inPlaceFused = false;
-    slot.inPlaceFusedInputIdx = -1;
-    slot.isFusedChainHead = false;
-    slot.fusedChainLength = 0;
-    slot.isFusedChainTail = false;
-    std::memset(slot.fusedChainOpCodes, 0, sizeof(slot.fusedChainOpCodes));
-    std::memset(slot.fusedChainSlots, 0, sizeof(slot.fusedChainSlots));
+    slot.flags.inPlaceFused = false;
+    slot.flags.inPlaceFusedInputIdx = -1;
+    slot.fusedChain.isFusedChainHead = false;
+    slot.fusedChain.fusedChainLength = 0;
+    slot.fusedChain.isFusedChainTail = false;
+    std::memset(slot.fusedChain.fusedChainOpCodes, 0, sizeof(slot.fusedChain.fusedChainOpCodes));
+    std::memset(slot.fusedChain.fusedChainSlots, 0, sizeof(slot.fusedChain.fusedChainSlots));
     std::fill(std::begin(slot.fusedChainSecondaryInputSources), std::end(slot.fusedChainSecondaryInputSources), INT32_MIN);
 
     // Build input wiring from inputPaired
@@ -262,19 +262,19 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
     // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
     bool isDataDep = hasOpTrait(slot.op, sd::ops::OP_TRAIT_DATA_DEPENDENT);
-    if (isDataDep && normalizeOpName(slot.opName) == "where" && numInputs == 3) {
+    if (isDataDep && normalizeOpName(slot.ident.opName) == "where" && numInputs == 3) {
       isDataDep = false;
     }
-    slot.isDataDependent = isDataDep;
-    slot.isIdentityOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_IDENTITY);
-    slot.isViewCapableOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
+    slot.flags.isDataDependent = isDataDep;
+    slot.flags.isIdentityOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_IDENTITY);
+    slot.flags.isViewCapableOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
     // View-capable ops share input buffer → no zeroing needed (would corrupt input data).
     // Non-view-capable data-movement ops still need zeroing for safety.
-    slot.needsZeroedOutput = slot.isViewCapableOp ? false
+    slot.flags.needsZeroedOutput = slot.flags.isViewCapableOp ? false
                              : (!hasOpTrait(slot.op, sd::ops::OP_TRAIT_FULLY_WRITING) || isDataDep);
-    slot.numInputs = numInputs;
-    slot.inputSourceIndices = new int[numInputs];
-    slot.inputSourceTypes = new int8_t[numInputs];
+    slot.wiring.numInputs = numInputs;
+    slot.wiring.inputSourceIndices = new int[numInputs];
+    slot.wiring.inputSourceTypes = new int8_t[numInputs];
 
     bool hasIntLong = false;
     for (int i = 0; i < numInputs; i++) {
@@ -338,7 +338,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
             if (myIt != varToOutputSlot.end() && myIt->second == slotIt->second) {
               isSelfRef = true;
               DSP_DIAG(COMPILE, "NativePlanCompiler: self-reference at step %d (op %s): input '%s' -> slot %d == own output '%s' slot %d",
-                       stepIdx, slot.opName.c_str(), inputName.c_str(), slotIt->second, myOut.c_str(), myIt->second);
+                       stepIdx, slot.ident.opName.c_str(), inputName.c_str(), slotIt->second, myOut.c_str(), myIt->second);
               break;
             }
           }
@@ -349,25 +349,25 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
           if (resolvedSlot >= 0 && resolvedSlot < (int)slotProducerStep.size() && slotProducerStep[resolvedSlot] == stepIdx) {
             isSelfRef = true;
             DSP_DIAG(COMPILE, "NativePlanCompiler: self-reference (producer match) at step %d (op %s): input '%s' -> slot %d produced at same step",
-                     stepIdx, slot.opName.c_str(), inputName.c_str(), resolvedSlot);
+                     stepIdx, slot.ident.opName.c_str(), inputName.c_str(), resolvedSlot);
           }
         }
       }
       if (slotIt != varToOutputSlot.end() && !isSelfRef) {
-        slot.inputSourceIndices[i] = slotIt->second;
-        slot.inputSourceTypes[i] = SOURCE_OP_OUTPUT;
+        slot.wiring.inputSourceIndices[i] = slotIt->second;
+        slot.wiring.inputSourceTypes[i] = SOURCE_OP_OUTPUT;
         if (stepIdx > slotLastConsumerStep[slotIt->second]) {
           slotLastConsumerStep[slotIt->second] = stepIdx;
         }
       } else {
         int extIdx = addExternal(inputName);
-        slot.inputSourceIndices[i] = -(extIdx + 1);
+        slot.wiring.inputSourceIndices[i] = -(extIdx + 1);
         if (constants.count(inputName)) {
-          slot.inputSourceTypes[i] = SOURCE_CONSTANT;
+          slot.wiring.inputSourceTypes[i] = SOURCE_CONSTANT;
         } else if (variableNames.count(inputName)) {
-          slot.inputSourceTypes[i] = SOURCE_VARIABLE;
+          slot.wiring.inputSourceTypes[i] = SOURCE_VARIABLE;
         } else {
-          slot.inputSourceTypes[i] = SOURCE_PLACEHOLDER;
+          slot.wiring.inputSourceTypes[i] = SOURCE_PLACEHOLDER;
         }
         // Check external input NDArray dtype for INT/LONG detection
         if (!hasIntLong) {
@@ -381,20 +381,20 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         }
       }
     }
-    slot.needsIntLongSync = hasIntLong || isDataDep;
+    slot.flags.needsIntLongSync = hasIntLong || isDataDep;
     // Use OpTraitTable's VALUE_DEPENDENT_SHAPE trait to determine which ops have
     // output shapes that depend on input VALUES (not just shapes). This drives
     // shapeStatic=false propagation AND shape key value-hashing for graph replay.
     // The trait table is the single source of truth — no more hardcoded lists or
     // hasIntLong heuristics. If an op is missing from the table, add it there.
     bool isValueDepShape = hasOpTrait(slot.op, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
-    slot.outputShapeDependsOnInputValues = isValueDepShape || isDataDep;
+    slot.flags.outputShapeDependsOnInputValues = isValueDepShape || isDataDep;
 
     // Build output wiring
     auto* outputNames = node->outputNames();
     int numOutputs = outputNames ? outputNames->size() : 1;
-    slot.numOutputs = numOutputs;
-    slot.outputSlotIndices = new int[numOutputs];
+    slot.wiring.numOutputs = numOutputs;
+    slot.wiring.outputSlotIndices = new int[numOutputs];
 
     for (int i = 0; i < numOutputs; i++) {
       std::string outName;
@@ -404,7 +404,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         outName = node->name() ? node->name()->str() : ("node_" + std::to_string(node->id()));
       }
       auto it = varToOutputSlot.find(outName);
-      slot.outputSlotIndices[i] = (it != varToOutputSlot.end()) ? it->second : -1;
+      slot.wiring.outputSlotIndices[i] = (it != varToOutputSlot.end()) ? it->second : -1;
       if (it != varToOutputSlot.end()) {
         slotProducerStep[it->second] = stepIdx;
       }
@@ -414,71 +414,71 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     // For reduce ops, dimensions are stored in the 'dimensions' field, not 'extraInteger'
     auto* dimensions = node->dimensions();
     if (dimensions && dimensions->size() > 0) {
-      slot.numIArgs = dimensions->size();
-      slot.iArgs = new LongType[slot.numIArgs];
-      for (int i = 0; i < slot.numIArgs; i++) {
-        slot.iArgs[i] = dimensions->Get(i);
+      slot.args.numIArgs = dimensions->size();
+      slot.args.iArgs = new LongType[slot.args.numIArgs];
+      for (int i = 0; i < slot.args.numIArgs; i++) {
+        slot.args.iArgs[i] = dimensions->Get(i);
       }
     } else {
       auto* extraInteger = node->extraInteger();
       if (extraInteger && extraInteger->size() > 0) {
         int numToUse = extraInteger->size();
         // Set structural iArg count from centralized OpTraitTable
-        slot.structuralIArgCount = sd::ops::getStructuralIArgCount(slot.opName);
+        slot.flags.structuralIArgCount = sd::ops::getStructuralIArgCount(slot.ident.opName);
 
         // Cap iArgs when data comes from input tensors.
         // Generic version of the old strided_slice-specific fix:
         // When an op has structural iArgs (masks, mode flags, axis) followed by data iArgs
         // (begin/end/strides, split sizes, etc.), and the data comes from input tensors,
         // we must cap to only the structural iArgs so the op reads data from inputs.
-        if (slot.structuralIArgCount >= 0 && numToUse > slot.structuralIArgCount
-            && slot.numInputs > 1) {
+        if (slot.flags.structuralIArgCount >= 0 && numToUse > slot.flags.structuralIArgCount
+            && slot.wiring.numInputs > 1) {
           DSP_DIAG(COMPILE, "Capping iArgs for op %s from %d to %d (structural only, data from inputs)",
-                   slot.opName.c_str(), numToUse, slot.structuralIArgCount);
-          numToUse = slot.structuralIArgCount;
+                   slot.ident.opName.c_str(), numToUse, slot.flags.structuralIArgCount);
+          numToUse = slot.flags.structuralIArgCount;
         }
-        slot.numIArgs = numToUse;
-        slot.iArgs = new LongType[slot.numIArgs];
-        for (int i = 0; i < slot.numIArgs; i++) {
-          slot.iArgs[i] = extraInteger->Get(i);
+        slot.args.numIArgs = numToUse;
+        slot.args.iArgs = new LongType[slot.args.numIArgs];
+        for (int i = 0; i < slot.args.numIArgs; i++) {
+          slot.args.iArgs[i] = extraInteger->Get(i);
         }
       }
     }
 
     auto* extraParams = node->extraParams();
     if (extraParams && extraParams->size() > 0) {
-      slot.numTArgs = extraParams->size();
-      slot.tArgs = new double[slot.numTArgs];
-      for (int i = 0; i < slot.numTArgs; i++) {
-        slot.tArgs[i] = extraParams->Get(i);
+      slot.args.numTArgs = extraParams->size();
+      slot.args.tArgs = new double[slot.args.numTArgs];
+      for (int i = 0; i < slot.args.numTArgs; i++) {
+        slot.args.tArgs[i] = extraParams->Get(i);
       }
     }
 
     auto* extraBools = node->extraBools();
     if (extraBools && extraBools->size() > 0) {
-      slot.numBArgs = extraBools->size();
-      slot.bArgs = new bool[slot.numBArgs];
-      for (int i = 0; i < slot.numBArgs; i++) {
-        slot.bArgs[i] = extraBools->Get(i);
+      slot.args.numBArgs = extraBools->size();
+      slot.args.bArgs = new bool[slot.args.numBArgs];
+      for (int i = 0; i < slot.args.numBArgs; i++) {
+        slot.args.bArgs[i] = extraBools->Get(i);
       }
     }
 
     auto* extraTypes = node->extraTypes();
     if (extraTypes && extraTypes->size() > 0) {
-      slot.numDArgs = extraTypes->size();
-      slot.dArgs = new DataType[slot.numDArgs];
-      for (int i = 0; i < slot.numDArgs; i++) {
+      slot.args.numDArgs = extraTypes->size();
+      slot.args.dArgs = new DataType[slot.args.numDArgs];
+      for (int i = 0; i < slot.args.numDArgs; i++) {
         // Convert FlatBuffer DType to native DataType
-        slot.dArgs[i] = static_cast<DataType>(extraTypes->Get(i));
+        slot.args.dArgs[i] = static_cast<DataType>(extraTypes->Get(i));
       }
     }
 
     auto* extraStrings = node->extraStrings();
     if (extraStrings && extraStrings->size() > 0) {
-      slot.numSArgs = extraStrings->size();
-      slot.sArgs = new std::string[slot.numSArgs];
-      for (int i = 0; i < slot.numSArgs; i++) {
-        slot.sArgs[i] = extraStrings->Get(i)->str();
+      slot.args.numSArgs = extraStrings->size();
+      slot.args.sArgs = new std::string[slot.args.numSArgs];
+      for (int i = 0; i < slot.args.numSArgs; i++) {
+        slot.args.sArgs[i] = extraStrings->Get(i)->str();
       }
     }
 
@@ -509,12 +509,12 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->externalInputIsVariable_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < numSteps; s++) {
     auto& slot = plan->slots_[s];
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
         if (extIdx < plan->numExternalInputs_ &&
-            slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
+            slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
           plan->externalInputIsVariable_[extIdx] = true;
         }
       }
@@ -562,7 +562,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->loopRegions_ = nullptr;
   plan->numLoopRegions_ = 0;
   for (int s = 0; s < numSteps; s++) {
-    if (plan->slots_[s].controlFlowType != CF_NONE) {
+    if (plan->slots_[s].cf.controlFlowType != CF_NONE) {
       plan->hasControlFlow_ = true;
       break;
     }
@@ -581,17 +581,17 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     std::vector<LoopRegion> regions;
     for (int s = 0; s < numSteps; s++) {
       NativeSlot& slot = plan->slots_[s];
-      if (slot.controlFlowType == CF_NEXT_ITERATION) {
+      if (slot.cf.controlFlowType == CF_NEXT_ITERATION) {
         // Find the Merge this NextIteration feeds: look at output wiring.
         // NextIteration output feeds into a Merge's input. Find the Merge by
         // scanning for a Merge whose inputSourceIndices references our output slot.
-        int nextIterOutputSlot = (slot.numOutputs > 0) ? slot.outputSlotIndices[0] : -1;
+        int nextIterOutputSlot = (slot.wiring.numOutputs > 0) ? slot.wiring.outputSlotIndices[0] : -1;
         int mergeSlotIdx = -1;
         if (nextIterOutputSlot >= 0) {
           for (int m = 0; m < numSteps; m++) {
-            if (plan->slots_[m].controlFlowType == CF_MERGE) {
-              for (int inp = 0; inp < plan->slots_[m].numInputs; inp++) {
-                if (plan->slots_[m].inputSourceIndices[inp] == nextIterOutputSlot) {
+            if (plan->slots_[m].cf.controlFlowType == CF_MERGE) {
+              for (int inp = 0; inp < plan->slots_[m].wiring.numInputs; inp++) {
+                if (plan->slots_[m].wiring.inputSourceIndices[inp] == nextIterOutputSlot) {
                   mergeSlotIdx = m;
                   break;
                 }
@@ -602,8 +602,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         }
 
         if (mergeSlotIdx >= 0) {
-          slot.loopBackTarget = mergeSlotIdx;
-          slot.loopRegionIndex = static_cast<int>(regions.size());
+          slot.cf.loopBackTarget = mergeSlotIdx;
+          slot.cf.loopRegionIndex = static_cast<int>(regions.size());
 
           LoopRegion lr;
           lr.mergeSlot = mergeSlotIdx;
@@ -614,9 +614,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
           lr.switchSlot = -1;
           lr.exitSlot = -1;
           for (int r = mergeSlotIdx; r <= s; r++) {
-            if (plan->slots_[r].controlFlowType == CF_SWITCH && lr.switchSlot < 0)
+            if (plan->slots_[r].cf.controlFlowType == CF_SWITCH && lr.switchSlot < 0)
               lr.switchSlot = r;
-            if (plan->slots_[r].controlFlowType == CF_EXIT && lr.exitSlot < 0)
+            if (plan->slots_[r].cf.controlFlowType == CF_EXIT && lr.exitSlot < 0)
               lr.exitSlot = r;
           }
           regions.push_back(lr);
@@ -637,8 +637,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     std::vector<int> outputSlotToStepIndex(totalOutputSlots, -1);
     for (int s = 0; s < numSteps; s++) {
       NativeSlot& slot = plan->slots_[s];
-      for (int i = 0; i < slot.numOutputs; i++) {
-        int si = slot.outputSlotIndices[i];
+      for (int i = 0; i < slot.wiring.numOutputs; i++) {
+        int si = slot.wiring.outputSlotIndices[i];
         if (si >= 0 && si < totalOutputSlots) {
           outputSlotToStepIndex[si] = s;
         }
@@ -648,33 +648,33 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     int staticCount = 0, dynamicCount = 0;
     for (int s = 0; s < numSteps; s++) {
       NativeSlot& slot = plan->slots_[s];
-      slot.shapeStatic = true;
+      slot.shapeCache.shapeStatic = true;
 
-      if (slot.isDataDependent || slot.outputShapeDependsOnInputValues) {
-        slot.shapeStatic = false;
+      if (slot.flags.isDataDependent || slot.flags.outputShapeDependsOnInputValues) {
+        slot.shapeCache.shapeStatic = false;
         dynamicCount++;
         continue;
       }
 
-      for (int i = 0; i < slot.numInputs; i++) {
-        int srcIdx = slot.inputSourceIndices[i];
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        int srcIdx = slot.wiring.inputSourceIndices[i];
         if (srcIdx < 0) {
-          if (slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
-            slot.shapeStatic = false;
+          if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
+            slot.shapeCache.shapeStatic = false;
             break;
           }
         } else {
           if (srcIdx < totalOutputSlots) {
             int producerStep = outputSlotToStepIndex[srcIdx];
-            if (producerStep >= 0 && !plan->slots_[producerStep].shapeStatic) {
-              slot.shapeStatic = false;
+            if (producerStep >= 0 && !plan->slots_[producerStep].shapeCache.shapeStatic) {
+              slot.shapeCache.shapeStatic = false;
               break;
             }
           }
         }
       }
 
-      if (slot.shapeStatic) staticCount++;
+      if (slot.shapeCache.shapeStatic) staticCount++;
       else dynamicCount++;
     }
 
@@ -718,14 +718,14 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     int needsZero = 0, skipZero = 0, customOps = 0, cfOps = 0;
     int dataDep = 0, valueDep = 0, identityOps = 0, fusedChains = 0;
     for (int i = 0; i < plan->numSlots_; i++) {
-      if (plan->slots_[i].needsZeroedOutput) needsZero++;
+      if (plan->slots_[i].flags.needsZeroedOutput) needsZero++;
       else skipZero++;
-      if (plan->slots_[i].isCustomOp) customOps++;
-      if (plan->slots_[i].controlFlowType != CF_NONE) cfOps++;
-      if (plan->slots_[i].isDataDependent) dataDep++;
-      if (plan->slots_[i].outputShapeDependsOnInputValues) valueDep++;
-      if (plan->slots_[i].isIdentityOp) identityOps++;
-      if (plan->slots_[i].isFusedChainHead) fusedChains++;
+      if (plan->slots_[i].flags.isCustomOp) customOps++;
+      if (plan->slots_[i].cf.controlFlowType != CF_NONE) cfOps++;
+      if (plan->slots_[i].flags.isDataDependent) dataDep++;
+      if (plan->slots_[i].flags.outputShapeDependsOnInputValues) valueDep++;
+      if (plan->slots_[i].flags.isIdentityOp) identityOps++;
+      if (plan->slots_[i].fusedChain.isFusedChainHead) fusedChains++;
     }
     DSP_DIAG(SHAPE, "%d/%d slots need zeroed output (%d can skip nullify)",
               needsZero, plan->numSlots_, skipZero);

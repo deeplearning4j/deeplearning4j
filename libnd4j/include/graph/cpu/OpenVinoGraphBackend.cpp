@@ -427,8 +427,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           }
         } else if (!isExternal && srcIdx >= 0 && srcIdx < totalOutputSlots) {
           auto& srcSlot = slots[srcIdx];
-          if (!srcSlot.cachedOutputShapes.empty() && srcSlot.cachedOutputShapes[0] != nullptr) {
-            shapeSrc = srcSlot.cachedOutputShapes[0];
+          if (!srcSlot.shapeCache.cachedOutputShapes.empty() && srcSlot.shapeCache.cachedOutputShapes[0] != nullptr) {
+            shapeSrc = srcSlot.shapeCache.cachedOutputShapes[0];
             rank = shape::rank(shapeSrc);
             dtype = mapDataType(ArrayOptions::dataType(shapeSrc));
             for (int d = 0; d < rank; d++) {

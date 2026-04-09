@@ -480,8 +480,8 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
   std::unordered_set<int> neededInputSlots;
   for (int s = seg.startSlot; s <= seg.endSlot && s < numSlots_; s++) {
     const NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
         // This is an internal input from a prior slot's output
         // Only migrate if the source slot is on a different device
@@ -510,8 +510,8 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // Walk backwards to find which slot produced this output
     for (int s = 0; s < numSlots_; s++) {
       const NativeSlot& srcSlot = slots_[s];
-      for (int o = 0; o < srcSlot.numOutputs; o++) {
-        if (srcSlot.outputSlotIndices[o] == slotIdx) {
+      for (int o = 0; o < srcSlot.wiring.numOutputs; o++) {
+        if (srcSlot.wiring.outputSlotIndices[o] == slotIdx) {
           sourceDevice = srcSlot.targetDeviceId;
           break;
         }

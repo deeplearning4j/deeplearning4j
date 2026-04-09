@@ -170,26 +170,26 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
     return "fminf(6.0f, fmaxf(0.0f, " + val + "))";
   if (opName == "leakyrelu" || opName == "LeakyRelu") {
     std::string alpha = "0.01f";
-    if (slot.numTArgs > 0) {
-      alpha = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    if (slot.args.numTArgs > 0) {
+      alpha = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     }
     return "(" + val + " >= 0.0f ? " + val + " : " + val + " * " + alpha + ")";
   }
   // Scalar ops: second operand from tArgs[0]
   if (opName == "add_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " + " + scalar + ")";
   }
   if (opName == "subtract_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " - " + scalar + ")";
   }
   if (opName == "multiply_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " * " + scalar + ")";
   }
   if (opName == "divide_scalar") {
-    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " / " + scalar + ")";
   }
   // Fallback: identity
@@ -290,8 +290,8 @@ std::string NvrtcGraphBackend::generateCudaSource(
   // First pass: identify all external inputs across all slots
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
-    for (int inp = 0; inp < slot.numInputs; inp++) {
-      int srcIdx = slot.inputSourceIndices[inp];
+    for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+      int srcIdx = slot.wiring.inputSourceIndices[inp];
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
         if (externalInputMap.find(extIdx) == externalInputMap.end()) {
@@ -305,15 +305,15 @@ std::string NvrtcGraphBackend::generateCudaSource(
   // consumed outside this segment)
   std::unordered_set<int> segmentSlotOutputs;
   for (int si = startSlot; si <= endSlot; si++) {
-    for (int o = 0; o < slots[si].numOutputs; o++) {
-      segmentSlotOutputs.insert(slots[si].outputSlotIndices[o]);
+    for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+      segmentSlotOutputs.insert(slots[si].wiring.outputSlotIndices[o]);
     }
   }
 
   // The final slot's outputs are always segment outputs
   auto& lastSlot = slots[endSlot];
-  for (int o = 0; o < lastSlot.numOutputs; o++) {
-    outputSlotIndices.push_back(lastSlot.outputSlotIndices[o]);
+  for (int o = 0; o < lastSlot.wiring.numOutputs; o++) {
+    outputSlotIndices.push_back(lastSlot.wiring.outputSlotIndices[o]);
   }
 
   // Build kernel signature
@@ -355,13 +355,13 @@ std::string NvrtcGraphBackend::generateCudaSource(
 
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
-    auto cat = getOpCategoryFromName(slot.opName);
+    auto cat = getOpCategoryFromName(slot.ident.opName);
     int inputCount = categoryInputCount(cat);
 
     // Helper to resolve an input source index to a variable name
     auto resolveInput = [&](int inputIdx) -> std::string {
-      if (inputIdx < slot.numInputs) {
-        int srcIdx = slot.inputSourceIndices[inputIdx];
+      if (inputIdx < slot.wiring.numInputs) {
+        int srcIdx = slot.wiring.inputSourceIndices[inputIdx];
         if (srcIdx < 0) {
           int extIdx = -(srcIdx + 1);
           return "ext" + std::to_string(externalInputMap[extIdx]);
@@ -376,22 +376,22 @@ std::string NvrtcGraphBackend::generateCudaSource(
     };
 
     // Resolve inputs based on category input count
-    std::string inputVar = (slot.numInputs > 0) ? resolveInput(0) : "0.0f";
-    std::string secVar = (inputCount >= 2 && slot.numInputs > 1) ? resolveInput(1) : "0.0f";
-    std::string terVar = (inputCount >= 3 && slot.numInputs > 2) ? resolveInput(2) : "0.0f";
+    std::string inputVar = (slot.wiring.numInputs > 0) ? resolveInput(0) : "0.0f";
+    std::string secVar = (inputCount >= 2 && slot.wiring.numInputs > 1) ? resolveInput(1) : "0.0f";
+    std::string terVar = (inputCount >= 3 && slot.wiring.numInputs > 2) ? resolveInput(2) : "0.0f";
 
     // Emit the op
     std::string resultVar = "t" + std::to_string(si);
     if (isNvrtcJittable(cat)) {
-      src << "    float " << resultVar << " = " << opToCudaExpr(cat, slot.opName, inputVar, secVar, terVar, slot) << ";\n";
+      src << "    float " << resultVar << " = " << opToCudaExpr(cat, slot.ident.opName, inputVar, secVar, terVar, slot) << ";\n";
     } else {
       // Unsupported op: pass through input (identity)
-      src << "    float " << resultVar << " = " << inputVar << ";  // unsupported: " << slot.opName << "\n";
+      src << "    float " << resultVar << " = " << inputVar << ";  // unsupported: " << slot.ident.opName << "\n";
     }
 
     // Map this slot's output indices to the variable
-    for (int o = 0; o < slot.numOutputs; o++) {
-      slotOutputVars[slot.outputSlotIndices[o]] = resultVar;
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      slotOutputVars[slot.wiring.outputSlotIndices[o]] = resultVar;
     }
   }
 
@@ -448,8 +448,8 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = seg.startSlot; i <= seg.endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
-    entry.wasCompiled = isNvrtcJittable(getOpCategoryFromName(slots[i].opName));
+    entry.opName = slots[i].ident.opName;
+    entry.wasCompiled = isNvrtcJittable(getOpCategoryFromName(slots[i].ident.opName));
     if (!entry.wasCompiled) {
       entry.reason = "unmappable op (not in OpCategoryTable or not NVRTC-jittable)";
     }

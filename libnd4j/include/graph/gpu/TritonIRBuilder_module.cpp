@@ -107,7 +107,7 @@ static std::vector<LongType> computeViewStridesFromOp(
     NDArray** outputSlots, int totalOutputSlots,
     const std::unordered_map<int, const LongType*>& cachedShapeInfoMap) {
 
-  const auto& opName = slots[slotIdx].opName;
+  const auto& opName = slots[slotIdx].ident.opName;
 
   // Only handle permute and transpose — these are the view ops that produce
   // non-contiguous strides.  reshape_no_copy changes shape but preserves
@@ -117,8 +117,8 @@ static std::vector<LongType> computeViewStridesFromOp(
   if (!isPermute && !isTranspose) return {};
 
   // Get the source op's input shape (the array being permuted/transposed)
-  if (slots[slotIdx].numInputs < 1) return {};
-  int inputSrcIdx = slots[slotIdx].inputSourceIndices[0];
+  if (slots[slotIdx].wiring.numInputs < 1) return {};
+  int inputSrcIdx = slots[slotIdx].wiring.inputSourceIndices[0];
 
   // Resolve the input shape
   std::vector<LongType> inputShape;
@@ -150,16 +150,16 @@ static std::vector<LongType> computeViewStridesFromOp(
   std::vector<int> perm;
   if (isPermute) {
     // permute: iArgs contains the permutation order
-    for (int i = 0; i < slots[slotIdx].numIArgs && i < rank; i++) {
-      perm.push_back(static_cast<int>(slots[slotIdx].iArgs[i]));
+    for (int i = 0; i < slots[slotIdx].args.numIArgs && i < rank; i++) {
+      perm.push_back(static_cast<int>(slots[slotIdx].args.iArgs[i]));
     }
   } else if (isTranspose) {
     // transpose with no iArgs = full reverse (equivalent to permute(N-1, N-2, ..., 0))
-    if (slots[slotIdx].numIArgs == 0) {
+    if (slots[slotIdx].args.numIArgs == 0) {
       for (int d = rank - 1; d >= 0; d--) perm.push_back(d);
     } else {
-      for (int i = 0; i < slots[slotIdx].numIArgs && i < rank; i++) {
-        perm.push_back(static_cast<int>(slots[slotIdx].iArgs[i]));
+      for (int i = 0; i < slots[slotIdx].args.numIArgs && i < rank; i++) {
+        perm.push_back(static_cast<int>(slots[slotIdx].args.iArgs[i]));
       }
     }
   }
@@ -228,7 +228,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   {
     bool hasNonElementwiseOps = false;
     for (int i = startSlot; i <= endSlot; i++) {
-      auto cat = getOpCategory(slots[i].opName);
+      auto cat = getOpCategory(slots[i].ident.opName);
       if (cat == TritonOpCategory::MATMUL || cat == TritonOpCategory::FUSED_ATTENTION ||
           cat == TritonOpCategory::DATA_MOVEMENT || cat == TritonOpCategory::CONVOLUTION ||
           cat == TritonOpCategory::SHAPE_MANIPULATION) {
@@ -260,12 +260,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // were populated from a prior execution.
   std::unordered_map<int, const LongType*> cachedShapeInfoMap;
   for (int i = 0; i < totalSlots; i++) {
-    if (!slots[i].cachedOutputShapes.empty()) {
-      for (int o = 0; o < slots[i].numOutputs; o++) {
-        int outIdx = slots[i].outputSlotIndices[o];
-        if (outIdx >= 0 && o < static_cast<int>(slots[i].cachedOutputShapes.size()) &&
-            slots[i].cachedOutputShapes[o] != nullptr) {
-          cachedShapeInfoMap[outIdx] = slots[i].cachedOutputShapes[o];
+    if (!slots[i].shapeCache.cachedOutputShapes.empty()) {
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+        int outIdx = slots[i].wiring.outputSlotIndices[o];
+        if (outIdx >= 0 && o < static_cast<int>(slots[i].shapeCache.cachedOutputShapes.size()) &&
+            slots[i].shapeCache.cachedOutputShapes[o] != nullptr) {
+          cachedShapeInfoMap[outIdx] = slots[i].shapeCache.cachedOutputShapes[o];
         }
       }
     }
@@ -322,12 +322,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   std::vector<std::vector<LongType>> shapes;
 
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = getOpCategory(slots[i].opName);
+    auto cat = getOpCategory(slots[i].ident.opName);
     // Every op must be in the table. getOpCategory() throws if missing.
     categories.push_back(cat);
 
-    if (slots[i].numOutputs > 0) {
-      int outIdx = slots[i].outputSlotIndices[0];
+    if (slots[i].wiring.numOutputs > 0) {
+      int outIdx = slots[i].wiring.outputSlotIndices[0];
       shapes.push_back(resolveShapeLocal(outIdx));
     } else {
       shapes.push_back({});
@@ -355,8 +355,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // ── Collect unique buffer references ──
   std::unordered_set<int> internalSlotOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalSlotOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalSlotOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -367,19 +367,19 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // that cannot be expressed through the 1D SSA pipeline.
   std::unordered_set<int> forceExternalInputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = getOpCategory(slots[i].opName);
-    if (cat == TritonOpCategory::ROPE && slots[i].numInputs >= 3) {
-      int cosSrc = slots[i].inputSourceIndices[1];
-      int sinSrc = slots[i].inputSourceIndices[2];
+    auto cat = getOpCategory(slots[i].ident.opName);
+    if (cat == TritonOpCategory::ROPE && slots[i].wiring.numInputs >= 3) {
+      int cosSrc = slots[i].wiring.inputSourceIndices[1];
+      int sinSrc = slots[i].wiring.inputSourceIndices[2];
       if (internalSlotOutputs.count(cosSrc)) {
         forceExternalInputs.insert(cosSrc);
         DSP_DIAG(COMPILE, "TritonIRBuilder: ROPE '%s' at slot %d: forcing internal cos src %d to kernel arg",
-                  slots[i].opName.c_str(), i, cosSrc);
+                  slots[i].ident.opName.c_str(), i, cosSrc);
       }
       if (internalSlotOutputs.count(sinSrc)) {
         forceExternalInputs.insert(sinSrc);
         DSP_DIAG(COMPILE, "TritonIRBuilder: ROPE '%s' at slot %d: forcing internal sin src %d to kernel arg",
-                  slots[i].opName.c_str(), i, sinSrc);
+                  slots[i].ident.opName.c_str(), i, sinSrc);
       }
     }
   }
@@ -394,8 +394,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   std::unordered_set<int> frozenSlotOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
     if (slots[i].frozenConstantSlot()) {
-      for (int o = 0; o < slots[i].numOutputs; o++) {
-        frozenSlotOutputs.insert(slots[i].outputSlotIndices[o]);
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+        frozenSlotOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
       }
     }
   }
@@ -409,24 +409,24 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   if (endSlot - startSlot < 100) {
     for (int i = startSlot; i <= endSlot; i++) {
       std::string inSrcs;
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
         if (!inSrcs.empty()) inSrcs += ",";
-        inSrcs += std::to_string(slots[i].inputSourceIndices[inp]);
+        inSrcs += std::to_string(slots[i].wiring.inputSourceIndices[inp]);
       }
       std::string outSlots2;
-      for (int o = 0; o < slots[i].numOutputs; o++) {
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
         if (!outSlots2.empty()) outSlots2 += ",";
-        outSlots2 += std::to_string(slots[i].outputSlotIndices[o]);
+        outSlots2 += std::to_string(slots[i].wiring.outputSlotIndices[o]);
       }
       bool allInternal = true;
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        int src = slots[i].inputSourceIndices[inp];
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        int src = slots[i].wiring.inputSourceIndices[inp];
         if (src < 0 || !internalSlotOutputs.count(src)) { allInternal = false; break; }
       }
       // Also show resolved array info for non-internal inputs
       std::string inputInfo;
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        int src = slots[i].inputSourceIndices[inp];
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        int src = slots[i].wiring.inputSourceIndices[inp];
         if (src < 0) {
           int extIdx = -(src + 1);
           if (extIdx < numExternalInputs && externalInputs[extIdx]) {
@@ -445,7 +445,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
       }
       DSP_DIAG_SLOT(COMPILE, i, "SLOT WIRING: [%d-%d] slot %d op='%s' inputs=[%s] outputs=[%s] allInternal=%d%s",
-                startSlot, endSlot, i, slots[i].opName.c_str(), inSrcs.c_str(),
+                startSlot, endSlot, i, slots[i].ident.opName.c_str(), inSrcs.c_str(),
                 outSlots2.c_str(), allInternal ? 1 : 0, inputInfo.c_str());
     }
   }
@@ -464,10 +464,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   {
     std::unordered_map<int, bool> inputHasNonConstGenConsumer;
     for (int i = startSlot; i <= endSlot; i++) {
-      auto cat = getOpCategory(slots[i].opName);
+      auto cat = getOpCategory(slots[i].ident.opName);
       bool isConstGen = (cat == TritonOpCategory::CONSTANT_GENERATION);
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        int srcIdx = slots[i].inputSourceIndices[inp];
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        int srcIdx = slots[i].wiring.inputSourceIndices[inp];
         if (srcIdx >= 0) continue;  // Only care about external inputs here
         auto it = inputHasNonConstGenConsumer.find(srcIdx);
         if (it == inputHasNonConstGenConsumer.end()) {
@@ -487,8 +487,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
 
@@ -572,14 +572,14 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                     srcIdx < totalSlots ? 1 : 0, srcIdx < totalOutputSlots ? 1 : 0);
           // Scan all slots for the producing op to diagnose why shape is missing
           for (int si2 = 0; si2 < totalSlots; si2++) {
-            for (int o2 = 0; o2 < slots[si2].numOutputs; o2++) {
-              if (slots[si2].outputSlotIndices[o2] == srcIdx) {
+            for (int o2 = 0; o2 < slots[si2].wiring.numOutputs; o2++) {
+              if (slots[si2].wiring.outputSlotIndices[o2] == srcIdx) {
                 DSP_DIAG(COMPILE, "  -> produced by op[%d] '%s' state=%d shapeCacheValid=%d "
                           "cachedOutputShapes.size=%d numOutputs=%d",
-                          si2, slots[si2].opName.c_str(), static_cast<int>(slots[si2].state_),
+                          si2, slots[si2].ident.opName.c_str(), static_cast<int>(slots[si2].state_),
                           slots[si2].shapeCacheValid() ? 1 : 0,
-                          static_cast<int>(slots[si2].cachedOutputShapes.size()),
-                          slots[si2].numOutputs);
+                          static_cast<int>(slots[si2].shapeCache.cachedOutputShapes.size()),
+                          slots[si2].wiring.numOutputs);
               }
             }
           }
@@ -637,10 +637,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // Find internal intermediates consumed by reduction ops
   std::unordered_set<int> reductionInputSlots;
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = getOpCategory(slots[i].opName);
+    auto cat = getOpCategory(slots[i].ident.opName);
     if (cat == TritonOpCategory::REDUCTION) {
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        int srcIdx = slots[i].inputSourceIndices[inp];
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        int srcIdx = slots[i].wiring.inputSourceIndices[inp];
         if (srcIdx >= 0 && internalSlotOutputs.count(srcIdx) && !externalOutputs.count(srcIdx)) {
           reductionInputSlots.insert(srcIdx);
         }
@@ -674,8 +674,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     int skippedInternal = 0;
     int skippedAliased = 0;
     for (int i = startSlot; i <= endSlot; i++) {
-      for (int o = 0; o < slots[i].numOutputs; o++) {
-        int outIdx = slots[i].outputSlotIndices[o];
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+        int outIdx = slots[i].wiring.outputSlotIndices[o];
         if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
         if (seenOutputSlots.count(outIdx)) continue;  // Deduplicate
         seenOutputSlots.insert(outIdx);
@@ -728,22 +728,22 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             // This happens when the output slot belongs to a view-capable op (reshape,
             // strided_slice, etc.) that doesn't pre-allocate its output. The producing op
             // (e.g. cast) needs the correct dtype to generate proper store instructions.
-            auto producerCat = getOpCategory(slots[i].opName);
-            if (producerCat == TritonOpCategory::CAST && slots[i].numIArgs > 0 && slots[i].iArgs) {
+            auto producerCat = getOpCategory(slots[i].ident.opName);
+            if (producerCat == TritonOpCategory::CAST && slots[i].args.numIArgs > 0 && slots[i].args.iArgs) {
               // Cast ops store target dtype in iArgs[0]
-              arg.dtype = static_cast<DataType>(slots[i].iArgs[0]);
+              arg.dtype = static_cast<DataType>(slots[i].args.iArgs[0]);
               DSP_DIAG(COMPILE, "TritonIRBuilder: output slot %d dtype resolved from cast iArgs[0]=%lld → dtype=%d",
-                       outIdx, (long long)slots[i].iArgs[0], (int)arg.dtype);
+                       outIdx, (long long)slots[i].args.iArgs[0], (int)arg.dtype);
             } else {
               // For non-cast ops, output dtype matches the primary input's dtype
-              if (slots[i].numInputs > 0) {
-                int inputSrc = slots[i].inputSourceIndices[0];
+              if (slots[i].wiring.numInputs > 0) {
+                int inputSrc = slots[i].wiring.inputSourceIndices[0];
                 arg.dtype = resolveDtypeLocal(inputSrc);
               }
             }
             // Derive shape from the primary input (most ops preserve shape)
-            if (arg.shape.empty() && slots[i].numInputs > 0) {
-              int inputSrc = slots[i].inputSourceIndices[0];
+            if (arg.shape.empty() && slots[i].wiring.numInputs > 0) {
+              int inputSrc = slots[i].wiring.inputSourceIndices[0];
               auto inputShape = resolveShapeLocal(inputSrc);
               if (!inputShape.empty()) {
                 arg.shape = inputShape;
@@ -897,8 +897,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     // paddedRowLen-sized tensors, causing MLIR type mismatch on tt.store.
     if (hasNormalization && !hasReduction && !hasMatmul) {
       for (int i = startSlot; i <= endSlot; i++) {
-        if (slots[i].numInputs >= 1) {
-          auto inputShape = resolveShapeLocal(slots[i].inputSourceIndices[0]);
+        if (slots[i].wiring.numInputs >= 1) {
+          auto inputShape = resolveShapeLocal(slots[i].wiring.inputSourceIndices[0]);
           if (!inputShape.empty()) {
             int64_t rowLen = inputShape.back();
             int64_t totalElements = 1;
@@ -1213,8 +1213,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     if (!mlir::isa<mlir::FloatType>(elemType) || getFloatBitWidth(elemType) <= 16)
       return val;  // Already FP16 or narrower — no truncation needed
     // Determine native output dtype from the output NDArray
-    for (int o = 0; o < slots[slotIdx].numOutputs; o++) {
-      int outIdx = slots[slotIdx].outputSlotIndices[o];
+    for (int o = 0; o < slots[slotIdx].wiring.numOutputs; o++) {
+      int outIdx = slots[slotIdx].wiring.outputSlotIndices[o];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
         auto nativeDtype = outputSlots[outIdx]->dataType();
         if (nativeDtype == DataType::HALF || nativeDtype == DataType::BFLOAT16) {
@@ -1242,17 +1242,17 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       };
       DSP_DIAG(COMPILE, "JIT SLOT[%d] op='%s' cat=%d inputs=%d outputs=%d iArgs=%d tArgs=%d bArgs=%d "
                 "identity=%d view=%d fused=%d zeroOut=%d frozen=%d",
-                si, slot.opName.c_str(), static_cast<int>(cat),
-                slot.numInputs, slot.numOutputs,
-                slot.numIArgs, slot.numTArgs, slot.numBArgs,
-                slot.isIdentityOp ? 1 : 0, slot.isViewCapableOp ? 1 : 0,
-                slot.inPlaceFused ? 1 : 0, slot.needsZeroedOutput ? 1 : 0,
+                si, slot.ident.opName.c_str(), static_cast<int>(cat),
+                slot.wiring.numInputs, slot.wiring.numOutputs,
+                slot.args.numIArgs, slot.args.numTArgs, slot.args.numBArgs,
+                slot.flags.isIdentityOp ? 1 : 0, slot.flags.isViewCapableOp ? 1 : 0,
+                slot.flags.inPlaceFused ? 1 : 0, slot.flags.needsZeroedOutput ? 1 : 0,
                 slot.frozenConstantSlot() ? 1 : 0);
-      for (int inp = 0; inp < slot.numInputs; inp++) {
-        int srcIdx = slot.inputSourceIndices[inp];
+      for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+        int srcIdx = slot.wiring.inputSourceIndices[inp];
         auto srcShape = resolveShapeLocal(srcIdx);
         const char* srcOp = "EXT";
-        if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].opName.c_str();
+        if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].ident.opName.c_str();
         bool exists = false;
         LongType len = -1;
         if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
@@ -1267,31 +1267,31 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                   inp, srcIdx, srcOp, fmtShpJit(srcShape).c_str(),
                   exists, (long long)len);
       }
-      for (int outp = 0; outp < slot.numOutputs; outp++) {
-        int outIdx = slot.outputSlotIndices[outp];
+      for (int outp = 0; outp < slot.wiring.numOutputs; outp++) {
+        int outIdx = slot.wiring.outputSlotIndices[outp];
         auto outShape = resolveShapeLocal(outIdx);
         DSP_DIAG(COMPILE, "  output[%d] slot=%d shape=[%s]",
                   outp, outIdx, fmtShpJit(outShape).c_str());
       }
-      if (slot.numIArgs > 0 && slot.iArgs) {
+      if (slot.args.numIArgs > 0 && slot.args.iArgs) {
         std::string iStr;
-        for (int a = 0; a < slot.numIArgs && a < 20; a++) {
-          if (a) iStr += ","; iStr += std::to_string(slot.iArgs[a]);
+        for (int a = 0; a < slot.args.numIArgs && a < 20; a++) {
+          if (a) iStr += ","; iStr += std::to_string(slot.args.iArgs[a]);
         }
-        if (slot.numIArgs > 20) iStr += "...";
-        DSP_DIAG(COMPILE, "  iArgs=[%s] (%d)", iStr.c_str(), slot.numIArgs);
+        if (slot.args.numIArgs > 20) iStr += "...";
+        DSP_DIAG(COMPILE, "  iArgs=[%s] (%d)", iStr.c_str(), slot.args.numIArgs);
       }
-      if (slot.numTArgs > 0 && slot.tArgs) {
+      if (slot.args.numTArgs > 0 && slot.args.tArgs) {
         char tBuf[256] = {0};
         int toff = 0;
-        for (int a = 0; a < slot.numTArgs && a < 10 && toff < 240; a++) {
-          toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.tArgs[a]);
+        for (int a = 0; a < slot.args.numTArgs && a < 10 && toff < 240; a++) {
+          toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.args.tArgs[a]);
         }
-        DSP_DIAG(COMPILE, "  tArgs=[%s] (%d)", tBuf, slot.numTArgs);
+        DSP_DIAG(COMPILE, "  tArgs=[%s] (%d)", tBuf, slot.args.numTArgs);
       }
     }
 
-    auto it = opTable.find(slot.opName);
+    auto it = opTable.find(slot.ident.opName);
     if (it == opTable.end()) continue;
     const auto& mapping = it->second;
     opsEmitted++;
@@ -1303,8 +1303,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     if (slot.frozenConstantSlot()) {
       // Verify SSA values are available for all outputs (set by tt.load loop above)
       bool allSet = true;
-      for (int o = 0; o < slot.numOutputs; o++) {
-        if (ssaValues.find(slot.outputSlotIndices[o]) == ssaValues.end()) {
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        if (ssaValues.find(slot.wiring.outputSlotIndices[o]) == ssaValues.end()) {
           allSet = false;
           break;
         }
@@ -1317,18 +1317,18 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
     if (cat == TritonOpCategory::BINARY_ELEMENTWISE) {
       // Binary: needs two inputs (except pow which can be unary with scalar exponent in tArgs)
-      if (slot.numInputs < 2) {
+      if (slot.wiring.numInputs < 2) {
         // Special case: pow with scalar exponent in tArgs (unary mode)
-        std::string opLower2 = slot.opName;
+        std::string opLower2 = slot.ident.opName;
         std::transform(opLower2.begin(), opLower2.end(), opLower2.begin(), ::tolower);
-        if (opLower2 == "pow" && slot.numInputs >= 1) {
-          int inputSrc = slot.inputSourceIndices[0];
+        if (opLower2 == "pow" && slot.wiring.numInputs >= 1) {
+          int inputSrc = slot.wiring.inputSourceIndices[0];
           auto inputIt = ssaValues.find(inputSrc);
           if (inputIt != ssaValues.end()) {
             auto opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
             opResult = emulateNativePrecision(opResult, si);
-            for (int o = 0; o < slot.numOutputs; o++) {
-              ssaValues[slot.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) {
+              ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
             }
           } else {
             DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for unary pow at slot %d (src=%d)",
@@ -1337,12 +1337,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           continue;
         }
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: binary op '%s' at slot %d has < 2 inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
 
-      int lhsSrc = slot.inputSourceIndices[0];
-      int rhsSrc = slot.inputSourceIndices[1];
+      int lhsSrc = slot.wiring.inputSourceIndices[0];
+      int rhsSrc = slot.wiring.inputSourceIndices[1];
 
       auto lhsIt = ssaValues.find(lhsSrc);
       auto rhsIt = ssaValues.find(rhsSrc);
@@ -1350,7 +1350,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for binary op '%s' at slot %d "
                   "(lhs=%d:%s, rhs=%d:%s)",
-                  slot.opName.c_str(), si,
+                  slot.ident.opName.c_str(), si,
                   lhsSrc, lhsIt != ssaValues.end() ? "found" : "MISSING",
                   rhsSrc, rhsIt != ssaValues.end() ? "found" : "MISSING");
         continue;
@@ -1360,35 +1360,35 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       opResult = emulateNativePrecision(opResult, si);
 
       // Store result SSA value for each output slot
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
 
     } else if (cat == TritonOpCategory::UNARY_ELEMENTWISE) {
       // Unary: needs one input
-      if (slot.numInputs < 1) {
+      if (slot.wiring.numInputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: unary op '%s' at slot %d has no inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
 
-      int inputSrc = slot.inputSourceIndices[0];
+      int inputSrc = slot.wiring.inputSourceIndices[0];
       auto inputIt = ssaValues.find(inputSrc);
       if (inputIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for unary op '%s' at slot %d (src=%d)",
-                  slot.opName.c_str(), si, inputSrc);
+                  slot.ident.opName.c_str(), si, inputSrc);
         continue;
       }
 
       mlir::Value opResult;
       // ClipByValue with tensor min/max: use loaded SSA inputs, not tArgs
       {
-        std::string ol = slot.opName;
+        std::string ol = slot.ident.opName;
         std::transform(ol.begin(), ol.end(), ol.begin(), ::tolower);
         if ((ol == "clipbyvalue" || ol == "clip_by_value" || ol == "clamp")
-            && slot.numInputs >= 3) {
-          auto minIt = ssaValues.find(slot.inputSourceIndices[1]);
-          auto maxIt = ssaValues.find(slot.inputSourceIndices[2]);
+            && slot.wiring.numInputs >= 3) {
+          auto minIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
+          auto maxIt = ssaValues.find(slot.wiring.inputSourceIndices[2]);
           if (minIt != ssaValues.end() && maxIt != ssaValues.end()) {
             auto elTy = mlir::cast<mlir::RankedTensorType>(
                 inputIt->second.getType()).getElementType();
@@ -1406,124 +1406,124 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
       opResult = emulateNativePrecision(opResult, si);
 
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
 
     } else if (cat == TritonOpCategory::COMPARISON) {
       // Comparison: needs two inputs, produces bool tensor
-      if (slot.numInputs < 2) {
+      if (slot.wiring.numInputs < 2) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: comparison op '%s' at slot %d has < 2 inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
-      int lhsSrc = slot.inputSourceIndices[0];
-      int rhsSrc = slot.inputSourceIndices[1];
+      int lhsSrc = slot.wiring.inputSourceIndices[0];
+      int rhsSrc = slot.wiring.inputSourceIndices[1];
       auto lhsIt = ssaValues.find(lhsSrc);
       auto rhsIt = ssaValues.find(rhsSrc);
       if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for comparison op '%s' at slot %d",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
-      auto opResult = emitComparisonOp(builder, loc, slot.opName, lhsIt->second, rhsIt->second, blockSize);
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+      auto opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
 
     } else if (cat == TritonOpCategory::LOGICAL) {
       // Logical: 1 or 2 inputs depending on op
-      if (slot.numInputs < 1) {
+      if (slot.wiring.numInputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: logical op '%s' at slot %d has no inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
-      int lhsSrc = slot.inputSourceIndices[0];
+      int lhsSrc = slot.wiring.inputSourceIndices[0];
       auto lhsIt = ssaValues.find(lhsSrc);
       if (lhsIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for logical op '%s' at slot %d",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
       // For NOT ops, rhs is unused (emitLogicalOp handles it internally)
       mlir::Value rhsVal = lhsIt->second;  // dummy for unary
-      if (slot.numInputs >= 2) {
-        int rhsSrc = slot.inputSourceIndices[1];
+      if (slot.wiring.numInputs >= 2) {
+        int rhsSrc = slot.wiring.inputSourceIndices[1];
         auto rhsIt = ssaValues.find(rhsSrc);
         if (rhsIt != ssaValues.end()) rhsVal = rhsIt->second;
       }
-      auto opResult = emitLogicalOp(builder, loc, slot.opName, lhsIt->second, rhsVal, blockSize);
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+      auto opResult = emitLogicalOp(builder, loc, slot.ident.opName, lhsIt->second, rhsVal, blockSize);
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
 
     } else if (cat == TritonOpCategory::TERNARY) {
       // Ternary: where/select needs 3 inputs (condition, true_val, false_val)
-      if (slot.numInputs < 3) {
+      if (slot.wiring.numInputs < 3) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: ternary op '%s' at slot %d has < 3 inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
-      int condSrc = slot.inputSourceIndices[0];
-      int trueSrc = slot.inputSourceIndices[1];
-      int falseSrc = slot.inputSourceIndices[2];
+      int condSrc = slot.wiring.inputSourceIndices[0];
+      int trueSrc = slot.wiring.inputSourceIndices[1];
+      int falseSrc = slot.wiring.inputSourceIndices[2];
       auto condIt = ssaValues.find(condSrc);
       auto trueIt = ssaValues.find(trueSrc);
       auto falseIt = ssaValues.find(falseSrc);
       if (condIt == ssaValues.end() || trueIt == ssaValues.end() || falseIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for ternary op '%s' at slot %d",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
       auto opResult = emitTernaryOp(builder, loc, condIt->second, trueIt->second, falseIt->second, blockSize);
       opResult = emulateNativePrecision(opResult, si);
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
 
     } else if (cat == TritonOpCategory::IDENTITY) {
       // Identity/assign: SSA value forwarding, no IR op needed
-      if (slot.numInputs < 1) {
+      if (slot.wiring.numInputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: identity op '%s' at slot %d has no inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
       // For assign(target, source): output = source = input[1]
       // For identity(x): output = x = input[0]
-      int inputIdx = (slot.numInputs >= 2) ? 1 : 0;
-      int inputSrc = slot.inputSourceIndices[inputIdx];
+      int inputIdx = (slot.wiring.numInputs >= 2) ? 1 : 0;
+      int inputSrc = slot.wiring.inputSourceIndices[inputIdx];
       auto inputIt = ssaValues.find(inputSrc);
       if (inputIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for identity op '%s' at slot %d",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
       // Forward the SSA value directly — no computation needed
       DSP_DIAG_SLOT(COMPILE, si, "TritonIRBuilder: IDENTITY op '%s' at slot %d: numInputs=%d inputIdx=%d inputSrc=%d → forwarded to %d output(s)",
-                slot.opName.c_str(), si, slot.numInputs, inputIdx, inputSrc, slot.numOutputs);
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+                slot.ident.opName.c_str(), si, slot.wiring.numInputs, inputIdx, inputSrc, slot.wiring.numOutputs);
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
       }
 
     } else if (cat == TritonOpCategory::CAST) {
       // Cast: type conversion using the castTo() helper
-      if (slot.numInputs < 1) {
+      if (slot.wiring.numInputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: cast op '%s' at slot %d has no inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
-      int inputSrc = slot.inputSourceIndices[0];
+      int inputSrc = slot.wiring.inputSourceIndices[0];
       auto inputIt = ssaValues.find(inputSrc);
       if (inputIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for cast op '%s' at slot %d",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
       // If cast elimination marked this as identity, forward the SSA value
       // without computing the cast (consistent with slot-by-slot identity path).
-      if (slot.isIdentityOp) {
-        for (int o = 0; o < slot.numOutputs; o++) {
-          ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+      if (slot.flags.isIdentityOp) {
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
         }
       } else {
         // Determine target type from the output slot's dtype.
@@ -1533,22 +1533,22 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // resolveDtypeLocal is the last resort but can return FLOAT32 (wrong) when
         // the output slot belongs to a view-capable op with no pre-allocated array.
         DataType targetDtype = FLOAT32;  // default
-        if (slot.numDArgs > 0 && slot.dArgs) {
-          targetDtype = slot.dArgs[0];
-        } else if (slot.numIArgs > 0 && slot.iArgs) {
+        if (slot.args.numDArgs > 0 && slot.args.dArgs) {
+          targetDtype = slot.args.dArgs[0];
+        } else if (slot.args.numIArgs > 0 && slot.args.iArgs) {
           // Cast ops store the target dtype in iArgs[0]
-          targetDtype = static_cast<DataType>(slot.iArgs[0]);
-        } else if (slot.numOutputs > 0) {
-          int outIdx = slot.outputSlotIndices[0];
+          targetDtype = static_cast<DataType>(slot.args.iArgs[0]);
+        } else if (slot.wiring.numOutputs > 0) {
+          int outIdx = slot.wiring.outputSlotIndices[0];
           targetDtype = resolveDtypeLocal(outIdx);
         }
         DSP_DIAG_SLOT(COMPILE, si, "TritonIRBuilder: cast at slot %d: numDArgs=%d numIArgs=%d targetDtype=%d (%s)",
-                  si, slot.numDArgs, slot.numIArgs, (int)targetDtype,
+                  si, slot.args.numDArgs, slot.args.numIArgs, (int)targetDtype,
                   DataTypeUtils::asString(targetDtype).c_str());
         auto targetElemType = getMLIRType(builder, targetDtype);
         auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
-        for (int o = 0; o < slot.numOutputs; o++) {
-          ssaValues[slot.outputSlotIndices[o]] = opResult;
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
         }
       }
 
@@ -1556,20 +1556,20 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // Segmented reduction: for each output element, accumulate over the reduction axis.
       // Unlike elementwise ops, reduction changes tensor size, so we can't use the SSA value
       // (which was loaded using output offsets). Instead, directly load from input buffer.
-      if (slot.numInputs < 1) {
+      if (slot.wiring.numInputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: reduction op '%s' at slot %d has no inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
-      int inputSrc = slot.inputSourceIndices[0];
+      int inputSrc = slot.wiring.inputSourceIndices[0];
       // Get reduction axis from iArgs
-      int reductionAxis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : -1;
+      int reductionAxis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : -1;
 
       // Resolve input shape
       auto inputShape = resolveShapeLocal(inputSrc);
       int inputRank = static_cast<int>(inputShape.size());
       if (inputRank == 0) {
-        DSP_DIAG_SLOT(SHAPE, si, "TritonIRBuilder: reduction op '%s' has no input shape info", slot.opName.c_str());
+        DSP_DIAG_SLOT(SHAPE, si, "TritonIRBuilder: reduction op '%s' has no input shape info", slot.ident.opName.c_str());
         continue;
       }
       // Handle negative axis
@@ -1673,7 +1673,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // Where inputOffset(i, k) unravels i to output ND coords, inserts k at reductionAxis, ravels to flat.
 
       // Determine reduction identity value and combine op
-      std::string opLower = slot.opName;
+      std::string opLower = slot.ident.opName;
       std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
       bool isMean = (opLower == "reduce_mean" || opLower == "mean");
       bool isMax = (opLower == "reduce_max" || opLower == "max");
@@ -1755,7 +1755,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
       // Cast back to output element type
-      auto outSlotIdx = slot.outputSlotIndices[0];
+      auto outSlotIdx = slot.wiring.outputSlotIndices[0];
       auto outDtype = resolveDtypeLocal(outSlotIdx);
       auto outElemType = getMLIRType(builder, outDtype);
       mlir::Value opResult = castTo(builder, loc, acc, outElemType);
@@ -1776,9 +1776,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
       bool hasDownstreamConsumer = false;
       for (int si2 = si + 1; si2 <= endSlot; si2++) {
-        for (int inp2 = 0; inp2 < slots[si2].numInputs; inp2++) {
-          for (int o = 0; o < slot.numOutputs; o++) {
-            if (slots[si2].inputSourceIndices[inp2] == slot.outputSlotIndices[o])
+        for (int inp2 = 0; inp2 < slots[si2].wiring.numInputs; inp2++) {
+          for (int o = 0; o < slot.wiring.numOutputs; o++) {
+            if (slots[si2].wiring.inputSourceIndices[inp2] == slot.wiring.outputSlotIndices[o])
               hasDownstreamConsumer = true;
           }
         }
@@ -1881,18 +1881,18 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
       opResult = emulateNativePrecision(opResult, si);
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
 
     } else if (cat == TritonOpCategory::NORMALIZATION) {
       // Normalization: load input with actual shape (not flattened), call emitNormalizationOp
-      if (slot.numInputs < 1) {
+      if (slot.wiring.numInputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: normalization op '%s' at slot %d has no inputs",
-                  slot.opName.c_str(), si);
+                  slot.ident.opName.c_str(), si);
         continue;
       }
-      int inputSrc = slot.inputSourceIndices[0];
+      int inputSrc = slot.wiring.inputSourceIndices[0];
       mlir::Value inputValue;
       mlir::RankedTensorType inputTensorType;
       
@@ -1943,7 +1943,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         int extIdx = -(inputSrc + 1);
         if (extIdx >= numExternalInputs || !externalInputs[extIdx]) {
           DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing external input %d for normalization op '%s' at slot %d",
-                    extIdx, slot.opName.c_str(), si);
+                    extIdx, slot.ident.opName.c_str(), si);
           continue;
         }
         // Find the arg for this external input
@@ -1953,14 +1953,14 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             });
         if (extArgIt == result.args.end()) {
           DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: external input %d not in result.args for normalization op '%s' at slot %d",
-                    inputSrc, slot.opName.c_str(), si);
+                    inputSrc, slot.ident.opName.c_str(), si);
           continue;
         }
         int argIdx = extArgIt - result.args.begin();
         auto bufferArg = getBufferArg(argIdx);
         if (!bufferArg) {
           DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: null bufferArg for external input %d in normalization op '%s' at slot %d",
-                    inputSrc, slot.opName.c_str(), si);
+                    inputSrc, slot.ident.opName.c_str(), si);
           continue;
         }
         // Load with padded tensor shape (power of 2 for Triton make_range)
@@ -2046,7 +2046,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       int axis = inputTensorType.getRank() - 1;
       if (axis < 0) axis = 0;
 
-      auto outSlotIdx = slot.outputSlotIndices[0];
+      auto outSlotIdx = slot.wiring.outputSlotIndices[0];
       mlir::RankedTensorType outputType;
       {
         auto outShape = resolveShapeLocal(outSlotIdx);
@@ -2057,12 +2057,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           outputType = mlir::RankedTensorType::get(outShape64, elemType);
         }
       }
-      std::string normKey = normalizeOpToken(slot.opName);
+      std::string normKey = normalizeOpToken(slot.ident.opName);
       // For normalization side inputs (gamma, beta), ALWAYS load external inputs directly
       // (SSA values from preloading are flattened to blockSize, which breaks reduction semantics)
       auto getNormInput = [&](int inputPos) -> mlir::Value {
-        if (inputPos >= slot.numInputs) return mlir::Value();
-        int src = slot.inputSourceIndices[inputPos];
+        if (inputPos >= slot.wiring.numInputs) return mlir::Value();
+        int src = slot.wiring.inputSourceIndices[inputPos];
 
         // For external inputs, load directly with padded shape (power of 2)
         if (src < 0) {
@@ -2139,11 +2139,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
       // Read epsilon from tArgs (first float argument), default 1e-5 if not set
-      float epsilon = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-5f;
+      float epsilon = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 1e-5f;
 
       // Pass logical row length to emitNormalizationOp for correct reduction
       // (tensor may be padded to power of 2, but we divide by logical width)
-      auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputValue, axis, outputType,
+      auto opResult = emitNormalizationOp(builder, loc, slot.ident.opName, inputValue, axis, outputType,
                                           scaleVal, biasVal, meanVal, varianceVal, epsilon, logicalRowLen);
       // Safety: if normalization somehow returns a scalar, splat it back to tensor
       if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
@@ -2158,8 +2158,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // The generic store uses blockSize-wide tensors with contiguous offsets,
         // which doesn't match the per-row paddedRowLen-wide normalization output
         // when data rows are packed at logicalRowLen intervals (not paddedRowLen).
-        for (int o = 0; o < slot.numOutputs; o++) {
-          auto outSlot = slot.outputSlotIndices[o];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          auto outSlot = slot.wiring.outputSlotIndices[o];
           // Find the output buffer arg
           auto outArgIt = std::find_if(result.args.begin(), result.args.end(),
               [outSlot](const TritonKernelArg& arg) {
@@ -2197,8 +2197,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
       } else {
         // Single-row: use generic store loop at end of buildModule
-        for (int o = 0; o < slot.numOutputs; o++) {
-          ssaValues[slot.outputSlotIndices[o]] = opResult;
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
         }
       }
 
@@ -2206,10 +2206,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // ─── MATMUL: per-element scalar K-loop matmul (correct, no tensor cores) ───
       // For standalone matmul ops within a 1D element-wise segment.
       // Small pure-matmul segments go through buildMatmulModule instead.
-      if (slot.numInputs >= 2 && slot.numOutputs >= 1) {
-        int aSrc = slot.inputSourceIndices[0];
-        int bSrc = slot.inputSourceIndices[1];
-        int cSlot = slot.outputSlotIndices[0];
+      if (slot.wiring.numInputs >= 2 && slot.wiring.numOutputs >= 1) {
+        int aSrc = slot.wiring.inputSourceIndices[0];
+        int bSrc = slot.wiring.inputSourceIndices[1];
+        int cSlot = slot.wiring.outputSlotIndices[0];
 
         NDArray* aArr = resolveArr(aSrc);
         NDArray* bArr = resolveArr(bSrc);
@@ -2238,44 +2238,44 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             if (cArr) outDtype = cArr->dataType();
             auto loaded = loadBackFromBuffer(cSlot, outDtype);
             if (loaded) {
-              for (int o = 0; o < slot.numOutputs; o++) {
-                ssaValues[slot.outputSlotIndices[o]] = loaded;
+              for (int o = 0; o < slot.wiring.numOutputs; o++) {
+                ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
               }
             }
           } else {
-            std::string msg = "TritonIRBuilder: matmul '" + slot.opName + "' at slot " + std::to_string(si) +
+            std::string msg = "TritonIRBuilder: matmul '" + slot.ident.opName + "' at slot " + std::to_string(si) +
                 " — missing kernel arg ptrs for A(" + std::to_string(aSrc) + ")/B(" + std::to_string(bSrc) +
                 ")/C(" + std::to_string(cSlot) + "). Cannot compile.";
             THROW_EXCEPTION(msg.c_str());
           }
         } else {
-          std::string msg = "TritonIRBuilder: matmul '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: matmul '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — M=" + std::to_string(M) + " N=" + std::to_string(N) + " K=" + std::to_string(K) +
               " invalid dimensions. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
       } else {
-        std::string msg = "TritonIRBuilder: matmul '" + slot.opName + "' at slot " + std::to_string(si) +
-            " — needs >=2 inputs and >=1 output, has " + std::to_string(slot.numInputs) + "/" +
-            std::to_string(slot.numOutputs) + ". Cannot compile.";
+        std::string msg = "TritonIRBuilder: matmul '" + slot.ident.opName + "' at slot " + std::to_string(si) +
+            " — needs >=2 inputs and >=1 output, has " + std::to_string(slot.wiring.numInputs) + "/" +
+            std::to_string(slot.wiring.numOutputs) + ". Cannot compile.";
         THROW_EXCEPTION(msg.c_str());
       }
 
     } else if (cat == TritonOpCategory::FUSED_ATTENTION) {
       // ─── FUSED ATTENTION: Q@K^T + scale + softmax + @V in one kernel ───
       // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
-      if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
-        int qSrc = slot.inputSourceIndices[0];
+      if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs >= 1) {
+        int qSrc = slot.wiring.inputSourceIndices[0];
         // dot_product_attention_v2 input order: (Q=0, V=1, K=2)
         // onnx_multi_head_attention input order: (Q=0, K=1, V=2)
         // Detect op name to swap K/V source indices for DPA v2.
-        std::string opLowerKV = slot.opName;
+        std::string opLowerKV = slot.ident.opName;
         std::transform(opLowerKV.begin(), opLowerKV.end(), opLowerKV.begin(), ::tolower);
         bool isDpaV2 = (opLowerKV.find("dot_product_attention") != std::string::npos);
 
-        int kSrc = isDpaV2 ? slot.inputSourceIndices[2] : slot.inputSourceIndices[1];
-        int vSrc = isDpaV2 ? slot.inputSourceIndices[1] : slot.inputSourceIndices[2];
-        int outSlot = slot.outputSlotIndices[0];
+        int kSrc = isDpaV2 ? slot.wiring.inputSourceIndices[2] : slot.wiring.inputSourceIndices[1];
+        int vSrc = isDpaV2 ? slot.wiring.inputSourceIndices[1] : slot.wiring.inputSourceIndices[2];
+        int outSlot = slot.wiring.outputSlotIndices[0];
 
         // onnx_multi_head_attention is a compound op: it takes 3D Q/K/V [B,S,H*D],
         // internally reshapes to 4D, concatenates past_key/past_value with current K/V,
@@ -2314,13 +2314,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           seqQ = static_cast<int>(qArr->sizeAt(1));
           int hidden = static_cast<int>(qArr->sizeAt(2));
           // numQHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
-          numQHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+          numQHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
           if (numQHeads <= 0) numQHeads = 1;
           headDim = hidden / numQHeads;
           qIsBSHD = true;
           DSP_DIAG(JIT, "TritonIRBuilder: fused attention '%s' at slot %d has 3D Q [%lld,%lld,%lld] "
                     "— compound op, numQHeads=%d (from iArgs[0]), headDim=%d, using dual-buffer mode",
-                    slot.opName, si,
+                    slot.ident.opName, si,
                     (long long)qArr->sizeAt(0), (long long)qArr->sizeAt(1),
                     (long long)qArr->sizeAt(2), numQHeads, headDim);
         }
@@ -2331,8 +2331,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         bool hasPastKv = false;
         int pastKeySrc = -1, pastValueSrc = -1;
 
-        for (int inp = 3; inp < slot.numInputs && !hasPastKv; inp++) {
-          int candidateSrc = slot.inputSourceIndices[inp];
+        for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKv; inp++) {
+          int candidateSrc = slot.wiring.inputSourceIndices[inp];
           NDArray* candidateArr = resolveArr(candidateSrc);
           if (candidateArr && candidateArr->rankOf() == 4) {
             int candidateHD = static_cast<int>(candidateArr->sizeAt(3));
@@ -2346,8 +2346,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                         si, inp, candidateSrc,
                         (long long)candidateArr->sizeAt(0), (long long)candidateArr->sizeAt(1),
                         (long long)candidateArr->sizeAt(2), (long long)candidateArr->sizeAt(3), headDim);
-              if (inp + 1 < slot.numInputs) {
-                int pvCandidate = slot.inputSourceIndices[inp + 1];
+              if (inp + 1 < slot.wiring.numInputs) {
+                int pvCandidate = slot.wiring.inputSourceIndices[inp + 1];
                 NDArray* pvArr = resolveArr(pvCandidate);
                 if (pvArr && pvArr->rankOf() == 4 && static_cast<int>(pvArr->sizeAt(3)) == headDim) {
                   pastValueSrc = pvCandidate;
@@ -2359,7 +2359,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         if (!hasPastKv) {
           DSP_DIAG(JIT, "ATTN slot=%d no past_key found (headDim=%d) in %d inputs",
-                    si, headDim, slot.numInputs);
+                    si, headDim, slot.wiring.numInputs);
         }
 
         // Determine if we need dual-buffer mode (3D Q with past_key)
@@ -2387,8 +2387,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
         } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
           // 3D key: [B, seqK, kvHeads*headDim] — infer from iArgs
-          if (slot.numIArgs > 0 && slot.iArgs) {
-            int totalQHeads = static_cast<int>(slot.iArgs[0]);
+          if (slot.args.numIArgs > 0 && slot.args.iArgs) {
+            int totalQHeads = static_cast<int>(slot.args.iArgs[0]);
             if (totalQHeads > 0) numKvHeads = totalQHeads;  // will be refined below
           }
         }
@@ -2432,10 +2432,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           // Strategy 1: Walk back from K source to find KV cache external inputs.
           if (kSrc >= 0) {
             for (int s = startSlot; s <= endSlot; s++) {
-              for (int o = 0; o < slots[s].numOutputs; o++) {
-                if (slots[s].outputSlotIndices[o] == kSrc) {
-                  for (int pi = 0; pi < slots[s].numInputs; pi++) {
-                    int psrc = slots[s].inputSourceIndices[pi];
+              for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                if (slots[s].wiring.outputSlotIndices[o] == kSrc) {
+                  for (int pi = 0; pi < slots[s].wiring.numInputs; pi++) {
+                    int psrc = slots[s].wiring.inputSourceIndices[pi];
                     if (psrc < 0) {
                       int extIdx = -(psrc + 1);
                       if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
@@ -2502,7 +2502,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         auto attnTile = chooseFusedAttentionTileConfig(
             batchSize, numQHeads, seqQ, seqK, headDim);
         if (!attnTile.fitsSharedMem) {
-          std::string msg = "TritonIRBuilder: fused attention '" + slot.opName + "' at slot " +
+          std::string msg = "TritonIRBuilder: fused attention '" + slot.ident.opName + "' at slot " +
                             std::to_string(si) + " cannot fit shared memory (headDim=" +
                             std::to_string(headDim) + ", BM=" + std::to_string(attnTile.blockM) +
                             ", BN=" + std::to_string(attnTile.blockN) + ", estimated=" +
@@ -2533,8 +2533,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Resolve attention bias/mask (input[3]) if present and non-empty
         mlir::Value biasPtr;
         std::vector<LongType> biasShape;
-        if (slot.numInputs > 3) {
-          int biasSrc = slot.inputSourceIndices[3];
+        if (slot.wiring.numInputs > 3) {
+          int biasSrc = slot.wiring.inputSourceIndices[3];
           NDArray* biasArr = resolveArr(biasSrc);
           // Only use bias if it's a real tensor (not empty/scalar placeholder)
           if (biasArr && !biasArr->isEmpty() && biasArr->rankOf() >= 2 && biasArr->lengthOf() > 1) {
@@ -2611,10 +2611,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           if (loaded) ssaValues[outSlot] = loaded;
 
           // output[1] = present_key, output[2] = present_value
-          if (useDualBuffer && slot.numOutputs >= 2) {
+          if (useDualBuffer && slot.wiring.numOutputs >= 2) {
             // Dual-buffer: present_key/value output may need write of current K/V
             // at pastSeqLen offset. Check if the output buffer can hold it.
-            int presentKeySlot = slot.outputSlotIndices[1];
+            int presentKeySlot = slot.wiring.outputSlotIndices[1];
             NDArray* pkOutArr = resolveArr(presentKeySlot);
             int pkSeqCapacity = (pkOutArr && pkOutArr->rankOf() == 4) ? static_cast<int>(pkOutArr->sizeAt(2)) : 0;
             int requiredSeq = pastSeqLen + seqKVCur;
@@ -2639,8 +2639,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                 if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
               }
             }
-            if (slot.numOutputs >= 3 && pkFits) {
-              int presentValSlot = slot.outputSlotIndices[2];
+            if (slot.wiring.numOutputs >= 3 && pkFits) {
+              int presentValSlot = slot.wiring.outputSlotIndices[2];
               auto presentValPtr = getSlotArgPtr(presentValSlot);
               if (presentValPtr && curVPtr) {
                 int totalSeq = pastSeqLen + seqKVCur;
@@ -2657,39 +2657,39 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           } else {
             // Non-dual-buffer: pass-through effective key/value SSA
             // output[1] = present_key (pass-through effective key)
-            if (slot.numOutputs >= 2) {
+            if (slot.wiring.numOutputs >= 2) {
               if (ssaValues.count(effectiveKSrc)) {
-                ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
+                ssaValues[slot.wiring.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
               } else {
                 DataType kDtype = FLOAT32;
                 NDArray* kArr2 = resolveArr(effectiveKSrc);
                 if (kArr2) kDtype = kArr2->dataType();
                 auto kLoaded = loadBackFromBuffer(effectiveKSrc, kDtype);
-                if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+                if (kLoaded) ssaValues[slot.wiring.outputSlotIndices[1]] = kLoaded;
               }
             }
             // output[2] = present_value (pass-through effective value)
-            if (slot.numOutputs >= 3) {
+            if (slot.wiring.numOutputs >= 3) {
               if (ssaValues.count(effectiveVSrc)) {
-                ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
+                ssaValues[slot.wiring.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
               } else {
                 DataType vDtype = FLOAT32;
                 NDArray* vArr2 = resolveArr(effectiveVSrc);
                 if (vArr2) vDtype = vArr2->dataType();
                 auto vLoaded = loadBackFromBuffer(effectiveVSrc, vDtype);
-                if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
+                if (vLoaded) ssaValues[slot.wiring.outputSlotIndices[2]] = vLoaded;
               }
             }
           }
         } else {
-          std::string msg = "TritonIRBuilder: fused attention '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: fused attention '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
       } else {
-        std::string msg = "TritonIRBuilder: fused attention '" + slot.opName + "' at slot " + std::to_string(si) +
-            " — needs >=3 inputs and >=1 output, has " + std::to_string(slot.numInputs) + "/" +
-            std::to_string(slot.numOutputs) + ". Cannot compile.";
+        std::string msg = "TritonIRBuilder: fused attention '" + slot.ident.opName + "' at slot " + std::to_string(si) +
+            " — needs >=3 inputs and >=1 output, has " + std::to_string(slot.wiring.numInputs) + "/" +
+            std::to_string(slot.wiring.numOutputs) + ". Cannot compile.";
         THROW_EXCEPTION(msg.c_str());
       }
 
@@ -2697,15 +2697,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // ─── SHAPE MANIPULATION ───
       // reshape/squeeze/expand_dims/flatten: SSA forwarding (same data, different view)
       // permute/transpose: need actual data reindexing via emitShapeManipulationSection
-      std::string opLower = slot.opName;
+      std::string opLower = slot.ident.opName;
       std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
 
       bool isPermute = (opLower == "permute" || opLower == "transpose");
 
-      if (isPermute && slot.numInputs >= 1 && slot.numOutputs >= 1) {
+      if (isPermute && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
         // Permute/transpose requires actual data movement
-        int inputSrc = slot.inputSourceIndices[0];
-        int outSlot = slot.outputSlotIndices[0];
+        int inputSrc = slot.wiring.inputSourceIndices[0];
+        int outSlot = slot.wiring.outputSlotIndices[0];
         NDArray* inArr = resolveArr(inputSrc);
         NDArray* outArr = resolveArr(outSlot);
 
@@ -2719,9 +2719,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
           // Get permutation from iArgs; fall back to reverse if not provided
           std::vector<int> permutation;
-          if (slot.numIArgs > 0 && slot.iArgs) {
-            for (int d = 0; d < slot.numIArgs; d++)
-              permutation.push_back(static_cast<int>(slot.iArgs[d]));
+          if (slot.args.numIArgs > 0 && slot.args.iArgs) {
+            for (int d = 0; d < slot.args.numIArgs; d++)
+              permutation.push_back(static_cast<int>(slot.args.iArgs[d]));
           }
           if (permutation.empty()) {
             for (int d = static_cast<int>(inputShape.size()) - 1; d >= 0; d--)
@@ -2739,36 +2739,36 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           DataType outDtype = outArr->dataType();
           auto loaded = loadBackFromBuffer(outSlot, outDtype);
           if (loaded) {
-            for (int o = 0; o < slot.numOutputs; o++) {
-              ssaValues[slot.outputSlotIndices[o]] = loaded;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) {
+              ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
             }
           }
         } else {
-          std::string msg = "TritonIRBuilder: permute/transpose '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: permute/transpose '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
-      } else if (slot.numInputs >= 1) {
+      } else if (slot.wiring.numInputs >= 1) {
         // reshape/squeeze/expand_dims/flatten: pure SSA forwarding (same data buffer)
-        int inputSrc = slot.inputSourceIndices[0];
+        int inputSrc = slot.wiring.inputSourceIndices[0];
         auto inputIt = ssaValues.find(inputSrc);
         if (inputIt != ssaValues.end()) {
-          for (int o = 0; o < slot.numOutputs; o++) {
-            ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+          for (int o = 0; o < slot.wiring.numOutputs; o++) {
+            ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
           }
         } else {
           DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for shape op '%s' at slot %d (src=%d)",
-                    slot.opName.c_str(), si, inputSrc);
+                    slot.ident.opName.c_str(), si, inputSrc);
         }
       }
 
     } else if (cat == TritonOpCategory::ROPE) {
       // ─── ROPE: paired elementwise rotation with precomputed cos/sin ───
-      if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
-        int inputSrc = slot.inputSourceIndices[0];
-        int cosSrc = slot.inputSourceIndices[1];
-        int sinSrc = slot.inputSourceIndices[2];
-        int outSlot = slot.outputSlotIndices[0];
+      if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs >= 1) {
+        int inputSrc = slot.wiring.inputSourceIndices[0];
+        int cosSrc = slot.wiring.inputSourceIndices[1];
+        int sinSrc = slot.wiring.inputSourceIndices[2];
+        int outSlot = slot.wiring.outputSlotIndices[0];
 
         auto inPtr = getSlotArgPtr(inputSrc);
         auto cosArgPtr = getSlotArgPtr(cosSrc);
@@ -2808,7 +2808,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
 
         if (cosArgPtr && sinArgPtr && !inShape.empty() && !cosShapeVec.empty() && nElements > 0) {
-          int ropeType = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+          int ropeType = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
 
           // Extract headDim and numHeads from input shape [B, S, H, D]
           int inputRank = static_cast<int>(inShape.size());
@@ -2829,8 +2829,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                                        cosArgPtr, sinArgPtr, pid, blockSize,
                                        headDim, numHeads, cosShapeVec, nElements);
             result = emulateNativePrecision(result, si);
-            for (int o = 0; o < slot.numOutputs; o++)
-              ssaValues[slot.outputSlotIndices[o]] = result;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+              ssaValues[slot.wiring.outputSlotIndices[o]] = result;
           } else if (inPtr && outPtr) {
             // Pointer-based emitter (flush SSA → global memory → reload)
             auto maybeStoreSSA = [&](int srcIdx) {
@@ -2859,13 +2859,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             auto loaded = loadBackFromBuffer(outSlot, outDtype);
             if (loaded) {
               loaded = emulateNativePrecision(loaded, si);
-              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
             }
           } else {
             // Neither SSA path nor pointer path is available — this is a genuine error.
             // Input must be either in SSA (for register path) or have a buffer pointer
             // (for pointer path). If neither, the segment structure is broken.
-            std::string msg = "TritonIRBuilder: ROPE '" + slot.opName + "' at slot " + std::to_string(si) +
+            std::string msg = "TritonIRBuilder: ROPE '" + slot.ident.opName + "' at slot " + std::to_string(si) +
                 " — cannot emit: SSA input not available (canUseSSA=false) and "
                 "buffer pointers missing (inPtr=" + std::to_string(inPtr ? 1 : 0) +
                 " outPtr=" + std::to_string(outPtr ? 1 : 0) +
@@ -2875,7 +2875,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             THROW_EXCEPTION(msg.c_str());
           }
         } else {
-          std::string msg = "TritonIRBuilder: ROPE '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: ROPE '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing required data: cosArgPtr=" + std::to_string(cosArgPtr ? 1 : 0) +
               " sinArgPtr=" + std::to_string(sinArgPtr ? 1 : 0) +
               " inShape.size=" + std::to_string(inShape.size()) +
@@ -2884,32 +2884,32 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               ". Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
-      } else if (slot.numInputs == 1 && slot.numOutputs >= 1) {
+      } else if (slot.wiring.numInputs == 1 && slot.wiring.numOutputs >= 1) {
         // Non-cached ROPE (computes sin/cos internally) — pass through as identity for now
-        int inputSrc = slot.inputSourceIndices[0];
+        int inputSrc = slot.wiring.inputSourceIndices[0];
         auto inputIt = ssaValues.find(inputSrc);
         if (inputIt != ssaValues.end()) {
-          for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+          for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
         }
       } else {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: ROPE '%s' at slot %d — insufficient inputs(%d)",
-                  slot.opName.c_str(), si, slot.numInputs);
+                  slot.ident.opName.c_str(), si, slot.wiring.numInputs);
       }
 
     } else if (cat == TritonOpCategory::DATA_MOVEMENT) {
       // ─── DATA MOVEMENT: dispatch to appropriate section emitter ───
-      std::string opLower = slot.opName;
+      std::string opLower = slot.ident.opName;
       std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
-      std::string opKey = normalizeOpToken(slot.opName);
+      std::string opKey = normalizeOpToken(slot.ident.opName);
 
-      if (slot.numInputs < 1 || slot.numOutputs < 1) {
+      if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: data movement '%s' at slot %d — insufficient inputs(%d)/outputs(%d)",
-                  slot.opName.c_str(), si, slot.numInputs, slot.numOutputs);
+                  slot.ident.opName.c_str(), si, slot.wiring.numInputs, slot.wiring.numOutputs);
       } else if (opKey == "gather" || opKey == "gathernd") {
         // ─── GATHER ───
-        int dataSrc = slot.inputSourceIndices[0];
-        int idxSrc = (slot.numInputs >= 2) ? slot.inputSourceIndices[1] : dataSrc;
-        int outSlot = slot.outputSlotIndices[0];
+        int dataSrc = slot.wiring.inputSourceIndices[0];
+        int idxSrc = (slot.wiring.numInputs >= 2) ? slot.wiring.inputSourceIndices[1] : dataSrc;
+        int outSlot = slot.wiring.outputSlotIndices[0];
 
         auto dataPtr = getSlotArgPtr(dataSrc);
         auto idxPtr = getSlotArgPtr(idxSrc);
@@ -2926,8 +2926,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
           int nElements = static_cast<int>(outArr->lengthOf());
           int axis = 0;
-          if (slot.numIArgs > 0 && slot.iArgs) {
-            axis = static_cast<int>(slot.iArgs[0]);
+          if (slot.args.numIArgs > 0 && slot.args.iArgs) {
+            axis = static_cast<int>(slot.args.iArgs[0]);
           }
           bool gatherNd = (opKey == "gathernd");
 
@@ -2937,17 +2937,17 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         } else {
-          std::string msg = "TritonIRBuilder: gather '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: gather '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs/arrays. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
 
       } else if (opLower == "concat") {
         // ─── CONCAT ───
-        int outSlot = slot.outputSlotIndices[0];
+        int outSlot = slot.wiring.outputSlotIndices[0];
         auto outPtr = getSlotArgPtr(outSlot);
         NDArray* outArr = resolveArr(outSlot);
 
@@ -2955,8 +2955,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         std::vector<std::vector<LongType>> inShapes;
         bool allValid = outPtr && outArr;
 
-        for (int inp = 0; inp < slot.numInputs && allValid; inp++) {
-          int src = slot.inputSourceIndices[inp];
+        for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
+          int src = slot.wiring.inputSourceIndices[inp];
           auto ptr = getSlotArgPtr(src);
           NDArray* arr = resolveArr(src);
           if (ptr && arr) {
@@ -2971,31 +2971,31 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         if (allValid && !inPtrs.empty()) {
           int nElements = static_cast<int>(outArr->lengthOf());
-          int axis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+          int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
 
           emitConcatSection(builder, loc, pid, blockSize,
                             inPtrs, outPtr, axis, inShapes, nElements);
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         } else {
-          std::string msg = "TritonIRBuilder: concat '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: concat '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs/arrays. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
 
       } else if (opLower == "split" || opLower == "split_v") {
         // ─── SPLIT ───
-        int dataSrc = slot.inputSourceIndices[0];
+        int dataSrc = slot.wiring.inputSourceIndices[0];
         auto dataPtr = getSlotArgPtr(dataSrc);
         NDArray* dataArr = resolveArr(dataSrc);
 
         std::vector<mlir::Value> outPtrs;
         bool allValid = dataPtr && dataArr;
-        for (int o = 0; o < slot.numOutputs && allValid; o++) {
-          int oSlot = slot.outputSlotIndices[o];
+        for (int o = 0; o < slot.wiring.numOutputs && allValid; o++) {
+          int oSlot = slot.wiring.outputSlotIndices[o];
           auto ptr = getSlotArgPtr(oSlot);
           if (ptr) {
             outPtrs.push_back(ptr);
@@ -3007,7 +3007,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         if (allValid && !outPtrs.empty()) {
           std::vector<LongType> dataShape;
           for (int d = 0; d < dataArr->rankOf(); d++) dataShape.push_back(dataArr->sizeAt(d));
-          int numSplits = slot.numOutputs;
+          int numSplits = slot.wiring.numOutputs;
           int nElements = static_cast<int>(dataArr->lengthOf());
           int rank = static_cast<int>(dataShape.size());
 
@@ -3016,22 +3016,22 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           int splitAxis = 0;
           if (isSplitV) {
             // SplitV iArgs: [splitDim, numSplit]
-            if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+            if (slot.args.numIArgs > 0 && slot.args.iArgs) splitAxis = static_cast<int>(slot.args.iArgs[0]);
           } else {
             // Split iArgs: [numSplit, splitDim] (most common) or [splitDim]
-            if (slot.numIArgs > 1 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[1]);
-            else if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+            if (slot.args.numIArgs > 1 && slot.args.iArgs) splitAxis = static_cast<int>(slot.args.iArgs[1]);
+            else if (slot.args.numIArgs > 0 && slot.args.iArgs) splitAxis = static_cast<int>(slot.args.iArgs[0]);
           }
           if (splitAxis < 0) splitAxis += rank;
           if (splitAxis < 0 || splitAxis >= rank) splitAxis = 0;
 
-          if (isSplitV && slot.numInputs >= 2) {
+          if (isSplitV && slot.wiring.numInputs >= 2) {
             // SplitV: variable chunk sizes from input[1]
-            int sizesSrc = slot.inputSourceIndices[1];
+            int sizesSrc = slot.wiring.inputSourceIndices[1];
             NDArray* sizesArr = resolveArr(sizesSrc);
             if (sizesArr && !dataShape.empty()) {
               int axisOffset = 0;
-              for (int o2 = 0; o2 < slot.numOutputs && o2 < static_cast<int>(outPtrs.size()); o2++) {
+              for (int o2 = 0; o2 < slot.wiring.numOutputs && o2 < static_cast<int>(outPtrs.size()); o2++) {
                 int chunkAxisSize = (o2 < static_cast<int>(sizesArr->lengthOf()))
                     ? static_cast<int>(sizesArr->e<int>(o2)) : 1;
                 std::vector<int> begins(rank, 0);
@@ -3057,23 +3057,23 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
 
           // Load back each output for downstream SSA
-          for (int o = 0; o < slot.numOutputs; o++) {
-            int oSlot = slot.outputSlotIndices[o];
+          for (int o = 0; o < slot.wiring.numOutputs; o++) {
+            int oSlot = slot.wiring.outputSlotIndices[o];
             NDArray* oArr = resolveArr(oSlot);
             DataType dt = oArr ? oArr->dataType() : FLOAT32;
             auto loaded = loadBackFromBuffer(oSlot, dt);
             if (loaded) ssaValues[oSlot] = loaded;
           }
         } else {
-          std::string msg = "TritonIRBuilder: split '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: split '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
 
       } else if (opLower == "tile") {
         // ─── TILE ───
-        int dataSrc = slot.inputSourceIndices[0];
-        int outSlot = slot.outputSlotIndices[0];
+        int dataSrc = slot.wiring.inputSourceIndices[0];
+        int outSlot = slot.wiring.outputSlotIndices[0];
         auto dataPtr = getSlotArgPtr(dataSrc);
         auto outPtr = getSlotArgPtr(outSlot);
         NDArray* dataArr = resolveArr(dataSrc);
@@ -3094,18 +3094,18 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         } else {
-          std::string msg = "TritonIRBuilder: tile '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: tile '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
 
       } else if (opLower == "strided_slice") {
         // ─── STRIDED SLICE ───
-        int dataSrc = slot.inputSourceIndices[0];
-        int outSlot = slot.outputSlotIndices[0];
+        int dataSrc = slot.wiring.inputSourceIndices[0];
+        int outSlot = slot.wiring.outputSlotIndices[0];
         auto dataPtr = getSlotArgPtr(dataSrc);
         auto outPtr = getSlotArgPtr(outSlot);
         NDArray* dataArr = resolveArr(dataSrc);
@@ -3124,17 +3124,17 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         } else {
-          std::string msg = "TritonIRBuilder: strided_slice '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: strided_slice '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
 
       } else if (opLower == "stack") {
         // ─── STACK: treat as concat (stack = unsqueeze + concat along new axis) ───
-        int outSlot = slot.outputSlotIndices[0];
+        int outSlot = slot.wiring.outputSlotIndices[0];
         auto outPtr = getSlotArgPtr(outSlot);
         NDArray* outArr = resolveArr(outSlot);
 
@@ -3142,8 +3142,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         std::vector<std::vector<LongType>> inShapes;
         bool allValid = outPtr && outArr;
 
-        for (int inp = 0; inp < slot.numInputs && allValid; inp++) {
-          int src = slot.inputSourceIndices[inp];
+        for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
+          int src = slot.wiring.inputSourceIndices[inp];
           auto ptr = getSlotArgPtr(src);
           NDArray* arr = resolveArr(src);
           if (ptr && arr) {
@@ -3163,10 +3163,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         } else {
-          std::string msg = "TritonIRBuilder: stack '" + slot.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: stack '" + slot.ident.opName + "' at slot " + std::to_string(si) +
               " — missing kernel arg ptrs. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
@@ -3175,11 +3175,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // ─── SCATTER_ND: copy data + scatter updates at indexed positions ───
         // scatter_nd needs 3 inputs: data, indices, updates
         // Output = copy of data with updates scattered at indexed positions
-        if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
-          int dataSrc = slot.inputSourceIndices[0];
-          int idxSrc = slot.inputSourceIndices[1];
-          int updSrc = slot.inputSourceIndices[2];
-          int outSlot = slot.outputSlotIndices[0];
+        if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs >= 1) {
+          int dataSrc = slot.wiring.inputSourceIndices[0];
+          int idxSrc = slot.wiring.inputSourceIndices[1];
+          int updSrc = slot.wiring.inputSourceIndices[2];
+          int outSlot = slot.wiring.outputSlotIndices[0];
 
           auto dataArgIt = slotToArgIdx.find(dataSrc);
           auto idxArgIt = slotToArgIdx.find(idxSrc);
@@ -3206,23 +3206,23 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             DataType outDtype = resolveDtypeLocal(outSlot);
             auto result = loadBackFromBuffer(outSlot, outDtype);
             if (result) {
-              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = result;
+              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = result;
             }
           } else {
-            std::string msg = "TritonIRBuilder: scatter_nd '" + slot.opName + "' at slot " + std::to_string(si) +
+            std::string msg = "TritonIRBuilder: scatter_nd '" + slot.ident.opName + "' at slot " + std::to_string(si) +
                 " — missing kernel arg ptrs. Cannot compile.";
             THROW_EXCEPTION(msg.c_str());
           }
-        } else if (slot.numInputs >= 1) {
-          auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
+        } else if (slot.wiring.numInputs >= 1) {
+          auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
           if (inputIt != ssaValues.end()) {
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
           }
         }
 
       } else {
         // Unknown data movement op — fail compilation instead of producing garbage
-        std::string msg = "TritonIRBuilder: unhandled data movement op '" + slot.opName + "' at slot " +
+        std::string msg = "TritonIRBuilder: unhandled data movement op '" + slot.ident.opName + "' at slot " +
             std::to_string(si) + ". No emitter available. Cannot compile.";
         THROW_EXCEPTION(msg.c_str());
       }
@@ -3232,14 +3232,14 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // These produce constant or computed values independent of input data.
       // In the 1D kernel, emit appropriate constant splats or ranges.
       DataType outDtype = FLOAT32;
-      if (slot.numOutputs > 0) {
-        int outIdx = slot.outputSlotIndices[0];
+      if (slot.wiring.numOutputs > 0) {
+        int outIdx = slot.wiring.outputSlotIndices[0];
         outDtype = resolveDtypeLocal(outIdx);
       }
       auto elemType = getMLIRType(builder, outDtype);
       auto tensorType = mlir::RankedTensorType::get({blockSize}, elemType);
 
-      std::string opLower = slot.opName;
+      std::string opLower = slot.ident.opName;
       std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
 
       mlir::Value opResult;
@@ -3251,12 +3251,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Try tArgs first, then fall back to reading from the warmup output array.
         float fillVal = 0.0f;
         bool foundVal = false;
-        if (slot.numTArgs > 0 && slot.tArgs) {
-          fillVal = static_cast<float>(slot.tArgs[0]);
+        if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+          fillVal = static_cast<float>(slot.args.tArgs[0]);
           foundVal = true;
         }
-        if (!foundVal && slot.numOutputs > 0) {
-          int outIdx = slot.outputSlotIndices[0];
+        if (!foundVal && slot.wiring.numOutputs > 0) {
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto* arr = resolveArr(outIdx);
           if (arr && arr->lengthOf() > 0) {
             arr->syncToHost();
@@ -3270,13 +3270,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // The range output has rangeLen elements; when downstream ops have more elements,
         // we use modular indexing: value[i] = start + step * (offsets % rangeLen).
         float start = 0.0f, step = 1.0f;
-        if (slot.numTArgs >= 1 && slot.tArgs) start = static_cast<float>(slot.tArgs[0]);
-        if (slot.numTArgs >= 3 && slot.tArgs) step = static_cast<float>(slot.tArgs[2]);
+        if (slot.args.numTArgs >= 1 && slot.args.tArgs) start = static_cast<float>(slot.args.tArgs[0]);
+        if (slot.args.numTArgs >= 3 && slot.args.tArgs) step = static_cast<float>(slot.args.tArgs[2]);
 
         // Determine range output length from the output array's shape
         int rangeLen = blockSize;
-        if (slot.numOutputs > 0) {
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numOutputs > 0) {
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto* arr = resolveArr(outIdx);
           if (arr) rangeLen = static_cast<int>(arr->lengthOf());
         }
@@ -3301,8 +3301,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Read the pre-computed values from the warmup output array and use
         // broadcast-safe indexing (offsets % outputLen) since the output is tiny.
         bool emitted = false;
-        if (slot.numOutputs > 0) {
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numOutputs > 0) {
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto* arr = resolveArr(outIdx);
           if (arr && arr->lengthOf() > 0) {
             arr->syncToHost();
@@ -3339,8 +3339,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         opResult = splatConstantF32(builder, loc, tensorType, 0.0f);
       }
 
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
     }
   }
@@ -3524,12 +3524,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // the state but shapes could still be populated from a prior execution.
   std::unordered_map<int, const LongType*> cachedShapeInfoMap;
   for (int i = 0; i < totalSlots; i++) {
-    if (!slots[i].cachedOutputShapes.empty()) {
-      for (int o = 0; o < slots[i].numOutputs; o++) {
-        int outIdx = slots[i].outputSlotIndices[o];
-        if (outIdx >= 0 && o < static_cast<int>(slots[i].cachedOutputShapes.size()) &&
-            slots[i].cachedOutputShapes[o] != nullptr) {
-          cachedShapeInfoMap[outIdx] = slots[i].cachedOutputShapes[o];
+    if (!slots[i].shapeCache.cachedOutputShapes.empty()) {
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+        int outIdx = slots[i].wiring.outputSlotIndices[o];
+        if (outIdx >= 0 && o < static_cast<int>(slots[i].shapeCache.cachedOutputShapes.size()) &&
+            slots[i].shapeCache.cachedOutputShapes[o] != nullptr) {
+          cachedShapeInfoMap[outIdx] = slots[i].shapeCache.cachedOutputShapes[o];
         }
       }
     }
@@ -3603,8 +3603,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // Collect all internal slot outputs
   std::unordered_set<int> internalSlotOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalSlotOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalSlotOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -3614,14 +3614,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   for (size_t si = 0; si < sections.size(); si++) {
     auto& sec = sections[si];
     for (int i = sec.startSlot; i <= sec.endSlot; i++) {
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        int srcIdx = slots[i].inputSourceIndices[inp];
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        int srcIdx = slots[i].wiring.inputSourceIndices[inp];
         if (srcIdx < 0) continue;  // External input
         // Check if this source is produced in a DIFFERENT section
         bool producedInThisSection = false;
         for (int j = sec.startSlot; j <= sec.endSlot; j++) {
-          for (int o = 0; o < slots[j].numOutputs; o++) {
-            if (slots[j].outputSlotIndices[o] == srcIdx) {
+          for (int o = 0; o < slots[j].wiring.numOutputs; o++) {
+            if (slots[j].wiring.outputSlotIndices[o] == srcIdx) {
               producedInThisSection = true;
               break;
             }
@@ -3646,8 +3646,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   auto computeSectionMaxOutputElements = [&](const KernelSection& sec) -> LongType {
     LongType maxElements = 0;
     for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-      for (int o = 0; o < slots[si].numOutputs; o++) {
-        int outIdx = slots[si].outputSlotIndices[o];
+      for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+        int outIdx = slots[si].wiring.outputSlotIndices[o];
         auto outShape = resolveShape(outIdx);
         LongType elems = shapeLength(outShape);
         if (elems > maxElements) maxElements = elems;
@@ -3659,8 +3659,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   for (size_t secIdx = 0; secIdx < sections.size(); secIdx++) {
     sectionMaxOutputElements[secIdx] = computeSectionMaxOutputElements(sections[secIdx]);
     for (int si = sections[secIdx].startSlot; si <= sections[secIdx].endSlot; si++) {
-      for (int o = 0; o < slots[si].numOutputs; o++) {
-        int outIdx = slots[si].outputSlotIndices[o];
+      for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+        int outIdx = slots[si].wiring.outputSlotIndices[o];
         if (internalSlotOutputs.count(outIdx)) {
           producerSectionByOutput[outIdx] = static_cast<int>(secIdx);
         }
@@ -3673,8 +3673,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     bool needsBarrier = false;
     const auto& consumerSection = sections[secIdx];
     for (int si = consumerSection.startSlot; si <= consumerSection.endSlot && !needsBarrier; si++) {
-      for (int inp = 0; inp < slots[si].numInputs; inp++) {
-        int srcIdx = slots[si].inputSourceIndices[inp];
+      for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+        int srcIdx = slots[si].wiring.inputSourceIndices[inp];
         if (srcIdx < 0 || !crossSectionIntermediates.count(srcIdx)) continue;
 
         auto producerIt = producerSectionByOutput.find(srcIdx);
@@ -3760,19 +3760,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // ── Force-external inputs for ROPE ops (same as buildModule) ──
   std::unordered_set<int> forceExternalInputsSectioned;
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = getOpCategory(slots[i].opName);
-    if (cat == TritonOpCategory::ROPE && slots[i].numInputs >= 3) {
-      int cosSrc = slots[i].inputSourceIndices[1];
-      int sinSrc = slots[i].inputSourceIndices[2];
+    auto cat = getOpCategory(slots[i].ident.opName);
+    if (cat == TritonOpCategory::ROPE && slots[i].wiring.numInputs >= 3) {
+      int cosSrc = slots[i].wiring.inputSourceIndices[1];
+      int sinSrc = slots[i].wiring.inputSourceIndices[2];
       if (internalSlotOutputs.count(cosSrc)) {
         forceExternalInputsSectioned.insert(cosSrc);
         DSP_DIAG(COMPILE, "TritonIRBuilder(sectioned): ROPE '%s' at slot %d: forcing internal cos src %d to kernel arg",
-                  slots[i].opName.c_str(), i, cosSrc);
+                  slots[i].ident.opName.c_str(), i, cosSrc);
       }
       if (internalSlotOutputs.count(sinSrc)) {
         forceExternalInputsSectioned.insert(sinSrc);
         DSP_DIAG(COMPILE, "TritonIRBuilder(sectioned): ROPE '%s' at slot %d: forcing internal sin src %d to kernel arg",
-                  slots[i].opName.c_str(), i, sinSrc);
+                  slots[i].ident.opName.c_str(), i, sinSrc);
       }
     }
   }
@@ -3781,8 +3781,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   std::vector<TritonKernelArg> inputArgs;
   std::unordered_set<int> seenInputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
 
@@ -3835,13 +3835,13 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                     srcIdx, startSlot, endSlot, hasLiveArr ? 1 : 0, shape.empty() ? 1 : 0,
                     static_cast<int>(cachedShapeInfoMap.count(srcIdx)));
           for (int si2 = 0; si2 < totalSlots; si2++) {
-            for (int o2 = 0; o2 < slots[si2].numOutputs; o2++) {
-              if (slots[si2].outputSlotIndices[o2] == srcIdx) {
+            for (int o2 = 0; o2 < slots[si2].wiring.numOutputs; o2++) {
+              if (slots[si2].wiring.outputSlotIndices[o2] == srcIdx) {
                 DSP_DIAG(COMPILE, "  -> produced by op[%d] '%s' state=%d shapeCacheValid=%d "
                           "cachedOutputShapes.size=%d",
-                          si2, slots[si2].opName.c_str(), static_cast<int>(slots[si2].state_),
+                          si2, slots[si2].ident.opName.c_str(), static_cast<int>(slots[si2].state_),
                           slots[si2].shapeCacheValid() ? 1 : 0,
-                          static_cast<int>(slots[si2].cachedOutputShapes.size()));
+                          static_cast<int>(slots[si2].shapeCache.cachedOutputShapes.size()));
               }
             }
           }
@@ -3885,8 +3885,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     std::unordered_set<int> seenOutputSlots;
     int skippedAliased = 0;
     for (int i = startSlot; i <= endSlot; i++) {
-      for (int o = 0; o < slots[i].numOutputs; o++) {
-        int outIdx = slots[i].outputSlotIndices[o];
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+        int outIdx = slots[i].wiring.outputSlotIndices[o];
         if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
         if (seenOutputSlots.count(outIdx)) continue;
         seenOutputSlots.insert(outIdx);
@@ -3925,17 +3925,17 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             for (int d = 0; d < rank; d++) arg.shape.push_back(shape::shapeOf(cit->second)[d]);
           } else {
             // No live array and no cached shape — resolve from producing op
-            auto producerCat = getOpCategory(slots[i].opName);
-            if (producerCat == TritonOpCategory::CAST && slots[i].numIArgs > 0 && slots[i].iArgs) {
-              arg.dtype = static_cast<DataType>(slots[i].iArgs[0]);
+            auto producerCat = getOpCategory(slots[i].ident.opName);
+            if (producerCat == TritonOpCategory::CAST && slots[i].args.numIArgs > 0 && slots[i].args.iArgs) {
+              arg.dtype = static_cast<DataType>(slots[i].args.iArgs[0]);
             } else {
-              if (slots[i].numInputs > 0) {
-                int inputSrc = slots[i].inputSourceIndices[0];
+              if (slots[i].wiring.numInputs > 0) {
+                int inputSrc = slots[i].wiring.inputSourceIndices[0];
                 arg.dtype = resolveDtype(inputSrc);
               }
             }
-            if (arg.shape.empty() && slots[i].numInputs > 0) {
-              int inputSrc = slots[i].inputSourceIndices[0];
+            if (arg.shape.empty() && slots[i].wiring.numInputs > 0) {
+              int inputSrc = slots[i].wiring.inputSourceIndices[0];
               auto inputShape = resolveShape(inputSrc);
               if (!inputShape.empty()) {
                 arg.shape = inputShape;
@@ -4054,9 +4054,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   std::vector<TritonOpCategory> categories;
   std::vector<std::vector<LongType>> shapes;
   for (int i = startSlot; i <= endSlot; i++) {
-    categories.push_back(getOpCategory(slots[i].opName));
-    if (slots[i].numOutputs > 0) {
-      int outIdx = slots[i].outputSlotIndices[0];
+    categories.push_back(getOpCategory(slots[i].ident.opName));
+    if (slots[i].wiring.numOutputs > 0) {
+      int outIdx = slots[i].wiring.outputSlotIndices[0];
       shapes.push_back(resolveShape(outIdx));
     } else {
       shapes.push_back({});
@@ -4076,8 +4076,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   auto sectionMaxElements = [&](const KernelSection& sec) -> LongType {
     LongType maxElements = 0;
     for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-      for (int o = 0; o < slots[si].numOutputs; o++) {
-        int outIdx = slots[si].outputSlotIndices[o];
+      for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+        int outIdx = slots[si].wiring.outputSlotIndices[o];
         auto outShape = resolveShape(outIdx);
         LongType elems = shapeLength(outShape);
         if (elems > maxElements) maxElements = elems;
@@ -4086,8 +4086,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     if (maxElements <= 0) {
       // Fallback for shape-only/meta ops: derive from consumed inputs.
       for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-        for (int inp = 0; inp < slots[si].numInputs; inp++) {
-          int srcIdx = slots[si].inputSourceIndices[inp];
+        for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+          int srcIdx = slots[si].wiring.inputSourceIndices[inp];
           auto inShape = resolveShape(srcIdx);
           LongType elems = shapeLength(inShape);
           if (elems > maxElements) maxElements = elems;
@@ -4108,19 +4108,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     if (sec.batchSize <= 0 || sec.numHeads <= 0 || sec.seqQ <= 0 || sec.headDim <= 0) {
       for (int si = sec.startSlot; si <= sec.endSlot; si++) {
         auto& slot = slots[si];
-        if (getOpCategory(slot.opName) != TritonOpCategory::FUSED_ATTENTION ||
-            slot.numInputs < 1) {
+        if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION ||
+            slot.wiring.numInputs < 1) {
           continue;
         }
         // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
-        std::string opLowerGrid = slot.opName;
+        std::string opLowerGrid = slot.ident.opName;
         std::transform(opLowerGrid.begin(), opLowerGrid.end(), opLowerGrid.begin(), ::tolower);
         bool isDpaV2Grid = (opLowerGrid.find("dot_product_attention") != std::string::npos);
         bool opUsesBSHDGrid = isDpaV2Grid;
         // For DPA v2: input[1]=V, input[2]=K; resolve K for seqK
         int kInputIdx = isDpaV2Grid ? 2 : 1;
 
-        auto qShape = resolveShape(slot.inputSourceIndices[0]);
+        auto qShape = resolveShape(slot.wiring.inputSourceIndices[0]);
         if (qShape.size() >= 4) {
           batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
           if (opUsesBSHDGrid) {
@@ -4133,8 +4133,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
           }
           headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
-          if (slot.numInputs > kInputIdx) {
-            auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+          if (slot.wiring.numInputs > kInputIdx) {
+            auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
             if (kShape.size() >= 3) {
               // seqK is at dim[1] for BSHD, dim[2] for BHSD
               int seqKDim = opUsesBSHDGrid ? 1 : 2;
@@ -4149,21 +4149,21 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
           int hidden = static_cast<int>(std::max<LongType>(1, qShape[2]));
           // numHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
-          numHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+          numHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
           if (numHeads <= 0) numHeads = 1;
           headDim = hidden / numHeads;
 
           // Check for past_key (input 4) — 4D BHSD [B,H,pastSeq,D]
           bool hasPastKvGrid = false;
-          if (slot.numInputs > 4) {
-            auto pastKeyShape = resolveShape(slot.inputSourceIndices[4]);
+          if (slot.wiring.numInputs > 4) {
+            auto pastKeyShape = resolveShape(slot.wiring.inputSourceIndices[4]);
             if (pastKeyShape.size() == 4 && pastKeyShape[0] > 0 && pastKeyShape[2] > 0) {
               hasPastKvGrid = true;
               int pastSeq = static_cast<int>(pastKeyShape[2]);
               // current K is input[1], 3D [B, seqKV, H*D]
               int seqKV = 1;
-              if (slot.numInputs > kInputIdx) {
-                auto curKShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+              if (slot.wiring.numInputs > kInputIdx) {
+                auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
                 if (curKShape.size() == 3) {
                   seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
                 }
@@ -4171,8 +4171,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               seqK = pastSeq + seqKV;  // total sequence for attention
             }
           }
-          if (!hasPastKvGrid && slot.numInputs > kInputIdx) {
-            auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+          if (!hasPastKvGrid && slot.wiring.numInputs > kInputIdx) {
+            auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
             if (kShape.size() >= 2) {
               seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
             }
@@ -4202,8 +4202,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     if (sec.type == KernelSectionType::NORMALIZATION) {
       LongType numRows = 0;
       for (int si = sec.startSlot; si <= sec.endSlot && numRows <= 0; si++) {
-        if (slots[si].numInputs < 1) continue;
-        auto inputShape = resolveShape(slots[si].inputSourceIndices[0]);
+        if (slots[si].wiring.numInputs < 1) continue;
+        auto inputShape = resolveShape(slots[si].wiring.inputSourceIndices[0]);
         LongType totalElements = shapeLength(inputShape);
         LongType logicalRowLen = inputShape.empty() ? 0 : inputShape.back();
         if (totalElements > 0 && logicalRowLen > 0) {
@@ -4454,17 +4454,17 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         auto& slot = slots[si];
         DSP_DIAG(COMPILE, "  SLOT[%d] op='%s' inputs=%d outputs=%d iArgs=%d tArgs=%d bArgs=%d "
                   "identity=%d view=%d fused=%d zeroOut=%d",
-                  si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
-                  slot.numIArgs, slot.numTArgs, slot.numBArgs,
-                  slot.isIdentityOp ? 1 : 0, slot.isViewCapableOp ? 1 : 0,
-                  slot.inPlaceFused ? 1 : 0, slot.needsZeroedOutput ? 1 : 0);
+                  si, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs,
+                  slot.args.numIArgs, slot.args.numTArgs, slot.args.numBArgs,
+                  slot.flags.isIdentityOp ? 1 : 0, slot.flags.isViewCapableOp ? 1 : 0,
+                  slot.flags.inPlaceFused ? 1 : 0, slot.flags.needsZeroedOutput ? 1 : 0);
 
         // Every input for this slot
-        for (int inp = 0; inp < slot.numInputs; inp++) {
-          int srcIdx = slot.inputSourceIndices[inp];
+        for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+          int srcIdx = slot.wiring.inputSourceIndices[inp];
           auto srcShape = resolveShape(srcIdx);
           const char* srcOp = "EXT";
-          if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].opName.c_str();
+          if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].ident.opName.c_str();
           bool exists = false;
           LongType len = -1;
           if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
@@ -4492,8 +4492,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         }
 
         // Every output for this slot
-        for (int outp = 0; outp < slot.numOutputs; outp++) {
-          int outIdx = slot.outputSlotIndices[outp];
+        for (int outp = 0; outp < slot.wiring.numOutputs; outp++) {
+          int outIdx = slot.wiring.outputSlotIndices[outp];
           auto outShape = resolveShape(outIdx);
           bool outExists = (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots && outputSlots[outIdx]);
           LongType outLen = outExists ? outputSlots[outIdx]->lengthOf() : -1;
@@ -4503,35 +4503,35 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         }
 
         // iArgs
-        if (slot.numIArgs > 0 && slot.iArgs) {
+        if (slot.args.numIArgs > 0 && slot.args.iArgs) {
           std::string iStr;
-          for (int a = 0; a < slot.numIArgs && a < 20; a++) {
+          for (int a = 0; a < slot.args.numIArgs && a < 20; a++) {
             if (a) iStr += ",";
-            iStr += std::to_string(slot.iArgs[a]);
+            iStr += std::to_string(slot.args.iArgs[a]);
           }
-          if (slot.numIArgs > 20) iStr += "...";
-          DSP_DIAG(COMPILE, "    iArgs=[%s] (%d total)", iStr.c_str(), slot.numIArgs);
+          if (slot.args.numIArgs > 20) iStr += "...";
+          DSP_DIAG(COMPILE, "    iArgs=[%s] (%d total)", iStr.c_str(), slot.args.numIArgs);
         }
 
         // tArgs
-        if (slot.numTArgs > 0 && slot.tArgs) {
+        if (slot.args.numTArgs > 0 && slot.args.tArgs) {
           char tBuf[512] = {0};
           int toff = 0;
-          for (int a = 0; a < slot.numTArgs && a < 10 && toff < 480; a++) {
-            toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.tArgs[a]);
+          for (int a = 0; a < slot.args.numTArgs && a < 10 && toff < 480; a++) {
+            toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.args.tArgs[a]);
           }
-          if (slot.numTArgs > 10) strncat(tBuf, "...", sizeof(tBuf) - strlen(tBuf) - 1);
-          DSP_DIAG(COMPILE, "    tArgs=[%s] (%d total)", tBuf, slot.numTArgs);
+          if (slot.args.numTArgs > 10) strncat(tBuf, "...", sizeof(tBuf) - strlen(tBuf) - 1);
+          DSP_DIAG(COMPILE, "    tArgs=[%s] (%d total)", tBuf, slot.args.numTArgs);
         }
 
         // bArgs
-        if (slot.numBArgs > 0 && slot.bArgs) {
+        if (slot.args.numBArgs > 0 && slot.args.bArgs) {
           std::string bStr;
-          for (int a = 0; a < slot.numBArgs && a < 10; a++) {
+          for (int a = 0; a < slot.args.numBArgs && a < 10; a++) {
             if (a) bStr += ",";
-            bStr += slot.bArgs[a] ? "true" : "false";
+            bStr += slot.args.bArgs[a] ? "true" : "false";
           }
-          DSP_DIAG(COMPILE, "    bArgs=[%s] (%d total)", bStr.c_str(), slot.numBArgs);
+          DSP_DIAG(COMPILE, "    bArgs=[%s] (%d total)", bStr.c_str(), slot.args.numBArgs);
         }
       }
     }
@@ -4554,8 +4554,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         // Compute max output elements for this section (for broadcast detection)
         LongType secMaxOutputElements = 0;
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-          for (int o = 0; o < slots[si].numOutputs; o++) {
-            int outIdx = slots[si].outputSlotIndices[o];
+          for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+            int outIdx = slots[si].wiring.outputSlotIndices[o];
             auto outShape = resolveShape(outIdx);
             LongType oElems = 1;
             for (auto d : outShape) oElems *= d;
@@ -4565,8 +4565,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         // Fallback: if output shapes unavailable, use max input elements
         if (secMaxOutputElements <= 1) {
           for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-            for (int inp = 0; inp < slots[si].numInputs; inp++) {
-              int srcIdx = slots[si].inputSourceIndices[inp];
+            for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+              int srcIdx = slots[si].wiring.inputSourceIndices[inp];
               auto argIt = slotToArgIdx.find(srcIdx);
               if (argIt == slotToArgIdx.end()) continue;
               auto& argDesc = result.args[argIt->second];
@@ -4592,8 +4592,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         bool skipGenericPreload = (sec.type == KernelSectionType::NORMALIZATION);
         if (!skipGenericPreload) {
           for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-            for (int inp = 0; inp < slots[si].numInputs; inp++) {
-              int srcIdx = slots[si].inputSourceIndices[inp];
+            for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+              int srcIdx = slots[si].wiring.inputSourceIndices[inp];
               if (ssaValues.count(srcIdx)) continue;
               auto argIt = slotToArgIdx.find(srcIdx);
               if (argIt == slotToArgIdx.end()) continue;
@@ -4628,43 +4628,43 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         // Emit ops in this section
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          auto cat = getOpCategory(slot.opName);
-          auto it = opTable.find(slot.opName);
+          auto cat = getOpCategory(slot.ident.opName);
+          auto it = opTable.find(slot.ident.opName);
           if (it == opTable.end()) continue;
           const auto& mapping = it->second;
 
           if (cat == TritonOpCategory::BINARY_ELEMENTWISE) {
-            if (slot.numInputs < 2) {
+            if (slot.wiring.numInputs < 2) {
               // Unary pow fallback: pow with scalar exponent in tArgs
-              std::string opLower2 = slot.opName;
+              std::string opLower2 = slot.ident.opName;
               std::transform(opLower2.begin(), opLower2.end(), opLower2.begin(), ::tolower);
-              if (opLower2 == "pow" && slot.numInputs >= 1) {
-                auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
+              if (opLower2 == "pow" && slot.wiring.numInputs >= 1) {
+                auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
                 if (inputIt != ssaValues.end()) {
                   auto opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
-                  for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+                  for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
                 }
               }
               continue;
             }
-            auto lhsIt = ssaValues.find(slot.inputSourceIndices[0]);
-            auto rhsIt = ssaValues.find(slot.inputSourceIndices[1]);
+            auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
+            auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
             if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) continue;
             auto opResult = emitBinaryElementwise(builder, loc, mapping, lhsIt->second, rhsIt->second);
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::UNARY_ELEMENTWISE) {
-            if (slot.numInputs < 1) continue;
-            auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
+            if (slot.wiring.numInputs < 1) continue;
+            auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
             if (inputIt == ssaValues.end()) continue;
             mlir::Value opResult;
             // ClipByValue with tensor min/max: use loaded SSA inputs, not tArgs
             {
-              std::string ol = slot.opName;
+              std::string ol = slot.ident.opName;
               std::transform(ol.begin(), ol.end(), ol.begin(), ::tolower);
               if ((ol == "clipbyvalue" || ol == "clip_by_value" || ol == "clamp")
-                  && slot.numInputs >= 3) {
-                auto minIt = ssaValues.find(slot.inputSourceIndices[1]);
-                auto maxIt = ssaValues.find(slot.inputSourceIndices[2]);
+                  && slot.wiring.numInputs >= 3) {
+                auto minIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
+                auto maxIt = ssaValues.find(slot.wiring.inputSourceIndices[2]);
                 if (minIt != ssaValues.end() && maxIt != ssaValues.end()) {
                   auto elTy = mlir::cast<mlir::RankedTensorType>(
                       inputIt->second.getType()).getElementType();
@@ -4680,82 +4680,82 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
             if (!opResult)
               opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::COMPARISON) {
-            if (slot.numInputs < 2) continue;
-            auto lhsIt = ssaValues.find(slot.inputSourceIndices[0]);
-            auto rhsIt = ssaValues.find(slot.inputSourceIndices[1]);
+            if (slot.wiring.numInputs < 2) continue;
+            auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
+            auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
             if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) continue;
-            auto opResult = emitComparisonOp(builder, loc, slot.opName, lhsIt->second, rhsIt->second, blockSize);
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            auto opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::LOGICAL) {
-            if (slot.numInputs < 1) continue;
-            auto lhsIt = ssaValues.find(slot.inputSourceIndices[0]);
+            if (slot.wiring.numInputs < 1) continue;
+            auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
             if (lhsIt == ssaValues.end()) continue;
             mlir::Value rhsVal = lhsIt->second;
-            if (slot.numInputs >= 2) {
-              auto rhsIt = ssaValues.find(slot.inputSourceIndices[1]);
+            if (slot.wiring.numInputs >= 2) {
+              auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
               if (rhsIt != ssaValues.end()) rhsVal = rhsIt->second;
             }
-            auto opResult = emitLogicalOp(builder, loc, slot.opName, lhsIt->second, rhsVal, blockSize);
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            auto opResult = emitLogicalOp(builder, loc, slot.ident.opName, lhsIt->second, rhsVal, blockSize);
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::TERNARY) {
-            if (slot.numInputs < 3) continue;
-            auto condIt = ssaValues.find(slot.inputSourceIndices[0]);
-            auto trueIt = ssaValues.find(slot.inputSourceIndices[1]);
-            auto falseIt = ssaValues.find(slot.inputSourceIndices[2]);
+            if (slot.wiring.numInputs < 3) continue;
+            auto condIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
+            auto trueIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
+            auto falseIt = ssaValues.find(slot.wiring.inputSourceIndices[2]);
             if (condIt == ssaValues.end() || trueIt == ssaValues.end() || falseIt == ssaValues.end()) continue;
             auto opResult = emitTernaryOp(builder, loc, condIt->second, trueIt->second, falseIt->second, blockSize);
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::IDENTITY) {
-            if (slot.numInputs < 1) continue;
+            if (slot.wiring.numInputs < 1) continue;
             // assign(target, source): forward input[1]; identity(x): forward input[0]
-            int identIdx = (slot.numInputs >= 2) ? 1 : 0;
-            auto inputIt = ssaValues.find(slot.inputSourceIndices[identIdx]);
+            int identIdx = (slot.wiring.numInputs >= 2) ? 1 : 0;
+            auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[identIdx]);
             if (inputIt == ssaValues.end()) continue;
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
           } else if (cat == TritonOpCategory::CAST) {
-            if (slot.numInputs < 1) continue;
-            auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
+            if (slot.wiring.numInputs < 1) continue;
+            auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
             if (inputIt == ssaValues.end()) continue;
             // If cast elimination marked this slot as identity, forward the SSA
             // value without computing the cast. This keeps the Triton path
             // consistent with the slot-by-slot identity fast path.
-            if (slot.isIdentityOp) {
-              for (int o = 0; o < slot.numOutputs; o++)
-                ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+            if (slot.flags.isIdentityOp) {
+              for (int o = 0; o < slot.wiring.numOutputs; o++)
+                ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
             } else {
               DataType targetDtype = FLOAT32;
-              if (slot.numDArgs > 0 && slot.dArgs) {
-                targetDtype = slot.dArgs[0];
-              } else if (slot.numIArgs > 0 && slot.iArgs) {
+              if (slot.args.numDArgs > 0 && slot.args.dArgs) {
+                targetDtype = slot.args.dArgs[0];
+              } else if (slot.args.numIArgs > 0 && slot.args.iArgs) {
                 // Cast ops store target dtype in iArgs[0]
-                targetDtype = static_cast<DataType>(slot.iArgs[0]);
-              } else if (slot.numOutputs > 0) {
-                int outIdx = slot.outputSlotIndices[0];
+                targetDtype = static_cast<DataType>(slot.args.iArgs[0]);
+              } else if (slot.wiring.numOutputs > 0) {
+                int outIdx = slot.wiring.outputSlotIndices[0];
                 targetDtype = resolveDtype(outIdx);
               }
               auto targetElemType = getMLIRType(builder, targetDtype);
               auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
-              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
             }
           } else if (cat == TritonOpCategory::REDUCTION) {
             // Segmented reduction: same approach as buildModule (lines 4159-4449).
             // Cannot use emitReductionOp/tt.reduce because sectioned module uses flat 1D
             // tensors — tt.reduce would reduce the entire tensor to a scalar, but we need
             // partial reduction along a specific axis of the original multi-dimensional shape.
-            if (slot.numInputs < 1) continue;
-            int inputSrc = slot.inputSourceIndices[0];
+            if (slot.wiring.numInputs < 1) continue;
+            int inputSrc = slot.wiring.inputSourceIndices[0];
 
             // Get reduction axis from iArgs
-            int reductionAxis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : -1;
+            int reductionAxis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : -1;
 
             // Resolve original input shape (multi-dimensional)
             auto inputShape = resolveShape(inputSrc);
             int inputRank = static_cast<int>(inputShape.size());
             if (inputRank == 0) {
               DSP_DIAG_SLOT(SHAPE, si, "TritonIRBuilder::buildSectionedModule: reduction op '%s' at slot %d has no input shape",
-                        slot.opName.c_str(), si);
+                        slot.ident.opName.c_str(), si);
               continue;
             }
 
@@ -4822,7 +4822,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
             // Determine reduction op type
-            std::string opLower = slot.opName;
+            std::string opLower = slot.ident.opName;
             std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
             bool isMean = (opLower == "reduce_mean" || opLower == "mean");
             bool isMax = (opLower == "reduce_max" || opLower == "max");
@@ -4900,7 +4900,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
 
             // Cast to output element type
-            auto outSlotIdx = slot.outputSlotIndices[0];
+            auto outSlotIdx = slot.wiring.outputSlotIndices[0];
             auto outDtype = resolveDtype(outSlotIdx);
             auto outElemType = getMLIRType(builder, outDtype);
             mlir::Value opResult = castTo(builder, loc, acc, outElemType);
@@ -4908,12 +4908,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
               opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
             }
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::NORMALIZATION) {
             // Normalization uses one program per logical row so RMS/softmax/layer-norm
             // operate over the last dimension instead of flattening the whole tensor.
-            if (slot.numInputs < 1) continue;
-            int inputSrc = slot.inputSourceIndices[0];
+            if (slot.wiring.numInputs < 1) continue;
+            int inputSrc = slot.wiring.inputSourceIndices[0];
             auto inputShape = resolveShape(inputSrc);
             if (inputShape.empty()) continue;
 
@@ -5004,12 +5004,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto inputTensorType = mlir::cast<mlir::RankedTensorType>(inputValue.getType());
             int axis = inputTensorType.getRank() - 1;
             if (axis < 0) axis = 0;
-            auto outSlotIdx = slot.outputSlotIndices[0];
+            auto outSlotIdx = slot.wiring.outputSlotIndices[0];
 
-            std::string normKey = normalizeOpToken(slot.opName);
+            std::string normKey = normalizeOpToken(slot.ident.opName);
             auto getNormInput = [&](int inputPos) -> mlir::Value {
-              if (inputPos >= slot.numInputs) return mlir::Value();
-              int src = slot.inputSourceIndices[inputPos];
+              if (inputPos >= slot.wiring.numInputs) return mlir::Value();
+              int src = slot.wiring.inputSourceIndices[inputPos];
               return loadNormInput(src, false);
             };
 
@@ -5024,8 +5024,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               biasVal = getNormInput(2);
             }
 
-            float epsilon2 = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-5f;
-            auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputValue, axis,
+            float epsilon2 = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 1e-5f;
+            auto opResult = emitNormalizationOp(builder, loc, slot.ident.opName, inputValue, axis,
                                                 inputTensorType, scaleVal, biasVal,
                                                 meanVal, varianceVal, epsilon2, logicalRowLen);
             if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
@@ -5055,7 +5055,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               customStoredOutputs.insert(outSlotIdx);
             }
 
-            for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
 
             // ── Normalization epilogue: emit absorbed elementwise ops ──
             // These ops (residual add, dropout, cast, etc.) operate on the
@@ -5067,14 +5067,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                         sec.normEpilogueCount, sec.normEpilogueStartSlot, sec.normEpilogueEndSlot);
               for (int epi = sec.normEpilogueStartSlot; epi <= sec.normEpilogueEndSlot; epi++) {
                 auto& epiSlot = slots[epi];
-                auto epiCat = getOpCategory(epiSlot.opName);
-                auto epiIt = opTable.find(epiSlot.opName);
+                auto epiCat = getOpCategory(epiSlot.ident.opName);
+                auto epiIt = opTable.find(epiSlot.ident.opName);
                 if (epiIt == opTable.end()) continue;
                 const auto& epiMapping = epiIt->second;
 
                 // Ensure all inputs are in SSA value map (load per-row from global memory if needed)
-                for (int inp = 0; inp < epiSlot.numInputs; inp++) {
-                  int srcIdx = epiSlot.inputSourceIndices[inp];
+                for (int inp = 0; inp < epiSlot.wiring.numInputs; inp++) {
+                  int srcIdx = epiSlot.wiring.inputSourceIndices[inp];
                   if (!ssaValues.count(srcIdx)) {
                     mlir::Value loaded = loadNormInput(srcIdx, true);
                     if (loaded) ssaValues[srcIdx] = loaded;
@@ -5082,29 +5082,29 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 }
 
                 mlir::Value epiResult;
-                if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiSlot.numInputs >= 2) {
-                  auto lhsIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
-                  auto rhsIt = ssaValues.find(epiSlot.inputSourceIndices[1]);
+                if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 2) {
+                  auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
+                  auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
                   if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
                     epiResult = emitBinaryElementwise(builder, loc, epiMapping, lhsIt->second, rhsIt->second);
                   }
-                } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.numInputs >= 1) {
-                  auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+                } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
+                  auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
                   if (inputIt != ssaValues.end()) {
                     epiResult = emitUnaryElementwise(builder, loc, epiMapping, epiSlot, inputIt->second, static_cast<int>(paddedRowLen));
                   }
                 } else if ((epiCat == TritonOpCategory::IDENTITY || epiCat == TritonOpCategory::CAST)
-                           && epiSlot.numInputs >= 1) {
-                  auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+                           && epiSlot.wiring.numInputs >= 1) {
+                  auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
                   if (inputIt != ssaValues.end()) epiResult = inputIt->second;
                 }
 
                 if (epiResult) {
-                  for (int o = 0; o < epiSlot.numOutputs; o++) {
-                    ssaValues[epiSlot.outputSlotIndices[o]] = epiResult;
+                  for (int o = 0; o < epiSlot.wiring.numOutputs; o++) {
+                    ssaValues[epiSlot.wiring.outputSlotIndices[o]] = epiResult;
                   }
                   // Store epilogue result per-row using the same row addressing
-                  auto epiOutSlotIdx = epiSlot.outputSlotIndices[0];
+                  auto epiOutSlotIdx = epiSlot.wiring.outputSlotIndices[0];
                   auto epiOutArgIt = slotToArgIdx.find(epiOutSlotIdx);
                   if (epiOutArgIt != slotToArgIdx.end()) {
                     auto epiOutFuncArg = getBufferArg(epiOutArgIt->second);
@@ -5127,7 +5127,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                     customStoredOutputs.insert(epiOutSlotIdx);
                   }
                   DSP_DIAG(COMPILE, "  norm epilogue op '%s' at slot %d emitted successfully",
-                            epiSlot.opName.c_str(), epi);
+                            epiSlot.ident.opName.c_str(), epi);
                 }
               }
             }
@@ -5136,11 +5136,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             builder.setInsertionPointAfter(rowIf);
           } else if (cat == TritonOpCategory::ROPE) {
             // ─── ROPE: paired elementwise rotation ───
-            if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
-              int inputSrc2 = slot.inputSourceIndices[0];
-              int cosSrc = slot.inputSourceIndices[1];
-              int sinSrc = slot.inputSourceIndices[2];
-              int outSlot2 = slot.outputSlotIndices[0];
+            if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs >= 1) {
+              int inputSrc2 = slot.wiring.inputSourceIndices[0];
+              int cosSrc = slot.wiring.inputSourceIndices[1];
+              int sinSrc = slot.wiring.inputSourceIndices[2];
+              int outSlot2 = slot.wiring.outputSlotIndices[0];
 
               auto inPtr2 = getSlotArgPtr(inputSrc2);
               auto cosPtr2 = getSlotArgPtr(cosSrc);
@@ -5190,8 +5190,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   auto result2 = emitRoPESSA(builder, loc, ssaIt2->second,
                                               cosPtr2, sinPtr2, pid, blockSize,
                                               headDim2, numHeads2, cosShapeVec2, nElems);
-                  for (int o = 0; o < slot.numOutputs; o++)
-                    ssaValues[slot.outputSlotIndices[o]] = result2;
+                  for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] = result2;
                 } else if (inPtr2 && outPtr2) {
                   // Pointer-based emitter (requires both input and output buffer pointers)
                   auto maybeStoreSSA = [&](int srcIdx) {
@@ -5211,7 +5211,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   };
                   maybeStoreSSA(inputSrc2);
 
-                  int ropeType2 = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+                  int ropeType2 = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
                   emitRoPESection(builder, loc, pid, blockSize,
                                   inPtr2, cosPtr2, sinPtr2, outPtr2,
                                   inShapeVec, cosShapeVec2, ropeType2, nElems);
@@ -5227,12 +5227,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                     auto reloaded = builder.create<mlir::triton::LoadOp>(loc,
                         outPtrs2.getResult(), mask.getResult(), mlir::Value(),
                         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
-                    for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = reloaded;
+                    for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = reloaded;
                   }
                 } else {
                   DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder(sectioned): ROPE '%s' at slot %d — "
                             "SSA path unavailable and missing buffer pointers (inPtr=%d outPtr=%d)",
-                            slot.opName.c_str(), si, inPtr2 ? 1 : 0, outPtr2 ? 1 : 0);
+                            slot.ident.opName.c_str(), si, inPtr2 ? 1 : 0, outPtr2 ? 1 : 0);
                 }
               }
             }
@@ -5240,14 +5240,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // Constant generation ops produce values independent of input data.
             // Must emit proper constants — NOT forward input SSA values.
             DataType outDtype = FLOAT32;
-            if (slot.numOutputs > 0) {
-              int outIdx = slot.outputSlotIndices[0];
+            if (slot.wiring.numOutputs > 0) {
+              int outIdx = slot.wiring.outputSlotIndices[0];
               outDtype = resolveDtype(outIdx);
             }
             auto cgElemType = getMLIRType(builder, outDtype);
             auto cgTensorType = mlir::RankedTensorType::get({blockSize}, cgElemType);
 
-            std::string opLower3 = slot.opName;
+            std::string opLower3 = slot.ident.opName;
             std::transform(opLower3.begin(), opLower3.end(), opLower3.begin(), ::tolower);
 
             mlir::Value cgResult;
@@ -5268,10 +5268,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               cgResult = splatConstantF32(builder, loc, cgTensorType, 1.0f);
             } else if (opLower3 == "create" || opLower3 == "set_scalar") {
               float fillVal = 0.0f;
-              if (slot.numTArgs > 0 && slot.tArgs) {
-                fillVal = static_cast<float>(slot.tArgs[0]);
-              } else if (slot.numOutputs > 0) {
-                int outIdx = slot.outputSlotIndices[0];
+              if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+                fillVal = static_cast<float>(slot.args.tArgs[0]);
+              } else if (slot.wiring.numOutputs > 0) {
+                int outIdx = slot.wiring.outputSlotIndices[0];
                 auto* arr = secResolveArr(outIdx);
                 if (arr && arr->lengthOf() > 0) {
                   arr->syncToHost();
@@ -5281,11 +5281,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               cgResult = splatConstantF32(builder, loc, cgTensorType, fillVal);
             } else if (opLower3 == "range") {
               float start = 0.0f, step = 1.0f;
-              if (slot.numTArgs >= 1 && slot.tArgs) start = static_cast<float>(slot.tArgs[0]);
-              if (slot.numTArgs >= 3 && slot.tArgs) step = static_cast<float>(slot.tArgs[2]);
+              if (slot.args.numTArgs >= 1 && slot.args.tArgs) start = static_cast<float>(slot.args.tArgs[0]);
+              if (slot.args.numTArgs >= 3 && slot.args.tArgs) step = static_cast<float>(slot.args.tArgs[2]);
               int rangeLen = blockSize;
-              if (slot.numOutputs > 0) {
-                int outIdx = slot.outputSlotIndices[0];
+              if (slot.wiring.numOutputs > 0) {
+                int outIdx = slot.wiring.outputSlotIndices[0];
                 auto outShape = resolveShape(outIdx);
                 LongType outLen = shapeLength(outShape);
                 if (outLen > 0) rangeLen = static_cast<int>(outLen);
@@ -5303,8 +5303,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               cgResult = castTo(builder, loc, cgResult, cgElemType);
             } else if (opLower3 == "shape_of") {
               bool emitted = false;
-              if (slot.numOutputs > 0) {
-                int outIdx = slot.outputSlotIndices[0];
+              if (slot.wiring.numOutputs > 0) {
+                int outIdx = slot.wiring.outputSlotIndices[0];
                 auto* arr = secResolveArr(outIdx);
                 if (arr && arr->lengthOf() > 0) {
                   arr->syncToHost();
@@ -5333,8 +5333,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               }
             } else if (opLower3 == "min_max_datatype") {
               float val = 0.0f;
-              if (slot.numOutputs > 0) {
-                int outIdx = slot.outputSlotIndices[0];
+              if (slot.wiring.numOutputs > 0) {
+                int outIdx = slot.wiring.outputSlotIndices[0];
                 auto* arr = secResolveArr(outIdx);
                 if (arr && arr->lengthOf() > 0) {
                   arr->syncToHost();
@@ -5348,7 +5348,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
 
             if (cgResult) {
-              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = cgResult;
+              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = cgResult;
             }
           } else if (cat == TritonOpCategory::SHAPE_MANIPULATION) {
             // Shape ops (reshape, squeeze, expand_dims, permute, transpose) are
@@ -5356,10 +5356,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // identifySections() and always run via native fallback.  This SSA
             // forwarding code should never be reached, but is kept as defensive
             // fallback.  It is correct only for non-permute ops (identity view).
-            if (slot.numInputs >= 1) {
-              auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
+            if (slot.wiring.numInputs >= 1) {
+              auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
               if (inputIt != ssaValues.end()) {
-                for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+                for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
               }
             }
           }
@@ -5367,8 +5367,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
         // Store cross-section intermediate outputs to global memory
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-          for (int o = 0; o < slots[si].numOutputs; o++) {
-            int outIdx = slots[si].outputSlotIndices[o];
+          for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+            int outIdx = slots[si].wiring.outputSlotIndices[o];
             if (!externalOutputs.count(outIdx)) continue;
             if (customStoredOutputs.count(outIdx)) continue;
             auto ssaIt = ssaValues.find(outIdx);
@@ -5483,18 +5483,18 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                               : sec.endSlot;
         for (int si = sec.startSlot; si <= matmulEndSlot; si++) {
           auto& slot = slots[si];
-          if (getOpCategory(slot.opName) != TritonOpCategory::MATMUL) continue;
-          if (slot.numInputs < 2 || slot.numOutputs < 1) continue;
+          if (getOpCategory(slot.ident.opName) != TritonOpCategory::MATMUL) continue;
+          if (slot.wiring.numInputs < 2 || slot.wiring.numOutputs < 1) continue;
 
           // ── Check for fused_gemm_swiglu: use dedicated GatedMLP kernel ──
           {
-            std::string opLower = slot.opName;
+            std::string opLower = slot.ident.opName;
             std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
-            if (opLower == "fused_gemm_swiglu" && slot.numInputs >= 3) {
-              int xSrc = slot.inputSourceIndices[0];
-              int wGateSrc = slot.inputSourceIndices[1];
-              int wUpSrc = slot.inputSourceIndices[2];
-              int outSlot = slot.outputSlotIndices[0];
+            if (opLower == "fused_gemm_swiglu" && slot.wiring.numInputs >= 3) {
+              int xSrc = slot.wiring.inputSourceIndices[0];
+              int wGateSrc = slot.wiring.inputSourceIndices[1];
+              int wUpSrc = slot.wiring.inputSourceIndices[2];
+              int outSlot = slot.wiring.outputSlotIndices[0];
               auto xPtr = getSlotArgPtr(xSrc);
               auto wGatePtr = getSlotArgPtr(wGateSrc);
               auto wUpPtr = getSlotArgPtr(wUpSrc);
@@ -5512,8 +5512,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   DataType outDtype = resolveDtype(outSlot);
                   auto loaded = loadBlock(outSlot, outDtype);
                   if (loaded) {
-                    for (int o = 0; o < slot.numOutputs; o++)
-                      ssaValues[slot.outputSlotIndices[o]] = loaded;
+                    for (int o = 0; o < slot.wiring.numOutputs; o++)
+                      ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
                   }
                   continue;
                 }
@@ -5523,20 +5523,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
           // ── Check for rms_norm_linear: use dedicated single-pass kernel ──
           {
-            std::string opLower = slot.opName;
+            std::string opLower = slot.ident.opName;
             std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
-            if ((opLower == "rms_norm_linear" || opLower == "rmsnormlinear") && slot.numInputs >= 3) {
-              int xSrc = slot.inputSourceIndices[0];
-              int gammaSrc = slot.inputSourceIndices[1];
-              int wSrc = slot.inputSourceIndices[2];
-              int outSlot = slot.outputSlotIndices[0];
+            if ((opLower == "rms_norm_linear" || opLower == "rmsnormlinear") && slot.wiring.numInputs >= 3) {
+              int xSrc = slot.wiring.inputSourceIndices[0];
+              int gammaSrc = slot.wiring.inputSourceIndices[1];
+              int wSrc = slot.wiring.inputSourceIndices[2];
+              int outSlot = slot.wiring.outputSlotIndices[0];
               auto xArgPtr = getSlotArgPtr(xSrc);
               auto gammaArgPtr = getSlotArgPtr(gammaSrc);
               auto wArgPtr = getSlotArgPtr(wSrc);
               auto outArgPtr = getSlotArgPtr(outSlot);
               auto xShape = resolveShape(xSrc);
               auto wShape = resolveShape(wSrc);
-              float eps = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-6f;
+              float eps = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 1e-6f;
               if (xArgPtr && gammaArgPtr && wArgPtr && outArgPtr &&
                   xShape.size() >= 2 && wShape.size() >= 2) {
                 int rM = static_cast<int>(xShape[xShape.size() - 2]);
@@ -5548,8 +5548,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   DataType outDtype = resolveDtype(outSlot);
                   auto loaded = loadBlock(outSlot, outDtype);
                   if (loaded) {
-                    for (int o = 0; o < slot.numOutputs; o++)
-                      ssaValues[slot.outputSlotIndices[o]] = loaded;
+                    for (int o = 0; o < slot.wiring.numOutputs; o++)
+                      ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
                   }
                   continue;
                 }
@@ -5557,9 +5557,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
           }
 
-          int aSrc = slot.inputSourceIndices[0];
-          int bSrc = slot.inputSourceIndices[1];
-          int cSlot = slot.outputSlotIndices[0];
+          int aSrc = slot.wiring.inputSourceIndices[0];
+          int bSrc = slot.wiring.inputSourceIndices[1];
+          int cSlot = slot.wiring.outputSlotIndices[0];
 
           auto aShape = resolveShape(aSrc);
           auto bShape = resolveShape(bSrc);
@@ -5582,11 +5582,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             DataType outDtype = resolveDtype(cSlot);
             auto loaded = loadBlock(cSlot, outDtype);
             if (loaded) {
-              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
             }
           } else {
             std::string msg = "TritonIRBuilder::buildSectionedModule: matmul at slot " + std::to_string(si) +
-                " op='" + slot.opName + "'"
+                " op='" + slot.ident.opName + "'"
                 " aSrc=" + std::to_string(aSrc) + " bSrc=" + std::to_string(bSrc) + " cSlot=" + std::to_string(cSlot) +
                 " aShape=[";
             for (size_t d = 0; d < aShape.size(); d++) { if (d) msg += ","; msg += std::to_string(aShape[d]); }
@@ -5625,8 +5625,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           // Determine n_elements for the epilogue (from first epilogue slot's output)
           int64_t epiNElements = 0;
           for (int esi = sec.matmulEpilogueStartSlot; esi <= sec.matmulEpilogueEndSlot && epiNElements == 0; esi++) {
-            if (slots[esi].numOutputs > 0) {
-              int epiOutIdx = slots[esi].outputSlotIndices[0];
+            if (slots[esi].wiring.numOutputs > 0) {
+              int epiOutIdx = slots[esi].wiring.outputSlotIndices[0];
               NDArray* epiOutArr = (epiOutIdx >= 0 && epiOutIdx < totalOutputSlots) ? outputSlots[epiOutIdx] : nullptr;
               if (epiOutArr) epiNElements = epiOutArr->lengthOf();
             }
@@ -5639,14 +5639,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
           for (int si = sec.matmulEpilogueStartSlot; si <= sec.matmulEpilogueEndSlot; si++) {
             auto& epiSlot = slots[si];
-            auto epiCat = getOpCategory(epiSlot.opName);
-            auto epiIt = opTable.find(epiSlot.opName);
+            auto epiCat = getOpCategory(epiSlot.ident.opName);
+            auto epiIt = opTable.find(epiSlot.ident.opName);
             if (epiIt == opTable.end()) continue;
             const auto& epiMapping = epiIt->second;
 
             // Ensure all inputs are in SSA value map (load from global memory if needed)
-            for (int inp = 0; inp < epiSlot.numInputs; inp++) {
-              int srcIdx = epiSlot.inputSourceIndices[inp];
+            for (int inp = 0; inp < epiSlot.wiring.numInputs; inp++) {
+              int srcIdx = epiSlot.wiring.inputSourceIndices[inp];
               if (!ssaValues.count(srcIdx)) {
                 auto argIt = slotToArgIdx.find(srcIdx);
                 if (argIt != slotToArgIdx.end()) {
@@ -5667,35 +5667,35 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
 
             mlir::Value epiResult;
-            if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiSlot.numInputs >= 2) {
-              auto lhsIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
-              auto rhsIt = ssaValues.find(epiSlot.inputSourceIndices[1]);
+            if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 2) {
+              auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
+              auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
               if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
                 epiResult = emitBinaryElementwise(builder, loc, epiMapping, lhsIt->second, rhsIt->second);
               }
-            } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.numInputs >= 1) {
-              auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+            } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
+              auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
               if (inputIt != ssaValues.end()) {
                 epiResult = emitUnaryElementwise(builder, loc, epiMapping, epiSlot, inputIt->second, blockSize);
               }
-            } else if (epiCat == TritonOpCategory::COMPARISON && epiSlot.numInputs >= 2) {
-              auto lhsIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
-              auto rhsIt = ssaValues.find(epiSlot.inputSourceIndices[1]);
+            } else if (epiCat == TritonOpCategory::COMPARISON && epiSlot.wiring.numInputs >= 2) {
+              auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
+              auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
               if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                epiResult = emitComparisonOp(builder, loc, epiSlot.opName, lhsIt->second, rhsIt->second, blockSize);
+                epiResult = emitComparisonOp(builder, loc, epiSlot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
               }
             } else if ((epiCat == TritonOpCategory::IDENTITY || epiCat == TritonOpCategory::CAST)
-                       && epiSlot.numInputs >= 1) {
-              auto inputIt = ssaValues.find(epiSlot.inputSourceIndices[0]);
+                       && epiSlot.wiring.numInputs >= 1) {
+              auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
               if (inputIt != ssaValues.end()) epiResult = inputIt->second;
             }
 
             if (epiResult) {
-              for (int o = 0; o < epiSlot.numOutputs; o++) {
-                ssaValues[epiSlot.outputSlotIndices[o]] = epiResult;
+              for (int o = 0; o < epiSlot.wiring.numOutputs; o++) {
+                ssaValues[epiSlot.wiring.outputSlotIndices[o]] = epiResult;
               }
               // Store epilogue result to output buffer
-              auto outSlotIdx = epiSlot.outputSlotIndices[0];
+              auto outSlotIdx = epiSlot.wiring.outputSlotIndices[0];
               auto outArgIt = slotToArgIdx.find(outSlotIdx);
               if (outArgIt != slotToArgIdx.end()) {
                 auto outFuncArg = getBufferArg(outArgIt->second);
@@ -5710,7 +5710,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 customStoredOutputs.insert(outSlotIdx);
               }
               DSP_DIAG(COMPILE, "  matmul epilogue op '%s' at slot %d emitted successfully",
-                        epiSlot.opName.c_str(), si);
+                        epiSlot.ident.opName.c_str(), si);
             }
           }
         }
@@ -5723,21 +5723,21 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         bool loggedAttnTileAdjust = false;
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (getOpCategory(slot.opName) != TritonOpCategory::FUSED_ATTENTION) continue;
-          if (slot.numInputs < 3 || slot.numOutputs < 1) continue;
+          if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION) continue;
+          if (slot.wiring.numInputs < 3 || slot.wiring.numOutputs < 1) continue;
 
-          int qSrc = slot.inputSourceIndices[0];
+          int qSrc = slot.wiring.inputSourceIndices[0];
           // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
-          std::string opLowerSec = slot.opName;
+          std::string opLowerSec = slot.ident.opName;
           std::transform(opLowerSec.begin(), opLowerSec.end(), opLowerSec.begin(), ::tolower);
           bool isDpaV2Sec = (opLowerSec.find("dot_product_attention") != std::string::npos);
 
           // 3D Q: compound attention (onnx_multi_head_attention) — handled via dual-buffer kernel
           auto qShapeSec = resolveShape(qSrc);
 
-          int kSrc = isDpaV2Sec ? slot.inputSourceIndices[2] : slot.inputSourceIndices[1];
-          int vSrc = isDpaV2Sec ? slot.inputSourceIndices[1] : slot.inputSourceIndices[2];
-          int outSlot = slot.outputSlotIndices[0];
+          int kSrc = isDpaV2Sec ? slot.wiring.inputSourceIndices[2] : slot.wiring.inputSourceIndices[1];
+          int vSrc = isDpaV2Sec ? slot.wiring.inputSourceIndices[1] : slot.wiring.inputSourceIndices[2];
+          int outSlot = slot.wiring.outputSlotIndices[0];
 
           // ── Step 1: Extract Q shape to get headDim (needed for past_key detection) ──
           auto qShape = resolveShape(qSrc);
@@ -5760,7 +5760,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             batchSize = static_cast<int>(qShape[0]);
             seqQ = static_cast<int>(qShape[1]);
             int hidden = static_cast<int>(qShape[2]);
-            numQHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+            numQHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
             if (numQHeads <= 0) numQHeads = 1;
             headDim = hidden / numQHeads;
             isBSHD = true;
@@ -5778,8 +5778,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           int pastKeySrc = -1, pastValueSrc = -1;
           bool pastKeyIsExternal = false;
 
-          for (int inp = 3; inp < slot.numInputs && !hasPastKv; inp++) {
-            int candidateSrc = slot.inputSourceIndices[inp];
+          for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKv; inp++) {
+            int candidateSrc = slot.wiring.inputSourceIndices[inp];
             auto candidateShape = resolveShape(candidateSrc);
             // Accept 4D KV cache shapes, including empty ones [B,H,0,D] at warmup.
             // GQA constraint: KV heads must divide Q heads evenly and be <= numQHeads.
@@ -5795,8 +5795,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                           si, inp, candidateSrc,
                           (long long)candidateShape[0], (long long)candidateShape[1],
                           (long long)candidateShape[2], (long long)candidateShape[3], headDim);
-                if (inp + 1 < slot.numInputs) {
-                  int pvCandidate = slot.inputSourceIndices[inp + 1];
+                if (inp + 1 < slot.wiring.numInputs) {
+                  int pvCandidate = slot.wiring.inputSourceIndices[inp + 1];
                   auto pvShape = resolveShape(pvCandidate);
                   if (pvShape.size() == 4 && static_cast<int>(pvShape[3]) == headDim) {
                     pastValueSrc = pvCandidate;
@@ -5808,7 +5808,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
           if (!hasPastKv) {
             DSP_DIAG(COMPILE, "ATTN slot=%d no past_key found (headDim=%d) in %d inputs",
-                      si, headDim, slot.numInputs);
+                      si, headDim, slot.wiring.numInputs);
           }
 
           // Use past_key as effective K source when available
@@ -5826,9 +5826,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // Summary line
             DSP_DIAG(COMPILE, "ATTN slot=%d op='%s' qSrc=%d kSrc=%d vSrc=%d effectiveKSrc=%d effectiveVSrc=%d "
                       "outSlot=%d hasPastKv=%d pastKeySrc=%d pastValueSrc=%d numInputs=%d numOutputs=%d",
-                      si, slot.opName.c_str(), qSrc, kSrc, vSrc, effectiveKSrc, effectiveVSrc,
+                      si, slot.ident.opName.c_str(), qSrc, kSrc, vSrc, effectiveKSrc, effectiveVSrc,
                       outSlot, hasPastKv, pastKeySrc, pastValueSrc,
-                      slot.numInputs, slot.numOutputs);
+                      slot.wiring.numInputs, slot.wiring.numOutputs);
 
             // Shapes: Q, K (raw), K (effective), V
             auto kShapeDbg = resolveShape(kSrc);
@@ -5838,11 +5838,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                       fmtShape(effectiveKShape).c_str(), fmtShape(vShapeDbg).c_str());
 
             // Every input: source index, shape, op name, whether slot array exists and its length
-            for (int inp = 0; inp < slot.numInputs; inp++) {
-              int srcIdx = slot.inputSourceIndices[inp];
+            for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+              int srcIdx = slot.wiring.inputSourceIndices[inp];
               auto srcShape = resolveShape(srcIdx);
               const char* srcOp = "EXT";
-              if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].opName.c_str();
+              if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].ident.opName.c_str();
               bool slotExists = false;
               LongType slotLen = -1;
               if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
@@ -5873,29 +5873,29 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
 
             // Every output slot
-            for (int outp = 0; outp < slot.numOutputs; outp++) {
-              int outIdx = slot.outputSlotIndices[outp];
+            for (int outp = 0; outp < slot.wiring.numOutputs; outp++) {
+              int outIdx = slot.wiring.outputSlotIndices[outp];
               auto outShape = resolveShape(outIdx);
               DSP_DIAG(COMPILE, "ATTN slot=%d   output[%d] slot=%d shape=[%s]",
                         si, outp, outIdx, fmtShape(outShape).c_str());
             }
 
             // iArgs and tArgs
-            if (slot.numIArgs > 0) {
+            if (slot.args.numIArgs > 0) {
               std::string iStr;
-              for (int a = 0; a < slot.numIArgs && a < 16; a++) {
+              for (int a = 0; a < slot.args.numIArgs && a < 16; a++) {
                 if (a) iStr += ",";
-                iStr += std::to_string(slot.iArgs[a]);
+                iStr += std::to_string(slot.args.iArgs[a]);
               }
-              DSP_DIAG(COMPILE, "ATTN slot=%d   iArgs=[%s] (%d total)", si, iStr.c_str(), slot.numIArgs);
+              DSP_DIAG(COMPILE, "ATTN slot=%d   iArgs=[%s] (%d total)", si, iStr.c_str(), slot.args.numIArgs);
             }
-            if (slot.numTArgs > 0) {
+            if (slot.args.numTArgs > 0) {
               char tBuf[256] = {0};
               int toff = 0;
-              for (int a = 0; a < slot.numTArgs && a < 8 && toff < 240; a++) {
-                toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.tArgs[a]);
+              for (int a = 0; a < slot.args.numTArgs && a < 8 && toff < 240; a++) {
+                toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.args.tArgs[a]);
               }
-              DSP_DIAG(COMPILE, "ATTN slot=%d   tArgs=[%s] (%d total)", si, tBuf, slot.numTArgs);
+              DSP_DIAG(COMPILE, "ATTN slot=%d   tArgs=[%s] (%d total)", si, tBuf, slot.args.numTArgs);
             }
           }
           // Extract KV head count from effective K shape (4D BHSD: [B,KvHeads,seqK,HD])
@@ -5915,8 +5915,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
           } else if (effectiveKShape.size() == 3) {
             // 3D key: [B, seqK, kvHeads*headDim] — infer from iArgs
-            if (slot.numIArgs > 0 && slot.iArgs) {
-              int totalQHeads = static_cast<int>(slot.iArgs[0]);
+            if (slot.args.numIArgs > 0 && slot.args.iArgs) {
+              int totalQHeads = static_cast<int>(slot.args.iArgs[0]);
               if (totalQHeads > 0) numKvHeads = totalQHeads;  // will be refined below
             }
           }
@@ -5960,11 +5960,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // Find that concat's past_key external input and use its seqK.
             if (kSrc >= 0) {
               for (int s = 0; s < totalSlots; s++) {
-                for (int o = 0; o < slots[s].numOutputs; o++) {
-                  if (slots[s].outputSlotIndices[o] == kSrc) {
+                for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                  if (slots[s].wiring.outputSlotIndices[o] == kSrc) {
                     // Found the producer of K. Check its inputs for external KV cache.
-                    for (int pi = 0; pi < slots[s].numInputs; pi++) {
-                      int psrc = slots[s].inputSourceIndices[pi];
+                    for (int pi = 0; pi < slots[s].wiring.numInputs; pi++) {
+                      int psrc = slots[s].wiring.inputSourceIndices[pi];
                       if (psrc < 0) {
                         // External input — check if it looks like a KV cache
                         int extIdx = -(psrc + 1);
@@ -6010,8 +6010,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // Strategy 2: Scan ALL attention op inputs for 4D KV cache shapes.
             // Covers cases where past_key is a direct input to the attention op.
             if (derivedSeqK == 0) {
-              for (int inp = 0; inp < slot.numInputs; inp++) {
-                int src = slot.inputSourceIndices[inp];
+              for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+                int src = slot.wiring.inputSourceIndices[inp];
                 auto shape = resolveShape(src);
                 int candidateKvH = (shape.size() == 4) ? static_cast<int>(shape[1]) : 0;
                 // GQA constraint: KV heads must divide Q heads evenly
@@ -6122,19 +6122,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               std::string r; for (size_t i = 0; i < v.size(); i++) { if (i) r += ","; r += std::to_string(v[i]); } return r.empty() ? "empty" : r;
             };
             std::string idxStr;
-            for (int i = 0; i < slot.numInputs; i++) { if (i) idxStr += ","; idxStr += std::to_string(slot.inputSourceIndices[i]); }
+            for (int i = 0; i < slot.wiring.numInputs; i++) { if (i) idxStr += ","; idxStr += std::to_string(slot.wiring.inputSourceIndices[i]); }
             DSP_DIAG(COMPILE, "TritonIRBuilder: attention slot=%d op=%s numInputs=%d numOutputs=%d "
                       "seqQ=%d seqK=%d heads=%d/%d hd=%d hasPastKv=%d dualBuf=%d "
                       "pastKeySrc=%d qShape=[%s] kShape=[%s] effectiveKShape=[%s] inputSrcs=[%s]",
-                      si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
+                      si, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs,
                       seqQ, seqK, numQHeads, numKvHeads, headDim,
                       hasPastKv ? 1 : 0, useDualBuffer ? 1 : 0,
                       pastKeySrc,
                       fmtShp(qShape).c_str(), fmtShp(resolveShape(kSrc)).c_str(),
                       fmtShp(effectiveKShape).c_str(), idxStr.c_str());
           }
-          if (slot.numInputs > 3) {
-            int biasSrc = slot.inputSourceIndices[3];
+          if (slot.wiring.numInputs > 3) {
+            int biasSrc = slot.wiring.inputSourceIndices[3];
             auto bShape = resolveShape(biasSrc);
             // Accept bias if rank >= 2 and non-scalar (rank 2 = [B, seqK] padding mask)
             if (bShape.size() >= 2 && shapeLength(bShape) > 1) {
@@ -6221,14 +6221,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             if (loaded) ssaValues[outSlot] = loaded;
 
             // output[1] = present_key, output[2] = present_value
-            if (useDualBuffer && slot.numOutputs >= 2) {
+            if (useDualBuffer && slot.wiring.numOutputs >= 2) {
               // Dual-buffer: write current K/V to present_key/value output at position pastSeq.
               // Guard: verify the present_key output buffer can hold pastSeqLen + seqKVCur positions.
               // For static KV caches, the past_key buffer is pre-allocated to maxKvLen but the
               // present_key output was allocated during warmup with a much smaller shape.
               // Writing at pastSeqLen offset would be out-of-bounds. In static KV cache mode,
               // the caller handles cache updates — skip the write.
-              int presentKeySlot = slot.outputSlotIndices[1];
+              int presentKeySlot = slot.wiring.outputSlotIndices[1];
               auto pkOutShape = resolveShape(presentKeySlot);
               int pkSeqCapacity = (pkOutShape.size() == 4) ? static_cast<int>(pkOutShape[2]) : 0;
               int requiredSeq = pastSeqLen + seqKVCur;
@@ -6250,8 +6250,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
                 }
               }
-              if (slot.numOutputs >= 3 && pkFits) {
-                int presentValSlot = slot.outputSlotIndices[2];
+              if (slot.wiring.numOutputs >= 3 && pkFits) {
+                int presentValSlot = slot.wiring.outputSlotIndices[2];
                 auto presentValPtr = getSlotArgPtr(presentValSlot);
                 if (presentValPtr && curVPtr) {
                   int totalSeq = pastSeqLen + seqKVCur;
@@ -6264,20 +6264,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               }
             } else {
               // Non-dual-buffer: pass-through effective key/value SSA
-              if (slot.numOutputs >= 2) {
+              if (slot.wiring.numOutputs >= 2) {
                 if (ssaValues.count(effectiveKSrc)) {
-                  ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
+                  ssaValues[slot.wiring.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
                 } else {
                   auto kLoaded = loadBlock(effectiveKSrc, resolveDtype(effectiveKSrc));
-                  if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+                  if (kLoaded) ssaValues[slot.wiring.outputSlotIndices[1]] = kLoaded;
                 }
               }
-              if (slot.numOutputs >= 3) {
+              if (slot.wiring.numOutputs >= 3) {
                 if (ssaValues.count(effectiveVSrc)) {
-                  ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
+                  ssaValues[slot.wiring.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
                 } else {
                   auto vLoaded = loadBlock(effectiveVSrc, resolveDtype(effectiveVSrc));
-                  if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
+                  if (vLoaded) ssaValues[slot.wiring.outputSlotIndices[2]] = vLoaded;
                 }
               }
             }
@@ -6301,10 +6301,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::GATHER_ND: {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 1 || slot.numOutputs < 1) continue;
-          int dataSrc = slot.inputSourceIndices[0];
-          int idxSrc = (slot.numInputs >= 2) ? slot.inputSourceIndices[1] : dataSrc;
-          int outSlot = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+          int dataSrc = slot.wiring.inputSourceIndices[0];
+          int idxSrc = (slot.wiring.numInputs >= 2) ? slot.wiring.inputSourceIndices[1] : dataSrc;
+          int outSlot = slot.wiring.outputSlotIndices[0];
           auto dataPtr = getSlotArgPtr(dataSrc);
           auto idxPtr = getSlotArgPtr(idxSrc);
           auto outPtr = getSlotArgPtr(outSlot);
@@ -6313,12 +6313,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto outShape = resolveShape(outSlot);
           if (dataPtr && idxPtr && outPtr && !dataShape.empty() && !outShape.empty()) {
             int nElements = static_cast<int>(shapeLength(outShape));
-            int axis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+            int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
             bool gatherNd = (sec.type == KernelSectionType::GATHER_ND);
             emitGatherSection(builder, loc, pid, blockSize, dataPtr, idxPtr, outPtr, axis,
                               dataShape, indicesShape, nElements, gatherNd);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         }
         break;
@@ -6327,15 +6327,15 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::CONCAT: {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 1 || slot.numOutputs < 1) continue;
-          int outSlot = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+          int outSlot = slot.wiring.outputSlotIndices[0];
           auto outPtr = getSlotArgPtr(outSlot);
           auto outShape = resolveShape(outSlot);
           std::vector<mlir::Value> inPtrs;
           std::vector<std::vector<LongType>> inShapes;
           bool allValid = outPtr && !outShape.empty();
-          for (int inp = 0; inp < slot.numInputs && allValid; inp++) {
-            int src = slot.inputSourceIndices[inp];
+          for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
+            int src = slot.wiring.inputSourceIndices[inp];
             auto ptr = getSlotArgPtr(src);
             auto shape = resolveShape(src);
             if (ptr && !shape.empty()) {
@@ -6345,10 +6345,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           }
           if (allValid && !inPtrs.empty()) {
             int nElements = static_cast<int>(shapeLength(outShape));
-            int axis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+            int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
             emitConcatSection(builder, loc, pid, blockSize, inPtrs, outPtr, axis, inShapes, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         }
         break;
@@ -6358,14 +6358,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::SPLIT_V: {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 1 || slot.numOutputs < 1) continue;
-          int dataSrc = slot.inputSourceIndices[0];
+          if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+          int dataSrc = slot.wiring.inputSourceIndices[0];
           auto dataPtr = getSlotArgPtr(dataSrc);
           auto dataShape = resolveShape(dataSrc);
           std::vector<mlir::Value> outPtrs;
           bool allValid = dataPtr && !dataShape.empty();
-          for (int o = 0; o < slot.numOutputs && allValid; o++) {
-            int oSlot = slot.outputSlotIndices[o];
+          for (int o = 0; o < slot.wiring.numOutputs && allValid; o++) {
+            int oSlot = slot.wiring.outputSlotIndices[o];
             auto ptr = getSlotArgPtr(oSlot);
             if (ptr) outPtrs.push_back(ptr);
             else allValid = false;
@@ -6373,7 +6373,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (allValid && !outPtrs.empty()) {
             int rank = static_cast<int>(dataShape.size());
 
-            std::string opLower = slot.opName;
+            std::string opLower = slot.ident.opName;
             std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
             bool isSplitV = (opLower.find("split_v") != std::string::npos ||
                              opLower.find("splitv") != std::string::npos);
@@ -6381,23 +6381,23 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             int splitAxis = 0;
             if (isSplitV) {
               // SplitV iArgs: [splitDim, numSplit]
-              if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+              if (slot.args.numIArgs > 0 && slot.args.iArgs) splitAxis = static_cast<int>(slot.args.iArgs[0]);
             } else {
               // Split iArgs: [numSplit, splitDim] (most common) or [splitDim]
-              if (slot.numIArgs > 1 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[1]);
-              else if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+              if (slot.args.numIArgs > 1 && slot.args.iArgs) splitAxis = static_cast<int>(slot.args.iArgs[1]);
+              else if (slot.args.numIArgs > 0 && slot.args.iArgs) splitAxis = static_cast<int>(slot.args.iArgs[0]);
             }
             if (splitAxis < 0) splitAxis += rank;
             if (splitAxis < 0 || splitAxis >= rank) splitAxis = 0;
 
-            if (isSplitV && slot.numInputs >= 2) {
+            if (isSplitV && slot.wiring.numInputs >= 2) {
               // SplitV: variable chunk sizes stored in input[1] (a constant int tensor)
-              int sizesSrc = slot.inputSourceIndices[1];
+              int sizesSrc = slot.wiring.inputSourceIndices[1];
               NDArray* sizesArr = resolveArr(sizesSrc);
               if (sizesArr && !dataShape.empty()) {
                 // Build per-output slice with variable axis sizes
                 int axisOffset = 0;
-                for (int o = 0; o < slot.numOutputs && o < static_cast<int>(outPtrs.size()); o++) {
+                for (int o = 0; o < slot.wiring.numOutputs && o < static_cast<int>(outPtrs.size()); o++) {
                   int chunkAxisSize = (o < static_cast<int>(sizesArr->lengthOf()))
                       ? static_cast<int>(sizesArr->e<int>(o)) : 1;
                   std::vector<int> begins(rank, 0);
@@ -6416,16 +6416,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               } else {
                 // Fallback: equal splits if sizes not available
                 int nElements = static_cast<int>(shapeLength(dataShape));
-                emitSplitSection(builder, loc, pid, blockSize, dataPtr, outPtrs, splitAxis, slot.numOutputs, dataShape, nElements);
+                emitSplitSection(builder, loc, pid, blockSize, dataPtr, outPtrs, splitAxis, slot.wiring.numOutputs, dataShape, nElements);
               }
             } else {
               // Equal split
               int nElements = static_cast<int>(shapeLength(dataShape));
-              emitSplitSection(builder, loc, pid, blockSize, dataPtr, outPtrs, splitAxis, slot.numOutputs, dataShape, nElements);
+              emitSplitSection(builder, loc, pid, blockSize, dataPtr, outPtrs, splitAxis, slot.wiring.numOutputs, dataShape, nElements);
             }
 
-            for (int o = 0; o < slot.numOutputs; o++) {
-              int oSlot = slot.outputSlotIndices[o];
+            for (int o = 0; o < slot.wiring.numOutputs; o++) {
+              int oSlot = slot.wiring.outputSlotIndices[o];
               DataType dt = resolveDtype(oSlot);
               auto loaded = loadBlock(oSlot, dt);
               if (loaded) ssaValues[oSlot] = loaded;
@@ -6438,9 +6438,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::TILE: {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 1 || slot.numOutputs < 1) continue;
-          int dataSrc = slot.inputSourceIndices[0];
-          int outSlot = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+          int dataSrc = slot.wiring.inputSourceIndices[0];
+          int outSlot = slot.wiring.outputSlotIndices[0];
           auto dataPtr = getSlotArgPtr(dataSrc);
           auto outPtr = getSlotArgPtr(outSlot);
           auto inputShape = resolveShape(dataSrc);
@@ -6452,7 +6452,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             int nElements = static_cast<int>(shapeLength(outShape));
             emitTileSection(builder, loc, pid, blockSize, dataPtr, outPtr, inputShape, repeats, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         }
         break;
@@ -6461,9 +6461,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::STRIDED_SLICE: {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 1 || slot.numOutputs < 1) continue;
-          int dataSrc = slot.inputSourceIndices[0];
-          int outSlot = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+          int dataSrc = slot.wiring.inputSourceIndices[0];
+          int outSlot = slot.wiring.outputSlotIndices[0];
           auto dataPtr = getSlotArgPtr(dataSrc);
           auto outPtr = getSlotArgPtr(outSlot);
           auto inputShape = resolveShape(dataSrc);
@@ -6474,7 +6474,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             int nElements = static_cast<int>(shapeLength(outShape));
             emitSliceSection(builder, loc, pid, blockSize, dataPtr, outPtr, begins, ends, strides, inputShape, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         }
         break;
@@ -6484,11 +6484,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::SCATTER_ND_UPDATE: {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 3 || slot.numOutputs < 1) continue;
-          int dataSrc = slot.inputSourceIndices[0];
-          int idxSrc = slot.inputSourceIndices[1];
-          int updSrc = slot.inputSourceIndices[2];
-          int outSlot = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs < 3 || slot.wiring.numOutputs < 1) continue;
+          int dataSrc = slot.wiring.inputSourceIndices[0];
+          int idxSrc = slot.wiring.inputSourceIndices[1];
+          int updSrc = slot.wiring.inputSourceIndices[2];
+          int outSlot = slot.wiring.outputSlotIndices[0];
           auto dataPtr = getSlotArgPtr(dataSrc);
           auto idxPtr = getSlotArgPtr(idxSrc);
           auto updPtr = getSlotArgPtr(updSrc);
@@ -6499,7 +6499,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             int nElements = static_cast<int>(shapeLength(outShape));
             emitScatterNdSection(builder, loc, pid, blockSize, dataPtr, idxPtr, updPtr, outPtr, dataShape, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         }
         break;
@@ -6509,9 +6509,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         // Permute/transpose section
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 1 || slot.numOutputs < 1) continue;
-          int inputSrc = slot.inputSourceIndices[0];
-          int outSlot = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+          int inputSrc = slot.wiring.inputSourceIndices[0];
+          int outSlot = slot.wiring.outputSlotIndices[0];
           auto inPtr = getSlotArgPtr(inputSrc);
           auto outPtr = getSlotArgPtr(outSlot);
           auto inputShape = resolveShape(inputSrc);
@@ -6519,21 +6519,21 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (inPtr && outPtr && !inputShape.empty() && !outputShape.empty()) {
             // Get permutation from iArgs; fall back to reverse if not provided
             std::vector<int> permutation;
-            if (slot.numIArgs > 0 && slot.iArgs) {
-              for (int d = 0; d < slot.numIArgs; d++)
-                permutation.push_back(static_cast<int>(slot.iArgs[d]));
+            if (slot.args.numIArgs > 0 && slot.args.iArgs) {
+              for (int d = 0; d < slot.args.numIArgs; d++)
+                permutation.push_back(static_cast<int>(slot.args.iArgs[d]));
             }
             if (permutation.empty()) {
               for (int d = static_cast<int>(inputShape.size()) - 1; d >= 0; d--)
                 permutation.push_back(d);
             }
             int nElements = static_cast<int>(shapeLength(outputShape));
-            std::string opLower = slot.opName;
+            std::string opLower = slot.ident.opName;
             std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
             emitShapeManipulationSection(builder, loc, pid, blockSize, inPtr, outPtr, opLower,
                                           inputShape, outputShape, permutation, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         }
         break;
@@ -6542,9 +6542,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::CONVOLUTION: {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numOutputs < 1) continue;
+          if (slot.wiring.numOutputs < 1) continue;
 
-          std::string opLower = slot.opName;
+          std::string opLower = slot.ident.opName;
           std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
 
           bool isIm2col = (opLower == "im2col");
@@ -6556,27 +6556,27 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (isIm2col) {
             // im2col: 1 input (4D image) → 1 output (6D columns)
             // iArgs: [kH, kW, sH, sW, pH, pW, dH, dW, isSameMode]
-            if (slot.numInputs < 1) continue;
-            int inputSrc = slot.inputSourceIndices[0];
-            int outSlot = slot.outputSlotIndices[0];
+            if (slot.wiring.numInputs < 1) continue;
+            int inputSrc = slot.wiring.inputSourceIndices[0];
+            int outSlot = slot.wiring.outputSlotIndices[0];
             auto inPtr = getSlotArgPtr(inputSrc);
             auto outPtr = getSlotArgPtr(outSlot);
             auto inputShape = resolveShape(inputSrc);
             auto outputShape = resolveShape(outSlot);
             if (inPtr && outPtr && !inputShape.empty() && !outputShape.empty()) {
-              int kH = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
-              int kW = (slot.numIArgs > 1 && slot.iArgs) ? static_cast<int>(slot.iArgs[1]) : 1;
-              int sH = (slot.numIArgs > 2 && slot.iArgs) ? static_cast<int>(slot.iArgs[2]) : 1;
-              int sW = (slot.numIArgs > 3 && slot.iArgs) ? static_cast<int>(slot.iArgs[3]) : 1;
-              int pH = (slot.numIArgs > 4 && slot.iArgs) ? static_cast<int>(slot.iArgs[4]) : 0;
-              int pW = (slot.numIArgs > 5 && slot.iArgs) ? static_cast<int>(slot.iArgs[5]) : 0;
-              int dH = (slot.numIArgs > 6 && slot.iArgs) ? static_cast<int>(slot.iArgs[6]) : 1;
-              int dW = (slot.numIArgs > 7 && slot.iArgs) ? static_cast<int>(slot.iArgs[7]) : 1;
+              int kH = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
+              int kW = (slot.args.numIArgs > 1 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[1]) : 1;
+              int sH = (slot.args.numIArgs > 2 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[2]) : 1;
+              int sW = (slot.args.numIArgs > 3 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[3]) : 1;
+              int pH = (slot.args.numIArgs > 4 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[4]) : 0;
+              int pW = (slot.args.numIArgs > 5 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[5]) : 0;
+              int dH = (slot.args.numIArgs > 6 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[6]) : 1;
+              int dW = (slot.args.numIArgs > 7 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[7]) : 1;
               int nElements = static_cast<int>(shapeLength(outputShape));
               emitIm2colSection(builder, loc, pid, blockSize, inPtr, outPtr,
                                 inputShape, outputShape, kH, kW, sH, sW, pH, pW, dH, dW, nElements);
               auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-              if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+              if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
             }
           } else if (isCol2im || isIm2colBp) {
             // col2im: 1 input (6D columns) → 1 output (4D image)
@@ -6584,19 +6584,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // im2col_bp: 2 inputs (4D image, 6D grad) → 1 output (4D grad)
             //   iArgs: [kH, kW, sH, sW, pH, pW, dH, dW, isSameMode]
             //   The 6D grad (input[1]) is the column data, output is the image-space grad
-            if (slot.numInputs < 1) continue;
+            if (slot.wiring.numInputs < 1) continue;
 
             // For col2im: input[0] is the 6D column data
             // For im2col_bp: input[1] is the 6D gradient (column data), input[0] is original image
             int colSrc, outSlotIdx;
             if (isCol2im) {
-              colSrc = slot.inputSourceIndices[0];
+              colSrc = slot.wiring.inputSourceIndices[0];
             } else {
               // im2col_bp: second input is the 6D gradient
-              if (slot.numInputs < 2) continue;
-              colSrc = slot.inputSourceIndices[1];
+              if (slot.wiring.numInputs < 2) continue;
+              colSrc = slot.wiring.inputSourceIndices[1];
             }
-            outSlotIdx = slot.outputSlotIndices[0];
+            outSlotIdx = slot.wiring.outputSlotIndices[0];
             auto colPtr = getSlotArgPtr(colSrc);
             auto outPtr = getSlotArgPtr(outSlotIdx);
             auto colShape = resolveShape(colSrc);
@@ -6605,39 +6605,39 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               int kH, kW, sH, sW, pH, pW, dH, dW;
               if (isCol2im) {
                 // col2im iArgs: [sY, sX, pY, pX, inY, inX, dY, dX, isSameMode]
-                sH = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
-                sW = (slot.numIArgs > 1 && slot.iArgs) ? static_cast<int>(slot.iArgs[1]) : 1;
-                pH = (slot.numIArgs > 2 && slot.iArgs) ? static_cast<int>(slot.iArgs[2]) : 0;
-                pW = (slot.numIArgs > 3 && slot.iArgs) ? static_cast<int>(slot.iArgs[3]) : 0;
-                dH = (slot.numIArgs > 6 && slot.iArgs) ? static_cast<int>(slot.iArgs[6]) : 1;
-                dW = (slot.numIArgs > 7 && slot.iArgs) ? static_cast<int>(slot.iArgs[7]) : 1;
+                sH = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
+                sW = (slot.args.numIArgs > 1 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[1]) : 1;
+                pH = (slot.args.numIArgs > 2 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[2]) : 0;
+                pW = (slot.args.numIArgs > 3 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[3]) : 0;
+                dH = (slot.args.numIArgs > 6 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[6]) : 1;
+                dW = (slot.args.numIArgs > 7 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[7]) : 1;
                 // kH, kW derived from column shape: col[bS, iC, kH, kW, oH, oW]
                 kH = (colShape.size() > 2) ? static_cast<int>(colShape[2]) : 1;
                 kW = (colShape.size() > 3) ? static_cast<int>(colShape[3]) : 1;
               } else {
                 // im2col_bp iArgs: [kH, kW, sH, sW, pH, pW, dH, dW, isSameMode]
-                kH = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
-                kW = (slot.numIArgs > 1 && slot.iArgs) ? static_cast<int>(slot.iArgs[1]) : 1;
-                sH = (slot.numIArgs > 2 && slot.iArgs) ? static_cast<int>(slot.iArgs[2]) : 1;
-                sW = (slot.numIArgs > 3 && slot.iArgs) ? static_cast<int>(slot.iArgs[3]) : 1;
-                pH = (slot.numIArgs > 4 && slot.iArgs) ? static_cast<int>(slot.iArgs[4]) : 0;
-                pW = (slot.numIArgs > 5 && slot.iArgs) ? static_cast<int>(slot.iArgs[5]) : 0;
-                dH = (slot.numIArgs > 6 && slot.iArgs) ? static_cast<int>(slot.iArgs[6]) : 1;
-                dW = (slot.numIArgs > 7 && slot.iArgs) ? static_cast<int>(slot.iArgs[7]) : 1;
+                kH = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
+                kW = (slot.args.numIArgs > 1 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[1]) : 1;
+                sH = (slot.args.numIArgs > 2 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[2]) : 1;
+                sW = (slot.args.numIArgs > 3 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[3]) : 1;
+                pH = (slot.args.numIArgs > 4 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[4]) : 0;
+                pW = (slot.args.numIArgs > 5 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[5]) : 0;
+                dH = (slot.args.numIArgs > 6 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[6]) : 1;
+                dW = (slot.args.numIArgs > 7 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[7]) : 1;
               }
 
               int nElements = static_cast<int>(shapeLength(outShape));
               emitCol2imSection(builder, loc, pid, blockSize, colPtr, outPtr,
                                 colShape, outShape, kH, kW, sH, sW, pH, pW, dH, dW, nElements);
               auto loaded = loadBlock(outSlotIdx, resolveDtype(outSlotIdx));
-              if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+              if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
             }
           } else {
             // conv2d and other convolution ops: 2+ inputs (image + filter)
-            if (slot.numInputs < 2) continue;
-            int inputSrc = slot.inputSourceIndices[0];
-            int filterSrc = slot.inputSourceIndices[1];
-            int outSlot = slot.outputSlotIndices[0];
+            if (slot.wiring.numInputs < 2) continue;
+            int inputSrc = slot.wiring.inputSourceIndices[0];
+            int filterSrc = slot.wiring.inputSourceIndices[1];
+            int outSlot = slot.wiring.outputSlotIndices[0];
             auto inPtr = getSlotArgPtr(inputSrc);
             auto filterPtr = getSlotArgPtr(filterSrc);
             auto outPtr = getSlotArgPtr(outSlot);
@@ -6646,17 +6646,17 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto outputShape = resolveShape(outSlot);
             if (inPtr && filterPtr && outPtr && !inputShape.empty() && !filterShape.empty() && !outputShape.empty()) {
               // Conv2D iArgs: [kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat, weightsFormat]
-              int strideH = (slot.numIArgs > 2 && slot.iArgs) ? static_cast<int>(slot.iArgs[2]) : 1;
-              int strideW = (slot.numIArgs > 3 && slot.iArgs) ? static_cast<int>(slot.iArgs[3]) : 1;
-              int padH = (slot.numIArgs > 4 && slot.iArgs) ? static_cast<int>(slot.iArgs[4]) : 0;
-              int padW = (slot.numIArgs > 5 && slot.iArgs) ? static_cast<int>(slot.iArgs[5]) : 0;
-              int wFormat = (slot.numIArgs > 10 && slot.iArgs) ? static_cast<int>(slot.iArgs[10]) : 0;
+              int strideH = (slot.args.numIArgs > 2 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[2]) : 1;
+              int strideW = (slot.args.numIArgs > 3 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[3]) : 1;
+              int padH = (slot.args.numIArgs > 4 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[4]) : 0;
+              int padW = (slot.args.numIArgs > 5 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[5]) : 0;
+              int wFormat = (slot.args.numIArgs > 10 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[10]) : 0;
 
               int nElements = static_cast<int>(shapeLength(outputShape));
               emitConvolutionSection(builder, loc, pid, blockSize, inPtr, filterPtr, outPtr,
                                       inputShape, filterShape, outputShape, strideH, strideW, padH, padW, nElements, wFormat);
               auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-              if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+              if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
             }
           }
         }
@@ -6667,15 +6667,15 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         // Stack = unsqueeze + concat
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (slot.numInputs < 1 || slot.numOutputs < 1) continue;
-          int outSlot = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+          int outSlot = slot.wiring.outputSlotIndices[0];
           auto outPtr = getSlotArgPtr(outSlot);
           auto outShape = resolveShape(outSlot);
           std::vector<mlir::Value> inPtrs;
           std::vector<std::vector<LongType>> inShapes;
           bool allValid = outPtr && !outShape.empty();
-          for (int inp = 0; inp < slot.numInputs && allValid; inp++) {
-            int src = slot.inputSourceIndices[inp];
+          for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
+            int src = slot.wiring.inputSourceIndices[inp];
             auto ptr = getSlotArgPtr(src);
             auto shape = resolveShape(src);
             if (ptr && !shape.empty()) {
@@ -6685,10 +6685,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           }
           if (allValid && !inPtrs.empty()) {
             int nElements = static_cast<int>(shapeLength(outShape));
-            int axis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+            int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
             emitConcatSection(builder, loc, pid, blockSize, inPtrs, outPtr, axis, inShapes, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         }
         break;
@@ -6893,14 +6893,14 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   };
 
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = getOpCategory(slots[i].opName);
+    auto cat = getOpCategory(slots[i].ident.opName);
     if (cat == TritonOpCategory::MATMUL) {
       matmulSlot = i;
 
       // Strategy 1: Extract from input arrays A and B (preferred — always available)
-      if (slots[i].numInputs >= 2) {
-        NDArray* aArr = resolveArray(slots[i].inputSourceIndices[0]);
-        NDArray* bArr = resolveArray(slots[i].inputSourceIndices[1]);
+      if (slots[i].wiring.numInputs >= 2) {
+        NDArray* aArr = resolveArray(slots[i].wiring.inputSourceIndices[0]);
+        NDArray* bArr = resolveArray(slots[i].wiring.inputSourceIndices[1]);
 
         if (aArr && aArr->rankOf() >= 2) {
           matmulM = static_cast<int>(aArr->sizeAt(aArr->rankOf() - 2));
@@ -6915,8 +6915,8 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
       }
 
       // Strategy 2: Fallback to output array if available
-      if ((matmulM == 0 || matmulN == 0) && slots[i].numOutputs > 0) {
-        int outIdx = slots[i].outputSlotIndices[0];
+      if ((matmulM == 0 || matmulN == 0) && slots[i].wiring.numOutputs > 0) {
+        int outIdx = slots[i].wiring.outputSlotIndices[0];
         if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
           auto& outArr = *outputSlots[outIdx];
           int rank = outArr.rankOf();
@@ -6929,8 +6929,8 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
 
       // Strategy 3: Fallback to cachedOutputShapes from slot shape cache
       if ((matmulM == 0 || matmulN == 0) && slots[i].shapeCacheValid() &&
-          !slots[i].cachedOutputShapes.empty()) {
-        const LongType* shapeInfo = slots[i].cachedOutputShapes[0];
+          !slots[i].shapeCache.cachedOutputShapes.empty()) {
+        const LongType* shapeInfo = slots[i].shapeCache.cachedOutputShapes[0];
         if (shapeInfo) {
           int rank = static_cast<int>(shape::rank(shapeInfo));
           if (rank >= 2) {
@@ -6942,17 +6942,17 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
       }
 
       // Strategy 4: For M and K, try input slot's shape cache (cachedOutputShapes)
-      if (slots[i].numInputs >= 1) {
-        int aSrc = slots[i].inputSourceIndices[0];
+      if (slots[i].wiring.numInputs >= 1) {
+        int aSrc = slots[i].wiring.inputSourceIndices[0];
         if (aSrc >= 0 && aSrc < static_cast<int>(totalOutputSlots)) {
           // Find the producing slot's cached output shape for aSrc
           if ((matmulM == 0 || matmulK == 0)) {
             for (int s = 0; s < static_cast<int>(totalSlots); s++) {
-              for (int o = 0; o < slots[s].numOutputs; o++) {
-                if (slots[s].outputSlotIndices[o] == aSrc &&
-                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty() &&
-                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
-                  const LongType* si = slots[s].cachedOutputShapes[o];
+              for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                if (slots[s].wiring.outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid() && !slots[s].shapeCache.cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].shapeCache.cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].shapeCache.cachedOutputShapes[o];
                   if (si) {
                     int rank = static_cast<int>(shape::rank(si));
                     if (rank >= 2) {
@@ -6968,10 +6968,10 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
           // Also check cachedOutputShapes of the producing slot
           if (matmulK == 0 || matmulM == 0) {
             for (int s = 0; s < startSlot; s++) {
-              for (int o = 0; o < slots[s].numOutputs; o++) {
-                if (slots[s].outputSlotIndices[o] == aSrc &&
-                    slots[s].shapeCacheValid() && !slots[s].cachedOutputShapes.empty()) {
-                  const LongType* shapeInfo = slots[s].cachedOutputShapes[o];
+              for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                if (slots[s].wiring.outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid() && !slots[s].shapeCache.cachedOutputShapes.empty()) {
+                  const LongType* shapeInfo = slots[s].shapeCache.cachedOutputShapes[o];
                   if (shapeInfo) {
                     int rank = static_cast<int>(shape::rank(shapeInfo));
                     if (rank >= 2) {
@@ -6992,9 +6992,9 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
 
   if (matmulSlot < 0 || matmulM == 0 || matmulN == 0 || matmulK == 0) {
     // Diagnostic: show what arrays are available for the matmul inputs
-    if (matmulSlot >= 0 && slots[matmulSlot].numInputs >= 2) {
-      int aSrc = slots[matmulSlot].inputSourceIndices[0];
-      int bSrc = slots[matmulSlot].inputSourceIndices[1];
+    if (matmulSlot >= 0 && slots[matmulSlot].wiring.numInputs >= 2) {
+      int aSrc = slots[matmulSlot].wiring.inputSourceIndices[0];
+      int bSrc = slots[matmulSlot].wiring.inputSourceIndices[1];
       NDArray* aArr = resolveArray(aSrc);
       NDArray* bArr = resolveArray(bSrc);
       DSP_DIAG(FALLBACK, "TritonIRBuilder::buildMatmulModule: could not extract M/N/K from slot %d "
@@ -7029,18 +7029,18 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   // ── Collect unique buffer references (same logic as buildModule) ──
   std::unordered_set<int> internalSlotOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalSlotOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalSlotOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
   // ── Force-external inputs for ROPE ops (same as buildModule) ──
   std::unordered_set<int> forceExternalInputsMatmul;
   for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = getOpCategory(slots[i].opName);
-    if (cat == TritonOpCategory::ROPE && slots[i].numInputs >= 3) {
-      int cosSrc = slots[i].inputSourceIndices[1];
-      int sinSrc = slots[i].inputSourceIndices[2];
+    auto cat = getOpCategory(slots[i].ident.opName);
+    if (cat == TritonOpCategory::ROPE && slots[i].wiring.numInputs >= 3) {
+      int cosSrc = slots[i].wiring.inputSourceIndices[1];
+      int sinSrc = slots[i].wiring.inputSourceIndices[2];
       if (internalSlotOutputs.count(cosSrc)) forceExternalInputsMatmul.insert(cosSrc);
       if (internalSlotOutputs.count(sinSrc)) forceExternalInputsMatmul.insert(sinSrc);
     }
@@ -7051,10 +7051,10 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   {
     std::unordered_map<int, bool> inputHasNonConstGenConsumer;
     for (int i = startSlot; i <= endSlot; i++) {
-      auto cat = getOpCategory(slots[i].opName);
+      auto cat = getOpCategory(slots[i].ident.opName);
       bool isConstGen = (cat == TritonOpCategory::CONSTANT_GENERATION);
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        int srcIdx = slots[i].inputSourceIndices[inp];
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        int srcIdx = slots[i].wiring.inputSourceIndices[inp];
         if (srcIdx >= 0) continue;
         auto it = inputHasNonConstGenConsumer.find(srcIdx);
         if (it == inputHasNonConstGenConsumer.end()) {
@@ -7072,8 +7072,8 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   std::vector<TritonKernelArg> inputArgs;
   std::unordered_set<int> seenInputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
       if (srcIdx < 0) {
@@ -7112,9 +7112,9 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
           std::vector<LongType> shape;
           DataType dtype = FLOAT32;
           if (srcIdx >= 0 && srcIdx < totalSlots &&
-              slots[srcIdx].shapeCacheValid() && !slots[srcIdx].cachedOutputShapes.empty() &&
-              slots[srcIdx].cachedOutputShapes[0] != nullptr) {
-            auto* si = slots[srcIdx].cachedOutputShapes[0];
+              slots[srcIdx].shapeCacheValid() && !slots[srcIdx].shapeCache.cachedOutputShapes.empty() &&
+              slots[srcIdx].shapeCache.cachedOutputShapes[0] != nullptr) {
+            auto* si = slots[srcIdx].shapeCache.cachedOutputShapes[0];
             LongType rank = shape::rank(si);
             for (int d = 0; d < rank; d++) shape.push_back(shape::shapeOf(si)[d]);
             dtype = ArrayOptions::dataType(si);
@@ -7130,12 +7130,12 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
               // Build a minimal cachedShapeInfoMap for the helper
               std::unordered_map<int, const LongType*> localCacheMap;
               for (int si2 = 0; si2 < totalSlots; si2++) {
-                if (slots[si2].shapeCacheValid() && !slots[si2].cachedOutputShapes.empty()) {
-                  for (int o2 = 0; o2 < slots[si2].numOutputs; o2++) {
-                    int oIdx = slots[si2].outputSlotIndices[o2];
-                    if (oIdx >= 0 && o2 < static_cast<int>(slots[si2].cachedOutputShapes.size()) &&
-                        slots[si2].cachedOutputShapes[o2] != nullptr) {
-                      localCacheMap[oIdx] = slots[si2].cachedOutputShapes[o2];
+                if (slots[si2].shapeCacheValid() && !slots[si2].shapeCache.cachedOutputShapes.empty()) {
+                  for (int o2 = 0; o2 < slots[si2].wiring.numOutputs; o2++) {
+                    int oIdx = slots[si2].wiring.outputSlotIndices[o2];
+                    if (oIdx >= 0 && o2 < static_cast<int>(slots[si2].shapeCache.cachedOutputShapes.size()) &&
+                        slots[si2].shapeCache.cachedOutputShapes[o2] != nullptr) {
+                      localCacheMap[oIdx] = slots[si2].shapeCache.cachedOutputShapes[o2];
                     }
                   }
                 }
@@ -7162,8 +7162,8 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   {
     std::unordered_set<int> seenOutputSlots;
     for (int i = startSlot; i <= endSlot; i++) {
-      for (int o = 0; o < slots[i].numOutputs; o++) {
-        int outIdx = slots[i].outputSlotIndices[o];
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+        int outIdx = slots[i].wiring.outputSlotIndices[o];
         if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
         if (seenOutputSlots.count(outIdx)) continue;  // Deduplicate
         seenOutputSlots.insert(outIdx);
@@ -7182,16 +7182,16 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
           }
         } else {
           // No live array — resolve from producing op (same logic as buildModule)
-          auto producerCat = getOpCategory(slots[i].opName);
-          if (producerCat == TritonOpCategory::CAST && slots[i].numIArgs > 0 && slots[i].iArgs) {
-            arg.dtype = static_cast<DataType>(slots[i].iArgs[0]);
-          } else if (slots[i].numInputs > 0) {
-            int inputSrc = slots[i].inputSourceIndices[0];
+          auto producerCat = getOpCategory(slots[i].ident.opName);
+          if (producerCat == TritonOpCategory::CAST && slots[i].args.numIArgs > 0 && slots[i].args.iArgs) {
+            arg.dtype = static_cast<DataType>(slots[i].args.iArgs[0]);
+          } else if (slots[i].wiring.numInputs > 0) {
+            int inputSrc = slots[i].wiring.inputSourceIndices[0];
             NDArray* inputArr = resolveArray(inputSrc);
             if (inputArr) arg.dtype = inputArr->dataType();
           }
-          if (arg.shape.empty() && slots[i].numInputs > 0) {
-            int inputSrc = slots[i].inputSourceIndices[0];
+          if (arg.shape.empty() && slots[i].wiring.numInputs > 0) {
+            int inputSrc = slots[i].wiring.inputSourceIndices[0];
             NDArray* inputArr = resolveArray(inputSrc);
             if (inputArr) {
               for (int d = 0; d < inputArr->rankOf(); d++) {
@@ -7279,16 +7279,16 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
 
   // The matmul's input source indices tell us which args correspond to A and B
   auto& matmulOp = slots[matmulSlot];
-  if (matmulOp.numInputs >= 2) {
-    int aSrc = matmulOp.inputSourceIndices[0];
-    int bSrc = matmulOp.inputSourceIndices[1];
+  if (matmulOp.wiring.numInputs >= 2) {
+    int aSrc = matmulOp.wiring.inputSourceIndices[0];
+    int bSrc = matmulOp.wiring.inputSourceIndices[1];
     for (int a = 0; a < static_cast<int>(result.args.size()); a++) {
       if (result.args[a].slotIndex == aSrc && !result.args[a].isOutput) aArgIdx = a;
       if (result.args[a].slotIndex == bSrc && !result.args[a].isOutput) bArgIdx = a;
     }
   }
-  if (matmulOp.numOutputs >= 1) {
-    int cSlot = matmulOp.outputSlotIndices[0];
+  if (matmulOp.wiring.numOutputs >= 1) {
+    int cSlot = matmulOp.wiring.outputSlotIndices[0];
     for (int a = 0; a < static_cast<int>(result.args.size()); a++) {
       if (result.args[a].slotIndex == cSlot && result.args[a].isOutput) cArgIdx = a;
     }
@@ -7312,13 +7312,13 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   std::vector<mlir::Value> epiloguePtrs;
 
   if (matmulSlot >= 0 && matmulSlot < endSlot) {
-    int matmulOutSlot = slots[matmulSlot].outputSlotIndices[0];
+    int matmulOutSlot = slots[matmulSlot].wiring.outputSlotIndices[0];
     for (int ei = matmulSlot + 1; ei <= endSlot; ei++) {
-      auto epiCat = getOpCategory(slots[ei].opName);
+      auto epiCat = getOpCategory(slots[ei].ident.opName);
       if (epiCat != TritonOpCategory::UNARY_ELEMENTWISE &&
           epiCat != TritonOpCategory::BINARY_ELEMENTWISE) break;
 
-      std::string epiLower = slots[ei].opName;
+      std::string epiLower = slots[ei].ident.opName;
       std::transform(epiLower.begin(), epiLower.end(), epiLower.begin(), ::tolower);
 
       if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiLower == "add") {
@@ -7327,9 +7327,9 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
         //   2D residual [M,N] → RESIDUAL_ADD epilogue (element-wise)
         // Detect by checking the rank of the non-matmul operand.
         int biasSrc = -1;
-        for (int inp = 0; inp < slots[ei].numInputs; inp++) {
-          if (slots[ei].inputSourceIndices[inp] != matmulOutSlot) {
-            biasSrc = slots[ei].inputSourceIndices[inp];
+        for (int inp = 0; inp < slots[ei].wiring.numInputs; inp++) {
+          if (slots[ei].wiring.inputSourceIndices[inp] != matmulOutSlot) {
+            biasSrc = slots[ei].wiring.inputSourceIndices[inp];
             break;
           }
         }
@@ -7355,22 +7355,22 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
           }
         }
         // Update matmulOutSlot to this op's output for chaining
-        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+        if (slots[ei].wiring.numOutputs > 0) matmulOutSlot = slots[ei].wiring.outputSlotIndices[0];
       } else if (epiLower == "relu") {
         epilogueOps.push_back({EpilogueOp::RELU, "relu", -1});
-        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+        if (slots[ei].wiring.numOutputs > 0) matmulOutSlot = slots[ei].wiring.outputSlotIndices[0];
       } else if (epiLower == "gelu") {
         epilogueOps.push_back({EpilogueOp::GELU, "gelu", -1});
-        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+        if (slots[ei].wiring.numOutputs > 0) matmulOutSlot = slots[ei].wiring.outputSlotIndices[0];
       } else if (epiLower == "silu" || epiLower == "swish") {
         epilogueOps.push_back({EpilogueOp::SILU, "silu", -1});
-        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+        if (slots[ei].wiring.numOutputs > 0) matmulOutSlot = slots[ei].wiring.outputSlotIndices[0];
       } else if (epiLower == "tanh") {
         epilogueOps.push_back({EpilogueOp::TANH, "tanh", -1});
-        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+        if (slots[ei].wiring.numOutputs > 0) matmulOutSlot = slots[ei].wiring.outputSlotIndices[0];
       } else if (epiLower == "sigmoid") {
         epilogueOps.push_back({EpilogueOp::SIGMOID, "sigmoid", -1});
-        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+        if (slots[ei].wiring.numOutputs > 0) matmulOutSlot = slots[ei].wiring.outputSlotIndices[0];
       } else {
         break;  // Unknown epilogue op — stop chaining
       }

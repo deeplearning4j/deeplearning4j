@@ -190,11 +190,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       auto& producerSlot = slots[s];
-      if (!producerSlot.shapeCacheValid() || producerSlot.cachedOutputShapes.empty()) continue;
-      for (int o = 0; o < producerSlot.numOutputs; o++) {
-        if (o >= static_cast<int>(producerSlot.cachedOutputShapes.size())) break;
-        if (producerSlot.outputSlotIndices[o] == slotIdx) {
-          return shapeInfoToVector(producerSlot.cachedOutputShapes[o]);
+      if (!producerSlot.shapeCacheValid() || producerSlot.shapeCache.cachedOutputShapes.empty()) continue;
+      for (int o = 0; o < producerSlot.wiring.numOutputs; o++) {
+        if (o >= static_cast<int>(producerSlot.shapeCache.cachedOutputShapes.size())) break;
+        if (producerSlot.wiring.outputSlotIndices[o] == slotIdx) {
+          return shapeInfoToVector(producerSlot.shapeCache.cachedOutputShapes[o]);
         }
       }
     }
@@ -227,13 +227,13 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
     uint32_t traits = 0;
-    if (slot.op != nullptr && slot.op->getOpDescriptor() != nullptr) {
-      traits |= slot.op->getOpDescriptor()->getTraits();
+    if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
+      traits |= slot.ident.op->getOpDescriptor()->getTraits();
     }
-    if (slot.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-    if (slot.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
-    if (slot.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-    if (slot.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
+    if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
+    if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
+    if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+    if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
     return traits;
   };
 
@@ -261,11 +261,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   };
 
   auto slotOutputsShapeControl = [&](const NativeSlot& slot) -> bool {
-    if (slot.numOutputs <= 0) return false;
+    if (slot.wiring.numOutputs <= 0) return false;
 
     bool sawOutput = false;
-    for (int o = 0; o < slot.numOutputs; o++) {
-      NDArray* out = resolveArray(slot.outputSlotIndices[o]);
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      NDArray* out = resolveArray(slot.wiring.outputSlotIndices[o]);
       if (out == nullptr || !isShapeControlArray(out)) {
         return false;
       }
@@ -276,11 +276,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   };
 
   auto slotAllInputsShapeControl = [&](const NativeSlot& slot) -> bool {
-    if (slot.numInputs <= 0) return false;
+    if (slot.wiring.numInputs <= 0) return false;
 
     bool sawInput = false;
-    for (int i = 0; i < slot.numInputs; i++) {
-      NDArray* in = resolveArray(slot.inputSourceIndices[i]);
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      NDArray* in = resolveArray(slot.wiring.inputSourceIndices[i]);
       if (in == nullptr || !isShapeControlArray(in)) {
         return false;
       }
@@ -329,9 +329,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     categories.reserve(seg.endSlot - seg.startSlot + 1);
     shapes.reserve(seg.endSlot - seg.startSlot + 1);
     for (int i = seg.startSlot; i <= seg.endSlot; i++) {
-      categories.push_back(getOpCategoryFromName(slots[i].opName));
-      if (slots[i].numOutputs > 0) {
-        shapes.push_back(resolveShape(slots[i].outputSlotIndices[0]));
+      categories.push_back(getOpCategoryFromName(slots[i].ident.opName));
+      if (slots[i].wiring.numOutputs > 0) {
+        shapes.push_back(resolveShape(slots[i].wiring.outputSlotIndices[0]));
       } else {
         shapes.push_back({});
       }
@@ -347,16 +347,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     auto sectionMaxElements = [&](const KernelSection& sec) -> LongType {
       LongType maxElements = 0;
       for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-        for (int o = 0; o < slots[si].numOutputs; o++) {
-          int outIdx = slots[si].outputSlotIndices[o];
+        for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+          int outIdx = slots[si].wiring.outputSlotIndices[o];
           LongType elems = shapeLength(resolveShape(outIdx));
           if (elems > maxElements) maxElements = elems;
         }
       }
       if (maxElements <= 0) {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-          for (int inp = 0; inp < slots[si].numInputs; inp++) {
-            int srcIdx = slots[si].inputSourceIndices[inp];
+          for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+            int srcIdx = slots[si].wiring.inputSourceIndices[inp];
             LongType elems = shapeLength(resolveShape(srcIdx));
             if (elems > maxElements) maxElements = elems;
           }
@@ -375,17 +375,17 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       if (sec.batchSize <= 0 || sec.numHeads <= 0 || sec.seqQ <= 0 || sec.headDim <= 0) {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (getOpCategoryFromName(slot.opName) != TritonOpCategory::FUSED_ATTENTION || slot.numInputs < 1) {
+          if (getOpCategoryFromName(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION || slot.wiring.numInputs < 1) {
             continue;
           }
 
-          std::string opLower = slot.opName;
+          std::string opLower = slot.ident.opName;
           std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
           bool isDpaV2 = (opLower.find("dot_product_attention") != std::string::npos);
           bool qIsBSHD = isDpaV2;
           int kInputIdx = isDpaV2 ? 2 : 1;
 
-          auto qShape = resolveShape(slot.inputSourceIndices[0]);
+          auto qShape = resolveShape(slot.wiring.inputSourceIndices[0]);
           if (qShape.size() >= 4) {
             batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
             if (qIsBSHD) {
@@ -396,8 +396,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
               seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
             }
             headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
-            if (slot.numInputs > kInputIdx) {
-              auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+            if (slot.wiring.numInputs > kInputIdx) {
+              auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
               if (kShape.size() >= 3) {
                 int seqKDim = qIsBSHD ? 1 : 2;
                 if (static_cast<int>(kShape.size()) > seqKDim) {
@@ -409,19 +409,19 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
             seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
             int hidden = static_cast<int>(std::max<LongType>(1, qShape[2]));
-            numHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+            numHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
             if (numHeads <= 0) numHeads = 1;
             headDim = hidden / numHeads;
 
             bool hasPastKv = false;
-            if (slot.numInputs > 4) {
-              auto pastKeyShape = resolveShape(slot.inputSourceIndices[4]);
+            if (slot.wiring.numInputs > 4) {
+              auto pastKeyShape = resolveShape(slot.wiring.inputSourceIndices[4]);
               if (pastKeyShape.size() == 4 && pastKeyShape[0] > 0 && pastKeyShape[2] > 0) {
                 hasPastKv = true;
                 int pastSeq = static_cast<int>(pastKeyShape[2]);
                 int seqKV = 1;
-                if (slot.numInputs > kInputIdx) {
-                  auto curKShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+                if (slot.wiring.numInputs > kInputIdx) {
+                  auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
                   if (curKShape.size() == 3) {
                     seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
                   }
@@ -429,8 +429,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                 seqK = pastSeq + seqKV;
               }
             }
-            if (!hasPastKv && slot.numInputs > kInputIdx) {
-              auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+            if (!hasPastKv && slot.wiring.numInputs > kInputIdx) {
+              auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
               if (kShape.size() >= 2) {
                 seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
               }
@@ -459,8 +459,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       if (sec.type == KernelSectionType::NORMALIZATION) {
         LongType numRows = 0;
         for (int si = sec.startSlot; si <= sec.endSlot && numRows <= 0; si++) {
-          if (slots[si].numInputs < 1) continue;
-          auto inputShape = resolveShape(slots[si].inputSourceIndices[0]);
+          if (slots[si].wiring.numInputs < 1) continue;
+          auto inputShape = resolveShape(slots[si].wiring.inputSourceIndices[0]);
           LongType totalElements = shapeLength(inputShape);
           LongType logicalRowLen = inputShape.empty() ? 0 : inputShape.back();
           if (totalElements > 0 && logicalRowLen > 0) {
@@ -584,8 +584,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
     // Check op-level exclusion list (not table-driven -- per-op granularity)
     for (int si = section.startSlot; si <= section.endSlot; si++) {
-      if (si >= 0 && si < totalSlots && !slots[si].opName.empty()) {
-        if (compileEnv.isTritonExcludedOp(slots[si].opName)) {
+      if (si >= 0 && si < totalSlots && !slots[si].ident.opName.empty()) {
+        if (compileEnv.isTritonExcludedOp(slots[si].ident.opName)) {
           return true;
         }
       }
@@ -924,7 +924,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             std::string opNames;
             for (int s = range.startSlot; s <= range.endSlot; s++) {
               if (!opNames.empty()) opNames += ",";
-              opNames += slots[s].opName;
+              opNames += slots[s].ident.opName;
             }
             DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
                      "keeping as native ordered range (ops: %s)",
@@ -975,7 +975,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           std::string opNames;
           for (int s = range.startSlot; s <= range.endSlot; s++) {
             if (!opNames.empty()) opNames += ",";
-            opNames += slots[s].opName;
+            opNames += slots[s].ident.opName;
           }
           DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
                    "keeping as native ordered range (ops: %s)",
@@ -994,7 +994,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       for (int s = fb.startSlot; s <= fb.endSlot; s++) {
         CompilationAuditEntry entry;
         entry.slotIndex = s;
-        entry.opName = slots[s].opName;
+        entry.opName = slots[s].ident.opName;
         entry.wasCompiled = false;
         entry.reason = "leaf range not Triton-compilable, using native ordered execution";
         compiledSeg.audit.push_back(entry);

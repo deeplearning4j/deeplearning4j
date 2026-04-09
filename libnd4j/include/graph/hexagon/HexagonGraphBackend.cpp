@@ -82,7 +82,7 @@ bool HexagonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) 
   int mappableOps = 0;
 
   for (int i = start; i < end; i++) {
-    if (HexagonIRBuilder::isHexagonMappable(slots[i].opName)) {
+    if (HexagonIRBuilder::isHexagonMappable(slots[i].ident.opName)) {
       mappableOps++;
     }
   }
@@ -188,8 +188,8 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = seg.startSlot; i < seg.endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName ? slots[i].opName : "";
-    entry.wasCompiled = HexagonIRBuilder::isHexagonMappable(slots[i].opName);
+    entry.opName = slots[i].ident.opName.c_str();
+    entry.wasCompiled = HexagonIRBuilder::isHexagonMappable(slots[i].ident.opName.c_str());
     if (!entry.wasCompiled) {
       entry.reason = "not HVX-mappable";
     }
@@ -248,7 +248,7 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     const auto& slot = slots[i];
 
     // Stage inputs
-    for (int j = 0; j < slot.numInputs; j++) {
+    for (int j = 0; j < slot.wiring.numInputs; j++) {
       NDArray* inputArr = nullptr;
 
       if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
@@ -329,7 +329,7 @@ bool HexagonGraphBackend::stageInputsToTcm(const NativeSlot& slot,
   auto& runtime = HexagonRuntimeManager::getInstance();
   tcmPtrs.clear();
 
-  for (int j = 0; j < slot.numInputs; j++) {
+  for (int j = 0; j < slot.wiring.numInputs; j++) {
     NDArray* inputArr = nullptr;
 
     if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {

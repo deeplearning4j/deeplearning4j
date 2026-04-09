@@ -69,8 +69,8 @@ static bool extractMatmulDimsFromShape(const NativeSlot& slot,
   int rB = shape::rank(shapeB);
   if (rA < 2 || rA > 3 || rB < 2 || rB > 3) return false;
 
-  transA = (slot.numIArgs >= 1) ? static_cast<int>(slot.iArgs[0]) : 0;
-  transB = (slot.numIArgs >= 2) ? static_cast<int>(slot.iArgs[1]) : 0;
+  transA = (slot.args.numIArgs >= 1) ? static_cast<int>(slot.args.iArgs[0]) : 0;
+  transB = (slot.args.numIArgs >= 2) ? static_cast<int>(slot.args.iArgs[1]) : 0;
 
   const LongType* dimsA = shape::shapeOf(shapeA);
   const LongType* dimsB = shape::shapeOf(shapeB);
@@ -131,9 +131,9 @@ const LongType* NativeDynamicShapePlan::resolveInputShapeInfo(
       if (arr != nullptr) return arr->shapeInfo();
     }
     const NativeSlot& srcSlot = slots_[srcIdx];
-    if (srcSlot.shapeCacheValid() && !srcSlot.cachedOutputShapes.empty() &&
-        srcSlot.cachedOutputShapes[0] != nullptr) {
-      return srcSlot.cachedOutputShapes[0];
+    if (srcSlot.shapeCacheValid() && !srcSlot.shapeCache.cachedOutputShapes.empty() &&
+        srcSlot.shapeCache.cachedOutputShapes[0] != nullptr) {
+      return srcSlot.shapeCache.cachedOutputShapes[0];
     }
   } else if (srcIdx < 0) {
     int extIdx = -(srcIdx + 1);
@@ -159,8 +159,8 @@ static bool hasTransitiveDependency(
   std::queue<int> queue;
 
   // Seed BFS with stepJ's direct inputs
-  for (int k = 0; k < slots[stepJ].numInputs; k++) {
-    int src = slots[stepJ].inputSourceIndices[k];
+  for (int k = 0; k < slots[stepJ].wiring.numInputs; k++) {
+    int src = slots[stepJ].wiring.inputSourceIndices[k];
     if (src < 0 || src >= totalOutputSlots) continue;
     int producerStep = outputSlotToStep[src];
     if (producerStep < 0) continue;
@@ -174,8 +174,8 @@ static bool hasTransitiveDependency(
     int cur = queue.front();
     queue.pop();
 
-    for (int k = 0; k < slots[cur].numInputs; k++) {
-      int src = slots[cur].inputSourceIndices[k];
+    for (int k = 0; k < slots[cur].wiring.numInputs; k++) {
+      int src = slots[cur].wiring.inputSourceIndices[k];
       if (src < 0 || src >= totalOutputSlots) continue;
       int producerStep = outputSlotToStep[src];
       if (producerStep < 0) continue;
@@ -195,8 +195,8 @@ static bool allInputsAvailableBefore(
     const NativeSlot& slot, int firstSlot, int totalOutputSlots,
     const std::vector<int>& outputSlotToStep) {
 
-  for (int k = 0; k < slot.numInputs; k++) {
-    int src = slot.inputSourceIndices[k];
+  for (int k = 0; k < slot.wiring.numInputs; k++) {
+    int src = slot.wiring.inputSourceIndices[k];
     if (src < 0) continue;  // external, always available
     if (src >= totalOutputSlots) return false;
     int producerStep = outputSlotToStep[src];
@@ -217,8 +217,8 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
   // Build reverse map: output slot index -> producing step index
   std::vector<int> outputSlotToStep(totalOutputSlots_, -1);
   for (int i = 0; i < numSlots_; i++) {
-    for (int o = 0; o < slots_[i].numOutputs; o++) {
-      int outIdx = slots_[i].outputSlotIndices[o];
+    for (int o = 0; o < slots_[i].wiring.numOutputs; o++) {
+      int outIdx = slots_[i].wiring.outputSlotIndices[o];
       if (outIdx >= 0 && outIdx < totalOutputSlots_) {
         outputSlotToStep[outIdx] = i;
       }
@@ -234,13 +234,13 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
 
     for (int i = seg.startSlot; i <= seg.endSlot; i++) {
       NativeSlot& slot = slots_[i];
-      if (!isMatmulOp(slot.opName) || slot.numInputs < 2 ||
-          slot.controlFlowType != CF_NONE || slot.frozenConstantSlot()) continue;
+      if (!isMatmulOp(slot.ident.opName) || slot.wiring.numInputs < 2 ||
+          slot.cf.controlFlowType != CF_NONE || slot.frozenConstantSlot()) continue;
 
       totalMatmuls++;
 
-      int srcA = slot.inputSourceIndices[0];
-      int srcB = slot.inputSourceIndices[1];
+      int srcA = slot.wiring.inputSourceIndices[0];
+      int srcB = slot.wiring.inputSourceIndices[1];
       const LongType* shapeA = resolveInputShapeInfo(srcA, externalArrays, numExt);
       const LongType* shapeB = resolveInputShapeInfo(srcB, externalArrays, numExt);
 
@@ -415,7 +415,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
     // Resolve input A
     NDArray* inputA = nullptr;
     {
-      int src = slot.inputSourceIndices[0];
+      int src = slot.wiring.inputSourceIndices[0];
       if (src >= 0) {
         inputA = outputSlots_[src];
         if (inputA == nullptr && src < totalOutputSlots_) inputA = slotArrayCache_[src];
@@ -428,7 +428,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
     // Resolve input B
     NDArray* inputB = nullptr;
     {
-      int src = slot.inputSourceIndices[1];
+      int src = slot.wiring.inputSourceIndices[1];
       if (src >= 0) {
         inputB = outputSlots_[src];
         if (inputB == nullptr && src < totalOutputSlots_) inputB = slotArrayCache_[src];
@@ -440,8 +440,8 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 
     // Resolve output C
     NDArray* outputC = nullptr;
-    if (slot.numOutputs >= 1) {
-      int outSlotIdx = slot.outputSlotIndices[0];
+    if (slot.wiring.numOutputs >= 1) {
+      int outSlotIdx = slot.wiring.outputSlotIndices[0];
       if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_) {
         outputC = outputSlots_[outSlotIdx];
         if (outputC == nullptr) outputC = slotArrayCache_[outSlotIdx];
@@ -538,8 +538,8 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   for (int b = 0; b < batchCount; b++) {
     int slotIdx = group.slotIndices[b];
     NativeSlot& slot = slots_[slotIdx];
-    if (slot.numOutputs >= 1) {
-      int outSlotIdx = slot.outputSlotIndices[0];
+    if (slot.wiring.numOutputs >= 1) {
+      int outSlotIdx = slot.wiring.outputSlotIndices[0];
       if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_ && outputSlots_[outSlotIdx] != nullptr) {
         outputSlots_[outSlotIdx]->tickWriteDevice();
       }

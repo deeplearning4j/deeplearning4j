@@ -229,10 +229,10 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       // Log which slots in this sub-kernel consume this external input
       if (argMapping.slotIndex < 0) {
         for (int si = compiled.startSlot_; si <= compiled.endSlot_; si++) {
-          for (int inp = 0; inp < slots[si].numInputs; inp++) {
-            if (slots[si].inputSourceIndices[inp] == argMapping.slotIndex) {
+          for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+            if (slots[si].wiring.inputSourceIndices[inp] == argMapping.slotIndex) {
               DSP_DIAG(EXECUTE, "  -> consumed by slot %d op='%s' (input #%d)",
-                        si, slots[si].opName.c_str(), inp);
+                        si, slots[si].ident.opName.c_str(), inp);
             }
           }
         }
@@ -276,7 +276,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       std::string opList;
       for (int si = compiled.startSlot_; si <= compiled.endSlot_ && si >= 0; si++) {
         if (!opList.empty()) opList += ",";
-        opList += slots[si].opName;
+        opList += slots[si].ident.opName;
         if (opList.size() > 200) { opList += "..."; break; }
       }
       DSP_DIAG(EXECUTE, "KERNEL_EXEC: slots[%d-%d] grid=(%u,%u,%u) block=(%u,%u,%u) "
@@ -334,33 +334,33 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     for (int si = compiled.startSlot_; si <= compiled.endSlot_ && si >= 0; si++) {
       auto& slot = slots[si];
       // Only log slots that have interesting args
-      if (slot.numIArgs > 0 || slot.numTArgs > 0 || slot.numBArgs > 0) {
+      if (slot.args.numIArgs > 0 || slot.args.numTArgs > 0 || slot.args.numBArgs > 0) {
         char iArgBuf[256] = {0};
         int ioff = 0;
-        for (int a = 0; a < slot.numIArgs && a < 16 && ioff < 240; a++) {
+        for (int a = 0; a < slot.args.numIArgs && a < 16 && ioff < 240; a++) {
           ioff += snprintf(iArgBuf + ioff, sizeof(iArgBuf) - ioff,
-                           "%s%lld", a > 0 ? "," : "", (long long)slot.iArgs[a]);
+                           "%s%lld", a > 0 ? "," : "", (long long)slot.args.iArgs[a]);
         }
         char tArgBuf[256] = {0};
         int toff = 0;
-        for (int a = 0; a < slot.numTArgs && a < 8 && toff < 240; a++) {
+        for (int a = 0; a < slot.args.numTArgs && a < 8 && toff < 240; a++) {
           toff += snprintf(tArgBuf + toff, sizeof(tArgBuf) - toff,
-                           "%s%.4g", a > 0 ? "," : "", slot.tArgs[a]);
+                           "%s%.4g", a > 0 ? "," : "", slot.args.tArgs[a]);
         }
         DSP_DIAG(EXECUTE, "  SLOT[%d] op='%s' inputs=%d outputs=%d "
                   "iArgs=[%s](%d) tArgs=[%s](%d) bArgs=%d identity=%d view=%d fused=%d",
-                  si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
-                  iArgBuf, slot.numIArgs, tArgBuf, slot.numTArgs,
-                  slot.numBArgs, slot.isIdentityOp ? 1 : 0,
-                  slot.isViewCapableOp ? 1 : 0, slot.inPlaceFused ? 1 : 0);
+                  si, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs,
+                  iArgBuf, slot.args.numIArgs, tArgBuf, slot.args.numTArgs,
+                  slot.args.numBArgs, slot.flags.isIdentityOp ? 1 : 0,
+                  slot.flags.isViewCapableOp ? 1 : 0, slot.flags.inPlaceFused ? 1 : 0);
       }
 
       // Log input wiring for every slot
-      if (slot.numInputs > 0) {
+      if (slot.wiring.numInputs > 0) {
         char wireBuf[512] = {0};
         int woff = 0;
-        for (int inp = 0; inp < slot.numInputs && woff < 480; inp++) {
-          int srcIdx = slot.inputSourceIndices[inp];
+        for (int inp = 0; inp < slot.wiring.numInputs && woff < 480; inp++) {
+          int srcIdx = slot.wiring.inputSourceIndices[inp];
           NDArray* srcArr = nullptr;
           if (srcIdx < 0) {
             int ei = -(srcIdx + 1);
@@ -547,12 +547,12 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     for (int si = compiled.startSlot_; si <= compiled.endSlot_; si++) {
       auto& slot = slots[si];
       std::string srcStr;
-      for (int inp = 0; inp < slot.numInputs; inp++) {
+      for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
         if (inp > 0) srcStr += ",";
-        char buf[32]; snprintf(buf, sizeof(buf), "%d", slot.inputSourceIndices[inp]); srcStr += buf;
+        char buf[32]; snprintf(buf, sizeof(buf), "%d", slot.wiring.inputSourceIndices[inp]); srcStr += buf;
       }
       DSP_DIAG(VERIFY, "SLOT INFO: slot=%d op='%s' numInputs=%d inputSources=[%s] numOutputs=%d",
-               si, slot.opName.c_str(), slot.numInputs, srcStr.c_str(), slot.numOutputs);
+               si, slot.ident.opName.c_str(), slot.wiring.numInputs, srcStr.c_str(), slot.wiring.numOutputs);
     }
   }
 
@@ -987,8 +987,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   // host data when they call prepareSpecialUse → syncToDevice.
   int rangeWriteSpecialCount = 0;
   for (int si = compiled.startSlot_; si <= compiled.endSlot_; si++) {
-    for (int o = 0; o < slots[si].numOutputs; o++) {
-      int outIdx = slots[si].outputSlotIndices[o];
+    for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+      int outIdx = slots[si].wiring.outputSlotIndices[o];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
         auto* db = outputSlots[outIdx]->dataBuffer();
         if (db) {

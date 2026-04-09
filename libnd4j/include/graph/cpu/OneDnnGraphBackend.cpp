@@ -260,12 +260,12 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 
     for (int s = startSlot; s <= endSlot; s++) {
       NativeSlot& slot = slots[s];
-      auto kind = mapOpKind(slot.opName);
+      auto kind = mapOpKind(slot.ident.opName);
       if (kind == dg::op::kind::LastSymbol) {
         // Can't map this op — record as skipped in the audit
         CompilationAuditEntry auditEntry;
         auditEntry.slotIndex = s;
-        auditEntry.opName = slot.opName;
+        auditEntry.opName = slot.ident.opName;
         auditEntry.wasCompiled = false;
         auditEntry.reason = "unmappable op kind";
         result.compilationAudit.push_back(std::move(auditEntry));
@@ -273,62 +273,62 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
       }
 
       // Create the oneDNN graph op
-      dg::op dgOp(tensorId++, kind, slot.opName);
+      dg::op dgOp(tensorId++, kind, slot.ident.opName);
 
       // Set op-specific attributes
       if (kind == dg::op::kind::MatMul) {
         // Check iArgs for transpose flags
-        bool transposeA = (slot.numIArgs > 0 && slot.iArgs[0] != 0);
-        bool transposeB = (slot.numIArgs > 1 && slot.iArgs[1] != 0);
+        bool transposeA = (slot.args.numIArgs > 0 && slot.args.iArgs[0] != 0);
+        bool transposeB = (slot.args.numIArgs > 1 && slot.args.iArgs[1] != 0);
         dgOp.set_attr<bool>(dg::op::attr::transpose_a, transposeA);
         dgOp.set_attr<bool>(dg::op::attr::transpose_b, transposeB);
       } else if (kind == dg::op::kind::SoftMax || kind == dg::op::kind::LogSoftmax) {
         int64_t axis = -1;
-        if (slot.numIArgs > 0) axis = static_cast<int64_t>(slot.iArgs[0]);
+        if (slot.args.numIArgs > 0) axis = static_cast<int64_t>(slot.args.iArgs[0]);
         dgOp.set_attr<int64_t>(dg::op::attr::axis, axis);
       } else if (kind == dg::op::kind::Concat) {
         int64_t axis = 0;
-        if (slot.numIArgs > 0) axis = static_cast<int64_t>(slot.iArgs[0]);
+        if (slot.args.numIArgs > 0) axis = static_cast<int64_t>(slot.args.iArgs[0]);
         dgOp.set_attr<int64_t>(dg::op::attr::axis, axis);
       } else if (kind == dg::op::kind::Elu) {
         float alpha = 1.0f;
-        if (slot.numTArgs > 0) alpha = static_cast<float>(slot.tArgs[0]);
+        if (slot.args.numTArgs > 0) alpha = static_cast<float>(slot.args.tArgs[0]);
         dgOp.set_attr<float>(dg::op::attr::alpha, alpha);
       } else if (kind == dg::op::kind::Clamp) {
         float minVal = -std::numeric_limits<float>::infinity();
         float maxVal = std::numeric_limits<float>::infinity();
-        if (slot.numTArgs > 0) minVal = static_cast<float>(slot.tArgs[0]);
-        if (slot.numTArgs > 1) maxVal = static_cast<float>(slot.tArgs[1]);
+        if (slot.args.numTArgs > 0) minVal = static_cast<float>(slot.args.tArgs[0]);
+        if (slot.args.numTArgs > 1) maxVal = static_cast<float>(slot.args.tArgs[1]);
         dgOp.set_attr<float>(dg::op::attr::min, minVal);
         dgOp.set_attr<float>(dg::op::attr::max, maxVal);
       } else if (kind == dg::op::kind::StaticReshape) {
         // Reshape needs target shape from iArgs, skipping ordering marker
         // ND4J encodes iArgs as [-order, dim0, dim1, ...] where -99=C, -102=F
-        if (slot.numIArgs > 0) {
+        if (slot.args.numIArgs > 0) {
           int startIdx = 0;
-          if (slot.iArgs[0] < 0 && (slot.iArgs[0] == -99 || slot.iArgs[0] == -102)) {
+          if (slot.args.iArgs[0] < 0 && (slot.args.iArgs[0] == -99 || slot.args.iArgs[0] == -102)) {
             startIdx = 1;
           }
-          std::vector<int64_t> shape(slot.numIArgs - startIdx);
-          for (int i = startIdx; i < slot.numIArgs; i++) {
-            shape[i - startIdx] = static_cast<int64_t>(slot.iArgs[i]);
+          std::vector<int64_t> shape(slot.args.numIArgs - startIdx);
+          for (int i = startIdx; i < slot.args.numIArgs; i++) {
+            shape[i - startIdx] = static_cast<int64_t>(slot.args.iArgs[i]);
           }
           dgOp.set_attr<std::vector<int64_t>>(dg::op::attr::shape, shape);
         }
       } else if (kind == dg::op::kind::StaticTranspose) {
         // Transpose needs permutation from iArgs
         std::vector<int64_t> order;
-        if (slot.numIArgs > 0) {
-          order.resize(slot.numIArgs);
-          for (int i = 0; i < slot.numIArgs; i++) {
-            order[i] = static_cast<int64_t>(slot.iArgs[i]);
+        if (slot.args.numIArgs > 0) {
+          order.resize(slot.args.numIArgs);
+          for (int i = 0; i < slot.args.numIArgs; i++) {
+            order[i] = static_cast<int64_t>(slot.args.iArgs[i]);
           }
         } else {
           // No iArgs = simple transpose: reverse dimensions
           // Get rank from input source (prior slot output or external input)
           int rank = 0;
-          if (slot.numInputs > 0) {
-            int srcIdx = slot.inputSourceIndices[0];
+          if (slot.wiring.numInputs > 0) {
+            int srcIdx = slot.wiring.inputSourceIndices[0];
             if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots[srcIdx] != nullptr) {
               rank = outputSlots[srcIdx]->rankOf();
             } else if (srcIdx < 0) {
@@ -347,24 +347,24 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
                  kind == dg::op::kind::ReduceMin || kind == dg::op::kind::ReduceMax ||
                  kind == dg::op::kind::ReduceProd) {
         // Reduction axes from iArgs
-        if (slot.numIArgs > 0) {
-          std::vector<int64_t> axes(slot.numIArgs);
-          for (int i = 0; i < slot.numIArgs; i++) {
-            axes[i] = static_cast<int64_t>(slot.iArgs[i]);
+        if (slot.args.numIArgs > 0) {
+          std::vector<int64_t> axes(slot.args.numIArgs);
+          for (int i = 0; i < slot.args.numIArgs; i++) {
+            axes[i] = static_cast<int64_t>(slot.args.iArgs[i]);
           }
           dgOp.set_attr<std::vector<int64_t>>(dg::op::attr::axes, axes);
         }
         dgOp.set_attr<bool>(dg::op::attr::keep_dims, false);
         // Check bArgs for keepDims
-        if (slot.numBArgs > 0 && slot.bArgs[0]) {
+        if (slot.args.numBArgs > 0 && slot.args.bArgs[0]) {
           dgOp.set_attr<bool>(dg::op::attr::keep_dims, true);
         }
       }
 
       // Wire inputs
       std::vector<dg::logical_tensor> inputTensors;
-      for (int i = 0; i < slot.numInputs; i++) {
-        int srcIdx = slot.inputSourceIndices[i];
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        int srcIdx = slot.wiring.inputSourceIndices[i];
         if (srcIdx >= 0) {
           // From a prior slot's output
           NDArray* arr = (srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
@@ -381,8 +381,8 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 
       // Wire outputs
       std::vector<dg::logical_tensor> outputTensors;
-      for (int i = 0; i < slot.numOutputs; i++) {
-        int outSlotIdx = slot.outputSlotIndices[i];
+      for (int i = 0; i < slot.wiring.numOutputs; i++) {
+        int outSlotIdx = slot.wiring.outputSlotIndices[i];
         NDArray* arr = (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots)
                            ? outputSlots[outSlotIdx] : nullptr;
         outputTensors.push_back(getSlotOutputTensor(outSlotIdx, arr));
@@ -394,14 +394,14 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
         opsAdded++;
       } catch (const std::exception& e) {
         DSP_DIAG(COMPILE, "OneDNN Graph: add_op failed for slot %d op '%s': %s",
-                 s, slot.opName, e.what());
+                 s, slot.ident.opName, e.what());
         return result;  // Return invalid result
       }
 
       // Record successful compilation in audit
       CompilationAuditEntry auditEntry;
       auditEntry.slotIndex = s;
-      auditEntry.opName = slot.opName;
+      auditEntry.opName = slot.ident.opName;
       auditEntry.wasCompiled = true;
       result.compilationAudit.push_back(std::move(auditEntry));
     }

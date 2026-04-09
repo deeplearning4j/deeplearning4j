@@ -65,8 +65,8 @@ static void logSlotHashes(const char* label, int startSlot, int endSlot,
   if (!DSP_DIAG_ENABLED(VERIFY)) return;
   std::unordered_set<int> loggedSlots;
   for (int si = startSlot; si <= endSlot; si++) {
-    for (int o = 0; o < slots[si].numOutputs; o++) {
-      int outIdx = slots[si].outputSlotIndices[o];
+    for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+      int outIdx = slots[si].wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
       if (!loggedSlots.insert(outIdx).second) continue;  // already logged
       NDArray* arr = outputSlots[outIdx];
@@ -74,7 +74,7 @@ static void logSlotHashes(const char* label, int startSlot, int endSlot,
       uint64_t hash = hashSlotGpuContent(arr, stream);
       DSP_DIAG(VERIFY, "HASH %s [%d-%d] exec=%d slot=%d (%s) hash=%016llx len=%lld dt=%d",
                label, startSlot, endSlot, execCount,
-               outIdx, slots[si].opName.c_str(), (unsigned long long)hash,
+               outIdx, slots[si].ident.opName.c_str(), (unsigned long long)hash,
                (long long)arr->lengthOf(), static_cast<int>(arr->dataType()));
     }
   }
@@ -89,8 +89,8 @@ static void logActualityState(const char* label, int startSlot, int endSlot,
   int hostPrimaryCount = 0, devicePrimaryCount = 0, bothActualCount = 0, neitherCount = 0;
   for (int si = startSlot; si <= endSlot; si++) {
     // Check inputs
-    for (int i = 0; i < slots[si].numInputs; i++) {
-      int srcIdx = slots[si].inputSourceIndices[i];
+    for (int i = 0; i < slots[si].wiring.numInputs; i++) {
+      int srcIdx = slots[si].wiring.inputSourceIndices[i];
       NDArray* arr = resolveRangeArray(srcIdx, externalInputs, numExternalInputs,
                                         outputSlots, totalOutputSlots);
       if (!arr || !arr->dataBuffer()) continue;
@@ -111,8 +111,8 @@ static void logActualityState(const char* label, int startSlot, int endSlot,
       }
     }
     // Check outputs
-    for (int o = 0; o < slots[si].numOutputs; o++) {
-      int outIdx = slots[si].outputSlotIndices[o];
+    for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+      int outIdx = slots[si].wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
       NDArray* arr = outputSlots[outIdx];
       if (!arr || !arr->dataBuffer()) continue;
@@ -221,7 +221,7 @@ static void detectBufferAliasing(int ki,
           aliasCount++;
           if (aliasCount <= 20) {
             const char* extSlotName = (si <= segEndSlot)
-                ? slots[si].opName.c_str() : "?";
+                ? slots[si].ident.opName.c_str() : "?";
             DSP_DIAG(VERIFY, "BUFFER OVERLAP: subK[%d] [%d-%d] output arg[%d](slot=%d) "
                      "[%p-%p] overlaps slot %d (%s) [%p-%p]",
                      ki, skStartSlot, skEndSlot,
@@ -259,7 +259,7 @@ static void detectBufferAliasing(int ki,
                  "external slot %d (%s) share same DataBuffer %p",
                  ki, skStartSlot, skEndSlot,
                  it->second, si,
-                 (si <= segEndSlot) ? slots[si].opName.c_str() : "?",
+                 (si <= segEndSlot) ? slots[si].ident.opName.c_str() : "?",
                  static_cast<void*>(outputSlots[si]->dataBuffer()));
       }
     }
@@ -559,8 +559,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         auto& slot = slots[si];
         // Check if any input comes from the gap range
         bool hasInputFromGap = false;
-        for (int inp = 0; inp < slot.numInputs; inp++) {
-          int srcIdx = slot.inputSourceIndices[inp];
+        for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+          int srcIdx = slot.wiring.inputSourceIndices[inp];
           if (srcIdx >= 0 && srcIdx >= nextSlotToRun && srcIdx < subKernel.startSlot_) {
             hasInputFromGap = true;
             break;
@@ -569,10 +569,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (!hasInputFromGap) continue;
 
         // Resolve actual input arrays (post-gap, so shapes are correct)
-        std::vector<NDArray*> inputArrays(slot.numInputs, nullptr);
+        std::vector<NDArray*> inputArrays(slot.wiring.numInputs, nullptr);
         bool allInputsAvailable = true;
-        for (int inp = 0; inp < slot.numInputs; inp++) {
-          int srcIdx = slot.inputSourceIndices[inp];
+        for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+          int srcIdx = slot.wiring.inputSourceIndices[inp];
           inputArrays[inp] = resolveRangeArray(srcIdx, externalInputs, numExternalInputs,
                                                outputSlots, totalOutputSlots);
           if (inputArrays[inp] == nullptr) {
@@ -584,22 +584,22 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
         // Build input shape list and run shape inference
         ShapeList inputShapes;
-        for (int inp = 0; inp < slot.numInputs; inp++) {
+        for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
           inputShapes.push_back(inputArrays[inp]->shapeInfo());
         }
 
         Context inferCtx(1);
-        for (int inp = 0; inp < slot.numInputs; inp++) {
+        for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
           inferCtx.setInputArray(inp, inputArrays[inp]);
         }
-        if (slot.numIArgs > 0) inferCtx.setIArguments(slot.iArgs, slot.numIArgs);
-        if (slot.numTArgs > 0) inferCtx.setTArguments(slot.tArgs, slot.numTArgs);
-        if (slot.numBArgs > 0) inferCtx.setBArguments(slot.bArgs, slot.numBArgs);
-        if (slot.numDArgs > 0) inferCtx.setDArguments(slot.dArgs, slot.numDArgs);
+        if (slot.args.numIArgs > 0) inferCtx.setIArguments(slot.args.iArgs, slot.args.numIArgs);
+        if (slot.args.numTArgs > 0) inferCtx.setTArguments(slot.args.tArgs, slot.args.numTArgs);
+        if (slot.args.numBArgs > 0) inferCtx.setBArguments(slot.args.bArgs, slot.args.numBArgs);
+        if (slot.args.numDArgs > 0) inferCtx.setDArguments(slot.args.dArgs, slot.args.numDArgs);
 
         ShapeList* inferredShapes = nullptr;
         try {
-          inferredShapes = slot.op->calculateOutputShape(&inputShapes, inferCtx);
+          inferredShapes = slot.ident.op->calculateOutputShape(&inputShapes, inferCtx);
         } catch (...) {
           continue;
         }
@@ -609,8 +609,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         }
 
         // Check each output — fix shape if mismatched
-        for (int o = 0; o < slot.numOutputs && o < static_cast<int>(inferredShapes->size()); o++) {
-          int outSlotIdx = slot.outputSlotIndices[o];
+        for (int o = 0; o < slot.wiring.numOutputs && o < static_cast<int>(inferredShapes->size()); o++) {
+          int outSlotIdx = slot.wiring.outputSlotIndices[o];
           if (outSlotIdx < 0 || outSlotIdx >= totalOutputSlots) continue;
 
           const LongType* inferredShape = inferredShapes->at(o);
@@ -633,7 +633,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
           DSP_DIAG(SHAPE, "POST_GAP_RESHAPE: slot %d (%s) output slot %d shape mismatch: "
                    "existing=%s inferred=%s existingLen=%lld inferredLen=%lld",
-                   si, slot.opName.c_str(), outSlotIdx,
+                   si, slot.ident.opName.c_str(), outSlotIdx,
                    ShapeUtils::shapeAsString(existingOut).c_str(),
                    ShapeUtils::shapeAsString(inferredShape).c_str(),
                    (long long)existingLen, (long long)inferredLen);
@@ -721,7 +721,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         std::string opSummary;
         for (int si = subKernel.startSlot_; si <= subKernel.endSlot_ && opSummary.size() < 400; si++) {
           if (!opSummary.empty()) opSummary += ", ";
-          opSummary += std::to_string(si) + ":" + slots[si].opName;
+          opSummary += std::to_string(si) + ":" + slots[si].ident.opName;
         }
         DSP_DIAG(EXECUTE, "SUBKERNEL ENTRY: subK[%d] [%d-%d] numArgs=%d indirect=%d cooperative=%d "
                  "dynamicGrid=%d multiPhase=%d ops=[%s]",
@@ -759,7 +759,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         std::string opNames;
         for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
           if (!opNames.empty()) opNames += ", ";
-          opNames += std::to_string(si) + ":" + slots[si].opName;
+          opNames += std::to_string(si) + ":" + slots[si].ident.opName;
         }
         DSP_DIAG(VERIFY, "TRITON VERIFY ENTRY: subK[%d] [%d-%d] execCount=%d ops: %s",
                  i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount, opNames.c_str());
@@ -799,8 +799,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (!tritonVerifyFullSnapshot) {
           // Non-fullSnapshot: only save the sub-kernel's declared output slots via dup()
           for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
-            for (int o = 0; o < slots[si].numOutputs; o++) {
-              int outIdx = slots[si].outputSlotIndices[o];
+            for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+              int outIdx = slots[si].wiring.outputSlotIndices[o];
               if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx] &&
                   outputSlots[outIdx]->lengthOf() > 0 && !outputSlots[outIdx]->isEmpty()) {
                 try {
@@ -860,8 +860,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         struct RawBuffer { std::vector<uint8_t> data; DataType dtype; LongType len; };
         std::unordered_map<int, RawBuffer> tritonRawOutputs;
         for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
-          for (int o = 0; o < slots[si].numOutputs; o++) {
-            int outIdx = slots[si].outputSlotIndices[o];
+          for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+            int outIdx = slots[si].wiring.outputSlotIndices[o];
             if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
               auto* arr = outputSlots[outIdx];
               void* sbuf = arr->specialBuffer();
@@ -884,8 +884,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           // Build set of expected output slots
           std::unordered_set<int> expectedOutputs;
           for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
-            for (int o = 0; o < slots[si].numOutputs; o++) {
-              int outIdx = slots[si].outputSlotIndices[o];
+            for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
+              int outIdx = slots[si].wiring.outputSlotIndices[o];
               if (outIdx >= 0 && outIdx < totalOutputSlots)
                 expectedOutputs.insert(outIdx);
             }
@@ -943,7 +943,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                 }
                 const char* slotName = "external";
                 if (slotIdx >= 0 && slotIdx <= seg.endSlot) {
-                  slotName = slots[slotIdx].opName.c_str();
+                  slotName = slots[slotIdx].ident.opName.c_str();
                 }
                 DSP_DIAG(VERIFY, "TRITON VERIFY CORRUPTION: subK[%d] [%d-%d] damaged %s slot %d (%s) "
                         "len=%zu firstDiffByte=%d gpuAddr=%p",
@@ -1178,17 +1178,17 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Compose attention present_key / present_value outputs
   int attnCount = 0;
   for (int si = seg.startSlot; si <= seg.endSlot; si++) {
-    if (slots[si].opName.empty()) continue;
-    bool isAttn = slots[si].op != nullptr &&
-                  slots[si].op->getOpDescriptor() != nullptr &&
-                  slots[si].op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_ATTENTION);
+    if (slots[si].ident.opName.empty()) continue;
+    bool isAttn = slots[si].ident.op != nullptr &&
+                  slots[si].ident.op->getOpDescriptor() != nullptr &&
+                  slots[si].ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_ATTENTION);
     if (!isAttn) continue;
-    if (slots[si].numInputs <= 4 || slots[si].numOutputs < 2) continue;
+    if (slots[si].wiring.numInputs <= 4 || slots[si].wiring.numOutputs < 2) continue;
 
-    int currentKeySrc = slots[si].inputSourceIndices[1];
-    int currentValueSrc = (slots[si].numInputs > 2) ? slots[si].inputSourceIndices[2] : -1;
-    int presentKeyOut = slots[si].outputSlotIndices[1];
-    int presentValueOut = (slots[si].numOutputs >= 3) ? slots[si].outputSlotIndices[2] : -1;
+    int currentKeySrc = slots[si].wiring.inputSourceIndices[1];
+    int currentValueSrc = (slots[si].wiring.numInputs > 2) ? slots[si].wiring.inputSourceIndices[2] : -1;
+    int presentKeyOut = slots[si].wiring.outputSlotIndices[1];
+    int presentValueOut = (slots[si].wiring.numOutputs >= 3) ? slots[si].wiring.outputSlotIndices[2] : -1;
 
     DSP_DIAG(EXECUTE, "composePresentKv: attn slot=%d currentKeySrc=%d currentValueSrc=%d "
              "presentKeyOut=%d presentValueOut=%d",

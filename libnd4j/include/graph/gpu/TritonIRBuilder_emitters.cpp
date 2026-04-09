@@ -178,7 +178,7 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
                                                    const NativeSlot& slot, mlir::Value input,
                                                    int blockSize) {
   auto tensorType = mlir::cast<mlir::RankedTensorType>(input.getType());
-  auto opName = mapping.opName;
+  auto opName = mapping.ident.opName;
 
   // Math ops require float inputs — promote integer/bool/f16/bf16 to at least f32
   input = promoteToFloat(builder, loc, input);
@@ -259,8 +259,8 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
     // fails to legalize it during TTGIR→LLVM lowering.
     // Instead, use special cases for common exponents and exp(e*log(x)) for general case.
     float exponent = 2.0f;
-    if (slot.numTArgs > 0 && slot.tArgs) {
-      exponent = static_cast<float>(slot.tArgs[0]);
+    if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+      exponent = static_cast<float>(slot.args.tArgs[0]);
     }
     // Special cases that avoid log/exp entirely
     if (exponent == 0.0f) {
@@ -299,9 +299,9 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
     // clamp(x, min, max) = min(max(x, minVal), maxVal)
     float minVal = -3.4028235e+38f;
     float maxVal = 3.4028235e+38f;
-    if (slot.numTArgs >= 2 && slot.tArgs) {
-      minVal = static_cast<float>(slot.tArgs[0]);
-      maxVal = static_cast<float>(slot.tArgs[1]);
+    if (slot.args.numTArgs >= 2 && slot.args.tArgs) {
+      minVal = static_cast<float>(slot.args.tArgs[0]);
+      maxVal = static_cast<float>(slot.args.tArgs[1]);
     }
     auto minSplat = splatConstantF32(builder, loc, tensorType, minVal);
     auto maxSplat = splatConstantF32(builder, loc, tensorType, maxVal);
@@ -352,9 +352,9 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
     // clip_by_value(x, min, max) — alias of clipbyvalue
     float minVal = -3.4028235e+38f;
     float maxVal = 3.4028235e+38f;
-    if (slot.numTArgs >= 2 && slot.tArgs) {
-      minVal = static_cast<float>(slot.tArgs[0]);
-      maxVal = static_cast<float>(slot.tArgs[1]);
+    if (slot.args.numTArgs >= 2 && slot.args.tArgs) {
+      minVal = static_cast<float>(slot.args.tArgs[0]);
+      maxVal = static_cast<float>(slot.args.tArgs[1]);
     }
     auto minSplat = splatConstantF32(builder, loc, tensorType, minVal);
     auto maxSplat = splatConstantF32(builder, loc, tensorType, maxVal);
@@ -389,8 +389,8 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   if (opLower == "leakyrelu") {
     // leakyrelu(x) = x > 0 ? x : alpha * x, default alpha = 0.01
     float alpha = 0.01f;
-    if (slot.numTArgs > 0 && slot.tArgs) {
-      alpha = static_cast<float>(slot.tArgs[0]);
+    if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+      alpha = static_cast<float>(slot.args.tArgs[0]);
     }
     auto zero = splatConstantF32(builder, loc, tensorType, 0.0f);
     auto alphaSplat = splatConstantF32(builder, loc, tensorType, alpha);
@@ -430,8 +430,8 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   if (opLower == "elu") {
     // elu(x) = x > 0 ? x : alpha * (exp(x) - 1), default alpha = 1.0
     float alpha = 1.0f;
-    if (slot.numTArgs > 0 && slot.tArgs) {
-      alpha = static_cast<float>(slot.tArgs[0]);
+    if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+      alpha = static_cast<float>(slot.args.tArgs[0]);
     }
     auto zero = splatConstantF32(builder, loc, tensorType, 0.0f);
     auto one = splatConstantF32(builder, loc, tensorType, 1.0f);
@@ -506,25 +506,25 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
 
   // Scalar binary ops: second operand comes from tArgs[0]
   if (opLower == "add_scalar") {
-    float scalar = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 0.0f;
+    float scalar = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 0.0f;
     auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
     return builder.create<mlir::arith::AddFOp>(loc, input, scalarSplat);
   }
 
   if (opLower == "subtract_scalar" || opLower == "sub_scalar") {
-    float scalar = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 0.0f;
+    float scalar = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 0.0f;
     auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
     return builder.create<mlir::arith::SubFOp>(loc, input, scalarSplat);
   }
 
   if (opLower == "multiply_scalar" || opLower == "mul_scalar") {
-    float scalar = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1.0f;
+    float scalar = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 1.0f;
     auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
     return builder.create<mlir::arith::MulFOp>(loc, input, scalarSplat);
   }
 
   if (opLower == "divide_scalar" || opLower == "div_scalar") {
-    float scalar = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1.0f;
+    float scalar = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 1.0f;
     auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
     return builder.create<mlir::arith::DivFOp>(loc, input, scalarSplat);
   }

@@ -280,11 +280,11 @@ bool NnapiGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (end - start + 1 < 2) return false;
 
   for (int i = start; i <= end; i++) {
-    int opCode = getNnapiOpCode(slots[i].opName);
+    int opCode = getNnapiOpCode(slots[i].ident.opName);
     if (opCode < 0) return false;
 
     // Check that this device's API level supports this op
-    int minApi = getMinApiLevel(slots[i].opName);
+    int minApi = getMinApiLevel(slots[i].ident.opName);
     if (apiLevel_ < minApi) return false;
   }
   return true;
@@ -469,7 +469,7 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── Softmax: needs beta (float scalar, default 1.0) ──
   if (nnapiOp == ANEURALNETWORKS_SOFTMAX) {
     float beta = 1.0f;
-    if (slot.numTArgs > 0 && slot.tArgs) beta = static_cast<float>(slot.tArgs[0]);
+    if (slot.args.numTArgs > 0 && slot.args.tArgs) beta = static_cast<float>(slot.args.tArgs[0]);
     inputOperands.push_back(addFloatOperand(model, beta, nextOperand));
     return true;
   }
@@ -483,7 +483,7 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── Concatenation: needs axis ──
   if (nnapiOp == ANEURALNETWORKS_CONCATENATION) {
     int axis = 0;
-    if (slot.numIArgs > 0 && slot.iArgs) axis = static_cast<int>(slot.iArgs[0]);
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) axis = static_cast<int>(slot.args.iArgs[0]);
     inputOperands.push_back(addScalarOperand(model, axis, nextOperand));
     return true;
   }
@@ -493,11 +493,11 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // nd4j conv2d iArgs: [kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, ...]
   if (nnapiOp == ANEURALNETWORKS_CONV_2D) {
     int pH = 0, pW = 0, sH = 1, sW = 1;
-    if (slot.numIArgs >= 6 && slot.iArgs) {
-      sH = static_cast<int>(slot.iArgs[2]);
-      sW = static_cast<int>(slot.iArgs[3]);
-      pH = static_cast<int>(slot.iArgs[4]);
-      pW = static_cast<int>(slot.iArgs[5]);
+    if (slot.args.numIArgs >= 6 && slot.args.iArgs) {
+      sH = static_cast<int>(slot.args.iArgs[2]);
+      sW = static_cast<int>(slot.args.iArgs[3]);
+      pH = static_cast<int>(slot.args.iArgs[4]);
+      pW = static_cast<int>(slot.args.iArgs[5]);
     }
     // NNAPI explicit padding: padLeft, padRight, padTop, padBottom
     inputOperands.push_back(addScalarOperand(model, pW, nextOperand));      // padLeft
@@ -513,14 +513,14 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── DEPTHWISE_CONV_2D: same as CONV_2D + depth_multiplier ──
   if (nnapiOp == ANEURALNETWORKS_DEPTHWISE_CONV_2D) {
     int pH = 0, pW = 0, sH = 1, sW = 1, dm = 1;
-    if (slot.numIArgs >= 6 && slot.iArgs) {
-      sH = static_cast<int>(slot.iArgs[2]);
-      sW = static_cast<int>(slot.iArgs[3]);
-      pH = static_cast<int>(slot.iArgs[4]);
-      pW = static_cast<int>(slot.iArgs[5]);
+    if (slot.args.numIArgs >= 6 && slot.args.iArgs) {
+      sH = static_cast<int>(slot.args.iArgs[2]);
+      sW = static_cast<int>(slot.args.iArgs[3]);
+      pH = static_cast<int>(slot.args.iArgs[4]);
+      pW = static_cast<int>(slot.args.iArgs[5]);
     }
-    if (slot.numIArgs >= 9 && slot.iArgs) {
-      dm = static_cast<int>(slot.iArgs[8]);
+    if (slot.args.numIArgs >= 9 && slot.args.iArgs) {
+      dm = static_cast<int>(slot.args.iArgs[8]);
       if (dm < 1) dm = 1;
     }
     inputOperands.push_back(addScalarOperand(model, pW, nextOperand));
@@ -537,11 +537,11 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── TRANSPOSE_CONV_2D: padding, strideW, strideH, activation ──
   if (nnapiOp == ANEURALNETWORKS_TRANSPOSE_CONV_2D) {
     int pH = 0, pW = 0, sH = 1, sW = 1;
-    if (slot.numIArgs >= 6 && slot.iArgs) {
-      sH = static_cast<int>(slot.iArgs[2]);
-      sW = static_cast<int>(slot.iArgs[3]);
-      pH = static_cast<int>(slot.iArgs[4]);
-      pW = static_cast<int>(slot.iArgs[5]);
+    if (slot.args.numIArgs >= 6 && slot.args.iArgs) {
+      sH = static_cast<int>(slot.args.iArgs[2]);
+      sW = static_cast<int>(slot.args.iArgs[3]);
+      pH = static_cast<int>(slot.args.iArgs[4]);
+      pW = static_cast<int>(slot.args.iArgs[5]);
     }
     inputOperands.push_back(addScalarOperand(model, pW, nextOperand));
     inputOperands.push_back(addScalarOperand(model, pW, nextOperand));
@@ -560,13 +560,13 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   if (nnapiOp == ANEURALNETWORKS_AVERAGE_POOL_2D ||
       nnapiOp == ANEURALNETWORKS_MAX_POOL_2D) {
     int kH = 1, kW = 1, sH = 1, sW = 1, pH = 0, pW = 0;
-    if (slot.numIArgs >= 6 && slot.iArgs) {
-      kH = static_cast<int>(slot.iArgs[0]);
-      kW = static_cast<int>(slot.iArgs[1]);
-      sH = static_cast<int>(slot.iArgs[2]);
-      sW = static_cast<int>(slot.iArgs[3]);
-      pH = static_cast<int>(slot.iArgs[4]);
-      pW = static_cast<int>(slot.iArgs[5]);
+    if (slot.args.numIArgs >= 6 && slot.args.iArgs) {
+      kH = static_cast<int>(slot.args.iArgs[0]);
+      kW = static_cast<int>(slot.args.iArgs[1]);
+      sH = static_cast<int>(slot.args.iArgs[2]);
+      sW = static_cast<int>(slot.args.iArgs[3]);
+      pH = static_cast<int>(slot.args.iArgs[4]);
+      pW = static_cast<int>(slot.args.iArgs[5]);
     }
     inputOperands.push_back(addScalarOperand(model, pW, nextOperand));
     inputOperands.push_back(addScalarOperand(model, pW, nextOperand));
@@ -583,12 +583,12 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── RESHAPE: needs new shape as a 1D INT32 tensor ──
   if (nnapiOp == ANEURALNETWORKS_RESHAPE) {
     // The target shape comes from iArgs or from the output array's actual shape
-    if (slot.numIArgs > 0 && slot.iArgs) {
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) {
       inputOperands.push_back(
-          addIntVectorOperand(model, slot.iArgs, slot.numIArgs, nextOperand, vectorStorage));
+          addIntVectorOperand(model, slot.args.iArgs, slot.args.numIArgs, nextOperand, vectorStorage));
     } else {
       // Infer from output shape
-      int outIdx = slot.outputSlotIndices[0];
+      int outIdx = slot.wiring.outputSlotIndices[0];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots && outputSlots[outIdx]) {
         inputOperands.push_back(
             addShapeOperand(model, outputSlots[outIdx], nextOperand, vectorStorage));
@@ -601,9 +601,9 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
 
   // ── TRANSPOSE: needs perm tensor ──
   if (nnapiOp == ANEURALNETWORKS_TRANSPOSE) {
-    if (slot.numIArgs > 0 && slot.iArgs) {
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) {
       inputOperands.push_back(
-          addIntVectorOperand(model, slot.iArgs, slot.numIArgs, nextOperand, vectorStorage));
+          addIntVectorOperand(model, slot.args.iArgs, slot.args.numIArgs, nextOperand, vectorStorage));
     }
     // If no iArgs, NNAPI reverses dimensions by default (no perm operand needed)
     return true;
@@ -612,16 +612,16 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── GATHER: needs axis scalar ──
   if (nnapiOp == ANEURALNETWORKS_GATHER) {
     int axis = 0;
-    if (slot.numIArgs > 0 && slot.iArgs) axis = static_cast<int>(slot.iArgs[0]);
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) axis = static_cast<int>(slot.args.iArgs[0]);
     inputOperands.push_back(addScalarOperand(model, axis, nextOperand));
     return true;
   }
 
   // ── SQUEEZE: needs axes as 1D tensor (optional) ──
   if (nnapiOp == ANEURALNETWORKS_SQUEEZE) {
-    if (slot.numIArgs > 0 && slot.iArgs) {
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) {
       inputOperands.push_back(
-          addIntVectorOperand(model, slot.iArgs, slot.numIArgs, nextOperand, vectorStorage));
+          addIntVectorOperand(model, slot.args.iArgs, slot.args.numIArgs, nextOperand, vectorStorage));
     }
     // If no iArgs, NNAPI squeezes all size-1 dimensions
     return true;
@@ -630,7 +630,7 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── EXPAND_DIMS: needs axis scalar ──
   if (nnapiOp == ANEURALNETWORKS_EXPAND_DIMS) {
     int axis = 0;
-    if (slot.numIArgs > 0 && slot.iArgs) axis = static_cast<int>(slot.iArgs[0]);
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) axis = static_cast<int>(slot.args.iArgs[0]);
     inputOperands.push_back(addScalarOperand(model, axis, nextOperand));
     return true;
   }
@@ -644,9 +644,9 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
       nnapiOp == ANEURALNETWORKS_REDUCE_ANY ||
       nnapiOp == ANEURALNETWORKS_REDUCE_ALL) {
     // iArgs = axes to reduce along
-    if (slot.numIArgs > 0 && slot.iArgs) {
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) {
       inputOperands.push_back(
-          addIntVectorOperand(model, slot.iArgs, slot.numIArgs, nextOperand, vectorStorage));
+          addIntVectorOperand(model, slot.args.iArgs, slot.args.numIArgs, nextOperand, vectorStorage));
     } else {
       // Reduce all — pass empty axes (NNAPI reduces all dims)
       vectorStorage.emplace_back();
@@ -663,7 +663,7 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
     }
     // keepDims: bArgs[0] if present, default false
     bool keepDims = false;
-    if (slot.numBArgs > 0 && slot.bArgs) keepDims = slot.bArgs[0];
+    if (slot.args.numBArgs > 0 && slot.args.bArgs) keepDims = slot.args.bArgs[0];
     inputOperands.push_back(addScalarOperand(model, keepDims ? 1 : 0, nextOperand));
     return true;
   }
@@ -671,7 +671,7 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── ARGMAX / ARGMIN: needs axis scalar ──
   if (nnapiOp == ANEURALNETWORKS_ARGMAX || nnapiOp == ANEURALNETWORKS_ARGMIN) {
     int axis = 0;
-    if (slot.numIArgs > 0 && slot.iArgs) axis = static_cast<int>(slot.iArgs[0]);
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) axis = static_cast<int>(slot.args.iArgs[0]);
     inputOperands.push_back(addScalarOperand(model, axis, nextOperand));
     return true;
   }
@@ -679,9 +679,9 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── SPLIT: needs axis scalar, numSplits scalar ──
   if (nnapiOp == ANEURALNETWORKS_SPLIT) {
     int axis = 0;
-    int numSplits = slot.numOutputs;
-    if (slot.numIArgs > 0 && slot.iArgs) axis = static_cast<int>(slot.iArgs[0]);
-    if (slot.numIArgs > 1 && slot.iArgs) numSplits = static_cast<int>(slot.iArgs[1]);
+    int numSplits = slot.wiring.numOutputs;
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) axis = static_cast<int>(slot.args.iArgs[0]);
+    if (slot.args.numIArgs > 1 && slot.args.iArgs) numSplits = static_cast<int>(slot.args.iArgs[1]);
     inputOperands.push_back(addScalarOperand(model, axis, nextOperand));
     inputOperands.push_back(addScalarOperand(model, numSplits, nextOperand));
     return true;
@@ -690,12 +690,12 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── PAD: needs paddings 2D tensor ──
   if (nnapiOp == ANEURALNETWORKS_PAD) {
     // iArgs = [pad_before_d0, pad_after_d0, pad_before_d1, pad_after_d1, ...]
-    if (slot.numIArgs >= 2 && slot.iArgs) {
-      int rank = slot.numIArgs / 2;
+    if (slot.args.numIArgs >= 2 && slot.args.iArgs) {
+      int rank = slot.args.numIArgs / 2;
       vectorStorage.emplace_back(rank * 2);
       auto& vec = vectorStorage.back();
       for (int i = 0; i < rank * 2; i++) {
-        vec[i] = static_cast<int32_t>(slot.iArgs[i]);
+        vec[i] = static_cast<int32_t>(slot.args.iArgs[i]);
       }
 
       uint32_t pidx = nextOperand++;
@@ -718,9 +718,9 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
 
   // ── TILE: needs multiples tensor ──
   if (nnapiOp == ANEURALNETWORKS_TILE) {
-    if (slot.numIArgs > 0 && slot.iArgs) {
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) {
       inputOperands.push_back(
-          addIntVectorOperand(model, slot.iArgs, slot.numIArgs, nextOperand, vectorStorage));
+          addIntVectorOperand(model, slot.args.iArgs, slot.args.numIArgs, nextOperand, vectorStorage));
     } else {
       return false;
     }
@@ -732,39 +732,39 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
     // nd4j strided_slice iArgs: [begin_d0..., end_d0..., strides_d0..., begin_mask, end_mask, ...]
     // We need to figure out the rank from the arrays
     int rank = 0;
-    if (slot.numIArgs >= 3) {
+    if (slot.args.numIArgs >= 3) {
       // Guess rank = numIArgs / 3 if no masks, or (numIArgs - extra) / 3
       // Safer: use iArgs count. Common layout: 3*rank values + optional masks
       // Try: if numIArgs >= 7 (rank=1: 3 + 4 masks, or rank=2: 6 + 1 mask)
       // The safest heuristic: subtract known scalar suffixes
       int numMasks = 0;
-      if (slot.numIArgs > 3) {
+      if (slot.args.numIArgs > 3) {
         // StridedSlice has begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask
         // 5 mask scalars at the end
-        if (slot.numIArgs > 5) {
-          rank = (slot.numIArgs - 5) / 3;
+        if (slot.args.numIArgs > 5) {
+          rank = (slot.args.numIArgs - 5) / 3;
           if (rank < 1) rank = 1;
           numMasks = 5;
         } else {
-          rank = slot.numIArgs / 3;
+          rank = slot.args.numIArgs / 3;
         }
       } else {
         rank = 1;
       }
 
-      if (rank > 0 && slot.numIArgs >= rank * 3) {
+      if (rank > 0 && slot.args.numIArgs >= rank * 3) {
         inputOperands.push_back(
-            addIntVectorOperand(model, slot.iArgs, rank, nextOperand, vectorStorage));
+            addIntVectorOperand(model, slot.args.iArgs, rank, nextOperand, vectorStorage));
         inputOperands.push_back(
-            addIntVectorOperand(model, slot.iArgs + rank, rank, nextOperand, vectorStorage));
+            addIntVectorOperand(model, slot.args.iArgs + rank, rank, nextOperand, vectorStorage));
         inputOperands.push_back(
-            addIntVectorOperand(model, slot.iArgs + 2 * rank, rank, nextOperand, vectorStorage));
+            addIntVectorOperand(model, slot.args.iArgs + 2 * rank, rank, nextOperand, vectorStorage));
 
         int beginMask = 0, endMask = 0, shrinkAxisMask = 0;
         int base = 3 * rank;
-        if (slot.numIArgs > base) beginMask = static_cast<int>(slot.iArgs[base]);
-        if (slot.numIArgs > base + 1) endMask = static_cast<int>(slot.iArgs[base + 1]);
-        if (slot.numIArgs > base + 4) shrinkAxisMask = static_cast<int>(slot.iArgs[base + 4]);
+        if (slot.args.numIArgs > base) beginMask = static_cast<int>(slot.args.iArgs[base]);
+        if (slot.args.numIArgs > base + 1) endMask = static_cast<int>(slot.args.iArgs[base + 1]);
+        if (slot.args.numIArgs > base + 4) shrinkAxisMask = static_cast<int>(slot.args.iArgs[base + 4]);
 
         inputOperands.push_back(addScalarOperand(model, beginMask, nextOperand));
         inputOperands.push_back(addScalarOperand(model, endMask, nextOperand));
@@ -779,10 +779,10 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   if (nnapiOp == ANEURALNETWORKS_LOCAL_RESPONSE_NORMALIZATION) {
     int radius = 5;
     float bias = 1.0f, alpha = 1.0f, beta = 0.5f;
-    if (slot.numIArgs >= 1 && slot.iArgs) radius = static_cast<int>(slot.iArgs[0]);
-    if (slot.numTArgs >= 1 && slot.tArgs) bias = static_cast<float>(slot.tArgs[0]);
-    if (slot.numTArgs >= 2 && slot.tArgs) alpha = static_cast<float>(slot.tArgs[1]);
-    if (slot.numTArgs >= 3 && slot.tArgs) beta = static_cast<float>(slot.tArgs[2]);
+    if (slot.args.numIArgs >= 1 && slot.args.iArgs) radius = static_cast<int>(slot.args.iArgs[0]);
+    if (slot.args.numTArgs >= 1 && slot.args.tArgs) bias = static_cast<float>(slot.args.tArgs[0]);
+    if (slot.args.numTArgs >= 2 && slot.args.tArgs) alpha = static_cast<float>(slot.args.tArgs[1]);
+    if (slot.args.numTArgs >= 3 && slot.args.tArgs) beta = static_cast<float>(slot.args.tArgs[2]);
     inputOperands.push_back(addScalarOperand(model, radius, nextOperand));
     inputOperands.push_back(addFloatOperand(model, bias, nextOperand));
     inputOperands.push_back(addFloatOperand(model, alpha, nextOperand));
@@ -793,8 +793,8 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   // ── BATCH_MATMUL: adjX, adjY booleans ──
   if (nnapiOp == ANEURALNETWORKS_BATCH_MATMUL) {
     bool adjX = false, adjY = false;
-    if (slot.numBArgs >= 1 && slot.bArgs) adjX = slot.bArgs[0];
-    if (slot.numBArgs >= 2 && slot.bArgs) adjY = slot.bArgs[1];
+    if (slot.args.numBArgs >= 1 && slot.args.bArgs) adjX = slot.args.bArgs[0];
+    if (slot.args.numBArgs >= 2 && slot.args.bArgs) adjY = slot.args.bArgs[1];
     inputOperands.push_back(addBoolOperand(model, adjX, nextOperand));
     inputOperands.push_back(addBoolOperand(model, adjY, nextOperand));
     return true;
@@ -804,12 +804,12 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   if (nnapiOp == ANEURALNETWORKS_RESIZE_BILINEAR ||
       nnapiOp == ANEURALNETWORKS_RESIZE_NEAREST_NEIGHBOR) {
     int newH = 0, newW = 0;
-    if (slot.numIArgs >= 2 && slot.iArgs) {
-      newH = static_cast<int>(slot.iArgs[0]);
-      newW = static_cast<int>(slot.iArgs[1]);
+    if (slot.args.numIArgs >= 2 && slot.args.iArgs) {
+      newH = static_cast<int>(slot.args.iArgs[0]);
+      newW = static_cast<int>(slot.args.iArgs[1]);
     } else {
       // Infer from output shape (NHWC: [N, H, W, C])
-      int outIdx = slot.outputSlotIndices[0];
+      int outIdx = slot.wiring.outputSlotIndices[0];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots && outputSlots[outIdx]) {
         auto* out = outputSlots[outIdx];
         if (out->rankOf() >= 3) {
@@ -829,17 +829,17 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
       nnapiOp == ANEURALNETWORKS_BATCH_TO_SPACE_ND) {
     // iArgs layout: [block_d0, block_d1, ..., pad/crop values...]
     // Typically rank-2 spatial: block_shape=[bH, bW], paddings=[[pH0,pH1],[pW0,pW1]]
-    if (slot.numIArgs >= 2 && slot.iArgs) {
+    if (slot.args.numIArgs >= 2 && slot.args.iArgs) {
       int spatialRank = 2;
       inputOperands.push_back(
-          addIntVectorOperand(model, slot.iArgs, spatialRank, nextOperand, vectorStorage));
+          addIntVectorOperand(model, slot.args.iArgs, spatialRank, nextOperand, vectorStorage));
 
-      if (slot.numIArgs >= 2 + spatialRank * 2) {
+      if (slot.args.numIArgs >= 2 + spatialRank * 2) {
         // Paddings/crops as 2D tensor
         vectorStorage.emplace_back(spatialRank * 2);
         auto& vec = vectorStorage.back();
         for (int i = 0; i < spatialRank * 2; i++) {
-          vec[i] = static_cast<int32_t>(slot.iArgs[spatialRank + i]);
+          vec[i] = static_cast<int32_t>(slot.args.iArgs[spatialRank + i]);
         }
         uint32_t pidx = nextOperand++;
         uint32_t dims[2] = {static_cast<uint32_t>(spatialRank), 2};
@@ -863,7 +863,7 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
   if (nnapiOp == ANEURALNETWORKS_SPACE_TO_DEPTH ||
       nnapiOp == ANEURALNETWORKS_DEPTH_TO_SPACE) {
     int blockSize = 2;
-    if (slot.numIArgs > 0 && slot.iArgs) blockSize = static_cast<int>(slot.iArgs[0]);
+    if (slot.args.numIArgs > 0 && slot.args.iArgs) blockSize = static_cast<int>(slot.args.iArgs[0]);
     inputOperands.push_back(addScalarOperand(model, blockSize, nextOperand));
     return true;
   }
@@ -904,20 +904,20 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   // Identify all outputs produced within this segment
   std::unordered_set<int> segmentOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      segmentOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      segmentOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
   // Identify externally visible outputs (consumed outside segment or are final)
   std::unordered_set<int> externalOutputSet;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       // Check if any slot outside this segment consumes this output
       for (int j = endSlot + 1; j < totalSlots; j++) {
-        for (int inp = 0; inp < slots[j].numInputs; inp++) {
-          if (slots[j].inputSourceIndices[inp] == outIdx) {
+        for (int inp = 0; inp < slots[j].wiring.numInputs; inp++) {
+          if (slots[j].wiring.inputSourceIndices[inp] == outIdx) {
             externalOutputSet.insert(outIdx);
             goto next_output;  // Found a consumer, move to next output
           }
@@ -928,15 +928,15 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   }
   // If no external consumers found, treat all final slot outputs as external
   if (externalOutputSet.empty()) {
-    for (int o = 0; o < slots[endSlot].numOutputs; o++) {
-      externalOutputSet.insert(slots[endSlot].outputSlotIndices[o]);
+    for (int o = 0; o < slots[endSlot].wiring.numOutputs; o++) {
+      externalOutputSet.insert(slots[endSlot].wiring.outputSlotIndices[o]);
     }
   }
 
   // Phase 1: Add input operands (external inputs + pre-segment intermediates)
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (sourceToOperand.count(srcIdx)) continue;
 
       bool isExternal = (srcIdx < 0);
@@ -964,17 +964,17 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
 
   // Phase 2: Process each slot — add output operands and NNAPI operations
   for (int i = startSlot; i <= endSlot; i++) {
-    int nnapiOp = getNnapiOpCode(slots[i].opName);
+    int nnapiOp = getNnapiOpCode(slots[i].ident.opName);
     if (nnapiOp < 0) {
       DSP_DIAG(FALLBACK, "NnapiGraphBackend: unmappable op '%s' at slot %d",
-                slots[i].opName.c_str(), i);
+                slots[i].ident.opName.c_str(), i);
       return false;
     }
 
     // Collect input operand indices for this op
     std::vector<uint32_t> inputOperands;
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       auto it = sourceToOperand.find(srcIdx);
       if (it == sourceToOperand.end()) {
         DSP_DIAG(COMPILE, "NnapiGraphBackend: missing operand for source %d at slot %d input %d",
@@ -988,14 +988,14 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     if (!addImplicitParams(model, slots[i], nnapiOp, inputOperands, nextOperand,
                            outputSlots, totalOutputSlots, vectorStorage)) {
       DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add implicit params for '%s' at slot %d",
-                slots[i].opName.c_str(), i);
+                slots[i].ident.opName.c_str(), i);
       return false;
     }
 
     // Add output operands for this op
     std::vector<uint32_t> outputOperands;
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       NDArray* arr = nullptr;
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) {
         arr = outputSlots[outIdx];
@@ -1023,7 +1023,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
 
     if (result != ANEURALNETWORKS_NO_ERROR) {
       DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add op '%s' (NNAPI code %d) at slot %d, error=%d",
-                slots[i].opName.c_str(), nnapiOp, i, result);
+                slots[i].ident.opName.c_str(), nnapiOp, i, result);
       return false;
     }
   }
@@ -1139,9 +1139,9 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = startSlot; i <= endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
-    int minApi = getMinApiLevel(slots[i].opName);
-    entry.wasCompiled = (getNnapiOpCode(slots[i].opName) >= 0 && apiLevel_ >= minApi);
+    entry.opName = slots[i].ident.opName;
+    int minApi = getMinApiLevel(slots[i].ident.opName);
+    entry.wasCompiled = (getNnapiOpCode(slots[i].ident.opName) >= 0 && apiLevel_ >= minApi);
     if (!entry.wasCompiled) {
       if (apiLevel_ < minApi) {
         entry.reason = "requires API " + std::to_string(minApi) + " (device is " +

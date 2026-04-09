@@ -1374,12 +1374,12 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
 
     for (int slotIdx : currentEwBatch) {
       auto& slot = slots[slotIdx];
-      std::string lower = toLower(slot.opName);
+      std::string lower = toLower(slot.ident.opName);
 
       // Gather input values — prefer SSA values from previous ops in this batch
       std::vector<mlir::Value> inputValues;
-      for (int inp = 0; inp < slot.numInputs; inp++) {
-        int srcIdx = slot.inputSourceIndices[inp];
+      for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+        int srcIdx = slot.wiring.inputSourceIndices[inp];
         // First: check if a previous op in this batch produced this value
         auto ssaIt = ssaValues.find(srcIdx);
         if (ssaIt != ssaValues.end()) {
@@ -1401,7 +1401,7 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
       // Emit the op
       mlir::Value result;
       const auto& table = getOpCategoryTable();
-      auto catIt = table.find(slot.opName);
+      auto catIt = table.find(slot.ident.opName);
       TritonOpCategory category = (catIt != table.end()) ? catIt->second : TritonOpCategory::UNSUPPORTED;
 
       switch (category) {
@@ -1411,7 +1411,7 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
           break;
         case TritonOpCategory::UNARY_ELEMENTWISE:
           if (!inputValues.empty())
-            result = emitUnaryElementwise(builder, loc, lower, inputValues[0], f32Type, slot.tArgs, slot.numTArgs);
+            result = emitUnaryElementwise(builder, loc, lower, inputValues[0], f32Type, slot.args.tArgs, slot.args.numTArgs);
           break;
         case TritonOpCategory::COMPARISON:
           if (inputValues.size() >= 2) {
@@ -1466,8 +1466,8 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
       }
 
       // Register in SSA value map for downstream ops in this batch
-      if (slot.numOutputs > 0) {
-        int outIdx = slot.outputSlotIndices[0];
+      if (slot.wiring.numOutputs > 0) {
+        int outIdx = slot.wiring.outputSlotIndices[0];
         ssaValues[outIdx] = result;
 
         // Only store to memref if externally visible (consumed outside this batch).
@@ -1491,7 +1491,7 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
     auto& slot = slots[absSlot];
 
     const auto& table = getOpCategoryTable();
-    auto catIt = table.find(slot.opName);
+    auto catIt = table.find(slot.ident.opName);
     TritonOpCategory category = (catIt != table.end()) ? catIt->second : TritonOpCategory::UNSUPPORTED;
 
     // Check if this is an element-wise-compatible op.
@@ -1523,36 +1523,36 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
 
     switch (category) {
       case TritonOpCategory::REDUCTION: {
-        if (slot.numInputs > 0 && slot.numOutputs > 0) {
-          int inSrc = slot.inputSourceIndices[0];
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numInputs > 0 && slot.wiring.numOutputs > 0) {
+          int inSrc = slot.wiring.inputSourceIndices[0];
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto inMem = getMemref(inSrc);
           auto outMem = getMemref(outIdx);
           if (inMem && outMem) {
             int64_t nElem = bufferArgs[sourceToArgIdx[inSrc]].array->lengthOf();
-            emitReductionOp(builder, loc, slot.opName, inMem, outMem, nElem, f32Type);
+            emitReductionOp(builder, loc, slot.ident.opName, inMem, outMem, nElem, f32Type);
           }
         }
         break;
       }
       case TritonOpCategory::NORMALIZATION: {
-        if (slot.numInputs > 0 && slot.numOutputs > 0) {
-          int inSrc = slot.inputSourceIndices[0];
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numInputs > 0 && slot.wiring.numOutputs > 0) {
+          int inSrc = slot.wiring.inputSourceIndices[0];
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto inMem = getMemref(inSrc);
           auto outMem = getMemref(outIdx);
           if (inMem && outMem) {
             int64_t nElem = bufferArgs[sourceToArgIdx[inSrc]].array->lengthOf();
-            emitNormalizationOp(builder, loc, slot.opName, inMem, outMem, nElem, f32Type);
+            emitNormalizationOp(builder, loc, slot.ident.opName, inMem, outMem, nElem, f32Type);
           }
         }
         break;
       }
       case TritonOpCategory::MATMUL: {
-        if (slot.numInputs >= 2 && slot.numOutputs > 0) {
-          int aSrc = slot.inputSourceIndices[0];
-          int bSrc = slot.inputSourceIndices[1];
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numInputs >= 2 && slot.wiring.numOutputs > 0) {
+          int aSrc = slot.wiring.inputSourceIndices[0];
+          int bSrc = slot.wiring.inputSourceIndices[1];
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto aMem = getMemref(aSrc);
           auto bMem = getMemref(bSrc);
           auto cMem = getMemref(outIdx);
@@ -1568,46 +1568,46 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
         break;
       }
       case TritonOpCategory::DATA_MOVEMENT: {
-        std::string lower = toLower(slot.opName);
+        std::string lower = toLower(slot.ident.opName);
         if (lower == "gather" || lower == "gather_nd" || lower == "gathernd") {
-          if (slot.numInputs >= 2 && slot.numOutputs > 0) {
-            int dataSrc = slot.inputSourceIndices[0];
-            int idxSrc = slot.inputSourceIndices[1];
-            int outIdx = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs >= 2 && slot.wiring.numOutputs > 0) {
+            int dataSrc = slot.wiring.inputSourceIndices[0];
+            int idxSrc = slot.wiring.inputSourceIndices[1];
+            int outIdx = slot.wiring.outputSlotIndices[0];
             auto dataMem = getMemref(dataSrc);
             auto idxMem = getMemref(idxSrc);
             auto outMem = getMemref(outIdx);
             if (dataMem && idxMem && outMem) {
               auto* outArr = bufferArgs[sourceToArgIdx[outIdx]].array;
               auto* dataArr = bufferArgs[sourceToArgIdx[dataSrc]].array;
-              int axis = (slot.numIArgs > 0) ? static_cast<int>(slot.iArgs[0]) : 0;
+              int axis = (slot.args.numIArgs > 0) ? static_cast<int>(slot.args.iArgs[0]) : 0;
               std::vector<LongType> dataShape(dataArr->rankOf());
               for (int d = 0; d < dataArr->rankOf(); d++) dataShape[d] = dataArr->sizeAt(d);
               emitGatherOp(builder, loc, dataMem, idxMem, outMem, outArr->lengthOf(), axis, dataShape, f32Type);
             }
           }
         } else if (lower == "concat") {
-          if (slot.numInputs >= 2 && slot.numOutputs > 0) {
+          if (slot.wiring.numInputs >= 2 && slot.wiring.numOutputs > 0) {
             std::vector<mlir::Value> inMemrefs;
             std::vector<int64_t> inLengths;
-            for (int inp = 0; inp < slot.numInputs; inp++) {
-              int src = slot.inputSourceIndices[inp];
+            for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+              int src = slot.wiring.inputSourceIndices[inp];
               auto mem = getMemref(src);
               if (mem) {
                 inMemrefs.push_back(mem);
                 inLengths.push_back(bufferArgs[sourceToArgIdx[src]].array->lengthOf());
               }
             }
-            int outIdx = slot.outputSlotIndices[0];
+            int outIdx = slot.wiring.outputSlotIndices[0];
             auto outMem = getMemref(outIdx);
             if (outMem && !inMemrefs.empty()) {
               emitConcatOp(builder, loc, inMemrefs, outMem, inLengths, f32Type);
             }
           }
         } else if (lower == "tile") {
-          if (slot.numInputs > 0 && slot.numOutputs > 0) {
-            int inSrc = slot.inputSourceIndices[0];
-            int outIdx = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs > 0 && slot.wiring.numOutputs > 0) {
+            int inSrc = slot.wiring.inputSourceIndices[0];
+            int outIdx = slot.wiring.outputSlotIndices[0];
             auto inMem = getMemref(inSrc);
             auto outMem = getMemref(outIdx);
             if (inMem && outMem) {
@@ -1618,11 +1618,11 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
           }
         } else if (lower == "scatter_nd" || lower == "scatter_nd_update" ||
                    lower == "scatternd" || lower == "scatterndupdate") {
-          if (slot.numInputs >= 3 && slot.numOutputs > 0) {
-            int dataSrc = slot.inputSourceIndices[0];
-            int idxSrc = slot.inputSourceIndices[1];
-            int updSrc = slot.inputSourceIndices[2];
-            int outIdx = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs > 0) {
+            int dataSrc = slot.wiring.inputSourceIndices[0];
+            int idxSrc = slot.wiring.inputSourceIndices[1];
+            int updSrc = slot.wiring.inputSourceIndices[2];
+            int outIdx = slot.wiring.outputSlotIndices[0];
             auto dataMem = getMemref(dataSrc);
             auto idxMem = getMemref(idxSrc);
             auto updMem = getMemref(updSrc);
@@ -1636,9 +1636,9 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
           }
         } else {
           // split, split_v, stack, strided_slice: copy for now
-          if (slot.numInputs > 0 && slot.numOutputs > 0) {
-            int inSrc = slot.inputSourceIndices[0];
-            int outIdx = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs > 0 && slot.wiring.numOutputs > 0) {
+            int inSrc = slot.wiring.inputSourceIndices[0];
+            int outIdx = slot.wiring.outputSlotIndices[0];
             auto inMem = getMemref(inSrc);
             auto outMem = getMemref(outIdx);
             if (inMem && outMem) {
@@ -1663,9 +1663,9 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
         break;
       }
       case TritonOpCategory::SHAPE_MANIPULATION: {
-        if (slot.numInputs > 0 && slot.numOutputs > 0) {
-          int inSrc = slot.inputSourceIndices[0];
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numInputs > 0 && slot.wiring.numOutputs > 0) {
+          int inSrc = slot.wiring.inputSourceIndices[0];
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto inMem = getMemref(inSrc);
           auto outMem = getMemref(outIdx);
           if (inMem && outMem) {
@@ -1674,31 +1674,31 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
             std::vector<LongType> inShape(inArr->rankOf()), outShape(outArr->rankOf());
             for (int d = 0; d < inArr->rankOf(); d++) inShape[d] = inArr->sizeAt(d);
             for (int d = 0; d < outArr->rankOf(); d++) outShape[d] = outArr->sizeAt(d);
-            emitShapeManipOp(builder, loc, slot.opName, inMem, outMem,
+            emitShapeManipOp(builder, loc, slot.ident.opName, inMem, outMem,
                              outArr->lengthOf(), inShape, outShape,
-                             slot.iArgs, slot.numIArgs, f32Type);
+                             slot.args.iArgs, slot.args.numIArgs, f32Type);
           }
         }
         break;
       }
       case TritonOpCategory::CONSTANT_GENERATION: {
-        if (slot.numOutputs > 0) {
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numOutputs > 0) {
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto outMem = getMemref(outIdx);
           if (outMem) {
             auto* outArr = bufferArgs[sourceToArgIdx[outIdx]].array;
-            emitConstantGenOp(builder, loc, slot.opName, outMem,
+            emitConstantGenOp(builder, loc, slot.ident.opName, outMem,
                               outArr->lengthOf(), f32Type,
-                              slot.tArgs, slot.numTArgs);
+                              slot.args.tArgs, slot.args.numTArgs);
           }
         }
         break;
       }
       case TritonOpCategory::CONVOLUTION: {
-        if (slot.numInputs >= 2 && slot.numOutputs > 0) {
-          int inSrc = slot.inputSourceIndices[0];
-          int filtSrc = slot.inputSourceIndices[1];
-          int outIdx = slot.outputSlotIndices[0];
+        if (slot.wiring.numInputs >= 2 && slot.wiring.numOutputs > 0) {
+          int inSrc = slot.wiring.inputSourceIndices[0];
+          int filtSrc = slot.wiring.inputSourceIndices[1];
+          int outIdx = slot.wiring.outputSlotIndices[0];
           auto inMem = getMemref(inSrc);
           auto filtMem = getMemref(filtSrc);
           auto outMem = getMemref(outIdx);
@@ -1712,22 +1712,22 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
             for (int d = 0; d < outArr->rankOf(); d++) outShape[d] = outArr->sizeAt(d);
             emitConvolutionOp(builder, loc, inMem, filtMem, outMem,
                               inShape, filtShape, outShape,
-                              slot.iArgs, slot.numIArgs, f32Type);
+                              slot.args.iArgs, slot.args.numIArgs, f32Type);
           }
         }
         break;
       }
       case TritonOpCategory::FUSED_LLM: {
         // Fused LLM ops: decompose into constituent ops for CPU emission.
-        std::string lower = toLower(slot.opName);
+        std::string lower = toLower(slot.ident.opName);
         if (lower == "rms_norm_linear" || lower == "rmsnormlinear") {
           // rms_norm_linear(x, gamma, W) = matmul(rms_norm(x, gamma, eps), W)
           // Decomposed: normalize x, then matmul with W
-          if (slot.numInputs >= 3 && slot.numOutputs > 0) {
-            int xSrc = slot.inputSourceIndices[0];
-            int gammaSrc = slot.inputSourceIndices[1];
-            int wSrc = slot.inputSourceIndices[2];
-            int outIdx = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs > 0) {
+            int xSrc = slot.wiring.inputSourceIndices[0];
+            int gammaSrc = slot.wiring.inputSourceIndices[1];
+            int wSrc = slot.wiring.inputSourceIndices[2];
+            int outIdx = slot.wiring.outputSlotIndices[0];
             auto xMem = getMemref(xSrc);
             auto gammaMem = getMemref(gammaSrc);
             auto wMem = getMemref(wSrc);
@@ -1752,11 +1752,11 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
           }
         } else if (lower == "fused_gemm_swiglu" || lower == "fusedgemmswiglu") {
           // fused_gemm_swiglu(x, W_gate, W_up) = silu(x @ W_gate) * (x @ W_up)
-          if (slot.numInputs >= 3 && slot.numOutputs > 0) {
-            int xSrc = slot.inputSourceIndices[0];
-            int wGateSrc = slot.inputSourceIndices[1];
-            int wUpSrc = slot.inputSourceIndices[2];
-            int outIdx = slot.outputSlotIndices[0];
+          if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs > 0) {
+            int xSrc = slot.wiring.inputSourceIndices[0];
+            int wGateSrc = slot.wiring.inputSourceIndices[1];
+            int wUpSrc = slot.wiring.inputSourceIndices[2];
+            int outIdx = slot.wiring.outputSlotIndices[0];
             auto xMem = getMemref(xSrc);
             auto wGateMem = getMemref(wGateSrc);
             auto wUpMem = getMemref(wUpSrc);

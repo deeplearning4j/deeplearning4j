@@ -79,7 +79,7 @@ namespace graph {
 // op cannot be identified.
 static TritonOpCategory resolveOpCategory(int slotIdx, NativeSlot* slots) {
   if (slots == nullptr) return TritonOpCategory::UNSUPPORTED;
-  const std::string& opName = slots[slotIdx].opName;
+  const std::string& opName = slots[slotIdx].ident.opName;
   if (opName.empty()) return TritonOpCategory::UNSUPPORTED;
 
   const auto& table = getOpCategoryTable();
@@ -92,14 +92,14 @@ static uint32_t resolveStructuralSlotTraits(int slotIdx, NativeSlot* slots) {
 
   uint32_t traits = 0;
   const auto& slot = slots[slotIdx];
-  if (slot.op != nullptr && slot.op->getOpDescriptor() != nullptr) {
-    traits |= slot.op->getOpDescriptor()->getTraits();
+  if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
+    traits |= slot.ident.op->getOpDescriptor()->getTraits();
   }
 
-  if (slot.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-  if (slot.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
-  if (slot.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-  if (slot.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
+  if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
+  if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
+  if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+  if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
 
   return traits;
 }
@@ -201,8 +201,8 @@ static int findProducerStepInSegment(const GraphSegment& seg, NativeSlot* slots,
   if (slots == nullptr || outputSlotIdx < 0) return -1;
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     const auto& slot = slots[s];
-    for (int o = 0; o < slot.numOutputs; o++) {
-      if (slot.outputSlotIndices[o] == outputSlotIdx) {
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
         return s;
       }
     }
@@ -217,8 +217,8 @@ static bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, NativeSl
     const auto& slot = slots[s];
     if (!slotHasAnyTrait(s, slots, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE)) continue;
 
-    for (int i = 0; i < slot.numInputs; i++) {
-      const int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      const int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) continue;
       if (findProducerStepInSegment(seg, slots, srcIdx) >= 0) {
         return true;
@@ -250,7 +250,7 @@ static DspDiagnostics::GapClassification classifyGapSlot(int slotIdx, NativeSlot
 
   if (slots == nullptr) return result;
 
-  const std::string& opNameStr = slots[slotIdx].opName;
+  const std::string& opNameStr = slots[slotIdx].ident.opName;
   if (!opNameStr.empty()) {
     result.primaryOpType = opNameStr.c_str();
   }
@@ -367,8 +367,8 @@ static bool isShapeDataMovement(int slotIdx, NativeSlot* slots, NDArray** output
   if (!slotWouldMaterialize(slotIdx, slots)) return false;
 
   // Check if ALL inputs are small shape tensors
-  for (int i = 0; i < slots[slotIdx].numInputs; i++) {
-    int srcIdx = slots[slotIdx].inputSourceIndices[i];
+  for (int i = 0; i < slots[slotIdx].wiring.numInputs; i++) {
+    int srcIdx = slots[slotIdx].wiring.inputSourceIndices[i];
     if (srcIdx < 0) {
       // External input — assume it's real data (not a shape expression)
       return false;
@@ -379,8 +379,8 @@ static bool isShapeDataMovement(int slotIdx, NativeSlot* slots, NDArray** output
   }
 
   // Check if output is also small
-  if (slots[slotIdx].numOutputs > 0) {
-    int outIdx = slots[slotIdx].outputSlotIndices[0];
+  if (slots[slotIdx].wiring.numOutputs > 0) {
+    int outIdx = slots[slotIdx].wiring.outputSlotIndices[0];
     if (!isSmallShapeTensor(outIdx, outputSlots)) {
       return false;  // Output is a real tensor
     }
@@ -442,9 +442,9 @@ static bool foldShapeChain(int startSlot, int endSlot, NativeSlot* slots,
 
   // Capture the current output as the folded result for each slot
   for (int s = startSlot; s <= endSlot; s++) {
-    if (outputSlots == nullptr || slots[s].numOutputs == 0) continue;
+    if (outputSlots == nullptr || slots[s].wiring.numOutputs == 0) continue;
 
-    int outIdx = slots[s].outputSlotIndices[0];
+    int outIdx = slots[s].wiring.outputSlotIndices[0];
     if (outIdx < 0 || outputSlots[outIdx] == nullptr) continue;
 
     NDArray* out = outputSlots[outIdx];
@@ -564,8 +564,8 @@ static std::vector<ReplayUnit> buildReplayUnits(const GraphSegment& seg,
 
       TritonOpCategory primaryCat = resolveOpCategory(gapStart, slots);
       const char* primaryOpName = "(unknown)";
-      if (!slots[gapStart].opName.empty()) {
-        primaryOpName = slots[gapStart].opName.c_str();
+      if (!slots[gapStart].ident.opName.empty()) {
+        primaryOpName = slots[gapStart].ident.opName.c_str();
       }
 
       if (gapType == ReplayUnitType::VIEW_INSTALL) {
@@ -1004,7 +1004,7 @@ static bool captureViewRecipe(int slotIdx, NativeSlot* slots, NDArray** outputSl
     return false;
   }
 
-  const std::string& opNameStr3 = slots[slotIdx].opName;
+  const std::string& opNameStr3 = slots[slotIdx].ident.opName;
   if (opNameStr3.empty()) {
     outError = "no op name";
     return false;
@@ -1018,15 +1018,15 @@ static bool captureViewRecipe(int slotIdx, NativeSlot* slots, NDArray** outputSl
   outRecipe.type = opToViewRecipeType(opNameStr3.c_str());
 
   // Find the output slot index for this slot
-  if (slots[slotIdx].numOutputs > 0) {
-    outRecipe.outputSlotIndex = slots[slotIdx].outputSlotIndices[0];
+  if (slots[slotIdx].wiring.numOutputs > 0) {
+    outRecipe.outputSlotIndex = slots[slotIdx].wiring.outputSlotIndices[0];
   }
 
   // Resolve the source input for this view op. For replay we need the
   // actual owning buffer observed during warmup, not just the logical input
   // edge, otherwise view chains can reinstall against an intermediate array
   // whose buffer is smaller than the captured output view.
-  int sourceIdx = slots[slotIdx].inputSourceIndices[0];
+  int sourceIdx = slots[slotIdx].wiring.inputSourceIndices[0];
   if (outRecipe.outputSlotIndex >= 0 && outRecipe.outputSlotIndex < totalOutputSlots &&
       slotOwnership != nullptr &&
       slotOwnership[outRecipe.outputSlotIndex].ownership == BufferOwnership::VIEW_OF_SLOT) {
@@ -1101,10 +1101,10 @@ static bool captureViewRecipe(int slotIdx, NativeSlot* slots, NDArray** outputSl
   // Note: slot-level shape info is not available here — rely on output array
 
   // For permute: capture the permutation vector from tArgs
-  if (outRecipe.type == ViewRecipeType::PERMUTE && slots[slotIdx].tArgs != nullptr) {
-    int permRank = std::min(slots[slotIdx].numTArgs, (int)ViewRecipe::MAX_SHAPE_RANK);
+  if (outRecipe.type == ViewRecipeType::PERMUTE && slots[slotIdx].args.tArgs != nullptr) {
+    int permRank = std::min(slots[slotIdx].args.numTArgs, (int)ViewRecipe::MAX_SHAPE_RANK);
     for (int i = 0; i < permRank; i++) {
-      outRecipe.perm[i] = (int)slots[slotIdx].tArgs[i];
+      outRecipe.perm[i] = (int)slots[slotIdx].args.tArgs[i];
     }
   }
 
@@ -1112,10 +1112,10 @@ static bool captureViewRecipe(int slotIdx, NativeSlot* slots, NDArray** outputSl
   if (outRecipe.type == ViewRecipeType::STRIDED_SLICE) {
     outRecipe.sliceRank = outRecipe.rank;
     for (int i = 0; i < outRecipe.sliceRank; i++) {
-      outRecipe.sliceBegin[i] = (slots[slotIdx].iArgs != nullptr && i < slots[slotIdx].numIArgs)
-                                ? slots[slotIdx].iArgs[i] : 0;
-      outRecipe.sliceEnd[i] = (slots[slotIdx].tArgs != nullptr && i < slots[slotIdx].numTArgs)
-                              ? (LongType)slots[slotIdx].tArgs[i] : outRecipe.outputShape[i];
+      outRecipe.sliceBegin[i] = (slots[slotIdx].args.iArgs != nullptr && i < slots[slotIdx].args.numIArgs)
+                                ? slots[slotIdx].args.iArgs[i] : 0;
+      outRecipe.sliceEnd[i] = (slots[slotIdx].args.tArgs != nullptr && i < slots[slotIdx].args.numTArgs)
+                              ? (LongType)slots[slotIdx].args.tArgs[i] : outRecipe.outputShape[i];
       outRecipe.sliceStride[i] = 1;  // Default stride
     }
   }
@@ -2231,8 +2231,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     NativeSlot& slot = slots_[stepIdx];
     // Phase 2: slotArrayCache_ == outputSlots_ (unified). No restore needed.
     // Validate input DataBuffers — Java close() may have freed them.
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
         auto* db = outputSlots_[srcIdx]->dataBuffer();
         if (db == nullptr || !db->isValid()) {
@@ -2244,8 +2244,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
     }
     // Validate or allocate output slot entries
-    for (int i = 0; i < slot.numOutputs; i++) {
-      int slotIdx = slot.outputSlotIndices[i];
+    for (int i = 0; i < slot.wiring.numOutputs; i++) {
+      int slotIdx = slot.wiring.outputSlotIndices[i];
       if (slotIdx < 0 || slotIdx >= totalOutputSlots_) continue;
       // DIAGNOSTIC: trace slot 274 and 420 pre-exec validation
       if ((slotIdx == 274 || slotIdx == 420) && shapesFrozen_) {
@@ -2278,17 +2278,17 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         // Warn but continue — the allocation path below will recover.
         if (shapesFrozen_ && seg.exec.executionCount > 1 && !slot.frozenConstantSlot()) {
           sd_printf("DSP BUG: Null output slot %d (%s) after warmup with frozen shapes — persistence bug. execCount=%d\n",
-                    slotIdx, slot.opName.c_str(), seg.exec.executionCount);
+                    slotIdx, slot.ident.opName.c_str(), seg.exec.executionCount);
         }
         // Allocate from cached shape info (populated during warmup)
         const LongType* shapeInfo = nullptr;
-        if (i < static_cast<int>(slot.cachedOutputShapes.size()) && slot.cachedOutputShapes[i]) {
-          shapeInfo = slot.cachedOutputShapes[i];
+        if (i < static_cast<int>(slot.shapeCache.cachedOutputShapes.size()) && slot.shapeCache.cachedOutputShapes[i]) {
+          shapeInfo = slot.shapeCache.cachedOutputShapes[i];
         }
         // For identity/view-like ops that don't cache output shapes,
         // derive the shape from the first input source's existing array
-        if (!shapeInfo && slot.numInputs > 0) {
-          int srcIdx = slot.inputSourceIndices[0];
+        if (!shapeInfo && slot.wiring.numInputs > 0) {
+          int srcIdx = slot.wiring.inputSourceIndices[0];
           NDArray* srcArr = nullptr;
           if (srcIdx < 0) {
             int extIdx = -(srcIdx + 1);
@@ -2305,9 +2305,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           // not the input type. When cachedOutputShapes is empty and the
           // using the input source's shape, the dtype would be wrong
           // (e.g., INT64 input for a cast-to-FLOAT op).
-          if ((slot.opName == "cast" || slot.opName == "Cast") &&
-              slot.numIArgs > 0 && slot.iArgs) {
-            auto castDt = static_cast<DataType>(slot.iArgs[0]);
+          if ((slot.ident.opName == "cast" || slot.ident.opName == "Cast") &&
+              slot.args.numIArgs > 0 && slot.args.iArgs) {
+            auto castDt = static_cast<DataType>(slot.args.iArgs[0]);
             if (castDt != dt) {
               DSP_DIAG(EXECUTE, "PRE_EXEC_ALLOC: cast dtype override slot=%d from %s to %s",
                        slotIdx, DataTypeUtils::asString(dt).c_str(),
@@ -3048,8 +3048,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         // Check output slot device pointers for this segment's range
         int nullSlots = 0;
         for (int si = seg.startSlot; si <= seg.endSlot && si < numSlots_; si++) {
-          for (int oi = 0; oi < slots_[si].numOutputs; oi++) {
-            int slotIdx = slots_[si].outputSlotIndices[oi];
+          for (int oi = 0; oi < slots_[si].wiring.numOutputs; oi++) {
+            int slotIdx = slots_[si].wiring.outputSlotIndices[oi];
             if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
               NDArray* slotArr = slotArrayCache_[slotIdx];
               if (slotArr == nullptr || DSP_BUF(slotArr) == nullptr) {
@@ -3228,8 +3228,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
         // Find the ACTUAL final output slot index (not the step index)
         int finalOutputSlot = -1;
-        if (seg.endSlot < numSlots_ && slots_[seg.endSlot].numOutputs > 0) {
-          finalOutputSlot = slots_[seg.endSlot].outputSlotIndices[0];
+        if (seg.endSlot < numSlots_ && slots_[seg.endSlot].wiring.numOutputs > 0) {
+          finalOutputSlot = slots_[seg.endSlot].wiring.outputSlotIndices[0];
         }
         // Fallback to seg.endSlot if output slot lookup fails
         if (finalOutputSlot < 0 || finalOutputSlot >= totalOutputSlots_) {
@@ -3910,8 +3910,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       // DIAGNOSTIC: dump warmup's final output argmax for comparison with replay
       {
         int finalOutputSlot = -1;
-        if (seg.endSlot < numSlots_ && slots_[seg.endSlot].numOutputs > 0) {
-          finalOutputSlot = slots_[seg.endSlot].outputSlotIndices[0];
+        if (seg.endSlot < numSlots_ && slots_[seg.endSlot].wiring.numOutputs > 0) {
+          finalOutputSlot = slots_[seg.endSlot].wiring.outputSlotIndices[0];
         }
         if (finalOutputSlot < 0 || finalOutputSlot >= totalOutputSlots_)
           finalOutputSlot = seg.endSlot;
@@ -4112,8 +4112,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         // output buffers consistent with the zeroed device state we capture.
         int markedCount = 0;
         for (int si = seg.startSlot; si <= seg.endSlot; si++) {
-          for (int o = 0; o < slots_[si].numOutputs; o++) {
-            int outIdx = slots_[si].outputSlotIndices[o];
+          for (int o = 0; o < slots_[si].wiring.numOutputs; o++) {
+            int outIdx = slots_[si].wiring.outputSlotIndices[o];
             if (outIdx >= 0 && outIdx < totalOutputSlots_ && outputSlots_[outIdx]) {
               auto* db = outputSlots_[outIdx]->dataBuffer();
               if (db) {
@@ -4255,8 +4255,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         // (matches GRAPH_REPLAY logic for apples-to-apples comparison)
         {
           int captureOutputSlot = -1;
-          if (seg.endSlot < numSlots_ && slots_[seg.endSlot].numOutputs > 0) {
-            captureOutputSlot = slots_[seg.endSlot].outputSlotIndices[0];
+          if (seg.endSlot < numSlots_ && slots_[seg.endSlot].wiring.numOutputs > 0) {
+            captureOutputSlot = slots_[seg.endSlot].wiring.outputSlotIndices[0];
           }
           if (captureOutputSlot < 0 || captureOutputSlot >= totalOutputSlots_) {
             captureOutputSlot = seg.endSlot;

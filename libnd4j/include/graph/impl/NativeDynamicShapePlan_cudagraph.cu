@@ -86,15 +86,15 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
   std::unordered_set<int> segOutputSlots;
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numOutputs; i++) {
-      segOutputSlots.insert(slot.outputSlotIndices[i]);
+    for (int i = 0; i < slot.wiring.numOutputs; i++) {
+      segOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
     }
   }
 
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
         if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
@@ -133,10 +133,10 @@ uint32_t resolveCreateValueKeyTraits(const NativeSlot& slot) {
   if (slot.op != nullptr && slot.op->getOpDescriptor() != nullptr) {
     traits |= slot.op->getOpDescriptor()->getTraits();
   }
-  if (slot.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-  if (slot.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
-  if (slot.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-  if (slot.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
+  if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+  if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
+  if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
+  if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
   return traits;
 }
 
@@ -163,8 +163,8 @@ LongType NativeDynamicShapePlan::computeCreateOpValueKey(
 
     // Track the inputs of any value-tracked constant-generation op.
     // This keeps replay invalidation trait-driven instead of relying on op names.
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
       NDArray* inputArr = nullptr;
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
@@ -383,8 +383,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     for (int stepIdx = segRef.startSlot; stepIdx <= segRef.endSlot; stepIdx++) {
       auto& slot = slots_[stepIdx];
       slot.state_ = NativeSlot::SlotState::WARMUP;
-      slot.cachedShapeKey = 0;
-      slot.cachedOutputShapes.clear();
+      slot.shapeCache.cachedShapeKey = 0;
+      slot.shapeCache.cachedOutputShapes.clear();
     }
   };
 
@@ -544,8 +544,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t estimatedCaptureBytes = 0;
     for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
       NativeSlot& slot = slots_[stepIdx];
-      for (int i = 0; i < slot.numOutputs; i++) {
-        int slotIdx = slot.outputSlotIndices[i];
+      for (int i = 0; i < slot.wiring.numOutputs; i++) {
+        int slotIdx = slot.wiring.outputSlotIndices[i];
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && slotArrayCache_[slotIdx] != nullptr) {
           estimatedCaptureBytes += slotArrayCache_[slotIdx]->lengthOf() *
                                    slotArrayCache_[slotIdx]->sizeOfT();
@@ -1295,9 +1295,9 @@ void NativeDynamicShapePlan::performReplayVerify(
       std::string inputInfo;
       if (snap.stepIdx < numSlots_) {
         auto& slot = slots_[snap.stepIdx];
-        for (int ii = 0; ii < slot.numInputs; ii++) {
+        for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
           if (ii > 0) inputInfo += " ";
-          int srcIdx = slot.inputSourceIndices[ii];
+          int srcIdx = slot.wiring.inputSourceIndices[ii];
           if (srcIdx >= 0) {
             inputInfo += "slot#" + std::to_string(srcIdx);
             if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx])

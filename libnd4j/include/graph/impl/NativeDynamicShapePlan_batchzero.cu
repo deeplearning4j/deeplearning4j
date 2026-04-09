@@ -142,21 +142,21 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     if (slot.frozenConstantSlot()) continue;
 
     // Skip identity ops — they wire output=input, no nullify happens
-    if (slot.isIdentityOp) { skippedIdentity++; continue; }
+    if (slot.flags.isIdentityOp) { skippedIdentity++; continue; }
 
     // Skip fused chain tails — head already computed, tail returns early
-    if (slot.isFusedChainTail) { skippedTail++; continue; }
+    if (slot.fusedChain.isFusedChainTail) { skippedTail++; continue; }
 
     // Skip in-place fused — output IS the input
-    if (slot.inPlaceFused) continue;
+    if (slot.flags.inPlaceFused) continue;
 
     // Fused chain heads only nullify the LAST chain slot's output,
     // not the head's own outputSlotIndices. Collect that specific buffer.
-    if (slot.isFusedChainHead && slot.fusedChainLength > 0) {
+    if (slot.fusedChain.isFusedChainHead && slot.fusedChain.fusedChainLength > 0) {
       skippedHead++;
-      int lastSlotIdx = slot.fusedChainSlots[slot.fusedChainLength - 1];
+      int lastSlotIdx = slot.fusedChain.fusedChainSlots[slot.fusedChain.fusedChainLength - 1];
       if (lastSlotIdx >= 0 && lastSlotIdx < numSlots_) {
-        int lastOutIdx = slots_[lastSlotIdx].outputSlotIndices[0];
+        int lastOutIdx = slots_[lastSlotIdx].wiring.outputSlotIndices[0];
         if (lastOutIdx >= 0 && lastOutIdx < totalOutputSlots_) {
           NDArray* cached = slotArrayCache_[lastOutIdx];
           if (cached != nullptr) {
@@ -183,10 +183,10 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     }
 
     // Skip view-capable ops — they share input's buffer, zeroing would corrupt data
-    if (slot.isViewCapableOp) continue;
+    if (slot.flags.isViewCapableOp) continue;
 
-    for (int o = 0; o < slot.numOutputs; o++) {
-      int outIdx = slot.outputSlotIndices[o];
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      int outIdx = slot.wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
 
       // Skip view-producer output slots — they share the input's DataBuffer.
@@ -215,7 +215,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
         DSP_DIAG(MEMORY, "batchZero[%d]: slot %d output[%d] -> slotIdx=%d ptr=%p bytes=%d op=%s",
                     static_cast<int>(batchZeroEntries_.size()) - 1,
                     s, o, outIdx, devPtr, static_cast<int>(bytes),
-                    slot.opName.c_str());
+                    slot.ident.opName.c_str());
       }
     }
   }

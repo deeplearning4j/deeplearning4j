@@ -88,13 +88,13 @@ const char* statusName_seg(Status status) {
 
 uint32_t resolveSegmentShapeTraits(const NativeSlot& slot) {
   uint32_t traits = 0;
-  if (slot.op != nullptr && slot.op->getOpDescriptor() != nullptr) {
-    traits |= slot.op->getOpDescriptor()->getTraits();
+  if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
+    traits |= slot.ident.op->getOpDescriptor()->getTraits();
   }
-  if (slot.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-  if (slot.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
-  if (slot.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-  if (slot.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
+  if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
+  if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
+  if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+  if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
   return traits;
 }
 
@@ -102,8 +102,8 @@ int findProducerStep(const GraphSegment& seg, NativeSlot* slots, int outputSlotI
   if (slots == nullptr || outputSlotIdx < 0) return -1;
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     const auto& slot = slots[s];
-    for (int o = 0; o < slot.numOutputs; o++) {
-      if (slot.outputSlotIndices[o] == outputSlotIdx) {
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
         return s;
       }
     }
@@ -128,16 +128,16 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     std::unordered_set<int> segOutputSlots;
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       NativeSlot& slot = slots_[s];
-      for (int i = 0; i < slot.numOutputs; i++) {
-        segOutputSlots.insert(slot.outputSlotIndices[i]);
+      for (int i = 0; i < slot.wiring.numOutputs; i++) {
+        segOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
       }
     }
 
     std::vector<NDArray*> crossInputs;
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       NativeSlot& slot = slots_[s];
-      for (int i = 0; i < slot.numInputs; i++) {
-        int srcIdx = slot.inputSourceIndices[i];
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        int srcIdx = slot.wiring.inputSourceIndices[i];
         if (srcIdx < 0) {
           int extIdx = -(srcIdx + 1);
           if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
@@ -175,16 +175,16 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       };
       for (int s = seg.startSlot; s <= seg.endSlot; s++) {
         NativeSlot& slot = slots_[s];
-        if (!slot.opName.empty()) {
-          for (const char* p = slot.opName.c_str(); *p != '\0'; p++) {
+        if (!slot.ident.opName.empty()) {
+          for (const char* p = slot.ident.opName.c_str(); *p != '\0'; p++) {
             mixRange(static_cast<LongType>(*p));
           }
         }
-        mixRange(static_cast<LongType>(slot.numIArgs));
-        for (int a = 0; a < slot.numIArgs; a++) {
-          mixRange(static_cast<LongType>(slot.iArgs[a]));
+        mixRange(static_cast<LongType>(slot.args.numIArgs));
+        for (int a = 0; a < slot.args.numIArgs; a++) {
+          mixRange(static_cast<LongType>(slot.args.iArgs[a]));
         }
-        mixRange(static_cast<LongType>(slot.numTArgs));
+        mixRange(static_cast<LongType>(slot.args.numTArgs));
       }
 
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld (with-op-mix)",
@@ -247,34 +247,34 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   // in singleton backend caches (e.g. OpenVINO, OneDNN Graph)
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    if (!slot.opName.empty()) {
-      for (const char* p = slot.opName.c_str(); *p != '\0'; p++) {
+    if (!slot.ident.opName.empty()) {
+      for (const char* p = slot.ident.opName.c_str(); *p != '\0'; p++) {
         mix(static_cast<LongType>(*p));
       }
     }
-    mix(static_cast<LongType>(slot.numInputs));
-    mix(static_cast<LongType>(slot.numOutputs));
-    mix(static_cast<LongType>(slot.numIArgs));
+    mix(static_cast<LongType>(slot.wiring.numInputs));
+    mix(static_cast<LongType>(slot.wiring.numOutputs));
+    mix(static_cast<LongType>(slot.args.numIArgs));
     // Mix actual iArg values (e.g. reshape target shape, axis indices)
-    for (int a = 0; a < slot.numIArgs; a++) {
-      mix(static_cast<LongType>(slot.iArgs[a]));
+    for (int a = 0; a < slot.args.numIArgs; a++) {
+      mix(static_cast<LongType>(slot.args.iArgs[a]));
     }
     // Mix tArg count (float args like epsilon, scale)
-    mix(static_cast<LongType>(slot.numTArgs));
+    mix(static_cast<LongType>(slot.args.numTArgs));
   }
 
   std::unordered_set<int> segOutputSlots;
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numOutputs; i++) {
-      segOutputSlots.insert(slot.outputSlotIndices[i]);
+    for (int i = 0; i < slot.wiring.numOutputs; i++) {
+      segOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
     }
   }
 
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
         if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
@@ -326,20 +326,20 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     mix(static_cast<LongType>(0xA1));
     mix(producerStep);
     mix(static_cast<LongType>(resolveSegmentShapeTraits(producer)));
-    mix(static_cast<LongType>(producer.numInputs));
-    mix(static_cast<LongType>(producer.numOutputs));
-    mix(static_cast<LongType>(producer.numIArgs));
-    for (int a = 0; a < producer.numIArgs; a++) {
-      mix(static_cast<LongType>(producer.iArgs[a]));
+    mix(static_cast<LongType>(producer.wiring.numInputs));
+    mix(static_cast<LongType>(producer.wiring.numOutputs));
+    mix(static_cast<LongType>(producer.args.numIArgs));
+    for (int a = 0; a < producer.args.numIArgs; a++) {
+      mix(static_cast<LongType>(producer.args.iArgs[a]));
     }
-    mix(static_cast<LongType>(producer.numTArgs));
-    if (!producer.opName.empty()) {
-      for (const char* p = producer.opName.c_str(); *p != '\0'; p++) {
+    mix(static_cast<LongType>(producer.args.numTArgs));
+    if (!producer.ident.opName.empty()) {
+      for (const char* p = producer.ident.opName.c_str(); *p != '\0'; p++) {
         mix(static_cast<LongType>(*p));
       }
     }
-    for (int i = 0; i < producer.numInputs; i++) {
-      self(self, producer.inputSourceIndices[i], visiting);
+    for (int i = 0; i < producer.wiring.numInputs; i++) {
+      self(self, producer.wiring.inputSourceIndices[i], visiting);
     }
     visiting.erase(producerStep);
   };
@@ -349,8 +349,8 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     const uint32_t traits = resolveSegmentShapeTraits(slot);
     if ((traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) == 0) continue;
 
-    for (int i = 0; i < slot.numInputs; i++) {
-      const int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      const int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0 || segOutputSlots.find(srcIdx) == segOutputSlots.end()) continue;
 
       mix(static_cast<LongType>(0xD1));
@@ -873,8 +873,8 @@ namespace {
 inline NDArray* resolveCfInput(NativeSlot& slot, int inputIdx,
                                NDArray** outputSlots, int totalOutputSlots,
                                NDArray** externalInputs, int numExt) {
-  if (inputIdx < 0 || inputIdx >= slot.numInputs) return nullptr;
-  int srcIdx = slot.inputSourceIndices[inputIdx];
+  if (inputIdx < 0 || inputIdx >= slot.wiring.numInputs) return nullptr;
+  int srcIdx = slot.wiring.inputSourceIndices[inputIdx];
   if (srcIdx >= 0) {
     return (srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
   } else {
@@ -888,8 +888,8 @@ inline NDArray* resolveCfInput(NativeSlot& slot, int inputIdx,
 // the op is on that dead branch and must be skipped entirely.
 // External inputs (srcIdx < 0) don't participate in dead propagation.
 inline bool anyInputDead(NativeSlot& slot, bool* slotIsDead, int slotIsDeadSize) {
-  for (int i = 0; i < slot.numInputs; i++) {
-    int srcIdx = slot.inputSourceIndices[i];
+  for (int i = 0; i < slot.wiring.numInputs; i++) {
+    int srcIdx = slot.wiring.inputSourceIndices[i];
     if (srcIdx >= 0 && srcIdx < slotIsDeadSize && slotIsDead[srcIdx]) {
       return true;
     }
@@ -899,8 +899,8 @@ inline bool anyInputDead(NativeSlot& slot, bool* slotIsDead, int slotIsDeadSize)
 
 // Mark all outputs of a slot as dead
 inline void markOutputsDead(NativeSlot& slot, bool* slotIsDead, int slotIsDeadSize) {
-  for (int i = 0; i < slot.numOutputs; i++) {
-    int si = slot.outputSlotIndices[i];
+  for (int i = 0; i < slot.wiring.numOutputs; i++) {
+    int si = slot.wiring.outputSlotIndices[i];
     if (si >= 0 && si < slotIsDeadSize) slotIsDead[si] = true;
   }
 }
@@ -910,8 +910,8 @@ inline void forwardInput(NativeDynamicShapePlan* plan, NativeSlot& slot, NDArray
                          int totalOutputSlots, NDArray** externalInputs, int numExt,
                          const char* tag) {
   NDArray* input = resolveCfInput(slot, 0, outputSlots, totalOutputSlots, externalInputs, numExt);
-  for (int i = 0; i < slot.numOutputs; i++) {
-    int si = slot.outputSlotIndices[i];
+  for (int i = 0; i < slot.wiring.numOutputs; i++) {
+    int si = slot.wiring.outputSlotIndices[i];
     if (si >= 0 && si < totalOutputSlots) {
       plan->writeOutputSlot(si, input, tag);
     }
@@ -968,20 +968,20 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     NativeSlot& slot = slots_[stepIdx];
 
     // ── Control flow dispatch ────────────────────────────────────────
-    if (slot.controlFlowType != CF_NONE) {
+    if (slot.cf.controlFlowType != CF_NONE) {
       // Dead propagation: if all inputs are dead and this is not a Merge, propagate dead
-      if (slot.controlFlowType != CF_MERGE && hasControlFlow_ && slotIsDead_ != nullptr) {
+      if (slot.cf.controlFlowType != CF_MERGE && hasControlFlow_ && slotIsDead_ != nullptr) {
         if (anyInputDead(slot, slotIsDead_, slotIsDeadSize_)) {
           DSP_DIAG_SLOT(EXECUTE, stepIdx,
                         "slot %d (%s) DEAD: propagated from dead input (cf=%d)",
-                        stepIdx, slot.opName.c_str(), (int)slot.controlFlowType);
+                        stepIdx, slot.ident.opName.c_str(), (int)slot.cf.controlFlowType);
           markOutputsDead(slot, slotIsDead_, slotIsDeadSize_);
           stepIdx++;
           continue;
         }
       }
 
-      switch (slot.controlFlowType) {
+      switch (slot.cf.controlFlowType) {
         case CF_SWITCH: {
           // Switch: input[0] = data, input[1] = predicate
           // If predicate is true: output[1] = data, output[0] is dead
@@ -994,8 +994,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           }
           int liveIdx = predValue ? 1 : 0;
           int deadIdx = predValue ? 0 : 1;
-          for (int i = 0; i < slot.numOutputs; i++) {
-            int si = slot.outputSlotIndices[i];
+          for (int i = 0; i < slot.wiring.numOutputs; i++) {
+            int si = slot.wiring.outputSlotIndices[i];
             if (si >= 0 && si < totalOutputSlots_) {
               if (i == liveIdx) {
                 writeOutputSlot(si, data, "cf-switch-live");
@@ -1007,8 +1007,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             }
           }
 #ifdef SD_CUDA
-          verifyCfSlotWrite(stepIdx, "SWITCH", slot.opName.c_str(),
-                            outputSlots_, slot.outputSlotIndices, slot.numOutputs, totalOutputSlots_);
+          verifyCfSlotWrite(stepIdx, "SWITCH", slot.ident.opName.c_str(),
+                            outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
 #endif
           break;
         }
@@ -1016,8 +1016,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         case CF_MERGE: {
           // Merge: select first non-dead, non-null input
           NDArray* selected = nullptr;
-          for (int i = 0; i < slot.numInputs; i++) {
-            int srcIdx = slot.inputSourceIndices[i];
+          for (int i = 0; i < slot.wiring.numInputs; i++) {
+            int srcIdx = slot.wiring.inputSourceIndices[i];
             bool isDead = (srcIdx >= 0 && srcIdx < slotIsDeadSize_ && slotIsDead_ && slotIsDead_[srcIdx]);
             if (!isDead) {
               NDArray* inp = resolveCfInput(slot, i, outputSlots_, totalOutputSlots_, externalArrays, numExt);
@@ -1027,16 +1027,16 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               }
             }
           }
-          for (int i = 0; i < slot.numOutputs; i++) {
-            int si = slot.outputSlotIndices[i];
+          for (int i = 0; i < slot.wiring.numOutputs; i++) {
+            int si = slot.wiring.outputSlotIndices[i];
             if (si >= 0 && si < totalOutputSlots_) {
               writeOutputSlot(si, selected, "cf-merge");
               if (slotIsDead_) slotIsDead_[si] = (selected == nullptr);
             }
           }
 #ifdef SD_CUDA
-          verifyCfSlotWrite(stepIdx, "MERGE", slot.opName.c_str(),
-                            outputSlots_, slot.outputSlotIndices, slot.numOutputs, totalOutputSlots_);
+          verifyCfSlotWrite(stepIdx, "MERGE", slot.ident.opName.c_str(),
+                            outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
 #endif
           break;
         }
@@ -1046,15 +1046,15 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         case CF_LOOP_COND:
           // Identity: forward input[0] to output[0]
           forwardInput(this, slot, outputSlots_, totalOutputSlots_, externalArrays, numExt,
-                       slot.controlFlowType == CF_ENTER ? "cf-enter"
-                       : slot.controlFlowType == CF_EXIT ? "cf-exit"
+                       slot.cf.controlFlowType == CF_ENTER ? "cf-enter"
+                       : slot.cf.controlFlowType == CF_EXIT ? "cf-exit"
                        : "cf-loop-cond");
 #ifdef SD_CUDA
           {
-            const char* cfName = (slot.controlFlowType == CF_ENTER) ? "ENTER" :
-                                  (slot.controlFlowType == CF_EXIT) ? "EXIT" : "LOOP_COND";
-            verifyCfSlotWrite(stepIdx, cfName, slot.opName.c_str(),
-                              outputSlots_, slot.outputSlotIndices, slot.numOutputs, totalOutputSlots_);
+            const char* cfName = (slot.cf.controlFlowType == CF_ENTER) ? "ENTER" :
+                                  (slot.cf.controlFlowType == CF_EXIT) ? "EXIT" : "LOOP_COND";
+            verifyCfSlotWrite(stepIdx, cfName, slot.ident.opName.c_str(),
+                              outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
           }
 #endif
           break;
@@ -1064,11 +1064,11 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           forwardInput(this, slot, outputSlots_, totalOutputSlots_, externalArrays, numExt,
                        "cf-next-iter");
 #ifdef SD_CUDA
-          verifyCfSlotWrite(stepIdx, "NEXT_ITER", slot.opName.c_str(),
-                            outputSlots_, slot.outputSlotIndices, slot.numOutputs, totalOutputSlots_);
+          verifyCfSlotWrite(stepIdx, "NEXT_ITER", slot.ident.opName.c_str(),
+                            outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
 #endif
 
-          if (slot.loopBackTarget >= 0 && slot.loopBackTarget >= seg.startSlot) {
+          if (slot.cf.loopBackTarget >= 0 && slot.cf.loopBackTarget >= seg.startSlot) {
             loopIterations++;
             if (loopIterations >= MAX_LOOP_ITERATIONS) {
               DSP_DIAG(EXECUTE, "loop iteration limit (%d) reached at slot %d",
@@ -1076,17 +1076,17 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               return Status::KERNEL_FAILURE;
             }
             // Clear dead flags for loop body range
-            if (slotIsDead_ && slot.loopRegionIndex >= 0 && slot.loopRegionIndex < numLoopRegions_) {
-              LoopRegion& lr = loopRegions_[slot.loopRegionIndex];
+            if (slotIsDead_ && slot.cf.loopRegionIndex >= 0 && slot.cf.loopRegionIndex < numLoopRegions_) {
+              LoopRegion& lr = loopRegions_[slot.cf.loopRegionIndex];
               for (int s = lr.mergeSlot; s <= lr.bodyEndSlot && s < numSlots_; s++) {
                 NativeSlot& bodySlot = slots_[s];
-                for (int oi = 0; oi < bodySlot.numOutputs; oi++) {
-                  int si = bodySlot.outputSlotIndices[oi];
+                for (int oi = 0; oi < bodySlot.wiring.numOutputs; oi++) {
+                  int si = bodySlot.wiring.outputSlotIndices[oi];
                   if (si >= 0 && si < slotIsDeadSize_) slotIsDead_[si] = false;
                 }
               }
             }
-            stepIdx = slot.loopBackTarget;
+            stepIdx = slot.cf.loopBackTarget;
             continue; // jump back to Merge, don't increment stepIdx
           }
           break;
@@ -1160,7 +1160,7 @@ executeSlot_retry:
                                  msg.find("Error code: [2]") != std::string::npos)) {
         retriedAfterTrim = true;
         DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
-                  stepIdx, slots_[stepIdx].opName.c_str());
+                  stepIdx, slots_[stepIdx].ident.opName.c_str());
         cudaGetLastError();
         if (stream) {
           cudaStream_t execStr = *static_cast<cudaStream_t*>(stream);
@@ -1181,7 +1181,7 @@ executeSlot_retry:
 #endif
       char buf[512];
       snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
-               stepIdx, slots_[stepIdx].opName.c_str(), e.what());
+               stepIdx, slots_[stepIdx].ident.opName.c_str(), e.what());
       DSP_DIAG(FALLBACK, "%s", buf);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
@@ -1189,7 +1189,7 @@ executeSlot_retry:
     } catch (...) {
       char buf[512];
       snprintf(buf, sizeof(buf), "slot %d (%s) threw unknown exception",
-               stepIdx, slots_[stepIdx].opName.c_str());
+               stepIdx, slots_[stepIdx].ident.opName.c_str());
       DSP_DIAG(FALLBACK, "%s", buf);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
@@ -1211,14 +1211,14 @@ executeSlot_retry:
                  "CUDA ERROR 700 DIAGNOSTIC: cudaDeviceSynchronize after slot %d (%s) "
                  "returned error %d (%s). This kernel accessed invalid GPU memory. "
                  "seg=[%d-%d] execCount=%d shapesFrozen=%d",
-                 stepIdx, slots_[stepIdx].opName.c_str(),
+                 stepIdx, slots_[stepIdx].ident.opName.c_str(),
                  static_cast<int>(syncErr), cudaGetErrorString(syncErr),
                  seg.startSlot, seg.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
         sd_printf("%s\n", buf);
         // Log all inputs to the failing slot
         auto& faultSlot = slots_[stepIdx];
-        for (int i = 0; i < faultSlot.numInputs; i++) {
-          int srcIdx = faultSlot.inputSourceIndices[i];
+        for (int i = 0; i < faultSlot.wiring.numInputs; i++) {
+          int srcIdx = faultSlot.wiring.inputSourceIndices[i];
           NDArray* inp = nullptr;
           if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
             inp = outputSlots_[srcIdx];
@@ -1240,8 +1240,8 @@ executeSlot_retry:
           }
         }
         // Log outputs of the failing slot
-        for (int i = 0; i < faultSlot.numOutputs; i++) {
-          int si = faultSlot.outputSlotIndices[i];
+        for (int i = 0; i < faultSlot.wiring.numOutputs; i++) {
+          int si = faultSlot.wiring.outputSlotIndices[i];
           NDArray* out = (si >= 0 && si < totalOutputSlots_) ? outputSlots_[si] : nullptr;
           if (out != nullptr && out->dataBuffer() != nullptr) {
             sd_printf("  FAULT OUTPUT[%d] slotIdx=%d: shape=%s special=%p len=%lld\n",
@@ -1265,17 +1265,17 @@ executeSlot_retry:
           sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
       if (existingMsg != nullptr && existingMsg[0] != '\0') {
         snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d: %s",
-                 stepIdx, slots_[stepIdx].opName.c_str(),
+                 stepIdx, slots_[stepIdx].ident.opName.c_str(),
                  static_cast<int>(status), existingMsg);
       } else {
         snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",
-                 stepIdx, slots_[stepIdx].opName.c_str(), static_cast<int>(status));
+                 stepIdx, slots_[stepIdx].ident.opName.c_str(), static_cast<int>(status));
       }
       DSP_DIAG(FALLBACK, "%s", buf);
 
       auto& failedSlot = slots_[stepIdx];
-      for (int i = 0; i < failedSlot.numInputs; i++) {
-        int srcIdx = failedSlot.inputSourceIndices[i];
+      for (int i = 0; i < failedSlot.wiring.numInputs; i++) {
+        int srcIdx = failedSlot.wiring.inputSourceIndices[i];
         if (srcIdx >= 0) {
           NDArray* inp = (srcIdx < totalOutputSlots_ ? outputSlots_[srcIdx] : nullptr);
           if (inp != nullptr) {
@@ -1311,8 +1311,8 @@ executeSlot_retry:
     // VIEW_OF_WEIGHT, etc., and maintains viewRefCount on parent slots.
     // Runs in parallel with existing cleanup logic during Phase 1 integration.
     if (slotOwnership_ != nullptr) {
-      for (int o = 0; o < slot.numOutputs; o++) {
-        int si = slot.outputSlotIndices[o];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        int si = slot.wiring.outputSlotIndices[o];
         if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
           classifyAndUpdateOwnership(
               slotOwnership_[si], outputSlots_[si], si,
@@ -1326,7 +1326,7 @@ executeSlot_retry:
     // Record op for FunctionalReplayHandle capture
     if (seg.exec.replayHandle && seg.exec.replayHandle->getState() == ReplayState::CAPTURING) {
       auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
-      if (funcHandle) funcHandle->recordOp(slot.op, stepIdx);
+      if (funcHandle) funcHandle->recordOp(slot.ident.op, stepIdx);
     }
 
     // Release schedule removed: arrays persist (one array per slot, never nullified).
@@ -1376,8 +1376,8 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
 
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
       NDArray* arr = nullptr;
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
@@ -1464,14 +1464,14 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       NativeSlot& slot = slots_[s];
-      for (int i = 0; i < slot.numInputs; i++) {
-        int srcIdx = slot.inputSourceIndices[i];
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        int srcIdx = slot.wiring.inputSourceIndices[i];
         if (srcIdx < 0) {
           int extIdx = -(srcIdx + 1);
           if (seenExt.count(extIdx)) continue;
           seenExt.insert(extIdx);
 
-          int8_t srcType = slot.inputSourceTypes[i];
+          int8_t srcType = slot.wiring.inputSourceTypes[i];
           size_t bytes = 0;
           if (extIdx < numExt && externalArrays[extIdx] != nullptr) {
             bytes = externalArrays[extIdx]->lengthOf() * externalArrays[extIdx]->sizeOfT();
@@ -1503,13 +1503,13 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       seenExt.clear();
       for (int s = seg.startSlot; s <= seg.endSlot; s++) {
         NativeSlot& slot = slots_[s];
-        for (int i = 0; i < slot.numInputs; i++) {
-          int srcIdx = slot.inputSourceIndices[i];
+        for (int i = 0; i < slot.wiring.numInputs; i++) {
+          int srcIdx = slot.wiring.inputSourceIndices[i];
           if (srcIdx < 0) {
             int extIdx = -(srcIdx + 1);
             if (seenExt.count(extIdx)) continue;
             seenExt.insert(extIdx);
-            if (slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER &&
+            if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER &&
                 extIdx < numExt && externalArrays[extIdx] != nullptr) {
               auto* arr = externalArrays[extIdx];
               size_t bytes = arr->lengthOf() * arr->sizeOfT();
@@ -1531,24 +1531,24 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       NativeSlot& slot = slots_[s];
-      if (slot.isIdentityOp)     numIdentity++;
-      if (slot.isViewCapableOp)  numViewOps++;
-      if (slot.isFusedChainHead) { numFusedChains++; totalFusedChainOps += slot.fusedChainLength; }
-      if (slot.isFusedChainTail) numFusedTails++;
-      if (slot.inPlaceFused)     numInPlaceFused++;
-      if (slot.isDataDependent)  numDataDependent++;
-      if (slot.controlFlowType != CF_NONE) numControlFlow++;
+      if (slot.flags.isIdentityOp)     numIdentity++;
+      if (slot.flags.isViewCapableOp)  numViewOps++;
+      if (slot.fusedChain.isFusedChainHead) { numFusedChains++; totalFusedChainOps += slot.fusedChain.fusedChainLength; }
+      if (slot.fusedChain.isFusedChainTail) numFusedTails++;
+      if (slot.flags.inPlaceFused)     numInPlaceFused++;
+      if (slot.flags.isDataDependent)  numDataDependent++;
+      if (slot.cf.controlFlowType != CF_NONE) numControlFlow++;
 
       // Classify by op name heuristic
-      const auto& name = slot.opName;
+      const auto& name = slot.ident.opName;
       if (name.find("matmul") != std::string::npos || name.find("mmul") != std::string::npos ||
           name.find("gemm") != std::string::npos || name.find("batched_gemm") != std::string::npos) {
         numMatmul++;
-      } else if (slot.isIdentityOp || slot.isViewCapableOp || slot.isFusedChainTail) {
+      } else if (slot.flags.isIdentityOp || slot.flags.isViewCapableOp || slot.fusedChain.isFusedChainTail) {
         // Already counted above — these are "free" ops
       } else {
         // Heuristic: ops with no iArgs, 1-2 inputs, and no data dependency are likely elementwise
-        if (!slot.isDataDependent && slot.numInputs <= 2 && slot.numOutputs == 1) {
+        if (!slot.flags.isDataDependent && slot.wiring.numInputs <= 2 && slot.wiring.numOutputs == 1) {
           numElementwise++;
         } else {
           numOther++;
@@ -1594,16 +1594,16 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       std::unordered_set<int> emittedExt;
       for (int s = seg.startSlot; s <= seg.endSlot; s++) {
         NativeSlot& slot = slots_[s];
-        for (int i = 0; i < slot.numInputs; i++) {
-          int srcIdx = slot.inputSourceIndices[i];
+        for (int i = 0; i < slot.wiring.numInputs; i++) {
+          int srcIdx = slot.wiring.inputSourceIndices[i];
           if (srcIdx < 0) {
             int extIdx = -(srcIdx + 1);
             if (emittedExt.count(extIdx)) continue;
             emittedExt.insert(extIdx);
             const char* srcLabel = "EXT";
-            if (slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) srcLabel = "PH";
-            else if (slot.inputSourceTypes[i] == SOURCE_CONSTANT) srcLabel = "CONST";
-            else if (slot.inputSourceTypes[i] == SOURCE_VARIABLE) srcLabel = "VAR";
+            if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) srcLabel = "PH";
+            else if (slot.wiring.inputSourceTypes[i] == SOURCE_CONSTANT) srcLabel = "CONST";
+            else if (slot.wiring.inputSourceTypes[i] == SOURCE_VARIABLE) srcLabel = "VAR";
             DSP_DIAG(EMULATED_REPLAY,
                      "    ext_%d [label=\"%s[%d]\", shape=ellipse, style=filled, fillcolor=lightblue];",
                      extIdx, srcLabel, extIdx);
@@ -1615,22 +1615,22 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       for (int s = seg.startSlot; s <= seg.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         const char* color = "white";
-        if (slot.isIdentityOp)         color = "gray90";
-        else if (slot.isFusedChainHead) color = "lightyellow";
-        else if (slot.isFusedChainTail) color = "lightyellow";
-        else if (slot.isViewCapableOp)  color = "honeydew";
-        else if (slot.isDataDependent)  color = "mistyrose";
+        if (slot.flags.isIdentityOp)         color = "gray90";
+        else if (slot.fusedChain.isFusedChainHead) color = "lightyellow";
+        else if (slot.fusedChain.isFusedChainTail) color = "lightyellow";
+        else if (slot.flags.isViewCapableOp)  color = "honeydew";
+        else if (slot.flags.isDataDependent)  color = "mistyrose";
 
         DSP_DIAG(EMULATED_REPLAY,
                  "    slot_%d [label=\"[%d] %s\", style=filled, fillcolor=%s];",
-                 s, s, slot.opName.empty() ? "?" : slot.opName.c_str(), color);
+                 s, s, slot.ident.opName.empty() ? "?" : slot.ident.opName.c_str(), color);
       }
 
       // Edges
       for (int s = seg.startSlot; s <= seg.endSlot; s++) {
         NativeSlot& slot = slots_[s];
-        for (int i = 0; i < slot.numInputs; i++) {
-          int srcIdx = slot.inputSourceIndices[i];
+        for (int i = 0; i < slot.wiring.numInputs; i++) {
+          int srcIdx = slot.wiring.inputSourceIndices[i];
           if (srcIdx < 0) {
             int extIdx = -(srcIdx + 1);
             DSP_DIAG(EMULATED_REPLAY, "    ext_%d -> slot_%d;", extIdx, s);
@@ -1638,8 +1638,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
             // Find which slot produces this output
             for (int ps = seg.startSlot; ps < s; ps++) {
               NativeSlot& pslot = slots_[ps];
-              for (int o = 0; o < pslot.numOutputs; o++) {
-                if (pslot.outputSlotIndices[o] == srcIdx) {
+              for (int o = 0; o < pslot.wiring.numOutputs; o++) {
+                if (pslot.wiring.outputSlotIndices[o] == srcIdx) {
                   DSP_DIAG(EMULATED_REPLAY, "    slot_%d -> slot_%d;", ps, s);
                   goto nextInput;
                 }
@@ -1682,15 +1682,15 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       // Detailed: find which external inputs changed shape
       for (int s = seg.startSlot; s <= seg.endSlot; s++) {
         NativeSlot& slot = slots_[s];
-        for (int i = 0; i < slot.numInputs; i++) {
-          int srcIdx = slot.inputSourceIndices[i];
+        for (int i = 0; i < slot.wiring.numInputs; i++) {
+          int srcIdx = slot.wiring.inputSourceIndices[i];
           if (srcIdx < 0) {
             int extIdx = -(srcIdx + 1);
             if (extIdx < numExt && externalArrays[extIdx] != nullptr) {
               auto* arr = externalArrays[extIdx];
               DSP_DIAG(EMULATED_REPLAY,
                        "    ext[%d] type=%d shape=[%s] dtype=%d",
-                       extIdx, (int)slot.inputSourceTypes[i],
+                       extIdx, (int)slot.wiring.inputSourceTypes[i],
                        ShapeUtils::shapeAsString(arr).c_str(),
                        (int)arr->dataType());
             }
@@ -1740,7 +1740,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   // Identity/fused-tail ops are skipped by executeSlot, so don't count them.
   int estimatedSkippedOps = 0;
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    if (slots_[s].isIdentityOp || slots_[s].isFusedChainTail) estimatedSkippedOps++;
+    if (slots_[s].flags.isIdentityOp || slots_[s].fusedChain.isFusedChainTail) estimatedSkippedOps++;
   }
   int effectiveDispatchOps = segSize - estimatedSkippedOps;
   long long estimatedDispatchUs = effectiveDispatchOps * 15LL;

@@ -487,8 +487,8 @@ std::string PtxGraphBackend::generatePtx(
 
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
-    for (int inp = 0; inp < slot.numInputs; inp++) {
-      int srcIdx = slot.inputSourceIndices[inp];
+    for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+      int srcIdx = slot.wiring.inputSourceIndices[inp];
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
         if (externalInputMap.find(extIdx) == externalInputMap.end()) {
@@ -499,8 +499,8 @@ std::string PtxGraphBackend::generatePtx(
   }
 
   auto& lastSlot = slots[endSlot];
-  for (int o = 0; o < lastSlot.numOutputs; o++) {
-    outputSlotIndices.push_back(lastSlot.outputSlotIndices[o]);
+  for (int o = 0; o < lastSlot.wiring.numOutputs; o++) {
+    outputSlotIndices.push_back(lastSlot.wiring.outputSlotIndices[o]);
   }
 
   int numInputParams = static_cast<int>(externalInputMap.size());
@@ -542,13 +542,13 @@ std::string PtxGraphBackend::generatePtx(
 
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
-    auto cat = getOpCategoryFromName(slot.opName);
+    auto cat = getOpCategoryFromName(slot.ident.opName);
     int inputCount = categoryInputCount(cat);
 
     // Helper to resolve an input source index to a register name
     auto resolveInput = [&](int inputIdx) -> std::string {
-      if (inputIdx < slot.numInputs) {
-        int srcIdx = slot.inputSourceIndices[inputIdx];
+      if (inputIdx < slot.wiring.numInputs) {
+        int srcIdx = slot.wiring.inputSourceIndices[inputIdx];
         if (srcIdx < 0) {
           int extIdx = -(srcIdx + 1);
           return extRegMap[externalInputMap[extIdx]];
@@ -566,16 +566,16 @@ std::string PtxGraphBackend::generatePtx(
     };
 
     // Resolve inputs based on category input count
-    std::string inReg = (slot.numInputs > 0) ? resolveInput(0) : "0f00000000";
-    std::string secReg = (inputCount >= 2 && slot.numInputs > 1) ? resolveInput(1) : "0f00000000";
-    std::string terReg = (inputCount >= 3 && slot.numInputs > 2) ? resolveInput(2) : "0f00000000";
+    std::string inReg = (slot.wiring.numInputs > 0) ? resolveInput(0) : "0f00000000";
+    std::string secReg = (inputCount >= 2 && slot.wiring.numInputs > 1) ? resolveInput(1) : "0f00000000";
+    std::string terReg = (inputCount >= 3 && slot.wiring.numInputs > 2) ? resolveInput(2) : "0f00000000";
 
-    body << "    // slot " << si << ": " << slot.opName << "\n";
+    body << "    // slot " << si << ": " << slot.ident.opName << "\n";
 
-    std::string resultReg = emitPtxOpByCategory(body, ra, cat, slot.opName, inReg, secReg, terReg, slot);
+    std::string resultReg = emitPtxOpByCategory(body, ra, cat, slot.ident.opName, inReg, secReg, terReg, slot);
 
-    for (int o = 0; o < slot.numOutputs; o++) {
-      slotOutputRegs[slot.outputSlotIndices[o]] = resultReg;
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      slotOutputRegs[slot.wiring.outputSlotIndices[o]] = resultReg;
     }
   }
 
@@ -689,8 +689,8 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = seg.startSlot; i <= seg.endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
-    entry.wasCompiled = isNvrtcJittable(getOpCategoryFromName(slots[i].opName));
+    entry.opName = slots[i].ident.opName;
+    entry.wasCompiled = isNvrtcJittable(getOpCategoryFromName(slots[i].ident.opName));
     if (!entry.wasCompiled) {
       entry.reason = "unmappable op (not in OpCategoryTable or not NVRTC-jittable)";
     }
