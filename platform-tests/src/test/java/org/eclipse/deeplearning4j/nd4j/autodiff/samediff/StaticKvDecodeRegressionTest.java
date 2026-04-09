@@ -218,7 +218,7 @@ public class StaticKvDecodeRegressionTest {
                     pastSeqLen + step, currentSeqLen,
                     staticKvBuffers, MAX_KV_LEN, cachePos + step,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, false);  // dspActive=true, nativeDecodeInputs=false
+                    true);  // dspActive=true
 
             INDArray mask = result.get("attention_mask");
             assertNotNull(mask, "attention_mask at step " + step);
@@ -290,7 +290,7 @@ public class StaticKvDecodeRegressionTest {
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null,
-                true, false);  // dspActive=true
+                true);  // dspActive=true
 
         INDArray attnBias = result.get(ATTN_REFORMAT_NODE);
         assertNotNull(attnBias, "4D attention bias should be present");
@@ -360,7 +360,7 @@ public class StaticKvDecodeRegressionTest {
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, false);
+                    true);
 
             INDArray attnBias = result.get(ATTN_REFORMAT_NODE);
             assertNotNull(attnBias, "Step " + step + ": bias should exist");
@@ -446,7 +446,7 @@ public class StaticKvDecodeRegressionTest {
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, true);  // nativeDecodeInputs=TRUE
+                    true);
 
             INDArray attnBias = result.get(ATTN_REFORMAT_NODE);
             assertNotNull(attnBias, "Step " + step + ": bias should exist with nativeDecodeInputs=true");
@@ -519,7 +519,7 @@ public class StaticKvDecodeRegressionTest {
                     inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen, 1, staticKvBuffers, MAX_KV_LEN, cachePos + step,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, false);  // nativeDecodeInputs=false
+                    true);  // dspActive=true
 
             INDArray posIds = result.get("position_ids");
             assertNotNull(posIds, "position_ids at step " + step);
@@ -562,14 +562,14 @@ public class StaticKvDecodeRegressionTest {
                 inputNames, dummyDecoder, embeddings, inputIds,
                 initialPastSeqLen, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, reusableInputs,
-                true, true);  // nativeDecodeInputs=true
+                true);
 
         // Step 1: Java posIds should be updated to 680 even with nativeDecodeInputs=true
         Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                 inputNames, dummyDecoder, embeddings, inputIds,
                 initialPastSeqLen + 1, 1, staticKvBuffers, MAX_KV_LEN, cachePos + 1,
                 true, HIDDEN_SIZE, reusableInputs,
-                true, true);
+                true);
 
         INDArray posIds = result.get("position_ids");
         assertEquals(initialPastSeqLen + 1, posIds.getLong(0, 0),

@@ -53,7 +53,7 @@ ExecutionState::~ExecutionState() {
           // The NDArray destructor handles this correctly when isView() is true
           delete slotArrays_[i];
         }
-        // WEIGHT, VIEW_OF_WEIGHT, CAPTURE_BUFFER — do NOT delete
+        // WEIGHT, VIEW_OF_WEIGHT — do NOT delete
       }
     }
   }

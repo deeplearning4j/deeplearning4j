@@ -48,7 +48,7 @@ namespace graph {
 
 int TritonGraphBackend::maxParallelCompilations_ = DEFAULT_MAX_PARALLEL_COMPILATIONS;
 std::mutex TritonGraphBackend::configMtx_;
-thread_local TritonGraphBackend::FallbackRangeExecutor TritonGraphBackend::fallbackRangeExecutor_ = nullptr;
+thread_local TritonGraphBackend::OrderedRangeExecutor TritonGraphBackend::orderedRangeExecutor_ = nullptr;
 
 // ─── Parallel compilation configuration ─────────────────────────────────────
 
@@ -90,12 +90,12 @@ TritonGraphBackend& TritonGraphBackend::getInstance() {
   return instance;
 }
 
-void TritonGraphBackend::setFallbackRangeExecutor(FallbackRangeExecutor executor) {
-  fallbackRangeExecutor_ = std::move(executor);
+void TritonGraphBackend::setOrderedRangeExecutor(OrderedRangeExecutor executor) {
+  orderedRangeExecutor_ = std::move(executor);
 }
 
-void TritonGraphBackend::clearFallbackRangeExecutor() {
-  fallbackRangeExecutor_ = nullptr;
+void TritonGraphBackend::clearOrderedRangeExecutor() {
+  orderedRangeExecutor_ = nullptr;
 }
 
 TritonGraphBackend::TritonGraphBackend() = default;
@@ -124,8 +124,8 @@ bool TritonGraphBackend::areAllOpsMappable(NativeSlot* slots, int start, int end
 // ─── Segment fusibility check ───────────────────────────────────────────────
 //
 // A segment is fusible if it contains at least one Triton-mappable op.
-// Non-mappable ops (matmul, gather, etc.) become fallback sections inside
-// compileSegment() — they run via slot-by-slot execution while the mappable
+// Non-mappable ops (matmul, gather, etc.) become native ordered ranges inside
+// compileSegment() — they run in program order while the mappable
 // chains get compiled into Triton kernels.  The previous version required
 // ALL ops to be mappable, which caused the post-freeze mega-segment
 // (1 segment, 3407 ops) to always fail canFuseSegment → launches=0.

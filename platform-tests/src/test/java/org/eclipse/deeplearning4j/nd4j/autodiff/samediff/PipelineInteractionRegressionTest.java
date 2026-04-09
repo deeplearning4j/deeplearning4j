@@ -96,7 +96,7 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, null, true, false);
+                true, HIDDEN_SIZE, null, true);
 
         INDArray bias = result.get(ATTN_REFORMAT_NODE);
         assertNotNull(bias, "4D bias should be present");
@@ -264,7 +264,7 @@ public class PipelineInteractionRegressionTest {
             Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
-                    true, HIDDEN_SIZE, reusableInputs, true, false);
+                    true, HIDDEN_SIZE, reusableInputs, true);
 
             INDArray mask = result.get("attention_mask");
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -355,7 +355,7 @@ public class PipelineInteractionRegressionTest {
             Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
-                    true, HIDDEN_SIZE, reusableInputs, true, true);  // nativeDecodeInputs=TRUE
+                    true, HIDDEN_SIZE, reusableInputs, true);
 
             INDArray mask = result.get("attention_mask");
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -406,14 +406,14 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> legacyResult = DecoderUtils.buildDecoderInputMap(
                 inputNames, dummyDecoder, embeddings, inputIds,
                 pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, null, true, false);
+                true, HIDDEN_SIZE, null, true);
 
         // ModelIOConfig overload with default config
         ModelIOConfig defaultConfig = ModelIOConfig.builder().build();
         Map<String, INDArray> configResult = DecoderUtils.buildDecoderInputMap(
                 defaultConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, null, true, false);
+                true, HIDDEN_SIZE, null, true);
 
         // Same keys
         assertEquals(legacyResult.keySet(), configResult.keySet(),
@@ -536,7 +536,7 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, null, true, false);
+                true, HIDDEN_SIZE, null, true);
 
         INDArray mask = result.get("attention_mask");
         INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -604,7 +604,7 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> result0 = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, reusableInputs, true, false);
+                true, HIDDEN_SIZE, reusableInputs, true);
 
         int maskId = System.identityHashCode(result0.get("attention_mask"));
         int biasId = System.identityHashCode(result0.get(ATTN_REFORMAT_NODE));
@@ -615,7 +615,7 @@ public class PipelineInteractionRegressionTest {
             Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, 1, staticKvBuffers, MAX_KV_LEN, cachePos + step,
-                    true, HIDDEN_SIZE, reusableInputs, true, false);
+                    true, HIDDEN_SIZE, reusableInputs, true);
 
             assertEquals(maskId, System.identityHashCode(result.get("attention_mask")),
                     "Step " + step + ": attention_mask should be same object");
@@ -655,13 +655,13 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> paddedResult = DecoderUtils.buildDecoderInputMap(
                 inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, null, true, false);
+                true, HIDDEN_SIZE, null, true);
 
         // View mode (dspActive=false)
         Map<String, INDArray> viewResult = DecoderUtils.buildDecoderInputMap(
                 inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, null, false, false);
+                true, HIDDEN_SIZE, null, false);
 
         String firstKv = "past_key_values.0.key";
         INDArray paddedKv = paddedResult.get(firstKv);
@@ -824,7 +824,7 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, null, true, false);
+                true, HIDDEN_SIZE, null, true);
 
         INDArray mask = result.get("attention_mask");
         INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -842,7 +842,7 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> resultFull = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, MAX_KV_LEN,
-                true, HIDDEN_SIZE, null, true, false);
+                true, HIDDEN_SIZE, null, true);
 
         INDArray maskFull = resultFull.get("attention_mask");
         long maskFullOnes = maskFull.sumNumber().longValue();

@@ -72,10 +72,15 @@ public:
      *
      * @param slots Array of NativeSlot describing each op
      * @param numSlots Number of slots in the plan
+     * @param externalInputRanks Optional ranks for external inputs (size = numExternalInputs).
+     *                           Used by MATMUL_BIAS_ACTIVATION fusion to validate that the
+     *                           bias operand is a 1D vector. Pass empty vector if unknown
+     *                           (some MATMUL_BIAS_ACTIVATION candidates will be skipped).
      * @return Vector of fusion candidates, sorted by startSlot
      */
     static std::vector<FusionCandidate> detectFusions(
-        NativeSlot* slots, int numSlots);
+        NativeSlot* slots, int numSlots,
+        const std::vector<int>& externalInputRanks = {});
 
     /**
      * Apply detected fusions by marking slots for in-place execution.

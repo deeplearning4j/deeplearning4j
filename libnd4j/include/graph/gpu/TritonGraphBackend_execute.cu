@@ -329,14 +329,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     compiledSeg = &it->second;
   }
 
-  if (streamCaptureActive && !compiledSeg->fallbackRanges.empty()) {
-    if (!Environment::getInstance().tritonAllowFallbackCapture()) {
-      DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: refusing slot fallback during CUDA graph capture for [%d-%d] (%d fallback ranges)",
-               seg.startSlot, seg.endSlot, static_cast<int>(compiledSeg->fallbackRanges.size()));
-      return Status::KERNEL_FAILURE;
-    }
-    DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: allowing fallback during CUDA graph capture for [%d-%d] (%d fallback ranges)",
-             seg.startSlot, seg.endSlot, static_cast<int>(compiledSeg->fallbackRanges.size()));
+  if (streamCaptureActive && !compiledSeg->orderedRanges.empty()) {
+    DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: capturing ordered native ranges during CUDA graph capture for [%d-%d] (%d ranges)",
+             seg.startSlot, seg.endSlot, static_cast<int>(compiledSeg->orderedRanges.size()));
   }
 
   bool tritonSkipKernels = Environment::getInstance().tritonSkipKernels();
@@ -345,11 +340,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   bool tritonVerifyFullSnapshot = Environment::getInstance().tritonVerifyFullSnapshot();
 
   DSP_DIAG_SEG(EXECUTE, seg.startSlot, "TritonGraphBackend::executeSegment: segment [%d-%d] launching %d sub-kernels "
-               "(fallbackRanges=%d, targetDeviceId=%d, activeDevice=%d, skipKernels=%d, verifyKernels=%d, "
+               "(orderedRanges=%d, targetDeviceId=%d, activeDevice=%d, skipKernels=%d, verifyKernels=%d, "
                "maxSubKernelIdx=%d, fullSnapshot=%d, execCount=%d)",
                seg.startSlot, seg.endSlot,
                static_cast<int>(compiledSeg->subKernels.size()),
-               static_cast<int>(compiledSeg->fallbackRanges.size()),
+               static_cast<int>(compiledSeg->orderedRanges.size()),
                targetDevice, execDevice,
                tritonSkipKernels ? 1 : 0, tritonVerifyKernels ? 1 : 0,
                tritonMaxSubKernelIndex, tritonVerifyFullSnapshot ? 1 : 0,
@@ -526,29 +521,23 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     auto& subKernel = compiledSeg->subKernels[i];
 
     if (nextSlotToRun < subKernel.startSlot_) {
-      if (streamCaptureActive && !Environment::getInstance().tritonAllowFallbackCapture()) {
-        DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: refusing leading gap [%d-%d] during CUDA graph capture",
-                 nextSlotToRun, subKernel.startSlot_ - 1);
-        return Status::KERNEL_FAILURE;
-      }
-
       // Log actuality state BEFORE gap execution
       logActualityState("PRE_GAP", nextSlotToRun, subKernel.startSlot_ - 1, slots,
                         outputSlots, totalOutputSlots, externalInputs, numExternalInputs);
-      if (!fallbackRangeExecutor_) {
-        DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: missing fallback executor for gap [%d-%d]",
+      if (!orderedRangeExecutor_) {
+        DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: missing ordered range executor for gap [%d-%d]",
                   nextSlotToRun, subKernel.startSlot_ - 1);
         return Status::KERNEL_FAILURE;
       }
-      auto gapStatus = fallbackRangeExecutor_(nextSlotToRun, subKernel.startSlot_ - 1);
+      auto gapStatus = orderedRangeExecutor_(nextSlotToRun, subKernel.startSlot_ - 1);
       if (gapStatus != Status::OK) {
-        DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: slot-by-slot gap [%d-%d] failed with status=%d",
+        DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: ordered native range [%d-%d] failed with status=%d",
                   nextSlotToRun, subKernel.startSlot_ - 1, static_cast<int>(gapStatus));
         return gapStatus;
       }
-      markFallbackRangeDeviceCurrent(nextSlotToRun, subKernel.startSlot_ - 1, slots,
-                                     externalInputs, numExternalInputs,
-                                     outputSlots, totalOutputSlots);
+      markOrderedRangeDeviceCurrent(nextSlotToRun, subKernel.startSlot_ - 1, slots,
+                                    externalInputs, numExternalInputs,
+                                    outputSlots, totalOutputSlots);
 
       // ── Post-gap shape re-validation ──
       // After a gap executes view-producing ops (reshape_no_copy, permute, etc.),
@@ -706,20 +695,20 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         (tritonMaxSubKernelIndex >= 0 && i > tritonMaxSubKernelIndex);
 
     if (skipThisKernel) {
-      if (fallbackRangeExecutor_) {
+      if (orderedRangeExecutor_) {
         if (!tritonSkipKernels && tritonMaxSubKernelIndex >= 0) {
           DSP_DIAG(EXECUTE, "TritonGraphBackend: subK[%d] [%d-%d] SKIPPED (index > maxSubKernelIndex=%d)",
                    i, subKernel.startSlot_, subKernel.endSlot_, tritonMaxSubKernelIndex);
         }
-        auto skipStatus = fallbackRangeExecutor_(subKernel.startSlot_, subKernel.endSlot_);
+        auto skipStatus = orderedRangeExecutor_(subKernel.startSlot_, subKernel.endSlot_);
         if (skipStatus != Status::OK) {
-          DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: native fallback for skipped kernel [%d-%d] failed with status=%d",
+          DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: native ordered range for skipped kernel [%d-%d] failed with status=%d",
                  subKernel.startSlot_, subKernel.endSlot_, static_cast<int>(skipStatus));
           return skipStatus;
         }
-        markFallbackRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
-                                       externalInputs, numExternalInputs,
-                                       outputSlots, totalOutputSlots);
+        markOrderedRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
+                                      externalInputs, numExternalInputs,
+                                      outputSlots, totalOutputSlots);
         if (!streamCaptureActive) {
           logSlotHashes("SKIP", subKernel.startSlot_, subKernel.endSlot_, slots,
                         outputSlots, totalOutputSlots,
@@ -864,7 +853,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
 
       // ── Verify mode: run native and compare ──
-      if (tritonVerifyKernels && !streamCaptureActive && fallbackRangeExecutor_) {
+      if (tritonVerifyKernels && !streamCaptureActive && orderedRangeExecutor_) {
         cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
 
         // Save Triton outputs (raw bytes)
@@ -1020,9 +1009,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
 
         // Run native slot-by-slot
-        auto nativeStatus = fallbackRangeExecutor_(subKernel.startSlot_, subKernel.endSlot_);
+        auto nativeStatus = orderedRangeExecutor_(subKernel.startSlot_, subKernel.endSlot_);
         if (nativeStatus != Status::OK) {
-          DSP_DIAG(VERIFY, "TRITON VERIFY: native fallback for [%d-%d] FAILED (status=%d)",
+          DSP_DIAG(VERIFY, "TRITON VERIFY: native ordered range for [%d-%d] FAILED (status=%d)",
                    subKernel.startSlot_, subKernel.endSlot_, static_cast<int>(nativeStatus));
           // Don't abort — continue with Triton results
           // Restore Triton outputs since native failed
@@ -1043,9 +1032,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         }
         cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
 
-        markFallbackRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
-                                       externalInputs, numExternalInputs,
-                                       outputSlots, totalOutputSlots);
+        markOrderedRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
+                                      externalInputs, numExternalInputs,
+                                      outputSlots, totalOutputSlots);
         // Compare native outputs against Triton raw outputs
         int mismatches = 0;
         double overallMaxDiff = 0;
@@ -1144,9 +1133,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     // Mark Triton-written outputs as device-current so downstream gap ops
     // don't overwrite fresh GPU data with stale host values via syncToDevice().
     if (!tritonSkipKernels) {
-      markFallbackRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
-                                     externalInputs, numExternalInputs,
-                                     outputSlots, totalOutputSlots);
+      markOrderedRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
+                                    externalInputs, numExternalInputs,
+                                    outputSlots, totalOutputSlots);
     }
 
     // Log actuality state AFTER Triton kernel + markDeviceCurrent
@@ -1161,30 +1150,24 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   if (nextSlotToRun <= seg.endSlot) {
-    if (streamCaptureActive && !Environment::getInstance().tritonAllowFallbackCapture()) {
-      DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: refusing trailing gap [%d-%d] during CUDA graph capture",
-               nextSlotToRun, seg.endSlot);
-      return Status::KERNEL_FAILURE;
-    }
-
     if (!streamCaptureActive) {
       logActualityState("PRE_TRAILING_GAP", nextSlotToRun, seg.endSlot, slots,
                         outputSlots, totalOutputSlots, externalInputs, numExternalInputs);
     }
-    if (!fallbackRangeExecutor_) {
-      DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: missing fallback executor for trailing gap [%d-%d]",
+    if (!orderedRangeExecutor_) {
+      DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: missing ordered range executor for trailing gap [%d-%d]",
                 nextSlotToRun, seg.endSlot);
       return Status::KERNEL_FAILURE;
     }
-    auto gapStatus = fallbackRangeExecutor_(nextSlotToRun, seg.endSlot);
+    auto gapStatus = orderedRangeExecutor_(nextSlotToRun, seg.endSlot);
     if (gapStatus != Status::OK) {
-      DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: trailing slot-by-slot gap [%d-%d] failed with status=%d",
+      DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: trailing ordered native range [%d-%d] failed with status=%d",
                 nextSlotToRun, seg.endSlot, static_cast<int>(gapStatus));
       return gapStatus;
     }
-    markFallbackRangeDeviceCurrent(nextSlotToRun, seg.endSlot, slots,
-                                   externalInputs, numExternalInputs,
-                                   outputSlots, totalOutputSlots);
+    markOrderedRangeDeviceCurrent(nextSlotToRun, seg.endSlot, slots,
+                                  externalInputs, numExternalInputs,
+                                  outputSlots, totalOutputSlots);
     if (!streamCaptureActive) {
       logSlotHashes("TRAILING_GAP", nextSlotToRun, seg.endSlot, slots,
                     outputSlots, totalOutputSlots,
@@ -1196,8 +1179,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   int attnCount = 0;
   for (int si = seg.startSlot; si <= seg.endSlot; si++) {
     if (slots[si].opName.empty()) continue;
-    bool isAttn = (slots[si].opName == "onnx_multi_head_attention" ||
-                   slots[si].opName == "multi_head_attention");
+    bool isAttn = slots[si].op != nullptr &&
+                  slots[si].op->getOpDescriptor() != nullptr &&
+                  slots[si].op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_ATTENTION);
     if (!isAttn) continue;
     if (slots[si].numInputs <= 4 || slots[si].numOutputs < 2) continue;
 

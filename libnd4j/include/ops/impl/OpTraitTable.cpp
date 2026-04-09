@@ -56,6 +56,21 @@ static constexpr uint32_t VALDEP = OP_TRAIT_VALUE_DEPENDENT_SHAPE;
 static constexpr uint32_t DATADEP = OP_TRAIT_DATA_DEPENDENT;
 static constexpr uint32_t SHAPE_ONLY = OP_TRAIT_SHAPE_ONLY_OUTPUT;
 static constexpr uint32_t IDENT = OP_TRAIT_IDENTITY | OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING;
+static constexpr uint32_t DATA_MOVE = OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING;
+static constexpr uint32_t DATA_MOVE_VALDEP = DATA_MOVE | OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+static constexpr uint32_t CONST_GEN = OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING;
+static constexpr uint32_t CONST_GEN_VALDEP = CONST_GEN | OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+static constexpr uint32_t ATTN = OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING;
+static constexpr uint32_t GATHER = DATA_MOVE_VALDEP | OP_TRAIT_GATHER;
+static constexpr uint32_t GATHER_ND = DATA_MOVE_VALDEP | OP_TRAIT_GATHER_ND;
+static constexpr uint32_t CONCAT = DATA_MOVE | OP_TRAIT_CONCAT;
+static constexpr uint32_t SPLIT = DATA_MOVE | OP_TRAIT_SPLIT;
+static constexpr uint32_t SPLIT_V = DATA_MOVE | OP_TRAIT_SPLIT_V;
+static constexpr uint32_t STACK = DATA_MOVE | OP_TRAIT_STACK;
+static constexpr uint32_t SLICE = DATA_MOVE_VALDEP | OP_TRAIT_SLICE;
+static constexpr uint32_t TILE = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
+static constexpr uint32_t SCATTER_ND = DATA_MOVE | OP_TRAIT_SCATTER_ND;
+static constexpr uint32_t SCATTER_ND_UPDATE = DATA_MOVE | OP_TRAIT_SCATTER_ND_UPDATE;
 
 static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
     static const std::unordered_map<std::string, uint32_t> TABLE = {
@@ -212,10 +227,10 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"fused_rope",     NORM},
 
         // ── Attention ops ──────────────────────────────────────────────────
-        {"onnx_multi_head_attention",       OP_TRAIT_FULLY_WRITING},
-        {"dot_product_attention_v2",        OP_TRAIT_FULLY_WRITING},
-        {"flash_attention",                 OP_TRAIT_FULLY_WRITING},
-        {"multi_head_dot_product_attention", OP_TRAIT_FULLY_WRITING},
+        {"onnx_multi_head_attention",       ATTN},
+        {"dot_product_attention_v2",        ATTN},
+        {"flash_attention",                 ATTN},
+        {"multi_head_dot_product_attention", ATTN},
 
         // ── Token sampling ─────────────────────────────────────────────────
         {"token_sample",   OP_TRAIT_FULLY_WRITING},
@@ -225,21 +240,32 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"reshape_no_copy", VIEW},
         {"expand_dims",    VIEW},
         {"squeeze",        VIEW},
+        {"flatten",        VIEW},
+        {"flatten_2d",     VIEW},
         {"permute",        OP_TRAIT_VIEW_PRODUCING},  // permute shape depends on iArgs, not input values
-        {"strided_slice",  VIEW},
+        {"strided_slice",  VIEW | OP_TRAIT_SLICE},
 
         // ── Value-dependent shape (non-view) ───────────────────────────────
-        {"slice",          VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"gather",         VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"gather_nd",      VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"tile",           VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"repeat",         VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"pad",            VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"fill",           VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"broadcast_to",   VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"range",          VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"linspace",       VALDEP | OP_TRAIT_FULLY_WRITING},
-        {"create",         VALDEP | OP_TRAIT_SHAPE_ONLY_OUTPUT},  // ConstantOfShape: also shape-only
+        {"slice",          SLICE},
+        {"gather",         GATHER},
+        {"gather_nd",      GATHER_ND},
+        {"concat",         CONCAT},
+        {"stack",          STACK},
+        {"split",          SPLIT},
+        {"split_v",        SPLIT_V},
+        {"tile",           TILE},
+        {"repeat",         DATA_MOVE_VALDEP},
+        {"pad",            DATA_MOVE_VALDEP},
+        {"fill",           DATA_MOVE_VALDEP},
+        {"broadcast_to",   DATA_MOVE_VALDEP},
+        {"scatter_nd",     SCATTER_ND},
+        {"scatter_nd_update", SCATTER_ND_UPDATE},
+        {"range",          CONST_GEN_VALDEP},
+        {"linspace",       CONST_GEN_VALDEP},
+        // create/ConstantOfShape materializes a real output buffer. Some instances feed
+        // shape-control ladders, but that must be inferred from runtime tensor semantics,
+        // not baked into the op as globally shape-only.
+        {"create",         CONST_GEN_VALDEP},
 
         // ── Data-dependent ops (variable-length output) ────────────────────
         {"unique",                 DATADEP},
@@ -247,15 +273,15 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"non_max_suppression_v3", DATADEP},
 
         // ── Shape-only output (output depends only on input shapes) ────────
-        {"shape_of",       SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"size_at",        SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"rank",           SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"zeros_like",     SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"zeros_as",       SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"zeroslike",      SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"ones_like",      SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"ones_as",        SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
-        {"oneslike",       SHAPE_ONLY | OP_TRAIT_FULLY_WRITING},
+        {"shape_of",       SHAPE_ONLY | CONST_GEN},
+        {"size_at",        SHAPE_ONLY | CONST_GEN},
+        {"rank",           SHAPE_ONLY | CONST_GEN},
+        {"zeros_like",     SHAPE_ONLY | CONST_GEN},
+        {"zeros_as",       SHAPE_ONLY | CONST_GEN},
+        {"zeroslike",      SHAPE_ONLY | CONST_GEN},
+        {"ones_like",      SHAPE_ONLY | CONST_GEN},
+        {"ones_as",        SHAPE_ONLY | CONST_GEN},
+        {"oneslike",       SHAPE_ONLY | CONST_GEN},
     };
     return TABLE;
 }

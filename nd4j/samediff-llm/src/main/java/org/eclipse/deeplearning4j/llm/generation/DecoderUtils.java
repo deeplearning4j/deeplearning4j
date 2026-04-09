@@ -621,30 +621,11 @@ public class DecoderUtils {
             boolean usingStaticKv, long hiddenSize,
             Map<String, INDArray> reusableInputs,
             boolean dspActive) {
-        return buildDecoderInputMap(decoderInputNames, decoder, embeddings, inputIds,
-                pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
-                usingStaticKv, hiddenSize, reusableInputs, dspActive, false);
-    }
-
-    /**
-     * Build the complete decoder input map with optional native decode input handling.
-     *
-     * @param nativeDecodeInputs when true, C++ handles input_ids/position_ids/attention_mask updates
-     *                           on device — skip Java-side putScalar mutations for these.
-     */
-    public static Map<String, INDArray> buildDecoderInputMap(
-            List<String> decoderInputNames, SameDiff decoder,
-            INDArray embeddings, INDArray inputIds,
-            long pastSeqLen, long currentSeqLen,
-            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
-            boolean usingStaticKv, long hiddenSize,
-            Map<String, INDArray> reusableInputs,
-            boolean dspActive, boolean nativeDecodeInputs) {
-        // Delegate to the ModelIOConfig-based implementation with default config
         ModelIOConfig config = ModelIOConfig.builder().build();
         return buildDecoderInputMap(config, decoderInputNames, decoder, embeddings, inputIds,
                 pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
-                usingStaticKv, hiddenSize, reusableInputs, dspActive, nativeDecodeInputs);
+                usingStaticKv, hiddenSize, reusableInputs, dspActive,
+                null, null);
     }
 
     /**
@@ -668,7 +649,6 @@ public class DecoderUtils {
      * @param hiddenSize model hidden size (for empty KV cache creation)
      * @param reusableInputs optional cache map; populated on first use, updated in-place thereafter
      * @param dspActive whether DSP is active (padded mode with fixed shapes for CUDA graphs)
-     * @param nativeDecodeInputs when true, C++ handles input updates on device
      * @return map of input name to INDArray ready to pass to decoder.output()
      */
     public static Map<String, INDArray> buildDecoderInputMap(
@@ -679,10 +659,10 @@ public class DecoderUtils {
             Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
             boolean usingStaticKv, long hiddenSize,
             Map<String, INDArray> reusableInputs,
-            boolean dspActive, boolean nativeDecodeInputs) {
+            boolean dspActive) {
         return buildDecoderInputMap(ioConfig, decoderInputNames, decoder, embeddings, inputIds,
                 pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
-                usingStaticKv, hiddenSize, reusableInputs, dspActive, nativeDecodeInputs,
+                usingStaticKv, hiddenSize, reusableInputs, dspActive,
                 null, null);
     }
 
@@ -704,15 +684,16 @@ public class DecoderUtils {
             Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
             boolean usingStaticKv, long hiddenSize,
             Map<String, INDArray> reusableInputs,
-            boolean dspActive, boolean nativeDecodeInputs,
+            boolean dspActive,
             INDArray encoderOutputs, INDArray encoderAttentionMask) {
 
         Map<String, INDArray> decoderInputMap = new HashMap<>();
         boolean canReuse = reusableInputs != null && usingStaticKv && currentSeqLen == 1;
         // DSP active = padded inputs with full static KV buffer (fixed shapes)
         boolean usePadded = dspActive && usingStaticKv;
+        List<String> materializedInputNames = expandConfiguredInputNames(ioConfig, decoderInputNames, decoder);
 
-        for (String inputName : decoderInputNames) {
+        for (String inputName : materializedInputNames) {
             if (ioConfig.isInputEmbeddings(inputName)) {
                 decoderInputMap.put(inputName, embeddings);
             } else if (ioConfig.isAttentionMask(inputName)) {
@@ -725,21 +706,21 @@ public class DecoderUtils {
                     long totalSeqLen = maxKvLen + currentSeqLen;
                     if (canReuse && reusableInputs.containsKey(inputName)) {
                         INDArray mask = reusableInputs.get(inputName);
-                        if (cachePos > 0 && !nativeDecodeInputs) {
-                            // Mark the position just filled by the previous scatter (cachePos-1).
-                            // When nativeDecodeInputs=true, C++ handles mask updates on device
-                            // via setNextDecodeToken → frozenFastPath capture buffer writes.
-                            mask.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(cachePos - 1)},
-                                    Nd4j.scalar(DataType.LONG, 1));
-                        }
-                        decoderInputMap.put(inputName, mask);
-                    } else {
-                        INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-                        // Set 1s at positions 0..cachePos-1 (filled KV slots) + the current token at the end
+                        // Ensure ALL positions [0, cachePos) are set to 1.
+                        // After prefill→decode transition, cachePos jumps from 0 to
+                        // prefillSeqLen. The incremental per-step update (cachePos-1)
+                        // only sets one position — we need the full range.
                         if (cachePos > 0) {
                             mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
                         }
-                        // Also set the last position (the concat'd current token)
+                        // Current token position at the end
+                        mask.putScalar(0, totalSeqLen - 1, 1);
+                        decoderInputMap.put(inputName, mask);
+                    } else {
+                        INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
+                        if (cachePos > 0) {
+                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
+                        }
                         mask.putScalar(0, totalSeqLen - 1, 1);
                         decoderInputMap.put(inputName, mask);
                         if (canReuse) reusableInputs.put(inputName, mask);
@@ -778,19 +759,14 @@ public class DecoderUtils {
             } else if (ioConfig.isPositionIds(inputName)) {
                 if (canReuse && reusableInputs.containsKey(inputName)) {
                     INDArray posIds = reusableInputs.get(inputName);
-                    if (!nativeDecodeInputs) {
-                        // C++ handles position_ids when nativeDecodeInputs=true.
-                        posIds.assign(Nd4j.scalar(DataType.LONG, pastSeqLen));
-                    }
+                    writePositionIds(posIds, pastSeqLen, currentSeqLen);
                     decoderInputMap.put(inputName, posIds);
                 } else {
-                    // arange creates a FLOAT array; reshape creates a view; castTo creates
-                    // a new LONG array. Close the intermediate FLOAT array to avoid leaking
-                    // its DataBuffer (the cast result has its own independent buffer).
-                    INDArray arangeResult = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
-                            .reshape(1, currentSeqLen);
-                    INDArray posIds = arangeResult.castTo(DataType.LONG);
-                    arangeResult.close();
+                    // Keep decode position_ids as a directly materialized LONG buffer.
+                    // This avoids temporary scalar/range arrays, async cast source lifetime,
+                    // and view-backed placeholders on the frozen replay path.
+                    INDArray posIds = Nd4j.create(DataType.LONG, 1, currentSeqLen);
+                    writePositionIds(posIds, pastSeqLen, currentSeqLen);
                     decoderInputMap.put(inputName, posIds);
                     if (canReuse) reusableInputs.put(inputName, posIds);
                 }
@@ -843,10 +819,12 @@ public class DecoderUtils {
                     long totalSeqLen = maxKvLen + currentSeqLen;
                     if (canReuse && reusableInputs.containsKey(inputName)) {
                         INDArray bias = reusableInputs.get(inputName);
-                        if (cachePos > 0 && !nativeDecodeInputs) {
-                            // Unmask the position that was just filled by KV scatter.
-                            // When nativeDecodeInputs=true, C++ handles this on device.
-                            bias.putScalar(new long[]{0, 0, 0, cachePos - 1}, 0.0f);
+                        // Unmask ALL positions [0, cachePos) — not just cachePos-1.
+                        // After prefill→decode, cachePos jumps and the full range needs clearing.
+                        if (cachePos > 0) {
+                            for (int p = 0; p < (int) cachePos; p++) {
+                                bias.putScalar(new long[]{0, 0, 0, p}, 0.0f);
+                            }
                         }
                         decoderInputMap.put(inputName, bias);
                     } else {
@@ -876,7 +854,76 @@ public class DecoderUtils {
             decoderInputMap.put(embedsName, embeddings);
         }
 
+        associateInternalModelInputs(ioConfig, materializedInputNames, decoder, decoderInputMap);
         return decoderInputMap;
+    }
+
+    private static List<String> expandConfiguredInputNames(ModelIOConfig ioConfig,
+                                                           List<String> decoderInputNames,
+                                                           SameDiff decoder) {
+        List<String> materializedInputNames = new ArrayList<>();
+        if (decoderInputNames != null) {
+            materializedInputNames.addAll(decoderInputNames);
+        }
+        if (decoder == null) {
+            return materializedInputNames;
+        }
+
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getInputEmbeddingsName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getInputIdsName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getAttentionMaskName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getCausalMaskName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getPositionIdsName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getEncoderHiddenStatesName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getEncoderAttentionMaskName());
+
+        return materializedInputNames;
+    }
+
+    private static void addConfiguredInputIfInternal(List<String> inputNames, SameDiff decoder, String inputName) {
+        if (decoder == null || inputName == null || inputName.isEmpty()) {
+            return;
+        }
+        if (!decoder.hasVariable(inputName) || inputNames.contains(inputName)) {
+            return;
+        }
+        inputNames.add(inputName);
+    }
+
+    /**
+     * Keep internal decoder inputs phase-aligned with the per-step arrays built above.
+     * SameDiff.output() only consumes external inputs from the feed map; configured inputs
+     * that exist as internal variables must be associated explicitly each step.
+     */
+    public static void associateInternalModelInputs(ModelIOConfig ioConfig,
+                                                    List<String> materializedInputNames,
+                                                    SameDiff decoder,
+                                                    Map<String, INDArray> decoderInputMap) {
+        if (decoder == null || decoderInputMap == null || decoderInputMap.isEmpty()) {
+            return;
+        }
+
+        List<String> externalInputNames = decoder.externalInputs();
+        for (String inputName : materializedInputNames) {
+            if (inputName == null || !decoder.hasVariable(inputName)) {
+                continue;
+            }
+            INDArray arr = decoderInputMap.get(inputName);
+            if (arr != null && !externalInputNames.contains(inputName)) {
+                decoder.associateArrayWithVariable(arr, inputName);
+            }
+        }
+    }
+
+    private static void writePositionIds(INDArray posIds, long startPos, long length) {
+        if (length == 1) {
+            posIds.putScalar(0, 0, startPos);
+            return;
+        }
+
+        for (long j = 0; j < length; j++) {
+            posIds.putScalar(0, j, startPos + j);
+        }
     }
 
     /**

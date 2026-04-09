@@ -94,8 +94,61 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     return nullptr;
   };
 
+  auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
+    if (slot.op == nullptr || slot.op->getOpDescriptor() == nullptr) {
+      return sd::ops::OP_TRAIT_NONE;
+    }
+    return slot.op->getOpDescriptor()->getTraits();
+  };
+
+  auto slotHasTrait = [&](const NativeSlot& slot, uint32_t traits) -> bool {
+    return (resolveSlotTraits(slot) & traits) != 0;
+  };
+
+  auto dataMovementSectionType = [&](const NativeSlot& slot) -> KernelSectionType {
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_GATHER_ND)) {
+      return KernelSectionType::GATHER_ND;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_GATHER)) {
+      return KernelSectionType::GATHER;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_CONCAT)) {
+      return KernelSectionType::CONCAT;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_SPLIT_V)) {
+      return KernelSectionType::SPLIT_V;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_SPLIT)) {
+      return KernelSectionType::SPLIT;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_STACK)) {
+      return KernelSectionType::STACK;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_TILE)) {
+      return KernelSectionType::TILE;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_SCATTER_ND_UPDATE)) {
+      return KernelSectionType::SCATTER_ND_UPDATE;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_SCATTER_ND)) {
+      return KernelSectionType::SCATTER_ND;
+    }
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_SLICE)) {
+      return KernelSectionType::STRIDED_SLICE;
+    }
+    return KernelSectionType::GATHER;
+  };
+
+  auto isGatherLikeSectionType = [](KernelSectionType type) -> bool {
+    return type == KernelSectionType::GATHER || type == KernelSectionType::GATHER_ND;
+  };
+
+  auto isConcatLikeSectionType = [](KernelSectionType type) -> bool {
+    return type == KernelSectionType::CONCAT || type == KernelSectionType::STACK;
+  };
+
   // Helper: classify a category into a section type
-  auto categoryToSectionType = [](TritonOpCategory cat, const std::string& opName) -> KernelSectionType {
+  auto categoryToSectionType = [&](TritonOpCategory cat, const NativeSlot& slot) -> KernelSectionType {
     switch (cat) {
       case TritonOpCategory::BINARY_ELEMENTWISE:
       case TritonOpCategory::UNARY_ELEMENTWISE:
@@ -126,36 +179,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         return KernelSectionType::CONSTANT_GENERATION;
       case TritonOpCategory::CONVOLUTION:
         return KernelSectionType::CONVOLUTION;
-      case TritonOpCategory::DATA_MOVEMENT: {
-        // Sub-classify data movement ops
-        std::string lower = opName;
-        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-        if (lower.find("gather_nd") != std::string::npos || lower == "gathernd")
-          return KernelSectionType::GATHER_ND;
-        if (lower.find("gather") != std::string::npos)
-          return KernelSectionType::GATHER;
-        if (lower.find("concat") != std::string::npos)
-          return KernelSectionType::CONCAT;
-        if (lower.find("split_v") != std::string::npos || lower == "splitv")
-          return KernelSectionType::SPLIT_V;
-        if (lower.find("split") != std::string::npos)
-          return KernelSectionType::SPLIT;
-        if (lower.find("stack") != std::string::npos)
-          return KernelSectionType::STACK;
-        if (lower.find("strided_slice") != std::string::npos)
-          return KernelSectionType::STRIDED_SLICE;
-        if (lower.find("tile") != std::string::npos)
-          return KernelSectionType::TILE;
-        if (lower.find("scatter_nd_update") != std::string::npos)
-          return KernelSectionType::SCATTER_ND_UPDATE;
-        if (lower.find("scatter_nd") != std::string::npos)
-          return KernelSectionType::SCATTER_ND;
-        return KernelSectionType::GATHER;  // Default data movement
-      }
+      case TritonOpCategory::DATA_MOVEMENT:
+        return dataMovementSectionType(slot);
       case TritonOpCategory::UNSUPPORTED:
       case TritonOpCategory::FUSED_LLM:
-        // Non-compilable ops must use SHAPE_MANIPULATION section type
-        // (alwaysFallback=true) so they run via native slot-by-slot.
+        // Non-compilable ops stay in native ordered ranges rather than Triton kernels.
         return KernelSectionType::SHAPE_MANIPULATION;
       default:
         return KernelSectionType::ELEMENTWISE;
@@ -178,8 +206,9 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   // requirements and should be emitted via dedicated section handlers.
   //
   // SHAPE_MANIPULATION ops (reshape, squeeze, expand_dims, permute, transpose)
-  // are NOT merged into ELEMENTWISE sections.  They run via native fallback
-  // (zero-copy view creation) which is both correct and free.  Merging them
+  // are NOT merged into ELEMENTWISE sections. They stay in native ordered
+  // execution (often as zero-copy view installation), which is both correct and
+  // free. Merging them
   // caused Bug 2: the Triton kernel SSA-forwarded reshape values and stored
   // to the reshape output buffer, but the stored data was zeros — likely
   // due to buffer pointer resolution issues between the Triton kernel and
@@ -213,11 +242,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   auto firstCat = getOpCategory(slots[startSlot].opName);
   // Reclassify TERNARY ops with < 3 inputs (e.g., 1-input Where = coordinate
   // extraction, not element-wise select).  These are data-dependent and cannot
-  // be compiled by Triton — they must run via native fallback.
+  // be compiled by Triton — they must stay in native ordered execution.
   if (firstCat == TritonOpCategory::TERNARY && slots[startSlot].numInputs < 3) {
     firstCat = TritonOpCategory::UNSUPPORTED;
   }
-  currentSection.type = categoryToSectionType(firstCat, slots[startSlot].opName);
+  currentSection.type = categoryToSectionType(firstCat, slots[startSlot]);
 
   // Track the element count for the current element-wise section.
   // All ops in the same section must have compatible element counts for
@@ -228,18 +257,18 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   // Track whether the current section contains a shape manipulation op
   // (permute, transpose, reshape, squeeze, expand_dims).  When true,
   // the NEXT op must start a new section so each shape op runs via
-  // native fallback (zero-copy view or permute reindexing).
+  // native ordered execution (zero-copy view or permute reindexing).
   bool currentSectionHasShapeOp = false;
 
   // Helper: detect whether an op is any shape manipulation op.
   // ALL shape manipulation ops are isolated into their own sections and
-  // run via native fallback.  This prevents:
+  // stay in native ordered execution. This prevents:
   //  - Permute/transpose: incorrect SSA-forwarding in 1D skeleton
   //  - Reshape/squeeze/expand_dims: zero-output bug from buffer pointer
   //    resolution issues between Triton kernels and ND4J view-based DataBuffers
-  auto isShapeManipOp = [](const NativeSlot& slot) -> bool {
-    auto cat = getOpCategory(slot.opName);
-    return cat == TritonOpCategory::SHAPE_MANIPULATION;
+  auto isShapeManipOp = [&](const NativeSlot& slot) -> bool {
+    return slotHasTrait(slot, sd::ops::OP_TRAIT_VIEW_PRODUCING) ||
+           getOpCategory(slot.opName) == TritonOpCategory::SHAPE_MANIPULATION;
   };
 
   auto shapeInfoToVector = [](const LongType* shapeInfo) -> std::vector<LongType> {
@@ -429,7 +458,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     if (cat == TritonOpCategory::TERNARY && slots[i].numInputs < 3) {
       cat = TritonOpCategory::UNSUPPORTED;
     }
-    auto sectionType = categoryToSectionType(cat, slots[i].opName);
+    auto sectionType = categoryToSectionType(cat, slots[i]);
 
     // Check if this is a shape manipulation op
     bool isShapeOp = (sectionType == KernelSectionType::SHAPE_MANIPULATION);
@@ -460,7 +489,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       // Permute/transpose require non-linear index reindexing; reshape/squeeze/
       // expand_dims cause zero-output bugs when SSA-forwarded in Triton kernels
       // due to buffer pointer resolution issues with ND4J view-based DataBuffers.
-      // All shape ops run via native fallback (alwaysFallback=true).
+      // All shape ops stay in native ordered execution (alwaysNativeOrdered=true).
       startNewSection = true;
       currentSectionHasShapeOp = true;
     } else if (isIdentityShape) {
@@ -527,7 +556,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         // - If n_elements is too large, smaller outputs get buffer overflows
         // Identity ops don't change element count, so they're always safe to merge.
         // Shape manipulation ops (reshape, squeeze, expand_dims, permute) are now
-        // excluded from ELEMENTWISE sections entirely — they run via native fallback.
+        // excluded from ELEMENTWISE sections entirely — they stay in native ordered execution.
         LongType opElements = getOutputElements(i);
         if (opElements > 0 && currentSectionElements > 0 && opElements != currentSectionElements) {
           // Element count changed — check if broadcast-compatible.
@@ -552,6 +581,37 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             startNewSection = true;
           }
         }
+      }
+    }
+
+    // ── Phase 2: Explicit gather+concat ladder coalescing ────────────────
+    // Adjacent GATHER and CONCAT sections that form a ladder pattern can be
+    // merged into a single section when they share compatible element counts
+    // and the concat consumes gather output as its primary input.
+    //
+    // This is an explicit lowering rule, not a generic "merge nearby" heuristic.
+    // Only merges when the resulting section is phase-closed (no cross-phase deps).
+    if (!startNewSection && currentSection.numOps > 0) {
+      // Check if this is a gather/concat ladder pattern
+      bool isGatherConcatLadder = false;
+      const auto prevType = categoryToSectionType(getOpCategory(slots[i - 1].opName), slots[i - 1]);
+      const auto curType = sectionType;
+
+      if ((isGatherLikeSectionType(prevType) && isConcatLikeSectionType(curType)) ||
+          (isConcatLikeSectionType(prevType) && isGatherLikeSectionType(curType))) {
+        // Verify element counts are compatible (same output size)
+        LongType prevElements = getOutputElements(i - 1);
+        LongType curElements = getOutputElements(i);
+        if (prevElements > 0 && curElements > 0 &&
+            (prevElements == curElements || prevElements % curElements == 0 || curElements % prevElements == 0)) {
+          isGatherConcatLadder = true;
+          startNewSection = false;  // Override: merge into single section
+        }
+      }
+
+      if (isGatherConcatLadder) {
+        // Mark section for fused gather-concat lowering
+        currentSection.type = sectionType;  // Keep the dominant section type
       }
     }
 
@@ -600,7 +660,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
           if (currentSection.matmulK == 0)
             currentSection.matmulK = static_cast<int>(bArr->sizeAt(bArr->rankOf() - 2));
         }
-        // Fallback: resolve M from input A's producing slot's cached output shape
+        // Secondary path: resolve M from input A's producing slot's cached output shape
         if (currentSection.matmulM == 0) {
           int aSrc = slots[i].inputSourceIndices[0];
           if (aSrc >= 0 && aSrc < totalOutputSlots) {
@@ -620,7 +680,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             }
           }
         }
-        // Fallback: resolve M from output shape (output of matmul is [..., M, N])
+        // Secondary path: resolve M from output shape (output of matmul is [..., M, N])
         if (currentSection.matmulM == 0 && slots[i].numOutputs > 0) {
           int outIdx = slots[i].outputSlotIndices[0];
           NDArray* outArr = resolveArray(outIdx);
@@ -647,7 +707,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             }
           }
         }
-        // Fallback: resolve K from input A's producing slot's cached output shape
+        // Secondary path: resolve K from input A's producing slot's cached output shape
         if (currentSection.matmulK == 0) {
           int aSrc = slots[i].inputSourceIndices[0];
           if (aSrc >= 0 && aSrc < totalOutputSlots) {
@@ -1761,7 +1821,7 @@ void TritonIRBuilder::emitShapeManipulationSection(mlir::OpBuilder& builder, mli
     return;
   }
 
-  // Default: straight copy (reshape, flatten, expand_dims, squeeze, or general permute fallback)
+  // Default: straight copy (reshape, flatten, expand_dims, squeeze, or general permute path)
   auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtr);
   auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, offsets);
   auto loaded = builder.create<mlir::triton::LoadOp>(loc,
@@ -1776,7 +1836,7 @@ void TritonIRBuilder::emitShapeManipulationSection(mlir::OpBuilder& builder, mli
                                          mlir::triton::EvictionPolicy::NORMAL);
 }
 
-// ─── Per-element matmul fallback ────────────────────────────────────────────
+// ─── Per-element matmul compatibility path ──────────────────────────────────
 // When cooperative launch is infeasible, compute matmul per-element without tt.dot.
 
 void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Location loc,

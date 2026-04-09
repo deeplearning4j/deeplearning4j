@@ -219,7 +219,7 @@ public class DecodeFeatureInteractionRegressionTest {
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, false);
+                    true);
 
             INDArray mask = result.get("attention_mask");
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -297,7 +297,7 @@ public class DecodeFeatureInteractionRegressionTest {
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, reusableInputs,
-                true, false);
+                true);
 
         INDArray biasAfterStep0 = reusableInputs.get(ATTN_REFORMAT_NODE);
         // After step 0: positions 0..9 attended (0.0), position 10+ masked (MASK_FILL)
@@ -311,7 +311,7 @@ public class DecodeFeatureInteractionRegressionTest {
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 680, currentSeqLen, staticKvBuffers, MAX_KV_LEN, 11,
                 true, HIDDEN_SIZE, reusableInputs,
-                true, false);
+                true);
 
         INDArray biasAfterStep1 = reusableInputs.get(ATTN_REFORMAT_NODE);
         assertEquals(0.0f, biasAfterStep1.getFloat(0, 0, 0, 10), 1e-6,
@@ -363,14 +363,14 @@ public class DecodeFeatureInteractionRegressionTest {
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, reusableInputs,
-                true, true);  // nativeDecodeInputs=true
+                true);  // dspActive=true
 
         // Step 1: cachePos=11, nativeDecodeInputs=true
         DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 680, currentSeqLen, staticKvBuffers, MAX_KV_LEN, 11,
                 true, HIDDEN_SIZE, reusableInputs,
-                true, true);
+                true);
 
         INDArray bias = reusableInputs.get(ATTN_REFORMAT_NODE);
         // Position 10 should be unmasked (the !nativeDecodeInputs guard was removed)
@@ -517,7 +517,7 @@ public class DecodeFeatureInteractionRegressionTest {
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen + step, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, false);
+                    true);
 
             INDArray mask = result.get("attention_mask");
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -592,7 +592,7 @@ public class DecodeFeatureInteractionRegressionTest {
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     0, 1, staticKvBuffers, MAX_KV_LEN, 0,
                     true, HIDDEN_SIZE, null,
-                    true, false);
+                    true);
 
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
             assertNotNull(bias);
@@ -641,7 +641,7 @@ public class DecodeFeatureInteractionRegressionTest {
                         ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                         679 + s, 1, staticKvBuffers, MAX_KV_LEN, pos,
                         true, HIDDEN_SIZE, reusableInputs,
-                        true, false);
+                        true);
             }, "Step " + s + " (cachePos=" + pos + ") should not throw");
         }
 

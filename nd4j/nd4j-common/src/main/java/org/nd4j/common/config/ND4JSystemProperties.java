@@ -1110,14 +1110,6 @@ public class ND4JSystemProperties {
 
     /**
      * Applicability: DynamicShapePlan-based inference<br>
-     * Description: When true, disables native decode input handling in DSP execution.
-     * <p>
-     * Default: false
-     */
-    public static final String DSP_NO_NATIVE_DECODE_INPUTS = "nd4j.dsp.noNativeDecodeInputs";
-
-    /**
-     * Applicability: DynamicShapePlan-based inference<br>
      * Description: When true, disables attention override optimization in DSP execution.
      * <p>
      * Default: false

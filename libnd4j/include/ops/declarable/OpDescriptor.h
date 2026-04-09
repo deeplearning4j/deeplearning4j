@@ -59,6 +59,19 @@ enum OpTraits : uint32_t {
   OP_TRAIT_COMPARISON             = 1 << 12,
   OP_TRAIT_LOGICAL                = 1 << 13,
   OP_TRAIT_IDENTITY               = 1 << 14,
+  OP_TRAIT_DATA_MOVEMENT          = 1 << 15,
+  OP_TRAIT_CONSTANT_GENERATION    = 1 << 16,
+  OP_TRAIT_ATTENTION              = 1 << 17,
+  OP_TRAIT_GATHER                 = 1 << 18,
+  OP_TRAIT_GATHER_ND             = 1 << 19,
+  OP_TRAIT_CONCAT                = 1 << 20,
+  OP_TRAIT_SPLIT                 = 1 << 21,
+  OP_TRAIT_SPLIT_V               = 1 << 22,
+  OP_TRAIT_STACK                 = 1 << 23,
+  OP_TRAIT_SLICE                 = 1 << 24,
+  OP_TRAIT_TILE                  = 1 << 25,
+  OP_TRAIT_SCATTER_ND            = 1 << 26,
+  OP_TRAIT_SCATTER_ND_UPDATE     = 1 << 27,
 };
 
 class SD_LIB_EXPORT OpExecTrace {

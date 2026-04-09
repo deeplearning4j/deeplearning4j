@@ -37,9 +37,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.execution.CapturingSlotInterceptor;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -330,11 +332,13 @@ public class TestDspValidation {
             }
         }
 
-        // For SLOT_BY_SLOT config, expect 100% match (same path)
-        if (config.getExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT) {
-            assertEquals(minLen, matches,
-                    config.getName() + ": SLOT_BY_SLOT should produce identical output");
-        }
+        double requiredRate = config.getExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
+                ? 1.0
+                : configuredMatchRate / 100.0;
+        assertTrue(matchRate >= requiredRate,
+                config.getName() + ": token match rate too low: "
+                        + String.format("%.1f%% (required %.1f%%)",
+                        matchRate * 100, requiredRate * 100));
     }
 
     // ─── Test: Per-op slot validation ──────────────────────────────────────
@@ -549,6 +553,357 @@ public class TestDspValidation {
                 String.format("%.1f", matchRate * 100));
         log.info("NO_TF32 text: {}", noTf32Result.getText());
         log.info("TF32 text:    {}", tf32Result.getText());
+    }
+
+    @Test
+    @DisplayName("Decoder plan introspection: slots 348-358 boundary")
+    public void testDecoderPlanBoundary348To358() throws Exception {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping boundary introspection");
+            return;
+        }
+        ensureModelsLoaded();
+
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokens);
+        BenchmarkConfigApplier.apply(config);
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+
+        decoder.setDspAutoCompileEnabled(true);
+        decoder.setDspNativeAutoCompileEnabled(true);
+        List<String> outputs = new ArrayList<>(decoder.outputs());
+        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+
+        embedTokens.setDspAutoCompileEnabled(true);
+        embedTokens.setDspNativeAutoCompileEnabled(true);
+        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
+        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+
+        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(getTokens(2))
+                .hiddenSize(hiddenSize)
+                .build();
+
+        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        assertNotNull(result, "Decode result should exist");
+
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "DSP executor must exist");
+        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
+
+        var plan = executor.getCurrentPlan();
+        assertTrue(plan.getSlots().length > 358, "Expected decoder plan to include slot 358");
+
+        log.info("=== DECODER PLAN BOUNDARY: slots 348-358 ===");
+        for (int slotIdx = 348; slotIdx <= 358; slotIdx++) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+
+        String[] auxVarNames = {
+                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_2/output_0",
+                "/model/layers.0/attn/v_proj/repeat_kv/Mul_1/output_0",
+                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_4/output_0"
+        };
+        log.info("=== DECODER PLAN AUXILIARY ARRAYS (348-358) ===");
+        for (String varName : auxVarNames) {
+            SDVariable var = decoder.getVariable(varName);
+            INDArray arr = decoder.getArrForVarName(varName);
+            String creator = (var != null && var.getCreator() != null) ? var.getCreator().getOwnName() : "null";
+            String type = (var != null) ? String.valueOf(var.getVariableType()) : "null";
+            log.info("  {} -> type={} creator={} shape={} dtype={} values={}",
+                    varName, type, creator,
+                    arr != null ? Arrays.toString(arr.shape()) : "null",
+                    arr != null ? arr.dataType() : "null",
+                    (arr != null && arr.length() <= 16) ? arr.toStringFull() : "<len=" + (arr != null ? arr.length() : -1) + ">");
+        }
+    }
+
+    @Test
+    @DisplayName("Decoder plan introspection: slots 400-430 boundary")
+    public void testDecoderPlanBoundary400To430() throws Exception {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping boundary introspection");
+            return;
+        }
+        ensureModelsLoaded();
+
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokens);
+        BenchmarkConfigApplier.apply(config);
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+
+        decoder.setDspAutoCompileEnabled(true);
+        decoder.setDspNativeAutoCompileEnabled(true);
+        List<String> outputs = new ArrayList<>(decoder.outputs());
+        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+
+        embedTokens.setDspAutoCompileEnabled(true);
+        embedTokens.setDspNativeAutoCompileEnabled(true);
+        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
+        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+
+        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(getTokens(2))
+                .hiddenSize(hiddenSize)
+                .build();
+
+        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        assertNotNull(result, "Decode result should exist");
+
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "DSP executor must exist");
+        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
+
+        var plan = executor.getCurrentPlan();
+        assertTrue(plan.getSlots().length > 430, "Expected decoder plan to include slot 430");
+
+        log.info("=== DECODER PLAN BOUNDARY: slots 400-430 ===");
+        for (int slotIdx = 400; slotIdx <= 430; slotIdx++) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+
+        int[] auxSlots = {399, 420, 421, 430, 431, 432};
+        log.info("=== DECODER PLAN AUXILIARY SLOTS (400-430) ===");
+        for (int slotIdx : auxSlots) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+
+        String[] auxVarNames = {
+                "/model/layers.0/input_layernorm/output_0",
+                "/model/layers.0/attn/v_proj/MatMul/output_0",
+                "model.layers.0.attn.v_proj.MatMul.weight",
+                "model.layers.0.input_layernorm.weight"
+        };
+        log.info("=== DECODER PLAN AUXILIARY ARRAYS (400-430) ===");
+        for (String varName : auxVarNames) {
+            INDArray arr = decoder.getArrForVarName(varName);
+            if (arr == null) {
+                log.info("  {} -> null", varName);
+                continue;
+            }
+            log.info("  {} -> shape={} dtype={} values={}",
+                    varName, Arrays.toString(arr.shape()), arr.dataType(),
+                    arr.length() <= 16 ? arr.toStringFull() : "<len=" + arr.length() + ">");
+        }
+    }
+
+    @Test
+    @DisplayName("Decoder plan introspection: slots 431-453 boundary")
+    public void testDecoderPlanBoundary431To453() throws Exception {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping boundary introspection");
+            return;
+        }
+        ensureModelsLoaded();
+
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokens);
+        BenchmarkConfigApplier.apply(config);
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+
+        decoder.setDspAutoCompileEnabled(true);
+        decoder.setDspNativeAutoCompileEnabled(true);
+        List<String> outputs = new ArrayList<>(decoder.outputs());
+        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+
+        embedTokens.setDspAutoCompileEnabled(true);
+        embedTokens.setDspNativeAutoCompileEnabled(true);
+        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
+        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+
+        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(getTokens(2))
+                .hiddenSize(hiddenSize)
+                .build();
+
+        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        assertNotNull(result, "Decode result should exist");
+
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "DSP executor must exist");
+        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
+
+        var plan = executor.getCurrentPlan();
+        assertTrue(plan.getSlots().length > 453, "Expected decoder plan to include slot 453");
+
+        log.info("=== DECODER PLAN BOUNDARY: slots 431-453 ===");
+        for (int slotIdx = 431; slotIdx <= 453; slotIdx++) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+
+        int[] auxSlots = {263, 265, 276, 277, 278, 430};
+        log.info("=== DECODER PLAN AUXILIARY SLOTS ===");
+        for (int slotIdx : auxSlots) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+
+        String[] auxVarNames = {
+                "/model/layers.0/attn/v_proj/repeat_kv/Mul_1/output_0",
+                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_4/output_0",
+                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_2/output_0",
+                "sd_var_21",
+                "sd_var_22",
+                "sd_var_23",
+                "sd_var_24",
+                "sd_var_25",
+                "sd_var_26",
+                "sd_var_27",
+                "sd_var_28",
+                "sd_var_29"
+        };
+        log.info("=== DECODER PLAN AUXILIARY ARRAYS ===");
+        for (String varName : auxVarNames) {
+            INDArray arr = decoder.getArrForVarName(varName);
+            if (arr == null) {
+                log.info("  {} -> null", varName);
+                continue;
+            }
+            log.info("  {} -> shape={} dtype={} values={}",
+                    varName, Arrays.toString(arr.shape()), arr.dataType(),
+                    arr.length() <= 16 ? arr.toStringFull() : "<len=" + arr.length() + ">");
+        }
+    }
+
+    @Test
+    @DisplayName("Decoder plan introspection: slots 455-523 boundary")
+    public void testDecoderPlanBoundary455To523() throws Exception {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping boundary introspection");
+            return;
+        }
+        ensureModelsLoaded();
+
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokens);
+        BenchmarkConfigApplier.apply(config);
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+
+        decoder.setDspAutoCompileEnabled(true);
+        decoder.setDspNativeAutoCompileEnabled(true);
+        List<String> outputs = new ArrayList<>(decoder.outputs());
+        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+
+        embedTokens.setDspAutoCompileEnabled(true);
+        embedTokens.setDspNativeAutoCompileEnabled(true);
+        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
+        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+
+        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(getTokens(2))
+                .hiddenSize(hiddenSize)
+                .build();
+
+        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        assertNotNull(result, "Decode result should exist");
+
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "DSP executor must exist");
+        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
+
+        var plan = executor.getCurrentPlan();
+        assertTrue(plan.getSlots().length > 523, "Expected decoder plan to include slot 523");
+
+        log.info("=== DECODER PLAN BOUNDARY: slots 455-523 ===");
+        for (int slotIdx = 455; slotIdx <= 523; slotIdx++) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+
+        int[] auxSlots = {455, 467, 489, 503, 523, 524};
+        log.info("=== DECODER PLAN AUXILIARY SLOTS (455-523) ===");
+        for (int slotIdx : auxSlots) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+    }
+
+    @Test
+    @DisplayName("Decoder plan introspection: slots 793-846 boundary")
+    public void testDecoderPlanBoundary793To846() throws Exception {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping boundary introspection");
+            return;
+        }
+        ensureModelsLoaded();
+
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokens);
+        BenchmarkConfigApplier.apply(config);
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+
+        decoder.setDspAutoCompileEnabled(true);
+        decoder.setDspNativeAutoCompileEnabled(true);
+        List<String> outputs = new ArrayList<>(decoder.outputs());
+        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+
+        embedTokens.setDspAutoCompileEnabled(true);
+        embedTokens.setDspNativeAutoCompileEnabled(true);
+        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
+        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+
+        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(getTokens(2))
+                .hiddenSize(hiddenSize)
+                .build();
+
+        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        assertNotNull(result, "Decode result should exist");
+
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "DSP executor must exist");
+        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
+
+        var plan = executor.getCurrentPlan();
+        assertTrue(plan.getSlots().length > 846, "Expected decoder plan to include slot 846");
+
+        log.info("=== DECODER PLAN BOUNDARY: slots 793-846 ===");
+        for (int slotIdx = 793; slotIdx <= 846; slotIdx++) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
+
+        int[] auxSlots = {792, 793, 819, 820, 821, 822, 823, 846, 847};
+        log.info("=== DECODER PLAN AUXILIARY SLOTS (793-846) ===");
+        for (int slotIdx : auxSlots) {
+            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+        }
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────

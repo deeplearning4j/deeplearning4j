@@ -408,7 +408,7 @@ public class DecodeLoopStateTransitionTest {
         Map<String, INDArray> step0Map = DecoderUtils.buildDecoderInputMap(
                 ioConfig, prefillInputNames, null, prefillEmbeds, prefillIds,
                 0, PREFILL_LEN, null, -1, 0,
-                false, HIDDEN_SIZE, reusableInputs, false, false);
+                false, HIDDEN_SIZE, reusableInputs, false);
 
         INDArray prefillMask = step0Map.get("attention_mask");
         assertNotNull(prefillMask, "Step 0: should have attention_mask");
@@ -430,7 +430,7 @@ public class DecodeLoopStateTransitionTest {
         Map<String, INDArray> step1Map = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, null, decodeEmbeds, decodeIds,
                 cachePos, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, HIDDEN_SIZE, reusableInputs, true, false);
+                true, HIDDEN_SIZE, reusableInputs, true);
 
         INDArray decodeMask = step1Map.get("attention_mask");
         assertNotNull(decodeMask, "Step 1: should have attention_mask");

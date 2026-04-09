@@ -111,7 +111,7 @@ public class CppVsJavaKvScatterTest {
         Map<String, INDArray> prefillInputs = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, decoder, embeddings, inputIds,
                 0, prefillIds.length, null, -1, 0,
-                false, HIDDEN_SIZE, null, false, false);
+                false, HIDDEN_SIZE, null, false);
         if (embedsName != null && !prefillInputs.containsKey(embedsName)) {
             prefillInputs.put(embedsName, embeddings);
         }
@@ -202,7 +202,7 @@ public class CppVsJavaKvScatterTest {
             Map<String, INDArray> decInputs = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, decoder, stepEmbedding, tokenIdArr,
                     pastSeqLen, 1, staticKvBuffers, maxKvLen, cachePos,
-                    true, HIDDEN_SIZE, reusableInputs, true, false);
+                    true, HIDDEN_SIZE, reusableInputs, true);
             if (embedsName != null && !decInputs.containsKey(embedsName)) {
                 decInputs.put(embedsName, stepEmbedding);
             }
@@ -269,7 +269,7 @@ public class CppVsJavaKvScatterTest {
             Map<String, INDArray> decInputs = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, decoder, stepEmbedding, tokenIdArr,
                     pastSeqLen, 1, staticKvBuffers, maxKvLen, cachePos,
-                    true, HIDDEN_SIZE, reusableInputs, true, false);
+                    true, HIDDEN_SIZE, reusableInputs, true);
             if (embedsName != null && !decInputs.containsKey(embedsName)) {
                 decInputs.put(embedsName, stepEmbedding);
             }
@@ -444,7 +444,7 @@ public class CppVsJavaKvScatterTest {
         Map<String, INDArray> prefillInputs = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, decoder, embeddings, inputIds,
                 0, prefillIds.length, null, -1, 0,
-                false, HIDDEN_SIZE, null, false, false);
+                false, HIDDEN_SIZE, null, false);
         if (embedsName != null && !prefillInputs.containsKey(embedsName)) {
             prefillInputs.put(embedsName, embeddings);
         }
@@ -527,7 +527,7 @@ public class CppVsJavaKvScatterTest {
             Map<String, INDArray> decInputs = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, decoder, stepEmbedding, tokenIdArr,
                     pastSeqLen, 1, staticKvBuffers, maxKvLen, cachePos,
-                    true, HIDDEN_SIZE, reusableInputs, true, false);
+                    true, HIDDEN_SIZE, reusableInputs, true);
             if (embedsName != null && !decInputs.containsKey(embedsName)) {
                 decInputs.put(embedsName, stepEmbedding);
             }

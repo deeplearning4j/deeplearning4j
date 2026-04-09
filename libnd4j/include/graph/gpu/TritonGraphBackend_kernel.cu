@@ -1071,7 +1071,9 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
         int extIdx = -(argMapping.slotIndex + 1);
         if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
       } else {
-        if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
+        if (argMapping.slotIndex < totalOutputSlots) {
+          arr = outputSlots[argMapping.slotIndex];
+        }
       }
 
       if (arr != nullptr) {

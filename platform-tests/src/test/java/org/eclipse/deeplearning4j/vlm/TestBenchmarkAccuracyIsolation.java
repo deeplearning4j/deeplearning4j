@@ -1,12 +1,15 @@
 package org.eclipse.deeplearning4j.vlm;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
+import org.eclipse.deeplearning4j.model.benchmark.DspAccuracyValidator;
+import org.eclipse.deeplearning4j.model.benchmark.ValidationConfig;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
@@ -22,6 +25,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.nd4j.autodiff.samediff.execution.CapturingSlotInterceptor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -37,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,6 +71,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class TestBenchmarkAccuracyIsolation {
+
+    private static final int REPLAY_PREFIX_TOKENS = 4;
+    private static final ValidationConfig TF32_BOUNDARY_TOLERANCE = ValidationConfig.tf32Tolerant();
 
     private SameDiff visionEncoder;
     private SameDiff decoder;
@@ -110,6 +120,49 @@ public class TestBenchmarkAccuracyIsolation {
         System.gc();
 
         log.info("Benchmark embeddings: shape={}", Arrays.toString(benchmarkEmbeddings.shape()));
+    }
+
+    // =========================================================================
+    // Test 0: isolate the exact benchmark prefill RMSNorm outside DSP.
+    // If this fails, the CUDA rms_norm path itself is broken for the prompt shape.
+    // If this passes, the fault is in DSP slot/buffer handling around slot 420.
+    // =========================================================================
+
+    @Test
+    @Order(0)
+    @DisplayName("0. Benchmark prefill rms_norm isolation")
+    public void testBenchmarkPrefillRmsNormIsolation() {
+        INDArray gamma = decoder.getArrForVarName("model.layers.0.input_layernorm.weight");
+        assertNotNull(gamma, "Layer 0 input_layernorm gamma not found");
+
+        INDArray input = benchmarkEmbeddings.dup();
+        assertNotNull(input, "Benchmark embeddings should exist");
+        assertEquals(3, input.rank(), "Benchmark embeddings should be rank 3");
+
+        log.info("Benchmark prefill rms_norm isolation: input shape={} dtype={} order={} view={}",
+                Arrays.toString(input.shape()), input.dataType(), input.ordering(), input.isView());
+        log.info("Benchmark prefill rms_norm isolation: gamma shape={} dtype={} order={} view={}",
+                Arrays.toString(gamma.shape()), gamma.dataType(), gamma.ordering(), gamma.isView());
+
+        INDArray direct = Nd4j.nn.rmsNorm(input, gamma, 1e-5f);
+        assertArrayEquals(input.shape(), direct.shape(), "Direct rms_norm shape should match input");
+
+        SameDiff sd = SameDiff.create();
+        try {
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, input.shape());
+            SDVariable g = sd.constant("gamma", gamma.dup());
+            SDVariable out = sd.nn.rmsNorm("out", x, g, 1e-5f);
+            Map<String, INDArray> result = sd.output(Map.of("x", input.dup()), out.name());
+            INDArray sameDiffOut = result.get(out.name());
+            assertNotNull(sameDiffOut, "SameDiff rms_norm output should exist");
+            assertArrayEquals(input.shape(), sameDiffOut.shape(), "SameDiff rms_norm shape should match input");
+
+            double maxDiff = direct.sub(sameDiffOut).normmaxNumber().doubleValue();
+            log.info("Benchmark prefill rms_norm isolation: direct vs SameDiff max diff={}", maxDiff);
+            assertTrue(maxDiff < 1e-3, "Benchmark prefill rms_norm direct vs SameDiff max diff=" + maxDiff);
+        } finally {
+            sd.close();
+        }
     }
 
     // =========================================================================
@@ -468,43 +521,45 @@ public class TestBenchmarkAccuracyIsolation {
     }
 
     // =========================================================================
-    // Test 7: Best Triton config end-to-end (the actual benchmark config)
-    // This runs LAST since it's the most expensive and depends on all others passing.
+    // Test 7: CUDA graphs replay path must match the manual baseline prefix
+    // This covers the real outputDirect() path that test 2 intentionally disables.
     // =========================================================================
 
     @Test
     @Order(7)
-    @DisplayName("7. Best Triton config: TRITON_compileAll_best_ATTN_gc_argOpt_batchOps")
+    @DisplayName("7. CUDA_GRAPHS replay matches manual baseline prefix")
+    public void testCudaGraphsReplayMatchesManualBaselinePrefix() {
+        List<Integer> expected = ensureManualDecodeTokens(REPLAY_PREFIX_TOKENS);
+
+        BenchmarkConfig config = BenchmarkConfig.create("test_cuda_graphs_replay_prefix")
+                .executionMode(GraphExecutionMode.CUDA_GRAPHS)
+                .maxTokens(6).minDiversityPct(0);
+
+        GenerationResult result = runConfiguredLoop(config, 6);
+
+        assertTrue(decoder.isDspShapesFrozen(),
+                "CUDA_GRAPHS decode should freeze shapes so StaticKvCacheDecodeLoop enters replay/outputDirect()");
+        assertTokenPrefixMatches("CUDA_GRAPHS replay", expected, result.getTokenIds(), REPLAY_PREFIX_TOKENS);
+    }
+
+    // =========================================================================
+    // Test 8: Best Triton config end-to-end (the actual benchmark config)
+    // This runs LAST since it's the most expensive and depends on all others passing.
+    // =========================================================================
+
+    @Test
+    @Order(8)
+    @DisplayName("8. Best Triton config: TRITON_compileAll_best_ATTN_gc_argOpt_batchOps")
     public void testBestTritonConfig() {
         if (!Nd4j.getNativeOps().isTritonAvailable()) {
             log.info("Triton not available, skipping");
             return;
         }
 
-        resetDecoder();
+        List<Integer> expected = ensureManualDecodeTokens(REPLAY_PREFIX_TOKENS);
 
-        BenchmarkConfig config = BenchmarkConfig.create("test_triton_best")
-                .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .dspBatchZero(true).dspBatchZeroKernel(true)
-                .dspBatchedGemm(true)
-                .dspCastSinkMatmul(true)
-                .maxTokens(100).minDiversityPct(0);
-        BenchmarkConfigApplier.apply(config);
-        BenchmarkConfigApplier.compileModels(decoder, "decoder", embedTokens, "embed_tokens", config);
-
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(100)
-                .hiddenSize((int) benchmarkEmbeddings.shape()[2])
-                .build();
-
-        GenerationResult result = loop.decode(benchmarkEmbeddings.dup(), benchmarkPromptTokenIds);
+        BenchmarkConfig config = createBestTritonConfig("test_triton_best", 100);
+        GenerationResult result = runConfiguredLoop(config, 100);
 
         log.info("BEST TRITON -> {} tokens: '{}'", result.getGeneratedTokenCount(), result.getText());
 
@@ -525,12 +580,271 @@ public class TestBenchmarkAccuracyIsolation {
         assertTrue(result.getGeneratedTokenCount() >= 10,
                 "Best Triton config should produce >= 10 tokens, got " + result.getGeneratedTokenCount());
 
+        assertTrue(decoder.isDspShapesFrozen(),
+                "Best Triton config should freeze shapes so decode runs through replay/outputDirect()");
+        assertTokenPrefixMatches("Best Triton batchOps", expected, result.getTokenIds(), REPLAY_PREFIX_TOKENS);
+
         // Check for structural tags (doctag, text, section_header, etc.)
         String text = result.getText();
         boolean hasStructuralTag = text.contains("<doctag>") || text.contains("<text") ||
                 text.contains("<section_header") || text.contains("<page") || text.contains("<otsl");
         assertTrue(hasStructuralTag,
                 "Output should contain SmolDocling structural tags. Got: '" + text + "'");
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("9. Layer 4 repeat_kv boundary: step-2 SLOT_BY_SLOT vs OPTIMAL")
+    public void testLayer4RepeatKvBoundaryStep2() {
+        List<String> boundaryVars = List.of(
+                "/model/layers.4/attn/k_proj/repeat_kv/Reshape_2/output_0",
+                "/model/layers.4/attn/k_proj/repeat_kv/Where/output_0",
+                "/model/layers.4/attn/k_proj/repeat_kv/Expand/output_0",
+                "/model/layers.4/attn/k_proj/repeat_kv/Concat_3/output_0",
+                "/model/layers.4/attn/k_proj/repeat_kv/Reshape_3/output_0"
+        );
+
+        BenchmarkConfig slotBySlotConfig = BenchmarkConfig.create("layer4_repeat_kv_slot_by_slot")
+                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+                .maxTokens(4).minDiversityPct(0);
+
+        BenchmarkConfig optimalConfig = BenchmarkConfig.optimal()
+                .maxTokens(4).minDiversityPct(0);
+        BenchmarkConfig bestConfig = createBestTritonConfig("layer4_repeat_kv_best", 100);
+        List<String> preReshapeBoundaryVars = boundaryVars.subList(0, boundaryVars.size() - 1);
+
+        Map<String, INDArray> baseline = runDecodeStepOutputs(slotBySlotConfig, 2, boundaryVars, false, true);
+        try {
+            INDArray baselineReshape = baseline.get("/model/layers.4/attn/k_proj/repeat_kv/Reshape_3/output_0");
+            assertNotNull(baselineReshape, "SLOT_BY_SLOT must materialize layer-4 repeat_kv Reshape_3 at step 2");
+            long expectedSeqLen = benchmarkEmbeddings.shape()[1] + 2;
+            assertArrayEquals(new long[]{1, 9, expectedSeqLen, 64}, baselineReshape.shape(),
+                    "Baseline layer-4 repeat_kv Reshape_3 shape must match the expected repeated KV layout");
+
+            Map<String, INDArray> paddedSlotBySlot = runStaticPaddedDecodeStepOutputs(slotBySlotConfig, 2, 100,
+                    boundaryVars, false);
+            try {
+                List<String> paddedMismatches = new ArrayList<>();
+                for (String varName : boundaryVars) {
+                    INDArray ref = baseline.get(varName);
+                    INDArray test = paddedSlotBySlot.get(varName);
+                    assertNotNull(ref, "Missing growing-KV baseline capture for " + varName);
+                    assertNotNull(test, "Missing static-padded SLOT_BY_SLOT capture for " + varName);
+
+                    log.info("LAYER4_REPEAT_KV_PADDED step2 var='{}' baselineShape={} paddedShape={}",
+                            varName, Arrays.toString(ref.shape()), Arrays.toString(test.shape()));
+                    if (ref.length() <= 16 && test.length() <= 16) {
+                        log.info("  baseline={}", Arrays.toString(ref.toLongVector()));
+                        log.info("  padded={}", Arrays.toString(test.toLongVector()));
+                    }
+
+                    if (!Arrays.equals(ref.shape(), test.shape())) {
+                        paddedMismatches.add("shape mismatch for " + varName
+                                + " baseline=" + Arrays.toString(ref.shape())
+                                + " padded=" + Arrays.toString(test.shape()));
+                        continue;
+                    }
+
+                    var divergence = DspAccuracyValidator.compareArrays(
+                            ref, test, varName, "layer4_repeat_kv_padded_step2", 2, 0.0, 0.0, null);
+                    if (divergence != null) {
+                        paddedMismatches.add(divergence.toString());
+                    }
+                }
+                if (!paddedMismatches.isEmpty()) {
+                    log.warn("Static padded path diverges before replay:\n{}",
+                            String.join("\n", paddedMismatches));
+                }
+
+                Map<String, INDArray> paddedOptimal = runStaticPaddedDecodeStepOutputs(optimalConfig, 2, 100,
+                        preReshapeBoundaryVars, true);
+                try {
+                    List<String> replayMismatches = new ArrayList<>();
+                    for (String varName : preReshapeBoundaryVars) {
+                        INDArray ref = paddedSlotBySlot.get(varName);
+                        INDArray test = paddedOptimal.get(varName);
+                        assertNotNull(ref, "Missing static-padded SLOT_BY_SLOT capture for " + varName);
+                        assertNotNull(test, "Missing static-padded OPTIMAL capture for " + varName);
+
+                        log.info("LAYER4_REPEAT_KV_PADDED_OPTIMAL step2 var='{}' slotBySlotShape={} optimalShape={}",
+                                varName, Arrays.toString(ref.shape()), Arrays.toString(test.shape()));
+                        if (ref.length() <= 16 && test.length() <= 16) {
+                            log.info("  slotBySlot={}", Arrays.toString(ref.toLongVector()));
+                            log.info("  optimal={}", Arrays.toString(test.toLongVector()));
+                        }
+
+                        if (!Arrays.equals(ref.shape(), test.shape())) {
+                            replayMismatches.add("shape mismatch for " + varName
+                                    + " slotBySlot=" + Arrays.toString(ref.shape())
+                                    + " optimal=" + Arrays.toString(test.shape()));
+                            continue;
+                        }
+                        double absTol = varName.endsWith("/Expand/output_0")
+                                ? TF32_BOUNDARY_TOLERANCE.getDefaultAbsTol()
+                                : 0.0;
+                        double relTol = varName.endsWith("/Expand/output_0")
+                                ? TF32_BOUNDARY_TOLERANCE.getDefaultRelTol()
+                                : 0.0;
+                        var divergence = DspAccuracyValidator.compareArrays(
+                                ref, test, varName, "layer4_repeat_kv_padded_optimal_step2", 2, absTol, relTol, null);
+                        if (divergence != null) {
+                            replayMismatches.add(divergence.toString());
+                        }
+                    }
+                    if (!replayMismatches.isEmpty()) {
+                        fail("Static padded OPTIMAL diverges from padded SLOT_BY_SLOT before replay:\n"
+                                + String.join("\n", replayMismatches));
+                    }
+                } finally {
+                    closeAll(paddedOptimal);
+                }
+
+                Map<String, INDArray> paddedBest = runStaticPaddedDecodeStepOutputs(bestConfig, 2, 100,
+                        preReshapeBoundaryVars, true);
+                try {
+                    List<String> bestMismatches = new ArrayList<>();
+                    for (String varName : preReshapeBoundaryVars) {
+                        INDArray ref = paddedSlotBySlot.get(varName);
+                        INDArray test = paddedBest.get(varName);
+                        assertNotNull(ref, "Missing static-padded SLOT_BY_SLOT capture for " + varName);
+                        assertNotNull(test, "Missing static-padded BEST capture for " + varName);
+
+                        log.info("LAYER4_REPEAT_KV_PADDED_BEST step2 var='{}' slotBySlotShape={} bestShape={}",
+                                varName, Arrays.toString(ref.shape()), Arrays.toString(test.shape()));
+                        if (ref.length() <= 16 && test.length() <= 16) {
+                            log.info("  slotBySlot={}", Arrays.toString(ref.toLongVector()));
+                            log.info("  best={}", Arrays.toString(test.toLongVector()));
+                        }
+
+                        if (!Arrays.equals(ref.shape(), test.shape())) {
+                            bestMismatches.add("shape mismatch for " + varName
+                                    + " slotBySlot=" + Arrays.toString(ref.shape())
+                                    + " best=" + Arrays.toString(test.shape()));
+                            continue;
+                        }
+                        double absTol = varName.endsWith("/Expand/output_0")
+                                ? TF32_BOUNDARY_TOLERANCE.getDefaultAbsTol()
+                                : 0.0;
+                        double relTol = varName.endsWith("/Expand/output_0")
+                                ? TF32_BOUNDARY_TOLERANCE.getDefaultRelTol()
+                                : 0.0;
+                        var divergence = DspAccuracyValidator.compareArrays(
+                                ref, test, varName, "layer4_repeat_kv_padded_best_step2", 2, absTol, relTol, null);
+                        if (divergence != null) {
+                            bestMismatches.add(divergence.toString());
+                        }
+                    }
+                    if (!bestMismatches.isEmpty()) {
+                        fail("Static padded BEST config diverges from padded SLOT_BY_SLOT before Reshape_3:\n"
+                                + String.join("\n", bestMismatches));
+                    }
+                } finally {
+                    closeAll(paddedBest);
+                }
+            } finally {
+                closeAll(paddedSlotBySlot);
+            }
+
+            Map<String, INDArray> optimal = runDecodeStepOutputs(optimalConfig, 2,
+                    boundaryVars.subList(0, boundaryVars.size() - 1), true, true);
+            try {
+                for (String varName : boundaryVars.subList(0, boundaryVars.size() - 1)) {
+                    INDArray ref = baseline.get(varName);
+                    INDArray test = optimal.get(varName);
+                    assertNotNull(ref, "Missing SLOT_BY_SLOT capture for " + varName);
+                    assertNotNull(test, "Missing OPTIMAL capture for " + varName);
+
+                    log.info("LAYER4_REPEAT_KV step2 var='{}' baselineShape={} optimalShape={}",
+                            varName, Arrays.toString(ref.shape()), Arrays.toString(test.shape()));
+                    if (ref.length() <= 16 && test.length() <= 16) {
+                        log.info("  baseline={}", Arrays.toString(ref.toLongVector()));
+                        log.info("  optimal={}", Arrays.toString(test.toLongVector()));
+                    }
+
+                    assertArrayEquals(ref.shape(), test.shape(), "Shape mismatch for " + varName);
+                    var divergence = DspAccuracyValidator.compareArrays(
+                            ref, test, varName, "layer4_repeat_kv_step2", 2, 0.0, 0.0, null);
+                    assertNull(divergence, "Value mismatch for " + varName + ": " + divergence);
+                }
+            } finally {
+                closeAll(optimal);
+            }
+        } finally {
+            closeAll(baseline);
+        }
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("10. Best Triton logits-only plan captures layer-4 Concat_3 before Reshape_3 failure")
+    public void testBestTritonLayer4ConcatInterceptorBeforeFailure() {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping");
+            return;
+        }
+
+        BenchmarkConfig config = createBestTritonConfig("test_triton_best_interceptor", 100);
+        resetDecoder();
+        BenchmarkConfigApplier.apply(config);
+        BenchmarkConfigApplier.compileModels(decoder, "decoder", embedTokens, "embed_tokens", config);
+
+        CapturingSlotInterceptor interceptor = new CapturingSlotInterceptor();
+        interceptor.filterVarNames(new LinkedHashSet<>(List.of(
+                "/model/layers.4/attn/k_proj/repeat_kv/Expand/output_0",
+                "/model/layers.4/attn/k_proj/repeat_kv/Concat_3/output_0",
+                "/model/layers.4/attn/k_proj/repeat_kv/Reshape_3/output_0"
+        )));
+
+        InferenceSession session = decoder.getOrCreateSession();
+        assertNotNull(session, "Decoder session must exist");
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "DynamicShapePlanExecutor must exist for best Triton config");
+        executor.setSlotOutputInterceptor(interceptor);
+
+        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(100)
+                .hiddenSize((int) benchmarkEmbeddings.shape()[2])
+                .build();
+
+        INDArray decodeInputs = benchmarkEmbeddings.dup();
+        IllegalStateException failure;
+        try {
+            failure = assertThrows(IllegalStateException.class,
+                    () -> loop.decode(decodeInputs, benchmarkPromptTokenIds),
+                    "Current best Triton config should reproduce the step-2 repeat_kv failure");
+        } finally {
+            if (decodeInputs.closeable() && !decodeInputs.wasClosed()) {
+                decodeInputs.close();
+            }
+        }
+
+        Throwable root = failure;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        String failureText = failure.toString() + " | root=" + root;
+        assertTrue(failureText.contains("slot 820") || failureText.contains("reshape_no_copy"),
+                "Failure should point at the repeat_kv reshape boundary, got: " + failureText);
+
+        INDArray concat = interceptor.getByName().get("/model/layers.4/attn/k_proj/repeat_kv/Concat_3/output_0");
+        assertNotNull(concat, "Concat_3 should be captured in the real logits-only best-config plan before failure");
+        assertArrayEquals(new long[]{4}, concat.shape(), "Concat_3 should stay a 4-element shape tensor");
+        assertArrayEquals(new long[]{1, 9, 780, 64}, concat.toLongVector(),
+                "Concat_3 should produce the expected repeat_kv reshape controller values");
+
+        INDArray expand = interceptor.getByName().get("/model/layers.4/attn/k_proj/repeat_kv/Expand/output_0");
+        assertNotNull(expand, "Expand/output_0 should be captured before the reshape boundary fails");
+        assertArrayEquals(new long[]{1, 3, 3, 780, 64}, expand.shape(),
+                "Expand/output_0 should retain the repeated KV payload shape before failure");
+
+        assertFalse(interceptor.getByName().containsKey("/model/layers.4/attn/k_proj/repeat_kv/Reshape_3/output_0"),
+                "Reshape_3 should not be emitted because the failure occurs during its shape inference");
+
+        interceptor.clear();
     }
 
     // =========================================================================
@@ -710,6 +1024,325 @@ public class TestBenchmarkAccuracyIsolation {
             String text = tokenizer.decode(new int[]{topIds[i]}, false);
             log.info("  {} top-{}: id={} logit={} text='{}'", label, i + 1, topIds[i], topVals[i], text);
         }
+    }
+
+    private List<Integer> ensureManualDecodeTokens(int requiredTokens) {
+        if (manualDecodeTokens == null || manualDecodeTokens.size() < requiredTokens) {
+            resetDecoder();
+            INDArray manualInputs = benchmarkEmbeddings.dup();
+            try {
+                manualDecodeTokens = manualDecode(manualInputs, Math.max(requiredTokens, 6));
+            } finally {
+                if (manualInputs.closeable() && !manualInputs.wasClosed()) {
+                    manualInputs.close();
+                }
+            }
+            resetDecoder();
+        }
+
+        assertNotNull(manualDecodeTokens, "Manual decode baseline must exist");
+        assertTrue(manualDecodeTokens.size() >= requiredTokens,
+                "Manual decode baseline produced only " + manualDecodeTokens.size()
+                        + " tokens, need at least " + requiredTokens);
+        return manualDecodeTokens;
+    }
+
+    private GenerationResult runConfiguredLoop(BenchmarkConfig config, int maxNewTokens) {
+        resetDecoder();
+        config.maxTokens(maxNewTokens);
+        BenchmarkConfigApplier.apply(config);
+        BenchmarkConfigApplier.compileModels(decoder, "decoder", embedTokens, "embed_tokens", config);
+
+        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(maxNewTokens)
+                .hiddenSize((int) benchmarkEmbeddings.shape()[2])
+                .build();
+
+        INDArray decodeInputs = benchmarkEmbeddings.dup();
+        try {
+            return loop.decode(decodeInputs, benchmarkPromptTokenIds);
+        } finally {
+            if (decodeInputs.closeable() && !decodeInputs.wasClosed()) {
+                decodeInputs.close();
+            }
+        }
+    }
+
+    private BenchmarkConfig createBestTritonConfig(String name, int maxTokens) {
+        return BenchmarkConfig.create(name)
+                .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION")
+                .tritonSectionFusion(true).tritonCompileAll(true)
+                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                .dspBatchZero(true).dspBatchZeroKernel(true)
+                .dspBatchedGemm(true)
+                .dspCastSinkMatmul(true)
+                .maxTokens(maxTokens).minDiversityPct(0);
+    }
+
+    private Map<String, INDArray> runDecodeStepOutputs(BenchmarkConfig config, int targetStep,
+                                                       List<String> requestedOutputs,
+                                                       boolean useOutputDirect,
+                                                       boolean includeIntermediateCompileOutputs) {
+        resetDecoder();
+        BenchmarkConfigApplier.apply(config);
+
+        String logitsName = findLogitsName();
+        List<String> kvOutputNames = findKvOutputNames();
+        List<String> compileOutputs = new ArrayList<>();
+        compileOutputs.add(logitsName);
+        compileOutputs.addAll(kvOutputNames);
+        if (includeIntermediateCompileOutputs) {
+            compileOutputs.addAll(requestedOutputs);
+        }
+
+        if (config.getExecutionMode() != null) {
+            decoder.setDspAutoCompileEnabled(true);
+            decoder.setDspNativeAutoCompileEnabled(true);
+            decoder.compileNativeDynamicShapePlan(compileOutputs, config.getExecutionMode(), true);
+        } else if (config.isTriton() || config.isTritonCompileAll()) {
+            decoder.setDspAutoCompileEnabled(true);
+            decoder.setDspNativeAutoCompileEnabled(true);
+            BenchmarkConfigApplier.compileModel(decoder, "decoder", compileOutputs, config);
+        }
+
+        INDArray embeddingTable = extractEmbeddingTable();
+        assertNotNull(embeddingTable, "Embedding table not found");
+
+        long seqLen = benchmarkEmbeddings.shape()[1];
+        long hSize = benchmarkEmbeddings.shape()[2];
+
+        Map<String, INDArray> inputs = buildPrefillInputs(seqLen);
+        inputs.put("inputs_embeds", benchmarkEmbeddings.dup());
+
+        Map<String, INDArray> prefill = executeDecoderOutputs(inputs,
+                compileOutputs.toArray(new String[0]), useOutputDirect);
+
+        Map<String, INDArray> kvCache = new HashMap<>();
+        for (String kvName : kvOutputNames) {
+            String pastName = kvName.replace("present", "past_key_values");
+            kvCache.put(pastName, prefill.get(kvName).dup());
+        }
+
+        INDArray logits = prefill.get(logitsName);
+        INDArray lastLogits = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
+        int nextToken = lastLogits.argMax().getInt(0);
+        long pastLen = seqLen;
+
+        closeAll(prefill);
+
+        for (int step = 1; step <= targetStep; step++) {
+            INDArray tokenEmbed = embeddingTable.getRow(nextToken).reshape(1, 1, hSize);
+            Map<String, INDArray> decInputs = new HashMap<>();
+            for (String name : decoder.inputs()) {
+                if (name.equals("inputs_embeds")) {
+                    decInputs.put(name, tokenEmbed);
+                } else if (name.equals("attention_mask")) {
+                    decInputs.put(name, Nd4j.ones(DataType.LONG, 1, pastLen + 1));
+                } else if (name.equals("position_ids")) {
+                    decInputs.put(name, Nd4j.createFromArray(new long[]{pastLen}).reshape(1, 1));
+                } else if (name.startsWith("past_key_values.") && kvCache.containsKey(name)) {
+                    decInputs.put(name, kvCache.get(name));
+                }
+            }
+
+            String[] stepOutputs = (step == targetStep ? requestedOutputs : compileOutputs)
+                    .toArray(new String[0]);
+            Map<String, INDArray> result = executeDecoderOutputs(decInputs, stepOutputs, useOutputDirect);
+
+            if (step == targetStep) {
+                Map<String, INDArray> duped = new HashMap<>();
+                for (String name : requestedOutputs) {
+                    INDArray arr = result.get(name);
+                    if (arr != null) {
+                        duped.put(name, arr.dup());
+                    }
+                }
+                closeAll(result);
+                closeAll(kvCache);
+                return duped;
+            }
+
+            INDArray stepLogits = result.get(logitsName);
+            INDArray flatLogits = stepLogits.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all());
+            nextToken = flatLogits.argMax().getInt(0);
+
+            for (String kvName : kvOutputNames) {
+                String pastName = kvName.replace("present", "past_key_values");
+                INDArray oldKv = kvCache.get(pastName);
+                if (oldKv != null && !oldKv.wasClosed()) {
+                    oldKv.setCloseable(true);
+                    oldKv.close();
+                }
+                kvCache.put(pastName, result.get(kvName).dup());
+            }
+            pastLen++;
+            closeAll(result);
+        }
+
+        closeAll(kvCache);
+        fail("Target step " + targetStep + " was not reached");
+        return Map.of();
+    }
+
+    private Map<String, INDArray> executeDecoderOutputs(Map<String, INDArray> inputs,
+                                                        String[] outputNames,
+                                                        boolean useOutputDirect) {
+        return useOutputDirect ? decoder.outputDirect(inputs, outputNames) : decoder.output(inputs, outputNames);
+    }
+
+    private Map<String, INDArray> runStaticPaddedDecodeStepOutputs(BenchmarkConfig config,
+                                                                   int targetStep,
+                                                                   int maxNewTokens,
+                                                                   List<String> requestedOutputs,
+                                                                   boolean useOutputDirect) {
+        resetDecoder();
+
+        BenchmarkConfigApplier.apply(config);
+        List<String> compileOutputs = new ArrayList<>();
+        compileOutputs.add(findLogitsName());
+        compileOutputs.addAll(findKvOutputNames());
+        compileOutputs.addAll(requestedOutputs);
+        if (config.getExecutionMode() != null) {
+            decoder.setDspAutoCompileEnabled(true);
+            decoder.setDspNativeAutoCompileEnabled(true);
+            decoder.compileNativeDynamicShapePlan(compileOutputs, config.getExecutionMode(), true);
+        } else if (config.isTriton() || config.isTritonCompileAll()) {
+            decoder.setDspAutoCompileEnabled(true);
+            decoder.setDspNativeAutoCompileEnabled(true);
+            BenchmarkConfigApplier.compileModel(decoder, "decoder", compileOutputs, config);
+        }
+
+        INDArray embeddingTable = extractEmbeddingTable();
+        assertNotNull(embeddingTable, "Embedding table not found");
+
+        long seqLen = benchmarkEmbeddings.shape()[1];
+        long hSize = benchmarkEmbeddings.shape()[2];
+        long maxKvLen = seqLen + maxNewTokens;
+
+        String logitsName = findLogitsName();
+        List<String> kvOutputNames = findKvOutputNames();
+        List<String> keyOutputNames = kvOutputNames.stream().filter(n -> n.endsWith(".key")).toList();
+        List<String> valueOutputNames = kvOutputNames.stream().filter(n -> n.endsWith(".value")).toList();
+
+        List<String> fullOutputs = new ArrayList<>();
+        fullOutputs.add(logitsName);
+        fullOutputs.addAll(kvOutputNames);
+
+        Map<String, INDArray> prefillInputs = buildPrefillInputs(seqLen);
+        prefillInputs.put("inputs_embeds", benchmarkEmbeddings.dup());
+        Map<String, INDArray> prefillResult = executeDecoderOutputs(
+                prefillInputs, fullOutputs.toArray(new String[0]), useOutputDirect);
+
+        Map<String, INDArray> staticKv = new HashMap<>();
+        for (String kvName : kvOutputNames) {
+            String pastName = kvName.replace("present", "past_key_values");
+            INDArray kv = prefillResult.get(kvName);
+            long[] shape = kv.shape();
+            INDArray padded = Nd4j.zeros(kv.dataType(), shape[0], shape[1], maxKvLen, shape[3]);
+            padded.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(0, shape[2]), NDArrayIndex.all()).assign(kv);
+            staticKv.put(pastName, padded);
+        }
+
+        INDArray logits = prefillResult.get(logitsName);
+        INDArray lastLogits = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
+        int nextToken = lastLogits.argMax().getInt(0);
+        long cachePos = seqLen;
+
+        closeAll(prefillResult);
+
+        for (int step = 1; step <= targetStep; step++) {
+            INDArray tokenEmbed = embeddingTable.getRow(nextToken).reshape(1, 1, hSize);
+            long totalSeqLen = maxKvLen + 1;
+            INDArray sparseMask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
+            if (cachePos > 0) {
+                sparseMask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
+            }
+            sparseMask.putScalar(0, totalSeqLen - 1, 1);
+
+            Map<String, INDArray> decInputs = new HashMap<>();
+            for (String name : decoder.inputs()) {
+                if (name.equals("inputs_embeds")) {
+                    decInputs.put(name, tokenEmbed);
+                } else if (name.equals("attention_mask")) {
+                    decInputs.put(name, sparseMask);
+                } else if (name.equals("position_ids")) {
+                    decInputs.put(name, Nd4j.createFromArray(new long[]{cachePos}).reshape(1, 1));
+                } else if (name.startsWith("past_key_values.") && staticKv.containsKey(name)) {
+                    decInputs.put(name, staticKv.get(name));
+                }
+            }
+
+            String[] stepOutputs = (step == targetStep ? requestedOutputs : fullOutputs)
+                    .toArray(new String[0]);
+            Map<String, INDArray> result = executeDecoderOutputs(decInputs, stepOutputs, useOutputDirect);
+
+            if (step == targetStep) {
+                Map<String, INDArray> duped = new HashMap<>();
+                for (String name : requestedOutputs) {
+                    INDArray arr = result.get(name);
+                    if (arr != null) {
+                        duped.put(name, arr.dup());
+                    }
+                }
+                closeAll(result);
+                closeAll(staticKv);
+                return duped;
+            }
+
+            INDArray stepLogits = result.get(logitsName);
+            INDArray flatLogits = stepLogits.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all());
+            nextToken = flatLogits.argMax().getInt(0);
+
+            DecoderUtils.scatterNewKvEntries(staticKv, result, keyOutputNames, valueOutputNames, maxKvLen, cachePos);
+            cachePos++;
+            closeAll(result);
+        }
+
+        closeAll(staticKv);
+        fail("Target step " + targetStep + " was not reached in static padded decode");
+        return Map.of();
+    }
+
+    private void closeAll(Map<String, INDArray> arrays) {
+        for (INDArray arr : arrays.values()) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) {
+                arr.close();
+            }
+        }
+    }
+
+    private void assertTokenPrefixMatches(String label, List<Integer> expected, int[] actual, int prefixLen) {
+        assertNotNull(actual, label + ": generated token array is null");
+        assertTrue(actual.length >= prefixLen,
+                label + ": generated only " + actual.length + " tokens, need at least " + prefixLen);
+        assertTrue(expected.size() >= prefixLen,
+                label + ": manual baseline has only " + expected.size() + " tokens, need at least " + prefixLen);
+
+        for (int i = 0; i < prefixLen; i++) {
+            int expectedToken = expected.get(i);
+            int actualToken = actual[i];
+            assertEquals(expectedToken, actualToken,
+                    label + ": token mismatch at step " + i
+                            + " expected " + tokenLabel(expectedToken)
+                            + " but got " + tokenLabel(actualToken));
+        }
+
+        log.info("{} prefix matches manual baseline for {} steps: {}",
+                label, prefixLen, Arrays.toString(Arrays.copyOf(actual, prefixLen)));
+    }
+
+    private String tokenLabel(int tokenId) {
+        String text = tokenizer.decode(new int[]{tokenId}, false).replace('\n', ' ').trim();
+        if (text.length() > 40) {
+            text = text.substring(0, 40);
+        }
+        return tokenId + "('" + text + "')";
     }
 
     /**

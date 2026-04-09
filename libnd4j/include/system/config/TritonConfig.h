@@ -92,6 +92,7 @@ class SD_LIB_EXPORT TritonConfig {
   std::atomic<int> _maxSubKernelIndex{-1};
   std::atomic<bool> _verifyFullSnapshot{false};
   std::atomic<bool> _forceRecapture{false};
+  std::atomic<bool> _warmupOnly{false};
   std::atomic<int> _captureMinExec{2};
 
   // Optimization flags shared between Triton and cuBLAS
@@ -211,6 +212,8 @@ class SD_LIB_EXPORT TritonConfig {
   void setVerifyFullSnapshot(bool v) { _verifyFullSnapshot.store(v); }
   bool forceRecapture() { return _forceRecapture.load(); }
   void setForceRecapture(bool v) { _forceRecapture.store(v); }
+  bool warmupOnly() { return _warmupOnly.load(); }
+  void setWarmupOnly(bool v) { _warmupOnly.store(v); }
   int captureMinExec() { return _captureMinExec.load(); }
   void setCaptureMinExec(int v) { _captureMinExec.store(v); }
 

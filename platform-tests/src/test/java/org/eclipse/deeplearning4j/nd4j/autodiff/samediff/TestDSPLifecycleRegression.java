@@ -704,12 +704,12 @@ public class TestDSPLifecycleRegression extends BaseNd4jTestWithBackends {
      * replay steps MUST produce different outputs.
      *
      * This is the decoder accuracy contract: position_ids changes every step,
-     * and the model output must reflect the new position. If capture buffer
-     * refresh fails, the output stays the same (stale position_ids).
+     * and the model output must reflect the new position. If replay input
+     * propagation fails, the output stays the same (stale position_ids).
      *
      * Graph is intentionally large (20 chained matmuls) to trigger CUDA graph
      * capture. The position_ids feeds a gather at the start of the chain.
-     * If capture buffers don't refresh position_ids, all replay steps see
+     * If replay keeps a stale position_ids value, all replay steps see
      * the warmup value and produce identical output.
      */
     @Test
@@ -763,7 +763,7 @@ public class TestDSPLifecycleRegression extends BaseNd4jTestWithBackends {
                 assertNotEquals(prevSum, sum, 1e-6,
                         "Step " + step + ": output MUST differ from step " + (step - 1) +
                         " because position_ids changed from " + (step - 1) + " to " + step +
-                        ". If identical, capture buffer refresh is broken (stale position_ids).");
+                        ". If identical, replay input propagation is broken (stale position_ids).");
             }
             prevSum = sum;
         }
@@ -839,7 +839,7 @@ public class TestDSPLifecycleRegression extends BaseNd4jTestWithBackends {
             if (step > 0) {
                 assertNotEquals(prevSum, sum, 1e-6,
                         "Step " + step + ": output must differ from previous step " +
-                        "when mask grows. If identical, mask capture buffer is stale.");
+                        "when mask grows. If identical, replay is using stale mask values.");
             }
             prevSum = sum;
         }
@@ -910,12 +910,12 @@ public class TestDSPLifecycleRegression extends BaseNd4jTestWithBackends {
      * 1. configureDecodeInputs() tells C++ which ext inputs are decode inputs
      * 2. Java frozen fast path SKIPS syncToSpecial for those inputs
      * 3. setNextDecodeToken() writes values directly to device via C++
-     * 4. capture buffers must be refreshed with the new values
+     * 4. replay must observe the new values without Java-side resync
      *
      * If broken, position_ids stays stale → model output repeats.
      */
     @Test
-    @DisplayName("DSP: setNextDecodeToken propagates position_ids through capture buffers")
+    @DisplayName("DSP: setNextDecodeToken propagates position_ids through replay")
     public void testSetNextDecodeTokenPropagation() {
         SameDiff sd = SameDiff.create();
 
@@ -978,7 +978,7 @@ public class TestDSPLifecycleRegression extends BaseNd4jTestWithBackends {
                     assertNotEquals(prevSum, sum, 1e-6,
                             "Step " + step + ": output MUST differ when setNextDecodeToken " +
                             "changes cachePos from " + (step - 1) + " to " + step +
-                            ". If identical, capture buffer propagation for decode inputs is broken.");
+                            ". If identical, replay-side decode input propagation is broken.");
                 }
                 prevSum = sum;
             }

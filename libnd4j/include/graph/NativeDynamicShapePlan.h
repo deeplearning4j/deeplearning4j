@@ -22,6 +22,7 @@
 #include <array/NDArray.h>
 #include <graph/Context.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/FusionPass.h>
 #include <graph/generated/graph_generated.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/DeclarableOp.h>
@@ -38,6 +39,7 @@
 #include <graph/SlotBufferOwnership.h>
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
+#include <graph/gpu/ViewRecipe.h>
 #include <system/Environment.h>
 
 // Forward declaration — full definition in DspStreamGuard.h
@@ -423,6 +425,41 @@ struct GraphSegment {
   // pointer refresh from slotArrayCache_ during replay to avoid stale addresses.
   struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
 
+  /**
+   * Composite replay unit — one element of a mixed segment's replay schedule.
+   *
+   * When a segment contains both Triton-capturable ops and unsupported gap ops
+   * (interleaved as "island -> gap -> island"), it cannot be captured as one
+   * monolithic graph. Instead, we build an ordered replay schedule:
+   *
+   *   unit 0: Triton island [200-297]  → replayHandle[0]->replay()
+   *   unit 1: gap unit [298-312]       → execute slots directly
+   *   unit 2: Triton island [313-346]  → replayHandle[1]->replay()
+   *   unit 3: gap unit [347-369]       → execute slots directly
+   *   unit 4: Triton island [370-399]  → replayHandle[2]->replay()
+   *
+   * Gap units are executed via direct slot dispatch. Triton island units are
+   * executed via their individual CudaGraphReplayHandle.
+   */
+  enum ReplayUnitKind {
+    REPLAY_UNIT_TRITON_ISLAND,   // Captured Triton graph — replay via handle
+    REPLAY_UNIT_GAP,              // Gap range — execute slots directly
+  };
+  struct ReplayScheduleUnit {
+    ReplayUnitKind kind;
+    int startSlot;
+    int endSlot;
+    int islandIndex;  // For TRITON_ISLAND: index into compositeReplayHandles
+    ReplayScheduleUnit() : kind(REPLAY_UNIT_GAP), startSlot(0), endSlot(0), islandIndex(-1) {}
+    ReplayScheduleUnit(ReplayUnitKind k, int s, int e, int idx)
+        : kind(k), startSlot(s), endSlot(e), islandIndex(idx) {}
+  };
+  struct ReplaySchedule {
+    std::vector<ReplayScheduleUnit> units;
+    // Individual capture handles for each Triton island in the schedule.
+    std::vector<std::unique_ptr<GraphReplayHandle>> compositeReplayHandles;
+  };
+
   // ── Mutable execution state (changes per-execution) ────────────────
   struct ExecState {
     int executionCount = 0;
@@ -447,7 +484,7 @@ struct GraphSegment {
     std::unique_ptr<GraphReplayHandle> replayHandle;
     LongType cachedShapeKey = 0;
 
-    // Legacy address key (kept for fallback diagnostics)
+    // Legacy address key (kept for replay diagnostics)
     LongType capturedInputAddrKey = 0;
 
     // Hash of input DATA values for 'create' (ConstantOfShape) ops.
@@ -476,11 +513,34 @@ struct GraphSegment {
     // Fast-replay: skip arg table refresh and EXT_INPUT_SYNC on replay.
     bool argTableStable = false;
 
-    // Triton fallback gap ops captured in graph — must not be re-executed after replay.
+    // Native ordered range ops captured in graph — must not be re-executed after replay.
     bool gapOpsCapturedInGraph = false;
 
     // Per-segment batch-zero entries for replay
     std::vector<BatchZeroEntry> segBatchZeroEntries;
+
+    // View recipe chain — captures view-producing ops (reshape, permute,
+    // expand_dims, squeeze, strided_slice) so they can be installed during
+    // REPLAYING without launching a kernel or executing a native ordered range.
+    // Populated during SHAPES_FROZEN, validated during POINTERS_STABLE,
+    // installed before consumer replay during REPLAYING.
+    ViewRecipeChain viewRecipes;
+
+    // Composite replay schedule for mixed Triton/gap segments.
+    // When a segment has interleaved gap slots, it's captured as multiple
+    // Triton island graphs + gap slot ranges, replayed in program order.
+    // Only populated for segments with hasUnsupportedTritonReplayGaps.
+    ReplaySchedule compositeReplaySchedule;
+
+    // Phase 2: Replay schedule signature hash (FNV-1a) from the last execution.
+    // Computed from ordered replay units (kinds, slot ranges, op categories).
+    // Zero if the segment has no replay or consolidation has not yet run.
+    unsigned long long replaySignatureHash = 0;
+
+    // Phase 2: Number of replay units after consolidation for this segment.
+    // Updated each execution when the consolidation pass runs.
+    // Zero if the segment is not capturable or consolidation hasn't run.
+    int replayUnitCount = 0;
 
     // Execution phase tracking — ACTUAL runtime mode (not user preference).
     ExecutionPhase currentPhase = ExecutionPhase::WARMUP;
@@ -508,6 +568,10 @@ struct GraphSegment {
       argTableStable = false;
       gapOpsCapturedInGraph = false;
       segBatchZeroEntries.clear();
+      viewRecipes = ViewRecipeChain();
+      compositeReplaySchedule = ReplaySchedule();
+      replaySignatureHash = 0;
+      replayUnitCount = 0;
       currentPhase = ExecutionPhase::WARMUP;
     }
   };
@@ -616,7 +680,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Release all GPU memory held by intermediate computation results while keeping
    * the plan structure alive. This frees:
    *  1. Non-weight NDArrays from outputSlots_ (SLOT_OWNED buffers only)
-   *  2. Per-segment CUDA graph replay handles (capture buffers, workspaces, host pointers)
+   *  2. Per-segment CUDA graph replay handles (workspaces, host pointers)
    *  3. cuBLAS workspace (256 MB)
    *  4. Batch-zero, batch-D2D, and batched-GEMM device arrays
    *  5. MmulHelper cast cache (thread-local FP16→FP32 staging)
@@ -636,7 +700,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Release GPU intermediates with option to preserve decode-invariant state.
    *
    * @param preserveDecodeState  If true, preserves:
-   *   - externalInputStagingBuffers_[] (max-size pre-allocated input buffers)
    *   - outputSlots_[] / slotArrayCache_[] (decode has invariant shapes)
    *   - CUDA graph replay handles (same kernel graph for decode)
    *   - cuBLAS workspace (same GEMM shapes for decode)
@@ -702,13 +765,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   void updateDecodeInputs(NDArray** externalInputs, int numExt,
                            long long tokenId, int cachePos, void* stream);
-
-  /**
-   * Propagate pending decode input values to ALL segment capture buffers.
-   * Called from execute() after updateDecodeInputs() and before segment dispatch.
-   * This is the SINGLE code path for decode→capture buffer propagation.
-   */
-  void propagateDecodeInputsToCaptureBuffers(void* stream);
 
   /**
    * Set the next decode token and cache position for automatic device-side update.
@@ -829,8 +885,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     cpuGraphBackend_ = nullptr;
     cpuGraphBackendChainBuilt_ = false;
     cpuGraphBackendChain_.clear();
-    // Enable GPU graph capture as fallback for all modes except SLOT_BY_SLOT.
-    // JIT backends (Triton/NVRTC/PTX) need graph capture fallback when they
+    // Enable GPU graph capture for all modes except SLOT_BY_SLOT.
+    // JIT backends (Triton/NVRTC/PTX) use graph capture when they
     // can't handle a segment (unsupported ops, etc).
     if (mode != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
       gpuGraphCaptureEnabled_ = true;
@@ -861,6 +917,24 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       auto& env = Environment::getInstance();
       bool mergeSegments = env.dspFreezeMergeSegments();
 
+      // ── Fusion pass (slot-by-slot → freeze transition) ──────────────────
+      // Run fusion detection NOW because:
+      //   1. cachedOutputShapes are populated from the warmup execution
+      //   2. externalInputRanks_ are captured from the first execute() call
+      //   3. We're past slot-by-slot, before any capture/replay
+      // At plan load time these shapes/ranks are empty, so rank checks
+      // (e.g., 1D bias vs 2D residual) cannot be validated.
+      if (numSlots_ > 1) {
+        auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_);
+        if (!fusions.empty()) {
+          DSP_DIAG(FUSION, "detected %d fusion candidates (post-warmup)",
+                   (int)fusions.size());
+          int applied = FusionPass::applyFusions(slots_, numSlots_, fusions);
+          DSP_DIAG(FUSION, "applied %d of %d fusion candidates",
+                   applied, (int)fusions.size());
+        }
+      }
+
       // No segment rebuild needed. buildSegments() already uses the frozen
       // capturability classification (value-dependent ops are capturable).
       // One build phase, no rebuild, no stale shape caches.
@@ -888,16 +962,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
         // Invalidate CUDA graph replay handles — buffer addresses from
         // non-frozen execution may differ from frozen steady-state.
         if (seg.exec.replayHandle) {
-          for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
-            if (!cb.directReference) delete cb.buffer;
-          }
-          seg.exec.replayHandle->getCaptureBuffers().clear();
-          seg.exec.replayHandle.reset();
+          platformCleanupSegmentForRebuild(seg);
         }
         seg.exec.argTableStable = false;
         seg.exec.gapOpsCapturedInGraph = false;
+        seg.exec.cachedShapeKey = 0;
         seg.exec.capturedInputAddrKey = 0;
+        seg.exec.capturedCreateValueKey = 0;
         seg.exec.compilationFailed = false;
+        seg.exec.currentPhase = ExecutionPhase::WARMUP;
       }
 
       // Add frozen reference count to all protected weight DataBuffers.
@@ -955,6 +1028,24 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       planPhase_ = PlanPhase::SLOT_BY_SLOT;
       pointersStable_ = false;
       frozenExecutionCount_ = 0;
+      executeCount_ = 0;
+      for (auto& seg : segments_) {
+        if (seg.exec.replayHandle) {
+          platformCleanupSegmentForRebuild(seg);
+        }
+        seg.exec.executionCount = 0;
+        seg.exec.argTableStable = false;
+        seg.exec.gapOpsCapturedInGraph = false;
+        seg.exec.cachedShapeKey = 0;
+        seg.exec.capturedInputAddrKey = 0;
+        seg.exec.capturedCreateValueKey = 0;
+        seg.exec.compilationFailed = false;
+        seg.exec.captureOomRetries = 0;
+        seg.exec.captureRetryAfterExec = 0;
+        seg.exec.lastReplayExecCount = 0;
+        seg.exec.currentPhase = ExecutionPhase::WARMUP;
+      }
+      clearAllShapeCachesForce();
       frozenSnapshot_.clear();
     }
   }
@@ -985,6 +1076,38 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * all segment arg tables have stable pointers.
    */
   bool arePointersStable() const { return pointersStable_; }
+
+  // ── Lifecycle enforcement ──────────────────────────────────────────────
+  // These methods are the ONLY way to write output slots, sync external inputs,
+  // and transition phases. All validation is centralized here.
+
+  /** Violation types for hard error diagnostics. */
+  enum class LifecycleViolation {
+    BUFFER_REPLACED_POST_FREEZE,
+    STALE_WRITE,
+    STALE_READ,
+    PHASE_VIOLATION
+  };
+
+  /**
+   * Write to an output slot. The ONLY way to modify outputSlots_.
+   * Validates against phase invariants. Hard error on violation.
+   * Tracks plan ownership of new arrays.
+   */
+  void writeOutputSlot(int slotIdx, NDArray* value, const char* tag);
+
+  /**
+   * Read from an output slot with stale-read validation.
+   * Returns nullptr for null slots. Throws on closed DataBuffer.
+   */
+  NDArray* readOutputSlot(int slotIdx) const;
+
+  /**
+   * Bulk H2D sync for all external inputs. The ONLY place H2D happens.
+   * Iterates all inputs, async H2D for any where host is newer than device.
+   * Uses tl_dspExecutionStream for async copies (no per-input sync).
+   */
+  void syncExternalInputs(NDArray** extInputs, int numExt, void* stream);
 
   /**
    * Get the slot state for a specific slot index (for JNI).
@@ -1064,24 +1187,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots);
 
   /**
-   * Set maximum sizes for external input arrays (staging buffer pre-allocation).
-   *
-   * When set, these external inputs will have max-size staging buffers pre-allocated.
-   * During execute(), actual input data is copied into these staging buffers before
-   * being passed to the graph. This keeps buffer addresses stable across pages.
-   *
-   * @param extIndices    Array of external input indices to pre-allocate
-   * @param maxSizes      Array of maximum sizes (in number of elements)
-   * @param numInputs     Number of entries in the arrays
-   *
-   * Usage for VLM decode:
-   *   - Call once before first page
-   *   - For input_ids/position_ids: max size = batch * maxSeqLen
-   *   - For embeddings: max size = batch * maxSeqLen * hiddenSize
-   */
-  void setExternalInputMaxSizes(const int* extIndices, const LongType* maxSizes, int numInputs);
-
-  /**
    * Get the current KV cache sequence position (for slice-based KV cache access).
    * This is the position where new KV entries will be written.
    */
@@ -1145,6 +1250,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
   std::vector<int> variableExternalInputIndices_;  // cached indices where externalInputIsVariable_[i]=true (replay optimization)
   bool variableIndicesCached_ = false;             // true once variableExternalInputIndices_ is populated
+
+  // External input ranks captured during the first execute() call.
+  // -1 = not yet observed. Used by FusionPass at freeze transition to
+  // disambiguate 1D bias vectors from N-D residual operands.
+  std::vector<int> externalInputRanks_;
 
   // Release schedule: releaseAtStep_[stepIdx] = array of slot indices to release
   int** releaseAtStep_;
@@ -1288,14 +1398,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   long long pendingTokenId_ = 0;
   int pendingCachePos_ = 0;
   bool hasPendingDecodeUpdate_ = false;
-
-  // ── External input staging buffers ───────────────────────────────────
-  // Max-size pre-allocated buffers for external inputs with invariant shapes.
-  // Used for page-to-page reuse in VLM decode to eliminate allocation churn.
-  // Java allocates via setExternalInputMaxSizes(), C++ copies actual inputs here.
-  NDArray** externalInputStagingBuffers_ = nullptr;  // [numExternalInputs_]
-  std::vector<LongType> externalInputMaxSizes_;      // max elements per input
-  std::vector<bool> externalInputUseStaging_;        // true if staging buffer allocated
 
   // Internal methods
   void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);
@@ -1487,10 +1589,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void startBatchZeroRegistration();
   void finishBatchZeroRegistration();
 
-  // Capture buffer pool sharing: routes capture workspace allocation
-  // through CudaMemoryPool for cross-segment reuse.
-  void* captureBufferRegistry_ = nullptr;  // opaque ptr to CaptureBufferRegistry
-
   // Shared capture workspace: all segments share one 128MB workspace
   // instead of each allocating their own. Since segments execute sequentially
   // and the workspace is scratch space (offset resets each capture), sharing
@@ -1502,10 +1600,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int sharedCaptureWorkspaceDevice_ = -1;
 
   // ── Batch D2D copy optimization ─────────────────────────────────────────
-  // Replaces ~357 individual cudaMemcpyAsync D2D calls for capture buffer
-  // updates with a single kernel launch (same pattern as batch-zero).
-  // dst pointers and sizes are static (capture buffers are fixed-address);
-  // src pointers are updated each step from external input specialBuffer().
   void* batchD2DDeviceSrcPtrs_ = nullptr;   // Device: void*[count]
   void* batchD2DDeviceDstPtrs_ = nullptr;   // Device: void*[count]
   void* batchD2DDeviceSizes_ = nullptr;     // Device: size_t[count]
@@ -1514,8 +1608,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void* batchD2DHostSizes_ = nullptr;       // Pinned host: size_t[count] (static)
   int batchD2DCount_ = 0;                   // Number of valid entries
   int batchD2DAllocated_ = 0;               // Allocated capacity
-  // Map from capture buffer index → batchD2D index (-1 = skipped)
-  std::vector<int> captureBufferToBatchIdx_;
 
   void prepareBatchD2DDevice(int count, cudaStream_t stream);
   void launchBatchD2D(cudaStream_t stream);

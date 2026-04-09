@@ -632,13 +632,15 @@ function(create_and_link_library)
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
 
-        # OpenMP: add COMPILE flags to the OBJECT target so source files get -fopenmp.
-        # target_link_libraries(OBJECT PUBLIC OpenMP::OpenMP_CXX) doesn't propagate
-        # compile flags to OBJECT targets in CMake — must use target_compile_options.
-        # Without -fopenmp, _OPENMP is undefined → omp_set_num_threads is a no-op
-        # → all linear algebra runs single-threaded.
+        # OpenMP: add -fopenmp compile flag to the OBJECT target.
+        # find_package(OpenMP) runs inside setup_cpu_environment() which has function
+        # scope — OpenMP_CXX_FOUND isn't visible here. Re-find at this scope.
+        find_package(OpenMP QUIET)
         if(OpenMP_CXX_FOUND)
-            target_compile_options(${OBJECT_LIB_NAME} PUBLIC ${OpenMP_CXX_FLAGS})
+            target_compile_options(${OBJECT_LIB_NAME} PUBLIC -fopenmp)
+            message(STATUS "✅ OpenMP -fopenmp added to OBJECT target ${OBJECT_LIB_NAME}")
+        else()
+            message(STATUS "⚠️ OpenMP NOT found — ${OBJECT_LIB_NAME} will be single-threaded")
         endif()
 
         # Generated instantiation sources compile into nested object directories

@@ -106,9 +106,9 @@ inline NDArray* resolveRangeArray(int slotIndex,
   return (slotIndex >= 0 && slotIndex < totalOutputSlots) ? outputSlots[slotIndex] : nullptr;
 }
 
-inline void markFallbackRangeDeviceCurrent(int startSlot, int endSlot, NativeSlot* slots,
-                                           NDArray** externalInputs, int numExternalInputs,
-                                           NDArray** outputSlots, int totalOutputSlots) {
+inline void markOrderedRangeDeviceCurrent(int startSlot, int endSlot, NativeSlot* slots,
+                                          NDArray** externalInputs, int numExternalInputs,
+                                          NDArray** outputSlots, int totalOutputSlots) {
   if (startSlot > endSlot) return;
 
   std::unordered_set<DataBuffer*> seenInputs;

@@ -27,6 +27,7 @@
 #include <system/op_enums.h>
 
 #include <functional>
+#include <mutex>
 
 namespace samediff {
 class SD_LIB_EXPORT ThreadsHelper {

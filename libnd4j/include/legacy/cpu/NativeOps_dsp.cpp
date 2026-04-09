@@ -263,6 +263,38 @@ void setPlanNextDecodeToken(sd::Pointer planHandle, sd::LongType tokenId, int ca
   plan->setNextDecodeToken(tokenId, cachePos);
 }
 
+// ─── Replay diagnostics (Phase 2) ──────────────────────────────────────────
+
+unsigned long long getPlanReplaySignatureHash(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr || segIdx < 0) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  const auto& segments = plan->getSegments();
+  if (segIdx >= static_cast<int>(segments.size())) return 0;
+  return segments[segIdx].exec.replaySignatureHash;
+}
+
+int getPlanReplayUnitCount(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr || segIdx < 0) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  const auto& segments = plan->getSegments();
+  if (segIdx >= static_cast<int>(segments.size())) return 0;
+  return segments[segIdx].exec.replayUnitCount;
+}
+
+int getSegmentExecutionCount(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr || segIdx < 0) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  const auto& segments = plan->getSegments();
+  if (segIdx >= static_cast<int>(segments.size())) return -1;
+  return segments[segIdx].exec.executionCount;
+}
+
+int getPlanSegmentCount(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  return static_cast<int>(plan->getSegmentCount());
+}
+
 // ─── Model loading ───────────────────────────────────────────────────────────
 
 sd::Pointer loadModelFromFile(const char* filePath) {
@@ -725,7 +757,7 @@ int getPlanSegmentNumCaptureBuffers(sd::Pointer planHandle, int segmentIdx) {
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
   auto& seg = segs[segmentIdx];
   if (!seg.exec.replayHandle) return 0;
-  return static_cast<int>(seg.exec.replayHandle->getCaptureBuffers().size());
+  return 0;
 }
 
 const char* getPlanSegmentCaptureBuffersJson(sd::Pointer planHandle, int segmentIdx) {
@@ -737,18 +769,7 @@ const char* getPlanSegmentCaptureBuffersJson(sd::Pointer planHandle, int segment
   auto& seg = segs[segmentIdx];
   if (!seg.exec.replayHandle) { result = "[]"; return result.c_str(); }
 
-  auto& bufs = seg.exec.replayHandle->getCaptureBuffers();
-  std::ostringstream ss;
-  ss << "[";
-  for (size_t i = 0; i < bufs.size(); ++i) {
-    if (i > 0) ss << ",";
-    ss << "{\"extInputIdx\":" << bufs[i].externalInputIndex
-       << ",\"size\":" << bufs[i].capturedSize
-       << ",\"directRef\":" << (bufs[i].directReference ? "true" : "false")
-       << ",\"neverSkip\":" << (bufs[i].neverSkipCopy ? "true" : "false") << "}";
-  }
-  ss << "]";
-  result = ss.str();
+  result = "[]";
   return result.c_str();
 }
 

@@ -44,8 +44,6 @@
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <system/Environment.h>
 
-#include <graph/gpu/CaptureBufferRegistry.h>
-
 #if HAVE_TRITON
 #include <graph/gpu/TritonGraphBackend.h>
 #include <graph/gpu/OpCategoryTable.h>
@@ -68,6 +66,17 @@ namespace {
 
 bool isStrictNoFallbackMode(GraphExecutionMode mode) {
   return mode == GraphExecutionMode::GEM_TRITON;
+}
+
+LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
+  LongType hash = 0xcbf29ce484222325ULL;
+  for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
+    void* addr = (outputSlots[si] != nullptr) ? outputSlots[si]->specialBuffer() : nullptr;
+    LongType bits = reinterpret_cast<uintptr_t>(addr);
+    hash ^= bits;
+    hash *= 0x100000001b3ULL;
+  }
+  return hash;
 }
 
 bool bindSegmentCudaDevice(const GraphSegment& segment,
@@ -161,24 +170,29 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO ||
        graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS);
   bool frozenFastPathInputStable = true;
+  bool frozenFastPathSlotsStable = true;
   if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1) {
     auto& seg0 = segments_[0];
-    if (!seg0.exec.replayHandle || seg0.exec.replayHandle->getCaptureBuffers().empty()) {
-      // Per-address comparison: catches address changes that the hash may miss
-      // (e.g. CUDA pool reuses an address for a different allocation, changing
-      // only a subset of the hashed values in a way that produces a collision).
-      if (seg0.exec.replayHandle && !seg0.exec.replayHandle->getCapturedExternalAddresses().empty()) {
-        frozenFastPathInputStable = externalAddrsMatch(seg0, externalInputs, numExternalInputs);
-      } else if (seg0.exec.capturedInputAddrKey != 0) {
-        // Legacy fallback: hash-based check for graphs captured before the
-        // per-address snapshot was introduced.
-        frozenFastPathInputStable =
-            (computeSegmentInputAddrKey(seg0, externalInputs, numExternalInputs) == seg0.exec.capturedInputAddrKey);
-      }
+    // Per-address comparison: catches address changes that the hash may miss
+    // (e.g. CUDA pool reuses an address for a different allocation, changing
+    // only a subset of the hashed values in a way that produces a collision).
+    if (seg0.exec.replayHandle && !seg0.exec.replayHandle->getCapturedExternalAddresses().empty()) {
+      frozenFastPathInputStable = externalAddrsMatch(seg0, externalInputs, numExternalInputs);
+    } else if (seg0.exec.capturedInputAddrKey != 0) {
+      // Legacy fallback: hash-based check for graphs captured before the
+      // per-address snapshot was introduced.
+      frozenFastPathInputStable =
+          (computeSegmentInputAddrKey(seg0, externalInputs, numExternalInputs) == seg0.exec.capturedInputAddrKey);
+    }
+    if (seg0.exec.capturedSlotAddrHash != 0) {
+      frozenFastPathSlotsStable =
+          (computeSlotAddrHash(outputSlots_, seg0.startSlot, seg0.endSlot, totalOutputSlots_) ==
+           seg0.exec.capturedSlotAddrHash);
     }
   }
   if (!(allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1 &&
-        frozenFastPathInputStable && segments_[0].exec.replayHandle != nullptr &&
+        frozenFastPathInputStable && frozenFastPathSlotsStable &&
+        segments_[0].exec.replayHandle != nullptr &&
         segments_[0].exec.replayHandle->isReady())) {
     return Status::MAYBE;  // Fast path not applicable
   }
@@ -198,134 +212,25 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
-  // Copy external inputs into fixed-address capture buffers.
   bool ok = true;
-  int copiedCount = 0;
-  int skippedCount = 0;
-  for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
-    if (cb.directReference) {
-      skippedCount++;
-      continue;
-    }
-
-    // Skip decode inputs (position_ids, attention_mask, input_ids) when C++ manages them.
-    // The regular D2D/hostMirror copy would read stale HOST values (because Java doesn't
-    // update host when nativeDecodeInputs=true). Instead, these are written directly to
-    // capture buffers in the decode-input block below.
-    if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
-      int ei = cb.externalInputIndex;
-      if (ei >= 0 && (ei == decodeInputIdsExtIdx_ || ei == decodePositionIdsExtIdx_
-                      || ei == decodeAttentionMaskExtIdx_)) {
-        skippedCount++;
-        continue;
-      }
-    }
-
-    NDArray* src = nullptr;
-    if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExternalInputs) {
-      src = externalInputs[cb.externalInputIndex];
-    } else if (cb.crossSegmentSlotIdx >= 0 && cb.crossSegmentSlotIdx < totalOutputSlots_) {
-      src = slotArrayCache_[cb.crossSegmentSlotIdx];
-    }
-    if (src == nullptr || cb.buffer == nullptr) { ok = false; break; }
-
-    size_t srcBytes = src->lengthOf() * src->sizeOfT();
-    if (srcBytes != cb.capturedSize) { ok = false; break; }
-
-    if (srcBytes > 0) {
-      const void* currentPtr = src->specialBuffer();
-      // NOTE: Never skip D2D copies based on pointer comparison.
-      // GPU memory pools reuse addresses — a freed buffer's address can be
-      // returned for a new allocation with completely different data.
-      // Always copy to avoid alternating-stale-data bugs.
-
-      auto dt = src->dataType();
-      bool hostMirror = (dt == INT32 || dt == INT64 || dt == BOOL)
-                        && src->lengthOf() > 0 && src->lengthOf() <= 32;
-      if (hostMirror) {
-        src->syncToHost();
-        std::memcpy(cb.buffer->buffer(), src->buffer(), srcBytes);
-        cb.buffer->tickWriteHost();
-        cb.buffer->syncToDevice();
-      } else {
-        src->syncToDevice();
-        auto copyErr = cudaMemcpyAsync(cb.buffer->specialBuffer(), src->specialBuffer(),
-                                       srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
-        if (copyErr != cudaSuccess) { cudaGetLastError(); ok = false; break; }
-        // Mark device as actual after D2D copy — prevents syncToSpecial()
-        // from recording a stale H2D that overwrites fresh data on replay.
-        cb.buffer->dataBuffer()->writeSpecial();
-      }
-      cb.lastSourcePtr = currentPtr;
-      cb.initialCopyDone = true;
-      copiedCount++;
-    }
+  int syncedCount = 0;
+  for (int ei = 0; ei < numExternalInputs; ei++) {
+    if (externalInputs[ei] == nullptr) continue;
+    externalInputs[ei]->syncToDevice();
+    syncedCount++;
   }
-  DSP_DIAG(EXECUTE, "NativeDSP::frozenFastPath: copied=%d skipped=%d total=%d",
-           copiedCount, skippedCount, copiedCount + skippedCount);
-
-  // Apply pending decode input updates directly to capture buffers.
-  // updateDecodeInputs() writes to external input arrays, but the graph reads
-  // from capture buffers (separate fixed-address copies). By writing to
-  // capture buffers here (after D2D copies, before graph launch), the graph
-  // sees the correct position_ids, attention_mask, and input_ids values.
-  if (ok && hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
-    for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
-      if (cb.directReference || cb.buffer == nullptr) continue;
-      int ei = cb.externalInputIndex;
-      if (ei < 0) continue;
-
-      // input_ids capture buffer: write pendingTokenId_
-      if (ei == decodeInputIdsExtIdx_ && cb.buffer->specialBuffer() != nullptr) {
-        LongType val = static_cast<LongType>(pendingTokenId_);
-        cudaMemcpyAsync(cb.buffer->specialBuffer(), &val, sizeof(LongType),
-                        cudaMemcpyHostToDevice, cudaStr);
-        DSP_DIAG(EXECUTE, "frozenFastPath: wrote input_ids=%lld to capture buffer (extIdx=%d)",
-                 pendingTokenId_, ei);
-      }
-      // position_ids capture buffer: write pendingCachePos_
-      else if (ei == decodePositionIdsExtIdx_ && cb.buffer->specialBuffer() != nullptr) {
-        LongType val = static_cast<LongType>(pendingCachePos_);
-        cudaMemcpyAsync(cb.buffer->specialBuffer(), &val, sizeof(LongType),
-                        cudaMemcpyHostToDevice, cudaStr);
-        DSP_DIAG(EXECUTE, "frozenFastPath: wrote position_ids=%d to capture buffer (extIdx=%d)",
-                 pendingCachePos_, ei);
-      }
-      // attention_mask capture buffer: write 1 at cachePos - 1
-      // cachePos is the NEXT write position — not yet filled. The position just filled
-      // is cachePos - 1. This must match updateDecodeInputs() which writes at cachePos - 1.
-      else if (ei == decodeAttentionMaskExtIdx_ && cb.buffer->specialBuffer() != nullptr) {
-        int writePos = pendingCachePos_ - 1;
-        auto maskLen = cb.buffer->lengthOf();
-        if (writePos >= 0 && writePos < maskLen) {
-          LongType one = 1;
-          auto* dst = static_cast<LongType*>(cb.buffer->specialBuffer()) + writePos;
-          cudaMemcpyAsync(dst, &one, sizeof(LongType),
-                          cudaMemcpyHostToDevice, cudaStr);
-          DSP_DIAG(EXECUTE, "frozenFastPath: wrote attention_mask[%d]=1 to capture buffer (extIdx=%d)",
-                   writePos, ei);
-        }
-      }
-    }
-    hasPendingDecodeUpdate_ = false;
-  }
+  DSP_DIAG(EXECUTE, "NativeDSP::frozenFastPath: synced=%d external inputs", syncedCount);
+  hasPendingDecodeUpdate_ = false;
 
   if (ok) {
     auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
 #if HAVE_TRITON
-    if (seg.exec.replayHandle->getCaptureBuffers().empty()) {
-      for (int ei = 0; ei < numExternalInputs; ei++) {
-        if (externalInputs[ei] != nullptr) {
-          externalInputs[ei]->syncToDevice();
-        }
-      }
-      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
-      if (tritonBackend != nullptr) {
-        tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
-                                                 outputSlots_, totalOutputSlots_,
-                                                 stream);
-      }
+    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+    if (tritonBackend != nullptr) {
+      tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
+                                               outputSlots_, totalOutputSlots_,
+                                               stream);
     }
 #endif
 
@@ -366,7 +271,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncDone - t0).count();
         DSP_DIAG(TIMING, "DSP timing: copy=%lldus launch=%lldus scatter=%lldus sync=%lldus total=%lldus "
                  "(copied=%d skipped=%d)",
-                 copyUs, launchUs, scatterUs, syncUs, totalUs, copiedCount, skippedCount);
+                 copyUs, launchUs, scatterUs, syncUs, totalUs, syncedCount, 0);
       }
       return Status::OK;
     }
@@ -827,21 +732,12 @@ void NativeDynamicShapePlan::platformScatterKvEntry(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Platform dispatch: KV capture buffer annotation
+// Platform dispatch: KV replay annotation
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
-  for (auto& seg : segments_) {
-    if (!seg.exec.replayHandle) continue;
-    for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
-      for (int i = 0; i < kvCacheNumMappings_; i++) {
-        if (cb.externalInputIndex == kvCacheMappings_[i].pastInputExternalIdx) {
-          cb.neverSkipCopy = true;
-          break;
-        }
-      }
-    }
-  }
+  // Capture-buffer staging has been removed. KV cache inputs are replayed
+  // directly from their canonical buffers, so there is nothing to annotate.
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -850,20 +746,9 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   if (seg.exec.replayHandle) {
-    // Free capture buffer NDArrays before destroying the handle
-    for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
-      if (!cb.directReference) delete cb.buffer;
+    if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
+      seg.exec.replayHandle->releaseWorkspace(nullptr, seg.startSlot);
     }
-    seg.exec.replayHandle->getCaptureBuffers().clear();
-    // Free capture workspace
-    {
-      bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
-                     captureBufferRegistry_ != nullptr;
-      seg.exec.replayHandle->releaseWorkspace(
-          usePool ? captureBufferRegistry_ : nullptr,
-          seg.startSlot);
-    }
-    // Free pinned host pointers
     seg.exec.replayHandle->freeHostPointers();
     seg.exec.replayHandle->clearExternalAddresses();
     seg.exec.replayHandle.reset();
@@ -895,20 +780,11 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   }
 #endif
 
-  bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
-                 captureBufferRegistry_ != nullptr;
-
-  // Free capture buffers, workspace, and JIT kernels from all segments
+  // Free replay workspaces and JIT kernels from all segments
   for (auto& seg : segments_) {
     if (seg.exec.replayHandle) {
-      for (auto& cb : seg.exec.replayHandle->getCaptureBuffers()) {
-        if (!cb.directReference) delete cb.buffer;
-      }
-      seg.exec.replayHandle->getCaptureBuffers().clear();
       if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
-        seg.exec.replayHandle->releaseWorkspace(
-            usePool ? captureBufferRegistry_ : nullptr,
-            seg.startSlot);
+        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.startSlot);
       }
       seg.exec.replayHandle->freeHostPointers();
       seg.exec.replayHandle->clearExternalAddresses();
@@ -930,15 +806,6 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     sharedCaptureWorkspaceBytes_ = 0;
     sharedCaptureWorkspaceDevice_ = -1;
   }
-
-  // Release all pool-managed capture buffers at once
-  if (usePool) {
-    auto* registry = static_cast<CaptureBufferRegistry*>(captureBufferRegistry_);
-    registry->releaseAll();
-    delete registry;
-    captureBufferRegistry_ = nullptr;
-  }
-
   // Free pre-allocated cuBLAS workspace
   if (cublasWorkspaceBuffer_ != nullptr) {
     cudaFree(cublasWorkspaceBuffer_);

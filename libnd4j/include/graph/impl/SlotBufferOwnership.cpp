@@ -48,9 +48,10 @@ BufferOwnership classifyBufferOwnership(
     }
   }
 
-  // Check if this buffer belongs to another output slot (view of another slot's output)
-  for (int i = 0; i < totalOutputSlots; i++) {
-    if (i == slotIdx) continue;  // skip self
+  // A slot can only alias buffers that already exist in execution order.
+  // Scanning future slots lets stale later views invert ownership
+  // (for example marking a broadcast output as a view of a later reshape).
+  for (int i = 0; i < slotIdx && i < totalOutputSlots; i++) {
     if (outputSlots[i] != nullptr && outputSlots[i]->dataBuffer() == outBuffer) {
       if (parentSlotIdxOut != nullptr) {
         *parentSlotIdxOut = i;
@@ -109,7 +110,6 @@ const char* bufferOwnershipName(BufferOwnership ownership) {
     case BufferOwnership::VIEW_OF_SLOT:   return "VIEW_OF_SLOT";
     case BufferOwnership::VIEW_OF_WEIGHT: return "VIEW_OF_WEIGHT";
     case BufferOwnership::WEIGHT:         return "WEIGHT";
-    case BufferOwnership::CAPTURE_BUFFER: return "CAPTURE_BUFFER";
     case BufferOwnership::WORKSPACE:      return "WORKSPACE";
     default:                              return "UNKNOWN";
   }
@@ -141,9 +141,10 @@ void classifyAndUpdateOwnership(
     }
   }
 
-  // 3. Check other output slots — if buffer matches another slot, it's a view of that slot
-  for (int i = 0; i < totalOutputSlots; i++) {
-    if (i == slotIdx) continue;
+  // 3. Check earlier output slots only. Later slots may still contain stale
+  // wrappers from the previous execution and must never become parents of the
+  // slot currently being classified.
+  for (int i = 0; i < slotIdx && i < totalOutputSlots; i++) {
     if (outputSlots[i] != nullptr && outputSlots[i]->dataBuffer() == outBuffer) {
       info.ownership = BufferOwnership::VIEW_OF_SLOT;
       info.parentSlotIdx = i;
@@ -243,6 +244,13 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
 
     DataBuffer* currentDb = outputSlots[i]->dataBuffer();
     if (currentDb != slotDataBuffers[i]) {
+      // DIAGNOSTIC: extra info for slot 420
+      if (i == 420 && outputSlots[i] != nullptr) {
+        sd_printf("DIAG_SLOT420: snapshot=%p current=%p arr=%p special=%p len=%lld rank=%d\n",
+                  (void*)slotDataBuffers[i], (void*)currentDb,
+                  (void*)outputSlots[i], (void*)outputSlots[i]->specialBuffer(),
+                  (long long)outputSlots[i]->lengthOf(), outputSlots[i]->rankOf());
+      }
       snprintf(errMsg, errMsgLen,
                "LIFECYCLE_ERROR: slot %d DataBuffer replaced during frozen execution "
                "(snapshot=%p current=%p) — ownership violated",

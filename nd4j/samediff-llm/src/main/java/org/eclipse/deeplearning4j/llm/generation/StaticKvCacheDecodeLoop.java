@@ -73,6 +73,22 @@ import java.util.Set;
 @Builder
 public class StaticKvCacheDecodeLoop {
 
+    private static final int DEFAULT_DIAGNOSTIC_STEPS = 3;
+
+    private static boolean decodePhaseLoggingEnabled() {
+        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.decodePhaseLogging", "true"));
+    }
+
+    private static boolean detailedDecodeDiagnosticsEnabled() {
+        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.decodeDiagnostics", "false"))
+                || Boolean.parseBoolean(System.getProperty("vlm.benchmark.logitFingerprints", "false"))
+                || Boolean.parseBoolean(System.getProperty("vlm.benchmark.tensorFingerprints", "false"));
+    }
+
+    private static int diagnosticSteps() {
+        return Integer.getInteger("vlm.benchmark.diagnosticSteps", DEFAULT_DIAGNOSTIC_STEPS);
+    }
+
     /**
      * Reuses the token_sample op and output buffer across decode steps.
      * The per-step host readback still exists, but this removes the repeated
@@ -227,17 +243,6 @@ public class StaticKvCacheDecodeLoop {
         List<String> decoderInputNames = decoder.externalInputs();
         log.info("  Decoder input names: {}", decoderInputNames);
 
-        String resolvedEmbedInputName = embedInputName;
-        if (resolvedEmbedInputName == null) {
-            resolvedEmbedInputName = embedTokens.inputs().isEmpty()
-                    ? resolvedIOConfig.getInputIdsName()
-                    : embedTokens.inputs().get(0);
-        }
-        String[] resolvedEmbedOutputNames = embedOutputNames;
-        if (resolvedEmbedOutputNames == null) {
-            resolvedEmbedOutputNames = embedTokens.outputs().toArray(new String[0]);
-        }
-
         // Resolve stop tokens
         int eosTokenId = tokenizer.getEosTokenId();
         Set<Integer> stopTokenIds = new HashSet<>();
@@ -269,12 +274,13 @@ public class StaticKvCacheDecodeLoop {
                 }
             }
         }
-        if (embeddingTable != null) {
-            log.info("  Using direct embedding lookup: shape={} (bypasses SameDiff.output() per token)",
-                    Arrays.toString(embeddingTable.shape()));
-        } else {
-            log.warn("  Could not extract embedding table, falling back to SameDiff.output() per token");
+        if (embeddingTable == null) {
+            throw new IllegalStateException(
+                    "StaticKvCacheDecodeLoop requires a direct embedding table from embedTokens; "
+                            + "per-token SameDiff.output() embedding fallback has been removed");
         }
+        log.info("  Using direct embedding lookup: shape={} (native decode path)",
+                Arrays.toString(embeddingTable.shape()));
 
         // Prefill needs logits + present KV outputs. Once native KV retention is enabled,
         // decode can request logits only while C++ scatters present KV internally.
@@ -342,6 +348,7 @@ public class StaticKvCacheDecodeLoop {
         INDArray reusableEmbeddings = null;  // [1, 1, hiddenSize]
         INDArray reusableInputIds = null;    // [1, 1]
         ReusableTokenSampler reusableTokenSampler = new ReusableTokenSampler(samplingConfig);
+        boolean loggedDirectPath = false;
 
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
@@ -387,28 +394,32 @@ public class StaticKvCacheDecodeLoop {
             // dspActive = padded mode with frozen shapes (enables native C++ input updates)
             boolean dspActive = usingStaticKv
                     && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noPadded"));
-            // All graph inputs are managed by Java through the normal placeholder path.
-            // No split authority — Java sets values, frozen fast path syncs to device,
-            // capture buffer D2D refresh propagates to captured graphs.
-            boolean nativeDecodeInputs = false;
             long maxKvLen = kvCacheManager.getMaxKvLen();
             long cachePos = kvCacheManager.getCachePosition();
-            Map<String, INDArray> decoderInputMap = DecoderUtils.buildDecoderInputMap(
-                    resolvedIOConfig, decoderInputNames, decoder,
-                    currentEmbeddings, currentInputIds,
-                    pastSeqLen, currentSeqLen,
-                    kvCacheManager.getStaticKvBuffers(), maxKvLen, cachePos,
-                    usingStaticKv, resolvedHiddenSize,
-                    reusableInputs, dspActive, nativeDecodeInputs,
-                    encoderOutputsForDecode, null);
+            Map<String, INDArray> decoderInputMap;
+            try {
+                decoderInputMap = DecoderUtils.buildDecoderInputMap(
+                        resolvedIOConfig, decoderInputNames, decoder,
+                        currentEmbeddings, currentInputIds,
+                        pastSeqLen, currentSeqLen,
+                        kvCacheManager.getStaticKvBuffers(), maxKvLen, cachePos,
+                        usingStaticKv, resolvedHiddenSize,
+                        reusableInputs, dspActive,
+                        encoderOutputsForDecode, null);
+            } catch (Exception e) {
+                throw decodeStageFailure("INPUT_BUILD", step, pastSeqLen, currentSeqLen,
+                        usingStaticKv, kvScatterInCpp, false, cachePos, e);
+            }
 
             long tAfterInputBuild = System.nanoTime();
 
             // All input updates are handled by Java via buildDecoderInputMap + syncToSpecial.
             // No C++ decode input management needed.
 
-            // Diagnostic logging for steps 1-3
-            if (step >= 1 && step <= 3) {
+            boolean detailedStepDiagnostics = detailedDecodeDiagnosticsEnabled() && step <= diagnosticSteps();
+
+            // Diagnostic logging for early steps only when explicitly enabled
+            if (detailedStepDiagnostics && step >= 1) {
                 logDiagnostics(step, decoderInputMap, resolvedIOConfig);
             }
 
@@ -427,18 +438,29 @@ public class StaticKvCacheDecodeLoop {
             // with C++ scatter. Java scatter is only used when C++ scatter is disabled.
             String[] requestedOutputNames = (usingStaticKv && kvScatterInCpp)
                     ? logitsOnlyOutputNames : fullOutputNames;
-            if (useDirect) {
-                decoderOutputs = decoder.outputDirect(
-                        decoderInputMap, requestedOutputNames);
-            } else {
-                decoderOutputs = decoder.output(
-                        decoderInputMap, requestedOutputNames);
+            if (useDirect && !loggedDirectPath) {
+                logDecodePhase("OUTPUT_DIRECT_ACTIVE", step,
+                        "requestedOutputs=" + Arrays.toString(requestedOutputNames));
+                loggedDirectPath = true;
+            }
+            try {
+                if (useDirect) {
+                    decoderOutputs = decoder.outputDirect(
+                            decoderInputMap, requestedOutputNames);
+                } else {
+                    decoderOutputs = decoder.output(
+                            decoderInputMap, requestedOutputNames);
+                }
+            } catch (Exception e) {
+                throw decodeStageFailure(useDirect ? "DSP_OUTPUT_DIRECT" : "DSP_OUTPUT",
+                        step, pastSeqLen, currentSeqLen, usingStaticKv, kvScatterInCpp,
+                        useDirect, cachePos, e);
             }
 
             long tAfterDecoder = System.nanoTime();
 
             // Diagnostic: present KV shapes at steps 1-3 (skip when C++ KV scatter manages outputs)
-            if (step >= 1 && step <= 3 && !kvScatterInCpp) {
+            if (detailedStepDiagnostics && step >= 1 && !kvScatterInCpp) {
                 logPresentKvDiagnostics(step, decoderOutputs, kvNames);
             }
 
@@ -446,8 +468,10 @@ public class StaticKvCacheDecodeLoop {
             // TokenSample now accepts rank-3 [batch, seqLen, vocabSize] directly
             INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
             if (logitsRaw == null) {
-                log.error("No logits output at step {}", step);
-                break;
+                throw decodeStageFailure("LOGITS_MISSING", step, pastSeqLen, currentSeqLen,
+                        usingStaticKv, kvScatterInCpp, useDirect, cachePos,
+                        new IllegalStateException("Missing logits output '" + logitsOutputName
+                                + "' from requested outputs " + Arrays.toString(requestedOutputNames)));
             }
             // Mixed precision decoder (HALF weights + FLOAT activations) keeps logits in FLOAT.
             // If a future full-HALF path produces HALF logits, cast to FLOAT for sampling precision.
@@ -461,8 +485,8 @@ public class StaticKvCacheDecodeLoop {
             // because setCloseable makes the DSP's frozen output closeable, and closing
             // it destroys the DSP's internal output slot cache → fallback to Java path.
 
-            // Diagnostic: top logit values at steps 0-3
-            if (step == 0) {
+            // Diagnostic: top logit values at early steps when explicitly enabled
+            if (detailedStepDiagnostics) {
                 logLogitsDiagnostics(step, logitsRaw);
             }
 
@@ -514,7 +538,12 @@ public class StaticKvCacheDecodeLoop {
             } else {
                 // Step 0 (prefill): initialize KV cache via KvCacheManager
                 long prefillSeqLen = currentSeqLen;
-                kvCacheManager.initializeFromPrefill(decoderOutputs, kvNames, maxNewTokens, prefillSeqLen);
+                try {
+                    kvCacheManager.initializeFromPrefill(decoderOutputs, kvNames, maxNewTokens, prefillSeqLen);
+                } catch (Exception e) {
+                    throw decodeStageFailure("KV_PREFILL_INIT", step, pastSeqLen, currentSeqLen,
+                            usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);
+                }
                 usingStaticKv = true;
                 // Re-read maxKvLen and cachePos — they were captured at the top of the
                 // loop BEFORE initializeFromPrefill, so the local variables are stale
@@ -522,6 +551,8 @@ public class StaticKvCacheDecodeLoop {
                 // correct post-prefill values for KV retention and decode input config.
                 maxKvLen = kvCacheManager.getMaxKvLen();
                 cachePos = kvCacheManager.getCachePosition();
+                logDecodePhase("PREFILL_COMPLETE", step,
+                        "prefillSeqLen=" + prefillSeqLen + " maxKvLen=" + maxKvLen + " cachePos=" + cachePos);
 
                 // Close prefill KV outputs — but ONLY when DSP native executor is NOT active.
                 // When DSP is active, the C++ slotArrayCache_ still holds raw NDArray* pointers
@@ -563,8 +594,7 @@ public class StaticKvCacheDecodeLoop {
                         // No graph topology changes needed. Internal variables (like input_ids)
                         // get correct values via associateArrayWithVariable in buildDecoderInputMap.
                         // Clear old plan and recompile with correct KV shapes.
-                        boolean cppKvEnabled = !skipFreeze
-                                && !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
+                        boolean cppKvEnabled = !skipFreeze;
                         String[] recompileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
                         decoder.clearDynamicShapePlanCache();
                         // Don't call clearAllCaches — it destroys the executor and frees
@@ -575,7 +605,12 @@ public class StaticKvCacheDecodeLoop {
                         if (!skipFreeze) {
                             log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={})",
                                     maxKvLen, Arrays.toString(recompileOutputs));
-                            decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
+                            try {
+                                decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
+                            } catch (Exception e) {
+                                throw decodeStageFailure("DSP_STATIC_KV_RECOMPILE", step, pastSeqLen, currentSeqLen,
+                                        usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);
+                            }
                         } else {
                             log.info("  [Perf] No-freeze mode: disabling DSP, using op-by-op execution");
                             decoder.setDspAutoCompileEnabled(false);
@@ -591,6 +626,12 @@ public class StaticKvCacheDecodeLoop {
                         // device now has ample free memory for graph capture.
                         decoder.reassignDynamicShapePlanDevices();
 
+                        if (dspExec == null && !skipFreeze) {
+                            throw new IllegalStateException(
+                                    "Static KV decode requires a DSP executor after recompilation; "
+                                            + "native-only benchmark path cannot continue without it");
+                        }
+
                         // CRITICAL: Freeze shapes IMMEDIATELY after recompile.
                         if (dspExec != null && !skipFreeze) {
                             dspExec.setShapesFrozen(true);
@@ -598,9 +639,18 @@ public class StaticKvCacheDecodeLoop {
                             dspExec.setExecutionTimingEnabled(true);
                             decoderDspExec = dspExec;
                             log.info("  [Perf] Shapes frozen AFTER recompile (stable Triton cache keys)");
+                            logDecodePhase("SHAPES_FROZEN", step,
+                                    "maxKvLen=" + maxKvLen + " cachePos=" + cachePos
+                                            + " planPhase=" + dspExec.getPlanPhase()
+                                            + " pointersStable=" + dspExec.arePointersStable());
 
                             // Configure C++ KV scatter: present outputs → static input buffers
                             DynamicShapePlan plan = cppKvEnabled ? dspExec.getCurrentPlan() : null;
+                            if (cppKvEnabled && plan == null) {
+                                throw new IllegalStateException(
+                                        "Static KV decode requires a frozen DSP plan for native KV scatter, "
+                                                + "but recompilation produced no current plan");
+                            }
                             if (plan != null) {
                                 List<String> presentNames = new ArrayList<>();
                                 presentNames.addAll(kvNames.keyNames);
@@ -609,20 +659,31 @@ public class StaticKvCacheDecodeLoop {
                                 for (String pn : presentNames) {
                                     pastNames.add(resolvedIOConfig.presentToInputName(pn));
                                 }
-                                boolean kvConfigured = dspExec.configureKvCacheRetention(
-                                        plan, presentNames, pastNames, (int) maxKvLen, (int) cachePos);
+                                boolean kvConfigured;
+                                try {
+                                    kvConfigured = dspExec.configureKvCacheRetention(
+                                            plan, presentNames, pastNames, (int) maxKvLen, (int) cachePos);
+                                } catch (Exception e) {
+                                    throw decodeStageFailure("KV_SCATTER_NATIVE_CONFIG", step, pastSeqLen, currentSeqLen,
+                                            usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);
+                                }
                                 if (kvConfigured) {
                                     kvScatterInCpp = true;
                                     log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}, decodeOutputs=logits-only",
                                             presentNames.size(), cachePos);
+                                    logDecodePhase("KV_SCATTER_NATIVE_READY", step,
+                                            "mappings=" + presentNames.size()
+                                                    + " cachePos=" + cachePos
+                                                    + " planPhase=" + dspExec.getPlanPhase()
+                                                    + " pointersStable=" + dspExec.arePointersStable());
 
                                     // Decode inputs managed by Java — no C++ configureDecodeInputs needed.
                                     // All inputs flow through buildDecoderInputMap → syncToSpecial → capture buffer D2D.
                                 } else {
-                                    decoderDspExec = null;
-                                    decoder.clearDynamicShapePlanCache();
-                                    decoderSession.clearAllCaches();
-                                    log.warn("  [Perf] C++ KV scatter setup failed, falling back to Java KV scatter");
+                                    throw new IllegalStateException(String.format(
+                                            "Native KV scatter setup failed after shapes froze "
+                                                    + "(presentNames=%d, maxKvLen=%d, cachePos=%d)",
+                                            presentNames.size(), maxKvLen, cachePos));
                                 }
                             }
                         }
@@ -638,7 +699,13 @@ public class StaticKvCacheDecodeLoop {
 
             // Sample next token via native GPU op — pass logits directly (rank-3 supported)
             long tSampStart = System.nanoTime();
-            int nextTokenId = reusableTokenSampler.sample(logitsRaw);
+            int nextTokenId;
+            try {
+                nextTokenId = reusableTokenSampler.sample(logitsRaw);
+            } catch (Exception e) {
+                throw decodeStageFailure("TOKEN_SAMPLE", step, pastSeqLen, currentSeqLen,
+                        usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);
+            }
             long tSampArgmax = System.nanoTime();
             generatedTokens.add(nextTokenId);
 
@@ -726,63 +793,44 @@ public class StaticKvCacheDecodeLoop {
 
             // Get embedding for next token
             INDArray prevEmbeddings = currentEmbeddings;
-            if (embeddingTable != null) {
-                // Direct lookup: single row from embedding table, reshaped to [1, 1, hiddenSize]
-                INDArray rowEmbed = embeddingTable.getRow(nextTokenId).reshape(1, 1, resolvedHiddenSize);
-                // Use fixed-address buffer for CUDA graph replay stability
-                if (usingStaticKv) {
-                    if (reusableEmbeddings == null) {
-                        reusableEmbeddings = rowEmbed.dup();
-                    } else {
-                        reusableEmbeddings.assign(rowEmbed);
-                    }
-                    currentEmbeddings = reusableEmbeddings;
+            // Direct lookup: single row from embedding table, reshaped to [1, 1, hiddenSize]
+            INDArray rowEmbed;
+            try {
+                rowEmbed = embeddingTable.getRow(nextTokenId).reshape(1, 1, resolvedHiddenSize);
+            } catch (Exception e) {
+                throw decodeStageFailure("TOKEN_EMBED_LOOKUP", step, pastSeqLen, currentSeqLen,
+                        usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);
+            }
+            // Use fixed-address buffer for CUDA graph replay stability
+            if (usingStaticKv) {
+                if (reusableEmbeddings == null) {
+                    reusableEmbeddings = rowEmbed.dup();
                 } else {
-                    currentEmbeddings = rowEmbed;
+                    reusableEmbeddings.assign(rowEmbed);
                 }
-                if (usingStaticKv) {
-                    if (reusableInputIds == null) {
-                        reusableInputIds = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-                    } else {
-                        reusableInputIds.putScalar(0, 0, nextTokenId);
-                    }
-                    // Close old currentInputIds if it's a different allocation (e.g., the initial prompt tensor)
-                    if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
-                        currentInputIds.setCloseable(true);
-                        currentInputIds.close();
-                    }
-                    currentInputIds = reusableInputIds;
-                } else {
-                    INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-                    if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
-                        currentInputIds.setCloseable(true);
-                        currentInputIds.close();
-                    }
-                    currentInputIds = newTokenTensor;
-                }
+                currentEmbeddings = reusableEmbeddings;
             } else {
-                // Fallback: full SameDiff execution
-                INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-                Map<String, INDArray> newEmbedOutputs = embedTokens.output(
-                        Map.of(resolvedEmbedInputName, newTokenTensor), resolvedEmbedOutputNames);
-                for (var entry : newEmbedOutputs.entrySet()) {
-                    if (usingStaticKv) {
-                        if (reusableEmbeddings == null) {
-                            reusableEmbeddings = entry.getValue().dup();
-                        } else {
-                            reusableEmbeddings.assign(entry.getValue());
-                        }
-                        currentEmbeddings = reusableEmbeddings;
-                    } else {
-                        currentEmbeddings = entry.getValue();
-                    }
+                currentEmbeddings = rowEmbed;
+            }
+            if (usingStaticKv) {
+                if (reusableInputIds == null) {
+                    reusableInputIds = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                } else {
+                    reusableInputIds.putScalar(0, 0, nextTokenId);
                 }
+                // Close old currentInputIds if it's a different allocation (e.g., the initial prompt tensor)
+                if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
+                    currentInputIds.setCloseable(true);
+                    currentInputIds.close();
+                }
+                currentInputIds = reusableInputIds;
+            } else {
+                INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
                 if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
                     currentInputIds.setCloseable(true);
                     currentInputIds.close();
                 }
                 currentInputIds = newTokenTensor;
-                embedTokens.clearPlaceholders(false);
             }
             // Close previous embeddings — but NOT if it's the same object as
             // currentEmbeddings (reusableEmbeddings is updated in-place via assign(),
@@ -828,7 +876,7 @@ public class StaticKvCacheDecodeLoop {
                 return decodeSpeculative(kvCacheManager, specMaxKvLen, cachePos,
                         resolvedIOConfig, embeddingTable, resolvedHiddenSize,
                         stopTokenIds, generatedTokens, prefillTimeMs, decodeStart,
-                        promptTokenIds, resolvedEmbedInputName, resolvedEmbedOutputNames);
+                        promptTokenIds);
             }
         }
 
@@ -943,8 +991,7 @@ public class StaticKvCacheDecodeLoop {
             ModelIOConfig specIOConfig,
             INDArray embeddingTable, long resolvedHiddenSize,
             Set<Integer> stopTokenIds, List<Integer> generatedTokens,
-            long prefillTimeMs, long decodeStart, int[] promptTokenIds,
-            String resolvedEmbedInputName, String[] resolvedEmbedOutputNames) {
+            long prefillTimeMs, long decodeStart, int[] promptTokenIds) {
 
         int K = maxSpeculativeTokens;
         int mergedSeqLen = K + 1;
@@ -1011,29 +1058,10 @@ public class StaticKvCacheDecodeLoop {
             }
 
             // Look up embeddings for all K+1 tokens
-            if (embeddingTable != null) {
-                for (int i = 0; i < mergedSeqLen; i++) {
-                    INDArray rowEmbed = embeddingTable.getRow(tokenArray[i]);
-                    mergedEmbeddings.get(NDArrayIndex.point(0), NDArrayIndex.point(i),
-                            NDArrayIndex.all()).assign(rowEmbed);
-                }
-            } else {
-                // Fallback: full SameDiff execution for embeddings
-                INDArray idsTensor = Nd4j.createFromArray(tokenArray).reshape(1, mergedSeqLen).castTo(DataType.LONG);
-                Map<String, INDArray> embedOut = embedTokens.output(
-                        Map.of(resolvedEmbedInputName, idsTensor), resolvedEmbedOutputNames);
-                for (var entry : embedOut.entrySet()) {
-                    mergedEmbeddings.assign(entry.getValue());
-                }
-                embedTokens.clearPlaceholders(false);
-                idsTensor.close();
-                // Close embed output arrays to prevent leaks
-                for (INDArray arr : embedOut.values()) {
-                    if (arr != null && !arr.wasClosed()) {
-                        arr.setCloseable(true);
-                        arr.close();
-                    }
-                }
+            for (int i = 0; i < mergedSeqLen; i++) {
+                INDArray rowEmbed = embeddingTable.getRow(tokenArray[i]);
+                mergedEmbeddings.get(NDArrayIndex.point(0), NDArrayIndex.point(i),
+                        NDArrayIndex.all()).assign(rowEmbed);
             }
 
             long poolAfterEmbed = getPoolUsedMB();
@@ -1272,6 +1300,49 @@ public class StaticKvCacheDecodeLoop {
             result[p] = topId;
         }
         return result;
+    }
+
+    private void logDecodePhase(String phase, int step, String detail) {
+        if (decodePhaseLoggingEnabled()) {
+            log.info("  [PHASE] {} step={} {}", phase, step, detail);
+        }
+    }
+
+    private IllegalStateException decodeStageFailure(String stage,
+                                                     int step,
+                                                     long pastSeqLen,
+                                                     long currentSeqLen,
+                                                     boolean usingStaticKv,
+                                                     boolean kvScatterInCpp,
+                                                     boolean useDirect,
+                                                     long cachePos,
+                                                     Throwable cause) {
+        DynamicShapePlanExecutor dspExec = null;
+        try {
+            InferenceSession session = decoder.getOrCreateSession();
+            dspExec = session.getDynamicShapePlanExecutor();
+        } catch (Exception ignored) {
+            // Preserve the original failure if session state is already broken.
+        }
+
+        String phase = dspExec != null ? String.valueOf(dspExec.getPlanPhase()) : "null";
+        boolean shapesFrozen = dspExec != null && dspExec.isShapesFrozen();
+        boolean pointersStable = dspExec != null && dspExec.arePointersStable();
+        boolean hasPlan = dspExec != null && dspExec.getCurrentPlan() != null;
+
+        return new IllegalStateException(
+                "Decode stage " + stage + " failed: step=" + step
+                        + " pastSeqLen=" + pastSeqLen
+                        + " currentSeqLen=" + currentSeqLen
+                        + " usingStaticKv=" + usingStaticKv
+                        + " kvScatterInCpp=" + kvScatterInCpp
+                        + " useDirect=" + useDirect
+                        + " cachePos=" + cachePos
+                        + " hasPlan=" + hasPlan
+                        + " shapesFrozen=" + shapesFrozen
+                        + " planPhase=" + phase
+                        + " pointersStable=" + pointersStable,
+                cause);
     }
 
     private void logDiagnostics(int step, Map<String, INDArray> decoderInputMap, ModelIOConfig diagConfig) {

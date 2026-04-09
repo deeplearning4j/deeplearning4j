@@ -282,6 +282,10 @@ void TritonConfig::initFromEnvironment() {
     if (v >= 0) setForceRecapture(v == 1);
   }
   {
+    int v = readBoolEnvTriState("ND4J_TRITON_WARMUP_ONLY");
+    if (v >= 0) setWarmupOnly(v == 1);
+  }
+  {
     int v = readIntEnv("ND4J_TRITON_CAPTURE_MIN_EXEC", -1);
     if (v >= 0) setCaptureMinExec(v);
   }

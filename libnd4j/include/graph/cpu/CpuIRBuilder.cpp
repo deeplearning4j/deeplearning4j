@@ -996,8 +996,8 @@ void CpuIRBuilder::emitShapeManipOp(mlir::OpBuilder& builder, mlir::Location loc
 
       for (int d = 0; d < rank; d++) {
         auto stride = builder.create<mlir::arith::ConstantIndexOp>(loc, outStrides[d]);
-        auto coord = builder.create<mlir::arith::DivUIOp>(loc, remaining, stride);
-        remaining = builder.create<mlir::arith::RemUIOp>(loc, remaining, stride);
+        auto coord = builder.create<mlir::arith::DivSIOp>(loc, remaining, stride);
+        remaining = builder.create<mlir::arith::RemSIOp>(loc, remaining, stride);
 
         // This output dim d corresponds to input dim iArgs[d]
         int srcDim = static_cast<int>(iArgs[d]);

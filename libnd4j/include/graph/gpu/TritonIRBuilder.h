@@ -26,6 +26,7 @@
 #include <array/NDArray.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/SegmentAnalysisTypes.h>
+#include <graph/gpu/TritonIRBuilder_types.h>
 #include <system/common.h>
 
 #include <string>
@@ -33,203 +34,19 @@
 #include <unordered_set>
 #include <vector>
 
-// Forward declarations for MLIR types used in helper signatures
-namespace mlir {
-class OpBuilder;
-class Location;
-class Value;
-class Type;
-class RankedTensorType;
-}  // namespace mlir
+// MLIR headers — only included from .cpp files compiled by the host compiler
+// (g++/clang++), never by NVCC. The _types.h header above provides all
+// NVCC-safe type definitions.
+#include <mlir/IR/Builders.h>
+#include <mlir/IR/BuiltinTypes.h>
+#include <mlir/IR/Value.h>
 
 namespace sd {
 namespace graph {
 
-// TritonOpCategory enum is defined in OpCategoryTable.h (shared with NVRTC path)
-// SegmentKernelPattern, OpNode, SegmentProfile, PatternMatch, PatternDetector,
-// MatchedPatterns, SegmentAnalysis are defined in SegmentAnalysisTypes.h
-
-/**
- * Section type within a cooperative mega-kernel.
- * Each section handles one category of op(s) with its own grid mapping.
- */
-enum class KernelSectionType {
-  ELEMENTWISE,         // 1D grid, BLOCK_SIZE elements per block
-  MATMUL,              // 2D tiled, tt.dot with K-loop
-  FUSED_ATTENTION,     // Flash Attention, online softmax, tt.dot for QK^T and P@V
-  REDUCTION,           // Tree reduction within block
-  NORMALIZATION,       // Multi-op fused pattern (softmax, layer_norm)
-  GATHER,              // Indexed loads from data using indices
-  GATHER_ND,           // Multi-dimensional indexed loads
-  CONCAT,              // Cascading select over N inputs
-  SPLIT,               // Partitioned loads into multiple outputs
-  SPLIT_V,             // Variable-size split
-  STACK,               // Stack along new axis
-  STRIDED_SLICE,       // Strided load with begin/end/stride
-  TILE,                // Repeated load with modular indexing
-  SCATTER_ND,          // Indexed stores
-  SCATTER_ND_UPDATE,   // Indexed update
-  SHAPE_MANIPULATION,  // reshape, permute, expand_dims, squeeze, flatten — stride recomputation
-  CONSTANT_GENERATION, // ones_like, zeros_like, range, shape_of
-  CONVOLUTION,         // Spatial convolution with nested loops
-  IDENTITY             // SSA forwarding (no IR ops)
-};
-
-/**
- * A section within the cooperative mega-kernel.
- * Groups contiguous ops of compatible types. Between sections with cross-block
- * data dependencies, a cooperative grid sync barrier is inserted.
- */
-struct KernelSection {
-  KernelSectionType type;
-  int startSlot;              // First slot (absolute) in this section
-  int endSlot;                // Last slot (absolute, inclusive) in this section
-  int numOps;                 // Number of ops in this section
-  int gridRequirement;        // Number of blocks needed for this section
-
-  // Matmul-specific dimensions (valid when type == MATMUL)
-  int matmulM, matmulN, matmulK;
-  int blockM, blockN, blockK;
-
-  // Attention-specific dimensions (valid when type == FUSED_ATTENTION)
-  int batchSize, numHeads, seqQ, seqK, headDim;
-  int numKvHeads = 0;  // KV heads for GQA (0 = same as numHeads, i.e. MHA)
-  float attentionScale;
-  bool attnQIsBSHD = false;
-  bool attnKIsBSHD = false;
-
-  // Data movement dimensions
-  int gatherAxis;             // Gather/scatter axis
-  int concatAxis;             // Concat axis
-
-  // Matmul epilogue fusion: when a MATMUL section is immediately followed by
-  // ELEMENTWISE ops that only consume the matmul output, those ops are absorbed
-  // into the matmul section as epilogue ops. The Triton emitter fuses them into
-  // the matmul tile loop (bias add, activation, cast) so the result stays in
-  // registers — no global memory round-trip between matmul and epilogue.
-  // The matmul section's endSlot is extended to cover the epilogue ops.
-  int matmulEpilogueStartSlot = -1;  // First epilogue slot (-1 = no epilogue)
-  int matmulEpilogueEndSlot = -1;    // Last epilogue slot (inclusive)
-  int matmulEpilogueCount = 0;       // Number of epilogue ops absorbed
-
-  // Normalization epilogue fusion: similar to matmul epilogue, when a
-  // NORMALIZATION section is immediately followed by ELEMENTWISE ops that
-  // only consume the normalization output, those ops are absorbed.
-  int normEpilogueStartSlot = -1;
-  int normEpilogueEndSlot = -1;
-  int normEpilogueCount = 0;
-
-  // Trailing permute fusion: when an elementwise section is immediately followed
-  // by a permute op that reads from this section's output, the permute is absorbed
-  // into the section as a transposed store. This eliminates the permute section
-  // and its barrier, saving one kernel launch per permute.
-  bool hasTrailingPermute = false;
-  int trailingPermuteSlot = -1;           // slot index of the absorbed permute op
-  int trailingPermuteOutputSlotIdx = -1;  // outputSlotIndices[0] of the permute
-  int trailingPermuteInputSlotIdx = -1;   // inputSourceIndices[0] of the permute
-  std::vector<int> trailingPermutation;
-  std::vector<LongType> trailingPermuteInputShape;
-  std::vector<LongType> trailingPermuteOutputShape;
-
-  KernelSection()
-      : type(KernelSectionType::ELEMENTWISE), startSlot(-1), endSlot(-1),
-        numOps(0), gridRequirement(1),
-        matmulM(0), matmulN(0), matmulK(0), blockM(128), blockN(128), blockK(32),
-        batchSize(0), numHeads(0), seqQ(0), seqK(0), headDim(0), attentionScale(1.0f),
-        gatherAxis(0), concatAxis(0) {}
-};
-
-/**
- * Mapping entry for a single libnd4j op to Triton IR.
- */
-struct TritonOpMapping {
-  std::string opName;
-  TritonOpCategory category;
-  std::string tritonIrOp;       // Primary Triton IR operation name
-  bool requiresPattern;         // true if compound pattern (e.g. relu = max(x,0))
-};
-
-/**
- * Kernel argument descriptor for wiring NDArray buffers to kernel parameters.
- */
-struct TritonKernelArg {
-  int slotIndex = 0;          // >=0: output slot, <0: -(externalIndex+1)
-  int outputIndex = 0;        // Which output of the slot (usually 0)
-  bool isOutput = false;      // true if this is a kernel output (written)
-  DataType dtype = FLOAT32;   // Default to FLOAT32 to avoid UB from uninitialized enum
-  std::vector<LongType> shape;
-  std::vector<LongType> strides;  // Actual strides from NDArray (empty = C-contiguous)
-
-  /**
-   * Returns true if this arg has non-C-contiguous strides (e.g., permute view).
-   * When true, the Triton kernel must use actual strides for indexing instead
-   * of assuming flat C-order layout.
-   */
-  bool isNonContiguous() const {
-    if (strides.empty() || shape.empty()) return false;
-    int rank = static_cast<int>(shape.size());
-    // Compute expected C-contiguous strides and compare
-    LongType expected = 1;
-    for (int d = rank - 1; d >= 0; d--) {
-      if (strides[d] != expected) return true;
-      expected *= shape[d];
-    }
-    return false;
-  }
-};
-
-/**
- * Result of building Triton IR from a segment of NativeSlots.
- */
-struct TritonIRModule {
-  void* mlirModule;           // Opaque handle to mlir::ModuleOp
-  void* mlirContext;          // Opaque handle to mlir::MLIRContext (owns module memory)
-  std::string kernelName;     // Generated kernel function name
-  std::vector<TritonKernelArg> args;   // Ordered kernel arguments
-  int numWarps;               // Recommended warps per block
-  int numStages;              // Recommended pipeline stages
-  unsigned int gridX;         // Grid dimension X (num_elements / BLOCK_SIZE)
-  unsigned int gridY;
-  unsigned int gridZ;
-  unsigned int blockX;        // Block dimension X (BLOCK_SIZE for element-wise)
-  unsigned int blockY;
-  unsigned int blockZ;
-  bool valid;                 // true if construction succeeded
-  bool useIndirectArgs;       // true if kernel uses indirect arg passing (pointer array)
-                              // When true, the kernel signature is (argArray* : ptr<i64>, n_elements : i32)
-                              // and all buffer pointers are packed into a device-side i64 array.
-                              // The launch code must allocate the array and pass its device pointer.
-  bool useCooperativeLaunch;  // true if kernel requires cooperative launch (grid sync barriers)
-  bool useDynamicGrid;        // true only for 1D element-wise kernels where gridX is derived from n_elements at launch
-  int requiredGrid;           // Maximum grid size needed across all sections
-  std::vector<KernelSection> sections;  // Section breakdown of the kernel
-
-  // Conservative estimate of shared memory per block (bytes), computed from
-  // section types and tile sizes. Used for early cooperative launch capacity
-  // rejection before the expensive TTIR→PTX compilation.
-  int estimatedSharedMemBytes;
-
-  // Multi-phase launch: when cooperative launch is disabled and cross-section
-  // barriers are needed, the kernel is launched once per phase. Each phase is
-  // a maximal group of consecutive sections that don't require cross-block sync.
-  // The kernel has a phase_id argument that controls which sections execute.
-  // Kernel launch provides implicit global sync between phases.
-  struct LaunchPhase {
-    int startSection;   // First section index in this phase (inclusive)
-    int endSection;     // Last section index in this phase (inclusive)
-    int gridX;          // Grid size needed for this phase (max across contained sections)
-  };
-  std::vector<LaunchPhase> launchPhases;  // Empty = single launch (no phases)
-  bool useMultiPhaseLaunch;               // true when launchPhases is populated
-
-  TritonIRModule() : mlirModule(nullptr), mlirContext(nullptr), numWarps(4), numStages(3),
-                     gridX(1), gridY(1), gridZ(1),
-                     blockX(1), blockY(1), blockZ(1),
-                     valid(false), useIndirectArgs(false), useCooperativeLaunch(false),
-                     useDynamicGrid(true),
-                     requiredGrid(1), estimatedSharedMemBytes(0),
-                     useMultiPhaseLaunch(false) {}
-};
+// All type definitions (KernelSectionType, KernelSection, EpilogueOp,
+// TritonOpMapping, TritonKernelArg, TritonIRModule) are in
+// TritonIRBuilder_types.h — MLIR-free, NVCC-safe.
 
 /**
  * Constructs Triton MLIR IR (TTIR) from sequences of NativeSlots.
@@ -457,7 +274,37 @@ class TritonIRBuilder {
 
   // ── Kernel patterns (TritonIRBuilder_kernels.cpp) ──
 
-  // Emit a matmul kernel pattern using tt.dot
+  // Emit a matmul kernel pattern using tt.dot.
+  // Optional epilogueOps: applied to the f32 accumulator IN REGISTERS before
+  // the final store. This is true mega-kernel fusion — no global memory
+  // round-trip between matmul and epilogue (bias add, activation, etc.).
+  // epiloguePtrs: buffer pointers for epilogue inputs (e.g., bias vector).
+  // Emit a fused RMSNorm+Linear kernel (Mirage-style single-pass).
+  // One K-loop accumulates BOTH Σx² (norm denominator) and (x*gamma)@W (matmul),
+  // deferring the division by RMS until after the loop. One read of x, one write.
+  static void emitRmsNormLinearKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                                      mlir::Value xPtr, mlir::Value gammaPtr,
+                                      mlir::Value wPtr, mlir::Value outPtr,
+                                      int M, int N, int K, float epsilon,
+                                      int blockM, int blockN, int blockK);
+
+  // Emit a fused GatedMLP kernel: silu(x @ W_gate) * (x @ W_up)
+  // Single K-loop loads x ONCE and performs TWO tt.dot accumulations (gate + up).
+  // After the loop, silu + elementwise multiply happen in registers.
+  // One read of x, two reads of W, one write of output.
+  static void emitGatedMLPKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                                  mlir::Value xPtr, mlir::Value wGatePtr,
+                                  mlir::Value wUpPtr, mlir::Value outPtr,
+                                  int M, int N, int K,
+                                  int blockM, int blockN, int blockK);
+
+  static void emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                               mlir::Value aPtr, mlir::Value bPtr, mlir::Value cPtr,
+                               int M, int N, int K,
+                               int blockM, int blockN, int blockK,
+                               const std::vector<EpilogueOp>& epilogueOps,
+                               const std::vector<mlir::Value>& epiloguePtrs);
+  // Overload without epilogue
   static void emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location loc,
                                mlir::Value aPtr, mlir::Value bPtr, mlir::Value cPtr,
                                int M, int N, int K,

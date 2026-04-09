@@ -1418,7 +1418,8 @@ public interface NativeOps {
 
  /**
   * Release all GPU memory held by intermediate computation results while keeping
-  * the plan structure alive. Frees CUDA graph replay handles, capture buffers,
+  * the plan structure alive. Frees CUDA graph replay handles and associated
+  * replay resources,
   * cuBLAS workspace, and non-weight output slot NDArrays. The plan enters a
   * "cold" state and will re-warm on the next execute() call.
   *
@@ -1429,13 +1430,13 @@ public interface NativeOps {
      throw new UnsupportedOperationException("releaseGpuIntermediates not implemented in this backend");
  }
 
- /**
-  * Release GPU intermediates with option to preserve decode-invariant state.
-  * When preserveDecodeState=true, preserves external input staging buffers,
-  * output slot arrays, CUDA graph handles, and cuBLAS workspace.
-  *
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @param preserveDecodeState if true, preserve decode-invariant state
+/**
+ * Release GPU intermediates with option to preserve decode-invariant state.
+ * When preserveDecodeState=true, preserves output slot arrays, CUDA graph
+ * handles, cuBLAS workspace, and batch replay resources.
+ *
+ * @param planHandle handle from compileDynamicShapePlan()
+ * @param preserveDecodeState if true, preserve decode-invariant state
   * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
   */
  default int releaseGpuIntermediates(Pointer planHandle, boolean preserveDecodeState) {
@@ -1865,6 +1866,31 @@ public interface NativeOps {
    * Returns PlanPhase as int: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=POINTERS_STABLE, 3=REPLAYING
    */
   default int getPlanPhase(Pointer planHandle) { return -1; }
+
+  /**
+   * Get the replay schedule signature hash for a segment.
+   * Returns the FNV-1a hash encoding of the ordered replay unit list.
+   * Zero if the segment has no replay.
+   */
+  long getPlanReplaySignatureHash(Pointer planHandle, int segIdx);
+
+  /**
+   * Get the number of replay units for a segment after consolidation.
+   * Returns the count of ordered replay units. Zero if no replay.
+   */
+  int getPlanReplayUnitCount(Pointer planHandle, int segIdx);
+
+  /**
+   * Get the execution count for a specific segment.
+   * Returns -1 on error.
+   */
+  int getSegmentExecutionCount(Pointer planHandle, int segIdx);
+
+  /**
+   * Get the number of segments in the plan.
+   * Returns -1 on error.
+   */
+  int getPlanSegmentCount(Pointer planHandle);
 
   /**
    * Check if all buffer pointers are stable (same addresses across executions).

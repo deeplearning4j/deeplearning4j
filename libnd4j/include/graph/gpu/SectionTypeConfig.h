@@ -19,7 +19,7 @@
 #ifndef LIBND4J_SECTION_TYPE_CONFIG_H
 #define LIBND4J_SECTION_TYPE_CONFIG_H
 
-#include <graph/gpu/TritonIRBuilder.h>
+#include <graph/gpu/TritonIRBuilder_types.h>
 
 #include <algorithm>
 #include <unordered_set>
@@ -43,7 +43,7 @@ struct SectionTypeConfig {
 
   // Compilation strategy
   bool compiledByDefault;   // Compiled without compileAll (ELEMENTWISE, IDENTITY)
-  bool alwaysFallback;      // Always native CUDA (SHAPE_MANIPULATION)
+  bool alwaysNativeOrdered; // Always native ordered execution (SHAPE_MANIPULATION)
   bool alwaysStandalone;    // Always own kernel (CONVOLUTION)
   bool fusionVerified;      // Safe to merge into multi-section mega-kernels
 
@@ -60,7 +60,7 @@ struct SectionTypeConfig {
 // fusionVerified = true for GATHER, GATHER_ND, STACK (tested 65% diversity in merged kernels).
 // SPLIT, CONCAT, CONST_GEN have subtle accuracy regressions when merged — standalone until proven.
 inline constexpr SectionTypeConfig SECTION_TYPE_CONFIGS[] = {
-  //  type                            name              compiled fallback standalone fusionOK barrier grid
+  //  type                            name              compiled nativeOrdered standalone fusionOK barrier grid
   { KernelSectionType::ELEMENTWISE,        "ELEMENTWISE",    true,  false, false, true,  false, SectionGridType::LINEAR_1D },
   { KernelSectionType::MATMUL,             "MATMUL",         false, false, false, true,  false, SectionGridType::TILED_2D },
   { KernelSectionType::FUSED_ATTENTION,    "ATTENTION",      false, false, false, false, true,  SectionGridType::ATTENTION },
@@ -91,7 +91,7 @@ inline const SectionTypeConfig& getSectionTypeConfig(KernelSectionType type) {
   if (idx >= 0 && idx < SECTION_TYPE_CONFIG_COUNT) {
     return SECTION_TYPE_CONFIGS[idx];
   }
-  // Fallback to ELEMENTWISE config for safety
+  // Default to ELEMENTWISE config for safety
   return SECTION_TYPE_CONFIGS[0];
 }
 
@@ -129,11 +129,11 @@ inline bool shouldBeStandalone(const SectionTypeConfig& cfg,
   return !cfg.compiledByDefault;
 }
 
-// Should this section fall back to native CUDA (cuBLAS/native ops)?
-inline bool shouldFallback(const SectionTypeConfig& cfg,
-                           bool compileAll,
-                           const std::unordered_set<KernelSectionType>& includedTypes) {
-  if (cfg.alwaysFallback) return true;
+// Should this section stay in native ordered execution instead of Triton compilation?
+inline bool shouldStayNativeOrdered(const SectionTypeConfig& cfg,
+                                    bool compileAll,
+                                    const std::unordered_set<KernelSectionType>& includedTypes) {
+  if (cfg.alwaysNativeOrdered) return true;
 
   if (!compileAll) {
     // Default: only compiledByDefault types (ELEMENTWISE, IDENTITY) are compiled

@@ -912,8 +912,7 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
         sd.nn.relu("result", conv, 0);
 
         // Input: values 1..16 in order so we can identify which position each element came from
-        INDArray inputData = Nd4j.create(new float[]{1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16},
-                                          new int[]{1,1,4,4});
+        INDArray inputData = Nd4j.createFromArray(1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16f).reshape(1,1,4,4);
         runOpTest("testTritonConv2dDeterministic", sd, Map.of("input", inputData), "result");
     }
 

@@ -458,7 +458,8 @@ public class TestDSPParallelCompilation extends BaseNd4jTestWithBackends {
             log.warn("Could not freeze: {}", e.getMessage());
         }
 
-        // Execute 5 times frozen — gap ops must be re-executed after each replay
+        // Execute 5 times frozen — mixed gap work must remain ordered and correct
+        // across the frozen replay schedule.
         for (int i = 0; i < 5; i++) {
             Map<String, INDArray> result = sd.output(Map.of("indices", idx), "output");
             INDArray output = result.get("output");
@@ -475,6 +476,6 @@ public class TestDSPParallelCompilation extends BaseNd4jTestWithBackends {
         }
 
         sd.close();
-        log.info("testGapOpsAfterReplay: PASSED — gap ops re-executed correctly");
+        log.info("testGapOpsAfterReplay: PASSED — mixed gap work remained correct during frozen execution");
     }
 }

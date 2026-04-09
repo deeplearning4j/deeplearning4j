@@ -44,7 +44,8 @@ static const char* const sCategoryNames[DSP_DIAG_NUM_CATEGORIES] = {
     "MEMORY",  "BACKEND",  "SHAPE",    "SEGMENT",
     "FUSION",  "VERIFY",   "KV_CACHE", "FALLBACK",
     "TRANSFER", "EMULATED_REPLAY",
-    "STREAM_SYNC", "MULTI_DEVICE", "GRAPH_REPLAY"
+    "STREAM_SYNC", "MULTI_DEVICE", "GRAPH_REPLAY",
+    "SEGMENT_BUCKETS"
 };
 
 // ─── Singleton ───────────────────────────────────────────────────────────────
@@ -65,8 +66,7 @@ DspDiagnostics::DspDiagnostics()
       planTotalUs_(0),
       lastStepStartUs_(0) {
   std::memset(events_, 0, sizeof(events_));
-  parseEnvVars();
-  applyLegacyFlags();
+  applyDspConfig();
 }
 
 // ─── Timestamp helper ────────────────────────────────────────────────────────
@@ -259,57 +259,52 @@ uint32_t DspDiagnostics::parseCategories(const char* str) {
   return mask;
 }
 
-// ─── Environment variable parsing ────────────────────────────────────────────
+// ─── Environment-driven configuration ──────────────────────────────────────
+//
+// All environment variable parsing is centralized in DspConfig::initFromEnvironment().
+// DspDiagnostics reads configuration from the Environment singleton — no direct
+// std::getenv or EnvHelper calls. This is the single source of truth.
 
-void DspDiagnostics::parseEnvVars() {
-  const char* cats = std::getenv("ND4J_DSP_DIAGNOSTICS");
-  if (cats != nullptr) {
-    enabledMask_.store(parseCategories(cats), std::memory_order_relaxed);
+void DspDiagnostics::applyDspConfig() {
+  const auto& cfg = sd::Environment::getInstance().dsp();
+
+  // Categories
+  if (!cfg.diagnosticsCategories().empty()) {
+    enabledMask_.store(parseCategories(cfg.diagnosticsCategories().c_str()),
+                       std::memory_order_relaxed);
   }
 
-  const char* lvl = std::getenv("ND4J_DSP_DIAGNOSTICS_LEVEL");
-  if (lvl != nullptr) {
-    std::string s(lvl);
+  // Level
+  if (!cfg.diagnosticsLevel().empty()) {
+    std::string s = cfg.diagnosticsLevel();
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-    if (s == "full" || s == "2")     setLevel(DSP_LEVEL_FULL);
+    if (s == "full" || s == "2")       setLevel(DSP_LEVEL_FULL);
     else if (s == "detailed" || s == "1") setLevel(DSP_LEVEL_DETAILED);
-    else                              setLevel(DSP_LEVEL_SUMMARY);
+    else                               setLevel(DSP_LEVEL_SUMMARY);
   }
 
-  const char* path = std::getenv("ND4J_DSP_DIAGNOSTICS_FILE");
-  if (path != nullptr) {
-    jsonPath_ = path;
+  // File
+  if (!cfg.diagnosticsFile().empty()) {
+    jsonPath_ = cfg.diagnosticsFile();
   }
-}
 
-// ─── Legacy flag mapping ─────────────────────────────────────────────────────
-
-void DspDiagnostics::applyLegacyFlags() {
-  // nd4j.dsp.trace / ND4J_DSP_TRACE -> EXECUTE
-  const char* trace = std::getenv("ND4J_DSP_TRACE");
-  if (trace != nullptr) {
+  // Legacy boolean flags → categories
+  if (cfg.diagnosticsTrace()) {
     enableCategories(DSP_DIAG_EXECUTE);
   }
-
-  // ND4J_TRITON_VERBOSE -> COMPILE + JIT + BACKEND
-  const char* tritonVerbose = std::getenv("ND4J_TRITON_VERBOSE");
-  if (tritonVerbose != nullptr) {
-    enableCategories(DSP_DIAG_COMPILE | DSP_DIAG_JIT | DSP_DIAG_BACKEND);
-  }
-
-  // nd4j.dsp.executionTiming -> TIMING
-  const char* timing = std::getenv("ND4J_DSP_EXECUTION_TIMING");
-  if (timing != nullptr) {
+  if (cfg.diagnosticsTiming()) {
     enableCategories(DSP_DIAG_TIMING);
   }
-
-  // nd4j.dsp.native.dumpOutputs -> VERIFY
-  const char* dumpNative = std::getenv("ND4J_DSP_NATIVE_DUMP_OUTPUTS");
-  if (dumpNative != nullptr) {
+  if (cfg.diagnosticsNativeDump()) {
     enableCategories(DSP_DIAG_VERIFY);
   }
 
-  // tritonVerifyKernels -> VERIFY + FULL level (auto-enable diagnostics output when verification is on)
+  // ND4J_TRITON_VERBOSE → COMPILE + JIT + BACKEND
+  if (sd::Environment::getInstance().tritonVerbose()) {
+    enableCategories(DSP_DIAG_COMPILE | DSP_DIAG_JIT | DSP_DIAG_BACKEND);
+  }
+
+  // tritonVerifyKernels → VERIFY + FULL level
   if (sd::Environment::getInstance().tritonVerifyKernels()) {
     enableCategories(DSP_DIAG_VERIFY);
     setLevel(DSP_LEVEL_FULL);
@@ -721,6 +716,59 @@ DspDiagnostics::ExtInputSyncResult DspDiagnostics::dumpExternalInputState(
               result.synced, result.skipped, execCount);
 
   return result;
+}
+
+// ── Invalid segment bucket summary ──────────────────────────────────────────
+
+void DspDiagnostics::reportSegmentBucketSummary(
+    int segStartSlot, int segEndSlot,
+    const GapClassification* classifications,
+    int numClassifications,
+    const char* combinedBucketLabel,
+    bool isInvalidForReplay) {
+
+  // Primary event: summary line
+  recordEvent(DSP_DIAG_SEGMENT_BUCKETS, -1, segStartSlot, -1, nullptr, 0,
+              "BUCKET_SUMMARY: seg[%d-%d] bucket='%s' invalid=%d gaps=%d",
+              segStartSlot, segEndSlot,
+              combinedBucketLabel ? combinedBucketLabel : "(none)",
+              isInvalidForReplay ? 1 : 0, numClassifications);
+
+  // Per-gap detail events
+  for (int i = 0; i < numClassifications; i++) {
+    const auto& gc = classifications[i];
+    const char* matLabel = gc.isShapeOnly ? "shape-only"
+                            : gc.isViewOnly ? "view-only"
+                            : gc.wouldMaterialize ? "materializing"
+                            : "unknown";
+
+    recordEvent(DSP_DIAG_SEGMENT_BUCKETS, -1, segStartSlot, -1, gc.primaryOpType, 0,
+                "BUCKET_GAP[%d]: seg[%d-%d] slots[%d-%d] op='%s' class='%s' bucket='%s'",
+                i, segStartSlot, segEndSlot, gc.startSlot, gc.endSlot,
+                gc.primaryOpType ? gc.primaryOpType : "(unknown)",
+                matLabel,
+                gc.bucketLabel ? gc.bucketLabel : combinedBucketLabel);
+  }
+
+  // Echo to stdout at FULL level for immediate visibility
+  if (getLevel() == DSP_LEVEL_FULL) {
+    fprintf(stdout, "[DSP_DIAG] [SEGMENT_BUCKETS] seg[%d-%d] bucket='%s' invalid=%d:\n",
+            segStartSlot, segEndSlot,
+            combinedBucketLabel ? combinedBucketLabel : "(none)",
+            isInvalidForReplay ? 1 : 0);
+    for (int i = 0; i < numClassifications; i++) {
+      const auto& gc = classifications[i];
+      const char* matLabel = gc.isShapeOnly ? "shape-only"
+                              : gc.isViewOnly ? "view-only"
+                              : gc.wouldMaterialize ? "materializing"
+                              : "unknown";
+      fprintf(stdout, "  gap[%d] slots[%d-%d] op='%s' -> %s\n",
+              i, gc.startSlot, gc.endSlot,
+              gc.primaryOpType ? gc.primaryOpType : "(unknown)",
+              matLabel);
+    }
+    fflush(stdout);
+  }
 }
 
 }  // namespace graph

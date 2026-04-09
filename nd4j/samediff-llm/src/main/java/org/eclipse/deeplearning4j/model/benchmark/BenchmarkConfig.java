@@ -123,7 +123,7 @@ public class BenchmarkConfig {
     /**
      * Returns the best-known benchmark configuration for LLM decode.
      * This is the single source of truth for optimal inference settings.
-     * Matches: warps4_stages1_tf32_default (~86 tok/s on RTX 4090).
+     * Intended target: native DSP replay at or above 100 tok/s on the benchmark happy path.
      *
      * @see org.nd4j.linalg.factory.Environment#applyOptimalLLMConfig()
      */
@@ -132,7 +132,7 @@ public class BenchmarkConfig {
                 .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                 .tritonSectionFusion(true)
                 .tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
                 .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                 .tritonFusionScoring(false)
                 .tritonNumWarps(4).tritonNumStages(1)

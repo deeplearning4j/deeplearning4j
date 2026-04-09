@@ -124,10 +124,10 @@ bool ReplayCacheDeviceKey::isCompatibleWith(const ReplayCacheDeviceKey& other) c
 // ── ReplayCacheManager ──
 
 ReplayCacheManager::ReplayCacheManager() {
-  // Check env var for cache dir
-  const char* envDir = std::getenv("ND4J_REPLAY_CACHE_DIR");
-  if (envDir && envDir[0] != '\0') {
-    cacheDir_ = envDir;
+  // Read cache dir from Environment (centralized config — no direct getenv)
+  std::string cfgDir = Environment::getInstance().dsp().replayCacheDir();
+  if (!cfgDir.empty()) {
+    cacheDir_ = cfgDir;
   } else {
     // Default to ~/.ndarray/replay_cache/
     const char* home = std::getenv("HOME");
@@ -139,9 +139,8 @@ ReplayCacheManager::ReplayCacheManager() {
     }
   }
 
-  // Check env var for enable/disable
-  const char* envEnabled = std::getenv("ND4J_REPLAY_CACHE_ENABLED");
-  enabled_ = (envEnabled == nullptr || std::string(envEnabled) != "false");
+  // Read enabled flag from Environment
+  enabled_ = Environment::getInstance().dsp().replayCacheEnabled();
 }
 
 ReplayCacheManager& ReplayCacheManager::getInstance() {
@@ -192,11 +191,6 @@ bool ReplayCacheManager::saveSegmentMetadata(const GraphSegment& seg, LongType s
   entry.workspaceHint = 0;
   entry.numCaptureBuffers = 0;
   entry.timestamp = static_cast<int64_t>(std::time(nullptr));
-
-  if (seg.exec.replayHandle) {
-    auto& bufs = seg.exec.replayHandle->getCaptureBuffers();
-    entry.numCaptureBuffers = static_cast<int>(bufs.size());
-  }
 
   // Store in memory
   {

@@ -779,10 +779,13 @@ public class EmulatedReplayTest {
             lastPhase = currentPhase;
         }
 
-        // After 10 frozen executions, should be at least POINTERS_STABLE
+        // After 10 frozen executions, the frozen plan should have reached
+        // pointer-stable steady state.
         log.info("Final phase after 10 frozen executions: {}", lastPhase);
-        assertTrue(lastPhase.isAtLeast(PlanPhase.SHAPES_FROZEN),
-                "After 10 frozen executions, should be at least SHAPES_FROZEN, got " + lastPhase);
+        assertTrue(lastPhase.isAtLeast(PlanPhase.POINTERS_STABLE),
+                "After 10 frozen executions, should be at least POINTERS_STABLE, got " + lastPhase);
+        assertTrue(executor.arePointersStable(),
+                "Frozen executions should mark pointers stable once the plan reaches steady state");
 
         sd.close();
     }

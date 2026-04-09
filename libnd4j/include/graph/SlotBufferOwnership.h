@@ -39,7 +39,6 @@ enum class BufferOwnership : uint8_t {
   VIEW_OF_SLOT,       // View into another slot's buffer (parentSlotIdx set)
   VIEW_OF_WEIGHT,     // View into an external weight/constant (never free)
   WEIGHT,             // External constant/variable buffer (never free)
-  CAPTURE_BUFFER,     // Owned by GraphReplayHandle capture buffer
   WORKSPACE,          // Workspace-allocated (freed by workspace)
 };
 
@@ -108,8 +107,7 @@ struct SlotBufferInfo {
    */
   SD_INLINE bool isProtected() const {
     return ownership == BufferOwnership::WEIGHT ||
-           ownership == BufferOwnership::VIEW_OF_WEIGHT ||
-           ownership == BufferOwnership::CAPTURE_BUFFER;
+           ownership == BufferOwnership::VIEW_OF_WEIGHT;
   }
 
   /**

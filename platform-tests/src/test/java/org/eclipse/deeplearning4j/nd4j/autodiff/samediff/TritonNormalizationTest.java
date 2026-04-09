@@ -79,7 +79,7 @@ public class TritonNormalizationTest extends BaseNd4jTestWithBackends {
         for (int i = 0; i < 576; i++) {
             gammaData[i] = (i % 2 == 0) ? 0.5f : 1.5f;
         }
-        SDVariable gamma = sd.constant("gamma", Nd4j.create(gammaData, new long[]{576}));
+        SDVariable gamma = sd.constant("gamma", Nd4j.createFromArray(gammaData).reshape(576));
         double eps = 1e-5;
 
         SDVariable squared = x.mul("square", x);
@@ -114,16 +114,16 @@ public class TritonNormalizationTest extends BaseNd4jTestWithBackends {
         SDVariable normed = x.mul("normed", rsqrtDenom);
         normed.mul("result", gamma);
 
-        INDArray xArr = Nd4j.create(xData, new long[]{1, 8});
+        INDArray xArr = Nd4j.createFromArray(xData).reshape(1, 8);
         Map<String, INDArray> ref = sd.output(Map.of("x", xArr), "result");
         INDArray actual = ref.get("result");
-        
+
         // Manual calculation
         double meanSqVal = 0.0;
         for (float v : xData) meanSqVal += v * v;
         meanSqVal /= 8.0;
         double scale = 2.0 / Math.sqrt(meanSqVal + eps);  // gamma=2.0
-        
+
         log.info("Java fallback: expected scale={:.6f}, actual first4=[{}, {}, {}, {}]",
             scale, actual.getFloat(0), actual.getFloat(1), actual.getFloat(2), actual.getFloat(3));
         
@@ -160,7 +160,7 @@ public class TritonNormalizationTest extends BaseNd4jTestWithBackends {
         normed.mul("result", gamma);
 
         // Expected: rms_norm(x) * 2.0
-        INDArray xArr = Nd4j.create(xData, new long[]{1, 8});
+        INDArray xArr = Nd4j.createFromArray(xData).reshape(1, 8);
         INDArray expected = xArr.dup();
         double meanSqVal = 0.0;
         for (float v : xData) meanSqVal += v * v;

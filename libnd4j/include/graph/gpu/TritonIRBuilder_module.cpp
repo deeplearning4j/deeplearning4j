@@ -5486,6 +5486,77 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (getOpCategory(slot.opName) != TritonOpCategory::MATMUL) continue;
           if (slot.numInputs < 2 || slot.numOutputs < 1) continue;
 
+          // ── Check for fused_gemm_swiglu: use dedicated GatedMLP kernel ──
+          {
+            std::string opLower = slot.opName;
+            std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+            if (opLower == "fused_gemm_swiglu" && slot.numInputs >= 3) {
+              int xSrc = slot.inputSourceIndices[0];
+              int wGateSrc = slot.inputSourceIndices[1];
+              int wUpSrc = slot.inputSourceIndices[2];
+              int outSlot = slot.outputSlotIndices[0];
+              auto xPtr = getSlotArgPtr(xSrc);
+              auto wGatePtr = getSlotArgPtr(wGateSrc);
+              auto wUpPtr = getSlotArgPtr(wUpSrc);
+              auto outArgPtr = getSlotArgPtr(outSlot);
+              auto xShape = resolveShape(xSrc);
+              auto wShape = resolveShape(wGateSrc);
+              if (xPtr && wGatePtr && wUpPtr && outArgPtr &&
+                  xShape.size() >= 2 && wShape.size() >= 2) {
+                int gM = static_cast<int>(xShape[xShape.size() - 2]);
+                int gK = static_cast<int>(xShape[xShape.size() - 1]);
+                int gN = static_cast<int>(wShape[wShape.size() - 1]);
+                if (gM > 0 && gN > 0 && gK > 0) {
+                  emitGatedMLPKernel(builder, loc, xPtr, wGatePtr, wUpPtr, outArgPtr,
+                                      gM, gN, gK, 128, 128, 32);
+                  DataType outDtype = resolveDtype(outSlot);
+                  auto loaded = loadBlock(outSlot, outDtype);
+                  if (loaded) {
+                    for (int o = 0; o < slot.numOutputs; o++)
+                      ssaValues[slot.outputSlotIndices[o]] = loaded;
+                  }
+                  continue;
+                }
+              }
+            }
+          }
+
+          // ── Check for rms_norm_linear: use dedicated single-pass kernel ──
+          {
+            std::string opLower = slot.opName;
+            std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+            if ((opLower == "rms_norm_linear" || opLower == "rmsnormlinear") && slot.numInputs >= 3) {
+              int xSrc = slot.inputSourceIndices[0];
+              int gammaSrc = slot.inputSourceIndices[1];
+              int wSrc = slot.inputSourceIndices[2];
+              int outSlot = slot.outputSlotIndices[0];
+              auto xArgPtr = getSlotArgPtr(xSrc);
+              auto gammaArgPtr = getSlotArgPtr(gammaSrc);
+              auto wArgPtr = getSlotArgPtr(wSrc);
+              auto outArgPtr = getSlotArgPtr(outSlot);
+              auto xShape = resolveShape(xSrc);
+              auto wShape = resolveShape(wSrc);
+              float eps = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-6f;
+              if (xArgPtr && gammaArgPtr && wArgPtr && outArgPtr &&
+                  xShape.size() >= 2 && wShape.size() >= 2) {
+                int rM = static_cast<int>(xShape[xShape.size() - 2]);
+                int rK = static_cast<int>(xShape[xShape.size() - 1]);
+                int rN = static_cast<int>(wShape[wShape.size() - 1]);
+                if (rM > 0 && rN > 0 && rK > 0) {
+                  emitRmsNormLinearKernel(builder, loc, xArgPtr, gammaArgPtr, wArgPtr, outArgPtr,
+                                          rM, rN, rK, eps, 128, 128, 32);
+                  DataType outDtype = resolveDtype(outSlot);
+                  auto loaded = loadBlock(outSlot, outDtype);
+                  if (loaded) {
+                    for (int o = 0; o < slot.numOutputs; o++)
+                      ssaValues[slot.outputSlotIndices[o]] = loaded;
+                  }
+                  continue;
+                }
+              }
+            }
+          }
+
           int aSrc = slot.inputSourceIndices[0];
           int bSrc = slot.inputSourceIndices[1];
           int cSlot = slot.outputSlotIndices[0];
@@ -7234,9 +7305,87 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   auto bPtr = getBufferArg(bArgIdx);
   auto cPtr = getBufferArg(cArgIdx);
 
-  // Emit the matmul kernel body (2D tiled with K-loop)
+  // ── Build epilogue ops from post-matmul elementwise slots ──
+  // If slots after the matmul are elementwise ops that consume only the matmul
+  // output, they become in-register epilogue ops (true mega-kernel fusion).
+  std::vector<EpilogueOp> epilogueOps;
+  std::vector<mlir::Value> epiloguePtrs;
+
+  if (matmulSlot >= 0 && matmulSlot < endSlot) {
+    int matmulOutSlot = slots[matmulSlot].outputSlotIndices[0];
+    for (int ei = matmulSlot + 1; ei <= endSlot; ei++) {
+      auto epiCat = getOpCategory(slots[ei].opName);
+      if (epiCat != TritonOpCategory::UNARY_ELEMENTWISE &&
+          epiCat != TritonOpCategory::BINARY_ELEMENTWISE) break;
+
+      std::string epiLower = slots[ei].opName;
+      std::transform(epiLower.begin(), epiLower.end(), epiLower.begin(), ::tolower);
+
+      if (epiCat == TritonOpCategory::BINARY_ELEMENTWISE && epiLower == "add") {
+        // Two cases:
+        //   1D bias [N]      → BIAS_ADD epilogue (broadcast across M)
+        //   2D residual [M,N] → RESIDUAL_ADD epilogue (element-wise)
+        // Detect by checking the rank of the non-matmul operand.
+        int biasSrc = -1;
+        for (int inp = 0; inp < slots[ei].numInputs; inp++) {
+          if (slots[ei].inputSourceIndices[inp] != matmulOutSlot) {
+            biasSrc = slots[ei].inputSourceIndices[inp];
+            break;
+          }
+        }
+        if (biasSrc >= 0) {
+          // Determine bias operand rank (1D vector vs 2D residual)
+          int biasRank = -1;
+          if (biasSrc < totalOutputSlots && outputSlots && outputSlots[biasSrc]) {
+            biasRank = outputSlots[biasSrc]->rankOf();
+          }
+
+          // Find bias buffer arg
+          for (int a = 0; a < static_cast<int>(result.args.size()); a++) {
+            if (result.args[a].slotIndex == biasSrc && !result.args[a].isOutput) {
+              EpilogueOp op;
+              // 1D vector → BIAS_ADD (broadcast). Anything else (2D residual,
+              // unknown rank) → RESIDUAL_ADD (element-wise [M, N] add).
+              op.type = (biasRank == 1) ? EpilogueOp::BIAS_ADD : EpilogueOp::RESIDUAL_ADD;
+              op.biasArgIndex = static_cast<int>(epiloguePtrs.size());
+              epilogueOps.push_back(op);
+              epiloguePtrs.push_back(getBufferArg(a));
+              break;
+            }
+          }
+        }
+        // Update matmulOutSlot to this op's output for chaining
+        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+      } else if (epiLower == "relu") {
+        epilogueOps.push_back({EpilogueOp::RELU, "relu", -1});
+        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+      } else if (epiLower == "gelu") {
+        epilogueOps.push_back({EpilogueOp::GELU, "gelu", -1});
+        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+      } else if (epiLower == "silu" || epiLower == "swish") {
+        epilogueOps.push_back({EpilogueOp::SILU, "silu", -1});
+        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+      } else if (epiLower == "tanh") {
+        epilogueOps.push_back({EpilogueOp::TANH, "tanh", -1});
+        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+      } else if (epiLower == "sigmoid") {
+        epilogueOps.push_back({EpilogueOp::SIGMOID, "sigmoid", -1});
+        if (slots[ei].numOutputs > 0) matmulOutSlot = slots[ei].outputSlotIndices[0];
+      } else {
+        break;  // Unknown epilogue op — stop chaining
+      }
+    }
+  }
+
+  if (!epilogueOps.empty()) {
+    DSP_DIAG(COMPILE, "TritonIRBuilder::buildMatmulModule: %d in-register epilogue ops",
+              static_cast<int>(epilogueOps.size()));
+  }
+
+  // Emit the matmul kernel body (2D tiled with K-loop + in-register epilogue)
   emitMatmulKernel(builder, loc, aPtr, bPtr, cPtr,
-                    matmulM, matmulN, matmulK, blockM, blockN, blockK);
+                    matmulM, matmulN, matmulK, blockM, blockN, blockK,
+                    epilogueOps, epiloguePtrs);
 
   // Return
   builder.create<mlir::triton::ReturnOp>(loc);

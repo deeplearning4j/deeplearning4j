@@ -351,7 +351,7 @@ public class GraphReplayHandleTest extends BaseNd4jTestWithBackends {
             int numSegs = ops.getPlanNumSegments(handle);
             for (int i = 0; i < numSegs; i++) {
                 int numBufs = ops.getPlanSegmentNumCaptureBuffers(handle, i);
-                assertTrue(numBufs >= 0, "Capture buffer count should be >= 0");
+                assertEquals(0, numBufs, "Capture buffers should be removed from replay handles");
                 int numHost = ops.getPlanSegmentNumHostPointers(handle, i);
                 assertTrue(numHost >= 0, "Host pointer count should be >= 0");
             }

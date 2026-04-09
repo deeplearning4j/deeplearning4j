@@ -68,8 +68,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 MVN="/home/agibsonccc/dev-apps/mvn/bin/mvn"
+VALIDATION_CLASS="TestDspValidation"
+VALIDATION_METHOD="testOutputAccuracy+testDecodeStepValidation"
 TEST_CLASS="TestSmolDoclingOptimizedPipeline"
 TEST_METHOD="testOptimizedDoclingPipeline"
+VALIDATION_LOG="$SCRIPT_DIR/dsp-validation.log"
 LOG_FILE="$SCRIPT_DIR/bench-output.log"
 SUREFIRE_OUT="$SCRIPT_DIR/target/surefire-reports/org.eclipse.deeplearning4j.vlm.${TEST_CLASS}-output.txt"
 SUREFIRE_XML="$SCRIPT_DIR/target/surefire-reports/TEST-org.eclipse.deeplearning4j.vlm.${TEST_CLASS}.xml"
@@ -91,7 +94,6 @@ CLEAR_CACHE=false
 CLEAR_DECODER=true
 SPECULATIVE_K=0
 DRAFT_MODEL=false
-NO_NATIVE_DECODE=false
 NO_CUBLAS_WORKSPACE=false
 NO_FREEZE=false
 TRITON_TF32=false
@@ -181,10 +183,6 @@ while [[ $# -gt 0 ]]; do
             fi
             shift
             ;;
-        --no-native-decode)
-            NO_NATIVE_DECODE=true
-            shift
-            ;;
         --no-cublas-workspace)
             NO_CUBLAS_WORKSPACE=true
             shift
@@ -239,7 +237,7 @@ while [[ $# -gt 0 ]]; do
             echo "       [--op-breakdown OPS] [--op-histogram OPS] [--tokens N] [--config NAME]"
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
-            echo "       [--draft] [--speculative K] [--no-native-decode] [--no-cublas-workspace] [--no-freeze]"
+            echo "       [--draft] [--speculative K] [--no-cublas-workspace] [--no-freeze]"
             echo "       [--triton-tf32] [--no-triton-tf32]"
             echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
             exit 1
@@ -268,7 +266,6 @@ $NO_OPTIMIZER && echo "  Optimizer: DISABLED"
 $OPTIMIZER_LOG && echo "  Optimizer: logging applied transforms"
 $DEBUG_MODE   && echo "  Mode:   DEBUG (DSP diagnostics + CUDA driver log)"
 $NSYS_MODE    && echo "  Mode:   NSYS (NVIDIA Nsight Systems profiler)"
-$NO_NATIVE_DECODE && echo "  NativeDecodeInputs: DISABLED (Java feedDict path)"
 $NO_CUBLAS_WORKSPACE && echo "  cuBLAS workspace:   DISABLED (no explicit workspace during capture)"
 $NO_FREEZE           && echo "  Freeze:             DISABLED (no shape freezing, no CUDA graph)"
 $NO_ATTN_OVERRIDE    && echo "  AttnOverride:       DISABLED (use model's attn_mask_reformat subgraph)"
@@ -312,10 +309,6 @@ fi
 if [ "$SPECULATIVE_K" -gt 0 ]; then
     EXTRA_ARGS="$EXTRA_ARGS -Dvlm.speculative.tokens=$SPECULATIVE_K"
     echo "  Speculation:  K=$SPECULATIVE_K (seqLen=$((SPECULATIVE_K + 1)))"
-fi
-
-if $NO_NATIVE_DECODE; then
-    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.noNativeDecodeInputs=true"
 fi
 
 if $NO_CUBLAS_WORKSPACE; then
@@ -411,6 +404,35 @@ if $OP_TIMING; then
     fi
 fi
 
+VALIDATION_TOKENS="$MAX_TOKENS"
+if [ "$VALIDATION_TOKENS" -gt 10 ]; then
+    VALIDATION_TOKENS=10
+fi
+
+echo "Running DSP validation preflight (${VALIDATION_CLASS}#${VALIDATION_METHOD}, tokens=${VALIDATION_TOKENS})..."
+set +e
+$MVN test \
+  -Dtest="${VALIDATION_CLASS}#${VALIDATION_METHOD}" \
+  -Dvlm.validation.tokens="$VALIDATION_TOKENS" \
+  -Dvlm.validation.configs="SLOT_BY_SLOT,TRITON_NO_GC,OPTIMAL" \
+  -Dlibnd4j.triton=ON \
+  -Dbackend.artifactId=nd4j-cuda-12.9 \
+  $EXTRA_ARGS \
+  2>&1 | tee "$VALIDATION_LOG"
+VALIDATION_RESULT=${PIPESTATUS[0]}
+set -e
+
+if [ $VALIDATION_RESULT -ne 0 ]; then
+    echo ""
+    echo "Validation failed before benchmark execution."
+    echo "Validation log: $VALIDATION_LOG"
+    exit $VALIDATION_RESULT
+fi
+
+echo ""
+echo "Validation passed. Starting benchmark..."
+
+set +e
 $MVN test \
   -Dtest="${TEST_CLASS}#${TEST_METHOD}" \
   -Dvlm.test.maxTokens="$MAX_TOKENS" \
@@ -421,8 +443,8 @@ $MVN test \
   -Dbackend.artifactId=nd4j-cuda-12.9 \
   $EXTRA_ARGS \
   2>&1 | tee "$LOG_FILE"
-
 BUILD_RESULT=${PIPESTATUS[0]}
+set -e
 
 echo ""
 echo "═══════════════════════════════════════════════════════════"

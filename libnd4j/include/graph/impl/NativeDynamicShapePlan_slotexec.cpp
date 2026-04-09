@@ -49,31 +49,11 @@
 // a different DataBuffer than the OLD value. This detects post-freeze buffer
 // replacement that would corrupt captured CUDA graphs.
 // Diagnostic only — logs and continues (not a hard error).
+// DSP_SLOT_WRITE: ALL output slot writes go through writeOutputSlot().
+// Phase validation, stale write detection, ownership tracking, and diagnostics
+// are centralized in one method on NativeDynamicShapePlan. No scattered guards.
 #define DSP_SLOT_WRITE(si, value, tag) \
-  do { \
-    NDArray* _dspOldVal = outputSlots_[(si)]; \
-    NDArray* _dspNewVal = (value); \
-    if (planPhase_ >= PlanPhase::POINTERS_STABLE && executeCount_ > 2) { \
-      DataBuffer* _dspOldDb = (_dspOldVal != nullptr) ? _dspOldVal->dataBuffer() : nullptr; \
-      DataBuffer* _dspNewDb = (_dspNewVal != nullptr) ? _dspNewVal->dataBuffer() : nullptr; \
-      if (_dspOldDb != nullptr && _dspNewDb != nullptr && _dspOldDb != _dspNewDb) { \
-        DSP_DIAG(FALLBACK, "DSP_SLOT_WRITE: buffer replacement detected at slot %d " \
-                 "phase=%d execCount=%d tag=%s oldDb=%p newDb=%p — " \
-                 "post-freeze buffer change may corrupt captured CUDA graphs", \
-                 (si), static_cast<int>(planPhase_), executeCount_, (tag), \
-                 (void*)_dspOldDb, (void*)_dspNewDb); \
-      } \
-    } \
-    /* Track plan-owned arrays: if this is a new allocation (not an alias of an   */ \
-    /* existing slot or external input), register it so the destructor knows to    */ \
-    /* free it. External inputs and model-variable arrays are NOT registered.      */ \
-    if (_dspNewVal != nullptr && _dspNewVal != _dspOldVal && \
-        planOwnedArrays_.count(_dspNewVal) == 0 && \
-        protectedWeightBuffers_.count(_dspNewVal->dataBuffer()) == 0) { \
-      planOwnedArrays_.insert(_dspNewVal); \
-    } \
-    outputSlots_[(si)] = _dspNewVal; \
-  } while (0)
+  writeOutputSlot((si), (value), (tag))
 
 // DSP_NEW_ARRAY: plain allocation. Registration as plan-owned happens in
 // DSP_SLOT_WRITE when the array is assigned to an output slot.
@@ -120,6 +100,329 @@ static void backfillCachedOutputShapes(NativeSlot& slot, NDArray** outputSlots, 
 }
 
 namespace {
+
+static int findProducingStepForOutputSlot(const NativeSlot* slots, int numSlots, int outputSlotIdx) {
+  if (slots == nullptr || outputSlotIdx < 0) return -1;
+  for (int s = 0; s < numSlots; s++) {
+    const auto& slot = slots[s];
+    for (int o = 0; o < slot.numOutputs; o++) {
+      if (slot.outputSlotIndices[o] == outputSlotIdx) {
+        return s;
+      }
+    }
+  }
+  return -1;
+}
+
+static NDArray* resolveInputSourceArray(int srcIdx,
+                                        NDArray** outputSlots,
+                                        int totalOutputSlots,
+                                        NDArray** externalArrays,
+                                        int numExt) {
+  if (srcIdx < 0) {
+    const int extIdx = -(srcIdx + 1);
+    return (extIdx >= 0 && extIdx < numExt) ? externalArrays[extIdx] : nullptr;
+  }
+  return (srcIdx >= 0 && srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
+}
+
+static bool isSmallIntegralControlArray(const NDArray* arr) {
+  if (arr == nullptr) return false;
+  const auto dt = arr->dataType();
+  if (dt != INT32 && dt != INT64 && dt != BOOL) return false;
+  const auto len = arr->lengthOf();
+  return len > 0 && len <= 32;
+}
+
+static SD_INLINE bool shouldPreserveWarmupOutputsDuringCapture() {
+  // Capture records GPU work against the warmup-established state; it must not
+  // mutate the current step's live output buffers. If we nullify reused outputs
+  // during capture, the zeroes stay resident because the recorded kernels/H2D
+  // nodes do not execute until replay on a later step.
+  return tl_graphExecutionActive;
+}
+
+static void traceSmallControlSlotIO(const char* stage,
+                                    int stepIdx,
+                                    const NativeSlot& slot,
+                                    const NDArray* input0,
+                                    const NDArray* output0,
+                                    int executeCount,
+                                    PlanPhase planPhase) {
+  if (!DSP_DIAG_ENABLED(SHAPE)) return;
+  if (!slot.outputShapeDependsOnInputValues) return;
+  if (!isSmallIntegralControlArray(input0) && !isSmallIntegralControlArray(output0)) return;
+
+  const bool sharesBuffer =
+      input0 != nullptr && output0 != nullptr &&
+      input0->dataBuffer() != nullptr &&
+      input0->dataBuffer() == output0->dataBuffer();
+
+  DSP_DIAG(SHAPE,
+           "CONTROL_SLOT_IO: stage=%s slot=%d (%s) state=%d exec=%d phase=%d "
+           "input0=%s inputShape=%s output0=%s outputShape=%s sharesBuffer=%d",
+           stage, stepIdx, slot.opName.c_str(), static_cast<int>(slot.state_),
+           executeCount, static_cast<int>(planPhase),
+           input0 != nullptr ? dspDumpHostDeviceValues(const_cast<NDArray*>(input0), 16).c_str() : "null",
+           input0 != nullptr ? dspShapeStr(const_cast<NDArray*>(input0)).c_str() : "null",
+           output0 != nullptr ? dspDumpHostDeviceValues(const_cast<NDArray*>(output0), 16).c_str() : "null",
+           output0 != nullptr ? dspShapeStr(const_cast<NDArray*>(output0)).c_str() : "null",
+           sharesBuffer ? 1 : 0);
+}
+
+static void traceSmallControlSlotTensors(const char* stage,
+                                         int stepIdx,
+                                         const NativeSlot& slot,
+                                         NDArray** inputs,
+                                         int numInputs,
+                                         NDArray** outputs,
+                                         int numOutputs,
+                                         int executeCount,
+                                         PlanPhase planPhase) {
+  if (!DSP_DIAG_ENABLED(SHAPE)) return;
+  if (!slot.outputShapeDependsOnInputValues) return;
+
+  bool anySmallTensor = false;
+  std::string inputStr;
+  for (int i = 0; i < numInputs; i++) {
+    NDArray* arr = (inputs != nullptr && i < numInputs) ? inputs[i] : nullptr;
+    if (!isSmallIntegralControlArray(arr)) continue;
+    anySmallTensor = true;
+    if (!inputStr.empty()) inputStr += " | ";
+    inputStr += "input[";
+    inputStr += std::to_string(i);
+    inputStr += "]=";
+    inputStr += dspDumpHostDeviceValues(arr, 16);
+    inputStr += " shape=";
+    inputStr += dspShapeStr(arr);
+  }
+
+  std::string outputStr;
+  for (int i = 0; i < numOutputs; i++) {
+    NDArray* arr = (outputs != nullptr && i < numOutputs) ? outputs[i] : nullptr;
+    if (!isSmallIntegralControlArray(arr)) continue;
+    anySmallTensor = true;
+    if (!outputStr.empty()) outputStr += " | ";
+    outputStr += "output[";
+    outputStr += std::to_string(i);
+    outputStr += "]=";
+    outputStr += dspDumpHostDeviceValues(arr, 16);
+    outputStr += " shape=";
+    outputStr += dspShapeStr(arr);
+  }
+
+  if (!anySmallTensor) return;
+
+  DSP_DIAG(SHAPE,
+           "CONTROL_SLOT_TENSORS: stage=%s slot=%d (%s) state=%d exec=%d phase=%d inputs=[%s] outputs=[%s]",
+           stage, stepIdx, slot.opName.c_str(), static_cast<int>(slot.state_),
+           executeCount, static_cast<int>(planPhase),
+           inputStr.empty() ? "none" : inputStr.c_str(),
+           outputStr.empty() ? "none" : outputStr.c_str());
+}
+
+static void reconcileExecutedOutputActuality(const char* stage,
+                                             int stepIdx,
+                                             const NativeSlot& slot,
+                                             NDArray* output) {
+  if (output == nullptr) return;
+  auto* db = output->dataBuffer();
+  if (db == nullptr || db->isClosed()) return;
+
+#ifdef SD_CUDA
+  const bool primaryActual = db->isPrimaryActual();
+  const bool specialActual = db->isSpecialActual();
+  const bool needsDeviceVisibleControl =
+      slot.isDataDependent || slot.outputShapeDependsOnInputValues ||
+      isSmallIntegralControlArray(output);
+
+  if (primaryActual && !specialActual) {
+    if (needsDeviceVisibleControl) {
+      output->syncToDevice();
+      DSP_DIAG(SHAPE,
+               "CONTROL_OUTPUT_SYNC: stage=%s slot=%d (%s) "
+               "synced host-current output to device after native execution",
+               stage, stepIdx, slot.opName.c_str());
+    }
+    return;
+  }
+
+  if (!primaryActual && !specialActual) {
+    db->writeSpecial();
+    DSP_DIAG(EXECUTE,
+             "OUTPUT_ACTUALITY_REPAIR: stage=%s slot=%d (%s) "
+             "marked device current after untracked native write",
+             stage, stepIdx, slot.opName.c_str());
+  }
+#else
+  (void)stage;
+  (void)stepIdx;
+  (void)slot;
+#endif
+}
+
+static bool slotHasOnlyPlanInternalControlInputs(const NativeSlot& slot,
+                                                 NDArray** outputSlots,
+                                                 int totalOutputSlots,
+                                                 NDArray** externalArrays,
+                                                 int numExt) {
+  bool sawControlInput = false;
+  for (int i = 0; i < slot.numInputs; i++) {
+    NDArray* arr = resolveInputSourceArray(slot.inputSourceIndices[i], outputSlots,
+                                           totalOutputSlots, externalArrays, numExt);
+    if (!isSmallIntegralControlArray(arr)) continue;
+    sawControlInput = true;
+    if (slot.inputSourceIndices[i] < 0) {
+      return false;
+    }
+  }
+  return sawControlInput;
+}
+
+static bool hasPlanInternalValueShapeAncestor(int stepIdx,
+                                              const NativeSlot* slots,
+                                              int numSlots,
+                                              NDArray** outputSlots,
+                                              int totalOutputSlots,
+                                              NDArray** externalArrays,
+                                              int numExt,
+                                              std::unordered_set<int>& visitedSteps) {
+  if (slots == nullptr || stepIdx < 0 || stepIdx >= numSlots) return false;
+  if (!visitedSteps.insert(stepIdx).second) return false;
+
+  const auto& slot = slots[stepIdx];
+  if (slot.outputShapeDependsOnInputValues &&
+      slotHasOnlyPlanInternalControlInputs(slot, outputSlots, totalOutputSlots,
+                                           externalArrays, numExt)) {
+    return true;
+  }
+
+  for (int i = 0; i < slot.numInputs; i++) {
+    const int srcIdx = slot.inputSourceIndices[i];
+    if (srcIdx < 0) continue;
+    const int producerStep = findProducingStepForOutputSlot(slots, numSlots, srcIdx);
+    if (producerStep >= 0 &&
+        hasPlanInternalValueShapeAncestor(producerStep, slots, numSlots,
+                                          outputSlots, totalOutputSlots,
+                                          externalArrays, numExt, visitedSteps)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static bool allowFrozenShapeRestabilization(int stepIdx,
+                                            const NativeSlot& slot,
+                                            PlanPhase planPhase,
+                                            const NativeSlot* slots,
+                                            int numSlots,
+                                            NDArray** outputSlots,
+                                            int totalOutputSlots,
+                                            NDArray** externalArrays,
+                                            int numExt) {
+  if (planPhase >= PlanPhase::POINTERS_STABLE) return false;
+
+  if (slot.outputShapeDependsOnInputValues &&
+      slotHasOnlyPlanInternalControlInputs(slot, outputSlots, totalOutputSlots,
+                                           externalArrays, numExt)) {
+    return true;
+  }
+
+  std::unordered_set<int> visitedSteps;
+  for (int i = 0; i < slot.numInputs; i++) {
+    const int srcIdx = slot.inputSourceIndices[i];
+    if (srcIdx < 0) continue;
+    const int producerStep = findProducingStepForOutputSlot(slots, numSlots, srcIdx);
+    if (producerStep >= 0 &&
+        hasPlanInternalValueShapeAncestor(producerStep, slots, numSlots,
+                                          outputSlots, totalOutputSlots,
+                                          externalArrays, numExt, visitedSteps)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static void appendUpstreamControlTrace(std::string& out,
+                                       int srcIdx,
+                                       int depth,
+                                       const NativeSlot* slots,
+                                       int numSlots,
+                                       NDArray** outputSlots,
+                                       int totalOutputSlots,
+                                       NDArray** externalArrays,
+                                       int numExt,
+                                       const std::vector<std::string>& externalInputNames,
+                                       std::vector<int>& seenSlotSteps) {
+  if (depth < 0) return;
+
+  if (srcIdx < 0) {
+    const int extIdx = -(srcIdx + 1);
+    out += "ext[";
+    out += std::to_string(extIdx);
+    out += "]";
+    if (extIdx >= 0 && extIdx < numExt) {
+      if (extIdx < static_cast<int>(externalInputNames.size()) &&
+          !externalInputNames[extIdx].empty()) {
+        out += "=\"";
+        out += externalInputNames[extIdx];
+        out += "\"";
+      }
+      NDArray* ext = externalArrays != nullptr ? externalArrays[extIdx] : nullptr;
+      out += " ";
+      out += ext != nullptr ? dspDumpHostDeviceValues(ext, 8) : "null";
+      if (ext != nullptr) {
+        out += " shape=";
+        out += dspShapeStr(ext);
+      }
+    } else {
+      out += " OUT_OF_RANGE";
+    }
+    return;
+  }
+
+  const int producerStep = findProducingStepForOutputSlot(slots, numSlots, srcIdx);
+  out += "slot[";
+  out += std::to_string(srcIdx);
+  out += "]";
+  if (producerStep >= 0) {
+    out += " step=";
+    out += std::to_string(producerStep);
+    out += " op=";
+    out += slots[producerStep].opName;
+  }
+
+  NDArray* arr = (outputSlots != nullptr && srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
+  out += " ";
+  out += arr != nullptr ? dspDumpHostDeviceValues(arr, 8) : "null";
+  if (arr != nullptr) {
+    out += " shape=";
+    out += dspShapeStr(arr);
+  }
+
+  if (producerStep < 0 || depth == 0) return;
+  if (std::find(seenSlotSteps.begin(), seenSlotSteps.end(), producerStep) != seenSlotSteps.end()) {
+    out += " <cycle>";
+    return;
+  }
+
+  seenSlotSteps.push_back(producerStep);
+  const auto& producer = slots[producerStep];
+  if (producer.numInputs > 0) {
+    out += " <= {";
+    for (int i = 0; i < producer.numInputs; i++) {
+      if (i > 0) out += "; ";
+      appendUpstreamControlTrace(out, producer.inputSourceIndices[i], depth - 1,
+                                 slots, numSlots, outputSlots, totalOutputSlots,
+                                 externalArrays, numExt, externalInputNames,
+                                 seenSlotSteps);
+    }
+    out += "}";
+  }
+  seenSlotSteps.pop_back();
+}
 
 /**
  * Build shape info for a permute view: takes the input's shape info and permutes
@@ -293,6 +596,7 @@ enum ViewCreateResult {
  * @return ViewCreateResult code
  */
 static ViewCreateResult tryCreateViewForSlot(
+    int stepIdx,
     const NativeSlot& slot,
     NDArray* input0,
     const LongType* outShapeInfo,
@@ -304,10 +608,25 @@ static ViewCreateResult tryCreateViewForSlot(
   *outView = nullptr;
   *outViewOffset = 0;
 
+  const LongType outLen = shape::length(outShapeInfo);
+  const LongType inLen = input0 != nullptr ? input0->lengthOf() : 0;
+  const bool traceSmallControl =
+      input0 != nullptr && isSmallIntegralControlArray(input0) && outLen > 0 && outLen <= 32;
+
   // Check C-contiguity of input
   if (input0->dataBuffer() == nullptr ||
       input0->ordering() != 'c' ||
       !shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
+    if (traceSmallControl && DSP_DIAG_ENABLED(SHAPE)) {
+      DSP_DIAG(SHAPE,
+               "VIEW_TRACE_FAIL: slot %d (%s) input not contiguous enough for zero-copy "
+               "view: order=%c strideDescending=%d inShape=%s outShape=%s inLen=%lld outLen=%lld",
+               stepIdx, slot.opName.c_str(), input0->ordering(),
+               shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo())) ? 1 : 0,
+               ShapeUtils::shapeAsString(input0).c_str(),
+               ShapeUtils::shapeAsString(outShapeInfo).c_str(),
+               static_cast<long long>(inLen), static_cast<long long>(outLen));
+    }
     return VIEW_NOT_POSSIBLE;
   }
 
@@ -329,17 +648,61 @@ static ViewCreateResult tryCreateViewForSlot(
   }
   *outViewOffset = viewOffset;
 
-  LongType outLen = shape::length(effectiveShapeInfo);
-  LongType inLen = input0->lengthOf();
+  LongType absoluteOffset = input0->offset() + viewOffset;
+  LongType sourceBufferElems =
+      input0->dataBuffer() != nullptr ? input0->dataBuffer()->getNumElements() : 0;
+  bool allowSubsetView =
+      slot.op != nullptr && slot.op->getOpDescriptor() != nullptr &&
+      slot.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SLICE);
+  bool elementCountCompatible =
+      allowSubsetView ? (outLen > 0 && outLen <= inLen) : (outLen > 0 && outLen == inLen);
+  bool fitsBackingBuffer =
+      absoluteOffset >= 0 && absoluteOffset <= sourceBufferElems &&
+      outLen <= (sourceBufferElems - absoluteOffset);
 
-  if (outLen > 0 && outLen <= inLen) {
+  if (elementCountCompatible && fitsBackingBuffer) {
     *outView = DSP_NEW_ARRAY(input0->dataBuffer(),
                            const_cast<LongType*>(effectiveShapeInfo),
                            LaunchContext::defaultContext(),
-                           viewOffset);
+                           absoluteOffset);
+    *outViewOffset = absoluteOffset;
+    if (traceSmallControl && DSP_DIAG_ENABLED(SHAPE)) {
+      DSP_DIAG(SHAPE,
+               "VIEW_TRACE_OK: slot %d (%s) zero-copy view created "
+               "inShape=%s outShape=%s inLen=%lld outLen=%lld offset=%lld",
+               stepIdx, slot.opName.c_str(),
+               ShapeUtils::shapeAsString(input0).c_str(),
+               ShapeUtils::shapeAsString(effectiveShapeInfo).c_str(),
+               static_cast<long long>(inLen), static_cast<long long>(outLen),
+               static_cast<long long>(absoluteOffset));
+    }
     return VIEW_CREATED;
   } else if (outLen == 0 && inLen > 0) {
+    if (traceSmallControl && DSP_DIAG_ENABLED(SHAPE)) {
+      DSP_DIAG(SHAPE,
+               "VIEW_TRACE_FAIL: slot %d (%s) stale empty cached shape "
+               "inShape=%s outShape=%s inLen=%lld outLen=%lld",
+               stepIdx, slot.opName.c_str(),
+               ShapeUtils::shapeAsString(input0).c_str(),
+               ShapeUtils::shapeAsString(effectiveShapeInfo).c_str(),
+               static_cast<long long>(inLen), static_cast<long long>(outLen));
+    }
     return VIEW_STALE_EMPTY_SHAPE;
+  }
+
+  if (traceSmallControl && DSP_DIAG_ENABLED(SHAPE)) {
+    DSP_DIAG(SHAPE,
+             "VIEW_TRACE_FAIL: slot %d (%s) element/buffer mismatch "
+             "inShape=%s outShape=%s inLen=%lld outLen=%lld allowSubset=%d absoluteOffset=%lld "
+             "sourceBufferElems=%lld fitsBackingBuffer=%d",
+             stepIdx, slot.opName.c_str(),
+             ShapeUtils::shapeAsString(input0).c_str(),
+             ShapeUtils::shapeAsString(effectiveShapeInfo).c_str(),
+             static_cast<long long>(inLen), static_cast<long long>(outLen),
+             allowSubsetView ? 1 : 0,
+             static_cast<long long>(absoluteOffset),
+             static_cast<long long>(sourceBufferElems),
+             fitsBackingBuffer ? 1 : 0);
   }
 
   return VIEW_NOT_POSSIBLE;
@@ -594,6 +957,83 @@ Status NativeDynamicShapePlan::executeSlot(
     int stepIdx, NDArray** externalArrays, int numExt, void* stream) {
   NativeSlot& slot = slots_[stepIdx];
 
+  // DIAGNOSTIC: trace entry for controller slots
+  bool traceEntry = DSP_DIAG_ENABLED(SHAPE) &&
+      (stepIdx == 349 || stepIdx == 350 || stepIdx == 357 || stepIdx == 358);
+  if (traceEntry) {
+    DSP_DIAG_SLOT(SHAPE, stepIdx,
+        "EXEC_SLOT_ENTRY: slot %d (%s) state=%d frozenContextReady=%d shapeValid=%d "
+        "isViewCapable=%d isDataDep=%d outputShapeDep=%d execCount=%d shapesFrozen=%d",
+        stepIdx, slot.opName.c_str(),
+        (int)slot.state_,
+        slot.frozenContextReady() ? 1 : 0,
+        slot.shapeCacheValid() ? 1 : 0,
+        slot.isViewCapableOp ? 1 : 0,
+        slot.isDataDependent ? 1 : 0,
+        slot.outputShapeDependsOnInputValues ? 1 : 0,
+        executeCount_,
+        shapesFrozen_ ? 1 : 0);
+  }
+
+  auto discardCachedSlotArray = [&](int slotIdx, NDArray* cached, const char* tag) {
+    if (cached == nullptr) return;
+
+    // In Phase 2, slotArrayCache_ aliases outputSlots_. Clearing the live slot
+    // before deleting avoids leaving a dangling NDArray wrapper behind when a
+    // shape transition forces inline replacement.
+    if (slotArrayCache_ == outputSlots_ &&
+        slotIdx >= 0 && slotIdx < totalOutputSlots_ &&
+        outputSlots_[slotIdx] == cached) {
+      outputSlots_[slotIdx] = nullptr;
+      if (slotOwnership_ != nullptr) {
+        slotOwnership_[slotIdx].reset();
+      }
+    }
+
+    if (!tl_graphExecutionActive && !isSlotArrayShared(cached, slotIdx)) {
+      planOwnedArrays_.erase(cached);
+      delete cached;
+      DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s deleted=%p",
+               slotIdx, tag, (void*)cached);
+    } else {
+      DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s preserved=%p sharedOrCapturing=%d",
+               slotIdx, tag, (void*)cached,
+               (tl_graphExecutionActive || isSlotArrayShared(cached, slotIdx)) ? 1 : 0);
+    }
+
+    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+      slotArrayCache_[slotIdx] = nullptr;
+    }
+  };
+
+  auto validateReusableSlotArray = [&](int slotIdx, NDArray* cached,
+                                       const char* tag) -> NDArray* {
+    if (cached == nullptr) return nullptr;
+
+    auto* db = cached->dataBuffer();
+    bool invalid = (db == nullptr) || db->isClosed() || !db->isValid();
+#ifdef SD_CUDA
+    if (!invalid && db != nullptr && db->special() == nullptr && !cached->isEmpty()) {
+      invalid = true;
+    }
+#else
+    if (!invalid && db != nullptr && db->primary() == nullptr && !cached->isEmpty()) {
+      invalid = true;
+    }
+#endif
+
+    if (!invalid) return cached;
+
+    DSP_DIAG_SLOT(MEMORY, stepIdx,
+        "STALE_CACHED_OUTPUT: slot %d (%s) tag=%s arr=%p db=%p valid=%d closed=%d len=%lld",
+        slotIdx, slot.opName.c_str(), tag, (void*)cached, (void*)db,
+        db != nullptr && db->isValid() ? 1 : 0,
+        db != nullptr && db->isClosed() ? 1 : 0,
+        (long long)cached->lengthOf());
+    discardCachedSlotArray(slotIdx, cached, tag);
+    return nullptr;
+  };
+
   // ── Fast path: identity ops ──────────────────────────────────────────────
   if (slot.isIdentityOp && slot.numInputs == 1 && slot.numOutputs >= 1) {
     int srcIdx = slot.inputSourceIndices[0];
@@ -755,15 +1195,12 @@ Status NativeDynamicShapePlan::executeSlot(
     NDArray* output = nullptr;
     if (lastOutputSlotIdx >= 0 && lastOutputSlotIdx < totalOutputSlots_) {
       output = slotArrayCache_[lastOutputSlotIdx];
-      if (output != nullptr) {
-        if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo)) {
-          // Same plan = same shapes. Shape mismatch is a bug — use a different plan.
-          DSP_DIAG(EXECUTE, "SHAPE MISMATCH at fused chain slot %d (cached vs expected) — "
-                   "same plan should never see different shapes", lastSlotIdx);
-          // Replace inline: delete old, allocate new
-          // During graph capture, don't delete — it's the saved warmup array
-          if (!tl_graphExecutionActive && !isSlotArrayShared(output, lastOutputSlotIdx)) delete output;
-          slotArrayCache_[lastOutputSlotIdx] = nullptr;
+        if (output != nullptr) {
+          if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo)) {
+            // Same plan = same shapes. Shape mismatch is a bug — use a different plan.
+            DSP_DIAG(EXECUTE, "SHAPE MISMATCH at fused chain slot %d (cached vs expected) — "
+                     "same plan should never see different shapes", lastSlotIdx);
+          discardCachedSlotArray(lastOutputSlotIdx, output, "fused-shape-mismatch");
           output = nullptr;
         }
       }
@@ -771,7 +1208,7 @@ Status NativeDynamicShapePlan::executeSlot(
         output = DSP_NEW_ARRAY(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
         slotArrayCache_[lastOutputSlotIdx] = output;
       }
-      if (!isBatchZeroActive()) {
+      if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture()) {
         if (isBatchZeroRegistering() && DSP_BUF(output) != nullptr) {
           registerBatchZeroBuffer(DSP_BUF(output),
                                   output->dataBuffer()->getLenInBytes(),
@@ -840,6 +1277,21 @@ Status NativeDynamicShapePlan::executeSlot(
         }
 
         if (input0 != nullptr && slot.shapeCacheValid() && !slot.cachedOutputShapes.empty()) {
+          // DIAGNOSTIC: trace frozen view installation for controller slots
+          bool traceThis = DSP_DIAG_ENABLED(SHAPE) &&
+              (stepIdx == 349 || stepIdx == 350 || stepIdx == 357 || stepIdx == 358);
+          if (traceThis) {
+            auto* db = input0->dataBuffer();
+            DSP_DIAG_SLOT(SHAPE, stepIdx,
+                "FROZEN-VIEW-TRACE: slot %d (%s) input0 len=%lld dtype=%d srcIdx=%d "
+                "pAct=%d sAct=%d cachedShape=%s values=%s",
+                stepIdx, slot.opName.c_str(),
+                (long long)input0->lengthOf(), (int)input0->dataType(), srcIdx,
+                db ? db->isPrimaryActual() : -1,
+                db ? db->isSpecialActual() : -1,
+                ShapeUtils::shapeAsString(slot.cachedOutputShapes[0]).c_str(),
+                dspDumpHostDeviceValues(input0, 16).c_str());
+          }
           // Gather all inputs for strided_slice offset computation
           static thread_local std::vector<NDArray*> ssInputs;
           ssInputs.resize(slot.numInputs);
@@ -857,7 +1309,7 @@ Status NativeDynamicShapePlan::executeSlot(
           NDArray* newView = nullptr;
           LongType viewOffset = 0;
           ViewCreateResult vcr = tryCreateViewForSlot(
-              slot, input0, slot.cachedOutputShapes[0],
+              stepIdx, slot, input0, slot.cachedOutputShapes[0],
               ssInputs.data(), slot.numInputs,
               &newView, &viewOffset);
 
@@ -885,6 +1337,14 @@ Status NativeDynamicShapePlan::executeSlot(
             NDArray* currentOut = outputSlots_[si];
             if (currentOut != nullptr && currentOut->dataBuffer() == input0->dataBuffer()
                 && currentOut->offset() == viewOffset) {
+              NDArray* tracedInputs[1] = {input0};
+              NDArray* tracedOutputs[1] = {currentOut};
+              traceSmallControlSlotIO("frozen-view-reuse", stepIdx, slot,
+                                      input0, currentOut,
+                                      executeCount_, planPhase_);
+              traceSmallControlSlotTensors("frozen-view-reuse", stepIdx, slot,
+                                           tracedInputs, 1, tracedOutputs, 1,
+                                           executeCount_, planPhase_);
               delete newView;  // Discard redundant view
               backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
               return Status::OK;
@@ -895,13 +1355,24 @@ Status NativeDynamicShapePlan::executeSlot(
             auto& ctx2 = *contextPool_[stepIdx];
             ctx2.setOutputArray(0, newView);
             ctx2.setInputArray(0, input0);
+            // In Phase 2, slotArrayCache_ == outputSlots_. Deleting 'old'
+            // would delete the slot's output array, leaving a dangling pointer.
             NDArray* old = slotArrayCache_[si];
-            if (old != nullptr && old != newView) {
+            if (old != nullptr && old != newView
+                && slotArrayCache_ != outputSlots_) {
               if (!isSlotArrayShared(old, si)) {
                 delete old;  // View wrapper only — no GPU memory freed
               }
             }
             slotArrayCache_[si] = newView;
+            NDArray* tracedInputs[1] = {input0};
+            NDArray* tracedOutputs[1] = {newView};
+            traceSmallControlSlotIO("frozen-view-install", stepIdx, slot,
+                                    input0, newView,
+                                    executeCount_, planPhase_);
+            traceSmallControlSlotTensors("frozen-view-install", stepIdx, slot,
+                                         tracedInputs, 1, tracedOutputs, 1,
+                                         executeCount_, planPhase_);
             backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
             return Status::OK;
           }
@@ -990,7 +1461,7 @@ Status NativeDynamicShapePlan::executeSlot(
         }
         if (isView) continue;
 
-        if (!isBatchZeroActive()) {
+        if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture()) {
           if (isBatchZeroRegistering() && DSP_BUF(ctxOuts[i]) != nullptr) {
             registerBatchZeroBuffer(DSP_BUF(ctxOuts[i]),
                                     ctxOuts[i]->dataBuffer()->getLenInBytes(),
@@ -1022,11 +1493,14 @@ Status NativeDynamicShapePlan::executeSlot(
     auto& ctxOuts = ctx.fastpath_out();
     for (int i = 0; i < slot.numOutputs && i < static_cast<int>(ctxOuts.size()); i++) {
       if (ctxOuts[i] != nullptr) {
-        ctxOuts[i]->tickWriteDevice();
+        reconcileExecutedOutputActuality("frozen-op-exec", stepIdx, slot, ctxOuts[i]);
         int si = slot.outputSlotIndices[i];
         if (si >= 0 && si < totalOutputSlots_) {
+          // In Phase 2, slotArrayCache_ == outputSlots_. Deleting oldCached
+          // would delete the slot's output array, leaving a dangling pointer.
           NDArray* oldCached = slotArrayCache_[si];
-          if (oldCached != nullptr && oldCached != ctxOuts[i] && !tl_graphExecutionActive) {
+          if (oldCached != nullptr && oldCached != ctxOuts[i] && !tl_graphExecutionActive
+              && slotArrayCache_ != outputSlots_) {
             if (!isSlotArrayShared(oldCached, si)) {
               delete oldCached;  // Replace stale cached array inline
               // During graph capture, don't delete — it's the saved warmup array
@@ -1046,6 +1520,21 @@ Status NativeDynamicShapePlan::executeSlot(
 #endif
 
     if (status == Status::OK) {
+      NDArray* tracedInput0 = slot.numInputs > 0 && !ctx.fastpath_in().empty()
+                                  ? ctx.fastpath_in()[0]
+                                  : nullptr;
+      NDArray* tracedOutput0 = slot.numOutputs > 0 && !ctxOuts.empty()
+                                   ? ctxOuts[0]
+                                   : nullptr;
+      traceSmallControlSlotIO("frozen-op-exec", stepIdx, slot,
+                              tracedInput0, tracedOutput0,
+                              executeCount_, planPhase_);
+      traceSmallControlSlotTensors("frozen-op-exec", stepIdx, slot,
+                                   ctx.fastpath_in().data(),
+                                   static_cast<int>(ctx.fastpath_in().size()),
+                                   ctxOuts.data(),
+                                   static_cast<int>(ctxOuts.size()),
+                                   executeCount_, planPhase_);
       backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
     }
     return status;
@@ -1198,6 +1687,13 @@ Status NativeDynamicShapePlan::executeSlot(
   if (cacheHit) {
     outputShapes = slot.cachedOutputShapes;
   } else {
+    const bool allowRestabilization =
+        shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid() &&
+        allowFrozenShapeRestabilization(stepIdx, slot, planPhase_,
+                                        slots_, numSlots_,
+                                        outputSlots_, totalOutputSlots_,
+                                        externalArrays, numExt);
+
     // ── Phase violation: shape change during SHAPES_FROZEN ──
     // If shapes are frozen and we get a cache miss (shape changed), this is
     // a phase contract violation. Return a hard error — the caller's frozen
@@ -1214,6 +1710,12 @@ Status NativeDynamicShapePlan::executeSlot(
                  "(value-dep op, input values changed but shapes frozen)",
                  stepIdx, slot.opName.c_str());
         // Fall through to shape recomputation below — it will verify actual shapes match
+      } else if (allowRestabilization) {
+        DSP_DIAG(SHAPE,
+                 "FROZEN_RESTABILIZE: slot %d (%s) cache miss during SHAPES_FROZEN "
+                 "is allowed because the shape-control chain is plan-internal and "
+                 "planPhase=%d (< POINTERS_STABLE)",
+                 stepIdx, slot.opName.c_str(), static_cast<int>(planPhase_));
       } else {
         // Non-value-dep op: shape key change means actual shapes changed → violation
         char errBuf[512];
@@ -1265,10 +1767,46 @@ Status NativeDynamicShapePlan::executeSlot(
         if (ii > 0) inputShapeStr += ", ";
         inputShapeStr += inputs[ii] ? ShapeUtils::shapeAsString(inputs[ii]) : "null";
       }
+      std::string smallInputValueStr;
+      for (int ii = 0; ii < slot.numInputs; ii++) {
+        if (inputs[ii] == nullptr) continue;
+        auto dt = inputs[ii]->dataType();
+        auto len = inputs[ii]->lengthOf();
+        if ((dt == INT32 || dt == INT64 || dt == BOOL) && len > 0 && len <= 16) {
+          if (!smallInputValueStr.empty()) smallInputValueStr += " | ";
+          smallInputValueStr += "input[";
+          smallInputValueStr += std::to_string(ii);
+          smallInputValueStr += "]=";
+          smallInputValueStr += dspDumpHostDeviceValues(inputs[ii], 16);
+        }
+      }
+      std::string upstreamTraceStr;
+      for (int ii = 0; ii < slot.numInputs; ii++) {
+        if (ii > 0) upstreamTraceStr += " | ";
+        upstreamTraceStr += "input[";
+        upstreamTraceStr += std::to_string(ii);
+        upstreamTraceStr += "]=>";
+        std::vector<int> seenSlotSteps;
+        appendUpstreamControlTrace(upstreamTraceStr, slot.inputSourceIndices[ii], 3,
+                                   slots_, numSlots_, outputSlots_, totalOutputSlots_,
+                                   externalArrays, numExt, externalInputNames_,
+                                   seenSlotSteps);
+      }
       char errBuf[1024];
       snprintf(errBuf, sizeof(errBuf), "slot %d (%s) shape inference failed: %s | inputs=[%s] iArgs=%d",
                stepIdx, slot.opName.c_str(), e.what(), inputShapeStr.c_str(), slot.numIArgs);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
+      std::string errMsg = errBuf;
+      if (!smallInputValueStr.empty()) {
+        errMsg += " smallInputs=[";
+        errMsg += smallInputValueStr;
+        errMsg += "]";
+      }
+      if (!upstreamTraceStr.empty()) {
+        errMsg += " upstream=[";
+        errMsg += upstreamTraceStr;
+        errMsg += "]";
+      }
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg.c_str());
       return Status::KERNEL_FAILURE;
     }
     if (shapeList == nullptr || shapeList->size() == 0) {
@@ -1295,10 +1833,125 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
-    slot.cachedShapeKey = shapeKey;
-    slot.cachedOutputShapes = outputShapes;
-    if (slot.state_ < NativeSlot::SlotState::SHAPE_CACHED)
-      slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;
+    if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid() &&
+        slot.outputShapeDependsOnInputValues && !slot.cachedOutputShapes.empty()) {
+      bool sameOutputShapeCount = slot.cachedOutputShapes.size() == outputShapes.size();
+      bool outputShapesMatch = sameOutputShapeCount;
+      if (outputShapesMatch) {
+        for (size_t i = 0; i < outputShapes.size(); i++) {
+          const LongType* oldShape = slot.cachedOutputShapes[i];
+          const LongType* newShape = outputShapes[i];
+          if (oldShape == nullptr || newShape == nullptr ||
+              !shape::equalsSoft(const_cast<LongType*>(oldShape),
+                                 const_cast<LongType*>(newShape)) ||
+              ArrayOptions::dataType(oldShape) != ArrayOptions::dataType(newShape)) {
+            outputShapesMatch = false;
+            break;
+          }
+        }
+      }
+
+      if (!outputShapesMatch) {
+        if (allowRestabilization) {
+          DSP_DIAG(SHAPE,
+                   "FROZEN_RESTABILIZE: slot %d (%s) output shape changed during SHAPES_FROZEN "
+                   "but the controlling value-shape chain is plan-internal and "
+                   "planPhase=%d (< POINTERS_STABLE). Updating cached shapes.",
+                   stepIdx, slot.opName.c_str(), static_cast<int>(planPhase_));
+        } else {
+          std::string oldShapesStr;
+          std::string newShapesStr;
+          for (size_t i = 0; i < std::max(slot.cachedOutputShapes.size(), outputShapes.size()); i++) {
+            if (i > 0) {
+              oldShapesStr += ", ";
+              newShapesStr += ", ";
+            }
+            oldShapesStr += (i < slot.cachedOutputShapes.size() && slot.cachedOutputShapes[i] != nullptr)
+                ? ShapeUtils::shapeAsString(slot.cachedOutputShapes[i])
+                : "null";
+            newShapesStr += (i < outputShapes.size() && outputShapes[i] != nullptr)
+                ? ShapeUtils::shapeAsString(outputShapes[i])
+                : "null";
+          }
+
+          std::string inputShapeStr;
+          for (int ii = 0; ii < slot.numInputs; ii++) {
+            if (ii > 0) inputShapeStr += ", ";
+            inputShapeStr += inputs[ii] ? ShapeUtils::shapeAsString(inputs[ii]) : "null";
+          }
+
+          std::string smallInputValueStr;
+          for (int ii = 0; ii < slot.numInputs; ii++) {
+            if (inputs[ii] == nullptr) continue;
+            auto dt = inputs[ii]->dataType();
+            auto len = inputs[ii]->lengthOf();
+            if ((dt == INT32 || dt == INT64 || dt == BOOL) && len > 0 && len <= 16) {
+              if (!smallInputValueStr.empty()) smallInputValueStr += " | ";
+              smallInputValueStr += "input[";
+              smallInputValueStr += std::to_string(ii);
+              smallInputValueStr += "]=";
+              smallInputValueStr += dspDumpHostDeviceValues(inputs[ii], 16);
+            }
+          }
+
+          std::string upstreamTraceStr;
+          for (int ii = 0; ii < slot.numInputs; ii++) {
+            if (ii > 0) upstreamTraceStr += " | ";
+            upstreamTraceStr += "input[";
+            upstreamTraceStr += std::to_string(ii);
+            upstreamTraceStr += "]=>";
+            std::vector<int> seenSlotSteps;
+            appendUpstreamControlTrace(upstreamTraceStr, slot.inputSourceIndices[ii], 3,
+                                       slots_, numSlots_, outputSlots_, totalOutputSlots_,
+                                       externalArrays, numExt, externalInputNames_,
+                                       seenSlotSteps);
+          }
+
+          std::string errMsg = "LIFECYCLE_ERROR: value-dependent output shape changed at slot " +
+              std::to_string(stepIdx) + " (" + slot.opName + ") during SHAPES_FROZEN phase "
+              "(execCount=" + std::to_string(executeCount_) + "). oldShapes=[" + oldShapesStr +
+              "] newShapes=[" + newShapesStr + "] inputs=[" + inputShapeStr + "]";
+          if (!smallInputValueStr.empty()) {
+            errMsg += " smallInputs=[" + smallInputValueStr + "]";
+          }
+          if (!upstreamTraceStr.empty()) {
+            errMsg += " upstream=[" + upstreamTraceStr + "]";
+          }
+
+          DSP_DIAG(SHAPE, "%s", errMsg.c_str());
+          if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_VERIFY)) {
+            dspDumpSlotInputs(stepIdx, slot.opName.c_str(),
+                              slot.numInputs, slot.inputSourceIndices, slot.inputSourceTypes,
+                              outputSlots_, totalOutputSlots_,
+                              externalArrays, numExt, externalInputNames_,
+                              "value-shape-mismatch", 8);
+          }
+          sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+              static_cast<int>(Status::KERNEL_FAILURE));
+          sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg.c_str());
+          delete shapeList;
+          return Status::KERNEL_FAILURE;
+        }
+      }
+
+      // Shapes are still frozen-stable. Update only the key, keep the original
+      // cached shape-info pointers to avoid churn during steady-state replay.
+      if (allowRestabilization && !outputShapesMatch) {
+        slot.cachedShapeKey = shapeKey;
+        slot.cachedOutputShapes = outputShapes;
+        if (slot.state_ < NativeSlot::SlotState::SHAPE_CACHED) {
+          slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;
+        }
+      } else {
+        slot.cachedShapeKey = shapeKey;
+        outputShapes = slot.cachedOutputShapes;
+      }
+    } else {
+      slot.cachedShapeKey = shapeKey;
+      slot.cachedOutputShapes = outputShapes;
+      if (slot.state_ < NativeSlot::SlotState::SHAPE_CACHED)
+        slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;
+    }
 
     delete shapeList;
   }
@@ -1365,7 +2018,7 @@ Status NativeDynamicShapePlan::executeSlot(
       NDArray* view = nullptr;
       LongType viewOffset = 0;
       ViewCreateResult vcr = tryCreateViewForSlot(
-          slot, input0, outputShapes[0],
+          stepIdx, slot, input0, outputShapes[0],
           inputs.data(), slot.numInputs,
           &view, &viewOffset);
 
@@ -1376,8 +2029,83 @@ Status NativeDynamicShapePlan::executeSlot(
         int slotIdx = slot.outputSlotIndices[0];
         outputs[0] = view;
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+          // DIAGNOSTIC: trace view-op-install buffer stability for lifecycle debugging
+          NDArray* oldCached = slotArrayCache_[slotIdx];
+          NDArray* oldOutput = outputSlots_[slotIdx];
+          auto* newDb = view->dataBuffer();
+          int srcIdx0 = slot.inputSourceIndices[0];
+          // Always trace for reshape ops during frozen execution
+          bool isReshape = (slot.opName == "reshape" || slot.opName == "reshape_no_copy");
+          if (isReshape && executeCount_ >= 2) {
+            auto* oldCachedDb = oldCached != nullptr ? oldCached->dataBuffer() : nullptr;
+            auto* oldOutputDb = oldOutput != nullptr ? oldOutput->dataBuffer() : nullptr;
+            DSP_DIAG_SLOT(MEMORY, stepIdx,
+                "VIEW-BUF-TRACE: slot %d (%s) oldCachedDb=%p oldOutputDb=%p newDb=%p "
+                "srcIdx0=%d exec=%d phase=%d cacheNull=%d outputNull=%d",
+                stepIdx, slot.opName.c_str(), (void*)oldCachedDb, (void*)oldOutputDb, (void*)newDb,
+                srcIdx0, executeCount_, (int)planPhase_,
+                oldCached == nullptr ? 1 : 0, oldOutput == nullptr ? 1 : 0);
+            if (oldOutputDb != newDb) {
+              DSP_DIAG_SLOT(MEMORY, stepIdx,
+                  "VIEW-BUF-CHANGE: slot %d (%s) outputSlot db changed! oldOutputDb=%p newDb=%p srcIdx0=%d exec=%d",
+                  stepIdx, slot.opName.c_str(), (void*)oldOutputDb, (void*)newDb, srcIdx0, executeCount_);
+            }
+          }
+          if (oldCached != nullptr) {
+            auto* oldDb = oldCached->dataBuffer();
+            int srcIdx0 = slot.inputSourceIndices[0];
+            if (isReshape && executeCount_ >= 2) {
+              if (srcIdx0 >= 0) {
+                NDArray* srcArr = outputSlots_[srcIdx0];
+                auto* srcDb = srcArr != nullptr ? srcArr->dataBuffer() : nullptr;
+                DSP_DIAG_SLOT(MEMORY, stepIdx,
+                    "VIEW-BUF-INPUT: slot %d (%s) from slot %d (%s) srcDb=%p oldDb=%p newDb=%p exec=%d phase=%d dbMatch=%d",
+                    stepIdx, slot.opName.c_str(), srcIdx0,
+                    srcIdx0 < numSlots_ ? slots_[srcIdx0].opName.c_str() : "?",
+                    (void*)srcDb, (void*)oldDb, (void*)newDb, executeCount_, (int)planPhase_,
+                    oldDb == newDb ? 1 : 0);
+              } else {
+                int extIdx = -(srcIdx0 + 1);
+                auto* extDb = (extIdx < numExt && externalArrays[extIdx] != nullptr)
+                    ? externalArrays[extIdx]->dataBuffer() : nullptr;
+                DSP_DIAG_SLOT(MEMORY, stepIdx,
+                    "VIEW-BUF-INPUT: slot %d (%s) from ext[%d] extDb=%p oldDb=%p newDb=%p exec=%d phase=%d dbMatch=%d",
+                    stepIdx, slot.opName.c_str(), extIdx,
+                    (void*)extDb, (void*)oldDb, (void*)newDb, executeCount_, (int)planPhase_,
+                    oldDb == newDb ? 1 : 0);
+              }
+            }
+            if (oldDb != newDb && planPhase_ >= PlanPhase::POINTERS_STABLE && executeCount_ > 1) {
+              // Buffer is changing — trace the source
+              if (srcIdx0 >= 0) {
+                NDArray* srcArr = outputSlots_[srcIdx0];
+                auto* srcDb = srcArr != nullptr ? srcArr->dataBuffer() : nullptr;
+                DSP_DIAG_SLOT(MEMORY, stepIdx,
+                    "VIEW-BUF-CHANGE: slot %d (%s) input from slot %d (%s) "
+                    "srcDb=%p oldDb=%p newDb=%p exec=%d phase=%d",
+                    stepIdx, slot.opName.c_str(), srcIdx0,
+                    srcIdx0 < numSlots_ ? slots_[srcIdx0].opName.c_str() : "?",
+                    (void*)srcDb, (void*)oldDb, (void*)newDb, executeCount_, (int)planPhase_);
+              } else {
+                int extIdx = -(srcIdx0 + 1);
+                auto* extDb = (extIdx < numExt && externalArrays[extIdx] != nullptr)
+                    ? externalArrays[extIdx]->dataBuffer() : nullptr;
+                DSP_DIAG_SLOT(MEMORY, stepIdx,
+                    "VIEW-BUF-CHANGE: slot %d (%s) input from ext[%d] "
+                    "extDb=%p oldDb=%p newDb=%p exec=%d phase=%d",
+                    stepIdx, slot.opName.c_str(), extIdx,
+                    (void*)extDb, (void*)oldDb, (void*)newDb, executeCount_, (int)planPhase_);
+              }
+            }
+          }
+
+          // In Phase 2, slotArrayCache_ == outputSlots_ (unified). Deleting 'old'
+          // would delete the slot's output array, leaving a dangling pointer for
+          // writeOutputSlot. Skip the delete — writeOutputSlot replaces the slot
+          // and the plan's cleanup handles the old array.
           NDArray* old = slotArrayCache_[slotIdx];
-          if (old != nullptr && old != view && !tl_graphExecutionActive) {
+          if (old != nullptr && old != view && !tl_graphExecutionActive
+              && slotArrayCache_ != outputSlots_) {
             if (!isSlotArrayShared(old, slotIdx)) {
               delete old;  // View wrapper only — no GPU memory freed
               // During graph capture, don't delete — it's the saved warmup array
@@ -1438,12 +2166,16 @@ step3_allocate:
     auto order = shape::order(shapeInfo);
     LongType rank = shape::rank(shapeInfo);
 
-    NDArray* cached = slotArrayCache_[slotIdx];
+    NDArray* cached = validateReusableSlotArray(slotIdx, slotArrayCache_[slotIdx],
+                                                "step3-reuse-validate");
     if (cached != nullptr) {
       const LongType* cachedShape = cached->shapeInfo();
       if (shape::equalsSoft(cachedShape, shapeInfo) &&
           ArrayOptions::dataType(cachedShape) == dt) {
-        if (!isBatchZeroActive()) {
+        // CRITICAL: Skip batch-zero for view-capable slots. Their outputs share
+        // buffers with inputs and zeroing would corrupt input data.
+        if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture() &&
+            !slot.isViewCapableOp) {
           if (isBatchZeroRegistering() && DSP_BUF(cached) != nullptr) {
             registerBatchZeroBuffer(DSP_BUF(cached),
                                     cached->dataBuffer()->getLenInBytes(),
@@ -1458,10 +2190,7 @@ step3_allocate:
         // Same plan = same shapes. Shape mismatch — replace inline.
         DSP_DIAG(EXECUTE, "SHAPE MISMATCH at slot %d (cached vs expected) — replacing inline",
                  slotIdx);
-        if (!isSlotArrayShared(cached, slotIdx)) {
-          delete cached;
-        }
-        slotArrayCache_[slotIdx] = nullptr;
+        discardCachedSlotArray(slotIdx, cached, "shape-mismatch");
       }
     }
 
@@ -1514,7 +2243,7 @@ step3_allocate:
         NDArray* maxOut = nullptr;
         try {
           maxOut = DSP_NEW_ARRAY(order, maxShape, dt);
-          if (!isBatchZeroActive()) {
+          if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture()) {
             if (isBatchZeroRegistering() && DSP_BUF(maxOut) != nullptr) {
               registerBatchZeroBuffer(DSP_BUF(maxOut),
                                       maxOut->dataBuffer()->getLenInBytes(),
@@ -1526,7 +2255,8 @@ step3_allocate:
           DSP_DIAG_SLOT(MEMORY, stepIdx, "max-allocation FAILED at slot %d (%s): %s",
                     stepIdx, slot.opName.c_str(), e.what());
           maxOut = DSP_NEW_ARRAY(order, shape, dt);
-          if (slot.needsZeroedOutput && !isBatchZeroActive()) {
+          if (slot.needsZeroedOutput && !isBatchZeroActive() &&
+              !shouldPreserveWarmupOutputsDuringCapture()) {
             if (isBatchZeroRegistering() && DSP_BUF(maxOut) != nullptr) {
               registerBatchZeroBuffer(DSP_BUF(maxOut),
                                       maxOut->dataBuffer()->getLenInBytes(),
@@ -1542,7 +2272,8 @@ step3_allocate:
         maxAllocatedSlots_.insert(slotIdx);
         continue;
       }
-      NDArray* cached2 = slotArrayCache_[slotIdx];
+      NDArray* cached2 = validateReusableSlotArray(slotIdx, slotArrayCache_[slotIdx],
+                                                   "maxalloc-reuse-validate");
       if (cached2 != nullptr) {
         outputs[i] = cached2;
         DSP_SLOT_WRITE(slotIdx, cached2, "cached2-reuse");
@@ -1553,7 +2284,13 @@ step3_allocate:
     NDArray* out = nullptr;
     try {
       out = DSP_NEW_ARRAY(order, shape, dt);
-      if (slot.needsZeroedOutput && !isBatchZeroActive()) {
+      // Register output for batch-zero if needed.
+      // CRITICAL: Skip registration for view-capable slots. Their output buffers
+      // share data with inputs (views), and zeroing them would corrupt the input
+      // data. The input buffers must remain valid for downstream consumers.
+      if (slot.needsZeroedOutput && !isBatchZeroActive() &&
+          !shouldPreserveWarmupOutputsDuringCapture() &&
+          !slot.isViewCapableOp) {
         if (isBatchZeroRegistering() && DSP_BUF(out) != nullptr) {
           registerBatchZeroBuffer(DSP_BUF(out),
                                   out->dataBuffer()->getLenInBytes(),
@@ -1630,6 +2367,35 @@ step3_allocate:
   }
 
   ctx.setShapeFunctionOverride(true);
+
+  // Shape-key computation and shape functions may sync control tensors to host
+  // in order to read value-dependent shape inputs. Re-sync those inputs before
+  // execution so the kernel does not read stale device-side shape values.
+  if (slot.isDataDependent || slot.outputShapeDependsOnInputValues) {
+    for (int i = 0; i < slot.numInputs; i++) {
+      NDArray* in = inputs[i];
+      if (in == nullptr || in->isEmpty()) continue;
+      auto* db = in->dataBuffer();
+      if (db == nullptr || db->isClosed()) continue;
+
+      const bool syncAllInputs = slot.isDataDependent;
+      const bool isControlInput = isSmallIntegralControlArray(in);
+      if (!syncAllInputs && !isControlInput) continue;
+
+      // DIAGNOSTIC: trace small integral input values before sync for shape-control debugging
+      bool traceThis = isControlInput && DSP_DIAG_ENABLED(SHAPE);
+      if (traceThis && (stepIdx == 349 || stepIdx == 350 || stepIdx == 357 || stepIdx == 358)) {
+        DSP_DIAG_SLOT(SHAPE, stepIdx,
+            "PRE-SYNC-TRACE: slot %d (%s) input[%d] dtype=%d len=%lld pAct=%d sAct=%d "
+            "values=[%s]",
+            stepIdx, slot.opName.c_str(), i, (int)in->dataType(), (long long)in->lengthOf(),
+            db->isPrimaryActual() ? 1 : 0, db->isSpecialActual() ? 1 : 0,
+            dspDumpHostDeviceValues(in, 16).c_str());
+      }
+
+      in->syncToDevice();
+    }
+  }
 
   // Log shapes for matmul gap slots to diagnose capture shape mismatches
   if (DSP_DIAG_ENABLED(EXECUTE) && normalizeOpName_slotexec(slot.opName) == "matmul") {
@@ -1763,8 +2529,20 @@ step3_allocate:
 
   for (int i = 0; i < numActualOutputs; i++) {
     if (outputs[i] != nullptr) {
-      outputs[i]->tickWriteDevice();
+      reconcileExecutedOutputActuality("normal-op-exec", stepIdx, slot, outputs[i]);
     }
+  }
+
+  if (status == Status::OK) {
+    NDArray* tracedInput0 = slot.numInputs > 0 && !inputs.empty() ? inputs[0] : nullptr;
+    NDArray* tracedOutput0 = numActualOutputs > 0 ? outputs[0] : nullptr;
+    traceSmallControlSlotIO("normal-op-exec", stepIdx, slot,
+                            tracedInput0, tracedOutput0,
+                            executeCount_, planPhase_);
+    traceSmallControlSlotTensors("normal-op-exec", stepIdx, slot,
+                                 inputs.data(), slot.numInputs,
+                                 outputs.data(), numActualOutputs,
+                                 executeCount_, planPhase_);
   }
 
   // ── Step 5: View producer handling ────────────────────────────────────────
@@ -1778,7 +2556,10 @@ step3_allocate:
         if (ctxOutputs[i] != outputs[i]) {
           slotIsViewProducer_[si] = true;
           NDArray* oldCached = slotArrayCache_[si];
-          if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive) {
+          // In Phase 2, slotArrayCache_ == outputSlots_. Deleting oldCached
+          // would delete the slot's output array, leaving a dangling pointer.
+          if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive
+              && slotArrayCache_ != outputSlots_) {
             if (!isSlotArrayShared(oldCached, si)) {
               delete oldCached;  // View wrapper only — no GPU memory freed
             }
@@ -1788,7 +2569,9 @@ step3_allocate:
         }
       } else if (slotIsViewProducer_[si]) {
         NDArray* oldCached = slotArrayCache_[si];
-        if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive) {
+        // Same Phase 2 fix: don't delete the slot's own array
+        if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive
+            && slotArrayCache_ != outputSlots_) {
           if (!isSlotArrayShared(oldCached, si)) {
             delete oldCached;  // View wrapper only — no GPU memory freed
           }

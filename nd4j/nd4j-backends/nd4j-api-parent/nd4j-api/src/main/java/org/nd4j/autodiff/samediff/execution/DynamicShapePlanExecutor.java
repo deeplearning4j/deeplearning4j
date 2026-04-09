@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -206,6 +207,16 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  (input_ids, attention_mask, position_ids). Saves ~0.5-1ms per step. */
     private int[] placeholderIndices;
 
+    /** Cached indices of non-placeholder small integral control inputs. These
+     *  arrays drive value-dependent shape/controller chains and must be refreshed
+     *  into the native opContext during frozen execution just like placeholders. */
+    private int[] frozenControlInputIndices;
+
+    /** Cached indices of external inputs backed by derived SameDiff variables.
+     *  These values are produced by upstream ops outside the current native replay
+     *  unit and must be re-resolved on every frozen execution. */
+    private int[] frozenDerivedExternalInputIndices;
+
     /** True once dummy outputs have been set on the context for frozen execution.
      *  After the first frozen call, C++ manages its own output slots — skip dummy setup. */
     private boolean frozenOutputsInitialized;
@@ -283,17 +294,6 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Compute a stable cache key for a plan's compiled native handle.
-     * Uses sorted requested output names so the same output set always maps to the same key.
-     */
-    private static String planCacheKey(DynamicShapePlan plan) {
-        if (plan == null) return null;
-        List<String> sorted = new ArrayList<>(plan.getRequestedOutputs());
-        Collections.sort(sorted);
-        return String.join(",", sorted);
-    }
-
-    /**
      * Initialize the executor for a specific plan.
      *
      * <p>IMPORTANT: This always clears the plan's per-slot shape caches, even if the same plan
@@ -316,6 +316,8 @@ public class DynamicShapePlanExecutor implements Closeable {
             contextInputRefs = null;
             inputIsPlaceholder = null;
             placeholderIndices = null;
+            frozenControlInputIndices = null;
+            frozenDerivedExternalInputIndices = null;
             // Free native plan handle to release CUDA graph replay handles, capture
             // buffers, and workspaces. These hold gigabytes of GPU memory (capture
             // workspace ~512MB, cuBLAS workspace ~256MB, captured graph state, output
@@ -535,6 +537,48 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
         return -1;
+    }
+
+    private static boolean isSmallIntegralControlArray(INDArray arr) {
+        if (arr == null || arr.isEmpty()) {
+            return false;
+        }
+        DataType dt = arr.dataType();
+        if (dt != DataType.INT32 && dt != DataType.INT64 && dt != DataType.BOOL) {
+            return false;
+        }
+        long len = arr.length();
+        return len > 0 && len <= 32;
+    }
+
+    private boolean isDerivedExternalInput(String varName) {
+        if (sd == null || varName == null) {
+            return false;
+        }
+        Variable meta = sd.getVariables().get(varName);
+        if (meta == null) {
+            return false;
+        }
+        String outputOfOp = meta.getOutputOfOp();
+        return outputOfOp != null && !outputOfOp.isEmpty();
+    }
+
+    private INDArray resolveCanonicalExternalInput(String varName,
+                                                   Map<String, INDArray> placeholderArrays) {
+        if (varName == null) {
+            return null;
+        }
+        if (placeholderArrays != null) {
+            INDArray placeholder = placeholderArrays.get(varName);
+            if (placeholder != null) {
+                return placeholder;
+            }
+        }
+        if (sd == null) {
+            return null;
+        }
+        SDVariable var = sd.getVariable(varName);
+        return var != null ? var.getArr() : null;
     }
 
     private static int findOutputSlotIndex(DynamicShapePlan plan, String outputName) {
@@ -787,6 +831,8 @@ public class DynamicShapePlanExecutor implements Closeable {
             contextInputRefs = null;
             inputIsPlaceholder = null;
             placeholderIndices = null;
+            frozenControlInputIndices = null;
+            frozenDerivedExternalInputIndices = null;
             frozenOutputsInitialized = false;
             frozenCallCount = 0;
             cachedExecStream = null;
@@ -870,8 +916,10 @@ public class DynamicShapePlanExecutor implements Closeable {
         contextInputRefs = null;
         inputIsPlaceholder = null;
         placeholderIndices = null;
+        frozenControlInputIndices = null;
+        frozenDerivedExternalInputIndices = null;
 
-        // Release C++ intermediate GPU memory (CUDA graphs, capture buffers, cuBLAS workspace,
+        // Release C++ intermediate GPU memory (CUDA graphs, replay workspaces, cuBLAS workspace,
         // non-weight output slot NDArrays). This also calls closeSlotArrayCache() internally.
         releaseGpuIntermediates();
 
@@ -925,7 +973,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      * <p>This variant is optimized for VLM decode where page shapes are INVARIANT.
      * It preserves:</p>
      * <ul>
-     *   <li>External input staging buffers (max-size pre-allocated)</li>
      *   <li>Output slot arrays (same shapes for decode)</li>
      *   <li>CUDA graph replay handles</li>
      *   <li>cuBLAS workspace</li>
@@ -951,29 +998,18 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Set maximum sizes for external input arrays (staging buffer pre-allocation).
+     * Reserved compatibility hook for the removed external-input staging path.
      *
-     * <p>When set, these external inputs will have max-size staging buffers pre-allocated.
-     * During execute(), actual input data is copied into these staging buffers before
-     * being passed to the graph. This keeps buffer addresses stable across pages.</p>
+     * <p>DSP replay now reads canonical external input buffers directly and
+     * invalidates/re-captures when those addresses drift, so there is no
+     * separate native staging lifecycle to configure here.</p>
      *
-     * <p>Usage for VLM decode:</p>
-     * <ul>
-     *   <li>Call once before first page</li>
-     *   <li>For input_ids/position_ids: max size = batch * maxSeqLen</li>
-     *   <li>For embeddings: max size = batch * maxSeqLen * hiddenSize</li>
-     * </ul>
-     *
-     * @param extIndices    Array of external input indices to pre-allocate
-     * @param maxSizes      Array of maximum sizes (in number of elements)
+     * @param extIndices    Unused
+     * @param maxSizes      Unused
      */
     public void setExternalInputMaxSizes(int[] extIndices, long[] maxSizes) {
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            // Note: This calls the native C++ method that allocates staging buffers
-            // The native method signature: setExternalInputMaxSizes(Pointer planHandle, int[] indices, long[] sizes)
-            // For now, this is a placeholder - actual implementation requires native method addition
-            log.info("setExternalInputMaxSizes: {} inputs configured for staging buffers", extIndices.length);
+            log.info("setExternalInputMaxSizes: no-op; replay uses canonical external buffers directly");
         }
     }
 
@@ -1096,120 +1132,98 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             freeNativePlanHandle("PLAN_RECOMPILATION");
 
-            // Check SameDiff's cache for a previously compiled handle with the same outputs
-            String cacheKey = planCacheKey(plan);
-            Pointer cachedHandle = sd != null ? sd.getCachedNativePlanHandle(cacheKey) : null;
-            if (cachedHandle != null) {
-                nativePlanHandle = cachedHandle;
-                nativePlanSource = plan;
-                nativeExecutorFailed = false;
-                // Tell C++ to clear cached output slots and redo shape inference.
-                // The previous session's output buffers are freed — the plan must
-                // re-allocate them on the next execution.
-                nativeOps.setPlanShapesFrozen(nativePlanHandle, false);
-                shapesFrozen = false;
-                maxAllocationConfigured = false;
-                log.info("Native executor: restored cached plan handle (key={}, slots={}, inputs={})",
-                        cacheKey, plan.getSlots().length, plan.getExternalInputKeys().length);
-                // Re-apply KV cache retention if it was configured before
-                if (savedKvPresentOutputNames != null && !savedKvPresentOutputNames.isEmpty()) {
-                    boolean reapplied = configureKvCacheRetention(plan, savedKvPresentOutputNames,
-                            savedKvPastInputNames, savedKvMaxLen, savedKvCurrentPos);
-                    log.info("Native executor: KV retention re-applied on cached handle: {}", reapplied);
-                }
-                // Fall through to mode configuration below
-            } else {
-                // No cached handle — compile from scratch
-                byte[] serialized = plan.serialize();
-                if (serialized == null || serialized.length == 0) {
-                    nativeExecutorFailed = true;
-                    throw new RuntimeException("Native executor: plan serialization returned empty. " +
-                            "Cannot compile native plan. No fallback permitted.");
-                }
+            byte[] serialized = plan.serialize();
+            if (serialized == null || serialized.length == 0) {
+                nativeExecutorFailed = true;
+                throw new RuntimeException("Native executor: plan serialization returned empty. " +
+                        "Cannot compile native plan. No fallback permitted.");
+            }
 
-                BytePointer planBytes = new BytePointer(serialized);
+            BytePointer planBytes = new BytePointer(serialized);
+            try {
+                nativePlanHandle = nativeOps.compileDynamicShapePlan(planBytes, serialized.length);
+            } catch (UnsupportedOperationException e) {
+                nativeExecutorFailed = true;
+                throw new RuntimeException("Native executor: backend does not support compileDynamicShapePlan. " +
+                        "No fallback permitted.", e);
+            } finally {
+                planBytes.close();
+            }
+
+            if (nativePlanHandle == null || nativePlanHandle.isNull()) {
+                nativePlanHandle = null;
+                nativeExecutorFailed = true;
+                throw new RuntimeException("Native executor: compileDynamicShapePlan returned null handle. " +
+                        "No fallback permitted.");
+            }
+
+            boolean cudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
+                    System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
+            if (cudaGraphsEnabled) {
                 try {
-                    nativePlanHandle = nativeOps.compileDynamicShapePlan(planBytes, serialized.length);
-                } catch (UnsupportedOperationException e) {
-                    nativeExecutorFailed = true;
-                    throw new RuntimeException("Native executor: backend does not support compileDynamicShapePlan. " +
-                            "No fallback permitted.", e);
-                } finally {
-                    planBytes.close();
-                }
-
-                if (nativePlanHandle == null || nativePlanHandle.isNull()) {
-                    nativePlanHandle = null;
-                    nativeExecutorFailed = true;
-                    throw new RuntimeException("Native executor: compileDynamicShapePlan returned null handle. " +
-                            "No fallback permitted.");
-                }
-
-                boolean cudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
-                        System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
-                if (cudaGraphsEnabled) {
-                    try {
-                        nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, true);
-                        DspDiagnostics.record(DspDiagnostics.COMPILE,
-                                "Java: CUDA graphs ENABLED on native plan");
-                    } catch (UnsupportedOperationException e) {
-                        DspDiagnostics.record(DspDiagnostics.COMPILE,
-                                "Java: CUDA graphs not supported by backend (CPU?)");
-                    }
-                } else {
+                    nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, true);
                     DspDiagnostics.record(DspDiagnostics.COMPILE,
-                            "Java: CUDA graphs DISABLED (cudaGraphsFailed=" + cudaGraphsFailed + ")");
+                            "Java: CUDA graphs ENABLED on native plan");
+                } catch (UnsupportedOperationException e) {
+                    DspDiagnostics.record(DspDiagnostics.COMPILE,
+                            "Java: CUDA graphs not supported by backend (CPU?)");
                 }
-
-                String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
-                if (!"graph".equalsIgnoreCase(jitModeStr)) {
-                    int jitModeInt = 0;  // GRAPH_ONLY
-                    if ("jit".equalsIgnoreCase(jitModeStr)) {
-                        jitModeInt = 1;  // JIT_ONLY
-                    } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
-                        jitModeInt = 2;  // GRAPH_PLUS_JIT
-                    }
-                    try {
-                        nativeOps.setPlanJitMode(nativePlanHandle, jitModeInt);
-                        log.info("Native executor: JIT mode set to {} ({})", jitModeStr, jitModeInt);
-                    } catch (UnsupportedOperationException e) {
-                        // Backend doesn't support JIT
-                    }
-                }
-
-                boolean execTiming = "true".equalsIgnoreCase(
-                        System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
-                if (execTiming) {
-                    try {
-                        nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, true);
-                    } catch (UnsupportedOperationException e) {
-                        // Backend doesn't support timing
-                    }
-                }
-
-                if (System.getProperty(ND4JSystemProperties.DSP_TRACE) != null) {
-                    try {
-                        nativeOps.setPlanTraceEnabled(nativePlanHandle, true);
-                    } catch (UnsupportedOperationException e) {
-                        // Backend doesn't support trace
-                    }
-                }
-
-                nativePlanSource = plan;
-                nativeExecutorFailed = false;
-                log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
-                        plan.getSlots().length, plan.getExternalInputKeys().length,
-                        plan.getRequestedOutputs().size(), cudaGraphsEnabled, false);
+            } else {
                 DspDiagnostics.record(DspDiagnostics.COMPILE,
-                        "Java: compiled native plan " + plan.getSlots().length + " slots, " +
-                        plan.getExternalInputKeys().length + " inputs, " +
-                        plan.getRequestedOutputs().size() + " outputs");
+                        "Java: CUDA graphs DISABLED (cudaGraphsFailed=" + cudaGraphsFailed + ")");
+            }
 
-                // Re-apply KV cache retention if it was previously configured but lost.
-                if (savedKvPresentOutputNames != null && !kvCacheRetentionConfigured) {
-                    log.info("Native executor: re-applying KV cache retention on new plan (pos={})", savedKvCurrentPos);
-                    reapplyKvCacheRetention(plan);
+            String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
+            if (!"graph".equalsIgnoreCase(jitModeStr)) {
+                int jitModeInt = 0;  // GRAPH_ONLY
+                if ("jit".equalsIgnoreCase(jitModeStr)) {
+                    jitModeInt = 1;  // JIT_ONLY
+                } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
+                    jitModeInt = 2;  // GRAPH_PLUS_JIT
                 }
+                try {
+                    nativeOps.setPlanJitMode(nativePlanHandle, jitModeInt);
+                    log.info("Native executor: JIT mode set to {} ({})", jitModeStr, jitModeInt);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support JIT
+                }
+            }
+
+            boolean execTiming = "true".equalsIgnoreCase(
+                    System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
+            if (execTiming) {
+                try {
+                    nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support timing
+                }
+            }
+
+            if (System.getProperty(ND4JSystemProperties.DSP_TRACE) != null) {
+                try {
+                    nativeOps.setPlanTraceEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support trace
+                }
+            }
+
+            nativePlanSource = plan;
+            nativeExecutorFailed = false;
+            executionCount = 0;
+            maxAllocationConfigured = false;
+            nativeExecutionDevice = -1;
+            log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
+                    plan.getSlots().length, plan.getExternalInputKeys().length,
+                    plan.getRequestedOutputs().size(), cudaGraphsEnabled, false);
+            DspDiagnostics.record(DspDiagnostics.COMPILE,
+                    "Java: compiled native plan " + plan.getSlots().length + " slots, " +
+                    plan.getExternalInputKeys().length + " inputs, " +
+                    plan.getRequestedOutputs().size() + " outputs");
+
+            // Re-apply KV cache retention if it was previously configured but lost.
+            if (savedKvPresentOutputNames != null && !kvCacheRetentionConfigured) {
+                log.info("Native executor: re-applying KV cache retention on new plan (pos={})", savedKvCurrentPos);
+                reapplyKvCacheRetention(plan);
             }
         }
 
@@ -1569,7 +1583,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * plan, while keeping the plan handle alive for reuse. This frees:
      * <ul>
      *   <li>Non-weight NDArrays from output slots (SLOT_OWNED buffers)</li>
-     *   <li>Per-segment CUDA graph replay handles (capture buffers, workspaces, host pointers)</li>
+     *   <li>Per-segment CUDA graph replay handles (workspaces, host pointers)</li>
      *   <li>cuBLAS workspace (~256 MB)</li>
      *   <li>Batch-zero, batch-D2D, and batched-GEMM device arrays</li>
      *   <li>MmulHelper cast cache (thread-local FP16-to-FP32 staging)</li>
@@ -1596,7 +1610,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      *
      * @param preserveDecodeState  If true, preserves:
      *   <ul>
-     *     <li>external input staging buffers (max-size pre-allocated input buffers)</li>
      *     <li>output slot arrays (decode has invariant shapes)</li>
      *     <li>CUDA graph replay handles (same kernel graph for decode)</li>
      *     <li>cuBLAS workspace (same GEMM shapes for decode)</li>
@@ -1644,7 +1657,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Step 1: Clear Java-side slot array cache (frees Java-managed DataBuffers)
         closeSlotArrayCache();
 
-        // Step 2: Call C++ releaseGpuIntermediates (frees CUDA graphs, capture buffers,
+        // Step 2: Call C++ releaseGpuIntermediates (frees CUDA graphs, replay workspaces,
         //         cuBLAS workspace, and non-weight output slot NDArrays)
         int freedCount = 0;
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
@@ -2164,17 +2177,46 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // For same-identity placeholder inputs (modified via putScalar), sync to device.
                 // Constants/variables are never modified on host — skip sync entirely.
                 
-                // Build placeholderIndices on first frozen call (saves ~0.5-1ms per step)
-                if (placeholderIndices == null && inputIsPlaceholder != null) {
+                // Build cached frozen fast-path index lists on first use.
+                // Placeholders and derived externals are phase-dynamic and must be
+                // re-resolved on every frozen execution. Small integral root externals
+                // are phase-stable but still need opContext refresh so value-shaped
+                // native chains read current device-visible values.
+                if ((placeholderIndices == null || frozenControlInputIndices == null
+                        || frozenDerivedExternalInputIndices == null) && inputIsPlaceholder != null) {
                     int count = 0;
                     for (boolean b : inputIsPlaceholder) if (b) count++;
                     placeholderIndices = new int[count];
-                    int idx = 0;
-                    for (int i = 0; i < inputIsPlaceholder.length; i++) {
-                        if (inputIsPlaceholder[i]) placeholderIndices[idx++] = i;
+                    int derivedCount = 0;
+                    for (int i = 0; i < extInputs.length; i++) {
+                        if (!inputIsPlaceholder[i] && isDerivedExternalInput(extKeys[i])) {
+                            derivedCount++;
+                        }
                     }
-                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})",
-                            count, extInputs.length);
+                    frozenDerivedExternalInputIndices = new int[derivedCount];
+                    int controlCount = 0;
+                    for (int i = 0; i < extInputs.length; i++) {
+                        if (!inputIsPlaceholder[i]
+                                && !isDerivedExternalInput(extKeys[i])
+                                && isSmallIntegralControlArray(extInputs[i])) {
+                            controlCount++;
+                        }
+                    }
+                    frozenControlInputIndices = new int[controlCount];
+                    int idx = 0;
+                    int derivedIdx = 0;
+                    int controlIdx = 0;
+                    for (int i = 0; i < inputIsPlaceholder.length; i++) {
+                        if (inputIsPlaceholder[i]) {
+                            placeholderIndices[idx++] = i;
+                        } else if (isDerivedExternalInput(extKeys[i])) {
+                            frozenDerivedExternalInputIndices[derivedIdx++] = i;
+                        } else if (isSmallIntegralControlArray(extInputs[i])) {
+                            frozenControlInputIndices[controlIdx++] = i;
+                        }
+                    }
+                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}], derivedIndices[{}], controlIndices[{}] (extInputs={})",
+                            count, derivedCount, controlCount, extInputs.length);
                     // Validate: check that all non-constant external inputs are in placeholderIndices.
                     // If a PLACEHOLDER variable is missing, it won't get synced on the frozen fast path.
                     int missingCount = 0;
@@ -2202,33 +2244,44 @@ public class DynamicShapePlanExecutor implements Closeable {
                         "Java: FROZEN_FAST_PATH entering placeholder loop, " +
                         placeholderIndices.length + " placeholders");
                     for (int pi : placeholderIndices) {
-                        // When C++ manages decode inputs, skip syncToSpecial for them.
-                        // syncToSpecial copies HOST→DEVICE, but C++ updateDecodeInputs
-                        // accumulates values on DEVICE directly. Syncing would overwrite
-                        // device with stale host data (e.g., wipe accumulated attention_mask).
-                        if (decodeInputsConfigured && (pi == decodeInputIdsExtIdx
-                                || pi == decodePositionIdsExtIdx
-                                || pi == decodeAttentionMaskExtIdx)) {
-                            continue;
-                        }
                         INDArray arr = extInputs[pi];
-                        // ALWAYS re-set placeholder inputs on the opContext.
-                        // Multi-GPU migration (replicateToDevice) can change both extInputs
-                        // and cachedInputArrays to the same migrated object, making identity
-                        // comparison useless. The C++ side needs fresh NDArray* pointers
-                        // because the old ones may have closed DataBuffers.
+                        // Re-set placeholder input pointers on the opContext.
+                        // C++ bulk H2D sync handles all device synchronization —
+                        // NO syncToSpecial calls from Java.
                         if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
                             OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, pi, opaqueIn);
                             cachedInputOpaques[pi] = opaqueIn;
                             cachedInputArrays[pi] = arr;
-                            // Sync to device (placeholder may have been modified on host)
-                            if (!arr.isEmpty()) {
-                                OpaqueDataBuffer odb = arr.data().opaqueBuffer();
-                                if (odb != null && !odb.isNull()) {
-                                    odb.syncToSpecial();
-                                }
-                            }
+                        }
+                    }
+                    for (int di : frozenDerivedExternalInputIndices) {
+                        INDArray arr = resolveCanonicalExternalInput(extKeys[di], placeholderArrays);
+                        if (arr == null || arr.data() == null || arr.data().wasClosed()) {
+                            throw new IllegalStateException("Frozen replay phase violation: derived external input '"
+                                    + extKeys[di] + "' is not live during frozen execution");
+                        }
+                        extInputs[di] = arr;
+                        if (isSmallIntegralControlArray(arr)) {
+                            arr.syncToDevice();
+                        }
+                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                        nativeOps.setGraphContextInputArray(opContext, di, opaqueIn);
+                        cachedInputOpaques[di] = opaqueIn;
+                        cachedInputArrays[di] = arr;
+                    }
+                    for (int ci : frozenControlInputIndices) {
+                        INDArray arr = resolveCanonicalExternalInput(extKeys[ci], placeholderArrays);
+                        if (arr == null) {
+                            arr = extInputs[ci];
+                        }
+                        if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                            extInputs[ci] = arr;
+                            arr.syncToDevice();
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                            nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
+                            cachedInputOpaques[ci] = opaqueIn;
+                            cachedInputArrays[ci] = arr;
                         }
                     }
                     // Re-set any stale non-placeholder inputs (constants/variables) that
@@ -2310,23 +2363,33 @@ public class DynamicShapePlanExecutor implements Closeable {
                     cachedInputArrays = new INDArray[extInputs.length];
                     System.arraycopy(extInputs, 0, cachedInputArrays, 0, extInputs.length);
                     inputIsPlaceholder = new boolean[extInputs.length];
-                    // Build placeholderIndices for fast path on subsequent calls
+                    // Build cached frozen fast-path index lists for subsequent calls.
                     int placeholderCount = 0;
+                    int derivedCount = 0;
+                    int controlCount = 0;
                     for (int i = 0; i < extInputs.length; i++) {
                         cachedInputOpaques[i] = OpaqueNDArray.fromINDArray(extInputs[i]);
                         // Mark as placeholder if it came from the placeholderArrays map
                         inputIsPlaceholder[i] = placeholderArrays != null
                                 && placeholderArrays.containsKey(extKeys[i]);
                         if (inputIsPlaceholder[i]) placeholderCount++;
+                        else if (isDerivedExternalInput(extKeys[i])) derivedCount++;
+                        else if (isSmallIntegralControlArray(extInputs[i])) controlCount++;
                     }
-                    // Build placeholderIndices array for fast path
+                    // Build frozen fast-path index arrays
                     placeholderIndices = new int[placeholderCount];
+                    frozenDerivedExternalInputIndices = new int[derivedCount];
+                    frozenControlInputIndices = new int[controlCount];
                     int idx = 0;
+                    int derivedIdx = 0;
+                    int controlIdx = 0;
                     for (int i = 0; i < extInputs.length; i++) {
                         if (inputIsPlaceholder[i]) placeholderIndices[idx++] = i;
+                        else if (isDerivedExternalInput(extKeys[i])) frozenDerivedExternalInputIndices[derivedIdx++] = i;
+                        else if (isSmallIntegralControlArray(extInputs[i])) frozenControlInputIndices[controlIdx++] = i;
                     }
-                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})",
-                            placeholderCount, extInputs.length);
+                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}], derivedIndices[{}], controlIndices[{}] (extInputs={})",
+                            placeholderCount, derivedCount, controlCount, extInputs.length);
                     // Validate: check that all non-constant external inputs are in placeholderIndices.
                     int missingCount = 0;
                     for (int i = 0; i < extInputs.length; i++) {
@@ -2394,7 +2457,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (shapesFrozen) frozenCallCount++;
 
             // ── Java-side lifecycle validation (frozen execution) ──────────────
-            // On first frozen execution: capture buffer snapshot.
+            // On first frozen execution: external buffer snapshot.
             // On subsequent frozen executions: validate buffers haven't been
             // closed, replaced, or had their shapes change.
             // Violations are IllegalStateException (hard error, not log).
@@ -2635,8 +2698,8 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /**
      * Release the native plan handle with a descriptive reason for diagnostics.
-     * If a SameDiff cache is available, saves the handle there for reuse by future sessions.
-     * Otherwise frees it immediately.
+     * Handles are always destroyed here so replay state cannot survive across
+     * plan changes or session resets.
      *
      * @param reason descriptive reason for plan destruction (e.g., "SESSION_RESET", "PLAN_RECOMPILATION")
      */
@@ -2655,24 +2718,12 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedOpContext = null;
         }
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-            // Save to SameDiff's cache for reuse across session resets
-            String cacheKey = planCacheKey(nativePlanSource);
-            if (sd != null && cacheKey != null) {
-                // Release GPU intermediates (CUDA graphs, capture buffers, cuBLAS workspace,
-                // Do NOT call releaseGpuIntermediates before caching. The plan's
-                // planOwnedArrays_ set tracks which arrays the plan created — only those
-                // will be freed when the cached handle is later destroyed. Arrays that
-                // back model variables are NOT plan-owned and survive across plan lifetimes.
-                log.info("    freeNativePlanHandle: caching handle for reuse (key={})", cacheKey);
-                sd.cacheNativePlanHandle(cacheKey, nativePlanHandle);
-            } else {
-                log.info("    freeNativePlanHandle: freeDynamicShapePlan (handle={})", nativePlanHandle);
-                try {
-                    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                    nativeOps.freeDynamicShapePlan(nativePlanHandle);
-                } catch (Exception e) {
-                    log.info("Error freeing native plan handle: {}", e.getMessage());
-                }
+            log.info("    freeNativePlanHandle: freeDynamicShapePlan (handle={})", nativePlanHandle);
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.freeDynamicShapePlan(nativePlanHandle);
+            } catch (Exception e) {
+                log.info("Error freeing native plan handle: {}", e.getMessage());
             }
         }
         nativePlanHandle = null;
@@ -2682,6 +2733,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         cachedInputArrays = null;
         contextInputRefs = null;
         inputIsPlaceholder = null;
+        placeholderIndices = null;
+        frozenControlInputIndices = null;
+        frozenDerivedExternalInputIndices = null;
         frozenOutputsInitialized = false;
         frozenCallCount = 0;
         cachedExecStream = null;

@@ -56,9 +56,10 @@ enum DspDiagCategory : uint32_t {
   DSP_DIAG_STREAM_SYNC     = (1u << 14),  // Stream synchronization events (cudaStreamSync, event waits, ordering)
   DSP_DIAG_MULTI_DEVICE    = (1u << 15),  // Multi-device orchestration (device selection, P2P, migrations)
   DSP_DIAG_GRAPH_REPLAY    = (1u << 16),  // Graph replay phases (capture, instantiate, launch, address validation)
+  DSP_DIAG_SEGMENT_BUCKETS = (1u << 17),  // Invalid segment bucket classification and gap analysis
 
   DSP_DIAG_NONE     = 0u,
-  DSP_DIAG_ALL      = 0x1FFFFu     // All 17 categories
+  DSP_DIAG_ALL      = 0x3FFFFu     // All 18 categories
 };
 
 // ─── Detail level ────────────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ struct DspDiagEvent {
 
 // ─── Per-category aggregate stats ────────────────────────────────────────────
 
-static constexpr int DSP_DIAG_NUM_CATEGORIES = 17;
+static constexpr int DSP_DIAG_NUM_CATEGORIES = 18;
 
 struct DspDiagCategoryStats {
   int64_t eventCount;
@@ -154,7 +155,7 @@ class SD_LIB_EXPORT DspDiagnostics {
 
   // ── Misc ──
   void clear();
-  void applyLegacyFlags();
+  void applyDspConfig();
 
   // ── Slot buffer diagnostics ──
   // Dumps first N float values from a device buffer via D2H copy.
@@ -174,6 +175,25 @@ class SD_LIB_EXPORT DspDiagnostics {
   void dumpSegmentOutput(const char* tag, int endSlot, const void* devicePtr,
                          int64_t numElements, int execCount, void* stream = nullptr,
                          int sampleCount = 4);
+
+  // ── Invalid segment bucket summary ──
+  // Classifies a segment's gap slots by op type and materialization behavior.
+  // Emits a structured diagnostic that maps each gap range to its bucket type
+  // (view-only, shape-only, materializing) and the op types involved.
+  struct GapClassification {
+    int startSlot;
+    int endSlot;
+    const char* primaryOpType;    // e.g., "reshape", "gather", "concat"
+    bool isViewOnly;              // true if op produces a view (no allocation)
+    bool isShapeOnly;             // true if op only computes shape/meta (no payload)
+    bool wouldMaterialize;        // true if op allocates new buffer
+    const char* bucketLabel;      // e.g., "simple_const_gather", "concat_ladder"
+  };
+  void reportSegmentBucketSummary(int segStartSlot, int segEndSlot,
+                                  const GapClassification* classifications,
+                                  int numClassifications,
+                                  const char* combinedBucketLabel,
+                                  bool isInvalidForReplay);
 
   // ── External input actuality state dump ──
   // Logs pAct/sAct/bytes/addr for each external input and returns sync counts.
@@ -214,8 +234,6 @@ class SD_LIB_EXPORT DspDiagnostics {
   ~DspDiagnostics() = default;
   DspDiagnostics(const DspDiagnostics&) = delete;
   DspDiagnostics& operator=(const DspDiagnostics&) = delete;
-
-  void parseEnvVars();
 
   std::atomic<uint32_t> enabledMask_;
   std::atomic<int>      level_;

@@ -26,7 +26,9 @@
 
 #if HAVE_TRITON
 
-#include <graph/gpu/TritonIRBuilder.h>
+// Forward declarations only — full headers included in .cpp/.cu files.
+// TritonIRBuilder.h contains MLIR types (mlir::Value) that NVCC cannot compile.
+#include <graph/gpu/TritonIRBuilder_types.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 
 #include <atomic>
@@ -102,9 +104,9 @@ class TritonGraphBackend : public GraphBackend {
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
   static TritonGraphBackend& getInstance();
-  using FallbackRangeExecutor = std::function<Status(int, int)>;
-  static void setFallbackRangeExecutor(FallbackRangeExecutor executor);
-  static void clearFallbackRangeExecutor();
+  using OrderedRangeExecutor = std::function<Status(int, int)>;
+  static void setOrderedRangeExecutor(OrderedRangeExecutor executor);
+  static void clearOrderedRangeExecutor();
 
   // Refresh all indirect arg table pinned host buffers with current NDArray
   // specialBuffer() addresses. Must be called before CUDA graph replay so the
@@ -123,8 +125,8 @@ class TritonGraphBackend : public GraphBackend {
    */
   void copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream);
 
-  // Get the set of slot indices NOT covered by any sub-kernel (gap/fallback slots).
-  // Used by batch-zero to only zero gap op outputs (Triton sub-kernel outputs are
+  // Get the set of slot indices NOT covered by any sub-kernel (ordered native ranges).
+  // Used by batch-zero to only zero native-range outputs (Triton sub-kernel outputs are
   // NOT zeroed — they're fully written by the Triton kernel).
   std::unordered_set<int> getGapSlots(const GraphSegment& seg, NativeSlot* slots) const;
 
@@ -230,7 +232,7 @@ class TritonGraphBackend : public GraphBackend {
 
   struct CompiledSegment {
     std::vector<CompiledKernel> subKernels;
-    std::vector<SlotRange> fallbackRanges;   // Slot ranges that must run slot-by-slot
+    std::vector<SlotRange> orderedRanges;   // Native-executed ranges between Triton islands
     std::vector<CompilationAuditEntry> audit;  // Combined audit across all sub-kernels
 
 #ifdef SD_CUDA
@@ -330,7 +332,7 @@ class TritonGraphBackend : public GraphBackend {
   // Configurable max parallel compilations (set via ND4J_TRITON_BUILD_THREADS env var)
   static int maxParallelCompilations_;
   static std::mutex configMtx_;
-  static thread_local FallbackRangeExecutor fallbackRangeExecutor_;
+  static thread_local OrderedRangeExecutor orderedRangeExecutor_;
 
  public:
   // Maximum number of ops that can be compiled into a single Triton kernel.

@@ -61,6 +61,8 @@ class SD_LIB_EXPORT DspConfig {
   // Capture buffer pool
   std::atomic<bool> _capturePoolEnabled{true};
   std::atomic<long long> _capturePoolMaxBytes{1073741824LL};
+  std::atomic<int> _captureHostWorkspaceMb{32};
+  std::atomic<int> _captureWorkspaceMb{128};
 
   // OOM retry
   std::atomic<int> _captureOomMaxRetries{3};
@@ -69,6 +71,19 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<int> _graphMetadataSafetyMb{16};
   std::atomic<bool> _proactiveEvictBeforeCapture{true};
   std::atomic<bool> _lruEviction{true};
+
+  // Diagnostics
+  std::string _diagnosticsCategories;
+  std::string _diagnosticsLevel;
+  std::string _diagnosticsFile;
+  std::atomic<bool> _diagnosticsTrace{false};
+  std::atomic<bool> _diagnosticsTiming{false};
+  std::atomic<bool> _diagnosticsNativeDump{false};
+
+  // Replay graph cache
+  std::string _replayCacheDir;
+  std::atomic<bool> _replayCacheEnabled{true};
+  std::atomic<int> _traceSlot{-1};
 
  public:
   DspConfig();
@@ -120,6 +135,10 @@ class SD_LIB_EXPORT DspConfig {
   void setCapturePoolEnabled(bool v) { _capturePoolEnabled.store(v); }
   long long capturePoolMaxBytes() { return _capturePoolMaxBytes.load(); }
   void setCapturePoolMaxBytes(long long v) { _capturePoolMaxBytes.store(v); }
+  int captureHostWorkspaceMb() { return _captureHostWorkspaceMb.load(); }
+  void setCaptureHostWorkspaceMb(int mb) { _captureHostWorkspaceMb.store(mb); }
+  int captureWorkspaceMb() { return _captureWorkspaceMb.load(); }
+  void setCaptureWorkspaceMb(int mb) { _captureWorkspaceMb.store(mb); }
 
   // --- OOM retry ---
   int captureOomMaxRetries() { return _captureOomMaxRetries.load(); }
@@ -134,6 +153,28 @@ class SD_LIB_EXPORT DspConfig {
   void setProactiveEvictBeforeCapture(bool v) { _proactiveEvictBeforeCapture.store(v); }
   bool lruEviction() { return _lruEviction.load(); }
   void setLruEviction(bool v) { _lruEviction.store(v); }
+
+  // --- Diagnostics ---
+  const std::string& diagnosticsCategories() const { return _diagnosticsCategories; }
+  void setDiagnosticsCategories(const std::string& v) { _diagnosticsCategories = v; }
+  const std::string& diagnosticsLevel() const { return _diagnosticsLevel; }
+  void setDiagnosticsLevel(const std::string& v) { _diagnosticsLevel = v; }
+  const std::string& diagnosticsFile() const { return _diagnosticsFile; }
+  void setDiagnosticsFile(const std::string& v) { _diagnosticsFile = v; }
+  bool diagnosticsTrace() { return _diagnosticsTrace.load(); }
+  void setDiagnosticsTrace(bool v) { _diagnosticsTrace.store(v); }
+  bool diagnosticsTiming() { return _diagnosticsTiming.load(); }
+  void setDiagnosticsTiming(bool v) { _diagnosticsTiming.store(v); }
+  bool diagnosticsNativeDump() { return _diagnosticsNativeDump.load(); }
+  void setDiagnosticsNativeDump(bool v) { _diagnosticsNativeDump.store(v); }
+
+  // --- Replay graph cache ---
+  const std::string& replayCacheDir() const { return _replayCacheDir; }
+  void setReplayCacheDir(const std::string& v) { _replayCacheDir = v; }
+  bool replayCacheEnabled() { return _replayCacheEnabled.load(); }
+  void setReplayCacheEnabled(bool v) { _replayCacheEnabled.store(v); }
+  int traceSlot() { return _traceSlot.load(); }
+  void setTraceSlot(int v) { _traceSlot.store(v); }
 
   /**
    * Initialize from environment variables.

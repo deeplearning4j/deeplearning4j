@@ -277,7 +277,7 @@ public class FrozenDecodeStep implements AutoCloseable {
         // Clear caches and compile fresh
         // For seqLen>1, C++ KV scatter doesn't work (designed for seqLen=1).
         // Must compile with full outputs (logits + present KV) so Java scatter can read them.
-        boolean cppKvEnabled = seqLen <= 1 && !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
+        boolean cppKvEnabled = seqLen <= 1;
         kvScatterInCpp = false; // Set early — seqLen>1 always uses Java scatter
         String[] compileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
         decoder.clearDynamicShapePlanCache();

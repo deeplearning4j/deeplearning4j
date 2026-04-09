@@ -85,6 +85,31 @@ const char* statusName_seg(Status status) {
     default: return "UNKNOWN";
   }
 }
+
+uint32_t resolveSegmentShapeTraits(const NativeSlot& slot) {
+  uint32_t traits = 0;
+  if (slot.op != nullptr && slot.op->getOpDescriptor() != nullptr) {
+    traits |= slot.op->getOpDescriptor()->getTraits();
+  }
+  if (slot.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
+  if (slot.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
+  if (slot.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+  if (slot.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
+  return traits;
+}
+
+int findProducerStep(const GraphSegment& seg, NativeSlot* slots, int outputSlotIdx) {
+  if (slots == nullptr || outputSlotIdx < 0) return -1;
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    const auto& slot = slots[s];
+    for (int o = 0; o < slot.numOutputs; o++) {
+      if (slot.outputSlotIndices[o] == outputSlotIdx) {
+        return s;
+      }
+    }
+  }
+  return -1;
+}
 }  // namespace
 
 // ─── Segment shape key computation ──────────────────────────────────────────
@@ -260,6 +285,79 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
           mixArraySignature(outputSlots_[srcIdx]);
         }
       }
+    }
+  }
+
+  // Value-dependent-shape consumers can be fed by small internal subgraphs
+  // (for example concat -> create) whose boundary inputs are external/cross-segment
+  // but whose current values are invisible to the plain cross-input key above.
+  // Walk those internal producer chains and mix their boundary array signatures
+  // plus op structure so frozen replay sees internal shape-driving variance.
+  auto mixShapeDriverChain = [&](auto&& self, int srcIdx,
+                                 std::unordered_set<int>& visiting) -> void {
+    if (srcIdx < 0) {
+      int extIdx = -(srcIdx + 1);
+      mix(static_cast<LongType>(0xE1));
+      mix(extIdx);
+      if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
+        mixArraySignature(externalInputs[extIdx]);
+      }
+      return;
+    }
+
+    int producerStep = findProducerStep(seg, slots_, srcIdx);
+    if (producerStep < 0) {
+      mix(static_cast<LongType>(0xC1));
+      mix(srcIdx);
+      if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
+        mixArraySignature(outputSlots_[srcIdx]);
+      }
+      return;
+    }
+
+    if (visiting.count(producerStep) != 0) {
+      mix(static_cast<LongType>(0x51));
+      mix(producerStep);
+      return;
+    }
+
+    visiting.insert(producerStep);
+    NativeSlot& producer = slots_[producerStep];
+    mix(static_cast<LongType>(0xA1));
+    mix(producerStep);
+    mix(static_cast<LongType>(resolveSegmentShapeTraits(producer)));
+    mix(static_cast<LongType>(producer.numInputs));
+    mix(static_cast<LongType>(producer.numOutputs));
+    mix(static_cast<LongType>(producer.numIArgs));
+    for (int a = 0; a < producer.numIArgs; a++) {
+      mix(static_cast<LongType>(producer.iArgs[a]));
+    }
+    mix(static_cast<LongType>(producer.numTArgs));
+    if (!producer.opName.empty()) {
+      for (const char* p = producer.opName.c_str(); *p != '\0'; p++) {
+        mix(static_cast<LongType>(*p));
+      }
+    }
+    for (int i = 0; i < producer.numInputs; i++) {
+      self(self, producer.inputSourceIndices[i], visiting);
+    }
+    visiting.erase(producerStep);
+  };
+
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    NativeSlot& slot = slots_[s];
+    const uint32_t traits = resolveSegmentShapeTraits(slot);
+    if ((traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) == 0) continue;
+
+    for (int i = 0; i < slot.numInputs; i++) {
+      const int srcIdx = slot.inputSourceIndices[i];
+      if (srcIdx < 0 || segOutputSlots.find(srcIdx) == segOutputSlots.end()) continue;
+
+      mix(static_cast<LongType>(0xD1));
+      mix(s);
+      mix(srcIdx);
+      std::unordered_set<int> visiting;
+      mixShapeDriverChain(mixShapeDriverChain, srcIdx, visiting);
     }
   }
 
@@ -668,13 +766,31 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   const char* backendName = backend->name();
 
-  // Fast path: after successful compilation, if shapes are frozen (stable symbolic
-  // ranges), skip shape key recomputation entirely. The cached key is valid because
-  // frozen shapes guarantee input dimensions don't change.
+  // Compute shape key for cache lookup.
+  // When shapes are frozen and the key was already computed, reuse it — the shapes
+  // cannot change so the hash is stable. Saves iterating all cross-segment inputs.
+  // EXCEPTION: segments with value-dependent ops must ALWAYS recompute the shape key
+  // because input VALUES (hashed by computeSegmentShapeKey for small inputs ≤32 elements)
+  // can change even when shapes are frozen. Without this guard, the cached key would
+  // miss value changes in reshape targets, broadcast dims, etc., causing replay with
+  // stale output shapes.
+  //
+  // REPLAY OPTIMIZATION: During stable replay (executionCount >= 3), skip shape key
+  // computation entirely — even for hasValueDepOps segments. The shape key was
+  // validated at capture time. Value-dependent inputs are handled by capture buffer
+  // refresh, not by shape key changes. If a value change truly requires graph
+  // invalidation, the createValueKey mechanism catches it. Skipping shape key here
+  // eliminates N syncToHost calls per step (one per small INT/INT64 cross-segment
+  // input array).
   LongType segShapeKey;
   bool needsCompile;
-  if (seg.exec.executionCount > 1 && shapesFrozen_ && seg.shapeKey != 0) {
-    segShapeKey = seg.shapeKey;
+  bool isStableReplay = shapesFrozen_ && seg.exec.executionCount >= 3 &&
+                         seg.exec.cachedShapeKey != 0;
+  if (isStableReplay) {
+    segShapeKey = seg.exec.cachedShapeKey;
+    needsCompile = false;
+  } else if (shapesFrozen_ && seg.exec.cachedShapeKey != 0 && !seg.hasValueDepOps) {
+    segShapeKey = seg.exec.cachedShapeKey;
     needsCompile = false;
   } else {
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
@@ -724,6 +840,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
   }
 
+  seg.exec.cachedShapeKey = segShapeKey;
   seg.shapeKey = segShapeKey;
   tl_graphExecutionActive = true;
   DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
@@ -789,13 +906,14 @@ inline void markOutputsDead(NativeSlot& slot, bool* slotIsDead, int slotIsDeadSi
 }
 
 // Forward input[0] to all outputs (identity operation for Enter/Exit/LoopCond/NextIteration)
-inline void forwardInput(NativeSlot& slot, NDArray** outputSlots, int totalOutputSlots,
-                         NDArray** externalInputs, int numExt) {
+inline void forwardInput(NativeDynamicShapePlan* plan, NativeSlot& slot, NDArray** outputSlots,
+                         int totalOutputSlots, NDArray** externalInputs, int numExt,
+                         const char* tag) {
   NDArray* input = resolveCfInput(slot, 0, outputSlots, totalOutputSlots, externalInputs, numExt);
   for (int i = 0; i < slot.numOutputs; i++) {
     int si = slot.outputSlotIndices[i];
     if (si >= 0 && si < totalOutputSlots) {
-      outputSlots[si] = input;
+      plan->writeOutputSlot(si, input, tag);
     }
   }
 }
@@ -880,10 +998,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             int si = slot.outputSlotIndices[i];
             if (si >= 0 && si < totalOutputSlots_) {
               if (i == liveIdx) {
-                outputSlots_[si] = data;
+                writeOutputSlot(si, data, "cf-switch-live");
                 if (slotIsDead_) slotIsDead_[si] = false;
               } else {
-                outputSlots_[si] = nullptr;
+                writeOutputSlot(si, nullptr, "cf-switch-dead");
                 if (slotIsDead_) slotIsDead_[si] = true;
               }
             }
@@ -912,7 +1030,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           for (int i = 0; i < slot.numOutputs; i++) {
             int si = slot.outputSlotIndices[i];
             if (si >= 0 && si < totalOutputSlots_) {
-              outputSlots_[si] = selected;
+              writeOutputSlot(si, selected, "cf-merge");
               if (slotIsDead_) slotIsDead_[si] = (selected == nullptr);
             }
           }
@@ -927,7 +1045,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         case CF_EXIT:
         case CF_LOOP_COND:
           // Identity: forward input[0] to output[0]
-          forwardInput(slot, outputSlots_, totalOutputSlots_, externalArrays, numExt);
+          forwardInput(this, slot, outputSlots_, totalOutputSlots_, externalArrays, numExt,
+                       slot.controlFlowType == CF_ENTER ? "cf-enter"
+                       : slot.controlFlowType == CF_EXIT ? "cf-exit"
+                       : "cf-loop-cond");
 #ifdef SD_CUDA
           {
             const char* cfName = (slot.controlFlowType == CF_ENTER) ? "ENTER" :
@@ -940,7 +1061,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
         case CF_NEXT_ITERATION: {
           // Forward input[0] to output[0], then jump back to Merge
-          forwardInput(slot, outputSlots_, totalOutputSlots_, externalArrays, numExt);
+          forwardInput(this, slot, outputSlots_, totalOutputSlots_, externalArrays, numExt,
+                       "cf-next-iter");
 #ifdef SD_CUDA
           verifyCfSlotWrite(stepIdx, "NEXT_ITER", slot.opName.c_str(),
                             outputSlots_, slot.outputSlotIndices, slot.numOutputs, totalOutputSlots_);
@@ -1138,9 +1260,17 @@ executeSlot_retry:
 #endif
 
     if (status != Status::OK) {
-      char buf[512];
-      snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",
-               stepIdx, slots_[stepIdx].opName.c_str(), static_cast<int>(status));
+      char buf[1024];
+      const char* existingMsg =
+          sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
+      if (existingMsg != nullptr && existingMsg[0] != '\0') {
+        snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d: %s",
+                 stepIdx, slots_[stepIdx].opName.c_str(),
+                 static_cast<int>(status), existingMsg);
+      } else {
+        snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",
+                 stepIdx, slots_[stepIdx].opName.c_str(), static_cast<int>(status));
+      }
       DSP_DIAG(FALLBACK, "%s", buf);
 
       auto& failedSlot = slots_[stepIdx];

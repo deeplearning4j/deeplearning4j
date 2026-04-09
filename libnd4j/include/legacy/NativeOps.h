@@ -1531,7 +1531,8 @@ SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
 
 /**
  * Release all GPU memory held by intermediate computation results while keeping
- * the plan structure alive. Frees CUDA graph replay handles, capture buffers,
+ * the plan structure alive. Frees CUDA graph replay handles and associated
+ * replay resources,
  * cuBLAS workspace, and non-weight output slot NDArrays. The plan enters a
  * "cold" state and will re-warm on the next execute() call.
  *
@@ -1542,8 +1543,8 @@ SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle);
 
 /**
  * Release GPU intermediates with option to preserve decode-invariant state.
- * When preserveDecodeState=true, preserves external input staging buffers,
- * output slot arrays, CUDA graph handles, and cuBLAS workspace.
+ * When preserveDecodeState=true, preserves output slot arrays, CUDA graph
+ * handles, cuBLAS workspace, and batch replay resources.
  *
  * @param planHandle         Handle from compileDynamicShapePlan()
  * @param preserveDecodeState If true, preserve decode-invariant state
@@ -1584,6 +1585,55 @@ SD_LIB_EXPORT int advancePlanKvCachePosition(sd::Pointer planHandle);
  * @param newPos  New write position
  */
 SD_LIB_EXPORT void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos);
+
+// ─── Replay diagnostics (Phase 2) ──────────────────────────────────────────
+
+/**
+ * Get the replay schedule signature hash for a segment.
+ * Returns the FNV-1a hash encoding of the ordered replay unit list
+ * (unit kinds, slot ranges, op types). Zero if the segment has no replay.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param segIdx     Segment index (0-based)
+ * @return FNV-1a hash of replay schedule, or 0 if no replay
+ */
+SD_LIB_EXPORT unsigned long long getPlanReplaySignatureHash(sd::Pointer planHandle, int segIdx);
+
+/**
+ * Get the number of replay units for a segment after consolidation.
+ * Returns the count of ordered replay units (Triton islands + prep units).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param segIdx     Segment index (0-based)
+ * @return Number of replay units, or 0 if no replay
+ */
+SD_LIB_EXPORT int getPlanReplayUnitCount(sd::Pointer planHandle, int segIdx);
+
+/**
+ * Get the current plan execution phase (0=SLOT_BY_SLOT, 1=SHAPES_FROZEN,
+ * 2=POINTERS_STABLE, 3=REPLAYING).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Current plan phase (0-3), or -1 on error
+ */
+SD_LIB_EXPORT int getPlanPhase(sd::Pointer planHandle);
+
+/**
+ * Get the execution count for a segment (number of times executed).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param segIdx     Segment index (0-based)
+ * @return Execution count, or -1 on error
+ */
+SD_LIB_EXPORT int getSegmentExecutionCount(sd::Pointer planHandle, int segIdx);
+
+/**
+ * Get the number of segments in the plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of segments, or -1 on error
+ */
+SD_LIB_EXPORT int getPlanSegmentCount(sd::Pointer planHandle);
 
 /**
  * Configure decode input indices for direct device-side updates.

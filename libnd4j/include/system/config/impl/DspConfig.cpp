@@ -129,6 +129,46 @@ void DspConfig::initFromEnvironment() {
     int v = readBoolEnvTriState("ND4J_DSP_LRU_EVICTION");
     if (v >= 0) setLruEviction(v == 1);
   }
+
+  // Diagnostics
+  {
+    std::string v = readStringEnv("ND4J_DSP_DIAGNOSTICS");
+    if (!v.empty()) setDiagnosticsCategories(v);
+  }
+  {
+    std::string v = readStringEnv("ND4J_DSP_DIAGNOSTICS_LEVEL");
+    if (!v.empty()) setDiagnosticsLevel(v);
+  }
+  {
+    std::string v = readStringEnv("ND4J_DSP_DIAGNOSTICS_FILE");
+    if (!v.empty()) setDiagnosticsFile(v);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_TRACE");
+    if (v >= 0) setDiagnosticsTrace(v == 1);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_EXECUTION_TIMING");
+    if (v >= 0) setDiagnosticsTiming(v == 1);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_NATIVE_DUMP_OUTPUTS");
+    if (v >= 0) setDiagnosticsNativeDump(v == 1);
+  }
+
+  // Replay graph cache
+  {
+    std::string v = readStringEnv("ND4J_REPLAY_CACHE_DIR");
+    if (!v.empty()) setReplayCacheDir(v);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_REPLAY_CACHE_ENABLED");
+    if (v >= 0) setReplayCacheEnabled(v == 1);
+  }
+  {
+    int v = readIntEnv("ND4J_DSP_TRACE_SLOT", -1);
+    if (v >= 0) setTraceSlot(v);
+  }
 }
 
 }  // namespace config

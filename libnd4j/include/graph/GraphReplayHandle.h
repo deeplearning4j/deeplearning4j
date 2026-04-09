@@ -55,26 +55,6 @@ struct ReplayStatistics {
 };
 
 /**
- * Platform-agnostic capture buffer descriptor.
- *
- * Replaces the CUDA-only GraphSegment::CaptureBuffer struct.
- * CUDA graphs record exact GPU memory addresses during capture.
- * External inputs get recreated each decoder step with new GPU addresses.
- * Capture buffers provide fixed-address staging areas that the graph always
- * references, with data copied from real inputs before each replay.
- */
-struct ReplayCaptureBuffer {
-  NDArray* buffer = nullptr;            // Fixed-address buffer (owned unless directReference)
-  int externalInputIndex = -1;          // Which external input this maps to (-1 = cross-segment)
-  int crossSegmentSlotIdx = -1;         // Which output slot this maps to (for cross-segment inputs)
-  size_t capturedSize = 0;              // Size in bytes at capture time
-  const void* lastSourcePtr = nullptr;  // Last source address — skip copy if unchanged
-  bool initialCopyDone = false;         // True after first successful copy
-  bool neverSkipCopy = false;           // Always copy even if pointer unchanged (KV cache buffers)
-  bool directReference = false;         // Buffer points to external input directly (NOT owned)
-};
-
-/**
  * Abstract interface for platform-agnostic graph replay.
  *
  * Abstracts the warmup -> capture -> replay lifecycle into a portable
@@ -83,8 +63,8 @@ struct ReplayCaptureBuffer {
  *   - CPU: FunctionalReplayHandle (cached op dispatch, skip shape inference)
  *   - Future: Metal command buffer, Vulkan command buffer, ROCm HIP graph
  *
- * The handle owns capture buffers, address snapshots, and pinned host
- * pointers that must persist for the graph's lifetime.
+ * The handle owns address snapshots, pinned host pointers, and optional
+ * capture workspace that must persist for the graph's lifetime.
  */
 class SD_LIB_EXPORT GraphReplayHandle {
  public:
@@ -134,14 +114,6 @@ class SD_LIB_EXPORT GraphReplayHandle {
 
   /** Get the backend name (e.g., "CUDA", "CPU", "Metal"). */
   virtual const char* backendName() const = 0;
-
-  // ── Capture buffers ───────────────────────────────────────────────────
-  // Base implementation stores capture buffers. Subclasses may override
-  // for platform-specific buffer management.
-
-  virtual void addCaptureBuffer(ReplayCaptureBuffer&& buf);
-  virtual std::vector<ReplayCaptureBuffer>& getCaptureBuffers();
-  virtual const std::vector<ReplayCaptureBuffer>& getCaptureBuffers() const;
 
   // ── Address snapshot for graph invalidation ───────────────────────────
   // Captures external input device buffer addresses at graph capture time.
@@ -218,7 +190,6 @@ class SD_LIB_EXPORT GraphReplayHandle {
   void* captureWorkspacePtr_ = nullptr;
   size_t captureWorkspaceBytes_ = 0;
   bool workspaceIsExternal_ = false;
-  std::vector<ReplayCaptureBuffer> captureBuffers_;
   std::vector<void*> capturedExternalAddrs_;
   std::vector<void*> capturedHostPtrs_;
 };

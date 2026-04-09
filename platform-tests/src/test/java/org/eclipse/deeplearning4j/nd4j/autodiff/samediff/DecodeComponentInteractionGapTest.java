@@ -532,7 +532,7 @@ public class DecodeComponentInteractionGapTest {
             Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                    true, HIDDEN_SIZE, reusableInputs, true, false);
+                    true, HIDDEN_SIZE, reusableInputs, true);
 
             INDArray mask = result.get("attention_mask");
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -591,7 +591,7 @@ public class DecodeComponentInteractionGapTest {
             Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                    true, HIDDEN_SIZE, reusableInputs, true, true /* nativeDecodeInputs */);
+                    true, HIDDEN_SIZE, reusableInputs, true);
 
             INDArray mask = result.get("attention_mask");
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
@@ -635,7 +635,7 @@ public class DecodeComponentInteractionGapTest {
             Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                    true, HIDDEN_SIZE, reusableInputs, true, false);
+                    true, HIDDEN_SIZE, reusableInputs, true);
 
             INDArray mask = result.get("attention_mask");
             INDArray bias = result.get(ATTN_REFORMAT_NODE);

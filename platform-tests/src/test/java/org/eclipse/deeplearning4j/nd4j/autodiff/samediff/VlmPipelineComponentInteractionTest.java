@@ -357,7 +357,7 @@ public class VlmPipelineComponentInteractionTest {
         Map<String, INDArray> step0Map = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, null, prefillEmbeds, prefillIds,
                 0, PREFILL_LEN, staticKvBuffers, MAX_KV_LEN, 0,
-                true, 32, reusableInputs, true, false);
+                true, 32, reusableInputs, true);
 
         assertNotNull(step0Map.get("attention_mask"), "Step 0 should have attention_mask");
 
@@ -372,7 +372,7 @@ public class VlmPipelineComponentInteractionTest {
         Map<String, INDArray> step1Map = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, null, decodeEmbeds, decodeIds,
                 pastSeqLen, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, 32, reusableInputs, true, true);
+                true, 32, reusableInputs, true);
 
         // The key property: Java-side arrays must have correct values regardless of
         // whether setNextDecodeToken will also write device memory.
@@ -419,7 +419,7 @@ public class VlmPipelineComponentInteractionTest {
         Map<String, INDArray> step1Map = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, null, embeds, ids,
                 cachePos, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, 32, reusableInputs, true, false);
+                true, 32, reusableInputs, true);
 
         INDArray bias = step1Map.get("attn_mask_reformat");
         assertNotNull(bias, "Bias should be present when attnMaskReformatOutput is in input names");
@@ -446,7 +446,7 @@ public class VlmPipelineComponentInteractionTest {
         Map<String, INDArray> step2Map = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, null, embeds, ids,
                 cachePos, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, 32, reusableInputs, true, false);
+                true, 32, reusableInputs, true);
 
         INDArray bias2 = step2Map.get("attn_mask_reformat");
         // Position PREFILL_LEN should now be unmasked (was filled by step 1's scatter)
@@ -462,7 +462,7 @@ public class VlmPipelineComponentInteractionTest {
             DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, null, embeds, ids,
                     cachePos, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                    true, 32, reusableInputs, true, false);
+                    true, 32, reusableInputs, true);
         }
         INDArray finalBias = reusableInputs.get("attn_mask_reformat");
         // All positions [0..PREFILL_LEN+10] should be unmasked
@@ -626,7 +626,7 @@ public class VlmPipelineComponentInteractionTest {
             Map<String, INDArray> inputMap = DecoderUtils.buildDecoderInputMap(
                     ioConfig, inputNames, null, embeds, ids,
                     cachePos, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                    true, 32, reusableInputs, true, false);
+                    true, 32, reusableInputs, true);
 
             INDArray mask = inputMap.get("attention_mask");
             INDArray bias = inputMap.get("attn_bias");
@@ -941,7 +941,7 @@ public class VlmPipelineComponentInteractionTest {
         DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, null, embeds, ids,
                 cachePos, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, 32, reusableInputs, true, false);
+                true, 32, reusableInputs, true);
 
         INDArray bias = reusableInputs.get("attn_bias");
         // At cachePos = PREFILL_LEN: positions [0..PREFILL_LEN-1] should be unmasked
@@ -957,7 +957,7 @@ public class VlmPipelineComponentInteractionTest {
         DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, null, embeds, ids,
                 cachePos, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
-                true, 32, reusableInputs, true, false);
+                true, 32, reusableInputs, true);
 
         assertEquals(0.0f, bias.getFloat(0, 0, 0, PREFILL_LEN), 1e-6,
                 "After cachePos advances to PREFILL_LEN+1, PREFILL_LEN should be unmasked (cachePos-1)");

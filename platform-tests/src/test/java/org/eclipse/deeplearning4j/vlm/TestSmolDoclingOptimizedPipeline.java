@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DspDebugger;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
@@ -1083,7 +1084,15 @@ public class TestSmolDoclingOptimizedPipeline {
     @Test
     @DisplayName("Optimized SmolDocling: Configuration matrix sweep")
     public void testOptimizedDoclingPipeline() throws Exception {
-        PipelineContext ctx = loadModelsAndPrepareEmbeddings();
+        long setupPhaseStart = phaseStart("PIPELINE_SETUP", benchmarkInputSummary());
+        PipelineContext ctx;
+        try {
+            ctx = loadModelsAndPrepareEmbeddings();
+        } catch (Throwable t) {
+            throw phaseFailure("PIPELINE_SETUP", benchmarkInputSummary(), t);
+        }
+        phaseSuccess("PIPELINE_SETUP", setupPhaseStart,
+                benchmarkInputSummary() + " " + summarizeTensor("inputsEmbeds", ctx.inputsEmbeds));
 
         // Assert pipeline setup produced valid state
         assertNotNull(ctx.decoder, "Decoder model must be loaded");
@@ -1122,12 +1131,27 @@ public class TestSmolDoclingOptimizedPipeline {
         List<SameDiff> models = List.of(ctx.decoder, ctx.embedTokens);
 
         // Compile function: delegates to BenchmarkConfigApplier
-        BenchmarkRunner.CompileFunction compileFn = config ->
+        BenchmarkRunner.CompileFunction compileFn = config -> {
+            String configSummary = summarizeConfig(config);
+            long phaseNs = phaseStart("CONFIG_COMPILE", configSummary);
+            try {
                 BenchmarkConfigApplier.compileModels(
                         ctx.decoder, "decoder", ctx.embedTokens, "embed_tokens", config);
+                logDspState("POST_COMPILE " + config.getName(), ctx.decoder);
+                phaseSuccess("CONFIG_COMPILE", phaseNs, configSummary);
+            } catch (Throwable t) {
+                logDspState("COMPILE_FAILURE " + config.getName(), ctx.decoder);
+                throw phaseFailure("CONFIG_COMPILE", configSummary, t);
+            }
+        };
 
         // Decode function: wraps StaticKvCacheDecodeLoop
         BenchmarkRunner.DecodeFunction decodeFn = config -> {
+            String configSummary = summarizeConfig(config);
+            long phaseNs = phaseStart("CONFIG_DECODE",
+                    configSummary + " "
+                            + summarizeTokens("promptTokenIds", ctx.promptTokenIds) + " "
+                            + summarizeTensor("inputsEmbeds", ctx.inputsEmbeds));
             String specTokensProp = System.getProperty("vlm.speculative.tokens", "0");
             int specTokens = (specTokensProp == null || specTokensProp.isEmpty()) ? 0 : Integer.parseInt(specTokensProp);
             boolean useDraft = config.isUseDraftModel()
@@ -1157,12 +1181,30 @@ public class TestSmolDoclingOptimizedPipeline {
             if (draftSpeculator != null) {
                 loopBuilder.speculator(draftSpeculator);
             }
-            return loopBuilder.build().decode(ctx.inputsEmbeds, ctx.promptTokenIds);
+            try {
+                logDspState("PRE_DECODE " + config.getName(), ctx.decoder);
+                GenerationResult result = loopBuilder.build().decode(ctx.inputsEmbeds, ctx.promptTokenIds);
+                logDspState("POST_DECODE " + config.getName(), ctx.decoder);
+                phaseSuccess("CONFIG_DECODE", phaseNs, summarizeResult(result));
+                return result;
+            } catch (Throwable t) {
+                logDspState("DECODE_FAILURE " + config.getName(), ctx.decoder);
+                throw phaseFailure("CONFIG_DECODE", configSummary, t);
+            }
         };
 
         // Validate function: structural tags + diversity checks
-        BenchmarkRunner.ValidateFunction validateFn = (config, result) ->
+        BenchmarkRunner.ValidateFunction validateFn = (config, result) -> {
+            long phaseNs = phaseStart("FINAL_VALIDATE",
+                    config.getName() + " " + summarizeResult(result));
+            try {
                 validateResult(config, result);
+                phaseSuccess("FINAL_VALIDATE", phaseNs, config.getName());
+            } catch (Throwable t) {
+                throw phaseFailure("FINAL_VALIDATE",
+                        config.getName() + " " + summarizeResult(result), t);
+            }
+        };
 
         // Run the matrix
         List<BenchmarkResult> results = BenchmarkRunner.runMatrix(
@@ -1181,6 +1223,32 @@ public class TestSmolDoclingOptimizedPipeline {
     }
 
     // ─── validateResult ────────────────────────────────────────────────────
+
+    private double effectiveThroughput(GenerationResult result) {
+        if (result.getLateSteadyStateTokensPerSecond() > 0) {
+            return result.getLateSteadyStateTokensPerSecond();
+        }
+        if (result.getSteadyStateTokensPerSecond() > 0) {
+            return result.getSteadyStateTokensPerSecond();
+        }
+        if (result.getDecodeTokensPerSecond() > 0) {
+            return result.getDecodeTokensPerSecond();
+        }
+        return result.getTokensPerSecond();
+    }
+
+    private String effectiveThroughputLabel(GenerationResult result) {
+        if (result.getLateSteadyStateTokensPerSecond() > 0) {
+            return "late steady-state";
+        }
+        if (result.getSteadyStateTokensPerSecond() > 0) {
+            return "steady-state";
+        }
+        if (result.getDecodeTokensPerSecond() > 0) {
+            return "decode-only";
+        }
+        return "overall";
+    }
 
     private void validateResult(BenchmarkConfig config, GenerationResult result) {
         String name = config.getName();
@@ -1237,6 +1305,14 @@ public class TestSmolDoclingOptimizedPipeline {
                     name + ": throughput too low: " +
                             String.format("%.2f", result.getTokensPerSecond()) + " tok/s");
         }
+        if ("OPTIMAL".equals(name) && result.getGeneratedTokenCount() >= 20) {
+            double effectiveThroughput = effectiveThroughput(result);
+            String throughputLabel = effectiveThroughputLabel(result);
+            assertTrue(effectiveThroughput >= 100.0,
+                    name + ": native benchmark target missed: "
+                            + throughputLabel + "=" + String.format("%.2f", effectiveThroughput)
+                            + " tok/s (target 100.00 tok/s)");
+        }
     }
 
     // ─── KvScatter isolation test ──────────────────────────────────────────
@@ -1275,51 +1351,85 @@ public class TestSmolDoclingOptimizedPipeline {
         PipelineContext ctx = new PipelineContext();
         Nd4j.getEnvironment().setTritonBuildThreads(4);
 
+        long phaseNs;
+
         // Download
-        long t0 = System.currentTimeMillis();
-        log.info("Downloading models...");
-        var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
-        var decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
-        var embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
-        var tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
-        VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
-        ctx.downloadMs = System.currentTimeMillis() - t0;
-        log.info("Download done [{}ms]", ctx.downloadMs);
+        phaseNs = phaseStart("DOWNLOAD_MODELS", benchmarkInputSummary());
+        VLMModelDownloader.DownloadResult visionResult;
+        VLMModelDownloader.DownloadResult decoderResult;
+        VLMModelDownloader.DownloadResult embedTokensResult;
+        VLMModelDownloader.DownloadResult tokenizerResult;
+        try {
+            long t0 = System.currentTimeMillis();
+            log.info("Downloading models...");
+            visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+            decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
+            embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
+            tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
+            VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+            ctx.downloadMs = System.currentTimeMillis() - t0;
+            log.info("Download done [{}ms]", ctx.downloadMs);
+        } catch (Throwable t) {
+            throw phaseFailure("DOWNLOAD_MODELS", benchmarkInputSummary(), t);
+        }
+        phaseSuccess("DOWNLOAD_MODELS", phaseNs,
+                "decoder=" + safeFileName(decoderResult.getModelFile())
+                        + " vision=" + safeFileName(visionResult.getModelFile())
+                        + " embed=" + safeFileName(embedTokensResult.getModelFile())
+                        + " tokenizer=" + safeFileName(tokenizerResult.getModelFile()));
 
         // Tokenizer
-        ctx.tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
-        assertNotNull(ctx.tokenizer, "Tokenizer failed to load");
-        assertTrue(ctx.tokenizer.getVocabSize() > 0, "Tokenizer vocab size must be positive");
-        log.info("Tokenizer loaded: vocab_size={}", ctx.tokenizer.getVocabSize());
+        phaseNs = phaseStart("TOKENIZER_LOAD", "tokenizer=" + safeFileName(tokenizerResult.getModelFile()));
+        try {
+            ctx.tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
+            assertNotNull(ctx.tokenizer, "Tokenizer failed to load");
+            assertTrue(ctx.tokenizer.getVocabSize() > 0, "Tokenizer vocab size must be positive");
+            log.info("Tokenizer loaded: vocab_size={}", ctx.tokenizer.getVocabSize());
+        } catch (Throwable t) {
+            throw phaseFailure("TOKENIZER_LOAD",
+                    "tokenizer=" + safeFileName(tokenizerResult.getModelFile()), t);
+        }
+        phaseSuccess("TOKENIZER_LOAD", phaseNs, "vocabSize=" + ctx.tokenizer.getVocabSize());
 
         // Import ONNX
-        long importStart = System.currentTimeMillis();
-        log.info("Importing ONNX models...");
-        boolean forceReoptimize = Boolean.getBoolean("vlm.model.cache.disable");
-        if (forceReoptimize) {
-            OnnxModelCache.invalidateCache(decoderResult.getModelFile().getAbsolutePath());
+        phaseNs = phaseStart("IMPORT_MODELS", "decoder=" + safeFileName(decoderResult.getModelFile()));
+        SameDiff visionEncoder;
+        try {
+            long importStart = System.currentTimeMillis();
+            log.info("Importing ONNX models...");
+            boolean forceReoptimize = Boolean.getBoolean("vlm.model.cache.disable");
+            if (forceReoptimize) {
+                OnnxModelCache.invalidateCache(decoderResult.getModelFile().getAbsolutePath());
+            }
+            SameDiff[] models = OnnxModelCache.importAllWithCache(
+                    visionResult.getModelFile().getAbsolutePath(),
+                    decoderResult.getModelFile().getAbsolutePath(),
+                    embedTokensResult.getModelFile().getAbsolutePath()
+            );
+            visionEncoder = models[0];
+            ctx.decoder = models[1];
+            ctx.embedTokens = models[2];
+            ctx.importMs = System.currentTimeMillis() - importStart;
+
+            assertNotNull(visionEncoder, "Vision encoder import failed");
+            assertNotNull(ctx.decoder, "Decoder import failed");
+            assertNotNull(ctx.embedTokens, "EmbedTokens import failed");
+            ctx.decoderOps = ctx.decoder.getOps().size();
+            ctx.embedOps = ctx.embedTokens.getOps().size();
+            assertTrue(ctx.decoderOps > 0, "Decoder has no ops");
+            assertTrue(ctx.embedOps > 0, "EmbedTokens has no ops");
+            assertTrue(visionEncoder.getOps().size() > 0, "Vision encoder has no ops");
+
+            log.info("ONNX import done [{}ms]: vision={} ops, decoder={} ops, embed={} ops",
+                    ctx.importMs, visionEncoder.getOps().size(), ctx.decoderOps, ctx.embedOps);
+        } catch (Throwable t) {
+            throw phaseFailure("IMPORT_MODELS",
+                    "decoder=" + safeFileName(decoderResult.getModelFile()), t);
         }
-        SameDiff[] models = OnnxModelCache.importAllWithCache(
-                visionResult.getModelFile().getAbsolutePath(),
-                decoderResult.getModelFile().getAbsolutePath(),
-                embedTokensResult.getModelFile().getAbsolutePath()
-        );
-        SameDiff visionEncoder = models[0];
-        ctx.decoder = models[1];
-        ctx.embedTokens = models[2];
-        ctx.importMs = System.currentTimeMillis() - importStart;
-
-        assertNotNull(visionEncoder, "Vision encoder import failed");
-        assertNotNull(ctx.decoder, "Decoder import failed");
-        assertNotNull(ctx.embedTokens, "EmbedTokens import failed");
-        ctx.decoderOps = ctx.decoder.getOps().size();
-        ctx.embedOps = ctx.embedTokens.getOps().size();
-        assertTrue(ctx.decoderOps > 0, "Decoder has no ops");
-        assertTrue(ctx.embedOps > 0, "EmbedTokens has no ops");
-        assertTrue(visionEncoder.getOps().size() > 0, "Vision encoder has no ops");
-
-        log.info("ONNX import done [{}ms]: vision={} ops, decoder={} ops, embed={} ops",
-                ctx.importMs, visionEncoder.getOps().size(), ctx.decoderOps, ctx.embedOps);
+        phaseSuccess("IMPORT_MODELS", phaseNs,
+                "visionOps=" + visionEncoder.getOps().size()
+                        + " decoderOps=" + ctx.decoderOps
+                        + " embedOps=" + ctx.embedOps);
 
         // Log op-type distribution for the decoder to verify optimizer ran
         Map<String, Integer> opCounts = new java.util.TreeMap<>();
@@ -1342,150 +1452,364 @@ public class TestSmolDoclingOptimizedPipeline {
 
         // Image preprocessing
         int targetSize = 512;
-        BufferedImage pdfImage = loadImageFromPdfOrGenerate();
-        assertNotNull(pdfImage, "Failed to load/generate test image");
-        assertTrue(pdfImage.getWidth() > 0 && pdfImage.getHeight() > 0, "Test image has zero dimensions");
+        phaseNs = phaseStart("IMAGE_PREPROCESS", benchmarkInputSummary());
+        BufferedImage pdfImage;
+        ImageTiler.SplitImageResult splitResult;
+        INDArray imageInput;
+        try {
+            pdfImage = loadImageFromPdfOrGenerate();
+            assertNotNull(pdfImage, "Failed to load/generate test image");
+            assertTrue(pdfImage.getWidth() > 0 && pdfImage.getHeight() > 0, "Test image has zero dimensions");
 
-        BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
-        ImageTiler.SplitImageResult splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, 9);
-        ctx.visionFrames = splitResult.getTotalFrames();
-        assertTrue(ctx.visionFrames > 0, "No vision frames produced");
+            BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
+            splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, 9);
+            ctx.visionFrames = splitResult.getTotalFrames();
+            assertTrue(ctx.visionFrames > 0, "No vision frames produced");
 
-        PreprocessorConfig ppConfig = new PreprocessorConfig();
-        ppConfig.setSize(new PreprocessorConfig.ImageSize(targetSize, targetSize));
-        ppConfig.setDoRescale(true);
-        ppConfig.setRescaleFactor(1.0 / 255.0);
-        ppConfig.setDoNormalize(true);
-        ppConfig.setImageMean(new double[]{0.5, 0.5, 0.5});
-        ppConfig.setImageStd(new double[]{0.5, 0.5, 0.5});
-        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
-        INDArray imageInput = VisionEncoderUtils.preprocessFrames(splitResult.frames, preprocessor, targetSize);
-        preprocessor.shutdown();
-        assertNotNull(imageInput, "Image preprocessing returned null");
-        assertFalse(imageInput.wasClosed(), "Image tensor closed after preprocessing");
+            PreprocessorConfig ppConfig = new PreprocessorConfig();
+            ppConfig.setSize(new PreprocessorConfig.ImageSize(targetSize, targetSize));
+            ppConfig.setDoRescale(true);
+            ppConfig.setRescaleFactor(1.0 / 255.0);
+            ppConfig.setDoNormalize(true);
+            ppConfig.setImageMean(new double[]{0.5, 0.5, 0.5});
+            ppConfig.setImageStd(new double[]{0.5, 0.5, 0.5});
+            VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
+            imageInput = VisionEncoderUtils.preprocessFrames(splitResult.frames, preprocessor, targetSize);
+            preprocessor.shutdown();
+            assertNotNull(imageInput, "Image preprocessing returned null");
+            assertFalse(imageInput.wasClosed(), "Image tensor closed after preprocessing");
+        } catch (Throwable t) {
+            throw phaseFailure("IMAGE_PREPROCESS", benchmarkInputSummary(), t);
+        }
+        phaseSuccess("IMAGE_PREPROCESS", phaseNs,
+                "image=" + pdfImage.getWidth() + "x" + pdfImage.getHeight()
+                        + " frames=" + ctx.visionFrames + " "
+                        + summarizeTensor("imageInput", imageInput));
 
         // Vision encoder - process each frame sequentially
-        long visionStart = System.currentTimeMillis();
-        log.info("Running vision encoder on {} frames...", ctx.visionFrames);
-        List<String> visionInputNames = visionEncoder.inputs();
-        String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
-        assertFalse(visionInputNames.isEmpty(), "Vision encoder has no inputs");
-        assertTrue(visionOutputNames.length > 0, "Vision encoder has no outputs");
+        phaseNs = phaseStart("VISION_ENCODE",
+                "frames=" + ctx.visionFrames + " " + summarizeTensor("imageInput", imageInput));
+        INDArray visionEmbeddings;
+        try {
+            long visionStart = System.currentTimeMillis();
+            log.info("Running vision encoder on {} frames...", ctx.visionFrames);
+            List<String> visionInputNames = visionEncoder.inputs();
+            String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
+            assertFalse(visionInputNames.isEmpty(), "Vision encoder has no inputs");
+            assertTrue(visionOutputNames.length > 0, "Vision encoder has no outputs");
 
-        List<INDArray> frameEmbeddings = new ArrayList<>();
-        for (int frameIdx = 0; frameIdx < ctx.visionFrames; frameIdx++) {
-            INDArray frameSlice = imageInput.get(
-                    NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
-                    NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
+            List<INDArray> frameEmbeddings = new ArrayList<>();
+            for (int frameIdx = 0; frameIdx < ctx.visionFrames; frameIdx++) {
+                INDArray frameSlice = imageInput.get(
+                        NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
+                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
 
-            Map<String, INDArray> visionInputMap = new HashMap<>();
-            for (String inputName : visionInputNames) {
-                if (inputName.equals("pixel_values")) {
-                    visionInputMap.put(inputName, singleFrame);
-                } else if (inputName.equals("pixel_attention_mask")) {
-                    ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
-                    visionInputMap.put(inputName,
-                            ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
+                Map<String, INDArray> visionInputMap = new HashMap<>();
+                for (String inputName : visionInputNames) {
+                    if (inputName.equals("pixel_values")) {
+                        visionInputMap.put(inputName, singleFrame);
+                    } else if (inputName.equals("pixel_attention_mask")) {
+                        ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
+                        visionInputMap.put(inputName,
+                                ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
+                    }
                 }
+
+                Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
+                assertNotNull(visionOutputs, "Vision encoder output null for frame " + frameIdx);
+                assertFalse(visionOutputs.isEmpty(), "Vision encoder output empty for frame " + frameIdx);
+
+                VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
+                assertNotNull(selected, "Vision encoder selected output null for frame " + frameIdx);
+                assertNotNull(selected.tensor, "Vision encoder selected tensor null for frame " + frameIdx);
+                assertTrue(selected.tensor.rank() >= 2, "Vision output rank < 2 for frame " + frameIdx);
+
+                INDArray out = selected.tensor.dup();
+                assertFalse(out.wasClosed(), "Vision output dup closed for frame " + frameIdx);
+                frameEmbeddings.add(out);
+
+                for (var entry : visionOutputs.entrySet()) {
+                    INDArray arr = entry.getValue();
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+                }
+                singleFrame.close();
             }
 
-            Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
-            assertNotNull(visionOutputs, "Vision encoder output null for frame " + frameIdx);
-            assertFalse(visionOutputs.isEmpty(), "Vision encoder output empty for frame " + frameIdx);
+            // Clean up vision encoder
+            visionEncoder.clearPlaceholders(false);
+            visionEncoder.clearOpInputs();
+            visionEncoder.resetSession();
+            Nd4j.getExecutioner().commit();
 
-            VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
-            assertNotNull(selected, "Vision encoder selected output null for frame " + frameIdx);
-            assertNotNull(selected.tensor, "Vision encoder selected tensor null for frame " + frameIdx);
-            assertTrue(selected.tensor.rank() >= 2, "Vision output rank < 2 for frame " + frameIdx);
+            assertEquals(ctx.visionFrames, frameEmbeddings.size(),
+                    "Frame embedding count mismatch: expected " + ctx.visionFrames);
 
-            INDArray out = selected.tensor.dup();
-            assertFalse(out.wasClosed(), "Vision output dup closed for frame " + frameIdx);
-            frameEmbeddings.add(out);
-
-            for (var entry : visionOutputs.entrySet()) {
-                INDArray arr = entry.getValue();
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+            visionEmbeddings = frameEmbeddings.size() == 1
+                    ? frameEmbeddings.get(0).dup()
+                    : Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0])).dup();
+            for (INDArray fe : frameEmbeddings) {
+                if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
             }
-            singleFrame.close();
+            imageInput.close();
+            ctx.visionMs = System.currentTimeMillis() - visionStart;
+
+            assertFalse(visionEmbeddings.wasClosed(), "Concatenated vision embeddings closed");
+            assertTrue(visionEmbeddings.rank() == 3, "Vision embeddings should be rank 3, got " + visionEmbeddings.rank());
+            log.info("Vision encoder done [{}ms]: shape={}", ctx.visionMs,
+                    Arrays.toString(visionEmbeddings.shape()));
+        } catch (Throwable t) {
+            throw phaseFailure("VISION_ENCODE", "frames=" + ctx.visionFrames, t);
         }
-
-        // Clean up vision encoder
-        visionEncoder.clearPlaceholders(false);
-        visionEncoder.clearOpInputs();
-        visionEncoder.resetSession();
-        Nd4j.getExecutioner().commit();
-
-        assertEquals(ctx.visionFrames, frameEmbeddings.size(),
-                "Frame embedding count mismatch: expected " + ctx.visionFrames);
-
-        INDArray visionEmbeddings = frameEmbeddings.size() == 1
-                ? frameEmbeddings.get(0).dup()
-                : Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0])).dup();
-        for (INDArray fe : frameEmbeddings) {
-            if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
-        }
-        imageInput.close();
-        ctx.visionMs = System.currentTimeMillis() - visionStart;
-
-        assertFalse(visionEmbeddings.wasClosed(), "Concatenated vision embeddings closed");
-        assertTrue(visionEmbeddings.rank() == 3, "Vision embeddings should be rank 3, got " + visionEmbeddings.rank());
-        log.info("Vision encoder done [{}ms]: shape={}", ctx.visionMs,
-                Arrays.toString(visionEmbeddings.shape()));
+        phaseSuccess("VISION_ENCODE", phaseNs,
+                "frames=" + ctx.visionFrames + " " + summarizeTensor("visionEmbeddings", visionEmbeddings));
 
         freeModelConstants(visionEncoder, "vision encoder");
 
         // Build prompt + embeddings
-        long embedStart = System.currentTimeMillis();
-        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(ctx.tokenizer);
-        assertTrue(imageTokenId >= 0, "Image token ID should be non-negative");
+        phaseNs = phaseStart("PROMPT_EMBED",
+                "visionFrames=" + ctx.visionFrames + " " + summarizeTensor("visionEmbeddings", visionEmbeddings));
+        try {
+            long embedStart = System.currentTimeMillis();
+            int imageTokenId = ImagePromptBuilder.resolveImageTokenId(ctx.tokenizer);
+            assertTrue(imageTokenId >= 0, "Image token ID should be non-negative");
 
-        int imageSeqLenPerFrame = (int) visionEmbeddings.size(1) / ctx.visionFrames;
-        assertTrue(imageSeqLenPerFrame > 0, "Image seq len per frame must be positive");
+            int imageSeqLenPerFrame = (int) visionEmbeddings.size(1) / ctx.visionFrames;
+            assertTrue(imageSeqLenPerFrame > 0, "Image seq len per frame must be positive");
 
-        String imagePrompt = ImagePromptBuilder.buildImagePromptString(
-                splitResult.numRows, splitResult.numCols, imageSeqLenPerFrame);
-        String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
-        ctx.promptTokenIds = ctx.tokenizer.encode(chatPrompt, false).getIds();
-        assertTrue(ctx.promptTokenIds.length > 0, "Prompt encoding produced no tokens");
+            String imagePrompt = ImagePromptBuilder.buildImagePromptString(
+                    splitResult.numRows, splitResult.numCols, imageSeqLenPerFrame);
+            String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+            ctx.promptTokenIds = ctx.tokenizer.encode(chatPrompt, false).getIds();
+            assertTrue(ctx.promptTokenIds.length > 0, "Prompt encoding produced no tokens");
 
-        INDArray promptIdsTensor = Nd4j.createFromArray(ctx.promptTokenIds)
-                .reshape(1, ctx.promptTokenIds.length).castTo(DataType.LONG);
-        String embedInputName = ctx.embedTokens.inputs().isEmpty() ? "input_ids" : ctx.embedTokens.inputs().get(0);
-        String[] embedOutputNames = ctx.embedTokens.outputs().toArray(new String[0]);
-        Map<String, INDArray> embedOutputs = ctx.embedTokens.output(
-                Map.of(embedInputName, promptIdsTensor), embedOutputNames);
-        assertNotNull(embedOutputs, "EmbedTokens output is null");
-        assertFalse(embedOutputs.isEmpty(), "EmbedTokens produced no output");
+            INDArray promptIdsTensor = Nd4j.createFromArray(ctx.promptTokenIds)
+                    .reshape(1, ctx.promptTokenIds.length).castTo(DataType.LONG);
+            String embedInputName = ctx.embedTokens.inputs().isEmpty() ? "input_ids" : ctx.embedTokens.inputs().get(0);
+            String[] embedOutputNames = ctx.embedTokens.outputs().toArray(new String[0]);
+            Map<String, INDArray> embedOutputs = ctx.embedTokens.output(
+                    Map.of(embedInputName, promptIdsTensor), embedOutputNames);
+            assertNotNull(embedOutputs, "EmbedTokens output is null");
+            assertFalse(embedOutputs.isEmpty(), "EmbedTokens produced no output");
 
-        INDArray textEmbeddings = null;
-        for (var entry : embedOutputs.entrySet()) {
-            textEmbeddings = entry.getValue().dup();
+            INDArray textEmbeddings = null;
+            for (var entry : embedOutputs.entrySet()) {
+                textEmbeddings = entry.getValue().dup();
+            }
+            assertNotNull(textEmbeddings, "embed_tokens produced no output");
+            assertFalse(textEmbeddings.wasClosed(), "Text embeddings closed after dup");
+
+            ctx.hiddenSize = visionEmbeddings.shape()[2];
+            assertEquals(ctx.hiddenSize, textEmbeddings.shape()[2],
+                    "Hidden size mismatch: vision=" + ctx.hiddenSize + " text=" + textEmbeddings.shape()[2]);
+            assertTrue(ctx.hiddenSize > 0, "Hidden size must be positive");
+
+            ctx.inputsEmbeds = EmbeddingMerger.mergeEmbeddings(
+                    textEmbeddings, visionEmbeddings, ctx.promptTokenIds, imageTokenId);
+            assertNotNull(ctx.inputsEmbeds, "Merged embeddings are null");
+            assertFalse(ctx.inputsEmbeds.wasClosed(), "Merged embeddings are closed");
+            assertTrue(ctx.inputsEmbeds.rank() == 3,
+                    "Merged embeddings should be rank 3, got " + ctx.inputsEmbeds.rank());
+
+            if (textEmbeddings.closeable() && !textEmbeddings.wasClosed()) textEmbeddings.close();
+            ctx.embedMs = System.currentTimeMillis() - embedStart;
+            log.info("Embeddings merged [{}ms]: shape={}", ctx.embedMs,
+                    Arrays.toString(ctx.inputsEmbeds.shape()));
+        } catch (Throwable t) {
+            throw phaseFailure("PROMPT_EMBED",
+                    "visionFrames=" + ctx.visionFrames + " " + summarizeTensor("visionEmbeddings", visionEmbeddings), t);
         }
-        assertNotNull(textEmbeddings, "embed_tokens produced no output");
-        assertFalse(textEmbeddings.wasClosed(), "Text embeddings closed after dup");
-
-        ctx.hiddenSize = visionEmbeddings.shape()[2];
-        assertEquals(ctx.hiddenSize, textEmbeddings.shape()[2],
-                "Hidden size mismatch: vision=" + ctx.hiddenSize + " text=" + textEmbeddings.shape()[2]);
-        assertTrue(ctx.hiddenSize > 0, "Hidden size must be positive");
-
-        ctx.inputsEmbeds = EmbeddingMerger.mergeEmbeddings(
-                textEmbeddings, visionEmbeddings, ctx.promptTokenIds, imageTokenId);
-        assertNotNull(ctx.inputsEmbeds, "Merged embeddings are null");
-        assertFalse(ctx.inputsEmbeds.wasClosed(), "Merged embeddings are closed");
-        assertTrue(ctx.inputsEmbeds.rank() == 3,
-                "Merged embeddings should be rank 3, got " + ctx.inputsEmbeds.rank());
-
-        if (textEmbeddings.closeable() && !textEmbeddings.wasClosed()) textEmbeddings.close();
-        ctx.embedMs = System.currentTimeMillis() - embedStart;
-        log.info("Embeddings merged [{}ms]: shape={}", ctx.embedMs,
-                Arrays.toString(ctx.inputsEmbeds.shape()));
+        phaseSuccess("PROMPT_EMBED", phaseNs,
+                summarizeTokens("promptTokenIds", ctx.promptTokenIds) + " "
+                        + summarizeTensor("inputsEmbeds", ctx.inputsEmbeds));
 
         return ctx;
     }
 
     // ─── Utility helpers ──────────────────────────────────────────────────
+
+    private boolean isPhaseLoggingEnabled() {
+        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.phaseLogging", "true"));
+    }
+
+    private boolean isTensorFingerprintLoggingEnabled() {
+        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.tensorFingerprints", "false"));
+    }
+
+    private boolean isDspStateLoggingEnabled() {
+        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.dspStateLogging", "true"));
+    }
+
+    private int tensorFingerprintSamples() {
+        return Integer.getInteger("vlm.benchmark.tensorSampleValues", 8);
+    }
+
+    private long phaseStart(String phase, String detail) {
+        if (isPhaseLoggingEnabled()) {
+            log.info("[PHASE] START {} {}", phase, detail);
+        }
+        return System.nanoTime();
+    }
+
+    private void phaseSuccess(String phase, long startNs, String detail) {
+        if (isPhaseLoggingEnabled()) {
+            long elapsedMs = (System.nanoTime() - startNs) / 1_000_000;
+            log.info("[PHASE] OK {} {}ms {}", phase, elapsedMs, detail);
+        }
+    }
+
+    private IllegalStateException phaseFailure(String phase, String detail, Throwable cause) {
+        log.error("[PHASE] FAIL {} {}: {}", phase, detail, cause.getMessage(), cause);
+        return new IllegalStateException("Benchmark phase " + phase + " failed: " + detail, cause);
+    }
+
+    private String benchmarkInputSummary() {
+        return "pdf=" + (pdfPath != null && !pdfPath.isEmpty() ? pdfPath : "<generated>")
+                + " page=" + (specificPage >= 0 ? specificPage : 0)
+                + " dpi=" + renderDpi;
+    }
+
+    private String summarizeConfig(BenchmarkConfig config) {
+        return "config=" + config.getName()
+                + " maxTokens=" + config.getMaxTokens()
+                + " triton=" + config.isTriton()
+                + " compileAll=" + config.isTritonCompileAll()
+                + " graphCapture=" + config.isTritonGraphCapture()
+                + " noFallbackCapture=" + !config.isTritonAllowFallbackCapture()
+                + " batchedGemm=" + config.isDspBatchedGemm();
+    }
+
+    private String summarizeTensor(String label, INDArray arr) {
+        if (arr == null) {
+            return label + "{null}";
+        }
+
+        StringBuilder sb = new StringBuilder(label).append("{shape=");
+        try {
+            sb.append(Arrays.toString(arr.shape()))
+                    .append(",dtype=").append(arr.dataType())
+                    .append(",length=").append(arr.length())
+                    .append(",closed=").append(arr.wasClosed());
+
+            if (isTensorFingerprintLoggingEnabled() && !arr.wasClosed() && arr.length() > 0) {
+                INDArray flat = arr.reshape(arr.length());
+                long len = flat.length();
+                long stride = Math.max(1L, len / Math.max(1, tensorFingerprintSamples()));
+                int sampled = 0;
+                double sampleMin = Double.POSITIVE_INFINITY;
+                double sampleMax = Double.NEGATIVE_INFINITY;
+                double sampleSum = 0.0;
+                double checksum = 0.0;
+                boolean sampleHasNaN = false;
+                for (long idx = 0; idx < len && sampled < tensorFingerprintSamples(); idx += stride) {
+                    double value = flat.getDouble(idx);
+                    sampleMin = Math.min(sampleMin, value);
+                    sampleMax = Math.max(sampleMax, value);
+                    sampleSum += value;
+                    checksum += value * (idx + 1);
+                    sampleHasNaN |= Double.isNaN(value);
+                    sampled++;
+                }
+                if (sampled == 0) {
+                    double value = flat.getDouble(0);
+                    sampleMin = value;
+                    sampleMax = value;
+                    sampleSum = value;
+                    checksum = value;
+                    sampleHasNaN = Double.isNaN(value);
+                    sampled = 1;
+                }
+                sb.append(",sampled=").append(sampled)
+                        .append(",stride=").append(stride)
+                        .append(",sampleMin=").append(String.format("%.6f", sampleMin))
+                        .append(",sampleMax=").append(String.format("%.6f", sampleMax))
+                        .append(",sampleMean=").append(String.format("%.6f", sampleSum / sampled))
+                        .append(",sampleChecksum=").append(String.format("%.6f", checksum))
+                        .append(",sampleHasNaN=").append(sampleHasNaN);
+            }
+        } catch (Throwable t) {
+            sb.append("?,fingerprintError=").append(t.getClass().getSimpleName())
+                    .append(":").append(t.getMessage());
+        }
+
+        return sb.append("}").toString();
+    }
+
+    private String summarizeTokens(String label, int[] tokens) {
+        if (tokens == null) {
+            return label + "{null}";
+        }
+
+        int preview = Math.min(tokens.length, 8);
+        int tailStart = Math.max(0, tokens.length - 8);
+        return label + "{count=" + tokens.length
+                + ",head=" + Arrays.toString(Arrays.copyOfRange(tokens, 0, preview))
+                + ",tail=" + Arrays.toString(Arrays.copyOfRange(tokens, tailStart, tokens.length))
+                + "}";
+    }
+
+    private String summarizeResult(GenerationResult result) {
+        if (result == null) {
+            return "result{null}";
+        }
+
+        return "result{tokens=" + result.getGeneratedTokenCount()
+                + ",finish=" + result.getFinishReason()
+                + ",throughputLabel=" + effectiveThroughputLabel(result)
+                + ",throughput=" + String.format("%.2f", effectiveThroughput(result))
+                + ",text='" + safeSnippet(result.getText(), 160) + "'"
+                + "," + summarizeTokens("tokenIds", result.getTokenIds())
+                + "}";
+    }
+
+    private String safeSnippet(String text, int maxChars) {
+        if (text == null) {
+            return "<null>";
+        }
+
+        String normalized = text.replace('\n', ' ').replace('\r', ' ').trim();
+        if (normalized.length() <= maxChars) {
+            return normalized;
+        }
+        return normalized.substring(0, maxChars) + "...";
+    }
+
+    private String safeFileName(File file) {
+        return file == null ? "<null>" : file.getName();
+    }
+
+    private void logDspState(String phase, SameDiff model) {
+        if (!isDspStateLoggingEnabled() || model == null) {
+            return;
+        }
+
+        try {
+            DspDebugger debugger = DspDebugger.attach(model);
+            DspDebugger.PlanReport planReport = debugger.analyzePlan();
+            DspDebugger.GraphReplayReport replayReport = debugger.analyzeGraphReplay();
+
+            if (planReport.errorMessage != null || replayReport.errorMessage != null) {
+                log.info("[DSP] {} plan={} replay={}",
+                        phase, planReport.errorMessage, replayReport.errorMessage);
+                return;
+            }
+
+            log.info("[DSP] {} planPhase={} pointersStable={} fullyReplaying={} frozenExec={} segments={} replaying={} captureFailures={} stuck={} riskyOps={} unfrozenOps={}",
+                    phase,
+                    replayReport.planPhase,
+                    replayReport.pointersStable,
+                    replayReport.isFullyReplaying(),
+                    replayReport.frozenExecutionCount,
+                    replayReport.numSegments,
+                    replayReport.getReplayingSegments().size(),
+                    replayReport.getCaptureFailures().size(),
+                    replayReport.getStuckSegments().size(),
+                    planReport.getRiskyOps().size(),
+                    planReport.getUnfrozenOps().size());
+        } catch (Throwable t) {
+            log.warn("[DSP] {} state unavailable: {}", phase, t.getMessage());
+        }
+    }
 
     private Set<String> extractTagTypes(String text) {
         Set<String> tagTypes = new HashSet<>();

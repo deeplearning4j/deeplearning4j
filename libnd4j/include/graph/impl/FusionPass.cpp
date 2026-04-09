@@ -29,6 +29,7 @@
 
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 
+#include <climits>
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
@@ -197,7 +198,8 @@ static bool isOnlyConsumedOnce(const std::unordered_map<int, int>& consumerCount
 }
 
 std::vector<FusionCandidate> FusionPass::detectFusions(
-        NativeSlot* slots, int numSlots) {
+        NativeSlot* slots, int numSlots,
+        const std::vector<int>& externalInputRanks) {
 
     std::vector<FusionCandidate> candidates;
     if (slots == nullptr || numSlots <= 1) return candidates;
@@ -451,16 +453,30 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             if (addName != "add") continue;
             if (slots[j].numInputs != 2) continue;
 
-            // One input must be matmul output, other must be external (bias)
+            // One input must be matmul output, other must be a 1D bias vector.
+            // 2D residuals (e.g., transformer x + matmul(x)) are NOT bias and
+            // would corrupt output if treated as bias by cuBLASLt.
+            //
+            // Find the external operand and check its rank using the
+            // externalInputRanks observed during slot-by-slot warmup.
             bool foundMatmulOutput = false;
-            bool foundExternal = false;
+            int externalSrcIdx = INT_MIN;  // raw inputSourceIndices value (negative)
             for (int k = 0; k < slots[j].numInputs; k++) {
-                if (slots[j].inputSourceIndices[k] == matmulOutputIdx) foundMatmulOutput = true;
-                else if (slots[j].inputSourceIndices[k] < 0) foundExternal = true;
+                if (slots[j].inputSourceIndices[k] == matmulOutputIdx) {
+                    foundMatmulOutput = true;
+                } else if (slots[j].inputSourceIndices[k] < 0) {
+                    externalSrcIdx = slots[j].inputSourceIndices[k];
+                }
             }
-            if (!foundMatmulOutput || !foundExternal) continue;
+            if (!foundMatmulOutput || externalSrcIdx == INT_MIN) continue;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
             if (slots[j].numOutputs != 1) continue;
+
+            // Convert source index to external input array index: srcIdx = -(extIdx+1)
+            int extIdx = -(externalSrcIdx + 1);
+            if (extIdx < 0 || extIdx >= static_cast<int>(externalInputRanks.size())) continue;
+            int extRank = externalInputRanks[extIdx];
+            if (extRank != 1) continue;  // residual or higher-dim — not a bias, skip fusion
 
             // Found matmul → add. Now check for optional activation.
             std::vector<int> chain = {i, j};

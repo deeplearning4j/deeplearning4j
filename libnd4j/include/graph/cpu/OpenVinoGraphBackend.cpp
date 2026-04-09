@@ -405,42 +405,48 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         } else {
           if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
         }
-        // Use actual shapes but mark concat-axis dims as dynamic to prevent
-        // shape merge failures in OpenVINO's concat inference.
+        // Use actual shapes for static dims (best performance), with these dims
+        // marked dynamic:
+        //  1. Concat axes (collected in dynamicDims above)
+        //  2. Any dim where compile-time value is 0 (empty placeholder) — these
+        //     are typically uninitialized buffers that get populated at runtime
+        //  3. If ANY dim of an input is 0, mark ALL dims of that input dynamic
+        //     because the whole tensor is "uninitialized" and may grow.
         auto& dynSet = dynamicDims[srcIdx];
         bool allDynamic = dynSet.count(-1) > 0;
         ov::PartialShape pshape;
         ov::element::Type dtype = ov::element::f32;
+        int rank = 0;
+        const LongType* shapeSrc = nullptr;
         if (arr) {
-          for (int d = 0; d < arr->rankOf(); d++) {
-            auto dimVal = arr->sizeAt(d);
-            if (dimVal <= 0 || allDynamic || dynSet.count(d) > 0) {
-              pshape.push_back(ov::Dimension::dynamic());
-            } else {
-              pshape.push_back(static_cast<int64_t>(dimVal));
-            }
-          }
+          rank = arr->rankOf();
           dtype = mapDataType(arr->dataType());
+          // Detect empty tensor — any dim == 0
+          for (int d = 0; d < rank; d++) {
+            if (arr->sizeAt(d) == 0) { allDynamic = true; break; }
+          }
         } else if (!isExternal && srcIdx >= 0 && srcIdx < totalOutputSlots) {
-          // Pre-segment slot: get rank/dtype/dims from the slot's cached output shape
           auto& srcSlot = slots[srcIdx];
           if (!srcSlot.cachedOutputShapes.empty() && srcSlot.cachedOutputShapes[0] != nullptr) {
-            const LongType* si = srcSlot.cachedOutputShapes[0];
-            int rank = shape::rank(si);
+            shapeSrc = srcSlot.cachedOutputShapes[0];
+            rank = shape::rank(shapeSrc);
+            dtype = mapDataType(ArrayOptions::dataType(shapeSrc));
             for (int d = 0; d < rank; d++) {
-              auto dimVal = shape::shapeOf(si)[d];
-              pshape.push_back(dimVal > 0 ? static_cast<int64_t>(dimVal) : ov::Dimension::dynamic());
+              if (shape::shapeOf(shapeSrc)[d] == 0) { allDynamic = true; break; }
             }
-            dtype = mapDataType(ArrayOptions::dataType(si));
-          } else {
-            // Last resort: scalar placeholder
-            pshape.push_back(ov::Dimension::dynamic());
           }
-        } else {
-          pshape.push_back(ov::Dimension::dynamic());
         }
-        auto param = std::make_shared<ov::op::v0::Parameter>(
-            mapDataType(arr->dataType()), pshape);
+        for (int d = 0; d < rank; d++) {
+          int64_t dimVal = arr ? arr->sizeAt(d) : (shapeSrc ? shape::shapeOf(shapeSrc)[d] : -1);
+          if (dimVal <= 0 || allDynamic || dynSet.count(d) > 0) {
+            pshape.push_back(ov::Dimension::dynamic());
+          } else {
+            pshape.push_back(dimVal);
+          }
+        }
+        // rank == 0 → empty pshape (true scalar)
+        // Use the dtype we already computed (may be from cachedOutputShapes when arr is null)
+        auto param = std::make_shared<ov::op::v0::Parameter>(dtype, pshape);
         params.push_back(param);
         tensorMap[srcIdx] = param->output(0);
         inputSourceMap.push_back(srcIdx);
@@ -467,58 +473,21 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       continue;
     }
 
-    // Gather input nodes
+    // Gather input nodes. If any input is missing from tensorMap, that means
+    // an upstream slot failed to compile. We do NOT create on-the-fly Parameters
+    // for missing inputs — that just creates ghost Parameters that have no source
+    // at runtime and cascade into broken models. Fail the segment cleanly so DSP
+    // can pick another backend.
     std::vector<ov::Output<ov::Node>> inputs;
     for (int inp = 0; inp < slots[s].numInputs; inp++) {
       int srcIdx = slots[s].inputSourceIndices[inp];
       auto it = tensorMap.find(srcIdx);
       if (it == tensorMap.end()) {
-        // Missing from tensorMap — create an on-the-fly Parameter.
-        // This handles within-segment cascades (prior op failed to compile)
-        // and any missed pre-segment inputs.
-        NDArray* fallbackArr = nullptr;
-        if (srcIdx < 0) {
-          int extIdx = -(srcIdx + 1);
-          if (extIdx < numExternalInputs) fallbackArr = externalInputs[extIdx];
-        } else if (srcIdx < totalOutputSlots) {
-          fallbackArr = outputSlots[srcIdx];
-        }
-        ov::PartialShape pshape;
-        ov::element::Type dtype = ov::element::f32;
-        if (fallbackArr) {
-          for (int d = 0; d < fallbackArr->rankOf(); d++) {
-            auto dv = fallbackArr->sizeAt(d);
-            pshape.push_back(dv > 0 ? static_cast<int64_t>(dv) : ov::Dimension::dynamic());
-          }
-          dtype = mapDataType(fallbackArr->dataType());
-        } else if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
-          auto& srcSlot = slots[srcIdx];
-          if (!srcSlot.cachedOutputShapes.empty() && srcSlot.cachedOutputShapes[0]) {
-            const LongType* si = srcSlot.cachedOutputShapes[0];
-            for (int d = 0; d < shape::rank(si); d++) {
-              auto dv = shape::shapeOf(si)[d];
-              pshape.push_back(dv > 0 ? static_cast<int64_t>(dv) : ov::Dimension::dynamic());
-            }
-            dtype = mapDataType(ArrayOptions::dataType(si));
-          } else {
-            pshape.push_back(ov::Dimension::dynamic());
-          }
-        } else {
-          pshape.push_back(ov::Dimension::dynamic());
-        }
-        auto param = std::make_shared<ov::op::v0::Parameter>(dtype, pshape);
-        params.push_back(param);
-        tensorMap[srcIdx] = param->output(0);
-        inputSourceMap.push_back(srcIdx);
-        it = tensorMap.find(srcIdx);
-      }
-      if (it == tensorMap.end()) {
-        audit.wasCompiled = false;
-        audit.reason = "missing input source " + std::to_string(srcIdx);
-        result.compilationAudit.push_back(audit);
-        DSP_DIAG(COMPILE, "OpenVINO: slot %d (%s) missing input source %d",
-                 s, opName.c_str(), srcIdx);
-        goto next_slot;
+        std::string msg = "OpenVINO: slot " + std::to_string(s) + " op '" + opName +
+                          "' missing input source " + std::to_string(srcIdx) +
+                          " (upstream slot must have failed to compile)";
+        DSP_DIAG(COMPILE, "%s", msg.c_str());
+        throw std::runtime_error(msg);
       }
       inputs.push_back(it->second);
     }
@@ -546,7 +515,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       };
 
-      try {
+      // No per-op try/catch — failures propagate up to compileSegment which
+      // returns false, and DSP picks another backend at the segment level.
       // ── Binary elementwise ──
       if (opName == "add" || opName == "Add") {
         if (inputs.size() >= 2) { harmonizeBinaryTypes(inputs[0], inputs[1]); node = std::make_shared<ov::op::v1::Add>(inputs[0], inputs[1]); }
@@ -1090,18 +1060,25 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         if (inputs.size() >= 1) {
           std::vector<int64_t> perm;
           for (int a = 0; a < slots[s].numIArgs; a++) perm.push_back(slots[s].iArgs[a]);
-          if (perm.empty()) {
-            // No iArgs = simple transpose: reverse dimensions
-            auto inputRank = inputs[0].get_partial_shape().rank();
-            if (inputRank.is_static()) {
-              int rank = static_cast<int>(inputRank.get_length());
-              for (int d = rank - 1; d >= 0; d--) perm.push_back(d);
+          // nd4j permute op takes the permutation from EITHER iArgs OR input[1] (a tensor).
+          // If iArgs is empty and we have a second input, use it as the order tensor.
+          // OpenVINO Transpose accepts the order as a runtime Output<Node>.
+          if (perm.empty() && inputs.size() >= 2) {
+            node = std::make_shared<ov::op::v1::Transpose>(inputs[0], inputs[1]);
+          } else {
+            if (perm.empty()) {
+              // No iArgs and no order tensor = simple transpose: reverse dimensions
+              auto inputRank = inputs[0].get_partial_shape().rank();
+              if (inputRank.is_static()) {
+                int rank = static_cast<int>(inputRank.get_length());
+                for (int d = rank - 1; d >= 0; d--) perm.push_back(d);
+              }
             }
-          }
-          if (!perm.empty()) {
-            auto perm_const = ov::op::v0::Constant::create(
-                ov::element::i64, {perm.size()}, perm);
-            node = std::make_shared<ov::op::v1::Transpose>(inputs[0], perm_const);
+            if (!perm.empty()) {
+              auto perm_const = ov::op::v0::Constant::create(
+                  ov::element::i64, {perm.size()}, perm);
+              node = std::make_shared<ov::op::v1::Transpose>(inputs[0], perm_const);
+            }
           }
         }
       } else if (opName == "squeeze" || opName == "Squeeze") {
@@ -1504,9 +1481,22 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           node = std::make_shared<ov::op::v3::Broadcast>(one, shape_of->output(0));
         }
       } else if (opName == "range" || opName == "Range") {
-        // Range(start, stop, step) — from tArgs or inputs
+        // Range(start, stop, step) — from tArgs or inputs.
+        // OpenVINO Range requires rank-0 (scalar) inputs. Squeeze any rank-1 size-1 inputs.
+        // Output type follows input type (don't hardcode f32 — inputs may be i64).
+        // Squeeze without axes removes all size-1 dims; for an already-scalar it's a no-op.
+        auto toScalar = [](const ov::Output<ov::Node>& in) -> ov::Output<ov::Node> {
+          auto pshape = in.get_partial_shape();
+          if (pshape.rank().is_static() && pshape.rank().get_length() == 0) return in;
+          return std::make_shared<ov::op::v0::Squeeze>(in)->output(0);
+        };
         if (inputs.size() >= 3) {
-          node = std::make_shared<ov::op::v4::Range>(inputs[0], inputs[1], inputs[2], ov::element::f32);
+          auto start = toScalar(inputs[0]);
+          auto stop = toScalar(inputs[1]);
+          auto step = toScalar(inputs[2]);
+          // Use input element type as output type
+          auto outType = start.get_element_type();
+          node = std::make_shared<ov::op::v4::Range>(start, stop, step, outType);
         } else if (slots[s].numTArgs >= 3) {
           auto start = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[0])});
           auto stop = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[1])});
@@ -1799,20 +1789,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
 
       audit.wasCompiled = true;
       result.compilationAudit.push_back(audit);
-
-      } catch (const std::exception& nodeEx) {
-        fprintf(stderr, "OpenVINO: node creation FAILED at slot %d op '%s': %s\n",
-                s, opName.c_str(), nodeEx.what());
-        fflush(stderr);
-        DSP_DIAG(COMPILE, "OpenVINO: node creation THREW at slot %d op '%s': %s",
-                 s, opName.c_str(), nodeEx.what());
-        audit.wasCompiled = false;
-        audit.reason = std::string("node creation exception: ") + nodeEx.what();
-        result.compilationAudit.push_back(audit);
-        goto next_slot;
-      }
     }
-    next_slot:;
   }
 
   // Determine which outputs are externally visible (consumed outside the segment or are plan outputs)

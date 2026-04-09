@@ -2129,4 +2129,7 @@ static_assert(true, "Selective rendering integration active in types.h");
 
 #endif // SD_ENABLE_SELECTIVE_RENDERING
 
+// OpenMP custom reductions for float16/bfloat16 — must come after type definitions
+#include <types/omp_reductions.h>
+
 #endif // SD_COMMON_TYPES_HEADER_INCLUDE

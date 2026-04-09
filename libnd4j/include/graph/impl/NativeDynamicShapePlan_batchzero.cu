@@ -369,7 +369,6 @@ void NativeDynamicShapePlan::freeBatchD2DResources() {
   if (batchD2DHostSizes_) { cudaFreeHost(batchD2DHostSizes_); batchD2DHostSizes_ = nullptr; }
   batchD2DCount_ = 0;
   batchD2DAllocated_ = 0;
-  captureBufferToBatchIdx_.clear();
 }
 
 }  // namespace graph

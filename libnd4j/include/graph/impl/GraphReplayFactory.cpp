@@ -62,18 +62,6 @@ namespace graph {
 // GraphReplayHandle base class — default implementations
 // ═══════════════════════════════════════════════════════════════════════════════
 
-void GraphReplayHandle::addCaptureBuffer(ReplayCaptureBuffer&& buf) {
-  captureBuffers_.emplace_back(std::move(buf));
-}
-
-std::vector<ReplayCaptureBuffer>& GraphReplayHandle::getCaptureBuffers() {
-  return captureBuffers_;
-}
-
-const std::vector<ReplayCaptureBuffer>& GraphReplayHandle::getCaptureBuffers() const {
-  return captureBuffers_;
-}
-
 void GraphReplayHandle::snapshotExternalAddresses(NDArray** externalInputs, int numInputs) {
   capturedExternalAddrs_.resize(numInputs);
   int nullCount = 0;

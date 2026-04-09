@@ -392,7 +392,7 @@ public class PlanIntrospectionTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
-    @DisplayName("Segment capture buffer counts are non-negative")
+    @DisplayName("Segment capture buffer counts are zero")
     public void testSegmentInfoCaptureBufferCounts() {
         SameDiff sd = buildLargerGraph();
         sd.setDspAutoCompileEnabled(true);
@@ -411,7 +411,7 @@ public class PlanIntrospectionTest extends BaseNd4jTestWithBackends {
                 PlanIntrospection.getSegmentsWithReplayState(executor.getCurrentPlan(),
                     executor.getNativePlanHandle());
             for (PlanIntrospection.SegmentInfo seg : segments) {
-                assertTrue(seg.getNumCaptureBuffers() >= 0, "Capture buffers should be >= 0");
+                assertEquals(0, seg.getNumCaptureBuffers(), "Capture buffers should be removed");
                 assertTrue(seg.getNumHostPointers() >= 0, "Host pointers should be >= 0");
             }
         }

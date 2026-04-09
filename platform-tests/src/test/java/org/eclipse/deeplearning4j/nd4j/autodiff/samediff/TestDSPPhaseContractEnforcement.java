@@ -435,6 +435,8 @@ public class TestDSPPhaseContractEnforcement extends BaseNd4jTestWithBackends {
                         seg.index, seg.phase, seg.replayCount, seg.replayState);
             }
         }
+        assertFalse(capturedSegments.isEmpty(),
+                "Expected at least one capturable segment after warmup/capture");
 
         // Phase 2: 10 more executions - verify handles persist
         for (int step = 0; step < 10; step++) {
@@ -476,7 +478,7 @@ public class TestDSPPhaseContractEnforcement extends BaseNd4jTestWithBackends {
     }
 
     // ========================================================================
-    // 5. Capture Buffer Refresh for Changing Inputs
+    // 5. Changed Input Propagation During Replay
     // ========================================================================
 
     /**
@@ -485,13 +487,13 @@ public class TestDSPPhaseContractEnforcement extends BaseNd4jTestWithBackends {
      * between replay steps. Verify that BOTH paths see the new value (output
      * changes).
      *
-     * This tests the capture buffer D2D refresh chain: when a placeholder
-     * changes, the capture buffer must be updated with a device-to-device copy
-     * before graph replay so that all downstream ops see the new data.
+     * This tests the direct input propagation contract: when a placeholder
+     * changes between frozen executions, replay must observe the new device
+     * value so that all downstream ops see the updated data.
      */
     @Test
     @Order(5)
-    @DisplayName("Phase contract: capture buffer D2D refresh propagates changed inputs")
+    @DisplayName("Phase contract: changed inputs propagate through replay")
     public void testCaptureBufferRefreshForChangingInputs() {
         int hiddenSize = 16;
         int vocabSize = 50;
@@ -546,7 +548,7 @@ public class TestDSPPhaseContractEnforcement extends BaseNd4jTestWithBackends {
                         "Index " + idx + " vs " + (idx - 1)
                                 + ": output should differ when input changes."
                                 + " Previous=" + previousSum + ", Current=" + sum
-                                + ". This indicates the capture buffer D2D refresh is broken"
+                                + ". This indicates replay is using stale input data"
                                 + " — the graph is replaying with stale input data.");
             }
             previousSum = sum;
@@ -556,14 +558,14 @@ public class TestDSPPhaseContractEnforcement extends BaseNd4jTestWithBackends {
         long distinctCount = sums.stream().map(d -> Math.round(d * 1e6) / 1e6).distinct().count();
         assertTrue(distinctCount >= 5,
                 "Expected at least 5 distinct output values for 10 different indices, got "
-                        + distinctCount + ". Capture buffer refresh may be broken.");
+                        + distinctCount + ". Replay input propagation may be broken.");
 
         log.info("testCaptureBufferRefreshForChangingInputs: {} distinct outputs for 10 inputs",
                 distinctCount);
     }
 
     // ========================================================================
-    // 6. Decode Input Propagation With Capture (DspDebugger validation)
+    // 6. Decode Input Propagation With Replay (DspDebugger validation)
     // ========================================================================
 
     /**

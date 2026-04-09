@@ -120,7 +120,7 @@ public class TestWhisperEncoderDecoder {
                 0, 1,
                 null, 0, 0,
                 false, 512,
-                null, false, false,
+                null, false,
                 encoderOutputs, null);
 
         // Should contain encoder outputs
@@ -163,7 +163,7 @@ public class TestWhisperEncoderDecoder {
                 0, 1,
                 null, 0, 0,
                 false, 512,
-                null, false, false,
+                null, false,
                 encoderOutputs, encoderMask);
 
         // Should use the explicit mask, not auto-generated
@@ -186,7 +186,7 @@ public class TestWhisperEncoderDecoder {
                 0, 1,
                 null, 0, 0,
                 false, 512,
-                null, false, false,
+                null, false,
                 null, null);
 
         assertNotNull(result.get("inputs_embeds"));
@@ -212,7 +212,7 @@ public class TestWhisperEncoderDecoder {
                 config, inputNames, null,
                 emb1, null, 0, 5,
                 null, 0, 0, false, 512,
-                null, false, false,
+                null, false,
                 encoderOutputs, null);
 
         // Step 2
@@ -221,7 +221,7 @@ public class TestWhisperEncoderDecoder {
                 config, inputNames, null,
                 emb2, null, 5, 1,
                 null, 0, 0, false, 512,
-                null, false, false,
+                null, false,
                 encoderOutputs, null);
 
         // Same encoder output object in both steps
@@ -258,7 +258,7 @@ public class TestWhisperEncoderDecoder {
                 5, 1,
                 null, 0, 0,
                 false, 512,
-                null, false, false,
+                null, false,
                 encoderOutputs, null);
 
         assertNotNull(result.get("inputs_embeds"));

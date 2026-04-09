@@ -209,6 +209,119 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return len;
   };
 
+  auto resolveArray = [&](int slotIdx) -> NDArray* {
+    if (slotIdx < 0) {
+      int extIdx = -(slotIdx + 1);
+      if (extIdx >= 0 && extIdx < numExternalInputs && externalInputs) {
+        return externalInputs[extIdx];
+      }
+      return nullptr;
+    }
+
+    if (slotIdx >= 0 && slotIdx < totalOutputSlots && outputSlots) {
+      return outputSlots[slotIdx];
+    }
+
+    return nullptr;
+  };
+
+  auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
+    uint32_t traits = 0;
+    if (slot.op != nullptr && slot.op->getOpDescriptor() != nullptr) {
+      traits |= slot.op->getOpDescriptor()->getTraits();
+    }
+    if (slot.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
+    if (slot.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
+    if (slot.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
+    if (slot.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
+    return traits;
+  };
+
+  auto isIntegralOrBoolType = [](DataType dt) -> bool {
+    switch (dt) {
+      case DataType::BOOL:
+      case DataType::INT8:
+      case DataType::UINT8:
+      case DataType::INT16:
+      case DataType::UINT16:
+      case DataType::INT32:
+      case DataType::UINT32:
+      case DataType::INT64:
+      case DataType::UINT64:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  auto isShapeControlArray = [&](NDArray* arr) -> bool {
+    if (arr == nullptr) return false;
+    if (!isIntegralOrBoolType(arr->dataType())) return false;
+    return arr->lengthOf() >= 0 && arr->lengthOf() <= 64 && arr->rankOf() <= 8;
+  };
+
+  auto slotOutputsShapeControl = [&](const NativeSlot& slot) -> bool {
+    if (slot.numOutputs <= 0) return false;
+
+    bool sawOutput = false;
+    for (int o = 0; o < slot.numOutputs; o++) {
+      NDArray* out = resolveArray(slot.outputSlotIndices[o]);
+      if (out == nullptr || !isShapeControlArray(out)) {
+        return false;
+      }
+      sawOutput = true;
+    }
+
+    return sawOutput;
+  };
+
+  auto slotAllInputsShapeControl = [&](const NativeSlot& slot) -> bool {
+    if (slot.numInputs <= 0) return false;
+
+    bool sawInput = false;
+    for (int i = 0; i < slot.numInputs; i++) {
+      NDArray* in = resolveArray(slot.inputSourceIndices[i]);
+      if (in == nullptr || !isShapeControlArray(in)) {
+        return false;
+      }
+      sawInput = true;
+    }
+
+    return sawInput;
+  };
+
+  auto slotLooksLikeShapeControl = [&](const NativeSlot& slot) -> bool {
+    uint32_t traits = resolveSlotTraits(slot);
+    if ((traits & (sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT |
+                   sd::ops::OP_TRAIT_CONSTANT_GENERATION |
+                   sd::ops::OP_TRAIT_VIEW_PRODUCING)) != 0) {
+      return true;
+    }
+
+    if (!slotOutputsShapeControl(slot)) {
+      return false;
+    }
+
+    if ((traits & (sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE |
+                   sd::ops::OP_TRAIT_DATA_DEPENDENT)) != 0) {
+      return slotAllInputsShapeControl(slot);
+    }
+
+    return slotAllInputsShapeControl(slot);
+  };
+
+  auto sectionLooksLikeShapeControl = [&](const KernelSection& section) -> bool {
+    bool sawSlot = false;
+    for (int si = section.startSlot; si <= section.endSlot; si++) {
+      if (si < seg.startSlot || si > seg.endSlot) return false;
+      if (!slotLooksLikeShapeControl(slots[si])) {
+        return false;
+      }
+      sawSlot = true;
+    }
+    return sawSlot;
+  };
+
   {
     TritonIRBuilder planningBuilder;
     std::vector<TritonOpCategory> categories;
@@ -395,7 +508,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return shouldBeStandalone(cfg, sectionFusionEnabled, section);
   };
 
-  // Determine which sections are compiled as Triton kernels vs native fallback.
+  // Determine which sections are compiled as Triton kernels vs native ordered ranges.
   // Default mode: only ELEMENTWISE/IDENTITY compiled, everything else uses cuBLAS/native.
   // When tritonCompileAll=true: compile ALL section types EXCEPT those containing
   // ops in the exclusion list (ND4J_TRITON_EXCLUDE_OPS). This allows fine-grained
@@ -461,9 +574,13 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
-  auto isFallbackSection = [&](const KernelSection& section) -> bool {
+  auto isNativeOrderedSection = [&](const KernelSection& section) -> bool {
     const auto& cfg = getSectionTypeConfig(section.type);
-    if (shouldFallback(cfg, compileAll, includedTypes)) return true;
+    if (shouldStayNativeOrdered(cfg, compileAll, includedTypes)) return true;
+
+    if (sectionLooksLikeShapeControl(section)) {
+      return true;
+    }
 
     // Check op-level exclusion list (not table-driven -- per-op granularity)
     for (int si = section.startSlot; si <= section.endSlot; si++) {
@@ -558,9 +675,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   for (int secIdx = 0; secIdx < static_cast<int>(sections.size());) {
     // Non-elementwise sections are skipped --
-    // they become gaps filled by fallbackRangeExecutor_ (cuBLAS/native).
-    if (isFallbackSection(sections[secIdx])) {
-      DSP_DIAG(COMPILE, "TritonGraphBackend: section %d [%d-%d] type=%s excluded (cuBLAS fallback)",
+    // they become ordered native ranges executed between Triton islands.
+    if (isNativeOrderedSection(sections[secIdx])) {
+      DSP_DIAG(COMPILE, "TritonGraphBackend: section %d [%d-%d] type=%s routed to native ordered execution",
                secIdx, sections[secIdx].startSlot, sections[secIdx].endSlot,
                sectionTypeName(sections[secIdx].type));
       secIdx++;
@@ -581,7 +698,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
              secIdx, sections[secIdx].startSlot, sections[secIdx].endSlot,
              sectionTypeName(sections[secIdx].type));
 
-    // Merge consecutive non-standalone, non-fallback sections into one compile range.
+    // Merge consecutive non-standalone Triton sections into one compile range.
     int runStart = secIdx;
     int runEnd = secIdx;
 
@@ -590,7 +707,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
     while (runEnd + 1 < static_cast<int>(sections.size()) &&
            !isStandaloneSection(sections[runEnd + 1]) &&
-           !isFallbackSection(sections[runEnd + 1])) {
+           !isNativeOrderedSection(sections[runEnd + 1])) {
       if (fusionScoringEnabled) {
         float score = scoreSectionFusionRange(sections, runStart, runEnd, runEnd + 1,
                                              slots, seg.startSlot, seg.endSlot,
@@ -763,7 +880,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   std::mutex workMtx;
   std::condition_variable workCv;
   std::vector<CompileRangeResult> allResults;
-  std::vector<SlotRange> leafFallbackRanges;  // Leaf ranges that failed → native fallback
+  std::vector<SlotRange> leafOrderedRanges;  // Leaf ranges that stay native-ordered
   std::atomic<int> activeWorkers{0};
 
   auto workerLoop = [&]() {
@@ -803,16 +920,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             splitRange(range);
             // New sub-ranges are in pendingRanges; wake other workers
           } else {
-            // Leaf range failed — add to fallback ranges instead of aborting
+            // Leaf range failed — keep it as a native ordered range instead of aborting
             std::string opNames;
             for (int s = range.startSlot; s <= range.endSlot; s++) {
               if (!opNames.empty()) opNames += ",";
               opNames += slots[s].opName;
             }
             DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
-                     "adding to native fallback (ops: %s)",
+                     "keeping as native ordered range (ops: %s)",
                      range.startSlot, range.endSlot, opNames.c_str());
-            leafFallbackRanges.push_back({range.startSlot, range.endSlot});
+            leafOrderedRanges.push_back({range.startSlot, range.endSlot});
           }
         }
         activeWorkers.fetch_sub(1);
@@ -854,37 +971,37 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           splitRetryCount++;
           splitRange(range);
         } else {
-          // Leaf range failed — add to fallback ranges instead of aborting
+          // Leaf range failed — keep it as a native ordered range instead of aborting
           std::string opNames;
           for (int s = range.startSlot; s <= range.endSlot; s++) {
             if (!opNames.empty()) opNames += ",";
             opNames += slots[s].opName;
           }
           DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
-                   "adding to native fallback (ops: %s)",
+                   "keeping as native ordered range (ops: %s)",
                    range.startSlot, range.endSlot, opNames.c_str());
-          leafFallbackRanges.push_back({range.startSlot, range.endSlot});
+          leafOrderedRanges.push_back({range.startSlot, range.endSlot});
         }
       }
     }
   }
 
-  // Merge leaf fallback ranges into compiledSeg
-  if (!leafFallbackRanges.empty()) {
-    for (auto& fb : leafFallbackRanges) {
-      compiledSeg.fallbackRanges.push_back(fb);
-      // Add audit entries for fallback slots
+  // Merge leaf native ordered ranges into compiledSeg
+  if (!leafOrderedRanges.empty()) {
+    for (auto& fb : leafOrderedRanges) {
+      compiledSeg.orderedRanges.push_back(fb);
+      // Add audit entries for native-ordered slots
       for (int s = fb.startSlot; s <= fb.endSlot; s++) {
         CompilationAuditEntry entry;
         entry.slotIndex = s;
         entry.opName = slots[s].opName;
         entry.wasCompiled = false;
-        entry.reason = "leaf range not Triton-compilable, using native fallback";
+        entry.reason = "leaf range not Triton-compilable, using native ordered execution";
         compiledSeg.audit.push_back(entry);
       }
     }
-    DSP_DIAG(COMPILE, "TritonGraphBackend: %d leaf ranges added to native fallback for [%d-%d]",
-             static_cast<int>(leafFallbackRanges.size()), seg.startSlot, seg.endSlot);
+    DSP_DIAG(COMPILE, "TritonGraphBackend: %d leaf ranges added to native ordered execution for [%d-%d]",
+             static_cast<int>(leafOrderedRanges.size()), seg.startSlot, seg.endSlot);
   }
 
   // Move successful results into compiledSeg

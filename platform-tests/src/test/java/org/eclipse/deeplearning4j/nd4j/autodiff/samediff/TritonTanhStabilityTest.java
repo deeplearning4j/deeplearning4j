@@ -40,10 +40,10 @@ public class TritonTanhStabilityTest {
         sd.setDspNativeAutoCompileEnabled(true);
 
         // Values that cause exp(2x) overflow: 50, 100, 1000, Float.MAX_VALUE/2
-        INDArray inputArr = Nd4j.create(new float[]{
+        INDArray inputArr = Nd4j.createFromArray(
                 0.0f, 0.5f, 1.0f, 5.0f, 10.0f, 20.0f, 50.0f, 100.0f,
                 -0.5f, -1.0f, -5.0f, -10.0f, -20.0f, -50.0f, -100.0f, 0.001f
-        }, new int[]{1, 16});
+        ).reshape(1, 16);
 
         // Reference: compute via Nd4j (uses native stable tanh)
         INDArray reference = Nd4j.math().tanh(inputArr);
@@ -113,10 +113,10 @@ public class TritonTanhStabilityTest {
         // Include values where x^3 * 0.044715 * sqrt(2/pi) > 44 (overflow threshold)
         // x = 10: tanh_arg ≈ sqrt(2/pi) * (10 + 0.044715*1000) ≈ 0.7979 * 54.715 ≈ 43.6
         // x = 11: tanh_arg ≈ 0.7979 * (11 + 0.044715*1331) ≈ 0.7979 * 70.5 ≈ 56.3 → overflow!
-        INDArray inputArr = Nd4j.create(new float[]{
+        INDArray inputArr = Nd4j.createFromArray(
                 0.0f, 1.0f, 2.0f, 5.0f, 8.0f, 10.0f, 11.0f, 15.0f,
                 -1.0f, -2.0f, -5.0f, -8.0f, -10.0f, -11.0f, -15.0f, 3.0f
-        }, new int[]{1, 16});
+        ).reshape(1, 16);
 
         // Reference GELU via manual computation
         float[] ref = new float[16];
@@ -127,7 +127,7 @@ public class TritonTanhStabilityTest {
             double t = Math.tanh(tArg);
             ref[i] = (float) (0.5 * x * (1.0 + t));
         }
-        INDArray reference = Nd4j.create(ref, new int[]{1, 16});
+        INDArray reference = Nd4j.createFromArray(ref).reshape(1, 16);
 
         Map<String, INDArray> feed = Map.of("input", inputArr);
 
