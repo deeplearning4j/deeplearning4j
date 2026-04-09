@@ -66,7 +66,7 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
   if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) return true;
-  if (seg.isCapturable && !seg.exec.compilationFailed) return true;
+  if (seg.def.isCapturable && !seg.exec.compilationFailed) return true;
   return false;
 }
 
@@ -97,8 +97,8 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
 // ── Graph eligibility: check CPU/GPU graph backends ─────────────────────────
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
-  if (!segment.isCapturable) return false;
-  return (segment.selectedBackend == SelectedBackend::CPU_GRAPH);
+  if (!segment.def.isCapturable) return false;
+  return (segment.def.selectedBackend == SelectedBackend::CPU_GRAPH);
 }
 
 // ── Segment execution: Cascading CPU dispatch ───────────────────────────────
@@ -109,11 +109,11 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   usedGraph = false;
 
   DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d",
-           segment.startSlot, segment.endSlot,
-           static_cast<int>(segment.selectedBackend), static_cast<int>(segment.isCapturable),
+           segment.def.startSlot, segment.def.endSlot,
+           static_cast<int>(segment.def.selectedBackend), static_cast<int>(segment.def.isCapturable),
            segment.exec.executionCount);
 
-  switch (segment.selectedBackend) {
+  switch (segment.def.selectedBackend) {
     case SelectedBackend::CPU_GRAPH: {
       // Use cascading backend selection — executeSegmentWithCpuGraph iterates the
       // backend chain and caches the resolved backend per-segment.
@@ -136,7 +136,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       }
       // All backends in the cascade failed — fall through to slot-by-slot
       DSP_DIAG(FALLBACK, "NativeDSP::execute: all CPU backends failed for seg[%d-%d] — falling back to slot-by-slot",
-               segment.startSlot, segment.endSlot);
+               segment.def.startSlot, segment.def.endSlot);
       goto slot_by_slot;
     }
 
@@ -149,7 +149,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     default:
 slot_by_slot:
       // Slot-by-slot with FunctionalReplayHandle for caching
-      if (!segment.exec.replayHandle && segment.isCapturable) {
+      if (!segment.exec.replayHandle && segment.def.isCapturable) {
         segment.exec.replayHandle = GraphReplayFactory::create(0);
         segment.exec.replayHandle->beginCapture(nullptr);
       }

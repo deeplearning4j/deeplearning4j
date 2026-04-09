@@ -159,8 +159,8 @@ std::string ReplayCacheManager::getCacheDir() const {
 LongType ReplayCacheManager::computeCacheKey(const GraphSegment& seg, LongType shapeKey,
                                               const ReplayCacheDeviceKey& device) const {
   // Combine slot range + shape key + device key into a single hash
-  std::string keyStr = std::to_string(seg.startSlot) + ":" +
-                       std::to_string(seg.endSlot) + ":" +
+  std::string keyStr = std::to_string(seg.def.startSlot) + ":" +
+                       std::to_string(seg.def.endSlot) + ":" +
                        std::to_string(shapeKey) + ":" +
                        device.toString();
   return fnv1a64String(keyStr);
@@ -184,8 +184,8 @@ bool ReplayCacheManager::saveSegmentMetadata(const GraphSegment& seg, LongType s
   // Build entry
   ReplayCacheEntry entry;
   entry.cacheKey = key;
-  entry.startSlot = seg.startSlot;
-  entry.endSlot = seg.endSlot;
+  entry.startSlot = seg.def.startSlot;
+  entry.endSlot = seg.def.endSlot;
   entry.shapeKey = shapeKey;
   entry.backendName = seg.exec.compiledByBackend;
   entry.workspaceHint = 0;

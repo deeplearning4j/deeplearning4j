@@ -346,7 +346,7 @@ bool AclGraphBackend::compileSegment(
     int* requestedOutputSlotIndices,
     int numRequestedOutputs) {
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
@@ -355,7 +355,7 @@ bool AclGraphBackend::compileSegment(
     return true;
   }
 
-  auto compiled = buildFunctions(slots, seg.startSlot, seg.endSlot,
+  auto compiled = buildFunctions(slots, seg.def.startSlot, seg.def.endSlot,
                                  externalInputs, numExternalInputs,
                                  outputSlots, totalOutputSlots);
   compiled.shapeKey = shapeKey;
@@ -385,7 +385,7 @@ Status AclGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
 
   AclFunctionGroup* compiled = nullptr;
   {

@@ -427,21 +427,24 @@ struct NativeSlot {
  * A contiguous range of slots that can be captured as a single graph.
  *
  * Split into:
- *   - Immutable definition (set at buildSegments time, never changes)
- *   - Mutable ExecState (changes every execution)
+ *   - GraphSegmentDef: immutable definition (set at buildSegments, never changes)
+ *   - GraphSegmentExec: mutable execution state (changes every execution)
  *
  * Lifecycle (via exec.executionCount):
  *   == 0: warm-up pass (slot-by-slot, populates slot cache)
  *   == 1: capture pass (ops recorded into graph, then launched)
  *   >= 2: replay pass (cached graph launched directly)
  */
-struct GraphSegment {
-  // ── Immutable definition (set at buildSegments, never changes) ─────
-  int startSlot;
-  int endSlot;
-  bool isCapturable;
+
+/**
+ * Immutable segment definition — set at buildSegments(), never changes.
+ */
+struct GraphSegmentDef {
+  int startSlot = 0;
+  int endSlot = 0;
+  bool isCapturable = false;
   bool hasValueDepOps = false;         // True if any slot has outputShapeDependsOnInputValues
-  LongType shapeKey;                   // Initial shape key from buildSegments
+  LongType shapeKey = 0;               // Initial shape key from buildSegments
 
   // User-forced backend override (empty = automatic selection via priority chain)
   std::string backendOverride;
@@ -450,14 +453,6 @@ struct GraphSegment {
   // For non-capturable segments, always SLOT_BY_SLOT.
   // For capturable: resolved from graphExecutionMode_ at build time.
   SelectedBackend selectedBackend = SelectedBackend::SLOT_BY_SLOT;
-
-  // Per-segment resolved CPU backend — set on first successful compile via cascade.
-  // Subsequent executions reuse this without re-cascading.
-  GraphBackend* resolvedCpuBackend = nullptr;
-
-  // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
-  // to update the slot cache when pre-allocating output arrays.
-  NDArray** slotArrayCache = nullptr;
 
   /**
    * Formal contract for segment integrity. Validated after buildSegments()
@@ -470,175 +465,190 @@ struct GraphSegment {
     bool shapeKeyStableOrInvalidates = true;
   };
   SegmentContract contract;
+};
+
+/**
+ * Composite replay unit — one element of a mixed segment's replay schedule.
+ *
+ * When a segment contains both Triton-capturable ops and unsupported gap ops
+ * (interleaved as "island -> gap -> island"), it cannot be captured as one
+ * monolithic graph. Instead, we build an ordered replay schedule:
+ *
+ *   unit 0: Triton island [200-297]  → replayHandle[0]->replay()
+ *   unit 1: gap unit [298-312]       → execute slots directly
+ *   unit 2: Triton island [313-346]  → replayHandle[1]->replay()
+ *   unit 3: gap unit [347-369]       → execute slots directly
+ *   unit 4: Triton island [370-399]  → replayHandle[2]->replay()
+ *
+ * Gap units are executed via direct slot dispatch. Triton island units are
+ * executed via their individual CudaGraphReplayHandle.
+ */
+enum ReplayUnitKind {
+  REPLAY_UNIT_TRITON_ISLAND,   // Captured Triton graph — replay via handle
+  REPLAY_UNIT_GAP,              // Gap range — execute slots directly
+};
+struct ReplayScheduleUnit {
+  ReplayUnitKind kind;
+  int startSlot;
+  int endSlot;
+  int islandIndex;  // For TRITON_ISLAND: index into compositeReplayHandles
+  ReplayScheduleUnit() : kind(REPLAY_UNIT_GAP), startSlot(0), endSlot(0), islandIndex(-1) {}
+  ReplayScheduleUnit(ReplayUnitKind k, int s, int e, int idx)
+      : kind(k), startSlot(s), endSlot(e), islandIndex(idx) {}
+};
+struct ReplaySchedule {
+  std::vector<ReplayScheduleUnit> units;
+  // Individual capture handles for each Triton island in the schedule.
+  std::vector<std::unique_ptr<GraphReplayHandle>> compositeReplayHandles;
+};
+
+// Batch-zero entry definition (used by exec.segBatchZeroEntries)
+// outputSlotIndex tracks which slot the pointer came from, enabling
+// pointer refresh from slotArrayCache_ during replay to avoid stale addresses.
+struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
+
+/**
+ * Mutable execution state — changes per-execution.
+ */
+struct GraphSegmentExec {
+  int executionCount = 0;
+
+  // If true, never attempt graph capture/compilation for this segment.
+  // Set for permanent failures (capture invalidation, host-only ops, address instability).
+  // NOT set for OOM failures — those use the retry mechanism below.
+  bool compilationFailed = false;
+
+  // OOM retry mechanism
+  int captureOomRetries = 0;
+  int captureRetryAfterExec = 0;
+
+  // LRU tracking: last executeCount_ at which this segment was replayed.
+  // Used by proactive eviction to target least-recently-used graphs.
+  int lastReplayExecCount = 0;
+
+  // ── Platform-agnostic graph replay handle ────────────────────────
+  // CUDA: CudaGraphReplayHandle (wraps cudaGraph_t/cudaGraphExec_t)
+  // CPU: FunctionalReplayHandle (cached op dispatch, skip shape inference)
+  // nullptr until first capture attempt.
+  std::unique_ptr<GraphReplayHandle> replayHandle;
+  LongType cachedShapeKey = 0;
+
+  // Legacy address key (kept for replay diagnostics)
+  LongType capturedInputAddrKey = 0;
+
+  // Hash of input DATA values for 'create' (ConstantOfShape) ops.
+  LongType capturedCreateValueKey = 0;
+
+  // Hash of slot output specialBuffer() addresses at capture time.
+  // Verified before replay — mismatch means output buffers were reallocated
+  // and the CUDA graph has stale baked-in addresses (would SIGSEGV or corrupt).
+  LongType capturedSlotAddrHash = 0;
+
+  // ── NVRTC JIT kernel (CUDA-only) ─────────────────────────────────
+#ifdef SD_CUDA
+  NvrtcKernelHandle* jitKernel = nullptr;
+  LongType jitShapeKey = 0;
+  bool jitCompileFailed = false;
+#endif
+
+  // Symbolic shape ranges
+  bool symbolicShapeEnabled = false;
+  int symbolicWarmupRemaining = 0;
+  void* symbolicRangeData = nullptr;  // opaque ptr to SegmentShapeProfile
+
+  // Backend that compiled this segment ("Triton", "oneDNN", "CUDA", "slot-by-slot", etc.)
+  std::string compiledByBackend;
+
+  // Fast-replay: skip arg table refresh and EXT_INPUT_SYNC on replay.
+  bool argTableStable = false;
+
+  // Native ordered range ops captured in graph — must not be re-executed after replay.
+  bool gapOpsCapturedInGraph = false;
+
+  // Per-segment batch-zero entries for replay
+  std::vector<BatchZeroEntry> segBatchZeroEntries;
+
+  // View recipe chain — captures view-producing ops (reshape, permute,
+  // expand_dims, squeeze, strided_slice) so they can be installed during
+  // REPLAYING without launching a kernel or executing a native ordered range.
+  // Populated during SHAPES_FROZEN, validated during POINTERS_STABLE,
+  // installed before consumer replay during REPLAYING.
+  ViewRecipeChain viewRecipes;
+
+  // Composite replay schedule for mixed Triton/gap segments.
+  // When a segment has interleaved gap slots, it's captured as multiple
+  // Triton island graphs + gap slot ranges, replayed in program order.
+  // Only populated for segments with hasUnsupportedTritonReplayGaps.
+  ReplaySchedule compositeReplaySchedule;
+
+  // Phase 2: Replay schedule signature hash (FNV-1a) from the last execution.
+  // Computed from ordered replay units (kinds, slot ranges, op categories).
+  // Zero if the segment has no replay or consolidation has not yet run.
+  unsigned long long replaySignatureHash = 0;
+
+  // Phase 2: Number of replay units after consolidation for this segment.
+  // Updated each execution when the consolidation pass runs.
+  // Zero if the segment is not capturable or consolidation hasn't run.
+  int replayUnitCount = 0;
+
+  // Execution phase tracking — ACTUAL runtime mode (not user preference).
+  ExecutionPhase currentPhase = ExecutionPhase::WARMUP;
+
+  void reset() {
+    executionCount = 0;
+    compilationFailed = false;
+    captureOomRetries = 0;
+    captureRetryAfterExec = 0;
+    lastReplayExecCount = 0;
+    replayHandle.reset();
+    cachedShapeKey = 0;
+    capturedInputAddrKey = 0;
+    capturedCreateValueKey = 0;
+    capturedSlotAddrHash = 0;
+#ifdef SD_CUDA
+    jitKernel = nullptr;
+    jitShapeKey = 0;
+    jitCompileFailed = false;
+#endif
+    symbolicShapeEnabled = false;
+    symbolicWarmupRemaining = 0;
+    symbolicRangeData = nullptr;
+    compiledByBackend.clear();
+    argTableStable = false;
+    gapOpsCapturedInGraph = false;
+    segBatchZeroEntries.clear();
+    viewRecipes = ViewRecipeChain();
+    compositeReplaySchedule = ReplaySchedule();
+    replaySignatureHash = 0;
+    replayUnitCount = 0;
+    currentPhase = ExecutionPhase::WARMUP;
+  }
+};
+
+/**
+ * Graph segment — combines immutable definition with mutable execution state.
+ * Access pattern: seg.def.startSlot, seg.exec.executionCount
+ */
+struct GraphSegment {
+  GraphSegmentDef def;
+  GraphSegmentExec exec;
+
+  // Per-segment resolved CPU backend — set on first successful compile via cascade.
+  // Subsequent executions reuse this without re-cascading.
+  GraphBackend* resolvedCpuBackend = nullptr;
+
+  // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
+  // to update the slot cache when pre-allocating output arrays.
+  NDArray** slotArrayCache = nullptr;
 
   // Runtime-configurable OOM retry constants (read from Environment)
   static int maxOomRetries() { return sd::Environment::getInstance().dspCaptureOomMaxRetries(); }
   static int retryInterval() { return sd::Environment::getInstance().dspCaptureOomRetryInterval(); }
 
-  // Batch-zero entry definition (used by exec.segBatchZeroEntries)
-  // outputSlotIndex tracks which slot the pointer came from, enabling
-  // pointer refresh from slotArrayCache_ during replay to avoid stale addresses.
-  struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
-
-  /**
-   * Composite replay unit — one element of a mixed segment's replay schedule.
-   *
-   * When a segment contains both Triton-capturable ops and unsupported gap ops
-   * (interleaved as "island -> gap -> island"), it cannot be captured as one
-   * monolithic graph. Instead, we build an ordered replay schedule:
-   *
-   *   unit 0: Triton island [200-297]  → replayHandle[0]->replay()
-   *   unit 1: gap unit [298-312]       → execute slots directly
-   *   unit 2: Triton island [313-346]  → replayHandle[1]->replay()
-   *   unit 3: gap unit [347-369]       → execute slots directly
-   *   unit 4: Triton island [370-399]  → replayHandle[2]->replay()
-   *
-   * Gap units are executed via direct slot dispatch. Triton island units are
-   * executed via their individual CudaGraphReplayHandle.
-   */
-  enum ReplayUnitKind {
-    REPLAY_UNIT_TRITON_ISLAND,   // Captured Triton graph — replay via handle
-    REPLAY_UNIT_GAP,              // Gap range — execute slots directly
-  };
-  struct ReplayScheduleUnit {
-    ReplayUnitKind kind;
-    int startSlot;
-    int endSlot;
-    int islandIndex;  // For TRITON_ISLAND: index into compositeReplayHandles
-    ReplayScheduleUnit() : kind(REPLAY_UNIT_GAP), startSlot(0), endSlot(0), islandIndex(-1) {}
-    ReplayScheduleUnit(ReplayUnitKind k, int s, int e, int idx)
-        : kind(k), startSlot(s), endSlot(e), islandIndex(idx) {}
-  };
-  struct ReplaySchedule {
-    std::vector<ReplayScheduleUnit> units;
-    // Individual capture handles for each Triton island in the schedule.
-    std::vector<std::unique_ptr<GraphReplayHandle>> compositeReplayHandles;
-  };
-
-  // ── Mutable execution state (changes per-execution) ────────────────
-  struct ExecState {
-    int executionCount = 0;
-
-    // If true, never attempt graph capture/compilation for this segment.
-    // Set for permanent failures (capture invalidation, host-only ops, address instability).
-    // NOT set for OOM failures — those use the retry mechanism below.
-    bool compilationFailed = false;
-
-    // OOM retry mechanism
-    int captureOomRetries = 0;
-    int captureRetryAfterExec = 0;
-
-    // LRU tracking: last executeCount_ at which this segment was replayed.
-    // Used by proactive eviction to target least-recently-used graphs.
-    int lastReplayExecCount = 0;
-
-    // ── Platform-agnostic graph replay handle ────────────────────────
-    // CUDA: CudaGraphReplayHandle (wraps cudaGraph_t/cudaGraphExec_t)
-    // CPU: FunctionalReplayHandle (cached op dispatch, skip shape inference)
-    // nullptr until first capture attempt.
-    std::unique_ptr<GraphReplayHandle> replayHandle;
-    LongType cachedShapeKey = 0;
-
-    // Legacy address key (kept for replay diagnostics)
-    LongType capturedInputAddrKey = 0;
-
-    // Hash of input DATA values for 'create' (ConstantOfShape) ops.
-    LongType capturedCreateValueKey = 0;
-
-    // Hash of slot output specialBuffer() addresses at capture time.
-    // Verified before replay — mismatch means output buffers were reallocated
-    // and the CUDA graph has stale baked-in addresses (would SIGSEGV or corrupt).
-    LongType capturedSlotAddrHash = 0;
-
-    // ── NVRTC JIT kernel (CUDA-only) ─────────────────────────────────
-#ifdef SD_CUDA
-    NvrtcKernelHandle* jitKernel = nullptr;
-    LongType jitShapeKey = 0;
-    bool jitCompileFailed = false;
-#endif
-
-    // Symbolic shape ranges
-    bool symbolicShapeEnabled = false;
-    int symbolicWarmupRemaining = 0;
-    void* symbolicRangeData = nullptr;  // opaque ptr to SegmentShapeProfile
-
-    // Backend that compiled this segment ("Triton", "oneDNN", "CUDA", "slot-by-slot", etc.)
-    std::string compiledByBackend;
-
-    // Fast-replay: skip arg table refresh and EXT_INPUT_SYNC on replay.
-    bool argTableStable = false;
-
-    // Native ordered range ops captured in graph — must not be re-executed after replay.
-    bool gapOpsCapturedInGraph = false;
-
-    // Per-segment batch-zero entries for replay
-    std::vector<BatchZeroEntry> segBatchZeroEntries;
-
-    // View recipe chain — captures view-producing ops (reshape, permute,
-    // expand_dims, squeeze, strided_slice) so they can be installed during
-    // REPLAYING without launching a kernel or executing a native ordered range.
-    // Populated during SHAPES_FROZEN, validated during POINTERS_STABLE,
-    // installed before consumer replay during REPLAYING.
-    ViewRecipeChain viewRecipes;
-
-    // Composite replay schedule for mixed Triton/gap segments.
-    // When a segment has interleaved gap slots, it's captured as multiple
-    // Triton island graphs + gap slot ranges, replayed in program order.
-    // Only populated for segments with hasUnsupportedTritonReplayGaps.
-    ReplaySchedule compositeReplaySchedule;
-
-    // Phase 2: Replay schedule signature hash (FNV-1a) from the last execution.
-    // Computed from ordered replay units (kinds, slot ranges, op categories).
-    // Zero if the segment has no replay or consolidation has not yet run.
-    unsigned long long replaySignatureHash = 0;
-
-    // Phase 2: Number of replay units after consolidation for this segment.
-    // Updated each execution when the consolidation pass runs.
-    // Zero if the segment is not capturable or consolidation hasn't run.
-    int replayUnitCount = 0;
-
-    // Execution phase tracking — ACTUAL runtime mode (not user preference).
-    ExecutionPhase currentPhase = ExecutionPhase::WARMUP;
-
-    void reset() {
-      executionCount = 0;
-      compilationFailed = false;
-      captureOomRetries = 0;
-      captureRetryAfterExec = 0;
-      lastReplayExecCount = 0;
-      replayHandle.reset();
-      cachedShapeKey = 0;
-      capturedInputAddrKey = 0;
-      capturedCreateValueKey = 0;
-      capturedSlotAddrHash = 0;
-#ifdef SD_CUDA
-      jitKernel = nullptr;
-      jitShapeKey = 0;
-      jitCompileFailed = false;
-#endif
-      symbolicShapeEnabled = false;
-      symbolicWarmupRemaining = 0;
-      symbolicRangeData = nullptr;
-      compiledByBackend.clear();
-      argTableStable = false;
-      gapOpsCapturedInGraph = false;
-      segBatchZeroEntries.clear();
-      viewRecipes = ViewRecipeChain();
-      compositeReplaySchedule = ReplaySchedule();
-      replaySignatureHash = 0;
-      replayUnitCount = 0;
-      currentPhase = ExecutionPhase::WARMUP;
-    }
-  };
-
-  ExecState exec;
-
   // Reset resolvedCpuBackend when exec state is reset (e.g., shape change rebuild)
   void resetCpuBackend() { resolvedCpuBackend = nullptr; }
 
-  GraphSegment()
-      : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0)
-  {}
+  GraphSegment() = default;
 };
 
 /**

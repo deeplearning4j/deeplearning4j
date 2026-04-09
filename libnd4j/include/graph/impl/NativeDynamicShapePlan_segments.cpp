@@ -100,7 +100,7 @@ uint32_t resolveSegmentShapeTraits(const NativeSlot& slot) {
 
 int findProducerStep(const GraphSegment& seg, NativeSlot* slots, int outputSlotIdx) {
   if (slots == nullptr || outputSlotIdx < 0) return -1;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     const auto& slot = slots[s];
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
@@ -126,7 +126,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
 
     // Collect cross-segment input arrays (same logic as standard path below)
     std::unordered_set<int> segOutputSlots;
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       NativeSlot& slot = slots_[s];
       for (int i = 0; i < slot.wiring.numOutputs; i++) {
         segOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
@@ -134,7 +134,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
 
     std::vector<NDArray*> crossInputs;
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       NativeSlot& slot = slots_[s];
       for (int i = 0; i < slot.wiring.numInputs; i++) {
         int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -156,7 +156,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       recordObservedShapes(profile, crossInputs.data(),
                            static_cast<int>(crossInputs.size()));
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] observation %d/%d",
-               seg.startSlot, seg.endSlot,
+               seg.def.startSlot, seg.def.endSlot,
                getObservationCount(profile), getWarmupSteps(profile));
     }
 
@@ -164,7 +164,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     if (isWarmupComplete(profile)) {
       LongType rangeKey = computeRangeBasedShapeKey(
           profile, crossInputs.data(), static_cast<int>(crossInputs.size()),
-          seg.startSlot, seg.endSlot);
+          seg.def.startSlot, seg.def.endSlot);
 
       // Mix op names, iArgs, and tArgs into the range-based key so different
       // plans with the same input shapes but different ops produce unique keys
@@ -173,7 +173,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
         rangeKey ^= val;
         rangeKey *= 0x100000001b3ULL;
       };
-      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         if (!slot.ident.opName.empty()) {
           for (const char* p = slot.ident.opName.c_str(); *p != '\0'; p++) {
@@ -188,7 +188,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       }
 
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld (with-op-mix)",
-               seg.startSlot, seg.endSlot, rangeKey);
+               seg.def.startSlot, seg.def.endSlot, rangeKey);
       // Cache the key for subsequent calls (when shapesFrozen_ is enabled)
       seg.exec.cachedShapeKey = rangeKey;
       return rangeKey;
@@ -240,12 +240,12 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
   };
 
-  mix(seg.startSlot);
-  mix(seg.endSlot);
+  mix(seg.def.startSlot);
+  mix(seg.def.endSlot);
 
   // Mix op names so different plans with same slot indices + shapes don't collide
   // in singleton backend caches (e.g. OpenVINO, OneDNN Graph)
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     if (!slot.ident.opName.empty()) {
       for (const char* p = slot.ident.opName.c_str(); *p != '\0'; p++) {
@@ -264,14 +264,14 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   }
 
   std::unordered_set<int> segOutputSlots;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numOutputs; i++) {
       segOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
     }
   }
 
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -344,7 +344,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     visiting.erase(producerStep);
   };
 
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     const uint32_t traits = resolveSegmentShapeTraits(slot);
     if ((traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) == 0) continue;
@@ -694,9 +694,9 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   // If all backends have been exhausted for this segment, skip immediately
   if (seg.exec.compilationFailed) {
-    DSP_DIAG_SEG(FALLBACK, seg.startSlot,
+    DSP_DIAG_SEG(FALLBACK, seg.def.startSlot,
                  "executeSegmentWithCpuGraph: seg[%d-%d] skipped (compilationFailed=true, all backends exhausted)",
-                 seg.startSlot, seg.endSlot);
+                 seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
@@ -708,9 +708,9 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   // Cascade through the backend chain to find one that works
   const auto& chain = getCpuGraphBackendChain();
   if (chain.empty()) {
-    DSP_DIAG_SEG(BACKEND, seg.startSlot,
+    DSP_DIAG_SEG(BACKEND, seg.def.startSlot,
                  "executeSegmentWithCpuGraph: no CPU graph backends available for seg[%d-%d]",
-                 seg.startSlot, seg.endSlot);
+                 seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
@@ -719,7 +719,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
     DSP_DIAG(EXECUTE, "executeSegmentWithCpuGraph: warmup %s for seg[%d-%d], executionCount→%d",
              warmupStatus == Status::OK ? "OK" : "FAILED",
-             seg.startSlot, seg.endSlot, seg.exec.executionCount);
+             seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
     if (warmupStatus != Status::OK) {
       return warmupStatus;
     }
@@ -730,9 +730,9 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphBackend* backend = chain[i];
     const char* backendName = backend->name();
 
-    if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
+    if (!backend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) {
       DSP_DIAG(BACKEND, "cascade: backend=%s cannot fuse seg[%d-%d], trying next",
-                backendName, seg.startSlot, seg.endSlot);
+                backendName, seg.def.startSlot, seg.def.endSlot);
       continue;
     }
 
@@ -742,12 +742,12 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
       // Cache the resolved backend for future executions
       seg.resolvedCpuBackend = backend;
       DSP_DIAG(BACKEND, "cascade: seg[%d-%d] resolved to backend=%s (chain position %d/%d)",
-                seg.startSlot, seg.endSlot, backendName, (int)i + 1, (int)chain.size());
+                seg.def.startSlot, seg.def.endSlot, backendName, (int)i + 1, (int)chain.size());
       return Status::OK;
     }
 
     DSP_DIAG(BACKEND, "cascade: backend=%s failed for seg[%d-%d] (status=%d), trying next",
-              backendName, seg.startSlot, seg.endSlot, static_cast<int>(status));
+              backendName, seg.def.startSlot, seg.def.endSlot, static_cast<int>(status));
     // Reset compilationFailed so next backend gets a fresh try
     seg.exec.compilationFailed = false;
   }
@@ -755,7 +755,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   // ALL backends exhausted — mark as permanently failed
   seg.exec.compilationFailed = true;
   DSP_DIAG(FALLBACK, "cascade: ALL %d backends failed for seg[%d-%d], falling back to slot-by-slot",
-            (int)chain.size(), seg.startSlot, seg.endSlot);
+            (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
   return Status::KERNEL_FAILURE;
 }
 
@@ -789,21 +789,21 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   if (isStableReplay) {
     segShapeKey = seg.exec.cachedShapeKey;
     needsCompile = false;
-  } else if (shapesFrozen_ && seg.exec.cachedShapeKey != 0 && !seg.hasValueDepOps) {
+  } else if (shapesFrozen_ && seg.exec.cachedShapeKey != 0 && !seg.def.hasValueDepOps) {
     segShapeKey = seg.exec.cachedShapeKey;
     needsCompile = false;
   } else {
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    needsCompile = (seg.exec.executionCount == 1) || (seg.shapeKey != segShapeKey);
+    needsCompile = (seg.exec.executionCount == 1) || (seg.def.shapeKey != segShapeKey);
   }
 
   if (needsCompile) {
-    DSP_DIAG_SEG(COMPILE, seg.startSlot,
+    DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
                  "seg[%d-%d] needs compile: %s (execCount=%d shapeKey=%lld->%lld backend=%s)",
-                 seg.startSlot, seg.endSlot,
+                 seg.def.startSlot, seg.def.endSlot,
                  seg.exec.executionCount == 1 ? "first-compile" : "shape-key-changed",
                  seg.exec.executionCount,
-                 static_cast<long long>(seg.shapeKey),
+                 static_cast<long long>(seg.def.shapeKey),
                  static_cast<long long>(segShapeKey),
                  backendName);
   }
@@ -812,7 +812,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
                                  outputSlots_, totalOutputSlots_, segShapeKey,
                                  numSlots_)) {
       DSP_DIAG(COMPILE, "executeSegmentWithSpecificBackend: backend=%s compile failed for seg[%d-%d]",
-                backendName, seg.startSlot, seg.endSlot);
+                backendName, seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
   }
@@ -830,29 +830,29 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
     if (!allCompiled) {
       DSP_DIAG(FALLBACK, "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend.",
-                backendName, seg.startSlot, seg.endSlot);
+                backendName, seg.def.startSlot, seg.def.endSlot);
       seg.exec.compilationFailed = true;
       return Status::KERNEL_FAILURE;
     } else {
-      DSP_DIAG_SEG(COMPILE, seg.startSlot,
+      DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
                    "%s VALIDATION OK: seg[%d-%d] all %d ops compiled successfully",
-                   backendName, seg.startSlot, seg.endSlot, (int)audit.size());
+                   backendName, seg.def.startSlot, seg.def.endSlot, (int)audit.size());
     }
   }
 
   seg.exec.cachedShapeKey = segShapeKey;
-  seg.shapeKey = segShapeKey;
+  seg.def.shapeKey = segShapeKey;
   tl_graphExecutionActive = true;
   DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
-           seg.startSlot, seg.endSlot, backendName, (long long)segShapeKey);
+           seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
   tl_graphExecutionActive = false;
   DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
-           seg.startSlot, seg.endSlot, backendName, (int)status);
+           seg.def.startSlot, seg.def.endSlot, backendName, (int)status);
 
   DSP_DIAG(EXECUTE, "executeSegmentWithSpecificBackend: exec%d seg[%d-%d]: backend=%s status=%d(%s)",
-            seg.exec.executionCount, seg.startSlot, seg.endSlot, backendName,
+            seg.exec.executionCount, seg.def.startSlot, seg.def.endSlot, backendName,
             static_cast<int>(status), statusName_seg(status));
 
   if (status == Status::OK) {
@@ -944,10 +944,10 @@ inline void verifyCfSlotWrite(int stepIdx, const char* cfType, const char* opNam
 
 Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
-  DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+  DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
                "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d compilationFailed=%d",
-               seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
-               seg.exec.executionCount, seg.isCapturable ? 1 : 0, seg.exec.compilationFailed ? 1 : 0);
+               seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
+               seg.exec.executionCount, seg.def.isCapturable ? 1 : 0, seg.exec.compilationFailed ? 1 : 0);
   bool streamIsCapturing = false;
 #ifdef SD_CUDA
   if (stream != nullptr) {
@@ -961,10 +961,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // NOT per segment — dead flags from Switch in seg N must persist to affect
   // ops in seg N+1.
 
-  int stepIdx = seg.startSlot;
+  int stepIdx = seg.def.startSlot;
   int loopIterations = 0;
 
-  while (stepIdx <= seg.endSlot) {
+  while (stepIdx <= seg.def.endSlot) {
     NativeSlot& slot = slots_[stepIdx];
 
     // ── Control flow dispatch ────────────────────────────────────────
@@ -1068,7 +1068,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                             outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
 #endif
 
-          if (slot.cf.loopBackTarget >= 0 && slot.cf.loopBackTarget >= seg.startSlot) {
+          if (slot.cf.loopBackTarget >= 0 && slot.cf.loopBackTarget >= seg.def.startSlot) {
             loopIterations++;
             if (loopIterations >= MAX_LOOP_ITERATIONS) {
               DSP_DIAG(EXECUTE, "loop iteration limit (%d) reached at slot %d",
@@ -1213,7 +1213,7 @@ executeSlot_retry:
                  "seg=[%d-%d] execCount=%d shapesFrozen=%d",
                  stepIdx, slots_[stepIdx].ident.opName.c_str(),
                  static_cast<int>(syncErr), cudaGetErrorString(syncErr),
-                 seg.startSlot, seg.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
+                 seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
         sd_printf("%s\n", buf);
         // Log all inputs to the failing slot
         auto& faultSlot = slots_[stepIdx];
@@ -1374,7 +1374,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
     hash *= 0x100000001b3ULL;
   };
 
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -1402,7 +1402,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
 Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
 
-  int segSize = seg.endSlot - seg.startSlot + 1;
+  int segSize = seg.def.endSlot - seg.def.startSlot + 1;
   int execCount = seg.exec.executionCount;
 
   // ── Phase determination ─────────────────────────────────────────────────
@@ -1420,8 +1420,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
   DSP_DIAG(EMULATED_REPLAY,
            "EMULATED seg[%d-%d] phase=%s execCount=%d slots=%d capturable=%d frozen=%d",
-           seg.startSlot, seg.endSlot, phaseName, execCount, segSize,
-           seg.isCapturable ? 1 : 0, shapesFrozen_ ? 1 : 0);
+           seg.def.startSlot, seg.def.endSlot, phaseName, execCount, segSize,
+           seg.def.isCapturable ? 1 : 0, shapesFrozen_ ? 1 : 0);
 
   // ── Gap 1: Fast path — skip key recomputation when stable ──────────────
   // When argTableStable was set on the previous execution (both shape and addr
@@ -1462,7 +1462,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     // Track unique external indices to avoid double-counting
     std::unordered_set<int> seenExt;
 
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       NativeSlot& slot = slots_[s];
       for (int i = 0; i < slot.wiring.numInputs; i++) {
         int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -1501,7 +1501,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     // Per-placeholder detail for large inputs
     if (DSP_DIAG_ENABLED(EMULATED_REPLAY)) {
       seenExt.clear();
-      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         for (int i = 0; i < slot.wiring.numInputs; i++) {
           int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -1529,7 +1529,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     int numMatmul = 0, numElementwise = 0, numOther = 0;
     int totalFusedChainOps = 0;
 
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       NativeSlot& slot = slots_[s];
       if (slot.flags.isIdentityOp)     numIdentity++;
       if (slot.flags.isViewCapableOp)  numViewOps++;
@@ -1585,14 +1585,14 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
     // ── Gap 4: DOT graph topology ────────────────────────────────────────
     if (DSP_DIAG_ENABLED(EMULATED_REPLAY)) {
-      DSP_DIAG(EMULATED_REPLAY, "  DOT_BEGIN seg[%d-%d]", seg.startSlot, seg.endSlot);
-      DSP_DIAG(EMULATED_REPLAY, "  digraph segment_%d_%d {", seg.startSlot, seg.endSlot);
+      DSP_DIAG(EMULATED_REPLAY, "  DOT_BEGIN seg[%d-%d]", seg.def.startSlot, seg.def.endSlot);
+      DSP_DIAG(EMULATED_REPLAY, "  digraph segment_%d_%d {", seg.def.startSlot, seg.def.endSlot);
       DSP_DIAG(EMULATED_REPLAY, "    rankdir=TB;");
       DSP_DIAG(EMULATED_REPLAY, "    node [shape=box, fontsize=10];");
 
       // External input nodes
       std::unordered_set<int> emittedExt;
-      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         for (int i = 0; i < slot.wiring.numInputs; i++) {
           int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -1612,7 +1612,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       }
 
       // Op nodes
-      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         const char* color = "white";
         if (slot.flags.isIdentityOp)         color = "gray90";
@@ -1627,7 +1627,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       }
 
       // Edges
-      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         for (int i = 0; i < slot.wiring.numInputs; i++) {
           int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -1636,7 +1636,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
             DSP_DIAG(EMULATED_REPLAY, "    ext_%d -> slot_%d;", extIdx, s);
           } else if (srcIdx >= 0) {
             // Find which slot produces this output
-            for (int ps = seg.startSlot; ps < s; ps++) {
+            for (int ps = seg.def.startSlot; ps < s; ps++) {
               NativeSlot& pslot = slots_[ps];
               for (int o = 0; o < pslot.wiring.numOutputs; o++) {
                 if (pslot.wiring.outputSlotIndices[o] == srcIdx) {
@@ -1654,7 +1654,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       }
 
       DSP_DIAG(EMULATED_REPLAY, "  }");
-      DSP_DIAG(EMULATED_REPLAY, "  DOT_END seg[%d-%d]", seg.startSlot, seg.endSlot);
+      DSP_DIAG(EMULATED_REPLAY, "  DOT_END seg[%d-%d]", seg.def.startSlot, seg.def.endSlot);
     }
 
   } else if (!fastPath) {
@@ -1680,7 +1680,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
                "Identify which input shapes changed between executions.");
 
       // Detailed: find which external inputs changed shape
-      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         for (int i = 0; i < slot.wiring.numInputs; i++) {
           int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -1739,7 +1739,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   // Dispatch overhead estimate: ~15us per effective op (shape inference + dispatch)
   // Identity/fused-tail ops are skipped by executeSlot, so don't count them.
   int estimatedSkippedOps = 0;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     if (slots_[s].flags.isIdentityOp || slots_[s].fusedChain.isFusedChainTail) estimatedSkippedOps++;
   }
   int effectiveDispatchOps = segSize - estimatedSkippedOps;

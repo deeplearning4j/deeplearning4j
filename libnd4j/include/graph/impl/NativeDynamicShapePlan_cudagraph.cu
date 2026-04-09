@@ -84,14 +84,14 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
   };
 
   std::unordered_set<int> segOutputSlots;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numOutputs; i++) {
       segOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
     }
   }
 
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -157,7 +157,7 @@ LongType NativeDynamicShapePlan::computeCreateOpValueKey(
   };
 
   // Part 1: Hash create op inputs (original logic)
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     if (!slotUsesValueTrackedConstantGeneration(slot)) continue;
 
@@ -233,7 +233,7 @@ Status NativeDynamicShapePlan::executeSegmentWithJit(
     // Phase 2: slotArrayCache_ == outputSlots_ (unified), no restore needed
 
     int64_t elementCount = 0;
-    for (int s = seg.endSlot; s >= seg.startSlot; s--) {
+    for (int s = seg.def.endSlot; s >= seg.def.startSlot; s--) {
       if (slots_[s].frozenConstantSlot() || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
       for (int o = 0; o < slots_[s].numOutputs; o++) {
         int si = slots_[s].outputSlotIndices[o];
@@ -246,7 +246,7 @@ Status NativeDynamicShapePlan::executeSegmentWithJit(
     }
 
     if (elementCount <= 0) {
-      DSP_DIAG(JIT, "NVRTC JIT: zero element count for seg[%d-%d]", seg.startSlot, seg.endSlot);
+      DSP_DIAG(JIT, "NVRTC JIT: zero element count for seg[%d-%d]", seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
 
@@ -275,10 +275,10 @@ Status NativeDynamicShapePlan::executeSegmentWithJit(
     seg.exec.jitKernel = nullptr;
   }
 
-  if (!canJitSegment(slots_, seg.startSlot, seg.endSlot)) {
+  if (!canJitSegment(slots_, seg.def.startSlot, seg.def.endSlot)) {
     seg.exec.jitCompileFailed = true;
     DSP_DIAG(FALLBACK, "NVRTC JIT: seg[%d-%d] not fusible, falling back",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
@@ -289,17 +289,17 @@ Status NativeDynamicShapePlan::executeSegmentWithJit(
     if (&segments_[i] == &seg) { segIdx = static_cast<int>(i); break; }
   }
 
-  auto source = buildKernelSource(slots_, seg.startSlot, seg.endSlot,
+  auto source = buildKernelSource(slots_, seg.def.startSlot, seg.def.endSlot,
                                   outputSlots_, totalOutputSlots_, segIdx);
   if (!source.valid) {
     seg.exec.jitCompileFailed = true;
     DSP_DIAG(JIT, "NVRTC JIT: source generation failed for seg[%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   DSP_DIAG_SEG(JIT, segIdx, "NVRTC: compiling kernel '%s' for seg[%d-%d] (%zu bytes source)",
-               source.kernelName.c_str(), seg.startSlot, seg.endSlot,
+               source.kernelName.c_str(), seg.def.startSlot, seg.def.endSlot,
                source.sourceCode.size());
 
   int deviceId = 0;
@@ -310,14 +310,14 @@ Status NativeDynamicShapePlan::executeSegmentWithJit(
     delete seg.exec.jitKernel;
     seg.exec.jitKernel = nullptr;
     DSP_DIAG(JIT, "NVRTC JIT: compilation failed for seg[%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   seg.exec.jitShapeKey = segShapeKey;
 
   int64_t elementCount = 0;
-  for (int s = seg.endSlot; s >= seg.startSlot; s--) {
+  for (int s = seg.def.endSlot; s >= seg.def.startSlot; s--) {
     if (slots_[s].frozenConstantSlot() || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
     for (int o = 0; o < slots_[s].numOutputs; o++) {
       int si = slots_[s].outputSlotIndices[o];
@@ -330,7 +330,7 @@ Status NativeDynamicShapePlan::executeSegmentWithJit(
   }
 
   if (elementCount <= 0) {
-    DSP_DIAG(JIT, "NVRTC JIT: zero element count for seg[%d-%d]", seg.startSlot, seg.endSlot);
+    DSP_DIAG(JIT, "NVRTC JIT: zero element count for seg[%d-%d]", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
@@ -341,7 +341,7 @@ Status NativeDynamicShapePlan::executeSegmentWithJit(
   if (status == Status::OK) {
     seg.exec.executionCount++;
     DSP_DIAG_SEG(JIT, segIdx, "NVRTC: launched '%s' for seg[%d-%d] (%lld elements)",
-                 seg.exec.jitKernel->kernelName.c_str(), seg.startSlot, seg.endSlot,
+                 seg.exec.jitKernel->kernelName.c_str(), seg.def.startSlot, seg.def.endSlot,
                  static_cast<long long>(elementCount));
     return Status::OK;
   }
@@ -374,7 +374,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     bool hasGraph = (seg.exec.replayHandle != nullptr);
     bool shapeMatch = hasGraph && (seg.exec.cachedShapeKey == segShapeKey);
     DSP_DIAG_SEG(EXECUTE, segIdx, "seg[%d-%d] execCount=%d hasGraph=%d shapeMatch=%d compilationFailed=%d",
-                 seg.startSlot, seg.endSlot, executeCount_,
+                 seg.def.startSlot, seg.def.endSlot, executeCount_,
                  static_cast<int>(hasGraph), static_cast<int>(shapeMatch),
                  static_cast<int>(seg.exec.compilationFailed));
   }
@@ -430,11 +430,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       // the graph has stale baked-in pointers and must be rebuilt.
       if (seg.exec.capturedSlotAddrHash != 0) {
         LongType currentAddrHash = computeSlotAddrHash(
-            outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
+            outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
         if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
           DSP_DIAG(MEMORY, "SLOT ADDRESS DRIFT for seg[%d-%d]: "
                    "captured=0x%llx current=0x%llx — invalidating replay handle",
-                   seg.startSlot, seg.endSlot,
+                   seg.def.startSlot, seg.def.endSlot,
                    (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
           clearGraphStreamError(cudaStr);
           platformCleanupSegmentForRebuild(seg);
@@ -451,13 +451,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
       if (replayInputsStable) {
         DSP_DIAG(FALLBACK, "graph replay failed for seg[%d-%d], "
-                 "falling back to slot-by-slot", seg.startSlot, seg.endSlot);
+                 "falling back to slot-by-slot", seg.def.startSlot, seg.def.endSlot);
         clearGraphStreamError(cudaStr);
         platformCleanupSegmentForRebuild(seg);
       }
     } else {
       DSP_DIAG(FALLBACK, "graph replay invalidated for seg[%d-%d]: input addresses drifted since capture",
-               seg.startSlot, seg.endSlot);
+               seg.def.startSlot, seg.def.endSlot);
       clearGraphStreamError(cudaStr);
       platformCleanupSegmentForRebuild(seg);
     }
@@ -481,7 +481,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   if (planPhase_ < PlanPhase::POINTERS_STABLE) {
     DSP_DIAG(SEGMENT, "PHASE_INFO: graph capture starting for seg[%d-%d] at planPhase=%d "
               "(before POINTERS_STABLE). External/input addresses may still drift.",
-              seg.startSlot, seg.endSlot, static_cast<int>(planPhase_));
+              seg.def.startSlot, seg.def.endSlot, static_cast<int>(planPhase_));
   }
 
   if (seg.exec.replayHandle && seg.exec.cachedShapeKey != segShapeKey) {
@@ -493,7 +493,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   bool hasValueDependentShapeOps = false;
-  for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
+  for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
     if (slots_[stepIdx].outputShapeDependsOnInputValues) {
       hasValueDependentShapeOps = true;
       break;
@@ -528,7 +528,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   if (currentDeviceErr != cudaSuccess) {
     DSP_DIAG(FALLBACK, "cudaGetDevice failed during graph capture setup "
              "for seg[%d-%d]: %s",
-             seg.startSlot, seg.endSlot, cudaGetErrorString(currentDeviceErr));
+             seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(currentDeviceErr));
     cudaGetLastError();
     seg.exec.compilationFailed = true;
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
@@ -542,7 +542,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   bool isOomRetry = (seg.exec.captureOomRetries > 0);
   if (!isOomRetry) {
     size_t estimatedCaptureBytes = 0;
-    for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
+    for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
       NativeSlot& slot = slots_[stepIdx];
       for (int i = 0; i < slot.wiring.numOutputs; i++) {
         int slotIdx = slot.wiring.outputSlotIndices[i];
@@ -560,7 +560,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     if (requiredFree > gpuFree) {
       DSP_DIAG_SEG(MEMORY, segIdx, "skipping graph capture for seg[%d-%d] (%d ops): "
                    "estimated %zuMB (2x %zuMB) > free %zuMB (total %zuMB)",
-                   seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
+                   seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                    requiredFree / (1024 * 1024),
                    estimatedCaptureBytes / (1024 * 1024),
                    gpuFree / (1024 * 1024),
@@ -594,9 +594,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   std::vector<NDArray*> preCapOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
   // pendingClose_ removed: arrays persist (one array per slot)
 
-  std::vector<NativeSlot::SlotState> savedFrozenContextReady(seg.endSlot - seg.startSlot + 1);
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    savedFrozenContextReady[s - seg.startSlot] = slots_[s].state_;
+  std::vector<NativeSlot::SlotState> savedFrozenContextReady(seg.def.endSlot - seg.def.startSlot + 1);
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    savedFrozenContextReady[s - seg.def.startSlot] = slots_[s].state_;
     if (slots_[s].state_ >= NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
   }
 
@@ -620,13 +620,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     return mb * 1024ULL * 1024ULL;
   }();
   DSP_DIAG_SEG(MEMORY, segIdx, "capture workspace check seg[%d-%d]: ptr=%p bytes=%zu",
-               seg.startSlot, seg.endSlot, seg.exec.replayHandle->getWorkspacePtr(), seg.exec.replayHandle->getWorkspaceBytes());
+               seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle->getWorkspacePtr(), seg.exec.replayHandle->getWorkspaceBytes());
   if (seg.exec.replayHandle->getWorkspacePtr() == nullptr) {
     int deviceId = 0;
     cudaGetDevice(&deviceId);
-    if (!seg.exec.replayHandle->allocateWorkspace(CAPTURE_WORKSPACE_SIZE, deviceId, nullptr, seg.startSlot)) {
+    if (!seg.exec.replayHandle->allocateWorkspace(CAPTURE_WORKSPACE_SIZE, deviceId, nullptr, seg.def.startSlot)) {
       DSP_DIAG_SEG(FALLBACK, segIdx, "capture workspace alloc failed for seg[%d-%d], graph will contain cudaMallocAsync nodes",
-                   seg.startSlot, seg.endSlot);
+                   seg.def.startSlot, seg.def.endSlot);
     }
   }
   tl_captureWorkspace = seg.exec.replayHandle->getWorkspacePtr();
@@ -661,7 +661,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (!handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed)) {
     DSP_DIAG(FALLBACK, "graph capture begin failed for seg[%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     tl_graphExecutionActive = false;
     tl_graphCaptureStream = prevCaptureStream;
     tl_captureWorkspace = nullptr;
@@ -687,19 +687,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     invalidateSegmentShapeState(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.startSlot];
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
     }
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   bool captureOk = true;
   bool captureOomFailure = false;
-  int lastCaptureSlot = seg.startSlot;
+  int lastCaptureSlot = seg.def.startSlot;
   lastCaptureAudit_.clear();
 
   try {
-    for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
+    for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
       lastCaptureSlot = stepIdx;
       {
         cudaStreamCaptureStatus capStatus;
@@ -804,13 +804,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       seg.exec.captureOomRetries++;
       seg.exec.captureRetryAfterExec = seg.exec.executionCount + GraphSegment::retryInterval();
       DSP_DIAG_SEG(MEMORY, segIdx, "graph capture OOM for seg[%d-%d], retry %d/%d after exec %d",
-                   seg.startSlot, seg.endSlot,
+                   seg.def.startSlot, seg.def.endSlot,
                    seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                    seg.exec.captureRetryAfterExec);
     } else {
       seg.exec.compilationFailed = true;
       DSP_DIAG_SEG(FALLBACK, segIdx, "graph capture permanently failed for seg[%d-%d] (oom=%s, retries=%d)",
-                   seg.startSlot, seg.endSlot,
+                   seg.def.startSlot, seg.def.endSlot,
                    captureOomFailure ? "true" : "false",
                    seg.exec.captureOomRetries);
     }
@@ -822,8 +822,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.startSlot];
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
     }
     invalidateSegmentShapeState(seg);
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
@@ -832,15 +832,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Helper lambda to restore slot state on capture failure.
   auto cleanupCaptureBuffersOnFailure = [&seg, &savedFrozenContextReady, this]() {
     // Arrays persist — no pendingClose_ cleanup needed on capture failure
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.startSlot];
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
     }
   };
 
   if (!handle->endCapture(cudaStr)) {
     cudaGetLastError();
     DSP_DIAG(FALLBACK, "graph capture end failed for seg[%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     for (auto* ptr : tl_capturedHostPtrs) {
       if (ptr != nullptr) cudaFreeHost(ptr);
     }
@@ -875,7 +875,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     int numEvicted = 0;
     if (handle->wasLastInstantiateOom()) {
       DSP_DIAG(MEMORY, "graph instantiate OOM for seg[%d-%d], attempting eviction (up to %d segments)",
-               seg.startSlot, seg.endSlot, GraphSegment::maxOomRetries());
+               seg.def.startSlot, seg.def.endSlot, GraphSegment::maxOomRetries());
 
       for (int evictAttempt = 0; evictAttempt < GraphSegment::maxOomRetries(); evictAttempt++) {
         // Find the segment with the smallest captured graph (fewest nodes) to evict.
@@ -905,10 +905,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         // Evict the selected segment's graph with full cleanup
         auto& evictSeg = segments_[evictIdx];
         DSP_DIAG(MEMORY, "evicting graph for seg[%d-%d] (%zu nodes) to free memory for seg[%d-%d] (attempt %d/%d)",
-                 evictSeg.startSlot, evictSeg.endSlot, smallestNodes,
-                 seg.startSlot, seg.endSlot, evictAttempt + 1, GraphSegment::maxOomRetries());
+                 evictSeg.def.startSlot, evictSeg.def.endSlot, smallestNodes,
+                 seg.def.startSlot, seg.def.endSlot, evictAttempt + 1, GraphSegment::maxOomRetries());
 
-        evictSeg.exec.replayHandle->releaseWorkspace(nullptr, evictSeg.startSlot);
+        evictSeg.exec.replayHandle->releaseWorkspace(nullptr, evictSeg.def.startSlot);
 
         // Free pinned host pointers allocated during capture
         evictSeg.exec.replayHandle->freeHostPointers();
@@ -938,7 +938,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         cudaGetLastError();
 
         DSP_DIAG(MEMORY, "evicted seg[%d-%d] (%zu nodes), total evicted: %d",
-                 evictSeg.startSlot, evictSeg.endSlot, smallestNodes, numEvicted);
+                 evictSeg.def.startSlot, evictSeg.def.endSlot, smallestNodes, numEvicted);
       }
     }
 
@@ -956,12 +956,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       int retryInterval = (numEvicted > 0) ? 1 : GraphSegment::retryInterval();
       seg.exec.captureRetryAfterExec = seg.exec.executionCount + retryInterval;
       DSP_DIAG(MEMORY, "graph instantiate OOM for seg[%d-%d], will retry %d/%d after exec %d (evicted %d segments)",
-               seg.startSlot, seg.endSlot,
+               seg.def.startSlot, seg.def.endSlot,
                seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                seg.exec.captureRetryAfterExec, numEvicted);
     } else {
       DSP_DIAG(FALLBACK, "graph instantiate failed for seg[%d-%d] (oom=%s, retries=%d, evicted=%d)",
-               seg.startSlot, seg.endSlot,
+               seg.def.startSlot, seg.def.endSlot,
                handle->wasLastInstantiateOom() ? "true" : "false",
                seg.exec.captureOomRetries, numEvicted);
       seg.exec.compilationFailed = true;
@@ -987,7 +987,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     DSP_DIAG_SEG(COMPILE, segIdx, "graph captured for seg[%d-%d]: "
                  "%zu nodes, %zu edges, %d kernels, %d memcpys, %d memsets, "
                  "%d memAllocs, %d memFrees, %d hostCallbacks, %d events, %d empty",
-                 seg.startSlot, seg.endSlot,
+                 seg.def.startSlot, seg.def.endSlot,
                  handle->getNumNodes(), handle->getNumEdges(),
                  stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
                  stats.numMemAllocs, stats.numMemFrees,
@@ -1004,7 +1004,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     if (stats.numKernels == 0 && stats.numMemcpyH2D == 0 && stats.numMemsets == 0) {
       DSP_DIAG_SEG(COMPILE, segIdx, "empty graph for seg[%d-%d] (0 kernels) — skipping replay, "
                    "marking segment as non-capturable",
-                   seg.startSlot, seg.endSlot);
+                   seg.def.startSlot, seg.def.endSlot);
       seg.exec.compilationFailed = true;
       for (auto* ptr : tl_capturedHostPtrs) {
         if (ptr != nullptr) cudaFreeHost(ptr);
@@ -1020,7 +1020,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   if (!handle->launchAsync(cudaStr)) {
     cudaGetLastError();
     DSP_DIAG(FALLBACK, "graph launch failed for seg[%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     for (auto* ptr : tl_capturedHostPtrs) {
       if (ptr != nullptr) cudaFreeHost(ptr);
     }
@@ -1044,7 +1044,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // replayHandle is already set (created before capture began)
   seg.exec.cachedShapeKey = segShapeKey;
   seg.exec.capturedSlotAddrHash = computeSlotAddrHash(
-      outputSlots_, seg.startSlot, seg.endSlot, totalOutputSlots_);
+      outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
   seg.exec.executionCount++;
   totalGraphReplays_++;
 
@@ -1061,7 +1061,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // and frees its output/cross-segment slots, causing stale data on replay.
   if (seg.exec.compilationFailed) {
     DSP_DIAG(COMPILE, "clearing compilationFailed for seg[%d-%d] after successful CUDA graph capture",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     seg.exec.compilationFailed = false;
   }
 
@@ -1069,13 +1069,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (seg.exec.captureOomRetries > 0) {
     DSP_DIAG_SEG(MEMORY, segIdx, "graph capture SUCCEEDED on OOM retry %d for seg[%d-%d]",
-                 seg.exec.captureOomRetries, seg.startSlot, seg.endSlot);
+                 seg.exec.captureOomRetries, seg.def.startSlot, seg.def.endSlot);
     seg.exec.captureOomRetries = 0;
     seg.exec.captureRetryAfterExec = 0;
   }
 
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    slots_[s].state_ = savedFrozenContextReady[s - seg.startSlot];
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
   }
 
   if (executionTimingEnabled_) {
@@ -1084,7 +1084,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         ? (100.0 * captureWorkspaceUsed / seg.exec.replayHandle->getWorkspaceBytes()) : 0.0;
     DSP_DIAG_SEG(TIMING, segIdx, "captured CUDA graph seg[%d-%d] (%zu nodes, %zu edges) "
                  "[%d kern, %d memcpy, %d memset, %d alloc, %d free] ws=%zuKB/%zuKB (%.1f%%)",
-                 seg.startSlot, seg.endSlot,
+                 seg.def.startSlot, seg.def.endSlot,
                  handle->getNumNodes(), handle->getNumEdges(),
                  stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
                  stats.numMemAllocs, stats.numMemFrees,
@@ -1118,11 +1118,11 @@ void NativeDynamicShapePlan::performReplayVerify(
 
   // Find final output slot for argmax
   int finalOutputSlot = -1;
-  if (seg.endSlot >= 0 && seg.endSlot < numSlots_ && slots_[seg.endSlot].numOutputs > 0) {
-    finalOutputSlot = slots_[seg.endSlot].outputSlotIndices[0];
+  if (seg.def.endSlot >= 0 && seg.def.endSlot < numSlots_ && slots_[seg.def.endSlot].numOutputs > 0) {
+    finalOutputSlot = slots_[seg.def.endSlot].outputSlotIndices[0];
   }
   if (finalOutputSlot < 0 || finalOutputSlot >= totalOutputSlots_) {
-    finalOutputSlot = seg.endSlot;
+    finalOutputSlot = seg.def.endSlot;
   }
 
   // 1. Compute argmax from REPLAY output
@@ -1149,7 +1149,7 @@ void NativeDynamicShapePlan::performReplayVerify(
   std::vector<SlotSnap> snaps;
 
   std::unordered_map<int, int> slotToStep;
-  for (int s = seg.startSlot; s <= seg.endSlot && s < numSlots_; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
     for (int oi = 0; oi < slots_[s].numOutputs; oi++) {
       int si = slots_[s].outputSlotIndices[oi];
       if (si >= 0 && si < totalOutputSlots_) slotToStep[si] = s;
@@ -1195,9 +1195,9 @@ void NativeDynamicShapePlan::performReplayVerify(
   // The frozen path only refreshes external/view-producer inputs — it does NOT
   // refresh regular slot-to-slot inputs, so downstream ops would read stale
   // warmup-era data instead of freshly computed outputs.
-  std::vector<NativeSlot::SlotState> savedFrozenCtx(seg.endSlot - seg.startSlot + 1);
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    savedFrozenCtx[s - seg.startSlot] = slots_[s].state_;
+  std::vector<NativeSlot::SlotState> savedFrozenCtx(seg.def.endSlot - seg.def.startSlot + 1);
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    savedFrozenCtx[s - seg.def.startSlot] = slots_[s].state_;
     if (slots_[s].state_ >= NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
   }
   // Set executeCount_ to 0 so shape inference runs fresh
@@ -1241,8 +1241,8 @@ void NativeDynamicShapePlan::performReplayVerify(
   releaseAtStepCounts_ = savedReleaseAtStepCounts;
   delete[] zeroedCounts;
   delete[] dummyRelease;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    slots_[s].state_ = savedFrozenCtx[s - seg.startSlot];
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    slots_[s].state_ = savedFrozenCtx[s - seg.def.startSlot];
   }
   executeCount_ = savedExecCountGlobal;
   seg.exec.executionCount = savedSegExecCount;

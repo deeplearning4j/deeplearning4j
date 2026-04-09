@@ -1018,7 +1018,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   cudaGetDevice(&currentDevice);
 
   auto& refreshEnv = Environment::getInstance();
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice,
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
 
@@ -1029,7 +1029,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     if (it == cache_.end()) {
       DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
                 "(shapeKey=%lld, device=%d) → marking argTableStable (no arg tables to refresh)",
-                seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice);
+                seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, currentDevice);
       // No Triton sub-kernels = no arg tables to refresh. Mark stable so fast replay
       // path can be used (skip iterating over all external inputs for sync checks).
       seg.exec.argTableStable = true;
@@ -1103,7 +1103,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: refreshed %d sub-kernels "
              "(skipped %d non-indirect, %d static-only, changedPtrs=%d) for seg[%d-%d]",
              refreshedCount, skippedCount, dirtySkippedCount, totalChangedPtrs,
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
   }
 
   // ── TRIPWIRE: scan arg tables for NULL (0) pointer entries ──────────
@@ -1130,7 +1130,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
           }
           DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_ARGTABLE: seg[%d-%d] subK[%zu] arg[%d]=%s#%d "
                    "value=0 (NULL device ptr) arr=%p specialBuf=%p — graph will SIGSEGV!",
-                   seg.startSlot, seg.endSlot, ki, i, kind, resolvedIdx,
+                   seg.def.startSlot, seg.def.endSlot, ki, i, kind, resolvedIdx,
                    (void*)arr, arr ? arr->specialBuffer() : nullptr);
           nullArgEntries++;
         }
@@ -1138,7 +1138,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     }
     if (nullArgEntries > 0) {
       DSP_DIAG(EXECUTE, "TRIPWIRE_ARGTABLE_SUMMARY: seg[%d-%d] %d NULL arg table entries detected!",
-               seg.startSlot, seg.endSlot, nullArgEntries);
+               seg.def.startSlot, seg.def.endSlot, nullArgEntries);
     }
   }
   // ── END TRIPWIRE ───────────────────────────────────────────────────
@@ -1147,7 +1147,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   if (totalChangedPtrs == 0 && refreshedCount > 0) {
     seg.exec.argTableStable = true;
     DSP_DIAG(EXECUTE, "ARG_TABLE_STABLE: seg[%d-%d] %d sub-kernels, fast-replay enabled",
-             seg.startSlot, seg.endSlot, refreshedCount);
+             seg.def.startSlot, seg.def.endSlot, refreshedCount);
   } else {
     seg.exec.argTableStable = false;
   }
@@ -1162,7 +1162,7 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   auto& refreshEnv = Environment::getInstance();
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice,
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
 
@@ -1199,7 +1199,7 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
                    "(replaces %d per-kernel copies) for seg[%d-%d]",
                    compiledSeg->consolidatedArgTableBytes,
                    static_cast<int>(compiledSeg->subKernels.size()),
-                   seg.startSlot, seg.endSlot);
+                   seg.def.startSlot, seg.def.endSlot);
     }
   }
 }

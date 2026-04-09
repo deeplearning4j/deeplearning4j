@@ -493,7 +493,7 @@ bool OneDnnGraphBackend::compileSegment(
     int* requestedOutputSlotIndices,
     int numRequestedOutputs) {
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
@@ -502,7 +502,7 @@ bool OneDnnGraphBackend::compileSegment(
     return true;  // Already compiled for this shape
   }
 
-  auto compiled = buildGraph(slots, seg.startSlot, seg.endSlot,
+  auto compiled = buildGraph(slots, seg.def.startSlot, seg.def.endSlot,
                              externalInputs, numExternalInputs,
                              outputSlots, totalOutputSlots);
   compiled.shapeKey = shapeKey;
@@ -532,7 +532,7 @@ Status OneDnnGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
 
   CompiledSegment* compiled = nullptr;
   {

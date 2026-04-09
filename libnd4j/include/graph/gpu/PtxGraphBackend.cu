@@ -648,7 +648,7 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                       int totalSlots,
                                       int* requestedOutputSlotIndices,
                                       int numRequestedOutputs) {
-  JitSegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
+  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -661,13 +661,13 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   JitCompiledKernel compiled;
 
-  std::string ptxSrc = generatePtx(slots, seg.startSlot, seg.endSlot,
+  std::string ptxSrc = generatePtx(slots, seg.def.startSlot, seg.def.endSlot,
                                      externalInputs, numExternalInputs,
                                      outputSlots, totalOutputSlots, compiled);
 
   if (ptxSrc.empty()) {
     DSP_DIAG(COMPILE, "PtxGraphBackend: PTX generation failed for segment [%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return false;
   }
 
@@ -680,13 +680,13 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     size_t paramBytes = compiled.argMap.size() * sizeof(void*) + sizeof(int);
     if (paramBytes > kConservativeMaxKernelParamBytes) {
       DSP_DIAG(COMPILE, "PtxGraphBackend: segment [%d-%d] requires %zu kernel-arg bytes, exceeds limit %zu, skipping",
-                seg.startSlot, seg.endSlot, paramBytes, kConservativeMaxKernelParamBytes);
+                seg.def.startSlot, seg.def.endSlot, paramBytes, kConservativeMaxKernelParamBytes);
       return false;
     }
   }
 
   // Build audit
-  for (int i = seg.startSlot; i <= seg.endSlot; i++) {
+  for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
     entry.opName = slots[i].ident.opName;
@@ -701,7 +701,7 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled.gpuModule = GpuKernelLauncher::loadPtxModule(ptxSrc.c_str(), ptxSrc.size());
   if (!compiled.gpuModule) {
     DSP_DIAG(COMPILE, "PtxGraphBackend: PTX module load failed for segment [%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return false;
   }
 
@@ -721,7 +721,7 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   DSP_DIAG(JIT, "PtxGraphBackend: loaded segment [%d-%d] (%zu bytes PTX, shape key %lld)",
-            seg.startSlot, seg.endSlot, ptxSrc.size(), shapeKey);
+            seg.def.startSlot, seg.def.endSlot, ptxSrc.size(), shapeKey);
   return true;
 }
 
@@ -731,7 +731,7 @@ Status PtxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                         NDArray** externalInputs, int numExternalInputs,
                                         NDArray** outputSlots, int totalOutputSlots,
                                         void* stream) {
-  JitSegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey};
+  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
   return jitExecuteSegment(key, cache_, cacheMtx_, "PtxGraphBackend",
                            slots, externalInputs, numExternalInputs,
                            outputSlots, totalOutputSlots, stream);

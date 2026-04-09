@@ -232,7 +232,7 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
   for (auto& seg : segments_) {
     std::unordered_map<MatmulSig, std::vector<int>, MatmulSigHash> sigBuckets;
 
-    for (int i = seg.startSlot; i <= seg.endSlot; i++) {
+    for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
       NativeSlot& slot = slots_[i];
       if (!isMatmulOp(slot.ident.opName) || slot.wiring.numInputs < 2 ||
           slot.cf.controlFlowType != CF_NONE || slot.frozenConstantSlot()) continue;

@@ -84,8 +84,8 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
                            int numSlots,
                            const char* phase) {
   int targetDevice = -1;
-  if (segment.startSlot >= 0 && segment.startSlot < numSlots) {
-    targetDevice = slots[segment.startSlot].targetDeviceId;
+  if (segment.def.startSlot >= 0 && segment.def.startSlot < numSlots) {
+    targetDevice = slots[segment.def.startSlot].targetDeviceId;
   }
   if (targetDevice < 0) return true;
 
@@ -102,7 +102,7 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
     cudaError_t countErr = cudaGetDeviceCount(&deviceCount);
     if (countErr != cudaSuccess || deviceCount <= 0) {
       DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] targetDeviceId=%d but CUDA device query failed: %s",
-               phase, segment.startSlot, segment.endSlot, targetDevice,
+               phase, segment.def.startSlot, segment.def.endSlot, targetDevice,
                cudaGetErrorString(countErr));
       cudaGetLastError();
       return false;
@@ -111,7 +111,7 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
   }
   if (targetDevice >= cachedDeviceCount) {
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] invalid targetDeviceId=%d (deviceCount=%d)",
-             phase, segment.startSlot, segment.endSlot, targetDevice, cachedDeviceCount);
+             phase, segment.def.startSlot, segment.def.endSlot, targetDevice, cachedDeviceCount);
     return false;
   }
 
@@ -120,7 +120,7 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
     cudaError_t getErr = cudaGetDevice(&currentDevice);
     if (getErr != cudaSuccess) {
       DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s",
-               phase, segment.startSlot, segment.endSlot, cudaGetErrorString(getErr));
+               phase, segment.def.startSlot, segment.def.endSlot, cudaGetErrorString(getErr));
       cudaGetLastError();
       return false;
     }
@@ -131,17 +131,17 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
     cudaError_t setErr = cudaSetDevice(targetDevice);
     if (setErr != cudaSuccess) {
       DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to switch CUDA device %d->%d: %s",
-               phase, segment.startSlot, segment.endSlot,
+               phase, segment.def.startSlot, segment.def.endSlot,
                cachedCurrentDevice, targetDevice, cudaGetErrorString(setErr));
       cudaGetLastError();
       return false;
     }
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] switched CUDA device %d->%d",
-             phase, segment.startSlot, segment.endSlot, cachedCurrentDevice, targetDevice);
+             phase, segment.def.startSlot, segment.def.endSlot, cachedCurrentDevice, targetDevice);
     cachedCurrentDevice = targetDevice;
   } else {
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] using CUDA device %d",
-             phase, segment.startSlot, segment.endSlot, cachedCurrentDevice);
+             phase, segment.def.startSlot, segment.def.endSlot, cachedCurrentDevice);
   }
   return true;
 }
@@ -356,13 +356,13 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
     auto& seg = segments_[si];
     if (seg.exec.compilationFailed) continue;
-    bool tryCapture = seg.isCapturable || (shapesFrozen_ && executeCount_ > 0);
+    bool tryCapture = seg.def.isCapturable || (shapesFrozen_ && executeCount_ > 0);
     if (!tryCapture) continue;
-    if (!gpuBackend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) continue;
+    if (!gpuBackend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) continue;
     LongType segShapeKey = computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
     int segTargetDevice = 0;
-    if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
-      segTargetDevice = slots_[seg.startSlot].targetDeviceId;
+    if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
+      segTargetDevice = slots_[seg.def.startSlot].targetDeviceId;
       if (segTargetDevice < 0) segTargetDevice = 0;
     }
     tasks.push_back({si, segShapeKey, segTargetDevice});
@@ -469,8 +469,8 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs) {
   // Get target device for this segment
   int targetDevice = -1;
-  if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
-    targetDevice = slots_[seg.startSlot].targetDeviceId;
+  if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
+    targetDevice = slots_[seg.def.startSlot].targetDeviceId;
   }
   if (targetDevice < 0) return;  // Auto device — no migration needed
 
@@ -478,7 +478,7 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
 
   // Collect unique input slot indices that this segment reads from prior segments
   std::unordered_set<int> neededInputSlots;
-  for (int s = seg.startSlot; s <= seg.endSlot && s < numSlots_; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
     const NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -566,7 +566,7 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
   if (migrated > 0) {
     DSP_DIAG(EXECUTE, "NativeDSP::execute: migrated %d input arrays from device(s) to device %d "
              "for seg[%d-%d] (host-staged D→H→D)",
-             migrated, targetDevice, seg.startSlot, seg.endSlot);
+             migrated, targetDevice, seg.def.startSlot, seg.def.endSlot);
   }
 }
 
@@ -600,11 +600,11 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   // Slot-by-slot execution properly frees all temporaries.
   if (!shapesFrozen_) return false;
 
-  bool tryCapture = (segment.isCapturable || (shapesFrozen_ && executeCount_ > 0))
+  bool tryCapture = (segment.def.isCapturable || (shapesFrozen_ && executeCount_ > 0))
                     && !segment.exec.compilationFailed;
   // Use selectedBackend to determine if graph capture is possible — no cascade check needed.
-  bool hasGraphBackend = (segment.selectedBackend == SelectedBackend::GPU_COMPILER ||
-                          segment.selectedBackend == SelectedBackend::CUDA_GRAPHS);
+  bool hasGraphBackend = (segment.def.selectedBackend == SelectedBackend::GPU_COMPILER ||
+                          segment.def.selectedBackend == SelectedBackend::CUDA_GRAPHS);
   return tryCapture && hasGraphBackend;
 }
 
@@ -618,11 +618,11 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   usedGraph = false;
 
   DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d phase=%d",
-           segment.startSlot, segment.endSlot,
-           static_cast<int>(segment.selectedBackend), static_cast<int>(segment.isCapturable),
+           segment.def.startSlot, segment.def.endSlot,
+           static_cast<int>(segment.def.selectedBackend), static_cast<int>(segment.def.isCapturable),
            segment.exec.executionCount, static_cast<int>(segment.exec.currentPhase));
 
-  switch (segment.selectedBackend) {
+  switch (segment.def.selectedBackend) {
     case SelectedBackend::GPU_COMPILER: {
       auto* gpuBackend = getGpuGraphBackend();
       if (gpuBackend) {
@@ -640,7 +640,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         }
         // GPU backend failed — hard error. No cascade.
         DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d — hard error",
-                 executeCount_, segment.startSlot, segment.endSlot, gpuBackend->name(),
+                 executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name(),
                  static_cast<int>(status));
         return status;
       }
@@ -657,7 +657,7 @@ cuda_graphs:
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
         DSP_DIAG(COMPILE, "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d — hard error",
-                 segment.startSlot, segment.endSlot, static_cast<int>(status));
+                 segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
         segment.exec.compilationFailed = true;
         return status;
       }
@@ -694,7 +694,7 @@ Status NativeDynamicShapePlan::platformCheckPostSegment(GraphSegment& segment) {
   if (lastErr != cudaSuccess) {
     char buf[512];
     snprintf(buf, sizeof(buf), "CUDA error after segment [%d-%d] (execCount=%d shapesFrozen=%d): %d (%s)",
-             segment.startSlot, segment.endSlot,
+             segment.def.startSlot, segment.def.endSlot,
              executeCount_, static_cast<int>(shapesFrozen_),
              static_cast<int>(lastErr), cudaGetErrorString(lastErr));
     DSP_DIAG(FALLBACK, "NativeDynamicShapePlan: %s", buf);
@@ -747,7 +747,7 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   if (seg.exec.replayHandle) {
     if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
-      seg.exec.replayHandle->releaseWorkspace(nullptr, seg.startSlot);
+      seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
     }
     seg.exec.replayHandle->freeHostPointers();
     seg.exec.replayHandle->clearExternalAddresses();
@@ -772,7 +772,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     std::vector<std::pair<int,int>> segRanges;
     segRanges.reserve(segments_.size());
     for (auto& seg : segments_) {
-      segRanges.emplace_back(seg.startSlot, seg.endSlot);
+      segRanges.emplace_back(seg.def.startSlot, seg.def.endSlot);
     }
     if (!segRanges.empty()) {
       TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
@@ -784,7 +784,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     if (seg.exec.replayHandle) {
       if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
-        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.startSlot);
+        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
       }
       seg.exec.replayHandle->freeHostPointers();
       seg.exec.replayHandle->clearExternalAddresses();

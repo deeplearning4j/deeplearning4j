@@ -1852,7 +1852,7 @@ bool OpenVinoGraphBackend::compileSegment(
     int* requestedOutputSlotIndices,
     int numRequestedOutputs) {
 
-  SegmentCacheKey cacheKey{seg.startSlot, seg.endSlot, shapeKey};
+  SegmentCacheKey cacheKey{seg.def.startSlot, seg.def.endSlot, shapeKey};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
@@ -1864,16 +1864,16 @@ bool OpenVinoGraphBackend::compileSegment(
 
   CompiledSegment compiled;
   try {
-    compiled = buildModel(slots, seg.startSlot, seg.endSlot,
+    compiled = buildModel(slots, seg.def.startSlot, seg.def.endSlot,
                           externalInputs, numExternalInputs,
                           outputSlots, totalOutputSlots);
   } catch (const std::exception& e) {
     DSP_DIAG(COMPILE, "OpenVINO: buildModel[%d-%d] exception: %s",
-             seg.startSlot, seg.endSlot, e.what());
+             seg.def.startSlot, seg.def.endSlot, e.what());
     return false;
   } catch (...) {
     DSP_DIAG(COMPILE, "OpenVINO: buildModel[%d-%d] unknown exception",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return false;
   }
   compiled.shapeKey = shapeKey;
@@ -1885,7 +1885,7 @@ bool OpenVinoGraphBackend::compileSegment(
   }
 
   cache_[cacheKey] = std::move(compiled);
-  seg.shapeKey = shapeKey;
+  seg.def.shapeKey = shapeKey;
   return true;
 }
 
@@ -1897,21 +1897,21 @@ Status OpenVinoGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
-  SegmentCacheKey cacheKey{seg.startSlot, seg.endSlot, seg.shapeKey};
+  SegmentCacheKey cacheKey{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
   auto it = cache_.find(cacheKey);
   if (it == cache_.end() || !it->second.valid) {
     DSP_DIAG(EXECUTE, "OpenVINO: no compiled segment for [%d-%d] shapeKey=%lld cacheSize=%d found=%d",
-             seg.startSlot, seg.endSlot, (long long)seg.shapeKey,
+             seg.def.startSlot, seg.def.endSlot, (long long)seg.def.shapeKey,
              (int)cache_.size(), it != cache_.end() ? 1 : 0);
     return Status::KERNEL_FAILURE;
   }
 
   auto& compiled = it->second;
   if (!compiled.request) {
-    DSP_DIAG(EXECUTE, "OpenVINO: compiled segment for [%d-%d] has null request", seg.startSlot, seg.endSlot);
+    DSP_DIAG(EXECUTE, "OpenVINO: compiled segment for [%d-%d] has null request", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
   auto& request = *compiled.request;
@@ -2006,11 +2006,11 @@ Status OpenVinoGraphBackend::executeSegment(
 
   } catch (const std::exception& e) {
     DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] exception: %s",
-             seg.startSlot, seg.endSlot, e.what());
+             seg.def.startSlot, seg.def.endSlot, e.what());
     return Status::KERNEL_FAILURE;
   } catch (...) {
     DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] unknown exception",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 }

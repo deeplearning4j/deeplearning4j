@@ -135,12 +135,12 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                           int numRequestedOutputs) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
 
   // Check negative cache
   if (failedCache_.find(key) != failedCache_.end()) {
     DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) in failed cache, "
-             "skipping", seg.startSlot, seg.endSlot);
+             "skipping", seg.def.startSlot, seg.def.endSlot);
     return false;
   }
 
@@ -148,7 +148,7 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   auto it = cache_.find(key);
   if (it != cache_.end() && it->second.kernelHandle != nullptr) {
     DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) cache hit",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     lastCompilationAudit_ = it->second.audit;
     return true;
   }
@@ -162,11 +162,11 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   // Build MLIR bytecode from the slot range
   std::vector<uint8_t> mlirBytecode = HexagonIRBuilder::buildModule(
-      slots, seg.startSlot, seg.endSlot, externalInputs, numExternalInputs);
+      slots, seg.def.startSlot, seg.def.endSlot, externalInputs, numExternalInputs);
 
   if (mlirBytecode.empty()) {
     DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) MLIR build failed",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     failedCache_.insert(key);
     return false;
   }
@@ -178,14 +178,14 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   if (kernelHandle == nullptr) {
     DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) kernel "
-             "compilation failed", seg.startSlot, seg.endSlot);
+             "compilation failed", seg.def.startSlot, seg.def.endSlot);
     failedCache_.insert(key);
     return false;
   }
 
   // Build compilation audit
   std::vector<CompilationAuditEntry> audit;
-  for (int i = seg.startSlot; i < seg.endSlot; i++) {
+  for (int i = seg.def.startSlot; i < seg.def.endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
     entry.opName = slots[i].ident.opName.c_str();
@@ -200,8 +200,8 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   CompiledKernel compiled;
   compiled.kernelHandle = kernelHandle;
   compiled.npuContext = npuContext_;
-  compiled.startSlot = seg.startSlot;
-  compiled.endSlot = seg.endSlot;
+  compiled.startSlot = seg.def.startSlot;
+  compiled.endSlot = seg.def.endSlot;
   compiled.audit = audit;
 
   cache_[key] = std::move(compiled);
@@ -209,7 +209,7 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) compiled "
            "successfully, kernel=%p",
-           seg.startSlot, seg.endSlot, kernelHandle);
+           seg.def.startSlot, seg.def.endSlot, kernelHandle);
   return true;
 }
 
@@ -226,8 +226,8 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Find the compiled kernel — search cache for matching segment range
   CompiledKernel* compiled = nullptr;
   for (auto& pair : cache_) {
-    if (pair.first.startSlot == seg.startSlot &&
-        pair.first.endSlot == seg.endSlot) {
+    if (pair.first.startSlot == seg.def.startSlot &&
+        pair.first.endSlot == seg.def.endSlot) {
       compiled = &pair.second;
       break;
     }
@@ -235,7 +235,7 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
   if (compiled == nullptr || compiled->kernelHandle == nullptr) {
     DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) no compiled "
-             "kernel found", seg.startSlot, seg.endSlot);
+             "kernel found", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
@@ -244,7 +244,7 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Collect all input/output buffer pointers as kernel arguments
   std::vector<void*> kernelArgs;
 
-  for (int i = seg.startSlot; i < seg.endSlot; i++) {
+  for (int i = seg.def.startSlot; i < seg.def.endSlot; i++) {
     const auto& slot = slots[i];
 
     // Stage inputs
@@ -277,19 +277,19 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                kernelArgs.data(),
                                static_cast<int>(kernelArgs.size()))) {
     DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) dispatch failed",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   // Wait for NPU completion
   if (!runtime.waitForCompletion(compiled->npuContext)) {
     DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) "
-             "waitForCompletion failed", seg.startSlot, seg.endSlot);
+             "waitForCompletion failed", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) executed "
-           "successfully", seg.startSlot, seg.endSlot);
+           "successfully", seg.def.startSlot, seg.def.endSlot);
   return Status::OK;
 }
 

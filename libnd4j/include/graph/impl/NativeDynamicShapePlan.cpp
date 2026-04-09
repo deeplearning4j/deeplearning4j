@@ -104,14 +104,14 @@ std::string normalizeOpName(const std::string& opName) {
 }
 
 bool segmentBlocksPlanPhase(const GraphSegment& seg) {
-  return seg.isCapturable && !seg.exec.compilationFailed;
+  return seg.def.isCapturable && !seg.exec.compilationFailed;
 }
 
 bool segmentIsCompiledSteadyState(const GraphSegment& seg, int minExecutionCountExclusive) {
   if (seg.exec.currentPhase != ExecutionPhase::COMPILED) return false;
   if (seg.exec.executionCount <= minExecutionCountExclusive) return false;
 
-  switch (seg.selectedBackend) {
+  switch (seg.def.selectedBackend) {
     case SelectedBackend::CPU_GRAPH:
       return seg.resolvedCpuBackend != nullptr;
     case SelectedBackend::GPU_COMPILER:
@@ -135,7 +135,7 @@ uint32_t resolvePlanPhaseTraits(const NativeSlot& slot) {
 
 int findProducerStepInSegment(const GraphSegment& seg, NativeSlot* slots, int outputSlotIdx) {
   if (slots == nullptr || outputSlotIdx < 0) return -1;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     const auto& slot = slots[s];
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
@@ -149,7 +149,7 @@ int findProducerStepInSegment(const GraphSegment& seg, NativeSlot* slots, int ou
 bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, NativeSlot* slots) {
   if (slots == nullptr) return false;
 
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     const auto& slot = slots[s];
     const uint32_t traits = resolvePlanPhaseTraits(slot);
     if ((traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) == 0) continue;
@@ -170,7 +170,7 @@ bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* s
   if (!segmentBlocksPlanPhase(seg)) return true;
   const bool needsReplayInvariantTracking = segmentHasInternalValueShapeInputs(seg, slots);
 
-  switch (seg.selectedBackend) {
+  switch (seg.def.selectedBackend) {
     case SelectedBackend::EMULATED_REPLAY:
       return seg.exec.argTableStable;
 
@@ -204,7 +204,7 @@ bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg, NativeSlot* sl
   if (!segmentBlocksPlanPhase(seg)) return true;
   const bool needsReplayInvariantTracking = segmentHasInternalValueShapeInputs(seg, slots);
 
-  switch (seg.selectedBackend) {
+  switch (seg.def.selectedBackend) {
     case SelectedBackend::EMULATED_REPLAY:
       return seg.exec.currentPhase == ExecutionPhase::REPLAYING &&
              seg.exec.argTableStable;
@@ -1205,8 +1205,8 @@ Status NativeDynamicShapePlan::execute(
         DSP_DIAG(FALLBACK, "PHASE_DEMOTION: REPLAYING → POINTERS_STABLE: "
                   "seg[%d-%d] no longer satisfies replay steady state "
                   "(backend=%d execPhase=%d segExecCount=%d handleReady=%d argStable=%d). execCount=%d",
-                  seg.startSlot, seg.endSlot,
-                  static_cast<int>(seg.selectedBackend),
+                  seg.def.startSlot, seg.def.endSlot,
+                  static_cast<int>(seg.def.selectedBackend),
                   static_cast<int>(seg.exec.currentPhase),
                   seg.exec.executionCount,
                   seg.exec.replayHandle && seg.exec.replayHandle->isReady() ? 1 : 0,
@@ -1388,9 +1388,9 @@ Status NativeDynamicShapePlan::execute(
 
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     bool segUsedGraph = false;
-    int segSlots = segment.endSlot - segment.startSlot + 1;
+    int segSlots = segment.def.endSlot - segment.def.startSlot + 1;
 
-    if (segment.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
+    if (segment.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
       // Emulated graph replay: slot-by-slot with full replay lifecycle diagnostics
       auto status = executeSegmentEmulatedReplay(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) return status;
@@ -1403,7 +1403,7 @@ Status NativeDynamicShapePlan::execute(
       if (status != Status::OK) return status;
     } else {
       // No graph backend applicable — slot-by-slot execution
-      segment.exec.currentPhase = segment.isCapturable
+      segment.exec.currentPhase = segment.def.isCapturable
           ? ExecutionPhase::WARMUP    // Capturable but not yet ready for graph
           : ExecutionPhase::SLOT_BY_SLOT;  // Non-capturable, always slot-by-slot
       auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
@@ -1469,7 +1469,7 @@ Status NativeDynamicShapePlan::execute(
                     "arr=%p gpuPtr=%p db=%p closed=%d pAct=%d sAct=%d "
                     "vals=[%.6f,%.6f,%.6f,%.6f] execCount=%d",
                     tag,
-                    segment.startSlot, segment.endSlot, traceSlot,
+                    segment.def.startSlot, segment.def.endSlot, traceSlot,
                     (void*)arr, gpuPtr, (void*)db,
                     db ? db->isClosed() : -1,
                     db ? (db->isPrimaryActual() ? 1 : 0) : -1,
@@ -1480,14 +1480,14 @@ Status NativeDynamicShapePlan::execute(
         } else {
           // Slot is null — log when this first happens
           static int lastNullSegEnd = -1;
-          if (lastNullSegEnd != segment.endSlot) {
+          if (lastNullSegEnd != segment.def.endSlot) {
             DSP_DIAG(VERIFY, "SLOT_TRACE NULL after seg[%d-%d]: slot=%d "
                     "outputSlots_[%d]=nullptr cache=%p execCount=%d",
-                    segment.startSlot, segment.endSlot, traceSlot, traceSlot,
+                    segment.def.startSlot, segment.def.endSlot, traceSlot, traceSlot,
                     (slotArrayCache_ && traceSlot < totalOutputSlots_) ?
                       (void*)slotArrayCache_[traceSlot] : nullptr,
                     executeCount_);
-            lastNullSegEnd = segment.endSlot;
+            lastNullSegEnd = segment.def.endSlot;
           }
         }
       }
@@ -1500,7 +1500,7 @@ Status NativeDynamicShapePlan::execute(
     // which is the single biggest performance bottleneck when left always-on.
     // Enable with: ND4J_TRITON_VERIFY_KERNELS=true
     if (shapesFrozen_ && Environment::getInstance().tritonVerifyKernels()) {
-      for (int stepIdx = segment.startSlot; stepIdx <= segment.endSlot; stepIdx++) {
+      for (int stepIdx = segment.def.startSlot; stepIdx <= segment.def.endSlot; stepIdx++) {
         auto& slot = slots_[stepIdx];
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           int si = slot.wiring.outputSlotIndices[o];
@@ -1516,7 +1516,7 @@ Status NativeDynamicShapePlan::execute(
           if (dbClosed) {
             fprintf(stdout, "[DSP_DIAG] [NaN_CLOSED_DB] seg[%d-%d] slot=%d opName=%s outSlot=%d "
                     "DataBuffer CLOSED! frozenConst=%d shapeStatic=%d execCount=%d\n",
-                    segment.startSlot, segment.endSlot, stepIdx,
+                    segment.def.startSlot, segment.def.endSlot, stepIdx,
                     slot.ident.opName.empty() ? "?" : slot.ident.opName.c_str(), si,
                     slot.frozenConstantSlot() ? 1 : 0, slot.shapeCache.shapeStatic ? 1 : 0, executeCount_);
             fflush(stdout);
@@ -1575,7 +1575,7 @@ Status NativeDynamicShapePlan::execute(
             fprintf(stdout, "[DSP_DIAG] [NaN_DETECT] seg[%d-%d] slot=%d opName=%s output[%d]=%d NaN! "
                     "useGraph=%d execCount=%d len=%lld addr=%p inputsNaN=%d hasReplay=%d "
                     "frozenConst=%d shapeStatic=%d\n",
-                    segment.startSlot, segment.endSlot, stepIdx,
+                    segment.def.startSlot, segment.def.endSlot, stepIdx,
                     slot.ident.opName.empty() ? "?" : slot.ident.opName.c_str(), o, si,
                     useGraph ? 1 : 0, executeCount_, (long long)arr->lengthOf(),
                     DSP_BUF(arr), anyInputNaN ? 1 : 0,
@@ -1913,10 +1913,10 @@ std::string NativeDynamicShapePlan::getSegmentCompilationAudit(int segIdx) const
   auto& seg = segments_[segIdx];
   std::ostringstream ss;
   ss << "{\"segmentIdx\":" << segIdx
-     << ",\"startSlot\":" << seg.startSlot
-     << ",\"endSlot\":" << seg.endSlot
+     << ",\"startSlot\":" << seg.def.startSlot
+     << ",\"endSlot\":" << seg.def.endSlot
      << ",\"compiledByBackend\":\"" << seg.exec.compiledByBackend << "\""
-     << ",\"capturable\":" << (seg.isCapturable ? "true" : "false")
+     << ",\"capturable\":" << (seg.def.isCapturable ? "true" : "false")
      << ",\"compilationFailed\":" << (seg.exec.compilationFailed ? "true" : "false")
      << ",\"executionCount\":" << seg.exec.executionCount
      << "}";
@@ -2039,7 +2039,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   for (auto& seg : segments_) {
     if (seg.exec.replayHandle) {
       if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
-        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.startSlot);
+        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
       }
       seg.exec.replayHandle->freeHostPointers();
       seg.exec.replayHandle->clearExternalAddresses();
@@ -2063,7 +2063,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     seg.exec.jitCompileFailed = false;
     seg.exec.segBatchZeroEntries.clear();
     // Reset compile-time shape key so Triton recompilation is triggered
-    seg.shapeKey = 0;
+    seg.def.shapeKey = 0;
   }
   logGpuMemState("STEP-1-AFTER-SEGMENTS");
 
@@ -2098,7 +2098,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     seg.exec.compiledByBackend.clear();
     seg.exec.currentPhase = ExecutionPhase::WARMUP;
     seg.exec.segBatchZeroEntries.clear();
-    seg.shapeKey = 0;
+    seg.def.shapeKey = 0;
   }
 #endif
 
@@ -2418,7 +2418,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     std::vector<std::pair<int,int>> segRanges;
     segRanges.reserve(segments_.size());
     for (auto& seg : segments_) {
-      segRanges.emplace_back(seg.startSlot, seg.endSlot);
+      segRanges.emplace_back(seg.def.startSlot, seg.def.endSlot);
     }
     if (!segRanges.empty()) {
       TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
@@ -2929,13 +2929,13 @@ void NativeDynamicShapePlan::buildSegments() {
   int capturableCount = 0, totalCapturable = 0;
   int staticCapturableCount = 0, dynamicCapturableCount = 0;
   for (auto& seg : segments_) {
-    if (seg.isCapturable) {
+    if (seg.def.isCapturable) {
       capturableCount++;
-      int sz = seg.endSlot - seg.startSlot + 1;
+      int sz = seg.def.endSlot - seg.def.startSlot + 1;
       totalCapturable += sz;
       // A segment is "static" if all its slots have stable shapes
       bool allStatic = true;
-      for (int s = seg.startSlot; s <= seg.endSlot && allStatic; s++)
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot && allStatic; s++)
         allStatic = slots_[s].shapeCache.shapeStatic;
       if (allStatic) staticCapturableCount++;
       else dynamicCapturableCount++;
@@ -2951,11 +2951,11 @@ void NativeDynamicShapePlan::buildSegments() {
   for (int i = 0; i < logged; i++) {
     const auto& seg = segments_[i];
     int targetDevice = -1;
-    if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
-      targetDevice = slots_[seg.startSlot].targetDeviceId;
+    if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
+      targetDevice = slots_[seg.def.startSlot].targetDeviceId;
     }
     DSP_DIAG_SEG(SEGMENT, i, "segment[%d] [%d-%d] capturable=%d targetDeviceId=%d",
-                 i, seg.startSlot, seg.endSlot, static_cast<int>(seg.isCapturable), targetDevice);
+                 i, seg.def.startSlot, seg.def.endSlot, static_cast<int>(seg.def.isCapturable), targetDevice);
   }
   if ((int)segments_.size() > maxLoggedSegments) {
     DSP_DIAG(SEGMENT, "... %d additional segments not shown in device map",
@@ -2965,19 +2965,19 @@ void NativeDynamicShapePlan::buildSegments() {
   // Propagate slotArrayCache_, resolve backend, and detect value-dep ops for all segments.
   for (auto& seg : segments_) {
     seg.slotArrayCache = slotArrayCache_;
-    seg.selectedBackend = resolveBackendForSegment(seg.isCapturable);
+    seg.def.selectedBackend = resolveBackendForSegment(seg.def.isCapturable);
     // Scan slots for value-dependent ops — these require shape key recomputation
     // even when shapes are frozen, because input VALUES (not just shapes) affect output shape.
-    seg.hasValueDepOps = false;
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    seg.def.hasValueDepOps = false;
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       if (slots_[s].flags.outputShapeDependsOnInputValues) {
-        seg.hasValueDepOps = true;
+        seg.def.hasValueDepOps = true;
         break;
       }
     }
-    DSP_DIAG_SEG(SEGMENT, seg.startSlot, "segment[%d-%d] selectedBackend=%d hasValueDepOps=%d",
-                 seg.startSlot, seg.endSlot, static_cast<int>(seg.selectedBackend),
-                 seg.hasValueDepOps ? 1 : 0);
+    DSP_DIAG_SEG(SEGMENT, seg.def.startSlot, "segment[%d-%d] selectedBackend=%d hasValueDepOps=%d",
+                 seg.def.startSlot, seg.def.endSlot, static_cast<int>(seg.def.selectedBackend),
+                 seg.def.hasValueDepOps ? 1 : 0);
   }
 
   // Initialize symbolic shape ranges if enabled
@@ -3009,9 +3009,9 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   // Destroy existing cached graphs (they reference old segment boundaries)
   for (auto& seg : segments_) {
     if (seg.exec.replayHandle) {
-      DSP_DIAG_SEG(SEGMENT, seg.startSlot,
+      DSP_DIAG_SEG(SEGMENT, seg.def.startSlot,
                    "destroying replay handle for seg[%d-%d] state=%d replays=%d",
-                   seg.startSlot, seg.endSlot, (int)seg.exec.replayHandle->getState(),
+                   seg.def.startSlot, seg.def.endSlot, (int)seg.exec.replayHandle->getState(),
                    seg.exec.replayHandle->getStatistics().replayCount);
     }
     platformCleanupSegmentForRebuild(seg);
@@ -3103,7 +3103,7 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   int capturableSlots = 0;
   int dataDepCount = 0;
   for (auto& seg : segments_) {
-    if (seg.isCapturable) capturableSlots += (seg.endSlot - seg.startSlot + 1);
+    if (seg.def.isCapturable) capturableSlots += (seg.def.endSlot - seg.def.startSlot + 1);
   }
   for (int i = 0; i < numSlots_; i++) {
     if (slots_[i].flags.isDataDependent) {
@@ -3122,10 +3122,10 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   if (DSP_DIAG_ENABLED(SEGMENT)) {
     for (int si = 0; si < (int)segments_.size(); si++) {
       auto& seg = segments_[si];
-      int segSize = seg.endSlot - seg.startSlot + 1;
-      DSP_DIAG_SEG(SEGMENT, seg.startSlot,
+      int segSize = seg.def.endSlot - seg.def.startSlot + 1;
+      DSP_DIAG_SEG(SEGMENT, seg.def.startSlot,
                    "segment[%d] slots[%d-%d] size=%d capturable=%d",
-                   si, seg.startSlot, seg.endSlot, segSize, seg.isCapturable ? 1 : 0);
+                   si, seg.def.startSlot, seg.def.endSlot, segSize, seg.def.isCapturable ? 1 : 0);
     }
   }
 
@@ -3136,14 +3136,14 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   // Propagate slotArrayCache_, resolve backend, and detect value-dep ops for all rebuilt segments.
   for (auto& seg : segments_) {
     seg.slotArrayCache = slotArrayCache_;
-    seg.selectedBackend = resolveBackendForSegment(seg.isCapturable);
+    seg.def.selectedBackend = resolveBackendForSegment(seg.def.isCapturable);
     // Scan slots for value-dependent ops — even in frozen mode, segments containing
     // these ops must recompute the shape key (not use cached) because input VALUES
     // could change even when shapes are stable.
-    seg.hasValueDepOps = false;
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    seg.def.hasValueDepOps = false;
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       if (slots_[s].flags.outputShapeDependsOnInputValues) {
-        seg.hasValueDepOps = true;
+        seg.def.hasValueDepOps = true;
         break;
       }
     }

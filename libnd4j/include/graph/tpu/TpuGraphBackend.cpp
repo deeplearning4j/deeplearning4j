@@ -97,8 +97,8 @@ bool TpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Clear previous audit
   lastAudit_.clear();
 
-  int start = seg.startSlot;
-  int end = seg.endSlot;
+  int start = seg.def.startSlot;
+  int end = seg.def.endSlot;
 
   DSP_DIAG(COMPILE, "TpuGraphBackend::compileSegment: compiling segment "
            "[%d, %d), shapeKey=0x%llx",
@@ -188,14 +188,14 @@ Status TpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                         void* stream) {
   if (!seg.exec.replayHandle || !seg.exec.replayHandle->isReady()) {
     DSP_DIAG(EXECUTE, "TpuGraphBackend::executeSegment: segment [%d, %d) "
-             "not compiled/ready", seg.startSlot, seg.endSlot);
+             "not compiled/ready", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   auto* tpuHandle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
 
-  int start = seg.startSlot;
-  int end = seg.endSlot;
+  int start = seg.def.startSlot;
+  int end = seg.def.endSlot;
 
   DSP_DIAG(EXECUTE, "TpuGraphBackend::executeSegment: executing segment "
            "[%d, %d), replay #%d", start, end, tpuHandle->getReplayCount() + 1);

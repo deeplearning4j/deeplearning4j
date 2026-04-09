@@ -275,15 +275,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
   int execDevice = -1;
   int targetDevice = -1;
-  if (seg.startSlot >= 0) {
-    targetDevice = slots[seg.startSlot].targetDeviceId;
+  if (seg.def.startSlot >= 0) {
+    targetDevice = slots[seg.def.startSlot].targetDeviceId;
   }
   bool streamCaptureActive = false;
 
   cudaError_t execDeviceErr = cudaGetDevice(&execDevice);
   if (execDeviceErr != cudaSuccess) {
     DSP_DIAG(BACKEND, "TritonGraphBackend::executeSegment: cudaGetDevice failed for segment [%d-%d]: %s",
-              seg.startSlot, seg.endSlot, cudaGetErrorString(execDeviceErr));
+              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(execDeviceErr));
     cudaGetLastError();
     return Status::KERNEL_FAILURE;
   }
@@ -296,7 +296,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   auto& execEnv = Environment::getInstance();
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, execDevice,
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, execDevice,
                       execEnv.tritonCompileAll(),
                       std::hash<std::string>()(execEnv.tritonExcludeOps())};
 
@@ -307,9 +307,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     if (it == cache_.end()) {
       int cachedDeviceId = -999;
       for (const auto& entry : cache_) {
-        if (entry.first.startSlot == seg.startSlot &&
-            entry.first.endSlot == seg.endSlot &&
-            entry.first.shapeKey == seg.shapeKey) {
+        if (entry.first.startSlot == seg.def.startSlot &&
+            entry.first.endSlot == seg.def.endSlot &&
+            entry.first.shapeKey == seg.def.shapeKey) {
           cachedDeviceId = entry.first.deviceId;
           break;
         }
@@ -318,11 +318,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: kernel cache miss for segment [%d-%d] "
                  "(shapeKey=%lld, activeDevice=%d, targetDeviceId=%d). "
                  "Found compiled kernel for deviceId=%d but cross-device module reuse is disallowed.",
-                 seg.startSlot, seg.endSlot, seg.shapeKey, execDevice, targetDevice, cachedDeviceId);
+                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, execDevice, targetDevice, cachedDeviceId);
       } else {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: no compiled kernel for segment [%d-%d] "
                  "(shapeKey=%lld, deviceId=%d)",
-                 seg.startSlot, seg.endSlot, seg.shapeKey, execDevice);
+                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, execDevice);
       }
       return Status::KERNEL_FAILURE;
     }
@@ -331,7 +331,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
   if (streamCaptureActive && !compiledSeg->orderedRanges.empty()) {
     DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: capturing ordered native ranges during CUDA graph capture for [%d-%d] (%d ranges)",
-             seg.startSlot, seg.endSlot, static_cast<int>(compiledSeg->orderedRanges.size()));
+             seg.def.startSlot, seg.def.endSlot, static_cast<int>(compiledSeg->orderedRanges.size()));
   }
 
   bool tritonSkipKernels = Environment::getInstance().tritonSkipKernels();
@@ -339,10 +339,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   int tritonMaxSubKernelIndex = Environment::getInstance().tritonMaxSubKernelIndex();
   bool tritonVerifyFullSnapshot = Environment::getInstance().tritonVerifyFullSnapshot();
 
-  DSP_DIAG_SEG(EXECUTE, seg.startSlot, "TritonGraphBackend::executeSegment: segment [%d-%d] launching %d sub-kernels "
+  DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "TritonGraphBackend::executeSegment: segment [%d-%d] launching %d sub-kernels "
                "(orderedRanges=%d, targetDeviceId=%d, activeDevice=%d, skipKernels=%d, verifyKernels=%d, "
                "maxSubKernelIdx=%d, fullSnapshot=%d, execCount=%d)",
-               seg.startSlot, seg.endSlot,
+               seg.def.startSlot, seg.def.endSlot,
                static_cast<int>(compiledSeg->subKernels.size()),
                static_cast<int>(compiledSeg->orderedRanges.size()),
                targetDevice, execDevice,
@@ -492,7 +492,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                            sk.argSlotMapping, sk.startSlot_, sk.endSlot_,
                            externalInputs, numExternalInputs,
                            outputSlots, totalOutputSlots,
-                           slots, seg.endSlot);
+                           slots, seg.def.endSlot);
     }
 
     // ── Phase 3: Single consolidated H2D ──
@@ -508,15 +508,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       cudaGetLastError();
     } else {
       consolidatedArgsCopied = true;
-      DSP_DIAG_SEG(EXECUTE, seg.startSlot, "TritonGraphBackend: consolidated arg table H2D: 1 copy of %zu bytes "
+      DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "TritonGraphBackend: consolidated arg table H2D: 1 copy of %zu bytes "
                    "(replaces %d per-kernel copies) for seg[%d-%d]",
                    compiledSeg->consolidatedArgTableBytes,
                    static_cast<int>(compiledSeg->subKernels.size()),
-                   seg.startSlot, seg.endSlot);
+                   seg.def.startSlot, seg.def.endSlot);
     }
   }
 
-  int nextSlotToRun = seg.startSlot;
+  int nextSlotToRun = seg.def.startSlot;
   for (int i = 0; i < (int)compiledSeg->subKernels.size(); i++) {
     auto& subKernel = compiledSeg->subKernels[i];
 
@@ -823,7 +823,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                              subKernel.argSlotMapping, subKernel.startSlot_, subKernel.endSlot_,
                              externalInputs, numExternalInputs,
                              outputSlots, totalOutputSlots,
-                             slots, seg.endSlot);
+                             slots, seg.def.endSlot);
       }
 
       auto status = executeSingleKernel(subKernel, slots,
@@ -942,7 +942,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                   if (beforeBytes[b] != afterBytes[b]) { firstDiffByte = (int)b; break; }
                 }
                 const char* slotName = "external";
-                if (slotIdx >= 0 && slotIdx <= seg.endSlot) {
+                if (slotIdx >= 0 && slotIdx <= seg.def.endSlot) {
                   slotName = slots[slotIdx].ident.opName.c_str();
                 }
                 DSP_DIAG(VERIFY, "TRITON VERIFY CORRUPTION: subK[%d] [%d-%d] damaged %s slot %d (%s) "
@@ -1149,27 +1149,27 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
-  if (nextSlotToRun <= seg.endSlot) {
+  if (nextSlotToRun <= seg.def.endSlot) {
     if (!streamCaptureActive) {
-      logActualityState("PRE_TRAILING_GAP", nextSlotToRun, seg.endSlot, slots,
+      logActualityState("PRE_TRAILING_GAP", nextSlotToRun, seg.def.endSlot, slots,
                         outputSlots, totalOutputSlots, externalInputs, numExternalInputs);
     }
     if (!orderedRangeExecutor_) {
       DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: missing ordered range executor for trailing gap [%d-%d]",
-                nextSlotToRun, seg.endSlot);
+                nextSlotToRun, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
-    auto gapStatus = orderedRangeExecutor_(nextSlotToRun, seg.endSlot);
+    auto gapStatus = orderedRangeExecutor_(nextSlotToRun, seg.def.endSlot);
     if (gapStatus != Status::OK) {
       DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: trailing ordered native range [%d-%d] failed with status=%d",
-                nextSlotToRun, seg.endSlot, static_cast<int>(gapStatus));
+                nextSlotToRun, seg.def.endSlot, static_cast<int>(gapStatus));
       return gapStatus;
     }
-    markOrderedRangeDeviceCurrent(nextSlotToRun, seg.endSlot, slots,
+    markOrderedRangeDeviceCurrent(nextSlotToRun, seg.def.endSlot, slots,
                                   externalInputs, numExternalInputs,
                                   outputSlots, totalOutputSlots);
     if (!streamCaptureActive) {
-      logSlotHashes("TRAILING_GAP", nextSlotToRun, seg.endSlot, slots,
+      logSlotHashes("TRAILING_GAP", nextSlotToRun, seg.def.endSlot, slots,
                     outputSlots, totalOutputSlots,
                     static_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
     }
@@ -1177,7 +1177,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
   // Compose attention present_key / present_value outputs
   int attnCount = 0;
-  for (int si = seg.startSlot; si <= seg.endSlot; si++) {
+  for (int si = seg.def.startSlot; si <= seg.def.endSlot; si++) {
     if (slots[si].ident.opName.empty()) continue;
     bool isAttn = slots[si].ident.op != nullptr &&
                   slots[si].ident.op->getOpDescriptor() != nullptr &&
@@ -1241,16 +1241,16 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     auto syncErr = cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
     if (syncErr != cudaSuccess) {
       DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: stream sync failed for [%d-%d]: %s",
-                seg.startSlot, seg.endSlot, cudaGetErrorString(syncErr));
+                seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(syncErr));
       cudaGetLastError();
       return Status::KERNEL_FAILURE;
     }
   }
 
   if (!streamCaptureActive && DSP_DIAG_ENABLED(VERIFY)) {
-    DSP_DIAG_SEG(VERIFY, seg.startSlot,
+    DSP_DIAG_SEG(VERIFY, seg.def.startSlot,
         "seg[%d-%d] exec=%d skip=%d attn=%d",
-        seg.startSlot, seg.endSlot, seg.exec.executionCount,
+        seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
         tritonSkipKernels ? 1 : 0, attnCount);
   }
 
@@ -1268,12 +1268,12 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   auto& gapEnv = sd::Environment::getInstance();
   bool compileAll = gapEnv.tritonCompileAll();
   size_t excludeOpsHash = std::hash<std::string>()(gapEnv.tritonExcludeOps());
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, activeDevice, compileAll, excludeOpsHash};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, activeDevice, compileAll, excludeOpsHash};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
   auto it = cache_.find(key);
   if (it == cache_.end()) {
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       gapSlots.insert(s);
     }
     return gapSlots;
@@ -1286,18 +1286,18 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
     }
   }
 
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     if (coveredSlots.find(s) == coveredSlots.end()) {
       gapSlots.insert(s);
     }
   }
 
-  DSP_DIAG_SEG(EXECUTE, seg.startSlot, "NativeDSP: getGapSlots: seg[%d-%d] %d subKernels, %d covered, %d gap slots (of %d total)",
-               seg.startSlot, seg.endSlot,
+  DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "NativeDSP: getGapSlots: seg[%d-%d] %d subKernels, %d covered, %d gap slots (of %d total)",
+               seg.def.startSlot, seg.def.endSlot,
                static_cast<int>(it->second.subKernels.size()),
                static_cast<int>(coveredSlots.size()),
                static_cast<int>(gapSlots.size()),
-               seg.endSlot - seg.startSlot + 1);
+               seg.def.endSlot - seg.def.startSlot + 1);
 
   return gapSlots;
 }

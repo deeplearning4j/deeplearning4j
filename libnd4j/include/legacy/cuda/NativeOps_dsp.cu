@@ -734,8 +734,8 @@ const char* getPlanCaptureStats(sd::Pointer planHandle) {
   int maxOomRetries = 0;
 
   for (const auto& seg : segs) {
-    int segSlots = seg.endSlot - seg.startSlot + 1;
-    if (!seg.isCapturable) {
+    int segSlots = seg.def.endSlot - seg.def.startSlot + 1;
+    if (!seg.def.isCapturable) {
       nonCapt++;
       nonCaptSlots += segSlots;
     } else if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
@@ -811,7 +811,7 @@ const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx)
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { buf[0] = '\0'; return buf; }
   auto& seg = segs[segmentIdx];
-  int numOps = seg.endSlot - seg.startSlot + 1;
+  int numOps = seg.def.endSlot - seg.def.startSlot + 1;
   const char* backend = (seg.exec.replayHandle) ? seg.exec.replayHandle->backendName() : "";
   int replayCount = (seg.exec.replayHandle) ? seg.exec.replayHandle->getStatistics().replayCount : 0;
   int replayState = (seg.exec.replayHandle) ? static_cast<int>(seg.exec.replayHandle->getState()) : -1;
@@ -820,7 +820,7 @@ const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx)
            "\"backendName\":\"%s\",\"executionCount\":%d,"
            "\"capturable\":%s,\"compilationFailed\":%s,\"compiledByBackend\":\"%s\"}",
            numOps, replayCount, replayState, backend, seg.exec.executionCount,
-           seg.isCapturable ? "true" : "false",
+           seg.def.isCapturable ? "true" : "false",
            seg.exec.compilationFailed ? "true" : "false",
            seg.exec.compiledByBackend.c_str());
   return buf;
@@ -1209,8 +1209,8 @@ bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPa
 
       // Add segment metadata
       file << "    {\"name\": \"segment_" << segmentIdx << "\", \"ph\": \"M\", \"pid\": 0, "
-           << "\"tid\": 0, \"ts\": 0, \"args\": {\"startSlot\": " << seg.startSlot
-           << ", \"endSlot\": " << seg.endSlot << "}},\n";
+           << "\"tid\": 0, \"ts\": 0, \"args\": {\"startSlot\": " << seg.def.startSlot
+           << ", \"endSlot\": " << seg.def.endSlot << "}},\n";
 
       // Extract trace events from the segment's JSON (simplified - just use debug dump)
     }
@@ -1739,25 +1739,25 @@ const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
     std::string json = "[";
     for (int i = 0; i < (int)segs.size(); i++) {
         auto& seg = segs[i];
-        int numOps = seg.endSlot - seg.startSlot + 1;
+        int numOps = seg.def.endSlot - seg.def.startSlot + 1;
         // Count op types in this segment
         std::unordered_map<std::string, int> opCounts;
         if (slots != nullptr) {
-            for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+            for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
                 opCounts[slots[s].ident.opName]++;
             }
         }
         if (i > 0) json += ",";
         json += "{";
         json += "\"index\":" + std::to_string(i);
-        json += ",\"startSlot\":" + std::to_string(seg.startSlot);
-        json += ",\"endSlot\":" + std::to_string(seg.endSlot);
+        json += ",\"startSlot\":" + std::to_string(seg.def.startSlot);
+        json += ",\"endSlot\":" + std::to_string(seg.def.endSlot);
         json += ",\"numOps\":" + std::to_string(numOps);
         json += ",\"executionCount\":" + std::to_string(seg.exec.executionCount);
-        json += ",\"isCapturable\":" + std::string(seg.isCapturable ? "true" : "false");
+        json += ",\"isCapturable\":" + std::string(seg.def.isCapturable ? "true" : "false");
         json += ",\"compilationFailed\":" + std::string(seg.exec.compilationFailed ? "true" : "false");
         json += ",\"hasReplayHandle\":" + std::string(seg.exec.replayHandle ? "true" : "false");
-        json += ",\"shapeKey\":" + std::to_string(seg.shapeKey);
+        json += ",\"shapeKey\":" + std::to_string(seg.def.shapeKey);
         // Op histogram
         json += ",\"ops\":{";
         bool first = true;

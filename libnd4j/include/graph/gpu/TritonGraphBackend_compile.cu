@@ -61,14 +61,14 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   cudaError_t activeDeviceErr = cudaGetDevice(&activeDevice);
   if (activeDeviceErr != cudaSuccess) {
     DSP_DIAG(BACKEND, "TritonGraphBackend::compileSegment: cudaGetDevice failed for segment [%d-%d]: %s",
-              seg.startSlot, seg.endSlot, cudaGetErrorString(activeDeviceErr));
+              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(activeDeviceErr));
     cudaGetLastError();
     return false;
   }
 
   int targetDevice = -1;
-  if (seg.startSlot >= 0) {
-    targetDevice = slots[seg.startSlot].targetDeviceId;
+  if (seg.def.startSlot >= 0) {
+    targetDevice = slots[seg.def.startSlot].targetDeviceId;
   }
 
   int compileDevice = activeDevice;
@@ -78,14 +78,14 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     if (countErr != cudaSuccess || deviceCount <= 0) {
       DSP_DIAG(BACKEND, "TritonGraphBackend::compileSegment: failed to query CUDA device count "
                 "for segment [%d-%d] targetDeviceId=%d: %s",
-                seg.startSlot, seg.endSlot, targetDevice, cudaGetErrorString(countErr));
+                seg.def.startSlot, seg.def.endSlot, targetDevice, cudaGetErrorString(countErr));
       cudaGetLastError();
       return false;
     }
     if (targetDevice >= deviceCount) {
       DSP_DIAG(BACKEND, "TritonGraphBackend::compileSegment: invalid targetDeviceId=%d for segment [%d-%d] "
                 "(deviceCount=%d)",
-                targetDevice, seg.startSlot, seg.endSlot, deviceCount);
+                targetDevice, seg.def.startSlot, seg.def.endSlot, deviceCount);
       return false;
     }
     compileDevice = targetDevice;
@@ -101,7 +101,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     cudaError_t setDeviceErr = cudaSetDevice(compileDevice);
     if (setDeviceErr != cudaSuccess) {
       DSP_DIAG(BACKEND, "TritonGraphBackend::compileSegment: failed to set CUDA device %d for segment [%d-%d]: %s",
-                compileDevice, seg.startSlot, seg.endSlot, cudaGetErrorString(setDeviceErr));
+                compileDevice, seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(setDeviceErr));
       cudaGetLastError();
       return false;
     }
@@ -110,7 +110,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     auto& cacheEnv = Environment::getInstance();
   bool cacheCompileAll = cacheEnv.tritonCompileAll();
   size_t cacheExcludeHash = std::hash<std::string>()(cacheEnv.tritonExcludeOps());
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash};
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -124,12 +124,12 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     if (failedCache_.find(key) != failedCache_.end()) {
       DSP_DIAG(COMPILE, "TritonGraphBackend::compileSegment: skipping previously failed segment [%d-%d] "
                "(shapeKey=%lld, deviceId=%d)",
-               seg.startSlot, seg.endSlot, shapeKey, compileDevice);
+               seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice);
       return false;
     }
   }
 
-  int segmentOps = seg.endSlot - seg.startSlot + 1;
+  int segmentOps = seg.def.endSlot - seg.def.startSlot + 1;
   CompiledSegment compiledSeg;
 
   // Use section boundaries for splitting: identify natural boundaries where
@@ -137,18 +137,18 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Each sub-kernel handles one section or a group of compatible sections.
   // This produces correct kernels because each section type needs different
   // grid dimensions, shared memory, and execution patterns.
-  auto sections = TritonIRBuilder::identifySections(slots, seg.startSlot, seg.endSlot,
+  auto sections = TritonIRBuilder::identifySections(slots, seg.def.startSlot, seg.def.endSlot,
                                                       outputSlots, totalOutputSlots,
                                                       externalInputs, numExternalInputs);
 
   if (sections.empty()) {
     DSP_DIAG(COMPILE, "TritonGraphBackend::compileSegment: no sections found for segment [%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return false;
   }
 
-  DSP_DIAG_SEG(COMPILE, seg.startSlot, "TritonGraphBackend: segment [%d-%d] has %d ops, %d sections (deviceId=%d)",
-               seg.startSlot, seg.endSlot, segmentOps, static_cast<int>(sections.size()),
+  DSP_DIAG_SEG(COMPILE, seg.def.startSlot, "TritonGraphBackend: segment [%d-%d] has %d ops, %d sections (deviceId=%d)",
+               seg.def.startSlot, seg.def.endSlot, segmentOps, static_cast<int>(sections.size()),
                compileDevice);
 
   auto shapeInfoToVector = [](const LongType* shapeInfo) -> std::vector<LongType> {
@@ -188,7 +188,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       return shapeVec;
     }
 
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       auto& producerSlot = slots[s];
       if (!producerSlot.shapeCacheValid() || producerSlot.shapeCache.cachedOutputShapes.empty()) continue;
       for (int o = 0; o < producerSlot.wiring.numOutputs; o++) {
@@ -313,7 +313,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   auto sectionLooksLikeShapeControl = [&](const KernelSection& section) -> bool {
     bool sawSlot = false;
     for (int si = section.startSlot; si <= section.endSlot; si++) {
-      if (si < seg.startSlot || si > seg.endSlot) return false;
+      if (si < seg.def.startSlot || si > seg.def.endSlot) return false;
       if (!slotLooksLikeShapeControl(slots[si])) {
         return false;
       }
@@ -326,9 +326,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     TritonIRBuilder planningBuilder;
     std::vector<TritonOpCategory> categories;
     std::vector<std::vector<LongType>> shapes;
-    categories.reserve(seg.endSlot - seg.startSlot + 1);
-    shapes.reserve(seg.endSlot - seg.startSlot + 1);
-    for (int i = seg.startSlot; i <= seg.endSlot; i++) {
+    categories.reserve(seg.def.endSlot - seg.def.startSlot + 1);
+    shapes.reserve(seg.def.endSlot - seg.def.startSlot + 1);
+    for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
       categories.push_back(getOpCategoryFromName(slots[i].ident.opName));
       if (slots[i].wiring.numOutputs > 0) {
         shapes.push_back(resolveShape(slots[i].wiring.outputSlotIndices[0]));
@@ -710,7 +710,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
            !isNativeOrderedSection(sections[runEnd + 1])) {
       if (fusionScoringEnabled) {
         float score = scoreSectionFusionRange(sections, runStart, runEnd, runEnd + 1,
-                                             slots, seg.startSlot, seg.endSlot,
+                                             slots, seg.def.startSlot, seg.def.endSlot,
                                              outputSlots, totalOutputSlots);
         if (score < fusionMinScore) {
           DSP_DIAG(FUSION, "TritonGraphBackend: section %d [%d-%d] NOT merged (score=%.2f < min=%.2f)",
@@ -735,7 +735,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   if (pendingRanges.empty()) {
     DSP_DIAG(COMPILE, "TritonGraphBackend: no sub-segments to compile for segment [%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     lastCompilationAudit_ = compiledSeg.audit;
     {
       std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -756,13 +756,13 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   const int maxParallelCompiles = std::max(1, getMaxParallelCompilations());
   DSP_DIAG(COMPILE, "TritonGraphBackend: adaptive section packing for [%d-%d] "
            "(initialRanges=%d, opsCap=%d(env=%d), sectionsCap=%d, compileThreads=%d)",
-           seg.startSlot, seg.endSlot,
+           seg.def.startSlot, seg.def.endSlot,
            static_cast<int>(pendingRanges.size()),
            maxOpsCap, envOpsCap, maxSectionsCap, maxParallelCompiles);
   if (maxSectionsCap <= 0) {
     DSP_DIAG(COMPILE, "TritonGraphBackend: section cap disabled for [%d-%d] (runtime control); "
              "set tritonMaxSubsegmentSections>0 to force additional splitting",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
   }
 
   int activeCompileDevice = -1;
@@ -770,12 +770,12 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   if (compileDeviceErr != cudaSuccess) {
     DSP_DIAG(BACKEND, "TritonGraphBackend: cudaGetDevice failed before adaptive compilation "
               "for segment [%d-%d]: %s",
-              seg.startSlot, seg.endSlot, cudaGetErrorString(compileDeviceErr));
+              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(compileDeviceErr));
     cudaGetLastError();
     return false;
   }
   DSP_DIAG(BACKEND, "TritonGraphBackend: compile device binding seg[%d-%d] targetDeviceId=%d activeDevice=%d cacheDeviceId=%d",
-           seg.startSlot, seg.endSlot, targetDevice, activeCompileDevice, compileDevice);
+           seg.def.startSlot, seg.def.endSlot, targetDevice, activeCompileDevice, compileDevice);
 
   struct CompileRangeResult {
     SubSegmentRange range;
@@ -808,7 +808,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         const long long inflightAfter = inFlightRanges.fetch_sub(1) - 1;
         DSP_DIAG(COMPILE, "TritonGraphBackend: compile progress seg[%d-%d] launch#%lld range[%d-%d] "
                  "status=FAILED(set-device) completed=%lld success=%lld failed=%lld inflight=%lld",
-                 seg.startSlot, seg.endSlot, launchIndex, range.startSlot, range.endSlot,
+                 seg.def.startSlot, seg.def.endSlot, launchIndex, range.startSlot, range.endSlot,
                  completedNow, successfulRanges.load(), failedNow, inflightAfter);
         cudaGetLastError();
         return result;
@@ -817,7 +817,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     const int sectionCount = range.endSectionIdx - range.startSectionIdx + 1;
     DSP_DIAG(COMPILE, "TritonGraphBackend: compile progress seg[%d-%d] launch#%lld range[%d-%d] "
              "START (ops=%d, sections=%d, inflight=%lld)",
-             seg.startSlot, seg.endSlot, launchIndex, range.startSlot, range.endSlot,
+             seg.def.startSlot, seg.def.endSlot, launchIndex, range.startSlot, range.endSlot,
              range.opsCount, sectionCount, inflightNow);
     result.compiled = compileToGpuBinary(slots, range.startSlot, range.endSlot,
                                          totalSlots,
@@ -837,7 +837,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             std::chrono::steady_clock::now() - rangeStart).count());
     DSP_DIAG(COMPILE, "TritonGraphBackend: compile progress seg[%d-%d] launch#%lld range[%d-%d] "
              "DONE status=%s elapsedMs=%lld completed=%lld success=%lld failed=%lld inflight=%lld",
-             seg.startSlot, seg.endSlot, launchIndex, range.startSlot, range.endSlot,
+             seg.def.startSlot, seg.def.endSlot, launchIndex, range.startSlot, range.endSlot,
              success ? "OK" : "FAILED", elapsedMs,
              completedNow, successNow, failedNow, inflightAfter);
     return result;
@@ -874,7 +874,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   const int totalInitialRanges = static_cast<int>(pendingRanges.size());
   DSP_DIAG(COMPILE, "TritonGraphBackend: work-stealing compile seg[%d-%d] "
            "(ranges=%d, workers=%d)",
-           seg.startSlot, seg.endSlot, totalInitialRanges, maxParallelCompiles);
+           seg.def.startSlot, seg.def.endSlot, totalInitialRanges, maxParallelCompiles);
 
   // Shared state for the work-stealing pool
   std::mutex workMtx;
@@ -1001,7 +1001,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       }
     }
     DSP_DIAG(COMPILE, "TritonGraphBackend: %d leaf ranges added to native ordered execution for [%d-%d]",
-             static_cast<int>(leafOrderedRanges.size()), seg.startSlot, seg.endSlot);
+             static_cast<int>(leafOrderedRanges.size()), seg.def.startSlot, seg.def.endSlot);
   }
 
   // Move successful results into compiledSeg
@@ -1011,7 +1011,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   DSP_DIAG(COMPILE, "TritonGraphBackend: compile progress seg[%d-%d] summary "
            "(launched=%lld, completed=%lld, success=%lld, failed=%lld, splitRetries=%lld)",
-           seg.startSlot, seg.endSlot,
+           seg.def.startSlot, seg.def.endSlot,
            launchedRanges.load(), completedRanges.load(),
            successfulRanges.load(), failedRanges.load(), splitRetryCount);
 
@@ -1022,7 +1022,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   if (compiledSeg.subKernels.empty()) {
     DSP_DIAG(COMPILE, "TritonGraphBackend: no compiled sub-kernels for segment [%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     {
       std::lock_guard<std::mutex> lock(cacheMtx_);
       failedCache_.insert(key);
@@ -1038,7 +1038,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   DSP_DIAG(COMPILE, "TritonGraphBackend: adaptive compilation produced %d sub-segments for [%d-%d]",
            static_cast<int>(compiledSeg.subKernels.size()),
-           seg.startSlot, seg.endSlot);
+           seg.def.startSlot, seg.def.endSlot);
 
   // Pre-allocate launch workspace outside runtime execution/capture.
   // This ensures the first captured Triton execution does not perform allocations.
@@ -1057,7 +1057,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     // before any stream capture path executes.
     if (getDummyDevicePtrForDevice(compileDevice, false) == nullptr) {
       DSP_DIAG(MEMORY, "TritonGraphBackend: failed pre-allocating dummy arg buffer on device %d for segment [%d-%d]",
-                compileDevice, seg.startSlot, seg.endSlot);
+                compileDevice, seg.def.startSlot, seg.def.endSlot);
     }
   }
 
@@ -1072,7 +1072,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     // Stream creation needs a small device memory allocation for control structures,
     // which can fail when the CUDA memory pool has reserved nearly all device memory.
     DSP_DIAG(COMPILE, "TritonGraphBackend: pre-allocation stream creation failed for segment [%d-%d]: %s — using default stream",
-              seg.startSlot, seg.endSlot, cudaGetErrorString(streamErr));
+              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(streamErr));
     cudaGetLastError();
     preallocStream = 0;  // default stream
     ownPreallocStream = false;
@@ -1284,7 +1284,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
       DSP_DIAG(COMPILE, "TritonGraphBackend: consolidated arg table %zu bytes for %d sub-kernels in [%d-%d]",
                 totalArgTableBytes, static_cast<int>(compiledSeg.subKernels.size()),
-                seg.startSlot, seg.endSlot);
+                seg.def.startSlot, seg.def.endSlot);
     }
   }
 
@@ -1314,7 +1314,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   auto preallocSyncErr = cudaStreamSynchronize(preallocStream);
   if (preallocSyncErr != cudaSuccess) {
     DSP_DIAG(COMPILE, "TritonGraphBackend: pre-allocation stream sync failed for segment [%d-%d]: %s",
-              seg.startSlot, seg.endSlot, cudaGetErrorString(preallocSyncErr));
+              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(preallocSyncErr));
     cudaGetLastError();
     cleanupCompiledWorkspace();
     return false;
@@ -1323,7 +1323,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     auto preallocDestroyErr = cudaStreamDestroy(preallocStream);
     if (preallocDestroyErr != cudaSuccess) {
       DSP_DIAG(COMPILE, "TritonGraphBackend: failed destroying pre-allocation stream for segment [%d-%d]: %s",
-                seg.startSlot, seg.endSlot, cudaGetErrorString(preallocDestroyErr));
+                seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(preallocDestroyErr));
       cudaGetLastError();
       cleanupCompiledWorkspace();
       return false;
@@ -1340,7 +1340,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   DSP_DIAG(COMPILE, "TritonGraphBackend: compiled segment [%d-%d] (%d sub-kernels, shape key %lld, deviceId=%d)",
-            seg.startSlot, seg.endSlot, compiledKernelCount, shapeKey, compileDevice);
+            seg.def.startSlot, seg.def.endSlot, compiledKernelCount, shapeKey, compileDevice);
   return true;
 }
 

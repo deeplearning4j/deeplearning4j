@@ -420,7 +420,7 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         int totalSlots,
                                         int* requestedOutputSlotIndices,
                                         int numRequestedOutputs) {
-  JitSegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
+  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -434,18 +434,18 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   JitCompiledKernel compiled;
 
   // Generate CUDA C source
-  std::string cudaSrc = generateCudaSource(slots, seg.startSlot, seg.endSlot,
+  std::string cudaSrc = generateCudaSource(slots, seg.def.startSlot, seg.def.endSlot,
                                             externalInputs, numExternalInputs,
                                             outputSlots, totalOutputSlots, compiled);
 
   if (cudaSrc.empty()) {
     DSP_DIAG(COMPILE, "NvrtcGraphBackend: CUDA source generation failed for segment [%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return false;
   }
 
   // Build audit
-  for (int i = seg.startSlot; i <= seg.endSlot; i++) {
+  for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
     entry.opName = slots[i].ident.opName;
@@ -478,7 +478,7 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       std::string log(logSize, '\0');
       nvrtcGetProgramLog(prog, &log[0]);
       DSP_DIAG(COMPILE, "NvrtcGraphBackend: compilation failed for segment [%d-%d]:\n%s",
-               seg.startSlot, seg.endSlot, log.c_str());
+               seg.def.startSlot, seg.def.endSlot, log.c_str());
     }
     nvrtcDestroyProgram(&prog);
     return false;
@@ -495,7 +495,7 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled.gpuModule = GpuKernelLauncher::loadPtxModule(ptx.c_str(), ptx.size());
   if (!compiled.gpuModule) {
     DSP_DIAG(COMPILE, "NvrtcGraphBackend: PTX module load failed for segment [%d-%d]",
-             seg.startSlot, seg.endSlot);
+             seg.def.startSlot, seg.def.endSlot);
     return false;
   }
 
@@ -517,7 +517,7 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   DSP_DIAG(JIT, "NvrtcGraphBackend: compiled segment [%d-%d] (%zu bytes PTX, shape key %lld)",
-            seg.startSlot, seg.endSlot, ptxSize, shapeKey);
+            seg.def.startSlot, seg.def.endSlot, ptxSize, shapeKey);
   return true;
 }
 
@@ -527,7 +527,7 @@ Status NvrtcGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           NDArray** externalInputs, int numExternalInputs,
                                           NDArray** outputSlots, int totalOutputSlots,
                                           void* stream) {
-  JitSegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey};
+  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
   return jitExecuteSegment(key, cache_, cacheMtx_, "NvrtcGraphBackend",
                            slots, externalInputs, numExternalInputs,
                            outputSlots, totalOutputSlots, stream);

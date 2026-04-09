@@ -63,8 +63,8 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                           int totalSlots,
                                           int* requestedOutputSlotIndices,
                                           int numRequestedOutputs) {
-  int startSlot = seg.startSlot;
-  int endSlot = seg.endSlot;
+  int startSlot = seg.def.startSlot;
+  int endSlot = seg.def.endSlot;
 
   // Check cache first
   SegmentCacheKey key{startSlot, endSlot, shapeKey};
@@ -156,9 +156,9 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                             NDArray** externalInputs, int numExternalInputs,
                                             NDArray** outputSlots, int totalOutputSlots,
                                             void* stream) {
-  int startSlot = seg.startSlot;
-  int endSlot = seg.endSlot;
-  SegmentCacheKey key{startSlot, endSlot, seg.shapeKey};
+  int startSlot = seg.def.startSlot;
+  int endSlot = seg.def.endSlot;
+  SegmentCacheKey key{startSlot, endSlot, seg.def.shapeKey};
 
   // Look up cached kernel
   CompiledSegment* compiled = nullptr;
