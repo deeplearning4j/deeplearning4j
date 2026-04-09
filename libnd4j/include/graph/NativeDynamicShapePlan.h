@@ -1330,10 +1330,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numRequestedOutputs_;
 
   // Execution state (reused across calls)
-  NDArray** outputSlots_;              // Current output slot values
-  NDArray** slotArrayCache_;           // UNIFIED with outputSlots_ (same pointer, DO NOT delete[] separately)
+  NDArray** outputSlots_;              // THE slot arrays — current output values for all slots
+  // slotArrayCache_ removed: was aliased to outputSlots_ (same pointer).
+  // Backward compat: #define slotArrayCache_ outputSlots_ provided below for existing code.
+  // New code should use outputSlots_ directly.
   bool* slotIsViewProducer_;           // View producer flags (learned from first exec)
-  // slotViewOutputs_ removed (Phase 2): views go directly into outputSlots_/slotArrayCache_
   Context** contextPool_;              // Pre-allocated Context pool
   bool viewProducerDetectionDone_;
   bool frozenConstantDetectionDone_;
@@ -1722,5 +1723,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
 }  // namespace graph
 }  // namespace sd
+
+// Backward compatibility: slotArrayCache_ was aliased to outputSlots_ (same pointer).
+// All existing code using slotArrayCache_ will transparently use outputSlots_.
+// New code should use outputSlots_ directly.
+#define slotArrayCache_ outputSlots_
 
 #endif  // LIBND4J_NATIVE_DYNAMIC_SHAPE_PLAN_H

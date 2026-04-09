@@ -545,7 +545,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * totalOutputSlots);
 
   // slotArrayCache_ unified with outputSlots_ (same pointer, Phase 2)
-  plan->slotArrayCache_ = plan->outputSlots_;
+  // slotArrayCache_ removed: now a macro alias to outputSlots_ (same pointer).
 
   plan->slotIsViewProducer_ = new bool[totalOutputSlots];
   std::memset(plan->slotIsViewProducer_, 0, sizeof(bool) * totalOutputSlots);

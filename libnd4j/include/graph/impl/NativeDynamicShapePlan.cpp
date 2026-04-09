@@ -267,7 +267,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
     : slots_(nullptr), numSlots_(0), totalOutputSlots_(0), numExternalInputs_(0),
       releaseAtStep_(nullptr), releaseAtStepCounts_(nullptr),
       requestedOutputSlotIndices_(nullptr), numRequestedOutputs_(0),
-      outputSlots_(nullptr), slotArrayCache_(nullptr), slotIsViewProducer_(nullptr),
+      outputSlots_(nullptr), slotIsViewProducer_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
       gpuGraphCaptureEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
       shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false), traceEnabled_(false),
@@ -850,7 +850,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * plan->totalOutputSlots_);
 
   // slotArrayCache_ unified with outputSlots_ (same pointer, Phase 2)
-  plan->slotArrayCache_ = plan->outputSlots_;
+  // slotArrayCache_ removed: now a macro alias to outputSlots_ (same pointer).
+  // The following line was the aliasing assignment, now redundant.
 
   plan->slotIsViewProducer_ = new bool[plan->totalOutputSlots_];
   std::memset(plan->slotIsViewProducer_, 0, sizeof(bool) * plan->totalOutputSlots_);
