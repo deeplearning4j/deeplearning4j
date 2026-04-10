@@ -114,7 +114,7 @@ bool TritonGraphBackend::isAvailable() const {
 
 bool TritonGraphBackend::areAllOpsMappable(NativeSlot* slots, int start, int end) {
   for (int i = start; i <= end; i++) {
-    if (!TritonIRBuilder::isTritonMappable(slots[i].opName)) {
+    if (!TritonIRBuilder::isTritonMappable(slots[i].ident.opName)) {
       return false;
     }
   }
@@ -139,7 +139,7 @@ bool TritonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   // Check if at least one op is Triton-mappable.
   // compileSegment handles mixed segments via isFallbackSection.
   for (int i = start; i <= end; i++) {
-    if (TritonIRBuilder::isTritonMappable(slots[i].opName)) {
+    if (TritonIRBuilder::isTritonMappable(slots[i].ident.opName)) {
       return true;
     }
   }

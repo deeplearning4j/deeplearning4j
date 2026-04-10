@@ -184,6 +184,32 @@ class SD_LIB_EXPORT CudaMemoryPool {
    */
   void setPinnedHostBytesLimit(size_t maxBytes) { pinnedHostBytesLimit_.store(maxBytes); }
 
+  // =========================================================================
+  // Pinned Host Memory Management
+  // =========================================================================
+
+  /**
+   * Allocate pinned host memory with pool tracking.
+   * Replaces raw cudaMallocHost calls so the pool can track and limit pinned host memory.
+   * @param size bytes to allocate
+   * @return pointer, or nullptr on failure
+   */
+  void* allocatePinnedHost(size_t size);
+
+  /**
+   * Free pinned host memory that was allocated via allocatePinnedHost().
+   * If the pointer was NOT allocated via allocatePinnedHost() (e.g., raw cudaMallocHost
+   * from older code), it falls back to cudaFreeHost directly.
+   * @param ptr pointer to free
+   * @return true if pointer was found in tracked allocations, false otherwise
+   */
+  bool freePinnedHost(void* ptr);
+
+  /**
+   * Check if a pointer is a tracked pinned host allocation.
+   */
+  bool isPinnedHostAllocation(void* ptr) const;
+
   /**
    * Release all pools (call on shutdown)
    */
@@ -304,7 +330,7 @@ class SD_LIB_EXPORT CudaMemoryPool {
   // Track host pinned allocations with sizes (very rare - only from last-resort failover).
   // Device allocations (both pool and non-pool) use cudaFree which works for both since CUDA 11.2.
   std::unordered_map<void*, size_t> hostAllocations_;  // ptr -> size, from cudaMallocHost failover
-  std::mutex fallbackAllocMutex_;
+  mutable std::mutex fallbackAllocMutex_;  // mutable for isPinnedHostAllocation() const
   std::atomic<size_t> pinnedHostBytesUsed_{0};   // cumulative pinned host bytes currently allocated
   std::atomic<size_t> pinnedHostBytesLimit_{0};   // max allowed pinned host bytes (0 = unlimited)
 

@@ -31,6 +31,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/OpDetection.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/shape.h>
 #include <array/ArrayOptions.h>
@@ -50,75 +51,7 @@ extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 namespace sd {
 namespace graph {
 
-// ── Detection: scan frozen slots for batchable matmul groups ─────────────────
-
-static bool isMatmulOp(const std::string& opName) {
-  return opName == "matmul" || opName == "mmul" || opName == "Mmul" ||
-         opName == "tensormmul" || opName == "Tensormmul";
-}
-
-// Extract matmul dimensions from shape info pointers (no NDArray* needed).
-// Handles rank-2 and rank-3 (with batch dim) matmuls. For rank-3, uses only the last 2 dims.
-static bool extractMatmulDimsFromShape(const NativeSlot& slot,
-                                        const LongType* shapeA, const LongType* shapeB,
-                                        int& M, int& N, int& K, int& transA, int& transB,
-                                        DataType& dtype) {
-  if (shapeA == nullptr || shapeB == nullptr) return false;
-
-  int rA = shape::rank(shapeA);
-  int rB = shape::rank(shapeB);
-  if (rA < 2 || rA > 3 || rB < 2 || rB > 3) return false;
-
-  transA = (slot.args.numIArgs >= 1) ? static_cast<int>(slot.args.iArgs[0]) : 0;
-  transB = (slot.args.numIArgs >= 2) ? static_cast<int>(slot.args.iArgs[1]) : 0;
-
-  const LongType* dimsA = shape::shapeOf(shapeA);
-  const LongType* dimsB = shape::shapeOf(shapeB);
-
-  if (transA) {
-    M = static_cast<int>(dimsA[rA - 1]);
-    K = static_cast<int>(dimsA[rA - 2]);
-  } else {
-    M = static_cast<int>(dimsA[rA - 2]);
-    K = static_cast<int>(dimsA[rA - 1]);
-  }
-
-  if (transB) {
-    N = static_cast<int>(dimsB[rB - 2]);
-  } else {
-    N = static_cast<int>(dimsB[rB - 1]);
-  }
-
-  dtype = ArrayOptions::dataType(shapeA);
-
-  // Only batch floating point matmuls (not shape computation ops using INT64 etc.)
-  if (dtype != FLOAT32 && dtype != DOUBLE && dtype != HALF && dtype != BFLOAT16) return false;
-
-  return true;
-}
-
-// Signature key for grouping matmuls
-struct MatmulSig {
-  int M, N, K, transA, transB;
-  DataType dtype;
-
-  bool operator==(const MatmulSig& o) const {
-    return M == o.M && N == o.N && K == o.K &&
-           transA == o.transA && transB == o.transB && dtype == o.dtype;
-  }
-};
-
-struct MatmulSigHash {
-  size_t operator()(const MatmulSig& s) const {
-    size_t h = std::hash<int>()(s.M);
-    h ^= std::hash<int>()(s.N) << 1;
-    h ^= std::hash<int>()(s.K) << 2;
-    h ^= std::hash<int>()(s.transA) << 3;
-    h ^= std::hash<int>()(s.transB) << 4;
-    h ^= std::hash<int>()(static_cast<int>(s.dtype)) << 5;
-    return h;
-  }
-};
+using namespace op_detection;  // isMatmulOp, extractMatmulDims, MatmulSig, MatmulSigHash, hasTransitiveDependency, allInputsAvailableBefore
 
 // Resolve shape info for a matmul input given its source index.
 // Priority: NDArray* (outputSlots_ / slotArrayCache_ / external) -> cachedOutputShapes on source slot.
@@ -142,68 +75,6 @@ const LongType* NativeDynamicShapePlan::resolveInputShapeInfo(
     }
   }
   return nullptr;
-}
-
-// ── Dependency analysis ──────────────────────────────────────────────────────
-
-// Check if stepJ transitively depends on any step in targetSteps.
-// BFS traces backward through inputSourceIndices -> outputSlotToStep.
-// Limited to steps >= minTarget for efficiency.
-static bool hasTransitiveDependency(
-    const NativeSlot* slots, int numSlots, int totalOutputSlots,
-    const std::vector<int>& outputSlotToStep,
-    int stepJ, const std::unordered_set<int>& targetSteps, int minTarget) {
-
-  static constexpr int MAX_BFS_NODES = 2000;
-  std::unordered_set<int> visited;
-  std::queue<int> queue;
-
-  // Seed BFS with stepJ's direct inputs
-  for (int k = 0; k < slots[stepJ].wiring.numInputs; k++) {
-    int src = slots[stepJ].wiring.inputSourceIndices[k];
-    if (src < 0 || src >= totalOutputSlots) continue;
-    int producerStep = outputSlotToStep[src];
-    if (producerStep < 0) continue;
-    if (targetSteps.count(producerStep)) return true;
-    if (producerStep >= minTarget && visited.insert(producerStep).second) {
-      queue.push(producerStep);
-    }
-  }
-
-  while (!queue.empty() && (int)visited.size() < MAX_BFS_NODES) {
-    int cur = queue.front();
-    queue.pop();
-
-    for (int k = 0; k < slots[cur].wiring.numInputs; k++) {
-      int src = slots[cur].wiring.inputSourceIndices[k];
-      if (src < 0 || src >= totalOutputSlots) continue;
-      int producerStep = outputSlotToStep[src];
-      if (producerStep < 0) continue;
-      if (targetSteps.count(producerStep)) return true;
-      if (producerStep >= minTarget && visited.insert(producerStep).second) {
-        queue.push(producerStep);
-      }
-    }
-  }
-
-  return false;
-}
-
-// Check if all inputs of a slot are available before firstSlot
-// (i.e., produced by steps < firstSlot, or external inputs).
-static bool allInputsAvailableBefore(
-    const NativeSlot& slot, int firstSlot, int totalOutputSlots,
-    const std::vector<int>& outputSlotToStep) {
-
-  for (int k = 0; k < slot.wiring.numInputs; k++) {
-    int src = slot.wiring.inputSourceIndices[k];
-    if (src < 0) continue;  // external, always available
-    if (src >= totalOutputSlots) return false;
-    int producerStep = outputSlotToStep[src];
-    if (producerStep < 0) return false;
-    if (producerStep >= firstSlot) return false;
-  }
-  return true;
 }
 
 // ── Main detection ───────────────────────────────────────────────────────────
@@ -234,7 +105,7 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
 
     for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
       NativeSlot& slot = slots_[i];
-      if (!isMatmulOp(slot.ident.opName) || slot.wiring.numInputs < 2 ||
+      if (!isMatmulOp(slot.ident.op) || slot.wiring.numInputs < 2 ||
           slot.cf.controlFlowType != CF_NONE || slot.frozenConstantSlot()) continue;
 
       totalMatmuls++;
@@ -258,7 +129,7 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
 
       int M, N, K, transA, transB;
       DataType dtype;
-      if (!extractMatmulDimsFromShape(slot, shapeA, shapeB, M, N, K, transA, transB, dtype)) {
+      if (!extractMatmulDims(slot, shapeA, shapeB, M, N, K, transA, transB, dtype)) {
         dimFailMatmuls++;
         if (dimFailMatmuls <= 10) {
           int rA = shapeA ? (int)shape::rank(shapeA) : -1;

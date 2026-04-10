@@ -18,6 +18,7 @@
 
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 #include <helpers/shape.h>
 
 #include <vector>
@@ -66,6 +67,9 @@ void recordObservedShapes(SegmentShapeProfile* profile,
                           NDArray** inputArrays, int numInputs) {
   if (profile == nullptr || inputArrays == nullptr) return;
 
+  DSP_DIAG(SHAPE, "recordObservedShapes: obs=%d/%d numInputs=%d",
+           profile->observationCount + 1, profile->warmupSteps, numInputs);
+
   // Resize input records if needed
   if (static_cast<int>(profile->inputRecords.size()) < numInputs) {
     profile->inputRecords.resize(numInputs);
@@ -96,6 +100,8 @@ void recordObservedShapes(SegmentShapeProfile* profile,
       if (static_cast<int>(rank) != rec.rank) {
         // Rank changed — mark ALL dimensions as dynamic
         // (this is unusual but handle it gracefully)
+        DSP_DIAG(SHAPE, "recordObservedShapes: input[%d] RANK CHANGED %d→%lld — all dims dynamic",
+                 i, rec.rank, (long long)rank);
         rec.rank = static_cast<int>(rank);
         rec.dims.resize(rank);
         for (int d = 0; d < rank; d++) {
@@ -136,10 +142,12 @@ LongType computeRangeBasedShapeKey(SegmentShapeProfile* profile,
                                     int startSlot, int endSlot) {
   if (profile == nullptr) return 0;
 
-  LongType key = 0xcbf29ce484222325ULL;
+  DSP_DIAG(SHAPE, "computeRangeBasedShapeKey: [%d-%d] numInputs=%d warmupComplete=%d",
+           startSlot, endSlot, numInputs, isWarmupComplete(profile) ? 1 : 0);
+
+  uint64_t key = dsp::FNV1A64_OFFSET_BASIS;
   auto mix = [&key](LongType val) {
-    key ^= val;
-    key *= 0x100000001b3ULL;
+    dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
   mix(startSlot);
@@ -176,6 +184,8 @@ LongType computeRangeBasedShapeKey(SegmentShapeProfile* profile,
       mix(static_cast<LongType>(arr->lengthOf()));
     }
   }
+
+  DSP_DIAG(SHAPE, "computeRangeBasedShapeKey: [%d-%d] key=0x%llx", startSlot, endSlot, (long long)key);
 
   return key;
 }

@@ -665,6 +665,19 @@ struct KvCacheMapping {
 };
 
 /**
+ * Per-phase execution timing breakdown for diagnostics.
+ * Populated by the phase helpers and consumed by execute().
+ */
+struct PhaseExecutionStats {
+  long long graphReplayUs = 0;
+  long long slotBySlotUs = 0;
+  int graphReplaySegs = 0;
+  int slotBySlotSegs = 0;
+  int graphReplaySlots = 0;
+  int slotBySlotSlots = 0;
+};
+
+/**
  * Native C++ plan executor that replaces the Java DynamicShapePlanExecutor.
  *
  * Executes the entire pre-compiled plan in C++ with a single JNI call,
@@ -726,6 +739,89 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       NDArray** externalInputs, int numExternalInputs,
       NDArray** requestedOutputs, int numRequestedOutputs,
       void* stream);
+
+  // ─── Phase execution containers ─────────────────────────────────────────
+  // The monolithic execute() is decomposed into these clearly-scoped methods.
+  // Each encapsulates all work for its phase — no scattered logic.
+
+  /**
+   * PHASE: Warmup — first frozen execution (executeCount_ == 0 after freeze).
+   *
+   * Populates shapes in outputSlots_ by running all segments slot-by-slot.
+   * Captures shapes needed for subsequent compilation. Invalidates shape
+   * caches for non-capturable segments (their shapes may change across steps).
+   *
+   * Called automatically by execute() when shapesFrozen_ && executeCount_ == 0.
+   * @return Status::OK on success, error on segment execution failure.
+   */
+  Status phaseWarmup(NDArray** externalInputs, int numExternalInputs, void* stream,
+                     PhaseExecutionStats* stats = nullptr);
+
+  /**
+   * PHASE: Compile — precompile all GPU-compilable segments.
+   *
+   * Fires async compilation threads for Triton/NVRTC modules. On CPU, no-op.
+   * Compilation results populate seg.exec.compiledByBackend and seg.exec.replayHandle.
+   *
+   * Called automatically by execute() after warmup (executeCount_ == 1).
+   * Can also be called eagerly after setShapesFrozen() for ahead-of-time compilation.
+   */
+  void phaseCompile(NDArray** externalInputs, int numExternalInputs);
+
+  /**
+   * PHASE: Freeze — transition from dynamic to frozen shapes.
+   *
+   * Called by setShapesFrozen(true). Runs the fusion pass, rebuilds segments
+   * if merge is enabled, resets execution counters, and advances planPhase_
+   * to SHAPES_FROZEN.
+   *
+   * This is NOT called from execute() — it's the freeze transition itself.
+   */
+  Status phaseFreeze();
+
+  /**
+   * PHASE: Replay — steady-state graph replay execution.
+   *
+   * Dispatches all segments via their replay handles (CUDA graph replay,
+   * Triton compiled kernels, or emulated replay). Post-segment checks include
+   * NaN detection, trace slot reporting, and pool trimming.
+   *
+   * Called automatically by execute() when planPhase_ == REPLAYING.
+   * Also called for POINTERS_STABLE when segments are compiled but not yet
+   * fully replaying (transitional state).
+   *
+   * @return Status::OK on success, error on segment execution failure.
+   */
+  Status phaseReplay(NDArray** externalInputs, int numExternalInputs,
+                     NDArray** requestedOutputs, int numRequestedOutputs,
+                     void* stream, PhaseExecutionStats* stats = nullptr);
+
+  /**
+   * PHASE: Slot-by-slot — non-capturable segment execution.
+   *
+   * Executes segments that cannot be captured (control flow, CPU fallback,
+   * compilation failures). Each op runs individually with full shape inference.
+   *
+   * Called automatically by execute() when the plan is forced into full
+   * slot-by-slot mode.
+   * @return Status::OK on success.
+   */
+  Status phaseSlotBySlot(NDArray** externalInputs, int numExternalInputs, void* stream,
+                         PhaseExecutionStats* stats = nullptr);
+
+  /**
+   * Advance plan phase based on observed stability.
+   * Automatic — called at end of execute(). Transitions:
+   *   SHAPES_FROZEN → POINTERS_STABLE (after 2+ stable frozen executions)
+   *   POINTERS_STABLE → REPLAYING (when all segments reach replay steady state)
+   */
+  void advancePlanPhase();
+
+  /**
+   * Demote plan phase (manual override for error recovery).
+   * Used when segment drops out of replay steady state.
+   */
+  void demotePlanPhase(PlanPhase targetPhase, const char* reason);
 
   /**
    * Clear per-slot shape caches for shape-dynamic slots only.
@@ -873,6 +969,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int getTotalOutputSlots() const { return totalOutputSlots_; }
 
   /**
+   * Get the output slots array (NDArray pointers for all slots).
+   * Used by validation/diagnostic functions to inspect outputs after execution.
+   */
+  NDArray** getOutputSlots() const { return outputSlots_; }
+
+  /**
    * Get plan segments (for CUDA Graphs integration).
    */
   const std::vector<GraphSegment>& getSegments() const { return segments_; }
@@ -941,26 +1043,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setJitMode(JitMode mode) { jitMode_ = mode; }
   JitMode getJitMode() const { return jitMode_; }
 
-  void setGraphExecutionMode(GraphExecutionMode mode) {
-    graphExecutionMode_ = mode;
-    // Reset cached backends so mode changes take effect immediately.
-    gpuGraphBackendChecked_ = false;
-    gpuGraphBackend_ = nullptr;
-    cpuGraphBackendChecked_ = false;
-    cpuGraphBackend_ = nullptr;
-    cpuGraphBackendChainBuilt_ = false;
-    cpuGraphBackendChain_.clear();
-    // Enable GPU graph capture for all modes except SLOT_BY_SLOT.
-    // JIT backends (Triton/NVRTC/PTX) use graph capture when they
-    // can't handle a segment (unsupported ops, etc).
-    if (mode != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-      gpuGraphCaptureEnabled_ = true;
-    }
-    // Clear GPU backend failed-compilation cache so segments that failed with
-    // incomplete shapes (e.g., attention with seqK=0 before KV setup)
-    // can retry when called again with correct external input shapes.
-    clearGpuBackendFailedCache();
-  }
+  void setGraphExecutionMode(GraphExecutionMode mode);
   GraphExecutionMode getGraphExecutionMode() const { return graphExecutionMode_; }
 
 
@@ -1022,19 +1105,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Tracks plan ownership of new arrays.
    */
   void writeOutputSlot(int slotIdx, NDArray* value, const char* tag);
-
-  /**
-   * Read from an output slot with stale-read validation.
-   * Returns nullptr for null slots. Throws on closed DataBuffer.
-   */
-  NDArray* readOutputSlot(int slotIdx) const;
-
-  /**
-   * Bulk H2D sync for all external inputs. The ONLY place H2D happens.
-   * Iterates all inputs, async H2D for any where host is newer than device.
-   * Uses tl_dspExecutionStream for async copies (no per-input sync).
-   */
-  void syncExternalInputs(NDArray** extInputs, int numExt, void* stream);
 
   /**
    * Get the slot state for a specific slot index (for JNI).
@@ -1140,12 +1210,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * @return true if all ops were compiled, false if any were skipped
    */
   bool validateCompiledCpuGraph(int segmentIndex = -1) const;
-
-  /**
-   * Print the compilation audit for CPU graph backends.
-   * Shows every op with its compilation status (compiled vs skipped).
-   */
-  void printCompilationAudit() const;
 
   friend class NativePlanCompiler;
 
@@ -1331,7 +1395,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
-  void rebuildSegmentsForFrozenShapes();
   SelectedBackend resolveBackendForSegment(bool isCapturable) const;
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
@@ -1374,7 +1437,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                                   int numExt, void* stream);
   Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
-  GraphBackend* getCpuGraphBackend();
   const std::vector<GraphBackend*>& getCpuGraphBackendChain();
   Status executeSegmentWithSpecificBackend(GraphSegment& seg, GraphBackend* backend,
                                            NDArray** externalArrays, int numExt, void* stream);
@@ -1392,8 +1454,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool externalAddrsMatch(const GraphSegment& seg, NDArray** externalInputs, int numExt) const;
   Status executeSegmentWithGraph(GraphSegment& seg, NDArray** externalArrays,
                                  int numExt, void* stream);
-  Status executeSegmentWithJit(GraphSegment& seg, NDArray** externalArrays,
-                               int numExt, void* stream);
 
   /**
    * Replay verification: snapshot replay outputs, re-execute slot-by-slot with
@@ -1436,6 +1496,25 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformFreePlanResources();
   int platformCountCapturedGraphSegments() const;
   void platformMaybeSplitIfEnabled();
+
+  // ── Additional platform dispatch (extracted from NativeDynamicShapePlan.cpp) ──
+  void* platformBeginExecution(void* stream, bool frozen, int execCount);
+  void platformEndExecution(void* executionState, void* stream, bool frozen, int execCount);
+  void platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount);
+  void platformDumpExtInputGpuValues(NDArray* arr, int extIdx, int execCount, void* stream);
+  void platformClearCastCache();
+  void platformPostSegmentPoolManagement(bool frozen, int execCount);
+  void platformDumpLogitsArgmax(int execCount, void* stream);
+  void platformDetectAndPrepareBatchedGemm(NDArray** ext, int numExt, void* stream);
+  void platformPreReplayPoolStats(size_t& poolUsedOut, size_t& poolReservedOut);
+  void platformPostReplayPoolManagement(size_t poolUsedPre, bool frozen, int execCount);
+  void platformTraceSlotValues(const GraphSegment& seg, void* stream, int execCount);
+  void platformUpdateDecodeInputs(NDArray** ext, int numExt, long long tokenId, int cachePos, void* stream);
+  void platformPostKvScatterSync(int scattered, int pos, int numMappings);
+  SelectedBackend platformResolveBackend(bool isGraphCapture) const;
+  bool platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const;
+  void platformReleaseSegmentGpuResources();
+  void platformMigrateWeightsAndClearCaches();
 
   // ── GPU graph backend (NativeDynamicShapePlan_gpubackend.cpp) ──
   Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,

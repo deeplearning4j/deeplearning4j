@@ -82,18 +82,19 @@ bool GraphReplayHandle::externalAddressesMatch(NDArray** externalInputs, int num
     return false;
   }
   int mismatches = 0;
+  int detailLimit = sd::graph::DspDiagnostics::getInstance().diagDetailLimit();
   for (int i = 0; i < numInputs; i++) {
     void* current = (externalInputs[i] != nullptr) ? externalInputs[i]->specialBuffer() : nullptr;
     if (current != capturedExternalAddrs_[i]) {
       mismatches++;
-      if (mismatches <= 5) {
+      if (mismatches <= detailLimit) {
         DSP_DIAG(EXECUTE, "externalAddressesMatch: mismatch at ext[%d] captured=%p current=%p",
                  i, capturedExternalAddrs_[i], current);
       }
     }
   }
-  if (mismatches > 5) {
-    DSP_DIAG(EXECUTE, "externalAddressesMatch: ... and %d more mismatches", mismatches - 5);
+  if (mismatches > detailLimit) {
+    DSP_DIAG(EXECUTE, "externalAddressesMatch: ... and %d more mismatches", mismatches - detailLimit);
   }
   return mismatches == 0;
 }
@@ -103,6 +104,8 @@ const std::vector<void*>& GraphReplayHandle::getCapturedExternalAddresses() cons
 }
 
 void GraphReplayHandle::clearExternalAddresses() {
+  DSP_DIAG(GRAPH_REPLAY, "GraphReplayHandle::clearExternalAddresses: clearing %d entries (backend=%s)",
+           (int)capturedExternalAddrs_.size(), backendName());
   capturedExternalAddrs_.clear();
 }
 
@@ -122,17 +125,23 @@ const std::vector<void*>& GraphReplayHandle::getCapturedHostPtrs() const {
 
 bool GraphReplayHandle::allocateWorkspace(size_t bytes, int deviceId,
                                            void* registryPtr, int segIdx) {
+  DSP_DIAG(MEMORY, "GraphReplayHandle::allocateWorkspace: %zuKB device=%d seg=%d (base class no-op)",
+           bytes / 1024, deviceId, segIdx);
   // CPU base class: no GPU workspace needed
   return true;
 }
 
 void GraphReplayHandle::releaseWorkspace(void* registryPtr, int segIdx) {
+  DSP_DIAG(MEMORY, "GraphReplayHandle::releaseWorkspace: seg=%d prevBytes=%zu (base class)",
+           segIdx, captureWorkspaceBytes_);
   // CPU base class: nothing to release
   captureWorkspacePtr_ = nullptr;
   captureWorkspaceBytes_ = 0;
 }
 
 void GraphReplayHandle::freeHostPointers() {
+  DSP_DIAG(MEMORY, "GraphReplayHandle::freeHostPointers: clearing %d host ptrs (base class)",
+           (int)capturedHostPtrs_.size());
   // CPU base class: host pointers are plain heap — just clear the list.
   // CUDA override uses cudaFreeHost.
   capturedHostPtrs_.clear();
@@ -152,26 +161,36 @@ std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(int deviceId) {
   // in official v5, partial in lshqqytiger fork). Native HIP/L0 graph
   // APIs are production-ready, so use them directly.
 #if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating HipGraphReplayHandle (ZLUDA AMD)");
   return std::make_unique<HipGraphReplayHandle>(deviceId);
 #elif defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_INTEL)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating LevelZeroReplayHandle (ZLUDA Intel)");
   return std::make_unique<LevelZeroReplayHandle>(deviceId);
 
   // ── Native builds: use the platform's own graph replay API ────────────
 #elif defined(SD_CUDA)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating CudaGraphReplayHandle");
   return std::make_unique<CudaGraphReplayHandle>(deviceId);
 #elif defined(SD_HIP)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating HipGraphReplayHandle");
   return std::make_unique<HipGraphReplayHandle>(deviceId);
 #elif defined(SD_METAL)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating MetalReplayHandle");
   return std::make_unique<MetalReplayHandle>(deviceId);
 #elif defined(HAVE_LEVELZERO)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating LevelZeroReplayHandle");
   return std::make_unique<LevelZeroReplayHandle>(deviceId);
 #elif defined(HAVE_VULKAN)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating VulkanReplayHandle");
   return std::make_unique<VulkanReplayHandle>(deviceId);
 #elif defined(SD_TPU)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating TpuReplayHandle");
   return std::make_unique<TpuReplayHandle>(deviceId);
 #elif defined(HAVE_HEXAGON_MLIR)
+  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating HexagonReplayHandle");
   return std::make_unique<HexagonReplayHandle>(deviceId);
 #else
+  DSP_DIAG(GRAPH_REPLAY, "GraphReplayFactory: creating FunctionalReplayHandle (CPU fallback)");
   return std::make_unique<FunctionalReplayHandle>();
 #endif
 }

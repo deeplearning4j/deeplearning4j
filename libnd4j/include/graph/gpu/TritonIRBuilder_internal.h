@@ -121,35 +121,35 @@ inline void resolveStridedSliceParams(const NativeSlot& slot,
   if (rank <= 0) return;
 
   // iArgs fallback: [begin... end... stride...] or [begin... end...]
-  if (slot.numIArgs > 0 && slot.iArgs != nullptr) {
-    if (slot.numIArgs >= rank * 3) {
+  if (slot.args.numIArgs > 0 && slot.args.iArgs != nullptr) {
+    if (slot.args.numIArgs >= rank * 3) {
       for (int d = 0; d < rank; d++) {
-        begins[d] = static_cast<int>(slot.iArgs[d]);
-        ends[d] = static_cast<int>(slot.iArgs[d + rank]);
-        int s = static_cast<int>(slot.iArgs[d + (2 * rank)]);
+        begins[d] = static_cast<int>(slot.args.iArgs[d]);
+        ends[d] = static_cast<int>(slot.args.iArgs[d + rank]);
+        int s = static_cast<int>(slot.args.iArgs[d + (2 * rank)]);
         strides[d] = (s == 0 ? 1 : s);
       }
-    } else if (slot.numIArgs >= rank * 2) {
+    } else if (slot.args.numIArgs >= rank * 2) {
       for (int d = 0; d < rank; d++) {
-        begins[d] = static_cast<int>(slot.iArgs[d]);
-        ends[d] = static_cast<int>(slot.iArgs[d + rank]);
+        begins[d] = static_cast<int>(slot.args.iArgs[d]);
+        ends[d] = static_cast<int>(slot.args.iArgs[d + rank]);
       }
     }
   }
 
   // Tensor-input slice form (ONNX Slice / dynamic strided slice):
   // data, starts, ends, [axes], [steps]
-  if (slot.numInputs >= 3) {
-    auto starts = readHostIntVector(resolveArray(slot.inputSourceIndices[1]));
-    auto endVals = readHostIntVector(resolveArray(slot.inputSourceIndices[2]));
+  if (slot.wiring.numInputs >= 3) {
+    auto starts = readHostIntVector(resolveArray(slot.wiring.inputSourceIndices[1]));
+    auto endVals = readHostIntVector(resolveArray(slot.wiring.inputSourceIndices[2]));
     std::vector<int> axes;
     std::vector<int> steps;
 
-    if (slot.numInputs >= 5) {
-      axes = readHostIntVector(resolveArray(slot.inputSourceIndices[3]));
-      steps = readHostIntVector(resolveArray(slot.inputSourceIndices[4]));
-    } else if (slot.numInputs >= 4) {
-      auto fourth = readHostIntVector(resolveArray(slot.inputSourceIndices[3]));
+    if (slot.wiring.numInputs >= 5) {
+      axes = readHostIntVector(resolveArray(slot.wiring.inputSourceIndices[3]));
+      steps = readHostIntVector(resolveArray(slot.wiring.inputSourceIndices[4]));
+    } else if (slot.wiring.numInputs >= 4) {
+      auto fourth = readHostIntVector(resolveArray(slot.wiring.inputSourceIndices[3]));
       bool inRange = !fourth.empty();
       std::unordered_set<int> seen;
       bool unique = true;
@@ -308,8 +308,8 @@ inline std::unordered_set<int> computeExternallyVisibleOutputs(
   // 1. Collect all output slot indices produced within the segment
   std::unordered_set<int> segmentOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      segmentOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      segmentOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -317,8 +317,8 @@ inline std::unordered_set<int> computeExternallyVisibleOutputs(
   std::unordered_set<int> externallyConsumed;
   for (int i = 0; i < totalSlots; i++) {
     if (i >= startSlot && i <= endSlot) continue;  // Skip slots within segment
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (srcIdx >= 0 && segmentOutputs.count(srcIdx)) {
         externallyConsumed.insert(srcIdx);
       }
@@ -337,8 +337,8 @@ inline std::unordered_set<int> computeExternallyVisibleOutputs(
   //    These might be side-effect outputs or terminal values.
   std::unordered_set<int> consumedAnywhere;
   for (int i = 0; i < totalSlots; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (srcIdx >= 0) consumedAnywhere.insert(srcIdx);
     }
   }

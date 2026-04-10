@@ -2300,6 +2300,26 @@ SD_LIB_EXPORT const char* dspDiagGetJsonReport();
  */
 SD_LIB_EXPORT void dspDiagClear();
 
+/**
+ * Validate plan outputs after execution. Checks each output for NaN, Inf, all-zeros, or null.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param flagsOut    int array of size numRequestedOutputs, filled with DSP_VALIDATE_* bitmask per output
+ * @return number of outputs with validation issues
+ */
+SD_LIB_EXPORT int dspValidateOutputs(sd::Pointer planHandle, int* flagsOut);
+
+/**
+ * Detect stale outputs by comparing current outputs against previous step norms.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param prevNorms   float array of size numRequestedOutputs (updated in-place with current norms)
+ * @param staleOut    bool array of size numRequestedOutputs, set to true for stale outputs
+ * @param epsilon     threshold below which norm difference is considered stale
+ * @return number of stale outputs detected
+ */
+SD_LIB_EXPORT int dspDetectStaleOutputs(sd::Pointer planHandle, float* prevNorms, bool* staleOut, float epsilon);
+
 // =============================================================================
 // NCCL Collective Communication Operations
 // =============================================================================

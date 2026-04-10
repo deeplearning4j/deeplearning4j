@@ -332,14 +332,20 @@ bool OpenVinoGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end)
 
   for (int i = start; i <= end; i++) {
     totalOps++;
-    if (isOpenVinoMappable(slots[i].opName)) {
+    if (isOpenVinoMappable(slots[i].ident.opName)) {
       mappableOps++;
+    } else {
+      DSP_DIAG(BACKEND, "OpenVinoGraphBackend::canFuseSegment: unmappable op '%s' at slot %d",
+               slots[i].ident.opName.c_str(), i);
     }
   }
 
+  bool canFuse = mappableOps == totalOps && mappableOps >= 1;
+  DSP_DIAG(SEGMENT, "OpenVinoGraphBackend::canFuseSegment [%d-%d]: mappable=%d/%d canFuse=%s",
+           start, end, mappableOps, totalOps, canFuse ? "true" : "false");
   // Accept any segment where all ops are mappable — no minimum op count.
   // Every mappable op benefits from OpenVINO compilation.
-  return mappableOps == totalOps && mappableOps >= 1;
+  return canFuse;
 }
 
 // ─── buildModel ─────────────────────────────────────────────────────────────
@@ -359,8 +365,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
   // Collect which slot outputs are produced within this segment
   std::unordered_set<int> segmentOutputs;
   for (int s = startSlot; s <= endSlot; s++) {
-    for (int o = 0; o < slots[s].numOutputs; o++) {
-      segmentOutputs.insert(slots[s].outputSlotIndices[o]);
+    for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+      segmentOutputs.insert(slots[s].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -370,11 +376,11 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
   // dynamic prevents OpenVINO's concat shape inference from failing.
   std::unordered_map<int, std::unordered_set<int>> dynamicDims;  // srcIdx -> set of dim indices
   for (int s = startSlot; s <= endSlot; s++) {
-    const std::string& op = slots[s].opName;
+    const std::string& op = slots[s].ident.opName;
     if (op == "concat" || op == "Concat" || op == "concat_v2") {
-      int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
-      for (int inp = 0; inp < slots[s].numInputs; inp++) {
-        int srcIdx = slots[s].inputSourceIndices[inp];
+      int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
+      for (int inp = 0; inp < slots[s].wiring.numInputs; inp++) {
+        int srcIdx = slots[s].wiring.inputSourceIndices[inp];
         if (axis < 0) {
           // Negative axis — resolve later when we know rank
           dynamicDims[srcIdx].insert(-1);  // sentinel: mark all dims dynamic
@@ -390,8 +396,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
   std::vector<int> inputSourceMap;  // maps param index -> source index
 
   for (int s = startSlot; s <= endSlot; s++) {
-    for (int inp = 0; inp < slots[s].numInputs; inp++) {
-      int srcIdx = slots[s].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[s].wiring.numInputs; inp++) {
+      int srcIdx = slots[s].wiring.inputSourceIndices[inp];
       if (tensorMap.count(srcIdx)) continue;
 
       bool isExternal = (srcIdx < 0);
@@ -459,7 +465,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
   std::vector<int> outputSourceMap;  // maps result index -> outputSlot index
 
   for (int s = startSlot; s <= endSlot; s++) {
-    const std::string& opName = slots[s].opName;
+    const std::string& opName = slots[s].ident.opName;
 
     CompilationAuditEntry audit;
     audit.slotIndex = s;
@@ -479,8 +485,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
     // at runtime and cascade into broken models. Fail the segment cleanly so DSP
     // can pick another backend.
     std::vector<ov::Output<ov::Node>> inputs;
-    for (int inp = 0; inp < slots[s].numInputs; inp++) {
-      int srcIdx = slots[s].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[s].wiring.numInputs; inp++) {
+      int srcIdx = slots[s].wiring.inputSourceIndices[inp];
       auto it = tensorMap.find(srcIdx);
       if (it == tensorMap.end()) {
         std::string msg = "OpenVINO: slot " + std::to_string(s) + " op '" + opName +
@@ -617,7 +623,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         if (inputs.size() >= 1) node = std::make_shared<ov::op::v4::Swish>(inputs[0]);
       } else if (opName == "elu" || opName == "Elu") {
         if (inputs.size() >= 1) {
-          double alpha = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1.0;
+          double alpha = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1.0;
           node = std::make_shared<ov::op::v0::Elu>(inputs[0], alpha);
         }
       } else if (opName == "ceil" || opName == "Ceil") {
@@ -652,8 +658,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "clamp" || opName == "ClipByValue" || opName == "clip_by_value" || opName == "clipbyvalue") {
         if (inputs.size() >= 1) {
-          double minVal = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : -std::numeric_limits<float>::max();
-          double maxVal = (slots[s].numTArgs > 1) ? slots[s].tArgs[1] : std::numeric_limits<float>::max();
+          double minVal = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : -std::numeric_limits<float>::max();
+          double maxVal = (slots[s].args.numTArgs > 1) ? slots[s].args.tArgs[1] : std::numeric_limits<float>::max();
           node = std::make_shared<ov::op::v0::Clamp>(inputs[0], minVal, maxVal);
         }
       } else if (opName == "reciprocal" || opName == "Reciprocal") {
@@ -688,14 +694,14 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "leakyrelu" || opName == "LeakyRelu") {
         // Use PRelu with constant slope
         if (inputs.size() >= 1) {
-          double alpha = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 0.01;
+          double alpha = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 0.01;
           auto slope = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(alpha)});
           node = std::make_shared<ov::op::v0::PRelu>(inputs[0], slope);
         }
       } else if (opName == "selu" || opName == "Selu") {
         if (inputs.size() >= 1) {
-          double alpha = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1.6732632423543772;
-          double lambda = (slots[s].numTArgs > 1) ? slots[s].tArgs[1] : 1.0507009873554805;
+          double alpha = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1.6732632423543772;
+          double lambda = (slots[s].args.numTArgs > 1) ? slots[s].args.tArgs[1] : 1.0507009873554805;
           auto alpha_const = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(alpha)});
           auto lambda_const = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(lambda)});
           node = std::make_shared<ov::op::v0::Selu>(inputs[0], alpha_const, lambda_const);
@@ -715,7 +721,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "celu" || opName == "Celu") {
         // Compose: max(0,x) + min(0, alpha*(exp(x/alpha)-1))
         if (inputs.size() >= 1) {
-          double alpha = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1.0;
+          double alpha = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1.0;
           auto zero = ov::op::v0::Constant::create(ov::element::f32, {}, {0.0f});
           auto alpha_const = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(alpha)});
           auto one = ov::op::v0::Constant::create(ov::element::f32, {}, {1.0f});
@@ -730,7 +736,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "thresholdedrelu" || opName == "ThresholdedRelu") {
         // Compose: Select(x > theta, x, 0)
         if (inputs.size() >= 1) {
-          double theta = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1.0;
+          double theta = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1.0;
           auto theta_const = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(theta)});
           auto zero = ov::op::v0::Constant::create(ov::element::f32, {}, {0.0f});
           auto cmp = std::make_shared<ov::op::v1::Greater>(inputs[0], theta_const);
@@ -749,23 +755,23 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       }
       // ── Scalar ops (second operand from tArgs[0]) ──
       else if (opName == "add_scalar") {
-        if (inputs.size() >= 1 && slots[s].numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[0])});
+        if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
+          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Add>(inputs[0], scalar);
         }
       } else if (opName == "subtract_scalar" || opName == "sub_scalar") {
-        if (inputs.size() >= 1 && slots[s].numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[0])});
+        if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
+          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Subtract>(inputs[0], scalar);
         }
       } else if (opName == "multiply_scalar" || opName == "mul_scalar") {
-        if (inputs.size() >= 1 && slots[s].numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[0])});
+        if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
+          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Multiply>(inputs[0], scalar);
         }
       } else if (opName == "divide_scalar" || opName == "div_scalar") {
-        if (inputs.size() >= 1 && slots[s].numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[0])});
+        if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
+          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Divide>(inputs[0], scalar);
         }
       }
@@ -776,8 +782,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
                opName == "tensormmul" || opName == "TensorMmul" ||
                opName == "batched_gemm" || opName == "BatchedGemm") {
         if (inputs.size() >= 2) {
-          bool transpA = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
-          bool transpB = (slots[s].numBArgs > 1) ? slots[s].bArgs[1] : false;
+          bool transpA = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
+          bool transpB = (slots[s].args.numBArgs > 1) ? slots[s].args.bArgs[1] : false;
           node = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], transpA, transpB);
         }
       } else if (opName == "xw_plus_b" || opName == "XwPlusB") {
@@ -804,12 +810,12 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       // ── Softmax ──
       else if (opName == "softmax" || opName == "Softmax") {
         if (inputs.size() >= 1) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : -1;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : -1;
           node = std::make_shared<ov::op::v8::Softmax>(inputs[0], axis);
         }
       } else if (opName == "log_softmax" || opName == "LogSoftmax") {
         if (inputs.size() >= 1) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : -1;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : -1;
           auto sm = std::make_shared<ov::op::v8::Softmax>(inputs[0], axis);
           node = std::make_shared<ov::op::v0::Log>(sm->output(0));
         }
@@ -819,12 +825,12 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
                opName == "fused_layer_norm" || opName == "FusedLayerNorm") {
         // Compose: MVN(x, axes, normalize_variance=true, eps) * scale + bias
         if (inputs.size() >= 1) {
-          double eps = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1e-5;
+          double eps = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1e-5;
           // Normalize over last axis by default
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           std::vector<int64_t> axes;
-          if (slots[s].numIArgs > 0) {
-            for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          if (slots[s].args.numIArgs > 0) {
+            for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           } else {
             axes.push_back(rank - 1);
           }
@@ -845,11 +851,11 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "rms_norm" || opName == "RmsNorm") {
         // Compose: x / sqrt(mean(x^2) + eps) * scale
         if (inputs.size() >= 1) {
-          double eps = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1e-5;
+          double eps = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1e-5;
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           std::vector<int64_t> axes;
-          if (slots[s].numIArgs > 0) {
-            for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          if (slots[s].args.numIArgs > 0) {
+            for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           } else {
             axes.push_back(rank - 1);
           }
@@ -871,7 +877,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // = matmul(x / sqrt(mean(x^2) + eps) * gamma, W)
         // Input 0: x, Input 1: gamma, Input 2: W
         if (inputs.size() >= 3) {
-          double eps = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1e-6;
+          double eps = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1e-6;
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           std::vector<int64_t> axes = {rank - 1};
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
@@ -891,7 +897,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "batchnorm" || opName == "BatchNorm" || opName == "batchnorm_inference" || opName == "batch_norm") {
         // BatchNormInference: input, gamma, beta, mean, variance
         if (inputs.size() >= 5) {
-          double eps = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 1e-5;
+          double eps = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1e-5;
           node = std::make_shared<ov::op::v5::BatchNormInference>(
               inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], eps);
         }
@@ -901,56 +907,56 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       else if (opName == "reduce_sum" || opName == "ReduceSum" || opName == "sum" || opName == "Sum") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           node = std::make_shared<ov::op::v1::ReduceSum>(inputs[0], axes_const, keepDims);
         }
       } else if (opName == "reduce_max" || opName == "ReduceMax" || opName == "max") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           node = std::make_shared<ov::op::v1::ReduceMax>(inputs[0], axes_const, keepDims);
         }
       } else if (opName == "reduce_mean" || opName == "ReduceMean" || opName == "mean" || opName == "Mean") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           node = std::make_shared<ov::op::v1::ReduceMean>(inputs[0], axes_const, keepDims);
         }
       } else if (opName == "reduce_min" || opName == "ReduceMin" || opName == "min") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           node = std::make_shared<ov::op::v1::ReduceMin>(inputs[0], axes_const, keepDims);
         }
       } else if (opName == "reduce_prod" || opName == "ReduceProd" || opName == "prod" || opName == "Prod") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           node = std::make_shared<ov::op::v1::ReduceProd>(inputs[0], axes_const, keepDims);
         }
       } else if (opName == "reduce_norm1" || opName == "ReduceNorm1" || opName == "norm1") {
         // Compose: ReduceSum(Abs(x), axes)
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           auto abs_x = std::make_shared<ov::op::v0::Abs>(inputs[0]);
           node = std::make_shared<ov::op::v1::ReduceSum>(abs_x->output(0), axes_const, keepDims);
         }
@@ -958,10 +964,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // Compose: Sqrt(ReduceSum(x*x, axes))
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           auto x_sq = std::make_shared<ov::op::v1::Multiply>(inputs[0], inputs[0]);
           auto sum_sq = std::make_shared<ov::op::v1::ReduceSum>(x_sq->output(0), axes_const, keepDims);
           node = std::make_shared<ov::op::v0::Sqrt>(sum_sq->output(0));
@@ -970,10 +976,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // Compose: Log(ReduceSum(Exp(x), axes))
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           auto exp_x = std::make_shared<ov::op::v0::Exp>(inputs[0]);
           auto sum_exp = std::make_shared<ov::op::v1::ReduceSum>(exp_x->output(0), axes_const, keepDims);
           node = std::make_shared<ov::op::v0::Log>(sum_exp->output(0));
@@ -982,10 +988,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // Compose: mean((x - mean(x))^2)
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           auto mean_x = std::make_shared<ov::op::v1::ReduceMean>(inputs[0], axes_const, true);
           auto diff = std::make_shared<ov::op::v1::Subtract>(inputs[0], mean_x->output(0));
           auto diff_sq = std::make_shared<ov::op::v1::Multiply>(diff->output(0), diff->output(0));
@@ -995,10 +1001,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // Compose: sqrt(variance)
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           auto mean_x = std::make_shared<ov::op::v1::ReduceMean>(inputs[0], axes_const, true);
           auto diff = std::make_shared<ov::op::v1::Subtract>(inputs[0], mean_x->output(0));
           auto diff_sq = std::make_shared<ov::op::v1::Multiply>(diff->output(0), diff->output(0));
@@ -1009,10 +1015,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // ReduceMax(Abs(x), axes)
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(-1);
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          bool keepDims = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : false;
+          bool keepDims = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           auto abs_x = std::make_shared<ov::op::v0::Abs>(inputs[0]);
           node = std::make_shared<ov::op::v1::ReduceMax>(abs_x->output(0), axes_const, keepDims);
         }
@@ -1025,16 +1031,16 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           // ND4J reshape encodes iArgs as [-order, dim0, dim1, ...] where -99=C, -102=F
           std::vector<int64_t> targetShape;
           int startIdx = 0;
-          if (slots[s].numIArgs > 0) {
-            int64_t first = slots[s].iArgs[0];
+          if (slots[s].args.numIArgs > 0) {
+            int64_t first = slots[s].args.iArgs[0];
             if (first < 0 && (first == -99 || first == -102)) {
               startIdx = 1;  // skip ordering marker
             }
           }
-          for (int a = startIdx; a < slots[s].numIArgs; a++) targetShape.push_back(slots[s].iArgs[a]);
-          if (targetShape.empty() && slots[s].numOutputs > 0) {
+          for (int a = startIdx; a < slots[s].args.numIArgs; a++) targetShape.push_back(slots[s].args.iArgs[a]);
+          if (targetShape.empty() && slots[s].wiring.numOutputs > 0) {
             // Use output slot shape if available
-            int outIdx = slots[s].outputSlotIndices[0];
+            int outIdx = slots[s].wiring.outputSlotIndices[0];
             if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
               for (int d = 0; d < outputSlots[outIdx]->rankOf(); d++) {
                 targetShape.push_back(outputSlots[outIdx]->sizeAt(d));
@@ -1049,7 +1055,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
             }
             shapeStr += "]";
             DSP_DIAG(COMPILE, "OpenVINO: reshape slot %d: iArgs=%d startIdx=%d targetShape=%s input=%s",
-                     s, slots[s].numIArgs, startIdx, shapeStr.c_str(),
+                     s, slots[s].args.numIArgs, startIdx, shapeStr.c_str(),
                      inputs[0].get_partial_shape().to_string().c_str());
             auto shape_const = ov::op::v0::Constant::create(
                 ov::element::i64, {targetShape.size()}, targetShape);
@@ -1059,7 +1065,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "permute" || opName == "Permute" || opName == "Transpose" || opName == "transpose") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> perm;
-          for (int a = 0; a < slots[s].numIArgs; a++) perm.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) perm.push_back(slots[s].args.iArgs[a]);
           // nd4j permute op takes the permutation from EITHER iArgs OR input[1] (a tensor).
           // If iArgs is empty and we have a second input, use it as the order tensor.
           // OpenVINO Transpose accepts the order as a runtime Output<Node>.
@@ -1084,7 +1090,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "squeeze" || opName == "Squeeze") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (!axes.empty()) {
             auto axes_const = ov::op::v0::Constant::create(
                 ov::element::i64, {axes.size()}, axes);
@@ -1096,7 +1102,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "expand_dims" || opName == "ExpandDims" || opName == "Unsqueeze") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (axes.empty()) axes.push_back(0);
           auto axes_const = ov::op::v0::Constant::create(
               ov::element::i64, {axes.size()}, axes);
@@ -1107,15 +1113,15 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         if (inputs.size() >= 1) {
           std::vector<int64_t> targetShape;
           int startIdx = 0;
-          if (slots[s].numIArgs > 0) {
-            int64_t first = slots[s].iArgs[0];
+          if (slots[s].args.numIArgs > 0) {
+            int64_t first = slots[s].args.iArgs[0];
             if (first < 0 && (first == -99 || first == -102)) {
               startIdx = 1;
             }
           }
-          for (int a = startIdx; a < slots[s].numIArgs; a++) targetShape.push_back(slots[s].iArgs[a]);
-          if (targetShape.empty() && slots[s].numOutputs > 0) {
-            int outIdx = slots[s].outputSlotIndices[0];
+          for (int a = startIdx; a < slots[s].args.numIArgs; a++) targetShape.push_back(slots[s].args.iArgs[a]);
+          if (targetShape.empty() && slots[s].wiring.numOutputs > 0) {
+            int outIdx = slots[s].wiring.outputSlotIndices[0];
             if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
               for (int d = 0; d < outputSlots[outIdx]->rankOf(); d++) {
                 targetShape.push_back(outputSlots[outIdx]->sizeAt(d));
@@ -1144,7 +1150,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // Upper triangular: compose with constant mask + Select
         // For now, create via ShapeOf + Range + Compare + Select
         if (inputs.size() >= 1) {
-          int diag = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int diag = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           if (rank >= 2) {
             auto shape_of = std::make_shared<ov::op::v3::ShapeOf>(inputs[0], ov::element::i64);
@@ -1170,7 +1176,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "tril" || opName == "Tril") {
         // Lower triangular: compose with constant mask + Select
         if (inputs.size() >= 1) {
-          int diag = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int diag = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           if (rank >= 2) {
             auto shape_of = std::make_shared<ov::op::v3::ShapeOf>(inputs[0], ov::element::i64);
@@ -1194,7 +1200,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "broadcast_to" || opName == "BroadcastTo") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> targetShape;
-          for (int a = 0; a < slots[s].numIArgs; a++) targetShape.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) targetShape.push_back(slots[s].args.iArgs[a]);
           if (!targetShape.empty()) {
             auto shape_const = ov::op::v0::Constant::create(
                 ov::element::i64, {targetShape.size()}, targetShape);
@@ -1217,13 +1223,13 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       // ── Data movement ──
       else if (opName == "gather" || opName == "Gather") {
         if (inputs.size() >= 2) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           auto axis_const = ov::op::v0::Constant::create(ov::element::i64, {}, {axis});
           node = std::make_shared<ov::op::v8::Gather>(inputs[0], inputs[1], axis_const);
         }
       } else if (opName == "gather_nd" || opName == "GatherNd") {
         if (inputs.size() >= 2) {
-          int batchDims = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int batchDims = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           node = std::make_shared<ov::op::v8::GatherND>(inputs[0], inputs[1], batchDims);
         }
       } else if (opName == "scatter_nd" || opName == "ScatterNd" || opName == "ScatterNdUpdate") {
@@ -1232,7 +1238,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "concat" || opName == "Concat") {
         if (inputs.size() >= 2) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           // Log input shapes for diagnosis
           for (size_t ci = 0; ci < inputs.size(); ci++) {
             DSP_DIAG(COMPILE, "OpenVINO: concat slot %d input[%zu] shape=%s",
@@ -1243,24 +1249,24 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "split" || opName == "Split") {
         if (inputs.size() >= 1) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
-          int numSplits = (slots[s].numIArgs > 1) ? static_cast<int>(slots[s].iArgs[1]) : slots[s].numOutputs;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
+          int numSplits = (slots[s].args.numIArgs > 1) ? static_cast<int>(slots[s].args.iArgs[1]) : slots[s].wiring.numOutputs;
           auto axis_const = ov::op::v0::Constant::create(ov::element::i64, {}, {axis});
           node = std::make_shared<ov::op::v1::Split>(inputs[0], axis_const, numSplits);
         }
       } else if (opName == "slice" || opName == "Slice" || opName == "strided_slice" || opName == "StridedSlice") {
-        if (inputs.size() >= 1 && slots[s].numIArgs >= 2) {
+        if (inputs.size() >= 1 && slots[s].args.numIArgs >= 2) {
           // Extract begin, end, strides from iArgs
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           std::vector<int64_t> begin, end, strides;
           // iArgs layout: begin..., end..., strides...
-          int argsPerDim = slots[s].numIArgs / 3;
+          int argsPerDim = slots[s].args.numIArgs / 3;
           if (argsPerDim <= 0) argsPerDim = rank;
           for (int d = 0; d < argsPerDim && d < rank; d++) {
-            begin.push_back(slots[s].iArgs[d]);
-            end.push_back(slots[s].iArgs[argsPerDim + d]);
-            int64_t stride = (2 * argsPerDim + d < slots[s].numIArgs)
-                              ? slots[s].iArgs[2 * argsPerDim + d] : 1;
+            begin.push_back(slots[s].args.iArgs[d]);
+            end.push_back(slots[s].args.iArgs[argsPerDim + d]);
+            int64_t stride = (2 * argsPerDim + d < slots[s].args.numIArgs)
+                              ? slots[s].args.iArgs[2 * argsPerDim + d] : 1;
             if (stride == 0) stride = 1;  // OpenVINO rejects stride=0
             strides.push_back(stride);
           }
@@ -1275,7 +1281,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "tile" || opName == "Tile" || opName == "repeat" || opName == "Repeat") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> repeats;
-          for (int a = 0; a < slots[s].numIArgs; a++) repeats.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) repeats.push_back(slots[s].args.iArgs[a]);
           if (!repeats.empty()) {
             auto repeats_const = ov::op::v0::Constant::create(
                 ov::element::i64, {repeats.size()}, repeats);
@@ -1284,11 +1290,11 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "split_v" || opName == "SplitV") {
         if (inputs.size() >= 1) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           auto axis_const = ov::op::v0::Constant::create(ov::element::i64, {}, {axis});
           // Split lengths from remaining iArgs
           std::vector<int64_t> splitLengths;
-          for (int a = 1; a < slots[s].numIArgs; a++) splitLengths.push_back(slots[s].iArgs[a]);
+          for (int a = 1; a < slots[s].args.numIArgs; a++) splitLengths.push_back(slots[s].args.iArgs[a]);
           if (!splitLengths.empty()) {
             auto lengths_const = ov::op::v0::Constant::create(
                 ov::element::i64, {splitLengths.size()}, splitLengths);
@@ -1301,16 +1307,16 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "unstack" || opName == "Unstack") {
         // Split along axis into single-element slices, then squeeze that axis
         if (inputs.size() >= 1) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           auto axis_const = ov::op::v0::Constant::create(ov::element::i64, {}, {axis});
-          int numSplits = slots[s].numOutputs;
+          int numSplits = slots[s].wiring.numOutputs;
           if (numSplits <= 0) numSplits = 1;
           auto split_node = std::make_shared<ov::op::v1::Split>(inputs[0], axis_const, numSplits);
           // For multi-output, wire each split output and squeeze
           if (numSplits > 1) {
             auto sq_axes = ov::op::v0::Constant::create(ov::element::i64, {1}, {axis});
-            for (int o = 0; o < slots[s].numOutputs && o < numSplits; o++) {
-              int outIdx = slots[s].outputSlotIndices[o];
+            for (int o = 0; o < slots[s].wiring.numOutputs && o < numSplits; o++) {
+              int outIdx = slots[s].wiring.outputSlotIndices[o];
               auto squeezed = std::make_shared<ov::op::v0::Squeeze>(split_node->output(o), sq_axes);
               tensorMap[outIdx] = squeezed->output(0);
             }
@@ -1325,7 +1331,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "stack" || opName == "Stack") {
         // Unsqueeze each input along axis, then concat
         if (inputs.size() >= 1) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           auto ax_const = ov::op::v0::Constant::create(ov::element::i64, {1}, {axis});
           ov::OutputVector unsqueezed;
           for (size_t i = 0; i < inputs.size(); i++) {
@@ -1339,10 +1345,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           // pads_begin and pads_end from iArgs: first half = begin, second half = end
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           std::vector<int64_t> pads_begin, pads_end;
-          if (slots[s].numIArgs >= 2 * rank) {
+          if (slots[s].args.numIArgs >= 2 * rank) {
             for (int d = 0; d < rank; d++) {
-              pads_begin.push_back(slots[s].iArgs[d]);
-              pads_end.push_back(slots[s].iArgs[rank + d]);
+              pads_begin.push_back(slots[s].args.iArgs[d]);
+              pads_end.push_back(slots[s].args.iArgs[rank + d]);
             }
           } else if (inputs.size() >= 3) {
             // pads from inputs[1] and inputs[2]
@@ -1354,7 +1360,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           if (!pads_begin.empty() && !node) {
             auto pb = ov::op::v0::Constant::create(ov::element::i64, {pads_begin.size()}, pads_begin);
             auto pe = ov::op::v0::Constant::create(ov::element::i64, {pads_end.size()}, pads_end);
-            float padVal = (slots[s].numTArgs > 0) ? static_cast<float>(slots[s].tArgs[0]) : 0.0f;
+            float padVal = (slots[s].args.numTArgs > 0) ? static_cast<float>(slots[s].args.tArgs[0]) : 0.0f;
             auto pv = ov::op::v0::Constant::create(ov::element::f32, {}, {padVal});
             node = std::make_shared<ov::op::v1::Pad>(inputs[0], pb, pe, pv, ov::op::PadMode::CONSTANT);
           }
@@ -1364,13 +1370,13 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
           std::vector<int64_t> pads_begin, pads_end;
           // mode: 0 = REFLECT, 1 = SYMMETRIC
-          auto mode = (slots[s].numIArgs > 2 * rank) ?
-              ((slots[s].iArgs[2 * rank] == 1) ? ov::op::PadMode::SYMMETRIC : ov::op::PadMode::REFLECT)
+          auto mode = (slots[s].args.numIArgs > 2 * rank) ?
+              ((slots[s].args.iArgs[2 * rank] == 1) ? ov::op::PadMode::SYMMETRIC : ov::op::PadMode::REFLECT)
               : ov::op::PadMode::REFLECT;
-          if (slots[s].numIArgs >= 2 * rank) {
+          if (slots[s].args.numIArgs >= 2 * rank) {
             for (int d = 0; d < rank; d++) {
-              pads_begin.push_back(slots[s].iArgs[d]);
-              pads_end.push_back(slots[s].iArgs[rank + d]);
+              pads_begin.push_back(slots[s].args.iArgs[d]);
+              pads_end.push_back(slots[s].args.iArgs[rank + d]);
             }
           }
           if (!pads_begin.empty()) {
@@ -1382,7 +1388,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "reverse" || opName == "Reverse" || opName == "reverse_v2" || opName == "ReverseV2") {
         if (inputs.size() >= 1) {
           std::vector<int64_t> axes;
-          for (int a = 0; a < slots[s].numIArgs; a++) axes.push_back(slots[s].iArgs[a]);
+          for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
           if (!axes.empty()) {
             auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
             node = std::make_shared<ov::op::v1::Reverse>(
@@ -1440,11 +1446,11 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       else if (opName == "cast" || opName == "Cast") {
         if (inputs.size() >= 1) {
           ov::element::Type targetType;
-          if (slots[s].numDArgs > 0) {
-            targetType = mapDataType(slots[s].dArgs[0]);
-          } else if (slots[s].numIArgs > 0) {
+          if (slots[s].args.numDArgs > 0) {
+            targetType = mapDataType(slots[s].args.dArgs[0]);
+          } else if (slots[s].args.numIArgs > 0) {
             // Cast op stores target type as iArg (FlatBuffersMapper byte encoding)
-            targetType = mapDataType(static_cast<DataType>(slots[s].iArgs[0]));
+            targetType = mapDataType(static_cast<DataType>(slots[s].args.iArgs[0]));
           } else {
             // Fallback: same type as input (identity cast)
             targetType = inputs[0].get_element_type();
@@ -1457,8 +1463,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       else if (opName == "identity" || opName == "Identity" || opName == "assign" || opName == "Assign") {
         if (inputs.size() >= 1) {
           // Pass-through: wire input directly to output
-          for (int o = 0; o < slots[s].numOutputs; o++) {
-            int outIdx = slots[s].outputSlotIndices[o];
+          for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+            int outIdx = slots[s].wiring.outputSlotIndices[o];
             tensorMap[outIdx] = inputs[0];
           }
           audit.wasCompiled = true;
@@ -1497,18 +1503,18 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           // Use input element type as output type
           auto outType = start.get_element_type();
           node = std::make_shared<ov::op::v4::Range>(start, stop, step, outType);
-        } else if (slots[s].numTArgs >= 3) {
-          auto start = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[0])});
-          auto stop = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[1])});
-          auto step = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[2])});
+        } else if (slots[s].args.numTArgs >= 3) {
+          auto start = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
+          auto stop = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[1])});
+          auto step = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[2])});
           node = std::make_shared<ov::op::v4::Range>(start, stop, step, ov::element::f32);
         }
       } else if (opName == "fill" || opName == "Fill") {
         // Broadcast a scalar value to a target shape
         if (inputs.size() >= 2) {
           node = std::make_shared<ov::op::v3::Broadcast>(inputs[1], inputs[0]);
-        } else if (inputs.size() >= 1 && slots[s].numTArgs > 0) {
-          auto val = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].tArgs[0])});
+        } else if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
+          auto val = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v3::Broadcast>(val, inputs[0]);
         }
       } else if (opName == "shape_of" || opName == "ShapeOf") {
@@ -1517,10 +1523,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "onehot" || opName == "OneHot") {
         if (inputs.size() >= 1) {
-          int axis = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : -1;
-          int64_t depth = (slots[s].numIArgs > 1) ? slots[s].iArgs[1] : 1;
-          float onVal = (slots[s].numTArgs > 0) ? static_cast<float>(slots[s].tArgs[0]) : 1.0f;
-          float offVal = (slots[s].numTArgs > 1) ? static_cast<float>(slots[s].tArgs[1]) : 0.0f;
+          int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : -1;
+          int64_t depth = (slots[s].args.numIArgs > 1) ? slots[s].args.iArgs[1] : 1;
+          float onVal = (slots[s].args.numTArgs > 0) ? static_cast<float>(slots[s].args.tArgs[0]) : 1.0f;
+          float offVal = (slots[s].args.numTArgs > 1) ? static_cast<float>(slots[s].args.tArgs[1]) : 0.0f;
           auto depth_const = ov::op::v0::Constant::create(ov::element::i64, {}, {depth});
           auto on_const = ov::op::v0::Constant::create(ov::element::f32, {}, {onVal});
           auto off_const = ov::op::v0::Constant::create(ov::element::f32, {}, {offVal});
@@ -1529,9 +1535,9 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "eye" || opName == "Eye") {
         // Compose identity-like pattern: triu(ones) with diag=0 on square matrix
         // Use Range + Unsqueeze + Equal to create identity
-        if (slots[s].numIArgs >= 1) {
-          int64_t n = slots[s].iArgs[0];
-          int64_t m = (slots[s].numIArgs > 1) ? slots[s].iArgs[1] : n;
+        if (slots[s].args.numIArgs >= 1) {
+          int64_t n = slots[s].args.iArgs[0];
+          int64_t m = (slots[s].args.numIArgs > 1) ? slots[s].args.iArgs[1] : n;
           auto zero = ov::op::v0::Constant::create(ov::element::i64, {}, {0});
           auto one_step = ov::op::v0::Constant::create(ov::element::i64, {}, {1});
           auto n_const = ov::op::v0::Constant::create(ov::element::i64, {}, {n});
@@ -1548,10 +1554,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "linspace" || opName == "Linspace" ||
                  opName == "lin_space" || opName == "LinSpace") {
         // Compose: start + arange(num) * ((stop - start) / (num - 1))
-        if (slots[s].numTArgs >= 2 && slots[s].numIArgs >= 1) {
-          double start = slots[s].tArgs[0];
-          double stop = slots[s].tArgs[1];
-          int64_t num = slots[s].iArgs[0];
+        if (slots[s].args.numTArgs >= 2 && slots[s].args.numIArgs >= 1) {
+          double start = slots[s].args.tArgs[0];
+          double stop = slots[s].args.tArgs[1];
+          int64_t num = slots[s].args.iArgs[0];
           if (num > 1) {
             double stepVal = (stop - start) / (num - 1);
             auto zeroC = ov::op::v0::Constant::create(ov::element::f32, {}, {0.0f});
@@ -1569,8 +1575,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "sequence_mask" || opName == "SequenceMask") {
         // Compose: unsqueeze(lengths, -1) > arange(maxLen)
-        if (inputs.size() >= 1 && slots[s].numIArgs >= 1) {
-          int64_t maxLen = slots[s].iArgs[0];
+        if (inputs.size() >= 1 && slots[s].args.numIArgs >= 1) {
+          int64_t maxLen = slots[s].args.iArgs[0];
           auto zeroC = ov::op::v0::Constant::create(ov::element::i64, {}, {0});
           auto maxC = ov::op::v0::Constant::create(ov::element::i64, {}, {maxLen});
           auto oneC = ov::op::v0::Constant::create(ov::element::i64, {}, {1});
@@ -1583,9 +1589,9 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
                  opName == "set_scalar" || opName == "SetScalar" ||
                  opName == "min_max_datatype" || opName == "MinMaxDatatype") {
         // Broadcast a scalar value to the output shape
-        double val = (slots[s].numTArgs > 0) ? slots[s].tArgs[0] : 0.0;
-        if (slots[s].numOutputs > 0) {
-          int outIdx = slots[s].outputSlotIndices[0];
+        double val = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 0.0;
+        if (slots[s].wiring.numOutputs > 0) {
+          int outIdx = slots[s].wiring.outputSlotIndices[0];
           if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
             std::vector<int64_t> targetShape;
             for (int d = 0; d < outputSlots[outIdx]->rankOf(); d++) {
@@ -1607,7 +1613,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "size_at" || opName == "SizeAt") {
         // Size of a specific dimension
         if (inputs.size() >= 1) {
-          int dim = (slots[s].numIArgs > 0) ? static_cast<int>(slots[s].iArgs[0]) : 0;
+          int dim = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
           auto shapeNode = std::make_shared<ov::op::v3::ShapeOf>(inputs[0], ov::element::i64);
           auto idx = ov::op::v0::Constant::create(ov::element::i64, {1}, {static_cast<int64_t>(dim)});
           auto axis = ov::op::v0::Constant::create(ov::element::i64, {}, {0});
@@ -1637,12 +1643,12 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         if (inputs.size() >= 2) {
           // Extract strides, pads, dilations from iArgs
           // iArgs: [kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat]
-          int64_t sH = (slots[s].numIArgs > 2) ? slots[s].iArgs[2] : 1;
-          int64_t sW = (slots[s].numIArgs > 3) ? slots[s].iArgs[3] : 1;
-          int64_t pH = (slots[s].numIArgs > 4) ? slots[s].iArgs[4] : 0;
-          int64_t pW = (slots[s].numIArgs > 5) ? slots[s].iArgs[5] : 0;
-          int64_t dH = (slots[s].numIArgs > 6) ? slots[s].iArgs[6] : 1;
-          int64_t dW = (slots[s].numIArgs > 7) ? slots[s].iArgs[7] : 1;
+          int64_t sH = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 1;
+          int64_t sW = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 1;
+          int64_t pH = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 0;
+          int64_t pW = (slots[s].args.numIArgs > 5) ? slots[s].args.iArgs[5] : 0;
+          int64_t dH = (slots[s].args.numIArgs > 6) ? slots[s].args.iArgs[6] : 1;
+          int64_t dW = (slots[s].args.numIArgs > 7) ? slots[s].args.iArgs[7] : 1;
           ov::Strides strides{static_cast<size_t>(sH), static_cast<size_t>(sW)};
           ov::CoordinateDiff pads_begin{pH, pW};
           ov::CoordinateDiff pads_end{pH, pW};
@@ -1652,15 +1658,15 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "conv3d" || opName == "Conv3d") {
         if (inputs.size() >= 2) {
-          int64_t sD = (slots[s].numIArgs > 3) ? slots[s].iArgs[3] : 1;
-          int64_t sH = (slots[s].numIArgs > 4) ? slots[s].iArgs[4] : 1;
-          int64_t sW = (slots[s].numIArgs > 5) ? slots[s].iArgs[5] : 1;
-          int64_t pD = (slots[s].numIArgs > 6) ? slots[s].iArgs[6] : 0;
-          int64_t pH = (slots[s].numIArgs > 7) ? slots[s].iArgs[7] : 0;
-          int64_t pW = (slots[s].numIArgs > 8) ? slots[s].iArgs[8] : 0;
-          int64_t dD = (slots[s].numIArgs > 9) ? slots[s].iArgs[9] : 1;
-          int64_t dH = (slots[s].numIArgs > 10) ? slots[s].iArgs[10] : 1;
-          int64_t dW = (slots[s].numIArgs > 11) ? slots[s].iArgs[11] : 1;
+          int64_t sD = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 1;
+          int64_t sH = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 1;
+          int64_t sW = (slots[s].args.numIArgs > 5) ? slots[s].args.iArgs[5] : 1;
+          int64_t pD = (slots[s].args.numIArgs > 6) ? slots[s].args.iArgs[6] : 0;
+          int64_t pH = (slots[s].args.numIArgs > 7) ? slots[s].args.iArgs[7] : 0;
+          int64_t pW = (slots[s].args.numIArgs > 8) ? slots[s].args.iArgs[8] : 0;
+          int64_t dD = (slots[s].args.numIArgs > 9) ? slots[s].args.iArgs[9] : 1;
+          int64_t dH = (slots[s].args.numIArgs > 10) ? slots[s].args.iArgs[10] : 1;
+          int64_t dW = (slots[s].args.numIArgs > 11) ? slots[s].args.iArgs[11] : 1;
           ov::Strides strides{static_cast<size_t>(sD), static_cast<size_t>(sH), static_cast<size_t>(sW)};
           ov::CoordinateDiff pads_begin{pD, pH, pW};
           ov::CoordinateDiff pads_end{pD, pH, pW};
@@ -1670,12 +1676,12 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "depthwise_conv2d" || opName == "DepthwiseConv2d") {
         if (inputs.size() >= 2) {
-          int64_t sH = (slots[s].numIArgs > 2) ? slots[s].iArgs[2] : 1;
-          int64_t sW = (slots[s].numIArgs > 3) ? slots[s].iArgs[3] : 1;
-          int64_t pH = (slots[s].numIArgs > 4) ? slots[s].iArgs[4] : 0;
-          int64_t pW = (slots[s].numIArgs > 5) ? slots[s].iArgs[5] : 0;
-          int64_t dH = (slots[s].numIArgs > 6) ? slots[s].iArgs[6] : 1;
-          int64_t dW = (slots[s].numIArgs > 7) ? slots[s].iArgs[7] : 1;
+          int64_t sH = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 1;
+          int64_t sW = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 1;
+          int64_t pH = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 0;
+          int64_t pW = (slots[s].args.numIArgs > 5) ? slots[s].args.iArgs[5] : 0;
+          int64_t dH = (slots[s].args.numIArgs > 6) ? slots[s].args.iArgs[6] : 1;
+          int64_t dW = (slots[s].args.numIArgs > 7) ? slots[s].args.iArgs[7] : 1;
           ov::Strides strides{static_cast<size_t>(sH), static_cast<size_t>(sW)};
           ov::CoordinateDiff pads_begin{pH, pW};
           ov::CoordinateDiff pads_end{pH, pW};
@@ -1685,14 +1691,14 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "maxpool2d" || opName == "MaxPool2d") {
         if (inputs.size() >= 1) {
-          int64_t kH = (slots[s].numIArgs > 0) ? slots[s].iArgs[0] : 2;
-          int64_t kW = (slots[s].numIArgs > 1) ? slots[s].iArgs[1] : 2;
-          int64_t sH = (slots[s].numIArgs > 2) ? slots[s].iArgs[2] : 1;
-          int64_t sW = (slots[s].numIArgs > 3) ? slots[s].iArgs[3] : 1;
-          int64_t pH = (slots[s].numIArgs > 4) ? slots[s].iArgs[4] : 0;
-          int64_t pW = (slots[s].numIArgs > 5) ? slots[s].iArgs[5] : 0;
-          int64_t dH = (slots[s].numIArgs > 6) ? slots[s].iArgs[6] : 1;
-          int64_t dW = (slots[s].numIArgs > 7) ? slots[s].iArgs[7] : 1;
+          int64_t kH = (slots[s].args.numIArgs > 0) ? slots[s].args.iArgs[0] : 2;
+          int64_t kW = (slots[s].args.numIArgs > 1) ? slots[s].args.iArgs[1] : 2;
+          int64_t sH = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 1;
+          int64_t sW = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 1;
+          int64_t pH = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 0;
+          int64_t pW = (slots[s].args.numIArgs > 5) ? slots[s].args.iArgs[5] : 0;
+          int64_t dH = (slots[s].args.numIArgs > 6) ? slots[s].args.iArgs[6] : 1;
+          int64_t dW = (slots[s].args.numIArgs > 7) ? slots[s].args.iArgs[7] : 1;
           ov::Strides strides{static_cast<size_t>(sH), static_cast<size_t>(sW)};
           ov::Strides dilations{static_cast<size_t>(dH), static_cast<size_t>(dW)};
           ov::Shape kernel{static_cast<size_t>(kH), static_cast<size_t>(kW)};
@@ -1703,28 +1709,28 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "avgpool2d" || opName == "AvgPool2d") {
         if (inputs.size() >= 1) {
-          int64_t kH = (slots[s].numIArgs > 0) ? slots[s].iArgs[0] : 2;
-          int64_t kW = (slots[s].numIArgs > 1) ? slots[s].iArgs[1] : 2;
-          int64_t sH = (slots[s].numIArgs > 2) ? slots[s].iArgs[2] : 1;
-          int64_t sW = (slots[s].numIArgs > 3) ? slots[s].iArgs[3] : 1;
-          int64_t pH = (slots[s].numIArgs > 4) ? slots[s].iArgs[4] : 0;
-          int64_t pW = (slots[s].numIArgs > 5) ? slots[s].iArgs[5] : 0;
+          int64_t kH = (slots[s].args.numIArgs > 0) ? slots[s].args.iArgs[0] : 2;
+          int64_t kW = (slots[s].args.numIArgs > 1) ? slots[s].args.iArgs[1] : 2;
+          int64_t sH = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 1;
+          int64_t sW = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 1;
+          int64_t pH = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 0;
+          int64_t pW = (slots[s].args.numIArgs > 5) ? slots[s].args.iArgs[5] : 0;
           ov::Strides strides{static_cast<size_t>(sH), static_cast<size_t>(sW)};
           ov::Shape kernel{static_cast<size_t>(kH), static_cast<size_t>(kW)};
           ov::Shape pads_begin{static_cast<size_t>(pH), static_cast<size_t>(pW)};
           ov::Shape pads_end{static_cast<size_t>(pH), static_cast<size_t>(pW)};
-          bool excludePad = (slots[s].numBArgs > 0) ? slots[s].bArgs[0] : true;
+          bool excludePad = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : true;
           node = std::make_shared<ov::op::v1::AvgPool>(
               inputs[0], strides, pads_begin, pads_end, kernel, excludePad);
         }
       } else if (opName == "deconv2d") {
         if (inputs.size() >= 2) {
-          int64_t sH = (slots[s].numIArgs > 2) ? slots[s].iArgs[2] : 1;
-          int64_t sW = (slots[s].numIArgs > 3) ? slots[s].iArgs[3] : 1;
-          int64_t pH = (slots[s].numIArgs > 4) ? slots[s].iArgs[4] : 0;
-          int64_t pW = (slots[s].numIArgs > 5) ? slots[s].iArgs[5] : 0;
-          int64_t dH = (slots[s].numIArgs > 6) ? slots[s].iArgs[6] : 1;
-          int64_t dW = (slots[s].numIArgs > 7) ? slots[s].iArgs[7] : 1;
+          int64_t sH = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 1;
+          int64_t sW = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 1;
+          int64_t pH = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 0;
+          int64_t pW = (slots[s].args.numIArgs > 5) ? slots[s].args.iArgs[5] : 0;
+          int64_t dH = (slots[s].args.numIArgs > 6) ? slots[s].args.iArgs[6] : 1;
+          int64_t dW = (slots[s].args.numIArgs > 7) ? slots[s].args.iArgs[7] : 1;
           ov::Strides strides{static_cast<size_t>(sH), static_cast<size_t>(sW)};
           ov::CoordinateDiff pads_begin{pH, pW};
           ov::CoordinateDiff pads_end{pH, pW};
@@ -1734,15 +1740,15 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "deconv3d") {
         if (inputs.size() >= 2) {
-          int64_t sD = (slots[s].numIArgs > 3) ? slots[s].iArgs[3] : 1;
-          int64_t sH = (slots[s].numIArgs > 4) ? slots[s].iArgs[4] : 1;
-          int64_t sW = (slots[s].numIArgs > 5) ? slots[s].iArgs[5] : 1;
-          int64_t pD = (slots[s].numIArgs > 6) ? slots[s].iArgs[6] : 0;
-          int64_t pH = (slots[s].numIArgs > 7) ? slots[s].iArgs[7] : 0;
-          int64_t pW = (slots[s].numIArgs > 8) ? slots[s].iArgs[8] : 0;
-          int64_t dD = (slots[s].numIArgs > 9) ? slots[s].iArgs[9] : 1;
-          int64_t dH = (slots[s].numIArgs > 10) ? slots[s].iArgs[10] : 1;
-          int64_t dW = (slots[s].numIArgs > 11) ? slots[s].iArgs[11] : 1;
+          int64_t sD = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 1;
+          int64_t sH = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 1;
+          int64_t sW = (slots[s].args.numIArgs > 5) ? slots[s].args.iArgs[5] : 1;
+          int64_t pD = (slots[s].args.numIArgs > 6) ? slots[s].args.iArgs[6] : 0;
+          int64_t pH = (slots[s].args.numIArgs > 7) ? slots[s].args.iArgs[7] : 0;
+          int64_t pW = (slots[s].args.numIArgs > 8) ? slots[s].args.iArgs[8] : 0;
+          int64_t dD = (slots[s].args.numIArgs > 9) ? slots[s].args.iArgs[9] : 1;
+          int64_t dH = (slots[s].args.numIArgs > 10) ? slots[s].args.iArgs[10] : 1;
+          int64_t dW = (slots[s].args.numIArgs > 11) ? slots[s].args.iArgs[11] : 1;
           ov::Strides strides{static_cast<size_t>(sD), static_cast<size_t>(sH), static_cast<size_t>(sW)};
           ov::CoordinateDiff pads_begin{pD, pH, pW};
           ov::CoordinateDiff pads_end{pD, pH, pW};
@@ -1781,8 +1787,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       }
 
       // Wire outputs
-      for (int o = 0; o < slots[s].numOutputs; o++) {
-        int outIdx = slots[s].outputSlotIndices[o];
+      for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+        int outIdx = slots[s].wiring.outputSlotIndices[o];
         int nodeOutputIdx = std::min(o, static_cast<int>(node->get_output_size()) - 1);
         tensorMap[outIdx] = node->output(nodeOutputIdx);
       }
@@ -1796,8 +1802,8 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
   std::unordered_set<int> externallyConsumed;
   // All slot outputs that might be used outside this segment
   for (int s = startSlot; s <= endSlot; s++) {
-    for (int o = 0; o < slots[s].numOutputs; o++) {
-      int outIdx = slots[s].outputSlotIndices[o];
+    for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+      int outIdx = slots[s].wiring.outputSlotIndices[o];
       externallyConsumed.insert(outIdx);  // conservatively mark all as external
     }
   }
@@ -1858,9 +1864,14 @@ bool OpenVinoGraphBackend::compileSegment(
 
   auto it = cache_.find(cacheKey);
   if (it != cache_.end() && it->second.valid) {
+    DSP_DIAG(JIT, "OpenVinoGraphBackend::compileSegment [%d-%d]: cache HIT (shapeKey=0x%llx)",
+             seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
     lastCompilationAudit_ = it->second.compilationAudit;
     return true;
   }
+
+  DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: cache MISS, building model (shapeKey=0x%llx)",
+           seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
 
   CompiledSegment compiled;
   try {
@@ -1881,9 +1892,12 @@ bool OpenVinoGraphBackend::compileSegment(
   lastCompilationAudit_ = compiled.compilationAudit;
 
   if (!compiled.valid) {
+    DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: FAILED", seg.def.startSlot, seg.def.endSlot);
     return false;
   }
 
+  DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: SUCCESS inputs=%d outputs=%d",
+           seg.def.startSlot, seg.def.endSlot, (int)compiled.inputSlotMap.size(), (int)compiled.outputSlotMap.size());
   cache_[cacheKey] = std::move(compiled);
   seg.def.shapeKey = shapeKey;
   return true;

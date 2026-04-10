@@ -79,11 +79,14 @@ bool MlxGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (segSize < 2) return false;
 
   for (int i = start; i <= end; i++) {
-    if (!MlxIRBuilder::isMlxMappable(slots[i].opName)) {
+    if (!MlxIRBuilder::isMlxMappable(slots[i].ident.opName)) {
+      DSP_DIAG(BACKEND, "MlxGraphBackend::canFuseSegment: unmappable op '%s' at slot %d",
+               slots[i].ident.opName.c_str(), i);
       return false;
     }
   }
 
+  DSP_DIAG(SEGMENT, "MlxGraphBackend::canFuseSegment [%d-%d]: all %d ops mappable", start, end, segSize);
   return true;
 }
 
@@ -103,10 +106,15 @@ bool MlxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it != cache_.end() && it->second.valid) {
+      DSP_DIAG(JIT, "MlxGraphBackend::compileSegment [%d-%d]: cache HIT (shapeKey=0x%llx)",
+               startSlot, endSlot, (long long)shapeKey);
       lastCompilationAudit_ = it->second.compilationAudit;
       return true;
     }
   }
+
+  DSP_DIAG(COMPILE, "MlxGraphBackend::compileSegment [%d-%d]: cache MISS, compiling (shapeKey=0x%llx)",
+           startSlot, endSlot, (long long)shapeKey);
 
   // Analyze the segment
   auto analysis = MlxIRBuilder::analyzeSegment(slots, startSlot, endSlot, totalSlots,
@@ -147,8 +155,8 @@ bool MlxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = startSlot; i <= endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
-    entry.wasCompiled = MlxIRBuilder::isMlxMappable(slots[i].opName);
+    entry.opName = slots[i].ident.opName;
+    entry.wasCompiled = MlxIRBuilder::isMlxMappable(slots[i].ident.opName);
     if (!entry.wasCompiled) {
       entry.reason = "unsupported op category";
     }
@@ -183,14 +191,18 @@ Status MlxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it == cache_.end() || !it->second.valid) {
+      DSP_DIAG(EXECUTE, "MlxGraphBackend::executeSegment [%d-%d]: no compiled graph found", startSlot, endSlot);
       return Status::KERNEL_FAILURE;
     }
     compiled = &it->second;
   }
 
   if (!compiled->mlxGraph.valid) {
+    DSP_DIAG(EXECUTE, "MlxGraphBackend::executeSegment [%d-%d]: graph invalid", startSlot, endSlot);
     return Status::KERNEL_FAILURE;
   }
+
+  DSP_DIAG(EXECUTE, "MlxGraphBackend::executeSegment [%d-%d]: executing MLX graph", startSlot, endSlot);
 
   // For each output in the MLX graph, evaluate and copy back to NDArray
   try {

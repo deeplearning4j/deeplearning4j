@@ -1,14 +1,11 @@
 <factorypath>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-onnxruntime/1.0.0-SNAPSHOT/nd4j-onnxruntime-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-api/1.0.0-SNAPSHOT/nd4j-api-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/dorkbox/Annotations/3.2/Annotations-3.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/dorkbox/Updates/1.1/Updates-1.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/jakewharton/byteunits/byteunits/0.9.1/byteunits-0.9.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-math3/3.5/commons-math3-3.5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-collections4/4.1/commons-collections4-4.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/google/flatbuffers/flatbuffers-java/25.2.10/flatbuffers-java-25.2.10.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/protobuf/1.0.0-SNAPSHOT/protobuf-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/github/oshi/oshi-core/3.4.2/oshi-core-3.4.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/net/java/dev/jna/jna-platform/4.3.0/jna-platform-4.3.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/net/java/dev/jna/jna/4.3.0/jna-4.3.0.jar" enabled="true" runInBatchMode="false"/>
@@ -38,25 +35,19 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/opencl/3.0-1.5.13/opencl-3.0-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/slf4j/log4j-over-slf4j/1.7.21/log4j-over-slf4j-1.7.21.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/junit/platform/junit-platform-console-standalone/1.11.0-M1/junit-platform-console-standalone-1.11.0-M1.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-parallel-wrapper/1.0.0-SNAPSHOT/deeplearning4j-parallel-wrapper-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/beust/jcommander/1.27/jcommander-1.27.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-core/1.0.0-SNAPSHOT/deeplearning4j-core-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/sun/activation/javax.activation/1.2.0/javax.activation-1.2.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-compress/1.21/commons-compress-1.21.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/github/oshi/oshi-json/3.4.2/oshi-json-3.4.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/glassfish/javax.json/1.0.4/javax.json-1.0.4.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-arrow/1.0.0-SNAPSHOT/nd4j-arrow-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/arrow/arrow-memory-unsafe/6.0.1/arrow-memory-unsafe-6.0.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/arrow/arrow-memory-core/6.0.1/arrow-memory-core-6.0.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/arrow/arrow-vector/6.0.1/arrow-vector-6.0.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/arrow/arrow-format/6.0.1/arrow-format-6.0.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-common/4.1.74.Final/netty-common-4.1.74.Final.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-common/1.0.0-SNAPSHOT/nd4j-common-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/guava/1.0.0-SNAPSHOT/guava-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-core/5.3.15/spring-core-5.3.15.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-jcl/5.3.15/spring-jcl-5.3.15.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/python4j-numpy/1.0.0-SNAPSHOT/python4j-numpy-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/numpy-platform/2.4.2-1.5.13/numpy-platform-2.4.2-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/openblas-platform/0.3.31-1.5.13/openblas-platform-0.3.31-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/openblas/0.3.31-1.5.13/openblas-0.3.31-1.5.13-android-arm64.jar" enabled="true" runInBatchMode="false"/>
@@ -81,15 +72,8 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/numpy/2.4.2-1.5.13/numpy-2.4.2-1.5.13-macosx-arm64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/numpy/2.4.2-1.5.13/numpy-2.4.2-1.5.13-macosx-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/numpy/2.4.2-1.5.13/numpy-2.4.2-1.5.13-windows-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-native-api/1.0.0-SNAPSHOT/nd4j-native-api-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/python4j-core/1.0.0-SNAPSHOT/python4j-core-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/json/json/20190722/json-20190722.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/netty-common/1.0.0-SNAPSHOT/netty-common-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-io/commons-io/2.7/commons-io-2.7.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/resources/1.0.0-SNAPSHOT/resources-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-datavec-iterators/1.0.0-SNAPSHOT/deeplearning4j-datavec-iterators-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-datasets/1.0.0-SNAPSHOT/deeplearning4j-datasets-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/datavec-data-image/1.0.0-SNAPSHOT/datavec-data-image-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/github/jai-imageio/jai-imageio-core/1.3.0/jai-imageio-core-1.3.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/twelvemonkeys/imageio/imageio-jpeg/3.1.1/imageio-jpeg-3.1.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/twelvemonkeys/imageio/imageio-core/3.1.1/imageio-core-3.1.1.jar" enabled="true" runInBatchMode="false"/>
@@ -126,7 +110,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/opencv/4.13.0-1.5.13/opencv-4.13.0-1.5.13-macosx-arm64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/opencv/4.13.0-1.5.13/opencv-4.13.0-1.5.13-macosx-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/opencv/4.13.0-1.5.13/opencv-4.13.0-1.5.13-windows-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/datavec-api/1.0.0-SNAPSHOT/datavec-api-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/junit/jupiter/junit-jupiter-api/5.11.0-M1/junit-jupiter-api-5.11.0-M1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/junit/platform/junit-platform-commons/1.11.0-M1/junit-platform-commons-1.11.0-M1.jar" enabled="true" runInBatchMode="false"/>
@@ -136,7 +119,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-lang3/3.11/commons-lang3-3.11.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-codec/commons-codec/1.10/commons-codec-1.10.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/joda-time/joda-time/2.2/joda-time-2.2.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/jackson/1.0.0-SNAPSHOT/jackson-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/freemarker/freemarker/2.3.23/freemarker-2.3.23.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/clearspring/analytics/stream/2.9.8/stream-2.9.8.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/opencsv/opencsv/5.9/opencsv-5.9.jar" enabled="true" runInBatchMode="false"/>
@@ -146,20 +128,11 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/com/tdunning/t-digest/3.2/t-digest-3.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/it/unimi/dsi/fastutil/6.5.7/fastutil-6.5.7.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/projectlombok/lombok/1.18.44/lombok-1.18.44.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-common-tests/1.0.0-SNAPSHOT/deeplearning4j-common-tests-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-nn/1.0.0-SNAPSHOT/deeplearning4j-nn-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-utility-iterators/1.0.0-SNAPSHOT/deeplearning4j-utility-iterators-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-cuda-12.9/1.0.0-SNAPSHOT/nd4j-cuda-12.9-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/junit/platform/junit-platform-launcher/1.11.0-M1/junit-platform-launcher-1.11.0-M1.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-cuda-12.9-preset/1.0.0-SNAPSHOT/nd4j-cuda-12.9-preset-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-presets-common/1.0.0-SNAPSHOT/nd4j-presets-common-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-cuda-12.9-preset/1.0.0-SNAPSHOT/nd4j-cuda-12.9-preset-1.0.0-SNAPSHOT-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/cuda/12.9-9.10-1.5.12/cuda-12.9-9.10-1.5.12.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/cuda/12.9-9.10-1.5.12/cuda-12.9-9.10-1.5.12-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/javacpp/1.5.13/javacpp-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/javacpp/1.5.13/javacpp-1.5.13-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-cuda-12.9/1.0.0-SNAPSHOT/nd4j-cuda-12.9-1.0.0-SNAPSHOT-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-tensorflow-lite/1.0.0-SNAPSHOT/nd4j-tensorflow-lite-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow-lite-platform/2.20.0-1.5.13/tensorflow-lite-platform-2.20.0-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/javacpp-platform/1.5.13/javacpp-platform-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/javacpp/1.5.13/javacpp-1.5.13-android-arm64.jar" enabled="true" runInBatchMode="false"/>
@@ -181,7 +154,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow-lite/2.20.0-1.5.13/tensorflow-lite-2.20.0-1.5.13-macosx-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow-lite/2.20.0-1.5.13/tensorflow-lite-2.20.0-1.5.13-windows-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow-lite/2.20.0-1.5.13/tensorflow-lite-2.20.0-1.5.13.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-tvm/1.0.0-SNAPSHOT/nd4j-tvm-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/mkl-platform-redist/2025.3-1.5.13/mkl-platform-redist-2025.3-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/mkl-platform/2025.3-1.5.13/mkl-platform-2025.3-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/mkl/2025.3-1.5.13/mkl-2025.3-1.5.13.jar" enabled="true" runInBatchMode="false"/>
@@ -208,18 +180,14 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/llvm/19.1.3-1.5.11/llvm-19.1.3-1.5.11.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/scipy/1.14.1-1.5.11/scipy-1.14.1-1.5.11.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-modelimport/1.0.0-SNAPSHOT/deeplearning4j-modelimport-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/google/code/gson/gson/2.8.0/gson-2.8.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/hdf5-platform/1.14.3-1.5.10/hdf5-platform-1.14.3-1.5.10.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/hdf5/1.14.3-1.5.10/hdf5-1.14.3-1.5.10.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/hdf5/1.14.3-1.5.10/hdf5-1.14.3-1.5.10-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/hdf5/1.14.3-1.5.10/hdf5-1.14.3-1.5.10-macosx-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/hdf5/1.14.3-1.5.10/hdf5-1.14.3-1.5.10-windows-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/datavec-arrow/1.0.0-SNAPSHOT/datavec-arrow-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/datavec-jdbc/1.0.0-SNAPSHOT/datavec-jdbc-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-dbutils/commons-dbutils/1.7/commons-dbutils-1.7.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/zaxxer/HikariCP-java7/2.4.12/HikariCP-java7-2.4.12.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-import-onnx/1.0.0-SNAPSHOT/samediff-import-onnx-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/onnx-platform/1.20.1-1.5.13/onnx-platform-1.20.1-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/onnx/1.20.1-1.5.13/onnx-1.20.1-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/onnx/1.20.1-1.5.13/onnx-1.20.1-1.5.13-linux-arm64.jar" enabled="true" runInBatchMode="false"/>
@@ -227,7 +195,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/onnx/1.20.1-1.5.13/onnx-1.20.1-1.5.13-macosx-arm64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/onnx/1.20.1-1.5.13/onnx-1.20.1-1.5.13-macosx-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/onnx/1.20.1-1.5.13/onnx-1.20.1-1.5.13-windows-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-import-api/1.0.0-SNAPSHOT/samediff-import-api-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/github/microutils/kotlin-logging-jvm/3.0.5/kotlin-logging-jvm-3.0.5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/github/classgraph/classgraph/4.8.90/classgraph-4.8.90.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/jgit/org.eclipse.jgit.lfs/5.10.0.202012080955-r/org.eclipse.jgit.lfs-5.10.0.202012080955-r.jar" enabled="true" runInBatchMode="false"/>
@@ -237,9 +204,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/jetbrains/annotations/13.0/annotations-13.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/jetbrains/kotlin/kotlin-reflect/1.9.24/kotlin-reflect-1.9.24.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.24/kotlin-stdlib-common-1.9.24.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-import-tensorflow/1.0.0-SNAPSHOT/samediff-import-tensorflow-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-ui-components/1.0.0-SNAPSHOT/deeplearning4j-ui-components-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-ui-model/1.0.0-SNAPSHOT/deeplearning4j-ui-model-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/lz4/lz4-pure-java/1.8.0/lz4-pure-java-1.8.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/mapdb/mapdb/3.0.5/mapdb-3.0.5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/collections/eclipse-collections-api/7.1.2/eclipse-collections-api-7.1.2.jar" enabled="true" runInBatchMode="false"/>
@@ -250,7 +214,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/mapdb/elsa/3.0.0-M5/elsa-3.0.0-M5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/xerial/sqlite-jdbc/3.15.1/sqlite-jdbc-3.15.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/aeron/aeron-all/1.39.0/aeron-all-1.39.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-vertx/1.0.0-SNAPSHOT/deeplearning4j-vertx-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/vertx/vertx-core/3.9.16/vertx-core-3.9.16.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-buffer/4.1.74.Final/netty-buffer-4.1.74.Final.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-transport/4.1.74.Final/netty-transport-4.1.74.Final.jar" enabled="true" runInBatchMode="false"/>
@@ -297,7 +260,7 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/bower/lodash/3.10.1-amd/lodash-3.10.1-amd.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/npm/dagre/0.8.4/dagre-0.8.4.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/npm/graphlib/2.1.8/graphlib-2.1.8.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/npm/lodash/4.17.23/lodash-4.17.23.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/npm/lodash/4.18.1/lodash-4.18.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/npm/cytoscape-cola/2.3.0/cytoscape-cola-2.3.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/npm/webcola/3.4.0/webcola-3.4.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/npm/d3-dispatch/2.0.0-rc.1/d3-dispatch-2.0.0-rc.1.jar" enabled="true" runInBatchMode="false"/>
@@ -332,22 +295,15 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/font-awesome/3.0.2/font-awesome-3.0.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/bootstrap/2.2.2-1/bootstrap-2.2.2-1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/bootstrap-glyphicons/bdd2cbfba0/bootstrap-glyphicons-bdd2cbfba0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-webjar/1.0.0-SNAPSHOT/nd4j-webjar-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-ui/1.0.0-SNAPSHOT/deeplearning4j-ui-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/omnihub/1.0.0-SNAPSHOT/omnihub-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/squareup/javapoet/1.13.0/javapoet-1.13.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/module/jackson-module-kotlin/2.14.2/jackson-module-kotlin-2.14.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-annotations/2.14.2/jackson-annotations-2.14.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/me/tongfei/progressbar/0.5.5/progressbar-0.5.5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/jline/jline/2.12/jline-2.12.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/zeroturnaround/zt-exec/1.12/zt-exec-1.12.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/datavec-local/1.0.0-SNAPSHOT/datavec-local-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/codepoetics/protonpack/1.15/protonpack-1.15.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/derby/derby/10.13.1.1/derby-10.13.1.1.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-common-tests/1.0.0-SNAPSHOT/nd4j-common-tests-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-graph/1.0.0-SNAPSHOT/deeplearning4j-graph-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/threadly/threadly/4.10.0/threadly-4.10.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-nlp/1.0.0-SNAPSHOT/deeplearning4j-nlp-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-lang/commons-lang/2.6/commons-lang-2.6.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/github/vinhkhuc/jfasttext/0.4/jfasttext-0.4.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/deeplearning4j/dl4j-test-resources/1.0.0-SNAPSHOT/dl4j-test-resources-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
@@ -359,12 +315,10 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/junit/platform/junit-platform-engine/1.11.0-M1/junit-platform-engine-1.11.0-M1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/junit/jupiter/junit-jupiter-params/5.11.0-M1/junit-jupiter-params-5.11.0-M1.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/deeplearning4j-zoo/1.0.0-SNAPSHOT/deeplearning4j-zoo-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/ch/qos/logback/logback-classic/1.2.3/logback-classic-1.2.3.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/ch/qos/logback/logback-core/1.2.3/logback-core-1.2.3.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/tngtech/archunit/archunit-junit5-api/0.14.1/archunit-junit5-api-0.14.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/tngtech/archunit/archunit/0.14.1/archunit-0.14.1.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/datavec-excel/1.0.0-SNAPSHOT/datavec-excel-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/poi/poi/5.2.0/poi-5.2.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/zaxxer/SparseBitSet/1.2/SparseBitSet-1.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/logging/log4j/log4j-api/2.17.2/log4j-api-2.17.2.jar" enabled="true" runInBatchMode="false"/>
@@ -373,7 +327,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/xmlbeans/xmlbeans/5.0.3/xmlbeans-5.0.3.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/github/virtuald/curvesapi/1.06/curvesapi-1.06.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/h2database/h2/2.2.224/h2-2.2.224.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-tensorflow/1.0.0-SNAPSHOT/nd4j-tensorflow-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow/1.15.5-1.5.8/tensorflow-1.15.5-1.5.8.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/mkl-dnn/0.21.5-1.5.8/mkl-dnn-0.21.5-1.5.8.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow-platform/1.15.5-1.5.8/tensorflow-platform-1.15.5-1.5.8.jar" enabled="true" runInBatchMode="false"/>
@@ -389,18 +342,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow/1.15.5-1.5.8/tensorflow-1.15.5-1.5.8-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow/1.15.5-1.5.8/tensorflow-1.15.5-1.5.8-macosx-x86_64.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/tensorflow/1.15.5-1.5.8/tensorflow-1.15.5-1.5.8-windows-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-pipeline-core/1.0.0-SNAPSHOT/samediff-pipeline-core-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-pipeline-safetensors/1.0.0-SNAPSHOT/samediff-pipeline-safetensors-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-pipeline-ggml/1.0.0-SNAPSHOT/samediff-pipeline-ggml-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-pipeline-onnx/1.0.0-SNAPSHOT/samediff-pipeline-onnx-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-vlm/1.0.0-SNAPSHOT/samediff-vlm-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/samediff-llm/1.0.0-SNAPSHOT/samediff-llm-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/tokenizers-native/1.0.0-SNAPSHOT/tokenizers-native-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/tokenizers-native-preset/1.0.0-SNAPSHOT/tokenizers-native-preset-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/libtokenizers/1.0.0-SNAPSHOT/libtokenizers-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/libtokenizers/1.0.0-SNAPSHOT/libtokenizers-1.0.0-SNAPSHOT-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/tokenizers-native/1.0.0-SNAPSHOT/tokenizers-native-1.0.0-SNAPSHOT-linux-x86_64.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/eclipse/deeplearning4j/nd4j-ggml/1.0.0-SNAPSHOT/nd4j-ggml-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/pdfbox/pdfbox/2.0.29/pdfbox-2.0.29.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/pdfbox/fontbox/2.0.29/fontbox-2.0.29.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-logging/commons-logging/1.2/commons-logging-1.2.jar" enabled="true" runInBatchMode="false"/>

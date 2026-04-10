@@ -246,10 +246,11 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
     if (currentDb != slotDataBuffers[i]) {
       // DIAGNOSTIC: extra info for slot 420
       if (i == 420 && outputSlots[i] != nullptr) {
-        sd_printf("DIAG_SLOT420: snapshot=%p current=%p arr=%p special=%p len=%lld rank=%d\n",
-                  (void*)slotDataBuffers[i], (void*)currentDb,
-                  (void*)outputSlots[i], (void*)outputSlots[i]->specialBuffer(),
-                  (long long)outputSlots[i]->lengthOf(), outputSlots[i]->rankOf());
+        DSP_DIAG(VERIFY,
+            "DIAG_SLOT420: snapshot=%p current=%p arr=%p special=%p len=%lld rank=%d",
+            (void*)slotDataBuffers[i], (void*)currentDb,
+            (void*)outputSlots[i], (void*)outputSlots[i]->specialBuffer(),
+            (long long)outputSlots[i]->lengthOf(), outputSlots[i]->rankOf());
       }
       snprintf(errMsg, errMsgLen,
                "LIFECYCLE_ERROR: slot %d DataBuffer replaced during frozen execution "

@@ -21,6 +21,8 @@
 #include <graph/NativePlanCompiler.h>
 #include <system/op_boilerplate.h>
 #include <graph/DspStreamGuard.h>
+#include <graph/DspAnalysisUtils.h>
+#include <graph/DspPhaseUtils.h>
 #include <sstream>
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
@@ -35,9 +37,6 @@
 #endif
 // Null-safe version
 #define DSP_BUF_SAFE(arr) ((arr) != nullptr ? DSP_BUF(arr) : nullptr)
-#if HAVE_TRITON && defined(SD_CUDA)
-#include <graph/gpu/TritonGraphBackend.h>
-#endif
 #include <graph/FusionPass.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <graph/GraphBackend.h>
@@ -121,49 +120,17 @@ bool segmentIsCompiledSteadyState(const GraphSegment& seg, int minExecutionCount
   }
 }
 
+// Delegate to shared utilities in DspAnalysisUtils.h
 uint32_t resolvePlanPhaseTraits(const NativeSlot& slot) {
-  uint32_t traits = 0;
-  if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
-    traits |= slot.ident.op->getOpDescriptor()->getTraits();
-  }
-  if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-  if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
-  if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-  if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
-  return traits;
+  return dsp::resolveSlotTraits(slot);
 }
 
 int findProducerStepInSegment(const GraphSegment& seg, NativeSlot* slots, int outputSlotIdx) {
-  if (slots == nullptr || outputSlotIdx < 0) return -1;
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    const auto& slot = slots[s];
-    for (int o = 0; o < slot.wiring.numOutputs; o++) {
-      if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
-        return s;
-      }
-    }
-  }
-  return -1;
+  return dsp::findProducerStepInSegment(seg, slots, outputSlotIdx);
 }
 
 bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, NativeSlot* slots) {
-  if (slots == nullptr) return false;
-
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    const auto& slot = slots[s];
-    const uint32_t traits = resolvePlanPhaseTraits(slot);
-    if ((traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) == 0) continue;
-
-    for (int i = 0; i < slot.wiring.numInputs; i++) {
-      const int srcIdx = slot.wiring.inputSourceIndices[i];
-      if (srcIdx < 0) continue;
-      if (findProducerStepInSegment(seg, slots, srcIdx) >= 0) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return dsp::segmentHasInternalValueShapeInputs(seg, slots);
 }
 
 bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* slots) {
@@ -291,13 +258,16 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
 
   NDArray* old = outputSlots_[slotIdx];
 
-  // DIAGNOSTIC: trace all writes to slot 274 and 420
-  if ((slotIdx == 274 || slotIdx == 420) && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
-    auto* oldDb = old != nullptr ? old->dataBuffer() : nullptr;
-    auto* newDb = value != nullptr ? value->dataBuffer() : nullptr;
-    DSP_DIAG(MEMORY, "WOS_%d: tag=%s old=%p new=%p oldDb=%p newDb=%p exec=%d phase=%d",
-             slotIdx, tag, (void*)old, (void*)value, (void*)oldDb, (void*)newDb,
-             executeCount_, (int)planPhase_);
+  // DIAGNOSTIC: trace writes to the configured trace slot (ND4J_DSP_TRACE_SLOT)
+  if (DSP_DIAG_ENABLED(MEMORY) && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
+    int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
+    if (ts >= 0 && slotIdx == ts) {
+      auto* oldDb = old != nullptr ? old->dataBuffer() : nullptr;
+      auto* newDb = value != nullptr ? value->dataBuffer() : nullptr;
+      DSP_DIAG(MEMORY, "WOS_%d: tag=%s old=%p new=%p oldDb=%p newDb=%p exec=%d phase=%d",
+               slotIdx, tag, (void*)old, (void*)value, (void*)oldDb, (void*)newDb,
+               executeCount_, (int)planPhase_);
+    }
   }
 
   if (planPhase_ >= PlanPhase::POINTERS_STABLE && executeCount_ > 2) {
@@ -335,40 +305,31 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   outputSlots_[slotIdx] = value;
 }
 
-NDArray* NativeDynamicShapePlan::readOutputSlot(int slotIdx) const {
-  if (slotIdx < 0 || slotIdx >= totalOutputSlots_) return nullptr;
-  NDArray* arr = outputSlots_[slotIdx];
-  if (arr != nullptr && arr->dataBuffer() != nullptr && arr->dataBuffer()->isClosed()) {
-    char buf[128];
-    snprintf(buf, sizeof(buf), "LIFECYCLE VIOLATION: reading closed DataBuffer at slot %d", slotIdx);
-    THROW_EXCEPTION(buf);
+void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
+  DSP_DIAG(EXECUTE, "setGraphExecutionMode: %d -> %d", static_cast<int>(graphExecutionMode_), static_cast<int>(mode));
+  graphExecutionMode_ = mode;
+  // Reset cached backends so mode changes take effect immediately.
+  gpuGraphBackendChecked_ = false;
+  gpuGraphBackend_ = nullptr;
+  cpuGraphBackendChecked_ = false;
+  cpuGraphBackend_ = nullptr;
+  cpuGraphBackendChainBuilt_ = false;
+  cpuGraphBackendChain_.clear();
+  // Enable GPU graph capture for all modes except SLOT_BY_SLOT.
+  // JIT backends (Triton/NVRTC/PTX) use graph capture when they
+  // can't handle a segment (unsupported ops, etc).
+  if (mode != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    gpuGraphCaptureEnabled_ = true;
   }
-  return arr;
-}
-
-void NativeDynamicShapePlan::syncExternalInputs(NDArray** extInputs, int numExt, void* stream) {
-  if (extInputs == nullptr || numExt <= 0) return;
-
-  for (int i = 0; i < numExt; i++) {
-    NDArray* arr = extInputs[i];
-    if (arr == nullptr) continue;
-    arr->syncToDevice();
-  }
+  // Clear GPU backend failed-compilation cache so segments that failed with
+  // incomplete shapes (e.g., attention with seqK=0 before KV setup)
+  // can retry when called again with correct external input shapes.
+  clearGpuBackendFailedCache();
 }
 
 NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d planOwned=%zu",
            this, numSlots_, totalOutputSlots_, planOwnedArrays_.size());
-
-#ifdef SD_CUDA
-  // Free CUDA event used for cross-stream sync
-  if (executionCompleteEvent_ != nullptr) {
-    cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-    cudaEventDestroy(evt);
-    delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
-    executionCompleteEvent_ = nullptr;
-  }
-#endif
 
   // ── Phase 1: Free GPU resources FIRST ─────────────────────────────────
   // Platform GPU resources (replay handles, JIT kernels, cuBLAS workspace,
@@ -1010,7 +971,7 @@ Status NativeDynamicShapePlan::execute(
 
   DspDiagnostics::getInstance().beginStep(executeCount_);
 
-  // CRITICAL FIX: Set tl_dspExecutionStream at the start of EVERY DSP execution.
+  // Set tl_dspExecutionStream at the start of EVERY DSP execution.
   // This allows syncToSpecial() to use async H2D copies on the DSP stream instead
   // of falling back to stream 0 with full cudaStreamSynchronize.
   // Without this, we get 657k sync calls per decode step.
@@ -1021,15 +982,9 @@ Status NativeDynamicShapePlan::execute(
   //
   // RAII guard: automatically restores the previous tl_dspExecutionStream value
   // when execute() returns (including early returns and exceptions).
-#ifdef SD_CUDA
-  // Declare outside the if so it lives for the entire function scope.
-  // On CPU builds, DspStreamGuard is a no-op (accepts void*).
-  std::unique_ptr<sd::graph::DspStreamGuard> dspStreamGuardPtr;
-  if (stream != nullptr) {
-    dspStreamGuardPtr = std::make_unique<sd::graph::DspStreamGuard>(
-        *static_cast<cudaStream_t*>(stream));
-  }
-#endif
+  // Platform-specific stream setup + ordering (DspStreamGuard on CUDA, no-op on CPU).
+  // executionStatePtr is freed by platformEndExecution at end of execute().
+  void* executionStatePtr = platformBeginExecution(stream, shapesFrozen_, executeCount_);
 
   DSP_DIAG(EXECUTE, "step %d: frozen=%d segs=%d graphCapture=%d ext=%d",
            executeCount_, static_cast<int>(shapesFrozen_),
@@ -1055,99 +1010,41 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-#ifdef SD_CUDA
-  // Stream ordering: ensure all async CUDA operations from Java (DataBuffer
-  // closes, H2D copies, allocations on stream 0) complete before DSP execution.
-  //
-  // Non-frozen / first frozen: full cudaStreamSynchronize (safe, ~1ms)
-  // Frozen replay (executeCount_ > 1): event-based ordering from stream 0.
-  //   Java ops between execute() calls happen on stream 0 (the default stream).
-  //   Without this, the DSP execution stream could start reading buffers that
-  //   stream 0 is still writing to (e.g., putScalar for input_ids).
-  //   Record event on stream 0, wait on it from DSP stream.
-  if (stream != nullptr) {
-    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
-    if (!shapesFrozen_ || executeCount_ <= 1) {
-      cudaStreamSynchronize(cudaStr);
-    } else {
-      // Lightweight cross-stream ordering: stream 0 → DSP stream.
-      // cudaStreamSynchronize(0) would be ~1ms. Event wait is ~0.01ms.
-      cudaEvent_t defaultStreamEvent;
-      cudaEventCreateWithFlags(&defaultStreamEvent, cudaEventDisableTiming);
-      cudaEventRecord(defaultStreamEvent, nullptr);  // Record on stream 0 (default)
-      cudaStreamWaitEvent(cudaStr, defaultStreamEvent, 0);  // DSP stream waits
-      cudaEventDestroy(defaultStreamEvent);
-    }
-  }
-  // Dump every FLOAT32 external input device values per call to find the
-  // placeholder and verify data freshness across replays.
-  if (DSP_DIAG_ENABLED(EXECUTE)) {
-    for (int dbgI = 0; dbgI < numExternalInputs; dbgI++) {
-      NDArray* arr = externalInputs[dbgI];
-      if (arr == nullptr || arr->dataType() != FLOAT32 || arr->lengthOf() <= 0) continue;
-      auto* db = arr->dataBuffer();
-      int dumpN = std::min((int)arr->lengthOf(), 4);
-      std::vector<float> hostBuf(dumpN, 0.0f);
-      if (db && DSP_BUF(arr) != nullptr) {
-        cudaMemcpy(hostBuf.data(), DSP_BUF(arr), dumpN * 4, cudaMemcpyDeviceToHost);
-      }
-      const char* nm = (dbgI < (int)externalInputNames_.size()) ? externalInputNames_[dbgI].c_str() : "?";
-      DSP_DIAG(EXECUTE, "EXT_ENTRY execCount=%d ext[%d]='%s' arr=%p sbuf=%p len=%lld "
-               "pAct=%d sAct=%d dev=[%.4f %.4f %.4f %.4f]",
-               executeCount_, dbgI, nm, (void*)arr, DSP_BUF(arr),
-               (long long)arr->lengthOf(),
-               db ? (db->isPrimaryActual() ? 1 : 0) : -1,
-               db ? (db->isSpecialActual() ? 1 : 0) : -1,
-               hostBuf[0], hostBuf[1], hostBuf[2], hostBuf[3]);
-    }
-  }
-#endif
+  platformDumpExternalInputDiagnostics(externalInputs, numExternalInputs, executeCount_);
 
-  // Debug: dump external input at index 1331 (slot -1332) — useful for diagnosing
-  // forced-H2D-sync issues where device-authoritative buffers get overwritten
-  if (sd::Environment::getInstance().isDebug() && numExternalInputs > 1331) {
-    NDArray* ext1331 = externalInputs[1331];
-    if (ext1331 != nullptr) {
-      DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=1331 dtype=%d shape=[%lld] len=%lld "
-               "specialBuf=%p primaryBuf=%p dbPtr=%p pAct=%d sAct=%d",
-               executeCount_, (int)ext1331->dataType(),
-               (long long)(ext1331->rankOf() > 0 ? ext1331->sizeAt(0) : 0),
-               (long long)ext1331->lengthOf(),
-               DSP_BUF(ext1331), ext1331->buffer(),
-               static_cast<void*>(ext1331->dataBuffer()),
-               ext1331->dataBuffer() ? (ext1331->dataBuffer()->isPrimaryActual() ? 1 : 0) : -1,
-               ext1331->dataBuffer() ? (ext1331->dataBuffer()->isSpecialActual() ? 1 : 0) : -1);
-#ifdef SD_CUDA
-      if (DSP_BUF(ext1331) != nullptr && ext1331->lengthOf() > 0
-          && ext1331->dataType() == FLOAT32) {
-        int dumpCount = std::min((int)ext1331->lengthOf(), 8);
-        std::vector<float> hostBuf(dumpCount);
-        cudaDeviceSynchronize();
-        cudaMemcpy(hostBuf.data(), DSP_BUF(ext1331), dumpCount * 4, cudaMemcpyDeviceToHost);
-        std::string valStr;
-        for (int v = 0; v < dumpCount; v++) {
-          if (v > 0) valStr += ",";
-          char buf[32]; snprintf(buf, sizeof(buf), "%.6f", hostBuf[v]); valStr += buf;
-        }
-        DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=1331 GPU values: %s",
-                 executeCount_, valStr.c_str());
+  // Debug: dump external input at a configured index (ND4J_DSP_TRACE_EXT_INPUT)
+  // useful for diagnosing forced-H2D-sync issues where device-authoritative buffers get overwritten
+  {
+    int traceExt = sd::graph::DspDiagnostics::getInstance().traceExtInput();
+    if (traceExt >= 0 && traceExt < numExternalInputs && DSP_DIAG_ENABLED(VERIFY)) {
+      NDArray* extArr = externalInputs[traceExt];
+      if (extArr != nullptr) {
+        DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=%d dtype=%d shape=[%lld] len=%lld "
+                 "specialBuf=%p primaryBuf=%p dbPtr=%p pAct=%d sAct=%d",
+                 executeCount_, traceExt, (int)extArr->dataType(),
+                 (long long)(extArr->rankOf() > 0 ? extArr->sizeAt(0) : 0),
+                 (long long)extArr->lengthOf(),
+                 DSP_BUF(extArr), extArr->buffer(),
+                 static_cast<void*>(extArr->dataBuffer()),
+                 extArr->dataBuffer() ? (extArr->dataBuffer()->isPrimaryActual() ? 1 : 0) : -1,
+                 extArr->dataBuffer() ? (extArr->dataBuffer()->isSpecialActual() ? 1 : 0) : -1);
+        platformDumpExtInputGpuValues(extArr, traceExt, executeCount_, stream);
       }
-#endif
-    }
-    // Check if externalInputs[1331] shares a buffer with any output slot in the cache
-    if (ext1331 != nullptr && DSP_BUF(ext1331) != nullptr && slotArrayCache_ != nullptr) {
-      void* extAddr = DSP_BUF(ext1331);
-      int aliasCount = 0;
-      for (int si = 0; si < totalOutputSlots_; si++) {
-        if (slotArrayCache_[si] != nullptr && DSP_BUF(slotArrayCache_[si]) == extAddr) {
-          DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=1331 addr=%p == slotArrayCache[%d] (len=%lld)",
-                   extAddr, si, (long long)slotArrayCache_[si]->lengthOf());
-          aliasCount++;
+      // Check if the traced external input shares a buffer with any output slot in the cache
+      if (extArr != nullptr && DSP_BUF(extArr) != nullptr && slotArrayCache_ != nullptr) {
+        void* extAddr = DSP_BUF(extArr);
+        int aliasCount = 0;
+        for (int si = 0; si < totalOutputSlots_; si++) {
+          if (slotArrayCache_[si] != nullptr && DSP_BUF(slotArrayCache_[si]) == extAddr) {
+            DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=%d addr=%p == slotArrayCache[%d] (len=%lld)",
+                     traceExt, extAddr, si, (long long)slotArrayCache_[si]->lengthOf());
+            aliasCount++;
+          }
         }
-      }
-      if (aliasCount == 0) {
-        DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=1331 addr=%p NO alias found in %d output slots",
-                 extAddr, totalOutputSlots_);
+        if (aliasCount == 0) {
+          DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=%d addr=%p NO alias found in %d output slots",
+                   traceExt, extAddr, totalOutputSlots_);
+        }
       }
     }
   }
@@ -1203,9 +1100,10 @@ Status NativeDynamicShapePlan::execute(
     for (size_t si = 0; si < segments_.size(); si++) {
       auto& seg = segments_[si];
       if (!segmentIsFullyReplayingForPlanPhase(seg, slots_)) {
-        DSP_DIAG(FALLBACK, "PHASE_DEMOTION: REPLAYING → POINTERS_STABLE: "
-                  "seg[%d-%d] no longer satisfies replay steady state "
-                  "(backend=%d execPhase=%d segExecCount=%d handleReady=%d argStable=%d). execCount=%d",
+        demotePlanPhase(PlanPhase::POINTERS_STABLE,
+            "segment no longer satisfies replay steady state");
+        DSP_DIAG(FALLBACK, "  seg[%d-%d] details: backend=%d execPhase=%d "
+                  "segExecCount=%d handleReady=%d argStable=%d execCount=%d",
                   seg.def.startSlot, seg.def.endSlot,
                   static_cast<int>(seg.def.selectedBackend),
                   static_cast<int>(seg.exec.currentPhase),
@@ -1213,7 +1111,6 @@ Status NativeDynamicShapePlan::execute(
                   seg.exec.replayHandle && seg.exec.replayHandle->isReady() ? 1 : 0,
                   seg.exec.argTableStable ? 1 : 0,
                   executeCount_);
-        planPhase_ = PlanPhase::POINTERS_STABLE;
         break;
       }
     }
@@ -1235,14 +1132,6 @@ Status NativeDynamicShapePlan::execute(
   // shape while values change (KV length growth), so cross-execution shape cache
   // reuse can become stale and cause later broadcast mismatches. Invalidate these
   // segment-local caches each execute; capturable graph-replay segments keep caches.
-  // Determine if any segment has a replay handle (used for pre-populate decision below)
-  bool hasAnyReplayHandle = false;
-  for (auto& seg : segments_) {
-    if (seg.exec.replayHandle != nullptr) {
-      hasAnyReplayHandle = true;
-      break;
-    }
-  }
 
   // replayManagedSlots REMOVED: arrays persist (one array per slot), no protection needed.
 
@@ -1267,9 +1156,7 @@ Status NativeDynamicShapePlan::execute(
              "(excluding variable/placeholder feeds)",
              protectedWeightBuffers_.size(), numExternalInputs);
 
-    // External inputs are WEIGHT — never freed by the plan.
-    // Output slot ownership is set when ops produce outputs during execution
-    // via classifyAndUpdateOwnership() in executeSegmentSlotBySlot().
+
   }
 
   if (numExternalInputs > 0 && !protectedWeightBuffers_.empty()) {
@@ -1311,16 +1198,9 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-#ifdef SD_CUDA
-  // Clear MmulHelper's thread-local persistent cast cache between non-frozen executions.
-  // During non-frozen execution (dynamic shapes), CUDA graph capture never happens, so
-  // the persistent cast buffers are never reused. Without clearing, each matmul pushes
-  // new persistent NDArrays with GPU memory (~1-2 MB each for weight matrix casts),
-  // leaking ~225 MB per decoder step across ~150 matmul ops.
   if (!shapesFrozen_) {
-    MmulHelper::clearCastCache();
+    platformClearCastCache();
   }
-#endif
 
   // Reset dead-slot flags once per plan execution (not per segment).
   // Dead flags from Switch in one segment must persist to affect ops in later segments.
@@ -1331,297 +1211,42 @@ Status NativeDynamicShapePlan::execute(
   // Timing instrumentation
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+  PhaseExecutionStats phaseStats;
+  bool phaseHandledPostSegments = false;
+  bool phaseHandledOutputs = false;
 
   // Step 1b: Parallel precompilation of all GPU-compilable segments.
-  // On GPU: fires async compilation threads for all eligible segments.
-  // On CPU: no-op.
-  platformPrecompileSegments(externalInputs, numExternalInputs);
-
-  // Step 2: Execute segments
-#ifdef SD_CUDA
-  size_t poolUsedPreSegs = 0, poolReservedPreSegs = 0;
-  sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedPreSegs, poolReservedPreSegs);
-  DSP_DIAG(MEMORY, "pre-segments: pool used=%zuMB reserved=%zuMB",
-           poolUsedPreSegs / (1024*1024), poolReservedPreSegs / (1024*1024));
-
-  // cuBLAS workspace: do NOT zero between frozen executions.  During capture,
-  // the workspace accumulates cuBLAS plan/descriptor data as segments capture
-  // sequentially.  Later segments' graphs omit H2D nodes for plans already
-  // cached by earlier segments.  Zeroing would destroy those inherited plans,
-  // causing GEMM kernels that lack H2D re-uploads to read zeros and hang.
-  // Since shapes and buffer addresses are stable in frozen state, all cuBLAS
-  // plans remain valid across executions — the workspace is self-consistent.
-  if (shapesFrozen_ && executeCount_ > 0 && hasAnyReplayHandle &&
-      cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
-    DSP_DIAG(MEMORY, "pre-segments: cuBLAS workspace PRESERVED (%zuMB) — plans stable in frozen state",
-             cublasWorkspaceSize_ / (1024*1024));
+  // Skip the first frozen warmup because shapes are still being populated.
+  if (!(shapesFrozen_ && executeCount_ == 0) &&
+      graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    phaseCompile(externalInputs, numExternalInputs);
   }
-#endif
-  // One-time segment map dump on first frozen execution
+
+  Status phaseStatus = Status::OK;
   if (shapesFrozen_ && executeCount_ == 0) {
-    DSP_DIAG(SEGMENT, "SEGMENT_MAP: %d segments (frozen first exec)", (int)segments_.size());
-    for (int i = 0; i < (int)segments_.size(); i++) {
-      auto& s = segments_[i];
-      DSP_DIAG(SEGMENT, "  seg[%d]: slots[%d-%d] capturable=%d hasReplay=%d "
-               "compilationFailed=%d execCount=%d",
-               i, s.startSlot, s.endSlot, s.isCapturable,
-               s.exec.replayHandle != nullptr, s.exec.compilationFailed, s.exec.executionCount);
-    }
+    DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phaseWarmup (frozen=%d execCount=%d mode=%d)",
+             static_cast<int>(shapesFrozen_), executeCount_, static_cast<int>(graphExecutionMode_));
+    phaseStatus = phaseWarmup(externalInputs, numExternalInputs, stream, &phaseStats);
+  } else if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phaseSlotBySlot (frozen=%d execCount=%d mode=%d)",
+             static_cast<int>(shapesFrozen_), executeCount_, static_cast<int>(graphExecutionMode_));
+    phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
+  } else {
+    DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phaseReplay (frozen=%d execCount=%d mode=%d)",
+             static_cast<int>(shapesFrozen_), executeCount_, static_cast<int>(graphExecutionMode_));
+    phaseStatus = phaseReplay(externalInputs, numExternalInputs, requestedOutputs,
+                              numRequestedOutputs, stream, &phaseStats);
+    phaseHandledPostSegments = true;
+    phaseHandledOutputs = true;
   }
-
-  int segmentIdx = 0;
-  long long graphReplayUs = 0, slotBySlotUs = 0;
-  int graphReplaySegs = 0, slotBySlotSegs = 0, graphReplaySlots = 0, slotBySlotSlots = 0;
-  for (auto& segment : segments_) {
-    if (!platformBindSegmentDevice(segment)) {
-      return Status::KERNEL_FAILURE;
-    }
-
-    // Migrate inputs that are on a different device than this segment's target
-    platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
-
-    bool useGraph = platformShouldUseGraph(segment);
-
-    // Set initial execution phase before dispatch
-    if (segment.exec.executionCount == 0) {
-      segment.exec.currentPhase = ExecutionPhase::WARMUP;
-    }
-
-    auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-    bool segUsedGraph = false;
-    int segSlots = segment.def.endSlot - segment.def.startSlot + 1;
-
-    if (segment.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
-      // Emulated graph replay: slot-by-slot with full replay lifecycle diagnostics
-      auto status = executeSegmentEmulatedReplay(segment, externalInputs, numExternalInputs, stream);
-      if (status != Status::OK) return status;
-      // Emulated replay counts as "graph" for timing purposes (tracks replay overhead)
-      segUsedGraph = true;
-    } else if (useGraph) {
-      // Platform dispatch: selected backend executes segment
-      auto status = platformExecuteSegmentWithBackends(
-          segment, externalInputs, numExternalInputs, stream, segUsedGraph);
-      if (status != Status::OK) return status;
-    } else {
-      // No graph backend applicable — slot-by-slot execution
-      segment.exec.currentPhase = segment.def.isCapturable
-          ? ExecutionPhase::WARMUP    // Capturable but not yet ready for graph
-          : ExecutionPhase::SLOT_BY_SLOT;  // Non-capturable, always slot-by-slot
-      auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-      if (status != Status::OK) return status;
-    }
-
-    if (executionTimingEnabled_) {
-      auto segUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tSegStart).count();
-      if (segUsedGraph) {
-        graphReplayUs += segUs;
-        graphReplaySegs++;
-        graphReplaySlots += segSlots;
-      } else {
-        slotBySlotUs += segUs;
-        slotBySlotSegs++;
-        slotBySlotSlots += segSlots;
-      }
-    }
-
-    // Restore original arrays in outputSlots_ and delete migrated copies.
-    // Must happen AFTER segment execution but BEFORE post-segment checks so
-    // downstream segments see the original (source-device) arrays, not the
-    // migrated copies which are about to be deleted.
-    platformCleanupMigratedInputs();
-
-    // Post-segment check: on GPU, detects sticky errors from async execution.
-    // On CPU, always returns OK.
-    auto postStatus = platformCheckPostSegment(segment);
-    if (postStatus != Status::OK) return postStatus;
-
-#ifdef SD_CUDA
-    // Targeted slot trace: after every segment, check a specific slot's GPU data.
-    // Set via Environment::getInstance().dsp().setTraceSlot(slotIndex).
-    // Reports: slot pointer, DataBuffer state, first 4 floats from GPU memory.
-    {
-      static int traceSlot = -1;
-      static bool traceSlotInit = false;
-      if (!traceSlotInit) {
-        traceSlot = Environment::getInstance().dsp().traceSlot();
-        traceSlotInit = true;
-      }
-      if (traceSlot >= 0 && traceSlot < totalOutputSlots_ && shapesFrozen_) {
-        auto* arr = outputSlots_[traceSlot];
-        if (arr != nullptr) {
-          auto* db = arr->dataBuffer();
-          void* gpuPtr = DSP_BUF(arr);
-          float firstVals[4] = {0, 0, 0, 0};
-          if (gpuPtr != nullptr && arr->lengthOf() > 0 && arr->dataType() == FLOAT32) {
-            int n = std::min((int)arr->lengthOf(), 4);
-            // Raw cudaMemcpy — bypasses DataBuffer sync to avoid actuality counter corruption
-            cudaStream_t execStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
-            if (execStr != nullptr) cudaStreamSynchronize(execStr);
-            cudaMemcpy(firstVals, gpuPtr, n * sizeof(float), cudaMemcpyDeviceToHost);
-          }
-          bool allZero = (firstVals[0] == 0.0f && firstVals[1] == 0.0f &&
-                         firstVals[2] == 0.0f && firstVals[3] == 0.0f);
-          bool hasNaN = (std::isnan(firstVals[0]) || std::isnan(firstVals[1]) ||
-                        std::isnan(firstVals[2]) || std::isnan(firstVals[3]));
-          // Always log when execCount_ > 0 to trace data transitions
-          if (allZero || hasNaN || executeCount_ > 0) {
-            const char* tag = hasNaN ? "NaN" : (allZero ? "ZERO" : "OK");
-            DSP_DIAG(VERIFY, "SLOT_TRACE %s after seg[%d-%d]: slot=%d "
-                    "arr=%p gpuPtr=%p db=%p closed=%d pAct=%d sAct=%d "
-                    "vals=[%.6f,%.6f,%.6f,%.6f] execCount=%d",
-                    tag,
-                    segment.def.startSlot, segment.def.endSlot, traceSlot,
-                    (void*)arr, gpuPtr, (void*)db,
-                    db ? db->isClosed() : -1,
-                    db ? (db->isPrimaryActual() ? 1 : 0) : -1,
-                    db ? (db->isSpecialActual() ? 1 : 0) : -1,
-                    firstVals[0], firstVals[1], firstVals[2], firstVals[3],
-                    executeCount_);
-          }
-        } else {
-          // Slot is null — log when this first happens
-          static int lastNullSegEnd = -1;
-          if (lastNullSegEnd != segment.def.endSlot) {
-            DSP_DIAG(VERIFY, "SLOT_TRACE NULL after seg[%d-%d]: slot=%d "
-                    "outputSlots_[%d]=nullptr cache=%p execCount=%d",
-                    segment.def.startSlot, segment.def.endSlot, traceSlot, traceSlot,
-                    (slotArrayCache_ && traceSlot < totalOutputSlots_) ?
-                      (void*)slotArrayCache_[traceSlot] : nullptr,
-                    executeCount_);
-            lastNullSegEnd = segment.def.endSlot;
-          }
-        }
-      }
-    }
-#endif
-
-    // NaN detection: check output slots for NaN when verify mode is enabled.
-    // GATED behind tritonVerifyKernels because syncToHost() on every output slot
-    // in every segment causes thousands of GPU→CPU syncs per token (~4592 segments),
-    // which is the single biggest performance bottleneck when left always-on.
-    // Enable with: ND4J_TRITON_VERIFY_KERNELS=true
-    if (shapesFrozen_ && Environment::getInstance().tritonVerifyKernels()) {
-      for (int stepIdx = segment.def.startSlot; stepIdx <= segment.def.endSlot; stepIdx++) {
-        auto& slot = slots_[stepIdx];
-        for (int o = 0; o < slot.wiring.numOutputs; o++) {
-          int si = slot.wiring.outputSlotIndices[o];
-          if (si < 0 || si >= totalOutputSlots_ || outputSlots_[si] == nullptr) continue;
-          auto* arr = outputSlots_[si];
-          auto* db = arr->dataBuffer();
-#if defined(SD_CUDA)
-          if (db == nullptr || db->special() == nullptr || arr->lengthOf() == 0) continue;
-#else
-          if (db == nullptr || db->primary() == nullptr || arr->lengthOf() == 0) continue;
-#endif
-          bool dbClosed = db->isClosed();
-          if (dbClosed) {
-            fprintf(stdout, "[DSP_DIAG] [NaN_CLOSED_DB] seg[%d-%d] slot=%d opName=%s outSlot=%d "
-                    "DataBuffer CLOSED! frozenConst=%d shapeStatic=%d execCount=%d\n",
-                    segment.def.startSlot, segment.def.endSlot, stepIdx,
-                    slot.ident.opName.empty() ? "?" : slot.ident.opName.c_str(), si,
-                    slot.frozenConstantSlot() ? 1 : 0, slot.shapeCache.shapeStatic ? 1 : 0, executeCount_);
-            fflush(stdout);
-            continue;
-          }
-          // Check FULL array for NaN, not just element 0
-          arr->syncToHost();
-          bool hasNaN = arr->hasNaNs();
-          if (hasNaN) {
-            // Check inputs for this slot — full NaN check on each input
-            bool anyInputNaN = false;
-            for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
-              int srcIdx = slot.wiring.inputSourceIndices[inp];
-              NDArray* srcArr = nullptr;
-              if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-                srcArr = outputSlots_[srcIdx];
-              } else if (srcIdx < 0) {
-                int extIdx = -(srcIdx + 1);
-                if (extIdx >= 0 && extIdx < numExternalInputs) srcArr = externalInputs[extIdx];
-              }
-              if (srcArr != nullptr && srcArr->lengthOf() > 0) {
-                auto* srcDb = srcArr->dataBuffer();
-                bool srcClosed = (srcDb != nullptr) ? srcDb->isClosed() : false;
-                // Find which step produces this output slot for frozen/shapeStatic info
-                int srcStepIdx = -1;
-                bool srcFrozenConst = false, srcShapeStatic = false;
-                if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-                  for (int ss = 0; ss < numSlots_; ss++) {
-                    for (int oo = 0; oo < slots_[ss].wiring.numOutputs; oo++) {
-                      if (slots_[ss].wiring.outputSlotIndices[oo] == srcIdx) {
-                        srcStepIdx = ss;
-                        srcFrozenConst = slots_[ss].frozenConstantSlot();
-                        srcShapeStatic = slots_[ss].shapeCache.shapeStatic;
-                        goto foundSrcStep;
-                      }
-                    }
-                  }
-                  foundSrcStep:;
-                }
-                srcArr->syncToHost();
-                bool inpHasNaN = srcArr->hasNaNs();
-                bool inpHasInf = !srcArr->isFinite();
-                float inpVal = srcArr->e<float>(0);
-                if (inpHasNaN) anyInputNaN = true;
-                fprintf(stdout, "[DSP_DIAG] [NaN_TRACE] slot=%d input[%d] srcIdx=%d firstVal=%.6f "
-                        "anyNaN=%d anyInf=%d addr=%p len=%lld dbClosed=%d "
-                        "srcStep=%d srcFrozenConst=%d srcShapeStatic=%d\n",
-                        stepIdx, inp, srcIdx, inpVal, inpHasNaN ? 1 : 0, inpHasInf ? 1 : 0,
-                        DSP_BUF(srcArr), (long long)srcArr->lengthOf(), srcClosed ? 1 : 0,
-                        srcStepIdx, srcFrozenConst ? 1 : 0, srcShapeStatic ? 1 : 0);
-              } else {
-                fprintf(stdout, "[DSP_DIAG] [NaN_TRACE] slot=%d input[%d] srcIdx=%d arr=%p (null or empty)\n",
-                        stepIdx, inp, srcIdx, (void*)srcArr);
-              }
-            }
-            fprintf(stdout, "[DSP_DIAG] [NaN_DETECT] seg[%d-%d] slot=%d opName=%s output[%d]=%d NaN! "
-                    "useGraph=%d execCount=%d len=%lld addr=%p inputsNaN=%d hasReplay=%d "
-                    "frozenConst=%d shapeStatic=%d\n",
-                    segment.def.startSlot, segment.def.endSlot, stepIdx,
-                    slot.ident.opName.empty() ? "?" : slot.ident.opName.c_str(), o, si,
-                    useGraph ? 1 : 0, executeCount_, (long long)arr->lengthOf(),
-                    DSP_BUF(arr), anyInputNaN ? 1 : 0,
-                    segment.exec.replayHandle != nullptr ? 1 : 0,
-                    slot.frozenConstantSlot() ? 1 : 0, slot.shapeCache.shapeStatic ? 1 : 0);
-            fflush(stdout);
-            goto nanDetectDone; // only report first NaN
-          }
-        }
-      }
-      nanDetectDone:;
-    }
-
-    segmentIdx++;
-  }
+  DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phase returned status=%d", static_cast<int>(phaseStatus));
+  if (phaseStatus != Status::OK) return phaseStatus;
 
   auto tSegsDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
-#ifdef SD_CUDA
-  {
-    size_t poolUsedPostSegs = 0, poolReservedPostSegs = 0;
-    sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedPostSegs, poolReservedPostSegs);
-    long long deltaMB = static_cast<long long>(poolUsedPostSegs - poolUsedPreSegs) / (1024LL*1024);
-    DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB (delta=%lldMB from pre-segs)",
-             poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024), deltaMB);
+  if (!phaseHandledPostSegments) {
+    platformPostSegmentPoolManagement(shapesFrozen_, executeCount_);
   }
-
-  // Periodically trim the async memory pool to release freed memory back to the
-  // CUDA driver. Without this, cudaFreeAsync returns memory to the pool's reserved
-  // set but does NOT return it to cudaFree-able driver memory. Over many decode
-  // steps, the gap between pool-reserved and pool-used grows.
-  // Trim on the first frozen execution and then every trimInterval steps (default 5).
-  // The end-of-execution cudaStreamSynchronize (below) ensures all pending frees
-  // complete before the next step, so we do NOT need a redundant sync here.
-  if (shapesFrozen_) {
-    int trimInterval = Environment::getInstance().dspTrimInterval();
-    if (trimInterval > 0 && (executeCount_ == 0 || (executeCount_ % trimInterval) == 0)) {
-      int trimDeviceId = 0;
-      cudaGetDevice(&trimDeviceId);
-      sd::memory::CudaMemoryPool::getInstance().trimPool(trimDeviceId);
-      DSP_DIAG(MEMORY, "post-segments: trimmed pool on device %d (frozen exec=%d, interval=%d)",
-               trimDeviceId, executeCount_, trimInterval);
-    }
-  }
-#endif
 
   // ── Consistency assertions: verify slot reuse and replay integrity ───
   // These checks run after every execution to catch lifecycle bugs early.
@@ -1646,7 +1271,7 @@ Status NativeDynamicShapePlan::execute(
              executeCount_, shapesFrozen_ ? 1 : 0,
              liveSlots, nullSlots, viewSlots, totalOutputSlots_,
              replaySegs, slotBySlotSegsCount, compilationFailedSegs, (int)segments_.size(),
-             graphReplaySegs, slotBySlotSegs);
+             phaseStats.graphReplaySegs, phaseStats.slotBySlotSegs);
 
     // Verify slotArrayCache_ alias is still consistent with outputSlots_
     if (slotArrayCache_ != outputSlots_) {
@@ -1655,18 +1280,19 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-  // Step 3: Copy requested outputs
-  for (int i = 0; i < numRequestedOutputs_; i++) {
-    int slotIdx = requestedOutputSlotIndices_[i];
-    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-      requestedOutputs[i] = outputSlots_[slotIdx];
-    } else {
-      requestedOutputs[i] = nullptr;
+  if (!phaseHandledOutputs) {
+    for (int i = 0; i < numRequestedOutputs_; i++) {
+      int slotIdx = requestedOutputSlotIndices_[i];
+      if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+        requestedOutputs[i] = outputSlots_[slotIdx];
+      } else {
+        requestedOutputs[i] = nullptr;
+      }
     }
   }
 
   // Diagnostic: dump requested output slot info and argmax for logits comparison
-  if (DSP_DIAG_ENABLED(VERIFY) && executeCount_ <= 4) {
+  if (DSP_DIAG_ENABLED(VERIFY) && sd::graph::DspDiagnostics::getInstance().withinExecLimit(executeCount_)) {
     for (int i = 0; i < numRequestedOutputs_; i++) {
       int slotIdx = requestedOutputSlotIndices_[i];
       if (requestedOutputs[i] != nullptr) {
@@ -1674,31 +1300,14 @@ Status NativeDynamicShapePlan::execute(
         DSP_DIAG_SLOT(VERIFY, slotIdx,
             "reqOut[%d] len=%lld dt=%d rank=%d",
             i, (long long)arr->lengthOf(), (int)arr->dataType(), arr->rankOf());
-#ifdef SD_CUDA
-        // For logits-sized outputs, find argmax on GPU side
-        void* sbuf = DSP_BUF(arr);
-        if (sbuf && arr->dataType() == FLOAT32 && arr->lengthOf() >= 49280) {
-          auto len = arr->lengthOf();
-          std::vector<float> fullBuf(len);
-          cudaMemcpy(fullBuf.data(), sbuf, len * sizeof(float), cudaMemcpyDeviceToHost);
-          float maxVal = -1e30f;
-          int maxIdx = -1;
-          for (int j = 0; j < (int)len; j++) {
-            if (fullBuf[j] > maxVal) { maxVal = fullBuf[j]; maxIdx = j; }
-          }
-          DSP_DIAG_SLOT(VERIFY, slotIdx,
-              "logits maxIdx=%d maxVal=%.4f v@44=%.4f v@15539=%.4f",
-              maxIdx, maxVal, fullBuf[44], fullBuf[15539]);
-        }
-#endif
+        platformDumpLogitsArgmax(executeCount_, stream);
       } else {
         DSP_DIAG_SLOT(VERIFY, slotIdx, "reqOut[%d] nullptr", i);
       }
     }
   }
 
-  // Step 3.5: KV cache retention — C++ side scatters present KV into static buffers
-  if (kvCacheRetentionEnabled_) {
+  if (!phaseHandledOutputs && kvCacheRetentionEnabled_) {
     scatterKvEntries(externalInputs, numExternalInputs, stream);
     kvCachePosition_++;
   }
@@ -1750,69 +1359,30 @@ Status NativeDynamicShapePlan::execute(
   }
 
   // ── Plan-level phase advancement ───────────────────────────────────────────
-  // Phase transitions are automatic based on observed stability:
-  //   SLOT_BY_SLOT → SHAPES_FROZEN:    when setShapesFrozen(true) is called (in header)
-  //   SHAPES_FROZEN → POINTERS_STABLE: after 2+ frozen executions with every
-  //                                     replay-eligible segment in backend-specific
-  //                                     pointer-stable steady state
-  //   POINTERS_STABLE → REPLAYING:     when every replay-eligible segment reaches
-  //                                     backend-specific replay steady state
+  // Phase transitions are automatic based on observed stability.
+  // Snapshot capture and frozenExecutionCount_ increment happen here (need
+  // external inputs), then advancePlanPhase() handles the transitions.
   if (shapesFrozen_ && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
     frozenExecutionCount_++;
 
     // Capture a buffer pointer snapshot after the first frozen execution.
-    // At this point all slots are populated with valid arrays.
-    // Subsequent executions validate against this snapshot.
     if (frozenExecutionCount_ == 1 && !frozenSnapshot_.valid) {
       frozenSnapshot_.capture(outputSlots_, totalOutputSlots_,
                                lifecycleExternalInputPtrs, numExternalInputs);
       DSP_DIAG(EXECUTE, "LIFECYCLE: captured buffer pointer snapshot (%d slots, %d extInputs)",
                totalOutputSlots_, numExternalInputs);
-      // DIAGNOSTIC: trace slot 420 at snapshot capture
-      if (outputSlots_[420] != nullptr) {
-        DSP_DIAG(MEMORY, "SNAPSHOT_420: arr=%p db=%p special=%p len=%lld",
-                 (void*)outputSlots_[420], (void*)outputSlots_[420]->dataBuffer(),
-                 (void*)outputSlots_[420]->specialBuffer(),
-                 (long long)outputSlots_[420]->lengthOf());
+      {
+        int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
+        if (ts >= 0 && ts < totalOutputSlots_ && outputSlots_[ts] != nullptr) {
+          DSP_DIAG(MEMORY, "SNAPSHOT_SLOT_%d: arr=%p db=%p special=%p len=%lld",
+                   ts, (void*)outputSlots_[ts], (void*)outputSlots_[ts]->dataBuffer(),
+                   (void*)outputSlots_[ts]->specialBuffer(),
+                   (long long)outputSlots_[ts]->lengthOf());
+        }
       }
     }
 
-    // Check pointer stability across all replay-eligible segments.
-    if (planPhase_ == PlanPhase::SHAPES_FROZEN && frozenExecutionCount_ >= 2) {
-      bool allStable = true;
-      for (auto& seg : segments_) {
-        if (!segmentHasStablePointersForPlanPhase(seg, slots_)) {
-          allStable = false;
-          break;
-        }
-      }
-      if (allStable) {
-        pointersStable_ = true;
-        planPhase_ = PlanPhase::POINTERS_STABLE;
-        DSP_DIAG(EXECUTE, "PLAN_PHASE: SHAPES_FROZEN → POINTERS_STABLE (frozenExec=%d)",
-                 frozenExecutionCount_);
-      }
-    }
-
-    // Promote to REPLAYING only once every replay-eligible segment has reached
-    // steady-state replay. Mixed-phase plans stay at POINTERS_STABLE.
-    if (planPhase_ >= PlanPhase::POINTERS_STABLE) {
-      bool hasReplayEligibleSegment = false;
-      bool allReplaying = true;
-      for (auto& seg : segments_) {
-        if (!segmentBlocksPlanPhase(seg)) continue;
-        hasReplayEligibleSegment = true;
-        if (!segmentIsFullyReplayingForPlanPhase(seg, slots_)) {
-          allReplaying = false;
-          break;
-        }
-      }
-      if (hasReplayEligibleSegment && allReplaying && planPhase_ != PlanPhase::REPLAYING) {
-        planPhase_ = PlanPhase::REPLAYING;
-        DSP_DIAG(EXECUTE, "PLAN_PHASE: POINTERS_STABLE → REPLAYING (frozenExec=%d)",
-                 frozenExecutionCount_);
-      }
-    }
+    advancePlanPhase();
   }
 
   // Frozen constant detection MUST run BEFORE Triton precompilation.
@@ -1827,26 +1397,10 @@ Status NativeDynamicShapePlan::execute(
   // are populated in outputSlots_. Compile all Triton modules now so the 2nd
   // execute() goes straight to replay instead of blocking on compilation.
   if (shapesFrozen_ && executeCount_ == 1) {
-    platformPrecompileSegments(externalInputs, numExternalInputs);
+    phaseCompile(externalInputs, numExternalInputs);
   }
 
-#ifdef SD_CUDA
-  // Batched GEMM group detection: after first shapes-frozen warmup, scan for
-  // same-shape matmul slots that can be batched. Uses cachedOutputShapes from
-  // the warmup pass (persists even after arrays are released).
-  // Only detect when NOT using graph capture — batched GEMM replaces individual
-  // matmul ops during slot-by-slot execution, not during graph replay.
-  // Running detection + cudaMalloc during graph capture steps causes interference.
-  if (shapesFrozen_ && executeCount_ == 1 && batchedGemmGroups_.empty() &&
-      Environment::getInstance().dspBatchedGemm() &&
-      !gpuGraphCaptureEnabled_) {
-    detectBatchedGemmGroups(externalInputs, numExternalInputs);
-    if (!batchedGemmGroups_.empty()) {
-      cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
-      prepareBatchedGemmDevice(execStream);
-    }
-  }
-#endif
+  platformDetectAndPrepareBatchedGemm(externalInputs, numExternalInputs, stream);
 
   // Adaptive segment splitting (GPU only): if a segment's shape key
   // changes for consecutive executions, split it at the midpoint.
@@ -1861,40 +1415,15 @@ Status NativeDynamicShapePlan::execute(
     DSP_DIAG(TIMING, "segments=%lldus outputs=%lldus flush=%lldus total=%lldus (%d segs, %d slots) | graph=%lldus(%d segs/%d slots) sbs=%lldus(%d segs/%d slots)",
              segMs, outMs, flushMs, totalMs,
              static_cast<int>(segments_.size()), numSlots_,
-             graphReplayUs, graphReplaySegs, graphReplaySlots,
-             slotBySlotUs, slotBySlotSegs, slotBySlotSlots);
+             phaseStats.graphReplayUs, phaseStats.graphReplaySegs, phaseStats.graphReplaySlots,
+             phaseStats.slotBySlotUs, phaseStats.slotBySlotSegs, phaseStats.slotBySlotSlots);
   }
 
   DspDiagnostics::getInstance().endStep(executeCount_);
 
-  // Cross-stream synchronization: the DSP execution stream must complete before
-  // Java reads outputs on the default stream (stream 0) for argmax/sampling.
-  // On frozen replay steps, use a lightweight CUDA event (~0.1ms) instead of full
-  // cudaStreamSynchronize (~1.4ms). The event is recorded on the DSP stream and
-  // the default stream waits on it before any output reads.
-  // On non-frozen steps, use full sync for safety (shape transitions may free arrays).
-#ifdef SD_CUDA
-  if (stream != nullptr) {
-    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
-    if (shapesFrozen_ && executeCount_ > 1) {
-      // Lightweight event-based sync for frozen replay steps
-      if (executionCompleteEvent_ == nullptr) {
-        cudaEvent_t evt;
-        cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
-        executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
-      }
-      cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-      cudaEventRecord(evt, cudaStr);
-      // Make the default stream (stream 0) wait for the DSP stream to finish
-      cudaStreamWaitEvent(nullptr, evt, 0);
-    } else {
-      // Full sync for non-frozen steps (shape transitions, warmup, capture)
-      cudaStreamSynchronize(cudaStr);
-    }
-  }
-  // tl_dspExecutionStream is restored automatically by DspStreamGuard (dspStreamGuardPtr)
-  // when it goes out of scope at function exit.
-#endif
+  // Cross-stream synchronization + DspStreamGuard cleanup
+  platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
+  executionStatePtr = nullptr;
 
   return Status::OK;
 }
@@ -1937,68 +1466,16 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 
 // ─── Memory management ─────────────────────────────────────────────────────
 
-// flushPendingClose REMOVED: arrays persist (one array per slot).
 // View wrappers deleted inline in slotexec. No batched/deferred close needed.
 
 void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
   bool wasFrozen = shapesFrozen_;
   shapesFrozen_ = frozen;
   if (frozen && !wasFrozen) {
-    auto& env = Environment::getInstance();
-    bool mergeSegments = env.dspFreezeMergeSegments();
-
-    // ── Fusion pass (slot-by-slot → freeze transition) ──────────────────
-    if (numSlots_ > 1) {
-      auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_);
-      if (!fusions.empty()) {
-        DSP_DIAG(FUSION, "detected %d fusion candidates (post-warmup)",
-                 (int)fusions.size());
-        int applied = FusionPass::applyFusions(slots_, numSlots_, fusions);
-        DSP_DIAG(FUSION, "applied %d of %d fusion candidates",
-                 applied, (int)fusions.size());
-      }
-    }
-
-    DSP_DIAG(SEGMENT, "setShapesFrozen: %d segments (single build, no rebuild)",
-              (int)segments_.size());
-
-    planPhase_ = PlanPhase::SHAPES_FROZEN;
-    pointersStable_ = false;
-    frozenExecutionCount_ = 0;
-
-    DSP_DIAG(EXECUTE, "FROZEN_TRANSITION: unfrozen → FROZEN, "
-              "%d segments, %d slots, %d extInputs, mergeSegments=%d, recompile=%d",
-              (int)segments_.size(), numSlots_, numExternalInputs_,
-              mergeSegments ? 1 : 0, env.dspFreezeRecompile() ? 1 : 0);
-
-    MmulHelper::clearCastCache();
-
-    executeCount_ = 0;
-    for (auto& seg : segments_) {
-      seg.exec.executionCount = 0;
-      if (seg.exec.replayHandle) {
-        platformCleanupSegmentForRebuild(seg);
-      }
-      seg.exec.argTableStable = false;
-      seg.exec.gapOpsCapturedInGraph = false;
-      seg.exec.cachedShapeKey = 0;
-      seg.exec.capturedInputAddrKey = 0;
-      seg.exec.capturedCreateValueKey = 0;
-      seg.exec.compilationFailed = false;
-      seg.exec.currentPhase = ExecutionPhase::WARMUP;
-    }
-
-    for (auto* db : protectedWeightBuffers_) {
-      if (db != nullptr) db->addFrozenRef();
-    }
-
-    if (outputSlots_ != nullptr) {
-      for (int i = 0; i < totalOutputSlots_; i++) {
-        if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
-          outputSlots_[i]->dataBuffer()->addFrozenRef();
-        }
-      }
-      DSP_DIAG(MEMORY, "setShapesFrozen: added frozen ref to %d output slot DataBuffers", totalOutputSlots_);
+    auto status = phaseFreeze();
+    if (status != Status::OK) {
+      DSP_DIAG(FALLBACK, "setShapesFrozen(true): phaseFreeze failed with status %d",
+               static_cast<int>(status));
     }
   }
   if (!frozen) {
@@ -2047,6 +1524,422 @@ void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
   }
 }
 
+// ─── Phase lifecycle methods ──────────────────────────────────────────────
+// Each method encapsulates ALL work for its phase. No scattered logic.
+
+void NativeDynamicShapePlan::advancePlanPhase() {
+  // ── Plan-level phase advancement ───────────────────────────────────────────
+  // Phase transitions are automatic based on observed stability:
+  //   SHAPES_FROZEN → POINTERS_STABLE: after 2+ frozen executions with every
+  //                                     replay-eligible segment in pointer-stable state
+  //   POINTERS_STABLE → REPLAYING:     when every replay-eligible segment reaches
+  //                                     backend-specific replay steady state
+  //
+  // Caller is responsible for: incrementing frozenExecutionCount_, capturing
+  // frozenSnapshot_ on first frozen execution.
+  if (!shapesFrozen_ || planPhase_ < PlanPhase::SHAPES_FROZEN) return;
+
+  // Check pointer stability across all replay-eligible segments.
+  if (planPhase_ == PlanPhase::SHAPES_FROZEN && frozenExecutionCount_ >= 2) {
+    bool allStable = true;
+    for (auto& seg : segments_) {
+      if (!segmentHasStablePointersForPlanPhase(seg, slots_)) {
+        allStable = false;
+        break;
+      }
+    }
+    if (allStable) {
+      pointersStable_ = true;
+      const char* oldPhase = dsp::planPhaseName(planPhase_);
+      planPhase_ = PlanPhase::POINTERS_STABLE;
+      DSP_DIAG(EXECUTE, "PLAN_PHASE: %s → POINTERS_STABLE (frozenExec=%d)",
+               oldPhase, frozenExecutionCount_);
+    }
+  }
+
+  // Promote to REPLAYING only once every replay-eligible segment has reached
+  // steady-state replay. Mixed-phase plans stay at POINTERS_STABLE.
+  if (planPhase_ >= PlanPhase::POINTERS_STABLE) {
+    bool hasReplayEligibleSegment = false;
+    bool allReplaying = true;
+    for (auto& seg : segments_) {
+      if (!segmentBlocksPlanPhase(seg)) continue;
+      hasReplayEligibleSegment = true;
+      if (!segmentIsFullyReplayingForPlanPhase(seg, slots_)) {
+        allReplaying = false;
+        break;
+      }
+    }
+    if (hasReplayEligibleSegment && allReplaying && planPhase_ != PlanPhase::REPLAYING) {
+      const char* oldPhase = dsp::planPhaseName(planPhase_);
+      planPhase_ = PlanPhase::REPLAYING;
+      DSP_DIAG(EXECUTE, "PLAN_PHASE: %s → REPLAYING (frozenExec=%d)",
+               oldPhase, frozenExecutionCount_);
+    }
+  }
+}
+
+void NativeDynamicShapePlan::demotePlanPhase(PlanPhase targetPhase, const char* reason) {
+  const char* oldPhase = dsp::planPhaseName(planPhase_);
+  const char* newPhase = dsp::planPhaseName(targetPhase);
+  DSP_DIAG(FALLBACK, "PHASE_DEMOTION: %s → %s: %s (frozenExec=%d)",
+           oldPhase, newPhase, reason, frozenExecutionCount_);
+  planPhase_ = targetPhase;
+  if (targetPhase < PlanPhase::POINTERS_STABLE) {
+    pointersStable_ = false;
+  }
+}
+
+Status NativeDynamicShapePlan::phaseFreeze() {
+  auto& env = Environment::getInstance();
+  bool mergeSegments = env.dspFreezeMergeSegments();
+
+  // ── Fusion pass (slot-by-slot → freeze transition) ──────────────────
+  if (numSlots_ > 1) {
+    auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_);
+    if (!fusions.empty()) {
+      DSP_DIAG(FUSION, "detected %d fusion candidates (post-warmup)",
+               (int)fusions.size());
+      int applied = FusionPass::applyFusions(slots_, numSlots_, fusions);
+      DSP_DIAG(FUSION, "applied %d of %d fusion candidates",
+               applied, (int)fusions.size());
+    }
+  }
+
+  DSP_DIAG(SEGMENT, "SEGMENT_MAP: %d segments (frozen first exec)", (int)segments_.size());
+  for (int i = 0; i < (int)segments_.size(); i++) {
+    auto& s = segments_[i];
+    DSP_DIAG(SEGMENT, "  seg[%d]: slots[%d-%d] capturable=%d hasReplay=%d "
+             "compilationFailed=%d execCount=%d",
+             i, s.def.startSlot, s.def.endSlot, s.def.isCapturable,
+             s.exec.replayHandle != nullptr, s.exec.compilationFailed, s.exec.executionCount);
+  }
+
+  planPhase_ = PlanPhase::SHAPES_FROZEN;
+  pointersStable_ = false;
+  frozenExecutionCount_ = 0;
+
+  DSP_DIAG(EXECUTE, "FROZEN_TRANSITION: unfrozen → FROZEN, "
+            "%d segments, %d slots, %d extInputs, mergeSegments=%d, recompile=%d",
+            (int)segments_.size(), numSlots_, numExternalInputs_,
+            mergeSegments ? 1 : 0, env.dspFreezeRecompile() ? 1 : 0);
+
+  MmulHelper::clearCastCache();
+
+  executeCount_ = 0;
+  for (auto& seg : segments_) {
+    seg.exec.executionCount = 0;
+    if (seg.exec.replayHandle) {
+      platformCleanupSegmentForRebuild(seg);
+    }
+    seg.exec.argTableStable = false;
+    seg.exec.gapOpsCapturedInGraph = false;
+    seg.exec.cachedShapeKey = 0;
+    seg.exec.capturedInputAddrKey = 0;
+    seg.exec.capturedCreateValueKey = 0;
+    seg.exec.compilationFailed = false;
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+  }
+
+  for (auto* db : protectedWeightBuffers_) {
+    if (db != nullptr) db->addFrozenRef();
+  }
+
+  if (outputSlots_ != nullptr) {
+    for (int i = 0; i < totalOutputSlots_; i++) {
+      if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+        outputSlots_[i]->dataBuffer()->addFrozenRef();
+      }
+    }
+    DSP_DIAG(MEMORY, "phaseFreeze: added frozen ref to %d output slot DataBuffers", totalOutputSlots_);
+  }
+
+  return Status::OK;
+}
+
+Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExternalInputs,
+                                           void* stream, PhaseExecutionStats* stats) {
+  DSP_DIAG(EXECUTE, "phaseWarmup: BEGIN segments=%d extInputs=%d", (int)segments_.size(), numExternalInputs);
+
+  long long slotBySlotUs = 0;
+  int slotBySlotSegs = 0;
+  int slotBySlotSlots = 0;
+  using Clock = std::chrono::high_resolution_clock;
+
+  // Reset segment state for warmup
+  for (auto& segment : segments_) {
+    segment.exec.executionCount = 0;
+    segment.exec.compilationFailed = false;
+    segment.exec.captureOomRetries = 0;
+    segment.exec.captureRetryAfterExec = 0;
+    segment.exec.cachedShapeKey = 0;
+    segment.exec.capturedInputAddrKey = 0;
+    segment.exec.capturedCreateValueKey = 0;
+    segment.exec.gapOpsCapturedInGraph = false;
+    if (segment.exec.replayHandle) {
+      platformCleanupSegmentForRebuild(segment);
+    }
+  }
+
+  platformClearCastCache();
+
+  // Execute all segments slot-by-slot to populate shapes
+  int segIdx = 0;
+  for (auto& segment : segments_) {
+    DSP_DIAG(EXECUTE, "phaseWarmup: seg[%d] slots=[%d-%d] capturable=%d starting...",
+             segIdx, segment.def.startSlot, segment.def.endSlot,
+             static_cast<int>(segment.def.isCapturable));
+    if (!platformBindSegmentDevice(segment)) {
+      return Status::KERNEL_FAILURE;
+    }
+    platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+
+    segment.exec.currentPhase = segment.def.isCapturable
+        ? ExecutionPhase::WARMUP
+        : ExecutionPhase::SLOT_BY_SLOT;
+
+    auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+    auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+    DSP_DIAG(EXECUTE, "phaseWarmup: seg[%d] slots=[%d-%d] completed status=%d",
+             segIdx, segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
+    segIdx++;
+    if (status != Status::OK) return status;
+
+    // Increment executionCount so that executeSegmentWithGraph sees exec >= 1
+    // and proceeds to graph capture instead of repeating warmup.
+    segment.exec.executionCount = 1;
+
+    // Note: We intentionally do NOT call computeSegmentShapeKey here.
+    // It is extremely expensive (per-element D2H sync for small inputs) and
+    // unnecessary during warmup. executeSegmentWithGraph will compute the
+    // key when it actually needs it for graph capture.
+
+    if (executionTimingEnabled_) {
+      auto segUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tSegStart).count();
+      slotBySlotUs += segUs;
+      slotBySlotSegs++;
+      slotBySlotSlots += segment.def.endSlot - segment.def.startSlot + 1;
+    }
+
+    platformCleanupMigratedInputs();
+    auto postStatus = platformCheckPostSegment(segment);
+    if (postStatus != Status::OK) return postStatus;
+  }
+
+  if (stats != nullptr) {
+    stats->slotBySlotUs = slotBySlotUs;
+    stats->slotBySlotSegs = slotBySlotSegs;
+    stats->slotBySlotSlots = slotBySlotSlots;
+  }
+
+  return Status::OK;
+}
+
+void NativeDynamicShapePlan::phaseCompile(NDArray** externalInputs, int numExternalInputs) {
+  DSP_DIAG(COMPILE, "phaseCompile: BEGIN segments=%d extInputs=%d", (int)segments_.size(), numExternalInputs);
+  platformPrecompileSegments(externalInputs, numExternalInputs);
+  DSP_DIAG(COMPILE, "phaseCompile: END");
+}
+
+Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int numExternalInputs,
+                                               void* stream, PhaseExecutionStats* stats) {
+  DSP_DIAG(EXECUTE, "phaseSlotBySlot: BEGIN segments=%d extInputs=%d", (int)segments_.size(), numExternalInputs);
+
+  long long slotBySlotUs = 0;
+  int slotBySlotSegs = 0;
+  int slotBySlotSlots = 0;
+  using Clock = std::chrono::high_resolution_clock;
+
+  for (auto& segment : segments_) {
+    if (!platformBindSegmentDevice(segment)) {
+      return Status::KERNEL_FAILURE;
+    }
+    platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+
+    segment.exec.currentPhase = segment.def.isCapturable
+        ? ExecutionPhase::WARMUP
+        : ExecutionPhase::SLOT_BY_SLOT;
+
+    auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+    auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+    if (status != Status::OK) return status;
+
+    if (executionTimingEnabled_) {
+      auto segUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tSegStart).count();
+      slotBySlotUs += segUs;
+      slotBySlotSegs++;
+      slotBySlotSlots += segment.def.endSlot - segment.def.startSlot + 1;
+    }
+
+    platformCleanupMigratedInputs();
+    auto postStatus = platformCheckPostSegment(segment);
+    if (postStatus != Status::OK) return postStatus;
+  }
+
+  if (stats != nullptr) {
+    stats->slotBySlotUs = slotBySlotUs;
+    stats->slotBySlotSegs = slotBySlotSegs;
+    stats->slotBySlotSlots = slotBySlotSlots;
+  }
+
+  return Status::OK;
+}
+
+Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExternalInputs,
+                                           NDArray** requestedOutputs, int numRequestedOutputs,
+                                           void* stream, PhaseExecutionStats* stats) {
+  DSP_DIAG(EXECUTE, "phaseReplay: BEGIN segments=%d extInputs=%d frozen=%d phase=%d execCount=%d",
+           (int)segments_.size(), numExternalInputs, shapesFrozen_ ? 1 : 0,
+           static_cast<int>(planPhase_), executeCount_);
+
+  size_t poolUsedPreSegs = 0, poolReservedPreSegs = 0;
+  platformPreReplayPoolStats(poolUsedPreSegs, poolReservedPreSegs);
+
+  long long graphReplayUs = 0, slotBySlotUs = 0;
+  int graphReplaySegs = 0, slotBySlotSegs = 0, graphReplaySlots = 0, slotBySlotSlots = 0;
+
+  using Clock = std::chrono::high_resolution_clock;
+
+  for (auto& segment : segments_) {
+    if (!platformBindSegmentDevice(segment)) {
+      return Status::KERNEL_FAILURE;
+    }
+    platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+
+    bool useGraph = platformShouldUseGraph(segment);
+    auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+    bool segUsedGraph = false;
+    int segSlots = segment.def.endSlot - segment.def.startSlot + 1;
+
+    if (segment.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
+      auto status = executeSegmentEmulatedReplay(segment, externalInputs, numExternalInputs, stream);
+      if (status != Status::OK) return status;
+      segUsedGraph = true;
+    } else if (useGraph) {
+      auto status = platformExecuteSegmentWithBackends(
+          segment, externalInputs, numExternalInputs, stream, segUsedGraph);
+      if (status != Status::OK) return status;
+    } else {
+      segment.exec.currentPhase = segment.def.isCapturable
+          ? ExecutionPhase::WARMUP
+          : ExecutionPhase::SLOT_BY_SLOT;
+      auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+      if (status != Status::OK) return status;
+    }
+
+    if (executionTimingEnabled_) {
+      auto segUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tSegStart).count();
+      if (segUsedGraph) {
+        graphReplayUs += segUs;
+        graphReplaySegs++;
+        graphReplaySlots += segSlots;
+      } else {
+        slotBySlotUs += segUs;
+        slotBySlotSegs++;
+        slotBySlotSlots += segSlots;
+      }
+    }
+
+    platformCleanupMigratedInputs();
+    auto postStatus = platformCheckPostSegment(segment);
+    if (postStatus != Status::OK) return postStatus;
+
+    // Trace slot reporting (GPU only)
+    platformTraceSlotValues(segment, stream, executeCount_);
+
+    // NaN detection (gated behind tritonVerifyKernels)
+    if (shapesFrozen_ && Environment::getInstance().tritonVerifyKernels()) {
+      for (int stepIdx = segment.def.startSlot; stepIdx <= segment.def.endSlot; stepIdx++) {
+        auto& slot = slots_[stepIdx];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          int si = slot.wiring.outputSlotIndices[o];
+          if (si < 0 || si >= totalOutputSlots_ || outputSlots_[si] == nullptr) continue;
+          auto* arr = outputSlots_[si];
+          auto* db = arr->dataBuffer();
+          if (db == nullptr || DSP_BUF(arr) == nullptr || arr->lengthOf() == 0) continue;
+          bool dbClosed = db->isClosed();
+          if (dbClosed) {
+            DSP_DIAG_SLOT(VERIFY, stepIdx, slot.ident.opName.c_str(),
+                    "NaN_CLOSED_DB seg[%d-%d] outSlot=%d DataBuffer CLOSED! "
+                    "frozenConst=%d shapeStatic=%d execCount=%d",
+                    segment.def.startSlot, segment.def.endSlot, si,
+                    slot.frozenConstantSlot() ? 1 : 0, slot.shapeCache.shapeStatic ? 1 : 0, executeCount_);
+            continue;
+          }
+          arr->syncToHost();
+          bool hasNaN = arr->hasNaNs();
+          if (hasNaN) {
+            bool anyInputNaN = false;
+            for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+              int srcIdx = slot.wiring.inputSourceIndices[inp];
+              NDArray* srcArr = nullptr;
+              if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+                srcArr = outputSlots_[srcIdx];
+              } else if (srcIdx < 0) {
+                int extIdx = -(srcIdx + 1);
+                if (extIdx >= 0 && extIdx < numExternalInputs) srcArr = externalInputs[extIdx];
+              }
+              if (srcArr != nullptr && srcArr->lengthOf() > 0) {
+                srcArr->syncToHost();
+                bool inpHasNaN = srcArr->hasNaNs();
+                if (inpHasNaN) anyInputNaN = true;
+              }
+            }
+            DSP_DIAG_SLOT(VERIFY, stepIdx, slot.ident.opName.c_str(),
+                    "NaN_DETECT seg[%d-%d] output[%d]=%d NaN! "
+                    "useGraph=%d execCount=%d len=%lld inputsNaN=%d hasReplay=%d "
+                    "frozenConst=%d shapeStatic=%d",
+                    segment.def.startSlot, segment.def.endSlot, o, si,
+                    useGraph ? 1 : 0, executeCount_, (long long)arr->lengthOf(),
+                    anyInputNaN ? 1 : 0,
+                    segment.exec.replayHandle != nullptr ? 1 : 0,
+                    slot.frozenConstantSlot() ? 1 : 0, slot.shapeCache.shapeStatic ? 1 : 0);
+            goto nanDetectDoneReplay;
+          }
+        }
+      }
+      nanDetectDoneReplay:;
+    }
+  }
+
+  // Post-segment pool trimming
+  platformPostReplayPoolManagement(poolUsedPreSegs, shapesFrozen_, executeCount_);
+
+  // Copy requested outputs
+  for (int i = 0; i < numRequestedOutputs_; i++) {
+    int slotIdx = requestedOutputSlotIndices_[i];
+    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+      requestedOutputs[i] = outputSlots_[slotIdx];
+    } else {
+      requestedOutputs[i] = nullptr;
+    }
+  }
+
+  // KV cache retention
+  if (kvCacheRetentionEnabled_) {
+    scatterKvEntries(externalInputs, numExternalInputs, stream);
+    kvCachePosition_++;
+  }
+
+  // Timing breakdown
+  if (executionTimingEnabled_) {
+    DSP_DIAG(TIMING, "replay: graph=%lldus(%d segs/%d slots) sbs=%lldus(%d segs/%d slots)",
+             graphReplayUs, graphReplaySegs, graphReplaySlots,
+             slotBySlotUs, slotBySlotSegs, slotBySlotSlots);
+  }
+
+  if (stats != nullptr) {
+    stats->graphReplayUs = graphReplayUs;
+    stats->slotBySlotUs = slotBySlotUs;
+    stats->graphReplaySegs = graphReplaySegs;
+    stats->slotBySlotSegs = slotBySlotSegs;
+    stats->graphReplaySlots = graphReplaySlots;
+    stats->slotBySlotSlots = slotBySlotSlots;
+  }
+
+  return Status::OK;
+}
+
 void NativeDynamicShapePlan::clearShapeCaches() {
   // When shapes are frozen, skip clearing entirely after first execution.
   // All cached shapes remain valid since external input shapes are constant.
@@ -2077,43 +1970,6 @@ void NativeDynamicShapePlan::clearAllShapeCachesForce() {
 
 // ─── Release GPU intermediates ───────────────────────────────────────────────
 
-#ifdef SD_CUDA
-// Diagnostic helper: report cudaMemGetInfo + pool stats at each step boundary.
-// Always prints via sd_printf so we can trace the ~800 MB per-page leak.
-static void logGpuMemState(const char* label) {
-  size_t freeMem = 0, totalMem = 0;
-  cudaMemGetInfo(&freeMem, &totalMem);
-  size_t usedMem = totalMem - freeMem;
-
-  // Query the default memory pool for current device
-  cudaMemPool_t pool = nullptr;
-  int deviceId = 0;
-  cudaGetDevice(&deviceId);
-  cudaDeviceGetDefaultMemPool(&pool, deviceId);
-
-  uint64_t poolUsed = 0, poolReserved = 0;
-  if (pool != nullptr) {
-    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrUsedMemCurrent, &poolUsed);
-    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReservedMemCurrent, &poolReserved);
-  }
-
-  // Also count direct allocations from CudaMemoryPool
-  auto& memPool = memory::CudaMemoryPool::getInstance();
-  size_t directAllocBytes = 0;
-  {
-    // Sum direct allocation sizes
-    // We can't access directAllocations_ directly, but we know the weight migration
-    // moves weights there. Use pinnedHostBytesUsed as a proxy for pinned host.
-  }
-
-  sd_printf("  [GPU-MEM %s] dev%d: used=%zu MB, free=%zu MB, total=%zu MB | "
-            "pool: used=%llu MB, reserved=%llu MB, reclaimable=%llu MB\n",
-            label, deviceId,
-            usedMem / (1024*1024), freeMem / (1024*1024), totalMem / (1024*1024),
-            poolUsed / (1024ULL*1024), poolReserved / (1024ULL*1024),
-            (poolReserved - poolUsed) / (1024ULL*1024));
-}
-#endif
 
 int NativeDynamicShapePlan::releaseGpuIntermediates() {
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: START plan=%p numSlots=%d totalOutputSlots=%d",
@@ -2142,78 +1998,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   //            pinned host pointers) ──────────────────────────────────────────
   // This is the same cleanup as the destructor's platformFreePlanResources(),
   // but we keep the segment metadata (slot ranges, op definitions) intact.
-#ifdef SD_CUDA
-  logGpuMemState("STEP-0-ENTRY");
-  for (auto& seg : segments_) {
-    if (seg.exec.replayHandle) {
-      if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
-        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
-      }
-      seg.exec.replayHandle->freeHostPointers();
-      seg.exec.replayHandle->clearExternalAddresses();
-      seg.exec.replayHandle.reset();
-    }
-    seg.exec.gapOpsCapturedInGraph = false;
-    seg.exec.argTableStable = false;
-    seg.exec.capturedInputAddrKey = 0;
-    seg.exec.compilationFailed = false;
-    seg.exec.executionCount = 0;
-    delete seg.exec.jitKernel;
-    seg.exec.jitKernel = nullptr;
-    // Reset stale state that would cause skipped recompilation/recapture:
-    seg.exec.cachedShapeKey = 0;
-    seg.exec.capturedCreateValueKey = 0;
-    seg.exec.captureOomRetries = 0;
-    seg.exec.captureRetryAfterExec = 0;
-    seg.exec.compiledByBackend.clear();
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
-    seg.exec.jitShapeKey = 0;
-    seg.exec.jitCompileFailed = false;
-    seg.exec.segBatchZeroEntries.clear();
-    // Reset compile-time shape key so Triton recompilation is triggered
-    seg.def.shapeKey = 0;
-  }
-  logGpuMemState("STEP-1-AFTER-SEGMENTS");
-
-  // Free cuBLAS workspace (256 MB)
-  if (cublasWorkspaceBuffer_ != nullptr) {
-    cudaFree(cublasWorkspaceBuffer_);
-    cublasWorkspaceBuffer_ = nullptr;
-    cublasWorkspaceSize_ = 0;
-  }
-
-  // Free batch-zero, batch-D2D, and batched-GEMM device arrays
-  freeBatchZeroResources();
-  freeBatchD2DResources();
-  freeBatchedGemmResources();
-  logGpuMemState("STEP-1-AFTER-BATCH-RESOURCES");
-#else
-  // CPU path: reset segment execution state (no CUDA graphs or GPU resources)
-  for (auto& seg : segments_) {
-    if (seg.exec.replayHandle) {
-      seg.exec.replayHandle.reset();
-    }
-    seg.exec.gapOpsCapturedInGraph = false;
-    seg.exec.argTableStable = false;
-    seg.exec.capturedInputAddrKey = 0;
-    seg.exec.compilationFailed = false;
-    seg.exec.executionCount = 0;
-    // Reset stale state that would cause skipped recompilation/recapture:
-    seg.exec.cachedShapeKey = 0;
-    seg.exec.capturedCreateValueKey = 0;
-    seg.exec.captureOomRetries = 0;
-    seg.exec.captureRetryAfterExec = 0;
-    seg.exec.compiledByBackend.clear();
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
-    seg.exec.segBatchZeroEntries.clear();
-    seg.def.shapeKey = 0;
-  }
-#endif
+  platformReleaseSegmentGpuResources();
 
   // ── Step 2: Free non-weight NDArrays from outputSlots_ ─────────────────
   // Only free SLOT_OWNED buffers. Views and weights are externally owned.
   //
-  // CRITICAL: Re-classify ownership before freeing. After CUDA graph capture,
+  //  Re-classify ownership before freeing. After CUDA graph capture,
   // outputSlots_[] is restored to warmup arrays (line 2716 in gpubackend.cpp)
   // but slotOwnership_[] still reflects capture-time classification. The warmup
   // arrays may have different ownership than the capture arrays:
@@ -2304,171 +2094,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       }
     }
   }
-#ifdef SD_CUDA
-  DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed %d unique intermediate NDArrays", freedCount);
-  sd_printf("  [GPU-MEM] Step 2: freed %d unique intermediate NDArrays\n", freedCount);
-  logGpuMemState("STEP-2-AFTER-INTERMEDIATES");
-
-  // ── Step 3: Free untracked output cache ─────────────────────────────────
-  if (untrackedOutputCache_) {
-    for (int i = 0; i < untrackedOutputCacheSize_; i++) {
-      delete untrackedOutputCache_[i];
-      untrackedOutputCache_[i] = nullptr;
-    }
-  }
-
-  // ── Step 4: Clear MmulHelper cast cache (thread-local FP16→FP32 staging) ─
-  MmulHelper::clearCastCache();
-  logGpuMemState("STEP-4-AFTER-CAST-CACHE");
-
-  // ── Step 4b: Migrate weight buffers out of async pool, then trim ────────
-  // The CUDA async memory pool uses a single default pool per device for BOTH
-  // model weights (long-lived) and intermediates (short-lived). When intermediates
-  // are freed, weight allocations scattered across pool blocks prevent
-  // cudaMemPoolTrimTo from reclaiming the freed memory. This causes a progressive
-  // ~800-1200 MB leak per page cycle.
-  //
-  // Fix: After freeing intermediates and syncing, migrate each weight DataBuffer
-  // from its pool allocation (cudaMallocAsync) to a direct allocation (cudaMalloc).
-  // This removes all weight pointers from the pool, allowing trimPool to fully
-  // reclaim all freed intermediate memory. The migration is a one-time cost per
-  // reset (~2-4 GB memcpy) that eliminates the fragmentation root cause.
-  {
-    cudaError_t syncErr = cudaDeviceSynchronize();
-    if (syncErr != cudaSuccess) {
-      DSP_DIAG(MEMORY, "releaseGpuIntermediates: cudaDeviceSynchronize failed: %s",
-               cudaGetErrorString(syncErr));
-      cudaGetLastError();  // clear sticky error
-    }
-    int deviceId = 0;
-    cudaGetDevice(&deviceId);
-
-    // Migrate weight buffers from async pool to direct cudaMalloc
-    int migratedCount = 0;
-    int skippedDirect = 0;
-    int skippedNonDevice = 0;
-    int failedMigrations = 0;
-    size_t migratedBytes = 0;
-    size_t totalWeightBytes = 0;
-    auto& pool = memory::CudaMemoryPool::getInstance();
-
-    sd_printf("  [GPU-MEM] Weight migration: %zu protected weight buffers to check\n",
-              protectedWeightBuffers_.size());
-
-    for (auto* db : protectedWeightBuffers_) {
-      if (db == nullptr || db->special() == nullptr) continue;
-
-      size_t bufSize = db->getLenInBytes();
-      totalWeightBytes += bufSize;
-
-      // Skip buffers that are already direct allocations (from a previous migration)
-      if (pool.isDirectAllocation(db->special())) {
-        skippedDirect++;
-        continue;
-      }
-
-      // Skip host (pinned) allocations — these aren't in the pool
-      // (detected by checking if the pointer is in hostAllocations_)
-      cudaPointerAttributes ptrAttrs;
-      cudaError_t attrErr = cudaPointerGetAttributes(&ptrAttrs, db->special());
-      if (attrErr != cudaSuccess) {
-        cudaGetLastError();
-        continue;  // Can't query pointer — skip
-      }
-      if (ptrAttrs.type != cudaMemoryTypeDevice) {
-        skippedNonDevice++;
-        continue;  // Not device memory (host/managed/unregistered) — skip
-      }
-
-      if (bufSize == 0) continue;
-
-      // Allocate a new direct (non-pool) buffer via cudaMalloc
-      void* directPtr = nullptr;
-      cudaError_t allocErr = cudaMalloc(&directPtr, bufSize);
-      if (allocErr != cudaSuccess || directPtr == nullptr) {
-        // Can't allocate — skip this buffer (it stays in the pool)
-        cudaGetLastError();
-        failedMigrations++;
-        sd_printf("  [GPU-MEM] Weight migration FAILED for %zu bytes (%zu MB): %s\n",
-                  bufSize, bufSize / (1024*1024), cudaGetErrorString(allocErr));
-        continue;
-      }
-
-      // Copy weight data from pool buffer to direct buffer
-      cudaError_t copyErr = cudaMemcpy(directPtr, db->special(), bufSize, cudaMemcpyDeviceToDevice);
-      if (copyErr != cudaSuccess) {
-        // Copy failed — free the new buffer and skip
-        cudaFree(directPtr);
-        cudaGetLastError();
-        DSP_DIAG(MEMORY, "releaseGpuIntermediates: weight migration memcpy failed for %zu bytes: %s",
-                 bufSize, cudaGetErrorString(copyErr));
-        continue;
-      }
-
-      // Free the old pool-based buffer via cudaFreeAsync (returns memory to pool)
-      void* oldPtr = db->special();
-      cudaFreeAsync(oldPtr, nullptr);
-
-      // Update the DataBuffer to point to the new direct buffer.
-      // replaceSpecialBuffer swaps _specialBuffer without calling deleteSpecial(),
-      // which would try to free the already-freed old pointer.
-      db->replaceSpecialBuffer(directPtr, true);
-
-      // Register the new pointer as a direct allocation so CudaMemoryPool::free()
-      // routes it to cudaFree instead of cudaFreeAsync
-      pool.registerDirectAllocation(directPtr, bufSize);
-
-      migratedCount++;
-      migratedBytes += bufSize;
-    }
-
-    if (migratedCount > 0) {
-      // Sync again to ensure all cudaFreeAsync from old pool buffers complete
-      cudaDeviceSynchronize();
-    }
-
-    sd_printf("  [GPU-MEM] Weight migration summary: total=%zu MB, migrated=%d (%zu MB), "
-              "skippedDirect=%d, skippedNonDevice=%d, failed=%d\n",
-              totalWeightBytes / (1024*1024), migratedCount, migratedBytes / (1024*1024),
-              skippedDirect, skippedNonDevice, failedMigrations);
-
-    pool.trimPool(deviceId);
-    logGpuMemState("STEP-4b-AFTER-MIGRATION-AND-TRIM");
-
-    // ── Step 4c: Clear shape and TAD caches ────────────────────────────────
-    // DirectShapeTrie and DirectTadTrie permanently cache every unique
-    // (shape+strides+dtype+order) and (shape+TAD-dimensions) combination.
-    // In the VLM decoder, seqKV increments by 1 each decode step, creating
-    // ~hundreds of unique shapes per page. Each entry allocates GPU memory
-    // via replicatePointer() → CudaMemoryPool::allocate(). Neither cache
-    // ever evicts entries — they grow monotonically, accounting for ~600-700 MB
-    // of non-reclaimable pool memory per page cycle.
-    //
-    // Fix: Clear both caches between pages. The entries will be recreated
-    // on-demand during the next page's execution. The GPU memory freed here
-    // returns to the async pool, which we then reclaim via a second trimPool().
-    {
-      auto shapeEntriesBefore = ConstantShapeHelper::getInstance().getCachedEntries();
-      auto tadEntriesBefore = ConstantTadHelper::getInstance().getCachedEntries();
-
-      ConstantShapeHelper::getInstance().clearCache();
-      ConstantTadHelper::getInstance().clearCache();
-
-      auto shapeEntriesAfter = ConstantShapeHelper::getInstance().getCachedEntries();
-      auto tadEntriesAfter = ConstantTadHelper::getInstance().getCachedEntries();
-
-      sd_printf("  [GPU-MEM] Shape/TAD cache clear: shapes %lld->%lld, TADs %lld->%lld\n",
-                static_cast<long long>(shapeEntriesBefore), static_cast<long long>(shapeEntriesAfter),
-                static_cast<long long>(tadEntriesBefore), static_cast<long long>(tadEntriesAfter));
-
-      // Sync so all cudaFreeAsync calls from cache clearing complete
-      cudaDeviceSynchronize();
-      // Trim again to reclaim pool memory freed by cache clearing
-      pool.trimPool(deviceId);
-      logGpuMemState("STEP-4c-AFTER-CACHE-CLEAR-AND-TRIM");
-    }
-  }
-#endif
+  platformMigrateWeightsAndClearCaches();
 
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;
@@ -2516,23 +2142,6 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
 
   // Clear GPU backend failed-segment cache
   clearGpuBackendFailedCache();
-
-  // Clear Triton compiled kernel cache (singleton) to free CUmodule GPU memory.
-  // The Triton cache accumulates ~100-150MB/page of CUmodule handles because
-  // cache keys include shapeKey which changes per page. Kernels re-load from
-  // disk cache in <100ms, so the re-compilation cost is minimal.
-#if HAVE_TRITON && defined(SD_CUDA)
-  {
-    std::vector<std::pair<int,int>> segRanges;
-    segRanges.reserve(segments_.size());
-    for (auto& seg : segments_) {
-      segRanges.emplace_back(seg.def.startSlot, seg.def.endSlot);
-    }
-    if (!segRanges.empty()) {
-      TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
-    }
-  }
-#endif
 
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: DONE plan=%p, freed %d arrays. "
            "Plan is now cold — next execute() will re-warm.", this, freedCount);
@@ -2632,66 +2241,7 @@ void NativeDynamicShapePlan::updateDecodeInputs(
   // correct actuality flags, single stream for ordering with graph replay.
   // Note: for non-pinned H2D, cudaMemcpyAsync stages data before returning,
   // so stack-local source values are safe.
-#ifdef SD_CUDA
-  cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
-
-  DSP_DIAG(EXECUTE, "updateDecodeInputs: ENTER tokenId=%lld cachePos=%d numExt=%d idsIdx=%d posIdx=%d maskIdx=%d",
-           tokenId, cachePos, numExt, decodeInputIdsExtIdx_, decodePositionIdsExtIdx_, decodeAttentionMaskExtIdx_);
-
-  // input_ids[0] = tokenId
-  if (decodeInputIdsExtIdx_ >= 0 && decodeInputIdsExtIdx_ < numExt) {
-    NDArray* ids = externalInputs[decodeInputIdsExtIdx_];
-    DSP_DIAG(EXECUTE, "updateDecodeInputs: ids NDArray=%p specialBuf=%p len=%lld",
-             ids, ids ? DSP_BUF(ids) : nullptr, ids ? (long long)ids->lengthOf() : -1);
-    if (ids != nullptr && DSP_BUF(ids) != nullptr) {
-      LongType val = static_cast<LongType>(tokenId);
-      cudaMemcpyAsync(DSP_BUF(ids), &val, sizeof(LongType),
-                      cudaMemcpyHostToDevice, cudaStr);
-      ids->dataBuffer()->writeSpecial();
-    }
-  }
-
-  // position_ids[0] = cachePos
-  if (decodePositionIdsExtIdx_ >= 0 && decodePositionIdsExtIdx_ < numExt) {
-    NDArray* pos = externalInputs[decodePositionIdsExtIdx_];
-    DSP_DIAG(EXECUTE, "updateDecodeInputs: pos NDArray=%p specialBuf=%p len=%lld",
-             pos, pos ? DSP_BUF(pos) : nullptr, pos ? (long long)pos->lengthOf() : -1);
-    if (pos != nullptr && DSP_BUF(pos) != nullptr) {
-      LongType val = static_cast<LongType>(cachePos);
-      cudaMemcpyAsync(DSP_BUF(pos), &val, sizeof(LongType),
-                      cudaMemcpyHostToDevice, cudaStr);
-      pos->dataBuffer()->writeSpecial();
-    }
-  }
-
-  // attention_mask[cachePos - 1] = 1  (unmask the position filled by the PREVIOUS step's scatter)
-  // cachePos is the NEXT write position — not yet filled. The position just filled is cachePos - 1.
-  // Positions 0..cachePos-1 are valid; cachePos itself will be filled AFTER this forward pass.
-  if (decodeAttentionMaskExtIdx_ >= 0 && decodeAttentionMaskExtIdx_ < numExt && cachePos > 0) {
-    NDArray* mask = externalInputs[decodeAttentionMaskExtIdx_];
-    int writePos = cachePos - 1;
-    DSP_DIAG(EXECUTE, "updateDecodeInputs: mask NDArray=%p specialBuf=%p len=%lld cachePos=%d writePos=%d",
-             mask, mask ? DSP_BUF(mask) : nullptr, mask ? (long long)mask->lengthOf() : -1,
-             cachePos, writePos);
-    if (mask != nullptr && DSP_BUF(mask) != nullptr) {
-      LongType one = 1;
-      auto maskLen = mask->lengthOf();
-      if (writePos < maskLen) {
-        auto* dst = static_cast<LongType*>(DSP_BUF(mask)) + writePos;
-        DSP_DIAG(EXECUTE, "updateDecodeInputs: mask dst=%p (base=%p + %d * %d)",
-                 dst, DSP_BUF(mask), writePos, (int)sizeof(LongType));
-        cudaMemcpyAsync(dst, &one, sizeof(LongType),
-                        cudaMemcpyHostToDevice, cudaStr);
-        mask->dataBuffer()->writeSpecial();
-      } else {
-        DSP_DIAG(EXECUTE, "updateDecodeInputs: SKIP attn_mask write writePos=%d maskLen=%lld (OOB)",
-                 writePos, (long long)maskLen);
-      }
-    }
-  }
-
-  DSP_DIAG(EXECUTE, "updateDecodeInputs: tokenId=%lld cachePos=%d", tokenId, cachePos);
-#endif
+  platformUpdateDecodeInputs(externalInputs, numExt, tokenId, cachePos, stream);
 }
 
 void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots) {
@@ -2805,26 +2355,7 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
     auto* lc = LaunchContext::defaultContext();
     sd::ops::helpers::kvScatterBatched(batchEntries.data(), scattered, batchDtype, lc);
 
-#ifdef SD_CUDA
-    // Diagnostic: sync after KV scatter to catch latent errors from scatter kernel
-    {
-      cudaError_t scatterErr = cudaDeviceSynchronize();
-      if (scatterErr != cudaSuccess) {
-        sd_printf("KV SCATTER CUDA ERROR: cudaDeviceSynchronize after kvScatterBatched "
-                  "returned error %d (%s). scattered=%d pos=%d numMappings=%d\n",
-                  static_cast<int>(scatterErr), cudaGetErrorString(scatterErr),
-                  scattered, kvCachePosition_, kvCacheNumMappings_);
-        // Log first entry pointers for debugging
-        if (!batchEntries.empty()) {
-          auto& e = batchEntries[0];
-          sd_printf("  entry[0]: srcPtr=%p dstPtr=%p heads=%lld srcSeqLen=%lld dstSeqLen=%lld cachePos=%lld\n",
-                    e.srcPtr, e.dstPtr, (long long)e.heads, (long long)e.srcSeqLen,
-                    (long long)e.dstSeqLen, (long long)e.cachePos);
-        }
-        cudaGetLastError(); // clear sticky error
-      }
-    }
-#endif
+    platformPostKvScatterSync(scattered, kvCachePosition_, kvCacheNumMappings_);
   }
 
   // Register special use for all pairs
@@ -2877,22 +2408,14 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturab
     case GraphExecutionMode::GEM_LEVELZERO:
     case GraphExecutionMode::GEM_VULKAN:
     case GraphExecutionMode::GEM_METAL:
-#ifdef SD_CUDA
-      return SelectedBackend::CUDA_GRAPHS;
-#else
-      return SelectedBackend::SLOT_BY_SLOT;
-#endif
+      return platformResolveBackend(true);
 
     case GraphExecutionMode::GEM_TRITON:
     case GraphExecutionMode::GEM_NVRTC_JIT:
     case GraphExecutionMode::GEM_PTX_JIT:
     case GraphExecutionMode::GEM_TPU:
     case GraphExecutionMode::GEM_HEXAGON:
-#ifdef SD_CUDA
-      return SelectedBackend::GPU_COMPILER;
-#else
-      return SelectedBackend::CPU_GRAPH;
-#endif
+      return platformResolveBackend(false);
 
     case GraphExecutionMode::GEM_MLX:
     case GraphExecutionMode::GEM_ARM_HYBRID:
@@ -2903,20 +2426,7 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturab
       return SelectedBackend::EMULATED_REPLAY;
 
     case GraphExecutionMode::GEM_AUTO: {
-      // Resolve best available backend. Check order: GPU compiler → CUDA graphs → CPU graph → slot-by-slot
-      // GPU compiler is checked lazily by getGpuGraphBackend() on first execution.
-      // At build time we can check if CUDA graphs are enabled as a strong signal.
-#ifdef SD_CUDA
-      // For AUTO, we prefer GPU_COMPILER (Triton/NVRTC/PTX). The actual backend
-      // is resolved lazily by getGpuGraphBackend(). If it returns nullptr at
-      // execution time, we fall back to CUDA_GRAPHS if enabled.
-      // We can't fully resolve at build time because backend availability may
-      // depend on runtime state. Mark as GPU_COMPILER optimistically — the
-      // dispatcher will handle nullptr gpuBackend gracefully.
-      return SelectedBackend::GPU_COMPILER;
-#else
-      return SelectedBackend::CPU_GRAPH;
-#endif
+      return platformResolveBackend(false);
     }
 
     default:
@@ -2927,7 +2437,12 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturab
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────
 
 void NativeDynamicShapePlan::buildSegments() {
-  if (numSlots_ == 0) return;
+  if (numSlots_ == 0) {
+    DSP_DIAG(SEGMENT, "buildSegments: skipped (numSlots=0)");
+    return;
+  }
+  DSP_DIAG(SEGMENT, "buildSegments: BEGIN numSlots=%d matmulSeg=%d",
+           numSlots_, Environment::getInstance().dspMatmulSegmentation() ? 1 : 0);
 
   // Segmentation policy:
   //
@@ -2962,39 +2477,22 @@ void NativeDynamicShapePlan::buildSegments() {
   const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
   static constexpr int MAX_SEGMENT_SIZE = 200;
 
-#ifndef SD_CUDA
-  // On CPU, break segments at ops with no traits registered in OpTraitTable.
-  // Ops with traits (elementwise, reduction, matmul, normalization, etc.) are
-  // compilable by OneDNN/OpenVINO. Ops without traits (custom/unknown ops) are
-  // isolated into 1-slot segments for slot-by-slot execution.
-  auto& registrator = sd::ops::OpRegistrator::getInstance();
-  auto hasRegisteredTraits = [&registrator, this](int idx) -> bool {
-    auto* op = registrator.getOperation(slots_[idx].ident.opName.c_str());
-    if (op == nullptr) return false;
-    auto* desc = op->getOpDescriptor();
-    if (desc == nullptr) return false;
-    return desc->getTraits() != 0;
-  };
-#endif
-
   auto isMatmulOrAttention = [this](int idx) -> bool {
-    const std::string& name = slots_[idx].ident.opName;
-    return name == "matmul" || name == "mmul" || name == "batched_gemm"
-        || name == "tensormmul" || name == "fp8_matmul" || name == "smooth_quant"
-        || name == "awq_matmul" || name == "column_parallel_linear"
-        || name == "row_parallel_linear" || name == "multi_lora_matmul"
-        || name == "fused_gemm_swiglu" || name == "multi_head_attention";
+    auto* op = slots_[idx].ident.op;
+    if (!op || !op->getOpDescriptor()) return false;
+    return op->getOpDescriptor()->hasAnyTrait(
+        sd::ops::OP_TRAIT_MATMUL | sd::ops::OP_TRAIT_ATTENTION);
   };
 
   GraphSegment current;
-  current.startSlot = 0;
-  current.isCapturable = isSlotCapturable(slots_[0], 0);
+  current.def.startSlot = 0;
+  current.def.isCapturable = isSlotCapturable(slots_[0], 0);
 
   for (int i = 1; i < numSlots_; i++) {
     bool thisCapturable = isSlotCapturable(slots_[i], i);
     bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
-    int currentSize = i - current.startSlot;
-    bool sizeLimit = (current.isCapturable && currentSize >= MAX_SEGMENT_SIZE);
+    int currentSize = i - current.def.startSlot;
+    bool sizeLimit = (current.def.isCapturable && currentSize >= MAX_SEGMENT_SIZE);
 
     // Break at matmul/attention boundaries for Triton fusion
     bool matmulBreak = false;
@@ -3004,33 +2502,22 @@ void NativeDynamicShapePlan::buildSegments() {
       if (thisIsMatmul != prevIsMatmul) matmulBreak = true;
     }
 
-#ifndef SD_CUDA
-    // On CPU, break at trait boundaries — ops with registered traits are
-    // compilable by OneDNN/OpenVINO, ops without traits run slot-by-slot.
-    bool cpuTraitBreak = false;
-    {
-      bool thisHasTraits = hasRegisteredTraits(i);
-      bool prevHasTraits = hasRegisteredTraits(i - 1);
-      if (thisHasTraits != prevHasTraits) cpuTraitBreak = true;
-    }
-#else
-    bool cpuTraitBreak = false;
-#endif
+    bool cpuTraitBreak = platformShouldBreakSegmentAtTraitBoundary(i, i - 1);
 
-    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit || matmulBreak || cpuTraitBreak) {
+    if (thisCapturable != current.def.isCapturable || deviceChange || sizeLimit || matmulBreak || cpuTraitBreak) {
       // End current segment
-      current.endSlot = i - 1;
+      current.def.endSlot = i - 1;
       segments_.push_back(std::move(current));
 
       // Start new segment
       current = GraphSegment();
-      current.startSlot = i;
-      current.isCapturable = thisCapturable;
+      current.def.startSlot = i;
+      current.def.isCapturable = thisCapturable;
     }
   }
 
   // Finalize last segment
-  current.endSlot = numSlots_ - 1;
+  current.def.endSlot = numSlots_ - 1;
   segments_.push_back(std::move(current));
 
   // Log segment structure
@@ -3099,287 +2586,6 @@ void NativeDynamicShapePlan::buildSegments() {
   }
 }
 
-// ─── Rebuild segments for frozen shapes ───────────────────────────────────────
-//
-// When shapes are frozen, value-dependent-shape ops (reshape, gather, slice, etc.)
-// are safe to capture — their input values never change, so output shapes are constant.
-// Only truly data-dependent ops (where/unique/NMS with variable-length output)
-// remain non-capturable.
-//
-// This merges ALL consecutive slots into a single segment, breaking only on:
-//   1. Data-dependent ops (variable-length output)
-//   2. Device boundaries
-//
-void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
-  DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: ENTER numSlots=%d oldSegments=%d executeCount=%d shapesFrozen=%d",
-           numSlots_, (int)segments_.size(), executeCount_, shapesFrozen_ ? 1 : 0);
-
-  // Destroy existing cached graphs (they reference old segment boundaries)
-  for (auto& seg : segments_) {
-    if (seg.exec.replayHandle) {
-      DSP_DIAG_SEG(SEGMENT, seg.def.startSlot,
-                   "destroying replay handle for seg[%d-%d] state=%d replays=%d",
-                   seg.def.startSlot, seg.def.endSlot, (int)seg.exec.replayHandle->getState(),
-                   seg.exec.replayHandle->getStatistics().replayCount);
-    }
-    platformCleanupSegmentForRebuild(seg);
-  }
-
-  int oldSegCount = (int)segments_.size();
-  segments_.clear();
-
-  if (numSlots_ == 0) return;
-
-  // When shapes are frozen, value-dependent-shape ops (reshape, gather, slice, etc.)
-  // are safe to capture — their input values never change, so output shapes are constant.
-  // Data-dependent ops (1-input Where/Unique/NMS) remain non-capturable because they
-  // have variable-length output. 3-input Where (element-wise select) IS capturable.
-  // Break segments on: data-dependent ops, device boundaries, and max size limit.
-  //
-  // Max segment size prevents mega-graphs that cause:
-  //   1. Address instability (workspace allocs change address on replay → SIGSEGV)
-  //   2. Slow replay (390ms for 3781-slot graph vs 72ms for 129 smaller graphs)
-  // Cap at ~150 slots per segment — matches typical transformer layer size.
-  // MAX_FROZEN_SEGMENT_SIZE caps graph size to prevent mega-segments that cause
-  // Triton compilation failures and address instability. Set to ~200 slots which
-  // matches typical transformer layer size for efficient capture and replay.
-  // NOTE: create (ConstantOfShape) ops are captured but their input values are
-  // hashed and validated before replay (see computeCreateOpValueKey).
-  // If values change → graph is invalidated and re-captured.
-  static constexpr int MAX_FROZEN_SEGMENT_SIZE = 200;
-
-  auto isSlotCapturableFrozen = [this](int idx) -> bool {
-    return slots_[idx].cf.controlFlowType == CF_NONE;
-  };
-
-  // Matmul segmentation: when enabled, break segments at matmul/attention ops.
-  // This creates separate segments for element-wise chains between matmuls,
-  // allowing Triton to fuse each chain into a single kernel (like pytorch.compile).
-  // Matmul ops themselves run via GPU BLAS fallback within their own tiny segments.
-  const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
-
-  auto isMatmulOrAttention = [this](int idx) -> bool {
-    const std::string& name = slots_[idx].ident.opName;
-    return name == "matmul" || name == "mmul" || name == "batched_gemm"
-        || name == "tensormmul" || name == "fp8_matmul" || name == "smooth_quant"
-        || name == "awq_matmul" || name == "column_parallel_linear"
-        || name == "row_parallel_linear" || name == "multi_lora_matmul"
-        || name == "fused_gemm_swiglu" || name == "multi_head_attention";
-  };
-
-  GraphSegment current;
-  current.startSlot = 0;
-  current.isCapturable = isSlotCapturableFrozen(0);
-
-  for (int i = 1; i < numSlots_; i++) {
-    bool thisCapturable = isSlotCapturableFrozen(i);
-    bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
-    int currentSize = i - current.startSlot;
-    bool sizeLimit = (current.isCapturable && currentSize >= MAX_FROZEN_SEGMENT_SIZE);
-
-    // When matmul segmentation is enabled, break before and after matmul/attention ops.
-    // This isolates element-wise chains for Triton fusion while matmuls run via GPU BLAS.
-    bool matmulBreak = false;
-    if (matmulSegmentation) {
-      bool thisIsMatmul = isMatmulOrAttention(i);
-      bool prevIsMatmul = isMatmulOrAttention(i - 1);
-      // Break when transitioning from non-matmul to matmul or matmul to non-matmul
-      if (thisIsMatmul != prevIsMatmul) matmulBreak = true;
-    }
-
-    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit || matmulBreak) {
-      current.endSlot = i - 1;
-      segments_.push_back(std::move(current));
-      current = GraphSegment();
-      current.startSlot = i;
-      current.isCapturable = thisCapturable;
-    }
-  }
-  current.endSlot = numSlots_ - 1;
-  segments_.push_back(std::move(current));
-
-  // Reset frozen context for all slots since segment boundaries changed.
-  // Demote any slot that was FROZEN or FROZEN_CONSTANT back to SHAPE_CACHED
-  // (shape cache is still valid, but frozen context must be rebuilt).
-  for (int i = 0; i < numSlots_; i++) {
-    if (slots_[i].state_ >= NativeSlot::SlotState::FROZEN) {
-      slots_[i].state_ = NativeSlot::SlotState::SHAPE_CACHED;
-    }
-  }
-
-  // Log the result and any data-dependent ops that prevent full merge
-  int capturableSlots = 0;
-  int dataDepCount = 0;
-  for (auto& seg : segments_) {
-    if (seg.def.isCapturable) capturableSlots += (seg.def.endSlot - seg.def.startSlot + 1);
-  }
-  for (int i = 0; i < numSlots_; i++) {
-    if (slots_[i].flags.isDataDependent) {
-      dataDepCount++;
-      if (dataDepCount <= 10) {
-        DSP_DIAG_SLOT(SEGMENT, i, "slot %d op='%s' is data-dependent",
-                      i, slots_[i].ident.opName.c_str());
-      }
-    }
-  }
-  if (dataDepCount > 10) {
-    DSP_DIAG(SEGMENT, "... and %d more data-dependent slots",
-             dataDepCount - 10);
-  }
-  // Log per-segment summary
-  if (DSP_DIAG_ENABLED(SEGMENT)) {
-    for (int si = 0; si < (int)segments_.size(); si++) {
-      auto& seg = segments_[si];
-      int segSize = seg.def.endSlot - seg.def.startSlot + 1;
-      DSP_DIAG_SEG(SEGMENT, seg.def.startSlot,
-                   "segment[%d] slots[%d-%d] size=%d capturable=%d",
-                   si, seg.def.startSlot, seg.def.endSlot, segSize, seg.def.isCapturable ? 1 : 0);
-    }
-  }
-
-  DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: %d -> %d segments (%d/%d slots capturable, %d data-dep, matmulSeg=%d)",
-           oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount,
-           static_cast<int>(matmulSegmentation));
-
-  // Propagate slotArrayCache_, resolve backend, and detect value-dep ops for all rebuilt segments.
-  for (auto& seg : segments_) {
-    seg.slotArrayCache = slotArrayCache_;
-    seg.def.selectedBackend = resolveBackendForSegment(seg.def.isCapturable);
-    // Scan slots for value-dependent ops — even in frozen mode, segments containing
-    // these ops must recompute the shape key (not use cached) because input VALUES
-    // could change even when shapes are stable.
-    seg.def.hasValueDepOps = false;
-    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      if (slots_[s].flags.outputShapeDependsOnInputValues) {
-        seg.def.hasValueDepOps = true;
-        break;
-      }
-    }
-  }
-
-  // Reset slot ownership metadata after segment rebuild. The merged segments
-  // may contain slots whose DataBuffers will change during the next warmup
-  // execution (value-dependent ops get new output shapes in the merged context).
-  // Without this reset, the lifecycle validation at executeCount>0 sees stale
-  // ownership that references pre-merge DataBuffers → LIFECYCLE_ERROR.
-  if (slotOwnership_ != nullptr) {
-    for (int i = 0; i < totalOutputSlots_; i++) {
-      slotOwnership_[i].ownership = BufferOwnership::UNSET;
-      slotOwnership_[i].dataBuffer = nullptr;
-      slotOwnership_[i].parentSlotIdx = -1;
-      slotOwnership_[i].viewRefCount = 0;
-    }
-    DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: reset ownership for %d slots", totalOutputSlots_);
-  }
-
-  // Reset executeCount_ so the merged plan goes through the full
-  // warmup → capture → replay lifecycle from scratch.
-  executeCount_ = 0;
-
-  // CRITICAL FIX: When shapes are frozen, skip symbolic shape warmup.
-  // Frozen shapes are constant, so symbolic shape ranges are unnecessary.
-  // Use standard FNV-1a shape key which will be stable.
-  if (Environment::getInstance().dspSymbolicShapes()) {
-    int warmup = Environment::getInstance().dspSymbolicShapeWarmup();
-    // Free old profiles before rebuild
-    for (auto& seg : segments_) {
-      if (seg.exec.symbolicRangeData != nullptr) {
-        freeSegmentShapeProfile(static_cast<SegmentShapeProfile*>(seg.exec.symbolicRangeData));
-        seg.exec.symbolicRangeData = nullptr;
-      }
-    }
-    
-    // After rebuildSegmentsForFrozenShapes(), segments are merged.
-    // For frozen shapes, skip symbolic shape entirely - use standard FNV-1a key.
-    for (auto& seg : segments_) {
-      seg.exec.symbolicShapeEnabled = false;  // Disable symbolic shapes for frozen decode
-      seg.exec.symbolicWarmupRemaining = 0;
-      seg.exec.symbolicRangeData = nullptr;
-    }
-    
-    DSP_DIAG(SEGMENT, "Disabled symbolic shapes for %d frozen segments (using FNV-1a key)",
-             (int)segments_.size());
-  }
-
-  // PRE-WARMUP: Disable in-place fusion for ops that consume frozen constant outputs.
-  // This MUST happen before the warmup execution. In-place fusion allows downstream ops
-  // to overwrite their input buffer with their output. If the input is a frozen constant
-  // (e.g., reduce_mean of shape_of), the cached frozen value gets corrupted during warmup.
-  // detectFrozenConstants() runs AFTER the warmup (executeCount_==1), but by then the
-  // cached values are already wrong. Fix: pre-identify frozen candidates using the same
-  // graph analysis (SHAPE_ONLY_OUTPUT trait + transitive consumer analysis) and disable
-  // in-place fusion for their consumers before the warmup runs.
-
-  // Propagate external dependency through the graph (same logic as detectFrozenConstants).
-  std::vector<bool> dependsOnExternal(totalOutputSlots_, false);
-  for (int s = 0; s < numSlots_; s++) {
-    auto& sl = slots_[s];
-    // Shape-only-output ops don't propagate external dependency
-    bool isShapeOnly = (sl.ident.op && sl.ident.op->getOpDescriptor() &&
-                        sl.ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT));
-    if (isShapeOnly) continue; // doesn't propagate dependency
-
-    bool anyExternal = false;
-    for (int i = 0; i < sl.wiring.numInputs; i++) {
-      int srcIdx = sl.wiring.inputSourceIndices[i];
-      if (srcIdx < 0 || (srcIdx < totalOutputSlots_ && dependsOnExternal[srcIdx])) {
-        anyExternal = true;
-        break;
-      }
-    }
-    if (anyExternal) {
-      for (int o = 0; o < sl.wiring.numOutputs; o++) {
-        int si = sl.wiring.outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_) dependsOnExternal[si] = true;
-      }
-    }
-  }
-
-  // Collect output slot indices of frozen candidate slots
-  std::unordered_set<int> frozenOutputSlots;
-  for (int s = 0; s < numSlots_; s++) {
-    auto& sl = slots_[s];
-    bool allConstant = true;
-    for (int o = 0; o < sl.wiring.numOutputs; o++) {
-      int si = sl.wiring.outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_ && dependsOnExternal[si]) {
-        allConstant = false;
-        break;
-      }
-    }
-    if (allConstant && !sl.flags.isDataDependent) {
-      for (int o = 0; o < sl.wiring.numOutputs; o++) {
-        int si = sl.wiring.outputSlotIndices[o];
-        if (si >= 0) frozenOutputSlots.insert(si);
-      }
-    }
-  }
-
-  DSP_DIAG(FUSION, "frozen constant analysis: %zu frozen output slots out of %d total",
-           frozenOutputSlots.size(), totalOutputSlots_);
-
-  // Disable in-place fusion for any op whose in-place input comes from a frozen output
-  int disabledInPlace = 0;
-  for (int s = 0; s < numSlots_; s++) {
-    auto& sl = slots_[s];
-    if (sl.flags.inPlaceFused && sl.flags.inPlaceFusedInputIdx >= 0 &&
-        sl.flags.inPlaceFusedInputIdx < sl.wiring.numInputs) {
-      int srcSlot = sl.wiring.inputSourceIndices[sl.flags.inPlaceFusedInputIdx];
-      if (srcSlot >= 0 && frozenOutputSlots.count(srcSlot)) {
-        DSP_DIAG_SLOT(FUSION, s,
-                      "disabled in-place fusion: slot %d (%s) consumes frozen slot %d",
-                      s, sl.ident.opName.c_str(), srcSlot);
-        sl.flags.inPlaceFused = false;
-        sl.flags.inPlaceFusedInputIdx = -1;
-        disabledInPlace++;
-      }
-    }
-  }
-  if (disabledInPlace > 0) {
-    DSP_DIAG(FUSION, "rebuildSegments: disabled %d in-place fusions that would corrupt %zu frozen outputs",
-             disabledInPlace, frozenOutputSlots.size());
-  }
-}
 // ─── fromFlatGraph (delegates to NativePlanCompiler) ─────────────────────────
 
 NativeDynamicShapePlan* NativeDynamicShapePlan::fromFlatGraph(
@@ -3394,45 +2600,6 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromFlatGraph(
 // validateCapturedGraph). These methods are GPU-only and defined in the .cu file.
 
 // ─── CPU Graph compilation audit and validation ─────────────────────────────
-
-void NativeDynamicShapePlan::printCompilationAudit() const {
-  if (lastCompilationAudit_.empty()) {
-    DSP_DIAG(BACKEND, "no compilation audit data");
-    return;
-  }
-
-  const char* backendName = cpuGraphBackend_ ? cpuGraphBackend_->name() : "unknown";
-
-  DSP_DIAG(BACKEND, "CPU GRAPH COMPILATION AUDIT (%s backend), %zu total ops",
-           backendName, lastCompilationAudit_.size());
-
-  int skippedCount = 0;
-  int compiledCount = 0;
-
-  for (const auto& entry : lastCompilationAudit_) {
-    if (entry.wasCompiled) {
-      compiledCount++;
-      if (entry.reason.empty()) {
-        DSP_DIAG_SLOT(BACKEND, entry.slotIndex, "[slot %3d] %s COMPILED",
-                      entry.slotIndex, entry.opName.c_str());
-      } else {
-        DSP_DIAG_SLOT(BACKEND, entry.slotIndex, "[slot %3d] %s COMPILED (%s)",
-                      entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
-      }
-    } else {
-      skippedCount++;
-      DSP_DIAG_SLOT(BACKEND, entry.slotIndex, "[slot %3d] %s *** SKIPPED *** (%s)",
-                     entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
-    }
-  }
-
-  DSP_DIAG(COMPILE, "compilation audit: %d compiled, %d skipped of %zu total (%s backend)",
-           compiledCount, skippedCount, lastCompilationAudit_.size(), backendName);
-  if (skippedCount > 0) {
-    DSP_DIAG(FALLBACK, "%d ops skipped by %s backend - segment will fallback to slot-by-slot",
-             skippedCount, backendName);
-  }
-}
 
 bool NativeDynamicShapePlan::validateCompiledCpuGraph(int segmentIndex) const {
   if (lastCompilationAudit_.empty()) return true;  // No audit data = no validation

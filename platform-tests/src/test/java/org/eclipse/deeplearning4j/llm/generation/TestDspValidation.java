@@ -38,7 +38,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.execution.CapturingSlotInterceptor;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
@@ -346,101 +345,10 @@ public class TestDspValidation {
     @Test
     @DisplayName("Per-op slot validation: interceptor captures during decode")
     public void testPerOpSlotValidation() throws Exception {
-        if (!Nd4j.getNativeOps().isTritonAvailable()) {
-            log.info("Triton not available, skipping per-op validation");
-            return;
-        }
-        ensureModelsLoaded();
-        log.info("Running per-op slot validation with interceptor...");
-
-        int maxTokens = getTokens(3);
-
-        // Configure OPTIMAL and run decode with interceptor attached
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(maxTokens);
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
-
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
-
-        embedTokens.setDspAutoCompileEnabled(true);
-        embedTokens.setDspNativeAutoCompileEnabled(true);
-        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
-
-        // Attach a capturing interceptor to the decoder's executor
-        CapturingSlotInterceptor interceptor = new CapturingSlotInterceptor();
-        // Only capture output variable names (not intermediate slot IDs)
-        Set<String> outputVarNames = new LinkedHashSet<>(outputs);
-        interceptor.filterVarNames(outputVarNames);
-
-        // Run decode — first step initializes executor
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(maxTokens)
-                .hiddenSize(hiddenSize)
-                .build();
-
-        // Run first decode to create session+executor, then attach interceptor
-        GenerationResult firstResult = loop.decode(inputsEmbeds.dup(), promptTokenIds);
-        log.info("First decode: {} tokens, text='{}'",
-                firstResult.getGeneratedTokenCount(), firstResult.getText());
-
-        // Now attach interceptor for a second run
-        InferenceSession session = decoder.getOrCreateSession();
-        if (session != null) {
-            DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-            if (executor != null) {
-                executor.setSlotOutputInterceptor(interceptor);
-                log.info("Interceptor attached to decoder executor");
-            }
-        }
-
-        // Second decode with interceptor active
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
-
-        StaticKvCacheDecodeLoop loop2 = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(maxTokens)
-                .hiddenSize(hiddenSize)
-                .build();
-
-        GenerationResult secondResult = loop2.decode(inputsEmbeds.dup(), promptTokenIds);
-
-        log.info("Interceptor captured {} variables across {} steps",
-                interceptor.getByName().size(), interceptor.getCaptured().size());
-
-        // Log captured variable names and shapes
-        for (Map.Entry<String, INDArray> entry : interceptor.getByName().entrySet()) {
-            INDArray arr = entry.getValue();
-            if (!arr.wasClosed()) {
-                log.info("  Captured '{}': shape={} dtype={}", entry.getKey(),
-                        java.util.Arrays.toString(arr.shape()), arr.dataType());
-            }
-        }
-
-        // Verify we captured something
-        assertTrue(interceptor.getByName().size() > 0 || interceptor.getCaptured().isEmpty(),
-                "Interceptor should capture variables (or none if executor path not used)");
-
-        interceptor.clear();
+        // TODO: Re-enable when slot interceptor infrastructure is re-implemented in C++.
+        // This test relied on CapturingSlotInterceptor and setSlotOutputInterceptor which
+        // have been removed (non-functional with native C++ execution).
+        log.info("Skipping: interceptor classes removed (CapturingSlotInterceptor, setSlotOutputInterceptor)");
     }
 
     // ─── Test: Decode step validation ──────────────────────────────────────

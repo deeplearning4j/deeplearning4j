@@ -30,6 +30,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 #include <helpers/logger.h>
 
 #ifdef SD_CUDA
@@ -49,17 +50,14 @@ namespace sd {
 namespace graph {
 namespace triton_internal {
 
-// ─── FNV-1a hashing for disk cache keys ──────────────────────────────────────
+// ─── FNV-1a hashing for disk cache keys ─���────────────────────────────────────
+// Canonical definitions in <graph/DspHashUtils.h>; aliased here for convenience.
 
-constexpr uint64_t FNV1A64_OFFSET_BASIS = 1469598103934665603ULL;
-constexpr uint64_t FNV1A64_PRIME = 1099511628211ULL;
+constexpr uint64_t FNV1A64_OFFSET_BASIS = dsp::FNV1A64_OFFSET_BASIS;
+constexpr uint64_t FNV1A64_PRIME        = dsp::FNV1A64_PRIME;
 
 inline void mixFNV1a(uint64_t& hash, const void* data, size_t size) {
-  const auto* bytes = static_cast<const unsigned char*>(data);
-  for (size_t i = 0; i < size; i++) {
-    hash ^= static_cast<uint64_t>(bytes[i]);
-    hash *= FNV1A64_PRIME;
-  }
+  dsp::fnv1aMix(hash, data, size);
 }
 
 // ─── Metadata parsing ────────────────────────────────────────────────────────
@@ -117,8 +115,8 @@ inline void markOrderedRangeDeviceCurrent(int startSlot, int endSlot, NativeSlot
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
 
-    for (int i = 0; i < slot.numInputs; i++) {
-      NDArray* arr = resolveRangeArray(slot.inputSourceIndices[i],
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      NDArray* arr = resolveRangeArray(slot.wiring.inputSourceIndices[i],
                                        externalInputs, numExternalInputs,
                                        outputSlots, totalOutputSlots);
       if (arr == nullptr || arr->dataBuffer() == nullptr) continue;
@@ -129,8 +127,8 @@ inline void markOrderedRangeDeviceCurrent(int startSlot, int endSlot, NativeSlot
       }
     }
 
-    for (int o = 0; o < slot.numOutputs; o++) {
-      int outIdx = slot.outputSlotIndices[o];
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      int outIdx = slot.wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
       NDArray* arr = outputSlots[outIdx];
       if (arr == nullptr || arr->dataBuffer() == nullptr) continue;

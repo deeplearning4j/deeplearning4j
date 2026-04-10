@@ -76,7 +76,7 @@ public class TestDSPSlotLifecycle {
     private static boolean isCPU;
 
     /** Input image spatial size used across all tests. */
-    private static final int TARGET_SIZE = 256;
+    private static final int TARGET_SIZE = 512;
 
     /** Output node name for the vision encoder. */
     private static final List<String> OUTPUT_NAMES = List.of("image_features");
@@ -116,6 +116,13 @@ public class TestDSPSlotLifecycle {
     public static void teardown() {
         if (visionEncoder != null) {
             visionEncoder.close();
+        }
+    }
+
+    @BeforeEach
+    public void resetBeforeTest() {
+        if (visionEncoder != null) {
+            visionEncoder.resetSession();
         }
     }
 
@@ -428,7 +435,8 @@ public class TestDSPSlotLifecycle {
         Assumptions.assumeTrue(modelsLoaded, "Models not loaded — skipping");
 
         // Use a fixed seed for reproducible input
-        INDArray fixedInput = Nd4j.rand(DataType.FLOAT, 1, 1, 3, TARGET_SIZE, TARGET_SIZE, 42);
+        Nd4j.getRandom().setSeed(42);
+        INDArray fixedInput = Nd4j.rand(DataType.FLOAT, 1, 1, 3, TARGET_SIZE, TARGET_SIZE);
         INDArray mask = createPixelMask();
 
         int numRuns = 4;

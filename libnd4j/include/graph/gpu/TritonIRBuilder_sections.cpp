@@ -1166,6 +1166,8 @@ void TritonIRBuilder::emitGatherSection(mlir::OpBuilder& builder, mlir::Location
                                          const std::vector<LongType>& dataShape,
                                          const std::vector<LongType>& indicesShape,
                                          int nElements, bool gatherNd) {
+  DSP_DIAG(JIT, "emitGatherSection: axis=%d nElements=%d gatherNd=%d dataRank=%d idxRank=%d blockSize=%d",
+           axis, nElements, gatherNd ? 1 : 0, (int)dataShape.size(), (int)indicesShape.size(), blockSize);
   auto i32Type = builder.getI32Type();
   auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
 
@@ -1402,6 +1404,8 @@ void TritonIRBuilder::emitConcatSection(mlir::OpBuilder& builder, mlir::Location
                                          mlir::Value outputPtr, int axis,
                                          const std::vector<std::vector<LongType>>& inputShapes,
                                          int nElements) {
+  DSP_DIAG(JIT, "emitConcatSection: axis=%d nElements=%d numInputs=%d blockSize=%d",
+           axis, nElements, (int)inputPtrs.size(), blockSize);
   if (inputPtrs.empty() || inputShapes.empty()) return;
 
   auto i32Type = builder.getI32Type();
@@ -1943,6 +1947,9 @@ void TritonIRBuilder::emitMatmulSection(mlir::OpBuilder& builder, mlir::Location
   int M = section.matmulM, N = section.matmulN, K = section.matmulK;
   int blockM = section.blockM, blockN = section.blockN, blockK = section.blockK;
 
+  DSP_DIAG(JIT, "emitMatmulSection: M=%d N=%d K=%d block=(%d,%d,%d) epilogues=%d",
+           M, N, K, blockM, blockN, blockK, section.matmulEpilogueCount);
+
   if (M == 0 || N == 0 || K == 0) {
     DSP_DIAG(COMPILE, "TritonIRBuilder::emitMatmulSection: invalid dimensions M=%d N=%d K=%d", M, N, K);
     return;
@@ -1979,10 +1986,10 @@ void TritonIRBuilder::emitMatmulSection(mlir::OpBuilder& builder, mlir::Location
   auto bElemType = bPtrType.getPointeeType();
   auto cElemType = cPtrType.getPointeeType();
 
-  auto dotPrecision = mlir::triton::InputPrecision::TF32;
-  if (!mlir::isa<mlir::Float32Type>(aElemType)) {
-    dotPrecision = mlir::triton::InputPrecision::IEEE;
-  }
+  auto dotPrecision = (mlir::isa<mlir::Float32Type>(aElemType) &&
+                       sd::Environment::getInstance().tritonTf32Enabled())
+      ? mlir::triton::InputPrecision::TF32
+      : mlir::triton::InputPrecision::IEEE;
 
   auto blockMConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockM, 32);
   auto blockNConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockN, 32);
@@ -2223,6 +2230,8 @@ void TritonIRBuilder::emitAttentionSection(mlir::OpBuilder& builder, mlir::Locat
                                             mlir::Value pid, const KernelSection& section,
                                             mlir::Value qPtr, mlir::Value kPtr,
                                             mlir::Value vPtr, mlir::Value outPtr) {
+  DSP_DIAG(JIT, "emitAttentionSection: batch=%d heads=%d seqQ=%d seqK=%d headDim=%d",
+           section.batchSize, section.numHeads, section.seqQ, section.seqK, section.headDim);
   (void)pid;
   // Delegate to the existing emitFusedAttentionKernel, which creates its own
   // GetProgramIdOp. For the sectioned kernel, this is called within an scf.if
@@ -2302,6 +2311,8 @@ void TritonIRBuilder::emitRoPESection(mlir::OpBuilder& builder, mlir::Location l
                                        const std::vector<LongType>& inputShape,
                                        const std::vector<LongType>& cosShape,
                                        int ropeType, int nElements) {
+  DSP_DIAG(JIT, "emitRoPESection: ropeType=%d nElements=%d inputRank=%d cosRank=%d blockSize=%d",
+           ropeType, nElements, (int)inputShape.size(), (int)cosShape.size(), blockSize);
   auto i32Type = builder.getI32Type();
   auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
   auto f32Type = builder.getF32Type();
@@ -2738,6 +2749,9 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
                                               int strideH, int strideW,
                                               int padH, int padW,
                                               int nElements, int wFormat) {
+  DSP_DIAG(JIT, "emitConvolutionSection: inRank=%d filterRank=%d outRank=%d stride=(%d,%d) pad=(%d,%d) nElem=%d",
+           (int)inputShape.size(), (int)filterShape.size(), (int)outputShape.size(),
+           strideH, strideW, padH, padW, nElements);
   // Direct conv2d: each output element independently computes its value by
   // iterating over the filter spatial dimensions and input channels.
   //
@@ -2820,10 +2834,12 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
   auto ohSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ohConst);
   auto ocSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ocConst);
 
-  auto ow_idx = builder.create<mlir::arith::RemSIOp>(loc, offsets, owSplat);
-  auto tmp1 = builder.create<mlir::arith::DivSIOp>(loc, offsets, owSplat);
-  auto oh_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp1.getResult(), ohSplat);
-  auto tmp2 = builder.create<mlir::arith::DivSIOp>(loc, tmp1.getResult(), ohSplat);
+  // ND4J conv2d output uses Fortran-derived strides where OH is the
+  // fastest-varying spatial dimension. Decompose accordingly.
+  auto oh_idx = builder.create<mlir::arith::RemSIOp>(loc, offsets, ohSplat);
+  auto tmp1 = builder.create<mlir::arith::DivSIOp>(loc, offsets, ohSplat);
+  auto ow_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp1.getResult(), owSplat);
+  auto tmp2 = builder.create<mlir::arith::DivSIOp>(loc, tmp1.getResult(), owSplat);
   auto oc_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp2.getResult(), ocSplat);
   auto n_idx = builder.create<mlir::arith::DivSIOp>(loc, tmp2.getResult(), ocSplat);
 
@@ -2899,11 +2915,17 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
             w_in));
 
     // Load input value (masked by bounds check AND element mask)
+    // Out-of-bounds positions must contribute 0.0 for correct zero-padding semantics
     auto combinedMask = builder.create<mlir::arith::AndIOp>(loc, in_bounds, mask);
     auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtr);
     auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, inOffset);
+    auto inElemType = inPtrType.getPointeeType();
+    auto inElemTensorType = mlir::RankedTensorType::get({blockSize}, inElemType);
+    auto zeroPadScalar = builder.create<mlir::arith::ConstantOp>(loc, inElemType,
+        builder.getZeroAttr(inElemType));
+    auto zeroPadSplat = builder.create<mlir::triton::SplatOp>(loc, inElemTensorType, zeroPadScalar);
     auto inLoaded = builder.create<mlir::triton::LoadOp>(loc,
-        inPtrs.getResult(), combinedMask.getResult(), mlir::Value(),
+        inPtrs.getResult(), combinedMask.getResult(), zeroPadSplat.getResult(),
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
     auto inVal = castTo(builder, loc, inLoaded, f32Type);
 

@@ -31,6 +31,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <helpers/ConstantShapeHelper.h>
@@ -63,24 +64,17 @@ static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
 // Verified before replay — mismatch means output buffers were reallocated
 // and the CUDA graph has stale baked-in addresses (would SIGSEGV or corrupt).
 static LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
-  LongType hash = 0xcbf29ce484222325ULL;  // FNV-1a offset basis
-  for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
-    void* addr = (outputSlots[si] != nullptr) ? outputSlots[si]->specialBuffer() : nullptr;
-    LongType bits = reinterpret_cast<uintptr_t>(addr);
-    hash ^= bits;
-    hash *= 0x100000001b3ULL;  // FNV-1a prime
-  }
-  return hash;
+  return dsp::computeSlotAddrHash(outputSlots, startSlot, endSlot, totalSlots,
+      [](NDArray* a) -> void* { return a->specialBuffer(); });
 }
 
 // ─── Segment input address key computation ──────────────────────────────────
 
 LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
-  LongType key = 0xcbf29ce484222325ULL;
+  uint64_t key = dsp::FNV1A64_OFFSET_BASIS;
   auto mix = [&key](LongType val) {
-    key ^= val;
-    key *= 0x100000001b3ULL;
+    dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
   std::unordered_set<int> segOutputSlots;
@@ -130,8 +124,8 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
 namespace {
 uint32_t resolveCreateValueKeyTraits(const NativeSlot& slot) {
   uint32_t traits = 0;
-  if (slot.op != nullptr && slot.op->getOpDescriptor() != nullptr) {
-    traits |= slot.op->getOpDescriptor()->getTraits();
+  if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
+    traits |= slot.ident.op->getOpDescriptor()->getTraits();
   }
   if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
   if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
@@ -149,11 +143,10 @@ bool slotUsesValueTrackedConstantGeneration(const NativeSlot& slot) {
 
 LongType NativeDynamicShapePlan::computeCreateOpValueKey(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
-  LongType key = 0;
+  uint64_t key = 0;
   auto mix = [&key](LongType val) {
-    if (key == 0) key = 0xcbf29ce484222325ULL;
-    key ^= val;
-    key *= 0x100000001b3ULL;
+    if (key == 0) key = dsp::FNV1A64_OFFSET_BASIS;
+    dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
   // Part 1: Hash create op inputs (original logic)
@@ -198,10 +191,6 @@ LongType NativeDynamicShapePlan::computeCreateOpValueKey(
     }
   }
 
-  // Part 2: Placeholder external inputs (position_ids, attention_mask, etc.)
-  // are replayed from their canonical device buffers. Address drift is handled
-  // separately by computeSegmentInputAddrKey/external address snapshots, so the
-  // create op hash (Part 1) only needs to catch value-driven shape changes.
 
   return key;
 }
@@ -221,143 +210,6 @@ bool NativeDynamicShapePlan::externalAddrsMatch(
   return seg.exec.replayHandle->externalAddressesMatch(externalInputs, numExt);
 }
 
-// ─── Segment execution: NVRTC JIT compilation ────────────────────────────────
-
-Status NativeDynamicShapePlan::executeSegmentWithJit(
-    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
-
-  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-
-  // ── 1. If cached JIT kernel exists and shape matches, launch directly ──
-  if (seg.exec.jitKernel != nullptr && seg.exec.jitKernel->valid && seg.exec.jitShapeKey == segShapeKey) {
-    // Phase 2: slotArrayCache_ == outputSlots_ (unified), no restore needed
-
-    int64_t elementCount = 0;
-    for (int s = seg.def.endSlot; s >= seg.def.startSlot; s--) {
-      if (slots_[s].frozenConstantSlot() || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
-      for (int o = 0; o < slots_[s].numOutputs; o++) {
-        int si = slots_[s].outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
-          elementCount = outputSlots_[si]->lengthOf();
-          break;
-        }
-      }
-      if (elementCount > 0) break;
-    }
-
-    if (elementCount <= 0) {
-      DSP_DIAG(JIT, "NVRTC JIT: zero element count for seg[%d-%d]", seg.def.startSlot, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
-    }
-
-    auto status = launchKernel(seg.exec.jitKernel, elementCount,
-                               externalArrays, numExt,
-                               outputSlots_, totalOutputSlots_,
-                               stream);
-    if (status == Status::OK) {
-      seg.exec.executionCount++;
-      return Status::OK;
-    }
-    delete seg.exec.jitKernel;
-    seg.exec.jitKernel = nullptr;
-    seg.exec.jitCompileFailed = true;
-    return Status::KERNEL_FAILURE;
-  }
-
-  // ── 2. Warmup pass (executionCount == 0): slot-by-slot ──
-  if (seg.exec.executionCount == 0) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // ── 3. Compile pass ──
-  if (seg.exec.jitKernel != nullptr && seg.exec.jitShapeKey != segShapeKey) {
-    delete seg.exec.jitKernel;
-    seg.exec.jitKernel = nullptr;
-  }
-
-  if (!canJitSegment(slots_, seg.def.startSlot, seg.def.endSlot)) {
-    seg.exec.jitCompileFailed = true;
-    DSP_DIAG(FALLBACK, "NVRTC JIT: seg[%d-%d] not fusible, falling back",
-             seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
-  // Phase 2: slotArrayCache_ == outputSlots_ (unified), no restore needed
-
-  int segIdx = 0;
-  for (size_t i = 0; i < segments_.size(); i++) {
-    if (&segments_[i] == &seg) { segIdx = static_cast<int>(i); break; }
-  }
-
-  auto source = buildKernelSource(slots_, seg.def.startSlot, seg.def.endSlot,
-                                  outputSlots_, totalOutputSlots_, segIdx);
-  if (!source.valid) {
-    seg.exec.jitCompileFailed = true;
-    DSP_DIAG(JIT, "NVRTC JIT: source generation failed for seg[%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
-  DSP_DIAG_SEG(JIT, segIdx, "NVRTC: compiling kernel '%s' for seg[%d-%d] (%zu bytes source)",
-               source.kernelName.c_str(), seg.def.startSlot, seg.def.endSlot,
-               source.sourceCode.size());
-
-  int deviceId = 0;
-  cudaGetDevice(&deviceId);
-  seg.exec.jitKernel = compileKernel(source, deviceId);
-  if (seg.exec.jitKernel == nullptr || !seg.exec.jitKernel->valid) {
-    seg.exec.jitCompileFailed = true;
-    delete seg.exec.jitKernel;
-    seg.exec.jitKernel = nullptr;
-    DSP_DIAG(JIT, "NVRTC JIT: compilation failed for seg[%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
-  seg.exec.jitShapeKey = segShapeKey;
-
-  int64_t elementCount = 0;
-  for (int s = seg.def.endSlot; s >= seg.def.startSlot; s--) {
-    if (slots_[s].frozenConstantSlot() || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
-    for (int o = 0; o < slots_[s].numOutputs; o++) {
-      int si = slots_[s].outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
-        elementCount = outputSlots_[si]->lengthOf();
-        break;
-      }
-    }
-    if (elementCount > 0) break;
-  }
-
-  if (elementCount <= 0) {
-    DSP_DIAG(JIT, "NVRTC JIT: zero element count for seg[%d-%d]", seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
-  auto status = launchKernel(seg.exec.jitKernel, elementCount,
-                             externalArrays, numExt,
-                             outputSlots_, totalOutputSlots_,
-                             stream);
-  if (status == Status::OK) {
-    seg.exec.executionCount++;
-    DSP_DIAG_SEG(JIT, segIdx, "NVRTC: launched '%s' for seg[%d-%d] (%lld elements)",
-                 seg.exec.jitKernel->kernelName.c_str(), seg.def.startSlot, seg.def.endSlot,
-                 static_cast<long long>(elementCount));
-    return Status::OK;
-  }
-
-  delete seg.exec.jitKernel;
-  seg.exec.jitKernel = nullptr;
-  seg.exec.jitCompileFailed = true;
-  return Status::KERNEL_FAILURE;
-}
-
-// ─── Segment execution: CUDA Graph capture/replay ────────────────────────────
-
-// cuBLAS workspace functions (ensureCublasWorkspace, setCublasWorkspaceForCapture,
-// restoreCublasWorkspaceAfterCapture) are in NativeDynamicShapePlan_cublas.cu
-// because cublas_v2.h includes cuda_fp16.h which conflicts with our float16.h
-// when compiled by g++.
 
 Status NativeDynamicShapePlan::executeSegmentWithGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
@@ -367,8 +219,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     if (&segments_[i] == &seg) { segIdx = static_cast<int>(i); break; }
   }
 
-  // Compute shape key for this segment's inputs
-  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+  // ── Segment shape key: detect whether recompilation/recapture is needed ──
+  // Frozen + cached key: reuse (shapes can't change). Otherwise: compute once and cache.
+  // computeSegmentShapeKey is expensive (per-element D2H sync) so only call when needed.
+  LongType segShapeKey;
+  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
+    segShapeKey = seg.exec.cachedShapeKey;
+  } else {
+    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+    if (shapesFrozen_) {
+      seg.exec.cachedShapeKey = segShapeKey;
+    }
+  }
 
   {
     bool hasGraph = (seg.exec.replayHandle != nullptr);
@@ -380,7 +242,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   auto invalidateSegmentShapeState = [&](GraphSegment& segRef) {
-    for (int stepIdx = segRef.startSlot; stepIdx <= segRef.endSlot; stepIdx++) {
+    for (int stepIdx = segRef.def.startSlot; stepIdx <= segRef.def.endSlot; stepIdx++) {
       auto& slot = slots_[stepIdx];
       slot.state_ = NativeSlot::SlotState::WARMUP;
       slot.shapeCache.cachedShapeKey = 0;
@@ -494,7 +356,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   bool hasValueDependentShapeOps = false;
   for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
-    if (slots_[stepIdx].outputShapeDependsOnInputValues) {
+    if (slots_[stepIdx].flags.outputShapeDependsOnInputValues) {
       hasValueDependentShapeOps = true;
       break;
     }
@@ -592,7 +454,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   std::vector<std::pair<int, NDArray*>> savedExternalInputs;
   std::vector<std::pair<int, NDArray*>> savedOutputSlots;
   std::vector<NDArray*> preCapOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
-  // pendingClose_ removed: arrays persist (one array per slot)
 
   std::vector<NativeSlot::SlotState> savedFrozenContextReady(seg.def.endSlot - seg.def.startSlot + 1);
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
@@ -707,7 +568,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         if (capErr != cudaSuccess || capStatus != cudaStreamCaptureStatusActive) {
           DSP_DIAG_SLOT(COMPILE, stepIdx, "CAPTURE BROKEN before slot %d (%s): "
                        "capErr=%d capStatus=%d",
-                       stepIdx, slots_[stepIdx].opName.c_str(),
+                        stepIdx, slots_[stepIdx].ident.opName.c_str(),
                        static_cast<int>(capErr), static_cast<int>(capStatus));
           captureOk = false;
           break;
@@ -730,7 +591,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         if (capErr != cudaSuccess || capStatus != cudaStreamCaptureStatusActive) {
           DSP_DIAG_SLOT(COMPILE, stepIdx, "CAPTURE INVALIDATED by slot %d (%s)! "
                        "capErr=%d capStatus=%d",
-                       stepIdx, slots_[stepIdx].opName.c_str(),
+                        stepIdx, slots_[stepIdx].ident.opName.c_str(),
                        static_cast<int>(capErr), static_cast<int>(capStatus));
           captureOk = false;
           break;
@@ -741,18 +602,17 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       {
         cuda::CaptureAuditEntry entry;
         entry.slotIndex = stepIdx;
-        entry.opName = slots_[stepIdx].opName;
+          entry.opName = slots_[stepIdx].ident.opName;
         entry.nodesBefore = nodesBefore;
         entry.nodesAfter = nodesAfter;
         entry.nodesContributed = (nodesAfter > nodesBefore) ? (nodesAfter - nodesBefore) : 0;
         lastCaptureAudit_.push_back(std::move(entry));
       }
 
-      // Release schedule removed: arrays persist (one array per slot)
     }
   } catch (const std::exception& e) {
     DSP_DIAG(FALLBACK, "exception during graph capture at slot %d (%s): %s",
-             lastCaptureSlot, slots_[lastCaptureSlot].opName.c_str(), e.what());
+             lastCaptureSlot, slots_[lastCaptureSlot].ident.opName.c_str(), e.what());
     captureOk = false;
     std::string msg(e.what());
     if (msg.find("allocation failed") != std::string::npos) {
@@ -1065,7 +925,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     seg.exec.compilationFailed = false;
   }
 
-  // Phase 2: slotArrayCache_ == outputSlots_ (unified), no restore needed
 
   if (seg.exec.captureOomRetries > 0) {
     DSP_DIAG_SEG(MEMORY, segIdx, "graph capture SUCCEEDED on OOM retry %d for seg[%d-%d]",
@@ -1118,8 +977,8 @@ void NativeDynamicShapePlan::performReplayVerify(
 
   // Find final output slot for argmax
   int finalOutputSlot = -1;
-  if (seg.def.endSlot >= 0 && seg.def.endSlot < numSlots_ && slots_[seg.def.endSlot].numOutputs > 0) {
-    finalOutputSlot = slots_[seg.def.endSlot].outputSlotIndices[0];
+  if (seg.def.endSlot >= 0 && seg.def.endSlot < numSlots_ && slots_[seg.def.endSlot].wiring.numOutputs > 0) {
+    finalOutputSlot = slots_[seg.def.endSlot].wiring.outputSlotIndices[0];
   }
   if (finalOutputSlot < 0 || finalOutputSlot >= totalOutputSlots_) {
     finalOutputSlot = seg.def.endSlot;
@@ -1150,8 +1009,8 @@ void NativeDynamicShapePlan::performReplayVerify(
 
   std::unordered_map<int, int> slotToStep;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
-    for (int oi = 0; oi < slots_[s].numOutputs; oi++) {
-      int si = slots_[s].outputSlotIndices[oi];
+    for (int oi = 0; oi < slots_[s].wiring.numOutputs; oi++) {
+      int si = slots_[s].wiring.outputSlotIndices[oi];
       if (si >= 0 && si < totalOutputSlots_) slotToStep[si] = s;
     }
   }
@@ -1286,7 +1145,7 @@ void NativeDynamicShapePlan::performReplayVerify(
     if (maxDiff > 1e-3f) {
       mismatchCount++;
       if (firstMismatchSlot < 0) firstMismatchSlot = snap.slotIdx;
-      const char* opName = (snap.stepIdx < numSlots_) ? slots_[snap.stepIdx].opName.c_str() : "?";
+       const char* opName = (snap.stepIdx < numSlots_) ? slots_[snap.stepIdx].ident.opName.c_str() : "?";
       int nShow = std::min(compareCount, 4);
       float rv[4]={0}, fv[4]={0};
       dspBytesToFloat(snap.data.data(), snap.dtype, rv, nShow);

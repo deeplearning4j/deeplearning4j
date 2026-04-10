@@ -128,7 +128,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"assign",         IDENT},
 
         // ── Cast ───────────────────────────────────────────────────────────
-        {"cast",           UNARY_EW},
+        {"cast",           UNARY_EW | OP_TRAIT_CAST},
 
         // ── Clip ───────────────────────────────────────────────────────────
         {"clipbyvalue",    UNARY_EW},
@@ -190,6 +190,13 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"mmul",           MATMUL},
         {"batched_gemm",   MATMUL},
         {"tensormmul",     MATMUL},
+        {"fp8_matmul",     MATMUL},
+        {"smooth_quant",   MATMUL},
+        {"awq_matmul",     MATMUL},
+        {"column_parallel_linear", MATMUL},
+        {"row_parallel_linear",    MATMUL},
+        {"multi_lora_matmul",      MATMUL},
+        {"fused_gemm_swiglu",      MATMUL},
 
         // ── Reduction ops ──────────────────────────────────────────────────
         // NOTE: Many are DeclarableReductionOp subclasses → auto-derived.
@@ -231,6 +238,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"dot_product_attention_v2",        ATTN},
         {"flash_attention",                 ATTN},
         {"multi_head_dot_product_attention", ATTN},
+        {"multi_head_attention",            ATTN},
 
         // ── Token sampling ─────────────────────────────────────────────────
         {"token_sample",   OP_TRAIT_FULLY_WRITING},

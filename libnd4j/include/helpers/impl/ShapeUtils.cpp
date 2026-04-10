@@ -680,6 +680,71 @@ LongType* ShapeUtils::evalPermShapeInfo(LongType* dimensions, LongType rank, NDA
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Build permuted view shapeInfo from an input array and a permutation vector.
+// Handles rank mismatch (e.g. expand_dims added leading size-1 dims beyond
+// the permutation length). Returns a ConstantShapeHelper-managed buffer.
+// Returns nullptr if permutation cannot be constructed.
+const LongType* ShapeUtils::evalPermutedViewShapeInfo(const NDArray* input,
+                                                       const int* perm, int permLen) {
+  if (input == nullptr || perm == nullptr || permLen <= 0) return nullptr;
+
+  int rank = shape::rank(input->shapeInfo());
+  if (rank <= 0) return nullptr;
+
+  const LongType* inShape = shape::shapeOf(const_cast<LongType*>(input->shapeInfo()));
+  const LongType* inStrides = shape::stride(const_cast<LongType*>(input->shapeInfo()));
+
+  // Build effective permutation, adapting if rank > permLen
+  // (e.g., expand_dims added leading size-1 dims: rank-5 input with rank-4 permutation)
+  std::vector<int> permVec;
+  if (permLen >= rank) {
+    for (int i = 0; i < rank; i++) permVec.push_back(perm[i]);
+  } else if (permLen > 0) {
+    int extraDims = rank - permLen;
+    int leadingOnes = 0;
+    for (int i = 0; i < rank && leadingOnes < extraDims; i++) {
+      if (inShape[i] == 1) leadingOnes++;
+      else break;
+    }
+    if (leadingOnes >= extraDims) {
+      for (int i = 0; i < extraDims; i++) permVec.push_back(i);
+      for (int i = 0; i < permLen; i++) permVec.push_back(perm[i] + extraDims);
+    } else {
+      return nullptr;  // cannot adapt — not enough leading 1-dims
+    }
+  } else {
+    return nullptr;
+  }
+
+  // Build permuted shape and strides from input
+  std::vector<LongType> permShape(rank);
+  std::vector<LongType> permStrides(rank);
+  for (int i = 0; i < rank; i++) {
+    int srcDim = permVec[i];
+    if (srcDim < 0 || srcDim >= rank) return nullptr;  // invalid permutation index
+    permShape[i] = inShape[srcDim];
+    permStrides[i] = inStrides[srcDim];
+  }
+
+  // Build shape info buffer: [rank, shape..., strides..., 0, ews, order+flags]
+  auto shapeInfoLen = shape::shapeInfoLength(rank);
+  LongType* shapeInfoBuf = new LongType[shapeInfoLen];
+  shapeInfoBuf[0] = rank;
+  for (int i = 0; i < rank; i++) {
+    shapeInfoBuf[1 + i] = permShape[i];
+    shapeInfoBuf[1 + rank + i] = permStrides[i];
+  }
+  // extras (contains data type) — copy from input
+  shapeInfoBuf[2 * rank + 1] = input->shapeInfo()[2 * rank + 1];
+  // ews = 0 (view, not contiguous)
+  shapeInfoBuf[2 * rank + 2] = 0;
+  // Copy order from input
+  shapeInfoBuf[2 * rank + 3] = input->shapeInfo()[2 * rank + 3];
+
+  return ConstantShapeHelper::getInstance().createFromExisting(shapeInfoBuf);
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool ShapeUtils::copyVectorPart(std::vector<LongType>& target, std::vector<LongType>& source, LongType rank,
                                 LongType offset) {
   if (static_cast<sd::LongType>(source.size()) < offset + rank) return false;

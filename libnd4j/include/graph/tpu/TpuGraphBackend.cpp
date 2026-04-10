@@ -68,7 +68,7 @@ bool TpuGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (slots == nullptr || start >= end) return false;
 
   for (int i = start; i < end; ++i) {
-    const char* opName = slots[i].opName.c_str();
+    const char* opName = slots[i].ident.opName.c_str();
     if (!HloIRBuilder::isHloMappable(opName)) {
       DSP_DIAG(SEGMENT, "TpuGraphBackend::canFuseSegment: slot %d op '%s' "
                "not HLO-mappable", i, opName);
@@ -116,7 +116,7 @@ bool TpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     for (int i = start; i < end; ++i) {
       CompilationAuditEntry entry;
       entry.slotIndex = i;
-      entry.opName = slots[i].opName;
+      entry.opName = slots[i].ident.opName;
       entry.wasCompiled = false;
       entry.reason = "HLO module generation failed";
       lastAudit_.push_back(entry);
@@ -153,7 +153,7 @@ bool TpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     for (int i = start; i < end; ++i) {
       CompilationAuditEntry entry;
       entry.slotIndex = i;
-      entry.opName = slots[i].opName;
+      entry.opName = slots[i].ident.opName;
       entry.wasCompiled = false;
       entry.reason = "XLA compilation via PJRT failed";
       lastAudit_.push_back(entry);
@@ -168,7 +168,7 @@ bool TpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = start; i < end; ++i) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
+    entry.opName = slots[i].ident.opName;
     entry.wasCompiled = true;
     lastAudit_.push_back(entry);
   }
@@ -207,8 +207,8 @@ Status TpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Collect input arrays for this segment
   std::vector<void*> inputBuffers;
   for (int i = start; i < end; ++i) {
-    for (int j = 0; j < slots[i].numInputs; ++j) {
-      int srcIdx = slots[i].inputSourceIndices[j];
+    for (int j = 0; j < slots[i].wiring.numInputs; ++j) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[j];
       if (srcIdx < 0) {
         // External input
         int extIdx = -(srcIdx + 1);
@@ -230,8 +230,8 @@ Status TpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Collect output buffer pointers
   std::vector<void*> outputBufferPtrs;
   for (int i = start; i < end; ++i) {
-    for (int k = 0; k < slots[i].numOutputs; ++k) {
-      int outIdx = slots[i].outputSlotIndices[k];
+    for (int k = 0; k < slots[i].wiring.numOutputs; ++k) {
+      int outIdx = slots[i].wiring.outputSlotIndices[k];
       if (outIdx >= 0 && outIdx < totalOutputSlots &&
           outputSlots[outIdx] != nullptr) {
         outputBufferPtrs.push_back(outputSlots[outIdx]->specialBuffer());

@@ -1,5 +1,6 @@
 #include <graph/ReplayCacheManager.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspConstants.h>
 
 #include <fstream>
 #include <sstream>
@@ -41,21 +42,6 @@ namespace fs = std::filesystem;
 namespace sd {
 namespace graph {
 
-// FNV-1a 64-bit hash
-static LongType fnv1a64(const void* data, size_t len) {
-  const uint8_t* bytes = static_cast<const uint8_t*>(data);
-  LongType hash = 14695981039346656037ULL;
-  for (size_t i = 0; i < len; ++i) {
-    hash ^= bytes[i];
-    hash *= 1099511628211ULL;
-  }
-  return hash;
-}
-
-static LongType fnv1a64String(const std::string& s) {
-  return fnv1a64(s.data(), s.size());
-}
-
 // ── ReplayCacheDeviceKey ──
 
 ReplayCacheDeviceKey ReplayCacheDeviceKey::fromDeviceManager(DeviceType type, int localIndex) {
@@ -84,15 +70,6 @@ ReplayCacheDeviceKey ReplayCacheDeviceKey::fromDeviceManager(DeviceType type, in
     key.archId = "unknown";
   }
   return key;
-}
-
-ReplayCacheDeviceKey ReplayCacheDeviceKey::fromCurrentDevice() {
-#ifdef SD_CUDA
-  int devId = sd::AffinityManager::currentDeviceId();
-  return fromDeviceManager(DeviceType::CUDA_GPU, devId);
-#else
-  return fromDeviceManager(DeviceType::CPU, 0);
-#endif
 }
 
 std::string ReplayCacheDeviceKey::toString() const {
@@ -130,8 +107,8 @@ ReplayCacheManager::ReplayCacheManager() {
     cacheDir_ = cfgDir;
   } else {
     // Default to ~/.ndarray/replay_cache/
-    const char* home = std::getenv("HOME");
-    if (!home) home = std::getenv("USERPROFILE");
+    const char* home = std::getenv(sd::graph::dsp::ENV_HOME);
+    if (!home) home = std::getenv(sd::graph::dsp::ENV_USERPROFILE);
     if (home) {
       cacheDir_ = std::string(home) + "/.ndarray/replay_cache";
     } else {
@@ -156,121 +133,8 @@ std::string ReplayCacheManager::getCacheDir() const {
   return cacheDir_;
 }
 
-LongType ReplayCacheManager::computeCacheKey(const GraphSegment& seg, LongType shapeKey,
-                                              const ReplayCacheDeviceKey& device) const {
-  // Combine slot range + shape key + device key into a single hash
-  std::string keyStr = std::to_string(seg.def.startSlot) + ":" +
-                       std::to_string(seg.def.endSlot) + ":" +
-                       std::to_string(shapeKey) + ":" +
-                       device.toString();
-  return fnv1a64String(keyStr);
-}
-
 std::string ReplayCacheManager::getDeviceCacheDir(const ReplayCacheDeviceKey& device) const {
   return cacheDir_ + "/" + device.toString();
-}
-
-std::string ReplayCacheManager::getEntryFilePath(const ReplayCacheDeviceKey& device,
-                                                   LongType cacheKey) const {
-  return getDeviceCacheDir(device) + "/replay_" + std::to_string(cacheKey) + ".meta";
-}
-
-bool ReplayCacheManager::saveSegmentMetadata(const GraphSegment& seg, LongType shapeKey,
-                                              const ReplayCacheDeviceKey& device) {
-  if (!enabled_) return false;
-
-  LongType key = computeCacheKey(seg, shapeKey, device);
-
-  // Build entry
-  ReplayCacheEntry entry;
-  entry.cacheKey = key;
-  entry.startSlot = seg.def.startSlot;
-  entry.endSlot = seg.def.endSlot;
-  entry.shapeKey = shapeKey;
-  entry.backendName = seg.exec.compiledByBackend;
-  entry.workspaceHint = 0;
-  entry.numCaptureBuffers = 0;
-  entry.timestamp = static_cast<int64_t>(std::time(nullptr));
-
-  // Store in memory
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    std::string deviceKey = device.toString();
-    auto& entries = deviceCaches_[deviceKey];
-
-    // Replace or add
-    bool replaced = false;
-    for (auto& e : entries) {
-      if (e.cacheKey == key) {
-        e = entry;
-        replaced = true;
-        break;
-      }
-    }
-    if (!replaced) {
-      entries.push_back(entry);
-    }
-  }
-
-#if HAS_FILESYSTEM
-  try {
-    // Ensure directory exists
-    fs::create_directories(getDeviceCacheDir(device));
-
-    // Write entry to file
-    std::string path = getEntryFilePath(device, key);
-    std::ofstream file(path);
-    if (!file.is_open()) return false;
-
-    file << "{"
-         << "\"cacheKey\":" << key
-         << ",\"startSlot\":" << entry.startSlot
-         << ",\"endSlot\":" << entry.endSlot
-         << ",\"shapeKey\":" << entry.shapeKey
-         << ",\"backendName\":\"" << entry.backendName << "\""
-         << ",\"workspaceHint\":" << entry.workspaceHint
-         << ",\"numCaptureBuffers\":" << entry.numCaptureBuffers
-         << ",\"timestamp\":" << entry.timestamp
-         << "}";
-    return true;
-  } catch (...) {
-    return false;
-  }
-#else
-  return true;  // Memory-only cache when no filesystem support
-#endif
-}
-
-bool ReplayCacheManager::loadSegmentMetadata(const GraphSegment& seg, LongType shapeKey,
-                                              const ReplayCacheDeviceKey& device,
-                                              size_t& outWorkspaceHint, int& outNumCaptureBuffers,
-                                              std::string& outBackendName) {
-  if (!enabled_) {
-    cacheMisses_++;
-    return false;
-  }
-
-  LongType key = computeCacheKey(seg, shapeKey, device);
-
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    std::string deviceKey = device.toString();
-    auto it = deviceCaches_.find(deviceKey);
-    if (it != deviceCaches_.end()) {
-      for (const auto& e : it->second) {
-        if (e.cacheKey == key) {
-          outWorkspaceHint = e.workspaceHint;
-          outNumCaptureBuffers = e.numCaptureBuffers;
-          outBackendName = e.backendName;
-          cacheHits_++;
-          return true;
-        }
-      }
-    }
-  }
-
-  cacheMisses_++;
-  return false;
 }
 
 int ReplayCacheManager::loadAllForDevice(const ReplayCacheDeviceKey& device) {

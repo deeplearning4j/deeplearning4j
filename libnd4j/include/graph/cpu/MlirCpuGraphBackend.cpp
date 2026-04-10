@@ -48,11 +48,14 @@ bool MlirCpuGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) 
 
   // Check all ops are MLIR-mappable
   for (int i = start; i <= end; i++) {
-    if (!CpuIRBuilder::isMlirMappable(slots[i].opName)) {
+    if (!CpuIRBuilder::isMlirMappable(slots[i].ident.opName)) {
+      DSP_DIAG(BACKEND, "MlirCpuGraphBackend::canFuseSegment: unmappable op '%s' at slot %d",
+               slots[i].ident.opName.c_str(), i);
       return false;
     }
   }
 
+  DSP_DIAG(SEGMENT, "MlirCpuGraphBackend::canFuseSegment [%d-%d]: all %d ops mappable", start, end, segSize);
   return true;
 }
 
@@ -72,10 +75,15 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it != cache_.end() && it->second.valid) {
+      DSP_DIAG(JIT, "MlirCpuGraphBackend::compileSegment [%d-%d]: cache HIT (shapeKey=0x%llx)",
+               startSlot, endSlot, (long long)shapeKey);
       lastCompilationAudit_ = it->second.compilationAudit;
       return true;
     }
   }
+
+  DSP_DIAG(COMPILE, "MlirCpuGraphBackend::compileSegment [%d-%d]: cache MISS, compiling (shapeKey=0x%llx)",
+           startSlot, endSlot, (long long)shapeKey);
 
   // Analyze the segment
   auto analysis = CpuIRBuilder::analyzeSegment(slots, startSlot, endSlot, totalSlots,
@@ -129,8 +137,8 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = startSlot; i <= endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
-    entry.wasCompiled = CpuIRBuilder::isMlirMappable(slots[i].opName);
+    entry.opName = slots[i].ident.opName;
+    entry.wasCompiled = CpuIRBuilder::isMlirMappable(slots[i].ident.opName);
     if (!entry.wasCompiled) {
       entry.reason = "unsupported op category";
     }
@@ -166,14 +174,20 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it == cache_.end() || !it->second.valid) {
+      DSP_DIAG(EXECUTE, "MlirCpuGraphBackend::executeSegment [%d-%d]: no compiled kernel found",
+               startSlot, endSlot);
       return Status::KERNEL_FAILURE;
     }
     compiled = &it->second;
   }
 
   if (!compiled->kernel || !compiled->kernel->isValid()) {
+    DSP_DIAG(EXECUTE, "MlirCpuGraphBackend::executeSegment [%d-%d]: kernel invalid", startSlot, endSlot);
     return Status::KERNEL_FAILURE;
   }
+
+  DSP_DIAG(EXECUTE, "MlirCpuGraphBackend::executeSegment [%d-%d]: executing with %d args",
+           startSlot, endSlot, (int)compiled->argMappings.size());
 
   // Wire NDArray buffers to kernel arguments in the same order as compilation
   std::vector<NDArray*> inputArrays;

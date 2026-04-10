@@ -1947,7 +1947,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         DataBuffer buffer = create(this.length);
-        allocator.memcpyBlocking(buffer, new CudaPointer(allocator.getHostPointer(this).address()), this.length * elementSize, 0);
+        Pointer hostPtr = allocator.getHostPointer(this);
+        if (hostPtr == null) {
+            // Host pointer unavailable — fall back to device-side copy
+            Pointer devPtr = allocator.getPointer(this);
+            if (devPtr != null) {
+                allocator.memcpyBlocking(buffer, new CudaPointer(devPtr.address()), this.length * elementSize, 0);
+            }
+        } else {
+            allocator.memcpyBlocking(buffer, new CudaPointer(hostPtr.address()), this.length * elementSize, 0);
+        }
         return buffer;
     }
 

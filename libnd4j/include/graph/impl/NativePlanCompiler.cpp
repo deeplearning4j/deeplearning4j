@@ -222,16 +222,16 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
     // Resolve op — skip for control flow ops (they're handled by CF dispatch,
     // not as declarable ops, and may not be registered in OpRegistrator).
-    slot.op = nullptr;
+    slot.ident.op = nullptr;
     if (slot.cf.controlFlowType == CF_NONE) {
       if (!slot.ident.opName.empty()) {
-        slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.ident.opName.c_str());
+        slot.ident.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.ident.opName.c_str());
       }
       // Fallback to serialized hash for graphs that carry native hashes already.
-      if (!slot.op) {
-        slot.op = sd::ops::OpRegistrator::getInstance().getOperation(serializedOpHash);
+      if (!slot.ident.op) {
+        slot.ident.op = sd::ops::OpRegistrator::getInstance().getOperation(serializedOpHash);
       }
-      if (!slot.op) {
+      if (!slot.ident.op) {
         DSP_DIAG(COMPILE, "NativePlanCompiler: cannot resolve op hash=%lld name=%s",
                   serializedOpHash, slot.ident.opName.c_str());
         delete plan;
@@ -252,7 +252,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.fusedChain.isFusedChainTail = false;
     std::memset(slot.fusedChain.fusedChainOpCodes, 0, sizeof(slot.fusedChain.fusedChainOpCodes));
     std::memset(slot.fusedChain.fusedChainSlots, 0, sizeof(slot.fusedChain.fusedChainSlots));
-    std::fill(std::begin(slot.fusedChainSecondaryInputSources), std::end(slot.fusedChainSecondaryInputSources), INT32_MIN);
+    std::fill(std::begin(slot.fusedChain.fusedChainSecondaryInputSources), std::end(slot.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
 
     // Build input wiring from inputPaired
     auto* inputPaired = node->inputPaired();
@@ -261,17 +261,17 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     // Classify op via OpDescriptor traits (set by OpTraitTable at init time).
     // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
     // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
-    bool isDataDep = hasOpTrait(slot.op, sd::ops::OP_TRAIT_DATA_DEPENDENT);
+    bool isDataDep = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_DATA_DEPENDENT);
     if (isDataDep && normalizeOpName(slot.ident.opName) == "where" && numInputs == 3) {
       isDataDep = false;
     }
     slot.flags.isDataDependent = isDataDep;
-    slot.flags.isIdentityOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_IDENTITY);
-    slot.flags.isViewCapableOp = hasOpTrait(slot.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
+    slot.flags.isIdentityOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_IDENTITY);
+    slot.flags.isViewCapableOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
     // View-capable ops share input buffer → no zeroing needed (would corrupt input data).
     // Non-view-capable data-movement ops still need zeroing for safety.
     slot.flags.needsZeroedOutput = slot.flags.isViewCapableOp ? false
-                             : (!hasOpTrait(slot.op, sd::ops::OP_TRAIT_FULLY_WRITING) || isDataDep);
+                             : (!hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_FULLY_WRITING) || isDataDep);
     slot.wiring.numInputs = numInputs;
     slot.wiring.inputSourceIndices = new int[numInputs];
     slot.wiring.inputSourceTypes = new int8_t[numInputs];
@@ -387,7 +387,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     // shapeStatic=false propagation AND shape key value-hashing for graph replay.
     // The trait table is the single source of truth — no more hardcoded lists or
     // hasIntLong heuristics. If an op is missing from the table, add it there.
-    bool isValueDepShape = hasOpTrait(slot.op, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+    bool isValueDepShape = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
     slot.flags.outputShapeDependsOnInputValues = isValueDepShape || isDataDep;
 
     // Build output wiring

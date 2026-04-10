@@ -26,7 +26,9 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/FusionPass.h>
 #include <ops/OpTraitTable.h>
 #include <system/op_boilerplate.h>
@@ -85,17 +87,9 @@ static void backfillCachedOutputShapes(NativeSlot& slot, NDArray** outputSlots, 
 
 namespace {
 
+// Delegate to shared utilities in DspAnalysisUtils.h
 static int findProducingStepForOutputSlot(const NativeSlot* slots, int numSlots, int outputSlotIdx) {
-  if (slots == nullptr || outputSlotIdx < 0) return -1;
-  for (int s = 0; s < numSlots; s++) {
-    const auto& slot = slots[s];
-    for (int o = 0; o < slot.wiring.numOutputs; o++) {
-      if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
-        return s;
-      }
-    }
-  }
-  return -1;
+  return dsp::findProducingStepForOutputSlot(slots, numSlots, outputSlotIdx);
 }
 
 static NDArray* resolveInputSourceArray(int srcIdx,
@@ -103,11 +97,7 @@ static NDArray* resolveInputSourceArray(int srcIdx,
                                         int totalOutputSlots,
                                         NDArray** externalArrays,
                                         int numExt) {
-  if (srcIdx < 0) {
-    const int extIdx = -(srcIdx + 1);
-    return (extIdx >= 0 && extIdx < numExt) ? externalArrays[extIdx] : nullptr;
-  }
-  return (srcIdx >= 0 && srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
+  return dsp::resolveInputSourceArray(srcIdx, outputSlots, totalOutputSlots, externalArrays, numExt);
 }
 
 static bool isSmallIntegralControlArray(const NDArray* arr) {
@@ -409,70 +399,22 @@ static void appendUpstreamControlTrace(std::string& out,
 }
 
 /**
- * Build shape info for a permute view: takes the input's shape info and permutes
- * both dimensions AND strides according to the permutation vector.
- * Unlike calculateOutputShape (which sets contiguous strides), this preserves
- * the input's actual stride pattern so the view reads data correctly.
+ * Build shape info for a permute view: delegates to ShapeUtils::evalPermutedViewShapeInfo.
+ * Unlike calculateOutputShape (which sets contiguous strides), the ShapeUtils function
+ * preserves the input's actual stride pattern so the view reads data correctly.
  *
  * Returns a ConstantShapeHelper-managed pointer (not owned by caller).
  */
 static const LongType* buildPermutedViewShapeInfo(const NDArray* input, const NativeSlot& slot) {
-  int rank = shape::rank(input->shapeInfo());
-  if (rank <= 0) return nullptr;
-
-  const LongType* inShape = shape::shapeOf(const_cast<LongType*>(input->shapeInfo()));
-  const LongType* inStrides = shape::stride(const_cast<LongType*>(input->shapeInfo()));
-
-  // Build effective permutation, adapting if rank > numIArgs
-  // (e.g., expand_dims added leading size-1 dims: rank-5 input with rank-4 permutation)
+  // Build the permutation array from iArgs
   std::vector<int> permVec;
-  if (slot.args.numIArgs >= rank) {
-    for (int i = 0; i < rank; i++) permVec.push_back(static_cast<int>(slot.args.iArgs[i]));
-  } else if (slot.args.numIArgs > 0) {
-    int extraDims = rank - slot.args.numIArgs;
-    int leadingOnes = 0;
-    for (int i = 0; i < rank && leadingOnes < extraDims; i++) {
-      if (inShape[i] == 1) leadingOnes++;
-      else break;
-    }
-    if (leadingOnes >= extraDims) {
-      for (int i = 0; i < extraDims; i++) permVec.push_back(i);
-      for (int i = 0; i < slot.args.numIArgs; i++) permVec.push_back(static_cast<int>(slot.args.iArgs[i]) + extraDims);
-    } else {
-      return nullptr;
-    }
+  if (slot.args.numIArgs > 0) {
+    for (int i = 0; i < slot.args.numIArgs; i++) permVec.push_back(static_cast<int>(slot.args.iArgs[i]));
   } else {
     return nullptr;
   }
 
-  // Build permuted shape and strides from input
-  std::vector<LongType> permShape(rank);
-  std::vector<LongType> permStrides(rank);
-
-  for (int i = 0; i < rank; i++) {
-    int srcDim = permVec[i];
-    if (srcDim < 0 || srcDim >= rank) return nullptr;  // invalid permutation
-    permShape[i] = inShape[srcDim];
-    permStrides[i] = inStrides[srcDim];
-  }
-
-  // Build shape info buffer: [rank, shape..., strides..., 0, ews, order+flags]
-  auto shapeInfoLen = shape::shapeInfoLength(rank);
-  // Allocate — createFromExisting takes ownership
-  LongType* shapeInfoBuf = new LongType[shapeInfoLen];
-  shapeInfoBuf[0] = rank;
-  for (int i = 0; i < rank; i++) {
-    shapeInfoBuf[1 + i] = permShape[i];
-    shapeInfoBuf[1 + rank + i] = permStrides[i];
-  }
-  // extras (contains data type) — copy from input
-  shapeInfoBuf[2 * rank + 1] = input->shapeInfo()[2 * rank + 1];
-  // ews = 0 (view, not contiguous)
-  shapeInfoBuf[2 * rank + 2] = 0;
-  // Copy order from input
-  shapeInfoBuf[2 * rank + 3] = input->shapeInfo()[2 * rank + 3];
-
-  return ConstantShapeHelper::getInstance().createFromExisting(shapeInfoBuf);
+  return ShapeUtils::evalPermutedViewShapeInfo(input, permVec.data(), static_cast<int>(permVec.size()));
 }
 
 std::string normalizeOpName_slotexec(const std::string& opName) {
@@ -624,7 +566,8 @@ static ViewCreateResult tryCreateViewForSlot(
 
   // Compute view offset for strided_slice
   LongType viewOffset = 0;
-  if (slot.ident.opName == "strided_slice") {
+  if (slot.ident.op && slot.ident.op->getOpDescriptor() &&
+      slot.ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SLICE)) {
     viewOffset = computeStridedSliceViewOffset(slot, input0, allInputs, numInputs);
     if (viewOffset < 0) {
       return VIEW_STRIDED_SLICE_FAIL;
@@ -636,8 +579,8 @@ static ViewCreateResult tryCreateViewForSlot(
   LongType sourceBufferElems =
       input0->dataBuffer() != nullptr ? input0->dataBuffer()->getNumElements() : 0;
   bool allowSubsetView =
-      slot.op != nullptr && slot.op->getOpDescriptor() != nullptr &&
-      slot.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SLICE);
+      slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr &&
+      slot.ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SLICE);
   bool elementCountCompatible =
       allowSubsetView ? (outLen > 0 && outLen <= inLen) : (outLen > 0 && outLen == inLen);
   bool fitsBackingBuffer =
@@ -718,8 +661,8 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     auto& sl = slots_[s];
 
     // Check if this op is value-independent via trait
-    bool isShapeOnly = (sl.op && sl.op->getOpDescriptor() &&
-                        sl.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT));
+    bool isShapeOnly = (sl.ident.op && sl.ident.op->getOpDescriptor() &&
+                        sl.ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT));
     if (isShapeOnly) {
       isValueIndependentSlot[s] = true;
       continue;
@@ -759,7 +702,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
         break;
       }
     }
-    if (allOutputsConstant && !sl.isDataDependent) {
+    if (allOutputsConstant && !sl.flags.isDataDependent) {
       sl.state_ = NativeSlot::SlotState::FROZEN_CONSTANT;
       frozenConstCount++;
       if (isValueIndependentSlot[s]) valueIndepCount++;
@@ -832,12 +775,12 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   int disabledInPlace = 0;
   for (int s = 0; s < numSlots_; s++) {
     auto& sl = slots_[s];
-    if (sl.inPlaceFused && sl.inPlaceFusedInputIdx >= 0 &&
-        sl.inPlaceFusedInputIdx < sl.wiring.numInputs) {
-      int srcSlot = sl.wiring.inputSourceIndices[sl.inPlaceFusedInputIdx];
+    if (sl.flags.inPlaceFused && sl.flags.inPlaceFusedInputIdx >= 0 &&
+        sl.flags.inPlaceFusedInputIdx < sl.wiring.numInputs) {
+      int srcSlot = sl.wiring.inputSourceIndices[sl.flags.inPlaceFusedInputIdx];
       if (srcSlot >= 0 && frozenOutputSlots.count(srcSlot)) {
-        sl.inPlaceFused = false;
-        sl.inPlaceFusedInputIdx = -1;
+        sl.flags.inPlaceFused = false;
+        sl.flags.inPlaceFusedInputIdx = -1;
         disabledInPlace++;
       }
     }
@@ -846,41 +789,38 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants (%d value-independent, %d in-place disabled, %d view-alias unfrozen)",
             frozenConstCount, numSlots_, valueIndepCount, disabledInPlace, viewAliasUnfrozen);
 
-  // Log which output slots are frozen constant vs external-dependent for debugging
-  // NaN issues during frozen steady-state execution.
+  // Log external-dependency summary for frozen constant debugging.
   if (DSP_DIAG_ENABLED(SHAPE)) {
     int extDepCount = 0;
     for (int si = 0; si < totalOutputSlots_; si++) {
       if (dependsOnExternal[si]) extDepCount++;
     }
-    fprintf(stdout, "[DSP_DIAG] [FROZEN_CONST] %d/%d output slots depend on external input\n",
-            extDepCount, totalOutputSlots_);
-    // Log specific slots around the known NaN chain for debugging
-    for (int checkSlot : {299, 1214, 1215}) {
-      if (checkSlot < totalOutputSlots_) {
-        bool depExt = dependsOnExternal[checkSlot];
-        // Find which step produces this output slot
-        int producingStep = -1;
-        bool isFrozenConst = false, isShapeStatic = false;
-        for (int s = 0; s < numSlots_; s++) {
-          for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
-            if (slots_[s].wiring.outputSlotIndices[o] == checkSlot) {
-              producingStep = s;
-              isFrozenConst = slots_[s].frozenConstantSlot();
-              isShapeStatic = slots_[s].shapeStatic;
-              goto foundStep;
-            }
+    DSP_DIAG(SHAPE, "frozen constant detection: %d/%d output slots depend on external input",
+             extDepCount, totalOutputSlots_);
+
+    // At FULL level, log per-slot details for the configured trace slot (if any).
+    int ts = DspDiagnostics::getInstance().traceSlot();
+    if (ts >= 0 && ts < totalOutputSlots_) {
+      bool depExt = dependsOnExternal[ts];
+      int producingStep = -1;
+      bool isFrozenConst = false, isShapeStatic = false;
+      for (int s = 0; s < numSlots_; s++) {
+        for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+          if (slots_[s].wiring.outputSlotIndices[o] == ts) {
+            producingStep = s;
+            isFrozenConst = slots_[s].frozenConstantSlot();
+            isShapeStatic = slots_[s].shapeCache.shapeStatic;
+            goto foundTraceStep;
           }
         }
-        foundStep:;
-        fprintf(stdout, "[DSP_DIAG] [FROZEN_CONST] outSlot=%d dependsOnExternal=%d "
-                "producingStep=%d frozenConst=%d shapeStatic=%d opName=%s\n",
-                checkSlot, depExt ? 1 : 0, producingStep,
-                isFrozenConst ? 1 : 0, isShapeStatic ? 1 : 0,
-                producingStep >= 0 ? slots_[producingStep].ident.opName.c_str() : "?");
       }
+      foundTraceStep:;
+      DSP_DIAG(SHAPE, "trace slot outSlot=%d dependsOnExternal=%d "
+               "producingStep=%d frozenConst=%d shapeStatic=%d opName=%s",
+               ts, depExt ? 1 : 0, producingStep,
+               isFrozenConst ? 1 : 0, isShapeStatic ? 1 : 0,
+               producingStep >= 0 ? slots_[producingStep].ident.opName.c_str() : "?");
     }
-    fflush(stdout);
   }
 }
 
@@ -888,11 +828,9 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
 
 LongType NativeDynamicShapePlan::computeShapeKey(
     NativeSlot& slot, NDArray** inputs, int numInputs) {
-  // FNV-1a style hash
-  LongType key = 0xcbf29ce484222325ULL;
+  uint64_t key = dsp::FNV1A64_OFFSET_BASIS;
   auto mix = [&key](LongType val) {
-    key ^= val;
-    key *= 0x100000001b3ULL;
+    dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
   // Mix op identity
@@ -1105,9 +1043,9 @@ Status NativeDynamicShapePlan::executeSlot(
       return Status::BAD_INPUT;
     }
 
-    bool headIsBinary = (slot.fusedChainSecondaryInputSources[0] != INT32_MIN);
+    bool headIsBinary = (slot.fusedChain.fusedChainSecondaryInputSources[0] != INT32_MIN);
     if (headIsBinary && slot.wiring.numInputs == 2) {
-      int secSrc = slot.fusedChainSecondaryInputSources[0];
+      int secSrc = slot.fusedChain.fusedChainSecondaryInputSources[0];
       for (int k = 0; k < slot.wiring.numInputs; k++) {
         if (slot.wiring.inputSourceIndices[k] != secSrc) {
           int chainSrcIdx = slot.wiring.inputSourceIndices[k];
@@ -1304,8 +1242,9 @@ Status NativeDynamicShapePlan::executeSlot(
             goto normalExecution;
           } else if (vcr == VIEW_STALE_EMPTY_SHAPE) {
             if (executeCount_ > 1) {
-              sd_printf("DSP BUG: Frozen output empty post-warmup at slot %d (%s) — persistence bug. executeCount=%d\n",
-                        stepIdx, slot.ident.opName.c_str(), executeCount_);
+              DSP_DIAG_SLOT(VERIFY, stepIdx,
+                  "BUG: Frozen output empty post-warmup at slot %d (%s) — persistence bug. executeCount=%d",
+                  stepIdx, slot.ident.opName.c_str(), executeCount_);
             }
             // Stale empty shape from Step 0 — input is now non-empty.
             // Invalidate frozen state and fall through to normal path
@@ -1388,8 +1327,9 @@ Status NativeDynamicShapePlan::executeSlot(
         }
         if (allEmpty) {
           if (executeCount_ > 1) {
-            sd_printf("DSP BUG: Frozen output empty post-warmup at slot %d (%s) — persistence bug. executeCount=%d\n",
-                      stepIdx, slot.ident.opName.c_str(), executeCount_);
+            DSP_DIAG_SLOT(VERIFY, stepIdx,
+                "BUG: Frozen outputs empty post-warmup at slot %d (%s) — persistence bug. executeCount=%d",
+                stepIdx, slot.ident.opName.c_str(), executeCount_);
           }
           DSP_DIAG_SLOT(SHAPE, stepIdx,
               "view-capable slot %d (%s): frozen outputs empty but input non-empty "
@@ -1458,21 +1398,23 @@ Status NativeDynamicShapePlan::executeSlot(
 
     // Log attention op inputs for frozen tracking / lineage debugging
     if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_EXECUTE)) {
-      const char* opName = slot.op->getOpName()->c_str();
+      const char* opName = slot.ident.op->getOpName()->c_str();
       if (strcmp(opName, "onnx_multi_head_attention") == 0 || strcmp(opName, "dot_product_attention_v2") == 0) {
         int nIn = (int)ctx.fastpath_in().size();
         DSP_DIAG(EXECUTE, "ATTN_OP_INPUTS: %s step=%d slot=%d numInputs=%d planInputs=%d",
                  opName, executeCount_, stepIdx, nIn, slot.wiring.numInputs);
-        if (nIn > 6) {
-          NDArray* cachePos = ctx.fastpath_in()[6];
-          DSP_DIAG(EXECUTE, "ATTN_OP_CACHE_POS: input[6]=%p type=%d val=%lld",
-                   cachePos, cachePos ? (int)cachePos->dataType() : -1,
-                   (cachePos && cachePos->lengthOf() > 0) ? cachePos->e<sd::LongType>(0) : -999);
+        // Log all attention op inputs for debugging — not just a single hardcoded index
+        int detailLimit = std::min(nIn, sd::graph::DspDiagnostics::getInstance().diagDetailLimit());
+        for (int ai = 0; ai < detailLimit; ai++) {
+          NDArray* inp = ctx.fastpath_in()[ai];
+          DSP_DIAG(EXECUTE, "ATTN_OP_INPUT[%d]: ptr=%p type=%d len=%lld",
+                   ai, inp, inp ? (int)inp->dataType() : -1,
+                   (inp && inp->lengthOf() > 0) ? (long long)inp->lengthOf() : -1);
         }
       }
     }
 
-    auto status = slot.op->execute(&ctx);
+    auto status = slot.ident.op->execute(&ctx);
 
     auto& ctxOuts = ctx.fastpath_out();
     for (int i = 0; i < slot.wiring.numOutputs && i < static_cast<int>(ctxOuts.size()); i++) {
@@ -1741,7 +1683,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
     ShapeList* shapeList = nullptr;
     try {
-      shapeList = slot.op->calculateOutputShape(&inputShapes, ctx);
+      shapeList = slot.ident.op->calculateOutputShape(&inputShapes, ctx);
     } catch (const std::exception& e) {
       DSP_DIAG_SLOT(SHAPE, stepIdx, "shape inference EXCEPTION at slot %d (%s): %s",
                 stepIdx, slot.ident.opName.c_str(), e.what());
@@ -2156,7 +2098,7 @@ step3_allocate:
       const LongType* cachedShape = cached->shapeInfo();
       if (shape::equalsSoft(cachedShape, shapeInfo) &&
           ArrayOptions::dataType(cachedShape) == dt) {
-        // CRITICAL: Skip batch-zero for view-capable slots. Their outputs share
+        //  Skip batch-zero for view-capable slots. Their outputs share
         // buffers with inputs and zeroing would corrupt input data.
         if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture() &&
             !slot.flags.isViewCapableOp) {
@@ -2269,7 +2211,7 @@ step3_allocate:
     try {
       out = new NDArray(order, shape, dt);
       // Register output for batch-zero if needed.
-      // CRITICAL: Skip registration for view-capable slots. Their output buffers
+      //  Skip registration for view-capable slots. Their output buffers
       // share data with inputs (views), and zeroing them would corrupt the input
       // data. The input buffers must remain valid for downstream consumers.
       if (slot.flags.needsZeroedOutput && !isBatchZeroActive() &&
@@ -2382,7 +2324,8 @@ step3_allocate:
   }
 
   // Log shapes for matmul gap slots to diagnose capture shape mismatches
-  if (DSP_DIAG_ENABLED(EXECUTE) && normalizeOpName_slotexec(slot.ident.opName) == "matmul") {
+  if (DSP_DIAG_ENABLED(EXECUTE) && slot.ident.op && slot.ident.op->getOpDescriptor() &&
+      slot.ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_MATMUL)) {
     std::string inStr, outStr, cachedStr;
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       if (i > 0) inStr += ", ";
@@ -2439,7 +2382,7 @@ step3_allocate:
 
   Status status;
   try {
-    status = slot.op->execute(&ctx);
+    status = slot.ident.op->execute(&ctx);
   } catch (const std::exception& e) {
     // Reshape failures and other exceptions land here — log with DSP_DIAG
     std::string inputShapes, outputShapesStr;

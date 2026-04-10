@@ -21,7 +21,6 @@
 package org.eclipse.deeplearning4j.model.benchmark;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.samediff.execution.CapturingSlotInterceptor;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -202,72 +201,6 @@ public class MultiLevelComparator {
      * @param testLabel       label for test (e.g., "TRITON_NO_GC")
      * @return divergence report
      */
-    public DivergenceReport compareCapturedIntermediates(
-            CapturingSlotInterceptor refInterceptor,
-            CapturingSlotInterceptor testInterceptor,
-            String refLabel, String testLabel) {
-        return compareCapturedIntermediates(refInterceptor, testInterceptor, refLabel, testLabel, null);
-    }
-
-    /**
-     * Compare captured intermediate tensors with optional variable name filter.
-     *
-     * @param varNameFilter if non-null, only compare variables in this set
-     */
-    public DivergenceReport compareCapturedIntermediates(
-            CapturingSlotInterceptor refInterceptor,
-            CapturingSlotInterceptor testInterceptor,
-            String refLabel, String testLabel,
-            Set<String> varNameFilter) {
-
-        Map<Integer, Map<String, INDArray>> refCaptured = refInterceptor.getCaptured();
-        Map<Integer, Map<String, INDArray>> testCaptured = testInterceptor.getCaptured();
-
-        List<OpDivergence> divergences = new ArrayList<>();
-        int compared = 0;
-        int matched = 0;
-
-        for (Map.Entry<Integer, Map<String, INDArray>> stepEntry : refCaptured.entrySet()) {
-            int stepIdx = stepEntry.getKey();
-            Map<String, INDArray> refStep = stepEntry.getValue();
-            Map<String, INDArray> testStep = testCaptured.get(stepIdx);
-
-            if (testStep == null) continue;
-
-            String opName = refInterceptor.getStepToOpName() != null
-                    ? refInterceptor.getStepToOpName().getOrDefault(stepIdx, "unknown")
-                    : "unknown";
-
-            for (Map.Entry<String, INDArray> varEntry : refStep.entrySet()) {
-                String varName = varEntry.getKey();
-
-                if (varNameFilter != null && !varNameFilter.contains(varName)) continue;
-
-                INDArray refArr = varEntry.getValue();
-                INDArray testArr = testStep.get(varName);
-                if (testArr == null) continue;
-
-                compared++;
-                double absTol = config.getAbsTolForOp(opName);
-                OpDivergence div = DspAccuracyValidator.compareArrays(
-                        refArr, testArr, varName, opName, stepIdx,
-                        absTol, config.getDefaultRelTol(), null);
-                if (div == null) {
-                    matched++;
-                } else {
-                    divergences.add(div);
-                    if (config.isStopAtFirst()) break;
-                    if (divergences.size() >= config.getMaxDivergences()) break;
-                }
-            }
-
-            if (config.isStopAtFirst() && !divergences.isEmpty()) break;
-            if (divergences.size() >= config.getMaxDivergences()) break;
-        }
-
-        return new DivergenceReport(refLabel, testLabel, compared, matched, divergences);
-    }
-
     // ─── Tensor Comparison ──────────────────────────────────────────────────
 
     /**

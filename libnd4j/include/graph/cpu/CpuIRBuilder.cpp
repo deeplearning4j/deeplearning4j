@@ -65,7 +65,10 @@ std::string toLower(const std::string& s) {
 bool CpuIRBuilder::isMlirMappable(const std::string& opName) {
   const auto& table = getOpCategoryTable();
   auto it = table.find(opName);
-  if (it == table.end()) return false;
+  if (it == table.end()) {
+    DSP_DIAG(BACKEND, "CpuIRBuilder::isMlirMappable: op '%s' not in category table", opName.c_str());
+    return false;
+  }
   // Accept ALL categories except UNSUPPORTED
   return it->second != TritonOpCategory::UNSUPPORTED;
 }
@@ -103,16 +106,16 @@ SegmentAnalysis CpuIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot, i
   // Count unique input args
   std::unordered_set<int> internalSlotOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalSlotOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalSlotOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
   std::unordered_set<int> seenInputs;
   int inputArgCount = 0;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
       if (srcIdx < 0) {
@@ -1254,15 +1257,15 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
 
   std::unordered_set<int> internalOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
   // Collect input buffer args
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (sourceToArgIdx.count(srcIdx)) continue;
 
       NDArray* arr = nullptr;
@@ -1287,8 +1290,8 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
   // Collect output buffer args
   auto externalOutputSet = computeExternallyVisibleOutputs(slots, startSlot, endSlot, totalSlots);
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       if (!externalOutputSet.count(outIdx)) continue;
       if (sourceToArgIdx.count(outIdx)) continue;
 
@@ -1305,8 +1308,8 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
   // Also register internal intermediate outputs that have consumer ops needing
   // their memref (for non-element-wise ops that use full-array emitters)
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       if (sourceToArgIdx.count(outIdx)) continue;
       // Check if any non-trivial consumer needs this as a full memref
       NDArray* arr = nullptr;

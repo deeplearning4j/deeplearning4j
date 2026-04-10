@@ -33,9 +33,12 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
+#include <graph/DspStreamGuard.h>
 #include <helpers/ConstantShapeHelper.h>
+#include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <helpers/AttentionWorkspace.h>
@@ -69,14 +72,8 @@ bool isStrictNoFallbackMode(GraphExecutionMode mode) {
 }
 
 LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
-  LongType hash = 0xcbf29ce484222325ULL;
-  for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
-    void* addr = (outputSlots[si] != nullptr) ? outputSlots[si]->specialBuffer() : nullptr;
-    LongType bits = reinterpret_cast<uintptr_t>(addr);
-    hash ^= bits;
-    hash *= 0x100000001b3ULL;
-  }
-  return hash;
+  return dsp::computeSlotAddrHash(outputSlots, startSlot, endSlot, totalSlots,
+      [](NDArray* a) -> void* { return a->specialBuffer(); });
 }
 
 bool bindSegmentCudaDevice(const GraphSegment& segment,
@@ -186,7 +183,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
     if (seg0.exec.capturedSlotAddrHash != 0) {
       frozenFastPathSlotsStable =
-          (computeSlotAddrHash(outputSlots_, seg0.startSlot, seg0.endSlot, totalOutputSlots_) ==
+          (computeSlotAddrHash(outputSlots_, seg0.def.startSlot, seg0.def.endSlot, totalOutputSlots_) ==
            seg0.exec.capturedSlotAddrHash);
     }
   }
@@ -342,10 +339,17 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     NDArray** externalInputs, int numExternalInputs) {
   using Clock = std::chrono::high_resolution_clock;
 
-  if (executeCount_ != 1 || graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) return;
+  if (executeCount_ != 1 || graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    DSP_DIAG(COMPILE, "platformPrecompileSegments: skipped (execCount=%d mode=%d)",
+             executeCount_, static_cast<int>(graphExecutionMode_));
+    return;
+  }
 
   auto* gpuBackend = getGpuGraphBackend();
-  if (gpuBackend == nullptr) return;
+  if (gpuBackend == nullptr) {
+    DSP_DIAG(COMPILE, "platformPrecompileSegments: no GPU backend available");
+    return;
+  }
 
   struct PrecompileTask {
     int segIdx;
@@ -409,7 +413,7 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
                                             outputSlots_, totalOutputSlots_, task.shapeKey,
                                             numSlots_);
       if (ok) {
-        segments_[task.segIdx].shapeKey = task.shapeKey;
+        segments_[task.segIdx].def.shapeKey = task.shapeKey;
         precompileOk++;
       } else {
         precompileFail++;
@@ -432,6 +436,7 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
            "(ok=%d, failed=%d)",
            static_cast<long long>(precompileMs), precompileOk.load(), precompileFail.load());
 
+#if HAVE_TRITON
   // Report per-device Triton module memory budget
   {
     auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(gpuBackend);
@@ -451,6 +456,7 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
       }
     }
   }
+#endif
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -590,7 +596,10 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) return false;
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    DSP_DIAG_SEG(EXECUTE, segment.def.startSlot, "platformShouldUseGraph: false (GEM_SLOT_BY_SLOT)");
+    return false;
+  }
 
   // Non-frozen execution: use slot-by-slot to avoid memory leaks.
   // Graph capture/replay with tl_graphExecutionActive=true suppresses cudaFreeAsync
@@ -745,6 +754,9 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
+  DSP_DIAG_SEG(GRAPH_REPLAY, seg.def.startSlot,
+               "platformCleanupSegmentForRebuild: seg[%d-%d] hasReplay=%d",
+               seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle ? 1 : 0);
   if (seg.exec.replayHandle) {
     if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
       seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
@@ -762,6 +774,16 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformFreePlanResources() {
+  DSP_DIAG(MEMORY, "platformFreePlanResources: segments=%d slots=%d outputs=%d",
+           (int)segments_.size(), numSlots_, totalOutputSlots_);
+  // Free CUDA event used for cross-stream sync
+  if (executionCompleteEvent_ != nullptr) {
+    cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+    cudaEventDestroy(evt);
+    delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
+    executionCompleteEvent_ = nullptr;
+  }
+
   // Optionally invalidate Triton singleton cache entries for this plan's segments.
   // Default OFF: compiled kernels are reused across plan lifetimes (the disk
   // cache key no longer includes slot numbers, so modules stay valid).
@@ -928,6 +950,533 @@ bool NativeDynamicShapePlan::validateCapturedGraph(int segmentIndex) const {
   }
 
   return allOpsHaveNodes;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Additional platform dispatch (extracted from NativeDynamicShapePlan.cpp)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Helper: log GPU memory state
+static void logGpuMemState(const char* label) {
+  size_t freeMem = 0, totalMem = 0;
+  cudaMemGetInfo(&freeMem, &totalMem);
+  size_t usedMem = totalMem - freeMem;
+
+  cudaMemPool_t pool = nullptr;
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  cudaDeviceGetDefaultMemPool(&pool, deviceId);
+
+  uint64_t poolUsed = 0, poolReserved = 0;
+  if (pool != nullptr) {
+    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrUsedMemCurrent, &poolUsed);
+    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReservedMemCurrent, &poolReserved);
+  }
+
+  DSP_DIAG(MEMORY,
+      "[GPU-MEM %s] dev%d: used=%zu MB, free=%zu MB, total=%zu MB | "
+      "pool: used=%llu MB, reserved=%llu MB, reclaimable=%llu MB",
+      label, deviceId,
+      usedMem / (1024*1024), freeMem / (1024*1024), totalMem / (1024*1024),
+      poolUsed / (1024ULL*1024), poolReserved / (1024ULL*1024),
+      (poolReserved - poolUsed) / (1024ULL*1024));
+}
+
+void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, int execCount) {
+  // Create DspStreamGuard (heap-allocated so it lives for full execute() scope)
+  struct ExecutionState {
+    std::unique_ptr<sd::graph::DspStreamGuard> streamGuard;
+  };
+  auto* state = new ExecutionState();
+  if (stream != nullptr) {
+    state->streamGuard = std::make_unique<sd::graph::DspStreamGuard>(
+        *static_cast<cudaStream_t*>(stream));
+  }
+
+  // Stream ordering: ensure all async CUDA operations from Java complete before DSP execution.
+  if (stream != nullptr) {
+    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
+    // Check for prior CUDA errors before attempting sync
+    auto priorErr = cudaGetLastError();
+    if (priorErr != cudaSuccess) {
+      DSP_DIAG(EXECUTE, "platformBeginExecution: PRIOR CUDA ERROR before sync: %s (%d)",
+               cudaGetErrorString(priorErr), static_cast<int>(priorErr));
+    }
+    DSP_DIAG(EXECUTE, "platformBeginExecution: frozen=%d execCount=%d stream=%p syncing...",
+             static_cast<int>(frozen), execCount, static_cast<void*>(cudaStr));
+    if (!frozen || execCount <= 1) {
+      auto syncErr = cudaStreamSynchronize(cudaStr);
+      DSP_DIAG(EXECUTE, "platformBeginExecution: cudaStreamSynchronize returned %d (%s)",
+               static_cast<int>(syncErr), cudaGetErrorString(syncErr));
+    } else {
+      cudaEvent_t defaultStreamEvent;
+      cudaEventCreateWithFlags(&defaultStreamEvent, cudaEventDisableTiming);
+      cudaEventRecord(defaultStreamEvent, nullptr);
+      cudaStreamWaitEvent(cudaStr, defaultStreamEvent, 0);
+      cudaEventDestroy(defaultStreamEvent);
+    }
+  }
+
+  return static_cast<void*>(state);
+}
+
+void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* stream, bool frozen, int execCount) {
+  // Cross-stream synchronization
+  if (stream != nullptr) {
+    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
+    DSP_DIAG(EXECUTE, "platformEndExecution: frozen=%d execCount=%d stream=%p syncing...",
+             static_cast<int>(frozen), execCount, static_cast<void*>(cudaStr));
+    if (frozen && execCount > 1) {
+      if (executionCompleteEvent_ == nullptr) {
+        cudaEvent_t evt;
+        cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+        executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+      }
+      cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+      cudaEventRecord(evt, cudaStr);
+      cudaStreamWaitEvent(nullptr, evt, 0);
+    } else {
+      auto syncErr = cudaStreamSynchronize(cudaStr);
+      DSP_DIAG(EXECUTE, "platformEndExecution: cudaStreamSynchronize returned %d (%s)",
+               static_cast<int>(syncErr), cudaGetErrorString(syncErr));
+    }
+  }
+
+  // Free the execution state (DspStreamGuard destroyed here via unique_ptr)
+  struct ExecutionState {
+    std::unique_ptr<sd::graph::DspStreamGuard> streamGuard;
+  };
+  delete static_cast<ExecutionState*>(executionState);
+}
+
+void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount) {
+  if (!DSP_DIAG_ENABLED(EXECUTE)) return;
+  for (int dbgI = 0; dbgI < numExt; dbgI++) {
+    NDArray* arr = ext[dbgI];
+    if (arr == nullptr || arr->dataType() != FLOAT32 || arr->lengthOf() <= 0) continue;
+    auto* db = arr->dataBuffer();
+    int dumpN = std::min((int)arr->lengthOf(), 4);
+    std::vector<float> hostBuf(dumpN, 0.0f);
+    if (db && arr->specialBuffer() != nullptr) {
+      cudaMemcpy(hostBuf.data(), arr->specialBuffer(), dumpN * 4, cudaMemcpyDeviceToHost);
+    }
+    const char* nm = (dbgI < (int)externalInputNames_.size()) ? externalInputNames_[dbgI].c_str() : "?";
+    DSP_DIAG(EXECUTE, "EXT_ENTRY execCount=%d ext[%d]='%s' arr=%p sbuf=%p len=%lld "
+             "pAct=%d sAct=%d dev=[%.4f %.4f %.4f %.4f]",
+             execCount, dbgI, nm, (void*)arr, arr->specialBuffer(),
+             (long long)arr->lengthOf(),
+             db ? (db->isPrimaryActual() ? 1 : 0) : -1,
+             db ? (db->isSpecialActual() ? 1 : 0) : -1,
+             hostBuf[0], hostBuf[1], hostBuf[2], hostBuf[3]);
+  }
+}
+
+void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int extIdx, int execCount, void* stream) {
+  if (arr == nullptr) return;
+  if (arr->specialBuffer() != nullptr && arr->lengthOf() > 0 && arr->dataType() == FLOAT32) {
+    int dumpCount = std::min((int)arr->lengthOf(), 8);
+    std::vector<float> hostBuf(dumpCount);
+    cudaDeviceSynchronize();
+    cudaMemcpy(hostBuf.data(), arr->specialBuffer(), dumpCount * 4, cudaMemcpyDeviceToHost);
+    std::string valStr;
+    for (int v = 0; v < dumpCount; v++) {
+      if (v > 0) valStr += ",";
+      char buf[32]; snprintf(buf, sizeof(buf), "%.6f", hostBuf[v]); valStr += buf;
+    }
+    DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=%d GPU values: %s",
+             execCount, extIdx, valStr.c_str());
+  }
+}
+
+void NativeDynamicShapePlan::platformClearCastCache() {
+  MmulHelper::clearCastCache();
+}
+
+void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int execCount) {
+  size_t poolUsedPostSegs = 0, poolReservedPostSegs = 0;
+  sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedPostSegs, poolReservedPostSegs);
+  DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB",
+           poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024));
+
+  if (frozen) {
+    int trimInterval = Environment::getInstance().dspTrimInterval();
+    if (trimInterval > 0 && (execCount == 0 || (execCount % trimInterval) == 0)) {
+      int trimDeviceId = 0;
+      cudaGetDevice(&trimDeviceId);
+      sd::memory::CudaMemoryPool::getInstance().trimPool(trimDeviceId);
+      DSP_DIAG(MEMORY, "post-segments: trimmed pool on device %d (frozen exec=%d, interval=%d)",
+               trimDeviceId, execCount, trimInterval);
+    }
+  }
+}
+
+void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* stream) {
+  if (!DSP_DIAG_ENABLED(VERIFY) || execCount > 4) return;
+  for (int i = 0; i < numRequestedOutputs_; i++) {
+    int slotIdx = requestedOutputSlotIndices_[i];
+    NDArray* arr = (slotIdx >= 0 && slotIdx < totalOutputSlots_) ? outputSlots_[slotIdx] : nullptr;
+    if (arr == nullptr) continue;
+    void* sbuf = arr->specialBuffer();
+    if (sbuf && arr->dataType() == FLOAT32 && arr->lengthOf() >= 49280) {
+      auto len = arr->lengthOf();
+      std::vector<float> fullBuf(len);
+      cudaMemcpy(fullBuf.data(), sbuf, len * sizeof(float), cudaMemcpyDeviceToHost);
+      float maxVal = -1e30f;
+      int maxIdx = -1;
+      for (int j = 0; j < (int)len; j++) {
+        if (fullBuf[j] > maxVal) { maxVal = fullBuf[j]; maxIdx = j; }
+      }
+      DSP_DIAG_SLOT(VERIFY, slotIdx,
+          "logits maxIdx=%d maxVal=%.4f v@44=%.4f v@15539=%.4f",
+          maxIdx, maxVal, fullBuf[44], fullBuf[15539]);
+    }
+  }
+}
+
+void NativeDynamicShapePlan::platformDetectAndPrepareBatchedGemm(NDArray** ext, int numExt, void* stream) {
+  if (shapesFrozen_ && executeCount_ == 1 && batchedGemmGroups_.empty() &&
+      Environment::getInstance().dspBatchedGemm() &&
+      !gpuGraphCaptureEnabled_) {
+    detectBatchedGemmGroups(ext, numExt);
+    if (!batchedGemmGroups_.empty()) {
+      cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+      prepareBatchedGemmDevice(execStream);
+    }
+  }
+}
+
+void NativeDynamicShapePlan::platformPreReplayPoolStats(size_t& poolUsedOut, size_t& poolReservedOut) {
+  sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedOut, poolReservedOut);
+  DSP_DIAG(MEMORY, "pre-segments: pool used=%zuMB reserved=%zuMB",
+           poolUsedOut / (1024*1024), poolReservedOut / (1024*1024));
+
+  if (shapesFrozen_ && executeCount_ > 0 &&
+      cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
+    DSP_DIAG(MEMORY, "pre-segments: cuBLAS workspace PRESERVED (%zuMB) — plans stable",
+             cublasWorkspaceSize_ / (1024*1024));
+  }
+}
+
+void NativeDynamicShapePlan::platformPostReplayPoolManagement(size_t poolUsedPre, bool frozen, int execCount) {
+  size_t poolUsedPostSegs = 0, poolReservedPostSegs = 0;
+  sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedPostSegs, poolReservedPostSegs);
+  long long deltaMB = static_cast<long long>(poolUsedPostSegs - poolUsedPre) / (1024LL*1024);
+  DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB (delta=%lldMB from pre-segs)",
+           poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024), deltaMB);
+
+  if (frozen) {
+    int trimInterval = Environment::getInstance().dspTrimInterval();
+    if (trimInterval > 0 && (execCount == 0 || (execCount % trimInterval) == 0)) {
+      int trimDeviceId = 0;
+      cudaGetDevice(&trimDeviceId);
+      sd::memory::CudaMemoryPool::getInstance().trimPool(trimDeviceId);
+      DSP_DIAG(MEMORY, "post-segments: trimmed pool on device %d (frozen exec=%d, interval=%d)",
+               trimDeviceId, execCount, trimInterval);
+    }
+  }
+}
+
+void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, void* stream, int execCount) {
+  int traceSlot = sd::graph::DspDiagnostics::getInstance().traceSlot();
+  if (traceSlot >= 0 && traceSlot < totalOutputSlots_ && shapesFrozen_) {
+    auto* arr = outputSlots_[traceSlot];
+    if (arr != nullptr) {
+      auto* db = arr->dataBuffer();
+      void* gpuPtr = arr->specialBuffer();
+      float firstVals[4] = {0, 0, 0, 0};
+      if (gpuPtr != nullptr && arr->lengthOf() > 0 && arr->dataType() == FLOAT32) {
+        int n = std::min((int)arr->lengthOf(), 4);
+        cudaStream_t execStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+        if (execStr != nullptr) cudaStreamSynchronize(execStr);
+        cudaMemcpy(firstVals, gpuPtr, n * sizeof(float), cudaMemcpyDeviceToHost);
+      }
+      bool allZero = (firstVals[0] == 0.0f && firstVals[1] == 0.0f &&
+                     firstVals[2] == 0.0f && firstVals[3] == 0.0f);
+      bool hasNaN = (std::isnan(firstVals[0]) || std::isnan(firstVals[1]) ||
+                    std::isnan(firstVals[2]) || std::isnan(firstVals[3]));
+      if (allZero || hasNaN || execCount > 0) {
+        const char* tag = hasNaN ? "NaN" : (allZero ? "ZERO" : "OK");
+        DSP_DIAG(VERIFY, "SLOT_TRACE %s after seg[%d-%d]: slot=%d "
+                "arr=%p gpuPtr=%p db=%p closed=%d pAct=%d sAct=%d "
+                "vals=[%.6f,%.6f,%.6f,%.6f] execCount=%d",
+                tag,
+                seg.def.startSlot, seg.def.endSlot, traceSlot,
+                (void*)arr, gpuPtr, (void*)db,
+                db ? db->isClosed() : -1,
+                db ? (db->isPrimaryActual() ? 1 : 0) : -1,
+                db ? (db->isSpecialActual() ? 1 : 0) : -1,
+                firstVals[0], firstVals[1], firstVals[2], firstVals[3],
+                execCount);
+      }
+    }
+  }
+}
+
+void NativeDynamicShapePlan::platformUpdateDecodeInputs(NDArray** ext, int numExt,
+                                                         long long tokenId, int cachePos, void* stream) {
+  cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+
+  DSP_DIAG(EXECUTE, "updateDecodeInputs: ENTER tokenId=%lld cachePos=%d numExt=%d idsIdx=%d posIdx=%d maskIdx=%d",
+           tokenId, cachePos, numExt, decodeInputIdsExtIdx_, decodePositionIdsExtIdx_, decodeAttentionMaskExtIdx_);
+
+  // input_ids[0] = tokenId
+  if (decodeInputIdsExtIdx_ >= 0 && decodeInputIdsExtIdx_ < numExt) {
+    NDArray* ids = ext[decodeInputIdsExtIdx_];
+    DSP_DIAG(EXECUTE, "updateDecodeInputs: ids NDArray=%p specialBuf=%p len=%lld",
+             ids, ids ? ids->specialBuffer() : nullptr, ids ? (long long)ids->lengthOf() : -1);
+    if (ids != nullptr && ids->specialBuffer() != nullptr) {
+      LongType val = static_cast<LongType>(tokenId);
+      cudaMemcpyAsync(ids->specialBuffer(), &val, sizeof(LongType),
+                      cudaMemcpyHostToDevice, cudaStr);
+      ids->dataBuffer()->writeSpecial();
+    }
+  }
+
+  // position_ids[0] = cachePos
+  if (decodePositionIdsExtIdx_ >= 0 && decodePositionIdsExtIdx_ < numExt) {
+    NDArray* pos = ext[decodePositionIdsExtIdx_];
+    DSP_DIAG(EXECUTE, "updateDecodeInputs: pos NDArray=%p specialBuf=%p len=%lld",
+             pos, pos ? pos->specialBuffer() : nullptr, pos ? (long long)pos->lengthOf() : -1);
+    if (pos != nullptr && pos->specialBuffer() != nullptr) {
+      LongType val = static_cast<LongType>(cachePos);
+      cudaMemcpyAsync(pos->specialBuffer(), &val, sizeof(LongType),
+                      cudaMemcpyHostToDevice, cudaStr);
+      pos->dataBuffer()->writeSpecial();
+    }
+  }
+
+  // attention_mask[cachePos - 1] = 1
+  if (decodeAttentionMaskExtIdx_ >= 0 && decodeAttentionMaskExtIdx_ < numExt && cachePos > 0) {
+    NDArray* mask = ext[decodeAttentionMaskExtIdx_];
+    int writePos = cachePos - 1;
+    DSP_DIAG(EXECUTE, "updateDecodeInputs: mask NDArray=%p specialBuf=%p len=%lld cachePos=%d writePos=%d",
+             mask, mask ? mask->specialBuffer() : nullptr, mask ? (long long)mask->lengthOf() : -1,
+             cachePos, writePos);
+    if (mask != nullptr && mask->specialBuffer() != nullptr) {
+      LongType one = 1;
+      auto maskLen = mask->lengthOf();
+      if (writePos < maskLen) {
+        auto* dst = static_cast<LongType*>(mask->specialBuffer()) + writePos;
+        DSP_DIAG(EXECUTE, "updateDecodeInputs: mask dst=%p (base=%p + %d * %d)",
+                 dst, mask->specialBuffer(), writePos, (int)sizeof(LongType));
+        cudaMemcpyAsync(dst, &one, sizeof(LongType),
+                        cudaMemcpyHostToDevice, cudaStr);
+        mask->dataBuffer()->writeSpecial();
+      } else {
+        DSP_DIAG(EXECUTE, "updateDecodeInputs: SKIP attn_mask write writePos=%d maskLen=%lld (OOB)",
+                 writePos, (long long)maskLen);
+      }
+    }
+  }
+
+  DSP_DIAG(EXECUTE, "updateDecodeInputs: tokenId=%lld cachePos=%d", tokenId, cachePos);
+}
+
+void NativeDynamicShapePlan::platformPostKvScatterSync(int scattered, int pos, int numMappings) {
+  cudaError_t scatterErr = cudaDeviceSynchronize();
+  if (scatterErr != cudaSuccess) {
+    DSP_DIAG(EXECUTE,
+        "KV SCATTER CUDA ERROR: cudaDeviceSynchronize after kvScatterBatched "
+        "returned error %d (%s). scattered=%d pos=%d numMappings=%d",
+        static_cast<int>(scatterErr), cudaGetErrorString(scatterErr),
+        scattered, pos, numMappings);
+    cudaGetLastError();
+  }
+}
+
+SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
+  return isGraphCapture ? SelectedBackend::CUDA_GRAPHS : SelectedBackend::GPU_COMPILER;
+}
+
+bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const {
+  return false;  // No trait-based segmentation on GPU
+}
+
+void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
+  logGpuMemState("STEP-0-ENTRY");
+  for (auto& seg : segments_) {
+    if (seg.exec.replayHandle) {
+      if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
+        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
+      }
+      seg.exec.replayHandle->freeHostPointers();
+      seg.exec.replayHandle->clearExternalAddresses();
+      seg.exec.replayHandle.reset();
+    }
+    seg.exec.gapOpsCapturedInGraph = false;
+    seg.exec.argTableStable = false;
+    seg.exec.capturedInputAddrKey = 0;
+    seg.exec.compilationFailed = false;
+    seg.exec.executionCount = 0;
+    delete seg.exec.jitKernel;
+    seg.exec.jitKernel = nullptr;
+    seg.exec.cachedShapeKey = 0;
+    seg.exec.capturedCreateValueKey = 0;
+    seg.exec.captureOomRetries = 0;
+    seg.exec.captureRetryAfterExec = 0;
+    seg.exec.compiledByBackend.clear();
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    seg.exec.jitShapeKey = 0;
+    seg.exec.jitCompileFailed = false;
+    seg.exec.segBatchZeroEntries.clear();
+    seg.def.shapeKey = 0;
+  }
+  logGpuMemState("STEP-1-AFTER-SEGMENTS");
+
+  // Free cuBLAS workspace
+  if (cublasWorkspaceBuffer_ != nullptr) {
+    cudaFree(cublasWorkspaceBuffer_);
+    cublasWorkspaceBuffer_ = nullptr;
+    cublasWorkspaceSize_ = 0;
+  }
+
+  // Free batch-zero, batch-D2D, and batched-GEMM device arrays
+  freeBatchZeroResources();
+  freeBatchD2DResources();
+  freeBatchedGemmResources();
+  logGpuMemState("STEP-1-AFTER-BATCH-RESOURCES");
+}
+
+void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
+  DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed intermediate NDArrays");
+  logGpuMemState("STEP-2-AFTER-INTERMEDIATES");
+
+  // Free untracked output cache
+  if (untrackedOutputCache_) {
+    for (int i = 0; i < untrackedOutputCacheSize_; i++) {
+      delete untrackedOutputCache_[i];
+      untrackedOutputCache_[i] = nullptr;
+    }
+  }
+
+  // Clear MmulHelper cast cache
+  MmulHelper::clearCastCache();
+  logGpuMemState("STEP-4-AFTER-CAST-CACHE");
+
+  // Migrate weight buffers from async pool to direct cudaMalloc
+  {
+    cudaError_t syncErr = cudaDeviceSynchronize();
+    if (syncErr != cudaSuccess) {
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: cudaDeviceSynchronize failed: %s",
+               cudaGetErrorString(syncErr));
+      cudaGetLastError();
+    }
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+
+    int migratedCount = 0;
+    int skippedDirect = 0;
+    int skippedNonDevice = 0;
+    int failedMigrations = 0;
+    size_t migratedBytes = 0;
+    size_t totalWeightBytes = 0;
+    auto& pool = memory::CudaMemoryPool::getInstance();
+
+    DSP_DIAG(MEMORY, "Weight migration: %zu protected weight buffers to check",
+             protectedWeightBuffers_.size());
+
+    for (auto* db : protectedWeightBuffers_) {
+      if (db == nullptr || db->special() == nullptr) continue;
+
+      size_t bufSize = db->getLenInBytes();
+      totalWeightBytes += bufSize;
+
+      if (pool.isDirectAllocation(db->special())) {
+        skippedDirect++;
+        continue;
+      }
+
+      cudaPointerAttributes ptrAttrs;
+      cudaError_t attrErr = cudaPointerGetAttributes(&ptrAttrs, db->special());
+      if (attrErr != cudaSuccess) {
+        cudaGetLastError();
+        continue;
+      }
+      if (ptrAttrs.type != cudaMemoryTypeDevice) {
+        skippedNonDevice++;
+        continue;
+      }
+
+      if (bufSize == 0) continue;
+
+      void* directPtr = nullptr;
+      cudaError_t allocErr = cudaMalloc(&directPtr, bufSize);
+      if (allocErr != cudaSuccess || directPtr == nullptr) {
+        cudaGetLastError();
+        failedMigrations++;
+        DSP_DIAG(MEMORY,
+            "Weight migration FAILED for %zu bytes (%zu MB): %s",
+            bufSize, bufSize / (1024*1024), cudaGetErrorString(allocErr));
+        continue;
+      }
+
+      cudaError_t copyErr = cudaMemcpy(directPtr, db->special(), bufSize, cudaMemcpyDeviceToDevice);
+      if (copyErr != cudaSuccess) {
+        cudaFree(directPtr);
+        cudaGetLastError();
+        DSP_DIAG(MEMORY, "releaseGpuIntermediates: weight migration memcpy failed for %zu bytes: %s",
+                 bufSize, cudaGetErrorString(copyErr));
+        continue;
+      }
+
+      void* oldPtr = db->special();
+      cudaFreeAsync(oldPtr, nullptr);
+      db->replaceSpecialBuffer(directPtr, true);
+      pool.registerDirectAllocation(directPtr, bufSize);
+
+      migratedCount++;
+      migratedBytes += bufSize;
+    }
+
+    if (migratedCount > 0) {
+      cudaDeviceSynchronize();
+    }
+
+    DSP_DIAG(MEMORY,
+        "Weight migration summary: total=%zu MB, migrated=%d (%zu MB), "
+        "skippedDirect=%d, skippedNonDevice=%d, failed=%d",
+        totalWeightBytes / (1024*1024), migratedCount, migratedBytes / (1024*1024),
+        skippedDirect, skippedNonDevice, failedMigrations);
+
+    pool.trimPool(deviceId);
+    logGpuMemState("STEP-4b-AFTER-MIGRATION-AND-TRIM");
+
+    // Clear shape and TAD caches
+    {
+      auto shapeEntriesBefore = ConstantShapeHelper::getInstance().getCachedEntries();
+      auto tadEntriesBefore = ConstantTadHelper::getInstance().getCachedEntries();
+
+      ConstantShapeHelper::getInstance().clearCache();
+      ConstantTadHelper::getInstance().clearCache();
+
+      auto shapeEntriesAfter = ConstantShapeHelper::getInstance().getCachedEntries();
+      auto tadEntriesAfter = ConstantTadHelper::getInstance().getCachedEntries();
+
+      DSP_DIAG(MEMORY,
+          "Shape/TAD cache clear: shapes %lld->%lld, TADs %lld->%lld",
+          static_cast<long long>(shapeEntriesBefore), static_cast<long long>(shapeEntriesAfter),
+          static_cast<long long>(tadEntriesBefore), static_cast<long long>(tadEntriesAfter));
+
+      cudaDeviceSynchronize();
+      pool.trimPool(deviceId);
+      logGpuMemState("STEP-4c-AFTER-CACHE-CLEAR-AND-TRIM");
+    }
+  }
+
+  // Invalidate Triton compiled kernel cache
+#if HAVE_TRITON
+  {
+    std::vector<std::pair<int,int>> segRanges;
+    segRanges.reserve(segments_.size());
+    for (auto& seg : segments_) {
+      segRanges.emplace_back(seg.def.startSlot, seg.def.endSlot);
+    }
+    if (!segRanges.empty()) {
+      TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
+    }
+  }
+#endif
 }
 
 }  // namespace graph

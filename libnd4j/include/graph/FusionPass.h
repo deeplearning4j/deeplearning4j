@@ -100,26 +100,19 @@ public:
         const std::vector<FusionCandidate>& candidates);
 
     /**
-     * Check if an op hash corresponds to a unary elementwise operation.
-     */
-    static bool isUnaryElementwise(sd::LongType opHash);
-
-    /**
-     * Check if an op hash corresponds to a binary elementwise operation.
-     */
-    static bool isBinaryElementwise(sd::LongType opHash);
-
-    /**
-     * Check if an op hash corresponds to an activation function.
-     */
-    static bool isActivation(sd::LongType opHash);
-
-    /**
      * Maximum chain length for element-wise in-place buffer chaining.
      * No practical limit — each op is still a separate kernel launch,
      * so chain length only affects buffer reuse (no register pressure).
      */
     static constexpr int MAX_CHAIN_LENGTH = INT_MAX;
+
+    /**
+     * Sentinel value for fusedChainSecondaryInputSources entries that have
+     * no secondary input (i.e., unary ops in a fused chain).
+     * Distinct from negative source indices which encode external inputs
+     * as -(extIdx+1).
+     */
+    static constexpr int FUSED_NO_SECONDARY_SOURCE = INT32_MIN;
 };
 
 }  // namespace graph

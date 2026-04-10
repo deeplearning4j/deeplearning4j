@@ -37,6 +37,7 @@
 #include <graph/cpu/FunctionalReplayHandle.h>
 
 #include <cstring>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace graph {
@@ -254,6 +255,110 @@ int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
 
 void NativeDynamicShapePlan::platformMaybeSplitIfEnabled() {
   // No-op: adaptive splitting only benefits GPU graph capture
+}
+
+// ── Additional platform dispatch stubs (extracted from NativeDynamicShapePlan.cpp) ──
+
+void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, int execCount) {
+  return nullptr;  // No stream management on CPU
+}
+
+void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* stream, bool frozen, int execCount) {
+  // No cross-stream sync on CPU
+}
+
+void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount) {
+  // GPU diagnostic only
+}
+
+void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int extIdx, int execCount, void* stream) {
+  // GPU diagnostic only
+}
+
+void NativeDynamicShapePlan::platformClearCastCache() {
+  // MmulHelper cast cache is CUDA-only
+}
+
+void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int execCount) {
+  // No GPU memory pool on CPU
+}
+
+void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* stream) {
+  // GPU diagnostic only
+}
+
+void NativeDynamicShapePlan::platformDetectAndPrepareBatchedGemm(NDArray** ext, int numExt, void* stream) {
+  // Batched GEMM is GPU-only
+}
+
+void NativeDynamicShapePlan::platformPreReplayPoolStats(size_t& poolUsedOut, size_t& poolReservedOut) {
+  poolUsedOut = 0;
+  poolReservedOut = 0;
+}
+
+void NativeDynamicShapePlan::platformPostReplayPoolManagement(size_t poolUsedPre, bool frozen, int execCount) {
+  // No GPU memory pool on CPU
+}
+
+void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, void* stream, int execCount) {
+  // GPU diagnostic only
+}
+
+void NativeDynamicShapePlan::platformUpdateDecodeInputs(NDArray** ext, int numExt,
+                                                         long long tokenId, int cachePos, void* stream) {
+  // Decode input device writes are GPU-only (Java handles CPU updates)
+}
+
+void NativeDynamicShapePlan::platformPostKvScatterSync(int scattered, int pos, int numMappings) {
+  // No CUDA sync needed on CPU
+}
+
+SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
+  return isGraphCapture ? SelectedBackend::SLOT_BY_SLOT : SelectedBackend::CPU_GRAPH;
+}
+
+bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const {
+  // On CPU, break segments at ops with no traits registered in OpTraitTable.
+  // Ops with traits (elementwise, reduction, matmul, normalization, etc.) are
+  // compilable by OneDNN/OpenVINO. Ops without traits (custom/unknown ops) are
+  // isolated into 1-slot segments for slot-by-slot execution.
+  auto& registrator = sd::ops::OpRegistrator::getInstance();
+  auto hasTraits = [&](int idx) -> bool {
+    auto* op = registrator.getOperation(slots_[idx].ident.opName.c_str());
+    if (op == nullptr) return false;
+    auto* desc = op->getOpDescriptor();
+    if (desc == nullptr) return false;
+    return desc->getTraits() != 0;
+  };
+  bool currHasTraits = hasTraits(currIdx);
+  bool prevHasTraits = hasTraits(prevIdx);
+  return currHasTraits != prevHasTraits;
+}
+
+void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
+  // CPU path: reset segment execution state (no CUDA graphs or GPU resources)
+  for (auto& seg : segments_) {
+    if (seg.exec.replayHandle) {
+      seg.exec.replayHandle.reset();
+    }
+    seg.exec.gapOpsCapturedInGraph = false;
+    seg.exec.argTableStable = false;
+    seg.exec.capturedInputAddrKey = 0;
+    seg.exec.compilationFailed = false;
+    seg.exec.executionCount = 0;
+    seg.exec.cachedShapeKey = 0;
+    seg.exec.capturedCreateValueKey = 0;
+    seg.exec.captureOomRetries = 0;
+    seg.exec.captureRetryAfterExec = 0;
+    seg.exec.compiledByBackend.clear();
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    seg.exec.segBatchZeroEntries.clear();
+    seg.def.shapeKey = 0;
+  }
+}
+
+void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
+  // No GPU memory pool migration on CPU
 }
 
 }  // namespace graph

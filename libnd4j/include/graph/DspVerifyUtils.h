@@ -521,6 +521,96 @@ inline int dspCompareAddressMaps(const std::unordered_map<int, void*>& mapA,
 
 #endif  // SD_CUDA
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Output validation flags (returned as bitmask per output)
+// ═══════════════════════════════════════════════════════════════════════════
+constexpr int DSP_VALIDATE_OK         = 0;
+constexpr int DSP_VALIDATE_NULL       = (1 << 0);
+constexpr int DSP_VALIDATE_NAN        = (1 << 1);
+constexpr int DSP_VALIDATE_INF        = (1 << 2);
+constexpr int DSP_VALIDATE_ALL_ZERO   = (1 << 3);
+
+/**
+ * Validate plan outputs after execution. For each output, checks:
+ * - null pointer
+ * - contains NaN (via sum-based detection: sum != sum)
+ * - contains Inf
+ * - all zeros (norm2 == 0)
+ *
+ * @param outputs     array of output NDArray pointers
+ * @param numOutputs  number of outputs
+ * @param flagsOut    int array of size numOutputs, filled with DSP_VALIDATE_* bitmask per output
+ * @return number of outputs with validation issues (non-zero flags)
+ */
+SD_INLINE int dspValidateOutputs(NDArray** outputs, int numOutputs, int* flagsOut) {
+  int issues = 0;
+  for (int i = 0; i < numOutputs; i++) {
+    flagsOut[i] = DSP_VALIDATE_OK;
+    if (outputs[i] == nullptr) {
+      flagsOut[i] = DSP_VALIDATE_NULL;
+      issues++;
+      continue;
+    }
+    NDArray* arr = outputs[i];
+    auto len = arr->lengthOf();
+    if (len == 0) continue;
+
+    // Sum-based NaN/Inf detection (works for both CPU and CUDA)
+    auto sum = arr->sumNumber();
+    float sumVal = sum.e<float>(0);
+    if (std::isnan(sumVal)) {
+      flagsOut[i] |= DSP_VALIDATE_NAN;
+    }
+    if (std::isinf(sumVal)) {
+      flagsOut[i] |= DSP_VALIDATE_INF;
+    }
+
+    // All-zeros detection via norm2
+    auto norm = arr->reduceNumber(reduce::Norm2);
+    float normVal = norm->e<float>(0);
+    delete norm;
+    if (normVal == 0.0f && len > 0) {
+      flagsOut[i] |= DSP_VALIDATE_ALL_ZERO;
+    }
+
+    if (flagsOut[i] != DSP_VALIDATE_OK) issues++;
+  }
+  return issues;
+}
+
+/**
+ * Detect stale outputs by comparing current outputs against previously stored fingerprints.
+ * A "stale" output is one that is identical (within epsilon) to the previous step's output.
+ *
+ * @param outputs       array of current output NDArray pointers
+ * @param numOutputs    number of outputs
+ * @param prevNorms     array of norm2 values from previous step (updated in-place)
+ * @param staleOut      bool array of size numOutputs, set to true for stale outputs
+ * @param epsilon       threshold below which norm2 difference is considered stale (default 1e-10)
+ * @return number of stale outputs detected
+ */
+SD_INLINE int dspDetectStaleOutputs(NDArray** outputs, int numOutputs,
+                                     float* prevNorms, bool* staleOut, float epsilon = 1e-10f) {
+  int staleCount = 0;
+  for (int i = 0; i < numOutputs; i++) {
+    staleOut[i] = false;
+    if (outputs[i] == nullptr) {
+      prevNorms[i] = 0.0f;
+      continue;
+    }
+    auto norm = outputs[i]->reduceNumber(reduce::Norm2);
+    float normVal = norm->e<float>(0);
+    delete norm;
+    float diff = std::abs(normVal - prevNorms[i]);
+    if (diff < epsilon && prevNorms[i] != 0.0f) {
+      staleOut[i] = true;
+      staleCount++;
+    }
+    prevNorms[i] = normVal;
+  }
+  return staleCount;
+}
+
 }  // namespace graph
 }  // namespace sd
 

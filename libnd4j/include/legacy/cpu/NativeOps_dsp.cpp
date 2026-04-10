@@ -28,6 +28,7 @@
  */
 
 #include <graph/DspDiagnostics.h>
+#include <graph/DspVerifyUtils.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
@@ -144,9 +145,20 @@ int executeDynamicShapePlan(
         setError(4, buf);
         return 4;
       }
-      // Validate DataBuffer integrity before passing to plan->execute()
+      // Validate DataBuffer integrity before passing to plan->execute().
+      // Return error code 5 (STALE_BUFFER) with the bad input index encoded
+      // in the error message so Java can re-resolve only that input and retry.
       auto* db = inputPtrs[i]->dataBuffer();
       if (db != nullptr) {
+        if (db->isClosed() || db->isDestroyed() || !db->isValid()) {
+          char buf[256];
+          snprintf(buf, sizeof(buf),
+                   "executeDynamicShapePlan: stale buffer at input %d (closed=%d destroyed=%d valid=%d)",
+                   i, db->isClosed() ? 1 : 0, db->isDestroyed() ? 1 : 0, db->isValid() ? 1 : 0);
+          DSP_DIAG(EXECUTE, "%s", buf);
+          setError(5, buf);
+          return 5;
+        }
         DSP_DIAG(EXECUTE, "executeDSP: input[%d] ndarray=%p db=%p closed=%d const=%d special=%p primary=%p destroyed=%d valid=%d lenBytes=%lld",
                  i, (void*)inputPtrs[i], (void*)db, db->isClosed() ? 1 : 0,
                  db->isConstant ? 1 : 0, db->special(), db->primary(),
@@ -1152,4 +1164,45 @@ const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
     json += "]";
     result = json;
     return result.c_str();
+}
+
+// ─── Output validation ──────────────────────────────────────────────────────
+
+int dspValidateOutputs(sd::Pointer planHandle, int* flagsOut) {
+    if (planHandle == nullptr || flagsOut == nullptr) return -1;
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    int numOutputs = plan->getNumRequestedOutputs();
+    if (numOutputs <= 0) return 0;
+
+    // Collect the last-execution output arrays from the plan's output slot indices
+    auto* def = plan->getPlanDefinition();
+    if (def == nullptr) return -1;
+    auto* outputSlots = plan->getOutputSlots();
+    if (outputSlots == nullptr) return -1;
+
+    std::vector<NDArray*> outputs(numOutputs);
+    for (int i = 0; i < numOutputs; i++) {
+        int slotIdx = def->requestedOutputSlotIndices()[i];
+        outputs[i] = (slotIdx >= 0 && slotIdx < plan->getTotalOutputSlots()) ? outputSlots[slotIdx] : nullptr;
+    }
+    return sd::graph::dspValidateOutputs(outputs.data(), numOutputs, flagsOut);
+}
+
+int dspDetectStaleOutputs(sd::Pointer planHandle, float* prevNorms, bool* staleOut, float epsilon) {
+    if (planHandle == nullptr || prevNorms == nullptr || staleOut == nullptr) return -1;
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    int numOutputs = plan->getNumRequestedOutputs();
+    if (numOutputs <= 0) return 0;
+
+    auto* def = plan->getPlanDefinition();
+    if (def == nullptr) return -1;
+    auto* outputSlots = plan->getOutputSlots();
+    if (outputSlots == nullptr) return -1;
+
+    std::vector<NDArray*> outputs(numOutputs);
+    for (int i = 0; i < numOutputs; i++) {
+        int slotIdx = def->requestedOutputSlotIndices()[i];
+        outputs[i] = (slotIdx >= 0 && slotIdx < plan->getTotalOutputSlots()) ? outputSlots[slotIdx] : nullptr;
+    }
+    return sd::graph::dspDetectStaleOutputs(outputs.data(), numOutputs, prevNorms, staleOut, epsilon);
 }

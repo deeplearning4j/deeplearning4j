@@ -43,6 +43,7 @@
 
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 #include <graph/gpu/TritonIRBuilder_internal.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
@@ -431,12 +432,7 @@ bool TritonIRBuilder::isElementwiseCompatible(TritonOpCategory cat) {
 // ─── Kernel name generation ─────────────────────────────────────────────────
 
 static uint64_t hashKernelNameFNV1a(const std::string& text) {
-  uint64_t hash = 1469598103934665603ULL;  // FNV-1a 64-bit offset basis
-  for (unsigned char c : text) {
-    hash ^= static_cast<uint64_t>(c);
-    hash *= 1099511628211ULL;  // FNV prime
-  }
-  return hash;
+  return sd::graph::dsp::fnv1a64String(text);
 }
 
 std::string TritonIRBuilder::generateKernelName(NativeSlot* slots, int startSlot, int endSlot) {

@@ -39,9 +39,6 @@ struct SD_LIB_EXPORT ReplayCacheDeviceKey {
   /** Create from DeviceManager info. */
   static ReplayCacheDeviceKey fromDeviceManager(DeviceType type, int localIndex);
 
-  /** Create from current thread's affinity device. */
-  static ReplayCacheDeviceKey fromCurrentDevice();
-
   /** String key for filesystem: "cuda_0_sm89", "cpu_0_avx512", etc. */
   std::string toString() const;
 
@@ -80,14 +77,6 @@ class SD_LIB_EXPORT ReplayCacheManager {
 
   // ── Per-device save/load ──
 
-  bool saveSegmentMetadata(const GraphSegment& seg, LongType shapeKey,
-                           const ReplayCacheDeviceKey& device);
-
-  bool loadSegmentMetadata(const GraphSegment& seg, LongType shapeKey,
-                           const ReplayCacheDeviceKey& device,
-                           size_t& outWorkspaceHint, int& outNumCaptureBuffers,
-                           std::string& outBackendName);
-
   /** Load ALL cached segments for a device (bulk warm-start). Returns count loaded. */
   int loadAllForDevice(const ReplayCacheDeviceKey& device);
 
@@ -123,9 +112,6 @@ class SD_LIB_EXPORT ReplayCacheManager {
   ReplayCacheManager();
 
   std::string getDeviceCacheDir(const ReplayCacheDeviceKey& device) const;
-  std::string getEntryFilePath(const ReplayCacheDeviceKey& device, LongType cacheKey) const;
-  LongType computeCacheKey(const GraphSegment& seg, LongType shapeKey,
-                           const ReplayCacheDeviceKey& device) const;
 
   // In-memory cache (loaded from disk)
   mutable std::mutex mutex_;

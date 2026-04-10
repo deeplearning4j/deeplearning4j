@@ -64,7 +64,11 @@ DspDiagnostics::DspDiagnostics()
       stepsExecuted_(0),
       planStartUs_(0),
       planTotalUs_(0),
-      lastStepStartUs_(0) {
+      lastStepStartUs_(0),
+      diagExecLimit_(0),
+      diagDetailLimit_(20),
+      traceExtInput_(-1),
+      traceSlot_(-1) {
   std::memset(events_, 0, sizeof(events_));
   applyDspConfig();
 }
@@ -266,7 +270,7 @@ uint32_t DspDiagnostics::parseCategories(const char* str) {
 // std::getenv or EnvHelper calls. This is the single source of truth.
 
 void DspDiagnostics::applyDspConfig() {
-  const auto& cfg = sd::Environment::getInstance().dsp();
+  auto& cfg = sd::Environment::getInstance().dsp();
 
   // Categories
   if (!cfg.diagnosticsCategories().empty()) {
@@ -309,6 +313,12 @@ void DspDiagnostics::applyDspConfig() {
     enableCategories(DSP_DIAG_VERIFY);
     setLevel(DSP_LEVEL_FULL);
   }
+
+  // Configurable limits
+  diagExecLimit_   = cfg.diagExecLimit();
+  diagDetailLimit_ = cfg.diagDetailLimit();
+  traceExtInput_   = cfg.traceExtInput();
+  traceSlot_       = cfg.traceSlot();
 }
 
 // ─── Report generation ───────────────────────────────────────────────────────
@@ -562,7 +572,7 @@ int DspDiagnostics::compareAddressSnapshots(const char* tagA, const char* tagB) 
       else if (addrB == nullptr) nonNullToNull++;
       else ptrChanged++;
 
-      if (mismatches <= 20) {  // cap detailed logging
+      if (mismatches <= diagDetailLimit_) {
         const char* kind = (idx >= 0) ? "slot" : "ext";
         int dispIdx = (idx >= 0) ? idx : -(idx + 1);
         recordEvent(DSP_DIAG_EXECUTE, idx, -1, -1, nullptr, 0,

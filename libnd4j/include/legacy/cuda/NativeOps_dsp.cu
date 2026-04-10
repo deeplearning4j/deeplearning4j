@@ -29,6 +29,7 @@
 
 #include <cuda.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspVerifyUtils.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/Context.h>
@@ -157,6 +158,18 @@ int executeDynamicShapePlan(
         DSP_DIAG(EXECUTE, "%s", buf);
         setError(4, buf);
         return 4;
+      }
+      // Validate DataBuffer integrity — return error code 5 (STALE_BUFFER) with the
+      // bad input index so Java can re-resolve only that input and retry.
+      auto* db = inputPtrs[i]->dataBuffer();
+      if (db != nullptr && (db->isClosed() || db->isDestroyed() || !db->isValid())) {
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+                 "executeDynamicShapePlan: stale buffer at input %d (closed=%d destroyed=%d valid=%d)",
+                 i, db->isClosed() ? 1 : 0, db->isDestroyed() ? 1 : 0, db->isValid() ? 1 : 0);
+        DSP_DIAG(EXECUTE, "%s", buf);
+        setError(5, buf);
+        return 5;
       }
     }
 
@@ -922,7 +935,7 @@ bool isPlanSegmentCapturable(sd::Pointer planHandle, int segmentIdx) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return false;
-  return segs[segmentIdx].isCapturable;
+  return segs[segmentIdx].def.isCapturable;
 }
 
 bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmentIdx) {
@@ -1158,7 +1171,7 @@ void setPlanSegmentBackendOverride(sd::Pointer planHandle, int segIdx, const cha
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegmentsMutable();
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
-  segs[segIdx].backendOverride = backendName ? backendName : "";
+  segs[segIdx].def.backendOverride = backendName ? backendName : "";
 }
 
 void setPlanBackendPriority(sd::Pointer planHandle, const char* priorityList) {
@@ -1772,4 +1785,44 @@ const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
     json += "]";
     result = json;
     return result.c_str();
+}
+
+// ─── Output validation ──────────────────────────────────────────────────────
+
+int dspValidateOutputs(sd::Pointer planHandle, int* flagsOut) {
+    if (planHandle == nullptr || flagsOut == nullptr) return -1;
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    int numOutputs = plan->getNumRequestedOutputs();
+    if (numOutputs <= 0) return 0;
+
+    auto* def = plan->getPlanDefinition();
+    if (def == nullptr) return -1;
+    auto* outputSlots = plan->getOutputSlots();
+    if (outputSlots == nullptr) return -1;
+
+    std::vector<NDArray*> outputs(numOutputs);
+    for (int i = 0; i < numOutputs; i++) {
+        int slotIdx = def->requestedOutputSlotIndices()[i];
+        outputs[i] = (slotIdx >= 0 && slotIdx < plan->getTotalOutputSlots()) ? outputSlots[slotIdx] : nullptr;
+    }
+    return sd::graph::dspValidateOutputs(outputs.data(), numOutputs, flagsOut);
+}
+
+int dspDetectStaleOutputs(sd::Pointer planHandle, float* prevNorms, bool* staleOut, float epsilon) {
+    if (planHandle == nullptr || prevNorms == nullptr || staleOut == nullptr) return -1;
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    int numOutputs = plan->getNumRequestedOutputs();
+    if (numOutputs <= 0) return 0;
+
+    auto* def = plan->getPlanDefinition();
+    if (def == nullptr) return -1;
+    auto* outputSlots = plan->getOutputSlots();
+    if (outputSlots == nullptr) return -1;
+
+    std::vector<NDArray*> outputs(numOutputs);
+    for (int i = 0; i < numOutputs; i++) {
+        int slotIdx = def->requestedOutputSlotIndices()[i];
+        outputs[i] = (slotIdx >= 0 && slotIdx < plan->getTotalOutputSlots()) ? outputSlots[slotIdx] : nullptr;
+    }
+    return sd::graph::dspDetectStaleOutputs(outputs.data(), numOutputs, prevNorms, staleOut, epsilon);
 }

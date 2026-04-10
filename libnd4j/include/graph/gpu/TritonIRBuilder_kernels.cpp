@@ -70,6 +70,8 @@ void TritonIRBuilder::emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location 
                                         int blockM, int blockN, int blockK,
                                         const std::vector<EpilogueOp>& epilogueOps,
                                         const std::vector<mlir::Value>& epiloguePtrs) {
+  DSP_DIAG(JIT, "emitMatmulKernel: M=%d N=%d K=%d block=(%d,%d,%d) epilogues=%d",
+           M, N, K, blockM, blockN, blockK, (int)epilogueOps.size());
   auto f32Type = builder.getF32Type();
   auto i32Type = builder.getI32Type();
   auto i1Type = builder.getI1Type();
@@ -368,7 +370,7 @@ void TritonIRBuilder::emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location 
   }
 
   // Cast epilogue-processed accumulator to output type if needed.
-  // CRITICAL: cast from `acc` (post-epilogue), NOT `finalAcc` (raw matmul).
+  //  cast from `acc` (post-epilogue), NOT `finalAcc` (raw matmul).
   // Using finalAcc here would silently bypass all in-register epilogue ops
   // (relu, gelu, bias_add, etc.), causing 3.0+ output divergence.
   mlir::Value storeVal = acc;
@@ -442,6 +444,8 @@ void TritonIRBuilder::emitRmsNormLinearKernel(
     int M, int N, int K, float epsilon,
     int blockM, int blockN, int blockK) {
 
+  DSP_DIAG(JIT, "emitRmsNormLinearKernel: M=%d N=%d K=%d eps=%.6f block=(%d,%d,%d)",
+           M, N, K, epsilon, blockM, blockN, blockK);
   auto f32Type = builder.getF32Type();
   auto i32Type = builder.getI32Type();
   auto i1Type = builder.getI1Type();
@@ -673,6 +677,7 @@ void TritonIRBuilder::emitGatedMLPKernel(
     int M, int N, int K,
     int blockM, int blockN, int blockK) {
 
+  DSP_DIAG(JIT, "emitGatedMLPKernel: M=%d N=%d K=%d block=(%d,%d,%d)", M, N, K, blockM, blockN, blockK);
   auto f32Type = builder.getF32Type();
   auto i32Type = builder.getI32Type();
 
@@ -858,6 +863,9 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
                                                 const std::vector<LongType>& biasShape,
                                                 mlir::Value curKPtr, mlir::Value curVPtr,
                                                 int pastSeq, int seqKVCur) {
+  DSP_DIAG(JIT, "emitFusedAttentionKernel: batch=%d qHeads=%d kvHeads=%d seqQ=%d seqK=%d headDim=%d "
+           "block=(%d,%d) dualBuffer=%d", batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
+           blockM, blockN, curKPtr ? 1 : 0);
   // Dual-buffer mode: when curKPtr is valid, K/V are split across two buffers:
   //   kPtr  = past_key  [B,H,pastSeq,D]   BHSD (positions [0, pastSeq))
   //   curKPtr = current_key [B,seqKVCur,H*D] BSHD (positions [pastSeq, seqK))
@@ -1435,6 +1443,8 @@ void TritonIRBuilder::emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Locatio
                                           mlir::Value curPtr, mlir::Value presentPtr,
                                           int batchSize, int numQHeads, int numKvHeads,
                                           int pastSeq, int seqKV, int totalSeq, int headDim) {
+  DSP_DIAG(JIT, "emitPresentKvWrite: batch=%d qHeads=%d kvHeads=%d pastSeq=%d seqKV=%d totalSeq=%d headDim=%d",
+           batchSize, numQHeads, numKvHeads, pastSeq, seqKV, totalSeq, headDim);
   // This function is called WITHIN the attention kernel (same tt.func).
   // Grid is attention's: pid0 = b * numQHeads + qHeadIdx, pid1 = seqQ tile.
   // We decompose pid0 to get batch and qHeadIdx, then map qHeadIdx → kvHeadIdx.

@@ -76,4 +76,16 @@ public interface DspEnvironmentConfig {
     default void setDspFreezeMergeSegments(boolean enabled) {}
     default boolean dspFreezeRecompile() { return false; }
     default void setDspFreezeRecompile(boolean enabled) {}
+
+    default int dspCaptureHostWorkspaceMb() { return 0; }
+    default void setDspCaptureHostWorkspaceMb(int mb) {}
+    default int dspCaptureWorkspaceMb() { return 0; }
+    default void setDspCaptureWorkspaceMb(int mb) {}
+
+    default String dspReplayCacheDir() { return ""; }
+    default void setDspReplayCacheDir(String dir) {}
+    default boolean dspReplayCacheEnabled() { return false; }
+    default void setDspReplayCacheEnabled(boolean enabled) {}
+    default int dspTraceSlot() { return -1; }
+    default void setDspTraceSlot(int slot) {}
 }

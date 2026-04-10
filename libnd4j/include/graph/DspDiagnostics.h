@@ -224,6 +224,23 @@ class SD_LIB_EXPORT DspDiagnostics {
   int compareAddressSnapshots(const char* tagA, const char* tagB);
   void clearAddressSnapshots();
 
+  // ── Configurable limits ──
+  // Max execution count for verbose output dumps (0 = no limit when diag enabled)
+  int diagExecLimit() const { return diagExecLimit_; }
+  // Max mismatch/detail entries to log before summarizing
+  int diagDetailLimit() const { return diagDetailLimit_; }
+  // Specific external input index to trace (-1 = none)
+  int traceExtInput() const { return traceExtInput_; }
+  // Specific slot index to trace (-1 = none, read from ND4J_DSP_TRACE_SLOT)
+  int traceSlot() const { return traceSlot_; }
+
+  // Check if a given execution count is within the diagnostic dump limit.
+  // Returns true when diag is enabled and either no limit is set (0) or
+  // execCount <= limit.
+  bool withinExecLimit(int execCount) const {
+    return diagExecLimit_ == 0 || execCount <= diagExecLimit_;
+  }
+
   // ── Category name helpers ──
   static const char* categoryName(uint32_t category);
   static int categoryIndex(uint32_t category);
@@ -256,6 +273,12 @@ class SD_LIB_EXPORT DspDiagnostics {
 
   // JSON output path
   std::string jsonPath_;
+
+  // Configurable limits (read from DspConfig in applyDspConfig)
+  int diagExecLimit_;     // 0 = no limit
+  int diagDetailLimit_;   // default 20
+  int traceExtInput_;     // -1 = none
+  int traceSlot_;         // -1 = none
 
   // Address snapshots for graph replay validation
   std::unordered_map<std::string, std::vector<AddrEntry>> addrSnapshots_;

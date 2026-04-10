@@ -22,10 +22,7 @@ package org.eclipse.deeplearning4j.model.benchmark;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.execution.CapturingSlotInterceptor;
-import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -101,23 +98,10 @@ public class DspAccuracyValidator {
      * @return divergence report with per-op detail
      */
     public DivergenceReport validatePerOp(Map<String, INDArray> placeholders, String... outputNames) {
-        GraphExecutionMode savedMode = model.getGraphExecutionMode();
-
-        // Phase 1: run with SLOT_BY_SLOT as reference
-        CapturingSlotInterceptor refInterceptor = new CapturingSlotInterceptor();
-        runWithInterceptor(placeholders, outputNames, GraphExecutionMode.SLOT_BY_SLOT, refInterceptor);
-
-        // Phase 2: run with the saved mode as test
-        CapturingSlotInterceptor testInterceptor = new CapturingSlotInterceptor();
-        runWithInterceptor(placeholders, outputNames, savedMode, testInterceptor);
-
-        try {
-            return compareInterceptorCaptures(refInterceptor, testInterceptor,
-                    "SLOT_BY_SLOT", savedMode != null ? savedMode.name() : "DEFAULT");
-        } finally {
-            refInterceptor.clear();
-            testInterceptor.clear();
-        }
+        throw new UnsupportedOperationException(
+                "Per-op validation is no longer available. Native C++ execution does not support " +
+                "Java-side slot interceptor callbacks. Use validateOutputs() for output-level comparison, " +
+                "or use C++ diagnostics (dspDiagGetPlanReport) for per-slot inspection.");
     }
 
     /**
@@ -297,92 +281,6 @@ public class DspAccuracyValidator {
             duped.put(e.getKey(), e.getValue().dup());
         }
         return duped;
-    }
-
-    private void runWithInterceptor(Map<String, INDArray> placeholders, String[] outputNames,
-                                    GraphExecutionMode mode, CapturingSlotInterceptor interceptor) {
-        model.resetSession();
-        if (mode != null) {
-            model.setGraphExecutionMode(mode);
-        }
-        model.setDspAutoCompileEnabled(true);
-
-        // First call creates the session and compiles the plan
-        model.outputDirect(placeholders, outputNames);
-
-        // Now set the interceptor on the executor
-        InferenceSession session = model.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        if (executor != null) {
-            executor.setSlotOutputInterceptor(interceptor);
-        }
-
-        // Re-run with the interceptor active
-        model.outputDirect(placeholders, outputNames);
-
-        // Clean up interceptor
-        if (executor != null) {
-            executor.setSlotOutputInterceptor(null);
-        }
-    }
-
-    private DivergenceReport compareInterceptorCaptures(CapturingSlotInterceptor ref,
-                                                         CapturingSlotInterceptor test,
-                                                         String refLabel, String testLabel) {
-        Map<String, INDArray> refByName = ref.getByName();
-        Map<String, INDArray> testByName = test.getByName();
-
-        // Build step-indexed comparison from the reference captures
-        List<OpDivergence> divergences = new ArrayList<>();
-        int compared = 0;
-        int matched = 0;
-
-        // Compare step-by-step using the reference's captured data
-        Map<Integer, Map<String, INDArray>> refCaptured = ref.getCaptured();
-        Map<Integer, Map<String, INDArray>> testCaptured = test.getCaptured();
-
-        for (Map.Entry<Integer, Map<String, INDArray>> stepEntry : refCaptured.entrySet()) {
-            int stepIdx = stepEntry.getKey();
-            Map<String, INDArray> refStep = stepEntry.getValue();
-            Map<String, INDArray> testStep = testCaptured.get(stepIdx);
-
-            if (testStep == null) continue;
-
-            String opName = ref.getStepToOpName() != null
-                    ? ref.getStepToOpName().getOrDefault(stepIdx, "unknown") : "unknown";
-
-            for (Map.Entry<String, INDArray> varEntry : refStep.entrySet()) {
-                String varName = varEntry.getKey();
-                INDArray refArr = varEntry.getValue();
-                INDArray testArr = testStep.get(varName);
-                if (testArr == null) continue;
-
-                compared++;
-                double absTol = config.getAbsTolForOp(opName);
-                OpDivergence div = compareArrays(refArr, testArr, varName, opName, stepIdx,
-                        absTol, config.getDefaultRelTol(), null);
-                if (div == null) {
-                    matched++;
-                } else {
-                    divergences.add(div);
-                    if (config.isStopAtFirst()) break;
-                    if (divergences.size() >= config.getMaxDivergences()) break;
-                }
-            }
-
-            if (config.isStopAtFirst() && !divergences.isEmpty()) break;
-            if (divergences.size() >= config.getMaxDivergences()) break;
-        }
-
-        // Also compare by name for variables that may have different step indices
-        for (Map.Entry<String, INDArray> entry : refByName.entrySet()) {
-            String varName = entry.getKey();
-            if (testByName.containsKey(varName)) {
-                // Already compared in step loop if present
-            }
-        }
-
-        return new DivergenceReport(refLabel, testLabel, compared, matched, divergences);
     }
 
     private static void closeTempArrays(INDArray diff, INDArray absDiff,

@@ -54,12 +54,23 @@ public final class DspProperties {
     // Capture pool
     public static final String CAPTURE_POOL_ENABLED = "nd4j.dsp.capturePoolEnabled";
     public static final String CAPTURE_POOL_MAX_BYTES = "nd4j.dsp.capturePoolMaxBytes";
+    public static final String CAPTURE_HOST_WORKSPACE_MB = "nd4j.dsp.captureHostWorkspaceMb";
+    public static final String CAPTURE_WORKSPACE_MB = "nd4j.dsp.captureWorkspaceMb";
 
     // Memory management
     public static final String NO_FREEZE = "nd4j.dsp.noFreeze";
     public static final String TRIM_INTERVAL = "nd4j.dsp.trimInterval";
     public static final String SLOT_CACHE_GROWTH_FACTOR = "org.nd4j.dsp.slotCacheGrowthFactor";
     public static final String POOL_MAX_BYTES = "org.nd4j.dsp.pool.maxBytes";
+
+    // Frozen-shape transition
+    public static final String FREEZE_MERGE_SEGMENTS = "nd4j.dsp.freezeMergeSegments";
+    public static final String FREEZE_RECOMPILE = "nd4j.dsp.freezeRecompile";
+
+    // Replay graph cache
+    public static final String REPLAY_CACHE_DIR = "nd4j.dsp.replayCacheDir";
+    public static final String REPLAY_CACHE_ENABLED = "nd4j.dsp.replayCacheEnabled";
+    public static final String TRACE_SLOT = "nd4j.dsp.traceSlot";
 
     // Diagnostics
     public static final String TRACE = "nd4j.dsp.trace";

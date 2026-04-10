@@ -28,6 +28,7 @@
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonIRBuilder_internal.h>
 #include <graph/gpu/SectionTypeConfig.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/DspDiagnostics.h>
 #include <array/ArrayOptions.h>
 #include <helpers/logger.h>
@@ -649,24 +650,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   // Build set of input buffer addresses for aliasing detection.
-  // When an output slot shares the same GPU buffer as an input slot (e.g., identity
-  // cast with in-place allocation), emitting a tt.store for it creates a data race:
-  // different warps may execute the store before other warps read the aliased input.
-  // Skip such outputs — the data is already correct in the shared buffer.
-  std::unordered_set<uintptr_t> inputBufferAddrs;
-  for (auto& inArg : inputArgs) {
-    NDArray* inArr = nullptr;
-    if (inArg.slotIndex < 0) {
-      int ei = -(inArg.slotIndex + 1);
-      if (ei < numExternalInputs && externalInputs[ei]) inArr = externalInputs[ei];
-    } else {
-      if (inArg.slotIndex < totalOutputSlots && outputSlots && outputSlots[inArg.slotIndex])
-        inArr = outputSlots[inArg.slotIndex];
-    }
-    if (inArr && inArr->specialBuffer()) {
-      inputBufferAddrs.insert(reinterpret_cast<uintptr_t>(inArr->specialBuffer()));
-    }
-  }
+  auto inputBufferAddrs = dsp::buildInputBufferAddressSet(
+      inputArgs, outputSlots, totalOutputSlots, externalInputs, numExternalInputs);
 
   std::vector<TritonKernelArg> outputArgs;
   {
@@ -690,19 +675,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
 
         // Skip outputs whose GPU buffer aliases an input buffer.
-        // The kernel loads from the input arg and the output shares the same memory,
-        // so storing would either write the same data (identity cast) or create a race
-        // (non-identity op where output pointer = input pointer).
-        if (outputSlots && outIdx < totalOutputSlots && outputSlots[outIdx] &&
-            outputSlots[outIdx]->specialBuffer()) {
-          uintptr_t outAddr = reinterpret_cast<uintptr_t>(outputSlots[outIdx]->specialBuffer());
-          if (inputBufferAddrs.count(outAddr)) {
-            skippedAliased++;
-            DSP_DIAG(COMPILE, "TritonIRBuilder: skipping aliased output slot %d (addr=%p matches input buffer) "
-                     "in segment [%d-%d]",
-                     outIdx, (void*)outAddr, startSlot, endSlot);
-            continue;
-          }
+        if (dsp::isOutputAliasedWithInput(outIdx, outputSlots, totalOutputSlots, inputBufferAddrs)) {
+          skippedAliased++;
+          DSP_DIAG(COMPILE, "TritonIRBuilder: skipping aliased output slot %d in segment [%d-%d]",
+                   outIdx, startSlot, endSlot);
+          continue;
         }
 
         TritonKernelArg arg;
@@ -3610,30 +3587,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
   // Determine which outputs are cross-section intermediates:
   // produced in one section, consumed in a different section
-  std::unordered_set<int> crossSectionIntermediates;
-  for (size_t si = 0; si < sections.size(); si++) {
-    auto& sec = sections[si];
-    for (int i = sec.startSlot; i <= sec.endSlot; i++) {
-      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
-        int srcIdx = slots[i].wiring.inputSourceIndices[inp];
-        if (srcIdx < 0) continue;  // External input
-        // Check if this source is produced in a DIFFERENT section
-        bool producedInThisSection = false;
-        for (int j = sec.startSlot; j <= sec.endSlot; j++) {
-          for (int o = 0; o < slots[j].wiring.numOutputs; o++) {
-            if (slots[j].wiring.outputSlotIndices[o] == srcIdx) {
-              producedInThisSection = true;
-              break;
-            }
-          }
-          if (producedInThisSection) break;
-        }
-        if (!producedInThisSection && internalSlotOutputs.count(srcIdx)) {
-          crossSectionIntermediates.insert(srcIdx);
-        }
-      }
-    }
-  }
+  auto crossSectionIntermediates = dsp::identifyCrossSectionIntermediates(
+      slots, startSlot, endSlot, sections);
 
   sd_debug("TritonIRBuilder::buildSectionedModule: %d cross-section intermediates\n",
             static_cast<int>(crossSectionIntermediates.size()));
@@ -3641,7 +3596,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // Pre-compute which section boundaries truly require a grid-wide barrier.
   // Many sections share the same 1D pid mapping and can stream values block-local
   // without cooperative synchronization.
-  std::unordered_map<int, int> producerSectionByOutput;
+  auto producerSectionByOutput = dsp::buildProducerSectionMap(slots, sections, internalSlotOutputs);
+
   std::vector<LongType> sectionMaxOutputElements(sections.size(), 0);
   auto computeSectionMaxOutputElements = [&](const KernelSection& sec) -> LongType {
     LongType maxElements = 0;
@@ -3658,14 +3614,6 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
   for (size_t secIdx = 0; secIdx < sections.size(); secIdx++) {
     sectionMaxOutputElements[secIdx] = computeSectionMaxOutputElements(sections[secIdx]);
-    for (int si = sections[secIdx].startSlot; si <= sections[secIdx].endSlot; si++) {
-      for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
-        int outIdx = slots[si].wiring.outputSlotIndices[o];
-        if (internalSlotOutputs.count(outIdx)) {
-          producerSectionByOutput[outIdx] = static_cast<int>(secIdx);
-        }
-      }
-    }
   }
 
   std::vector<uint8_t> sectionNeedsBarrier(sections.size(), 0);
@@ -3864,21 +3812,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // NOTE: K/V projection external output forcing removed — attention ops now run via
   // cuBLAS fallback (isFallbackSection) and handle their own present_key/present_value outputs.
 
-  // Build set of input buffer addresses for aliasing detection (same as buildModule)
-  std::unordered_set<uintptr_t> inputBufferAddrsSectioned;
-  for (auto& inArg : inputArgs) {
-    NDArray* inArr = nullptr;
-    if (inArg.slotIndex < 0) {
-      int ei = -(inArg.slotIndex + 1);
-      if (ei < numExternalInputs && externalInputs[ei]) inArr = externalInputs[ei];
-    } else {
-      if (inArg.slotIndex < totalOutputSlots && outputSlots && outputSlots[inArg.slotIndex])
-        inArr = outputSlots[inArg.slotIndex];
-    }
-    if (inArr && inArr->specialBuffer()) {
-      inputBufferAddrsSectioned.insert(reinterpret_cast<uintptr_t>(inArr->specialBuffer()));
-    }
-  }
+  // Build set of input buffer addresses for aliasing detection
+  auto inputBufferAddrsSectioned = dsp::buildInputBufferAddressSet(
+      inputArgs, outputSlots, totalOutputSlots, externalInputs, numExternalInputs);
 
   std::vector<TritonKernelArg> outputArgs;
   {
@@ -3892,17 +3828,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         seenOutputSlots.insert(outIdx);
         if (!externalOutputs.count(outIdx)) continue;
 
-        // Skip outputs whose GPU buffer aliases an input buffer (same as buildModule)
-        if (outputSlots && outIdx < totalOutputSlots && outputSlots[outIdx] &&
-            outputSlots[outIdx]->specialBuffer()) {
-          uintptr_t outAddr = reinterpret_cast<uintptr_t>(outputSlots[outIdx]->specialBuffer());
-          if (inputBufferAddrsSectioned.count(outAddr)) {
-            skippedAliased++;
-            DSP_DIAG(COMPILE, "TritonIRBuilder::buildSectionedModule: skipping aliased output slot %d "
-                     "(addr=%p matches input buffer) in segment [%d-%d]",
-                     outIdx, (void*)outAddr, startSlot, endSlot);
-            continue;
-          }
+        // Skip outputs whose GPU buffer aliases an input buffer
+        if (dsp::isOutputAliasedWithInput(outIdx, outputSlots, totalOutputSlots, inputBufferAddrsSectioned)) {
+          skippedAliased++;
+          DSP_DIAG(COMPILE, "TritonIRBuilder::buildSectionedModule: skipping aliased output slot %d "
+                   "in segment [%d-%d]", outIdx, startSlot, endSlot);
+          continue;
         }
 
         TritonKernelArg arg;

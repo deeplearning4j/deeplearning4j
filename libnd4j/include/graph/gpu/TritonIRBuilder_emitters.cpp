@@ -178,7 +178,7 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
                                                    const NativeSlot& slot, mlir::Value input,
                                                    int blockSize) {
   auto tensorType = mlir::cast<mlir::RankedTensorType>(input.getType());
-  auto opName = mapping.ident.opName;
+  auto opName = mapping.opName;
 
   // Math ops require float inputs — promote integer/bool/f16/bf16 to at least f32
   input = promoteToFloat(builder, loc, input);

@@ -30,6 +30,7 @@
 #define LIBND4J_GRAPH_BACKEND_COMMON_H
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspDiagnostics.h>
 #include <system/common.h>
 
 #include <functional>
@@ -102,11 +103,14 @@ inline std::vector<ArgMapping> buildArgMappings(
 
   std::vector<ArgMapping> mappings;
 
+  DSP_DIAG(BACKEND, "buildArgMappings: BEGIN [%d-%d] extInputs=%d outputSlots=%d totalSlots=%d",
+           startSlot, endSlot, numExternalInputs, totalOutputSlots, totalSlots);
+
   // Collect all internal outputs (produced within this segment)
   std::unordered_set<int> internalOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -114,8 +118,8 @@ inline std::vector<ArgMapping> buildArgMappings(
 
   // Phase 1: Input args (external + pre-segment sources)
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenSrc.count(srcIdx)) continue;
 
       bool isExternal = (srcIdx < 0);
@@ -140,8 +144,8 @@ inline std::vector<ArgMapping> buildArgMappings(
   // Phase 2: Output args (externally visible)
   auto externalOutputSet = computeExternalOutputs(slots, startSlot, endSlot, totalSlots);
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       if (!externalOutputSet.count(outIdx)) continue;
       if (seenSrc.count(outIdx)) continue;
       seenSrc.insert(outIdx);
@@ -156,8 +160,8 @@ inline std::vector<ArgMapping> buildArgMappings(
 
   // Phase 3: Internal intermediate outputs
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       if (seenSrc.count(outIdx)) continue;
 
       NDArray* arr = nullptr;
@@ -168,6 +172,13 @@ inline std::vector<ArgMapping> buildArgMappings(
       mappings.push_back({outIdx, true});
     }
   }
+
+  int inputCount = 0, outputCount = 0;
+  for (const auto& m : mappings) {
+    if (m.isOutput) outputCount++; else inputCount++;
+  }
+  DSP_DIAG(BACKEND, "buildArgMappings: END [%d-%d] total=%d (inputs=%d outputs=%d)",
+           startSlot, endSlot, (int)mappings.size(), inputCount, outputCount);
 
   return mappings;
 }

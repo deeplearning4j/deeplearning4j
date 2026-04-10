@@ -42,6 +42,11 @@ CUSTOM_OP_IMPL(split_v, 2, -1, false, 0, -2) {
 
   if (axis < 0) axis += input->rankOf();
 
+  // Handle empty input arrays — outputs are already empty from shape function
+  if (input->isEmpty()) {
+    return sd::Status::OK;
+  }
+
   std::vector<sd::LongType> axisVec = {axis};
 
   int pos = 0;

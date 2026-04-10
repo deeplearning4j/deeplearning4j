@@ -80,6 +80,11 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<bool> _diagnosticsTiming{false};
   std::atomic<bool> _diagnosticsNativeDump{false};
 
+  // Diagnostic limits
+  std::atomic<int> _diagExecLimit{0};       // max exec count for verbose output dumps (0 = no limit)
+  std::atomic<int> _diagDetailLimit{20};    // max mismatch/detail entries to log
+  std::atomic<int> _traceExtInput{-1};      // specific external input index to trace (-1 = none)
+
   // Replay graph cache
   std::string _replayCacheDir;
   std::atomic<bool> _replayCacheEnabled{true};
@@ -167,6 +172,14 @@ class SD_LIB_EXPORT DspConfig {
   void setDiagnosticsTiming(bool v) { _diagnosticsTiming.store(v); }
   bool diagnosticsNativeDump() { return _diagnosticsNativeDump.load(); }
   void setDiagnosticsNativeDump(bool v) { _diagnosticsNativeDump.store(v); }
+
+  // --- Diagnostic limits ---
+  int diagExecLimit() { return _diagExecLimit.load(); }
+  void setDiagExecLimit(int v) { _diagExecLimit.store(v); }
+  int diagDetailLimit() { return _diagDetailLimit.load(); }
+  void setDiagDetailLimit(int v) { _diagDetailLimit.store(v); }
+  int traceExtInput() { return _traceExtInput.load(); }
+  void setTraceExtInput(int v) { _traceExtInput.store(v); }
 
   // --- Replay graph cache ---
   const std::string& replayCacheDir() const { return _replayCacheDir; }

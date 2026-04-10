@@ -25,6 +25,7 @@
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspConstants.h>
 #include <system/Environment.h>
 #include <helpers/logger.h>
 
@@ -51,10 +52,10 @@ using namespace triton_internal;
 // Utility: get platform-independent temp directory
 static std::string getTempDir() {
   // Try environment variables first (works on Linux, macOS, Windows)
-  const char* tempEnv = std::getenv("TMPDIR");
-  if (!tempEnv) tempEnv = std::getenv("TMP");
-  if (!tempEnv) tempEnv = std::getenv("TEMP");
-  if (!tempEnv) tempEnv = std::getenv("USERPROFILE");  // Windows fallback
+  const char* tempEnv = std::getenv(dsp::ENV_TMPDIR);
+  if (!tempEnv) tempEnv = std::getenv(dsp::ENV_TMP);
+  if (!tempEnv) tempEnv = std::getenv(dsp::ENV_TEMP);
+  if (!tempEnv) tempEnv = std::getenv(dsp::ENV_USERPROFILE);  // Windows fallback
   
   if (tempEnv && strlen(tempEnv) > 0) {
     std::string path(tempEnv);
@@ -149,7 +150,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     std::string failedOps;
     for (int s = startSlot; s <= endSlot; s++) {
       if (!failedOps.empty()) failedOps += ",";
-      failedOps += slots[s].opName;
+      failedOps += slots[s].ident.opName;
     }
     DSP_DIAG(COMPILE, "TritonGraphBackend: IR build FAILED for [%d-%d] after %lld ms "
              "(numExtInputs=%d, numOutputSlots=%d, ops: %s)",
@@ -290,8 +291,8 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   for (int i = startSlot; i <= endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
-    entry.wasCompiled = TritonIRBuilder::isTritonMappable(slots[i].opName);
+    entry.opName = slots[i].ident.opName;
+    entry.wasCompiled = TritonIRBuilder::isTritonMappable(slots[i].ident.opName);
     if (!entry.wasCompiled) {
       entry.reason = "unmappable op (not in Triton op table)";
     }

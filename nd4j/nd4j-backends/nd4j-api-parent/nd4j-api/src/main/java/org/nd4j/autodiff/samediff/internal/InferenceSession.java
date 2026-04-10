@@ -32,13 +32,9 @@ import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.execution.ExecutionNode;
-import org.nd4j.autodiff.samediff.execution.ExecutionPlan;
-import org.nd4j.autodiff.samediff.execution.ExecutionPlanCache;
-import org.nd4j.autodiff.samediff.execution.ExecutionPlanCompiler;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
 import org.nd4j.autodiff.samediff.execution.DAGCache;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
-import org.nd4j.autodiff.samediff.execution.PlanExecutor;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
@@ -261,16 +257,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         log.info("  Cleanup:          {}ms", String.format("%.2f", timingCleanupNs / 1_000_000.0));
     }
 
-    // ---- Plan-based execution (ORT-style pre-allocated workspace) ----
-    // When enabled, the first execution compiles an ExecutionPlan with pre-computed shapes
-    // and a contiguous memory layout. Subsequent executions with the same placeholder shapes
-    // reuse the plan and workspace with zero per-op allocation or shape inference.
-    @Getter @Setter
-    private volatile boolean planBasedExecutionEnabled = false;
-
-    private final ExecutionPlanCache planCache = new ExecutionPlanCache();
-    private final ThreadLocal<PlanExecutor> planExecutorTl = new ThreadLocal<>();
-
     // ---- DynamicShapePlan-based execution (for autoregressive inference with dynamic shapes) ----
     // When enabled, pre-compiles graph wiring (input/output index mapping, liveness schedule) once,
     // then executes using flat array-indexed slots instead of string-keyed HashMaps.
@@ -315,20 +301,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     public AbstractDependencyTracker<SDValue, Dep> getArrayUseTracker() {
         return arrayUseTracker();
-    }
-
-    /**
-     * Get the plan cache for plan-based execution.
-     */
-    public ExecutionPlanCache getPlanCache() {
-        return planCache;
-    }
-
-    /**
-     * Accessor for plan-based execution diagnostics/tests.
-     */
-    public PlanExecutor getPlanExecutor() {
-        return planExecutorTl.get();
     }
 
     /**
@@ -575,17 +547,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
         pool.clear();
 
-        PlanExecutor planExecutor = planExecutorTl.get();
-        boolean planExecutorClosed = false;
-        if (planExecutor != null) {
-            try {
-                planExecutor.close();
-                planExecutorClosed = true;
-            } catch (Exception e) {
-                log.warn("Error closing PlanExecutor during session cleanup: {}", e.getMessage());
-            }
-        }
-
         // Clear freed arrays tracker to avoid stale entries
         freedArraysTl.get().clear();
 
@@ -608,16 +569,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         currentExecutionDAG = null;
         dynamicShapePlan = null;
         dagCache.clear();
-        planCache.clear();
 
         // Close the DynamicShapePlanExecutor (slot cache, native workspace, dedup sets).
         // The executor holds GPU-allocated arrays in its slot cache; closing it frees them
         // and trims the pool, making memory available for subsequent model phases (e.g.,
         // decoder after vision encoder). A new executor is created on the next output() call.
+        boolean planExecutorClosed = false;
         DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
         if (executor != null) {
             try {
                 executor.close();
+                planExecutorClosed = true;
             } catch (Exception e) {
                 log.warn("Error closing DynamicShapePlanExecutor during session cleanup: {}", e.getMessage());
             }
@@ -629,7 +591,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         opContextsTl.remove();
         opContextPoolTl.remove();
-        planExecutorTl.remove();
         freedArraysTl.remove();
         arrayUseTrackerTl.remove();
         outputShapeCacheTl.remove();
@@ -964,42 +925,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
 
-            // Preprocess placeholders using existing logic (needed for plan-based and standard paths)
+            // Preprocess placeholders using existing logic (needed for standard path)
             Map<String, INDArray> processedPlaceholders = preprocessPlaceholders(placeholderValues, at);
 
-            // ---- Plan-based execution path (ORT-style pre-allocated workspace) ----
-            // When enabled and no SDValue placeholders are used, try the fast path:
-            // compile once, then execute with pre-allocated workspace and no shape inference.
-            if (planBasedExecutionEnabled &&
-                (otherPlaceHolderValues == null || otherPlaceHolderValues.isEmpty()) &&
-                (listeners == null || listeners.isEmpty())) {
-                try {
-                    Map<String, SDValue> planResults = executePlanBased(
-                            dag, processedPlaceholders, allRequired, variables);
-                    if (planResults != null) {
-                        log.debug("[EXEC-PATH] PlanExecutor path succeeded for {} outputs", planResults.size());
-                        filteredResults = planResults;
-                        dspStepCount++;
-                        // Periodic commit+trim: full sync on early steps, periodic in steady-state
-                        if (dspStepCount <= 2 || dspStepCount % TRIM_INTERVAL == 0) {
-                            Nd4j.getExecutioner().commit();
-                            int nDevicesPlan = Nd4j.getAffinityManager().getNumberOfDevices();
-                            for (int d = 0; d < nDevicesPlan; d++) {
-                                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(d, null);
-                            }
-                        }
-                        log.debug("Plan-based execution completed successfully");
-                        return ExecutionResult.builder().valueOutputs(filteredResults).build();
-                    }
-                } catch (Exception e) {
-                    log.warn("Plan-based execution failed, falling back to standard path: {}", e.getMessage());
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().clearLastError();
-                    // Fall through to standard execution
-                }
-            }
-
-            log.debug("[EXEC-PATH] Falling through to standard executeOperations (planBasedEnabled={}, DSP_ENABLED={})",
-                    planBasedExecutionEnabled, DYNAMIC_SHAPE_PLAN_ENABLED);
+            log.debug("[EXEC-PATH] Falling through to standard executeOperations (DSP_ENABLED={})",
+                    DYNAMIC_SHAPE_PLAN_ENABLED);
             // Reset growth factor to 1.0 but keep cache ENABLED.
             // The DSP side effect enables cache + growth factor 1.1x before checking if plan exists.
             // Growth factor > 1.0 creates oversized buffers (output arrays become views) and
@@ -1204,50 +1134,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return OUTER_FRAME.equals(frame) && iteration == 0 && parentFrameIter == null;
     }
 
-
-    /**
-     * Execute using the plan-based fast path: compile an ExecutionPlan with pre-computed
-     * shapes and a contiguous memory layout, then execute with a single workspace allocation
-     * and no per-op shape inference.
-     *
-     * @return results as SDValue map, or null if plan-based execution is not possible
-     */
-    private Map<String, SDValue> executePlanBased(ForwardExecutionDAG dag,
-                                                   Map<String, INDArray> placeholderArrays,
-                                                   Set<String> allRequired,
-                                                   List<String> requestedOutputs) {
-        // Compile or retrieve cached plan
-        Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
-        ExecutionPlan plan = planCache.getOrCompute(allRequired, placeholderArrays, () -> {
-            log.debug("Compiling execution plan for {} outputs", allRequired.size());
-            return ExecutionPlanCompiler.compile(sameDiff, dag, placeholderArrays, outputSet);
-        });
-
-        if (plan == null) {
-            return null;
-        }
-
-        // Get or create thread-local PlanExecutor
-        PlanExecutor executor = planExecutorTl.get();
-        if (executor == null) {
-            executor = new PlanExecutor(sameDiff);
-            planExecutorTl.set(executor);
-        }
-
-        // Execute
-        Map<String, INDArray> rawResults = executor.execute(plan, placeholderArrays);
-
-        // Wrap results as SDValues
-        Map<String, SDValue> sdResults = new LinkedHashMap<>();
-        for (String outputName : requestedOutputs) {
-            INDArray arr = rawResults.get(outputName);
-            if (arr != null) {
-                sdResults.put(outputName, SDValue.create(arr));
-            }
-        }
-
-        return sdResults;
-    }
 
     private List<String> resolveRequestedOutputs(List<String> requestedOutputs) {
         if (requestedOutputs != null && !requestedOutputs.isEmpty()) {
@@ -1894,19 +1780,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     } else if (buf.isAttached()) {
                         skippedAttached++;
                     } else if (buf.isConstant()) {
-                        // This buffer is marked constant (likely by setCloseable(false) on placeholder
-                        // inputs). Since it's NOT in protectedBuffers, it's an intermediate that shares
-                        // no DataBuffer with any constant/variable/placeholder. It was poisoned by
-                        // setCloseable(false) in batchOutputHelper/directExecHelper. Force-close it
-                        // to prevent GPU memory leaks in the standard execution path.
-                        try {
-                            forceClosedConstantBytes += buf.length() * buf.getElementSize();
-                            buf.setConstant(false);
-                            buf.close();
-                            forceClosedConstant++;
-                        } catch (Exception e) {
-                            closeErrors++;
-                        }
+                        // Buffer is marked constant — leave it alone. Force-closing constant
+                        // buffers was destroying model constant values needed by subsequent
+                        // DSP executions (scalar epsilon, scale, attention mask values).
+                        // The memory "leak" from poisoned intermediates is acceptable — they
+                        // are typically small scalars and get cleaned up on session/model close.
                         skippedConstant++;
                     }
                 }

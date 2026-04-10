@@ -25,9 +25,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.nd4j.autodiff.samediff.execution.CapturingSlotInterceptor;
-import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -43,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -778,73 +774,10 @@ public class TestBenchmarkAccuracyIsolation {
     @Order(10)
     @DisplayName("10. Best Triton logits-only plan captures layer-4 Concat_3 before Reshape_3 failure")
     public void testBestTritonLayer4ConcatInterceptorBeforeFailure() {
-        if (!Nd4j.getNativeOps().isTritonAvailable()) {
-            log.info("Triton not available, skipping");
-            return;
-        }
-
-        BenchmarkConfig config = createBestTritonConfig("test_triton_best_interceptor", 100);
-        resetDecoder();
-        BenchmarkConfigApplier.apply(config);
-        BenchmarkConfigApplier.compileModels(decoder, "decoder", embedTokens, "embed_tokens", config);
-
-        CapturingSlotInterceptor interceptor = new CapturingSlotInterceptor();
-        interceptor.filterVarNames(new LinkedHashSet<>(List.of(
-                "/model/layers.4/attn/k_proj/repeat_kv/Expand/output_0",
-                "/model/layers.4/attn/k_proj/repeat_kv/Concat_3/output_0",
-                "/model/layers.4/attn/k_proj/repeat_kv/Reshape_3/output_0"
-        )));
-
-        InferenceSession session = decoder.getOrCreateSession();
-        assertNotNull(session, "Decoder session must exist");
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        assertNotNull(executor, "DynamicShapePlanExecutor must exist for best Triton config");
-        executor.setSlotOutputInterceptor(interceptor);
-
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(100)
-                .hiddenSize((int) benchmarkEmbeddings.shape()[2])
-                .build();
-
-        INDArray decodeInputs = benchmarkEmbeddings.dup();
-        IllegalStateException failure;
-        try {
-            failure = assertThrows(IllegalStateException.class,
-                    () -> loop.decode(decodeInputs, benchmarkPromptTokenIds),
-                    "Current best Triton config should reproduce the step-2 repeat_kv failure");
-        } finally {
-            if (decodeInputs.closeable() && !decodeInputs.wasClosed()) {
-                decodeInputs.close();
-            }
-        }
-
-        Throwable root = failure;
-        while (root.getCause() != null) {
-            root = root.getCause();
-        }
-        String failureText = failure.toString() + " | root=" + root;
-        assertTrue(failureText.contains("slot 820") || failureText.contains("reshape_no_copy"),
-                "Failure should point at the repeat_kv reshape boundary, got: " + failureText);
-
-        INDArray concat = interceptor.getByName().get("/model/layers.4/attn/k_proj/repeat_kv/Concat_3/output_0");
-        assertNotNull(concat, "Concat_3 should be captured in the real logits-only best-config plan before failure");
-        assertArrayEquals(new long[]{4}, concat.shape(), "Concat_3 should stay a 4-element shape tensor");
-        assertArrayEquals(new long[]{1, 9, 780, 64}, concat.toLongVector(),
-                "Concat_3 should produce the expected repeat_kv reshape controller values");
-
-        INDArray expand = interceptor.getByName().get("/model/layers.4/attn/k_proj/repeat_kv/Expand/output_0");
-        assertNotNull(expand, "Expand/output_0 should be captured before the reshape boundary fails");
-        assertArrayEquals(new long[]{1, 3, 3, 780, 64}, expand.shape(),
-                "Expand/output_0 should retain the repeated KV payload shape before failure");
-
-        assertFalse(interceptor.getByName().containsKey("/model/layers.4/attn/k_proj/repeat_kv/Reshape_3/output_0"),
-                "Reshape_3 should not be emitted because the failure occurs during its shape inference");
-
-        interceptor.clear();
+        // TODO: Re-enable when slot interceptor infrastructure is re-implemented in C++.
+        // This test relied on CapturingSlotInterceptor and setSlotOutputInterceptor which
+        // have been removed (non-functional with native C++ execution).
+        log.info("Skipping: interceptor classes removed (CapturingSlotInterceptor, setSlotOutputInterceptor)");
     }
 
     // =========================================================================

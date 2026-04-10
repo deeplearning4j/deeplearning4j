@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.model.benchmark;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.execution.CapturingSlotInterceptor;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
@@ -52,7 +51,7 @@ import java.util.*;
  *       change realistically across decode steps.</li>
  *   <li><b>Multi-level validation</b> — Token prefix, logits, tensor equality,
  *       top-K overlap, and targeted intermediate capture comparison.</li>
- *   <li><b>Reusable diagnostics</b> — Uses DspDiagnostics, CapturingSlotInterceptor,
+ *   <li><b>Reusable diagnostics</b> — Uses DspDiagnostics, C++ diagnostics,
  *       and ReplayMetadataTracker. No ad-hoc printf logging.</li>
  * </ul>
  *
@@ -373,7 +372,7 @@ public class DecodeValidationFramework implements AutoCloseable {
 
                 case TENSOR:
                 case INTERMEDIATE:
-                    failures.add("TENSOR/INTERMEDIATE level requires CapturingSlotInterceptor — " +
+                    failures.add("TENSOR/INTERMEDIATE level requires C++ diagnostics — " +
                             "use DspAccuracyValidator.validatePerOp() for tensor-level comparison");
                     break;
             }
@@ -735,15 +734,15 @@ public class DecodeValidationFramework implements AutoCloseable {
                                            ValidationResult.Builder resultBuilder) {
         // TENSOR level delegates to DspAccuracyValidator
         failures.add("TENSOR level requires DspAccuracyValidator.validatePerOp() — " +
-                "use intermediate capture with CapturingSlotInterceptor for full tensor comparison");
+                "use intermediate capture with C++ diagnostics for full tensor comparison");
     }
 
     private void runIntermediateComparison(Map<String, INDArray> oracleLogitsPerStep,
                                             Map<String, INDArray> testLogitsPerStep,
                                             List<String> failures,
                                             ValidationResult.Builder resultBuilder) {
-        // INTERMEDIATE level requires CapturingSlotInterceptor
-        failures.add("INTERMEDIATE level requires CapturingSlotInterceptor — " +
+        // INTERMEDIATE level requires C++ diagnostics
+        failures.add("INTERMEDIATE level requires C++ diagnostics — " +
                 "attach interceptors to oracle and test executors, then compare captured intermediates");
     }
 

@@ -2275,4 +2275,25 @@ public interface NativeOps {
    * Clear all diagnostic events and stats.
    */
   default void dspDiagClear() {}
+
+  /**
+   * Validate plan outputs after execution. Checks each output for NaN, Inf, all-zeros, or null.
+   * Flags are bitmask: 1=NULL, 2=NaN, 4=Inf, 8=ALL_ZERO.
+   *
+   * @param planHandle  Handle from compileDynamicShapePlan()
+   * @param flagsOut    int array of size numRequestedOutputs, filled with validation bitmask per output
+   * @return number of outputs with validation issues
+   */
+  default int dspValidateOutputs(Pointer planHandle, int[] flagsOut) { return 0; }
+
+  /**
+   * Detect stale outputs by comparing current outputs against previous step norms.
+   *
+   * @param planHandle  Handle from compileDynamicShapePlan()
+   * @param prevNorms   float array of size numRequestedOutputs (updated in-place with current norms)
+   * @param staleOut    boolean array of size numRequestedOutputs, set to true for stale outputs
+   * @param epsilon     threshold below which norm difference is considered stale
+   * @return number of stale outputs detected
+   */
+  default int dspDetectStaleOutputs(Pointer planHandle, float[] prevNorms, boolean[] staleOut, float epsilon) { return 0; }
 }

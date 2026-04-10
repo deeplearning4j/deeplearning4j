@@ -565,7 +565,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (d == currentDeviceId) continue;
 
     bool isPeer = peerAccessEnabled_[currentDeviceId][d];
-    // CRITICAL: Skip non-peer devices entirely. Allocating on a non-peer device
+    //  Skip non-peer devices entirely. Allocating on a non-peer device
     // and returning the pointer to the caller causes kernels on the requesting
     // device to access memory they can't reach, resulting in CUDA error 700.
     // This was causing 7500+ cross-device failovers and CUDA context corruption
@@ -870,7 +870,7 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       return;
     }
     // Log failed cudaFreeAsync for debugging — this path means memory is LEAKED.
-    // CRITICAL: Do NOT call cudaFree() as fallback. cudaFreeAsync failures typically
+    //  Do NOT call cudaFree() as fallback. cudaFreeAsync failures typically
     // mean the pointer was allocated by cudaMallocAsync on a different stream or during
     // graph capture. Calling cudaFree() on such a pointer corrupts the CUDA context
     // permanently (error 700 "illegal memory access" on all subsequent CUDA calls).
@@ -916,6 +916,55 @@ void CudaMemoryPool::removeDirtyStream(int deviceId, cudaStream_t stream) {
     std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[deviceId]);
     dirtyFreeStreams_[deviceId].erase(stream);
   }
+}
+
+// ─── Pinned Host Memory Management ─────────────────────────────────────
+
+void* CudaMemoryPool::allocatePinnedHost(size_t size) {
+  // Enforce limit if set
+  size_t limit = pinnedHostBytesLimit_.load();
+  size_t currentUsage = pinnedHostBytesUsed_.load();
+  if (limit > 0 && currentUsage + size > limit) {
+    // Check if we can free some old allocations first (LRU not implemented — just reject)
+    return nullptr;
+  }
+
+  void* ptr = nullptr;
+  cudaError_t err = cudaMallocHost(&ptr, size);
+  if (err != cudaSuccess || ptr == nullptr) {
+    return nullptr;
+  }
+
+  // Track this allocation
+  std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
+  hostAllocations_[ptr] = size;
+  pinnedHostBytesUsed_.fetch_add(size);
+  return ptr;
+}
+
+bool CudaMemoryPool::freePinnedHost(void* ptr) {
+  if (ptr == nullptr) return true;
+
+  std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
+  auto it = hostAllocations_.find(ptr);
+  if (it != hostAllocations_.end()) {
+    size_t freedSize = it->second;
+    hostAllocations_.erase(it);
+    pinnedHostBytesUsed_.fetch_sub(freedSize);
+    cudaFreeHost(ptr);
+    return true;
+  }
+
+  // Not tracked — fall back to direct cudaFreeHost.
+  // This handles pointers from raw cudaMallocHost calls in legacy code.
+  cudaFreeHost(ptr);
+  return false;
+}
+
+bool CudaMemoryPool::isPinnedHostAllocation(void* ptr) const {
+  if (ptr == nullptr) return false;
+  std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
+  return hostAllocations_.count(ptr) > 0;
 }
 
 void CudaMemoryPool::getStats(int deviceId, size_t& usedBytes, size_t& reservedBytes) {

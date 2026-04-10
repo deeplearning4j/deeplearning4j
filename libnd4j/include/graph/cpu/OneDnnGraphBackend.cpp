@@ -154,20 +154,29 @@ static bool isSingleOpWorthCompiling(const std::string& opName) {
 }
 
 bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
-  if (!isAvailable()) return false;
+  if (!isAvailable()) {
+    DSP_DIAG(BACKEND, "OneDnnGraphBackend::canFuseSegment: oneDNN not available");
+    return false;
+  }
 
   int mappableOps = 0;
   int totalOps = end - start + 1;
 
   for (int i = start; i <= end; i++) {
-    auto kind = mapOpKind(slots[i].opName);
+    auto kind = mapOpKind(slots[i].ident.opName);
     if (kind != dg::op::kind::LastSymbol) {
       mappableOps++;
+    } else {
+      DSP_DIAG(BACKEND, "OneDnnGraphBackend::canFuseSegment: unmappable op '%s' at slot %d",
+               slots[i].ident.opName.c_str(), i);
     }
   }
 
+  bool canFuse = mappableOps == totalOps && mappableOps >= 1;
+  DSP_DIAG(SEGMENT, "OneDnnGraphBackend::canFuseSegment [%d-%d]: mappable=%d/%d canFuse=%s",
+           start, end, mappableOps, totalOps, canFuse ? "true" : "false");
   // Accept any segment where all ops are mappable — no minimum op count.
-  return mappableOps == totalOps && mappableOps >= 1;
+  return canFuse;
 }
 
 // ─── Graph building ─────────────────────────────────────────────────────────
@@ -499,8 +508,13 @@ bool OneDnnGraphBackend::compileSegment(
 
   auto it = cache_.find(key);
   if (it != cache_.end() && it->second.valid) {
+    DSP_DIAG(JIT, "OneDnnGraphBackend::compileSegment [%d-%d]: cache HIT (shapeKey=0x%llx)",
+             seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
     return true;  // Already compiled for this shape
   }
+
+  DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: cache MISS, building graph (shapeKey=0x%llx)",
+           seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
 
   auto compiled = buildGraph(slots, seg.def.startSlot, seg.def.endSlot,
                              externalInputs, numExternalInputs,
@@ -511,10 +525,13 @@ bool OneDnnGraphBackend::compileSegment(
   lastCompilationAudit_ = compiled.compilationAudit;
 
   if (compiled.valid) {
+    DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: SUCCESS partitions=%d",
+             seg.def.startSlot, seg.def.endSlot, (int)compiled.partitions.size());
     cache_[key] = std::move(compiled);
     return true;
   }
 
+  DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: FAILED", seg.def.startSlot, seg.def.endSlot);
   return false;
 }
 
@@ -539,10 +556,15 @@ Status OneDnnGraphBackend::executeSegment(
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it == cache_.end() || !it->second.valid) {
+      DSP_DIAG(EXECUTE, "OneDnnGraphBackend::executeSegment [%d-%d]: no compiled segment found",
+               seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
     compiled = &it->second;
   }
+
+  DSP_DIAG(EXECUTE, "OneDnnGraphBackend::executeSegment [%d-%d]: executing %d partitions",
+           seg.def.startSlot, seg.def.endSlot, (int)compiled->partitions.size());
 
   auto& strm = getThreadStream();
 

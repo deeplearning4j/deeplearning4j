@@ -129,9 +129,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
-    // Default for plan-based execution applied to newly created sessions
-    private volatile boolean planBasedExecutionDefault = false;
-
     /**
      * SameDiff-level cache for compiled DynamicShapePlans. Survives InferenceSession
      * resets (resetSession()) so that repeated calls don't recompile the plan.
@@ -3245,9 +3242,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         InferenceSession is = sessions.get(threadId);
         if (is == null) {
             is = getInferenceFactory().create(this);
-            if (planBasedExecutionDefault) {
-                is.setPlanBasedExecutionEnabled(true);
-            }
             sessions.put(threadId, is);
         }
 
@@ -3479,9 +3473,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         if (!sessions.containsKey(threadId)) {
             log.info("Creating new InferenceSession for thread {}", threadId);
             InferenceSession session = getInferenceFactory().create(this);
-            if (planBasedExecutionDefault) {
-                session.setPlanBasedExecutionEnabled(true);
-            }
             sessions.put(threadId, session);
         }
 
@@ -4214,23 +4205,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
-     * Enable or disable plan-based execution on all current and future InferenceSessions.
-     * When enabled, the first execution with a given set of placeholder shapes compiles
-     * an ExecutionPlan with pre-computed shapes and a contiguous memory layout.
-     * Subsequent executions with the same shapes reuse the plan with no per-op
-     * shape inference or dynamic allocation.
-     *
-     * @param enabled true to enable, false to disable
-     */
-    public void setPlanBasedExecution(boolean enabled) {
-        for (InferenceSession session : sessions.values()) {
-            session.setPlanBasedExecutionEnabled(enabled);
-        }
-        // Also set on the factory so new sessions inherit the setting
-        this.planBasedExecutionDefault = enabled;
-    }
-
-    /**
      * Get a cached DynamicShapePlan for the given output set, or null if none exists.
      * Plans survive InferenceSession resets since they contain only compiled graph structure.
      */
@@ -4611,9 +4585,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         long threadId = Thread.currentThread().getId();
         if (!sessions.containsKey(threadId)) {
             InferenceSession session = getInferenceFactory().create(this);
-            if (planBasedExecutionDefault) {
-                session.setPlanBasedExecutionEnabled(true);
-            }
             sessions.put(threadId, session);
         }
         return sessions.get(threadId);

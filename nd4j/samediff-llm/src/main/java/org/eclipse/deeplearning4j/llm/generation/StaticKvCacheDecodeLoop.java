@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample;
@@ -601,12 +602,17 @@ public class StaticKvCacheDecodeLoop {
                         // GPU arrays that back model variables (like input_ids). The plan
                         // cache clear above removes the old compiled plan. A new executor
                         // will be created on the next output() call.
+                        // Save execution mode before invalidating executor
+                        GraphExecutionMode prevMode = dspExec != null
+                                ? dspExec.getConfiguredGraphExecutionMode()
+                                : decoder.getGraphExecutionMode();
                         dspExec = null;  // old executor invalidated
                         if (!skipFreeze) {
-                            log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={})",
-                                    maxKvLen, Arrays.toString(recompileOutputs));
+                            log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={}, mode={})",
+                                    maxKvLen, Arrays.toString(recompileOutputs), prevMode);
                             try {
-                                decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
+                                decoder.compileNativeDynamicShapePlan(
+                                        Arrays.asList(recompileOutputs), prevMode, true);
                             } catch (Exception e) {
                                 throw decodeStageFailure("DSP_STATIC_KV_RECOMPILE", step, pastSeqLen, currentSeqLen,
                                         usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);

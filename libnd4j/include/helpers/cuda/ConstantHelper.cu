@@ -234,7 +234,7 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
       // capture invalidation (error 901). Use cudaMemcpyAsync on the CAPTURED stream
       // so it becomes a recorded graph node.
       //
-      // CRITICAL: The H2D memcpy node bakes the source address into the graph. If `src`
+      //  The H2D memcpy node bakes the source address into the graph. If `src`
       // points to stack/temporary memory, graph replay will read garbage (the stack frame
       // is gone). Copy src into the capture host workspace (persistent pinned memory) first,
       // matching the pattern in DataBuffer::syncToSpecial().

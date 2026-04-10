@@ -35,7 +35,7 @@ namespace graph {
 
 // ── CUDA Kernel ──────────────────────────────────────────────────────────────
 
-__global__ void batchZeroKernel(void** ptrs, int* sizes, int numBuffers) {
+SD_KERNEL void batchZeroKernel(void** ptrs, int* sizes, int numBuffers) {
   int bid = blockIdx.x;
   if (bid >= numBuffers) return;
 

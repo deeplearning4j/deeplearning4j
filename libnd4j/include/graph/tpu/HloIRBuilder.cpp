@@ -167,7 +167,7 @@ std::string HloIRBuilder::buildModule(NativeSlot* slots, int start, int end,
 
   // First pass: verify all ops in range are HLO-mappable
   for (int i = start; i < end; ++i) {
-    const char* opName = slots[i].opName.c_str();
+    const char* opName = slots[i].ident.opName.c_str();
     if (!isHloMappable(opName)) {
       DSP_DIAG(COMPILE, "HloIRBuilder::buildModule: slot %d op '%s' not "
                "HLO-mappable, aborting segment", i, opName);
@@ -197,8 +197,8 @@ std::string HloIRBuilder::buildModule(NativeSlot* slots, int start, int end,
   // Emit parameter declarations for external inputs referenced by this segment
   std::unordered_set<int> usedExternals;
   for (int i = start; i < end; ++i) {
-    for (int j = 0; j < slots[i].numInputs; ++j) {
-      int srcIdx = slots[i].inputSourceIndices[j];
+    for (int j = 0; j < slots[i].wiring.numInputs; ++j) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[j];
       if (srcIdx < 0) {
         // External input: -(srcIdx + 1)
         int extIdx = -(srcIdx + 1);
@@ -230,7 +230,7 @@ std::string HloIRBuilder::buildModule(NativeSlot* slots, int start, int end,
   // Second pass: emit HLO instructions for each slot
   std::string lastSlotName;
   for (int i = start; i < end; ++i) {
-    const char* opName = slots[i].opName.c_str();
+    const char* opName = slots[i].ident.opName.c_str();
     const char* hloOp = mapOpToHlo(opName);
     if (hloOp == nullptr) continue;  // Should not happen (verified above)
 
@@ -238,8 +238,8 @@ std::string HloIRBuilder::buildModule(NativeSlot* slots, int start, int end,
 
     // Collect operand SSA names
     std::vector<std::string> operands;
-    for (int j = 0; j < slots[i].numInputs; ++j) {
-      int srcIdx = slots[i].inputSourceIndices[j];
+    for (int j = 0; j < slots[i].wiring.numInputs; ++j) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[j];
       auto it = ssaNames.find(srcIdx);
       if (it != ssaNames.end()) {
         operands.push_back(it->second);
@@ -264,9 +264,9 @@ std::string HloIRBuilder::buildModule(NativeSlot* slots, int start, int end,
         << " " << hloOp << "(" << opList.str() << ")\n";
 
     // Register this slot's output SSA name for downstream consumers
-    if (slots[i].numOutputs > 0) {
-      for (int k = 0; k < slots[i].numOutputs; ++k) {
-        ssaNames[slots[i].outputSlotIndices[k]] = slotName;
+    if (slots[i].wiring.numOutputs > 0) {
+      for (int k = 0; k < slots[i].wiring.numOutputs; ++k) {
+        ssaNames[slots[i].wiring.outputSlotIndices[k]] = slotName;
       }
     }
 

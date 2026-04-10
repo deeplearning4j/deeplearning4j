@@ -1935,7 +1935,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer retHostShape = null;
         int dimension[] = null;
 
-        var hostYShapeInfo = y == null ? null : AddressRetriever.retrieveHostPointer(y.shapeInfoDataBuffer());
+        Pointer hostYShapeInfo = y == null ? null : AddressRetriever.retrieveHostPointer(y.shapeInfoDataBuffer());
 
 
         if (z == null || z == x) {
@@ -1948,7 +1948,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             z = ret;
         }
 
-        var extraArgs = op.extraArgs() != null ? allocator.getPointer(op.extraArgsDataBuff(op.getOpType() == Op.Type.TRANSFORM_BOOL || op.getOpType() == Op.Type.PAIRWISE_BOOL ? x.dataType() : z.dataType()), context) : null;
+        Pointer extraArgs = op.extraArgs() != null ? allocator.getPointer(op.extraArgsDataBuff(op.getOpType() == Op.Type.TRANSFORM_BOOL || op.getOpType() == Op.Type.PAIRWISE_BOOL ? x.dataType() : z.dataType()), context) : null;
         val hostZShapeInfo = z == null ? null : AddressRetriever.retrieveHostPointer(z.shapeInfoDataBuffer());
 
         Pointer hostTadShapeInfo = null;

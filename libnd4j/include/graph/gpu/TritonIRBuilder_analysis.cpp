@@ -69,22 +69,22 @@ SegmentProfile TritonIRBuilder::profileSegment(NativeSlot* slots, int startSlot,
     auto& node = profile.nodes[i];
     node.slotIndex = absSlot;
     node.localIndex = i;
-    node.opName = slots[absSlot].opName;
-    node.category = getOpCategory(slots[absSlot].opName);
+    node.opName = slots[absSlot].ident.opName;
+    node.category = getOpCategory(slots[absSlot].ident.opName);
     node.hasExternalInput = false;
 
     // Register outputs produced by this node
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      outputSlotToProducer[slots[absSlot].outputSlotIndices[o]] = i;
+    for (int o = 0; o < slots[absSlot].wiring.numOutputs; o++) {
+      outputSlotToProducer[slots[absSlot].wiring.outputSlotIndices[o]] = i;
     }
 
     // Populate output shape from DSP's pre-calculated cache or live outputSlots
-    if (slots[absSlot].numOutputs > 0) {
-      int outIdx = slots[absSlot].outputSlotIndices[0];
+    if (slots[absSlot].wiring.numOutputs > 0) {
+      int outIdx = slots[absSlot].wiring.outputSlotIndices[0];
 
       // Priority 1: Use NativeSlot's cached shape info (pre-calculated by DSP)
-      if (slots[absSlot].shapeCacheValid() && !slots[absSlot].cachedOutputShapes.empty()) {
-        const LongType* shapeInfo = slots[absSlot].cachedOutputShapes[0];
+      if (slots[absSlot].shapeCacheValid() && !slots[absSlot].shapeCache.cachedOutputShapes.empty()) {
+        const LongType* shapeInfo = slots[absSlot].shapeCache.cachedOutputShapes[0];
         if (shapeInfo) {
           LongType rank = shape::rank(shapeInfo);
           node.outputShape.resize(rank);
@@ -120,8 +120,8 @@ SegmentProfile TritonIRBuilder::profileSegment(NativeSlot* slots, int startSlot,
     int absSlot = startSlot + i;
     auto& node = profile.nodes[i];
 
-    for (int inp = 0; inp < slots[absSlot].numInputs; inp++) {
-      int srcIdx = slots[absSlot].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[absSlot].wiring.numInputs; inp++) {
+      int srcIdx = slots[absSlot].wiring.inputSourceIndices[inp];
 
       if (srcIdx < 0) {
         // External input
@@ -148,8 +148,8 @@ SegmentProfile TritonIRBuilder::profileSegment(NativeSlot* slots, int startSlot,
   // Fill consumer lists
   for (int i = 0; i < segSize; i++) {
     int absSlot = startSlot + i;
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      int outIdx = slots[absSlot].outputSlotIndices[o];
+    for (int o = 0; o < slots[absSlot].wiring.numOutputs; o++) {
+      int outIdx = slots[absSlot].wiring.outputSlotIndices[o];
       auto it = outputToConsumers.find(outIdx);
       if (it != outputToConsumers.end()) {
         for (int consumer : it->second) {
@@ -163,8 +163,8 @@ SegmentProfile TritonIRBuilder::profileSegment(NativeSlot* slots, int startSlot,
   std::unordered_set<int> outputSet;
   for (int i = 0; i < segSize; i++) {
     int absSlot = startSlot + i;
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      outputSet.insert(slots[absSlot].outputSlotIndices[o]);
+    for (int o = 0; o < slots[absSlot].wiring.numOutputs; o++) {
+      outputSet.insert(slots[absSlot].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -312,8 +312,8 @@ class DecomposedSoftmaxDetector : public PatternDetector {
       if (profile.nodes[i].opName != "reduce_max" && profile.nodes[i].opName != "ReduceMax") continue;
 
       int absI = startSlot + i;
-      if (slots[absI].numOutputs != 1) continue;
-      int out0 = slots[absI].outputSlotIndices[0];
+      if (slots[absI].wiring.numOutputs != 1) continue;
+      int out0 = slots[absI].wiring.outputSlotIndices[0];
 
       // Find sub consuming reduce_max output
       int subLocal = -1;
@@ -321,40 +321,40 @@ class DecomposedSoftmaxDetector : public PatternDetector {
         auto& name = profile.nodes[j].opName;
         if (name != "subtract" && name != "Sub") continue;
         int absJ = startSlot + j;
-        for (int k = 0; k < slots[absJ].numInputs; k++) {
-          if (slots[absJ].inputSourceIndices[k] == out0) { subLocal = j; break; }
+        for (int k = 0; k < slots[absJ].wiring.numInputs; k++) {
+          if (slots[absJ].wiring.inputSourceIndices[k] == out0) { subLocal = j; break; }
         }
         if (subLocal >= 0) break;
       }
       if (subLocal < 0) continue;
 
-      int outSub = slots[startSlot + subLocal].outputSlotIndices[0];
+      int outSub = slots[startSlot + subLocal].wiring.outputSlotIndices[0];
       // Find exp consuming sub output
       int expLocal = -1;
       for (int j = subLocal + 1; j < profile.totalOps; j++) {
         auto& name = profile.nodes[j].opName;
         if (name != "exp" && name != "Exp") continue;
         int absJ = startSlot + j;
-        if (slots[absJ].numInputs >= 1 && slots[absJ].inputSourceIndices[0] == outSub) {
+        if (slots[absJ].wiring.numInputs >= 1 && slots[absJ].wiring.inputSourceIndices[0] == outSub) {
           expLocal = j; break;
         }
       }
       if (expLocal < 0) continue;
 
-      int outExp = slots[startSlot + expLocal].outputSlotIndices[0];
+      int outExp = slots[startSlot + expLocal].wiring.outputSlotIndices[0];
       // Find reduce_sum consuming exp output
       int sumLocal = -1;
       for (int j = expLocal + 1; j < profile.totalOps; j++) {
         auto& name = profile.nodes[j].opName;
         if (name != "reduce_sum" && name != "ReduceSum") continue;
         int absJ = startSlot + j;
-        if (slots[absJ].numInputs >= 1 && slots[absJ].inputSourceIndices[0] == outExp) {
+        if (slots[absJ].wiring.numInputs >= 1 && slots[absJ].wiring.inputSourceIndices[0] == outExp) {
           sumLocal = j; break;
         }
       }
       if (sumLocal < 0) continue;
 
-      int outSum = slots[startSlot + sumLocal].outputSlotIndices[0];
+      int outSum = slots[startSlot + sumLocal].wiring.outputSlotIndices[0];
       // Find div consuming exp and sum outputs
       int divLocal = -1;
       for (int j = sumLocal + 1; j < profile.totalOps; j++) {
@@ -362,9 +362,9 @@ class DecomposedSoftmaxDetector : public PatternDetector {
         if (name != "divide" && name != "Div" && name != "RealDiv") continue;
         int absJ = startSlot + j;
         bool hasExp = false, hasSum = false;
-        for (int k = 0; k < slots[absJ].numInputs; k++) {
-          if (slots[absJ].inputSourceIndices[k] == outExp) hasExp = true;
-          if (slots[absJ].inputSourceIndices[k] == outSum) hasSum = true;
+        for (int k = 0; k < slots[absJ].wiring.numInputs; k++) {
+          if (slots[absJ].wiring.inputSourceIndices[k] == outExp) hasExp = true;
+          if (slots[absJ].wiring.inputSourceIndices[k] == outSum) hasSum = true;
         }
         if (hasExp && hasSum) { divLocal = j; break; }
       }
@@ -570,16 +570,16 @@ SegmentAnalysis TritonIRBuilder::classifyAndAnalyze(const SegmentProfile& profil
   // Count unique input/output args (same logic as buildModule, but no MLIR)
   std::unordered_set<int> internalSlotOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalSlotOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      internalSlotOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
   std::unordered_set<int> seenInputs;
   int inputArgCount = 0;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
 
@@ -605,8 +605,8 @@ SegmentAnalysis TritonIRBuilder::classifyAndAnalyze(const SegmentProfile& profil
   int skippedInternalOutputs = 0;
   std::unordered_set<int> seenOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
       if (seenOutputs.count(outIdx)) continue;  // Deduplicate
       seenOutputs.insert(outIdx);
@@ -891,6 +891,12 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
   // Clamp to reasonable Triton tile range
   blockSize = std::max(64, std::min(blockSize, 4096));
   numWarps = std::max(1, std::min(numWarps, 16));
+
+  DSP_DIAG(JIT, "selectTileConfig: blockSize=%d numWarps=%d numStages=%d "
+           "(matmul=%d reduce=%d norm=%d attn=%d maxOutLen=%lld)",
+           blockSize, numWarps, numStages,
+           hasMatmul ? 1 : 0, hasReduction ? 1 : 0,
+           hasNormalization ? 1 : 0, hasFusedAttention ? 1 : 0, (long long)maxOutputLen);
 }
 
 }  // namespace graph

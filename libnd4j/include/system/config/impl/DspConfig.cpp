@@ -169,6 +169,18 @@ void DspConfig::initFromEnvironment() {
     int v = readIntEnv("ND4J_DSP_TRACE_SLOT", -1);
     if (v >= 0) setTraceSlot(v);
   }
+  {
+    int v = readIntEnv("ND4J_DSP_TRACE_EXT_INPUT", -1);
+    if (v >= 0) setTraceExtInput(v);
+  }
+  {
+    int v = readIntEnv("ND4J_DSP_DIAG_EXEC_LIMIT", 0);
+    if (v > 0) setDiagExecLimit(v);
+  }
+  {
+    int v = readIntEnv("ND4J_DSP_DIAG_DETAIL_LIMIT", 20);
+    if (v > 0) setDiagDetailLimit(v);
+  }
 }
 
 }  // namespace config

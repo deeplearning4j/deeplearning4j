@@ -208,7 +208,7 @@ void ContextBuffers::initialize() {
   cudaGetLastError();  // clear any error from trim
 
   // Allocate workspace buffers using cudaMallocAsync on the default pool.
-  // CRITICAL: We must NOT use CudaMemoryPool::allocate() here because its
+  //  We must NOT use CudaMemoryPool::allocate() here because its
   // allocateFailover() silently routes to a different device when the current
   // device is low on memory. This creates a fatal mismatch: ContextBuffers
   // workspace and streams end up on device 1, but ops use device 0 data,

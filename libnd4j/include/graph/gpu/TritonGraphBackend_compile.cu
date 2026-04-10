@@ -28,6 +28,7 @@
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/gpu/SectionTypeConfig.h>
 #include <graph/gpu/FusionScoring.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/DspDiagnostics.h>
 #include <system/Environment.h>
 #include <helpers/shape.h>
@@ -226,15 +227,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   };
 
   auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
-    uint32_t traits = 0;
-    if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
-      traits |= slot.ident.op->getOpDescriptor()->getTraits();
-    }
-    if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-    if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
-    if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-    if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
-    return traits;
+    return dsp::resolveSlotTraits(slot);
   };
 
   auto isIntegralOrBoolType = [](DataType dt) -> bool {
@@ -1253,11 +1246,12 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         cleanupCompiledWorkspace();
         return false;
       }
-      // Allocate consolidated pinned host buffer
-      auto pinnedErr = cudaMallocHost(&compiledSeg.consolidatedArgTableHostPinned, totalArgTableBytes);
-      if (pinnedErr != cudaSuccess) {
-        DSP_DIAG(MEMORY, "TritonGraphBackend: failed allocating consolidated pinned arg table (%zu bytes): %s",
-                  totalArgTableBytes, cudaGetErrorString(pinnedErr));
+      // Allocate consolidated pinned host buffer via pool tracking
+      auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+      compiledSeg.consolidatedArgTableHostPinned = static_cast<char*>(memPool.allocatePinnedHost(totalArgTableBytes));
+      if (compiledSeg.consolidatedArgTableHostPinned == nullptr) {
+        DSP_DIAG(MEMORY, "TritonGraphBackend: failed allocating consolidated pinned arg table (%zu bytes) via pool",
+                  totalArgTableBytes);
         cudaGetLastError();
         cleanupCompiledWorkspace();
         return false;

@@ -74,28 +74,10 @@ static std::string getOpName(const NativeSlot& slot) {
  * Query traits from a slot's resolved op descriptor.
  */
 static bool slotHasTrait(const NativeSlot& slot, uint32_t trait) {
-    if (slot.op && slot.op->getOpDescriptor()) {
-        return slot.op->getOpDescriptor()->hasAnyTrait(trait);
+    if (slot.ident.op && slot.ident.op->getOpDescriptor()) {
+        return slot.ident.op->getOpDescriptor()->hasAnyTrait(trait);
     }
     return false;
-}
-
-bool FusionPass::isUnaryElementwise(sd::LongType opHash) {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(opHash);
-    return op && op->getOpDescriptor() &&
-           op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_UNARY_ELEMENTWISE);
-}
-
-bool FusionPass::isBinaryElementwise(sd::LongType opHash) {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(opHash);
-    return op && op->getOpDescriptor() &&
-           op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_BINARY_ELEMENTWISE);
-}
-
-bool FusionPass::isActivation(sd::LongType opHash) {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(opHash);
-    return op && op->getOpDescriptor() &&
-           op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_ACTIVATION);
 }
 
 static bool isElementwiseSlot(const NativeSlot& slot) {
@@ -125,7 +107,7 @@ static bool isNormalizationSlot(const NativeSlot& slot) {
 static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
                            int slotAOutputIdx) {
     if (!isElementwiseSlot(slotB)) return false;
-    if (slotB.isDataDependent || slotB.outputShapeDependsOnInputValues) return false;
+    if (slotB.flags.isDataDependent || slotB.flags.outputShapeDependsOnInputValues) return false;
 
     // Check that B has exactly the right number of inputs
     bool bIsBinary = slotHasTrait(slotB, sd::ops::OP_TRAIT_BINARY_ELEMENTWISE);
@@ -197,12 +179,64 @@ static bool isOnlyConsumedOnce(const std::unordered_map<int, int>& consumerCount
     return it != consumerCounts.end() && it->second == 1;
 }
 
+/**
+ * Extend a chain starting from an already-identified head slot by appending
+ * consecutive element-wise ops that consume the previous slot's output.
+ * Used by reduction→elementwise and normalization→elementwise passes.
+ *
+ * @param startSlot     Index of the head slot (already in chain)
+ * @param slots         Slot array
+ * @param numSlots      Total slot count
+ * @param fused         Per-slot fused flags (skips already-fused slots)
+ * @param consumerCounts Pre-computed consumer counts
+ * @return Chain of slot indices (including startSlot). Empty if no extension found.
+ */
+static std::vector<int> extendElementwiseChain(
+        int startSlot,
+        const NativeSlot* slots, int numSlots,
+        const std::vector<bool>& fused,
+        const std::unordered_map<int, int>& consumerCounts) {
+
+    std::vector<int> chain;
+    chain.push_back(startSlot);
+
+    for (int j = startSlot + 1; j < numSlots && chain.size() < static_cast<size_t>(FusionPass::MAX_CHAIN_LENGTH); j++) {
+        if (fused[j]) continue;
+        if (!isElementwiseSlot(slots[j])) break;
+        if (slots[j].wiring.numInputs < 1) break;
+
+        int prevOutputIdx = slots[chain.back()].wiring.outputSlotIndices[0];
+        bool consumesPrev = false;
+        for (int k = 0; k < slots[j].wiring.numInputs; k++) {
+            if (slots[j].wiring.inputSourceIndices[k] == prevOutputIdx) {
+                consumesPrev = true;
+                break;
+            }
+        }
+        if (!consumesPrev) break;
+        if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, static_cast<int>(chain.back()))) break;
+        if (slots[j].wiring.numOutputs != 1) break;
+
+        chain.push_back(j);
+    }
+
+    return chain;
+}
+
 std::vector<FusionCandidate> FusionPass::detectFusions(
         NativeSlot* slots, int numSlots,
         const std::vector<int>& externalInputRanks) {
 
     std::vector<FusionCandidate> candidates;
-    if (slots == nullptr || numSlots <= 1) return candidates;
+    if (slots == nullptr || numSlots <= 1) {
+        DSP_DIAG(FUSION, "detectFusions: skipped (slots=%p numSlots=%d)", slots, numSlots);
+        return candidates;
+    }
+
+    DSP_DIAG(FUSION, "detectFusions: BEGIN numSlots=%d castElim=%d castSink=%d",
+             numSlots,
+             Environment::getInstance().dspCastElimination() ? 1 : 0,
+             Environment::getInstance().dspCastSinkMatmul() ? 1 : 0);
 
     // Pre-compute consumer counts for O(1) "only consumed once" checks
     auto consumerCounts = buildConsumerCounts(slots, numSlots);
@@ -211,14 +245,12 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     std::vector<bool> fused(numSlots, false);
 
     // Pass 0: Cast elimination — remove redundant cast pairs (A→B followed by B→A)
-    // Like pytorch.compile, we eliminate redundant type conversions to reduce kernel launches
-    // and memory bandwidth waste. 261 FP16↔FP32 cast ops in SmolDocling are prime targets.
+    // Eliminates redundant type conversions to reduce kernel launches and memory bandwidth waste.
     if (Environment::getInstance().dspCastElimination()) {
         int castsEliminated = 0;
         for (int i = 0; i < numSlots; i++) {
             if (fused[i]) continue;
-            std::string nameI = getOpName(slots[i]);
-            if (nameI != "cast") continue;
+            if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_CAST)) continue;
             if (slots[i].wiring.numOutputs != 1 || slots[i].wiring.numInputs != 1) continue;
             if (slots[i].args.numIArgs < 1) continue;
 
@@ -228,8 +260,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             // Find the consumer of this cast's output
             for (int j = i + 1; j < numSlots; j++) {
                 if (fused[j]) continue;
-                std::string nameJ = getOpName(slots[j]);
-                if (nameJ != "cast") continue;
+                if (!slotHasTrait(slots[j], sd::ops::OP_TRAIT_CAST)) continue;
                 if (slots[j].wiring.numInputs != 1 || slots[j].wiring.numOutputs != 1) continue;
                 if (slots[j].args.numIArgs < 1) continue;
                 if (slots[j].wiring.inputSourceIndices[0] != outputIdx) continue;
@@ -260,8 +291,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                 if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) break;
 
                 // Mark both as identity ops (skip execution, wire through)
-                slots[i].isIdentityOp = true;
-                slots[j].isIdentityOp = true;
+                slots[i].flags.isIdentityOp = true;
+                slots[j].flags.isIdentityOp = true;
                 fused[i] = true;
                 fused[j] = true;
                 castsEliminated += 2;
@@ -289,8 +320,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         int castsNoConsumer = 0;
         for (int i = 0; i < numSlots; i++) {
             if (fused[i]) continue;
-            std::string nameI = getOpName(slots[i]);
-            if (nameI != "cast") continue;
+            if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_CAST)) continue;
             totalCasts++;
             if (slots[i].wiring.numOutputs != 1 || slots[i].wiring.numInputs != 1) { castsMultiIO++; continue; }
             if (slots[i].args.numIArgs < 1) { castsNoIArgs++; continue; }
@@ -317,8 +347,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                 if (!consumesOutput) continue;
 
                 consumerCount++;
-                std::string nameJ = getOpName(slots[j]);
-                if (nameJ != "matmul" && nameJ != "mmul" && nameJ != "tensormmul") {
+                if (!slotHasTrait(slots[j], sd::ops::OP_TRAIT_MATMUL)) {
                     allConsumersAreMatmul = false;
                     break;
                 }
@@ -327,7 +356,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             if (consumerCount > 0 && allConsumersAreMatmul) {
                 // Mark cast as identity — matmuls will receive FP16 input directly
                 // and MmulHelper handles mixed precision via cublasSgemmEx
-                slots[i].isIdentityOp = true;
+                slots[i].flags.isIdentityOp = true;
                 fused[i] = true;
                 castsSunk++;
             } else if (consumerCount > 0) {
@@ -345,6 +374,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 1: Detect element-wise chains
+    DSP_DIAG(FUSION, "detectFusions: pass 1 — element-wise chain detection");
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isElementwiseSlot(slots[i])) continue;
@@ -384,6 +414,9 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
 
         // Only create a fusion candidate if chain has >= 2 ops
         if (chain.size() >= 2) {
+            DSP_DIAG(FUSION, "pass 1: element-wise chain [%d-%d] length=%d head=%s",
+                      chain.front(), chain.back(), (int)chain.size(),
+                      slots[chain.front()].ident.opName.c_str());
             FusionCandidate candidate;
             candidate.startSlot = chain.front();
             candidate.endSlot = chain.back();
@@ -401,6 +434,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 2: Detect bias+activation patterns (add -> relu/sigmoid/tanh/gelu)
+    DSP_DIAG(FUSION, "detectFusions: pass 2 — bias+activation pattern detection");
     for (int i = 0; i < numSlots - 1; i++) {
         if (fused[i]) continue;
 
@@ -433,15 +467,11 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 3: Detect matmul → add(bias) → optional activation patterns
+    DSP_DIAG(FUSION, "detectFusions: pass 3 — matmul+bias+activation pattern detection");
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
 
-        std::string opName = getOpName(slots[i]);
-        if (opName != "matmul" && opName != "mmul"
-            && opName != "fp8_matmul" && opName != "smooth_quant"
-            && opName != "awq_matmul" && opName != "column_parallel_linear"
-            && opName != "row_parallel_linear" && opName != "multi_lora_matmul"
-            && opName != "fused_gemm_swiglu") continue;
+        if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_MATMUL)) continue;
         if (slots[i].wiring.numOutputs != 1) continue;
 
         int matmulOutputIdx = slots[i].wiring.outputSlotIndices[0];
@@ -510,36 +540,13 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 4: Detect reduction → element-wise chains (e.g., reduce_sum → sqrt for norm)
+    DSP_DIAG(FUSION, "detectFusions: pass 4 — reduction+element-wise chain detection");
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isReductionSlot(slots[i])) continue;
         if (slots[i].wiring.numOutputs != 1) continue;
 
-        int outputIdx = slots[i].wiring.outputSlotIndices[0];
-        std::vector<int> chain;
-        chain.push_back(i);
-
-        // Look for element-wise ops consuming the reduction output
-        for (int j = i + 1; j < numSlots && chain.size() < static_cast<size_t>(MAX_CHAIN_LENGTH); j++) {
-            if (fused[j]) continue;
-            if (!isElementwiseSlot(slots[j])) break;
-            if (slots[j].wiring.numInputs < 1) break;
-
-            bool consumesPrev = false;
-            int prevOutputIdx = slots[chain.back()].wiring.outputSlotIndices[0];
-            for (int k = 0; k < slots[j].wiring.numInputs; k++) {
-                if (slots[j].wiring.inputSourceIndices[k] == prevOutputIdx) {
-                    consumesPrev = true;
-                    break;
-                }
-            }
-            if (!consumesPrev) break;
-            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, static_cast<int>(chain.back()))) break;
-            if (slots[j].wiring.numOutputs != 1) break;
-
-            chain.push_back(j);
-        }
-
+        auto chain = extendElementwiseChain(i, slots, numSlots, fused, consumerCounts);
         if (chain.size() >= 2) {
             FusionCandidate candidate;
             candidate.startSlot = chain.front();
@@ -553,34 +560,13 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 5: Detect normalization → element-wise chains (e.g., softmax → log)
+    DSP_DIAG(FUSION, "detectFusions: pass 5 — normalization+element-wise chain detection");
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isNormalizationSlot(slots[i])) continue;
         if (slots[i].wiring.numOutputs != 1) continue;
 
-        std::vector<int> chain;
-        chain.push_back(i);
-
-        for (int j = i + 1; j < numSlots && chain.size() < static_cast<size_t>(MAX_CHAIN_LENGTH); j++) {
-            if (fused[j]) continue;
-            if (!isElementwiseSlot(slots[j])) break;
-            if (slots[j].wiring.numInputs < 1) break;
-
-            int prevOutputIdx = slots[chain.back()].wiring.outputSlotIndices[0];
-            bool consumesPrev = false;
-            for (int k = 0; k < slots[j].wiring.numInputs; k++) {
-                if (slots[j].wiring.inputSourceIndices[k] == prevOutputIdx) {
-                    consumesPrev = true;
-                    break;
-                }
-            }
-            if (!consumesPrev) break;
-            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, static_cast<int>(chain.back()))) break;
-            if (slots[j].wiring.numOutputs != 1) break;
-
-            chain.push_back(j);
-        }
-
+        auto chain = extendElementwiseChain(i, slots, numSlots, fused, consumerCounts);
         if (chain.size() >= 2) {
             FusionCandidate candidate;
             candidate.startSlot = chain.front();
@@ -594,6 +580,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 6: Detect softmax compound patterns (reduce_max → sub → exp → reduce_sum → div)
+    DSP_DIAG(FUSION, "detectFusions: pass 6 — softmax compound pattern detection");
     for (int i = 0; i < numSlots - 4; i++) {
         if (fused[i]) continue;
         std::string op0 = getOpName(slots[i]);
@@ -677,6 +664,18 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                   return a.startSlot < b.startSlot;
               });
 
+    // Summary: count by type
+    int numElemChain = 0, numBiasAct = 0, numMatmulBias = 0;
+    for (const auto& c : candidates) {
+        switch (c.type) {
+            case FusionCandidate::ELEMENTWISE_CHAIN: numElemChain++; break;
+            case FusionCandidate::BIAS_ACTIVATION: numBiasAct++; break;
+            case FusionCandidate::MATMUL_BIAS_ACTIVATION: numMatmulBias++; break;
+        }
+    }
+    DSP_DIAG(FUSION, "detectFusions: END %d candidates (elemChain=%d biasAct=%d matmulBias=%d)",
+             (int)candidates.size(), numElemChain, numBiasAct, numMatmulBias);
+
     return candidates;
 }
 
@@ -685,6 +684,8 @@ int FusionPass::applyFusions(
         const std::vector<FusionCandidate>& candidates) {
 
     int applied = 0;
+
+    DSP_DIAG(FUSION, "applyFusions: BEGIN numSlots=%d candidates=%d", numSlots, (int)candidates.size());
 
     for (const auto& fusion : candidates) {
         switch (fusion.type) {
@@ -745,7 +746,7 @@ int FusionPass::applyFusions(
 
                             // For binary ops, find the secondary input source
                             // (the one that does NOT come from the previous chain slot)
-                            secondarySources[ci] = INT32_MIN;  // INT32_MIN = unary, no secondary (-1 is external input 0!)
+                            secondarySources[ci] = FusionPass::FUSED_NO_SECONDARY_SOURCE;
                             if (slotHasTrait(slots[si], sd::ops::OP_TRAIT_BINARY_ELEMENTWISE) && slots[si].wiring.numInputs == 2) {
                                 int prevOutputSlotIdx = -1;
                                 if (ci > 0) {
@@ -771,7 +772,7 @@ int FusionPass::applyFusions(
                                             }
                                         }
                                         // If no external found, use the non-primary internal source
-                                        if (secondarySources[ci] == INT32_MIN) {
+                                        if (secondarySources[ci] == FusionPass::FUSED_NO_SECONDARY_SOURCE) {
                                             // Primary is input 0 by default; secondary is input 1
                                             secondarySources[ci] = src1;
                                         }
@@ -803,7 +804,7 @@ int FusionPass::applyFusions(
 
                             // Mark tail slots (all except head)
                             for (int ci = 1; ci < chainLen; ci++) {
-                                slots[fusion.slotIndices[ci]].isFusedChainTail = true;
+                                slots[fusion.slotIndices[ci]].fusedChain.isFusedChainTail = true;
                             }
 
                             DSP_DIAG(FUSION, "fused kernel dispatch enabled for chain slots %d-%d (%d ops)",
@@ -915,6 +916,8 @@ int FusionPass::applyFusions(
             }
         }
     }
+
+    DSP_DIAG(FUSION, "applyFusions: END applied=%d of %d candidates", applied, (int)candidates.size());
 
     return applied;
 }

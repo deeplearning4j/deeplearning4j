@@ -66,11 +66,15 @@ bool ArmHybridGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end
 
   // Check all ops are MLIR-mappable
   for (int i = start; i <= end; i++) {
-    if (!CpuIRBuilder::isMlirMappable(slots[i].opName)) {
+    if (!CpuIRBuilder::isMlirMappable(slots[i].ident.opName)) {
+      DSP_DIAG(BACKEND, "ArmHybridGraphBackend::canFuseSegment: unmappable op '%s' at slot %d",
+               slots[i].ident.opName.c_str(), i);
       return false;
     }
   }
 
+  DSP_DIAG(SEGMENT, "ArmHybridGraphBackend::canFuseSegment [%d-%d]: all %d ops mappable, vulkan=%d",
+           start, end, segSize, vulkanAvailable_ ? 1 : 0);
   return true;
 }
 
@@ -118,7 +122,7 @@ ArmHybridGraphBackend::ExecPath ArmHybridGraphBackend::selectExecPath(
   int64_t maxTensorSize = 0;
 
   for (int i = start; i <= end; i++) {
-    auto category = OpCategoryTable::getCategory(slots[i].opName);
+    auto category = OpCategoryTable::getCategory(slots[i].ident.opName);
 
     // MATMUL, CONVOLUTION, and large REDUCTION are GPU candidates
     if (category == TritonOpCategory::MATMUL ||
@@ -128,8 +132,8 @@ ArmHybridGraphBackend::ExecPath ArmHybridGraphBackend::selectExecPath(
     }
 
     // Check tensor sizes
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      int outIdx = slots[i].wiring.outputSlotIndices[o];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots && outputSlots[outIdx]) {
         int64_t len = outputSlots[outIdx]->lengthOf();
         if (len > maxTensorSize) maxTensorSize = len;
@@ -162,10 +166,15 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it != cache_.end() && it->second.valid) {
+      DSP_DIAG(JIT, "ArmHybridGraphBackend::compileSegment [%d-%d]: cache HIT (shapeKey=0x%llx)",
+               startSlot, endSlot, (long long)shapeKey);
       lastCompilationAudit_ = it->second.compilationAudit;
       return true;
     }
   }
+
+  DSP_DIAG(COMPILE, "ArmHybridGraphBackend::compileSegment [%d-%d]: cache MISS, compiling (shapeKey=0x%llx)",
+           startSlot, endSlot, (long long)shapeKey);
 
   // Determine execution path (CPU vs GPU)
   ExecPath execPath = selectExecPath(slots, startSlot, endSlot,
@@ -252,8 +261,8 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   for (int i = startSlot; i <= endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
-    entry.opName = slots[i].opName;
-    entry.wasCompiled = CpuIRBuilder::isMlirMappable(slots[i].opName);
+    entry.opName = slots[i].ident.opName;
+    entry.wasCompiled = CpuIRBuilder::isMlirMappable(slots[i].ident.opName);
     if (!entry.wasCompiled) {
       entry.reason = "unsupported op category";
     }
@@ -291,14 +300,21 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it == cache_.end() || !it->second.valid) {
+      DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: no compiled kernel found",
+               startSlot, endSlot);
       return Status::KERNEL_FAILURE;
     }
     compiled = &it->second;
   }
 
   if (!compiled->kernel || !compiled->kernel->isValid()) {
+    DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: kernel invalid", startSlot, endSlot);
     return Status::KERNEL_FAILURE;
   }
+
+  const char* pathName = (compiled->execPath == ExecPath::VULKAN_GPU) ? "Vulkan GPU" : "ARM CPU";
+  DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: executing via %s with %d args",
+           startSlot, endSlot, pathName, (int)compiled->argMappings.size());
 
   // Wire NDArray buffers to kernel arguments in the same order as compilation
   std::vector<NDArray*> inputArrays;

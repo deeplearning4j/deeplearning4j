@@ -87,19 +87,20 @@ public class DynamicShapePlanExecutor implements Closeable {
     private static final boolean NATIVE_EXECUTOR_ENABLED = !"false".equalsIgnoreCase(
             System.getProperty(ND4JSystemProperties.DSP_NATIVE_EXECUTOR_ENABLED, "true"));
 
+    /** C++ error code returned when an input DataBuffer is closed/destroyed/invalid.
+     *  Java can detect this and re-resolve the stale input from SameDiff variables. */
+    private static final int NATIVE_STATUS_STALE_BUFFER = 5;
+
     /** Number of execute() calls on this executor. Used to skip cache validity probe
-     *  on the first execution (no cached entries yet). */
+     *  on the first execution (no cached entries yet).
+     *  NOTE: C++ also tracks execution count; this Java-side copy avoids a JNI call
+     *  on the hot path. Consolidation target for when input resolution moves to C++. */
     private int executionCount;
 
     /** Java-side tracking of shapes-frozen state. When true, shape caches don't need
-     *  clearing between executions because all shapes are guaranteed constant. */
+     *  clearing between executions because all shapes are guaranteed constant.
+     *  NOTE: C++ tracks this via PlanPhase; kept here for Java-side fast-path decisions. */
     private boolean shapesFrozen;
-
-    /** Optional interceptor called after each slot execution. Null by default (zero overhead).
-     *  @deprecated Only functional with the removed Java slot-by-slot execution path. */
-    @Deprecated
-    private SlotOutputInterceptor slotOutputInterceptor;
-
 
     private final SameDiff sd;
     private final SessionMemMgr mmgr;
@@ -201,6 +202,11 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Bitmap: true for external inputs that are placeholders (may be modified on host).
      *  Only these need syncToSpecial on the frozen fast path. Constants never change. */
     private boolean[] inputIsPlaceholder;
+
+    /** Cached constant values: detached copies of small constant arrays (≤32 elements)
+     *  made when they are first resolved with live DataBuffers. Used to restore values
+     *  when session cleanup force-closes constant DataBuffers. Key = external input index. */
+    private Map<Integer, INDArray> cachedConstantValues;
 
     /** Cached indices of placeholder inputs. Built on first frozen call to avoid
      *  iterating all 1332 external inputs every step. Only ~3 are placeholders
@@ -1014,26 +1020,6 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Sets an optional interceptor that is called after each slot execution.
-     * The interceptor receives the output array directly — implementations
-     * must {@code dup()} arrays they want to retain.
-     * Pass {@code null} to disable (default).
-     * @deprecated Only functional with the removed Java slot-by-slot execution path.
-     */
-    @Deprecated
-    public void setSlotOutputInterceptor(SlotOutputInterceptor interceptor) {
-        this.slotOutputInterceptor = interceptor;
-    }
-
-    /**
-     * @deprecated Only functional with the removed Java slot-by-slot execution path.
-     */
-    @Deprecated
-    public SlotOutputInterceptor getSlotOutputInterceptor() {
-        return slotOutputInterceptor;
-    }
-
-    /**
      * Enable/disable execution timing breakdown logging on the native plan.
      */
     public void setExecutionTimingEnabled(boolean enabled) {
@@ -1225,6 +1211,28 @@ public class DynamicShapePlanExecutor implements Closeable {
                 log.info("Native executor: re-applying KV cache retention on new plan (pos={})", savedKvCurrentPos);
                 reapplyKvCacheRetention(plan);
             }
+
+            // Cache small constant values NOW while their DataBuffers are still alive.
+            // Session cleanup can force-close constant buffers between compilation and
+            // first execution. By caching detached copies here, we can restore values
+            // even after the originals are closed.
+            String[] extKeys = plan.getExternalInputKeys();
+            cachedConstantValues = new HashMap<>();
+            int cachedCount = 0;
+            for (int i = 0; i < extKeys.length; i++) {
+                SDVariable var = sd.getVariable(extKeys[i]);
+                if (var != null && var.getVariableType() == VariableType.CONSTANT) {
+                    INDArray arr = var.getArr();
+                    if (arr != null && arr.data() != null && !arr.data().wasClosed()
+                            && arr.length() <= 32) {
+                        cachedConstantValues.put(i, arr.dup());
+                        cachedCount++;
+                    }
+                }
+            }
+            if (cachedCount > 0) {
+                log.info("Native executor: cached {} small constant values at compile time", cachedCount);
+            }
         }
 
         GraphExecutionMode resolvedMode = resolveRequestedGraphExecutionMode(requestedMode);
@@ -1354,7 +1362,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                         "No fallback to Java permitted. Fix the native compilation issue.");
             }
             if (!isNativePlanCompiled(plan) && sd.isDspNativeAutoCompileEnabled()) {
-                compileNativePlan(plan, null, sd.isDspFallbackToAutoIfTritonUnavailable());
+                // Reuse the previously configured execution mode (e.g. SLOT_BY_SLOT)
+                // so that plan recompilation after frozen transition doesn't reset to AUTO.
+                GraphExecutionMode recompileMode = configuredGraphExecutionMode != GraphExecutionMode.AUTO
+                        ? configuredGraphExecutionMode : null;
+                compileNativePlan(plan, recompileMode, sd.isDspFallbackToAutoIfTritonUnavailable());
             }
             // No try/catch — native executor failures must crash, not be masked
             return executeNative(plan, placeholderArrays);
@@ -1779,10 +1791,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
                                 resolvedCount++;
                             } else {
-                                // Dead constant: DataBuffer is closed but the native plan
-                                // already has the value baked into its captured CUDA graph
-                                // from the warmup execution. Safe to skip on replay steps.
-                                resolvedCount++;  // Count as resolved to not block replay
+                                // Dead constant: try to restore from cached values
+                                INDArray cached = cachedConstantValues != null ? cachedConstantValues.get(i) : null;
+                                if (cached != null && cached.data() != null && !cached.data().wasClosed()) {
+                                    extInputs[i] = cached;
+                                    cachedInputArrays[i] = cached;
+                                    if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
+                                    if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
+                                        staleNonPlaceholderIndices = java.util.Arrays.copyOf(staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
+                                    staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
+                                }
+                                resolvedCount++;
                             }
                         } else if (vt == VariableType.PLACEHOLDER && placeholderArrays != null) {
                             stalePlaceholderCount++;
@@ -1830,7 +1849,11 @@ public class DynamicShapePlanExecutor implements Closeable {
             DspDiagnostics.record(DspDiagnostics.EXECUTE,
                     "Java: external inputs SLOW PATH (resolving " + extKeys.length + " inputs fresh)");
             extInputs = new INDArray[extKeys.length];
+            if (cachedConstantValues == null) {
+                cachedConstantValues = new HashMap<>();
+            }
             int deadConstantCount = 0;
+            int restoredFromCacheCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
                 String varName = extKeys[i];
                 INDArray arr = null;
@@ -1844,34 +1867,28 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     var.getVariableType() == VariableType.VARIABLE ||
                                     var.getVariableType() == VariableType.ARRAY)) {
                         arr = var.getArr();
-                        // Detect dead constants: array exists but DataBuffer is already closed.
-                        // This happens when SDZ deserialization creates shared dummy arrays for
-                        // small metadata constants (axes, reshape dims). The native plan reads
-                        // these values during the first (warmup) execution and bakes them into
-                        // the captured CUDA graph — so the graph replay doesn't need live
-                        // DataBuffers for these constants. We keep the original array as-is
-                        // (the native C++ side reads from shapeInfo for scalars, and the CUDA
-                        // pool typically hasn't recycled the freed memory yet for the first exec).
-                        // The stale buffer scan in the FAST PATH will skip these on replay.
                         if (arr != null && (arr.data() == null || arr.data().wasClosed())) {
-                            // Recreate the closed DataBuffer. This happens when SDZ
-                            // deserialization shares dummy buffers for small metadata
-                            // constants. Allocate a fresh zero buffer so the native plan
-                            // can read the array without crashing.
-                            INDArray fresh = Nd4j.zeros(arr.dataType(), arr.shape());
-                            // Copy the SDVariable's stored value if available
-                            SDVariable sdVar = sd.getVariable(varName);
-                            if (sdVar != null && sdVar.getArr() != null && sdVar.getArr().data() != null
-                                    && !sdVar.getArr().data().wasClosed()) {
-                                fresh.assign(sdVar.getArr());
+                            // DataBuffer closed by session cleanup. Restore from cache if available.
+                            INDArray cached = cachedConstantValues.get(i);
+                            if (cached != null && cached.data() != null && !cached.data().wasClosed()) {
+                                arr = cached;
+                                restoredFromCacheCount++;
+                            } else {
+                                // No cached copy — create zeros as last resort
+                                INDArray fresh = Nd4j.zeros(arr.dataType(), arr.shape());
+                                extInputs[i] = fresh;
+                                arr = fresh;
+                                deadConstantCount++;
+                                if (deadConstantCount <= 5) {
+                                    log.warn("DEAD_CONSTANT_ZERO: ext[{}] '{}' no cached value, using zeros (dtype={}, shape={})",
+                                             i, varName, arr.dataType(), Arrays.toString(arr.shape()));
+                                }
                             }
-                            extInputs[i] = fresh;
-                            arr = fresh;
-                            deadConstantCount++;
-                            if (deadConstantCount <= 5) {
-                                log.info("DEAD_CONSTANT_FIXED: ext[{}] '{}' recreated DataBuffer (dtype={}, shape={})",
-                                         i, varName, arr.dataType(), Arrays.toString(arr.shape()));
-                            }
+                        } else if (arr != null && arr.data() != null && !arr.data().wasClosed()
+                                   && var.getVariableType() == VariableType.CONSTANT
+                                   && arr.length() <= 32 && !cachedConstantValues.containsKey(i)) {
+                            // Buffer is alive — cache a detached copy for future recovery
+                            cachedConstantValues.put(i, arr.dup());
                         }
                     }
                 }
@@ -1882,9 +1899,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
                 extInputs[i] = arr;
             }
-            if (deadConstantCount > 0) {
-                log.warn("DEAD_CONSTANT_SUMMARY: {} of {} external inputs have closed DataBuffers at INIT. " +
-                         "CUDA graph replay will be blocked until these are fixed.", deadConstantCount, extKeys.length);
+            if (deadConstantCount > 0 || restoredFromCacheCount > 0) {
+                log.info("DEAD_CONSTANT_SUMMARY: {} dead, {} restored from cache, {} total ext inputs",
+                         deadConstantCount, restoredFromCacheCount, extKeys.length);
             }
         }
 
@@ -2245,10 +2262,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                         placeholderIndices.length + " placeholders");
                     for (int pi : placeholderIndices) {
                         INDArray arr = extInputs[pi];
-                        // Re-set placeholder input pointers on the opContext.
-                        // C++ bulk H2D sync handles all device synchronization —
-                        // NO syncToSpecial calls from Java.
+                        // Sync placeholder inputs to device. Java putScalar/assign writes to
+                        // host and marks host as dirty (tickHostWrite), but the C++ NDArray
+                        // wrapper created by OpaqueNDArray.fromINDArray doesn't inherit the
+                        // Java-side actuality tracking. Without this sync, the C++ side sees
+                        // sAct=true (device up-to-date) and skips the H2D copy, causing stale
+                        // data to be used during CUDA graph replay.
                         if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                            arr.syncToDevice();
                             OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, pi, opaqueIn);
                             cachedInputOpaques[pi] = opaqueIn;
@@ -2521,6 +2542,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 DspDiagnostics.recordTimed(DspDiagnostics.FALLBACK, -1, -1, "executeNative",
                         execMs * 1000, "Java: native execution FAILED status=" + status +
                         " msg=" + errMsg + " executionCount=" + executionCount);
+                if (status == NATIVE_STATUS_STALE_BUFFER) {
+                    // C++ detected a closed/destroyed DataBuffer. This means a constant or
+                    // variable was GC'd between Java's input resolution and C++ execution.
+                    // Throw a specific exception so callers can re-resolve and retry.
+                    throw new IllegalStateException("Stale buffer detected by C++ during DSP execution: " +
+                            (errMsg != null ? errMsg : "unknown input"));
+                }
                 throw new RuntimeException("Native plan execution failed with status " + status +
                         ": " + (errMsg != null ? errMsg : "unknown error"));
             }

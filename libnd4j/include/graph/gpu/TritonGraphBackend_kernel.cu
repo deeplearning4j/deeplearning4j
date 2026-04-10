@@ -657,15 +657,16 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     // Pinned memory survives across graph replays.
     if (compiled.cachedArgTableHostPinned == nullptr ||
         compiled.cachedArgTableHostPinnedBytes < tableBytes) {
+      auto& memPool = sd::memory::CudaMemoryPool::getInstance();
       if (compiled.cachedArgTableHostPinned != nullptr) {
-        cudaFreeHost(compiled.cachedArgTableHostPinned);
+        memPool.freePinnedHost(compiled.cachedArgTableHostPinned);
         compiled.cachedArgTableHostPinned = nullptr;
         compiled.cachedArgTableHostPinnedBytes = 0;
       }
-      auto pinnedErr = cudaMallocHost(&compiled.cachedArgTableHostPinned, tableBytes);
-      if (pinnedErr != cudaSuccess) {
-        DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate pinned arg table host (%d bytes): %s",
-                  (int)tableBytes, cudaGetErrorString(pinnedErr));
+      compiled.cachedArgTableHostPinned = static_cast<char*>(memPool.allocatePinnedHost(tableBytes));
+      if (compiled.cachedArgTableHostPinned == nullptr) {
+        DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate pinned arg table host (%d bytes) via pool",
+                  (int)tableBytes);
         return Status::KERNEL_FAILURE;
       }
       compiled.cachedArgTableHostPinnedBytes = tableBytes;
@@ -939,7 +940,6 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
         DSP_DIAG(VERIFY, "BUFFER ALIAS COPYBACK: [%d-%d] slot=%d temp=%p → orig=%p bytes=%zu",
                  compiled.startSlot_, compiled.endSlot_, ao.slotIdx, ao.tempPtr, ao.origPtr, ao.bytes);
       }
-      // Free the temporary buffer
       freeDeviceBufferAsync(ao.tempPtr, cudaExecStream);
     }
   }

@@ -33,6 +33,8 @@ namespace graph {
 
 SegmentProfile GraphAnalysisUtils::profileSegment(NativeSlot* slots, int startSlot, int endSlot,
                                                    NDArray** outputSlots, int totalOutputSlots) {
+  DSP_DIAG(SEGMENT, "profileSegment: BEGIN [%d-%d] (%d ops)", startSlot, endSlot, endSlot - startSlot + 1);
+
   SegmentProfile profile;
   int segSize = endSlot - startSlot + 1;
   profile.totalOps = segSize;
@@ -48,21 +50,21 @@ SegmentProfile GraphAnalysisUtils::profileSegment(NativeSlot* slots, int startSl
     auto& node = profile.nodes[i];
     node.slotIndex = absSlot;
     node.localIndex = i;
-    node.opName = slots[absSlot].opName;
+    node.opName = slots[absSlot].ident.opName;
 
     const auto& table = getOpCategoryTable();
     auto catIt = table.find(node.opName);
     node.category = (catIt != table.end()) ? catIt->second : TritonOpCategory::UNSUPPORTED;
     node.hasExternalInput = false;
 
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      outputSlotToProducer[slots[absSlot].outputSlotIndices[o]] = i;
+    for (int o = 0; o < slots[absSlot].wiring.numOutputs; o++) {
+      outputSlotToProducer[slots[absSlot].wiring.outputSlotIndices[o]] = i;
     }
 
-    if (slots[absSlot].numOutputs > 0) {
-      int outIdx = slots[absSlot].outputSlotIndices[0];
-      if (slots[absSlot].shapeCacheValid() && !slots[absSlot].cachedOutputShapes.empty()) {
-        const LongType* shapeInfo = slots[absSlot].cachedOutputShapes[0];
+    if (slots[absSlot].wiring.numOutputs > 0) {
+      int outIdx = slots[absSlot].wiring.outputSlotIndices[0];
+      if (slots[absSlot].shapeCacheValid() && !slots[absSlot].shapeCache.cachedOutputShapes.empty()) {
+        const LongType* shapeInfo = slots[absSlot].shapeCache.cachedOutputShapes[0];
         if (shapeInfo) {
           LongType rank = shape::rank(shapeInfo);
           node.outputShape.resize(rank);
@@ -94,8 +96,8 @@ SegmentProfile GraphAnalysisUtils::profileSegment(NativeSlot* slots, int startSl
     int absSlot = startSlot + i;
     auto& node = profile.nodes[i];
 
-    for (int inp = 0; inp < slots[absSlot].numInputs; inp++) {
-      int srcIdx = slots[absSlot].inputSourceIndices[inp];
+    for (int inp = 0; inp < slots[absSlot].wiring.numInputs; inp++) {
+      int srcIdx = slots[absSlot].wiring.inputSourceIndices[inp];
       if (srcIdx < 0) {
         node.inputLocalIndices.push_back(-1);
         node.hasExternalInput = true;
@@ -116,8 +118,8 @@ SegmentProfile GraphAnalysisUtils::profileSegment(NativeSlot* slots, int startSl
 
   for (int i = 0; i < segSize; i++) {
     int absSlot = startSlot + i;
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      int outIdx = slots[absSlot].outputSlotIndices[o];
+    for (int o = 0; o < slots[absSlot].wiring.numOutputs; o++) {
+      int outIdx = slots[absSlot].wiring.outputSlotIndices[o];
       auto it = outputToConsumers.find(outIdx);
       if (it != outputToConsumers.end()) {
         for (int consumer : it->second) {
@@ -130,8 +132,8 @@ SegmentProfile GraphAnalysisUtils::profileSegment(NativeSlot* slots, int startSl
   std::unordered_set<int> outputSet;
   for (int i = 0; i < segSize; i++) {
     int absSlot = startSlot + i;
-    for (int o = 0; o < slots[absSlot].numOutputs; o++) {
-      outputSet.insert(slots[absSlot].outputSlotIndices[o]);
+    for (int o = 0; o < slots[absSlot].wiring.numOutputs; o++) {
+      outputSet.insert(slots[absSlot].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -145,16 +147,24 @@ SegmentProfile GraphAnalysisUtils::profileSegment(NativeSlot* slots, int startSl
   profile.hasShapeManip = profile.categoryCounts[static_cast<int>(TritonOpCategory::SHAPE_MANIPULATION)] > 0;
   profile.hasDataMovement = profile.categoryCounts[static_cast<int>(TritonOpCategory::DATA_MOVEMENT)] > 0;
 
+  DSP_DIAG(SEGMENT, "profileSegment: END [%d-%d] extInputs=%d outputs=%d matmul=%d reduce=%d norm=%d attn=%d shape=%d data=%d",
+           startSlot, endSlot, profile.numUniqueExternalInputs, profile.numUniqueOutputs,
+           profile.hasMatmul ? 1 : 0, profile.hasReduction ? 1 : 0,
+           profile.hasNormalization ? 1 : 0, profile.hasFusedAttention ? 1 : 0,
+           profile.hasShapeManip ? 1 : 0, profile.hasDataMovement ? 1 : 0);
+
   return profile;
 }
 
 std::unordered_set<int> GraphAnalysisUtils::computeExternallyVisibleOutputs(
     NativeSlot* slots, int startSlot, int endSlot, int totalSlots) {
 
+  DSP_DIAG(SEGMENT, "computeExternallyVisibleOutputs: [%d-%d] totalSlots=%d", startSlot, endSlot, totalSlots);
+
   std::unordered_set<int> segmentOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      segmentOutputs.insert(slots[i].outputSlotIndices[o]);
+    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+      segmentOutputs.insert(slots[i].wiring.outputSlotIndices[o]);
     }
   }
 
@@ -162,8 +172,8 @@ std::unordered_set<int> GraphAnalysisUtils::computeExternallyVisibleOutputs(
   for (int outIdx : segmentOutputs) {
     bool consumedOutside = false;
     for (int i = endSlot + 1; i < totalSlots && !consumedOutside; i++) {
-      for (int inp = 0; inp < slots[i].numInputs; inp++) {
-        if (slots[i].inputSourceIndices[inp] == outIdx) {
+      for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+        if (slots[i].wiring.inputSourceIndices[inp] == outIdx) {
           consumedOutside = true;
           break;
         }
@@ -175,9 +185,12 @@ std::unordered_set<int> GraphAnalysisUtils::computeExternallyVisibleOutputs(
   }
 
   // All outputs from the last slot are always externally visible
-  for (int o = 0; o < slots[endSlot].numOutputs; o++) {
-    externalOutputs.insert(slots[endSlot].outputSlotIndices[o]);
+  for (int o = 0; o < slots[endSlot].wiring.numOutputs; o++) {
+    externalOutputs.insert(slots[endSlot].wiring.outputSlotIndices[o]);
   }
+
+  DSP_DIAG(SEGMENT, "computeExternallyVisibleOutputs: [%d-%d] segOutputs=%d extVisible=%d",
+           startSlot, endSlot, (int)segmentOutputs.size(), (int)externalOutputs.size());
 
   return externalOutputs;
 }

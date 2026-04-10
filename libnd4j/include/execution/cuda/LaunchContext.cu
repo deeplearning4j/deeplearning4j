@@ -35,7 +35,7 @@
 // This eliminates the "flip-flop" pattern where switching devices caused
 // release+reinitialize cycles that fail when a device is out of memory.
 //
-// CRITICAL: ContextBuffers MUST live in thread-local storage (TLS), NOT on the
+//  ContextBuffers MUST live in thread-local storage (TLS), NOT on the
 // heap. Known buffer overrun issues in C++ ops corrupt heap metadata, causing
 // "free(): invalid pointer" crashes. TLS is in a separate memory segment that
 // heap corruption cannot reach. Using `new ContextBuffers()` (heap) triggers

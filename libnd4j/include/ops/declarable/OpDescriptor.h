@@ -72,6 +72,7 @@ enum OpTraits : uint32_t {
   OP_TRAIT_TILE                  = 1 << 25,
   OP_TRAIT_SCATTER_ND            = 1 << 26,
   OP_TRAIT_SCATTER_ND_UPDATE     = 1 << 27,
+  OP_TRAIT_CAST                  = 1 << 28,
 };
 
 class SD_LIB_EXPORT OpExecTrace {

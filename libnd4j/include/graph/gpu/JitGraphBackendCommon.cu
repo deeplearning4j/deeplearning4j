@@ -34,7 +34,7 @@ namespace graph {
 bool jitCanFuseSegment(NativeSlot* slots, int start, int end) {
   int fusible = 0;
   for (int i = start; i <= end; i++) {
-    auto cat = getOpCategoryFromName(slots[i].opName);
+    auto cat = getOpCategoryFromName(slots[i].ident.opName);
     if (isNvrtcJittable(cat)) {
       fusible++;
     }

@@ -26,6 +26,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 
 // Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
 #ifdef SD_CUDA
@@ -117,6 +118,13 @@ int findProducerStep(const GraphSegment& seg, NativeSlot* slots, int outputSlotI
 LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
 
+  // ── Frozen fast path: reuse cached key if shapes can't change ──
+  // This is the AUTHORITATIVE cache check — applies to ALL callers
+  // (phaseCompile, executeSegmentWithGpuGraph, executeSegmentWithSpecificBackend, etc.)
+  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
+    return seg.exec.cachedShapeKey;
+  }
+
   // ── Symbolic shape range path ──────────────────────────────────────────
   // When enabled, collect cross-segment inputs, feed them to the shape
   // profiler, and (after warmup) use range-based hashing that ignores
@@ -169,9 +177,9 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       // Mix op names, iArgs, and tArgs into the range-based key so different
       // plans with the same input shapes but different ops produce unique keys
       // in singleton backend caches (OpenVINO, OneDNN Graph). v2-cache-fix.
-      auto mixRange = [&rangeKey](LongType val) {
-        rangeKey ^= val;
-        rangeKey *= 0x100000001b3ULL;
+      uint64_t rangeKeyU64 = static_cast<uint64_t>(rangeKey);
+      auto mixRange = [&rangeKeyU64](LongType val) {
+        dsp::fnv1aMixValue(rangeKeyU64, static_cast<uint64_t>(val));
       };
       for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
@@ -188,19 +196,18 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       }
 
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld (with-op-mix)",
-               seg.def.startSlot, seg.def.endSlot, rangeKey);
+               seg.def.startSlot, seg.def.endSlot, static_cast<long long>(rangeKeyU64));
       // Cache the key for subsequent calls (when shapesFrozen_ is enabled)
-      seg.exec.cachedShapeKey = rangeKey;
-      return rangeKey;
+      seg.exec.cachedShapeKey = static_cast<LongType>(rangeKeyU64);
+      return static_cast<LongType>(rangeKeyU64);
     }
     // Fall through to standard path during warmup
   }
 
   // ── Standard FNV-1a path ───────────────────────────────────────────────
-  LongType key = 0xcbf29ce484222325ULL;
+  uint64_t key = dsp::FNV1A64_OFFSET_BASIS;
   auto mix = [&key](LongType val) {
-    key ^= val;
-    key *= 0x100000001b3ULL;
+    dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
   auto mixArraySignature = [&](NDArray* arr) {
@@ -220,21 +227,24 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     // axis constants, broadcast targets, reshape dims, etc. — eliminating the
     // need for a hardcoded "value-dependent shape op" list.
     // Only small inputs are hashed to avoid GPU→CPU sync overhead on large tensors.
-    // The sync is safe here because shape key computation runs BEFORE graph capture
-    // (during warmup or shape-change detection), not during replay.
+    // We read directly from the host buffer after syncToHost() instead of using
+    // e<T>() which has significant per-element overhead on CUDA arrays.
     LongType len = arr->lengthOf();
     if (len > 0 && len <= 32) {
       arr->syncToHost();
-      auto dt = arr->dataType();
-      for (LongType e = 0; e < len; e++) {
-        if (dt == INT32 || dt == INT64 || dt == BOOL) {
-          mix(arr->e<LongType>(e));
-        } else {
-          // Float values: cast to int64 bit pattern for hashing
-          double v = arr->e<double>(e);
-          LongType bits;
-          std::memcpy(&bits, &v, sizeof(bits));
-          mix(bits);
+      auto* db = arr->dataBuffer();
+      if (db != nullptr && db->primary() != nullptr) {
+        auto dt = arr->dataType();
+        auto sizeOfElem = DataTypeUtils::sizeOf(dt);
+        const auto* hostPtr = static_cast<const int8_t*>(db->primary());
+        auto offset = arr->offset();
+        for (LongType e = 0; e < len; e++) {
+          LongType val = 0;
+          const auto* elemPtr = hostPtr + (offset + e) * sizeOfElem;
+          if (sizeOfElem <= 8) {
+            std::memcpy(&val, elemPtr, sizeOfElem);
+          }
+          mix(val);
         }
       }
     }
@@ -361,204 +371,14 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
   }
 
+  // Cache for future frozen calls
+  if (shapesFrozen_) {
+    seg.exec.cachedShapeKey = key;
+  }
   return key;
 }
 
 // ─── CPU Graph backend selection ────────────────────────────────────────────
-
-GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
-  if (cpuGraphBackendChecked_) return cpuGraphBackend_;
-  cpuGraphBackendChecked_ = true;
-  const auto mode = graphExecutionMode_;
-
-  if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#ifdef SD_CUDA
-  if (mode == GraphExecutionMode::GEM_TRITON ||
-      mode == GraphExecutionMode::GEM_NVRTC_JIT ||
-      mode == GraphExecutionMode::GEM_PTX_JIT ||
-      mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
-      mode == GraphExecutionMode::GEM_LEVELZERO ||
-      mode == GraphExecutionMode::GEM_VULKAN ||
-      mode == GraphExecutionMode::GEM_METAL ||
-      mode == GraphExecutionMode::GEM_TPU ||
-      mode == GraphExecutionMode::GEM_HEXAGON) {
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#ifdef SD_CUDA
-  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
-                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS);
-#else
-  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
-                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS ||
-                             mode == GraphExecutionMode::GEM_TRITON ||
-                             mode == GraphExecutionMode::GEM_NVRTC_JIT ||
-                             mode == GraphExecutionMode::GEM_PTX_JIT ||
-                             mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
-                             mode == GraphExecutionMode::GEM_LEVELZERO ||
-                             mode == GraphExecutionMode::GEM_VULKAN ||
-                             mode == GraphExecutionMode::GEM_METAL ||
-                             mode == GraphExecutionMode::GEM_TPU ||
-                             mode == GraphExecutionMode::GEM_HEXAGON);
-#endif
-
-#if HAVE_MLX
-  if (mode == GraphExecutionMode::GEM_MLX || autoLikeMode) {
-    auto& mlx = MlxGraphBackend::getInstance();
-    if (mlx.isAvailable()) {
-      cpuGraphBackend_ = &mlx;
-      if (mode == GraphExecutionMode::GEM_MLX) {
-        DSP_DIAG(BACKEND, "using MLX Apple Silicon backend (forced)");
-      } else {
-        DSP_DIAG(BACKEND, "using MLX Apple Silicon backend");
-      }
-      return cpuGraphBackend_;
-    }
-    if (mode == GraphExecutionMode::GEM_MLX) {
-      DSP_DIAG(BACKEND, "GEM_MLX requested but MLX not available");
-      cpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_MLX) {
-    DSP_DIAG(BACKEND, "GEM_MLX requested but HAVE_MLX=0");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#if HAVE_ONEDNN
-  if (autoLikeMode) {
-    auto& onednn = OneDnnGraphBackend::getInstance();
-    if (onednn.isAvailable()) {
-      cpuGraphBackend_ = &onednn;
-      DSP_DIAG(BACKEND, "using oneDNN Graph backend");
-      return cpuGraphBackend_;
-    }
-  }
-#endif
-
-#if HAVE_OPENVINO
-  if (mode == GraphExecutionMode::GEM_OPENVINO || autoLikeMode) {
-    auto& ov = OpenVinoGraphBackend::getInstance();
-    if (ov.isAvailable()) {
-      cpuGraphBackend_ = &ov;
-      if (mode == GraphExecutionMode::GEM_OPENVINO) {
-        DSP_DIAG(BACKEND, "using OpenVINO CPU backend (forced)");
-      } else {
-        DSP_DIAG(BACKEND, "using OpenVINO CPU backend");
-      }
-      return cpuGraphBackend_;
-    }
-    if (mode == GraphExecutionMode::GEM_OPENVINO) {
-      DSP_DIAG(BACKEND, "GEM_OPENVINO requested but OpenVINO not available");
-      cpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_OPENVINO) {
-    DSP_DIAG(BACKEND, "GEM_OPENVINO requested but HAVE_OPENVINO=0");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#if HAVE_ARMCOMPUTE
-  if (autoLikeMode) {
-    auto& acl = AclGraphBackend::getInstance();
-    if (acl.isAvailable()) {
-      cpuGraphBackend_ = &acl;
-      DSP_DIAG(BACKEND, "using ARM ACL backend");
-      return cpuGraphBackend_;
-    }
-  }
-#endif
-
-  if (mode == GraphExecutionMode::GEM_TVM) {
-    DSP_DIAG(BACKEND, "GEM_TVM requested but TVM backend removed (use triton-cpu instead)");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-
-#if HAVE_NNAPI
-  if (mode == GraphExecutionMode::GEM_NNAPI || autoLikeMode) {
-    auto& nnapi = NnapiGraphBackend::getInstance();
-    if (nnapi.isAvailable()) {
-      cpuGraphBackend_ = &nnapi;
-      if (mode == GraphExecutionMode::GEM_NNAPI) {
-        DSP_DIAG(BACKEND, "using Android NNAPI backend (forced)");
-      } else {
-        DSP_DIAG(BACKEND, "using Android NNAPI backend");
-      }
-      return cpuGraphBackend_;
-    }
-    if (mode == GraphExecutionMode::GEM_NNAPI) {
-      DSP_DIAG(BACKEND, "GEM_NNAPI requested but NNAPI not available");
-      cpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_NNAPI) {
-    DSP_DIAG(BACKEND, "GEM_NNAPI requested but HAVE_NNAPI=0");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#if HAVE_MLIR
-#if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
-  if (mode == GraphExecutionMode::GEM_ARM_HYBRID || autoLikeMode) {
-    auto& armHybrid = ArmHybridGraphBackend::getInstance();
-    if (armHybrid.isAvailable()) {
-      cpuGraphBackend_ = &armHybrid;
-      if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-        DSP_DIAG(BACKEND, "using ARM Hybrid (MLIR CPU + Vulkan) backend (forced)");
-      } else {
-        DSP_DIAG(BACKEND, "using ARM Hybrid (MLIR CPU + Vulkan) backend");
-      }
-      return cpuGraphBackend_;
-    }
-    if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-      DSP_DIAG(BACKEND, "GEM_ARM_HYBRID requested but backend not available");
-      cpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-    DSP_DIAG(BACKEND, "GEM_ARM_HYBRID requested but this platform is not ARM Android/Linux");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-  if (autoLikeMode) {
-    auto& mlirBackend = MlirCpuGraphBackend::getInstance();
-    if (mlirBackend.isAvailable()) {
-      cpuGraphBackend_ = &mlirBackend;
-      DSP_DIAG(BACKEND, "using MLIR CPU JIT backend");
-      return cpuGraphBackend_;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-    DSP_DIAG(BACKEND, "GEM_ARM_HYBRID requested but HAVE_MLIR=0");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-  cpuGraphBackend_ = nullptr;
-  return nullptr;
-}
 
 // ─── CPU Graph backend chain (prioritized list of all available backends) ────
 
@@ -782,19 +602,19 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   // invalidation, the createValueKey mechanism catches it. Skipping shape key here
   // eliminates N syncToHost calls per step (one per small INT/INT64 cross-segment
   // input array).
+  // ── Shape key: detect if segment needs recompilation ──
+  // Frozen + cached key: reuse. Otherwise: compute once and cache.
   LongType segShapeKey;
   bool needsCompile;
-  bool isStableReplay = shapesFrozen_ && seg.exec.executionCount >= 3 &&
-                         seg.exec.cachedShapeKey != 0;
-  if (isStableReplay) {
-    segShapeKey = seg.exec.cachedShapeKey;
-    needsCompile = false;
-  } else if (shapesFrozen_ && seg.exec.cachedShapeKey != 0 && !seg.def.hasValueDepOps) {
+  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
     segShapeKey = seg.exec.cachedShapeKey;
     needsCompile = false;
   } else {
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
     needsCompile = (seg.exec.executionCount == 1) || (seg.def.shapeKey != segShapeKey);
+    if (shapesFrozen_) {
+      seg.exec.cachedShapeKey = segShapeKey;  // cache for future frozen calls
+    }
   }
 
   if (needsCompile) {
@@ -1214,7 +1034,7 @@ executeSlot_retry:
                  stepIdx, slots_[stepIdx].ident.opName.c_str(),
                  static_cast<int>(syncErr), cudaGetErrorString(syncErr),
                  seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
-        sd_printf("%s\n", buf);
+        DSP_DIAG(EXECUTE, "%s", buf);
         // Log all inputs to the failing slot
         auto& faultSlot = slots_[stepIdx];
         for (int i = 0; i < faultSlot.wiring.numInputs; i++) {
@@ -1227,16 +1047,17 @@ executeSlot_retry:
             if (extIdx >= 0 && extIdx < numExt) inp = externalArrays[extIdx];
           }
           if (inp != nullptr && inp->dataBuffer() != nullptr) {
-            sd_printf("  FAULT INPUT[%d] srcIdx=%d: shape=%s special=%p primary=%p "
-                      "len=%lld db=%p closed=%d devId=%d\n",
-                      i, srcIdx, ShapeUtils::shapeAsString(inp).c_str(),
-                      inp->dataBuffer()->special(), inp->dataBuffer()->primary(),
-                      (long long)inp->lengthOf(), (void*)inp->dataBuffer(),
-                      inp->dataBuffer()->isClosed() ? 1 : 0,
-                      inp->dataBuffer()->deviceId());
+            DSP_DIAG(EXECUTE,
+                "  FAULT INPUT[%d] srcIdx=%d: shape=%s special=%p primary=%p "
+                "len=%lld db=%p closed=%d devId=%d",
+                i, srcIdx, ShapeUtils::shapeAsString(inp).c_str(),
+                inp->dataBuffer()->special(), inp->dataBuffer()->primary(),
+                (long long)inp->lengthOf(), (void*)inp->dataBuffer(),
+                inp->dataBuffer()->isClosed() ? 1 : 0,
+                inp->dataBuffer()->deviceId());
           } else {
-            sd_printf("  FAULT INPUT[%d] srcIdx=%d: %s\n",
-                      i, srcIdx, inp ? "db=null" : "null");
+            DSP_DIAG(EXECUTE, "  FAULT INPUT[%d] srcIdx=%d: %s",
+                     i, srcIdx, inp ? "db=null" : "null");
           }
         }
         // Log outputs of the failing slot
@@ -1244,11 +1065,13 @@ executeSlot_retry:
           int si = faultSlot.wiring.outputSlotIndices[i];
           NDArray* out = (si >= 0 && si < totalOutputSlots_) ? outputSlots_[si] : nullptr;
           if (out != nullptr && out->dataBuffer() != nullptr) {
-            sd_printf("  FAULT OUTPUT[%d] slotIdx=%d: shape=%s special=%p len=%lld\n",
-                      i, si, ShapeUtils::shapeAsString(out).c_str(),
-                      out->dataBuffer()->special(), (long long)out->lengthOf());
+            DSP_DIAG(EXECUTE,
+                "  FAULT OUTPUT[%d] slotIdx=%d: shape=%s special=%p len=%lld",
+                i, si, ShapeUtils::shapeAsString(out).c_str(),
+                out->dataBuffer()->special(), (long long)out->lengthOf());
           } else {
-            sd_printf("  FAULT OUTPUT[%d] slotIdx=%d: %s\n", i, si, out ? "db=null" : "null");
+            DSP_DIAG(EXECUTE, "  FAULT OUTPUT[%d] slotIdx=%d: %s",
+                     i, si, out ? "db=null" : "null");
           }
         }
         cudaGetLastError(); // clear sticky error
@@ -1368,10 +1191,9 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
   // FNV-1a hash of buffer addresses for all segment inputs (external + cross-segment).
   // On CUDA, uses specialBuffer(); on CPU, uses primaryBuffer().
   // Address changes between executions indicate the graph would have stale pointers.
-  LongType hash = 0xcbf29ce484222325ULL;
+  uint64_t hash = dsp::FNV1A64_OFFSET_BASIS;
   auto mix = [&hash](uintptr_t val) {
-    hash ^= val;
-    hash *= 0x100000001b3ULL;
+    dsp::fnv1aMixValue(hash, static_cast<uint64_t>(val));
   };
 
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {

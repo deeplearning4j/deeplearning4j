@@ -1331,7 +1331,8 @@ void TritonGraphBackend::invalidateCache() {
         seg.consolidatedArgTableBytes = 0;
       }
       if (seg.consolidatedArgTableHostPinned != nullptr) {
-        cudaFreeHost(seg.consolidatedArgTableHostPinned);
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        memPool.freePinnedHost(seg.consolidatedArgTableHostPinned);
         seg.consolidatedArgTableHostPinned = nullptr;
       }
       // Null out per-kernel pointers (they were offsets into consolidated buffer,
@@ -1356,7 +1357,8 @@ void TritonGraphBackend::invalidateCache() {
         kernel.cachedArgTableDeviceId = -1;
       }
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
-        cudaFreeHost(kernel.cachedArgTableHostPinned);
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
         kernel.cachedArgTableHostPinned = nullptr;
         kernel.cachedArgTableHostPinnedBytes = 0;
       }
@@ -1419,7 +1421,8 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
         cudaFree(seg.consolidatedArgTableDevice);
       }
       if (seg.consolidatedArgTableHostPinned != nullptr) {
-        cudaFreeHost(seg.consolidatedArgTableHostPinned);
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        memPool.freePinnedHost(seg.consolidatedArgTableHostPinned);
       }
       for (auto& kernel : seg.subKernels) {
         kernel.cachedArgTableDevice = nullptr;
@@ -1435,7 +1438,8 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
         cudaFree(kernel.cachedArgTableDevice);
       }
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
-        cudaFreeHost(kernel.cachedArgTableHostPinned);
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
       }
       if (kernel.cachedSyncCounterDevice != nullptr) {
         recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : segDeviceId,

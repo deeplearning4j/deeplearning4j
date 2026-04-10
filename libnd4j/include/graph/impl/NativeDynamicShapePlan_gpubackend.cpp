@@ -25,8 +25,11 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspConstants.h>
+#include <graph/DspHashUtils.h>
 #include <graph/DspStreamGuard.h>
 #include <graph/DspVerifyUtils.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/gpu/ViewRecipe.h>
 #include <helpers/ShapeBuilders.h>
 #include <helpers/MmulHelper.h>
@@ -197,36 +200,13 @@ static bool slotIsElementwisePayloadOp(int slotIdx, NativeSlot* slots) {
                          sd::ops::OP_TRAIT_LOGICAL);
 }
 
+// Delegate to shared utilities in DspAnalysisUtils.h
 static int findProducerStepInSegment(const GraphSegment& seg, NativeSlot* slots, int outputSlotIdx) {
-  if (slots == nullptr || outputSlotIdx < 0) return -1;
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    const auto& slot = slots[s];
-    for (int o = 0; o < slot.wiring.numOutputs; o++) {
-      if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
-        return s;
-      }
-    }
-  }
-  return -1;
+  return dsp::findProducerStepInSegment(seg, slots, outputSlotIdx);
 }
 
 static bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, NativeSlot* slots) {
-  if (slots == nullptr) return false;
-
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    const auto& slot = slots[s];
-    if (!slotHasAnyTrait(s, slots, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE)) continue;
-
-    for (int i = 0; i < slot.wiring.numInputs; i++) {
-      const int srcIdx = slot.wiring.inputSourceIndices[i];
-      if (srcIdx < 0) continue;
-      if (findProducerStepInSegment(seg, slots, srcIdx) >= 0) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return dsp::segmentHasInternalValueShapeInputs(seg, slots);
 }
 
 static bool slotIsReductionOp(int slotIdx, NativeSlot* slots) {
@@ -347,8 +327,9 @@ static std::string buildCombinedBucketLabel(const std::vector<DspDiagnostics::Ga
 //
 // This is the first real launch-count reduction pass.
 
-static constexpr int SHAPE_CHAIN_MAX_ELEMENTS = 64;  // Max elements for a "small" shape tensor
-static constexpr int SHAPE_CHAIN_MAX_RANK = 8;       // Max rank for shape tensors
+// Shape chain thresholds — canonical definitions in DspConstants.h
+using dsp::SHAPE_CHAIN_MAX_ELEMENTS;
+using dsp::SHAPE_CHAIN_MAX_RANK;
 
 // Check if a slot's output is a "small" shape-sized tensor (not a real payload).
 static bool isSmallShapeTensor(int slotIdx, NDArray** outputSlots) {
@@ -645,7 +626,7 @@ static ReplayScheduleSignature buildReplaySignature(const GraphSegment& seg,
   sig.numUnits = std::min((int)units.size(), ReplayScheduleSignature::MAX_UNITS);
 
   // Compute FNV-1a hash incrementally
-  uint64_t h = 0xcbf29ce484222325ULL;  // FNV offset basis
+  uint64_t h = dsp::FNV1A64_OFFSET_BASIS;
   for (int i = 0; i < sig.numUnits; i++) {
     const auto& u = units[i];
     sig.units[i].kind = ReplayScheduleSignature::toUnitKind(u.type);
@@ -664,10 +645,7 @@ static ReplayScheduleSignature buildReplaySignature(const GraphSegment& seg,
     buf[6] = (uint8_t)((sig.units[i].opCategory >> 8) & 0xFF);
     buf[7] = (uint8_t)i;  // order matters
 
-    for (int b = 0; b < 8; b++) {
-      h ^= buf[b];
-      h *= 0x100000001b3ULL;  // FNV prime
-    }
+    dsp::fnv1aMix(h, buf, 8);
   }
   sig.hash = h;
   return sig;
@@ -901,34 +879,6 @@ static bool isMaterializingPrepNeeded(int slotIdx, NativeSlot* slots, NDArray** 
   return slotWouldMaterialize(slotIdx, slots);
 }
 
-// Lower an attention tail pattern by absorbing view-only and shape-only prep
-// into the attention section, and executing only essential materializing prep.
-static Status lowerAttentionTail(const AttentionTailPrep& prep, NativeSlot* slots,
-                                 NDArray** outputSlots, NDArray** externalInputs,
-                                 int numExternalInputs, void* stream) {
-  // Step 1: Install view-only prep (zero-copy views)
-  // These are already captured as view recipes — just install them
-  DSP_DIAG(EXECUTE, "ATTN_TAIL: installing %d view ops before attention slot %d",
-           static_cast<int>(prep.viewOpSlots.size()), prep.attentionSlot);
-
-  // Step 2: Install shape-only prep (folded shape chains)
-  DSP_DIAG(EXECUTE, "ATTN_TAIL: installing %d shape ops before attention slot %d",
-           static_cast<int>(prep.shapeOpSlots.size()), prep.attentionSlot);
-
-  // Step 3: Execute only essential materializing prep ops
-  for (int slotIdx : prep.materializeSlots) {
-    if (isMaterializingPrepNeeded(slotIdx, slots, outputSlots)) {
-      DSP_DIAG(EXECUTE, "ATTN_TAIL: executing materializing prep slot %d", slotIdx);
-      // Execute this slot natively — it's essential for attention
-      // In production, this would use the native slot executor
-    } else {
-      DSP_DIAG(EXECUTE, "ATTN_TAIL: skipping unnecessary materializing prep slot %d", slotIdx);
-    }
-  }
-
-  return Status::OK;
-}
-
 // ── View recipe capture, validation, and installation ──────────────────────
 
 // Map an op name to a ViewRecipeType using the category table for semantic
@@ -954,10 +904,6 @@ static bool isViewCompatibleInput(NDArray* input) {
   if (input == nullptr || input->dataBuffer() == nullptr) return false;
   // View requires C-contiguous layout for simple offset + stride math
   return input->ordering() == 'c';
-}
-
-static bool slotAllowsSubsetView(int slotIdx, NativeSlot* slots) {
-  return slotHasAnyTrait(slotIdx, slots, sd::ops::OP_TRAIT_SLICE);
 }
 
 static bool resolveViewRecipeOwnerSlot(int outputSlotIdx,
@@ -1350,14 +1296,8 @@ static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& 
  * and replay — stale addresses in a CUDA graph cause SIGSEGV or corruption.
  */
 static LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
-  LongType hash = 0xcbf29ce484222325ULL;  // FNV-1a offset basis
-  for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
-    void* addr = (outputSlots[si] != nullptr) ? DSP_BUF(outputSlots[si]) : nullptr;
-    LongType bits = reinterpret_cast<uintptr_t>(addr);
-    hash ^= bits;
-    hash *= 0x100000001b3ULL;  // FNV-1a prime
-  }
-  return hash;
+  return dsp::computeSlotAddrHash(outputSlots, startSlot, endSlot, totalSlots,
+      [](NDArray* a) -> void* { return DSP_BUF(a); });
 }
 
 #ifdef SD_CUDA
@@ -1536,10 +1476,10 @@ static bool findUnsupportedTritonReplayGap(TritonGraphBackend* tritonBackend,
  *   unit 3: GAP            [347-369] islandIndex=-1
  *   unit 4: TRITON_ISLAND [370-399]  islandIndex=2
  */
-static GraphSegment::ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
+static ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
                                                     NativeSlot* slots,
                                                     TritonGraphBackend* tritonBackend) {
-  GraphSegment::ReplaySchedule schedule;
+  ReplaySchedule schedule;
   auto gap_slots = tritonBackend->getGapSlots(seg, slots);
 
   int islandIdx = 0;
@@ -1552,9 +1492,9 @@ static GraphSegment::ReplaySchedule buildCompositeReplaySchedule(const GraphSegm
 
     if (atBoundary && slot > rangeStart) {
       if (inIsland) {
-        schedule.units.emplace_back(GraphSegment::REPLAY_UNIT_TRITON_ISLAND, rangeStart, slot - 1, islandIdx++);
+        schedule.units.emplace_back(REPLAY_UNIT_TRITON_ISLAND, rangeStart, slot - 1, islandIdx++);
       } else {
-        schedule.units.emplace_back(GraphSegment::REPLAY_UNIT_GAP, rangeStart, slot - 1, -1);
+        schedule.units.emplace_back(REPLAY_UNIT_GAP, rangeStart, slot - 1, -1);
       }
       rangeStart = slot;
       inIsland = !isGap;
@@ -1562,9 +1502,9 @@ static GraphSegment::ReplaySchedule buildCompositeReplaySchedule(const GraphSegm
     // If at seg.def.endSlot+1 boundary with pending range, the loop above handles it
     if (slot == seg.def.endSlot + 1 && rangeStart <= seg.def.endSlot) {
       if (inIsland) {
-        schedule.units.emplace_back(GraphSegment::REPLAY_UNIT_TRITON_ISLAND, rangeStart, seg.def.endSlot, islandIdx++);
+        schedule.units.emplace_back(REPLAY_UNIT_TRITON_ISLAND, rangeStart, seg.def.endSlot, islandIdx++);
       } else {
-        schedule.units.emplace_back(GraphSegment::REPLAY_UNIT_GAP, rangeStart, seg.def.endSlot, -1);
+        schedule.units.emplace_back(REPLAY_UNIT_GAP, rangeStart, seg.def.endSlot, -1);
       }
     }
   }
@@ -1932,7 +1872,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     DSP_DIAG(VERIFY, "SEG_ENTER seg[%d-%d] execCount=%d mode=%s",
               seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount, mode);
     // Dump external input actuality flags for first N inputs
-    int dumpCount = std::min(numExt, 8);
+    int detailLimit = sd::graph::DspDiagnostics::getInstance().diagDetailLimit();
+    int dumpCount = std::min(numExt, detailLimit);
     for (int i = 0; i < dumpCount; i++) {
       if (externalArrays[i] != nullptr && externalArrays[i]->dataBuffer() != nullptr) {
         auto* db = externalArrays[i]->dataBuffer();
@@ -1943,8 +1884,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                   DSP_BUF(externalArrays[i]));
       }
     }
-    if (numExt > 8) {
-      DSP_DIAG(VERIFY, "  ... and %d more external inputs", numExt - 8);
+    if (numExt > detailLimit) {
+      DSP_DIAG(VERIFY, "  ... and %d more external inputs", numExt - detailLimit);
     }
   }
 #endif
@@ -1985,19 +1926,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       for (int si = 0; si < (int)segments_.size(); si++) {
         auto& s = segments_[si];
         DSP_DIAG(VERIFY, "Segment %d: slots [%d..%d] (%d ops) %s",
-                  si, s.startSlot, s.endSlot, s.endSlot - s.startSlot + 1,
-                  s.isCapturable ? "capturable" : "non-capturable");
+                  si, s.def.startSlot, s.def.endSlot, s.def.endSlot - s.def.startSlot + 1,
+                  s.def.isCapturable ? "capturable" : "non-capturable");
       }
       // Per-step wiring
       std::unordered_map<std::string, int> opHistogram;
       for (int s = 0; s < numSlots_; s++) {
         auto& sl = slots_[s];
-        opHistogram[sl.opName]++;
+        opHistogram[sl.ident.opName]++;
         // Build input description
         std::string inputsStr;
-        for (int i = 0; i < sl.numInputs; i++) {
+        for (int i = 0; i < sl.wiring.numInputs; i++) {
           if (i > 0) inputsStr += ", ";
-          int srcIdx = sl.inputSourceIndices[i];
+          int srcIdx = sl.wiring.inputSourceIndices[i];
           if (srcIdx >= 0) {
             inputsStr += "slot#" + std::to_string(srcIdx);
           } else {
@@ -2006,23 +1947,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             if (extIdx < (int)externalInputNames_.size() && !externalInputNames_[extIdx].empty()) {
               inputsStr += ":\"" + externalInputNames_[extIdx] + "\"";
             }
-            if (sl.inputSourceTypes != nullptr) {
+            if (sl.wiring.inputSourceTypes != nullptr) {
               inputsStr += ":";
-              inputsStr += sourceTypeName(sl.inputSourceTypes[i]);
+              inputsStr += sourceTypeName(sl.wiring.inputSourceTypes[i]);
             }
           }
         }
         // Build output description
         std::string outputsStr;
-        for (int i = 0; i < sl.numOutputs; i++) {
+        for (int i = 0; i < sl.wiring.numOutputs; i++) {
           if (i > 0) outputsStr += ",";
-          outputsStr += std::to_string(sl.outputSlotIndices[i]);
+          outputsStr += std::to_string(sl.wiring.outputSlotIndices[i]);
         }
         DSP_DIAG(VERIFY, "STEP %4d: %-20s inputs:[%s] -> outputs:[%s]%s%s%s",
-                  s, sl.opName.c_str(), inputsStr.c_str(), outputsStr.c_str(),
-                  sl.isIdentityOp ? " [IDENTITY]" : "",
+                  s, sl.ident.opName.c_str(), inputsStr.c_str(), outputsStr.c_str(),
+                  sl.flags.isIdentityOp ? " [IDENTITY]" : "",
                   sl.frozenConstantSlot() ? " [FROZEN]" : "",
-                  sl.isFusedChainTail ? " [FUSED_TAIL]" : "");
+                  sl.fusedChain.isFusedChainTail ? " [FUSED_TAIL]" : "");
       }
       // Op histogram
       std::string histStr;
@@ -2047,7 +1988,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       int promoted = 0;
       for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         auto& sl = slots_[s];
-        if (!sl.isViewCapableOp || sl.state_ >= NativeSlot::SlotState::FROZEN) continue;
+        if (!sl.flags.isViewCapableOp || sl.state_ >= NativeSlot::SlotState::FROZEN) continue;
         sl.state_ = NativeSlot::SlotState::FROZEN;
         promoted++;
       }
@@ -2109,19 +2050,17 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // If a value change truly requires graph invalidation, the createValueKey mechanism
   // catches it. Skipping shape key here eliminates N syncToHost calls per step
   // (one per small INT/INT64 cross-segment input array).
+  // ── Shape key: detect if segment needs recompilation ──
+  // Frozen + cached key: reuse. Otherwise: compute once and cache.
   const bool hasInternalValueShapeInputs = segmentHasInternalValueShapeInputs(seg, slots_);
   LongType segShapeKey;
-  bool isStableReplay = shapesFrozen_ && seg.exec.executionCount >= 3 &&
-                         seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady() &&
-                         seg.exec.cachedShapeKey != 0 &&
-                         !hasInternalValueShapeInputs;
-  if (isStableReplay) {
-    segShapeKey = seg.exec.cachedShapeKey;
-  } else if (shapesFrozen_ && seg.exec.cachedShapeKey != 0 &&
-             !seg.def.hasValueDepOps && !hasInternalValueShapeInputs) {
+  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
     segShapeKey = seg.exec.cachedShapeKey;
   } else {
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+    if (shapesFrozen_) {
+      seg.exec.cachedShapeKey = segShapeKey;
+    }
   }
 
   // Diagnostic: scan all slotArrayCache_ entries for freed DataBuffers.
@@ -2136,6 +2075,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // in the segment range + all external inputs (~1333). For 278 captured segments,
   // this is significant host-side iteration. After the first few replays validate
   // no stale entries exist, skip the scan.
+  bool isStableReplay = shapesFrozen_ && seg.exec.cachedShapeKey != 0 &&
+                         seg.exec.executionCount >= 3;
   if (seg.exec.executionCount < 4 || !isStableReplay) {
     int invalidCount = 0;
     for (int si = seg.def.startSlot; si <= seg.def.endSlot && si < totalOutputSlots_; si++) {
@@ -2247,24 +2188,30 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     for (int i = 0; i < slot.wiring.numOutputs; i++) {
       int slotIdx = slot.wiring.outputSlotIndices[i];
       if (slotIdx < 0 || slotIdx >= totalOutputSlots_) continue;
-      // DIAGNOSTIC: trace slot 274 and 420 pre-exec validation
-      if ((slotIdx == 274 || slotIdx == 420) && shapesFrozen_) {
-        auto* arr = outputSlots_[slotIdx];
-        auto* db = arr != nullptr ? arr->dataBuffer() : nullptr;
-        DSP_DIAG_SLOT(MEMORY, stepIdx,
-            "PRE_EXEC_VALIDATE: slot=%d arr=%p db=%p valid=%d exec=%d",
-            slotIdx, (void*)arr, (void*)db,
-            db != nullptr && db->isValid() ? 1 : 0,
-            seg.exec.executionCount);
+      // DIAGNOSTIC: trace configured slot pre-exec validation (ND4J_DSP_TRACE_SLOT)
+      {
+        int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
+        if (ts >= 0 && slotIdx == ts && shapesFrozen_) {
+          auto* arr = outputSlots_[slotIdx];
+          auto* db = arr != nullptr ? arr->dataBuffer() : nullptr;
+          DSP_DIAG_SLOT(MEMORY, stepIdx,
+              "PRE_EXEC_VALIDATE: slot=%d arr=%p db=%p valid=%d exec=%d",
+              slotIdx, (void*)arr, (void*)db,
+              db != nullptr && db->isValid() ? 1 : 0,
+              seg.exec.executionCount);
+        }
       }
       // Validate existing entry
       if (outputSlots_[slotIdx] != nullptr) {
         auto* db = outputSlots_[slotIdx]->dataBuffer();
         if (db == nullptr || !db->isValid()) {
-          if (slotIdx == 274 || slotIdx == 420) {
-            DSP_DIAG_SLOT(MEMORY, stepIdx,
-                "PRE_EXEC_NULL: slot=%d db=%p was nullOrInvalid exec=%d",
-                slotIdx, (void*)db, seg.exec.executionCount);
+          {
+            int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
+            if (ts >= 0 && slotIdx == ts) {
+              DSP_DIAG_SLOT(MEMORY, stepIdx,
+                  "PRE_EXEC_NULL: slot=%d db=%p was nullOrInvalid exec=%d",
+                  slotIdx, (void*)db, seg.exec.executionCount);
+            }
           }
           outputSlots_[slotIdx] = nullptr;
           if (stepIdx < numSlots_ && slots_[stepIdx].state_ == NativeSlot::SlotState::FROZEN_CONSTANT) {
@@ -2277,8 +2224,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         // Frozen constant slots are exempt (they never allocate output arrays).
         // Warn but continue — the allocation path below will recover.
         if (shapesFrozen_ && seg.exec.executionCount > 1 && !slot.frozenConstantSlot()) {
-          sd_printf("DSP BUG: Null output slot %d (%s) after warmup with frozen shapes — persistence bug. execCount=%d\n",
-                    slotIdx, slot.ident.opName.c_str(), seg.exec.executionCount);
+          DSP_DIAG_SLOT(VERIFY, slotIdx,
+              "BUG: Null output slot %d (%s) after warmup with frozen shapes — persistence bug. execCount=%d",
+              slotIdx, slot.ident.opName.c_str(), seg.exec.executionCount);
         }
         // Allocate from cached shape info (populated during warmup)
         const LongType* shapeInfo = nullptr;
@@ -2305,7 +2253,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           // not the input type. When cachedOutputShapes is empty and the
           // using the input source's shape, the dtype would be wrong
           // (e.g., INT64 input for a cast-to-FLOAT op).
-          if ((slot.ident.opName == "cast" || slot.ident.opName == "Cast") &&
+          if (slot.ident.op && slot.ident.op->getOpDescriptor() &&
+              slot.ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_CAST) &&
               slot.args.numIArgs > 0 && slot.args.iArgs) {
             auto castDt = static_cast<DataType>(slot.args.iArgs[0]);
             if (castDt != dt) {
@@ -2323,11 +2272,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           outputSlots_[slotIdx] = arr;
           // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate assignment needed
           preExecAllocCount++;
-          if (slotIdx == 274 || slotIdx == 420) {
-            auto* newDb = arr != nullptr ? arr->dataBuffer() : nullptr;
-            DSP_DIAG_SLOT(MEMORY, stepIdx,
-                "PRE_EXEC_ALLOC: slot=%d arr=%p db=%p exec=%d",
-                slotIdx, (void*)arr, (void*)newDb, seg.exec.executionCount);
+          {
+            int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
+            if (ts >= 0 && slotIdx == ts) {
+              auto* newDb = arr != nullptr ? arr->dataBuffer() : nullptr;
+              DSP_DIAG_SLOT(MEMORY, stepIdx,
+                  "PRE_EXEC_ALLOC: slot=%d arr=%p db=%p exec=%d",
+                  slotIdx, (void*)arr, (void*)newDb, seg.exec.executionCount);
+            }
           }
           if (Environment::getInstance().tritonVerifyKernels()) {
             DSP_DIAG(VERIFY, "SLOT_WRITE slot=%d tag=ALLOC dtype=%s len=%lld addr=%p",
@@ -2637,7 +2589,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // 1. Shape key matches (frozen shapes)
   // 2. Create op input values stable (ConstantOfShape shapes unchanged)
   // 3. Input addresses are unchanged since capture
-  // CRITICAL: Only enter the Triton replay path for segments actually compiled by Triton.
+  //  Only enter the Triton replay path for segments actually compiled by Triton.
   // Segments captured by the raw CUDA graph path (NativeDynamicShapePlan_cudagraph.cu)
   // have replayHandles but NO Triton arg tables. The Triton replay path's D2D copy +
   // arg table refresh is incompatible with raw CUDA graphs — it can corrupt cross-segment
@@ -2841,7 +2793,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           bool sAct = db ? db->isSpecialActual() : false;
           if (pAct && !sAct) synced++;
           else skipped++;
-          externalArrays[ei]->syncToDevice();
+          // Force sync for variable inputs during replay — even if sAct=true.
+          // Java's syncToDevice may have updated the device buffer at a JNI wrapper level,
+          // but the C++ DataBuffer's actuality might still show sAct=true from the Java sync.
+          // Force ensures the H2D copy actually happens.
+          if (db) db->syncToSpecial(true);
+          else externalArrays[ei]->syncToDevice();
         }
       } else {
         // Non-frozen or no variable info: sync all
@@ -2924,9 +2881,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     {
       auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
       if (tritonBackend != nullptr) {
-        tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
+        auto refreshStatus = tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
                                                  outputSlots_, totalOutputSlots_,
                                                  stream);
+        if (refreshStatus != Status::OK) {
+          DSP_DIAG(EXECUTE, "WARNING: refreshArgTablesForReplay FAILED for seg[%d-%d] "
+                   "shapeKey=%lld execCount=%d — graph replay will use STALE arg tables!",
+                   seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey,
+                   seg.exec.executionCount);
+        }
       }
 
       // CRITICAL FIX: After refreshing arg tables on host, copy to device BEFORE graph launch.
@@ -3157,7 +3120,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       bool hasGapsInSchedule = false;
       if (!sched.units.empty()) {
         for (auto& u : sched.units) {
-          if (u.kind == GraphSegment::REPLAY_UNIT_GAP) {
+          if (u.kind == REPLAY_UNIT_GAP) {
             hasGapsInSchedule = true;
             break;
           }
@@ -3168,7 +3131,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       if (hasGapsInSchedule) {
         // Execute gap units in order, then replay the monolithic graph.
         for (auto& u : sched.units) {
-          if (u.kind == GraphSegment::REPLAY_UNIT_GAP) {
+          if (u.kind == REPLAY_UNIT_GAP) {
             DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: executing gap[%d-%d] before graph for seg[%d-%d]",
                      u.startSlot, u.endSlot, seg.def.startSlot, seg.def.endSlot);
             for (int s = u.startSlot; s <= u.endSlot; s++) {
@@ -3808,6 +3771,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // (e.g., cudaFuncGetName on driver-API functions) contaminate capture and launch.
     cudaGetLastError();
 
+    // Diagnostic: dump small variable ext inputs AFTER sync to verify data is current
+    for (int ei = 0; ei < numExt; ei++) {
+      if (externalArrays[ei] == nullptr) continue;
+      if (ei >= static_cast<int>(externalInputIsVariable_.size()) || !externalInputIsVariable_[ei]) continue;
+      auto* arr = externalArrays[ei];
+      if (arr->lengthOf() > 4) continue;
+      arr->syncToHost();
+      auto* db = arr->dataBuffer();
+      std::string name = (ei < static_cast<int>(externalInputNames_.size())) ? externalInputNames_[ei] : "?";
+      if (db != nullptr && db->primary() != nullptr && arr->dataType() == INT64) {
+        long long val = 0;
+        std::memcpy(&val, static_cast<const char*>(db->primary()) + arr->offset() * 8, 8);
+        DSP_DIAG(EXECUTE, "CAPTURE_EXT_INPUT[%d] '%s' INT64 value=%lld host=%p dev=%p execCount=%d",
+                 ei, name.c_str(), val, db->primary(), db->special(), seg.exec.executionCount);
+      }
+    }
+
     // Configurable: push primary CUDA context during capture.
     // Default OFF — the non-Triton path works without it. Pushing and then popping
     // after capture may cause SIGSEGV on replay (null pointer inside libcuda.so).
@@ -3972,7 +3952,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
     // cuBLAS workspace preservation during capture.
     //
-    // CRITICAL: Once shapes are frozen (shapesFrozen_ == true), NEVER zero the cuBLAS workspace.
+    //  Once shapes are frozen (shapesFrozen_ == true), NEVER zero the cuBLAS workspace.
     // During capture, cuBLAS stores plan/descriptor data in the workspace. Captured CUDA graphs
     // inherit these cached plans and omit H2D re-upload nodes. Zeroing the workspace destroys
     // cached plans, causing GEMM kernels to read zeros and hang on replay.
@@ -4028,7 +4008,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       int promoted = 0;
       for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         auto& sl = slots_[s];
-        if (!sl.isViewCapableOp || sl.state_ >= NativeSlot::SlotState::FROZEN) continue;
+        if (!sl.flags.isViewCapableOp || sl.state_ >= NativeSlot::SlotState::FROZEN) continue;
         sl.state_ = NativeSlot::SlotState::FROZEN;
         promoted++;
       }
