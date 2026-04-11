@@ -862,16 +862,11 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      effA = castA;
      castB = effB->cast(HALF);
      effB = castB;
-     if (!tl_graphExecutionActive) {
-       auto* shapeA = castA->getShapeAsVector();
-       auto* persistentA = new NDArray(castA->ordering(), *shapeA, HALF, castA->getContext());
-       delete shapeA;
-       tl_castCacheA.push_back(persistentA);
-       auto* shapeB = castB->getShapeAsVector();
-       auto* persistentB = new NDArray(castB->ordering(), *shapeB, HALF, castB->getContext());
-       delete shapeB;
-       tl_castCacheB.push_back(persistentB);
-     }
+     // NOTE: Do NOT push to tl_castCache during non-capture execution.
+     // The cache is only for graph capture persistence. During normal execution,
+     // push_back grows the cache unboundedly (~250 MB/step for 211 matmuls),
+     // because resetCastCacheIndices() only resets the index, not the cache.
+     // The temporary castA/castB arrays are freed at function scope exit.
    }
  }
 
@@ -898,12 +893,6 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        effA = castA;
        tl_lastCaptureCastSourceA = nullptr;
        tl_lastCaptureCastArrayA = nullptr;
-       if (!tl_graphExecutionActive) {
-         auto* shapePtr = castA->getShapeAsVector();
-         auto* persistent = new NDArray(castA->ordering(), *shapePtr, HALF, castA->getContext());
-         delete shapePtr;
-         tl_castCacheA.push_back(persistent);
-       }
      }
    } else if (aType == HALF && bType == FLOAT32) {
      const bool sameLogicalB =
@@ -923,12 +912,6 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        effB = castB;
        tl_lastCaptureCastSourceB = nullptr;
        tl_lastCaptureCastArrayB = nullptr;
-       if (!tl_graphExecutionActive) {
-         auto* shapePtr = castB->getShapeAsVector();
-         auto* persistent = new NDArray(castB->ordering(), *shapePtr, HALF, castB->getContext());
-         delete shapePtr;
-         tl_castCacheB.push_back(persistent);
-       }
      }
    }
  }
@@ -1173,16 +1156,6 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
      effA = castA;
      castX = effX->cast(HALF);
      effX = castX;
-     if (!tl_graphExecutionActive) {
-       auto* shapeA = castA->getShapeAsVector();
-       auto* persistentA = new NDArray(castA->ordering(), *shapeA, HALF, castA->getContext());
-       delete shapeA;
-       tl_castCacheA.push_back(persistentA);
-       auto* shapeX = castX->getShapeAsVector();
-       auto* persistentX = new NDArray(castX->ordering(), *shapeX, HALF, castX->getContext());
-       delete shapeX;
-       tl_castCacheB.push_back(persistentX);
-     }
    }
  }
 

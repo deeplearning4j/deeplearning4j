@@ -1362,9 +1362,13 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     // Nullify output arrays before re-execution.
-    // Skip outputs that share a data buffer with any input — those are views,
-    // and zeroing them would corrupt the input data.
-    if (!slot.flags.inPlaceFused) {
+    // In frozen mode (shapesFrozen_ && executeCount_ >= 2), skip nullify entirely.
+    // Output buffers already have the correct shape from the previous step.
+    // Nullifying them forces ops to re-allocate DataBuffers internally
+    // (e.g., matmul's OVERWRITE_RESULT creates a temporary tZ), causing
+    // ~176 MB/step GPU memory leak from unmatched alloc/free pairs.
+    // Ops will overwrite the buffer contents during execution regardless.
+    if (!slot.flags.inPlaceFused && !(shapesFrozen_ && executeCount_ >= 2)) {
       auto& ctxOuts = ctx.fastpath_out();
       auto& ctxIns = ctx.fastpath_in();
       for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
@@ -1403,7 +1407,6 @@ Status NativeDynamicShapePlan::executeSlot(
         int nIn = (int)ctx.fastpath_in().size();
         DSP_DIAG(EXECUTE, "ATTN_OP_INPUTS: %s step=%d slot=%d numInputs=%d planInputs=%d",
                  opName, executeCount_, stepIdx, nIn, slot.wiring.numInputs);
-        // Log all attention op inputs for debugging — not just a single hardcoded index
         int detailLimit = std::min(nIn, sd::graph::DspDiagnostics::getInstance().diagDetailLimit());
         for (int ai = 0; ai < detailLimit; ai++) {
           NDArray* inp = ctx.fastpath_in()[ai];

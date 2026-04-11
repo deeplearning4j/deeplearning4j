@@ -682,12 +682,22 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   seg.exec.cachedShapeKey = segShapeKey;
   seg.def.shapeKey = segShapeKey;
-  tl_graphExecutionActive = true;
-  DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
-           seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
+  // Only suppress GPU memory frees during CUDA graph capture/replay.
+  // SLOT_BY_SLOT and non-capture execution must allow normal frees —
+  // otherwise temporary op buffers leak ~224 MB/step on large models.
+  bool needsCaptureSuppression = (seg.exec.currentPhase == ExecutionPhase::COMPILING
+      || seg.exec.currentPhase == ExecutionPhase::REPLAYING);
+  if (needsCaptureSuppression) {
+    tl_graphExecutionActive = true;
+  }
+  DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld captureSuppression=%d",
+           seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey,
+           needsCaptureSuppression ? 1 : 0);
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
-  tl_graphExecutionActive = false;
+  if (needsCaptureSuppression) {
+    tl_graphExecutionActive = false;
+  }
   DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
            seg.def.startSlot, seg.def.endSlot, backendName, (int)status);
 
@@ -789,6 +799,9 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d compilationFailed=%d",
                seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                seg.exec.executionCount, seg.def.isCapturable ? 1 : 0, seg.exec.compilationFailed ? 1 : 0);
+  // Reset per-segment allocation counters
+  tl_dspAllocBytes = 0; tl_dspFreeBytes = 0;
+  tl_dspAllocCount = 0; tl_dspFreeCount = 0; tl_dspFreeSkipCount = 0;
   bool streamIsCapturing = false;
 #ifdef SD_CUDA
   if (stream != nullptr) {
@@ -1188,6 +1201,13 @@ executeSlot_retry:
     DSP_DIAG(SHAPE, "view producer detection done: %d/%d output slots are view producers",
               viewCount, totalOutputSlots_);
   }
+
+  // Log per-segment allocation/free summary
+  DSP_DIAG(MEMORY, "SEG-MEM: seg[%d-%d] exec=%d alloc=%lldMB(%d) free=%lldMB(%d) freeSkip=%d net=%lldMB",
+           seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
+           tl_dspAllocBytes / (1024*1024), tl_dspAllocCount,
+           tl_dspFreeBytes / (1024*1024), tl_dspFreeCount, tl_dspFreeSkipCount,
+           (tl_dspAllocBytes - tl_dspFreeBytes) / (1024*1024));
 
   seg.exec.executionCount++;
   return Status::OK;

@@ -61,11 +61,20 @@ public class BenchmarkConfigApplier {
         // 2. CUDA graphs are cached in-memory (CudaGraphScheduler._graphCache)
         // 3. Both should persist across benchmark configs for the same model
         // 4. invalidateTritonCache() would force re-compilation, defeating the cache
-        
+
         // Only reset Triton counters for clean metrics
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         if (nativeOps.isTritonAvailable()) {
             nativeOps.resetTritonCounters();
+        }
+
+        // Trim GPU memory pools after resetting session to reclaim freed plan arrays.
+        // resetSession() closes the DSP executor which frees ~256 MB of plan-owned arrays
+        // via cudaFreeAsync. Without trimming, these deferred frees accumulate across
+        // benchmark configs and cause OOM before the full 250-token decode completes.
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int d = 0; d < numDevices; d++) {
+            nativeOps.trimMemoryPool(d);
         }
     }
 

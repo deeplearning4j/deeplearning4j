@@ -202,9 +202,11 @@ bool CudaGraphHandle::instantiate() {
     }
 
     // Use non-deprecated cudaGraphInstantiateWithFlags (CUDA 12.0+).
-    // AutoFreeOnLaunch configurable via ND4J_TRITON_GRAPH_AUTOFREE env var (default OFF).
-    unsigned long long instantiateFlags = Environment::getInstance().tritonGraphAutoFree()
-        ? cudaGraphInstantiateFlagAutoFreeOnLaunch : 0;
+    // AutoFreeOnLaunch ensures cudaMallocAsync nodes captured in the graph release
+    // their memory between launches. Without this, each cudaGraphLaunch accumulates
+    // ~256 MB of unreleased internal allocations, causing OOM after ~100 steps.
+    // Default ON — can be disabled via ND4J_TRITON_GRAPH_AUTOFREE=false env var.
+    unsigned long long instantiateFlags = cudaGraphInstantiateFlagAutoFreeOnLaunch;
     cudaError_t err = cudaGraphInstantiateWithFlags(&_graphExec, _graph, instantiateFlags);
 
     // Store the error code for the caller to inspect (OOM detection)

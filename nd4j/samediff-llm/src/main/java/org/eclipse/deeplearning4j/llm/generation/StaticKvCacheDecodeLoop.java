@@ -377,9 +377,23 @@ public class StaticKvCacheDecodeLoop {
             }
         }
 
+        boolean memoryDiag = "true".equalsIgnoreCase(System.getProperty("nd4j.decode.memoryDiag"));
+        long prevStepFree = 0;
         for (int step = 0; step < maxNewTokens; step++) {
             long stepStart = System.nanoTime();
             long currentSeqLen = currentEmbeddings.shape()[1];
+
+            if (memoryDiag && step <= 10) {
+                var nops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+                int dev = org.nd4j.linalg.factory.Nd4j.getAffinityManager()
+                        .getDeviceForCurrentThread().intValue();
+                long free = nops.getDeviceFreeMemory(dev);
+                long delta = step > 0 ? (prevStepFree - free) : 0;
+                log.info("[MEM-DIAG] step={} free={}MB delta={}MB useDirect={} kvScatterInCpp={}",
+                        step, free / (1024*1024), delta / (1024*1024),
+                        usingStaticKv && step >= 2 && !skipFreeze, kvScatterInCpp);
+                prevStepFree = free;
+            }
 
             // Re-pin to execution device at the start of each step.
             // Token sampling / embedding ops between steps can change the thread's device.
@@ -397,6 +411,14 @@ public class StaticKvCacheDecodeLoop {
                     && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noPadded"));
             long maxKvLen = kvCacheManager.getMaxKvLen();
             long cachePos = kvCacheManager.getCachePosition();
+
+            // Per-phase memory tracking for leak diagnosis
+            long memBeforeInputBuild = 0;
+            boolean trackMem = step <= 5 || step % 10 == 0;
+            if (trackMem) {
+                memBeforeInputBuild = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(0) / (1024 * 1024);
+            }
+
             Map<String, INDArray> decoderInputMap;
             try {
                 decoderInputMap = DecoderUtils.buildDecoderInputMap(
@@ -413,6 +435,13 @@ public class StaticKvCacheDecodeLoop {
             }
 
             long tAfterInputBuild = System.nanoTime();
+
+            long memAfterInputBuild = 0;
+            if (trackMem) {
+                memAfterInputBuild = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(0) / (1024 * 1024);
+                log.info("  [PHASE_MEM] step={} phase=INPUT_BUILD before={}MB after={}MB delta={}MB",
+                        step, memBeforeInputBuild, memAfterInputBuild, memBeforeInputBuild - memAfterInputBuild);
+            }
 
             // All input updates are handled by Java via buildDecoderInputMap + syncToSpecial.
             // No C++ decode input management needed.
@@ -459,6 +488,13 @@ public class StaticKvCacheDecodeLoop {
             }
 
             long tAfterDecoder = System.nanoTime();
+
+            if (trackMem) {
+                long memAfterDecoder = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(0) / (1024 * 1024);
+                log.info("  [PHASE_MEM] step={} phase=DECODER_EXEC before={}MB after={}MB delta={}MB outputs={} useDirect={} kvScatterInCpp={}",
+                        step, memAfterInputBuild, memAfterDecoder, memAfterInputBuild - memAfterDecoder,
+                        decoderOutputs.size(), useDirect, kvScatterInCpp);
+            }
 
             // Diagnostic: present KV shapes at steps 1-3 (skip when C++ KV scatter manages outputs)
             if (detailedStepDiagnostics && step >= 1 && !kvScatterInCpp) {
@@ -598,10 +634,12 @@ public class StaticKvCacheDecodeLoop {
                         boolean cppKvEnabled = !skipFreeze;
                         String[] recompileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
                         decoder.clearDynamicShapePlanCache();
-                        // Don't call clearAllCaches — it destroys the executor and frees
-                        // GPU arrays that back model variables (like input_ids). The plan
-                        // cache clear above removes the old compiled plan. A new executor
-                        // will be created on the next output() call.
+                        // CRITICAL: Clear session caches (node output buffers, array cache, pooled
+                        // resources) after invalidating the DSP plan. Without this, stale prefill
+                        // outputs remain cached and the recompiled DSP plan reads wrong values.
+                        // Model weights/constants are protected via isConstant()/isAttached() guards
+                        // in closeNodeValueOutputBuffers and snapshotProtectedBuffersForCleanup.
+                        decoderSession.clearAllCaches();
                         // Save execution mode before invalidating executor
                         GraphExecutionMode prevMode = dspExec != null
                                 ? dspExec.getConfiguredGraphExecutionMode()
@@ -702,6 +740,12 @@ public class StaticKvCacheDecodeLoop {
             }
 
             long tAfterKvUpdate = System.nanoTime();
+
+            if (trackMem) {
+                long memAfterKv = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(0) / (1024 * 1024);
+                log.info("  [PHASE_MEM] step={} phase=KV_UPDATE+SAMPLING after={}MB totalStepDelta={}MB",
+                        step, memAfterKv, memBeforeInputBuild - memAfterKv);
+            }
 
             // Sample next token via native GPU op — pass logits directly (rank-3 supported)
             long tSampStart = System.nanoTime();

@@ -303,6 +303,41 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   DSP_DIAG(MEMORY, "WRITE_SLOT: slot=%d tag=%s phase=%d execCount=%d",
            slotIdx, tag, static_cast<int>(planPhase_), executeCount_);
 
+  // Free the OLD array when it's being replaced, IF:
+  // 1. old != value (actually being replaced, not a no-op write)
+  // 2. old is plan-owned (we allocated it, safe to delete)
+  // 3. old's DataBuffer is not a protected weight buffer
+  // 4. old is not still referenced by another slot
+  // Without this, replaced arrays stay in planOwnedArrays_ but are unreachable
+  // from outputSlots_[], causing ~240 MB/step GPU memory leak in large models.
+  if (old != nullptr && old != value) {
+    bool isPlanOwned = planOwnedArrays_.count(old) > 0;
+    if (isPlanOwned) {
+      auto* oldDb = old->dataBuffer();
+      bool isProtected = oldDb != nullptr && protectedWeightBuffers_.count(oldDb) > 0;
+      if (!isProtected) {
+        // Check that no OTHER slot still references this exact NDArray pointer.
+        // View ops can share the same NDArray across slots.
+        bool referencedElsewhere = false;
+        for (int i = 0; i < totalOutputSlots_; i++) {
+          if (i != slotIdx && outputSlots_[i] == old) {
+            referencedElsewhere = true;
+            break;
+          }
+        }
+        if (!referencedElsewhere) {
+          planOwnedArrays_.erase(old);
+          delete old;
+        }
+      }
+    } else {
+      // NOT plan-owned but being replaced — this is a potential leak.
+      long long leakedBytes = old->dataBuffer() ? (long long)old->dataBuffer()->getLenInBytes() : 0;
+      DSP_DIAG(MEMORY, "WRITE_SLOT_LEAK: slot=%d tag=%s old=%p NOT plan-owned, bytes=%lld planOwned=%d",
+               slotIdx, tag, (void*)old, leakedBytes, (int)planOwnedArrays_.size());
+    }
+  }
+
   outputSlots_[slotIdx] = value;
 }
 
@@ -1323,6 +1358,10 @@ Status NativeDynamicShapePlan::execute(
 
   // Step 4: No flush needed — arrays persist (one array per slot)
   auto tFlushDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+
+  // Log plan-owned array count and total GPU allocation
+  DSP_DIAG(MEMORY, "DSP_EXEC_END execCount=%d: planOwnedArrays=%d totalSlots=%d",
+            executeCount_, (int)planOwnedArrays_.size(), totalOutputSlots_);
 
   // Track execution count for shapes-frozen optimization
   if (shapesFrozen_) executeCount_++;

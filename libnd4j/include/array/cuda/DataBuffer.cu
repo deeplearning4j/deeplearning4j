@@ -68,6 +68,13 @@ SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
 // "use capture workspace + suppress D2H".
 SD_TLS_EXPORT thread_local bool tl_captureSkipFrees = false;
 
+// Per-step GPU allocation/free tracking for leak diagnosis
+SD_TLS_EXPORT thread_local long long tl_dspAllocBytes = 0;
+SD_TLS_EXPORT thread_local long long tl_dspFreeBytes = 0;
+SD_TLS_EXPORT thread_local int tl_dspAllocCount = 0;
+SD_TLS_EXPORT thread_local int tl_dspFreeCount = 0;
+SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount = 0;
+
 // DSP execution stream: when set, syncToSpecial uses this stream instead of
 // stream 0 and skips per-call cudaStreamSynchronize (caller guarantees ordering
 // via same-stream graph launch or explicit sync). Set/unset by DSP replay path.
@@ -583,6 +590,8 @@ void DataBuffer::allocateSpecial() {
     }
     _isOwnerSpecial = true;
     _specialAllocBytes = getLenInBytes();
+    tl_dspAllocBytes += getLenInBytes();
+    tl_dspAllocCount++;
 
     // Store the ACTUAL device where special buffer was allocated, not the requested device
     // This is critical for multi-GPU: failover may allocate on a different GPU
@@ -1040,6 +1049,7 @@ void DataBuffer::deleteSpecial() {
       if (!inWorkspace) {
         // Non-workspace buffer — do NOT free, do NOT reset pointer.
         // Caller (NDArray destructor or flushPendingClose) will retry after capture.
+        tl_dspFreeSkipCount++;
         return;
       }
       // Workspace buffer — fall through to reset pointer (no actual CUDA free needed)
@@ -1088,6 +1098,8 @@ void DataBuffer::deleteSpecial() {
         _specialBuffer,array::BufferType::SPECIAL);
 #endif
     // Use device-aware free - critical for multi-GPU correctness
+    tl_dspFreeBytes += getLenInBytes();
+    tl_dspFreeCount++;
     RELEASE_SPECIAL_WITH_DEVICE(p, bufferDeviceId, _workspace);
 
     // count out towards DataBuffer device, only if we're not in workspace

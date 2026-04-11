@@ -115,6 +115,16 @@ extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
  */
 extern SD_TLS_EXPORT thread_local bool tl_captureSkipFrees;
 
+/**
+ * Per-step GPU allocation/free tracking for leak diagnosis.
+ * Reset at segment entry, logged at segment exit via DSP_DIAG.
+ */
+extern SD_TLS_EXPORT thread_local long long tl_dspAllocBytes;
+extern SD_TLS_EXPORT thread_local long long tl_dspFreeBytes;
+extern SD_TLS_EXPORT thread_local int tl_dspAllocCount;
+extern SD_TLS_EXPORT thread_local int tl_dspFreeCount;
+extern SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount;
+
 #ifdef SD_CUDA
 /**
  * DSP execution stream override for syncToSpecial().

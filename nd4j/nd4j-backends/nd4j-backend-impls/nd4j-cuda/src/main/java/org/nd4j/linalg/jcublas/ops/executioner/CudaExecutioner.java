@@ -35,6 +35,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
@@ -335,122 +336,61 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numDevices = getDeviceCount();
         if (numDevices <= 1) return 0;
 
-        // When cross-device routing is suppressed (e.g., during InferenceSession execution),
-        // always use the current thread's device. The CUDA pool can reuse freed entries via
-        // cudaMallocAsync even though cudaMemGetInfo reports low free memory.
-        if (OpaqueDataBuffer.isCrossDeviceRoutingSuppressed()) {
-            return Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        }
+        // Delegate to DeviceMemoryManager which handles memory pressure,
+        // device priorities, simulation mode, and fallback routing centrally.
+        // Use input data locality to pick a preferred device.
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
 
-        // Priority 1: Output device — preferred, but only if it has enough free memory
-        // for both the migration of cross-device inputs AND execution workspace.
-        // Outputs CAN be migrated (ensureDeviceCoherency handles output reallocation),
-        // so if the output device is OOM we fall through to find a viable device.
-        if (outputs != null) {
-            long[] outputDeviceBytes = new long[numDevices];
-            boolean anyOutput = false;
-            for (INDArray output : outputs) {
-                if (output != null && output.data() != null) {
-                    int devId = AtomicAllocator.getInstance().getDeviceId(output);
-                    if (devId >= 0 && devId < numDevices) {
-                        outputDeviceBytes[devId] += output.length() * output.data().getElementSize();
-                        anyOutput = true;
-                    }
-                }
-            }
-            if (anyOutput) {
-                int bestDevice = 0;
-                long bestBytes = outputDeviceBytes[0];
-                for (int d = 1; d < numDevices; d++) {
-                    if (outputDeviceBytes[d] > bestBytes) {
-                        bestDevice = d;
-                        bestBytes = outputDeviceBytes[d];
-                    }
-                }
-                // Calculate how much input data would need to migrate TO the output device
-                long inputMigrationBytes = 0;
-                if (inputs != null) {
-                    for (INDArray input : inputs) {
-                        if (input != null && input.data() != null) {
-                            int inputDev = AtomicAllocator.getInstance().getDeviceId(input);
-                            if (inputDev >= 0 && inputDev != bestDevice) {
-                                inputMigrationBytes += input.length() * input.data().getElementSize();
-                            }
-                        }
-                    }
-                }
-                // Only use the output device if it has enough free memory for
-                // input migration + execution workspace
-                long freeMem = Nd4j.getNativeOps().getDeviceFreeMemory(bestDevice);
-                if (freeMem >= inputMigrationBytes + MIN_FREE_MEMORY_FOR_TARGET) {
-                    return bestDevice;
-                }
-                // Output device can't fit migration — fall through to find a device with capacity
-            }
-        }
-
-        // Priority 2: Input majority weighted by data size, with free-memory gate
+        // Find which device holds the most input data (data-locality preference)
+        int preferredDevice = -1;
         if (inputs != null && !inputs.isEmpty()) {
             long[] inputDeviceBytes = new long[numDevices];
-            boolean anyInput = false;
             for (INDArray input : inputs) {
                 if (input != null && input.data() != null) {
                     int devId = AtomicAllocator.getInstance().getDeviceId(input);
                     if (devId >= 0 && devId < numDevices) {
                         inputDeviceBytes[devId] += input.length() * input.data().getElementSize();
-                        anyInput = true;
                     }
                 }
             }
-            if (anyInput) {
-                // Find data-locality winner
-                int localityDevice = 0;
-                long localityBytes = inputDeviceBytes[0];
-                for (int d = 1; d < numDevices; d++) {
-                    if (inputDeviceBytes[d] > localityBytes) {
-                        localityDevice = d;
-                        localityBytes = inputDeviceBytes[d];
-                    }
+            long bestBytes = 0;
+            for (int d = 0; d < numDevices; d++) {
+                if (inputDeviceBytes[d] > bestBytes) {
+                    bestBytes = inputDeviceBytes[d];
+                    preferredDevice = d;
                 }
-
-                // Calculate how much data would need to migrate TO the locality winner
-                long migrationBytes = 0;
-                for (int d = 0; d < numDevices; d++) {
-                    if (d != localityDevice) {
-                        migrationBytes += inputDeviceBytes[d];
-                    }
-                }
-
-                // Verify the locality winner has enough free memory for migration + workspace.
-                // Without this check, a device holding most model constants but with almost
-                // no free memory (e.g., 8GB GPU after loading a 5GB model) gets selected,
-                // then input migration or output allocation OOMs, corrupting the CUDA context.
-                long freeMem = Nd4j.getNativeOps().getDeviceFreeMemory(localityDevice);
-                if (freeMem >= migrationBytes + MIN_FREE_MEMORY_FOR_TARGET) {
-                    return localityDevice;
-                }
-                // Fall through to capacity-based selection
             }
         }
 
-        // Priority 3: Device with most free memory (capacity tiebreaker).
-        // Also requires MIN_FREE_MEMORY_FOR_TARGET — if all devices are too full,
-        // fall back to the current device (avoid migration-induced OOM).
-        long bestFree = -1;
-        int bestDevice = -1;
-        for (int d = 0; d < numDevices; d++) {
-            long freeMem = Nd4j.getNativeOps().getDeviceFreeMemory(d);
-            if (freeMem >= MIN_FREE_MEMORY_FOR_TARGET && freeMem > bestFree) {
-                bestFree = freeMem;
-                bestDevice = d;
+        // Delegate to DeviceMemoryManager which handles memory pressure,
+        // device priorities, and fallback routing centrally.
+        long workspaceBytes = MIN_FREE_MEMORY_FOR_TARGET;
+
+        DeviceDescriptor preferredDesc = null;
+        if (preferredDevice >= 0) {
+            String prefId = String.valueOf(preferredDevice);
+            for (DeviceDescriptor d : mgr.getRegisteredDevices()) {
+                if (prefId.equals(d.getDeviceId())) {
+                    preferredDesc = d;
+                    break;
+                }
             }
         }
-        if (bestDevice >= 0) {
-            return bestDevice;
+
+        DeviceDescriptor selected;
+        if (preferredDesc != null) {
+            selected = mgr.selectDeviceForAllocation(workspaceBytes, preferredDesc);
+        } else {
+            selected = mgr.selectDeviceForAllocation(workspaceBytes);
         }
-        // All devices below threshold — use current device to avoid migration
-        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        return Math.max(0, Math.min(currentDevice, numDevices - 1));
+        if (selected != null) {
+            try {
+                return Integer.parseInt(selected.getDeviceId());
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     /** Get the number of CUDA devices (cached after first query). */

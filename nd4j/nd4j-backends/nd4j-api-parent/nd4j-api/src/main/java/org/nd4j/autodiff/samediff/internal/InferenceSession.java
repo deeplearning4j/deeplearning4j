@@ -289,7 +289,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // nothing meaningful to return. Only trim periodically and always on step 0/1
     // (prefill→decode transition where large buffers are freed).
     protected int dspStepCount = 0;
-    protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 50);
+    protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
 
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
@@ -862,11 +862,24 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (DYNAMIC_SHAPE_PLAN_ENABLED &&
                 (otherPlaceHolderValues == null || otherPlaceHolderValues.isEmpty())) {
                 try {
+                    // Suppress cross-device routing during DSP execution.
+                    // Without this, selectTargetDevice() in CudaExecutioner can migrate
+                    // input tensors to a different GPU when memory pressure is detected
+                    // (cudaMemGetInfo reports low free memory). During frozen DSP decode,
+                    // all data should stay on the model's home device — cross-device
+                    // migration causes stale CUDA context state → SIGSEGV.
+                    OpaqueDataBuffer.suppressCrossDeviceRouting(true);
                     // Lightweight type casting: cast mismatched placeholder dtypes without
                     // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
                     Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholderValues);
+                    long memBeforeDsp = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
                     Map<String, SDValue> dynamicPlanResults = executeDynamicShapePlanBased(
                             dag, dspPlaceholders, allRequired, variables);
+                    long memAfterDsp = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
+                    if (memBeforeDsp - memAfterDsp > 10) {
+                        log.info("[DSP_MEM_LEAK] executeDynamicShapePlanBased consumed {}MB (before={}MB after={}MB) dspStep={}",
+                                memBeforeDsp - memAfterDsp, memBeforeDsp, memAfterDsp, dspStepCount);
+                    }
                     if (dynamicPlanResults == null) {
                         // DSP not available — close any cast copies to prevent GPU memory leak.
                         // castPlaceholderTypes returns a NEW map with cast arrays when types mismatch.
@@ -896,19 +909,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutorTl.get();
                         boolean frozen = dspExec != null && dspExec.isShapesFrozen();
 
+                        // Periodically trim the CUDA memory pool to reclaim freed memory.
                         if (dspStepCount % TRIM_INTERVAL == 0 || dspStepCount <= 2) {
-                            // Periodic pool-wide trim to release freed intermediates.
-                            // Uses trimMemoryPool (not trimMemoryPoolOnStream) to sync ALL
-                            // dirty streams before trimming — ensures memory freed on any
-                            // stream is fully released back to the device allocator.
                             Nd4j.getExecutioner().commit();
-                            int nDevicesTrim = Nd4j.getAffinityManager().getNumberOfDevices();
                             NativeOps trimOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                            int nDevicesTrim = Nd4j.getAffinityManager().getNumberOfDevices();
                             for (int d = 0; d < nDevicesTrim; d++) {
                                 trimOps.trimMemoryPool(d);
                             }
                         }
-                        // Non-trim steps: skip commit and trim for maximum throughput
 
                         log.debug("DynamicShapePlan-based execution completed successfully");
                         // Do NOT call mmgr.scopeOut() here. The finally block handles both
@@ -916,12 +925,31 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // in the correct order. Closing the workspace here causes the finally
                         // block's detach() to fail with "leaked workspace pointer" because
                         // the workspace is no longer active when detach checks isScopeActive().
+                        // Close any cast placeholder copies to prevent GPU memory leak.
+                        // castPlaceholderTypes() allocates new arrays when dtypes mismatch.
+                        // These must be freed after DSP execution completes.
+                        if (dspPlaceholders != placeholderValues && dspPlaceholders != null) {
+                            for (Map.Entry<String, INDArray> entry : dspPlaceholders.entrySet()) {
+                                INDArray castArr = entry.getValue();
+                                if (placeholderValues != null && castArr != placeholderValues.get(entry.getKey())) {
+                                    if (castArr != null && !castArr.wasClosed()) {
+                                        castArr.close();
+                                    }
+                                }
+                            }
+                        }
+                        // Restore cross-device routing suppression before returning.
+                        OpaqueDataBuffer.suppressCrossDeviceRouting(false);
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
                 } catch (Exception e) {
                     log.error("DynamicShapePlan-based execution failed — no fallback allowed: {}", e.getMessage());
                     throw new RuntimeException("DSP execution failed. No fallback to standard path. " +
                             "Fix the DSP executor. Error: " + e.getMessage(), e);
+                } finally {
+                    // Always restore cross-device routing when leaving the DSP path,
+                    // whether it succeeded, fell through, or threw an exception.
+                    OpaqueDataBuffer.suppressCrossDeviceRouting(false);
                 }
             }
 
@@ -1240,6 +1268,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Growth factor 1.1x is active ONLY during DSP execution — if the plan returned
         // null above, the growth factor stays at its default (1.0) and standard execution
         // won't create oversized buffers that leak stale data via cuBLAS partial writes.
+        long memBeforeExec = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
         Map<String, INDArray> rawResults;
         try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.1)) {
             rawResults = executor.execute(plan, placeholderArrays);
@@ -1247,6 +1276,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("DSP execution failed", e);
+        }
+        long memAfterExec = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
+        if (memBeforeExec - memAfterExec > 10) {
+            log.info("[DSP_MEM_INNER] executor.execute consumed {}MB (before={}MB after={}MB) frozen={}",
+                    memBeforeExec - memAfterExec, memBeforeExec, memAfterExec,
+                    executor.isShapesFrozen());
         }
 
         // Wrap results as SDValues

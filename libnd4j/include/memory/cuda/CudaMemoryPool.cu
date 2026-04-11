@@ -1013,8 +1013,6 @@ void CudaMemoryPool::trimPool(int deviceId) {
     for (auto s : streamsToSync) {
       cudaError_t err = cudaStreamSynchronize(s);
       if (err != cudaSuccess) {
-        // Stream may have been destroyed — CUDA guarantees all ops on a
-        // destroyed stream complete before destroy returns, so this is safe.
         cudaGetLastError();  // clear error
       }
     }
