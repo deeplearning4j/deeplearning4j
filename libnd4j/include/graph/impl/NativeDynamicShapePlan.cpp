@@ -45,6 +45,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/helper_hash.h>
+#include <ops/OpTraitTable.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/LegacyTransformSameOp.h>
 #include <ops/declarable/LegacyTransformStrictOp.h>
@@ -237,7 +238,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr), slotIsViewProducer_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
       gpuGraphCaptureEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
-      shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false), traceEnabled_(false),
+      shapesFrozen_(false), executeCount_(0), compilationDone_(false), executionTimingEnabled_(false), traceEnabled_(false),
       cpuGraphBackend_(nullptr), cpuGraphBackendChecked_(false),
       gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
@@ -306,6 +307,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
 }
 
 void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
+  DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setGraphExecutionMode");
   DSP_DIAG(EXECUTE, "setGraphExecutionMode: %d -> %d", static_cast<int>(graphExecutionMode_), static_cast<int>(mode));
   graphExecutionMode_ = mode;
   // Reset cached backends so mode changes take effect immediately.
@@ -703,10 +705,14 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     slot.ident.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.ident.opName);
     // Structural replay/capture classification must come from op traits, not
     // hardcoded op-name lists.
-    const uint32_t opTraits =
-        (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr)
-            ? slot.ident.op->getOpDescriptor()->getTraits()
-            : 0;
+    uint32_t opTraits = 0;
+    if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
+      opTraits = slot.ident.op->getOpDescriptor()->getTraits();
+    }
+    // Fallback: look up traits by op name from the trait table.
+    if (opTraits == 0 && !slot.ident.opName.empty()) {
+      opTraits = sd::ops::getOpTraitsByName(slot.ident.opName);
+    }
     slot.flags.isIdentityOp = (opTraits & sd::ops::OP_TRAIT_IDENTITY) != 0;
     slot.flags.isViewCapableOp = (opTraits & sd::ops::OP_TRAIT_VIEW_PRODUCING) != 0;
     // View-capable ops share input buffer → no zeroing needed
@@ -1217,7 +1223,8 @@ Status NativeDynamicShapePlan::execute(
 
   // Step 1b: Parallel precompilation of all GPU-compilable segments.
   // Skip the first frozen warmup because shapes are still being populated.
-  if (!(shapesFrozen_ && executeCount_ == 0) &&
+  // phaseCompile() itself checks compilationDone_ and returns immediately if already done.
+  if (!compilationDone_ && !(shapesFrozen_ && executeCount_ == 0) &&
       graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
     phaseCompile(externalInputs, numExternalInputs);
   }
@@ -1396,7 +1403,8 @@ Status NativeDynamicShapePlan::execute(
   // Eager precompilation: after warmup (executeCount_ just became 1), all shapes
   // are populated in outputSlots_. Compile all Triton modules now so the 2nd
   // execute() goes straight to replay instead of blocking on compilation.
-  if (shapesFrozen_ && executeCount_ == 1) {
+  // compilationDone_ gate ensures this only happens once per plan lifecycle.
+  if (!compilationDone_ && shapesFrozen_ && executeCount_ == 1) {
     phaseCompile(externalInputs, numExternalInputs);
   }
 
@@ -1469,6 +1477,9 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // View wrappers deleted inline in slotexec. No batched/deferred close needed.
 
 void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
+  if (frozen) {
+    DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setShapesFrozen(true)");
+  }
   bool wasFrozen = shapesFrozen_;
   shapesFrozen_ = frozen;
   if (frozen && !wasFrozen) {
@@ -1503,6 +1514,7 @@ void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
     pointersStable_ = false;
     frozenExecutionCount_ = 0;
     executeCount_ = 0;
+    compilationDone_ = false;
     for (auto& seg : segments_) {
       if (seg.exec.replayHandle) {
         platformCleanupSegmentForRebuild(seg);
@@ -1591,6 +1603,7 @@ void NativeDynamicShapePlan::demotePlanPhase(PlanPhase targetPhase, const char* 
 }
 
 Status NativeDynamicShapePlan::phaseFreeze() {
+  DSP_REQUIRE_PLAN_PHASE_EXACT(PlanPhase::SLOT_BY_SLOT, "phaseFreeze");
   auto& env = Environment::getInstance();
   bool mergeSegments = env.dspFreezeMergeSegments();
 
@@ -1627,6 +1640,7 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   MmulHelper::clearCastCache();
 
   executeCount_ = 0;
+  compilationDone_ = false;
   for (auto& seg : segments_) {
     seg.exec.executionCount = 0;
     if (seg.exec.replayHandle) {
@@ -1736,9 +1750,18 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
 }
 
 void NativeDynamicShapePlan::phaseCompile(NDArray** externalInputs, int numExternalInputs) {
+  DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SHAPES_FROZEN, "phaseCompile");
+  if (compilationDone_) return;
+  // Require at least one warmup execution so slot shape caches are populated.
+  // Without shapes, Triton IR builds fail on cross-segment inputs.
+  if (executeCount_ < 1) {
+    DSP_DIAG(COMPILE, "phaseCompile: deferred (executeCount=%d, shapes not yet populated)", executeCount_);
+    return;
+  }
   DSP_DIAG(COMPILE, "phaseCompile: BEGIN segments=%d extInputs=%d", (int)segments_.size(), numExternalInputs);
   platformPrecompileSegments(externalInputs, numExternalInputs);
-  DSP_DIAG(COMPILE, "phaseCompile: END");
+  compilationDone_ = true;
+  DSP_DIAG(COMPILE, "phaseCompile: END (compilationDone=true)");
 }
 
 Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int numExternalInputs,
@@ -1958,6 +1981,7 @@ void NativeDynamicShapePlan::clearShapeCaches() {
 }
 
 void NativeDynamicShapePlan::clearAllShapeCachesForce() {
+  DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SHAPES_FROZEN, "clearAllShapeCachesForce");
   for (int i = 0; i < numSlots_; i++) {
     slots_[i].shapeCache.cachedShapeKey = 0;
     slots_[i].shapeCache.cachedOutputShapes.clear();
@@ -1966,6 +1990,21 @@ void NativeDynamicShapePlan::clearAllShapeCachesForce() {
       slots_[i].state_ = NativeSlot::SlotState::WARMUP;
     }
   }
+}
+
+// ─── Reset segment execution state ──────────────────────────────────────────
+
+void NativeDynamicShapePlan::resetSegmentExecutionState() {
+  demotePlanPhase(PlanPhase::SLOT_BY_SLOT, "resetSegmentExecutionState");
+  for (auto& seg : segments_) {
+    seg.exec.executionCount = 0;
+    seg.exec.compilationFailed = false;
+    seg.exec.captureOomRetries = 0;
+    if (seg.exec.replayHandle) seg.exec.replayHandle.reset();
+    seg.exec.argTableStable = false;
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+  }
+  compilationDone_ = false;
 }
 
 // ─── Release GPU intermediates ───────────────────────────────────────────────
@@ -2100,6 +2139,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   viewProducerDetectionDone_ = false;
   frozenConstantDetectionDone_ = false;
   executeCount_ = 0;
+  compilationDone_ = false;
   // Remove frozen reference counts from weight DataBuffers before clearing
   // shapesFrozen_. During frozen execution, addFrozenRef() was called on each
   // protectedWeightBuffer to prevent DataBuffer::migrate() from relocating
@@ -2437,6 +2477,7 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturab
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────
 
 void NativeDynamicShapePlan::buildSegments() {
+  DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "buildSegments");
   if (numSlots_ == 0) {
     DSP_DIAG(SEGMENT, "buildSegments: skipped (numSlots=0)");
     return;
@@ -2475,7 +2516,18 @@ void NativeDynamicShapePlan::buildSegments() {
   // Matmul segmentation: break segments at matmul/attention op boundaries.
   // This isolates element-wise chains for Triton fusion while matmuls run via cuBLAS.
   const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
-  static constexpr int MAX_SEGMENT_SIZE = 200;
+
+  // Adaptive segment size: frozen shapes can use unlimited segments (the entire
+  // decode step becomes one CUDA graph capture). Static shapes get a higher limit.
+  // Dynamic shapes keep the conservative limit to bound recompilation scope.
+  auto allSlotsStaticShape = [this]() -> bool {
+    for (int i = 0; i < numSlots_; i++) {
+      if (!slots_[i].shapeCache.shapeStatic) return false;
+    }
+    return true;
+  };
+  const int MAX_SEGMENT_SIZE = shapesFrozen_ ? 100000 :
+                               allSlotsStaticShape() ? 500 : 200;
 
   auto isMatmulOrAttention = [this](int idx) -> bool {
     auto* op = slots_[idx].ident.op;
@@ -2499,7 +2551,42 @@ void NativeDynamicShapePlan::buildSegments() {
     if (matmulSegmentation) {
       bool thisIsMatmul = isMatmulOrAttention(i);
       bool prevIsMatmul = isMatmulOrAttention(i - 1);
-      if (thisIsMatmul != prevIsMatmul) matmulBreak = true;
+      if (thisIsMatmul != prevIsMatmul) {
+        // Transition detected. Only break if:
+        // 1. Going from elementwise→matmul AND the elementwise range has
+        //    outputs consumed by slots AFTER the upcoming matmul range, OR
+        // 2. Going from matmul→elementwise (always break — matmul is a natural
+        //    compilation unit boundary, and the elementwise tail should be
+        //    isolated for Triton fusion)
+        if (prevIsMatmul && !thisIsMatmul) {
+          // matmul→elementwise: always break (isolate elementwise for Triton)
+          matmulBreak = true;
+        } else {
+          // elementwise→matmul: check if any slot in the current elementwise
+          // range [current.def.startSlot .. i-1] has outputs consumed by
+          // slots beyond i (outside this matmul). If yes, break. If all
+          // outputs feed only slot i (the matmul), defer the break.
+          bool hasExternalConsumers = false;
+          for (int s = current.def.startSlot; s < i; s++) {
+            for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+              int outIdx = slots_[s].wiring.outputSlotIndices[o];
+              // Check if any consumer of this output is beyond the matmul
+              for (int c = i + 1; c < numSlots_; c++) {
+                for (int ci = 0; ci < slots_[c].wiring.numInputs; ci++) {
+                  if (slots_[c].wiring.inputSourceIndices[ci] == outIdx) {
+                    hasExternalConsumers = true;
+                    break;
+                  }
+                }
+                if (hasExternalConsumers) break;
+              }
+              if (hasExternalConsumers) break;
+            }
+            if (hasExternalConsumers) break;
+          }
+          matmulBreak = hasExternalConsumers;
+        }
+      }
     }
 
     bool cpuTraitBreak = platformShouldBreakSegmentAtTraitBoundary(i, i - 1);
@@ -2582,6 +2669,71 @@ void NativeDynamicShapePlan::buildSegments() {
       seg.exec.symbolicShapeEnabled = true;
       seg.exec.symbolicWarmupRemaining = warmup;
       seg.exec.symbolicRangeData = createSegmentShapeProfile(warmup);
+    }
+  }
+
+  // ── Post-pass: merge unprofitable small segments ──────────────────────────
+  // Segments below MIN_PROFITABLE_SIZE that consist entirely of transparent ops
+  // (views, shapes, identity, constants) are merged into the preceding segment.
+  // This mirrors XLA's DeclusterNodes which removes trivially small clusters.
+  static constexpr int MIN_PROFITABLE_SIZE = 4;
+
+  if (segments_.size() > 1) {
+    std::vector<GraphSegment> merged;
+    merged.reserve(segments_.size());
+    merged.push_back(std::move(segments_[0]));
+
+    for (size_t i = 1; i < segments_.size(); i++) {
+      auto& seg = segments_[i];
+      int sz = seg.def.endSlot - seg.def.startSlot + 1;
+
+      // Check if segment is small AND all ops are transparent (non-materializing)
+      bool isSmallTransparent = false;
+      if (sz < MIN_PROFITABLE_SIZE && seg.def.isCapturable) {
+        isSmallTransparent = true;
+        for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+          // A slot is "transparent" if it's a view, identity, shape-only, or constant
+          bool isTransparent = slots_[s].flags.isViewCapableOp ||
+                               slots_[s].flags.isIdentityOp;
+          // Also check op traits for shape/constant generation
+          if (!isTransparent) {
+            uint32_t traits = 0;
+            if (slots_[s].ident.op && slots_[s].ident.op->getOpDescriptor()) {
+              traits = slots_[s].ident.op->getOpDescriptor()->getTraits();
+            }
+            if (traits == 0 && !slots_[s].ident.opName.empty()) {
+              traits = sd::ops::getOpTraitsByName(slots_[s].ident.opName);
+            }
+            isTransparent = (traits & (sd::ops::OP_TRAIT_VIEW_PRODUCING |
+                                       sd::ops::OP_TRAIT_IDENTITY |
+                                       sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT |
+                                       sd::ops::OP_TRAIT_CONSTANT_GENERATION)) != 0;
+          }
+          if (!isTransparent) {
+            isSmallTransparent = false;
+            break;
+          }
+        }
+      }
+
+      if (isSmallTransparent && !merged.empty()) {
+        // Absorb into preceding segment
+        auto& prev = merged.back();
+        prev.def.endSlot = seg.def.endSlot;
+        // Preserve hasValueDepOps
+        if (seg.def.hasValueDepOps) prev.def.hasValueDepOps = true;
+        DSP_DIAG(SEGMENT, "Merged small transparent segment [%d-%d] (%d slots) into [%d-%d]",
+                 seg.def.startSlot, seg.def.endSlot, sz,
+                 prev.def.startSlot, prev.def.endSlot);
+      } else {
+        merged.push_back(std::move(seg));
+      }
+    }
+
+    if (merged.size() < segments_.size()) {
+      DSP_DIAG(SEGMENT, "Profitability post-pass: %d -> %d segments",
+               (int)segments_.size(), (int)merged.size());
+      segments_ = std::move(merged);
     }
   }
 }

@@ -2338,7 +2338,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                             }
                         }
                         if (extInputs[i] != cachedInputArrays[i] || staleBuffer) {
-                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
+                            // Guard: ensure buffer is live before creating OpaqueNDArray.
+                            // Control flow dead branches may have closed buffers.
+                            INDArray arrToSet = extInputs[i];
+                            if (arrToSet != null && (arrToSet.data() == null || arrToSet.data().wasClosed())) {
+                                try {
+                                    arrToSet = Nd4j.zeros(arrToSet.dataType(), arrToSet.shape());
+                                } catch (Exception e) {
+                                    arrToSet = Nd4j.scalar(0.0f);
+                                }
+                                extInputs[i] = arrToSet;
+                            }
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arrToSet);
                             nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                             cachedInputOpaques[i] = opaqueIn;
                             cachedInputArrays[i] = extInputs[i];
@@ -2373,7 +2384,46 @@ public class DynamicShapePlanExecutor implements Closeable {
                 OpaqueNDArray[] oldRefs = contextInputRefs;  // prevent GC of old wrappers
                 OpaqueNDArray[] newRefs = new OpaqueNDArray[extInputs.length];
                 for (int i = 0; i < extInputs.length; i++) {
-                    OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
+                    INDArray arr = extInputs[i];
+                    // Guard against closed buffers from control flow dead branches.
+                    // Switch/Merge ops selectively enable/disable branches; dead-branch
+                    // outputs may have their DataBuffers freed by session cleanup. Creating
+                    // an OpaqueNDArray from a closed buffer causes PointerWrapper::pointer()
+                    // null dereference in native code. Replace with a zero-filled placeholder
+                    // of the same shape/dtype — the native plan's control flow routing will
+                    // never actually read from the dead branch's slot.
+                    if (arr != null && (arr.data() == null || arr.data().wasClosed())) {
+                        // Try to resolve a fresh copy from the variable
+                        SDVariable var = sd.getVariable(extKeys[i]);
+                        if (var != null) {
+                            INDArray fresh = var.getArr();
+                            if (fresh != null && fresh.data() != null && !fresh.data().wasClosed()) {
+                                arr = fresh;
+                            } else {
+                                // Create zeros — guard against null shape/dtype from dead arrays
+                                try {
+                                    arr = Nd4j.zeros(arr.dataType(), arr.shape());
+                                } catch (Exception e) {
+                                    arr = Nd4j.scalar(0.0f);
+                                }
+                            }
+                        } else {
+                            try {
+                                arr = Nd4j.zeros(arr.dataType(), arr.shape());
+                            } catch (Exception e) {
+                                arr = Nd4j.scalar(0.0f);
+                            }
+                        }
+                        extInputs[i] = arr;
+                    }
+                    if (arr == null || arr.data() == null || arr.data().wasClosed()) {
+                        log.error("DEAD_INPUT_AT_SET: ext[{}] '{}' still dead after guard (arr={}, data={})",
+                                i, extKeys[i], arr != null ? "id=" + arr.getId() : "null",
+                                arr != null ? (arr.data() == null ? "null" : "closed=" + arr.data().wasClosed()) : "N/A");
+                        arr = Nd4j.scalar(DataType.FLOAT, 0.0f);
+                        extInputs[i] = arr;
+                    }
+                    OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                     nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                     newRefs[i] = opaqueIn;
                 }

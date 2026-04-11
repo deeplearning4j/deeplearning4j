@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assumptions;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.*;
@@ -581,6 +582,8 @@ public class TestDSPPhaseContractEnforcement extends BaseNd4jTestWithBackends {
     @Order(6)
     @DisplayName("Phase contract: decode input propagation with DspDebugger validation")
     public void testDecodeInputPropagationWithCapture() {
+        Assumptions.assumeTrue(!Nd4j.getEnvironment().isCPU(),
+                "Decode input propagation with CUDA_GRAPHS requires CUDA backend");
         int hiddenSize = 16;
         int numLayers = 10;
 

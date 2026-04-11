@@ -33,6 +33,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
+#include <ops/OpTraitTable.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/MmulHelper.h>
@@ -126,6 +127,10 @@ uint32_t resolveCreateValueKeyTraits(const NativeSlot& slot) {
   uint32_t traits = 0;
   if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
     traits |= slot.ident.op->getOpDescriptor()->getTraits();
+  }
+  // Fallback: look up traits by op name from the trait table.
+  if (traits == 0 && !slot.ident.opName.empty()) {
+    traits |= sd::ops::getOpTraitsByName(slot.ident.opName);
   }
   if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
   if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
@@ -903,8 +908,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   // replayHandle is already set (created before capture began)
   seg.exec.cachedShapeKey = segShapeKey;
+  seg.exec.capturedInputAddrKey = computeSegmentInputAddrKey(seg, externalArrays, numExt);
+  seg.exec.capturedCreateValueKey = computeCreateOpValueKey(seg, externalArrays, numExt);
   seg.exec.capturedSlotAddrHash = computeSlotAddrHash(
       outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
+  snapshotExternalAddrs(seg, externalArrays, numExt);
   seg.exec.executionCount++;
   totalGraphReplays_++;
 

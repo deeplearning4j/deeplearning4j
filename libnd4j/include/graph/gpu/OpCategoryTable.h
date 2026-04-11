@@ -192,6 +192,13 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"Equals",            TritonOpCategory::COMPARISON},
     {"not_equals",        TritonOpCategory::COMPARISON},
     {"NotEquals",         TritonOpCategory::COMPARISON},
+    // Scalar comparison ops
+    {"greaterthan_scalar",        TritonOpCategory::COMPARISON},
+    {"greaterthanorequal_scalar", TritonOpCategory::COMPARISON},
+    {"lessthan_scalar",           TritonOpCategory::COMPARISON},
+    {"lessthanorequal_scalar",    TritonOpCategory::COMPARISON},
+    {"equals_scalar",             TritonOpCategory::COMPARISON},
+    {"notequals_scalar",          TritonOpCategory::COMPARISON},
 
     // ── Logical ──
     {"boolean_and",       TritonOpCategory::LOGICAL},

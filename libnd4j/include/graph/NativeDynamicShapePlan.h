@@ -22,6 +22,7 @@
 #include <array/NDArray.h>
 #include <graph/Context.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/FusionPass.h>
 #include <graph/generated/graph_generated.h>
 #include <helpers/MmulHelper.h>
@@ -29,6 +30,7 @@
 #include <system/common.h>
 
 #include <cstdint>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -982,7 +984,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   /**
    * Get mutable plan segments (for clearing CUDA graph timelines, etc.).
    */
-  std::vector<GraphSegment>& getSegmentsMutable() { return segments_; }
+  std::vector<GraphSegment>& getSegmentsMutable() {
+    if (planPhase_ > PlanPhase::SLOT_BY_SLOT) {
+      sd_printf("DSP PHASE VIOLATION: getSegmentsMutable called in phase %d\n", (int)planPhase_);
+      assert(false && "DSP phase violation: getSegmentsMutable");
+    }
+    return segments_;
+  }
+
+  /**
+   * Reset all segment execution state back to WARMUP.
+   * Demotes plan phase to SLOT_BY_SLOT and clears compilation caches,
+   * replay handles, and execution counters.
+   * Use for session reset or model reload without full plan rebuild.
+   */
+  void resetSegmentExecutionState();
 
   /**
    * Get raw slot array for inspection (read-only).
@@ -1031,7 +1047,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Enable/disable GPU graph capture for this plan.
    * Default: disabled (slot-by-slot execution).
    */
-  void setCudaGraphsEnabled(bool enabled) { gpuGraphCaptureEnabled_ = enabled; }
+  void setCudaGraphsEnabled(bool enabled) {
+    if (planPhase_ > PlanPhase::SLOT_BY_SLOT) {
+      sd_printf("DSP PHASE VIOLATION: setCudaGraphsEnabled called in phase %d\n", (int)planPhase_);
+      assert(false && "DSP phase violation: setCudaGraphsEnabled");
+      return;
+    }
+    gpuGraphCaptureEnabled_ = enabled;
+  }
   bool isCudaGraphsEnabled() const { return gpuGraphCaptureEnabled_; }
 
   /**
@@ -1040,7 +1063,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * - JIT_ONLY: NVRTC JIT only for element-wise segments
    * - GRAPH_PLUS_JIT: Try JIT first, fall back to graph capture
    */
-  void setJitMode(JitMode mode) { jitMode_ = mode; }
+  void setJitMode(JitMode mode) {
+    if (planPhase_ > PlanPhase::SLOT_BY_SLOT) {
+      sd_printf("DSP PHASE VIOLATION: setJitMode called in phase %d\n", (int)planPhase_);
+      assert(false && "DSP phase violation: setJitMode");
+      return;
+    }
+    jitMode_ = mode;
+  }
   JitMode getJitMode() const { return jitMode_; }
 
   void setGraphExecutionMode(GraphExecutionMode mode);
@@ -1310,6 +1340,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Use when all external input shapes are guaranteed constant (e.g., static KV decode).
   bool shapesFrozen_;
   int executeCount_;  // Tracks executions since shapes were frozen
+  bool compilationDone_;  // True after platformPrecompileSegments succeeds; skip phaseCompile
 
   // ── Plan-level phase tracking ──────────────────────────────────────────
   // Automatically advanced by execute() based on observed stability.

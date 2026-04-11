@@ -537,15 +537,7 @@ public class TestSmolDoclingOptimizedPipeline {
                 .executionMode(GraphExecutionMode.AUTO)
                 .maxTokens(10).minDiversityPct(0));
 
-        // Build the extended matrix whenever the caller explicitly selects configs.
-        // That lets the benchmark script run isolated named configs without forcing ALL.
-        String filterProp = System.getProperty("vlm.test.configs");
-        boolean includeAll = filterProp != null && !filterProp.trim().isEmpty();
-        if (!includeAll) return configs;
-
-        // ── Additional configs below only run with vlm.test.configs=ALL ──
-
-        // Baselines
+        // Baselines — always available so --config SLOT_BY_SLOT / CUDA_GRAPHS works
         configs.add(BenchmarkConfig.create("SLOT_BY_SLOT")
                 .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
                 .maxTokens(100)
@@ -554,6 +546,14 @@ public class TestSmolDoclingOptimizedPipeline {
         configs.add(BenchmarkConfig.create("CUDA_GRAPHS")
                 .executionMode(GraphExecutionMode.CUDA_GRAPHS)
                 .maxTokens(50));
+
+        // Build the extended matrix whenever the caller explicitly selects configs.
+        // That lets the benchmark script run isolated named configs without forcing ALL.
+        String filterProp = System.getProperty("vlm.test.configs");
+        boolean includeAll = filterProp != null && !filterProp.trim().isEmpty();
+        if (!includeAll) return configs;
+
+        // ── Additional configs below only run with vlm.test.configs=ALL ──
 
         if (!triton) return configs;
 
@@ -1117,6 +1117,24 @@ public class TestSmolDoclingOptimizedPipeline {
         if (filterProp != null && !filterProp.isEmpty() && !"ALL".equalsIgnoreCase(filterProp)) {
             Set<String> keep = Set.of(filterProp.split(","));
             configs.removeIf(c -> !keep.contains(c.getName()));
+
+            // If filtering produced an empty list, try to create configs dynamically
+            // from GraphExecutionMode enum names (e.g. --config SLOT_BY_SLOT).
+            if (configs.isEmpty()) {
+                for (String name : keep) {
+                    try {
+                        GraphExecutionMode mode = GraphExecutionMode.valueOf(name);
+                        configs.add(BenchmarkConfig.create(name)
+                                .executionMode(mode)
+                                .maxTokens(100)
+                                .minDiversityPct(0));
+                        log.info("Dynamically created config '{}' from GraphExecutionMode enum", name);
+                    } catch (IllegalArgumentException ignored) {
+                        // not a valid GraphExecutionMode name — skip
+                    }
+                }
+            }
+
             log.info("Filtered to {} configs via vlm.test.configs: {}", configs.size(), keep);
         }
 

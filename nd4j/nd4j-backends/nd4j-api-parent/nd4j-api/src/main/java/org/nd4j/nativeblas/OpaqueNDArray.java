@@ -432,6 +432,29 @@ public class OpaqueNDArray extends Pointer {
             return null;
         }
 
+        // Guard against arrays with closed/null data buffers.
+        // Control flow dead branches (Switch/Merge) may produce arrays whose
+        // DataBuffers have been freed by session cleanup, or never allocated.
+        // Wrapping such arrays creates OpaqueNDArrays with null PointerWrapper
+        // internals, causing SIGSEGV in native code.
+        if (array.wasClosed()) {
+            throw new IllegalStateException(
+                "Cannot create OpaqueNDArray from closed INDArray (id=" + array.getId() + ").");
+        }
+        if (array.data() == null || array.data().wasClosed()) {
+            // Array has no live data — either never allocated (control flow intermediates)
+            // or DataBuffer was freed (dead branch cleanup). Fall back to uncached creation
+            // with a zero-filled replacement to avoid SIGSEGV from null PointerWrapper.
+            DataBuffer shapeInfo = array.shapeInfoDataBuffer();
+            if (shapeInfo == null || shapeInfo.wasClosed()) {
+                // Can't even read shape — create a minimal scalar placeholder
+                return fromINDArrayUncached(Nd4j.scalar(0.0f));
+            }
+            // Create a zero array with the same shape/dtype
+            INDArray replacement = Nd4j.zeros(array.dataType(), array.shape());
+            return fromINDArrayUncached(replacement);
+        }
+
         // Sync host→device before passing to native ops.
         // Java-side operations like putScalar() write to the HOST buffer and mark it as
         // authoritative. Native CUDA ops read from the DEVICE buffer. Without this sync,

@@ -223,6 +223,59 @@ static std::vector<int> extendElementwiseChain(
     return chain;
 }
 
+/**
+ * Pass 2: Reduction epilogue fusion.
+ * Detects: reduce_* → elementwise chain
+ * Fuses the elementwise tail into the reduction's epilogue.
+ * Complements Pass 6 by adding isOnlyConsumedOnce check and isFusedChainTail marking.
+ */
+static void fuseReductionEpilogues(NativeSlot* slots, int numSlots,
+                                    std::vector<bool>& fused,
+                                    const std::unordered_map<int, int>& consumerCounts) {
+    for (int s = 0; s < numSlots; s++) {
+        if (fused[s]) continue;
+        if (!isReductionSlot(slots[s])) continue;
+        if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, s)) continue;
+
+        auto chain = extendElementwiseChain(s, slots, numSlots, fused, consumerCounts);
+        if (chain.size() > 1) {
+            // Mark chain tail as fused (head is the reduction, already not fused)
+            for (size_t i = 1; i < chain.size(); i++) {
+                fused[chain[i]] = true;
+                slots[chain[i]].fusedChain.isFusedChainTail = true;
+            }
+            DSP_DIAG(FUSION, "REDUCTION_EPILOGUE: slots [%d] + %zu elementwise tail ops",
+                     s, chain.size() - 1);
+        }
+    }
+}
+
+/**
+ * Pass 3: Normalization epilogue fusion.
+ * Detects: layer_norm/rms_norm/softmax → elementwise chain
+ * Fuses post-norm scaling/bias into the normalization kernel.
+ * Complements Pass 7 by adding isOnlyConsumedOnce check and isFusedChainTail marking.
+ */
+static void fuseNormalizationEpilogues(NativeSlot* slots, int numSlots,
+                                        std::vector<bool>& fused,
+                                        const std::unordered_map<int, int>& consumerCounts) {
+    for (int s = 0; s < numSlots; s++) {
+        if (fused[s]) continue;
+        if (!isNormalizationSlot(slots[s])) continue;
+        if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, s)) continue;
+
+        auto chain = extendElementwiseChain(s, slots, numSlots, fused, consumerCounts);
+        if (chain.size() > 1) {
+            for (size_t i = 1; i < chain.size(); i++) {
+                fused[chain[i]] = true;
+                slots[chain[i]].fusedChain.isFusedChainTail = true;
+            }
+            DSP_DIAG(FUSION, "NORM_EPILOGUE: slots [%d] + %zu elementwise tail ops",
+                     s, chain.size() - 1);
+        }
+    }
+}
+
 std::vector<FusionCandidate> FusionPass::detectFusions(
         NativeSlot* slots, int numSlots,
         const std::vector<int>& externalInputRanks) {
@@ -433,8 +486,14 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
-    // Pass 2: Detect bias+activation patterns (add -> relu/sigmoid/tanh/gelu)
-    DSP_DIAG(FUSION, "detectFusions: pass 2 — bias+activation pattern detection");
+    // Pass 2: Reduction epilogue fusion (complements Pass 4 with isOnlyConsumedOnce + isFusedChainTail)
+    fuseReductionEpilogues(slots, numSlots, fused, consumerCounts);
+
+    // Pass 3: Normalization epilogue fusion (complements Pass 5 with isOnlyConsumedOnce + isFusedChainTail)
+    fuseNormalizationEpilogues(slots, numSlots, fused, consumerCounts);
+
+    // Pass 4: Detect bias+activation patterns (add -> relu/sigmoid/tanh/gelu)
+    DSP_DIAG(FUSION, "detectFusions: pass 4 — bias+activation pattern detection");
     for (int i = 0; i < numSlots - 1; i++) {
         if (fused[i]) continue;
 
@@ -466,8 +525,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
-    // Pass 3: Detect matmul → add(bias) → optional activation patterns
-    DSP_DIAG(FUSION, "detectFusions: pass 3 — matmul+bias+activation pattern detection");
+    // Pass 5: Detect matmul → add(bias) → optional activation patterns
+    DSP_DIAG(FUSION, "detectFusions: pass 5 — matmul+bias+activation pattern detection");
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
 
@@ -539,8 +598,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
-    // Pass 4: Detect reduction → element-wise chains (e.g., reduce_sum → sqrt for norm)
-    DSP_DIAG(FUSION, "detectFusions: pass 4 — reduction+element-wise chain detection");
+    // Pass 6: Detect reduction → element-wise chains (e.g., reduce_sum → sqrt for norm)
+    DSP_DIAG(FUSION, "detectFusions: pass 6 — reduction+element-wise chain detection");
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isReductionSlot(slots[i])) continue;
@@ -559,8 +618,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
-    // Pass 5: Detect normalization → element-wise chains (e.g., softmax → log)
-    DSP_DIAG(FUSION, "detectFusions: pass 5 — normalization+element-wise chain detection");
+    // Pass 7: Detect normalization → element-wise chains (e.g., softmax → log)
+    DSP_DIAG(FUSION, "detectFusions: pass 7 — normalization+element-wise chain detection");
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
         if (!isNormalizationSlot(slots[i])) continue;
@@ -579,8 +638,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
-    // Pass 6: Detect softmax compound patterns (reduce_max → sub → exp → reduce_sum → div)
-    DSP_DIAG(FUSION, "detectFusions: pass 6 — softmax compound pattern detection");
+    // Pass 8: Detect softmax compound patterns (reduce_max → sub → exp → reduce_sum → div)
+    DSP_DIAG(FUSION, "detectFusions: pass 8 — softmax compound pattern detection");
     for (int i = 0; i < numSlots - 4; i++) {
         if (fused[i]) continue;
         std::string op0 = getOpName(slots[i]);

@@ -25,6 +25,7 @@
 #ifndef LIBND4J_DSP_ANALYSIS_UTILS_H
 #define LIBND4J_DSP_ANALYSIS_UTILS_H
 
+#include <ops/OpTraitTable.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <system/common.h>
 
@@ -164,6 +165,10 @@ SD_INLINE uint32_t resolveSlotTraits(const NativeSlot& slot) {
   uint32_t traits = 0;
   if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
     traits |= slot.ident.op->getOpDescriptor()->getTraits();
+  }
+  // Fallback: look up traits by op name from the trait table.
+  if (traits == 0 && !slot.ident.opName.empty()) {
+    traits |= sd::ops::getOpTraitsByName(slot.ident.opName);
   }
   if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
   if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;

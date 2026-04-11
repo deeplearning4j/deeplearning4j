@@ -32,6 +32,12 @@ namespace ops {
 SD_LIB_EXPORT void initOpTraits();
 
 /**
+ * Look up op trait flags by op name. Returns 0 if the op is not found.
+ * Uses the same internal trait table as initOpTraits().
+ */
+SD_LIB_EXPORT uint32_t getOpTraitsByName(const std::string& opName);
+
+/**
  * Get the number of structural iArgs for an op (args that affect output shape
  * but not the computation itself, like axis for concat).
  * Returns -1 if the op has no structural iArgs entry.

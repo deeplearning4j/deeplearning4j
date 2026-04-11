@@ -322,18 +322,17 @@ void TritonIRBuilder::emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location 
         break;
       }
       case EpilogueOp::GELU: {
-        // GELU(x) = 0.5 * x * (1 + erf(x / sqrt(2)))
-        auto invSqrt2 = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.7071067811865476));
-        auto invSqrt2T = builder.create<mlir::triton::SplatOp>(loc, accTensorType, invSqrt2);
-        auto scaled = builder.create<mlir::arith::MulFOp>(loc, acc, invSqrt2T);
-        auto erfVal = builder.create<mlir::math::ErfOp>(loc, scaled);
+        // Match native GELU: x * sigmoid(1.702 * x) = x / (1 + exp(-1.702 * x))
+        auto coeffScalar = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 1.702));
+        auto coeffT = builder.create<mlir::triton::SplatOp>(loc, accTensorType, coeffScalar);
+        auto scaled = builder.create<mlir::arith::MulFOp>(loc, coeffT, acc);
+        auto neg = builder.create<mlir::arith::NegFOp>(loc, scaled);
+        auto expNeg = builder.create<mlir::math::ExpOp>(loc, neg);
         auto oneT = builder.create<mlir::triton::SplatOp>(loc, accTensorType,
             builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 1.0)));
-        auto erfPlus1 = builder.create<mlir::arith::AddFOp>(loc, oneT, erfVal);
-        auto halfT = builder.create<mlir::triton::SplatOp>(loc, accTensorType,
-            builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.5)));
-        auto halfX = builder.create<mlir::arith::MulFOp>(loc, halfT, acc);
-        acc = builder.create<mlir::arith::MulFOp>(loc, halfX, erfPlus1);
+        auto denom = builder.create<mlir::arith::AddFOp>(loc, oneT, expNeg);
+        auto sigmoid = builder.create<mlir::arith::DivFOp>(loc, oneT, denom);
+        acc = builder.create<mlir::arith::MulFOp>(loc, acc, sigmoid);
         break;
       }
       case EpilogueOp::SILU: {

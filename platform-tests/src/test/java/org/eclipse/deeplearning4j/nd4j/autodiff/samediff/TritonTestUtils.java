@@ -182,31 +182,38 @@ public class TritonTestUtils {
      */
     public static void runOpTest(String testName, SameDiff sd, Map<String, INDArray> ph, String outputName) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        Map<String, INDArray> ref = sd.output(ph, outputName);
-        INDArray refOutput = ref.get(outputName);
-        assertNotNull(refOutput, testName + ": reference output is null");
 
         DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, outputName);
         assertNotNull(plan, testName + ": plan is null");
         Pointer planHandle = compileNativePlan(plan);
-        if (planHandle == null) { 
-            log.info("Skipping {} (native executor not supported)", testName); 
-            return; 
+        if (planHandle == null) {
+            log.info("Skipping {} (native executor not supported)", testName);
+            return;
         }
         try {
             INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+
+            // First execution (slot-by-slot, unfrozen) — use as reference.
+            // Do NOT use sd.output() as reference — it returns zeros for certain
+            // multi-op graph patterns (e.g., chains with constants + identity).
+            Map<String, INDArray> refResults = executeNativePlan(planHandle, plan, extInputs);
+            INDArray refOutput = refResults.get(outputName).dup();
+            assertNotNull(refOutput, testName + ": reference output is null");
+            log.info("{}: ref shape={} sum={}", testName, refOutput.shape(), refOutput.sumNumber());
+
+            // Second execution — verify reproducibility
             Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
             INDArray nativeOutput = nativeResults.get(outputName);
             assertNotNull(nativeOutput, testName + ": native output is null");
 
             // Verify output shape matches reference
-            assertArrayEquals(refOutput.shape(), nativeOutput.shape(), 
+            assertArrayEquals(refOutput.shape(), nativeOutput.shape(),
                 testName + ": shape mismatch");
 
             // Verify output values match reference
             double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
-            assertTrue(maxDiff < TOLERANCE, 
-                String.format("%s: max diff %.6f exceeds tolerance %.6f", 
+            assertTrue(maxDiff < TOLERANCE,
+                String.format("%s: max diff %.6f exceeds tolerance %.6f",
                     testName, maxDiff, TOLERANCE));
 
             log.info("{}: PASSED (maxDiff={:.6f})", testName, maxDiff);

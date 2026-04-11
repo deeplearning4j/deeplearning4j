@@ -29,8 +29,10 @@
 #define LIBND4J_DSP_PHASE_UTILS_H
 
 #include <system/common.h>
+#include <graph/DspDiagnostics.h>
 
 #include <cstdint>
+#include <cassert>
 
 namespace sd {
 namespace graph {
@@ -60,5 +62,64 @@ SD_INLINE const char* executionPhaseName(ExecutionPhase phase) {
 }  // namespace dsp
 }  // namespace graph
 }  // namespace sd
+
+// ─── Phase guard macros ─────────────────────────────────────────────────────
+//
+// Enforce plan phase invariants at method entry points.
+// Fires DSP_DIAG (FALLBACK category) + sd_printf + assert.
+// These compile to nothing under __CUDA_ARCH__ (device code).
+//
+// Usage: Place as the FIRST line of a method body.
+//   DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "buildSegments");
+//   DSP_REQUIRE_PLAN_PHASE_EXACT(PlanPhase::SLOT_BY_SLOT, "phaseFreeze");
+//   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SHAPES_FROZEN, "someMethod");
+//
+// planPhase_ must be in scope (member of NativeDynamicShapePlan).
+
+#ifndef __CUDA_ARCH__
+
+#define DSP_REQUIRE_PLAN_PHASE_AT_MOST(maxPhase, methodName)                   \
+  do {                                                                          \
+    if (planPhase_ > (maxPhase)) {                                             \
+      DSP_DIAG(FALLBACK, "PHASE_VIOLATION: %s called in phase %s, requires <= %s", \
+               (methodName), dsp::planPhaseName(planPhase_),                   \
+               dsp::planPhaseName(maxPhase));                                  \
+      sd_printf("DSP PHASE VIOLATION: %s called in phase %d, requires <= %d\n", \
+                (methodName), (int)planPhase_, (int)(maxPhase));               \
+      assert(false && "DSP phase violation");                                   \
+    }                                                                           \
+  } while (0)
+
+#define DSP_REQUIRE_PLAN_PHASE_EXACT(requiredPhase, methodName)                \
+  do {                                                                          \
+    if (planPhase_ != (requiredPhase)) {                                       \
+      DSP_DIAG(FALLBACK, "PHASE_VIOLATION: %s called in phase %s, requires %s", \
+               (methodName), dsp::planPhaseName(planPhase_),                   \
+               dsp::planPhaseName(requiredPhase));                             \
+      sd_printf("DSP PHASE VIOLATION: %s called in phase %d, requires %d\n",  \
+                (methodName), (int)planPhase_, (int)(requiredPhase));           \
+      assert(false && "DSP phase violation");                                   \
+    }                                                                           \
+  } while (0)
+
+#define DSP_REQUIRE_PLAN_PHASE_AT_LEAST(minPhase, methodName)                  \
+  do {                                                                          \
+    if (planPhase_ < (minPhase)) {                                             \
+      DSP_DIAG(FALLBACK, "PHASE_VIOLATION: %s called in phase %s, requires >= %s", \
+               (methodName), dsp::planPhaseName(planPhase_),                   \
+               dsp::planPhaseName(minPhase));                                  \
+      sd_printf("DSP PHASE VIOLATION: %s called in phase %d, requires >= %d\n", \
+                (methodName), (int)planPhase_, (int)(minPhase));               \
+      assert(false && "DSP phase violation");                                   \
+    }                                                                           \
+  } while (0)
+
+#else  // __CUDA_ARCH__
+
+#define DSP_REQUIRE_PLAN_PHASE_AT_MOST(maxPhase, methodName)  ((void)0)
+#define DSP_REQUIRE_PLAN_PHASE_EXACT(requiredPhase, methodName) ((void)0)
+#define DSP_REQUIRE_PLAN_PHASE_AT_LEAST(minPhase, methodName)  ((void)0)
+
+#endif  // __CUDA_ARCH__
 
 #endif  // LIBND4J_DSP_PHASE_UTILS_H

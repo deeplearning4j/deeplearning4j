@@ -38,6 +38,9 @@
 #include <system/Environment.h>
 #include <config.h>
 
+// Forward declaration for TritonGraphBackend (full header only available when HAVE_TRITON)
+namespace sd { namespace graph { class TritonGraphBackend; } }
+
 // Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
 #ifdef SD_CUDA
 #define DSP_BUF(arr) ((arr)->specialBuffer())
@@ -97,6 +100,10 @@ static uint32_t resolveStructuralSlotTraits(int slotIdx, NativeSlot* slots) {
   const auto& slot = slots[slotIdx];
   if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
     traits |= slot.ident.op->getOpDescriptor()->getTraits();
+  }
+  // Fallback: look up traits by op name from the trait table.
+  if (traits == 0 && !slot.ident.opName.empty()) {
+    traits |= sd::ops::getOpTraitsByName(slot.ident.opName);
   }
 
   if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
@@ -733,6 +740,22 @@ static ConsolidationDecision evaluateConsolidation(
     return d;
   }
 
+  // Gate 6: GAP (transparent only) can be absorbed by any preceding unit
+  // Transparent gaps are view_chain or shape_expression — no GPU work, just pointer arithmetic
+  if (b.type == ReplayUnitType::VIEW_INSTALL || b.type == ReplayUnitType::SHAPE_INSTALL) {
+    d.approved = true;
+    d.reason = "transparent gap absorbed";
+    return d;
+  }
+
+  // Gate 7: PREP_UNIT followed by TRITON_ISLAND (reverse of Gate 4)
+  // Prep output feeds the island — safe to merge in order
+  if (a.type == ReplayUnitType::PREP_UNIT && b.type == ReplayUnitType::TRITON_ISLAND) {
+    d.approved = true;
+    d.reason = "prep+island ordered merge";
+    return d;
+  }
+
   // Default: reject — phases would cross or profitability unclear
   d.approved = false;
   d.reason = "phase boundary or unprofitable";
@@ -750,6 +773,27 @@ static bool canFusePrepUnits(const ReplayUnit& a, const ReplayUnit& b,
   if (a.opCategory == TritonOpCategory::DATA_MOVEMENT &&
       b.opCategory == TritonOpCategory::DATA_MOVEMENT) {
     if (outRuleName) *outRuleName = "adjacent_materializing_prep";
+    return true;
+  }
+
+  // Constant generation feeding data movement — safe to fuse
+  if (a.opCategory == TritonOpCategory::CONSTANT_GENERATION &&
+      b.opCategory == TritonOpCategory::DATA_MOVEMENT) {
+    if (outRuleName) *outRuleName = "constgen_into_data_movement";
+    return true;
+  }
+
+  // Adjacent constant generation ops — safe to fuse
+  if (a.opCategory == TritonOpCategory::CONSTANT_GENERATION &&
+      b.opCategory == TritonOpCategory::CONSTANT_GENERATION) {
+    if (outRuleName) *outRuleName = "adjacent_constgen";
+    return true;
+  }
+
+  // Shape manipulation feeding data movement — safe to fuse
+  if (a.opCategory == TritonOpCategory::SHAPE_MANIPULATION &&
+      b.opCategory == TritonOpCategory::DATA_MOVEMENT) {
+    if (outRuleName) *outRuleName = "shape_into_data_movement";
     return true;
   }
 
@@ -1900,7 +1944,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 #if HAVE_TRITON
   auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
 #else
-  auto* tritonBackend = nullptr;
+  void* tritonBackend = nullptr;
 #endif
 
   // If compilation previously failed validation, never try again
@@ -2486,7 +2530,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     }
   }
 #else
-  seg.exec.compositeReplaySchedule = GraphSegment::ReplaySchedule();
+  seg.exec.compositeReplaySchedule = ReplaySchedule();
 #endif
 
   bool captureWindowSatisfied = execCountInWindow || requiresOrderedGapCapture;
@@ -2775,6 +2819,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       DSP_DIAG(EXECUTE, "FAST_REPLAY_EXT_SYNC: %d H2D (of %d variable) execCount=%d",
                fastSynced, static_cast<int>(variableExternalInputIndices_.size()),
                seg.exec.executionCount);
+
+      // CRITICAL FIX: Copy consolidated arg table to device during fast replay.
+      // The captured graph's H2D memcpy nodes copy from consolidatedArgTableHostPinned
+      // to consolidatedArgTableDevice. The host-pinned table was populated during
+      // capture and contains correct pointers (since argTableStable=true). But the
+      // device arg table must be updated before graph launch. Without this copy,
+      // the device arg table may have stale data from a previous execution, causing
+      // Triton kernels to read/write wrong buffers.
+#if HAVE_TRITON && defined(SD_CUDA)
+      {
+        auto* tritonBackendFast = dynamic_cast<TritonGraphBackend*>(backend);
+        if (tritonBackendFast != nullptr) {
+          tritonBackendFast->copyConsolidatedArgTableToDevice(seg, stream);
+        }
+      }
+#endif
     } else {
       DspDiagnostics::ExtInputSyncResult syncResult = {0, 0, 0};
       DSP_DIAG_DUMP_EXT_INPUTS(externalArrays, numExt, seg.exec.executionCount, syncResult);
@@ -2793,12 +2853,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           bool sAct = db ? db->isSpecialActual() : false;
           if (pAct && !sAct) synced++;
           else skipped++;
-          // Force sync for variable inputs during replay — even if sAct=true.
-          // Java's syncToDevice may have updated the device buffer at a JNI wrapper level,
-          // but the C++ DataBuffer's actuality might still show sAct=true from the Java sync.
-          // Force ensures the H2D copy actually happens.
-          if (db) db->syncToSpecial(true);
-          else externalArrays[ei]->syncToDevice();
+          externalArrays[ei]->syncToDevice();
         }
       } else {
         // Non-frozen or no variable info: sync all
@@ -3152,6 +3207,33 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           platformCleanupSegmentForRebuild(seg);
           return Status::KERNEL_FAILURE;
         }
+
+        // CRITICAL FIX: Refresh arg tables AFTER gap execution but BEFORE graph replay.
+        // Gap ops (e.g., view-producing reshape/permute) may replace output slot NDArray
+        // wrappers via the frozen view fast path in executeSlot(). While the underlying
+        // DataBuffer (GPU address) is shared with the input, the output slot's
+        // specialBuffer() address changes when the slot's previous own DataBuffer is
+        // replaced with a view of the input's DataBuffer. The captured graph's H2D memcpy
+        // nodes bake in the arg table addresses from capture time. Without refreshing,
+        // the graph replays with stale arg table addresses, causing Triton kernels to
+        // read/write wrong buffers → garbage output → "User" repeating tokens.
+#if HAVE_TRITON && defined(SD_CUDA)
+        {
+          auto* tritonBackend2 = dynamic_cast<TritonGraphBackend*>(backend);
+          if (tritonBackend2 != nullptr) {
+            auto refreshStatus2 = tritonBackend2->refreshArgTablesForReplay(seg, externalArrays, numExt,
+                                                     outputSlots_, totalOutputSlots_,
+                                                     stream);
+            if (refreshStatus2 != Status::OK) {
+              DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: refreshArgTablesForReplay FAILED for seg[%d-%d] "
+                       "post-gap — graph replay will use STALE arg tables!",
+                       seg.def.startSlot, seg.def.endSlot);
+            }
+            tritonBackend2->copyConsolidatedArgTableToDevice(seg, stream);
+          }
+        }
+#endif
+
         DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: launching graph for seg[%d-%d] after gaps",
                  seg.def.startSlot, seg.def.endSlot);
         replayOk = seg.exec.replayHandle->replay(stream);

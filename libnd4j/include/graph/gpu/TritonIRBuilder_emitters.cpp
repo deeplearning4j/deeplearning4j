@@ -222,15 +222,15 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   }
 
   if (opLower == "gelu") {
-    // gelu(x) = 0.5 * x * (1.0 + erf(x / sqrt(2.0)))
-    auto half = splatConstantF32(builder, loc, tensorType, 0.5f);
-    auto sqrtTwo = splatConstantF32(builder, loc, tensorType, static_cast<float>(std::sqrt(2.0)));
+    // Match native GELU: x * sigmoid(1.702 * x) = x / (1 + exp(-1.702 * x))
+    auto coeff = splatConstantF32(builder, loc, tensorType, 1.702f);
+    auto scaled = builder.create<mlir::arith::MulFOp>(loc, coeff, input);
+    auto neg = builder.create<mlir::arith::NegFOp>(loc, scaled);
+    auto expNeg = builder.create<mlir::math::ExpOp>(loc, neg);
     auto one = splatConstantF32(builder, loc, tensorType, 1.0f);
-    auto xDivSqrt2 = builder.create<mlir::arith::DivFOp>(loc, input, sqrtTwo);
-    auto erfVal = builder.create<mlir::math::ErfOp>(loc, xDivSqrt2);
-    auto onePlusErf = builder.create<mlir::arith::AddFOp>(loc, one, erfVal);
-    auto halfX = builder.create<mlir::arith::MulFOp>(loc, half, input);
-    return builder.create<mlir::arith::MulFOp>(loc, halfX, onePlusErf);
+    auto denom = builder.create<mlir::arith::AddFOp>(loc, one, expNeg);
+    auto sigmoid = builder.create<mlir::arith::DivFOp>(loc, one, denom);
+    return builder.create<mlir::arith::MulFOp>(loc, input, sigmoid);
   }
 
   if (opLower == "exp") {
@@ -553,12 +553,12 @@ mlir::Value TritonIRBuilder::emitComparisonOp(mlir::OpBuilder& builder, mlir::Lo
     rhs = castTo(builder, loc, rhs, floatTy);
 
     mlir::arith::CmpFPredicate pred;
-    if (opKey == "greater") pred = mlir::arith::CmpFPredicate::OGT;
-    else if (opKey == "greaterequal") pred = mlir::arith::CmpFPredicate::OGE;
-    else if (opKey == "less") pred = mlir::arith::CmpFPredicate::OLT;
-    else if (opKey == "lessequal") pred = mlir::arith::CmpFPredicate::OLE;
-    else if (opKey == "equals" || opKey == "equal" || opKey == "eq") pred = mlir::arith::CmpFPredicate::OEQ;
-    else if (opKey == "notequals" || opKey == "notequal" || opKey == "neq") pred = mlir::arith::CmpFPredicate::ONE;
+    if (opKey == "greater" || opKey == "greaterthanscalar") pred = mlir::arith::CmpFPredicate::OGT;
+    else if (opKey == "greaterequal" || opKey == "greaterthanorequalscalar") pred = mlir::arith::CmpFPredicate::OGE;
+    else if (opKey == "less" || opKey == "lessthanscalar") pred = mlir::arith::CmpFPredicate::OLT;
+    else if (opKey == "lessequal" || opKey == "lessthanorequalscalar") pred = mlir::arith::CmpFPredicate::OLE;
+    else if (opKey == "equals" || opKey == "equal" || opKey == "eq" || opKey == "equalsscalar") pred = mlir::arith::CmpFPredicate::OEQ;
+    else if (opKey == "notequals" || opKey == "notequal" || opKey == "neq" || opKey == "notequalsscalar") pred = mlir::arith::CmpFPredicate::ONE;
     else {
       std::string msg = "TritonIRBuilder::emitComparisonOp: unknown float comparison '" + opName +
                         "' — categorized as COMPARISON but has no emitter.";
@@ -573,12 +573,12 @@ mlir::Value TritonIRBuilder::emitComparisonOp(mlir::OpBuilder& builder, mlir::Lo
     rhs = castTo(builder, loc, rhs, intTy);
 
     mlir::arith::CmpIPredicate pred;
-    if (opKey == "greater") pred = mlir::arith::CmpIPredicate::sgt;
-    else if (opKey == "greaterequal") pred = mlir::arith::CmpIPredicate::sge;
-    else if (opKey == "less") pred = mlir::arith::CmpIPredicate::slt;
-    else if (opKey == "lessequal") pred = mlir::arith::CmpIPredicate::sle;
-    else if (opKey == "equals" || opKey == "equal" || opKey == "eq") pred = mlir::arith::CmpIPredicate::eq;
-    else if (opKey == "notequals" || opKey == "notequal" || opKey == "neq") pred = mlir::arith::CmpIPredicate::ne;
+    if (opKey == "greater" || opKey == "greaterthanscalar") pred = mlir::arith::CmpIPredicate::sgt;
+    else if (opKey == "greaterequal" || opKey == "greaterthanorequalscalar") pred = mlir::arith::CmpIPredicate::sge;
+    else if (opKey == "less" || opKey == "lessthanscalar") pred = mlir::arith::CmpIPredicate::slt;
+    else if (opKey == "lessequal" || opKey == "lessthanorequalscalar") pred = mlir::arith::CmpIPredicate::sle;
+    else if (opKey == "equals" || opKey == "equal" || opKey == "eq" || opKey == "equalsscalar") pred = mlir::arith::CmpIPredicate::eq;
+    else if (opKey == "notequals" || opKey == "notequal" || opKey == "neq" || opKey == "notequalsscalar") pred = mlir::arith::CmpIPredicate::ne;
     else {
       std::string msg = "TritonIRBuilder::emitComparisonOp: unknown int comparison '" + opName +
                         "' — categorized as COMPARISON but has no emitter.";

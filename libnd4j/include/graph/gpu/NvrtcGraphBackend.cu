@@ -113,8 +113,7 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
   if (opName == "tanh" || opName == "Tanh")
     return "tanhf(" + val + ")";
   if (opName == "gelu" || opName == "Gelu")
-    return "(0.5f * " + val + " * (1.0f + tanhf(0.7978845608f * ("
-           + val + " + 0.044715f * " + val + " * " + val + " * " + val + "))))";
+    return "(" + val + " * (1.0f / (1.0f + expf(-1.702f * " + val + "))))";
   if (opName == "exp" || opName == "Exp")
     return "expf(" + val + ")";
   if (opName == "log" || opName == "Log")

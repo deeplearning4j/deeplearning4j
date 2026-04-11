@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -917,6 +918,8 @@ public class TestDSPLifecycleRegression extends BaseNd4jTestWithBackends {
     @Test
     @DisplayName("DSP: setNextDecodeToken propagates position_ids through replay")
     public void testSetNextDecodeTokenPropagation() {
+        Assumptions.assumeTrue(!Nd4j.getEnvironment().isCPU(),
+                "Decode input propagation with CUDA_GRAPHS requires CUDA backend");
         SameDiff sd = SameDiff.create();
 
         int hiddenSize = 16;

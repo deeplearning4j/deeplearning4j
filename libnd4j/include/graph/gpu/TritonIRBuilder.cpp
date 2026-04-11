@@ -195,6 +195,14 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["not_equals"]   = {"not_equals",   TritonOpCategory::COMPARISON,  "arith.cmpf ONE", false};
   table["NotEqual"]     = {"NotEqual",     TritonOpCategory::COMPARISON,  "arith.cmpf ONE", false};
 
+  // Scalar comparison ops
+  table["greaterthan_scalar"]        = {"greaterthan_scalar",        TritonOpCategory::COMPARISON,  "arith.cmpf OGT", false};
+  table["greaterthanorequal_scalar"] = {"greaterthanorequal_scalar", TritonOpCategory::COMPARISON,  "arith.cmpf OGE", false};
+  table["lessthan_scalar"]           = {"lessthan_scalar",           TritonOpCategory::COMPARISON,  "arith.cmpf OLT", false};
+  table["lessthanorequal_scalar"]    = {"lessthanorequal_scalar",    TritonOpCategory::COMPARISON,  "arith.cmpf OLE", false};
+  table["equals_scalar"]             = {"equals_scalar",             TritonOpCategory::COMPARISON,  "arith.cmpf OEQ", false};
+  table["notequals_scalar"]          = {"notequals_scalar",          TritonOpCategory::COMPARISON,  "arith.cmpf ONE", false};
+
   // Logical ops
   table["boolean_and"]  = {"boolean_and",  TritonOpCategory::LOGICAL, "arith.andi", false};
   table["And"]          = {"And",          TritonOpCategory::LOGICAL, "arith.andi", false};

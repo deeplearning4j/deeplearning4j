@@ -414,7 +414,7 @@ set +e
 $MVN test \
   -Dtest="${VALIDATION_CLASS}#${VALIDATION_METHOD}" \
   -Dvlm.validation.tokens="$VALIDATION_TOKENS" \
-  -Dvlm.validation.configs="SLOT_BY_SLOT,TRITON_NO_GC,OPTIMAL" \
+  -Dvlm.validation.configs="$CONFIG" \
   -Dlibnd4j.triton=ON \
   -Dbackend.artifactId=nd4j-cuda-12.9 \
   $EXTRA_ARGS \

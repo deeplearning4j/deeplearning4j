@@ -1388,22 +1388,48 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
     } else if (cat == TritonOpCategory::COMPARISON) {
-      // Comparison: needs two inputs, produces bool tensor
-      if (slot.wiring.numInputs < 2) {
-        DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: comparison op '%s' at slot %d has < 2 inputs",
+      // Comparison: produces bool tensor from 2 inputs or 1 input + scalar tArg
+      if (slot.wiring.numInputs < 1) {
+        DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: comparison op '%s' at slot %d has no inputs",
                   slot.ident.opName.c_str(), si);
         continue;
       }
       int lhsSrc = slot.wiring.inputSourceIndices[0];
-      int rhsSrc = slot.wiring.inputSourceIndices[1];
       auto lhsIt = ssaValues.find(lhsSrc);
-      auto rhsIt = ssaValues.find(rhsSrc);
-      if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) {
+      if (lhsIt == ssaValues.end()) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for comparison op '%s' at slot %d",
                   slot.ident.opName.c_str(), si);
         continue;
       }
-      auto opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+
+      mlir::Value opResult;
+      if (slot.wiring.numInputs >= 2) {
+        // Standard 2-input comparison
+        int rhsSrc = slot.wiring.inputSourceIndices[1];
+        auto rhsIt = ssaValues.find(rhsSrc);
+        if (rhsIt == ssaValues.end()) {
+          DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for comparison op '%s' at slot %d",
+                    slot.ident.opName.c_str(), si);
+          continue;
+        }
+        opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+      } else if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+        // Scalar comparison: second operand comes from tArgs[0]
+        auto lhsTensorType = mlir::cast<mlir::RankedTensorType>(lhsIt->second.getType());
+        auto lhsElemType = lhsTensorType.getElementType();
+        double scalarVal = slot.args.tArgs[0];
+        mlir::Value rhsSplat;
+        if (mlir::isa<mlir::FloatType>(lhsElemType)) {
+          rhsSplat = splatConstantF32(builder, loc, lhsTensorType, static_cast<float>(scalarVal));
+        } else {
+          rhsSplat = splatConstantI32(builder, loc, lhsTensorType, static_cast<int>(scalarVal));
+        }
+        opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsSplat, blockSize);
+      } else {
+        DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: scalar comparison op '%s' at slot %d has no tArgs",
+                  slot.ident.opName.c_str(), si);
+        continue;
+      }
       for (int o = 0; o < slot.wiring.numOutputs; o++) {
         ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
@@ -3135,8 +3161,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         if (allValid && !inPtrs.empty()) {
           int nElements = static_cast<int>(outArr->lengthOf());
+          int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
+          // Stack = unsqueeze + concat: insert dim=1 at axis for each input shape
+          for (auto& shape : inShapes) {
+            shape.insert(shape.begin() + axis, 1);
+          }
           emitConcatSection(builder, loc, pid, blockSize,
-                            inPtrs, outPtr, 0, inShapes, nElements);
+                            inPtrs, outPtr, axis, inShapes, nElements);
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
@@ -4613,11 +4644,28 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
             for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::COMPARISON) {
-            if (slot.wiring.numInputs < 2) continue;
+            if (slot.wiring.numInputs < 1) continue;
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
-            auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
-            if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) continue;
-            auto opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+            if (lhsIt == ssaValues.end()) continue;
+            mlir::Value opResult;
+            if (slot.wiring.numInputs >= 2) {
+              auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
+              if (rhsIt == ssaValues.end()) continue;
+              opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+            } else if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+              auto lhsTensorType = mlir::cast<mlir::RankedTensorType>(lhsIt->second.getType());
+              auto lhsElemType = lhsTensorType.getElementType();
+              double scalarVal = slot.args.tArgs[0];
+              mlir::Value rhsSplat;
+              if (mlir::isa<mlir::FloatType>(lhsElemType)) {
+                rhsSplat = splatConstantF32(builder, loc, lhsTensorType, static_cast<float>(scalarVal));
+              } else {
+                rhsSplat = splatConstantI32(builder, loc, lhsTensorType, static_cast<int>(scalarVal));
+              }
+              opResult = emitComparisonOp(builder, loc, slot.ident.opName, lhsIt->second, rhsSplat, blockSize);
+            } else {
+              continue;
+            }
             for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::LOGICAL) {
             if (slot.wiring.numInputs < 1) continue;
@@ -5609,11 +5657,26 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               if (inputIt != ssaValues.end()) {
                 epiResult = emitUnaryElementwise(builder, loc, epiMapping, epiSlot, inputIt->second, blockSize);
               }
-            } else if (epiCat == TritonOpCategory::COMPARISON && epiSlot.wiring.numInputs >= 2) {
+            } else if (epiCat == TritonOpCategory::COMPARISON && epiSlot.wiring.numInputs >= 1) {
               auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
-              auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
-              if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                epiResult = emitComparisonOp(builder, loc, epiSlot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+              if (lhsIt != ssaValues.end()) {
+                if (epiSlot.wiring.numInputs >= 2) {
+                  auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
+                  if (rhsIt != ssaValues.end()) {
+                    epiResult = emitComparisonOp(builder, loc, epiSlot.ident.opName, lhsIt->second, rhsIt->second, blockSize);
+                  }
+                } else if (epiSlot.args.numTArgs > 0 && epiSlot.args.tArgs) {
+                  auto lhsTensorType = mlir::cast<mlir::RankedTensorType>(lhsIt->second.getType());
+                  auto lhsElemType = lhsTensorType.getElementType();
+                  double scalarVal = epiSlot.args.tArgs[0];
+                  mlir::Value rhsSplat;
+                  if (mlir::isa<mlir::FloatType>(lhsElemType)) {
+                    rhsSplat = splatConstantF32(builder, loc, lhsTensorType, static_cast<float>(scalarVal));
+                  } else {
+                    rhsSplat = splatConstantI32(builder, loc, lhsTensorType, static_cast<int>(scalarVal));
+                  }
+                  epiResult = emitComparisonOp(builder, loc, epiSlot.ident.opName, lhsIt->second, rhsSplat, blockSize);
+                }
               }
             } else if ((epiCat == TritonOpCategory::IDENTITY || epiCat == TritonOpCategory::CAST)
                        && epiSlot.wiring.numInputs >= 1) {
@@ -6617,6 +6680,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (allValid && !inPtrs.empty()) {
             int nElements = static_cast<int>(shapeLength(outShape));
             int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
+            // Stack = unsqueeze + concat: insert dim=1 at axis for each input shape
+            for (auto& shape : inShapes) {
+              shape.insert(shape.begin() + axis, 1);
+            }
             emitConcatSection(builder, loc, pid, blockSize, inPtrs, outPtr, axis, inShapes, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
             if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;

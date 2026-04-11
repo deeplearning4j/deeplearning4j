@@ -26,7 +26,9 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
+#include <ops/OpTraitTable.h>
 
 // Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
 #ifdef SD_CUDA
@@ -91,6 +93,10 @@ uint32_t resolveSegmentShapeTraits(const NativeSlot& slot) {
   uint32_t traits = 0;
   if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
     traits |= slot.ident.op->getOpDescriptor()->getTraits();
+  }
+  // Fallback: look up traits by op name from the trait table.
+  if (traits == 0 && !slot.ident.opName.empty()) {
+    traits |= sd::ops::getOpTraitsByName(slot.ident.opName);
   }
   if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
   if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
@@ -159,13 +165,25 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       }
     }
 
-    // Record observations during warmup
+    // Record observations during warmup.
+    // When shapesFrozen_, shapes are constant — force warmup complete immediately
+    // by recording one observation (sufficient for frozen shapes) and skip waiting
+    // for the normal 2-observation warmup cycle.
     if (!isWarmupComplete(profile)) {
       recordObservedShapes(profile, crossInputs.data(),
                            static_cast<int>(crossInputs.size()));
-      DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] observation %d/%d",
-               seg.def.startSlot, seg.def.endSlot,
-               getObservationCount(profile), getWarmupSteps(profile));
+      if (shapesFrozen_ && !isWarmupComplete(profile)) {
+        // Frozen shapes won't change, so one observation is enough.
+        // Record again to satisfy the 2-step warmup requirement immediately.
+        recordObservedShapes(profile, crossInputs.data(),
+                             static_cast<int>(crossInputs.size()));
+        DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] fast-completed warmup (shapesFrozen)",
+                 seg.def.startSlot, seg.def.endSlot);
+      } else {
+        DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] observation %d/%d",
+                 seg.def.startSlot, seg.def.endSlot,
+                 getObservationCount(profile), getWarmupSteps(profile));
+      }
     }
 
     // After warmup, use range-based key
@@ -511,6 +529,7 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
 
 Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+  DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithCpuGraph");
 
   // If all backends have been exhausted for this segment, skip immediately
   if (seg.exec.compilationFailed) {
@@ -583,6 +602,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
 Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     GraphSegment& seg, GraphBackend* backend, NDArray** externalArrays, int numExt, void* stream) {
+  DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithSpecificBackend");
 
   const char* backendName = backend->name();
 
@@ -764,6 +784,7 @@ inline void verifyCfSlotWrite(int stepIdx, const char* cfType, const char* opNam
 
 Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+  DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentSlotBySlot");
   DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
                "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d compilationFailed=%d",
                seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
@@ -1223,6 +1244,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
 
 Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+  DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentEmulatedReplay");
 
   int segSize = seg.def.endSlot - seg.def.startSlot + 1;
   int execCount = seg.exec.executionCount;

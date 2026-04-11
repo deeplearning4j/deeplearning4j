@@ -35,6 +35,7 @@
 #include <graph/GraphBackend.h>
 #include <graph/GraphReplayHandle.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
+#include <graph/DspPhaseUtils.h>
 
 #include <cstring>
 #include <ops/declarable/OpRegistrator.h>
@@ -75,6 +76,7 @@ bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& 
 
 void NativeDynamicShapePlan::platformPrecompileSegments(
     NDArray** externalInputs, int numExternalInputs) {
+  DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SHAPES_FROZEN, "platformPrecompileSegments");
   // No GPU compilation on CPU builds
 }
 

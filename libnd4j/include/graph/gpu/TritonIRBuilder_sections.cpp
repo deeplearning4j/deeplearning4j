@@ -37,6 +37,7 @@
 #include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <ops/OpTraitTable.h>
 #include <system/Environment.h>
 
 #include <algorithm>
@@ -95,10 +96,22 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   };
 
   auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
-    if (slot.ident.op == nullptr || slot.ident.op->getOpDescriptor() == nullptr) {
-      return sd::ops::OP_TRAIT_NONE;
+    // Try slot.ident.op first (may be set in some code paths)
+    if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
+      uint32_t traits = slot.ident.op->getOpDescriptor()->getTraits();
+      if (traits != 0) {
+        DSP_DIAG(COMPILE, "resolveSlotTraits: op='%s' via slot.ident.op traits=0x%x",
+                 slot.ident.opName.c_str(), traits);
+        return traits;
+      }
+      // Op descriptor exists but has no traits set — fall through to trait table
     }
-    return slot.ident.op->getOpDescriptor()->getTraits();
+    // Look up traits by op name from the trait table.
+    // This is the primary path since op descriptors often don't have traits set.
+    uint32_t traits = sd::ops::getOpTraitsByName(slot.ident.opName);
+    DSP_DIAG(COMPILE, "resolveSlotTraits: op='%s' via trait table traits=0x%x",
+             slot.ident.opName.c_str(), traits);
+    return traits;
   };
 
   auto slotHasTrait = [&](const NativeSlot& slot, uint32_t traits) -> bool {
@@ -106,6 +119,12 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   };
 
   auto dataMovementSectionType = [&](const NativeSlot& slot) -> KernelSectionType {
+    uint32_t resolvedTraits = resolveSlotTraits(slot);
+    DSP_DIAG(COMPILE, "dataMovementSectionType: op='%s' traits=0x%x GATHER=0x%x STACK=0x%x hasGather=%d hasStack=%d",
+             slot.ident.opName.c_str(), resolvedTraits,
+             sd::ops::OP_TRAIT_GATHER, sd::ops::OP_TRAIT_STACK,
+             (resolvedTraits & sd::ops::OP_TRAIT_GATHER) ? 1 : 0,
+             (resolvedTraits & sd::ops::OP_TRAIT_STACK) ? 1 : 0);
     if (slotHasTrait(slot, sd::ops::OP_TRAIT_GATHER_ND)) {
       return KernelSectionType::GATHER_ND;
     }

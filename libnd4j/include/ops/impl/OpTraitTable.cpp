@@ -336,6 +336,12 @@ void initOpTraits() {
     traitsInitialized.store(true, std::memory_order_release);
 }
 
+uint32_t getOpTraitsByName(const std::string& opName) {
+    auto& table = getTraitTable();
+    auto it = table.find(normalizeOpName(opName));
+    return (it != table.end()) ? it->second : 0;
+}
+
 int getStructuralIArgCount(const std::string& opName) {
     auto& table = getStructuralIArgTable();
     auto it = table.find(normalizeOpName(opName));

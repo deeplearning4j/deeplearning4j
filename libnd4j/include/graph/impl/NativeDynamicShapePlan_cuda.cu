@@ -33,6 +33,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
@@ -337,11 +338,15 @@ bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& 
 
 void NativeDynamicShapePlan::platformPrecompileSegments(
     NDArray** externalInputs, int numExternalInputs) {
+  DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SHAPES_FROZEN, "platformPrecompileSegments");
   using Clock = std::chrono::high_resolution_clock;
 
-  if (executeCount_ != 1 || graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-    DSP_DIAG(COMPILE, "platformPrecompileSegments: skipped (execCount=%d mode=%d)",
-             executeCount_, static_cast<int>(graphExecutionMode_));
+  // Guard: require at least one warmup execution (executeCount_ >= 1) so that
+  // slot shape caches are populated before Triton IR build tries to read them.
+  // Without this, cross-segment inputs have empty shapes → all IR builds fail.
+  if (compilationDone_ || executeCount_ < 1 || graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    DSP_DIAG(COMPILE, "platformPrecompileSegments: skipped (compilationDone=%d execCount=%d mode=%d)",
+             compilationDone_ ? 1 : 0, executeCount_, static_cast<int>(graphExecutionMode_));
     return;
   }
 
@@ -614,7 +619,18 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   // Use selectedBackend to determine if graph capture is possible — no cascade check needed.
   bool hasGraphBackend = (segment.def.selectedBackend == SelectedBackend::GPU_COMPILER ||
                           segment.def.selectedBackend == SelectedBackend::CUDA_GRAPHS);
-  return tryCapture && hasGraphBackend;
+  bool result = tryCapture && hasGraphBackend;
+  if (!result) {
+    DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
+                 "platformShouldUseGraph: false (frozen=%d execCount=%d capturable=%d "
+                 "compilFailed=%d backend=%d tryCapture=%d hasBackend=%d)",
+                 shapesFrozen_ ? 1 : 0, executeCount_,
+                 segment.def.isCapturable ? 1 : 0,
+                 segment.exec.compilationFailed ? 1 : 0,
+                 static_cast<int>(segment.def.selectedBackend),
+                 tryCapture ? 1 : 0, hasGraphBackend ? 1 : 0);
+  }
+  return result;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
