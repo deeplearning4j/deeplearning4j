@@ -54,13 +54,13 @@ namespace graph {
 using namespace op_detection;  // isMatmulOp, extractMatmulDims, MatmulSig, MatmulSigHash, hasTransitiveDependency, allInputsAvailableBefore
 
 // Resolve shape info for a matmul input given its source index.
-// Priority: NDArray* (outputSlots_ / slotArrayCache_ / external) -> cachedOutputShapes on source slot.
+// Priority: NDArray* (outputSlots_ / outputSlots_ / external) -> cachedOutputShapes on source slot.
 const LongType* NativeDynamicShapePlan::resolveInputShapeInfo(
     int srcIdx, NDArray** externalArrays, int numExt) const {
   if (srcIdx >= 0 && srcIdx < numSlots_) {
     if (srcIdx < totalOutputSlots_) {
       NDArray* arr = outputSlots_[srcIdx];
-      if (arr == nullptr) arr = slotArrayCache_[srcIdx];
+      if (arr == nullptr) arr = outputSlots_[srcIdx];
       if (arr != nullptr) return arr->shapeInfo();
     }
     const NativeSlot& srcSlot = slots_[srcIdx];
@@ -119,7 +119,7 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
         bool wasFromArray = false;
         if (srcA >= 0 && srcA < totalOutputSlots_) {
           NDArray* arr = outputSlots_[srcA];
-          if (arr == nullptr) arr = slotArrayCache_[srcA];
+          if (arr == nullptr) arr = outputSlots_[srcA];
           wasFromArray = (arr != nullptr);
         } else if (srcA < 0) {
           wasFromArray = true;
@@ -276,7 +276,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 
   // 0. Pre-populate outputSlots_ for ALL members from slot cache.
   //    This ensures downstream ops can find each member's output array.
-  // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
+  // Phase 2: outputSlots_ == outputSlots_ (unified), no separate restore needed
 
   // 1. Populate host pointer arrays from current slot inputs/outputs
   for (int b = 0; b < batchCount; b++) {
@@ -289,7 +289,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       int src = slot.wiring.inputSourceIndices[0];
       if (src >= 0) {
         inputA = outputSlots_[src];
-        if (inputA == nullptr && src < totalOutputSlots_) inputA = slotArrayCache_[src];
+        if (inputA == nullptr && src < totalOutputSlots_) inputA = outputSlots_[src];
       } else {
         int extIdx = -(src + 1);
         if (extIdx < numExt) inputA = externalArrays[extIdx];
@@ -302,7 +302,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       int src = slot.wiring.inputSourceIndices[1];
       if (src >= 0) {
         inputB = outputSlots_[src];
-        if (inputB == nullptr && src < totalOutputSlots_) inputB = slotArrayCache_[src];
+        if (inputB == nullptr && src < totalOutputSlots_) inputB = outputSlots_[src];
       } else {
         int extIdx = -(src + 1);
         if (extIdx < numExt) inputB = externalArrays[extIdx];
@@ -315,7 +315,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       int outSlotIdx = slot.wiring.outputSlotIndices[0];
       if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_) {
         outputC = outputSlots_[outSlotIdx];
-        if (outputC == nullptr) outputC = slotArrayCache_[outSlotIdx];
+        if (outputC == nullptr) outputC = outputSlots_[outSlotIdx];
       }
     }
 

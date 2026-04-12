@@ -3508,7 +3508,12 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
 
   bool canReshape = ops::helpers::reshapeNoAlloc(array->shapeInfo(), shape_vector, order, shapeInfoNew);
   if (!canReshape) {
-    // reshapeNoAlloc failed - need to properly initialize shapeInfoNew
+    // reshapeNoAlloc failed — source strides are not compatible with the new shape.
+    // Compute fresh C-contiguous strides for the new shape.
+    // IMPORTANT: these strides are only valid if the data IS contiguous in memory.
+    // If the caller uses copyToNewBuff=false (view creation), the resulting view
+    // will have C-contiguous strides over non-contiguous data — WRONG.
+    // The caller must handle this by copying when canReshape=false.
     shapeInfoNew[0] = shape_vector.size(); // rank
     for (int i = 0; i < shape_vector.size(); i++) {
       shapeInfoNew[i + 1] = shape_vector[i]; // shape values
@@ -3529,13 +3534,35 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
 
 NDArray *NDArray::reshape(char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
   sd::LongType* newShapeInfo = NDArray::reshapeShapeInfo(this, order, shape);
+
+  if (!copyToNewBuff) {
+    // Verify the view is safe by checking if reshapeNoAlloc can compute valid strides.
+    // If the source has non-contiguous strides (e.g., from permute, transpose, or
+    // DSP view ops), reshapeNoAlloc fails and reshapeShapeInfo falls back to fresh
+    // C-contiguous strides. Creating a view with those strides over non-contiguous
+    // data silently reads wrong elements — a correctness bug.
+    // Detect this by comparing: if the new strides DON'T match what reshapeNoAlloc
+    // would produce, the source is non-contiguous and we must copy.
+    sd::LongType shapeInfoLen = shape::shapeInfoLength(shape.size());
+    sd::LongType* testShapeInfo = new sd::LongType[shapeInfoLen + SD_SHAPE_ALLOC_PADDING];
+    memset(testShapeInfo, 0, sizeof(sd::LongType) * shapeInfoLen);
+    testShapeInfo[0] = shape.size();
+    for (size_t i = 0; i < shape.size(); i++) testShapeInfo[i + 1] = shape[i];
+    bool canView = ops::helpers::reshapeNoAlloc(this->shapeInfo(), shape, order, testShapeInfo);
+    delete[] testShapeInfo;
+
+    if (!canView) {
+      // Source strides incompatible — must copy for correctness.
+      copyToNewBuff = true;
+    }
+  }
+
   if (copyToNewBuff) {
     NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
     if(this->isScalar() || this->lengthOf() <= 1) {
       ret->p(0,this);
     } else {
       this->applyTransform(transform::Assign, ret, nullptr);
-
     }
     return ret;
   } else {

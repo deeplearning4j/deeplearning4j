@@ -735,15 +735,29 @@ public class DecoderUtils {
                 }
             } else if (ioConfig.isCausalMask(inputName)) {
                 if (usePadded) {
-                    // Padded mode: causal mask matches concat shape (maxKvLen + currentSeqLen)
+                    // Padded mode: causal mask shape is [1, 1, currentSeqLen, maxKvLen + currentSeqLen].
+                    // For decode (seqLen=1): mask positions 0..cachePos with 0 (attend),
+                    // mask positions cachePos+1..maxKvLen with MASK_FILL (don't attend to
+                    // uninitialized padding in the static KV cache).
+                    // Must UPDATE each step as cachePos advances — cannot reuse stale mask.
+                    long totalSeqLen = maxKvLen + currentSeqLen;
+                    INDArray causalMask;
                     if (canReuse && reusableInputs.containsKey(inputName)) {
-                        decoderInputMap.put(inputName, reusableInputs.get(inputName));
+                        causalMask = reusableInputs.get(inputName);
                     } else {
-                        long totalSeqLen = maxKvLen + currentSeqLen;
-                        INDArray causalMask = buildCausalMask(currentSeqLen, totalSeqLen);
-                        decoderInputMap.put(inputName, causalMask);
+                        causalMask = Nd4j.zeros(DataType.FLOAT, 1, 1, currentSeqLen, totalSeqLen);
                         if (canReuse) reusableInputs.put(inputName, causalMask);
                     }
+                    // Update mask content: attend to positions 0..cachePos, mask the rest
+                    if (currentSeqLen == 1) {
+                        causalMask.assign(0.0f);
+                        for (long k = cachePos + 1; k < totalSeqLen; k++) {
+                            causalMask.putScalar(new long[]{0, 0, 0, k}, MASK_FILL);
+                        }
+                    } else {
+                        causalMask.assign(buildCausalMask(currentSeqLen, totalSeqLen));
+                    }
+                    decoderInputMap.put(inputName, causalMask);
                 } else if (usingStaticKv) {
                     // View-based mode
                     long totalSeqLen = cachePos + currentSeqLen;

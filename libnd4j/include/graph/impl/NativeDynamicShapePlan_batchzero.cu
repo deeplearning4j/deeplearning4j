@@ -158,7 +158,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       if (lastSlotIdx >= 0 && lastSlotIdx < numSlots_) {
         int lastOutIdx = slots_[lastSlotIdx].wiring.outputSlotIndices[0];
         if (lastOutIdx >= 0 && lastOutIdx < totalOutputSlots_) {
-          NDArray* cached = slotArrayCache_[lastOutIdx];
+          NDArray* cached = outputSlots_[lastOutIdx];
           if (cached != nullptr) {
             void* devPtr = cached->specialBuffer();
             if (devPtr != nullptr) {
@@ -193,7 +193,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       // slotIsViewProducer_ is indexed by OUTPUT SLOT INDEX, not op slot index.
       if (slotIsViewProducer_[outIdx]) { skippedView++; continue; }
 
-      NDArray* cached = slotArrayCache_[outIdx];
+      NDArray* cached = outputSlots_[outIdx];
       if (cached == nullptr) continue;
 
       void* devPtr = cached->specialBuffer();

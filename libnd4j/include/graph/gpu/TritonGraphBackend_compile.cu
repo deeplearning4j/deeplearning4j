@@ -407,19 +407,28 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             headDim = hidden / numHeads;
 
             bool hasPastKv = false;
-            if (slot.wiring.numInputs > 4) {
-              auto pastKeyShape = resolveShape(slot.wiring.inputSourceIndices[4]);
-              if (pastKeyShape.size() == 4 && pastKeyShape[0] > 0 && pastKeyShape[2] > 0) {
-                hasPastKv = true;
-                int pastSeq = static_cast<int>(pastKeyShape[2]);
-                int seqKV = 1;
-                if (slot.wiring.numInputs > kInputIdx) {
-                  auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-                  if (curKShape.size() == 3) {
-                    seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
+            for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKv; inp++) {
+              auto candidateShape = resolveShape(slot.wiring.inputSourceIndices[inp]);
+              if (candidateShape.size() == 4) {
+                int candidateKvHeads = static_cast<int>(candidateShape[1]);
+                int candidatePastSeq = static_cast<int>(candidateShape[2]);
+                int candidateHeadDim = static_cast<int>(candidateShape[3]);
+                if (candidateShape[0] > 0 &&
+                    candidatePastSeq > 0 &&
+                    candidateHeadDim == headDim &&
+                    candidateKvHeads > 0 &&
+                    candidateKvHeads <= numHeads &&
+                    numHeads % candidateKvHeads == 0) {
+                  hasPastKv = true;
+                  int seqKV = 1;
+                  if (slot.wiring.numInputs > kInputIdx) {
+                    auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
+                    if (curKShape.size() == 3) {
+                      seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
+                    }
                   }
+                  seqK = candidatePastSeq + seqKV;
                 }
-                seqK = pastSeq + seqKV;
               }
             }
             if (!hasPastKv && slot.wiring.numInputs > kInputIdx) {

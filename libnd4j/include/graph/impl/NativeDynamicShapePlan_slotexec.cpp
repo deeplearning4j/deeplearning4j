@@ -403,13 +403,37 @@ static void appendUpstreamControlTrace(std::string& out,
  * Unlike calculateOutputShape (which sets contiguous strides), the ShapeUtils function
  * preserves the input's actual stride pattern so the view reads data correctly.
  *
+ * The permutation can come from two sources (matching the permute op itself):
+ *   1. iArgs on the slot (when permute was created with explicit int dimensions)
+ *   2. A second input array (when ONNX Transpose provides perm as a constant tensor)
+ *
  * Returns a ConstantShapeHelper-managed pointer (not owned by caller).
  */
-static const LongType* buildPermutedViewShapeInfo(const NDArray* input, const NativeSlot& slot) {
-  // Build the permutation array from iArgs
+static const LongType* buildPermutedViewShapeInfo(const NDArray* input, const NativeSlot& slot,
+                                                    NDArray** allInputs, int numInputs) {
+  // Build the permutation array from iArgs, normalizing negative indices
+  int rank = shape::rank(input->shapeInfo());
+  if (rank <= 0) return nullptr;
+
   std::vector<int> permVec;
   if (slot.args.numIArgs > 0) {
-    for (int i = 0; i < slot.args.numIArgs; i++) permVec.push_back(static_cast<int>(slot.args.iArgs[i]));
+    // Source 1: permutation stored as iArgs
+    for (int i = 0; i < slot.args.numIArgs; i++) {
+      int dim = static_cast<int>(slot.args.iArgs[i]);
+      if (dim < 0) dim += rank;  // wrap negative
+      permVec.push_back(dim);
+    }
+  } else if (numInputs > 1 && allInputs != nullptr && allInputs[1] != nullptr &&
+             !allInputs[1]->isEmpty() && allInputs[1]->lengthOf() > 0) {
+    // Source 2: permutation stored as second input array (ONNX Transpose import path)
+    NDArray* permArr = allInputs[1];
+    permArr->syncToHost();
+    auto len = permArr->lengthOf();
+    for (LongType i = 0; i < len; i++) {
+      int dim = static_cast<int>(permArr->e<LongType>(i));
+      if (dim < 0) dim += rank;  // wrap negative
+      permVec.push_back(dim);
+    }
   } else {
     return nullptr;
   }
@@ -509,7 +533,7 @@ enum ViewCreateResult {
  *   VIEW_STALE_EMPTY_SHAPE  — cached output shape is empty but input is non-empty
  *
  * The caller is responsible for installing the view into outputSlots_,
- * slotArrayCache_, slotIsViewProducer_, and context — this helper only
+ * outputSlots_, slotIsViewProducer_, and context — this helper only
  * creates the NDArray wrapper.
  *
  * @param slot           The NativeSlot for this op
@@ -560,8 +584,10 @@ static ViewCreateResult tryCreateViewForSlot(
   const LongType* effectiveShapeInfo = outShapeInfo;
   bool isPermute = (normalizeOpName_slotexec(slot.ident.opName) == "permute");
   if (isPermute) {
-    const LongType* permSI = buildPermutedViewShapeInfo(input0, slot);
-    if (permSI != nullptr) effectiveShapeInfo = permSI;
+    const LongType* permSI = buildPermutedViewShapeInfo(input0, slot, allInputs, numInputs);
+    if (permSI != nullptr) {
+      effectiveShapeInfo = permSI;
+    }
   }
 
   // Compute view offset for strided_slice
@@ -900,10 +926,10 @@ Status NativeDynamicShapePlan::executeSlot(
   auto discardCachedSlotArray = [&](int slotIdx, NDArray* cached, const char* tag) {
     if (cached == nullptr) return;
 
-    // In Phase 2, slotArrayCache_ aliases outputSlots_. Clearing the live slot
+    // In Phase 2, outputSlots_ aliases outputSlots_. Clearing the live slot
     // before deleting avoids leaving a dangling NDArray wrapper behind when a
     // shape transition forces inline replacement.
-    if (slotArrayCache_ == outputSlots_ &&
+    if (outputSlots_ == outputSlots_ &&
         slotIdx >= 0 && slotIdx < totalOutputSlots_ &&
         outputSlots_[slotIdx] == cached) {
       outputSlots_[slotIdx] = nullptr;
@@ -924,7 +950,7 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-      slotArrayCache_[slotIdx] = nullptr;
+      outputSlots_[slotIdx] = nullptr;
     }
   };
 
@@ -986,7 +1012,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
   // ── Frozen constant optimization ──────────────────────────────────────────
   // Only skip when shapesFrozen_ && executeCount_ > 0, because that's when
-  // outputSlots_ is populated from slotArrayCache_ (line 921-922).  When
+  // outputSlots_ is populated from outputSlots_ (line 921-922).  When
   // shapesFrozen_=false, outputSlots_ is zeroed — skipping a slot would
   // leave a NULL entry and downstream slots would get NULL inputs.
   if (slot.frozenConstantSlot() && shapesFrozen_ && executeCount_ > 0) {
@@ -1032,7 +1058,7 @@ Status NativeDynamicShapePlan::executeSlot(
     int primarySrcIdx = slot.wiring.inputSourceIndices[0];
     if (primarySrcIdx >= 0) {
       primaryInput = outputSlots_[primarySrcIdx];
-      // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
+      // Phase 2: outputSlots_ == outputSlots_ (unified), no separate restore needed
     } else {
       int extIdx = -(primarySrcIdx + 1);
       if (extIdx < numExt) primaryInput = externalArrays[extIdx];
@@ -1071,7 +1097,7 @@ Status NativeDynamicShapePlan::executeSlot(
       if (secSrc != INT32_MIN) {
         if (secSrc >= 0) {
           secondaryInputs[ci] = outputSlots_[secSrc];
-          // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
+          // Phase 2: outputSlots_ == outputSlots_ (unified), no separate restore needed
         } else {
           int extIdx = -(secSrc + 1);
           if (extIdx < numExt) secondaryInputs[ci] = externalArrays[extIdx];
@@ -1116,7 +1142,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
     NDArray* output = nullptr;
     if (lastOutputSlotIdx >= 0 && lastOutputSlotIdx < totalOutputSlots_) {
-      output = slotArrayCache_[lastOutputSlotIdx];
+      output = outputSlots_[lastOutputSlotIdx];
         if (output != nullptr) {
           if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo)) {
             // Same plan = same shapes. Shape mismatch is a bug — use a different plan.
@@ -1128,7 +1154,7 @@ Status NativeDynamicShapePlan::executeSlot(
       }
       if (output == nullptr) {
         output = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
-        slotArrayCache_[lastOutputSlotIdx] = output;
+        outputSlots_[lastOutputSlotIdx] = output;
       }
       if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture()) {
         if (isBatchZeroRegistering() && DSP_BUF(output) != nullptr) {
@@ -1278,16 +1304,7 @@ Status NativeDynamicShapePlan::executeSlot(
             auto& ctx2 = *contextPool_[stepIdx];
             ctx2.setOutputArray(0, newView);
             ctx2.setInputArray(0, input0);
-            // In Phase 2, slotArrayCache_ == outputSlots_. Deleting 'old'
-            // would delete the slot's output array, leaving a dangling pointer.
-            NDArray* old = slotArrayCache_[si];
-            if (old != nullptr && old != newView
-                && slotArrayCache_ != outputSlots_) {
-              if (!isSlotArrayShared(old, si)) {
-                delete old;  // View wrapper only — no GPU memory freed
-              }
-            }
-            slotArrayCache_[si] = newView;
+            outputSlots_[si] = newView;
             NDArray* tracedInputs[1] = {input0};
             NDArray* tracedOutputs[1] = {newView};
             traceSmallControlSlotIO("frozen-view-install", stepIdx, slot,
@@ -1362,13 +1379,14 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     // Nullify output arrays before re-execution.
-    // In frozen mode (shapesFrozen_ && executeCount_ >= 2), skip nullify entirely.
-    // Output buffers already have the correct shape from the previous step.
-    // Nullifying them forces ops to re-allocate DataBuffers internally
-    // (e.g., matmul's OVERWRITE_RESULT creates a temporary tZ), causing
+    // In frozen mode (shapesFrozen_ && executeCount_ >= 2), only nullify outputs
+    // that have needsZeroedOutput=true. Most ops fully overwrite their output and
+    // don't need zeroing. Skipping unnecessary nullify prevents ops from
+    // re-allocating DataBuffers internally (e.g., matmul's OVERWRITE_RESULT
+    // creates a temporary tZ when the existing output was nullified), eliminating
     // ~176 MB/step GPU memory leak from unmatched alloc/free pairs.
-    // Ops will overwrite the buffer contents during execution regardless.
-    if (!slot.flags.inPlaceFused && !(shapesFrozen_ && executeCount_ >= 2)) {
+    bool frozenSkipNullify = shapesFrozen_ && executeCount_ >= 2;
+    if (!slot.flags.inPlaceFused) {
       auto& ctxOuts = ctx.fastpath_out();
       auto& ctxIns = ctx.fastpath_in();
       for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
@@ -1390,6 +1408,11 @@ Status NativeDynamicShapePlan::executeSlot(
         if (isView) continue;
 
         if (!isBatchZeroActive() && !shouldPreserveWarmupOutputsDuringCapture()) {
+          // In frozen mode, skip nullify for ops that fully overwrite their output.
+          // Only nullify when the op requires zero-initialized output (accumulations,
+          // reductions, attention score init). This prevents unnecessary DataBuffer
+          // re-allocation that causes GPU memory leaks.
+          if (frozenSkipNullify && !slot.flags.needsZeroedOutput) continue;
           if (isBatchZeroRegistering() && DSP_BUF(ctxOuts[i]) != nullptr) {
             registerBatchZeroBuffer(DSP_BUF(ctxOuts[i]),
                                     ctxOuts[i]->dataBuffer()->getLenInBytes(),
@@ -1417,26 +1440,84 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
+    // ── DSP debug: mirror standard path's isDebugAndVerbose output + slot info ──
+    if (Environment::getInstance().isDebugAndVerbose()) {
+      sd_printf("DSP_SLOT[%d] Op with name %s and num inputs %i (outSlots=%d)\n",
+                stepIdx, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs);
+      auto& ctxIns = ctx.fastpath_in();
+      for (int i = 0; i < (int)ctxIns.size() && i < slot.wiring.numInputs; i++) {
+        auto* array = ctxIns[i];
+        int srcIdx = slot.wiring.inputSourceIndices[i];
+        if (array != nullptr) {
+          auto shape = ShapeUtils::shapeAsString(array);
+          int sizePreview = array->isS() ? 2 : 32;
+          sd::LongType len = sd::math::sd_min((sd::LongType)sizePreview, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
+          array->syncToHost();
+          std::string* first;
+          if (array->isEmpty() || array->lengthOf() == 0) {
+            first = new std::string("Empty NDArray");
+          } else {
+            first = array->asString(len);
+            if (first == nullptr) {
+              first = new std::string("<asString returned null>");
+            }
+          }
+          auto type = DataTypeUtils::asString(array->dataType());
+          sd_printf("  slot_%i:%i input  shape: %s; dtype: %s; src=%d; first values %s\n",
+                    stepIdx, i, shape.c_str(), type.c_str(), srcIdx, first->c_str());
+          delete first;
+        } else {
+          sd_printf("  slot_%i:%i input  NULL (src=%d)\n", stepIdx, i, srcIdx);
+        }
+      }
+    }
+
+    // Ensure CUDA host↔device coherency before op execution.
+    // The standard path gets this via NativeOps entry points (prepareSpecialUse/registerSpecialUse).
+    // DSP dispatches ops directly — without this, input arrays may have stale GPU data
+    // and output actuality counters won't be ticked, causing compounding errors.
+    NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+
     auto status = slot.ident.op->execute(&ctx);
 
+    NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+
     auto& ctxOuts = ctx.fastpath_out();
+
+    if (Environment::getInstance().isDebugAndVerbose()) {
+      for (int i = 0; i < slot.wiring.numOutputs && i < (int)ctxOuts.size(); i++) {
+        auto* array = ctxOuts[i];
+        int outSlotIdx = slot.wiring.outputSlotIndices[i];
+        if (array != nullptr) {
+          auto shape = ShapeUtils::shapeAsString(array);
+          sd::LongType len = sd::math::sd_min(32LL, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
+          array->syncToHost();
+          std::string* first;
+          if (array->isEmpty() || array->lengthOf() == 0) {
+            first = new std::string("Empty NDArray");
+          } else {
+            first = array->asString(len);
+            if (first == nullptr) {
+              first = new std::string("<asString returned null>");
+            }
+          }
+          auto type = DataTypeUtils::asString(array->dataType());
+          sd_printf("  slot_%i:%i result shape: %s; dtype: %s; outSlot=%d; first values %s\n",
+                    stepIdx, i, shape.c_str(), type.c_str(), outSlotIdx, first->c_str());
+          delete first;
+        } else {
+          sd_printf("  slot_%i:%i result NULL (outSlot=%d)\n", stepIdx, i, outSlotIdx);
+        }
+      }
+    }
+
     for (int i = 0; i < slot.wiring.numOutputs && i < static_cast<int>(ctxOuts.size()); i++) {
       if (ctxOuts[i] != nullptr) {
         reconcileExecutedOutputActuality("frozen-op-exec", stepIdx, slot, ctxOuts[i]);
         int si = slot.wiring.outputSlotIndices[i];
         if (si >= 0 && si < totalOutputSlots_) {
-          // In Phase 2, slotArrayCache_ == outputSlots_. Deleting oldCached
-          // would delete the slot's output array, leaving a dangling pointer.
-          NDArray* oldCached = slotArrayCache_[si];
-          if (oldCached != nullptr && oldCached != ctxOuts[i] && !tl_graphExecutionActive
-              && slotArrayCache_ != outputSlots_) {
-            if (!isSlotArrayShared(oldCached, si)) {
-              delete oldCached;  // Replace stale cached array inline
-              // During graph capture, don't delete — it's the saved warmup array
-            }
-          }
           writeOutputSlot(si, ctxOuts[i], "frozen-op-exec");
-          slotArrayCache_[si] = ctxOuts[i];
+          outputSlots_[si] = ctxOuts[i];
         }
       }
     }
@@ -1477,7 +1558,7 @@ Status NativeDynamicShapePlan::executeSlot(
     int srcIdx = slot.wiring.inputSourceIndices[i];
     if (srcIdx >= 0) {
       inputs[i] = outputSlots_[srcIdx];
-      // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore needed
+      // Phase 2: outputSlots_ == outputSlots_ (unified), no separate restore needed
     } else {
       int extIdx = -(srcIdx + 1);
       if (extIdx < numExt) {
@@ -1509,7 +1590,7 @@ Status NativeDynamicShapePlan::executeSlot(
         int badSrcIdx = slot.wiring.inputSourceIndices[i];
         if (badSrcIdx >= 0 && badSrcIdx < totalOutputSlots_) {
           writeOutputSlot(badSrcIdx, nullptr, "null-bad-input");
-          slotArrayCache_[badSrcIdx] = nullptr;
+          outputSlots_[badSrcIdx] = nullptr;
         }
         return Status::BAD_INPUT;
       }
@@ -1886,9 +1967,21 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Step 3: Allocate/reuse outputs ───────────────────────────────────────
-  int numActualOutputs = std::min(slot.wiring.numOutputs, static_cast<int>(outputShapes.size()));
+  // Use the shape function's output count for context setup, not the graph wiring count.
+  // The C++ calculateOutputShape may return MORE outputs than the graph wires
+  // (e.g., onnx_multi_head_attention always returns 3 shapes but the graph may
+  // only have 1 output variable when present_key/present_value are unused).
+  // The standard execution path (InferenceSession) allocates ALL shapes from
+  // calculateOutputShape, so the op sees outputWidth() == shapeCount. We must
+  // match this to ensure the op takes the same code path in DSP.
+  // Outputs beyond numWiredOutputs are treated as untracked scratch arrays.
+  int numShapeFnOutputs = static_cast<int>(outputShapes.size());
+  int numWiredOutputs = slot.wiring.numOutputs;
+  int numActualOutputs = numShapeFnOutputs;
   static thread_local std::vector<NDArray*> outputs;
   outputs.resize(numActualOutputs);
+  // Zero-init all entries (resize doesn't zero for pointers)
+  for (int i = 0; i < numActualOutputs; i++) outputs[i] = nullptr;
 
   // ── In-place fusion: reuse input buffer as output ──
   if (slot.flags.inPlaceFused && slot.flags.inPlaceFusedInputIdx >= 0 &&
@@ -1905,7 +1998,10 @@ Status NativeDynamicShapePlan::executeSlot(
         }
 
         for (int i = 1; i < numActualOutputs; i++) {
-          int si = slot.wiring.outputSlotIndices[i];
+          // Guard: outputSlotIndices only has numWiredOutputs entries.
+          // Overflow outputs (from shape function returning more than graph wires)
+          // are treated as untracked (si = -1).
+          int si = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
           if (si < 0) {
             int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
             if (cacheIdx < untrackedOutputCacheSize_) {
@@ -1926,13 +2022,10 @@ Status NativeDynamicShapePlan::executeSlot(
           }
           const LongType* shapeInfo = outputShapes[i];
           auto dt = ArrayOptions::dataType(shapeInfo);
-          auto order = shape::order(shapeInfo);
-          LongType rank = shape::rank(shapeInfo);
-          std::vector<LongType> shape(rank);
-          for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
-          outputs[i] = new NDArray(order, shape, dt);
+          // Use shapeInfo-preserving constructor to match standard path strides/ordering
+          outputs[i] = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
           writeOutputSlot(si, outputs[i], "alloc-output");
-          slotArrayCache_[si] = outputs[i];
+          outputSlots_[si] = outputs[i];
         }
 
         goto step4_execute;
@@ -1959,7 +2052,7 @@ Status NativeDynamicShapePlan::executeSlot(
         outputs[0] = view;
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
           // DIAGNOSTIC: trace view-op-install buffer stability for lifecycle debugging
-          NDArray* oldCached = slotArrayCache_[slotIdx];
+          NDArray* oldCached = outputSlots_[slotIdx];
           NDArray* oldOutput = outputSlots_[slotIdx];
           auto* newDb = view->dataBuffer();
           int srcIdx0 = slot.wiring.inputSourceIndices[0];
@@ -2028,35 +2121,31 @@ Status NativeDynamicShapePlan::executeSlot(
             }
           }
 
-          // In Phase 2, slotArrayCache_ == outputSlots_ (unified). Deleting 'old'
-          // would delete the slot's output array, leaving a dangling pointer for
-          // writeOutputSlot. Skip the delete — writeOutputSlot replaces the slot
-          // and the plan's cleanup handles the old array.
-          NDArray* old = slotArrayCache_[slotIdx];
-          if (old != nullptr && old != view && !tl_graphExecutionActive
-              && slotArrayCache_ != outputSlots_) {
-            if (!isSlotArrayShared(old, slotIdx)) {
-              delete old;  // View wrapper only — no GPU memory freed
-              // During graph capture, don't delete — it's the saved warmup array
-            }
-          }
+          // Note: writeOutputSlot handles ownership and deferred cleanup safely.
+          // It deletes the old array when safe (not referenced by other slots,
+          // not a protected weight buffer, plan-owned).
           writeOutputSlot(slotIdx, view, "view-op-install");
-          slotArrayCache_[slotIdx] = view;
+          outputSlots_[slotIdx] = view;
           slotIsViewProducer_[slotIdx] = true;
         }
 
         for (int i = 1; i < numActualOutputs; i++) {
-          int si = slot.wiring.outputSlotIndices[i];
+          int si = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
           const LongType* shapeInfo = outputShapes[i];
           auto dt = ArrayOptions::dataType(shapeInfo);
-          auto order = shape::order(shapeInfo);
-          LongType rank = shape::rank(shapeInfo);
-          std::vector<LongType> shape(rank);
-          for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
-          outputs[i] = new NDArray(order, shape, dt);
+          // Use shapeInfo-preserving constructor to match standard path strides/ordering
+          outputs[i] = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
           if (si >= 0 && si < totalOutputSlots_) {
             writeOutputSlot(si, outputs[i], "view-secondary-alloc");
-            slotArrayCache_[si] = outputs[i];
+            outputSlots_[si] = outputs[i];
+          } else if (si < 0) {
+            // Overflow output (shape function returned more than graph wires) —
+            // cache as untracked so it can be reused across steps.
+            int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
+            if (cacheIdx < untrackedOutputCacheSize_) {
+              delete untrackedOutputCache_[cacheIdx];
+              untrackedOutputCache_[cacheIdx] = outputs[i];
+            }
           }
         }
         goto step4_execute;
@@ -2067,7 +2156,10 @@ Status NativeDynamicShapePlan::executeSlot(
 
 step3_allocate:
   for (int i = 0; i < numActualOutputs; i++) {
-    int slotIdx = slot.wiring.outputSlotIndices[i];
+    // Guard: outputSlotIndices only has numWiredOutputs entries.
+    // Overflow outputs (from shape function returning more than graph wires)
+    // are treated as untracked (slotIdx = -1).
+    int slotIdx = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
     if (slotIdx < 0) {
       int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
       if (cacheIdx < untrackedOutputCacheSize_) {
@@ -2095,7 +2187,7 @@ step3_allocate:
     auto order = shape::order(shapeInfo);
     LongType rank = shape::rank(shapeInfo);
 
-    NDArray* cached = validateReusableSlotArray(slotIdx, slotArrayCache_[slotIdx],
+    NDArray* cached = validateReusableSlotArray(slotIdx, outputSlots_[slotIdx],
                                                 "step3-reuse-validate");
     if (cached != nullptr) {
       const LongType* cachedShape = cached->shapeInfo();
@@ -2134,7 +2226,7 @@ step3_allocate:
       NDArray* emptyOut = new NDArray(const_cast<LongType*>(shapeInfo), true);
       outputs[i] = emptyOut;
       writeOutputSlot(slotIdx, emptyOut, "empty-output-alloc");
-      slotArrayCache_[slotIdx] = emptyOut;
+      outputSlots_[slotIdx] = emptyOut;
       continue;
     }
 
@@ -2183,7 +2275,8 @@ step3_allocate:
         } catch (const std::exception& e) {
           DSP_DIAG_SLOT(MEMORY, stepIdx, "max-allocation FAILED at slot %d (%s): %s",
                     stepIdx, slot.ident.opName.c_str(), e.what());
-          maxOut = new NDArray(order, shape, dt);
+          // Fallback to original shape — use shapeInfo-preserving constructor
+          maxOut = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
           if (slot.flags.needsZeroedOutput && !isBatchZeroActive() &&
               !shouldPreserveWarmupOutputsDuringCapture()) {
             if (isBatchZeroRegistering() && DSP_BUF(maxOut) != nullptr) {
@@ -2197,13 +2290,26 @@ step3_allocate:
 
         outputs[i] = maxOut;
         writeOutputSlot(slotIdx, maxOut, "max-alloc-output");
-        slotArrayCache_[slotIdx] = maxOut;
+        outputSlots_[slotIdx] = maxOut;
         maxAllocatedSlots_.insert(slotIdx);
         continue;
       }
-      NDArray* cached2 = validateReusableSlotArray(slotIdx, slotArrayCache_[slotIdx],
+      NDArray* cached2 = validateReusableSlotArray(slotIdx, outputSlots_[slotIdx],
                                                    "maxalloc-reuse-validate");
       if (cached2 != nullptr) {
+        // Zero the buffer if the op requires zero-initialized output.
+        // Skip registration for view-capable slots — their output buffers share
+        // data with inputs, and zeroing would corrupt the input data.
+        if (slot.flags.needsZeroedOutput && !isBatchZeroActive() &&
+            !shouldPreserveWarmupOutputsDuringCapture() &&
+            !slot.flags.isViewCapableOp) {
+          if (isBatchZeroRegistering() && DSP_BUF(cached2) != nullptr) {
+            registerBatchZeroBuffer(DSP_BUF(cached2),
+                                    cached2->dataBuffer()->getLenInBytes(),
+                                    slotIdx);
+          }
+          cached2->nullify();
+        }
         outputs[i] = cached2;
         writeOutputSlot(slotIdx, cached2, "cached2-reuse");
         continue;
@@ -2212,7 +2318,11 @@ step3_allocate:
 
     NDArray* out = nullptr;
     try {
-      out = new NDArray(order, shape, dt);
+      // Use the shapeInfo-preserving constructor to match the standard path
+      // (prepareOutputs: new NDArray(out, true, ...)). This preserves the exact
+      // strides, ordering, and EWS from calculateOutputShape, avoiding subtle
+      // layout mismatches that cause wrong results in ops like matmul.
+      out = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
       // Register output for batch-zero if needed.
       //  Skip registration for view-capable slots. Their output buffers
       // share data with inputs (views), and zeroing them would corrupt the input
@@ -2235,7 +2345,7 @@ step3_allocate:
 
     outputs[i] = out;
     writeOutputSlot(slotIdx, out, "normal-alloc-output");
-    slotArrayCache_[slotIdx] = out;
+    outputSlots_[slotIdx] = out;
   }
 
   step4_execute:
@@ -2383,6 +2493,40 @@ step3_allocate:
     }
   }
 
+  // ── DSP debug: mirror standard path's isDebugAndVerbose output + slot info (warmup path) ──
+  if (Environment::getInstance().isDebugAndVerbose()) {
+    sd_printf("DSP_SLOT_WU[%d] Op with name %s and num inputs %i (outputs=%d)\n",
+              stepIdx, slot.ident.opName.c_str(), slot.wiring.numInputs, numActualOutputs);
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      auto* array = inputs[i];
+      int srcIdx = slot.wiring.inputSourceIndices[i];
+      if (array != nullptr) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        int sizePreview = array->isS() ? 2 : 32;
+        sd::LongType len = sd::math::sd_min((sd::LongType)sizePreview, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
+        array->syncToHost();
+        std::string* first;
+        if (array->isEmpty() || array->lengthOf() == 0) {
+          first = new std::string("Empty NDArray");
+        } else {
+          first = array->asString(len);
+          if (first == nullptr) {
+            first = new std::string("<asString returned null>");
+          }
+        }
+        auto type = DataTypeUtils::asString(array->dataType());
+        sd_printf("  slot_%i:%i input  shape: %s; dtype: %s; src=%d; first values %s\n",
+                  stepIdx, i, shape.c_str(), type.c_str(), srcIdx, first->c_str());
+        delete first;
+      } else {
+        sd_printf("  slot_%i:%i input  NULL (src=%d)\n", stepIdx, i, srcIdx);
+      }
+    }
+  }
+
+  // Ensure CUDA host↔device coherency (warmup path)
+  NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+
   Status status;
   try {
     status = slot.ident.op->execute(&ctx);
@@ -2457,6 +2601,9 @@ step3_allocate:
               (int)cacheHit, executeCount_, (int)shapesFrozen_);
   }
 
+  // Register device writes (warmup path)
+  NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+
   for (int i = 0; i < numActualOutputs; i++) {
     if (outputs[i] != nullptr) {
       reconcileExecutedOutputActuality("normal-op-exec", stepIdx, slot, outputs[i]);
@@ -2479,35 +2626,48 @@ step3_allocate:
   {
     auto& ctxOutputs = ctx.fastpath_out();
     for (int i = 0; i < numActualOutputs && i < static_cast<int>(ctxOutputs.size()); i++) {
-      int si = slot.wiring.outputSlotIndices[i];
+      int si = (i < slot.wiring.numOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
       if (si < 0) continue;
 
       if (!viewProducerDetectionDone_) {
         if (ctxOutputs[i] != outputs[i]) {
           slotIsViewProducer_[si] = true;
-          NDArray* oldCached = slotArrayCache_[si];
-          // In Phase 2, slotArrayCache_ == outputSlots_. Deleting oldCached
-          // would delete the slot's output array, leaving a dangling pointer.
-          if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive
-              && slotArrayCache_ != outputSlots_) {
-            if (!isSlotArrayShared(oldCached, si)) {
-              delete oldCached;  // View wrapper only — no GPU memory freed
-            }
-          }
+          // writeOutputSlot handles safe deletion of old arrays
           writeOutputSlot(si, ctxOutputs[i], "view-producer-detect");
-          slotArrayCache_[si] = ctxOutputs[i];
+          outputSlots_[si] = ctxOutputs[i];
         }
       } else if (slotIsViewProducer_[si]) {
-        NDArray* oldCached = slotArrayCache_[si];
-        // Same Phase 2 fix: don't delete the slot's own array
-        if (oldCached != nullptr && oldCached != ctxOutputs[i] && !tl_graphExecutionActive
-            && slotArrayCache_ != outputSlots_) {
-          if (!isSlotArrayShared(oldCached, si)) {
-            delete oldCached;  // View wrapper only — no GPU memory freed
+        // writeOutputSlot handles safe deletion of old arrays
+        writeOutputSlot(si, ctxOutputs[i], "view-producer-update");
+        outputSlots_[si] = ctxOutputs[i];
+      }
+    }
+  }
+
+  // ── DSP debug: post-execute output info (warmup path) ──
+  if (Environment::getInstance().isDebugAndVerbose() && status == Status::OK) {
+    for (int i = 0; i < numActualOutputs; i++) {
+      auto* array = outputs[i];
+      int outSlotIdx = (i < slot.wiring.numOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
+      if (array != nullptr) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd::LongType len = sd::math::sd_min(32LL, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
+        array->syncToHost();
+        std::string* first;
+        if (array->isEmpty() || array->lengthOf() == 0) {
+          first = new std::string("Empty NDArray");
+        } else {
+          first = array->asString(len);
+          if (first == nullptr) {
+            first = new std::string("<asString returned null>");
           }
         }
-        writeOutputSlot(si, ctxOutputs[i], "view-producer-update");
-        slotArrayCache_[si] = ctxOutputs[i];
+        auto type = DataTypeUtils::asString(array->dataType());
+        sd_printf("  slot_%i:%i result shape: %s; dtype: %s; outSlot=%d; first values %s\n",
+                  stepIdx, i, shape.c_str(), type.c_str(), outSlotIdx, first->c_str());
+        delete first;
+      } else {
+        sd_printf("  slot_%i:%i result NULL (outSlot=%d)\n", stepIdx, i, outSlotIdx);
       }
     }
   }

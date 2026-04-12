@@ -1224,4 +1224,124 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
 
         runTritonComparisonTest("permuteMatmul", sd, Map.of("q", qInput, "k", kInput), "out");
     }
+
+    // ==================================================================================
+    // repeat_kv divergence isolation tests — reproduce the Transpose_1 divergence
+    // in SmolDocling's attention layer 0 repeat_kv chain.
+    //
+    // Chain in the model:
+    //   K_proj matmul: [1,17,576] × [576,192] → [1,17,192]
+    //   Reshape_1:     [1,17,192] → [1,17,3,64]
+    //   Transpose_1:   [1,17,3,64] → [1,3,17,64]   ← FIRST DIVERGENCE (maxDiff=13.28)
+    //   Unsqueeze_5:   [1,3,17,64] → [1,3,1,17,64]
+    //   Expand:        [1,3,1,17,64] → [1,3,3,17,64]
+    //   Reshape_3:     [1,3,3,17,64] → [1,9,17,64]
+    //   Transpose_2:   [1,9,17,64] → [1,17,9,64]
+    //   Reshape_4:     [1,17,9,64] → [1,17,576]
+    //
+    // Reshape_1 MATCHES between DSP and standard. Transpose_1 DIVERGES.
+    // ==================================================================================
+
+    /**
+     * Test the FULL repeat_kv pattern including the upstream matmul.
+     * matmul → reshape → permute
+     * This verifies whether the matmul output causes the permute divergence.
+     */
+    @Test
+    @DisplayName("DSP: repeat_kv pattern with matmul (matmul→reshape→permute)")
+    public void testRepeatKvWithMatmul() {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 1;
+        int seq = 17;
+        int hidden = 576;
+        int projDim = 192;
+        int heads = 3;
+        int headDim = 64;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, batch, seq, hidden);
+        SDVariable w = sd.constant("w", Nd4j.randn(12345, new int[]{hidden, projDim}).castTo(DataType.FLOAT));
+
+        // matmul: [1,17,576] × [576,192] → [1,17,192]
+        SDVariable proj = sd.mmul("proj", x, w);
+        // reshape: [1,17,192] → [1,17,3,64]
+        SDVariable reshaped = sd.reshape("reshaped", proj, batch, seq, heads, headDim);
+        // permute: [1,17,3,64] → [1,3,17,64]
+        SDVariable transposed = sd.permute("transposed", reshaped, 0, 2, 1, 3);
+        SDVariable out = transposed.mul("out", sd.constant("scale", Nd4j.scalar(1.0f)));
+
+        INDArray input = Nd4j.randn(12345, new int[]{batch, seq, hidden}).castTo(DataType.FLOAT);
+
+        // Standard execution (ground truth)
+        Map<String, INDArray> standardResult = sd.output(Map.of("x", input), "out");
+        INDArray expected = standardResult.get("out").dup();
+
+        // DSP execution with SLOT_BY_SLOT mode
+        enableDsp(sd);
+        sd.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+        Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
+        INDArray actual = dspResult.get("out").dup();
+
+        log.info("Standard shape: {}", java.util.Arrays.toString(expected.shape()));
+        log.info("DSP shape:      {}", java.util.Arrays.toString(actual.shape()));
+
+        assertArrayEquals(expected.shape(), actual.shape(), "Shape mismatch");
+        double maxDiff = expected.sub(actual).amaxNumber().doubleValue();
+        log.info("repeat_kv with matmul max diff: {}", maxDiff);
+        assertTrue(maxDiff < TOL,
+                "repeat_kv with matmul: max diff " + maxDiff + " exceeds tolerance " + TOL);
+
+        sd.close();
+    }
+
+    /**
+     * Test the reshape→permute chain WITHOUT the upstream matmul.
+     * Isolates whether the permute divergence is caused by matmul output
+     * or is inherent to the permute/reshape handling in DSP.
+     *
+     * Input: [1, 17, 192] → reshape [1, 17, 3, 64] → permute [1, 3, 17, 64]
+     */
+    @Test
+    @DisplayName("DSP: repeat_kv reshape→permute only (no matmul)")
+    public void testRepeatKvReshapePermuteOnly() {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 1;
+        int seq = 17;
+        int heads = 3;
+        int headDim = 64;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, batch, seq, heads * headDim);
+
+        // reshape: [1,17,192] → [1,17,3,64]
+        SDVariable reshaped = sd.reshape("reshaped", x, batch, seq, heads, headDim);
+        // permute: [1,17,3,64] → [1,3,17,64]
+        SDVariable transposed = sd.permute("transposed", reshaped, 0, 2, 1, 3);
+        SDVariable out = transposed.mul("out", sd.constant("scale", Nd4j.scalar(1.0f)));
+
+        INDArray input = Nd4j.randn(12345, new int[]{batch, seq, heads * headDim}).castTo(DataType.FLOAT);
+
+        // Standard execution (ground truth)
+        Map<String, INDArray> standardResult = sd.output(Map.of("x", input), "out");
+        INDArray expected = standardResult.get("out").dup();
+
+        // DSP execution with SLOT_BY_SLOT mode
+        enableDsp(sd);
+        sd.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+        Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
+        INDArray actual = dspResult.get("out").dup();
+
+        log.info("Standard shape: {}", java.util.Arrays.toString(expected.shape()));
+        log.info("DSP shape:      {}", java.util.Arrays.toString(actual.shape()));
+
+        assertArrayEquals(expected.shape(), actual.shape(), "Shape mismatch");
+        double maxDiff = expected.sub(actual).amaxNumber().doubleValue();
+        log.info("repeat_kv reshape→permute only max diff: {}", maxDiff);
+        assertTrue(maxDiff < TOL,
+                "repeat_kv reshape→permute only: max diff " + maxDiff + " exceeds tolerance " + TOL);
+
+        sd.close();
+    }
 }

@@ -7086,6 +7086,88 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Regression test: ONNX MHA with GQA but no direct past_key/past_value input.
+     *
+     * This matches the imported SmolDocling decoder pattern where repeat_kv is done
+     * upstream, so onnx_multi_head_attention receives 3D Q/K/V while inputs 4/5 are
+     * only empty placeholders. Triton must infer numKvHeads from kvHidden / headDim.
+     */
+    @Test
+    public void testFusedAttention_GQA_3dKvWithoutDirectPastInput() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("FUSED_ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 17, numQHeads = 9, numKVHeads = 3, headDim = 64;
+            int qHidden = numQHeads * headDim;
+            int kvHidden = numKVHeads * headDim;
+
+            SameDiff sd = createGqaMhaGraph(batch, seqQ, numQHeads, numKVHeads, headDim, 0);
+
+            INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, qHidden).muli(0.1);
+            INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+            INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+
+            Map<String, INDArray> ph = Map.of(
+                    "q", qArr,
+                    "k", kArr,
+                    "v", vArr);
+
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("GQA_3dKvWithoutDirectPast iter {}: maxDiff={}, native max={}, native mean={}",
+                            iter, maxDiff, nativeOutput.amaxNumber(), nativeOutput.meanNumber());
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("GQA_3dKvWithoutDirectPast: tritonLaunches={}", tritonLaunches);
+                assertTrue(tritonLaunches > 0,
+                        "Triton attention kernel was never launched for 3D GQA ONNX MHA");
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
      * Test: Stale K shape recovery — simulates the warmup-to-decode transition
      * where KV cache shapes are stale from warmup (empty past_key) but external
      * inputs have correct shapes at decode time.

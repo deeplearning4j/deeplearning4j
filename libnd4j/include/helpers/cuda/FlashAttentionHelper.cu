@@ -799,16 +799,18 @@ void fusedAttentionCuda(
    biasPtr = attentionBias->specialBuffer();
 
    if (biasRank == 3) {
-     // [batch, seqQ, seqKV] - direct indexing
-     biasStride0 = attentionBias->sizeAt(1) * attentionBias->sizeAt(2);  // seqQ * seqKV
-     biasStride1 = attentionBias->sizeAt(2);  // seqKV
-     biasStride2 = 1;
+     // [batch, seqQ, seqKV] - use actual array strides (NOT shape-derived)
+     // Shape-derived strides assume C-contiguous layout which breaks for views
+     // from DSP where the bias may have non-contiguous strides.
+     biasStride0 = attentionBias->strideAt(0);  // batch stride
+     biasStride1 = attentionBias->strideAt(1);  // seqQ stride
+     biasStride2 = attentionBias->strideAt(2);  // seqKV stride
    } else if (biasRank == 4) {
      // [batch, 1, seqQ, seqKV] or [batch, numHeads, seqQ, seqKV]
      // For 3D attention (single head), we use head index 0
-     biasStride0 = attentionBias->sizeAt(1) * attentionBias->sizeAt(2) * attentionBias->sizeAt(3);
-     biasStride1 = attentionBias->sizeAt(3);  // seqKV (stride for seqQ dimension)
-     biasStride2 = 1;
+     biasStride0 = attentionBias->strideAt(0);  // batch stride
+     biasStride1 = attentionBias->strideAt(2);  // seqQ stride (skip heads dim)
+     biasStride2 = attentionBias->strideAt(3);  // seqKV stride
    }
    NDArray::prepareSpecialUse({output}, {query, key, value, attentionBias});
  } else {

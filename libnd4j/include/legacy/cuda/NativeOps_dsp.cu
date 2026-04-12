@@ -30,6 +30,8 @@
 #include <cuda.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
+#include <helpers/ShapeUtils.h>
+#include <array/DataTypeUtils.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/Context.h>
@@ -299,14 +301,26 @@ int executeDynamicShapePlan(
     for (int i = 0; i < numOutputs; i++) {
       if (outputPtrs[i] != nullptr) {
         opContext->setOutputArray(i, outputPtrs[i], false);
-        // Debug: print output shape
         auto* arr = outputPtrs[i];
-        fprintf(stdout, "DSP_DEBUG: output[%d] rank=%d shape=[", i, arr->rankOf());
-        for (int d = 0; d < arr->rankOf(); d++) {
-          fprintf(stdout, "%lld%s", (long long)arr->sizeAt(d), d < arr->rankOf()-1 ? "," : "");
+        if (Environment::getInstance().isDebugAndVerbose()) {
+          arr->syncToHost();
+          auto shape = ShapeUtils::shapeAsString(arr);
+          auto type = DataTypeUtils::asString(arr->dataType());
+          sd::LongType previewLen = sd::math::sd_min(8LL, arr->isEmpty() || arr->lengthOf() == 0 ? 0 : arr->lengthOf());
+          std::string valStr;
+          if (previewLen > 0) {
+            auto* s = arr->asString(previewLen);
+            if (s) { valStr = *s; delete s; } else { valStr = "<null>"; }
+          } else {
+            valStr = arr->isEmpty() ? "Empty" : "len=0";
+          }
+          auto shapeInfoStr = ShapeUtils::shapeInfoAsString(arr->shapeInfo());
+          DSP_DIAG(EXECUTE, "PLAN_OUTPUT[%d] shapeInfo=%s dtype=%s len=%lld isView=%d "
+                   "ptr=%p specialPtr=%p values=%s",
+                   i, shapeInfoStr.c_str(), type.c_str(),
+                   (long long)arr->lengthOf(), arr->isView() ? 1 : 0,
+                   (void*)arr, arr->specialBuffer(), valStr.c_str());
         }
-        fprintf(stdout, "] len=%lld\n", (long long)arr->lengthOf());
-        fflush(stdout);
       }
     }
 

@@ -61,6 +61,11 @@ static constexpr uint32_t DATA_MOVE_VALDEP = DATA_MOVE | OP_TRAIT_VALUE_DEPENDEN
 static constexpr uint32_t CONST_GEN = OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING;
 static constexpr uint32_t CONST_GEN_VALDEP = CONST_GEN | OP_TRAIT_VALUE_DEPENDENT_SHAPE;
 static constexpr uint32_t ATTN = OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING;
+// GATHER: DATA_MOVE_VALDEP already includes FULLY_WRITING (via DATA_MOVE).
+// The gather kernel iterates exactly over output length (numIndices * TAD_size),
+// writing every element of the allocated output buffer. In frozen replay, output
+// shapes are identical between steps, so the buffer size always matches the logical
+// output shape — no stale tail data can leak. needsZeroedOutput=false is correct.
 static constexpr uint32_t GATHER = DATA_MOVE_VALDEP | OP_TRAIT_GATHER;
 static constexpr uint32_t GATHER_ND = DATA_MOVE_VALDEP | OP_TRAIT_GATHER_ND;
 static constexpr uint32_t CONCAT = DATA_MOVE | OP_TRAIT_CONCAT;

@@ -20,6 +20,7 @@
 #define LIBND4J_DSP_DIAGNOSTICS_H
 
 #include <system/common.h>
+#include <system/Environment.h>
 #include <array/NDArray.h>
 
 #include <atomic>
@@ -124,7 +125,10 @@ class SD_LIB_EXPORT DspDiagnostics {
   void setJsonPath(const std::string& path);
 
   // ── Fast-path check (inlined) ──
+  // When Environment debug+verbose is ON, ALL DSP diagnostics are enabled
+  // so that DSP_DIAG macros produce output alongside standard op debug logging.
   bool isEnabled(uint32_t category) const {
+    if (sd::Environment::getInstance().isDebugAndVerbose()) return true;
     return (enabledMask_.load(std::memory_order_relaxed) & category) != 0;
   }
 

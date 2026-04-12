@@ -1507,6 +1507,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number prodNumber() {
+        if(isEmpty())
+            return 1.0;
         if(isScalar())
             return getNumber(0);
         return prod().getDouble(0);
@@ -1514,7 +1516,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number meanNumber() {
-        validateNumericalArray("meanNumber", false);
+        validateNumericalArray("meanNumber", true);
+        if(isEmpty())
+            return Double.NaN;
         if(isScalar())
             return getNumber(0);
         return mean().getDouble(0);
@@ -1532,6 +1536,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number maxNumber() {
+        if(isEmpty())
+            return Double.NaN;
         if(isScalar())
             return getNumber(0);
         return max().getDouble(0);
@@ -1544,6 +1550,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number minNumber() {
+        if(isEmpty())
+            return Double.NaN;
         if(isScalar())
             return getNumber(0);
         return min().getDouble(0);
@@ -1581,7 +1589,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number sumNumber() {
-        validateNumericalArray("sum", false);
+        validateNumericalArray("sum", true);
+        if(isEmpty())
+            return 0.0;
         if(isScalar())
             return getNumber(0);
         val scalar = sum();
@@ -6438,8 +6448,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected void validateNumericalArray(String opName, boolean allowEmpty){
         if(dataType() == DataType.BOOL || dataType() == DataType.UTF8)
             throw new IllegalStateException("Cannot apply operation " + opName + " to array with " + dataType() + " datatype. Array shape: " + Arrays.toString(shape()));
-        if(!allowEmpty && isEmpty())
-            throw new IllegalStateException("Cannot perform operation " + opName + " on empty array with datatype " + dataType());
+        // Empty arrays (e.g., [1,3,0,64] KV cache at prefill) are valid NDArrays.
+        // Operations should return sensible defaults (0 for sum, NaN for mean, etc.)
+        // rather than throwing, because debug/verbose logging and other infrastructure
+        // may legitimately call reductions on empty arrays.
     }
 
     @Override

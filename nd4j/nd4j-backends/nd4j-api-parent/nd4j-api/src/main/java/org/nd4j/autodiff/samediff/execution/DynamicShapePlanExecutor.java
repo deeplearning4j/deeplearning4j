@@ -727,6 +727,22 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Sync the saved KV cache position to match the actual C++ position.
+     * Unlike {@link #advanceKvCachePosition()}, this does NOT call into C++ —
+     * it only updates {@code savedKvCurrentPos} so that if the plan recompiles
+     * mid-decode, {@link #reapplyKvCacheRetention} restores the correct position.
+     *
+     * <p>Use this when the C++ side already incremented {@code kvCachePosition_}
+     * (e.g., during {@code execute()}) and Java just needs to keep its saved
+     * copy in sync.</p>
+     *
+     * @param pos the actual current KV cache position on the C++ side
+     */
+    public void syncSavedKvPosition(long pos) {
+        this.savedKvCurrentPos = (int) pos;
+    }
+
+    /**
      * Get the native plan handle for direct JNI calls.
      */
     public Pointer getNativePlanHandle() {
@@ -1874,13 +1890,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 arr = cached;
                                 restoredFromCacheCount++;
                             } else {
-                                // No cached copy — create zeros as last resort
-                                INDArray fresh = Nd4j.zeros(arr.dataType(), arr.shape());
-                                extInputs[i] = fresh;
-                                arr = fresh;
+                                // DataBuffer was closed but GPU memory may still be valid.
+                                // For constants, pass the original array as-is — the native
+                                // plan uses GPU pointers directly, and the GPU memory has not
+                                // been freed (it's just marked "closed" on the Java side).
+                                // Creating zeros here would corrupt model weights.
                                 deadConstantCount++;
-                                if (deadConstantCount <= 5) {
-                                    log.warn("DEAD_CONSTANT_ZERO: ext[{}] '{}' no cached value, using zeros (dtype={}, shape={})",
+                                if (deadConstantCount <= 65) {
+                                    log.warn("DEAD_CONSTANT_PASSTHROUGH: ext[{}] '{}' DataBuffer closed but passing original (dtype={}, shape={})",
                                              i, varName, arr.dataType(), Arrays.toString(arr.shape()));
                                 }
                             }
@@ -2684,14 +2701,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // Read shape info from the C++ output NDArray
                 long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueOut);
                 long[] shape = Shape.shape(shapeInfo);
+                long[] strides = Shape.stride(shapeInfo);
                 DataType dtype = ArrayOptionsHelper.dataType(shapeInfo);
                 long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
                 char ordering = Shape.order(shapeInfo);
 
-                // Create a Java-owned INDArray with the SAME ordering as the C++ output.
+                // Create a Java-owned INDArray with the EXACT strides from the C++ output.
                 // The raw buffer copy below is a flat memcpy — the destination must have
-                // matching strides so elements are interpreted correctly.
-                INDArray result = Nd4j.createUninitialized(dtype, shape, ordering);
+                // matching strides so elements are interpreted correctly. If the C++ output
+                // has non-contiguous strides (e.g., from a view-based permute op whose shape
+                // function inherited the input's strides), using contiguous strides here
+                // would mis-interpret the buffer layout and produce wrong results.
+                INDArray result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
 
                 // Get raw pointers — primary may be null on CUDA (data only on GPU)
                 Pointer nativePrimary = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);
@@ -2710,7 +2731,54 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
 
+                // If the C++ output had non-contiguous strides (from view ops like permute),
+                // dup to contiguous layout so downstream Java code doesn't need to handle
+                // non-contiguous arrays. This is a safety net — ideally C++ shape functions
+                // should return contiguous strides for output arrays.
+                if (shape.length > 1) {
+                    boolean isContiguous = true;
+                    if (ordering == 'c') {
+                        long expected = 1;
+                        for (int d = shape.length - 1; d >= 0; d--) {
+                            if (strides[d] != expected) { isContiguous = false; break; }
+                            expected *= shape[d];
+                        }
+                    } else {
+                        long expected = 1;
+                        for (int d = 0; d < shape.length; d++) {
+                            if (strides[d] != expected) { isContiguous = false; break; }
+                            expected *= shape[d];
+                        }
+                    }
+                    if (!isContiguous) {
+                        INDArray contiguous = result.dup(ordering);
+                        result = contiguous;
+                    }
+                }
+
                 String outputName = requestedOutputs.get(i);
+                // Verify copy correctness: print first values immediately after copyBuffer
+                if (Nd4j.getEnvironment().isDebugAndVerbose() && result.rank() >= 2 && result.length() > 0) {
+                    result.syncToHost();
+                    long lastPos = result.rank() == 3 ? result.size(1) - 1 : 0;
+                    StringBuilder sb = new StringBuilder("DSP_COPY_VERIFY[" + outputName + "] shape=");
+                    sb.append(java.util.Arrays.toString(result.shape()));
+                    sb.append(" first5=[");
+                    for (int v = 0; v < Math.min(5, (int)result.length()); v++) {
+                        if (v > 0) sb.append(",");
+                        sb.append(String.format("%.4f", result.getFloat(v)));
+                    }
+                    sb.append("] lastPos5=[");
+                    if (result.rank() == 3) {
+                        long vocabSize = result.size(2);
+                        for (int v = 0; v < Math.min(5, (int)vocabSize); v++) {
+                            if (v > 0) sb.append(",");
+                            sb.append(String.format("%.4f", result.getFloat(0, lastPos, v)));
+                        }
+                    }
+                    sb.append("]");
+                    log.info(sb.toString());
+                }
                 results.put(outputName, result);
             }
 

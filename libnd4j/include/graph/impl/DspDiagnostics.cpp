@@ -170,8 +170,9 @@ void DspDiagnostics::recordEventV(uint32_t category, int slotId, int segmentId,
     }
   }
 
-  // Echo to stdout if FULL level (stdout is captured by surefire; stderr is not)
-  if (getLevel() == DSP_LEVEL_FULL) {
+  // Echo to stdout if FULL level OR if debug+verbose is enabled
+  // (stdout is captured by surefire; stderr is not)
+  if (getLevel() == DSP_LEVEL_FULL || sd::Environment::getInstance().isDebugAndVerbose()) {
     int catIdx = categoryIndex(category);
     const char* catName = (catIdx >= 0) ? sCategoryNames[catIdx] : "UNKNOWN";
     fprintf(stdout, "[DSP_DIAG] [%s] ", catName);

@@ -506,7 +506,7 @@ struct ReplaySchedule {
 
 // Batch-zero entry definition (used by exec.segBatchZeroEntries)
 // outputSlotIndex tracks which slot the pointer came from, enabling
-// pointer refresh from slotArrayCache_ during replay to avoid stale addresses.
+// pointer refresh from outputSlots_ during replay to avoid stale addresses.
 struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
 
 /**
@@ -863,7 +863,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Release GPU intermediates with option to preserve decode-invariant state.
    *
    * @param preserveDecodeState  If true, preserves:
-   *   - outputSlots_[] / slotArrayCache_[] (decode has invariant shapes)
+   *   - outputSlots_[] (decode has invariant shapes)
    *   - CUDA graph replay handles (same kernel graph for decode)
    *   - cuBLAS workspace (same GEMM shapes for decode)
    *   - Batch-zero, batch-D2D, batched-GEMM device arrays
@@ -1287,9 +1287,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Execution state (reused across calls)
   NDArray** outputSlots_;              // THE slot arrays — current output values for all slots
-  // slotArrayCache_ removed: was aliased to outputSlots_ (same pointer).
-  // Backward compat: #define slotArrayCache_ outputSlots_ provided below for existing code.
-  // New code should use outputSlots_ directly.
   bool* slotIsViewProducer_;           // View producer flags (learned from first exec)
   Context** contextPool_;              // Pre-allocated Context pool
   bool viewProducerDetectionDone_;
@@ -1439,7 +1436,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * between slots via identity ops or in-place fusion.
    *
    * Identity ops (outputSlots_[si] = input) create pointer aliasing between slots
-   * without reference counting. If we blindly delete slotArrayCache_[si] when
+   * without reference counting. If we blindly delete outputSlots_[si] when
    * replacing it, we may delete an array still referenced by another slot.
    *
    * @param arr     The NDArray pointer to check
@@ -1605,7 +1602,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // kernel launch that zeros all output buffers in parallel.
   // Reduces CUDA graph node count by ~28%, saving ~1-2ms per graph replay.
   // outputSlotIndex tracks which slot the pointer came from, enabling
-  // pointer refresh from slotArrayCache_ during replay to avoid stale addresses.
+  // pointer refresh from outputSlots_ during replay to avoid stale addresses.
   struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
   std::vector<BatchZeroEntry> batchZeroEntries_;
   void* batchZeroDevicePtrs_ = nullptr;   // Device array of void* pointers
@@ -1695,10 +1692,5 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
 }  // namespace graph
 }  // namespace sd
-
-// Backward compatibility: slotArrayCache_ was aliased to outputSlots_ (same pointer).
-// All existing code using slotArrayCache_ will transparently use outputSlots_.
-// New code should use outputSlots_ directly.
-#define slotArrayCache_ outputSlots_
 
 #endif  // LIBND4J_NATIVE_DYNAMIC_SHAPE_PLAN_H

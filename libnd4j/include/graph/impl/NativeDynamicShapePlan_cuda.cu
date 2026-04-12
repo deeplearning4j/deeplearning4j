@@ -237,7 +237,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       for (int i = 0; i < numRequestedOutputs_; i++) {
         int slotIdx = requestedOutputSlotIndices_[i];
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          requestedOutputs[i] = slotArrayCache_[slotIdx];
+          requestedOutputs[i] = outputSlots_[slotIdx];
         } else {
           requestedOutputs[i] = nullptr;
         }

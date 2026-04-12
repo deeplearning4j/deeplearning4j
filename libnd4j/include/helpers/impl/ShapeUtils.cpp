@@ -698,7 +698,11 @@ const LongType* ShapeUtils::evalPermutedViewShapeInfo(const NDArray* input,
   // (e.g., expand_dims added leading size-1 dims: rank-5 input with rank-4 permutation)
   std::vector<int> permVec;
   if (permLen >= rank) {
-    for (int i = 0; i < rank; i++) permVec.push_back(perm[i]);
+    for (int i = 0; i < rank; i++) {
+      int dim = perm[i];
+      if (dim < 0) dim += rank;  // wrap negative indices
+      permVec.push_back(dim);
+    }
   } else if (permLen > 0) {
     int extraDims = rank - permLen;
     int leadingOnes = 0;
@@ -708,7 +712,11 @@ const LongType* ShapeUtils::evalPermutedViewShapeInfo(const NDArray* input,
     }
     if (leadingOnes >= extraDims) {
       for (int i = 0; i < extraDims; i++) permVec.push_back(i);
-      for (int i = 0; i < permLen; i++) permVec.push_back(perm[i] + extraDims);
+      for (int i = 0; i < permLen; i++) {
+        int dim = perm[i] + extraDims;
+        if (dim < 0) dim += rank;  // wrap negative indices after offset
+        permVec.push_back(dim);
+      }
     } else {
       return nullptr;  // cannot adapt — not enough leading 1-dims
     }

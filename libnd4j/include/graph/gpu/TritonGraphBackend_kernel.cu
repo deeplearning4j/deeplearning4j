@@ -187,7 +187,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       // by the frozen constant optimization during gap execution, leaving
       // outputSlots_[si] null. When the pre-exec restoration is also skipped
       // (seg.exec.executionCount > 2 optimization), the slot stays null. Restore
-      // from slotArrayCache_ which retains the array from the warmup step.
+      // from outputSlots_ which retains the array from the warmup step.
       if (!arr && slotArrayCache && argMapping.slotIndex < totalOutputSlots) {
         arr = slotArrayCache[argMapping.slotIndex];
         if (arr) {

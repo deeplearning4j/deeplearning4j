@@ -421,6 +421,14 @@ public class FrozenDecodeStep implements AutoCloseable {
     }
 
     /**
+     * Get the DSP executor for this frozen step.
+     * Used by callers to sync KV cache position for plan recompilation safety.
+     */
+    public DynamicShapePlanExecutor getDspExec() {
+        return dspExec;
+    }
+
+    /**
      * Scatter accepted KV entries from the last merged step into static buffers.
      *
      * After verification determines how many tokens were accepted, scatter those

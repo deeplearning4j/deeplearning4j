@@ -778,16 +778,24 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
           currentSection.attentionScale = 1.0f / std::sqrt(static_cast<float>(currentSection.headDim));
         }
 
-        // Determine effective K source: use past_key (input 4) if available
+        // Determine effective K source by scanning optional inputs for a real KV-cache tensor.
+        // ONNX MHA may carry empty placeholders or other optional tensors after input[3],
+        // so don't assume input[4] is always past_key.
         bool hasPastKv = false;
         int effectiveKInputIdx = 1;
-        if (slots[i].wiring.numInputs > 4) {
-          NDArray* pastKeyArr = resolveArray(slots[i].wiring.inputSourceIndices[4]);
-          if (pastKeyArr && pastKeyArr->rankOf() == 4) {
-            auto pastKeyLen = pastKeyArr->sizeAt(pastKeyArr->rankOf() - 2);
-            if (pastKeyLen > 1) {
+        for (int inp = 3; inp < slots[i].wiring.numInputs && !hasPastKv; inp++) {
+          NDArray* candidateArr = resolveArray(slots[i].wiring.inputSourceIndices[inp]);
+          if (candidateArr && candidateArr->rankOf() == 4) {
+            int candidateHeadDim = static_cast<int>(candidateArr->sizeAt(3));
+            int candidateKvHeads = static_cast<int>(candidateArr->sizeAt(1));
+            int candidateSeqK = static_cast<int>(candidateArr->sizeAt(2));
+            if (candidateHeadDim == currentSection.headDim &&
+                candidateSeqK > 0 &&
+                candidateKvHeads > 0 &&
+                candidateKvHeads <= currentSection.numHeads &&
+                currentSection.numHeads % candidateKvHeads == 0) {
               hasPastKv = true;
-              effectiveKInputIdx = 4;
+              effectiveKInputIdx = inp;
             }
           }
         }
@@ -795,12 +803,29 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         NDArray* kArr = (effectiveKInputIdx < slots[i].wiring.numInputs) ?
             resolveArray(slots[i].wiring.inputSourceIndices[effectiveKInputIdx]) : nullptr;
         if (kArr && kArr->rankOf() >= 2) {
-          currentSection.seqK = static_cast<int>(kArr->sizeAt(kArr->rankOf() - 2));
-          currentSection.attnKIsBSHD = hasPastKv ? false : currentSection.attnQIsBSHD;
-          // GQA: extract KV head count from past_key (4D: [B, KvHeads, seqK, HD])
-          if (hasPastKv && kArr->rankOf() == 4) {
-            currentSection.numKvHeads = static_cast<int>(kArr->sizeAt(1));
-            currentSection.headDim = static_cast<int>(kArr->sizeAt(3));
+          if (kArr->rankOf() == 3) {
+            currentSection.seqK = static_cast<int>(kArr->sizeAt(1));
+            currentSection.attnKIsBSHD = currentSection.attnQIsBSHD;
+            // ONNX MHA K/V stay 3D for GQA: [B, seqK, kvHeads * headDim].
+            // Infer the real KV head count from kvHidden instead of assuming Q heads.
+            int kvHidden = static_cast<int>(kArr->sizeAt(2));
+            if (currentSection.headDim > 0 && kvHidden > 0 &&
+                kvHidden % currentSection.headDim == 0) {
+              int inferredKvHeads = kvHidden / currentSection.headDim;
+              if (inferredKvHeads > 0 &&
+                  inferredKvHeads <= currentSection.numHeads &&
+                  currentSection.numHeads % inferredKvHeads == 0) {
+                currentSection.numKvHeads = inferredKvHeads;
+              }
+            }
+          } else {
+            currentSection.seqK = static_cast<int>(kArr->sizeAt(kArr->rankOf() - 2));
+            currentSection.attnKIsBSHD = hasPastKv ? false : currentSection.attnQIsBSHD;
+            // GQA: extract KV head count from past_key (4D: [B, KvHeads, seqK, HD])
+            if (hasPastKv && kArr->rankOf() == 4) {
+              currentSection.numKvHeads = static_cast<int>(kArr->sizeAt(1));
+              currentSection.headDim = static_cast<int>(kArr->sizeAt(3));
+            }
           }
         }
         // Default: MHA (numKvHeads = numHeads)

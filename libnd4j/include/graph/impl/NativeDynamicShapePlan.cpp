@@ -425,7 +425,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
              freedOwned, skippedExternal);
     delete[] outputSlots_;
   }
-  // slotArrayCache_ is an alias of outputSlots_ — do NOT delete[] separately
+  // outputSlots_ owns the NDArray* array — do NOT delete[] separately
 
   // Free view producer flags
   delete[] slotIsViewProducer_;
@@ -851,9 +851,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   plan->outputSlots_ = new NDArray*[plan->totalOutputSlots_];
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * plan->totalOutputSlots_);
 
-  // slotArrayCache_ unified with outputSlots_ (same pointer, Phase 2)
-  // slotArrayCache_ removed: now a macro alias to outputSlots_ (same pointer).
-  // The following line was the aliasing assignment, now redundant.
+  // outputSlots_ owns all slot arrays
 
   plan->slotIsViewProducer_ = new bool[plan->totalOutputSlots_];
   std::memset(plan->slotIsViewProducer_, 0, sizeof(bool) * plan->totalOutputSlots_);
@@ -1072,13 +1070,13 @@ Status NativeDynamicShapePlan::execute(
         platformDumpExtInputGpuValues(extArr, traceExt, executeCount_, stream);
       }
       // Check if the traced external input shares a buffer with any output slot in the cache
-      if (extArr != nullptr && DSP_BUF(extArr) != nullptr && slotArrayCache_ != nullptr) {
+      if (extArr != nullptr && DSP_BUF(extArr) != nullptr && outputSlots_ != nullptr) {
         void* extAddr = DSP_BUF(extArr);
         int aliasCount = 0;
         for (int si = 0; si < totalOutputSlots_; si++) {
-          if (slotArrayCache_[si] != nullptr && DSP_BUF(slotArrayCache_[si]) == extAddr) {
+          if (outputSlots_[si] != nullptr && DSP_BUF(outputSlots_[si]) == extAddr) {
             DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=%d addr=%p == slotArrayCache[%d] (len=%lld)",
-                     traceExt, extAddr, si, (long long)slotArrayCache_[si]->lengthOf());
+                     traceExt, extAddr, si, (long long)outputSlots_[si]->lengthOf());
             aliasCount++;
           }
         }
@@ -1164,7 +1162,7 @@ Status NativeDynamicShapePlan::execute(
   platformPreExecuteSetup(externalInputs, numExternalInputs, stream);
 
   // Step 1: Initialize output slots
-  // When shapes are frozen (after warmup), pre-populate from slotArrayCache_ so
+  // When shapes are frozen (after warmup), pre-populate from outputSlots_ so
   // downstream ops can read inputs without each slot individually setting outputSlots_.
   // View-producer slots will be overwritten during execution.
   //
@@ -1314,12 +1312,6 @@ Status NativeDynamicShapePlan::execute(
              liveSlots, nullSlots, viewSlots, totalOutputSlots_,
              replaySegs, slotBySlotSegsCount, compilationFailedSegs, (int)segments_.size(),
              phaseStats.graphReplaySegs, phaseStats.slotBySlotSegs);
-
-    // Verify slotArrayCache_ alias is still consistent with outputSlots_
-    if (slotArrayCache_ != outputSlots_) {
-      DSP_DIAG(VERIFY, "ERROR: slotArrayCache_ (%p) != outputSlots_ (%p) — alias broken!",
-               (void*)slotArrayCache_, (void*)outputSlots_);
-    }
   }
 
   if (!phaseHandledOutputs) {
@@ -1762,9 +1754,23 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     // and proceeds to graph capture instead of repeating warmup.
     segment.exec.executionCount = 1;
 
-    // Note: We intentionally do NOT call computeSegmentShapeKey here.
-    // It is extremely expensive (per-element D2H sync for small inputs) and
-    // unnecessary during warmup. executeSegmentWithGraph will compute the
+    // Capture baseline shape and address keys for EMULATED_REPLAY segments.
+    // Without these baselines, the first frozen replay computes keys and compares
+    // against zeros — keys never match, argTableStable stays false, and the plan
+    // is permanently stuck at SHAPES_FROZEN (frozenExecutionCount_ >= 2 but
+    // segmentHasStablePointersForPlanPhase always returns false).
+    // Note: computeSegmentShapeKey hashes small input values (<=32 elements) which
+    // requires D2H sync, but this only happens once during warmup.
+    if (segment.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
+      segment.exec.cachedShapeKey =
+          computeSegmentShapeKey(segment, externalInputs, numExternalInputs);
+      segment.exec.capturedInputAddrKey =
+          computeSegmentInputAddrKeyPortable(segment, externalInputs, numExternalInputs);
+    }
+
+    // Note: We intentionally do NOT call computeSegmentShapeKey for non-EMULATED_REPLAY
+    // segments here. It is extremely expensive (per-element D2H sync for small inputs)
+    // and unnecessary during warmup. executeSegmentWithGraph will compute the
     // key when it actually needs it for graph capture.
 
     if (executionTimingEnabled_) {
@@ -2364,6 +2370,8 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
   batchEntries.reserve(kvCacheNumMappings_);
   // Track arrays for prepareSpecialUse/registerSpecialUse
   std::vector<std::pair<NDArray*, NDArray*>> scatterPairs;
+  // Track contiguous-copy temporaries that must be freed after scatter
+  std::vector<NDArray*> tempCopies;
   DataType batchDtype = DataType::HALF;  // default; set from first valid entry
 
   int skipped = 0;
@@ -2375,9 +2383,9 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
 
     NDArray* presentKv = resolveLiveArray(outputSlots_[presentSlotIdx]);
     if (presentKv == nullptr) {
-      presentKv = resolveLiveArray(slotArrayCache_[presentSlotIdx]);
-    } else if (slotArrayCache_[presentSlotIdx] != presentKv) {
-      slotArrayCache_[presentSlotIdx] = presentKv;
+      presentKv = resolveLiveArray(outputSlots_[presentSlotIdx]);
+    } else if (outputSlots_[presentSlotIdx] != presentKv) {
+      outputSlots_[presentSlotIdx] = presentKv;
     }
 
     if (presentKv == nullptr) { skipped++; continue; }
@@ -2389,26 +2397,70 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
 
     if (presentKv->rankOf() != 4 || staticBuf->rankOf() != 4) { skipped++; continue; }
 
+    // If presentKv has non-contiguous strides (e.g. from a permute view),
+    // the scatter kernel's flat pointer arithmetic will read wrong values.
+    // Materialize a contiguous copy before scattering.
+    NDArray* scatterSrc = presentKv;
+    {
+      const int rank = presentKv->rankOf();
+      bool isContiguous = (rank <= 1);
+      if (!isContiguous) {
+        const auto* shapePtr = presentKv->shapeOf();
+        const auto* stridePtr = presentKv->stridesOf();
+        const char order = presentKv->ordering();
+        if (order == 'c') {
+          LongType expectedStride = 1;
+          isContiguous = true;
+          for (int i = rank - 1; i >= 0 && isContiguous; --i) {
+            if (shapePtr[i] > 1 && stridePtr[i] != expectedStride) {
+              isContiguous = false;
+            }
+            expectedStride *= shapePtr[i];
+          }
+        } else {
+          LongType expectedStride = 1;
+          isContiguous = true;
+          for (int i = 0; i < rank && isContiguous; ++i) {
+            if (shapePtr[i] > 1 && stridePtr[i] != expectedStride) {
+              isContiguous = false;
+            }
+            expectedStride *= shapePtr[i];
+          }
+        }
+      }
+      if (!isContiguous) {
+        NDArray* contiguousCopy = presentKv->dup();
+        if (contiguousCopy == nullptr) {
+          NDArray::registerSpecialUse({staticBuf}, {presentKv});
+          skipped++;
+          continue;
+        }
+        tempCopies.push_back(contiguousCopy);
+        scatterSrc = contiguousCopy;
+        DSP_DIAG(KV_CACHE, "  mapping[%d]: presentKv non-contiguous, created contiguous copy %p", m, contiguousCopy);
+      }
+    }
+
     // Validate GPU buffer pointers are non-null and sequence dims are non-zero.
     // After resetForNextPage(), restored cached handles may encounter empty
     // destination buffers (shape [1,H,0,D]) whose specialBuffer() is nullptr.
     // Writing to nullptr causes CUDA error 700.
-    NDArray::prepareSpecialUse({staticBuf}, {presentKv});
+    NDArray::prepareSpecialUse({staticBuf}, {scatterSrc});
 
-    const void* srcBuf = DSP_BUF(presentKv);
+    const void* srcBuf = DSP_BUF(scatterSrc);
     void* dstBuf = DSP_BUF(staticBuf);
-    auto srcSeq = presentKv->sizeAt(2);
+    auto srcSeq = scatterSrc->sizeAt(2);
     auto dstSeq = staticBuf->sizeAt(2);
 
     if (srcBuf == nullptr || dstBuf == nullptr || srcSeq <= 0 || dstSeq <= 0) {
-      NDArray::registerSpecialUse({staticBuf}, {presentKv}); // balance the prepareSpecialUse
+      NDArray::registerSpecialUse({staticBuf}, {scatterSrc}); // balance the prepareSpecialUse
       skipped++;
       continue;
     }
 
     // Validate cachePos is within the destination buffer's bounds
     if (kvCachePosition_ >= dstSeq) {
-      NDArray::registerSpecialUse({staticBuf}, {presentKv}); // balance the prepareSpecialUse
+      NDArray::registerSpecialUse({staticBuf}, {scatterSrc}); // balance the prepareSpecialUse
       skipped++;
       continue;
     }
@@ -2416,17 +2468,17 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
     sd::ops::helpers::KvScatterEntry entry;
     entry.srcPtr = srcBuf;
     entry.dstPtr = dstBuf;
-    entry.heads = presentKv->sizeAt(1);
+    entry.heads = scatterSrc->sizeAt(1);
     entry.srcSeqLen = srcSeq;
     entry.dstSeqLen = dstSeq;
-    entry.dim = presentKv->sizeAt(3);
+    entry.dim = scatterSrc->sizeAt(3);
     entry.lastPos = entry.srcSeqLen - 1;
     entry.cachePos = kvCachePosition_;
     batchEntries.push_back(entry);
     if (scatterPairs.empty()) {
-      batchDtype = presentKv->dataType();
+      batchDtype = scatterSrc->dataType();
     }
-    scatterPairs.push_back({presentKv, staticBuf});
+    scatterPairs.push_back({scatterSrc, staticBuf});
   }
 
   int scattered = static_cast<int>(batchEntries.size());
@@ -2441,6 +2493,14 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
   for (auto& pair : scatterPairs) {
     NDArray::registerSpecialUse({pair.second}, {pair.first});
   }
+
+  // Free temporary contiguous copies
+  for (NDArray* temp : tempCopies) {
+    if (temp != nullptr) {
+      delete temp;
+    }
+  }
+  tempCopies.clear();
 
   platformEndKvScatter(savedState);
 
@@ -2460,7 +2520,7 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
       int psi = mapping.presentOutputSlotIdx;
       int exi = mapping.pastInputExternalIdx;
       NDArray* fromSlot = (psi >= 0 && psi < totalOutputSlots_) ? outputSlots_[psi] : nullptr;
-      NDArray* fromCache = (psi >= 0 && psi < totalOutputSlots_) ? slotArrayCache_[psi] : nullptr;
+      NDArray* fromCache = (psi >= 0 && psi < totalOutputSlots_) ? outputSlots_[psi] : nullptr;
       NDArray* extArr = (exi >= 0 && exi < numExt) ? externalInputs[exi] : nullptr;
       DSP_DIAG(KV_CACHE, "  mapping[%d]: presentSlot=%d outputSlots_=%p slotCache=%p extIdx=%d ext=%p",
                m, psi, fromSlot, fromCache, exi, extArr);
@@ -2683,9 +2743,9 @@ void NativeDynamicShapePlan::buildSegments() {
              static_cast<int>(segments_.size()) - maxLoggedSegments);
   }
 
-  // Propagate slotArrayCache_, resolve backend, and detect value-dep ops for all segments.
+  // Propagate outputSlots_, resolve backend, and detect value-dep ops for all segments.
   for (auto& seg : segments_) {
-    seg.slotArrayCache = slotArrayCache_;
+    seg.slotArrayCache = outputSlots_;
     seg.def.selectedBackend = resolveBackendForSegment(seg.def.isCapturable);
     // Scan slots for value-dependent ops — these require shape key recomputation
     // even when shapes are frozen, because input VALUES (not just shapes) affect output shape.

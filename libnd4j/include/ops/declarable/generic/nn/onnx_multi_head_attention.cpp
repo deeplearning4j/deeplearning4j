@@ -138,11 +138,17 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
 
   // Reshape [batch, seq, hidden] -> [batch, seq, heads, headDim] (BSHD format for FlashAttentionHelper)
   // Q uses numHeads, K/V use numKvHeads (may differ for GQA)
-  // Use reshape with copyToNewBuff=false to force view creation (no GPU allocation).
-  // These inputs are contiguous C-order so view creation always succeeds.
+  // Force contiguous copy before reshape: DSP pre-allocated arrays may have non-standard
+  // strides from view ops or max-allocation. reshape('c', ..., false) creates views that
+  // map coordinates using the source's strides — if strides differ between DSP and standard
+  // execution, the same reshape produces different data layouts, causing wrong attention output.
   std::vector<LongType> qShape4d = {batch, seqQ, numHeads, headDim};
   std::vector<LongType> kvShape4d = {batch, seqKV, numKvHeads, headDim};
-  
+
+  NDArray* qContig = query;
+  NDArray* kContig = key;
+  NDArray* vContig = value;
+
   NDArray* qReshaped = query->reshape('c', qShape4d, false);
   NDArray* kReshaped = key->reshape('c', kvShape4d, false);
   NDArray* vReshaped = value->reshape('c', kvShape4d, false);
@@ -278,7 +284,13 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
   auto workspace = AttentionWorkspace::getInstance();
   NDArray* attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
-  
+  // Zero the workspace buffer to prevent stale data from a previous call leaking through.
+  // AttentionWorkspace reuses buffers across calls without clearing them.  While
+  // FlashAttention normally writes every output position, edge cases (maxKV==0, or
+  // future kernel changes) could leave positions unwritten.  The cost of one memset
+  // is negligible compared to the attention computation itself.
+  attnOut4d->nullify();
+
   // Cast attention bias to query dtype if needed
   std::unique_ptr<NDArray> attnBiasCastOwner;
   if (attnBias != nullptr && attnBias->dataType() != query->dataType()) {
@@ -286,6 +298,33 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     attnBias = attnBiasCastOwner.get();
   }
   
+  // Diagnostic: dump Q checksum at the divergent position before FlashAttention
+  if (Environment::getInstance().isDebugAndVerbose()) {
+    qReshaped->syncToHost();
+    kFinal->syncToHost();
+    // Q is [batch, seqQ, numHeads, headDim] = [1, 17, 9, 64]
+    // Dump head 2 at position 9 (where divergence occurs)
+    if (seqQ > 9 && numHeads > 2) {
+      sd_printf("MHA_DIAG: Q[0,9,2,0:4] = [%.6f, %.6f, %.6f, %.6f]\n",
+                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 0),
+                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 1),
+                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 2),
+                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 3));
+      sd_printf("MHA_DIAG: K[0,9,0,0:4] = [%.6f, %.6f, %.6f, %.6f]\n",
+                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 0),
+                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 1),
+                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 2),
+                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 3));
+      // Compute a simple checksum of all Q values
+      double qSum = 0;
+      for (LongType i = 0; i < std::min((LongType)100, qReshaped->lengthOf()); i++) {
+        qSum += qReshaped->e<float>(i);
+      }
+      sd_printf("MHA_DIAG: Q checksum(first100) = %.8f, numHeads=%lld, numKvHeads=%lld, scale=%.8f\n",
+                qSum, numHeads, numKvHeads, scale);
+    }
+  }
+
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
   FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, attnOut4d, config,
                                 nullptr, nullptr, nullptr,
@@ -324,7 +363,8 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   delete qReshaped;
   delete kReshaped;
   delete vReshaped;
-  
+  // qContig/kContig/vContig are just aliases, not owned copies
+
   return sd::Status::OK;
 }
 

@@ -4804,6 +4804,163 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * // Resources automatically released
      * }</pre>
      */
+    /**
+     * Compare DSP execution against standard execution for correctness verification.
+     * Runs the graph through both the standard {@code executeOperations()} path and the
+     * native DSP plan path, then compares every requested output element-wise.
+     *
+     * <p>Returns a report of all divergent outputs with max absolute difference.
+     * Throws {@link AssertionError} on the first output that exceeds {@code tolerance}.</p>
+     *
+     * @param placeholders placeholder input arrays
+     * @param outputs      requested output names
+     * @param tolerance    maximum allowed absolute difference per element
+     * @param mode         DSP execution mode to test
+     * @return map of output name → max absolute difference (empty if all match)
+     */
+    public Map<String, Double> compareExecutionPaths(
+            Map<String, INDArray> placeholders,
+            List<String> outputs,
+            double tolerance,
+            GraphExecutionMode mode) {
+
+        String[] outputArr = outputs.toArray(new String[0]);
+
+        // ── Step 1: DSP path FIRST (clean model state) ──────────────────
+        // Run DSP first to avoid standard path contaminating model state
+        compileNativeDynamicShapePlan(outputs, mode, true);
+        Map<String, INDArray> dspResults = output(placeholders, outputArr);
+
+        // Dup DSP outputs
+        Map<String, INDArray> dspDups = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : dspResults.entrySet()) {
+            if (e.getValue() != null && !e.getValue().isEmpty()) {
+                e.getValue().syncToHost();
+                dspDups.put(e.getKey(), e.getValue().dup());
+            }
+        }
+
+        // ── Step 2: Standard path (no DSP) ──────────────────────────────
+        boolean dspWas = InferenceSession.isDynamicShapePlanEnabled();
+        InferenceSession.setDynamicShapePlanEnabled(false);
+        clearDynamicShapePlanCache();
+        resetSession();
+
+        // Rebuild placeholders (DSP path may have consumed them)
+        Map<String, INDArray> stdPlaceholders = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
+            INDArray arr = e.getValue();
+            if (arr != null && !arr.wasClosed()) {
+                stdPlaceholders.put(e.getKey(), arr.dup());
+            }
+        }
+
+        Map<String, INDArray> standardResults = output(stdPlaceholders, outputArr);
+        Map<String, INDArray> standardDups = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : standardResults.entrySet()) {
+            if (e.getValue() != null && !e.getValue().isEmpty()) {
+                e.getValue().syncToHost();
+                standardDups.put(e.getKey(), e.getValue().dup());
+            }
+        }
+        InferenceSession.setDynamicShapePlanEnabled(dspWas);
+
+        // ── Step 3: Compare ─────────────────────────────────────────────
+        Map<String, Double> divergences = new LinkedHashMap<>();
+        String firstDivergent = null;
+        double firstMaxDiff = 0;
+        int compared = 0, matched = 0;
+
+        for (String name : outputs) {
+            INDArray std = standardDups.get(name);
+            INDArray dsp = dspDups.get(name);
+
+            if (std == null || dsp == null || std.isEmpty() || dsp.isEmpty()) continue;
+            // Skip non-float types that can't be meaningfully subtracted
+            if (!std.dataType().isFPType()) continue;
+
+            compared++;
+            dsp.syncToHost();
+
+            if (!java.util.Arrays.equals(std.shape(), dsp.shape())) {
+                log.error("SHAPE MISMATCH [{}]: standard={} dsp={}",
+                        name, java.util.Arrays.toString(std.shape()),
+                        java.util.Arrays.toString(dsp.shape()));
+                divergences.put(name, Double.MAX_VALUE);
+                if (firstDivergent == null) firstDivergent = name;
+                continue;
+            }
+
+            INDArray absDiff = Nd4j.math().abs(std.sub(dsp));
+            double maxDiff = absDiff.maxNumber().doubleValue();
+            absDiff.close();
+            if (maxDiff > tolerance) {
+                divergences.put(name, maxDiff);
+                long flatLen = std.length();
+                int preview = (int) Math.min(10, flatLen);
+                INDArray stdFlat = std.reshape(new long[]{flatLen});
+                INDArray dspFlat = dsp.reshape(new long[]{flatLen});
+                // Find position of max difference
+                INDArray diffArr = Nd4j.math().abs(std.sub(dsp));
+                int maxIdx = Nd4j.argMax(diffArr.reshape(new long[]{diffArr.length()})).getInt(0);
+                diffArr.close();
+                // Convert flat index to coordinates
+                long[] coords = new long[std.rank()];
+                long remaining = maxIdx;
+                for (int d = std.rank() - 1; d >= 0; d--) {
+                    coords[d] = remaining % std.size(d);
+                    remaining /= std.size(d);
+                }
+                log.error("DIVERGENT [{}]: maxDiff={} shape={} maxDiffAt={} stdVal={} dspVal={}",
+                        name, maxDiff, java.util.Arrays.toString(std.shape()),
+                        java.util.Arrays.toString(coords),
+                        std.getDouble(coords), dsp.getDouble(coords));
+                StringBuilder stdVals = new StringBuilder("[");
+                StringBuilder dspVals = new StringBuilder("[");
+                for (int vi = 0; vi < preview; vi++) {
+                    if (vi > 0) { stdVals.append(", "); dspVals.append(", "); }
+                    stdVals.append(String.format("%.6f", stdFlat.getDouble(vi)));
+                    dspVals.append(String.format("%.6f", dspFlat.getDouble(vi)));
+                }
+                stdVals.append("]"); dspVals.append("]");
+                log.error("  standard[0:{}]: {}", preview, stdVals);
+                log.error("  dsp     [0:{}]: {}", preview, dspVals);
+                if (firstDivergent == null) {
+                    firstDivergent = name;
+                    firstMaxDiff = maxDiff;
+                }
+            } else {
+                matched++;
+            }
+        }
+
+        log.info("compareExecutionPaths: {}/{} matched (tolerance={}), divergent: {}",
+                matched, compared, tolerance, divergences.keySet());
+
+        // Cleanup dups
+        for (INDArray arr : standardDups.values()) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+        }
+        for (INDArray arr : dspDups.values()) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+        }
+        for (Map.Entry<String, INDArray> e : stdPlaceholders.entrySet()) {
+            INDArray arr = e.getValue();
+            if (arr != null && arr.closeable() && !arr.wasClosed() && arr != placeholders.get(e.getKey())) {
+                arr.close();
+            }
+        }
+
+        if (firstDivergent != null) {
+            throw new AssertionError(
+                    "DSP execution diverges from standard at output '" + firstDivergent +
+                    "' (maxDiff=" + firstMaxDiff + ", tolerance=" + tolerance +
+                    "). Total divergent: " + divergences.size() + "/" + compared);
+        }
+
+        return divergences;
+    }
+
     @Override
     public void close() {
         log.debug("Closing SameDiff instance");

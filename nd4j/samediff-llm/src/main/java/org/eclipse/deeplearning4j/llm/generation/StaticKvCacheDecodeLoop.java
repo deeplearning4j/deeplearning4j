@@ -536,6 +536,11 @@ public class StaticKvCacheDecodeLoop {
                     // kvCachePosition_ on every execution (in NativeDynamicShapePlan::execute()).
                     // Java only needs to keep its own position counter in sync.
                     kvCacheManager.setCachePosition(kvCacheManager.getCachePosition() + 1);
+                    // Sync executor's saved position for plan recompilation safety.
+                    // Do NOT call advanceKvCachePosition() — that would double-increment C++.
+                    if (decoderDspExec != null) {
+                        decoderDspExec.syncSavedKvPosition(kvCacheManager.getCachePosition());
+                    }
                 } else {
                     // Java scatter — C++ KV scatter is disabled, so we must scatter manually
                     kvCacheManager.scatterNewEntries(decoderOutputs, kvNames);
@@ -634,12 +639,11 @@ public class StaticKvCacheDecodeLoop {
                         boolean cppKvEnabled = !skipFreeze;
                         String[] recompileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
                         decoder.clearDynamicShapePlanCache();
-                        // CRITICAL: Clear session caches (node output buffers, array cache, pooled
-                        // resources) after invalidating the DSP plan. Without this, stale prefill
-                        // outputs remain cached and the recompiled DSP plan reads wrong values.
-                        // Model weights/constants are protected via isConstant()/isAttached() guards
-                        // in closeNodeValueOutputBuffers and snapshotProtectedBuffersForCleanup.
-                        decoderSession.clearAllCaches();
+                        // Clear stale prefill node outputs so the recompiled DSP plan
+                        // doesn't read wrong values. Do NOT call clearAllCaches() —
+                        // that also flushes the array cache which progressively destroys
+                        // model constant DataBuffers across recompile cycles.
+                        decoderSession.clearNodeOutputsOnly();
                         // Save execution mode before invalidating executor
                         GraphExecutionMode prevMode = dspExec != null
                                 ? dspExec.getConfiguredGraphExecutionMode()
@@ -1176,6 +1180,14 @@ public class StaticKvCacheDecodeLoop {
             int numToScatter = newTokens.size();
             frozenStep.scatterAcceptedKv(cachePos, numToScatter);
             cachePos += numToScatter;
+
+            // Sync executor's saved position for plan recompilation safety.
+            // Even though Java scatter is used (not C++ scatter), the saved position
+            // must stay in sync in case the plan recompiles mid-decode.
+            DynamicShapePlanExecutor specDspExec = frozenStep.getDspExec();
+            if (specDspExec != null) {
+                specDspExec.syncSavedKvPosition(cachePos);
+            }
 
             // 5. Update state
             generatedTokens.addAll(newTokens);

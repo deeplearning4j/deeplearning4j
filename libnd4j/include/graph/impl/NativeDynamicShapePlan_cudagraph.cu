@@ -413,9 +413,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       NativeSlot& slot = slots_[stepIdx];
       for (int i = 0; i < slot.wiring.numOutputs; i++) {
         int slotIdx = slot.wiring.outputSlotIndices[i];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && slotArrayCache_[slotIdx] != nullptr) {
-          estimatedCaptureBytes += slotArrayCache_[slotIdx]->lengthOf() *
-                                   slotArrayCache_[slotIdx]->sizeOfT();
+        if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && outputSlots_[slotIdx] != nullptr) {
+          estimatedCaptureBytes += outputSlots_[slotIdx]->lengthOf() *
+                                   outputSlots_[slotIdx]->sizeOfT();
         }
       }
     }

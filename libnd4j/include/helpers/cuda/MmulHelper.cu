@@ -1005,9 +1005,13 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    // Decode-phase projections are dominated by row-vector GEMMs [1,K] x [K,N].
    // Map the row-major problem to cuBLAS's column-major view as [N,K] x [K,1] = [N,1]
    // so the library can use a better algorithm than the generic m=1, n=N path.
+   // Use stride-based contiguity check instead of ews() which is deprecated/unreliable.
+   // ews() returns 0 for arrays created by DSP pre-allocation even when strides are contiguous.
+   const bool aContiguous = shape::strideDescendingCAscendingF(pA->shapeInfo());
+   const bool cContiguous = shape::strideDescendingCAscendingF(pC->shapeInfo());
    const bool rowVectorFastPath =
        M == 1 && !transA && transB &&
-       pA->ews() == 1 && pB->strideAt(1) == 1 && pC->ews() == 1;
+       aContiguous && pB->strideAt(1) == 1 && cContiguous;
 
    if (rowVectorFastPath && (typeDouble || typeFloat || typeHalf || typeHalfFloat)) {
      const int ldaFast = static_cast<int>(pB->strideAt(0));

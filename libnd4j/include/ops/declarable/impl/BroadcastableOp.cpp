@@ -49,6 +49,19 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   } else
     dtype = sd::DataType::BOOL;
 
+  // Helper lambda: create a contiguous shape info from an input shape info.
+  // This prevents non-contiguous strides (from views like permute) from leaking
+  // into the output shape. Output shape info must always have contiguous strides
+  // because downstream code (e.g., Java-side raw buffer copy) assumes contiguous layout.
+  auto contiguousShapeFrom = [&](const LongType* si) -> LongType* {
+    int rank = shape::rank(si);
+    std::vector<LongType> shapeVec(rank);
+    for (int d = 0; d < rank; d++) {
+      shapeVec[d] = shape::shapeOf(si)[d];
+    }
+    return ConstantShapeHelper::getInstance().createShapeInfo(dtype, shape::order(si), shapeVec);
+  };
+
   if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
     // this is edge case, [3, 4] + [] = []
     if ((shape::isEmptyConst(x) && shape::rank(x) == 0) || (shape::isEmptyConst(y) && shape::rank(y) == 0)) {
@@ -63,24 +76,23 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
     shapeList->push_back(newshape);
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
-      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
+      shapeList->push_back(contiguousShapeFrom(x));
     } else {
-      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(y)->primary());
+      shapeList->push_back(contiguousShapeFrom(y));
     }
   } else if (shape::equalsSoft(x, y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
+    shapeList->push_back(contiguousShapeFrom(x));
   } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(y)->primary());
+    shapeList->push_back(contiguousShapeFrom(y));
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
+    shapeList->push_back(contiguousShapeFrom(x));
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
     sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     // NOTE: newshape is already a cached pointer from ConstantShapeHelper, don't delete it
     shapeList->push_back(newshape);
   } else {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
-
+    shapeList->push_back(contiguousShapeFrom(x));
   }
 
   return shapeList;

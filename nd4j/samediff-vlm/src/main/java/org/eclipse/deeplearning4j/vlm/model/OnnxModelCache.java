@@ -33,6 +33,9 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +103,9 @@ public class OnnxModelCache {
      * @return the imported SameDiff model
      * @throws IOException if import or cache operations fail
      */
+    private static final int MAX_LOAD_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 500;
+
     public static SameDiff importWithCache(String onnxFilePath) throws IOException {
         File onnxFile = new File(onnxFilePath);
         if (!onnxFile.exists()) {
@@ -108,6 +114,24 @@ public class OnnxModelCache {
 
         File sdzFile = getSdzCacheFile(onnxFile);
         boolean cacheDisabled = Boolean.getBoolean(DISABLE_CACHE_PROPERTY);
+
+        // Acquire file lock to prevent concurrent read/write/delete of the SDZ cache.
+        // The lock file is adjacent to the SDZ file — all processes/threads contending
+        // for this model will serialize through this lock.
+        File lockFile = new File(sdzFile.getAbsolutePath() + ".lock");
+        lockFile.getParentFile().mkdirs();
+        try (RandomAccessFile raf = new RandomAccessFile(lockFile, "rw");
+             FileChannel channel = raf.getChannel();
+             FileLock lock = channel.lock()) {
+            return importWithCacheLocked(onnxFile, sdzFile, cacheDisabled);
+        } catch (IOException e) {
+            // If locking fails (e.g., NFS without lock support), fall through without lock
+            log.warn("File locking failed for {}, proceeding without lock: {}", lockFile, e.getMessage());
+            return importWithCacheLocked(onnxFile, sdzFile, cacheDisabled);
+        }
+    }
+
+    private static SameDiff importWithCacheLocked(File onnxFile, File sdzFile, boolean cacheDisabled) throws IOException {
 
         boolean optimizerEnabled = isOptimizerEnabled();
 
@@ -123,10 +147,14 @@ public class OnnxModelCache {
             if (optValid) {
                 log.info("Loading cached optimized SDZ model: {} ({} bytes)", optSdzFile.getName(), optSdzFile.length());
                 long start = System.currentTimeMillis();
-                SameDiff sd = SDZSerializer.load(optSdzFile, false);
-                long elapsed = System.currentTimeMillis() - start;
-                log.info("Loaded cached optimized SDZ model in {}ms: {}", elapsed, optSdzFile.getName());
-                return sd;
+                SameDiff sd = loadSdzWithRetry(optSdzFile);
+                if (sd != null) {
+                    long elapsed = System.currentTimeMillis() - start;
+                    log.info("Loaded cached optimized SDZ model in {}ms: {}", elapsed, optSdzFile.getName());
+                    return sd;
+                }
+                log.warn("Failed to load optimized SDZ after retries, will re-import: {}", optSdzFile.getName());
+                optSdzFile.delete();
             } else if (optSdzFile.exists()) {
                 log.info("Stale .opt.sdz detected, will re-optimize: {}", optSdzFile.getName());
                 optSdzFile.delete();
@@ -137,17 +165,21 @@ public class OnnxModelCache {
         if (!cacheDisabled && sdzFile.exists() && sdzFile.lastModified() >= onnxFile.lastModified()) {
             log.info("Loading cached SDZ model: {} ({} bytes)", sdzFile.getName(), sdzFile.length());
             long start = System.currentTimeMillis();
-            SameDiff sd = SDZSerializer.load(sdzFile, false);
-            long elapsed = System.currentTimeMillis() - start;
-            log.info("Loaded cached SDZ model in {}ms: {}", elapsed, sdzFile.getName());
-            return maybeOptimize(sd, onnxFile, optimizerEnabled, cacheDisabled);
+            SameDiff sd = loadSdzWithRetry(sdzFile);
+            if (sd != null) {
+                long elapsed = System.currentTimeMillis() - start;
+                log.info("Loaded cached SDZ model in {}ms: {}", elapsed, sdzFile.getName());
+                return maybeOptimize(sd, onnxFile, optimizerEnabled, cacheDisabled);
+            }
+            log.warn("Failed to load cached SDZ after retries, will re-import: {}", sdzFile.getName());
+            sdzFile.delete();
         }
 
         // Full ONNX import (first run or cache invalidated)
         log.info("Importing ONNX model: {} (will cache as SDZ)", onnxFile.getName());
         long importStart = System.currentTimeMillis();
         OnnxFrameworkImporter importer = new OnnxFrameworkImporter();
-        SameDiff sd = importer.runImport(onnxFilePath, Map.of(), false, false);
+        SameDiff sd = importer.runImport(onnxFile.getAbsolutePath(), Map.of(), false, false);
         long importElapsed = System.currentTimeMillis() - importStart;
         log.info("ONNX import completed in {}ms: {}", importElapsed, onnxFile.getName());
 
@@ -223,6 +255,30 @@ public class OnnxModelCache {
         }
 
         return optimized;
+    }
+
+    /**
+     * Load an SDZ file with retry logic for transient ZIP extraction failures.
+     * Returns null if all retries fail (caller should fall back to re-import).
+     */
+    private static SameDiff loadSdzWithRetry(File sdzFile) {
+        for (int attempt = 1; attempt <= MAX_LOAD_RETRIES; attempt++) {
+            try {
+                return SDZSerializer.load(sdzFile, false);
+            } catch (Exception e) {
+                log.warn("SDZ load attempt {}/{} failed for {}: {}",
+                        attempt, MAX_LOAD_RETRIES, sdzFile.getName(), e.getMessage());
+                if (attempt < MAX_LOAD_RETRIES) {
+                    try {
+                        Thread.sleep(RETRY_DELAY_MS * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return null;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**

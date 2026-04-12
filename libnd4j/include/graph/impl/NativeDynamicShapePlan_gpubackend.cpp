@@ -2107,7 +2107,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     }
   }
 
-  // Diagnostic: scan all slotArrayCache_ entries for freed DataBuffers.
+  // Diagnostic: scan all outputSlots_ entries for freed DataBuffers.
   // Java may have closed DSP output arrays between steps (e.g., prefill KV outputs via
   // setCloseable(true)+close()), deleting the C++ NDArray and leaving dangling pointers.
   //
@@ -2124,16 +2124,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   if (seg.exec.executionCount < 4 || !isStableReplay) {
     int invalidCount = 0;
     for (int si = seg.def.startSlot; si <= seg.def.endSlot && si < totalOutputSlots_; si++) {
-      NDArray* cached = slotArrayCache_[si];
+      NDArray* cached = outputSlots_[si];
       if (cached != nullptr && !cached->isEmpty()) {
         auto* db = cached->dataBuffer();
         if (db == nullptr || !db->isValid()) {
-          DSP_DIAG_SLOT(MEMORY, si, "STALE slotArrayCache_[%d] detected "
+          DSP_DIAG_SLOT(MEMORY, si, "STALE outputSlots_[%d] detected "
                     "(arr=%p, db=%p, dbValid=%d, frozenConst=%d). Invalidating.",
                     si, (void*)cached, (void*)db, db ? (db->isValid() ? 1 : 0) : -1,
                     slots_[si].frozenConstantSlot() ? 1 : 0);
-          slotArrayCache_[si] = nullptr;
-          if (outputSlots_[si] == cached) outputSlots_[si] = nullptr;
+          outputSlots_[si] = nullptr;
           if (si < numSlots_ && slots_[si].state_ == NativeSlot::SlotState::FROZEN_CONSTANT) {
             slots_[si].state_ = NativeSlot::SlotState::FROZEN;
           }
@@ -2182,7 +2181,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // The Triton kernel's arg mapping references outputSlots_ for both inputs
   // (from prior ops) and outputs (to write results). Slot-by-slot warmup may
   // have released intermediate arrays via releaseAtStep_, leaving entries null.
-  // First restore from slotArrayCache_, then allocate any remaining nulls
+  // First restore from outputSlots_, then allocate any remaining nulls
   // using cached shape info from warmup.
   //
   //  This MUST happen BEFORE compilation. The compiler resolves
@@ -2194,7 +2193,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   //
   // IMPORTANT: Java may close() output arrays between execution steps (e.g.,
   // prefill KV outputs via setCloseable(true)+close()). This frees the underlying
-  // DataBuffer while slotArrayCache_ still holds the NDArray*. Validate the
+  // DataBuffer while outputSlots_ still holds the NDArray*. Validate the
   // DataBuffer before reusing — invalidate entries pointing to freed buffers.
   //
   //  If any output slot within the segment is allocated at a NEW address
@@ -2214,7 +2213,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   if (!(shapesFrozen_ && seg.exec.executionCount > 2 && seg.exec.replayHandle != nullptr)) {
   for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
     NativeSlot& slot = slots_[stepIdx];
-    // Phase 2: slotArrayCache_ == outputSlots_ (unified). No restore needed.
+    // Phase 2: outputSlots_ == outputSlots_ (unified). No restore needed.
     // Validate input DataBuffers — Java close() may have freed them.
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
@@ -2287,7 +2286,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             if (extIdx < numExt) srcArr = externalArrays[extIdx];
           } else if (srcIdx < totalOutputSlots_) {
             srcArr = outputSlots_[srcIdx];
-            // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate restore
+            // Phase 2: outputSlots_ == outputSlots_ (unified), no separate restore
           }
           if (srcArr) shapeInfo = srcArr->shapeInfo();
         }
@@ -2314,7 +2313,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           for (int d = 0; d < rank; d++) shapeVec[d] = shapeInfo[d + 1];
           auto* arr = new NDArray(order, shapeVec, dt);
           outputSlots_[slotIdx] = arr;
-          // Phase 2: slotArrayCache_ == outputSlots_ (unified), no separate assignment needed
+          // Phase 2: outputSlots_ == outputSlots_ (unified), no separate assignment needed
           preExecAllocCount++;
           {
             int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
@@ -2940,10 +2939,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                                                  outputSlots_, totalOutputSlots_,
                                                  stream);
         if (refreshStatus != Status::OK) {
-          DSP_DIAG(EXECUTE, "WARNING: refreshArgTablesForReplay FAILED for seg[%d-%d] "
-                   "shapeKey=%lld execCount=%d — graph replay will use STALE arg tables!",
+          DSP_DIAG(EXECUTE, "refreshArgTablesForReplay FAILED for seg[%d-%d] "
+                   "shapeKey=%lld execCount=%d — falling back to slot-by-slot execution",
                    seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey,
                    seg.exec.executionCount);
+          platformCleanupSegmentForRebuild(seg);
+          seg.exec.argTableStable = false;
+          batchD2DCount_ = 0;
+          seg.exec.cachedShapeKey = 0;
+          seg.exec.compilationFailed = false;
+          return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
         }
       }
 
@@ -3007,14 +3012,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // shared batchZeroEntries_ which only contains the LAST captured segment's data.
     auto& segBZ = seg.exec.segBatchZeroEntries;
     if (Environment::getInstance().dspBatchZero() && !segBZ.empty()) {
-      // Refresh batch-zero pointers from current slotArrayCache_ entries.
+      // Refresh batch-zero pointers from current outputSlots_ entries.
       // During frozen replay, the pre-exec restoration may be skipped (optimization),
-      // but slotArrayCache_ entries persist with stable shapes. Re-derive the GPU
+      // but outputSlots_ entries persist with stable shapes. Re-derive the GPU
       // pointer from the authoritative source to avoid stale pointers that cause
       // CUDA error 700 (illegal memory access) during cudaMemsetAsync.
       for (auto& entry : segBZ) {
         if (entry.outputSlotIndex >= 0 && entry.outputSlotIndex < totalOutputSlots_) {
-          NDArray* cached = slotArrayCache_[entry.outputSlotIndex];
+          NDArray* cached = outputSlots_[entry.outputSlotIndex];
           if (cached != nullptr && DSP_BUF(cached) != nullptr) {
             entry.ptr = DSP_BUF(cached);
             entry.bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
@@ -3069,7 +3074,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           for (int oi = 0; oi < slots_[si].wiring.numOutputs; oi++) {
             int slotIdx = slots_[si].wiring.outputSlotIndices[oi];
             if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-              NDArray* slotArr = slotArrayCache_[slotIdx];
+              NDArray* slotArr = outputSlots_[slotIdx];
               if (slotArr == nullptr || DSP_BUF(slotArr) == nullptr) {
                 nullSlots++;
                 DSP_DIAG(EXECUTE, "TRIPWIRE_NULL_SLOT: seg[%d-%d] step=%d "
@@ -3226,8 +3231,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                                                      stream);
             if (refreshStatus2 != Status::OK) {
               DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: refreshArgTablesForReplay FAILED for seg[%d-%d] "
-                       "post-gap — graph replay will use STALE arg tables!",
+                       "post-gap — falling back to slot-by-slot execution",
                        seg.def.startSlot, seg.def.endSlot);
+              platformCleanupSegmentForRebuild(seg);
+              seg.exec.argTableStable = false;
+              batchD2DCount_ = 0;
+              seg.exec.capturedInputAddrKey = 0;
+              seg.exec.capturedCreateValueKey = 0;
+              seg.exec.executionCount = 0;
+              seg.exec.compilationFailed = false;
+              return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
             }
             tritonBackend2->copyConsolidatedArgTableToDevice(seg, stream);
           }
@@ -3474,7 +3487,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 #endif  // HAVE_TRITON
         }
 
-        // Phase 2: slotArrayCache_ == outputSlots_ (unified).
+        // Phase 2: outputSlots_ == outputSlots_ (unified).
         // Post-replay restoration is a no-op — arrays are already in place.
 
         if (Environment::getInstance().tritonVerifyKernels()) {
@@ -3995,10 +4008,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       // ── RESTORE NULL OUTPUT SLOTS FROM CACHE ─────────────────────────────
       // The warmup execution may clear some outputSlots_ entries (e.g. control
       // flow CF_SWITCH dead outputs, or segment cleanup paths).  The values
-      // were captured into slotArrayCache_ during execution, so restore any
-      // Phase 2: slotArrayCache_ == outputSlots_ (unified).
+      // were captured into outputSlots_ during execution, so restore any
+      // Phase 2: outputSlots_ == outputSlots_ (unified).
       // Post-warmup restoration is a no-op — arrays produced during warmup
-      // are already in outputSlots_ (which IS slotArrayCache_).
+      // are already in outputSlots_ (which IS outputSlots_).
     }
 
     // DIAGNOSTIC: warmup-only mode — skip capture, use warmup result directly.
@@ -4585,7 +4598,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         status = Status::OK;
         usedTritonGraphCapture = true;
 
-        // Phase 2: slotArrayCache_ == outputSlots_ (unified).
+        // Phase 2: outputSlots_ == outputSlots_ (unified).
         // No need to sync cache ← output — they are the same pointer.
 
         // FORCE_RECAPTURE: invalidate graph immediately after capture+launch

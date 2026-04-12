@@ -2389,10 +2389,16 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             }
           }
         } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
-          // 3D key: [B, seqK, kvHeads*headDim] — infer from iArgs
-          if (slot.args.numIArgs > 0 && slot.args.iArgs) {
-            int totalQHeads = static_cast<int>(slot.args.iArgs[0]);
-            if (totalQHeads > 0) numKvHeads = totalQHeads;  // will be refined below
+          // ONNX MHA K/V stay 3D for GQA: [B, seqK, kvHeads * headDim].
+          // Infer KV heads from kvHidden instead of assuming numQHeads.
+          int kvHidden = static_cast<int>(effectiveKArr->sizeAt(2));
+          if (headDim > 0 && kvHidden > 0 && kvHidden % headDim == 0) {
+            int inferredKvHeads = kvHidden / headDim;
+            if (inferredKvHeads > 0 &&
+                inferredKvHeads <= numQHeads &&
+                numQHeads % inferredKvHeads == 0) {
+              numKvHeads = inferredKvHeads;
+            }
           }
         }
         if (numKvHeads <= 0) numKvHeads = numQHeads;
@@ -4115,22 +4121,30 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (numHeads <= 0) numHeads = 1;
           headDim = hidden / numHeads;
 
-          // Check for past_key (input 4) — 4D BHSD [B,H,pastSeq,D]
+          // Scan optional inputs for a real past_key tensor.
           bool hasPastKvGrid = false;
-          if (slot.wiring.numInputs > 4) {
-            auto pastKeyShape = resolveShape(slot.wiring.inputSourceIndices[4]);
-            if (pastKeyShape.size() == 4 && pastKeyShape[0] > 0 && pastKeyShape[2] > 0) {
-              hasPastKvGrid = true;
-              int pastSeq = static_cast<int>(pastKeyShape[2]);
-              // current K is input[1], 3D [B, seqKV, H*D]
-              int seqKV = 1;
-              if (slot.wiring.numInputs > kInputIdx) {
-                auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-                if (curKShape.size() == 3) {
-                  seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
+          for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKvGrid; inp++) {
+            auto candidateShape = resolveShape(slot.wiring.inputSourceIndices[inp]);
+            if (candidateShape.size() == 4) {
+              int candidateKvHeads = static_cast<int>(candidateShape[1]);
+              int candidatePastSeq = static_cast<int>(candidateShape[2]);
+              int candidateHeadDim = static_cast<int>(candidateShape[3]);
+              if (candidateShape[0] > 0 &&
+                  candidatePastSeq > 0 &&
+                  candidateHeadDim == headDim &&
+                  candidateKvHeads > 0 &&
+                  candidateKvHeads <= numHeads &&
+                  numHeads % candidateKvHeads == 0) {
+                hasPastKvGrid = true;
+                int seqKV = 1;
+                if (slot.wiring.numInputs > kInputIdx) {
+                  auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
+                  if (curKShape.size() == 3) {
+                    seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
+                  }
                 }
+                seqK = candidatePastSeq + seqKV;  // total sequence for attention
               }
-              seqK = pastSeq + seqKV;  // total sequence for attention
             }
           }
           if (!hasPastKvGrid && slot.wiring.numInputs > kInputIdx) {
@@ -5908,10 +5922,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               }
             }
           } else if (effectiveKShape.size() == 3) {
-            // 3D key: [B, seqK, kvHeads*headDim] — infer from iArgs
-            if (slot.args.numIArgs > 0 && slot.args.iArgs) {
-              int totalQHeads = static_cast<int>(slot.args.iArgs[0]);
-              if (totalQHeads > 0) numKvHeads = totalQHeads;  // will be refined below
+            // ONNX MHA K/V stay 3D for GQA: [B, seqK, kvHeads * headDim].
+            // Infer KV heads from kvHidden instead of assuming numQHeads.
+            int kvHidden = static_cast<int>(effectiveKShape[2]);
+            if (headDim > 0 && kvHidden > 0 && kvHidden % headDim == 0) {
+              int inferredKvHeads = kvHidden / headDim;
+              if (inferredKvHeads > 0 &&
+                  inferredKvHeads <= numQHeads &&
+                  numQHeads % inferredKvHeads == 0) {
+                numKvHeads = inferredKvHeads;
+              }
             }
           }
           // Default: MHA (KV heads = Q heads)

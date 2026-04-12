@@ -328,8 +328,10 @@ void FlashAttentionHelper::forward4D(
     kPermBuffer->reshapei(shape3D_KV);
     vPermBuffer->reshapei(shape3D_KV);
 
-    // Get output buffer from workspace
+    // Get output buffer from workspace and zero it — the fused kernel may not write
+    // all positions (e.g., causal mask), and stale data from a previous call would leak.
     NDArray* outFlat = workspace->getBuffer("forward4d_outFlat", shape3D_Q, query->dataType(), context);
+    outFlat->nullify();
 
     // Prepare attention bias if present - broadcast+reshape to [batch*heads, seqQ, seqKV]
     //  The fused CUDA kernel templates on query dtype (float32/float64/half).

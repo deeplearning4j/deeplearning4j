@@ -355,6 +355,23 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /**
+     * Clear only the node output buffers and plan, preserving the array cache
+     * and model constants. Use this during decode recompile cycles where
+     * stale prefill outputs must be cleared but model weights must survive.
+     */
+    public void clearNodeOutputsOnly() {
+        DynamicShapePlan sessionPlan = dynamicShapePlan;
+        if (sessionPlan != null) {
+            sessionPlan.close();
+            dynamicShapePlan = null;
+        }
+        int nodeOutputsClosed = closeNodeValueOutputBuffers();
+        if (nodeOutputsClosed > 0) {
+            log.info("clearNodeOutputsOnly: closed {} node output buffers", nodeOutputsClosed);
+        }
+    }
+
+    /**
      * Clear all caches (DAG cache, plan cache, constant/variable cache).
      * Call when the graph structure changes.
      */
@@ -489,12 +506,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 continue;
             }
 
-            if (buf.isConstant() && !buf.isAttached()) {
-                try {
-                    buf.setConstant(false);
-                } catch (Exception ignored) {
-                    // Best-effort cleanup only.
-                }
+            // Never force-close constant buffers — they are model weights that must
+            // survive session cleanup. The protectedBuffers snapshot may miss them if
+            // identity ops alias a constant's DataBuffer to an output slot, causing the
+            // buffer to appear in nodeValueOutputs with a different identity.
+            if (buf.isConstant()) {
+                continue;
             }
 
             if (buf.closeable()) {
