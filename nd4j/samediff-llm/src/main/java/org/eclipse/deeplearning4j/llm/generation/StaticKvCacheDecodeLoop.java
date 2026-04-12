@@ -644,17 +644,13 @@ public class StaticKvCacheDecodeLoop {
                         // that also flushes the array cache which progressively destroys
                         // model constant DataBuffers across recompile cycles.
                         decoderSession.clearNodeOutputsOnly();
-                        // Save execution mode before invalidating executor
-                        GraphExecutionMode prevMode = dspExec != null
-                                ? dspExec.getConfiguredGraphExecutionMode()
-                                : decoder.getGraphExecutionMode();
                         dspExec = null;  // old executor invalidated
                         if (!skipFreeze) {
-                            log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={}, mode={})",
-                                    maxKvLen, Arrays.toString(recompileOutputs), prevMode);
+                            log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={})",
+                                    maxKvLen, Arrays.toString(recompileOutputs));
                             try {
                                 decoder.compileNativeDynamicShapePlan(
-                                        Arrays.asList(recompileOutputs), prevMode, true);
+                                        DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
                             } catch (Exception e) {
                                 throw decodeStageFailure("DSP_STATIC_KV_RECOMPILE", step, pastSeqLen, currentSeqLen,
                                         usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);

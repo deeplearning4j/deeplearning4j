@@ -307,7 +307,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   // 1. old != value (actually being replaced, not a no-op write)
   // 2. old is plan-owned (we allocated it, safe to delete)
   // 3. old's DataBuffer is not a protected weight buffer
-  // 4. old is not still referenced by another slot
+  // 4. old's DataBuffer is not shared with any other slot (including views)
   // Without this, replaced arrays stay in planOwnedArrays_ but are unreachable
   // from outputSlots_[], causing ~240 MB/step GPU memory leak in large models.
   if (old != nullptr && old != value) {
