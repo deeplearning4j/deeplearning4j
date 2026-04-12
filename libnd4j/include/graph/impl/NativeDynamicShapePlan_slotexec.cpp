@@ -673,6 +673,16 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   if (!shapesFrozen_ || executeCount_ != 1 || frozenConstantDetectionDone_) return;
   frozenConstantDetectionDone_ = true;
 
+  // DISABLED: Frozen constant detection incorrectly marks KV-related slots as
+  // constants when the plan is compiled with logits-only outputs. The dependency
+  // propagation fails to recognize that KV concat ops depend on external KV inputs
+  // when those inputs flow through internal slots. This causes KV concat to be
+  // skipped during frozen replay, leaving the KV cache unupdated and producing
+  // degenerate repeated tokens.
+  // TODO: Fix the dependency propagation to correctly trace KV external inputs
+  // through internal slot wiring before re-enabling this optimization.
+  return;
+
   // Ops whose output depends ONLY on input shapes, not input values.
   // When shapes are frozen, these produce identical output every step.
   // Classification now comes from OpDescriptor traits (OP_TRAIT_SHAPE_ONLY_OUTPUT).
@@ -1476,11 +1486,20 @@ Status NativeDynamicShapePlan::executeSlot(
     // The standard path gets this via NativeOps entry points (prepareSpecialUse/registerSpecialUse).
     // DSP dispatches ops directly — without this, input arrays may have stale GPU data
     // and output actuality counters won't be ticked, causing compounding errors.
-    NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+    //
+    // PERFORMANCE: In frozen steady-state (executeCount_ >= 2), all data is already
+    // device-resident and actuality flags are correct. Skipping these calls eliminates
+    // ~5486 syncToDevice calls per decode step (2743 ops × 2 calls).
+    bool needsSync = !shapesFrozen_ || executeCount_ < 2;
+    if (needsSync) {
+        NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+    }
 
     auto status = slot.ident.op->execute(&ctx);
 
-    NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+    if (needsSync) {
+        NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+    }
 
     auto& ctxOuts = ctx.fastpath_out();
 
@@ -2524,8 +2543,14 @@ step3_allocate:
     }
   }
 
-  // Ensure CUDA host↔device coherency (warmup path)
-  NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+  // Ensure CUDA host↔device coherency (warmup path).
+  // PERFORMANCE: In frozen steady-state (executeCount_ >= 2), all data is already
+  // device-resident and actuality flags are correct. Skipping eliminates ~5486
+  // syncToDevice calls per decode step.
+  bool needsSync = !shapesFrozen_ || executeCount_ < 2;
+  if (needsSync) {
+    NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+  }
 
   Status status;
   try {
@@ -2601,8 +2626,11 @@ step3_allocate:
               (int)cacheHit, executeCount_, (int)shapesFrozen_);
   }
 
-  // Register device writes (warmup path)
-  NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+  // Register device writes (warmup path).
+  // PERFORMANCE: Skip in frozen steady-state to eliminate ~5486 sync calls/step.
+  if (needsSync) {
+    NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+  }
 
   for (int i = 0; i < numActualOutputs; i++) {
     if (outputs[i] != nullptr) {

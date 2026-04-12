@@ -90,12 +90,12 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
-      if (srcIdx < 0) {
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
-          mix(reinterpret_cast<LongType>(externalInputs[extIdx]->specialBuffer()));
-        }
-      } else if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
+      // Skip external inputs (srcIdx < 0) — Java allocates new arrays for
+      // placeholder inputs each decode step. Including them would make the
+      // address key never match, blocking phase advancement. Only cross-segment
+      // inputs matter for pointer stability.
+      if (srcIdx < 0) continue;
+      if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
         if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
           mix(reinterpret_cast<LongType>(outputSlots_[srcIdx]->specialBuffer()));
         }

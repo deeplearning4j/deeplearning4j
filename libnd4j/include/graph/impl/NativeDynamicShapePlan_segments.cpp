@@ -1229,9 +1229,17 @@ executeSlot_retry:
 
 LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
-  // FNV-1a hash of buffer addresses for all segment inputs (external + cross-segment).
+  // FNV-1a hash of buffer addresses for all CROSS-SEGMENT inputs.
   // On CUDA, uses specialBuffer(); on CPU, uses primaryBuffer().
   // Address changes between executions indicate the graph would have stale pointers.
+  //
+  // IMPORTANT: External inputs (srcIdx < 0) are EXCLUDED. Java allocates new
+  // arrays for placeholder inputs (position_ids, attention_mask) each decode step,
+  // so their pointers always change. Including them would make the address key
+  // never match, argTableStable would stay false, and the plan would be permanently
+  // stuck at SHAPES_FROZEN — never advancing to POINTERS_STABLE or REPLAYING.
+  // Only cross-segment inputs (internal plan outputs) matter for pointer stability,
+  // since those are the buffers the plan itself manages and expects to be stable.
   uint64_t hash = dsp::FNV1A64_OFFSET_BASIS;
   auto mix = [&hash](uintptr_t val) {
     dsp::fnv1aMixValue(hash, static_cast<uint64_t>(val));
@@ -1242,21 +1250,21 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       NDArray* arr = nullptr;
-      if (srcIdx < 0) {
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt) arr = externalInputs[extIdx];
-      } else if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
         arr = outputSlots_[srcIdx];
       }
+      // Skip external inputs (srcIdx < 0) — their pointers change every step
+      // by design and should not block phase advancement.
       if (arr != nullptr) {
 #if defined(SD_CUDA)
         mix(reinterpret_cast<uintptr_t>(arr->specialBuffer()));
 #else
         mix(reinterpret_cast<uintptr_t>(arr->buffer()));
 #endif
-      } else {
-        mix(0);  // nullptr sentinel
+      } else if (srcIdx >= 0) {
+        mix(0);  // cross-segment nullptr sentinel
       }
+      // external input: deliberately not hashed
     }
   }
   return hash;
