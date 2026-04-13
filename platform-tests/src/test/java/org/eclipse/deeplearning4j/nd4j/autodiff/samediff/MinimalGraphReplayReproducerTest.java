@@ -681,20 +681,334 @@ public class MinimalGraphReplayReproducerTest {
 
     @Test
     @Order(20)
-    @DisplayName("20. Reusable embeddings only")
+    @DisplayName("20. Reusable embeddings only — with GPU data dump")
     public void test20_reusableEmbeddingsOnly() {
         Assumptions.assumeTrue(modelsLoaded, "Models not loaded");
         Assumptions.assumeTrue(Nd4j.getNativeOps().isTritonAvailable(), "Triton not available");
 
-        log.info("=== TEST 20: Reusable embeddings only ===");
-        DecodeResult baseline = runManualDecodeReusableSplit("20_EMBED_OFF", false, PREFILL_TOKENS, true,
-                /*reusableEmbeddings=*/true, /*reusableInputIds=*/false);
-        DecodeResult treatment = runManualDecodeReusableSplit("20_EMBED_ON", true, PREFILL_TOKENS, true,
-                /*reusableEmbeddings=*/true, /*reusableInputIds=*/false);
+        log.info("=== TEST 20: Reusable embeddings with GPU data dump ===");
+        log.info("=== PHASE 1: GRAPH-OFF (baseline) ===");
+        DecodeResult baseline = runReusableEmbedWithDataDump("20_OFF", false);
+        log.info("=== PHASE 2: GRAPH-ON (treatment) ===");
+        DecodeResult treatment = runReusableEmbedWithDataDump("20_ON", true);
+
+        // Cross-compare: print side-by-side for each step
+        log.info("========================================================================");
+        log.info("  SIDE-BY-SIDE COMPARISON: graph-off vs graph-on");
+        log.info("========================================================================");
+        int minLen = Math.min(baseline.tokens.size(), treatment.tokens.size());
+        for (int i = 0; i < minLen; i++) {
+            String stepLabel = i == 0 ? "prefill" : "decode " + (i - 1);
+            boolean match = baseline.tokens.get(i).equals(treatment.tokens.get(i));
+            log.info("  Step {}: OFF token={}  ON token={}  {}",
+                    String.format("%8s", stepLabel), baseline.tokens.get(i), treatment.tokens.get(i),
+                    match ? "MATCH" : "*** DIVERGE ***");
+        }
+        log.info("========================================================================");
 
         String result = compareAndReport("20_REUSE_EMBED_ONLY", baseline, treatment);
         testResults.put("20_REUSE_EMBED_ONLY", result);
         assertTokensMatch("20_REUSE_EMBED_ONLY", baseline.tokens, treatment.tokens);
+    }
+
+    /**
+     * Instrumented decode loop with GPU data dumps at every step.
+     * Dumps: embedding GPU data (first 4 values + address), logits (first 4 values + argmax).
+     */
+    private DecodeResult runReusableEmbedWithDataDump(String label, boolean graphCaptureOn) {
+        DecodeResult result = new DecodeResult();
+        Environment env = Nd4j.getEnvironment();
+
+        boolean origGraphCapture = env.tritonGraphCapture();
+        boolean origCompileAll = env.tritonCompileAll();
+        boolean origSectionFusion = env.tritonSectionFusion();
+        boolean origConsolidated = env.tritonConsolidatedArgTable();
+        boolean origDirtyTracking = env.tritonArgDirtyTracking();
+        boolean origCublasTf32 = env.cublasTf32Enabled();
+        boolean origTritonTf32 = env.tritonTf32Enabled();
+        boolean origBatchedGemm = env.dspBatchedGemm();
+        boolean origFusionScoring = env.tritonFusionScoring();
+        String origIncludeTypes = env.tritonIncludeTypes();
+
+        try {
+            env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION");
+            env.setTritonCompileAll(true);
+            env.setTritonSectionFusion(true);
+            env.setTritonGraphCapture(graphCaptureOn);
+            env.setTritonConsolidatedArgTable(graphCaptureOn);
+            env.setTritonArgDirtyTracking(graphCaptureOn);
+            env.setCublasTf32Enabled(graphCaptureOn);
+            env.setTritonTf32Enabled(graphCaptureOn);
+            env.setDspBatchedGemm(graphCaptureOn);
+            env.setTritonFusionScoring(!graphCaptureOn);
+
+            decoder.resetSession();
+            embedTokens.resetSession();
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            decoder.setDspAutoCompileEnabled(true);
+            decoder.setDspNativeAutoCompileEnabled(true);
+
+            INDArray prefillEmbeds = buildPrefillEmbeddings(PREFILL_TOKENS);
+            runReusableEmbedStepsWithDump(label, result, prefillEmbeds, PREFILL_TOKENS, graphCaptureOn);
+        } finally {
+            env.setTritonGraphCapture(origGraphCapture);
+            env.setTritonCompileAll(origCompileAll);
+            env.setTritonSectionFusion(origSectionFusion);
+            env.setTritonConsolidatedArgTable(origConsolidated);
+            env.setTritonArgDirtyTracking(origDirtyTracking);
+            env.setCublasTf32Enabled(origCublasTf32);
+            env.setTritonTf32Enabled(origTritonTf32);
+            env.setDspBatchedGemm(origBatchedGemm);
+            env.setTritonFusionScoring(origFusionScoring);
+            env.setTritonIncludeTypes(origIncludeTypes);
+        }
+
+        return result;
+    }
+
+    /**
+     * Instrumented decode steps: reusable embeddings with GPU data dump at each step.
+     */
+    private void runReusableEmbedStepsWithDump(String label, DecodeResult result,
+                                                INDArray prefillEmbeds, int[] prefillTokenIds,
+                                                boolean graphCaptureOn) {
+        String[] fullOutputNames = buildFullOutputNames();
+        String[] logitsOnlyOutputNames = new String[]{logitsName};
+        String embedOutputName = embedTokens.outputs().get(0);
+
+        INDArray inputIds = Nd4j.createFromArray(prefillTokenIds)
+                .reshape(1, prefillTokenIds.length)
+                .castTo(DataType.LONG);
+        long prefillSeqLen = prefillTokenIds.length;
+
+        // Prefill
+        Map<String, INDArray> prefillInputs = DecoderUtils.buildDecoderInputMap(
+                decoder.inputs(), decoder, prefillEmbeds, inputIds,
+                0, prefillSeqLen, null, 0, 0, false, hiddenSize);
+        Map<String, INDArray> prefillOutputs = decoder.output(prefillInputs, fullOutputNames);
+        INDArray prefillLogits = prefillOutputs.get(logitsName);
+        assertNotNull(prefillLogits, label + ": prefill logits null");
+
+        INDArray lastLogits = prefillLogits.rank() == 3
+                ? prefillLogits.get(NDArrayIndex.point(0),
+                NDArrayIndex.point(prefillLogits.size(1) - 1), NDArrayIndex.all())
+                : prefillLogits.get(NDArrayIndex.point(0), NDArrayIndex.all());
+        int nextToken = Nd4j.argMax(lastLogits).getInt(0);
+        result.tokens.add(nextToken);
+
+        // Dump prefill logits
+        float[] prefillLogitVals = lastLogits.dup().data().asFloat();
+        log.info("[{}] PREFILL logits first4=[{}, {}, {}, {}] argmax={} token={}",
+                label, prefillLogitVals[0], prefillLogitVals[1], prefillLogitVals[2], prefillLogitVals[3],
+                nextToken, nextToken);
+
+        // Initialize static KV cache
+        StaticKvManager kvMgr = new StaticKvManager(kvNames, MAX_KV_LEN);
+        kvMgr.initializeFromPrefill(prefillOutputs);
+
+        // Close prefill KV outputs
+        for (String name : kvNames.keyNames) {
+            INDArray arr = prefillOutputs.get(name);
+            if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
+        }
+        for (String name : kvNames.valueNames) {
+            INDArray arr = prefillOutputs.get(name);
+            if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
+        }
+        if (prefillLogits != null && !prefillLogits.wasClosed()) {
+            prefillLogits.setCloseable(true); prefillLogits.close();
+        }
+
+        // Recompile
+        decoder.clearDynamicShapePlanCache();
+        var session = decoder.getOrCreateSession();
+        session.clearAllCaches();
+
+        Map<String, INDArray> staticKvBuffers = kvMgr.getStaticKvBuffers();
+        for (Map.Entry<String, INDArray> e : staticKvBuffers.entrySet()) {
+            if (decoder.hasVariable(e.getKey())) {
+                decoder.associateArrayWithVariable(e.getValue(), e.getKey());
+            }
+        }
+
+        decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, logitsOnlyOutputNames);
+
+        session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor dspExec = session.getDynamicShapePlanExecutor();
+
+        boolean cppKvScatterActive = false;
+        if (dspExec != null) {
+            dspExec.setShapesFrozen(true);
+            if (dspExec.getCurrentPlan() != null) {
+                List<String> presentNames = new ArrayList<>();
+                presentNames.addAll(kvNames.keyNames);
+                presentNames.addAll(kvNames.valueNames);
+                List<String> pastNames = new ArrayList<>();
+                for (String pn : presentNames) {
+                    pastNames.add(ioConfig.presentToInputName(pn));
+                }
+                cppKvScatterActive = dspExec.configureKvCacheRetention(
+                        dspExec.getCurrentPlan(), presentNames, pastNames,
+                        (int) kvMgr.getMaxKvLen(), (int) kvMgr.getCachePosition());
+                log.info("[{}] C++ KV scatter: {}", label, cppKvScatterActive);
+                if (cppKvScatterActive) {
+                    dspExec.configureDecodeInputs(dspExec.getCurrentPlan(), (int) kvMgr.getMaxKvLen());
+                }
+            }
+        }
+
+        // Decode steps with reusable embeddings + data dump
+        INDArray reusableEmbed = null;
+        Map<String, INDArray> reusableInputs = new HashMap<>();
+        float[] prevEmbedVals = null;  // track previous embedding values
+        float[] prevLogitVals = null;  // track previous logit values
+
+        for (int step = 0; step < NUM_DECODE_STEPS; step++) {
+            long pastSeqLen2 = prefillSeqLen + step;
+            long cachePos = kvMgr.getCachePosition();
+
+            log.info("[{}] ---- STEP {} ---- nextToken={} cachePos={}", label, step, nextToken, cachePos);
+
+            // Get embedding for this token
+            INDArray tokenIdArr = Nd4j.createFromArray(new long[]{nextToken})
+                    .reshape(1, 1).castTo(DataType.LONG);
+            Map<String, INDArray> tokenEmbedOut = embedTokens.output(
+                    Map.of("input_ids", tokenIdArr), embedOutputName);
+            INDArray stepEmbed = tokenEmbedOut.get(embedOutputName);
+
+            // Dump the FRESH embedding from embedTokens (before assign)
+            float[] freshEmbedVals = stepEmbed.dup().data().asFloat();
+            long freshEmbedAddr = stepEmbed.data().address();
+            log.info("[{}] Step {} FRESH embed addr=0x{} first4=[{}, {}, {}, {}]",
+                    label, step, Long.toHexString(freshEmbedAddr),
+                    freshEmbedVals[0], freshEmbedVals[1], freshEmbedVals[2], freshEmbedVals[3]);
+
+            // Reusable embeddings: assign into fixed buffer
+            if (reusableEmbed == null) {
+                reusableEmbed = stepEmbed.dup();
+                log.info("[{}] Step {} CREATED reusable embed addr=0x{}",
+                        label, step, Long.toHexString(reusableEmbed.data().address()));
+            } else {
+                long addrBefore = reusableEmbed.data().address();
+                reusableEmbed.assign(stepEmbed);
+                long addrAfter = reusableEmbed.data().address();
+                log.info("[{}] Step {} ASSIGNED to reusable embed addrBefore=0x{} addrAfter=0x{} sameAddr={}",
+                        label, step, Long.toHexString(addrBefore), Long.toHexString(addrAfter),
+                        addrBefore == addrAfter);
+            }
+
+            // Dump the REUSABLE embedding AFTER assign (read back from GPU)
+            float[] reusableEmbedVals = reusableEmbed.dup().data().asFloat();
+            long reusableEmbedAddr = reusableEmbed.data().address();
+            log.info("[{}] Step {} REUSABLE embed addr=0x{} first4=[{}, {}, {}, {}]",
+                    label, step, Long.toHexString(reusableEmbedAddr),
+                    reusableEmbedVals[0], reusableEmbedVals[1], reusableEmbedVals[2], reusableEmbedVals[3]);
+
+            // Check if reusable embed matches fresh embed
+            boolean embedMatch = true;
+            for (int v = 0; v < Math.min(4, freshEmbedVals.length); v++) {
+                if (Float.compare(freshEmbedVals[v], reusableEmbedVals[v]) != 0) {
+                    embedMatch = false;
+                    break;
+                }
+            }
+            log.info("[{}] Step {} EMBED fresh==reusable? {}", label, step, embedMatch);
+
+            // Check if embedding changed from previous step
+            if (prevEmbedVals != null) {
+                boolean changed = false;
+                for (int v = 0; v < Math.min(4, reusableEmbedVals.length); v++) {
+                    if (Float.compare(prevEmbedVals[v], reusableEmbedVals[v]) != 0) {
+                        changed = true;
+                        break;
+                    }
+                }
+                log.info("[{}] Step {} EMBED changed-vs-prev? {} prev=[{}, {}, {}, {}]",
+                        label, step, changed,
+                        prevEmbedVals[0], prevEmbedVals[1], prevEmbedVals[2], prevEmbedVals[3]);
+            }
+            prevEmbedVals = reusableEmbedVals;
+
+            // Fresh inputIds each step (not reusable)
+            Map<String, INDArray> decodeInputs = DecoderUtils.buildDecoderInputMap(
+                    decoder.inputs(), decoder, reusableEmbed, tokenIdArr,
+                    pastSeqLen2, 1, kvMgr.getStaticKvBuffers(), kvMgr.getMaxKvLen(), cachePos,
+                    true, hiddenSize, reusableInputs, true);
+
+            // Tell C++ to update input_ids/position_ids/attention_mask directly on GPU device
+            if (cppKvScatterActive && dspExec != null) {
+                dspExec.setNextDecodeToken(nextToken, (int) cachePos);
+            }
+
+            // Dump the embedding address that decoder will see (the placeholder array)
+            for (String inputName : decoder.inputs()) {
+                if (inputName.contains("embed") || inputName.contains("hidden") || inputName.contains("inputs_embeds")) {
+                    INDArray inputArr = decodeInputs.get(inputName);
+                    if (inputArr != null) {
+                        float[] inputVals = inputArr.dup().data().asFloat();
+                        log.info("[{}] Step {} DECODER INPUT '{}' addr=0x{} shape={} first4=[{}, {}, {}, {}]",
+                                label, step, inputName,
+                                Long.toHexString(inputArr.data().address()),
+                                Arrays.toString(inputArr.shape()),
+                                inputVals[0], inputVals[1], inputVals[2], inputVals[3]);
+                    }
+                }
+            }
+
+            Map<String, INDArray> outputs = decoder.outputDirect(decodeInputs, logitsOnlyOutputNames);
+
+            INDArray stepLogits = outputs.get(logitsName);
+            assertNotNull(stepLogits, label + ": step " + step + " logits null");
+
+            // Dump the LOGITS from GPU
+            INDArray lastLogit = stepLogits.rank() == 3
+                    ? stepLogits.get(NDArrayIndex.point(0),
+                    NDArrayIndex.point(stepLogits.size(1) - 1), NDArrayIndex.all())
+                    : stepLogits.get(NDArrayIndex.point(0), NDArrayIndex.all());
+            float[] logitVals = lastLogit.dup().data().asFloat();
+            nextToken = Nd4j.argMax(lastLogit).getInt(0);
+            result.tokens.add(nextToken);
+
+            log.info("[{}] Step {} LOGITS addr=0x{} shape={} first4=[{}, {}, {}, {}] argmax={} token={}",
+                    label, step, Long.toHexString(stepLogits.data().address()),
+                    Arrays.toString(stepLogits.shape()),
+                    logitVals[0], logitVals[1], logitVals[2], logitVals[3],
+                    nextToken, nextToken);
+
+            // Check if logits changed from previous step
+            if (prevLogitVals != null) {
+                boolean logitsChanged = false;
+                for (int v = 0; v < Math.min(4, logitVals.length); v++) {
+                    if (Float.compare(prevLogitVals[v], logitVals[v]) != 0) {
+                        logitsChanged = true;
+                        break;
+                    }
+                }
+                log.info("[{}] Step {} LOGITS changed-vs-prev? {} prev=[{}, {}, {}, {}]",
+                        label, step, logitsChanged,
+                        prevLogitVals[0], prevLogitVals[1], prevLogitVals[2], prevLogitVals[3]);
+            }
+            prevLogitVals = logitVals;
+
+            // Also dump the REUSABLE embedding AFTER decoder execution to check if decoder modified it
+            float[] postExecEmbedVals = reusableEmbed.dup().data().asFloat();
+            boolean embedIntactAfterExec = true;
+            for (int v = 0; v < Math.min(4, reusableEmbedVals.length); v++) {
+                if (Float.compare(reusableEmbedVals[v], postExecEmbedVals[v]) != 0) {
+                    embedIntactAfterExec = false;
+                    break;
+                }
+            }
+            log.info("[{}] Step {} EMBED intact-after-exec? {} postExec=[{}, {}, {}, {}]",
+                    label, step, embedIntactAfterExec,
+                    postExecEmbedVals[0], postExecEmbedVals[1], postExecEmbedVals[2], postExecEmbedVals[3]);
+
+            if (cppKvScatterActive) {
+                kvMgr.advancePosition();
+            } else {
+                kvMgr.scatterNewEntries(outputs);
+            }
+        }
     }
 
     // ========================================================================
