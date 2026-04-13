@@ -673,22 +673,43 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   if (!shapesFrozen_ || executeCount_ != 1 || frozenConstantDetectionDone_) return;
   frozenConstantDetectionDone_ = true;
 
-  // DISABLED: Frozen constant detection incorrectly marks KV-related slots as
-  // constants when the plan is compiled with logits-only outputs. The dependency
-  // propagation fails to recognize that KV concat ops depend on external KV inputs
-  // when those inputs flow through internal slots. This causes KV concat to be
-  // skipped during frozen replay, leaving the KV cache unupdated and producing
-  // degenerate repeated tokens.
-  // TODO: Fix the dependency propagation to correctly trace KV external inputs
-  // through internal slot wiring before re-enabling this optimization.
-  return;
-
   // Ops whose output depends ONLY on input shapes, not input values.
   // When shapes are frozen, these produce identical output every step.
   // Classification now comes from OpDescriptor traits (OP_TRAIT_SHAPE_ONLY_OUTPUT).
 
   std::vector<bool> dependsOnExternal(totalOutputSlots_, false);
   std::vector<bool> isValueIndependentSlot(numSlots_, false);
+
+  // Step 1: Identify output slots NOT produced by any op in the plan.
+  // These are "Java-managed" slots — populated externally by Java before each
+  // execution (constants, variables, placeholders). Any op reading from such a
+  // slot must be treated as external-dependent because Java may change the data.
+  //
+  // This fixes the KV cache bug: static KV buffers are associated as variables
+  // (srcIdx >= 0, SOURCE_VARIABLE) and mapped to output slots that no plan op
+  // writes to. Without this, KV concat ops appeared to have only internal inputs
+  // and were incorrectly frozen, leaving the KV cache unupdated.
+  std::vector<bool> producedByPlanOp(totalOutputSlots_, false);
+  for (int s = 0; s < numSlots_; s++) {
+    auto& sl = slots_[s];
+    for (int o = 0; o < sl.wiring.numOutputs; o++) {
+      int si = sl.wiring.outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_) {
+        producedByPlanOp[si] = true;
+      }
+    }
+  }
+
+  // Mark all Java-managed (non-op-produced) output slots as external-dependent.
+  // Constants with SOURCE_CONSTANT are truly immutable — but we still mark them
+  // as external-dependent for safety. The cost is minimal: a few extra slots
+  // won't be frozen, but correctness is guaranteed. Shape-only ops that read
+  // these slots will still be frozen (they don't propagate dependency).
+  for (int si = 0; si < totalOutputSlots_; si++) {
+    if (!producedByPlanOp[si]) {
+      dependsOnExternal[si] = true;
+    }
+  }
 
   // Propagate external dependency through the graph (topological order).
   // Value-independent ops do NOT propagate dependency — their outputs
@@ -711,7 +732,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
         anyInputDependsOnExternal = true;
         break;
       }
-      if (srcIdx < totalOutputSlots_ && dependsOnExternal[srcIdx]) {
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots_ && dependsOnExternal[srcIdx]) {
         anyInputDependsOnExternal = true;
         break;
       }
@@ -822,8 +843,17 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     }
   }
 
-  DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants (%d value-independent, %d in-place disabled, %d view-alias unfrozen)",
-            frozenConstCount, numSlots_, valueIndepCount, disabledInPlace, viewAliasUnfrozen);
+  // Count Java-managed slots for diagnostics
+  int javaManagedCount = 0;
+  for (int si = 0; si < totalOutputSlots_; si++) {
+    if (!producedByPlanOp[si]) javaManagedCount++;
+  }
+
+  DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants "
+            "(%d value-independent, %d in-place disabled, %d view-alias unfrozen, "
+            "%d java-managed output slots)",
+            frozenConstCount, numSlots_, valueIndepCount, disabledInPlace,
+            viewAliasUnfrozen, javaManagedCount);
 
   // Log external-dependency summary for frozen constant debugging.
   if (DSP_DIAG_ENABLED(SHAPE)) {
@@ -831,8 +861,9 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     for (int si = 0; si < totalOutputSlots_; si++) {
       if (dependsOnExternal[si]) extDepCount++;
     }
-    DSP_DIAG(SHAPE, "frozen constant detection: %d/%d output slots depend on external input",
-             extDepCount, totalOutputSlots_);
+    DSP_DIAG(SHAPE, "frozen constant detection: %d/%d output slots depend on external input "
+             "(%d from java-managed slots)",
+             extDepCount, totalOutputSlots_, javaManagedCount);
 
     // At FULL level, log per-slot details for the configured trace slot (if any).
     int ts = DspDiagnostics::getInstance().traceSlot();
@@ -840,17 +871,18 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
       bool depExt = dependsOnExternal[ts];
       int producingStep = -1;
       bool isFrozenConst = false, isShapeStatic = false;
-      for (int s = 0; s < numSlots_; s++) {
+      bool found = false;
+      for (int s = 0; s < numSlots_ && !found; s++) {
         for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
           if (slots_[s].wiring.outputSlotIndices[o] == ts) {
             producingStep = s;
             isFrozenConst = slots_[s].frozenConstantSlot();
             isShapeStatic = slots_[s].shapeCache.shapeStatic;
-            goto foundTraceStep;
+            found = true;
+            break;
           }
         }
       }
-      foundTraceStep:;
       DSP_DIAG(SHAPE, "trace slot outSlot=%d dependsOnExternal=%d "
                "producingStep=%d frozenConst=%d shapeStatic=%d opName=%s",
                ts, depExt ? 1 : 0, producingStep,
