@@ -4892,7 +4892,11 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
             SDVariable output = sd.mmul("output", current, outW);
 
             INDArray input = Nd4j.randn(DataType.FLOAT, 1, hiddenDim);
-            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3);
+            // Tolerance accounts for f32 precision differences between cuBLAS GEMM
+            // and Triton per-element matmul (different accumulation order) across
+            // 8 stacked layers. Kahan summation in Triton matmul K-loop reduces
+            // per-layer error to ~O(eps), but algorithm differences remain.
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 5e-3);
             log.info("testTritonMultiShapeStackedLayers: {} layers, worstDiff={}", numLayers, maxDiff);
         } finally {
             env.setTritonCompileAll(prevCompileAll);

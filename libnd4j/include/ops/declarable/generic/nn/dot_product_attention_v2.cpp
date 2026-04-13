@@ -239,8 +239,16 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     config.numKvHeads = 1;
   }
 
-  bool hasInputMasks = (qMask != nullptr && !qMask->isEmpty()) ||
-                       (vMask != nullptr && !vMask->isEmpty());
+  // Treat empty or scalar arrays as no mask
+  // SameDiff may create empty placeholders or rank-0 scalar arrays for null inputs
+  if(qMask != nullptr && (qMask->isEmpty() || qMask->rankOf() == 0)) {
+    qMask = nullptr;
+  }
+  if(vMask != nullptr && (vMask->isEmpty() || vMask->rankOf() == 0)) {
+    vMask = nullptr;
+  }
+
+  bool hasInputMasks = (qMask != nullptr) || (vMask != nullptr);
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
   std::unique_ptr<NDArray> attentionBiasCastOwner;
 
@@ -271,11 +279,128 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     REQUIRE_TRUE(!hasAttentionBias, 0,
                  "dot_product_attention_v2: additive attention bias with query/value masks or dropout is not "
                  "supported in this path yet");
-    // Fallback to AttentionHelper for masks/dropout support
-    std::vector<sd::NDArray*> inputs = {queries, values, keys};
+    // Fallback to AttentionHelper for masks/dropout support.
+    // AttentionHelper::doAttention expects 3D [batch*heads, seq, dim] format.
+    // For rank-4 BSHD inputs, we must reshape to 3D and handle GQA (KV head expansion).
+    std::vector<sd::NDArray*> inputs;
+    // Note: mask nullification already done above for hasInputMasks check
     std::vector<sd::NDArray*> masks = {qMask, vMask};
+
+    NDArray* q3d = nullptr;
+    NDArray* k3d = nullptr;
+    NDArray* v3d = nullptr;
+    NDArray* qPerm = nullptr;
+    NDArray* kPerm = nullptr;
+    NDArray* vPerm = nullptr;
+    NDArray* kExpanded = nullptr;
+    NDArray* vExpanded = nullptr;
+    std::vector<sd::LongType> scoresShape3d;
+
+    // Save 4D dimensions BEFORE any modifications (they may be corrupted by doAttention)
+    sd::LongType batch4d = 0, seqQ4d = 0, numHeads4d = 0, headDim4d = 0, seqKV4d = 0;
+    if (isRank4) {
+      batch4d = queries->sizeAt(0);
+      seqQ4d = queries->sizeAt(1);
+      numHeads4d = queries->sizeAt(2);
+      headDim4d = queries->sizeAt(3);
+      seqKV4d = keys->sizeAt(1);
+    }
+
+    if (isRank4) {
+      auto numKvHeads = keys->sizeAt(2);
+      int headsPerKv = numHeads4d / numKvHeads;
+
+      // Permute Q from BSHD [batch, seq, heads, dim] to BHSD [batch, heads, seq, dim]
+      std::vector<sd::LongType> permOrder = {0, 2, 1, 3};
+      qPerm = queries->permute(permOrder, false, false);
+      kPerm = keys->permute(permOrder, false, false);
+      vPerm = values->permute(permOrder, false, false);
+
+      // Reshape Q to 3D: [batch*heads, seq, dim]
+      std::vector<sd::LongType> qShape3d = {batch4d * numHeads4d, seqQ4d, headDim4d};
+      q3d = qPerm->reshape('c', qShape3d);
+
+      // Handle GQA: expand KV heads if needed
+      k3d = kPerm;
+      v3d = vPerm;
+      if (headsPerKv > 1) {
+        // Tile KV heads: [batch, numKvHeads, seq, dim] -> [batch, numHeads, seq, dim]
+        std::vector<sd::LongType> tiledShape = {batch4d, numKvHeads, static_cast<sd::LongType>(headsPerKv), seqKV4d, headDim4d};
+        NDArray* kTiled = new NDArray('c', tiledShape, keys->dataType(), block.launchContext());
+        NDArray* vTiled = new NDArray('c', tiledShape, values->dataType(), block.launchContext());
+
+        std::vector<sd::LongType> reshapeForTile = {batch4d, numKvHeads, 1, seqKV4d, headDim4d};
+        kPerm->reshapei(reshapeForTile);
+        vPerm->reshapei(reshapeForTile);
+
+        std::vector<sd::LongType> reps = {1, 1, static_cast<sd::LongType>(headsPerKv), 1, 1};
+        kPerm->tile(reps, *kTiled);
+        vPerm->tile(reps, *vTiled);
+
+        std::vector<sd::LongType> expandedShape = {batch4d, numHeads4d, seqKV4d, headDim4d};
+        kTiled->reshapei(expandedShape);
+        vTiled->reshapei(expandedShape);
+
+        kExpanded = kTiled;
+        vExpanded = vTiled;
+
+        // Restore kPerm/vPerm shapes
+        kPerm->reshapei({batch4d, numKvHeads, seqKV4d, headDim4d});
+        vPerm->reshapei({batch4d, numKvHeads, seqKV4d, headDim4d});
+
+        // Reshape expanded KV to 3D: [batch*heads, seq, dim]
+        std::vector<sd::LongType> kvShape3d = {batch4d * numHeads4d, seqKV4d, headDim4d};
+        k3d = kExpanded->reshape('c', kvShape3d);
+        v3d = vExpanded->reshape('c', kvShape3d);
+      } else {
+        std::vector<sd::LongType> kvShape3d = {batch4d * numHeads4d, seqKV4d, headDim4d};
+        k3d = kPerm->reshape('c', kvShape3d);
+        v3d = vPerm->reshape('c', kvShape3d);
+      }
+
+      inputs = {q3d, v3d, k3d};
+      scoresShape3d = {batch4d * numHeads4d, seqQ4d, seqKV4d};
+
+      // Reshape output tensors to 3D for doAttention
+      applyScoresOut->reshapei({batch4d * numHeads4d, seqQ4d, headDim4d});
+      attentionLogits->reshapei(scoresShape3d);
+      attentionScores->reshapei(scoresShape3d);
+      if (dropoutMask != nullptr) {
+        dropoutMask->reshapei(scoresShape3d);
+      }
+    } else {
+      inputs = {queries, values, keys};
+    }
+
     AttentionHelper::doAttention(inputs, masks, training, useCausalMask, dropout, scale, attentionScores,
                                  block.randomSeed(), applyScoresOut, attentionLogits, dropoutMask);
+
+    // Restore 4D shapes after doAttention (use saved dimensions, not from arrays)
+    if (isRank4) {
+      // Restore output shapes to 4D BSHD
+      applyScoresOut->reshapei({batch4d, seqQ4d, numHeads4d, headDim4d});
+      attentionLogits->reshapei({batch4d, numHeads4d, seqQ4d, seqKV4d});
+      attentionScores->reshapei({batch4d, numHeads4d, seqQ4d, seqKV4d});
+      if (dropoutMask != nullptr) {
+        dropoutMask->reshapei({batch4d, numHeads4d, seqQ4d, seqKV4d});
+      }
+
+      // Permute applyScoresOut from BHSD back to BSHD
+      std::vector<sd::LongType> permBack = {0, 2, 1, 3};
+      auto outPerm = applyScoresOut->permute(permBack, false, false);
+      applyScoresOut->assign(outPerm);
+      delete outPerm;
+
+      // Cleanup temporary arrays — reshape() creates new NDArray objects that must be freed
+      delete q3d;   // reshape of qPerm
+      delete k3d;   // reshape of kExpanded (GQA) or kPerm (non-GQA)
+      delete v3d;   // reshape of vExpanded (GQA) or vPerm (non-GQA)
+      delete qPerm; // permute of queries
+      delete kPerm; // permute of keys
+      delete vPerm; // permute of values
+      delete kExpanded;  // nullptr when non-GQA
+      delete vExpanded;  // nullptr when non-GQA
+    }
   }
 
   // Cleanup reshaped arrays and restore output shapes

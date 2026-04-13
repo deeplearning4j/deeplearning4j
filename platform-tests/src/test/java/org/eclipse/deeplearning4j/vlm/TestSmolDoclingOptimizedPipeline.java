@@ -136,64 +136,152 @@ public class TestSmolDoclingOptimizedPipeline {
         boolean triton = Nd4j.getNativeOps().isTritonAvailable();
         List<BenchmarkConfig> configs = new ArrayList<>();
 
-        // DEFAULT: Best measured steady-state config for SmolDocling right now.
-        // This is the ONLY config that runs unless vlm.test.configs selects others.
-        // Target: ≥90 tok/s steady-state decode with ≥50% token diversity.
+        // Core configs: OPTIMAL (Triton) and SLOT_BY_SLOT (cuBLAS baseline).
+        // Additional configs can be added here when needed for debugging.
         if (triton) {
             configs.add(BenchmarkConfig.optimal());
 
-            // Audit variants for isolating the remaining Triton/cublas decode knobs.
-            configs.add(BenchmarkConfig.create("OPTIMAL_NO_NORM")
-                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(1)
-                    .cublasTf32(true)
-                    .tritonTf32(true)
-                    .dspBatchedGemm(true)
-                    .maxTokens(250).minDiversityPct(30));
+        }
 
-            configs.add(BenchmarkConfig.create("OPTIMAL_NO_BATCHED_GEMM")
+        // SLOT_BY_SLOT baseline — no Triton, no graph capture, proves model works
+        configs.add(BenchmarkConfig.create("SLOT_BY_SLOT")
+                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+                .maxTokens(100)
+                .minDiversityPct(0));
+
+        // Build the extended matrix whenever the caller explicitly selects configs.
+        String filterProp = System.getProperty("vlm.test.configs");
+        boolean includeAll = filterProp != null && !filterProp.trim().isEmpty();
+        if (!includeAll) return configs;
+
+        // ── Additional configs below only run with vlm.test.configs=<name> ──
+        if (triton) {
+            // Bisect: each adds ONE OPTIMAL setting to the noGC baseline
+            configs.add(BenchmarkConfig.create("BISECT_argTable")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .maxTokens(10).minDiversityPct(0));
+            configs.add(BenchmarkConfig.create("BISECT_batchedGemm")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(10).minDiversityPct(0));
+            configs.add(BenchmarkConfig.create("BISECT_tf32")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .cublasTf32(true).tritonTf32(true)
+                    .maxTokens(10).minDiversityPct(0));
+            configs.add(BenchmarkConfig.create("BISECT_graphCapture_only")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
+                    .maxTokens(10).minDiversityPct(0));
+            configs.add(BenchmarkConfig.create("BISECT_graphCapture_allSettings")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .tritonFusionScoring(false)
                     .tritonNumWarps(4).tritonNumStages(1)
-                    .cublasTf32(true)
-                    .tritonTf32(true)
-                    .dspBatchedGemm(false)
-                    .maxTokens(250).minDiversityPct(30));
-
-            configs.add(BenchmarkConfig.create("OPTIMAL_NO_NORM_NO_BATCHED_GEMM")
-                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .cublasTf32(true).tritonTf32(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(10).minDiversityPct(0));
+            configs.add(BenchmarkConfig.create("BISECT_noGC_allSettings")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .tritonFusionScoring(false)
                     .tritonNumWarps(4).tritonNumStages(1)
-                    .cublasTf32(true)
-                    .tritonTf32(true)
-                    .dspBatchedGemm(false)
-                    .maxTokens(250).minDiversityPct(30));
+                    .cublasTf32(true).tritonTf32(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(10).minDiversityPct(0));
 
-            // ─── cuBLAS workspace matrix ─────────────────────────────────────
-            // Tests all combinations of workspace ON/OFF × stages 1/2 × tf32 ON/OFF.
-            // workspace=ON prevents MemAlloc graph nodes but may cause algorithm divergence.
-            // Run these via: --configs WORKSPACE_ON_stages1_tf32,WORKSPACE_OFF_stages1_tf32,...
+            // Triton WITHOUT graph capture + VERIFY — compares each Triton section vs slot-by-slot
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_VERIFY")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonVerifyKernels(true)
+                    .maxTokens(3).minDiversityPct(0));
 
-            // Workspace ON + stages=1 + TF32 (current OPTIMAL)
-            configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages1_tf32")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+            // Triton WITHOUT graph capture — isolates Triton kernel correctness
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
+
+            // Triton + GC but WITHOUT ATTENTION
+            configs.add(BenchmarkConfig.create("DIAG_Triton_gc_noATTN")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES)
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .maxTokens(10).minDiversityPct(0));
+
+            // ── Binary search: isolate which OPTIMAL setting causes wrong output ──
+            // Baseline: DIAG_TRITON_noGC (correct). Each adds ONE OPTIMAL setting.
+
+            // Binary search: add graph capture only
+            configs.add(BenchmarkConfig.create("BISECT_graphCapture")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
+                    .maxTokens(10).minDiversityPct(0));
+
+            // Binary search: add consolidated arg table only
+            configs.add(BenchmarkConfig.create("BISECT_argTable")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .maxTokens(10).minDiversityPct(0));
+
+            // Binary search: add batched GEMM only
+            configs.add(BenchmarkConfig.create("BISECT_batchedGemm")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(10).minDiversityPct(0));
+
+            // Binary search: add TF32 only
+            configs.add(BenchmarkConfig.create("BISECT_tf32")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .cublasTf32(true).tritonTf32(true)
+                    .maxTokens(10).minDiversityPct(0));
+
+            // Binary search: graph capture + arg table (no batched gemm, no tf32)
+            configs.add(BenchmarkConfig.create("BISECT_gc_argTable")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .maxTokens(10).minDiversityPct(0));
+
+            // Binary search: everything EXCEPT graph capture
+            configs.add(BenchmarkConfig.create("BISECT_noGC")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true).tritonTf32(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+
+        return configs;
+    }
+
+    // Placeholder for extended configs — add debugging configs here as needed.
+    // They only run when vlm.test.configs property selects them by name.
+    @SuppressWarnings("unused")
+    private static void _extendedConfigsPlaceholder() {
+        // configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages1_tf32").tritonIncludeTypes(...).maxTokens(250));
+    }
+    // ──── END of config definitions ─────
+    // NOTE: The block below is dead code from old configs, left in a comment for reference.
+    /*
+    DEAD_CODE_START
                     .tritonNumWarps(4).tritonNumStages(1)
                     .cublasTf32(true).cublasCaptureWorkspace(true)
                     .dspBatchedGemm(true)
@@ -438,123 +526,7 @@ public class TestSmolDoclingOptimizedPipeline {
                     .maxTokens(20).minDiversityPct(0));
         }
 
-        // DIAGNOSTIC: SLOT_BY_SLOT baseline — no Triton, no graph capture, proves model works
-        configs.add(BenchmarkConfig.create("DIAG_SLOT_BY_SLOT_baseline")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
-                .maxTokens(10)
-                .minDiversityPct(0));
-
-        // DIAGNOSTIC: Triton WITHOUT graph capture — isolates Triton kernel correctness
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-
-        // DIAGNOSTIC: Triton WITHOUT graph capture + VERIFY — compares each Triton section vs slot-by-slot
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_VERIFY")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonVerifyKernels(true)
-                    .maxTokens(3).minDiversityPct(0));
-        }
-
-        // DIAGNOSTIC: Triton + GC but WITHOUT ATTENTION — isolates attention compilation
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_Triton_gc_noATTN")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-
-        // DIAGNOSTIC: Triton + GC + ATTENTION but WITHOUT argOpt — isolates arg table
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_Triton_gc_ATTN_noArgOpt")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-
-        // DIAGNOSTIC: Full config without batch ops
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_full_noBatchOps")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-
-        // BINARY SEARCH: Isolate which Triton op type causes wrong output
-        // Triton no GC, ATTENTION only (no COMPILE_ALL_TYPES)
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_ATTN_only")
-                    .tritonIncludeTypes("ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-        // Triton no GC, NO attention (COMPILE_ALL_TYPES only)
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_noATTN")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-        // Triton no GC, GATHER only
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_GATHER_only")
-                    .tritonIncludeTypes("GATHER")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-        // Triton no GC, CONST_GEN only
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_CONSTGEN_only")
-                    .tritonIncludeTypes("CONST_GEN")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-        // Triton no GC, CONCAT+SPLIT+STACK only
-        if (triton) {
-            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_CONCAT_SPLIT_STACK")
-                    .tritonIncludeTypes("CONCAT,SPLIT,STACK")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .maxTokens(10).minDiversityPct(0));
-        }
-
-        // NON-TRITON DSP modes: isolate whether bug is Triton-specific or DSP mode related
-        // CUDA_GRAPHS without Triton include types cannot capture — graph capture requires
-        // Triton-compiled kernels. Use AUTO mode instead, which falls back to slot-by-slot.
-        configs.add(BenchmarkConfig.create("DIAG_CUDA_GRAPHS_noTriton")
-                .executionMode(GraphExecutionMode.AUTO)
-                .maxTokens(10).minDiversityPct(0));
-        configs.add(BenchmarkConfig.create("DIAG_AUTO_noTriton")
-                .executionMode(GraphExecutionMode.AUTO)
-                .maxTokens(10).minDiversityPct(0));
-
-        // Baselines — always available so --config SLOT_BY_SLOT / CUDA_GRAPHS works
-        configs.add(BenchmarkConfig.create("SLOT_BY_SLOT")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("CUDA_GRAPHS")
-                .executionMode(GraphExecutionMode.CUDA_GRAPHS)
-                .maxTokens(50));
-
-        // Build the extended matrix whenever the caller explicitly selects configs.
-        // That lets the benchmark script run isolated named configs without forcing ALL.
-        String filterProp = System.getProperty("vlm.test.configs");
-        boolean includeAll = filterProp != null && !filterProp.trim().isEmpty();
-        if (!includeAll) return configs;
-
-        // ── Additional configs below only run with vlm.test.configs=ALL ──
-
+        // ── Additional configs below only run with vlm.test.configs=<name> or ALL ──
         if (!triton) return configs;
 
         // 2. compileAll: individual section types (bisect crashes)
@@ -1044,7 +1016,8 @@ public class TestSmolDoclingOptimizedPipeline {
                 .maxTokens(100).minDiversityPct(0));
 
         return configs;
-    }
+    DEAD_CODE_END
+    */
 
     // ─── Setup ─────────────────────────────────────────────────────────────
 

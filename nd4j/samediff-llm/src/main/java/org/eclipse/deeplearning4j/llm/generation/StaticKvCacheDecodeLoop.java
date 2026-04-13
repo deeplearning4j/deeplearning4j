@@ -342,12 +342,7 @@ public class StaticKvCacheDecodeLoop {
 
 
         // Reusable input arrays — avoids per-step allocation of masks/position_ids
-        // Also used for CUDA graph replay: fixed-address buffers for inputs_embeds/input_ids
-        // prevent address key mismatch that would invalidate captured graphs.
         Map<String, INDArray> reusableInputs = new HashMap<>();
-        // Fixed-address decode buffers (allocated once, data copied each step)
-        INDArray reusableEmbeddings = null;  // [1, 1, hiddenSize]
-        INDArray reusableInputIds = null;    // [1, 1]
         ReusableTokenSampler reusableTokenSampler = new ReusableTokenSampler(samplingConfig);
         boolean loggedDirectPath = false;
 
@@ -851,41 +846,20 @@ public class StaticKvCacheDecodeLoop {
                 throw decodeStageFailure("TOKEN_EMBED_LOOKUP", step, pastSeqLen, currentSeqLen,
                         usingStaticKv, kvScatterInCpp, useDirect, cachePos, e);
             }
-            // Use fixed-address buffer for CUDA graph replay stability
-            if (usingStaticKv) {
-                if (reusableEmbeddings == null) {
-                    reusableEmbeddings = rowEmbed.dup();
-                } else {
-                    reusableEmbeddings.assign(rowEmbed);
-                }
-                currentEmbeddings = reusableEmbeddings;
-            } else {
-                currentEmbeddings = rowEmbed;
+            // Fresh buffer each step: address changes force CUDA graph replay to
+            // detect drift and re-capture when needed. The old fixed-address pattern
+            // (reusableEmbeddings.assign()) caused graph replay to read stale data
+            // at step 3+ because the address key never changed.
+            currentEmbeddings = rowEmbed.dup();
+            INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+            // Close old currentInputIds if it's a different allocation (e.g., the initial prompt tensor)
+            if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
+                currentInputIds.setCloseable(true);
+                currentInputIds.close();
             }
-            if (usingStaticKv) {
-                if (reusableInputIds == null) {
-                    reusableInputIds = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-                } else {
-                    reusableInputIds.putScalar(0, 0, nextTokenId);
-                }
-                // Close old currentInputIds if it's a different allocation (e.g., the initial prompt tensor)
-                if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
-                    currentInputIds.setCloseable(true);
-                    currentInputIds.close();
-                }
-                currentInputIds = reusableInputIds;
-            } else {
-                INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-                if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
-                    currentInputIds.setCloseable(true);
-                    currentInputIds.close();
-                }
-                currentInputIds = newTokenTensor;
-            }
-            // Close previous embeddings — but NOT if it's the same object as
-            // currentEmbeddings (reusableEmbeddings is updated in-place via assign(),
-            // so prevEmbeddings == currentEmbeddings == reusableEmbeddings).
-            // Also skip the original prefillEmbeddings — it's externally owned by the caller.
+            currentInputIds = newTokenTensor;
+            // Close previous embeddings — each step now allocates a fresh buffer.
+            // Skip the original prefillEmbeddings — it's externally owned by the caller.
             if (prevEmbeddings != null && prevEmbeddings != currentEmbeddings
                     && prevEmbeddings != prefillEmbeddings
                     && !prevEmbeddings.wasClosed()) {
@@ -903,17 +877,12 @@ public class StaticKvCacheDecodeLoop {
                     if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
                 }
                 reusableInputs.clear();
-                // Close fixed-address decode buffers (not in reusableInputs map)
-                if (reusableEmbeddings != null && !reusableEmbeddings.wasClosed()) {
-                    reusableEmbeddings.setCloseable(true);
-                    reusableEmbeddings.close();
+                // Close current decode buffers
+                if (currentEmbeddings != null && currentEmbeddings != prefillEmbeddings && !currentEmbeddings.wasClosed()) {
+                    currentEmbeddings.setCloseable(true);
+                    currentEmbeddings.close();
                 }
-                if (reusableInputIds != null && !reusableInputIds.wasClosed()) {
-                    reusableInputIds.setCloseable(true);
-                    reusableInputIds.close();
-                }
-                // Close currentInputIds if different from reusableInputIds
-                if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
+                if (currentInputIds != null && !currentInputIds.wasClosed()) {
                     currentInputIds.setCloseable(true);
                     currentInputIds.close();
                 }
@@ -940,18 +909,12 @@ public class StaticKvCacheDecodeLoop {
             if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
         }
         reusableInputs.clear();
-        // Close fixed-address decode buffers (not in reusableInputs map)
-        if (reusableEmbeddings != null && !reusableEmbeddings.wasClosed()) {
-            reusableEmbeddings.setCloseable(true);
-            reusableEmbeddings.close();
+        // Close current decode buffers (fresh each step, no fixed-address tracking needed)
+        if (currentEmbeddings != null && currentEmbeddings != prefillEmbeddings && !currentEmbeddings.wasClosed()) {
+            currentEmbeddings.setCloseable(true);
+            currentEmbeddings.close();
         }
-        if (reusableInputIds != null && !reusableInputIds.wasClosed()) {
-            reusableInputIds.setCloseable(true);
-            reusableInputIds.close();
-        }
-        // Close currentInputIds if it's a different object from reusableInputIds
-        // (e.g., if decode never ran and it's still the initial prompt tensor)
-        if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
+        if (currentInputIds != null && !currentInputIds.wasClosed()) {
             currentInputIds.setCloseable(true);
             currentInputIds.close();
         }

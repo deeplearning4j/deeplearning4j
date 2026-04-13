@@ -1916,6 +1916,10 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   auto colIndices = builder.create<mlir::arith::RemSIOp>(loc, offsets, splatNConst);
 
   // K-loop: accumulate A[row, k] * B[k, col] for k in [0, K)
+  // Match cuBLAS precision: when TF32 is enabled, truncate FP32 inputs to TF32
+  // (10-bit mantissa) before multiplication, matching CUBLAS_TF32_TENSOR_OP_MATH.
+  // Use simple acc += a*b so NVCC can fuse to FMA, matching cuBLAS reduction.
+  bool useTf32 = sd::Environment::getInstance().tritonTf32Enabled();
   auto accInit = splatConstantF32(builder, loc, f32TensorType, 0.0f);
   auto kStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
   auto kEnd = builder.create<mlir::arith::ConstantIntOp>(loc, K, 32);
@@ -1963,7 +1967,20 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   auto aVal = castTo(builder, loc, aLoaded, f32Type);
   auto bVal = castTo(builder, loc, bLoaded, f32Type);
 
-  // acc += a * b
+  // When TF32 enabled, truncate mantissa to 10 bits to match cuBLAS TF32 tensor ops.
+  // TF32: zero the low 13 mantissa bits of FP32 (AND with 0xFFFFE000).
+  if (useTf32) {
+    auto i32TensorTypeLocal = mlir::RankedTensorType::get({blockSize}, i32Type);
+    auto tf32Mask = splatConstantI32(builder, loc, i32TensorTypeLocal, static_cast<int>(0xFFFFE000u));
+    auto aBits = builder.create<mlir::arith::BitcastOp>(loc, i32TensorTypeLocal, aVal);
+    auto aTrunc = builder.create<mlir::arith::AndIOp>(loc, aBits, tf32Mask);
+    aVal = builder.create<mlir::arith::BitcastOp>(loc, f32TensorType, aTrunc);
+    auto bBits = builder.create<mlir::arith::BitcastOp>(loc, i32TensorTypeLocal, bVal);
+    auto bTrunc = builder.create<mlir::arith::AndIOp>(loc, bBits, tf32Mask);
+    bVal = builder.create<mlir::arith::BitcastOp>(loc, f32TensorType, bTrunc);
+  }
+
+  // acc += a * b — simple FMA-friendly accumulation matching cuBLAS
   auto prod = builder.create<mlir::arith::MulFOp>(loc, aVal, bVal);
   auto newAcc = builder.create<mlir::arith::AddFOp>(loc, accIter, prod);
 

@@ -531,12 +531,14 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithCpuGraph");
 
-  // If all backends have been exhausted for this segment, skip immediately
+  // If all backends have been exhausted for this segment, throw — do not silently fall back
   if (seg.exec.compilationFailed) {
-    DSP_DIAG_SEG(FALLBACK, seg.def.startSlot,
-                 "executeSegmentWithCpuGraph: seg[%d-%d] skipped (compilationFailed=true, all backends exhausted)",
-                 seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "executeSegmentWithCpuGraph: seg[%d-%d] permanently failed — all backends exhausted. "
+             "Fix the compilation failure instead of falling back to slot-by-slot.",
+             seg.def.startSlot, seg.def.endSlot);
+    THROW_EXCEPTION(buf);
   }
 
   // If we already resolved a backend for this segment, use it directly
@@ -547,10 +549,12 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   // Cascade through the backend chain to find one that works
   const auto& chain = getCpuGraphBackendChain();
   if (chain.empty()) {
-    DSP_DIAG_SEG(BACKEND, seg.def.startSlot,
-                 "executeSegmentWithCpuGraph: no CPU graph backends available for seg[%d-%d]",
-                 seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "executeSegmentWithCpuGraph: no CPU graph backends available for seg[%d-%d]. "
+             "Cannot execute — a backend must be configured.",
+             seg.def.startSlot, seg.def.endSlot);
+    THROW_EXCEPTION(buf);
   }
 
   // Warmup must happen before any backend tries to compile (needs output shapes)
@@ -591,11 +595,14 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     seg.exec.compilationFailed = false;
   }
 
-  // ALL backends exhausted — mark as permanently failed
+  // ALL backends exhausted — hard failure, do not silently fall back
   seg.exec.compilationFailed = true;
-  DSP_DIAG(FALLBACK, "cascade: ALL %d backends failed for seg[%d-%d], falling back to slot-by-slot",
-            (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
-  return Status::KERNEL_FAILURE;
+  char buf[256];
+  snprintf(buf, sizeof(buf),
+           "cascade: ALL %d backends failed for seg[%d-%d]. Fix the backend compilation — "
+           "silent fallback to slot-by-slot is not permitted.",
+           (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
+  THROW_EXCEPTION(buf);
 }
 
 // ─── Execute segment with a specific backend (shared logic) ─────────────────
@@ -669,10 +676,13 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
       }
     }
     if (!allCompiled) {
-      DSP_DIAG(FALLBACK, "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend.",
-                backendName, seg.def.startSlot, seg.def.endSlot);
       seg.exec.compilationFailed = true;
-      return Status::KERNEL_FAILURE;
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+               "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
+               "Fix the backend to compile all ops — silent fallback is not permitted.",
+               backendName, seg.def.startSlot, seg.def.endSlot);
+      THROW_EXCEPTION(buf);
     } else {
       DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
                    "%s VALIDATION OK: seg[%d-%d] all %d ops compiled successfully",
@@ -682,22 +692,20 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   seg.exec.cachedShapeKey = segShapeKey;
   seg.def.shapeKey = segShapeKey;
-  // Only suppress GPU memory frees during CUDA graph capture/replay.
-  // SLOT_BY_SLOT and non-capture execution must allow normal frees —
-  // otherwise temporary op buffers leak ~224 MB/step on large models.
-  bool needsCaptureSuppression = (seg.exec.currentPhase == ExecutionPhase::COMPILING
-      || seg.exec.currentPhase == ExecutionPhase::REPLAYING);
-  if (needsCaptureSuppression) {
-    tl_graphExecutionActive = true;
-  }
-  DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld captureSuppression=%d",
-           seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey,
-           needsCaptureSuppression ? 1 : 0);
+  // tl_graphExecutionActive must NOT be set here. This function drives CPU graph
+  // backends (OneDNN, ACL, MLIR, etc.) and Triton warmup. tl_graphExecutionActive
+  // is a CUDA-graph-capture-specific guard that suppresses frees, skips syncs, and
+  // routes allocations through capture workspace. Setting it during non-capture
+  // execution causes:
+  //  - Memory leaks (~224 MB/step from unsuppressed temporary buffers)
+  //  - Silent correctness bugs (skipped debug checks, wrong allocation paths)
+  //  - Stale data in Triton warmup (sync guards suppressed)
+  // Actual CUDA graph capture manages tl_graphExecutionActive around
+  // beginCapture/endCapture in executeSegmentWithGpuGraph.
+  DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
+           seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
-  if (needsCaptureSuppression) {
-    tl_graphExecutionActive = false;
-  }
   DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
            seg.def.startSlot, seg.def.endSlot, backendName, (int)status);
 
@@ -925,9 +933,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           if (slot.cf.loopBackTarget >= 0 && slot.cf.loopBackTarget >= seg.def.startSlot) {
             loopIterations++;
             if (loopIterations >= MAX_LOOP_ITERATIONS) {
-              DSP_DIAG(EXECUTE, "loop iteration limit (%d) reached at slot %d",
-                        MAX_LOOP_ITERATIONS, stepIdx);
-              return Status::KERNEL_FAILURE;
+              char buf[256];
+              snprintf(buf, sizeof(buf),
+                       "loop iteration limit (%d) reached at slot %d (%s) in seg[%d-%d]. "
+                       "Possible infinite loop in control flow.",
+                       MAX_LOOP_ITERATIONS, stepIdx, slots_[stepIdx].ident.opName.c_str(),
+                       seg.def.startSlot, seg.def.endSlot);
+              THROW_EXCEPTION(buf);
             }
             // Clear dead flags for loop body range
             if (slotIsDead_ && slot.cf.loopRegionIndex >= 0 && slot.cf.loopRegionIndex < numLoopRegions_) {
@@ -986,9 +998,15 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             stepIdx++;
             continue;
           }
-          // On failure, fall through to individual execution of this slot
-          DSP_DIAG(FALLBACK, "batched GEMM group %d failed (status=%d), falling back to individual execution",
-                    bgIdx, (int)batchStatus);
+          // Batched GEMM failure is a hard error — do not silently fall back to individual execution
+          {
+            char buf[256];
+            snprintf(buf, sizeof(buf),
+                     "batched GEMM group %d failed (status=%d) at slot %d (%s). "
+                     "Fix the batched GEMM execution — silent fallback to individual execution is not permitted.",
+                     bgIdx, (int)batchStatus, stepIdx, slots_[stepIdx].ident.opName.c_str());
+            THROW_EXCEPTION(buf);
+          }
         } else {
           // Non-first member: output already computed by the trigger's batch call.
           // Release schedule removed: arrays persist (one array per slot)
@@ -1002,53 +1020,51 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     // ── Normal op execution ──────────────────────────────────────────
     Status status;
     bool retriedAfterTrim = false;
-executeSlot_retry:
-    try {
-      status = executeSlot(stepIdx, externalArrays, numExt, stream);
-    } catch (const std::exception& e) {
-      std::string msg = e.what();
+    bool shouldRetry = false;
+    do {
+      shouldRetry = false;
+      try {
+        status = executeSlot(stepIdx, externalArrays, numExt, stream);
+      } catch (const std::exception& e) {
+        std::string msg = e.what();
 #ifdef SD_CUDA
-      if (!streamIsCapturing &&
-          !retriedAfterTrim && (msg.find("cannot allocate") != std::string::npos ||
-                                 msg.find("out of memory") != std::string::npos ||
-                                 msg.find("Error code: [2]") != std::string::npos)) {
-        retriedAfterTrim = true;
-        DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
-                  stepIdx, slots_[stepIdx].ident.opName.c_str());
-        cudaGetLastError();
-        if (stream) {
-          cudaStream_t execStr = *static_cast<cudaStream_t*>(stream);
-          cudaStreamSynchronize(execStr);
-        }
-        cudaStreamSynchronize(static_cast<cudaStream_t>(nullptr));
-        {
-          cudaMemPool_t pool = nullptr;
-          int dev = 0;
-          cudaGetDevice(&dev);
-          if (cudaDeviceGetMemPool(&pool, dev) == cudaSuccess && pool != nullptr) {
-            cudaMemPoolTrimTo(pool, 0);
-            DSP_DIAG(MEMORY, "trimmed memory pool on device %d", dev);
+        if (!streamIsCapturing &&
+            !retriedAfterTrim && (msg.find("cannot allocate") != std::string::npos ||
+                                   msg.find("out of memory") != std::string::npos ||
+                                   msg.find("Error code: [2]") != std::string::npos)) {
+          retriedAfterTrim = true;
+          shouldRetry = true;
+          DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
+                    stepIdx, slots_[stepIdx].ident.opName.c_str());
+          cudaGetLastError();
+          if (stream) {
+            cudaStream_t execStr = *static_cast<cudaStream_t*>(stream);
+            cudaStreamSynchronize(execStr);
           }
+          cudaStreamSynchronize(static_cast<cudaStream_t>(nullptr));
+          {
+            cudaMemPool_t pool = nullptr;
+            int dev = 0;
+            cudaGetDevice(&dev);
+            if (cudaDeviceGetMemPool(&pool, dev) == cudaSuccess && pool != nullptr) {
+              cudaMemPoolTrimTo(pool, 0);
+              DSP_DIAG(MEMORY, "trimmed memory pool on device %d", dev);
+            }
+          }
+          continue;  // retry the slot execution after trimming
         }
-        goto executeSlot_retry;
-      }
 #endif
-      char buf[512];
-      snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
-               stepIdx, slots_[stepIdx].ident.opName.c_str(), e.what());
-      DSP_DIAG(FALLBACK, "%s", buf);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-      status = Status::KERNEL_FAILURE;
-    } catch (...) {
-      char buf[512];
-      snprintf(buf, sizeof(buf), "slot %d (%s) threw unknown exception",
-               stepIdx, slots_[stepIdx].ident.opName.c_str());
-      DSP_DIAG(FALLBACK, "%s", buf);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-      status = Status::KERNEL_FAILURE;
-    }
+        char buf[512];
+        snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
+                 stepIdx, slots_[stepIdx].ident.opName.c_str(), e.what());
+        THROW_EXCEPTION(buf);
+      } catch (...) {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "slot %d (%s) threw unknown exception",
+                 stepIdx, slots_[stepIdx].ident.opName.c_str());
+        THROW_EXCEPTION(buf);
+      }
+    } while (shouldRetry);
     // ── Diagnostic: per-slot CUDA error check on warmup execution ──────
     // On the first execution of each segment (warmup), synchronize the device
     // after every slot to catch latent CUDA kernel errors (error 700) at the
@@ -1056,8 +1072,15 @@ executeSlot_retry:
     // slots later during an unrelated cudaMallocAsync call.
     // This is expensive (blocks GPU pipeline) but essential for diagnosing
     // stale-pointer bugs in restored cached plan handles.
+    //
+    // SKIP when tl_graphCaptureStream is set: indicates another stream on this
+    // thread is being captured. cudaDeviceSynchronize is device-wide and fails
+    // with error 900 if ANY stream is capturing. Gap ops execute on a dedicated
+    // non-capturing stream during Triton graph capture, but cudaDeviceSynchronize
+    // would still try to sync the capturing stream.
 #ifdef SD_CUDA
-    if (status == Status::OK && seg.exec.executionCount == 0 && !streamIsCapturing) {
+    if (status == Status::OK && seg.exec.executionCount == 0 && !streamIsCapturing
+        && tl_graphCaptureStream == nullptr) {
       cudaError_t syncErr = cudaDeviceSynchronize();
       if (syncErr != cudaSuccess) {
         char buf[1024];
@@ -1109,9 +1132,7 @@ executeSlot_retry:
           }
         }
         cudaGetLastError(); // clear sticky error
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(syncErr));
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-        return Status::KERNEL_FAILURE;
+        THROW_EXCEPTION(buf);
       }
     }
 #endif
@@ -1154,13 +1175,10 @@ executeSlot_retry:
         }
       }
 
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(status));
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-
 #ifdef SD_CUDA
       cudaGetLastError();
 #endif
-      return status;
+      THROW_EXCEPTION(buf);
     }
 
     // Classify ownership for all outputs produced by this slot.
@@ -1508,19 +1526,22 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
             DSP_DIAG(EMULATED_REPLAY, "    ext_%d -> slot_%d;", extIdx, s);
           } else if (srcIdx >= 0) {
             // Find which slot produces this output
-            for (int ps = seg.def.startSlot; ps < s; ps++) {
+            bool foundProducer = false;
+            for (int ps = seg.def.startSlot; ps < s && !foundProducer; ps++) {
               NativeSlot& pslot = slots_[ps];
               for (int o = 0; o < pslot.wiring.numOutputs; o++) {
                 if (pslot.wiring.outputSlotIndices[o] == srcIdx) {
                   DSP_DIAG(EMULATED_REPLAY, "    slot_%d -> slot_%d;", ps, s);
-                  goto nextInput;
+                  foundProducer = true;
+                  break;
                 }
               }
             }
-            // Cross-segment input
-            DSP_DIAG(EMULATED_REPLAY, "    cross_%d [label=\"slot[%d]\", shape=diamond];", srcIdx, srcIdx);
-            DSP_DIAG(EMULATED_REPLAY, "    cross_%d -> slot_%d;", srcIdx, s);
-            nextInput:;
+            if (!foundProducer) {
+              // Cross-segment input
+              DSP_DIAG(EMULATED_REPLAY, "    cross_%d [label=\"slot[%d]\", shape=diamond];", srcIdx, srcIdx);
+              DSP_DIAG(EMULATED_REPLAY, "    cross_%d -> slot_%d;", srcIdx, s);
+            }
           }
         }
       }

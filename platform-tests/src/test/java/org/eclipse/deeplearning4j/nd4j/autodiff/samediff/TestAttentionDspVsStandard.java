@@ -152,7 +152,8 @@ public class TestAttentionDspVsStandard {
         SDVariable[] mhaOutputs = mhaOp.outputVariables();
 
         SDVariable attentionOutput = mhaOutputs[0];
-        attentionOutput.setVarName("attention_output");
+        String autoName = attentionOutput.name();
+        sd.renameVariable(autoName, "attention_output");
 
         // Create input data
         Nd4j.getRandom().setSeed(12345);
@@ -219,7 +220,8 @@ public class TestAttentionDspVsStandard {
         SDVariable[] mhaOutputs = mhaOp.outputVariables();
 
         SDVariable attentionOutput = mhaOutputs[0];
-        attentionOutput.setVarName("attention_output");
+        String autoName = attentionOutput.name();
+        sd.renameVariable(autoName, "attention_output");
 
         Nd4j.getRandom().setSeed(12345);
         INDArray inputData = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);
@@ -270,7 +272,8 @@ public class TestAttentionDspVsStandard {
         SDVariable[] mhaOutputs = mhaOp.outputVariables();
 
         SDVariable attentionOutput = mhaOutputs[0];
-        attentionOutput.setVarName("attention_output");
+        String autoName = attentionOutput.name();
+        sd.renameVariable(autoName, "attention_output");
 
         Nd4j.getRandom().setSeed(12345);
         INDArray qData = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);

@@ -3846,6 +3846,21 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     externalOutputs.insert(idx);
   }
 
+  // Matmul output slots MUST be in the arg list even if internal to the segment.
+  // emitPerElementMatmul stores results via getSlotArgPtr which requires an arg entry.
+  // Without this, matmul outputs in fused sections get cPtr=NULL and compilation fails.
+  for (int i = startSlot; i <= endSlot; i++) {
+    const auto& opName = slots[i].ident.opName;
+    if (opName == "matmul" || opName == "mmul" || opName == "batched_gemm") {
+      for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+        int outIdx = slots[i].wiring.outputSlotIndices[o];
+        if (outIdx >= 0 && outIdx < totalSlots) {
+          externalOutputs.insert(outIdx);
+        }
+      }
+    }
+  }
+
   // NOTE: K/V projection external output forcing removed — attention ops now run via
   // cuBLAS fallback (isFallbackSection) and handle their own present_key/present_value outputs.
 

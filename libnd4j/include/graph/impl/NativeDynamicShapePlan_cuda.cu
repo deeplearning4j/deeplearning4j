@@ -68,10 +68,6 @@ namespace graph {
 
 namespace {
 
-bool isStrictNoFallbackMode(GraphExecutionMode mode) {
-  return mode == GraphExecutionMode::GEM_TRITON;
-}
-
 LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
   return dsp::computeSlotAddrHash(outputSlots, startSlot, endSlot, totalSlots,
       [](NDArray* a) -> void* { return a->specialBuffer(); });
@@ -323,11 +319,8 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
   // Keep caches for segments with an instantiated graph that can replay.
-  // Check ONLY for replay handle — NOT compilationFailed. The compilationFailed flag means
-  // the Triton path failed, but the CUDA graph fallback may have succeeded and set
-  // replayHandle. During cleanup between calls, compilationFailed is still true (Fix 10
-  // clears it during the NEXT execution). If we also require !compilationFailed, cleanup
-  // frees the segment's slots → graph replay D2D copies read freed memory → NaN.
+  // compilationFailed now throws immediately (no silent fallback), so a segment
+  // with compilationFailed=true will never reach cache retention checks.
   if (seg.exec.replayHandle != nullptr) return true;
   return false;
 }
@@ -634,7 +627,7 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Platform dispatch: Switch-based backend dispatch (no cascade)
+// Platform dispatch: Switch-based backend dispatch (hard error on failure)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
@@ -650,41 +643,71 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   switch (segment.def.selectedBackend) {
     case SelectedBackend::GPU_COMPILER: {
       auto* gpuBackend = getGpuGraphBackend();
-      if (gpuBackend) {
-        auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
-        if (status == Status::OK) {
-          usedGraph = true;
-          if (segment.exec.executionCount <= 1) {
-            segment.exec.currentPhase = ExecutionPhase::COMPILING;
-          } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-            segment.exec.currentPhase = ExecutionPhase::REPLAYING;
-          } else {
-            segment.exec.currentPhase = ExecutionPhase::COMPILED;
-          }
-          return Status::OK;
+      if (!gpuBackend) {
+        // GPU_COMPILER was selected but no backend is available at runtime.
+        // This is a configuration error — throw rather than silently degrading.
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+                 "NativeDSP::execute: seg[%d-%d] selectedBackend=GPU_COMPILER but "
+                 "getGpuGraphBackend() returned null. No GPU backend available.",
+                 segment.def.startSlot, segment.def.endSlot);
+        DSP_DIAG(COMPILE, "%s", buf);
+        THROW_EXCEPTION(buf);
+      }
+
+      // Compilation has permanently failed for this segment. This means a prior
+      // attempt to compile or capture failed and was recorded. Throw immediately
+      // so the failure is visible rather than silently producing wrong results.
+      if (segment.exec.compilationFailed) {
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+                 "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s "
+                 "compilationFailed=true — prior compilation/capture failed permanently. "
+                 "Fix the root cause.",
+                 executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name());
+        DSP_DIAG(COMPILE, "%s", buf);
+        THROW_EXCEPTION(buf);
+      }
+
+      auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
+      if (status == Status::OK) {
+        usedGraph = true;
+        if (segment.exec.executionCount <= 1) {
+          segment.exec.currentPhase = ExecutionPhase::COMPILING;
+        } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+          segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+        } else {
+          segment.exec.currentPhase = ExecutionPhase::COMPILED;
         }
-        // GPU backend failed — hard error. No cascade.
-        DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d — hard error",
+        return Status::OK;
+      }
+
+      // GPU backend execution failed. Mark as failed and throw immediately.
+      // Silent fallback to slot-by-slot masks the real bug.
+      segment.exec.compilationFailed = true;
+      {
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+                 "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d. "
+                 "GPU compilation/capture failed — fix the root cause.",
                  executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name(),
                  static_cast<int>(status));
-        return status;
+        DSP_DIAG(COMPILE, "%s", buf);
+        THROW_EXCEPTION(buf);
       }
-      // GEM_AUTO resolved to GPU_COMPILER but no backend available at runtime.
-      // Fall through to CUDA graphs if enabled, otherwise slot-by-slot.
-      if (gpuGraphCaptureEnabled_) {
-        goto cuda_graphs;
-      }
-      goto slot_by_slot;
     }
 
     case SelectedBackend::CUDA_GRAPHS: {
-cuda_graphs:
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        DSP_DIAG(COMPILE, "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d — hard error",
-                 segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
         segment.exec.compilationFailed = true;
-        return status;
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+                 "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d. "
+                 "Graph capture failed — fix the root cause.",
+                 segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
+        DSP_DIAG(COMPILE, "%s", buf);
+        THROW_EXCEPTION(buf);
       }
       usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.compilationFailed);
       if (usedGraph) {
@@ -698,8 +721,6 @@ cuda_graphs:
     }
 
     case SelectedBackend::SLOT_BY_SLOT:
-    default:
-slot_by_slot:
       segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
       return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
@@ -707,6 +728,16 @@ slot_by_slot:
       // CPU graph backend not applicable on CUDA build — treat as slot-by-slot
       segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
       return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+
+    default: {
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+               "NativeDSP::execute: seg[%d-%d] unknown selectedBackend=%d",
+               segment.def.startSlot, segment.def.endSlot,
+               static_cast<int>(segment.def.selectedBackend));
+      DSP_DIAG(COMPILE, "%s", buf);
+      THROW_EXCEPTION(buf);
+    }
   }
 }
 
