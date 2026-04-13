@@ -1049,6 +1049,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   int skippedCount = 0;
   int dirtySkippedCount = 0;
   int totalChangedPtrs = 0;
+  int totalChangedInternalPtrs = 0;
   for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
     auto& subKernel = compiledSeg->subKernels[ki];
     if (!subKernel.useIndirectArgs || subKernel.cachedArgTableHostPinned == nullptr) {
@@ -1064,10 +1065,12 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     int numBufferArgs = static_cast<int>(subKernel.argSlotMapping.size());
 
     int changedPtrs = 0;
+    int changedInternalPtrs = 0;
     for (int i = 0; i < numBufferArgs; i++) {
       auto& argMapping = subKernel.argSlotMapping[i];
       NDArray* arr = nullptr;
-      if (argMapping.slotIndex < 0) {
+      bool isExternal = (argMapping.slotIndex < 0);
+      if (isExternal) {
         int extIdx = -(argMapping.slotIndex + 1);
         if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
       } else {
@@ -1080,12 +1083,16 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
         void* sbuf = arr->specialBuffer();
         if (sbuf != nullptr) {
           int64_t newVal = reinterpret_cast<int64_t>(sbuf);
-          if (argTableHostPinned[i] != newVal) changedPtrs++;
+          if (argTableHostPinned[i] != newVal) {
+            changedPtrs++;
+            if (!isExternal) changedInternalPtrs++;
+          }
           argTableHostPinned[i] = newVal;
         }
       }
     }
     totalChangedPtrs += changedPtrs;
+    totalChangedInternalPtrs += changedInternalPtrs;
     if (changedPtrs > 0) {
       if (isStaticByDirtyTracking) {
         DSP_DIAG(EXECUTE, "DIRTY_TRACK_BUG: subK[%zu] [%d-%d] classified STATIC but %d/%d ptrs changed!",
@@ -1101,8 +1108,9 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
 
   if (refreshedCount > 0 || dirtySkippedCount > 0) {
     DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: refreshed %d sub-kernels "
-             "(skipped %d non-indirect, %d static-only, changedPtrs=%d) for seg[%d-%d]",
+             "(skipped %d non-indirect, %d static-only, changedPtrs=%d extChanged=%d intChanged=%d) for seg[%d-%d]",
              refreshedCount, skippedCount, dirtySkippedCount, totalChangedPtrs,
+             totalChangedPtrs - totalChangedInternalPtrs, totalChangedInternalPtrs,
              seg.def.startSlot, seg.def.endSlot);
   }
 
@@ -1143,13 +1151,25 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   }
   // ── END TRIPWIRE ───────────────────────────────────────────────────
 
-  // Mark arg table stable when no pointers changed — enables fast-replay path.
-  if (totalChangedPtrs == 0 && refreshedCount > 0) {
+  // Mark arg table stable when no INTERNAL slot pointers changed.
+  // External input pointer changes are expected (Java may allocate fresh buffers each
+  // decode step) and are handled correctly by the arg table refresh + D2D copy.
+  // Only internal slot pointer changes indicate real instability that prevents fast replay.
+  // This allows fast replay to kick in even when Java uses fresh allocation patterns,
+  // as long as the plan's internal output slot pointers are frozen.
+  if (totalChangedInternalPtrs == 0 && refreshedCount > 0) {
     seg.exec.argTableStable = true;
-    DSP_DIAG(EXECUTE, "ARG_TABLE_STABLE: seg[%d-%d] %d sub-kernels, fast-replay enabled",
-             seg.def.startSlot, seg.def.endSlot, refreshedCount);
+    DSP_DIAG(EXECUTE, "ARG_TABLE_STABLE: seg[%d-%d] %d sub-kernels, fast-replay enabled "
+             "(extChanges=%d internalChanges=%d)",
+             seg.def.startSlot, seg.def.endSlot, refreshedCount,
+             totalChangedPtrs - totalChangedInternalPtrs, totalChangedInternalPtrs);
   } else {
     seg.exec.argTableStable = false;
+    if (totalChangedInternalPtrs > 0) {
+      DSP_DIAG(EXECUTE, "ARG_TABLE_UNSTABLE: seg[%d-%d] %d internal ptrs changed (ext=%d)",
+               seg.def.startSlot, seg.def.endSlot, totalChangedInternalPtrs,
+               totalChangedPtrs - totalChangedInternalPtrs);
+    }
   }
   return Status::OK;
 }

@@ -2842,7 +2842,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     }
 
     if (useFastReplay) {
-      // Fast path: arg table pointers are stable so skip refresh.
+      // Fast path: internal slot pointers are stable. Skip expensive hash
+      // computations (address key, create value key, address snapshots).
+      // BUT still refresh arg tables and sync variable external inputs, because
+      // Java may allocate fresh embedding/input_id buffers each decode step.
+      // The arg table refresh updates host-pinned tables with new external
+      // addresses; the D2D copy pushes them to the device before graph launch.
       cudaGetLastError();
       if (!variableIndicesCached_) {
         variableExternalInputIndices_.clear();
@@ -2866,17 +2871,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                fastSynced, static_cast<int>(variableExternalInputIndices_.size()),
                seg.exec.executionCount);
 
-      // CRITICAL FIX: Copy consolidated arg table to device during fast replay.
-      // The captured graph's H2D memcpy nodes copy from consolidatedArgTableHostPinned
-      // to consolidatedArgTableDevice. The host-pinned table was populated during
-      // capture and contains correct pointers (since argTableStable=true). But the
-      // device arg table must be updated before graph launch. Without this copy,
-      // the device arg table may have stale data from a previous execution, causing
-      // Triton kernels to read/write wrong buffers.
+      // ALWAYS refresh arg tables on the fast path: external input addresses may
+      // have changed (fresh Java allocations) even though internal slots are stable.
+      // refreshArgTablesForReplay updates the host-pinned arg table with current
+      // specialBuffer() addresses for ALL args (internal + external).
+      // Then copyConsolidatedArgTableToDevice pushes the updated table to GPU.
 #if HAVE_TRITON && defined(SD_CUDA)
       {
         auto* tritonBackendFast = dynamic_cast<TritonGraphBackend*>(backend);
         if (tritonBackendFast != nullptr) {
+          tritonBackendFast->refreshArgTablesForReplay(seg, externalArrays, numExt,
+                                                       outputSlots_, totalOutputSlots_,
+                                                       stream);
           tritonBackendFast->copyConsolidatedArgTableToDevice(seg, stream);
         }
       }

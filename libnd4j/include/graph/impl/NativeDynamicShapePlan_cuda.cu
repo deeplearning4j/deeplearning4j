@@ -214,6 +214,14 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     syncedCount++;
   }
   DSP_DIAG(EXECUTE, "NativeDSP::frozenFastPath: synced=%d external inputs", syncedCount);
+
+  // Apply pending decode input updates (input_ids, position_ids, attention_mask)
+  // directly to device memory before replay. Without this, the frozen fast path
+  // skips updateDecodeInputs and the graph reads stale decode metadata.
+  if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
+    updateDecodeInputs(externalInputs, numExternalInputs,
+                       pendingTokenId_, pendingCachePos_, stream);
+  }
   hasPendingDecodeUpdate_ = false;
 
   if (ok) {
@@ -248,6 +256,33 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                                                stream);
     }
 #endif
+
+    // Pre-replay batch-zero: zero all output buffers OUTSIDE the graph.
+    // During capture, individual nullify() calls were suppressed (no memset graph
+    // nodes). On replay, outputs must be zeroed before graph launch so that ops
+    // which depend on zero-initialized output buffers produce correct results.
+    // Without this, the frozen fast path skips batch-zero, causing stale output
+    // data from the previous step to leak through partially-written buffers.
+    auto& segBZ = seg.exec.segBatchZeroEntries;
+    if (Environment::getInstance().dspBatchZero() && !segBZ.empty()) {
+      // Refresh batch-zero pointers from current outputSlots_ entries.
+      for (auto& entry : segBZ) {
+        if (entry.outputSlotIndex >= 0 && entry.outputSlotIndex < totalOutputSlots_) {
+          NDArray* cached = outputSlots_[entry.outputSlotIndex];
+          if (cached != nullptr && DSP_BUF(cached) != nullptr) {
+            entry.ptr = DSP_BUF(cached);
+            entry.bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
+          }
+        }
+      }
+      for (auto& entry : segBZ) {
+        if (entry.ptr != nullptr && entry.bytes > 0) {
+          cudaMemsetAsync(entry.ptr, 0, entry.bytes, cudaStr);
+        }
+      }
+      DSP_DIAG(MEMORY, "frozen fast path batch-zero: %d buffers zeroed via cudaMemsetAsync seg[%d-%d]",
+               static_cast<int>(segBZ.size()), seg.def.startSlot, seg.def.endSlot);
+    }
 
     if (seg.exec.replayHandle->replay(stream)) {
       auto tLaunchDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};

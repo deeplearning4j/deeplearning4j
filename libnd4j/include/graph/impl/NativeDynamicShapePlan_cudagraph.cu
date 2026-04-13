@@ -331,6 +331,32 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         }
       }
 
+      // Pre-replay batch-zero: zero all output buffers OUTSIDE the graph.
+      // During capture, individual nullify() calls were suppressed (no memset graph
+      // nodes). On replay, outputs must be zeroed before graph launch so that ops
+      // which depend on zero-initialized output buffers produce correct results.
+      if (replayInputsStable) {
+        auto& segBZ = seg.exec.segBatchZeroEntries;
+        if (Environment::getInstance().dspBatchZero() && !segBZ.empty()) {
+          for (auto& entry : segBZ) {
+            if (entry.outputSlotIndex >= 0 && entry.outputSlotIndex < totalOutputSlots_) {
+              NDArray* cached = outputSlots_[entry.outputSlotIndex];
+              if (cached != nullptr && DSP_BUF(cached) != nullptr) {
+                entry.ptr = DSP_BUF(cached);
+                entry.bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
+              }
+            }
+          }
+          for (auto& entry : segBZ) {
+            if (entry.ptr != nullptr && entry.bytes > 0) {
+              cudaMemsetAsync(entry.ptr, 0, entry.bytes, cudaStr);
+            }
+          }
+          DSP_DIAG(MEMORY, "cudagraph replay batch-zero: %d buffers zeroed seg[%d-%d]",
+                   static_cast<int>(segBZ.size()), seg.def.startSlot, seg.def.endSlot);
+        }
+      }
+
       if (replayInputsStable && seg.exec.replayHandle->replay(stream)) {
         seg.exec.lastReplayExecCount = executeCount_;
         totalGraphReplays_++;
