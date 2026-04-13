@@ -2138,6 +2138,13 @@ public class MinimalGraphReplayReproducerTest {
                     pastSeqLen2, 1, kvMgr.getStaticKvBuffers(), kvMgr.getMaxKvLen(), cachePos,
                     true, hiddenSize, reusableInputs, true);
 
+            // Tell C++ to update input_ids/position_ids/attention_mask directly on GPU device
+            // before graph capture/replay. Without this, reusable buffers with putScalar()
+            // updates have stale H2D memcpy nodes baked into the CUDA graph.
+            if (cppKvScatterActive && dspExec != null) {
+                dspExec.setNextDecodeToken(nextToken, (int) cachePos);
+            }
+
             Map<String, INDArray> outputs = decoder.outputDirect(decodeInputs, logitsOnlyOutputNames);
 
             INDArray stepLogits = outputs.get(logitsName);

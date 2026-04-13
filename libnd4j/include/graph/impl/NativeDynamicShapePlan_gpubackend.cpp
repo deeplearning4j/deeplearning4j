@@ -2809,6 +2809,38 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // RAII guard: restores previous tl_dspExecutionStream value when this function exits.
     sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
 
+    // CRITICAL FIX: Cross-stream ordering for stable-address variable inputs.
+    //
+    // When external inputs (embeddings, input_ids) use reusable fixed-address buffers,
+    // .assign() writes new data to the SAME GPU address each step. The assign runs on
+    // the default LaunchContext stream (stream A). The graph replay launches on the DSP
+    // execution stream (stream B = cudaStr). Without explicit ordering, stream B can
+    // launch the graph BEFORE stream A's assign completes — reading stale data.
+    //
+    // Fix: record a CUDA event on the default stream after all prior work, then make
+    // the DSP stream wait on it. This creates a happens-before relationship:
+    //   assign() on default stream → event → DSP stream graph launch
+    //
+    // Only needed when the DSP stream differs from the default stream (which it
+    // always does in the replay path since DspStreamGuard sets tl_dspExecutionStream).
+    {
+      cudaStream_t defaultStream = nullptr;
+      auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+      if (defaultStreamPtr != nullptr) {
+        defaultStream = *defaultStreamPtr;
+      }
+      if (defaultStream != nullptr && defaultStream != cudaStr) {
+        cudaEvent_t crossStreamEvt;
+        cudaEventCreateWithFlags(&crossStreamEvt, cudaEventDisableTiming);
+        cudaEventRecord(crossStreamEvt, defaultStream);
+        cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
+        cudaEventDestroy(crossStreamEvt);
+        DSP_DIAG(EXECUTE, "CROSS_STREAM_SYNC: DSP stream %p waiting on default stream %p event "
+                 "for seg[%d-%d] — ensures .assign() data visible to graph replay",
+                 (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
+      }
+    }
+
     if (useFastReplay) {
       // Fast path: arg table pointers are stable so skip refresh.
       cudaGetLastError();

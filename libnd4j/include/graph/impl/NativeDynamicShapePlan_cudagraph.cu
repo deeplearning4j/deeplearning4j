@@ -284,6 +284,28 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         }
       }
 
+      // CRITICAL FIX: Cross-stream ordering for stable-address variable inputs.
+      // .assign() on reusable buffers runs on the default LaunchContext stream.
+      // Graph replay launches on cudaStr. Without ordering, replay reads stale data.
+      // Make cudaStr wait on the default stream's prior work via a CUDA event.
+      {
+        cudaStream_t defaultStream = nullptr;
+        auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+        if (defaultStreamPtr != nullptr) {
+          defaultStream = *defaultStreamPtr;
+        }
+        if (defaultStream != nullptr && defaultStream != cudaStr) {
+          cudaEvent_t crossStreamEvt;
+          cudaEventCreateWithFlags(&crossStreamEvt, cudaEventDisableTiming);
+          cudaEventRecord(crossStreamEvt, defaultStream);
+          cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
+          cudaEventDestroy(crossStreamEvt);
+          DSP_DIAG(EXECUTE, "CROSS_STREAM_SYNC: replay stream %p waiting on default stream %p "
+                   "for seg[%d-%d]",
+                   (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
+        }
+      }
+
 #if HAVE_TRITON
       auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
       if (tritonBackend != nullptr) {
