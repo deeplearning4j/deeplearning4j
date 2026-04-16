@@ -87,13 +87,13 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     LongType batchSize = x->lengthOf() / (xM * xK);
 
     std::vector<LongType> newXShape = {batchSize * xM, xK};
-    bool xCanView = x->ews() == 1;
+    bool xCanView = shape::strideDescendingCAscendingF(x->shapeInfo());
     xReshaped = x->reshape(x->ordering(), newXShape, !xCanView);
 
     // Flatten z to 2D: [product(batch...) * M, N]
     LongType zN = z->sizeAt(-1);
     std::vector<LongType> newZShape = {batchSize * xM, zN};
-    bool zCanView = z->ews() == 1;
+    bool zCanView = shape::strideDescendingCAscendingF(z->shapeInfo());
     zReshaped = z->reshape(z->ordering(), newZShape, !zCanView);
 
     x = xReshaped;
@@ -106,13 +106,13 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     LongType batchSize = y->lengthOf() / (yK * yN);
 
     std::vector<LongType> newYShape = {yK, batchSize * yN};
-    bool yCanView = y->ews() == 1;
+    bool yCanView = shape::strideDescendingCAscendingF(y->shapeInfo());
     yReshaped = y->reshape(y->ordering(), newYShape, !yCanView);
 
     // Flatten z to 2D: [M, product(batch...) * N]
     LongType zM = z->sizeAt(-2);
     std::vector<LongType> newZShape = {zM, batchSize * yN};
-    bool zCanView = z->ews() == 1;
+    bool zCanView = shape::strideDescendingCAscendingF(z->shapeInfo());
     zReshaped = z->reshape(z->ordering(), newZShape, !zCanView);
 
     y = yReshaped;

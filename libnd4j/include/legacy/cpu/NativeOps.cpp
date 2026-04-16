@@ -2663,18 +2663,6 @@ void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
     plan->setOutputSlotMaxSizes(slotIndices, maxSizes, static_cast<int>(numSlots));
 }
 
-void setPlanKvCachePosition(sd::Pointer planHandle, int pos) {
-    if (planHandle == nullptr) return;
-    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
-    plan->setKvCachePosition(pos);
-}
-
-void setPlanMaxKvCacheLength(sd::Pointer planHandle, int maxLen) {
-    if (planHandle == nullptr) return;
-    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
-    plan->setMaxKvCacheLength(maxLen);
-}
-
 // Constant Cache Statistics API (CPU)
 SD_LIB_EXPORT sd::LongType getConstantCacheBytes(int deviceId) {
     return sd::ConstantHelper::getInstance().getCachedAmount(deviceId);

@@ -104,28 +104,8 @@ public class DynamicShapeSlot {
     /** Whether this op has INT/LONG inputs that need device-to-host sync before shape calc. */
     private final boolean needsIntLongSync;
 
-    /** Whether this op has data-dependent output shapes (Where, unique). */
-    private final boolean isDataDependent;
-
     /** Whether this op requires dynamic shape inference (reshape with computed shape input, etc). */
     private final boolean requiresDynamicShapeInference;
-
-    /**
-     * Whether outputs of this op need to be zeroed before execution.
-     * Ops that fully write every output element (matmul, add, softmax, etc.) can safely
-     * skip zeroing of reused buffers. Ops that partially write or have data-dependent
-     * output sizes (scatter, pad, Where) need zeroed buffers to avoid stale data corruption.
-     */
-    private final boolean needsZeroedOutput;
-
-    /**
-     * Whether this op produces view outputs (shares input buffer, no data copy).
-     * View-capable ops: reshape, reshape_no_copy, expand_dims, squeeze, permute.
-     * When true, the executor can skip output allocation entirely and pass an empty
-     * placeholder — C++ will replace it with a view of the input's buffer.
-     * Matches C++ NativePlanCompiler's isViewCapableOp flag.
-     */
-    private final boolean viewCapableOp;
 
     /**
      * Whether ALL INT/LONG inputs to this op come from external sources (constants, variables,

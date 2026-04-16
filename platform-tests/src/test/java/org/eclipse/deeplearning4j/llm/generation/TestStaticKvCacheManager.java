@@ -152,26 +152,6 @@ public class TestStaticKvCacheManager {
     }
 
     @Test
-    public void testCppScatterMode() {
-        StaticKvCacheManager manager = new StaticKvCacheManager();
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
-
-        Map<String, INDArray> prefillOutputs = createPrefillOutputs(5);
-        manager.initializeFromPrefill(prefillOutputs, kvNames, 10, 5);
-
-        manager.setKvScatterInCpp(true);
-        assertTrue(manager.isKvScatterInCpp());
-
-        long posBefore = manager.getCachePosition();
-
-        // C++ scatter mode: scatter should just advance position
-        manager.scatterNewEntries(new HashMap<>(), kvNames);
-        assertEquals(posBefore + 1, manager.getCachePosition());
-
-        manager.close();
-    }
-
-    @Test
     public void testMultiStepScatter() {
         StaticKvCacheManager manager = new StaticKvCacheManager();
         DecoderUtils.KVCacheNames kvNames = createKvNames();

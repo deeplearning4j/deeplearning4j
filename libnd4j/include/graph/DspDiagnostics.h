@@ -389,6 +389,36 @@ class SD_LIB_EXPORT DspDiagnostics {
     } \
   } while (0)
 
+// Log a slot WRITE event: who wrote to SLOT_IDX, when, on what STREAM, during PHASE.
+// Gated on MEMORY category. Emits a structured DSP_DIAG_SLOT row that records the
+// code-path tag (e.g. "fast-frozen", "fused-chain-head", "alloc-output") alongside
+// the op name, byte count, and stream pointer.  Used at every slot write site in
+// the slot executor so we can reconstruct which code path touched a slot.
+#define DSP_DIAG_SLOT_WRITE(SLOT_IDX, OP, BYTES, STREAM, PHASE) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_MEMORY)) { \
+      sd::graph::DspDiagnostics::getInstance().recordEvent( \
+          sd::graph::DSP_DIAG_MEMORY, (SLOT_IDX), -1, -1, (OP), 0, \
+          "SLOT_WRITE slot=%d op=%s bytes=%lld stream=%p phase=%s", \
+          (int)(SLOT_IDX), (OP) ? (OP) : "?", (long long)(BYTES), \
+          (void*)(STREAM), (PHASE) ? (PHASE) : "?"); \
+    } \
+  } while (0)
+
+// Log a slot ZERO event: who zeroed SLOT_IDX and WHY (batch-zero / prezero / nullify).
+// Gated on MEMORY category.  Emits the reason string so "output zeroed then written"
+// races can be traced back to the exact zeroing site.
+#define DSP_DIAG_SLOT_ZERO(SLOT_IDX, REASON, STREAM, PHASE) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_MEMORY)) { \
+      sd::graph::DspDiagnostics::getInstance().recordEvent( \
+          sd::graph::DSP_DIAG_MEMORY, (SLOT_IDX), -1, -1, nullptr, 0, \
+          "SLOT_ZERO slot=%d reason=%s stream=%p phase=%s", \
+          (int)(SLOT_IDX), (REASON) ? (REASON) : "?", \
+          (void*)(STREAM), (PHASE) ? (PHASE) : "?"); \
+    } \
+  } while (0)
+
 #else  // __CUDA_ARCH__
 
 #define DSP_DIAG_ENABLED(CAT)                     false
@@ -402,6 +432,8 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_DUMP_EXT_INPUTS(EXT_ARRAYS, NUM_EXT, EXEC_COUNT, RESULT_VAR) ((void)0)
 #define DSP_DIAG_SNAPSHOT_ADDRS(TAG, OUT_SLOTS, NUM_OUT, EXT_ARRAYS, NUM_EXT) ((void)0)
 #define DSP_DIAG_COMPARE_ADDRS(TAG_A, TAG_B) (0)
+#define DSP_DIAG_SLOT_WRITE(SLOT_IDX, OP, BYTES, STREAM, PHASE) ((void)0)
+#define DSP_DIAG_SLOT_ZERO(SLOT_IDX, REASON, STREAM, PHASE) ((void)0)
 
 #endif  // __CUDA_ARCH__
 

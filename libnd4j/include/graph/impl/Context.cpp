@@ -22,6 +22,7 @@
 #include <array/InteropDataBuffer.h>
 #include <graph/Context.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/shape.h>
 
 #ifdef SD_CUDA
 #include <cuda_runtime.h>
@@ -358,8 +359,8 @@ Variable *Context::getVariable(int idx) {
     if (!array->isEmpty()) {
       LongType maxLen = sd::math::sd_min(16, array->lengthOf() - 1);
 
-      sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
-                this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());
+      sd_printf("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s];\n",
+                this->_nodeId, idx, shape_.c_str(),(shape::strideDescendingCAscendingF(array->shapeInfo()) ? 1 : 0), array->ordering(), type.c_str());
       std::vector<sd::LongType> shapeLen = {array->lengthOf()};
       NDArray *raveled = array->reshape(array->ordering(), shapeLen);
       sd_printf("Values: [ ",0);
@@ -372,8 +373,8 @@ Variable *Context::getVariable(int idx) {
       sd_printf("]\n",0);
 
     } else {
-      sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
-                this->_nodeId, idx, shape_.c_str(), (int)array->ews(), array->ordering(), type.c_str(), m);
+      sd_printf("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
+                this->_nodeId, idx, shape_.c_str(), (shape::strideDescendingCAscendingF(array->shapeInfo()) ? 1 : 0), array->ordering(), type.c_str(), m);
     }
   }
 

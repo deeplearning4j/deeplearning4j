@@ -63,8 +63,8 @@ PLATFORM_CHECK(add, ENGINE_CPU) {
     req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(x->ews() == 1 || x->ews() == 0, "X contiguous") &&
-    req.expectTrue(y->ews() == 1 || y->ews() == 0, "Y contiguous");
+    req.expectTrue(shape::strideDescendingCAscendingF(x->shapeInfo()), "X contiguous") &&
+    req.expectTrue(shape::strideDescendingCAscendingF(y->shapeInfo()), "Y contiguous");
 
     return req;
 }
@@ -139,8 +139,8 @@ PLATFORM_CHECK(multiply, ENGINE_CPU) {
     req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(x->ews() == 1 || x->ews() == 0, "X contiguous") &&
-    req.expectTrue(y->ews() == 1 || y->ews() == 0, "Y contiguous");
+    req.expectTrue(shape::strideDescendingCAscendingF(x->shapeInfo()), "X contiguous") &&
+    req.expectTrue(shape::strideDescendingCAscendingF(y->shapeInfo()), "Y contiguous");
 
     return req;
 }

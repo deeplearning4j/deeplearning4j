@@ -114,11 +114,36 @@ SD_INLINE const char* executionPhaseName(ExecutionPhase phase) {
     }                                                                           \
   } while (0)
 
+// ─── Segment execution phase transition event ──────────────────────────────
+//
+// Emits a standardized [PHASE_TRANSITION] event on every segment phase change
+// and performs the assignment in one step. The event prefix "[PHASE_TRANSITION]"
+// matches the one used for plan-level transitions, so a single grep/parse yields
+// a complete phase timeline for a test run.
+//
+// Usage:
+//   DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "cpu_graph_first_exec");
+//
+// SEG must be a GraphSegment reference with .def.startSlot / .def.endSlot /
+// .exec.currentPhase / .exec.executionCount accessible at the call site.
+
+#define DSP_SET_SEG_PHASE(SEG, NEW_PHASE, REASON)                              \
+  do {                                                                          \
+    const char* _oldName = sd::graph::dsp::executionPhaseName((SEG).exec.currentPhase); \
+    const char* _newName = sd::graph::dsp::executionPhaseName((NEW_PHASE));    \
+    (SEG).exec.currentPhase = (NEW_PHASE);                                     \
+    DSP_DIAG(EXECUTE,                                                          \
+             "[PHASE_TRANSITION] seg[%d-%d] %s -> %s reason=%s execCount=%d",  \
+             (SEG).def.startSlot, (SEG).def.endSlot,                           \
+             _oldName, _newName, (REASON), (SEG).exec.executionCount);         \
+  } while (0)
+
 #else  // __CUDA_ARCH__
 
 #define DSP_REQUIRE_PLAN_PHASE_AT_MOST(maxPhase, methodName)  ((void)0)
 #define DSP_REQUIRE_PLAN_PHASE_EXACT(requiredPhase, methodName) ((void)0)
 #define DSP_REQUIRE_PLAN_PHASE_AT_LEAST(minPhase, methodName)  ((void)0)
+#define DSP_SET_SEG_PHASE(SEG, NEW_PHASE, REASON) ((void)0)
 
 #endif  // __CUDA_ARCH__
 

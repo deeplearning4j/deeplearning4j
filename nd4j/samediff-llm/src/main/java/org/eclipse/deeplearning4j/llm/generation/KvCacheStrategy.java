@@ -48,11 +48,9 @@ public enum KvCacheStrategy {
      * view+assign. Shapes are fixed after prefill, enabling CUDA graph capture
      * and replay for zero-overhead kernel launches.</p>
      *
-     * <p>Supports two scatter modes:</p>
-     * <ul>
-     *   <li>C++ scatter: DSP handles KV retention internally (logits-only output)</li>
-     *   <li>Java scatter: Decoder outputs present KV, Java scatters via KvScatter op</li>
-     * </ul>
+     * <p>KV scatter is handled by the standard {@code kv_scatter} op, either as an
+     * in-graph node (captured into CUDA graph replay) or as a post-execution call
+     * through {@link UnifiedKvCacheManager}.</p>
      */
     STATIC,
 

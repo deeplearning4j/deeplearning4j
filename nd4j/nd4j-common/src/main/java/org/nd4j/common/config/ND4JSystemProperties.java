@@ -544,6 +544,30 @@ public class ND4JSystemProperties {
 
     /**
      * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Fraction of available device memory budgeted for the shape-keyed
+     * plan cache. A cached plan counts against this budget by the bytes held in its
+     * slot NDArrays. Above the budget, least-recently-used plans are evicted and
+     * destroyed. Set to 0 to disable caching (every execute recompiles; never
+     * recommended — the slot-immutability contract requires a matching cached plan).
+     * Environment variable: ND4J_DSP_PLAN_CACHE_BUDGET_FRACTION
+     * <p>
+     * Default: 0.05 (5% of free device memory)
+     */
+    public static final String DSP_PLAN_CACHE_BUDGET_FRACTION = "org.nd4j.dsp.planCache.budgetFraction";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Hard cap on the number of plans cached per SameDiff instance.
+     * Lower of {budget-fraction bytes} and {max plans} wins. Guards against
+     * pathological models with thousands of distinct input-shape combinations.
+     * Environment variable: ND4J_DSP_PLAN_CACHE_MAX_PLANS
+     * <p>
+     * Default: 64
+     */
+    public static final String DSP_PLAN_CACHE_MAX_PLANS = "org.nd4j.dsp.planCache.maxPlans";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
      * Description: Enable detailed per-op timing breakdown for DSP execution.
      * <p>
      * Default: false
@@ -605,6 +629,23 @@ public class ND4JSystemProperties {
      *         "TPU", "HEXAGON", "OPENVINO", "TVM"
      */
     public static final String DSP_GRAPH_EXECUTION_MODE = "nd4j.dsp.graphExecutionMode";
+
+    /**
+     * Applicability: DSP execution engine / slot-by-slot lifecycle coordination<br>
+     * Description: Controls how the slot-by-slot (legacy) execution path coordinates with
+     * DSP capture/replay state. Gates per-buffer actuality ticks, host/device resync,
+     * and deallocation against in-flight DSP plans.<br>
+     * Values:
+     * <ul>
+     *   <li>"LEGACY_UNAWARE" (0) — bisecting regressions: slot-by-slot runs unchanged,
+     *       no gating against DSP state. Use only to reproduce pre-fix behavior.</li>
+     *   <li>"COEXIST_SAFE" (1, default) — slot-by-slot skips ticks, resyncs, and closes
+     *       that would clobber DSP-owned buffers or corrupt in-flight capture/replay.</li>
+     *   <li>"STRICT_ISOLATED" (2) — reserved for future use: disallow slot-by-slot
+     *       entirely while DSP plan is active.</li>
+     * </ul>
+     */
+    public static final String DSP_EXECUTION_MODE = "nd4j.dsp.executionMode";
 
     /**
      * Applicability: DSP execution engine<br>
@@ -1016,14 +1057,7 @@ public class ND4JSystemProperties {
      */
     public static final String DSP_SYMBOLIC_SHAPES = "nd4j.dsp.symbolicShapes";
 
-    /**
-     * Applicability: DSP execution<br>
-     * Description: Number of observation steps before classifying dimensions as static or dynamic.
-     * Environment variable: ND4J_DSP_SYMBOLIC_SHAPE_WARMUP
-     * <p>
-     * Default: 2
-     */
-    public static final String DSP_SYMBOLIC_SHAPE_WARMUP = "nd4j.dsp.symbolicShapeWarmup";
+    // DSP_SYMBOLIC_SHAPE_WARMUP removed — warmup is a compile-time constant (2) in DspConfig::kSymbolicShapeWarmup.
 
     /**
      * Applicability: DSP CUDA execution<br>

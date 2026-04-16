@@ -52,6 +52,11 @@ public class BenchmarkResult {
     private long tritonLaunches;
     private long tritonCacheHits;
 
+    // Warmup classification
+    private int warmupStepCount;
+    private long maxWarmupStepMs;
+    private long totalWarmupMs;
+
     // DSP / CUDA graph observability
     private String planMetricsSummary;
 
@@ -93,6 +98,12 @@ public class BenchmarkResult {
     public void setTritonLaunches(long tritonLaunches) { this.tritonLaunches = tritonLaunches; }
     public long getTritonCacheHits() { return tritonCacheHits; }
     public void setTritonCacheHits(long tritonCacheHits) { this.tritonCacheHits = tritonCacheHits; }
+    public int getWarmupStepCount() { return warmupStepCount; }
+    public void setWarmupStepCount(int warmupStepCount) { this.warmupStepCount = warmupStepCount; }
+    public long getMaxWarmupStepMs() { return maxWarmupStepMs; }
+    public void setMaxWarmupStepMs(long maxWarmupStepMs) { this.maxWarmupStepMs = maxWarmupStepMs; }
+    public long getTotalWarmupMs() { return totalWarmupMs; }
+    public void setTotalWarmupMs(long totalWarmupMs) { this.totalWarmupMs = totalWarmupMs; }
     public String getPlanMetricsSummary() { return planMetricsSummary; }
     public void setPlanMetricsSummary(String planMetricsSummary) { this.planMetricsSummary = planMetricsSummary; }
     public String getGeneratedText() { return generatedText; }
@@ -110,10 +121,14 @@ public class BenchmarkResult {
         if (lateSteadyTokPerSec > 0) {
             throughput.append(String.format(", lateSteady=%.2f tok/s", lateSteadyTokPerSec));
         }
-        String base = String.format("[PASS] %s: %d tokens, %s, firstToken=%dms | reset=%dms compile=%dms decode=%dms validate=%dms | triton: launches=%d hits=%d",
+        String warmupInfo = warmupStepCount > 0
+                ? String.format(" | warmup: %d steps, total=%dms, max=%dms",
+                    warmupStepCount, totalWarmupMs, maxWarmupStepMs)
+                : "";
+        String base = String.format("[PASS] %s: %d tokens, %s, firstToken=%dms | reset=%dms compile=%dms decode=%dms validate=%dms | triton: launches=%d hits=%d%s",
                 configName, tokenCount, throughput, firstTokenMs,
                 resetMs, compileMs, decodeMs, validateMs,
-                tritonLaunches, tritonCacheHits);
+                tritonLaunches, tritonCacheHits, warmupInfo);
         if (planMetricsSummary == null || planMetricsSummary.isEmpty()) {
             return base;
         }

@@ -2483,7 +2483,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        return createShapeInfo(shape, stride, elementWiseStride, order, dtype, ArrayOptionsHelper.toggleBitSet(0,ArrayOptionsHelper.ATYPE_EMPTY_BIT));
+        long extras = ArrayOptionsHelper.composeTypicalChecks(empty, dtype, false, false, false, false, false);
+        return createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
 
     @Override

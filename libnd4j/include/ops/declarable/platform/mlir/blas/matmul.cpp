@@ -94,9 +94,9 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
                    "Tensor size above MLIR threshold") &&
 
     // Check contiguous memory layout for optimal performance
-    req.expectTrue(a->ews() == 1 || a->ews() == 0,
+    req.expectTrue(shape::strideDescendingCAscendingF(a->shapeInfo()),
                    "Input A has contiguous memory") &&
-    req.expectTrue(b->ews() == 1 || b->ews() == 0,
+    req.expectTrue(shape::strideDescendingCAscendingF(b->shapeInfo()),
                    "Input B has contiguous memory");
 
     return req;

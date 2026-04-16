@@ -33,11 +33,11 @@ namespace config {
 class SD_LIB_EXPORT DspConfig {
  private:
   // Batch operations
-  std::atomic<bool> _batchZero{false};
+  std::atomic<bool> _batchZero{true};
   std::atomic<bool> _batchZeroVerbose{false};
   std::atomic<bool> _batchZeroGapOnly{true};
   std::atomic<bool> _batchZeroKernel{false};
-  std::atomic<bool> _batchedGemm{false};
+  std::atomic<bool> _batchedGemm{true};
 
   // Pool trim
   std::atomic<int> _trimInterval{5};
@@ -52,7 +52,9 @@ class SD_LIB_EXPORT DspConfig {
 
   // Symbolic shape ranges
   std::atomic<bool> _symbolicShapes{true};
-  std::atomic<int> _symbolicShapeWarmup{2};
+  // Warmup steps baked in as a compile-time constant (formerly DSP_SYMBOLIC_SHAPE_WARMUP).
+  // No runtime tuning is supported — the value was never tuned in practice.
+  static constexpr int kSymbolicShapeWarmup = 2;
 
   // Frozen-shape transition
   std::atomic<bool> _freezeMergeSegments{true};
@@ -90,6 +92,10 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<bool> _replayCacheEnabled{true};
   std::atomic<int> _traceSlot{-1};
 
+  // Shape-keyed plan cache (one NativeDynamicShapePlan per (outputSet, shapeSig))
+  std::atomic<float> _planCacheBudgetFraction{0.05f};  // fraction of free device memory
+  std::atomic<int> _planCacheMaxPlans{64};             // hard cap on cached plan count
+
  public:
   DspConfig();
 
@@ -126,8 +132,9 @@ class SD_LIB_EXPORT DspConfig {
   // --- Symbolic shapes ---
   bool symbolicShapes() { return _symbolicShapes.load(); }
   void setSymbolicShapes(bool v) { _symbolicShapes.store(v); }
-  int symbolicShapeWarmup() { return _symbolicShapeWarmup.load(); }
-  void setSymbolicShapeWarmup(int v) { _symbolicShapeWarmup.store(v); }
+  // Warmup step count is a compile-time constant; setter is a no-op for backward compat.
+  static constexpr int symbolicShapeWarmup() { return kSymbolicShapeWarmup; }
+  void setSymbolicShapeWarmup(int /*v*/) { /* baked-in constant; setter retained as no-op */ }
 
   // --- Frozen-shape transition ---
   bool freezeMergeSegments() { return _freezeMergeSegments.load(); }
@@ -188,6 +195,12 @@ class SD_LIB_EXPORT DspConfig {
   void setReplayCacheEnabled(bool v) { _replayCacheEnabled.store(v); }
   int traceSlot() { return _traceSlot.load(); }
   void setTraceSlot(int v) { _traceSlot.store(v); }
+
+  // --- Shape-keyed plan cache ---
+  float planCacheBudgetFraction() { return _planCacheBudgetFraction.load(); }
+  void setPlanCacheBudgetFraction(float v) { _planCacheBudgetFraction.store(v); }
+  int planCacheMaxPlans() { return _planCacheMaxPlans.load(); }
+  void setPlanCacheMaxPlans(int v) { _planCacheMaxPlans.store(v); }
 
   /**
    * Initialize from environment variables.

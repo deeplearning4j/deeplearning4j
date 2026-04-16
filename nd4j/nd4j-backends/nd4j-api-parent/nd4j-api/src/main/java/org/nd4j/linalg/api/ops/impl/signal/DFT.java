@@ -40,13 +40,13 @@ import java.util.List;
  */
 @NoArgsConstructor
 public class DFT extends DynamicCustomOp {
-    private int axis = -2;
+    private int dftAxis = -2;
     private boolean inverse = false;
     private boolean onesided = false;
 
     public DFT(@NonNull SameDiff sameDiff, @NonNull SDVariable input, int axis, boolean inverse, boolean onesided) {
         super(sameDiff, new SDVariable[]{input});
-        this.axis = axis;
+        this.dftAxis = axis;
         this.inverse = inverse;
         this.onesided = onesided;
         addArgs();
@@ -58,7 +58,7 @@ public class DFT extends DynamicCustomOp {
 
     public DFT(@NonNull INDArray input, int axis, boolean inverse, boolean onesided, INDArray output) {
         super(new INDArray[]{input}, wrapOrNull(output));
-        this.axis = axis;
+        this.dftAxis = axis;
         this.inverse = inverse;
         this.onesided = onesided;
         addArgs();
@@ -74,7 +74,7 @@ public class DFT extends DynamicCustomOp {
     }
 
     protected void addArgs() {
-        addIArgument(axis);
+        addIArgument(dftAxis);
         addIArgument(inverse ? 1 : 0);
         addIArgument(onesided ? 1 : 0);
     }

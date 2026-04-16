@@ -49,7 +49,7 @@ public final class DspProperties {
 
     // Symbolic shapes
     public static final String SYMBOLIC_SHAPES = "nd4j.dsp.symbolicShapes";
-    public static final String SYMBOLIC_SHAPE_WARMUP = "nd4j.dsp.symbolicShapeWarmup";
+    // SYMBOLIC_SHAPE_WARMUP removed — warmup is a compile-time constant (2) in DspConfig.
 
     // Capture pool
     public static final String CAPTURE_POOL_ENABLED = "nd4j.dsp.capturePoolEnabled";

@@ -29,6 +29,7 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <system/common.h>
 
+#include <atomic>
 #include <cstdint>
 #include <cassert>
 #include <memory>
@@ -319,6 +320,7 @@ struct SlotFlags {
   bool isCustomOp = true;
   bool isIdentityOp = false;
   bool isViewCapableOp = false;
+  bool isFullyWriting = false;
   bool inPlaceFused = false;
   int inPlaceFusedInputIdx = -1;
   // cublasLt epilogue fusion
@@ -408,12 +410,39 @@ struct NativeSlot {
   };
   SlotState state_ = SlotState::UNINITIALIZED;
 
+  /**
+   * Per-slot monotonic write generation.
+   *
+   * Incremented every time this slot's output buffers are written (kernel
+   * dispatch, prezero memset, nullify, fused chain emit, view install, etc.).
+   * Readers may record the generation they saw at read time and later call
+   * dspAssertSlotGeneration() to detect stale reads — e.g. "I read slot 42 at
+   * generation 17, but after my consumer ran the slot is at generation 19
+   * without my expecting a rewrite."
+   *
+   * Plain uint32_t (not atomic): plan execution is single-threaded per plan;
+   * cross-plan replay happens under an external serialization point. If
+   * concurrent access is ever added, promote to std::atomic<uint32_t>.
+   */
+  uint32_t generation_ = 0;
+
   NativeSlot() = default;
 
   // Convenience accessors that map SlotState to the old boolean semantics.
   bool shapeCacheValid() const { return state_ >= SlotState::SHAPE_CACHED; }
   bool frozenContextReady() const { return state_ >= SlotState::FROZEN; }
   bool frozenConstantSlot() const { return state_ == SlotState::FROZEN_CONSTANT; }
+
+  // ── Generation counter accessors ─────────────────────────────────
+  uint32_t generation() const { return generation_; }
+
+  /**
+   * Bump the write generation and return the new value.
+   * Call AFTER a slot-write completes (kernel dispatch submitted, memset
+   * enqueued, etc.) so that any reader that sees the new generation is
+   * guaranteed the write was at least initiated.
+   */
+  uint32_t bumpGeneration() { return ++generation_; }
 
   ~NativeSlot() = default;
 
@@ -504,9 +533,8 @@ struct ReplaySchedule {
   std::vector<std::unique_ptr<GraphReplayHandle>> compositeReplayHandles;
 };
 
-// Batch-zero entry definition (used by exec.segBatchZeroEntries)
-// outputSlotIndex tracks which slot the pointer came from, enabling
-// pointer refresh from outputSlots_ during replay to avoid stale addresses.
+// Batch-zero entry used by NativeDynamicShapePlan::batchZeroEntries_.
+// outputSlotIndex tracks which slot the pointer came from.
 struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
 
 /**
@@ -567,9 +595,6 @@ struct GraphSegmentExec {
   // Native ordered range ops captured in graph — must not be re-executed after replay.
   bool gapOpsCapturedInGraph = false;
 
-  // Per-segment batch-zero entries for replay
-  std::vector<BatchZeroEntry> segBatchZeroEntries;
-
   // View recipe chain — captures view-producing ops (reshape, permute,
   // expand_dims, squeeze, strided_slice) so they can be installed during
   // REPLAYING without launching a kernel or executing a native ordered range.
@@ -618,7 +643,6 @@ struct GraphSegmentExec {
     compiledByBackend.clear();
     argTableStable = false;
     gapOpsCapturedInGraph = false;
-    segBatchZeroEntries.clear();
     viewRecipes = ViewRecipeChain();
     compositeReplaySchedule = ReplaySchedule();
     replaySignatureHash = 0;
@@ -651,19 +675,6 @@ struct GraphSegment {
   void resetCpuBackend() { resolvedCpuBackend = nullptr; }
 
   GraphSegment() = default;
-};
-
-/**
- * Describes a single KV cache output→input mapping for native KV cache retention.
- * After execute(), the new KV entry at the last position of the present output
- * is scattered to the specified position in the static past input buffer.
- */
-struct KvCacheMapping {
-  int presentOutputSlotIdx;   // Absolute index into outputSlots_ for the present KV output
-  int pastInputExternalIdx;   // Index into external inputs for the past KV buffer
-  int seqDim;                 // Which dimension is the sequence dim (typically 2)
-
-  KvCacheMapping() : presentOutputSlotIdx(-1), pastInputExternalIdx(-1), seqDim(2) {}
 };
 
 /**
@@ -771,6 +782,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void phaseCompile(NDArray** externalInputs, int numExternalInputs);
 
   /**
+   * Ahead-of-time precompile entry point for benchmarks and tests.
+   *
+   * Performs the full compile lifecycle up front so subsequent execute() calls
+   * measure only replay time, never compilation. Runs: phaseFreeze (if not yet
+   * frozen), one warmup execution to populate shape caches, then phaseCompile.
+   * After return, compilationSealed() is true and any subsequent compileSegment
+   * call logs a COMPILE_VIOLATION and increments midExecutionCompileCount().
+   *
+   * Use this from benchmarks to separate compile time from execution time —
+   * without it, cold-start compile time leaks into the first measured execute().
+   */
+  Status precompilePlan(NDArray** externalInputs, int numExternalInputs, void* stream);
+
+  /**
    * PHASE: Freeze — transition from dynamic to frozen shapes.
    *
    * Called by setShapesFrozen(true). Runs the fusion pass, rebuilds segments
@@ -852,103 +877,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * re-warm (re-detect view producers, re-capture CUDA graphs, re-allocate
    * cuBLAS workspace, etc.) just like the very first execution.
    *
-   * Use this between VLM decode runs to reclaim ~14 GB of GPU memory without
+   * Use this between execution runs to reclaim GPU memory without
    * destroying the plan handle (avoiding costly re-compilation).
    *
    * @return the number of intermediate NDArrays freed
    */
   int releaseGpuIntermediates();
-
-  /**
-   * Release GPU intermediates with option to preserve decode-invariant state.
-   *
-   * @param preserveDecodeState  If true, preserves:
-   *   - outputSlots_[] (decode has invariant shapes)
-   *   - CUDA graph replay handles (same kernel graph for decode)
-   *   - cuBLAS workspace (same GEMM shapes for decode)
-   *   - Batch-zero, batch-D2D, batched-GEMM device arrays
-   *
-   *   Only resets:
-   *   - KV cache position (kvCachePosition_)
-   *   - Decode input pending updates (hasPendingDecodeUpdate_)
-   *
-   * Use this between VLM pages when decode shapes are invariant.
-   *
-   * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
-   */
-  int releaseGpuIntermediates(bool preserveDecodeState);
-
-  /**
-   * Configure KV cache retention. After this, execute() will scatter new KV entries
-   * from present output slots into static past input buffers, avoiding 60 copyBuffer
-   * round-trips per decode step.
-   *
-   * @param mappings       Flat array of (presentSlotIdx, pastExtIdx, seqDim) triples
-   * @param numMappings    Number of KV cache mappings (e.g. 60 for 30-layer model)
-   * @param maxKvLen       Maximum KV cache length (static buffer size along seqDim)
-   * @param initialPos     Initial write position (prefillLen)
-   */
-  void configureKvCacheRetention(const int* mappings, int numMappings, int maxKvLen, int initialPos);
-
-  /**
-   * Advance the KV cache write position by 1.
-   * @return the new position value
-   */
-  int advanceKvCachePosition();
-
-  /**
-   * Reset the KV cache write position.
-   */
-  void resetKvCachePosition(int newPos);
-
-  /**
-   * Configure decode input indices for direct device-side updates.
-   * Call once after plan compilation. The plan will use these indices
-   * to update input_ids, position_ids, and attention_mask directly on
-   * device memory — no JNI putScalar or host↔device round-trips.
-   *
-   * @param inputIdsExtIdx    External input index for input_ids (or -1 if N/A)
-   * @param positionIdsExtIdx External input index for position_ids (or -1 if N/A)
-   * @param attentionMaskExtIdx External input index for attention_mask (or -1 if N/A)
-   * @param maxKvLen          Maximum KV cache length (attention mask width minus 1)
-   */
-  void configureDecodeInputs(int inputIdsExtIdx, int positionIdsExtIdx,
-                              int attentionMaskExtIdx, int maxKvLen);
-
-  /**
-   * Update decode inputs directly on device. Single call replaces 3+ putScalar calls.
-   * Writes tokenId → input_ids[0,0], cachePos → position_ids[0,0],
-   * and sets attention_mask[0, cachePos-1] = 1 on the GPU.
-   *
-   * @param externalInputs  External input array (same as passed to execute())
-   * @param numExt          Number of external inputs
-   * @param tokenId         The next token ID to write into input_ids
-   * @param cachePos        Current cache position (for position_ids and mask update)
-   * @param stream          CUDA stream for async writes
-   */
-  void updateDecodeInputs(NDArray** externalInputs, int numExt,
-                           long long tokenId, int cachePos, void* stream);
-
-  /**
-   * Set the next decode token and cache position for automatic device-side update.
-   * Call before execute(). If decode inputs are configured, execute() will
-   * write these values directly to device memory before graph replay.
-   *
-   * @param tokenId   Next token ID
-   * @param cachePos  Current cache position
-   */
-  void setNextDecodeToken(long long tokenId, int cachePos) {
-    pendingTokenId_ = tokenId;
-    pendingCachePos_ = cachePos;
-    hasPendingDecodeUpdate_ = true;
-  }
-
-  /**
-   * Check if decode inputs have been configured.
-   */
-  bool isDecodeInputsConfigured() const {
-    return decodeInputIdsExtIdx_ >= 0 || decodePositionIdsExtIdx_ >= 0 || decodeAttentionMaskExtIdx_ >= 0;
-  }
 
   /**
    * Get the number of external inputs expected by this plan.
@@ -1083,8 +1017,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * - Shape key computation is skipped for slots with valid cached shapes
    * - nullify() is skipped for slots with needsZeroedOutput=false
    *
-   * Use this during static KV decode where all external input shapes
-   * are guaranteed to be constant across decode steps.
+   * Use when all external input shapes are guaranteed constant across steps.
    * The first execution after enabling will still do full shape inference
    * to populate the cache; subsequent executions skip shape work entirely.
    */
@@ -1116,6 +1049,47 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * all segment arg tables have stable pointers.
    */
   bool arePointersStable() const { return pointersStable_; }
+
+  // ── Compilation seal & mid-execution violation tracking ──────────────
+  // A "compilation seal" is placed after phaseCompile() succeeds. Any subsequent
+  // call into compileSegment()/platformPrecompileSegments() is a contract
+  // violation — it means compile time is leaking into measured execution time
+  // and skewing benchmark numbers. Violations increment midExecutionCompileCount_
+  // and emit a loud sd_printf log with a [COMPILE_VIOLATION] tag.
+  //
+  // The shape-change recompile path in executeSegmentWithGpuGraph is the one
+  // legitimate case where we must unseal, recompile, and reseal. It counts as
+  // a violation too — benchmarks should not observe any — but the plan
+  // transparently recovers instead of hard-faulting.
+
+  /** True once phaseCompile() has finalized. Reset by phaseFreeze/reset paths. */
+  bool isCompilationSealed() const { return compilationDone_; }
+
+  /**
+   * Number of times compileSegment() ran after the compilation seal was placed.
+   * Expected to be 0 for well-behaved benchmarks that call precompilePlan()
+   * before their measured execution loop. A non-zero value means compile time
+   * was measured as execution time.
+   */
+  int64_t getMidExecutionCompileCount() const {
+    return midExecutionCompileCount_.load(std::memory_order_relaxed);
+  }
+
+  /**
+   * Reset the mid-execution compile counter. Used by tests and by benchmark
+   * harnesses that want to assert zero violations across a measured window.
+   */
+  void resetMidExecutionCompileCount() {
+    midExecutionCompileCount_.store(0, std::memory_order_relaxed);
+  }
+
+  /**
+   * Record a mid-execution compilation event. Called by the shape-change
+   * recompile path before it unseal/recompile/reseals. Emits a loud
+   * [COMPILE_VIOLATION] log visible at any DSP diagnostic level so benchmarks
+   * never silently regress.
+   */
+  void recordMidExecutionCompile(int startSlot, int endSlot, const char* reason);
 
   // ── Lifecycle enforcement ──────────────────────────────────────────────
   // These methods are the ONLY way to write output slots, sync external inputs,
@@ -1212,24 +1186,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    *   - For each KV cache output slot, set max size = batch * numHeads * maxSeqLen * headDim
    */
   void setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots);
-
-  /**
-   * Get the current KV cache sequence position (for slice-based KV cache access).
-   * This is the position where new KV entries will be written.
-   */
-  int getKvCachePosition() const { return kvCachePosition_; }
-
-  /**
-   * Set the KV cache sequence position.
-   * Call before each decode step to tell the attention op where to write new KV.
-   */
-  void setKvCachePosition(int pos);
-
-  /**
-   * Set the maximum KV cache length (used with pre-allocated KV cache).
-   * When set, attention outputs are pre-allocated at [batch, numHeads, maxKvLen, headDim].
-   */
-  void setMaxKvCacheLength(int maxLen);
 
   /**
    * Validate that a compiled CPU graph (oneDNN/ACL) covers all ops in the segment.
@@ -1334,10 +1290,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Shapes-frozen optimization: when enabled, skip shape cache clearing,
   // shape key computation, and unnecessary output zeroing between executions.
-  // Use when all external input shapes are guaranteed constant (e.g., static KV decode).
+  // Use when all external input shapes are guaranteed constant across steps.
   bool shapesFrozen_;
   int executeCount_;  // Tracks executions since shapes were frozen
   bool compilationDone_;  // True after platformPrecompileSegments succeeds; skip phaseCompile
+
+  // Count of compileSegment() calls that occurred AFTER compilationDone_ was set
+  // (i.e., mid-execution compiles). Accessed from the shape-change recompile
+  // path and read by benchmarks to assert "no compile during measurement".
+  // Atomic because phaseCompile() can be multi-threaded.
+  std::atomic<int64_t> midExecutionCompileCount_{0};
 
   // ── Plan-level phase tracking ──────────────────────────────────────────
   // Automatically advanced by execute() based on observed stability.
@@ -1400,27 +1362,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int untrackedOutputCacheSize_;
   static constexpr int MAX_OUTPUTS_PER_SLOT = 8;  // Max outputs per op (most ops have 1-3)
 
-  // ── KV cache retention ──────────────────────────────────────────────
-  // When configured, present KV outputs are not returned to Java.
-  // Instead, C++ extracts the new KV entry and scatters it into the
-  // static input buffer, avoiding 60 copyBuffer round-trips per step.
-  bool kvCacheRetentionEnabled_;
-  int kvCachePosition_;           // Current write position in static buffers
-  int kvCacheMaxLen_;             // Maximum length of static KV buffers (dim along seqDim)
-  int kvCacheNumMappings_;
-  KvCacheMapping* kvCacheMappings_;  // Array of output→input mappings (owned)
-
-  // ── Decode input direct-update ───────────────────────────────────────
-  int decodeInputIdsExtIdx_ = -1;
-  int decodePositionIdsExtIdx_ = -1;
-  int decodeAttentionMaskExtIdx_ = -1;
-  int decodeMaxKvLen_ = 0;
-  long long pendingTokenId_ = 0;
-  int pendingCachePos_ = 0;
-  bool hasPendingDecodeUpdate_ = false;
-
   // Internal methods
-  void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
   SelectedBackend resolveBackendForSegment(bool isCapturable) const;
@@ -1463,6 +1405,26 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
   Status executeSegmentSlotBySlot(GraphSegment& seg, NDArray** externalArrays,
                                   int numExt, void* stream);
+  // Refresh stale view-producer NDArray wrappers in a segment.
+  // When a view op wraps a placeholder (e.g., squeeze(x)) and SameDiff replaces
+  // the placeholder's DataBuffer between calls, the cached view wrapper in
+  // outputSlots_ points at the (now-closed) prior DataBuffer. This helper
+  // walks slots in [seg.def.startSlot, seg.def.endSlot], detects view-producer
+  // slots with stale/invalid DataBuffers, and re-creates the view wrapper
+  // pointing at the current input's DataBuffer (using the cached output shape).
+  //
+  // Implementation lives in NativeDynamicShapePlan_slotexec.cpp alongside
+  // tryCreateViewForSlot() so it can reuse the zero-copy view construction logic.
+  //
+  // Returns: refreshedCount on success (0 if nothing to refresh, positive if
+  //          one or more wrappers were refreshed), or -1 if any view-producer
+  //          slot could not be refreshed (caller must trigger graph invalidation).
+  int refreshStaleViewWrappersInSegment(GraphSegment& seg, NDArray** externalArrays, int numExt);
+  // Unified pre-segment zero pass — walks slots in [seg.def.startSlot, seg.def.endSlot]
+  // and zeroes outputs for slots with needsZeroedOutput. Replaces the 12 scattered
+  // nullify/memset sites that previously handled this per-slot. Safe to call during
+  // CUDA graph capture (memsets get recorded into the graph).
+  void prezeroSegmentOutputs(const GraphSegment& seg, void* stream);
   Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
   const std::vector<GraphBackend*>& getCpuGraphBackendChain();
@@ -1516,10 +1478,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status platformExecuteSegmentWithBackends(GraphSegment& seg, NDArray** externalInputs,
                                              int numExternalInputs, void* stream, bool& usedGraph);
   Status platformCheckPostSegment(GraphSegment& seg);
-  void platformScatterKvEntry(NDArray* presentKv, NDArray* staticBuf, int seqDim, int pos, void* stream);
-  void* platformBeginKvScatter(void* stream);
-  void platformEndKvScatter(void* savedState);
-  void platformMarkKvCaptureBuffersNeverSkip();
   void platformCleanupSegmentForRebuild(GraphSegment& seg);
   void platformFreePlanResources();
   int platformCountCapturedGraphSegments() const;
@@ -1537,8 +1495,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformPreReplayPoolStats(size_t& poolUsedOut, size_t& poolReservedOut);
   void platformPostReplayPoolManagement(size_t poolUsedPre, bool frozen, int execCount);
   void platformTraceSlotValues(const GraphSegment& seg, void* stream, int execCount);
-  void platformUpdateDecodeInputs(NDArray** ext, int numExt, long long tokenId, int cachePos, void* stream);
-  void platformPostKvScatterSync(int scattered, int pos, int numMappings);
   SelectedBackend platformResolveBackend(bool isGraphCapture) const;
   bool platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const;
   void platformReleaseSegmentGpuResources();
@@ -1552,6 +1508,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 #ifdef SD_CUDA
   void proactivePreCaptureMemoryCleanup(GraphSegment& seg, int segIdx, void* stream);
   int evictLruGraphs(int segIdx, size_t neededBytes, void* stream);
+
+  // ── Clean capture/replay/gap paths ──
+  Status compositeCapture(GraphSegment& seg, ReplaySchedule& sched,
+                          NDArray** externalArrays, int numExt, void* stream);
+  Status compositeReplay(GraphSegment& seg, ReplaySchedule& sched,
+                         NDArray** externalArrays, int numExt, void* stream);
+  bool hasCompositeHandles(const GraphSegment& seg) const;
 #endif
 
   // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)
@@ -1593,36 +1556,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::unordered_map<int, LongType> outputSlotMaxSizes_;
   // Tracks which slots have been pre-allocated at max size
   std::unordered_set<int> maxAllocatedSlots_;
-  // Maximum KV cache length (for pre-allocated attention outputs)
-  int maxKvCacheLen_;
 
 #ifdef SD_CUDA
-  // ── Batch-zero optimization ────────────────────────────────────────────
-  // Replaces ~1000 individual cudaMemsetAsync graph nodes with a single
-  // kernel launch that zeros all output buffers in parallel.
-  // Reduces CUDA graph node count by ~28%, saving ~1-2ms per graph replay.
-  // outputSlotIndex tracks which slot the pointer came from, enabling
-  // pointer refresh from outputSlots_ during replay to avoid stale addresses.
-  struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
+  // ── Pre-capture batch-zero ─────────────────────────────────────────────
+  // collectBatchZeroTargets walks the segment's gap slots and builds the set
+  // of output buffers that must be zeroed before CUDA graph capture. The
+  // consumer is a cudaMemsetAsync loop in NativeDynamicShapePlan_gpubackend.cpp
+  // that runs outside capture (fill engines, no SM competition).
   std::vector<BatchZeroEntry> batchZeroEntries_;
-  void* batchZeroDevicePtrs_ = nullptr;   // Device array of void* pointers
-  void* batchZeroDeviceSizes_ = nullptr;  // Device array of int sizes
-  void* batchZeroHostPtrs_ = nullptr;     // Pinned host mirror of pointers
-  void* batchZeroHostSizes_ = nullptr;    // Pinned host mirror of sizes
-  int batchZeroDeviceCount_ = 0;
 
   void collectBatchZeroTargets(const std::unordered_set<int>& gapSlots);
-  void prepareBatchZeroDevice(cudaStream_t stream);
-  void launchBatchZero(cudaStream_t stream);
-  void freeBatchZeroResources();
-  static void setBatchZeroActive(bool active);
-
-  // Registration-based batch-zero: during warmup, observe which buffers
-  // actually get nullified and save that exact list for capture.
-  // This replaces the pre-scan approach (collectBatchZeroTargets) which
-  // collected ~143 extra buffers for slots that don't actually execute.
-  void startBatchZeroRegistration();
-  void finishBatchZeroRegistration();
 
   // Shared capture workspace: all segments share one 128MB workspace
   // instead of each allocating their own. Since segments execute sequentially
@@ -1648,14 +1591,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void launchBatchD2D(cudaStream_t stream);
   void freeBatchD2DResources();
 #else
-  void freeBatchZeroResources() {}
   void freeBatchD2DResources() {}
 #endif
-
-  // Available on all platforms (returns false on non-CUDA, no-op stubs)
-  static bool isBatchZeroActive();
-  static bool isBatchZeroRegistering();
-  static void registerBatchZeroBuffer(void* ptr, size_t bytes, int outputSlotIndex = -1);
 
 #ifdef SD_CUDA
   // ── Batched GEMM optimization ──────────────────────────────────────────

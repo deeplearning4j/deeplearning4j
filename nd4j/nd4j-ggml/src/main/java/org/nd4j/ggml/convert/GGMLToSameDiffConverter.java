@@ -427,10 +427,11 @@ public class GGMLToSameDiffConverter {
                 directBuffer.put(data);
                 directBuffer.rewind();
                 org.nd4j.linalg.api.buffer.DataBuffer buf = Nd4j.createBuffer(directBuffer, DataType.HALF, (int) numElements);
-                INDArray array = Nd4j.create(buf);
-                if (shape.length > 1) {
-                    array = array.reshape('c', shape);
-                }
+                // Construct with the exact GGUF shape so rank-0 scalars, rank-1 vectors, and N-D
+                // tensors all produce consistent shape info. The previous "create(buf) + conditional
+                // reshape" pattern left rank-0 tensors as malformed 1D [1] arrays that later paths
+                // (e.g. SameDiffSerializer.saveAutoShard → dup) mistakenly flagged as empty.
+                INDArray array = Nd4j.create(buf, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
                 // Force device→host sync so host has correct data for later host→device transfers
                 Nd4j.getAffinityManager().ensureLocation(array,
                         org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
@@ -442,16 +443,14 @@ public class GGMLToSameDiffConverter {
                 return Nd4j.create(doubleData, shape, 'c');
             }
             default: {
-                // Fallback for other types: use direct buffer approach
+                // Fallback for other types: use direct buffer approach.
+                // Construct with the exact GGUF shape so rank-0 scalars, rank-1 vectors, and N-D
+                // tensors all produce consistent shape info (see HALF case above).
                 ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
                 directBuffer.put(data);
                 directBuffer.rewind();
                 org.nd4j.linalg.api.buffer.DataBuffer rawDataBuffer = Nd4j.createBuffer(directBuffer, nd4jType, (int) numElements);
-                INDArray array = Nd4j.create(rawDataBuffer);
-                if (shape.length > 0 && rawDataBuffer.length() > 0) {
-                    array = array.reshape('c', shape);
-                }
-                return array;
+                return Nd4j.create(rawDataBuffer, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
             }
         }
     }

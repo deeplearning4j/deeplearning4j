@@ -268,10 +268,18 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.flags.isDataDependent = isDataDep;
     slot.flags.isIdentityOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_IDENTITY);
     slot.flags.isViewCapableOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
-    // View-capable ops share input buffer → no zeroing needed (would corrupt input data).
-    // Non-view-capable data-movement ops still need zeroing for safety.
-    slot.flags.needsZeroedOutput = slot.flags.isViewCapableOp ? false
-                             : (!hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_FULLY_WRITING) || isDataDep);
+    // Trait-driven output-zeroing classification. Computed once; runtime reads
+    // slot.flags.needsZeroedOutput without re-deciding.
+    //   aliasesInput  → view/identity output overlaps input; zeroing would corrupt input.
+    //   fullyWrites   → op overwrites every output byte; zeroing is wasted work.
+    //   partialWriter → scatter writes only at index positions; must be zeroed.
+    //   dataDep       → variable output length into oversized buffer; must be zeroed.
+    bool aliasesInput  = slot.flags.isViewCapableOp || slot.flags.isIdentityOp;
+    bool fullyWrites   = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_FULLY_WRITING);
+    bool partialWriter = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND) ||
+                         hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND_UPDATE);
+    slot.flags.isFullyWriting    = fullyWrites && !slot.flags.isDataDependent && !partialWriter;
+    slot.flags.needsZeroedOutput = !aliasesInput && !slot.flags.isFullyWriting;
     slot.wiring.numInputs = numInputs;
     slot.wiring.inputSourceIndices = new int[numInputs];
     slot.wiring.inputSourceTypes = new int8_t[numInputs];

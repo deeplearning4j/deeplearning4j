@@ -27,16 +27,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Regression tests for the nativeDecodeInputs feature.
+ * Regression tests for decode input semantics.
  *
- * Root cause: C++ updateDecodeInputs() wrote to external input arrays, but the
- * frozen CUDA graph replay path reads from separate capture buffers. When Java
- * skipped feedDict updates (because C++ was "handling it"), the D2D copies
- * pushed stale values to capture buffers → model saw the same position every
- * step → repeating tokens.
- *
- * Fix: platformTryFrozenFastPath now writes pending decode values directly to
- * capture buffers after the D2D copy loop, before graph launch.
+ * The bespoke "native decode inputs" C++ path was deleted: all decode inputs
+ * now flow through the normal ext-input write path (Java buildDecoderInputMap
+ * → syncToSpecial → D2D copy into capture buffers before graph replay).
+ * These tests guard the Java-visible invariant that position_ids must change
+ * from step to step — if the caller failed to update them, decode would see
+ * the same position every step and the model would emit repeating tokens.
  */
 public class TestNativeDecodeInputsRegression {
 

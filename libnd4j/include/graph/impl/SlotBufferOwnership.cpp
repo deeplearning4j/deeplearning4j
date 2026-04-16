@@ -133,10 +133,14 @@ void classifyAndUpdateOwnership(
   DataBuffer* outBuffer = outArray->dataBuffer();
 
   // 2. Check external inputs — if buffer matches, it's a view of a weight/constant
+  //    (or a view of a placeholder; pruneTransientViewSlots uses
+  //    protectedWeightBuffers to distinguish the two cases).
   for (int i = 0; i < numExternalInputs; i++) {
     if (externalInputs[i] != nullptr && externalInputs[i]->dataBuffer() == outBuffer) {
       info.ownership = BufferOwnership::VIEW_OF_WEIGHT;
       info.dataBuffer = outBuffer;
+      DSP_DIAG(MEMORY, "OWNERSHIP_CLASSIFY: slot %d → %s (extIdx=%d)",
+               slotIdx, bufferOwnershipName(info.ownership), i);
       return;
     }
   }
@@ -189,16 +193,42 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
     slotGpuAddresses = new void*[numSlots];
     slotDataBuffers = new DataBuffer*[numSlots];
     slotDeviceIds = new int[numSlots];
+    slotPrimaryAddresses = new void*[numSlots];
+    slotShapeInfoAddresses = new LongType*[numSlots];
+    slotNDArrayIdentity = new NDArray*[numSlots];
+    slotBufferOffsets = new LongType[numSlots];
+    slotLengths = new LongType[numSlots];
+    slotActualityFlags = new uint8_t[numSlots];
+    slotOrderings = new char[numSlots];
     for (int i = 0; i < numSlots; i++) {
       if (outputSlots[i] != nullptr) {
+        DataBuffer* db = outputSlots[i]->dataBuffer();
         slotGpuAddresses[i] = outputSlots[i]->specialBuffer();
-        slotDataBuffers[i] = outputSlots[i]->dataBuffer();
-        slotDeviceIds[i] = outputSlots[i]->dataBuffer() != nullptr
-            ? outputSlots[i]->dataBuffer()->deviceId() : -1;
+        slotDataBuffers[i] = db;
+        slotDeviceIds[i] = db != nullptr ? db->deviceId() : -1;
+        slotPrimaryAddresses[i] = db != nullptr ? db->primary() : nullptr;
+        slotShapeInfoAddresses[i] = outputSlots[i]->specialShapeInfo();
+        slotNDArrayIdentity[i] = outputSlots[i];
+        slotBufferOffsets[i] = outputSlots[i]->offset();
+        slotLengths[i] = outputSlots[i]->lengthOf();
+        uint8_t flags = 0;
+        if (db != nullptr) {
+          if (db->isPrimaryActual()) flags |= 1;
+          if (db->isSpecialActual()) flags |= 2;
+        }
+        slotActualityFlags[i] = flags;
+        slotOrderings[i] = outputSlots[i]->ordering();
       } else {
         slotGpuAddresses[i] = nullptr;
         slotDataBuffers[i] = nullptr;
         slotDeviceIds[i] = -1;
+        slotPrimaryAddresses[i] = nullptr;
+        slotShapeInfoAddresses[i] = nullptr;
+        slotNDArrayIdentity[i] = nullptr;
+        slotBufferOffsets[i] = 0;
+        slotLengths[i] = 0;
+        slotActualityFlags[i] = 0;
+        slotOrderings[i] = 0;
       }
     }
   }
@@ -207,21 +237,84 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
     extGpuAddresses = new void*[numExt];
     extDataBuffers = new DataBuffer*[numExt];
     extDeviceIds = new int[numExt];
+    extPrimaryAddresses = new void*[numExt];
+    extShapeInfoAddresses = new LongType*[numExt];
+    extNDArrayIdentity = new NDArray*[numExt];
+    extBufferOffsets = new LongType[numExt];
+    extLengths = new LongType[numExt];
+    extActualityFlags = new uint8_t[numExt];
+    extOrderings = new char[numExt];
     for (int i = 0; i < numExt; i++) {
       if (externalInputs[i] != nullptr) {
+        DataBuffer* db = externalInputs[i]->dataBuffer();
         extGpuAddresses[i] = externalInputs[i]->specialBuffer();
-        extDataBuffers[i] = externalInputs[i]->dataBuffer();
-        extDeviceIds[i] = externalInputs[i]->dataBuffer() != nullptr
-            ? externalInputs[i]->dataBuffer()->deviceId() : -1;
+        extDataBuffers[i] = db;
+        extDeviceIds[i] = db != nullptr ? db->deviceId() : -1;
+        extPrimaryAddresses[i] = db != nullptr ? db->primary() : nullptr;
+        extShapeInfoAddresses[i] = externalInputs[i]->specialShapeInfo();
+        extNDArrayIdentity[i] = externalInputs[i];
+        extBufferOffsets[i] = externalInputs[i]->offset();
+        extLengths[i] = externalInputs[i]->lengthOf();
+        uint8_t flags = 0;
+        if (db != nullptr) {
+          if (db->isPrimaryActual()) flags |= 1;
+          if (db->isSpecialActual()) flags |= 2;
+        }
+        extActualityFlags[i] = flags;
+        extOrderings[i] = externalInputs[i]->ordering();
       } else {
         extGpuAddresses[i] = nullptr;
         extDataBuffers[i] = nullptr;
         extDeviceIds[i] = -1;
+        extPrimaryAddresses[i] = nullptr;
+        extShapeInfoAddresses[i] = nullptr;
+        extNDArrayIdentity[i] = nullptr;
+        extBufferOffsets[i] = 0;
+        extLengths[i] = 0;
+        extActualityFlags[i] = 0;
+        extOrderings[i] = 0;
       }
     }
   }
 
   valid = true;
+}
+
+void BufferPointerSnapshot::pruneTransientViewSlots(
+    const SlotBufferInfo* ownership,
+    const std::unordered_set<DataBuffer*>& protectedWeightBuffers) {
+  if (!valid || ownership == nullptr) return;
+  if (slotDataBuffers == nullptr) return;
+
+  int pruned = 0;
+  for (int i = 0; i < totalSlots; i++) {
+    if (ownership[i].ownership != BufferOwnership::VIEW_OF_WEIGHT) continue;
+    DataBuffer* db = slotDataBuffers[i];
+    if (db == nullptr) continue;
+    if (protectedWeightBuffers.count(db) > 0) continue;  // true weight — keep
+
+    // Transient placeholder view — null out so later snapshot->validate()
+    // calls naturally skip this slot via the existing null-entry guards.
+    if (slotGpuAddresses != nullptr) slotGpuAddresses[i] = nullptr;
+    slotDataBuffers[i] = nullptr;
+    if (slotDeviceIds != nullptr) slotDeviceIds[i] = -1;
+    if (slotPrimaryAddresses != nullptr) slotPrimaryAddresses[i] = nullptr;
+    if (slotShapeInfoAddresses != nullptr) slotShapeInfoAddresses[i] = nullptr;
+    if (slotNDArrayIdentity != nullptr) slotNDArrayIdentity[i] = nullptr;
+    if (slotBufferOffsets != nullptr) slotBufferOffsets[i] = 0;
+    if (slotLengths != nullptr) slotLengths[i] = 0;
+    if (slotActualityFlags != nullptr) slotActualityFlags[i] = 0;
+    if (slotOrderings != nullptr) slotOrderings[i] = 0;
+    ++pruned;
+  }
+
+  if (pruned > 0) {
+    DSP_DIAG(MEMORY,
+             "BufferPointerSnapshot::pruneTransientViewSlots: nullified %d "
+             "VIEW_OF_WEIGHT slot(s) that point at non-protected (placeholder) "
+             "DataBuffers — those slots are refreshed by slot-exec each call",
+             pruned);
+  }
 }
 
 bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
@@ -259,13 +352,16 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
       return false;
     }
 
-    if (currentDb != nullptr && currentDb->isClosed()) {
-      snprintf(errMsg, errMsgLen,
-               "LIFECYCLE_ERROR: slot %d DataBuffer %p is CLOSED during frozen execution "
-               "— use-after-free will occur on next access",
-               i, (void*)currentDb);
-      return false;
-    }
+    // NOTE: the "is-closed" check for slot DataBuffers lives in the outer
+    // validateLifecycleForPhase() caller at the SHAPES_FROZEN level.  That
+    // caller has access to protectedWeightBuffers and can correctly
+    // distinguish a true protected-weight UAF from a transient placeholder
+    // view whose wrapper got closed between calls and will be refreshed on
+    // the imminent re-execution of its producing op.  Duplicating the check
+    // here (without that context) produced false positives for slots whose
+    // ownership was classified as SLOT_OWNED but actually aliased a
+    // placeholder external input (e.g., squeeze/expandDims creating a
+    // distinct DataBuffer* wrapper over shared placeholder memory).
 
     void* currentGpu = outputSlots[i]->specialBuffer();
     if (slotGpuAddresses[i] != nullptr && currentGpu != slotGpuAddresses[i]) {
@@ -276,6 +372,89 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
       return false;
     }
 
+    // Host (primary) buffer address check: detect host reallocation
+    if (slotPrimaryAddresses != nullptr && slotPrimaryAddresses[i] != nullptr) {
+      void* currentPrimary = currentDb != nullptr ? currentDb->primary() : nullptr;
+      if (currentPrimary != slotPrimaryAddresses[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d primary (host) address changed during frozen execution "
+                 "(snapshot=%p current=%p) — host buffer reallocated",
+                 i, slotPrimaryAddresses[i], currentPrimary);
+        return false;
+      }
+    }
+
+    // Device-side shape info pointer check: detect shape re-registration
+    if (slotShapeInfoAddresses != nullptr && slotShapeInfoAddresses[i] != nullptr) {
+      LongType* currentShapeInfo = outputSlots[i]->specialShapeInfo();
+      if (currentShapeInfo != slotShapeInfoAddresses[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d device shape info pointer changed during frozen execution "
+                 "(snapshot=%p current=%p) — shape info re-registered",
+                 i, (void*)slotShapeInfoAddresses[i], (void*)currentShapeInfo);
+        return false;
+      }
+    }
+
+    // NDArray wrapper identity check: detect wrapper replacement
+    if (slotNDArrayIdentity != nullptr && slotNDArrayIdentity[i] != nullptr) {
+      if (outputSlots[i] != slotNDArrayIdentity[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d NDArray wrapper identity changed during frozen execution "
+                 "(snapshot=%p current=%p) — slot wrapper replaced",
+                 i, (void*)slotNDArrayIdentity[i], (void*)outputSlots[i]);
+        return false;
+      }
+    }
+
+    // Buffer offset check: detect view base move
+    if (slotBufferOffsets != nullptr) {
+      LongType currentOffset = outputSlots[i]->offset();
+      if (currentOffset != slotBufferOffsets[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d buffer offset changed during frozen execution "
+                 "(snapshot=%lld current=%lld) — view base moved",
+                 i, (long long)slotBufferOffsets[i], (long long)currentOffset);
+        return false;
+      }
+    }
+
+    // Length check: detect shape mutation (should be impossible under frozen shapes)
+    if (slotLengths != nullptr) {
+      LongType currentLength = outputSlots[i]->lengthOf();
+      if (currentLength != slotLengths[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d lengthOf changed during frozen execution "
+                 "(snapshot=%lld current=%lld) — shape mutation under frozen plan",
+                 i, (long long)slotLengths[i], (long long)currentLength);
+        return false;
+      }
+    }
+
+    // Actuality flag check: only flag the two dangerous transitions.
+    // Benign transitions (e.g. 0x03 -> 0x02 when host copy becomes stale but
+    // device remains authoritative) must NOT fail validation.
+    //   * snapSAct && !curSAct          -> device lost authoritative data
+    //   * !curSAct && curPAct && snapSAct -> host overwrote device-authoritative data
+    // detectStaleActualityTransitions() applies identical logic with a hard
+    // throw; the check here mirrors it so a bad transition is caught before
+    // any further validation continues.
+    if (slotActualityFlags != nullptr && currentDb != nullptr) {
+      uint8_t currentFlags = 0;
+      if (currentDb->isPrimaryActual()) currentFlags |= 1;
+      if (currentDb->isSpecialActual()) currentFlags |= 2;
+      bool snapSAct = (slotActualityFlags[i] & 2) != 0;
+      bool curSAct = (currentFlags & 2) != 0;
+      bool curPAct = (currentFlags & 1) != 0;
+      if ((snapSAct && !curSAct) || (!curSAct && curPAct && snapSAct)) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d actuality flags changed during frozen execution "
+                 "(snapshot=0x%02x current=0x%02x) — device data invalidated or host overwrote device",
+                 i, (unsigned)slotActualityFlags[i], (unsigned)currentFlags);
+        return false;
+      }
+    }
+
     // Device ID check: detect buffer migration during frozen execution
     if (slotDeviceIds != nullptr && slotDeviceIds[i] >= 0 && currentDb != nullptr) {
       int currentDevId = currentDb->deviceId();
@@ -284,6 +463,18 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
                  "LIFECYCLE_ERROR: slot %d buffer migrated from device %d to device %d "
                  "during frozen execution — CUDA graph captured on device %d will access wrong memory",
                  i, slotDeviceIds[i], currentDevId, capturedDeviceId);
+        return false;
+      }
+    }
+
+    // Memory ordering check: detect layout flip (c↔f reorder)
+    if (slotOrderings != nullptr && slotOrderings[i] != 0) {
+      char currentOrdering = outputSlots[i]->ordering();
+      if (currentOrdering != slotOrderings[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: slot %d memory ordering changed during frozen execution "
+                 "(snapshot='%c' current='%c') — stride layout mutated under frozen plan",
+                 i, slotOrderings[i], currentOrdering);
         return false;
       }
     }
@@ -311,6 +502,15 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
       return false;
     }
 
+    // DataBuffer identity check: ext input DataBuffer must not be replaced
+    if (currentDb != extDataBuffers[i]) {
+      snprintf(errMsg, errMsgLen,
+               "LIFECYCLE_ERROR: external input %d DataBuffer replaced during frozen execution "
+               "(snapshot=%p current=%p) — weight/constant wrapper swapped",
+               i, (void*)extDataBuffers[i], (void*)currentDb);
+      return false;
+    }
+
     void* currentGpu = externalInputs[i]->specialBuffer();
     if (extGpuAddresses[i] != nullptr && currentGpu != extGpuAddresses[i]) {
       snprintf(errMsg, errMsgLen,
@@ -318,6 +518,84 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
                "execution (snapshot=%p current=%p) — weight buffer migrated or reallocated",
                i, extGpuAddresses[i], currentGpu);
       return false;
+    }
+
+    // Host (primary) buffer address check: detect host reallocation
+    if (extPrimaryAddresses != nullptr && extPrimaryAddresses[i] != nullptr) {
+      void* currentPrimary = currentDb != nullptr ? currentDb->primary() : nullptr;
+      if (currentPrimary != extPrimaryAddresses[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d primary (host) address changed during frozen "
+                 "execution (snapshot=%p current=%p) — weight host buffer reallocated",
+                 i, extPrimaryAddresses[i], currentPrimary);
+        return false;
+      }
+    }
+
+    // Device-side shape info pointer check: detect shape re-registration
+    if (extShapeInfoAddresses != nullptr && extShapeInfoAddresses[i] != nullptr) {
+      LongType* currentShapeInfo = externalInputs[i]->specialShapeInfo();
+      if (currentShapeInfo != extShapeInfoAddresses[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d device shape info pointer changed during frozen "
+                 "execution (snapshot=%p current=%p) — shape info re-registered",
+                 i, (void*)extShapeInfoAddresses[i], (void*)currentShapeInfo);
+        return false;
+      }
+    }
+
+    // NDArray wrapper identity check: detect wrapper replacement
+    if (extNDArrayIdentity != nullptr && extNDArrayIdentity[i] != nullptr) {
+      if (externalInputs[i] != extNDArrayIdentity[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d NDArray wrapper identity changed during frozen "
+                 "execution (snapshot=%p current=%p) — ext input wrapper replaced",
+                 i, (void*)extNDArrayIdentity[i], (void*)externalInputs[i]);
+        return false;
+      }
+    }
+
+    // Buffer offset check: detect view base move
+    if (extBufferOffsets != nullptr) {
+      LongType currentOffset = externalInputs[i]->offset();
+      if (currentOffset != extBufferOffsets[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d buffer offset changed during frozen execution "
+                 "(snapshot=%lld current=%lld) — view base moved",
+                 i, (long long)extBufferOffsets[i], (long long)currentOffset);
+        return false;
+      }
+    }
+
+    // Length check: detect shape mutation (should be impossible under frozen shapes)
+    if (extLengths != nullptr) {
+      LongType currentLength = externalInputs[i]->lengthOf();
+      if (currentLength != extLengths[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d lengthOf changed during frozen execution "
+                 "(snapshot=%lld current=%lld) — shape mutation under frozen plan",
+                 i, (long long)extLengths[i], (long long)currentLength);
+        return false;
+      }
+    }
+
+    // Actuality flag check: only flag the two dangerous transitions.
+    // Matches detectStaleActualityTransitions(); benign transitions like
+    // 0x03 -> 0x02 (host copy stale, device still authoritative) pass.
+    if (extActualityFlags != nullptr && currentDb != nullptr) {
+      uint8_t currentFlags = 0;
+      if (currentDb->isPrimaryActual()) currentFlags |= 1;
+      if (currentDb->isSpecialActual()) currentFlags |= 2;
+      bool snapSAct = (extActualityFlags[i] & 2) != 0;
+      bool curSAct = (currentFlags & 2) != 0;
+      bool curPAct = (currentFlags & 1) != 0;
+      if ((snapSAct && !curSAct) || (!curSAct && curPAct && snapSAct)) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d actuality flags changed during frozen execution "
+                 "(snapshot=0x%02x current=0x%02x) — device data invalidated or host overwrote device",
+                 i, (unsigned)extActualityFlags[i], (unsigned)currentFlags);
+        return false;
+      }
     }
 
     // Device ID check: detect weight migration during frozen execution
@@ -328,6 +606,18 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
                  "LIFECYCLE_ERROR: external input %d buffer migrated from device %d to device %d "
                  "during frozen execution — frozen refs should have prevented migration",
                  i, extDeviceIds[i], currentDevId);
+        return false;
+      }
+    }
+
+    // Memory ordering check: detect layout flip (c↔f reorder)
+    if (extOrderings != nullptr && extOrderings[i] != 0) {
+      char currentOrdering = externalInputs[i]->ordering();
+      if (currentOrdering != extOrderings[i]) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: external input %d memory ordering changed during frozen execution "
+                 "(snapshot='%c' current='%c') — stride layout mutated under frozen plan",
+                 i, extOrderings[i], currentOrdering);
         return false;
       }
     }
@@ -349,6 +639,84 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
 #endif
 
   return true;
+}
+
+void BufferPointerSnapshot::detectStaleActualityTransitions(
+    NDArray** outputSlots, int numSlots,
+    NDArray** externalInputs, int numExt,
+    int planPhase) const {
+  if (!valid) return;
+  if (planPhase < 1) return;  // Only check from SHAPES_FROZEN (1) onward
+
+  int checkSlots = std::min(totalSlots, numSlots);
+  for (int i = 0; i < checkSlots; i++) {
+    if (slotDataBuffers[i] == nullptr || outputSlots[i] == nullptr) continue;
+    DataBuffer* currentDb = outputSlots[i]->dataBuffer();
+    if (currentDb == nullptr) continue;
+
+    uint8_t snapFlags = slotActualityFlags[i];
+    uint8_t currentFlags = 0;
+    if (currentDb->isPrimaryActual()) currentFlags |= 1;
+    if (currentDb->isSpecialActual()) currentFlags |= 2;
+
+    bool snapSAct = (snapFlags & 2) != 0;
+    bool curSAct = (currentFlags & 2) != 0;
+    bool curPAct = (currentFlags & 1) != 0;
+
+    // sAct was set at capture → now cleared: device data was invalidated
+    if (snapSAct && !curSAct) {
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+               "STALE_DATA: slot %d lost isSpecialActual during frozen phase %d "
+               "(snapshot=0x%02x current=0x%02x) — device buffer was invalidated without a known writer",
+               i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
+      THROW_EXCEPTION(buf);
+    }
+
+    // pAct appeared without sAct: host wrote to a device-authoritative buffer
+    if (!curSAct && curPAct && snapSAct) {
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+               "STALE_DATA: slot %d has pAct=1 sAct=0 during frozen phase %d "
+               "(snapshot=0x%02x current=0x%02x) — host write overwrote device-authoritative data",
+               i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
+      THROW_EXCEPTION(buf);
+    }
+  }
+
+  int checkExt = std::min(numExternalInputs, numExt);
+  for (int i = 0; i < checkExt; i++) {
+    if (extDataBuffers[i] == nullptr || externalInputs[i] == nullptr) continue;
+    DataBuffer* currentDb = externalInputs[i]->dataBuffer();
+    if (currentDb == nullptr) continue;
+
+    uint8_t snapFlags = extActualityFlags[i];
+    uint8_t currentFlags = 0;
+    if (currentDb->isPrimaryActual()) currentFlags |= 1;
+    if (currentDb->isSpecialActual()) currentFlags |= 2;
+
+    bool snapSAct = (snapFlags & 2) != 0;
+    bool curSAct = (currentFlags & 2) != 0;
+    bool curPAct = (currentFlags & 1) != 0;
+
+    if (snapSAct && !curSAct) {
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+               "STALE_DATA: ext input %d lost isSpecialActual during frozen phase %d "
+               "(snapshot=0x%02x current=0x%02x) — device buffer was invalidated without a known writer",
+               i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
+      THROW_EXCEPTION(buf);
+    }
+
+    if (!curSAct && curPAct && snapSAct) {
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+               "STALE_DATA: ext input %d has pAct=1 sAct=0 during frozen phase %d "
+               "(snapshot=0x%02x current=0x%02x) — host write overwrote device-authoritative data",
+               i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
+      THROW_EXCEPTION(buf);
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -413,9 +781,21 @@ bool validateLifecycleForPhase(
         if (outputSlots[i] == nullptr) continue;
         DataBuffer* db = outputSlots[i]->dataBuffer();
         if (db != nullptr && db->isClosed()) {
+          // A slot whose underlying buffer is NOT in protectedWeightBuffers
+          // is not a true weight — it is either a view over a placeholder
+          // external input, or a SLOT_OWNED buffer that tracked a transient
+          // wrapper whose underlying memory was reclaimed (e.g., classifier
+          // saw separate DataBuffer* wrappers for view ops that nonetheless
+          // share the placeholder's memory).  In both cases the stale wrapper
+          // will be refreshed by the imminent slot-exec re-execution of the
+          // producing op.  Only protected weight/constant buffers must never
+          // be closed during a frozen phase — that is a true use-after-free.
+          if (protectedWeightBuffers.count(db) == 0) {
+            continue;
+          }
           snprintf(errMsg, errMsgLen,
-                   "LIFECYCLE_ERROR: slot %d has CLOSED DataBuffer %p during SHAPES_FROZEN+ "
-                   "phase — buffer was freed while shapes assumed stable",
+                   "LIFECYCLE_ERROR: slot %d has CLOSED protected weight DataBuffer %p during "
+                   "SHAPES_FROZEN+ phase — model weight was freed while plan active",
                    i, (void*)db);
           return false;
         }
@@ -447,8 +827,10 @@ bool validateLifecycleForPhase(
     }
   }
 
-  // ── Level 2: POINTERS_STABLE — buffer addresses match snapshot ──
-  if (planPhase >= 2 && snapshot != nullptr) {  // POINTERS_STABLE
+  // ── Level 1+: SHAPES_FROZEN — snapshot drift detection ──
+  // Gate lowered from POINTERS_STABLE to SHAPES_FROZEN so identity/address/
+  // shape-info/offset/length drift is caught as soon as shapes are frozen.
+  if (planPhase >= 1 && snapshot != nullptr) {  // SHAPES_FROZEN
     if (!snapshot->validate(outputSlots, totalSlots,
                             externalInputs, numExternalInputs,
                             errMsg, errMsgLen)) {

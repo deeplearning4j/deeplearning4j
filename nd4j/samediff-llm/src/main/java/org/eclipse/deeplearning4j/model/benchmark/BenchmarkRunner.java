@@ -166,6 +166,9 @@ public class BenchmarkRunner {
             cr.setFirstTokenMs(result.getFirstTokenLatencyMs());
             cr.setFinishReason(result.getFinishReason());
             cr.setGeneratedText(result.getText());
+            cr.setWarmupStepCount(result.getWarmupStepCount());
+            cr.setMaxWarmupStepMs(result.getMaxWarmupStepMs());
+            cr.setTotalWarmupMs(result.getTotalWarmupMs());
 
             // Record Triton counters
             if (nativeOps.isTritonAvailable()) {

@@ -120,6 +120,25 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       // Already compiled for this shape
       lastCompilationAudit_ = it->second.audit;
       totalCacheHits_++;
+      // Modules are still resident on cache hit — check the warn threshold
+      // here too so the diagnostic fires even when no fresh module load
+      // happened during this compileSegment call.
+      const int64_t warnBytes =
+          sd::Environment::getInstance().triton().moduleResidencyWarnBytes();
+      if (warnBytes > 0) {
+        const size_t devBytes = getTritonModuleMemory(compileDevice);
+        if (static_cast<int64_t>(devBytes) > warnBytes) {
+          bool expected = false;
+          if (residencyWarned_[compileDevice].compare_exchange_strong(
+                  expected, true, std::memory_order_acq_rel)) {
+            sd::Environment::getInstance().triton().incrementModuleResidencyWarnFireCount();
+            sd_printf("TritonGraphBackend: module residency on device %d (%zu bytes) "
+                      "exceeds warn threshold (%lld bytes). Consider raising "
+                      "ND4J_TRITON_MODULE_RESIDENCY_BUDGET_BYTES or the warn ceiling.\n",
+                      compileDevice, devBytes, static_cast<long long>(warnBytes));
+          }
+        }
+      }
       return true;
     }
     if (failedCache_.find(key) != failedCache_.end()) {
@@ -1336,10 +1355,25 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   lastCompilationAudit_ = compiledSeg.audit;
   const int compiledKernelCount = static_cast<int>(compiledSeg.subKernels.size());
 
+  // Stable references to register with ModuleResidencyCache after the move.
+  CompiledSegment* installedSeg = nullptr;
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
     failedCache_.erase(key);
     cache_[key] = std::move(compiledSeg);
+    installedSeg = &cache_[key];
+  }
+
+  // Register each freshly-installed sub-kernel with the residency cache.
+  // This MUST happen after the std::move into cache_ so the pointer is stable
+  // for the lifetime of the cache entry — the per-device tracking list stores
+  // raw CompiledKernel* and would dangle if we registered the moved-from copy.
+  if (installedSeg != nullptr) {
+    for (auto& kernel : installedSeg->subKernels) {
+      if (kernel.gpuModule == nullptr) continue;
+      const int kernDev = kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : compileDevice;
+      registerLoadedKernel(&kernel, kernDev);
+    }
   }
 
   DSP_DIAG(COMPILE, "TritonGraphBackend: compiled segment [%d-%d] (%d sub-kernels, shape key %lld, deviceId=%d)",

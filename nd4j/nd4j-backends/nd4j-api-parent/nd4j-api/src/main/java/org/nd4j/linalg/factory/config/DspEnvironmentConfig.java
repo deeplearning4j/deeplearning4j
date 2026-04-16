@@ -25,7 +25,7 @@ package org.nd4j.linalg.factory.config;
  */
 public interface DspEnvironmentConfig {
 
-    default boolean dspBatchZero() { return false; }
+    default boolean dspBatchZero() { return true; }
     default void setDspBatchZero(boolean v) {}
     default boolean dspBatchZeroVerbose() { return false; }
     default void setDspBatchZeroVerbose(boolean v) {}
@@ -33,12 +33,12 @@ public interface DspEnvironmentConfig {
     default void setDspBatchZeroGapOnly(boolean v) {}
     default boolean dspBatchZeroKernel() { return false; }
     default void setDspBatchZeroKernel(boolean v) {}
-    default boolean dspBatchedGemm() { return false; }
+    default boolean dspBatchedGemm() { return true; }
     default void setDspBatchedGemm(boolean v) {}
 
     default boolean dspCastElimination() { return true; }
     default void setDspCastElimination(boolean enabled) {}
-    default boolean dspMatmulSegmentation() { return false; }
+    default boolean dspMatmulSegmentation() { return true; }
     default void setDspMatmulSegmentation(boolean enabled) {}
     default boolean dspFp16Compute() { return false; }
     default void setDspFp16Compute(boolean enabled) {}
@@ -51,8 +51,7 @@ public interface DspEnvironmentConfig {
 
     default boolean dspSymbolicShapes() { return true; }
     default void setDspSymbolicShapes(boolean enabled) {}
-    default int dspSymbolicShapeWarmup() { return 2; }
-    default void setDspSymbolicShapeWarmup(int steps) {}
+    // dspSymbolicShapeWarmup removed — warmup is a compile-time constant (2) in DspConfig.
 
     default boolean dspCapturePoolEnabled() { return true; }
     default void setDspCapturePoolEnabled(boolean enabled) {}
@@ -72,7 +71,7 @@ public interface DspEnvironmentConfig {
     default boolean dspLruEviction() { return true; }
     default void setDspLruEviction(boolean enabled) {}
 
-    default boolean dspFreezeMergeSegments() { return false; }
+    default boolean dspFreezeMergeSegments() { return true; }
     default void setDspFreezeMergeSegments(boolean enabled) {}
     default boolean dspFreezeRecompile() { return false; }
     default void setDspFreezeRecompile(boolean enabled) {}

@@ -15,16 +15,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// Batch-zero kernel for CUDA graph node reduction.
+// Batch-zero target collection + batched D2D copy kernel.
 //
-// During CUDA graph capture, each native fallback op gets its output array
-// nullified individually, producing ~1000 cudaMemsetAsync graph nodes.
-// This kernel replaces all of them with a single kernel launch that zeros
-// all output buffers in parallel.
+// collectBatchZeroTargets() walks segment slots and produces the set of
+// output buffers that must be zeroed before each replay. The consumer is the
+// pre-capture loop in NativeDynamicShapePlan_gpubackend.cpp which issues
+// cudaMemsetAsync on each entry before beginning CUDA graph capture.
 //
-// Each thread block zeros one buffer using vectorized int4 writes.
-// For typical VLM decode (hidden_dim=576, seq=1): ~2KB per buffer,
-// ~1000 buffers total — the kernel completes in <10μs.
+// batchD2DKernel replaces ~357 individual cudaMemcpyAsync D2D calls with a
+// single kernel launch: each thread block copies one buffer using int4 reads.
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
@@ -33,92 +32,9 @@
 namespace sd {
 namespace graph {
 
-// ── CUDA Kernel ──────────────────────────────────────────────────────────────
-
-SD_KERNEL void batchZeroKernel(void** ptrs, int* sizes, int numBuffers) {
-  int bid = blockIdx.x;
-  if (bid >= numBuffers) return;
-
-  char* ptr = (char*)ptrs[bid];
-  int sz = sizes[bid];
-  if (ptr == nullptr || sz <= 0) return;
-
-  // Vectorized zero using int4 (16 bytes per write)
-  int4* p4 = (int4*)ptr;
-  int n4 = sz / 16;
-  for (int i = threadIdx.x; i < n4; i += blockDim.x) {
-    p4[i] = make_int4(0, 0, 0, 0);
-  }
-
-  // Handle remainder bytes
-  int base = n4 * 16;
-  for (int i = base + threadIdx.x; i < sz; i += blockDim.x) {
-    ptr[i] = 0;
-  }
-}
-
-// ── Host API ─────────────────────────────────────────────────────────────────
-
-// Thread-local flag: when true, slot execution skips individual nullify()
-// because a batch-zero kernel has already zeroed all output buffers.
-thread_local bool tl_batchZeroActive = false;
-
-// Registration mode: when true, nullify() still runs but also records each
-// buffer into a thread-local list. Used during warmup to learn the exact
-// set of buffers that need batch-zeroing during capture.
-thread_local bool tl_batchZeroRegistering = false;
-struct RegEntry { void* ptr; int bytes; int outputSlotIndex; };
-thread_local std::vector<RegEntry> tl_batchZeroRegistered;
-
-bool NativeDynamicShapePlan::isBatchZeroActive() {
-  return tl_batchZeroActive;
-}
-
-bool NativeDynamicShapePlan::isBatchZeroRegistering() {
-  return tl_batchZeroRegistering;
-}
-
-void NativeDynamicShapePlan::startBatchZeroRegistration() {
-  tl_batchZeroRegistered.clear();
-  tl_batchZeroRegistering = true;
-  DSP_DIAG(MEMORY, "batch-zero registration STARTED");
-}
-
-void NativeDynamicShapePlan::registerBatchZeroBuffer(void* ptr, size_t bytes, int outputSlotIndex) {
-  if (!tl_batchZeroRegistering || ptr == nullptr || bytes <= 0) return;
-  // Avoid duplicates
-  for (auto& entry : tl_batchZeroRegistered) {
-    if (entry.ptr == ptr) return;
-  }
-  tl_batchZeroRegistered.push_back(RegEntry{ptr, static_cast<int>(bytes), outputSlotIndex});
-}
-
-void NativeDynamicShapePlan::finishBatchZeroRegistration() {
-  tl_batchZeroRegistering = false;
-  batchZeroEntries_.clear();
-  batchZeroEntries_.reserve(tl_batchZeroRegistered.size());
-
-  for (auto& r : tl_batchZeroRegistered) {
-    batchZeroEntries_.push_back({r.ptr, r.bytes, r.outputSlotIndex});
-  }
-  DSP_DIAG(MEMORY, "batch-zero registration FINISHED: %d buffers registered",
-           static_cast<int>(batchZeroEntries_.size()));
-  tl_batchZeroRegistered.clear();
-}
-
 void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<int>& gapSlots) {
   batchZeroEntries_.clear();
 
-  // FALLBACK pre-scan approach: used when registration-based learning is not available
-  // (e.g., capture retry at executionCount >= 3).
-  //
-  // WARNING: This approach collects ~143 EXTRA buffers for slots that don't actually
-  // execute during the segment (identity ops, fused chains, etc.). This over-collection
-  // can cause incorrect zeroing of buffers that should retain their values.
-  // The preferred approach is registration-based learning (startBatchZeroRegistration +
-  // finishBatchZeroRegistration) which observes exactly which buffers get nullified
-  // during a warmup execution and records that exact set.
-  //
   // Only zero output buffers for gap (native fallback) slots — NOT Triton sub-kernel
   // outputs. Triton sub-kernels fully overwrite their outputs; zeroing them would add
   // unnecessary work and potentially interfere with multi-phase kernel correctness.
@@ -139,16 +55,34 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     auto& slot = slots_[s];
 
     // Skip frozen constants — they don't execute
-    if (slot.frozenConstantSlot()) continue;
+    if (slot.frozenConstantSlot()) {
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=frozen-constant",
+                   s, slot.ident.opName.c_str());
+      continue;
+    }
 
     // Skip identity ops — they wire output=input, no nullify happens
-    if (slot.flags.isIdentityOp) { skippedIdentity++; continue; }
+    if (slot.flags.isIdentityOp) {
+      skippedIdentity++;
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=identity-op",
+                   s, slot.ident.opName.c_str());
+      continue;
+    }
 
     // Skip fused chain tails — head already computed, tail returns early
-    if (slot.fusedChain.isFusedChainTail) { skippedTail++; continue; }
+    if (slot.fusedChain.isFusedChainTail) {
+      skippedTail++;
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=fused-chain-tail",
+                   s, slot.ident.opName.c_str());
+      continue;
+    }
 
     // Skip in-place fused — output IS the input
-    if (slot.flags.inPlaceFused) continue;
+    if (slot.flags.inPlaceFused) {
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=in-place-fused",
+                   s, slot.ident.opName.c_str());
+      continue;
+    }
 
     // Fused chain heads only nullify the LAST chain slot's output,
     // not the head's own outputSlotIndices. Collect that specific buffer.
@@ -183,7 +117,11 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     }
 
     // Skip view-capable ops — they share input's buffer, zeroing would corrupt data
-    if (slot.flags.isViewCapableOp) continue;
+    if (slot.flags.isViewCapableOp) {
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=view-capable",
+                   s, slot.ident.opName.c_str());
+      continue;
+    }
 
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];
@@ -191,7 +129,12 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
 
       // Skip view-producer output slots — they share the input's DataBuffer.
       // slotIsViewProducer_ is indexed by OUTPUT SLOT INDEX, not op slot index.
-      if (slotIsViewProducer_[outIdx]) { skippedView++; continue; }
+      if (slotIsViewProducer_[outIdx]) {
+        skippedView++;
+        DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d outIdx=%d op=%s reason=view-producer",
+                     s, outIdx, slot.ident.opName.c_str());
+        continue;
+      }
 
       NDArray* cached = outputSlots_[outIdx];
       if (cached == nullptr) continue;
@@ -224,78 +167,6 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
            static_cast<int>(batchZeroEntries_.size()),
            static_cast<int>(gapSlots.size()),
            skippedIdentity, skippedTail, skippedHead, skippedView);
-}
-
-void NativeDynamicShapePlan::prepareBatchZeroDevice(cudaStream_t stream) {
-  int count = static_cast<int>(batchZeroEntries_.size());
-  if (count <= 0) return;
-
-  // Free old device arrays if size changed
-  if (batchZeroDevicePtrs_ != nullptr && batchZeroDeviceCount_ != count) {
-    cudaFree(batchZeroDevicePtrs_);
-    cudaFree(batchZeroDeviceSizes_);
-    cudaFreeHost(batchZeroHostPtrs_);
-    cudaFreeHost(batchZeroHostSizes_);
-    batchZeroDevicePtrs_ = nullptr;
-    batchZeroDeviceSizes_ = nullptr;
-    batchZeroHostPtrs_ = nullptr;
-    batchZeroHostSizes_ = nullptr;
-  }
-
-  // Allocate device-side arrays (persistent — used on every graph replay)
-  if (batchZeroDevicePtrs_ == nullptr) {
-    cudaMalloc(&batchZeroDevicePtrs_, count * sizeof(void*));
-    cudaMalloc(&batchZeroDeviceSizes_, count * sizeof(int));
-    cudaMallocHost(&batchZeroHostPtrs_, count * sizeof(void*));
-    cudaMallocHost(&batchZeroHostSizes_, count * sizeof(int));
-    batchZeroDeviceCount_ = count;
-  }
-
-  // Fill host arrays
-  for (int i = 0; i < count; i++) {
-    static_cast<void**>(batchZeroHostPtrs_)[i] = batchZeroEntries_[i].ptr;
-    static_cast<int*>(batchZeroHostSizes_)[i] = batchZeroEntries_[i].bytes;
-  }
-
-  // Upload to device (this happens OUTSIDE graph capture, so it's a normal H2D copy)
-  cudaMemcpyAsync(batchZeroDevicePtrs_, batchZeroHostPtrs_,
-                   count * sizeof(void*), cudaMemcpyHostToDevice, stream);
-  cudaMemcpyAsync(batchZeroDeviceSizes_, batchZeroHostSizes_,
-                   count * sizeof(int), cudaMemcpyHostToDevice, stream);
-  cudaStreamSynchronize(stream);
-}
-
-void NativeDynamicShapePlan::launchBatchZero(cudaStream_t stream) {
-  int count = static_cast<int>(batchZeroEntries_.size());
-  if (count <= 0) return;
-
-  // Always use the single-kernel path. This produces exactly 1 CUDA graph node
-  // instead of N cudaMemsetAsync nodes, which is:
-  //   1. Capture-compatible (no cudaMemsetAsync during stream capture)
-  //   2. Consistent (same execution path every time)
-  //   3. Performant (one kernel launch vs N memset API calls)
-  // The per-buffer cudaMemsetAsync fallback is removed — it was capture-incompatible
-  // (error 901: cudaErrorStreamCaptureUnsupported) and produced inconsistent
-  // captured vs non-captured execution behavior.
-  int threadsPerBlock = 256;
-  batchZeroKernel<<<count, threadsPerBlock, 0, stream>>>(
-      static_cast<void**>(batchZeroDevicePtrs_),
-      static_cast<int*>(batchZeroDeviceSizes_),
-      count);
-  DSP_DIAG(MEMORY, "launchBatchZero: single kernel (%d buffers, %d blocks)", count, count);
-}
-
-void NativeDynamicShapePlan::setBatchZeroActive(bool active) {
-  tl_batchZeroActive = active;
-}
-
-void NativeDynamicShapePlan::freeBatchZeroResources() {
-  if (batchZeroDevicePtrs_) { cudaFree(batchZeroDevicePtrs_); batchZeroDevicePtrs_ = nullptr; }
-  if (batchZeroDeviceSizes_) { cudaFree(batchZeroDeviceSizes_); batchZeroDeviceSizes_ = nullptr; }
-  if (batchZeroHostPtrs_) { cudaFreeHost(batchZeroHostPtrs_); batchZeroHostPtrs_ = nullptr; }
-  if (batchZeroHostSizes_) { cudaFreeHost(batchZeroHostSizes_); batchZeroHostSizes_ = nullptr; }
-  batchZeroDeviceCount_ = 0;
-  batchZeroEntries_.clear();
 }
 
 // ── Batch D2D copy kernel ──────────────────────────────────────────────────

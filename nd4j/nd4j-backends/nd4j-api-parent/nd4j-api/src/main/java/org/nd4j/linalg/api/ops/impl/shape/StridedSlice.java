@@ -524,4 +524,5 @@ public class StridedSlice extends DynamicCustomOp {
     public boolean outputShapeDependsOnInputData() {
         return true;
     }
+
 }

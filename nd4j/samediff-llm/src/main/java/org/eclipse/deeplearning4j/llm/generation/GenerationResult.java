@@ -105,6 +105,26 @@ public class GenerationResult {
     private final double lateSteadyStateTokensPerSecond;
 
     /**
+     * Number of decode steps classified as warmup (compilation/capture overhead included).
+     * Steps are classified as warmup when the DSP plan phase has not yet reached REPLAYING.
+     */
+    @Builder.Default
+    private final int warmupStepCount = 0;
+
+    /**
+     * Maximum wall-clock time (ms) of any single warmup step.
+     * Useful for understanding the worst-case compilation overhead.
+     */
+    @Builder.Default
+    private final long maxWarmupStepMs = 0;
+
+    /**
+     * Total wall-clock time (ms) spent in warmup steps (compilation/capture).
+     */
+    @Builder.Default
+    private final long totalWarmupMs = 0;
+
+    /**
      * Log probabilities for each generated token (if requested).
      */
     private final List<Double> logProbs;

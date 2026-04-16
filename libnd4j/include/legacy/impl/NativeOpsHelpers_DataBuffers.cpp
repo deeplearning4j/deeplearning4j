@@ -27,6 +27,7 @@
 
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/TransferMetrics.h>
+#include <graph/DspLifecycleContext.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
 
@@ -440,6 +441,63 @@ bool dbIsConstant(OpaqueDataBuffer *dataBuffer) {
     return false;
   }
   return dataBuffer->isConstant.load(std::memory_order_acquire);
+}
+
+// =====================================================
+// DSP Lifecycle Gates
+// Thin JNI wrappers over sd::graph::DspLifecycleContext.
+// The slot-by-slot execution path (InferenceSession.java) consults these
+// before issuing syncs/ticks/closes that would race a live DSP capture or
+// replay. See libnd4j/include/graph/DspLifecycleContext.h for semantics.
+// =====================================================
+
+bool dbIsFrozenPlanRegistered(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr || !dataBuffer->isValid()) return false;
+  auto* db = dataBuffer->dataBuffer();
+  if (db == nullptr) return false;
+  return db->isFrozenPlanRegistered();
+}
+
+bool dbDspProtects(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr || !dataBuffer->isValid()) return false;
+  auto* db = dataBuffer->dataBuffer();
+  return sd::graph::DspLifecycleContext::protectsBuffer(db);
+}
+
+bool dspIsCaptureActive() {
+  return sd::graph::DspLifecycleContext::isCaptureActive();
+}
+
+bool dspIsReplayActive() {
+  return sd::graph::DspLifecycleContext::isReplayActive();
+}
+
+bool dspIsOwned() {
+  return sd::graph::DspLifecycleContext::isOwned();
+}
+
+bool dspShouldSkipResync(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr || !dataBuffer->isValid()) return false;
+  auto* db = dataBuffer->dataBuffer();
+  return sd::graph::DspLifecycleContext::shouldSkipResync(db);
+}
+
+bool dspShouldDeferClose(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr || !dataBuffer->isValid()) return false;
+  auto* db = dataBuffer->dataBuffer();
+  return sd::graph::DspLifecycleContext::shouldDeferClose(db);
+}
+
+int dspGetExecutionMode() {
+  return static_cast<int>(sd::graph::DspLifecycleContext::currentMode());
+}
+
+void dspSetExecutionMode(int mode) {
+  // Clamp to valid range — anything outside [0,2] is treated as COEXIST_SAFE.
+  sd::graph::DspExecutionMode m = sd::graph::DspExecutionMode::COEXIST_SAFE;
+  if (mode == 0) m = sd::graph::DspExecutionMode::LEGACY_UNAWARE;
+  else if (mode == 2) m = sd::graph::DspExecutionMode::STRICT_ISOLATED;
+  sd::graph::DspLifecycleContext::setCurrentMode(m);
 }
 
 sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) {

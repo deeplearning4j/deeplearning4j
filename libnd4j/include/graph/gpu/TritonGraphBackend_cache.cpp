@@ -230,6 +230,92 @@ bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
   return true;
 }
 
+bool TritonGraphBackend::loadBinaryFromDiskCacheByHash(
+    const std::string& cacheHash,
+    const std::string& kernelName,
+    TritonCompiledBinary& binary) const {
+  // Reload variant for module residency cache eviction recovery.
+  // Mirrors loadBinaryFromDiskCache but does not require a TritonIRModule
+  // (which would require an MLIR context the launch path does not have).
+  if (!sd::Environment::getInstance().tritonCacheEnabled()) return false;
+  if (cacheHash.empty()) return false;
+
+  const std::string cacheDir = getDiskCacheDir();
+  std::ostringstream name;
+  name << "ttir_" << cacheHash;
+  const std::string basePath = cacheDir + "/" + name.str();
+  const std::string ptxPath = basePath + ".ptx";
+  const std::string metaPath = basePath + ".meta";
+
+  std::ifstream ptxFile(ptxPath, std::ios::binary);
+  if (!ptxFile.good()) return false;
+
+  std::ifstream metaFile(metaPath);
+  if (!metaFile.good()) return false;
+
+  std::string ptxText((std::istreambuf_iterator<char>(ptxFile)),
+                      std::istreambuf_iterator<char>());
+  if (ptxText.empty()) return false;
+  if (ptxText.back() != '\0') ptxText.push_back('\0');
+
+  int metaNumWarps = 0;
+  int metaSharedMem = 0;
+  bool metaSharedMemPresent = false;
+  int metaGlobalScratchBytes = 0;
+  int metaGlobalScratchAlignment = 128;
+  std::string metaKernelName;
+  std::string line;
+  while (std::getline(metaFile, line)) {
+    size_t eqPos = line.find('=');
+    if (eqPos == std::string::npos) continue;
+    const std::string key = line.substr(0, eqPos);
+    const std::string value = line.substr(eqPos + 1);
+    if (key == "numWarps") {
+      parseIntValue(value, metaNumWarps);
+    } else if (key == "sharedMemBytes") {
+      parseIntValue(value, metaSharedMem);
+      metaSharedMemPresent = true;
+    } else if (key == "globalScratchBytes") {
+      parseIntValue(value, metaGlobalScratchBytes);
+    } else if (key == "globalScratchAlignment") {
+      parseIntValue(value, metaGlobalScratchAlignment);
+    } else if (key == "kernelName") {
+      metaKernelName = value;
+    }
+  }
+
+  if (!kernelName.empty() && !metaKernelName.empty() && metaKernelName != kernelName) {
+    DSP_DIAG(JIT, "TritonGraphBackend: reload disk cache hash %s metadata kernel name '%s' "
+             "does not match expected '%s'",
+             cacheHash.c_str(), metaKernelName.c_str(), kernelName.c_str());
+    return false;
+  }
+
+  if (!metaSharedMemPresent && metaSharedMem == 0 && ptxUsesExternSharedMemory(ptxText)) {
+    DSP_DIAG(JIT, "TritonGraphBackend: reload disk cache hash %s is stale "
+             "(extern shared PTX with no sharedMemBytes metadata)", cacheHash.c_str());
+    return false;
+  }
+
+  binary.data = new char[ptxText.size()];
+  std::memcpy(binary.data, ptxText.data(), ptxText.size());
+  binary.size = ptxText.size() - 1;
+  binary.target = TritonTargetDispatch::detectTarget();
+  binary.targetArch = TritonTargetDispatch::getTargetArch();
+  const std::string archOverride = sd::Environment::getInstance().tritonOverrideArch();
+  if (!archOverride.empty()) {
+    binary.targetArch = archOverride;
+  }
+  binary.numWarps = metaNumWarps;
+  binary.sharedMemBytes = metaSharedMem;
+  binary.globalScratchBytes = metaGlobalScratchBytes;
+  binary.globalScratchAlignment = metaGlobalScratchAlignment;
+
+  DSP_DIAG(JIT, "TritonGraphBackend: reload disk cache HIT for hash %s (%zu bytes)",
+           cacheHash.c_str(), binary.size);
+  return true;
+}
+
 void TritonGraphBackend::writeBinaryToDiskCache(int startSlot, int endSlot,
                                                 const std::string& cacheHash,
                                                 const TritonIRModule& irModule,

@@ -25,6 +25,7 @@
 #include <string>
 #include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
+#include <graph/DspLifecycleContext.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/OpExecutionLogger.h>
@@ -99,13 +100,23 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, Context 
     // update the actuality counters so that subsequent syncToHost() calls will know
     // to copy the data from device to host.
     //
-    // This is equivalent to calling registerSpecialUse({outputs}, {inputs})
-    for (auto v : opContext->fastpath_in()) {
-      if (v != nullptr && !v->isEmpty()) v->tickReadDevice();
-    }
+    // This is equivalent to calling registerSpecialUse({outputs}, {inputs}).
+    //
+    // DSP gate: when the current thread is executing under a live DSP capture
+    // or replay, ticking these counters here would clobber the actuality state
+    // DSP already established for the captured graph. Defer to DSP's own
+    // reconciler (NativeDynamicShapePlan_slotexec::reconcileExecutedOutputActuality).
+    // COEXIST_SAFE (default) is the mode that enables this gate — LEGACY_UNAWARE
+    // falls through for bisecting regressions. See graph/DspLifecycleContext.h.
+    const bool skipTick = sd::graph::DspLifecycleContext::shouldSkipTick();
+    if (!skipTick) {
+      for (auto v : opContext->fastpath_in()) {
+        if (v != nullptr && !v->isEmpty()) v->tickReadDevice();
+      }
 
-    for (auto v : opContext->fastpath_out()) {
-      if (v != nullptr && !v->isEmpty()) v->tickWriteDevice();
+      for (auto v : opContext->fastpath_out()) {
+        if (v != nullptr && !v->isEmpty()) v->tickWriteDevice();
+      }
     }
 
 #if defined(SD_GCC_FUNCTRACE)

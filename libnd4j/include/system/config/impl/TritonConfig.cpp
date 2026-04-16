@@ -98,6 +98,18 @@ void TritonConfig::initFromEnvironment() {
     if (v >= 0) setCacheEnabled(v == 1);
   }
   {
+    int64_t v = readInt64Env("ND4J_TRITON_MODULE_RESIDENCY_BUDGET_BYTES", -1);
+    if (v >= 0) setModuleResidencyBudgetBytes(v);
+  }
+  {
+    int64_t v = readInt64Env("ND4J_TRITON_MODULE_RESIDENCY_WARN_BYTES", -1);
+    if (v >= 0) setModuleResidencyWarnBytes(v);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_TRITON_BATCH_PRELOAD_MODULES");
+    if (v >= 0) setBatchPreloadModules(v == 1);
+  }
+  {
     int v = readBoolEnvTriState("ND4J_TRITON_COOPERATIVE_LAUNCH");
     if (v >= 0) setCooperativeLaunch(v == 1);
   }

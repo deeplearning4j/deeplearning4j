@@ -1352,7 +1352,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
         LongPointer shapePointer = new LongPointer(shape);
         LongPointer stridePointer = new LongPointer(stride);
-        long extras = ArrayOptionsHelper.composeTypicalChecks(empty,DataType.INT64,false,false,isView ,false,false );
+        long extras = ArrayOptionsHelper.composeTypicalChecks(empty, dtype, false, false, isView, false, false);
         getNativeOps().clearLastError();
         OpaqueConstantShapeBuffer dbf = getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
         if (getNativeOps().lastErrorCode() != 0)

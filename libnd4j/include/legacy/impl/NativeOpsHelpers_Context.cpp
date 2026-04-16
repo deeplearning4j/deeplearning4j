@@ -27,6 +27,7 @@
 
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
+#include <ops/OpTraitTable.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/OpExecutionLogger.h>
 
@@ -662,4 +663,19 @@ void printOpTrace() {
 
 std::vector<ExecTrace*> * listOpTraces() {
   return sd::ops::OpRegistrator::getInstance().execTrace();
+}
+
+unsigned int getOpTraits(const char* opName) {
+  if (opName == nullptr) return 0;
+  std::string name(opName);
+  uint32_t traits = sd::ops::getOpTraitsByName(name);
+  // Fall back to the registered descriptor in case traits were attached at
+  // registration time but not listed in the hand-maintained trait table.
+  if (traits == 0) {
+    auto* op = sd::ops::OpRegistrator::getInstance().getOperation(name);
+    if (op != nullptr && op->getOpDescriptor() != nullptr) {
+      traits = op->getOpDescriptor()->getTraits();
+    }
+  }
+  return static_cast<unsigned int>(traits);
 }

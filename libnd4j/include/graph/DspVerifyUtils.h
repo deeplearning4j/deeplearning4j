@@ -611,6 +611,43 @@ SD_INLINE int dspDetectStaleOutputs(NDArray** outputs, int numOutputs,
   return staleCount;
 }
 
+// ─── Per-slot generation assertion ──────────────────────────────────────
+//
+// Slot writers bump NativeSlot::generation_ after every write. Readers that
+// want to verify a slot hasn't been re-written out from under them can
+// snapshot generation() at read time and later call dspAssertSlotGeneration()
+// to detect drift.
+//
+// On mismatch the helper emits a FALLBACK-category diagnostic event (if the
+// FALLBACK category is enabled) and, when throwOnMismatch is true, raises a
+// sd_exception so the caller can unwind to a safe point. Throwing is opt-in
+// because many stale-read paths are best-effort (e.g. diagnostic dumps).
+//
+// Signature kept intentionally dependency-light so it compiles in both CPU
+// and CUDA translation units without pulling in plan-specific headers.
+SD_INLINE void dspAssertSlotGeneration(int slotIdx, uint32_t expected,
+                                       uint32_t actual, const char* siteName,
+                                       bool throwOnMismatch = false) {
+  if (expected == actual) return;
+
+  const char* site = (siteName != nullptr) ? siteName : "<unknown>";
+
+  // Emit via the existing DSP diagnostic framework (FALLBACK category).
+  // Gated by DSP_DIAG — zero cost when FALLBACK is not enabled.
+  DSP_DIAG_SLOT(FALLBACK, slotIdx,
+      "SLOT_GEN_MISMATCH: slot=%d site=%s expected=%u actual=%u delta=%d",
+      slotIdx, site, (unsigned)expected, (unsigned)actual,
+      (int)((int64_t)actual - (int64_t)expected));
+
+  if (throwOnMismatch) {
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "DSP slot generation mismatch: slot=%d site=%s expected=%u actual=%u",
+             slotIdx, site, (unsigned)expected, (unsigned)actual);
+    THROW_EXCEPTION(buf);
+  }
+}
+
 }  // namespace graph
 }  // namespace sd
 

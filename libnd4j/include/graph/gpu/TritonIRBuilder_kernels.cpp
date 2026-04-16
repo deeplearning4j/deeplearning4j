@@ -1432,7 +1432,11 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
 //
 // Writes current key/value (BSHD, 3D [B,seqKV,H*D]) to present_key/value
 // output buffer (BHSD, 4D [B,H,totalSeq,D]) at position pastSeq.
-// Only writes seqKV new positions — scatterKvEntries reads only the last position.
+// Writes only the seqKV new positions [pastSeq, pastSeq+seqKV) into the destination;
+// positions [0, pastSeq) are assumed already populated in the pre-allocated buffer
+// from prior decode steps. KV cache scatter into the past KV input buffer is now a
+// standard in-graph scatter_upd op, so this kernel no longer depends on any
+// C++-side post-pass to propagate new positions.
 //
 // Grid: pid0 = batch * numKvHeads + kvHeadIdx (same decomposition as attention kernel)
 //        pid1 = tile index over seqKV positions

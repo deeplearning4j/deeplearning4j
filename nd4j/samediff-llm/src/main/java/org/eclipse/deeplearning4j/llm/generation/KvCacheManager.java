@@ -34,9 +34,8 @@ import java.util.Map;
  * KV cache strategy is in use. Implementations handle the strategy-specific details:</p>
  *
  * <ul>
- *   <li>{@link StaticKvCacheManager} - Dense pre-allocated buffers with native KvScatter</li>
- *   <li>Future: PagedKvCacheManager - Block-based with paged attention kernel</li>
- *   <li>Future: QuantizedKvCacheManager - Block-based with INT8/FP8 quantization</li>
+ *   <li>{@link UnifiedKvCacheManager} - Single unified implementation for all strategies
+ *       (STATIC, PAGED, QUANTIZED, TURBOQUANT) with in-graph KvScatter support</li>
  * </ul>
  *
  * <h3>Lifecycle</h3>
@@ -49,7 +48,7 @@ import java.util.Map;
  * </ol>
  *
  * @see KvCacheStrategy
- * @see StaticKvCacheManager
+ * @see UnifiedKvCacheManager
  */
 public interface KvCacheManager extends AutoCloseable {
 
@@ -157,8 +156,9 @@ public interface KvCacheManager extends AutoCloseable {
     /**
      * Get the raw static KV buffer map (past_key_values input name to buffer).
      *
-     * <p>Returns null for non-static strategies. Used by DSP's
-     * {@code configureKvCacheRetention} to set up C++ KV scatter.</p>
+     * <p>Returns null for non-static strategies. The buffers are passed directly
+     * to the decoder as normal inputs and written to by the ordinary KvScatter op
+     * on each decode step — there is no native KV retention configuration.</p>
      */
     Map<String, INDArray> getStaticKvBuffers();
 

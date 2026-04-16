@@ -40,8 +40,10 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Compiles a {@link DynamicShapePlan} from a {@link ForwardExecutionDAG}.
@@ -65,63 +67,24 @@ import java.util.*;
 @Slf4j
 public class DynamicShapePlanCompiler {
 
-    // Data-dependent ops no longer block capturability — the shapeKey system
-    // handles dynamic shapes via value hashing and recompilation on cache miss.
-    // This set is kept only for the needsZeroedOutput flag (data-dependent ops
-    // need zeroed output buffers since they may not write all elements).
-    private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("where", "unique");
+    // Mirror of libnd4j/include/ops/declarable/OpDescriptor.h trait bitmask.
+    // OpTraitTable.cpp is the single source of truth for per-op classification —
+    // the Java compiler queries it via JNI (getOpTraits) so Java and C++ agree.
+    private static final int OP_TRAIT_VALUE_DEPENDENT_SHAPE = 1 << 8;
+    private static final int OP_TRAIT_DATA_DEPENDENT        = 1 << 9;
 
-    /**
-     * Ops that produce view outputs (share input buffer, no data copy).
-     * The executor can skip output allocation for these and pass an empty placeholder.
-     * Matches C++ NativePlanCompiler's isViewCapableOp detection.
-     */
-    private static final Set<String> VIEW_CAPABLE_OPS = Set.of(
-            "reshape", "reshape_no_copy",
-            "expand_dims", "squeeze",
-            "permute",
-            "strided_slice"
-    );
+    // Cache: op-name → trait bitmask. Native table is immutable after initOpTraits();
+    // memoise per-name to avoid JNI round-trips during plan compilation.
+    private static final Map<String, Integer> OP_TRAIT_CACHE = new ConcurrentHashMap<>();
 
-    /**
-     * Ops known to fully write every element of their output buffer. These ops can
-     * safely skip zeroing of reused buffers, saving a CUDA kernel launch per allocation.
-     *
-     * <p>Conservative whitelist — only ops with absolute write guarantees are included.
-     * View/shape ops (reshape, permute, transpose) are EXCLUDED because with
-     * shapeFunctionOverride=true, C++ may not copy data to the pre-allocated output
-     * buffer. Gather/concat/split/stack are EXCLUDED because they have complex memory
-     * access patterns with potential edge cases.</p>
-     */
-    private static final Set<String> FULLY_WRITING_OPS = Set.of(
-            // Matrix ops — BLAS contractually writes C[i,j] = sum(A[i,k]*B[k,j]) for all (i,j)
-            "matmul", "mmul", "batched_gemm", "tensormmul",
-            // Elementwise binary — output[i] = f(a[i], b[i]) for every i (with broadcasting)
-            "add", "subtract", "multiply", "divide", "floormod", "floordiv",
-            "reversedivide", "reversesubtract", "squaredsubtract",
-            "add_scalar", "subtract_scalar", "multiply_scalar", "divide_scalar",
-            "pow", "min_pairwise", "max_pairwise", "atan2",
-            // Elementwise unary — output[i] = f(input[i]) for every i
-            "abs", "neg", "exp", "log", "log1p", "sqrt", "rsqrt", "square", "reciprocal",
-            "ceil", "floor", "round", "sign", "erf", "erfc",
-            // Activation functions — elementwise, writes every element
-            "relu", "relu6", "leakyrelu", "elu", "selu", "gelu", "sigmoid", "tanh",
-            "softsign", "softplus", "swish", "mish", "hard_sigmoid", "hardtanh",
-            // Comparison ops — elementwise boolean output
-            "equals", "not_equals", "less", "less_equal", "greater", "greater_equal",
-            "boolean_and", "boolean_or", "boolean_not", "boolean_xor",
-            // Reduction ops — fully computes every output element from input
-            "reduce_sum", "reduce_mean", "reduce_max", "reduce_min", "reduce_prod",
-            "reduce_norm1", "reduce_norm2", "reduce_logsumexp", "reduce_variance", "reduce_stdev",
-            "sum", "mean", "max", "min", "prod", "norm1", "norm2", "normmax",
-            "argmax", "argmin",
-            // Softmax — normalizes every element across axis
-            "softmax", "log_softmax",
-            // Type conversion — converts every element
-            "cast",
-            // Clip — elementwise
-            "clipbyvalue"
-    );
+    private static int opTraitsOf(String opName) {
+        if (opName == null) return 0;
+        Integer cached = OP_TRAIT_CACHE.get(opName);
+        if (cached != null) return cached;
+        int traits = NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraits(opName);
+        OP_TRAIT_CACHE.put(opName, traits);
+        return traits;
+    }
 
     private DynamicShapePlanCompiler() {}
 
@@ -163,10 +126,6 @@ public class DynamicShapePlanCompiler {
             }
             opNodes.add(node);
         }
-
-        // Diagnostic tracking for needsZeroedOutput
-        Map<String, Integer> needsZeroedOutputOps = new java.util.TreeMap<>();
-        Map<String, Integer> skipsZeroedOutputOps = new java.util.TreeMap<>();
 
         // Step 2: Build external input index maps
         // External inputs = constants + variables + placeholders
@@ -284,10 +243,6 @@ public class DynamicShapePlanCompiler {
             String[] inputVarNames = new String[numInputs];
 
             boolean hasIntLongInputs = false;
-            // isDataDependent no longer blocks capturability — the shapeKey system
-            // handles dynamic shapes via value hashing and backend recompilation.
-            // We still track it for needsZeroedOutput (data-dependent ops may not write all elements).
-            boolean isDataDependent = false;
 
             for (int i = 0; i < numInputs; i++) {
                 String inputVar = inputVars.get(i);
@@ -486,23 +441,21 @@ public class DynamicShapePlanCompiler {
                 requiresDynamic = true;
             }
 
-            // Determine if this op needs zeroed output buffers.
-            // Default: true (safe). Only skip for ops known to fully write every output element.
-            boolean needsZeroedOutput = !FULLY_WRITING_OPS.contains(opNameLower) || isDataDependent;
-            if (needsZeroedOutput) {
-                needsZeroedOutputOps.merge(opNameLower, 1, Integer::sum);
+            // Consult the C++ OpTraitTable (single source of truth) rather than the
+            // crude "any int/long input → value-dependent" heuristic. Only ops actually
+            // carrying VALUE_DEPENDENT_SHAPE or DATA_DEPENDENT traits stamp this flag;
+            // e.g. gather takes INT indices but its output shape is derivable from shapes,
+            // so it must NOT be flagged value-dependent.
+            int opTraits = opTraitsOf(opName);
+            boolean shapeDependsOnValues;
+            if (opTraits != 0) {
+                shapeDependsOnValues = (opTraits &
+                        (OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT)) != 0;
             } else {
-                skipsZeroedOutputOps.merge(opNameLower, 1, Integer::sum);
+                // Op not in trait table (e.g. legacy / unregistered) — fall back to the
+                // old heuristic so we stay safe on unclassified ops.
+                shapeDependsOnValues = hasIntLongInputs;
             }
-
-            // Determine if output shape depends on input values (not just shapes).
-            // Uses runtime detection: any op with small INT/LONG inputs is treated as
-            // value-dependent. This replaces the brittle hardcoded VALUE_DEPENDENT_SHAPE_OPS
-            // set. The Java computeShapeKey() now always hashes INT/LONG values regardless,
-            // so this flag only affects the C++ frozen-shape fast-path (via serialization).
-            boolean shapeDependsOnValues = hasIntLongInputs || isDataDependent;
-
-            boolean isViewCapable = VIEW_CAPABLE_OPS.contains(opNameLower);
 
             DifferentialFunction slotOp = op;
 
@@ -526,12 +479,9 @@ public class DynamicShapePlanCompiler {
                     .bArgs(bArgs)
                     .dArgs(dArgs)
                     .sArgs(sArgs)
-                    .needsIntLongSync(hasIntLongInputs || isDataDependent)
+                    .needsIntLongSync(hasIntLongInputs)
                     .allIntLongInputsExternal(allIntLongExternal)
-                    .isDataDependent(isDataDependent)
                     .requiresDynamicShapeInference(requiresDynamic)
-                    .needsZeroedOutput(needsZeroedOutput)
-                    .viewCapableOp(isViewCapable)
                     .outputShapeDependsOnInputValues(shapeDependsOnValues)
                     .stepIndex(stepIdx)
                     .opNameHash(opNameHash)
@@ -800,30 +750,10 @@ public class DynamicShapePlanCompiler {
             }
         }
 
-        // Log needsZeroedOutput diagnostics
-        int totalNeedsZeroed = needsZeroedOutputOps.values().stream().mapToInt(Integer::intValue).sum();
-        int totalSkipsZeroed = skipsZeroedOutputOps.values().stream().mapToInt(Integer::intValue).sum();
-        log.info("needsZeroedOutput: {} ops need zeroed output, {} ops skip zeroed output", totalNeedsZeroed, totalSkipsZeroed);
-        if (!needsZeroedOutputOps.isEmpty()) {
-            log.info("Ops still needing zeroed output: {}", needsZeroedOutputOps);
-        }
-
-        // Log view-capable ops (zero-allocation slots)
-        int viewCapableCount = 0;
-        Map<String, Integer> viewCapableOps = new java.util.TreeMap<>();
-        for (DynamicShapeSlot slot : slots) {
-            if (slot.isViewCapableOp()) {
-                viewCapableCount++;
-                viewCapableOps.merge(slot.getOpName(), 1, Integer::sum);
-            }
-        }
-        log.info("viewCapableOps: {} slots skip allocation (view of input): {}", viewCapableCount, viewCapableOps);
-
-        // Log full op type histogram for kernel count analysis
+        // Log op type histogram
         Map<String, Integer> allOpTypes = new java.util.TreeMap<>();
-        allOpTypes.putAll(needsZeroedOutputOps);
-        for (var entry : skipsZeroedOutputOps.entrySet()) {
-            allOpTypes.merge(entry.getKey(), entry.getValue(), Integer::sum);
+        for (DynamicShapeSlot slot : slots) {
+            allOpTypes.merge(slot.getOpName(), 1, Integer::sum);
         }
         log.info("Op type histogram ({} total): {}", slots.length, allOpTypes);
 

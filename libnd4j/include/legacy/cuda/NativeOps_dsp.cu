@@ -34,6 +34,7 @@
 #include <array/DataTypeUtils.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/NativePlanCache.h>
 #include <graph/Context.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/NativePlanCompiler.h>
@@ -347,6 +348,74 @@ void freeDynamicShapePlan(sd::Pointer planHandle) {
   }
 }
 
+// ─── NativePlanCache JNI entry points ────────────────────────────────────────
+
+sd::Pointer createNativePlanCache() {
+  try {
+    return reinterpret_cast<sd::Pointer>(new sd::graph::NativePlanCache());
+  } catch (const std::exception& e) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    return nullptr;
+  }
+}
+
+void freeNativePlanCache(sd::Pointer cacheHandle) {
+  if (!cacheHandle) return;
+  delete reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
+}
+
+void clearNativePlanCacheHandle(sd::Pointer cacheHandle) {
+  if (!cacheHandle) return;
+  reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle)->clear();
+}
+
+sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
+                               sd::Pointer planBytes,
+                               sd::LongType planBytesLen,
+                               sd::Pointer outputNames,
+                               sd::LongType numOutputs,
+                               sd::Pointer phShapeInfoPtrs,
+                               sd::LongType numPlaceholders) {
+  try {
+    if (!cacheHandle) throw std::runtime_error("dispatchNativePlan: cacheHandle is null");
+
+    auto* cache = reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
+
+    // Build the output-set hash: FNV-1a over sorted names (order-independent).
+    // outputNames is a char** (array of C-string pointers), matching compileDynamicShapePlan's
+    // requestedOutputNames convention (passed from Java as PointerPointer of BytePointers).
+    auto** namesArr = reinterpret_cast<const char**>(outputNames);
+    std::vector<std::string> names;
+    names.reserve(numOutputs);
+    for (sd::LongType i = 0; i < numOutputs; i++) {
+      if (namesArr[i]) names.emplace_back(namesArr[i]);
+    }
+    std::sort(names.begin(), names.end());
+
+    uint64_t h = 14695981039346656037ULL;  // FNV-1a offset basis
+    for (auto& n : names) {
+      for (char c : n) { h ^= static_cast<uint8_t>(c); h *= 1099511628211ULL; }
+      h ^= 0; h *= 1099511628211ULL;  // NUL separator
+    }
+
+    sd::graph::NativePlanCache::Key key;
+    key.outputSetHash = h;
+    auto** ptrs = reinterpret_cast<sd::LongType**>(phShapeInfoPtrs);
+    key.phShapeInfoPtrs.assign(ptrs, ptrs + numPlaceholders);
+
+    // Factory: deserialize and build the plan on cold miss.
+    auto factory = [&]() -> sd::graph::NativeDynamicShapePlan* {
+      return NativeDynamicShapePlan::fromSerializedPlan(planBytes, planBytesLen);
+    };
+
+    auto* plan = cache->getOrInsert(key, factory);
+    return reinterpret_cast<sd::Pointer>(plan);
+  } catch (const std::exception& e) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    return nullptr;
+  }
+}
+
 void clearDynamicShapePlanCaches(sd::Pointer planHandle) {
   if (planHandle != nullptr) {
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
@@ -365,48 +434,6 @@ int releaseGpuIntermediates(sd::Pointer planHandle) {
   if (planHandle == nullptr) return 0;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   return plan->releaseGpuIntermediates();
-}
-
-int releaseGpuIntermediates(sd::Pointer planHandle, bool preserveDecodeState) {
-  if (planHandle == nullptr) return 0;
-  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  return plan->releaseGpuIntermediates(preserveDecodeState);
-}
-
-void configurePlanKvCacheRetention(
-    sd::Pointer planHandle, const int* mappings,
-    int numMappings, int maxKvLen, int initialPos) {
-  if (planHandle == nullptr || mappings == nullptr || numMappings <= 0) return;
-  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  plan->configureKvCacheRetention(mappings, numMappings, maxKvLen, initialPos);
-}
-
-int advancePlanKvCachePosition(sd::Pointer planHandle) {
-  if (planHandle == nullptr) return -1;
-  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  return plan->advanceKvCachePosition();
-}
-
-void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos) {
-  if (planHandle == nullptr) return;
-  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  plan->resetKvCachePosition(newPos);
-}
-
-void configurePlanDecodeInputs(
-    sd::Pointer planHandle,
-    int inputIdsExtIdx, int positionIdsExtIdx,
-    int attentionMaskExtIdx, int maxKvLen) {
-  if (planHandle == nullptr) return;
-  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  plan->configureDecodeInputs(inputIdsExtIdx, positionIdsExtIdx,
-                               attentionMaskExtIdx, maxKvLen);
-}
-
-void setPlanNextDecodeToken(sd::Pointer planHandle, sd::LongType tokenId, int cachePos) {
-  if (planHandle == nullptr) return;
-  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  plan->setNextDecodeToken(tokenId, cachePos);
 }
 
 // ─── Replay diagnostics (Phase 2) ──────────────────────────────────────────
@@ -440,6 +467,9 @@ int getPlanSegmentCount(sd::Pointer planHandle) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   return static_cast<int>(plan->getSegments().size());
 }
+
+// isPlanCompilationSealed / getPlanMidExecutionCompileCount / resetPlanMidExecutionCompileCount
+// live in legacy/impl/NativeOps_dsp_shared.cpp so they are shared between CPU and CUDA builds.
 
 // ─── Model loading (SDZ/SDNB) ───────────────────────────────────────────────
 
@@ -670,18 +700,6 @@ void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
                                  const int* slotIndices, const sd::LongType* maxSizes) {
   if (planHandle == nullptr || numSlots <= 0 || slotIndices == nullptr || maxSizes == nullptr) return;
   reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setOutputSlotMaxSizes(slotIndices, maxSizes, static_cast<int>(numSlots));
-}
-
-void setPlanKvCachePosition(sd::Pointer planHandle, int pos) {
-  if (planHandle != nullptr) {
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setKvCachePosition(pos);
-  }
-}
-
-void setPlanMaxKvCacheLength(sd::Pointer planHandle, int maxLen) {
-  if (planHandle != nullptr) {
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMaxKvCacheLength(maxLen);
-  }
 }
 
 int getPlanNumSegments(sd::Pointer planHandle) {

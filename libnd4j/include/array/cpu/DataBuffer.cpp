@@ -53,6 +53,7 @@ void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
 }
 
 void DataBuffer::expand(const uint64_t size) {
+  throwIfFrozen("expand");
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
@@ -278,6 +279,7 @@ void DataBuffer::deleteSpecial() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::freeGpuOnly() {
+  throwIfFrozen("freeGpuOnly");
   // CPU: no GPU to free. Free both buffers properly.
   deleteSpecial();
   deletePrimary();

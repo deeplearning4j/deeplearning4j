@@ -23,7 +23,6 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
-import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -52,7 +51,7 @@ import java.util.Map;
  * that CUDA graphs require.</p>
  *
  * <p>Requires a {@link KvCacheManager} that supports CUDA graph replay (i.e.,
- * {@link StaticKvCacheManager}). Paged or quantized strategies with dynamic shapes
+ * {@link UnifiedKvCacheManager} with STATIC strategy). Paged or quantized strategies with dynamic shapes
  * are not compatible with CUDA graph capture.</p>
  *
  * <p>Usage:</p>
@@ -91,11 +90,9 @@ public class FrozenDecodeStep implements AutoCloseable {
     // DSP state
     private DynamicShapePlanExecutor dspExec;
     private boolean compiled;
-    private boolean kvScatterInCpp;
 
     // Output names
     private String[] fullOutputNames;
-    private String[] logitsOnlyOutputNames;
 
     // Step counter for logging
     private int stepCount;
@@ -122,16 +119,15 @@ public class FrozenDecodeStep implements AutoCloseable {
                 : DecoderUtils.findKVCacheOutputNames(decoder);
         this.decoderInputNames = decoder.inputs();
         this.compiled = false;
-        this.kvScatterInCpp = false;
         this.stepCount = 0;
 
-        // Build output name lists
+        // Build output name lists — every step requests logits + present KV so the
+        // KvScatter op can copy entries into the Java-owned static KV buffers.
         List<String> fullList = new ArrayList<>();
         fullList.add(logitsOutputName);
         fullList.addAll(kvNames.keyNames);
         fullList.addAll(kvNames.valueNames);
         this.fullOutputNames = fullList.toArray(new String[0]);
-        this.logitsOnlyOutputNames = new String[]{logitsOutputName};
 
         // Pre-allocate fixed-address buffers
         allocateBuffers();
@@ -274,12 +270,10 @@ public class FrozenDecodeStep implements AutoCloseable {
             }
         }
 
-        // Clear caches and compile fresh
-        // For seqLen>1, C++ KV scatter doesn't work (designed for seqLen=1).
-        // Must compile with full outputs (logits + present KV) so Java scatter can read them.
-        boolean cppKvEnabled = seqLen <= 1;
-        kvScatterInCpp = false; // Set early — seqLen>1 always uses Java scatter
-        String[] compileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
+        // Clear caches and compile fresh. The merged step always requests logits +
+        // present KV — KvScatter runs as an ordinary op against the static KV
+        // buffers and there is no native KV retention configuration.
+        String[] compileOutputs = fullOutputNames;
         decoder.clearDynamicShapePlanCache();
         InferenceSession session = decoder.getOrCreateSession();
         session.clearAllCaches();
@@ -298,22 +292,6 @@ public class FrozenDecodeStep implements AutoCloseable {
             dspExec.setTraceEnabled(true);
             dspExec.setExecutionTimingEnabled(true);
             log.info("  Shapes frozen for merged decode step (seqLen={})", seqLen);
-
-            // Configure C++ KV scatter if possible
-            DynamicShapePlan plan = cppKvEnabled ? dspExec.getCurrentPlan() : null;
-            if (plan != null) {
-                List<String> presentNames = new ArrayList<>();
-                presentNames.addAll(kvNames.keyNames);
-                presentNames.addAll(kvNames.valueNames);
-                List<String> pastNames = new ArrayList<>();
-                for (String pn : presentNames) {
-                    pastNames.add(ioConfig.presentToInputName(pn));
-                }
-                // Note: C++ KV scatter is designed for seqLen=1.
-                // For speculative decode (seqLen>1), we use Java-side scatter.
-                // kvScatterInCpp already set to false above.
-                log.info("  C++ KV scatter NOT configured for merged step (seqLen={} > 1, using Java scatter)", seqLen);
-            }
         }
 
         compiled = true;
@@ -362,8 +340,7 @@ public class FrozenDecodeStep implements AutoCloseable {
             Nd4j.getEnvironment().setDebug(true);
             Nd4j.getEnvironment().setVerbose(true);
         }
-        String[] requestedOutputs = kvScatterInCpp ? logitsOnlyOutputNames : fullOutputNames;
-        Map<String, INDArray> outputs = decoder.outputDirect(inputMap, requestedOutputs);
+        Map<String, INDArray> outputs = decoder.outputDirect(inputMap, fullOutputNames);
         if (enableWarmupDebug) {
             Nd4j.getEnvironment().setDebug(false);
             Nd4j.getEnvironment().setVerbose(false);
@@ -381,14 +358,11 @@ public class FrozenDecodeStep implements AutoCloseable {
             logitsRaw = logitsRaw.castTo(DataType.FLOAT); // castTo creates new array (safe)
         }
 
-        // 5. KV scatter (Java side for multi-token)
-        if (!kvScatterInCpp) {
-            // Present KV from merged step has shape [1, heads, maxKvLen+seqLen, dim]
-            // The new entries are at the end: positions [maxKvLen..maxKvLen+seqLen-1]
-            // We need to scatter these into static buffer at [cachePos..cachePos+seqLen-1]
-            // But we DON'T scatter here — the caller decides how many to accept
-            // and calls scatterAcceptedKv() explicitly.
-        }
+        // 5. KV scatter is NOT run here. Present KV from the merged step has shape
+        // [1, heads, maxKvLen+seqLen, dim] with new entries at positions
+        // [maxKvLen..maxKvLen+seqLen-1]. The caller decides how many speculative
+        // tokens were accepted and invokes scatterAcceptedKv() to run KvScatter
+        // against the Java-owned static KV buffers at [cachePos..cachePos+numAccepted-1].
 
         long tAfterKv = System.nanoTime();
 

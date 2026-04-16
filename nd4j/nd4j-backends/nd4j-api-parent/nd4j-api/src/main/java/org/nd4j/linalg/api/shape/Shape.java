@@ -3073,13 +3073,16 @@ public class Shape {
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty,boolean isView) {
         boolean isEmpty = empty;
-        if (!empty)
+        if (shape.length == 0) {
+            isEmpty = false;
+        } else if (!empty) {
             for (val v:shape) {
                 if (v == 0) {
                     isEmpty = true;
                     break;
                 }
             }
+        }
 
         DataBuffer ret =  Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, isEmpty, isView);
         if(ret.getLong(0) == 0) {
@@ -3105,8 +3108,10 @@ public class Shape {
 
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
+        if (shape.length == 0) {
+            extras = extras & ~ArrayOptionsHelper.ATYPE_EMPTY_BIT;
+        }
         val dtype = ArrayOptionsHelper.dataType(extras);
-        //just propagate extra // it is the same value in the backend
         return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
 

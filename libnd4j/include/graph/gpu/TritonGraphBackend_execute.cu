@@ -26,7 +26,9 @@
 #include <system/Environment.h>
 #include <helpers/logger.h>
 #include <helpers/ShapeUtils.h>
+#include <array/DataTypeUtils.h>
 #include <array/ShapeList.h>
+#include <array/DataBuffer.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -399,7 +401,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                    static_cast<int>(argMapping.dtype), newArr->specialBuffer());
         }
 
-        // Sync all INPUT arrays to device
+        // Sync all INPUT arrays to device.
+        // External inputs (slotIndex < 0) use forceSync=true because readSpecial()
+        // from prior sub-kernels or markOrderedRangeDeviceCurrent() can leave
+        // isSpecialActual()=true even after Java modifies the host buffer. Without
+        // forceSync, the actuality check would skip the H2D, leaving stale device data.
         for (auto& argMapping : sk.argSlotMapping) {
           if (argMapping.isOutput) continue;
           NDArray* arr = nullptr;
@@ -410,17 +416,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
           }
           if (arr && arr->lengthOf() > 0) {
-            if (argMapping.slotIndex < 0 && arr->dataBuffer() != nullptr) {
-              bool pAct = arr->dataBuffer()->isPrimaryActual();
-              bool sAct = arr->dataBuffer()->isSpecialActual();
-              if (pAct && !sAct) {
-                arr->dataBuffer()->syncToSpecial(true);
-              } else {
-                arr->syncToDevice();
-              }
-            } else {
-              arr->syncToDevice();
-            }
+            arr->syncToDevice();
           }
         }
       }
@@ -496,29 +492,63 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     // ── Phase 3: Single consolidated H2D ──
-    auto memcpyErr = cudaMemcpyAsync(
-        compiledSeg->consolidatedArgTableDevice,
-        compiledSeg->consolidatedArgTableHostPinned,
-        compiledSeg->consolidatedArgTableBytes,
-        cudaMemcpyHostToDevice,
-        static_cast<cudaStream_t>(actualStream));
-    if (memcpyErr != cudaSuccess) {
-      DSP_DIAG(MEMORY, "TritonGraphBackend: consolidated arg table H2D failed (%zu bytes): %s",
-                compiledSeg->consolidatedArgTableBytes, cudaGetErrorString(memcpyErr));
-      cudaGetLastError();
+    // SKIP during stream capture: each island's CUDA graph must NOT bake in a
+    // full-segment consolidated H2D. At replay, gap ops between islands may
+    // change output buffer addresses. If the graph re-executes the consolidated
+    // H2D, it overwrites the device arg table with stale pre-loop addresses,
+    // causing island B+ to read wrong data. Per-kernel H2D (line ~707) is safe
+    // during capture — it uses per-kernel pinned/device buffers that are
+    // interior pointers into the consolidated table, updated by
+    // refreshArgTablesForReplay() + copyConsolidatedArgTableToDevice() at replay.
+    if (!streamCaptureActive) {
+      auto memcpyErr = cudaMemcpyAsync(
+          compiledSeg->consolidatedArgTableDevice,
+          compiledSeg->consolidatedArgTableHostPinned,
+          compiledSeg->consolidatedArgTableBytes,
+          cudaMemcpyHostToDevice,
+          static_cast<cudaStream_t>(actualStream));
+      if (memcpyErr != cudaSuccess) {
+        DSP_DIAG(MEMORY, "TritonGraphBackend: consolidated arg table H2D failed (%zu bytes): %s",
+                  compiledSeg->consolidatedArgTableBytes, cudaGetErrorString(memcpyErr));
+        cudaGetLastError();
+      } else {
+        consolidatedArgsCopied = true;
+        DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "TritonGraphBackend: consolidated arg table H2D: 1 copy of %zu bytes "
+                     "(replaces %d per-kernel copies) for seg[%d-%d]",
+                     compiledSeg->consolidatedArgTableBytes,
+                     static_cast<int>(compiledSeg->subKernels.size()),
+                     seg.def.startSlot, seg.def.endSlot);
+      }
     } else {
-      consolidatedArgsCopied = true;
-      DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "TritonGraphBackend: consolidated arg table H2D: 1 copy of %zu bytes "
-                   "(replaces %d per-kernel copies) for seg[%d-%d]",
-                   compiledSeg->consolidatedArgTableBytes,
-                   static_cast<int>(compiledSeg->subKernels.size()),
-                   seg.def.startSlot, seg.def.endSlot);
+      // During capture: per-kernel H2D via executeSingleKernel (argTablePreCopied=false)
+      DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
+                   "TritonGraphBackend: SKIP consolidated H2D during capture — per-kernel H2D will be used");
     }
   }
+
+  // Island slot range filter: when set, only launch sub-kernels within
+  // [tl_islandSlotMin, tl_islandSlotMax]. Used by composite capture to capture
+  // one Triton island at a time without capturing other islands in the segment.
+  // tl_islandSlotMin > tl_islandSlotMax means no filter (normal execution).
+  bool islandFilterActive = (tl_islandSlotMin <= tl_islandSlotMax);
 
   int nextSlotToRun = seg.def.startSlot;
   for (int i = 0; i < (int)compiledSeg->subKernels.size(); i++) {
     auto& subKernel = compiledSeg->subKernels[i];
+
+    // Island capture filter: skip sub-kernels outside the requested island range.
+    // During normal execution (no filter), islandFilterActive is false and all
+    // sub-kernels execute. During per-island capture, only the target island's
+    // sub-kernels are captured; others are skipped to avoid capturing incorrect
+    // kernels into the island-specific graph.
+    if (islandFilterActive &&
+        (subKernel.endSlot_ < tl_islandSlotMin ||
+         subKernel.startSlot_ > tl_islandSlotMax)) {
+      DSP_DIAG(EXECUTE, "ISLAND_FILTER_SKIP: sub-kernel [%d-%d] outside island [%d-%d] — skipped",
+               subKernel.startSlot_, subKernel.endSlot_, tl_islandSlotMin, tl_islandSlotMax);
+      nextSlotToRun = subKernel.endSlot_ + 1;
+      continue;
+    }
 
     if (nextSlotToRun < subKernel.startSlot_) {
       // Log actuality state BEFORE gap execution
@@ -797,21 +827,22 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         // When fullSnapshot is enabled, we already have host-side copies in fullSnapshotBefore
         // so we DON'T need GPU dup() copies — avoids doubling GPU memory usage (OOM fix).
         if (!tritonVerifyFullSnapshot) {
-          // Non-fullSnapshot: only save the sub-kernel's declared output slots via dup()
-          for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
-            for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
-              int outIdx = slots[si].wiring.outputSlotIndices[o];
-              if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx] &&
-                  outputSlots[outIdx]->lengthOf() > 0 && !outputSlots[outIdx]->isEmpty()) {
-                try {
-                  savedOutputs[outIdx] = new NDArray(outputSlots[outIdx]->dup());
-                } catch (...) {
-                  DSP_DIAG(VERIFY, "TRITON VERIFY: dup() failed for slot %d — skipping", outIdx);
-                }
+          // Non-fullSnapshot: only save ACTUAL kernel output slots via dup().
+          // Fused kernels only write buffers in argSlotMapping with isOutput=true;
+          // intermediate slots are computed in registers and never stored.
+          for (auto& argMap : subKernel.argSlotMapping) {
+            if (!argMap.isOutput || argMap.slotIndex < 0) continue;
+            int outIdx = argMap.slotIndex;
+            if (outIdx < totalOutputSlots && outputSlots[outIdx] &&
+                outputSlots[outIdx]->lengthOf() > 0 && !outputSlots[outIdx]->isEmpty()) {
+              try {
+                savedOutputs[outIdx] = new NDArray(outputSlots[outIdx]->dup());
+              } catch (...) {
+                DSP_DIAG(VERIFY, "TRITON VERIFY: dup() failed for slot %d — skipping", outIdx);
               }
             }
           }
-          DSP_DIAG(VERIFY, "TRITON VERIFY: saved %d output arrays via GPU dup()", static_cast<int>(savedOutputs.size()));
+          DSP_DIAG(VERIFY, "TRITON VERIFY: saved %d kernel output arrays via GPU dup()", static_cast<int>(savedOutputs.size()));
         } else {
           DSP_DIAG(VERIFY, "TRITON VERIFY: using host-side fullSnapshot for restore (%d snapshots, no GPU dup)",
                    static_cast<int>(fullSnapshotBefore.size()));
@@ -853,27 +884,35 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
 
       // ── Verify mode: run native and compare ──
+      do {
       if (tritonVerifyKernels && !streamCaptureActive && orderedRangeExecutor_) {
         cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
 
-        // Save Triton outputs (raw bytes)
+        // Save Triton outputs (raw bytes).
+        // IMPORTANT: Only save slots that are actual kernel outputs (in argSlotMapping
+        // with isOutput=true). Fused kernels compute intermediate slots in registers
+        // and only write the final output buffer. Comparing intermediate slot buffers
+        // produces false positives because the Triton kernel never writes them.
         struct RawBuffer { std::vector<uint8_t> data; DataType dtype; LongType len; };
         std::unordered_map<int, RawBuffer> tritonRawOutputs;
-        for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
-          for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
-            int outIdx = slots[si].wiring.outputSlotIndices[o];
-            if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
-              auto* arr = outputSlots[outIdx];
-              void* sbuf = arr->specialBuffer();
-              if (sbuf && arr->dataBuffer() && arr->lengthOf() > 0) {
-                size_t byteLen = arr->lengthOf() * arr->sizeOfT();
-                RawBuffer rb;
-                rb.data.resize(byteLen);
-                rb.dtype = arr->dataType();
-                rb.len = arr->lengthOf();
-                cudaMemcpy(rb.data.data(), sbuf, byteLen, cudaMemcpyDeviceToHost);
-                tritonRawOutputs[outIdx] = std::move(rb);
-              }
+        std::unordered_set<int> kernelOutputSlots;
+        for (auto& argMap : subKernel.argSlotMapping) {
+          if (argMap.isOutput && argMap.slotIndex >= 0) {
+            kernelOutputSlots.insert(argMap.slotIndex);
+          }
+        }
+        for (int outIdx : kernelOutputSlots) {
+          if (outIdx < totalOutputSlots && outputSlots[outIdx]) {
+            auto* arr = outputSlots[outIdx];
+            void* sbuf = arr->specialBuffer();
+            if (sbuf && arr->dataBuffer() && arr->lengthOf() > 0) {
+              size_t byteLen = arr->lengthOf() * arr->sizeOfT();
+              RawBuffer rb;
+              rb.data.resize(byteLen);
+              rb.dtype = arr->dataType();
+              rb.len = arr->lengthOf();
+              cudaMemcpy(rb.data.data(), sbuf, byteLen, cudaMemcpyDeviceToHost);
+              tritonRawOutputs[outIdx] = std::move(rb);
             }
           }
         }
@@ -1028,7 +1067,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           }
           cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
           for (auto& kv : savedOutputs) delete kv.second;
-          goto end_verify;
+          break;  // Skip comparison, exit verify block
         }
         cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
 
@@ -1122,7 +1161,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       } else {
         for (auto& kv : savedOutputs) delete kv.second;
       }
-      end_verify:
+      } while (false);
     }
     totalKernelLaunches_++;
 
@@ -1132,10 +1171,63 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
     // Mark Triton-written outputs as device-current so downstream gap ops
     // don't overwrite fresh GPU data with stale host values via syncToDevice().
+    // IMPORTANT: Only mark ACTUAL kernel output slots (from argSlotMapping with
+    // isOutput=true), NOT all slots in the range. Fused kernels compute intermediate
+    // slots in registers and never write their output buffers. Marking intermediate
+    // slots as device-current causes downstream ops to read stale device data
+    // (zeros from nullify) instead of correct host-side data from warmup.
     if (!tritonSkipKernels) {
-      markOrderedRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
-                                    externalInputs, numExternalInputs,
-                                    outputSlots, totalOutputSlots);
+      // Mark inputs as device-read
+      std::unordered_set<DataBuffer*> seenInputs;
+      for (auto& argMap : subKernel.argSlotMapping) {
+        if (argMap.isOutput) continue;
+        NDArray* arr = resolveRangeArray(argMap.slotIndex, externalInputs, numExternalInputs,
+                                          outputSlots, totalOutputSlots);
+        if (arr && arr->dataBuffer() && seenInputs.insert(arr->dataBuffer()).second) {
+          arr->dataBuffer()->readSpecial();
+        }
+      }
+      // Mark only actual kernel outputs as device-written
+      std::unordered_set<DataBuffer*> seenOutputs;
+      for (auto& argMap : subKernel.argSlotMapping) {
+        if (!argMap.isOutput) continue;
+        int outIdx = argMap.slotIndex;
+        if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
+          auto* db = outputSlots[outIdx]->dataBuffer();
+          if (db && seenOutputs.insert(db).second) {
+            db->writeSpecial();
+          }
+        }
+      }
+    }
+
+    // Per-slot fingerprint for Triton sub-kernel outputs (exec >= 2 only)
+    if (!streamCaptureActive && !skipThisKernel &&
+        seg.exec.executionCount >= 2 &&
+        sd::Environment::getInstance().isDebugAndVerbose()) {
+      for (auto& argMap : subKernel.argSlotMapping) {
+        if (!argMap.isOutput) continue;
+        int outIdx = argMap.slotIndex;
+        if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
+          auto* arr = outputSlots[outIdx];
+          if (!arr->isEmpty() && arr->lengthOf() > 0) {
+            arr->syncToHost();
+            double sum = 0.0;
+            double firstVal = arr->e<double>(0);
+            sd::LongType len = arr->lengthOf();
+            sd::LongType fpLen = sd::math::sd_min(64LL, len);
+            for (sd::LongType fi = 0; fi < fpLen; fi++) {
+              sum += arr->e<double>(fi);
+            }
+            sd_printf("DSP_FINGERPRINT_TRITON subkernel=%d-%d slot=%d op=%s shape=%s dtype=%s len=%lld first=%.8g sum64=%.8g\n",
+                      subKernel.startSlot_, subKernel.endSlot_, outIdx,
+                      slots[outIdx].ident.opName.c_str(),
+                      ShapeUtils::shapeAsString(arr).c_str(),
+                      DataTypeUtils::asString(arr->dataType()).c_str(),
+                      (long long)len, firstVal, sum);
+          }
+        }
+      }
     }
 
     // Log actuality state AFTER Triton kernel + markDeviceCurrent
@@ -1313,6 +1405,15 @@ void TritonGraphBackend::clearFailedSegmentCache() {
 
 void TritonGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(cacheMtx_);
+  // Pull all sub-kernels out of the residency tracking list before we tear
+  // down their modules.  unregisterLoadedKernel acquires loadedKernelsMtx_
+  // briefly; lock order (cacheMtx_ -> loadedKernelsMtx_) is consistent with
+  // every other call site (evictIfOverBudget never takes cacheMtx_).
+  for (auto& entry : cache_) {
+    for (auto& kernel : entry.second.subKernels) {
+      unregisterLoadedKernel(&kernel);
+    }
+  }
   for (auto& entry : cache_) {
     auto& seg = entry.second;
     // Determine device for memory tracking
@@ -1412,6 +1513,13 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
     int segDeviceId = 0;
     if (!seg.subKernels.empty() && seg.subKernels[0].cachedArgTableDeviceId >= 0)
       segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
+
+    // Drop residency tracking for these kernels before unloading their
+    // modules, otherwise a concurrent eviction sweep could chase the stale
+    // pointers we are about to delete.
+    for (auto& kernel : seg.subKernels) {
+      unregisterLoadedKernel(&kernel);
+    }
 
     // Free resources (same logic as invalidateCache)
     if (seg.useConsolidatedArgTable) {

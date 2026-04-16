@@ -143,5 +143,4 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         return z;
     }
 
-
 }

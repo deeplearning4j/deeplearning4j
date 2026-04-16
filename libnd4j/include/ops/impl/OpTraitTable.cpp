@@ -51,6 +51,15 @@ static constexpr uint32_t TERNARY_EW = OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_F
 static constexpr uint32_t REDUCE = OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING;
 static constexpr uint32_t NORM = OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING;
 static constexpr uint32_t MATMUL = OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING;
+// VIEW_SHAPE_DEP: shape-manipulating view whose output shape is fully determined by
+// input shapes + iArgs (no tensor-value read). Examples: expand_dims, squeeze,
+// flatten, permute. These ops MUST NOT carry VALUE_DEPENDENT_SHAPE — otherwise
+// the SHAPES_FROZEN slot executor treats input-shape changes as value-dep errors
+// instead of taking the "shape changed" recovery path (POST_SEAL_SHAPE_CHANGE).
+static constexpr uint32_t VIEW_SHAPE_DEP = OP_TRAIT_VIEW_PRODUCING;
+// VIEW: view-producing AND value-dependent (shape comes from an input TENSOR,
+// e.g., reshape(x, shapeTensor), reshape_no_copy, strided_slice). Use this only
+// when the shape fn actually dereferences input tensor data.
 static constexpr uint32_t VIEW = OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE;
 static constexpr uint32_t VALDEP = OP_TRAIT_VALUE_DEPENDENT_SHAPE;
 static constexpr uint32_t DATADEP = OP_TRAIT_DATA_DEPENDENT;
@@ -61,21 +70,31 @@ static constexpr uint32_t DATA_MOVE_VALDEP = DATA_MOVE | OP_TRAIT_VALUE_DEPENDEN
 static constexpr uint32_t CONST_GEN = OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING;
 static constexpr uint32_t CONST_GEN_VALDEP = CONST_GEN | OP_TRAIT_VALUE_DEPENDENT_SHAPE;
 static constexpr uint32_t ATTN = OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING;
-// GATHER: DATA_MOVE_VALDEP already includes FULLY_WRITING (via DATA_MOVE).
+// GATHER / GATHER_ND: DATA_MOVE already includes FULLY_WRITING.
 // The gather kernel iterates exactly over output length (numIndices * TAD_size),
 // writing every element of the allocated output buffer. In frozen replay, output
 // shapes are identical between steps, so the buffer size always matches the logical
 // output shape — no stale tail data can leak. needsZeroedOutput=false is correct.
-static constexpr uint32_t GATHER = DATA_MOVE_VALDEP | OP_TRAIT_GATHER;
-static constexpr uint32_t GATHER_ND = DATA_MOVE_VALDEP | OP_TRAIT_GATHER_ND;
+//
+// IMPORTANT: gather's output shape is determined by input SHAPES ONLY
+// (output = indices.shape + params.shape[1:]). The shape fn does not dereference
+// indices tensor DATA. Therefore gather/gather_nd must NOT carry VALUE_DEPENDENT_SHAPE —
+// when input shapes change (e.g., batch size 1→18), the SHAPES_FROZEN path should
+// hit the non-value-dep branch (POST_SEAL_SHAPE_CHANGE recovery), NOT the value-dep
+// shape-match assertion. Same applies to repeat (repeats come from iArgs).
+static constexpr uint32_t GATHER = DATA_MOVE | OP_TRAIT_GATHER;
+static constexpr uint32_t GATHER_ND = DATA_MOVE | OP_TRAIT_GATHER_ND;
 static constexpr uint32_t CONCAT = DATA_MOVE | OP_TRAIT_CONCAT;
 static constexpr uint32_t SPLIT = DATA_MOVE | OP_TRAIT_SPLIT;
 static constexpr uint32_t SPLIT_V = DATA_MOVE | OP_TRAIT_SPLIT_V;
 static constexpr uint32_t STACK = DATA_MOVE | OP_TRAIT_STACK;
 static constexpr uint32_t SLICE = DATA_MOVE_VALDEP | OP_TRAIT_SLICE;
 static constexpr uint32_t TILE = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
-static constexpr uint32_t SCATTER_ND = DATA_MOVE | OP_TRAIT_SCATTER_ND;
-static constexpr uint32_t SCATTER_ND_UPDATE = DATA_MOVE | OP_TRAIT_SCATTER_ND_UPDATE;
+// Partial writers: only write at scatter indices, leave other positions stale.
+// Must be zeroed before execution if downstream reads the whole buffer.
+static constexpr uint32_t SCATTER_PARTIAL = OP_TRAIT_DATA_MOVEMENT;
+static constexpr uint32_t SCATTER_ND = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND;
+static constexpr uint32_t SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE;
 
 static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
     static const std::unordered_map<std::string, uint32_t> TABLE = {
@@ -248,26 +267,36 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         // ── Token sampling ─────────────────────────────────────────────────
         {"token_sample",   OP_TRAIT_FULLY_WRITING},
 
-        // ── View-producing ops (output shape depends on input VALUES) ──────
+        // ── View-producing ops ─────────────────────────────────────────────
+        // VIEW (VALDEP): shape fn dereferences an input TENSOR's data.
+        //   reshape/reshape_no_copy take a shape tensor; strided_slice reads begin/end/stride tensors.
+        // VIEW_SHAPE_DEP: shape fn uses only input shapes + iArgs — no data read.
+        //   expand_dims/squeeze/flatten/flatten_2d/permute all fall in this class.
         {"reshape",        VIEW},
         {"reshape_no_copy", VIEW},
-        {"expand_dims",    VIEW},
-        {"squeeze",        VIEW},
-        {"flatten",        VIEW},
-        {"flatten_2d",     VIEW},
-        {"permute",        OP_TRAIT_VIEW_PRODUCING},  // permute shape depends on iArgs, not input values
         {"strided_slice",  VIEW | OP_TRAIT_SLICE},
+        {"expand_dims",    VIEW_SHAPE_DEP},
+        {"squeeze",        VIEW_SHAPE_DEP},
+        {"flatten",        VIEW_SHAPE_DEP},
+        {"flatten_2d",     VIEW_SHAPE_DEP},
+        {"permute",        VIEW_SHAPE_DEP},
 
-        // ── Value-dependent shape (non-view) ───────────────────────────────
-        {"slice",          SLICE},
+        // ── Shape-determined data movement (shape fn reads input shapes + iArgs only) ─
+        // These MUST NOT carry VALUE_DEPENDENT_SHAPE — the SHAPES_FROZEN check relies on
+        // the flag being accurate. A false positive causes the value-dep shape-match
+        // branch to report "value-dependent output shape changed" when in fact the input
+        // shape changed (e.g., gather indices went [1,512] → [18,512]).
         {"gather",         GATHER},
         {"gather_nd",      GATHER_ND},
         {"concat",         CONCAT},
         {"stack",          STACK},
         {"split",          SPLIT},
         {"split_v",        SPLIT_V},
-        {"tile",           TILE},
-        {"repeat",         DATA_MOVE_VALDEP},
+        {"repeat",         DATA_MOVE},
+
+        // ── Value-dependent data movement (shape fn reads tensor DATA) ─────
+        {"slice",          SLICE},           // dual-mode: iArg or tensor begin/size; conservative VALDEP
+        {"tile",           TILE},            // dual-mode: iArg or tensor multiples; conservative VALDEP
         {"pad",            DATA_MOVE_VALDEP},
         {"fill",           DATA_MOVE_VALDEP},
         {"broadcast_to",   DATA_MOVE_VALDEP},
@@ -295,6 +324,84 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"ones_like",      SHAPE_ONLY | CONST_GEN},
         {"ones_as",        SHAPE_ONLY | CONST_GEN},
         {"oneslike",       SHAPE_ONLY | CONST_GEN},
+
+        // ── LLM attention ops (forward + backprop) ─────────────────────────
+        {"dot_product_attention",               ATTN},
+        {"dot_product_attention_bp",            ATTN},
+        {"dot_product_attention_v2_bp",         ATTN},
+        {"multi_head_dot_product_attention_bp", ATTN},
+        {"flash_attention_bp",                  ATTN},
+        {"grouped_query_attention",             ATTN},
+        {"grouped_query_attention_bp",          ATTN},
+        {"sliding_window_attention",            ATTN},
+        {"shared_kv_attention",                 ATTN},
+        {"windowed_attention",                  ATTN},
+        {"paged_attention_forward",             ATTN},
+        {"turbo_quant_attention",               ATTN},
+        {"two_way_cross_attention",             ATTN},
+        {"two_way_cross_attention_bp",          ATTN},
+        {"vlm_cross_attention",                 ATTN},
+        {"apply_alibi",                         ATTN},
+        {"relative_position_bias",              ATTN},
+
+        // ── KV cache management ────────────────────────────────────────────
+        {"kv_cache_update",     DATA_MOVE_VALDEP},
+        {"kv_cache_quantize",   CONST_GEN_VALDEP},
+        {"kv_cache_dequantize", UNARY_EW},
+        {"paged_kv_append",     DATA_MOVE_VALDEP},
+
+        // ── Rotary / positional embedding ──────────────────────────────────
+        {"rope",         NORM},
+        {"rope_bp",      NORM},
+        {"fused_rope_bp", NORM},
+        {"dual_rope",    NORM},
+
+        // ── Normalization backprop / fused variants ────────────────────────
+        {"rms_norm_bp",             NORM},
+        {"rms_norm_linear_bp",      NORM},
+        {"fused_layer_norm_bp",     NORM},
+        {"fused_rms_norm_swiglu",   NORM},
+        {"fused_rms_norm_swiglu_bp", NORM},
+
+        // ── Fused GEMM / SwiGLU ────────────────────────────────────────────
+        {"fused_gemm_swiglu_bp", MATMUL},
+
+        // ── Activation backprop + novel activations ────────────────────────
+        {"silu_bp",         UNARY_ACT},
+        {"fused_gelu_bp",   UNARY_ACT},
+        {"squared_relu",    UNARY_ACT},
+        {"squared_relu_bp", UNARY_ACT},
+        {"gated_delta_rule", UNARY_ACT},
+
+        // ── Mamba / selective scan / SSM / causal conv ─────────────────────
+        {"gated_delta_net_block", REDUCE},
+        {"selective_scan",        REDUCE},
+        {"mamba2_ssm",            REDUCE},
+        {"causal_conv1d",         UNARY_EW},
+
+        // ── Fused training kernels ─────────────────────────────────────────
+        {"fused_bias_dropout_residual", UNARY_EW},
+        {"fused_elementwise_chain",     UNARY_EW},
+        {"swish_mul_bp",                BINARY_EW},
+        {"center_and_sharpen",          UNARY_EW},
+        {"center_and_sharpen_bp",       UNARY_EW},
+        {"ema_update",                  DATA_MOVE},
+        {"ema_update_bp",               DATA_MOVE},
+
+        // ── Quantization / adapter matmuls ─────────────────────────────────
+        {"quantized_matmul", MATMUL},
+        {"dora_matmul",      MATMUL},
+        {"dora_matmul_bp",   MATMUL},
+        {"lora_matmul",      MATMUL},
+        {"lora_matmul_bp",   MATMUL},
+        {"loha_matmul",      MATMUL},
+        {"loha_matmul_bp",   MATMUL},
+        {"lokr_matmul",      MATMUL},
+        {"lokr_matmul_bp",   MATMUL},
+
+        // ── GGML / per-layer embedding / misc ──────────────────────────────
+        {"ggml_dequantize",     UNARY_EW},
+        {"per_layer_embedding", DATA_MOVE_VALDEP},
     };
     return TABLE;
 }

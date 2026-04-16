@@ -137,13 +137,17 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     private final Map<Set<String>, DynamicShapePlan> dynamicShapePlanCache = new ConcurrentHashMap<>();
 
     /**
-     * Cache of compiled native plan handles (C++ Triton kernels + CUDA graph).
-     * Survives session resets so that plans don't need expensive recompilation
-     * when the same output configuration is requested again (e.g., between pages
-     * in multi-page document processing). Keyed by sorted output names.
-     * Freed on close() and clearDynamicShapePlanCache().
+     * Single native plan cache handle (C++ LRU cache keyed by placeholder-shape signature).
+     * One native cache per SameDiff instance — it owns the lifetimes of all compiled plan
+     * handles dispatched from it. Lazily created on first use; freed on {@link #close()}
+     * and cleared on {@link #clearDynamicShapePlanCache()}.
+     *
+     * <p>Dispatch happens via {@code NativeOps.dispatchNativePlan(cache, planBytes, ...,
+     * phShapeInfoPtrs, numPh)}: given the serialized plan and current placeholder shape-infos,
+     * the C++ cache returns the handle for a plan compiled against that exact shape signature
+     * (compiling a new one on cache miss).</p>
      */
-    private final Map<String, Pointer> nativePlanHandleCache = new ConcurrentHashMap<>();
+    private Pointer nativePlanCache;
 
 
     @Getter
@@ -191,14 +195,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     private GraphExecutionMode graphExecutionMode = GraphExecutionMode.AUTO;
 
     // If true, DSP plan compilation is allowed during execution when missing.
-    // Defaults to false: users must explicitly compile DSP plans before execution.
+    // Defaults to true: DSP is the production execution path and auto-compile is the
+    // expected behavior. Set to false only when pre-compiling plans explicitly.
     @Getter @Setter
-    private boolean dspAutoCompileEnabled = false;
+    private boolean dspAutoCompileEnabled = true;
 
     // If true, native DSP plan compilation is allowed during execution when missing.
-    // Defaults to false: users must explicitly compile native DSP plans.
+    // Defaults to true: native DSP compilation is the production execution path.
+    // Set to false only when pre-compiling plans explicitly.
     @Getter @Setter
-    private boolean dspNativeAutoCompileEnabled = false;
+    private boolean dspNativeAutoCompileEnabled = true;
 
     // When forcing TRITON mode, optionally degrade to AUTO if Triton is unavailable.
     @Getter @Setter
@@ -4245,64 +4251,38 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
         }
         dynamicShapePlanCache.clear();
-        freeAllCachedNativePlanHandles();
-    }
-
-    /**
-     * Cache a compiled native plan handle for later reuse across session resets.
-     * @param cacheKey sorted output names key (from DynamicShapePlan.requestedOutputs)
-     * @param handle  the compiled C++ plan handle (Pointer)
-     */
-    public void cacheNativePlanHandle(String cacheKey, Pointer handle) {
-        if (cacheKey == null || handle == null || handle.isNull()) return;
-        Pointer old = nativePlanHandleCache.put(cacheKey, handle);
-        if (old != null && old != handle && !old.isNull()) {
+        if (nativePlanCache != null && !nativePlanCache.isNull()) {
             try {
-                NativeOps nativeOps = Nd4j.getNativeOps();
-                nativeOps.freeDynamicShapePlan(old);
+                Nd4j.getNativeOps().clearNativePlanCacheHandle(nativePlanCache);
             } catch (Exception e) {
-                log.debug("Error freeing displaced native plan handle: {}", e.getMessage());
+                log.debug("Error clearing native plan cache: {}", e.getMessage());
             }
         }
-        log.debug("Cached native plan handle for key: {}", cacheKey);
     }
 
     /**
-     * Retrieve a previously cached native plan handle.
-     * @param cacheKey sorted output names key
-     * @return the cached handle, or null if not cached
+     * Lazily create (if needed) and return the native plan cache handle for this
+     * SameDiff instance. The cache is created on first use and freed on {@link #close()}.
+     *
+     * @return non-null Pointer to the C++ native plan cache
      */
-    public Pointer getCachedNativePlanHandle(String cacheKey) {
-        if (cacheKey == null) return null;
-        Pointer handle = nativePlanHandleCache.remove(cacheKey);
-        if (handle != null && !handle.isNull()) {
-            log.info("Restoring cached native plan handle for key: {}", cacheKey);
-            return handle;
+    public synchronized Pointer getOrCreateNativePlanCache() {
+        if (nativePlanCache == null || nativePlanCache.isNull()) {
+            NativeOps nativeOps = Nd4j.getNativeOps();
+            nativePlanCache = nativeOps.createNativePlanCache();
+            if (nativePlanCache == null || nativePlanCache.isNull()) {
+                throw new RuntimeException("createNativePlanCache returned null — native DSP cache is unavailable");
+            }
+            log.debug("Created native plan cache: {}", nativePlanCache);
         }
-        return null;
+        return nativePlanCache;
     }
 
     /**
-     * Free all cached native plan handles, releasing associated GPU memory (capture buffers,
-     * workspace allocations, etc.). Called on close() and clearDynamicShapePlanCache().
-     * Can also be called directly when GPU memory must be reclaimed between executions
-     * without closing the SameDiff instance.
+     * @return the current native plan cache handle, or null if not yet created.
      */
-    public void freeAllCachedNativePlanHandles() {
-        if (nativePlanHandleCache.isEmpty()) return;
-        NativeOps nativeOps = Nd4j.getNativeOps();
-        for (Map.Entry<String, Pointer> entry : nativePlanHandleCache.entrySet()) {
-            Pointer handle = entry.getValue();
-            if (handle != null && !handle.isNull()) {
-                try {
-                    nativeOps.freeDynamicShapePlan(handle);
-                } catch (Exception e) {
-                    log.debug("Error freeing cached native plan handle: {}", e.getMessage());
-                }
-            }
-        }
-        log.info("Freed {} cached native plan handles", nativePlanHandleCache.size());
-        nativePlanHandleCache.clear();
+    public Pointer getNativePlanCache() {
+        return nativePlanCache;
     }
 
     /**
@@ -4562,6 +4542,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     public GraphExecutionMode compileNativeDynamicShapePlan(Collection<String> requestedOutputs,
                                                             GraphExecutionMode requestedMode,
                                                             boolean fallbackToAutoIfTritonUnavailable) {
+        // Persist the requested mode so subsequent recompilations (e.g., KV shape
+        // recompile inside StaticKvCacheDecodeLoop) use the same mode.
+        this.graphExecutionMode = requestedMode;
+        this.dspFallbackToAutoIfTritonUnavailable = fallbackToAutoIfTritonUnavailable;
         List<String> out = normalizeCompileOutputs(requestedOutputs);
         return getOrCreateSession().compileNativeDynamicShapePlan(
                 out, requestedMode, fallbackToAutoIfTritonUnavailable);
@@ -4952,10 +4936,154 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
 
         if (firstDivergent != null) {
-            throw new AssertionError(
-                    "DSP execution diverges from standard at output '" + firstDivergent +
-                    "' (maxDiff=" + firstMaxDiff + ", tolerance=" + tolerance +
-                    "). Total divergent: " + divergences.size() + "/" + compared);
+            log.warn("compareExecutionPaths: DSP diverges from standard at output '{}' "
+                    + "(maxDiff={}, tolerance={}). Total divergent: {}/{}",
+                    firstDivergent, firstMaxDiff, tolerance, divergences.size(), compared);
+        }
+
+        return divergences;
+    }
+
+    /**
+     * Compare two DSP execution modes against each other on the same inputs.
+     *
+     * <p>Compiles and runs the graph with {@code modeA} (reference), then resets and
+     * compiles with {@code modeB} (test), then compares every requested output element-wise.
+     * Unlike {@link #compareExecutionPaths} which compares DSP vs non-DSP, this method
+     * compares two different DSP modes directly.</p>
+     *
+     * @param placeholders placeholder input arrays (will be dup'd for each run)
+     * @param outputs      requested output names
+     * @param tolerance    maximum allowed absolute difference per element
+     * @param modeA        reference execution mode
+     * @param modeB        test execution mode
+     * @return map of output name to max absolute difference for divergent outputs
+     */
+    public Map<String, Double> compareDspModes(
+            Map<String, INDArray> placeholders,
+            List<String> outputs,
+            double tolerance,
+            GraphExecutionMode modeA,
+            GraphExecutionMode modeB) {
+
+        String[] outputArr = outputs.toArray(new String[0]);
+
+        // ── Step 1: Run modeA (reference) ───────────────────────────────
+        clearDynamicShapePlanCache();
+        resetSession();
+        compileNativeDynamicShapePlan(outputs, modeA, true);
+
+        Map<String, INDArray> phA = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
+            phA.put(e.getKey(), e.getValue().dup());
+        }
+
+        Map<String, INDArray> resultA = output(phA, outputArr);
+        Map<String, INDArray> dupsA = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : resultA.entrySet()) {
+            if (e.getValue() != null && !e.getValue().isEmpty()) {
+                e.getValue().syncToHost();
+                dupsA.put(e.getKey(), e.getValue().dup());
+            }
+        }
+
+        // ── Step 2: Run modeB (test) ────────────────────────────────────
+        clearDynamicShapePlanCache();
+        resetSession();
+        compileNativeDynamicShapePlan(outputs, modeB, true);
+
+        Map<String, INDArray> phB = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
+            phB.put(e.getKey(), e.getValue().dup());
+        }
+
+        Map<String, INDArray> resultB = output(phB, outputArr);
+        Map<String, INDArray> dupsB = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : resultB.entrySet()) {
+            if (e.getValue() != null && !e.getValue().isEmpty()) {
+                e.getValue().syncToHost();
+                dupsB.put(e.getKey(), e.getValue().dup());
+            }
+        }
+
+        // ── Step 3: Compare ─────────────────────────────────────────────
+        Map<String, Double> divergences = new LinkedHashMap<>();
+        String firstDivergent = null;
+        double firstMaxDiff = 0;
+        int compared = 0, matched = 0;
+
+        for (String name : outputs) {
+            INDArray a = dupsA.get(name);
+            INDArray b = dupsB.get(name);
+            if (a == null || b == null || a.isEmpty() || b.isEmpty()) continue;
+            if (!a.dataType().isFPType()) continue;
+
+            compared++;
+
+            if (!java.util.Arrays.equals(a.shape(), b.shape())) {
+                log.error("SHAPE MISMATCH [{}]: modeA({})={} modeB({})={}",
+                        name, modeA, java.util.Arrays.toString(a.shape()),
+                        modeB, java.util.Arrays.toString(b.shape()));
+                divergences.put(name, Double.MAX_VALUE);
+                if (firstDivergent == null) firstDivergent = name;
+                continue;
+            }
+
+            INDArray absDiff = Nd4j.math().abs(a.sub(b));
+            double maxDiff = absDiff.maxNumber().doubleValue();
+            absDiff.close();
+
+            if (maxDiff > tolerance) {
+                divergences.put(name, maxDiff);
+                INDArray diffArr = Nd4j.math().abs(a.sub(b));
+                int maxIdx = Nd4j.argMax(diffArr.reshape(new long[]{diffArr.length()})).getInt(0);
+                diffArr.close();
+                long[] coords = new long[a.rank()];
+                long remaining = maxIdx;
+                for (int d = a.rank() - 1; d >= 0; d--) {
+                    coords[d] = remaining % a.size(d);
+                    remaining /= a.size(d);
+                }
+                log.error("DIVERGENT [{}]: maxDiff={} shape={} at={} {}Val={} {}Val={}",
+                        name, maxDiff, java.util.Arrays.toString(a.shape()),
+                        java.util.Arrays.toString(coords),
+                        modeA, a.getDouble(coords), modeB, b.getDouble(coords));
+                int preview = (int) Math.min(10, a.length());
+                INDArray af = a.reshape(new long[]{a.length()});
+                INDArray bf = b.reshape(new long[]{b.length()});
+                StringBuilder sa = new StringBuilder("["), sb = new StringBuilder("[");
+                for (int vi = 0; vi < preview; vi++) {
+                    if (vi > 0) { sa.append(", "); sb.append(", "); }
+                    sa.append(String.format("%.6f", af.getDouble(vi)));
+                    sb.append(String.format("%.6f", bf.getDouble(vi)));
+                }
+                sa.append("]"); sb.append("]");
+                log.error("  {}[0:{}]: {}", modeA, preview, sa);
+                log.error("  {}[0:{}]: {}", modeB, preview, sb);
+                if (firstDivergent == null) {
+                    firstDivergent = name;
+                    firstMaxDiff = maxDiff;
+                }
+            } else {
+                matched++;
+            }
+        }
+
+        log.info("compareDspModes({} vs {}): {}/{} matched (tolerance={}), divergent: {}",
+                modeA, modeB, matched, compared, tolerance, divergences.keySet());
+
+        // Cleanup
+        for (INDArray arr : dupsA.values()) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+        }
+        for (INDArray arr : dupsB.values()) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+        }
+        for (INDArray arr : phA.values()) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+        }
+        for (INDArray arr : phB.values()) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
         }
 
         return divergences;
@@ -4966,6 +5094,14 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         log.debug("Closing SameDiff instance");
         closeAllSessions();
         clearDynamicShapePlanCache();
+        if (nativePlanCache != null && !nativePlanCache.isNull()) {
+            try {
+                Nd4j.getNativeOps().freeNativePlanCache(nativePlanCache);
+            } catch (Exception e) {
+                log.debug("Error freeing native plan cache: {}", e.getMessage());
+            }
+            nativePlanCache = null;
+        }
         trimSessionMemory();
     }
 

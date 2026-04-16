@@ -138,4 +138,5 @@ public class Squeeze extends DynamicCustomOp {
     public boolean outputShapeDependsOnInputData() {
         return true;
     }
+
 }

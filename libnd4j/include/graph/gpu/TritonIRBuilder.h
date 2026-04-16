@@ -337,7 +337,10 @@ class TritonIRBuilder {
 
   // Emit present_key/value writes for compound attention ops.
   // Writes current_key (BSHD/3D) to present_key (BHSD) output buffer at position pastSeq.
-  // Only writes the NEW token positions — scatterKvEntries reads only the last position.
+  // Writes only the NEW seqKV positions [pastSeq, pastSeq+seqKV) into the destination;
+  // positions [0, pastSeq) are already present in the pre-allocated present buffer from
+  // prior steps. KV cache scatter into the past input buffer now runs as a standard
+  // in-graph scatter_upd op, so this kernel is no longer coupled to any C++ post-pass.
   // Grid: uses same pid0 decomposition as attention kernel (b * numQHeads + qHeadIdx).
   static void emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Location loc,
                                   mlir::Value curPtr, mlir::Value presentPtr,

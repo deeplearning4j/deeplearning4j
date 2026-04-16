@@ -19,11 +19,11 @@
 //
 // Created by raver119 on 06.10.2017.
 //
-// Phase 1: Environment.h includes all subsystem config headers and provides
-// deprecated forwarding methods for backward compatibility. No caller changes needed.
-//
-// Phase 2 (future): Replace these includes with forward declarations and move
-// them to Environment.cpp. Environment.h will become stable (~60 lines).
+// Environment.h exposes subsystem config classes directly. Both C++ and Java
+// callers access options via env.triton(), env.dsp(), env.core(), etc.
+// New config options MUST be added to the subsystem classes; do NOT add flat
+// forwarding wrappers on Environment for new options. The existing flat methods
+// below are preserved only for backward compatibility with legacy callers.
 //
 
 #ifndef LIBND4J_ENVIRONMENT_H
@@ -79,16 +79,15 @@ class SD_LIB_EXPORT Environment {
   static Environment& getInstance();
 
   // ===== Subsystem accessors (stable API — new code should use these) =====
-  // Hidden from JavaCPP parser: these return C++ config classes that have no Java mapping.
-  // Java callers use the legacy forwarding methods below instead.
-#ifndef SWIG
+  // Exposed to both C++ and JavaCPP. Java callers: env.triton().setCacheEnabled(v).
+  // New config options should be added to the subsystem classes directly; do NOT
+  // add flat forwarding wrappers on Environment for new options.
   config::CoreConfig& core() { return _core; }
   config::CudaDeviceConfig& cuda() { return _cuda; }
   config::TritonConfig& triton() { return _triton; }
   config::DspConfig& dsp() { return _dsp; }
   config::LifecycleConfig& lifecycle() { return _lifecycle; }
   config::PrintConfig& print() { return _print; }
-#endif
 
   // ===== Legacy forwarding methods (backward compat — all delegate to subsystems) =====
   // These exist so that all 93+ files that call env.isVerbose(), env.tritonBuildThreads(),
@@ -253,6 +252,9 @@ class SD_LIB_EXPORT Environment {
   void setTritonBuildThreads(int v) { _triton.setBuildThreads(v); }
   bool tritonCacheEnabled() { return _triton.cacheEnabled(); }
   void setTritonCacheEnabled(bool v) { _triton.setCacheEnabled(v); }
+  // NOTE: new Triton config accessors should go directly through the
+  // triton() subsystem (see subsystem accessors above). Do not add more
+  // flat forwarding wrappers here — they exist only for legacy callers.
   bool tritonCooperativeLaunch() { return _triton.cooperativeLaunch(); }
   void setTritonCooperativeLaunch(bool v) { _triton.setCooperativeLaunch(v); }
   int tritonCoopTargetBlocks() { return _triton.coopTargetBlocks(); }

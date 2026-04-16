@@ -195,6 +195,13 @@ public abstract class DifferentialFunction {
         }
     }
 
+    // ─── Op trait methods ───────────────────────────────────────────────────
+    // These methods declare behavioral traits that the DSP compiler uses to
+    // determine output zeroing, view allocation, and data-dependent handling.
+    // Base classes override these so all subclasses inherit correct defaults.
+    // Individual ops may further override when their behavior differs from
+    // the base class default.
+
     /**
      * Returns the {@link AttributeAdapter} s for each of the
      * possible ops for import (typically tensorflow and onnx)

@@ -60,7 +60,7 @@ PLATFORM_CHECK(equals, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(x->ews() == 1 || x->ews() == 0, "Contiguous memory");
+    req.expectTrue(shape::strideDescendingCAscendingF(x->shapeInfo()), "Contiguous memory");
 
     return req;
 }
@@ -129,7 +129,7 @@ PLATFORM_CHECK(greater, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(x->ews() == 1 || x->ews() == 0, "Contiguous memory");
+    req.expectTrue(shape::strideDescendingCAscendingF(x->shapeInfo()), "Contiguous memory");
 
     return req;
 }
@@ -198,7 +198,7 @@ PLATFORM_CHECK(less, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(x->ews() == 1 || x->ews() == 0, "Contiguous memory");
+    req.expectTrue(shape::strideDescendingCAscendingF(x->shapeInfo()), "Contiguous memory");
 
     return req;
 }

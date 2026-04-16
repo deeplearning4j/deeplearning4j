@@ -915,15 +915,16 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
       int outIdx = slots[i].wiring.outputSlotIndices[o];
       // Check if any slot outside this segment consumes this output
-      for (int j = endSlot + 1; j < totalSlots; j++) {
+      bool foundConsumer = false;
+      for (int j = endSlot + 1; j < totalSlots && !foundConsumer; j++) {
         for (int inp = 0; inp < slots[j].wiring.numInputs; inp++) {
           if (slots[j].wiring.inputSourceIndices[inp] == outIdx) {
             externalOutputSet.insert(outIdx);
-            goto next_output;  // Found a consumer, move to next output
+            foundConsumer = true;
+            break;  // Found a consumer, move to next output
           }
         }
       }
-      next_output:;
     }
   }
   // If no external consumers found, treat all final slot outputs as external

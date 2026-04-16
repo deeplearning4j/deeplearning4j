@@ -214,4 +214,5 @@ public class Transpose extends DynamicCustomOp {
         DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
         return Collections.singletonList(shapeInfo);
     }
+
 }

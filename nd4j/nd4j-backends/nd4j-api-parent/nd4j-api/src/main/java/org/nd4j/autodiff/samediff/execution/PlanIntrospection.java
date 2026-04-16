@@ -348,12 +348,12 @@ public final class PlanIntrospection {
             if (!boundary) {
                 int prevDev = slots[i - 1].getTargetDeviceId();
                 int curDev = slots[i].getTargetDeviceId();
-                boolean prevCapturable = !slots[i - 1].isDataDependent() && !slots[i - 1].isOutputShapeDependsOnInputValues();
-                boolean curCapturable = !slots[i].isDataDependent() && !slots[i].isOutputShapeDependsOnInputValues();
+                boolean prevCapturable = !slots[i - 1].isOutputShapeDependsOnInputValues();
+                boolean curCapturable = !slots[i].isOutputShapeDependsOnInputValues();
                 boundary = (prevDev != curDev) || (prevCapturable != curCapturable);
             }
             if (boundary) {
-                boolean capturable = !slots[segStart].isDataDependent() && !slots[segStart].isOutputShapeDependsOnInputValues();
+                boolean capturable = !slots[segStart].isOutputShapeDependsOnInputValues();
                 int deviceId = slots[segStart].getTargetDeviceId();
                 if (deviceId < 0) deviceId = 0;
                 int count = i - segStart;
@@ -474,9 +474,7 @@ public final class PlanIntrospection {
 
         // Flags
         List<String> flags = new ArrayList<>();
-        if (slot.isDataDependent()) flags.add("data-dependent");
         if (slot.isOutputShapeDependsOnInputValues()) flags.add("value-dependent-shape");
-        if (slot.isNeedsZeroedOutput()) flags.add("needs-zeroed");
         if (slot.isNeedsIntLongSync()) flags.add("int-long-sync");
         if (slot.getTargetDeviceId() >= 0) flags.add("device:" + slot.getTargetDeviceId());
         if (!flags.isEmpty()) {
@@ -514,7 +512,6 @@ public final class PlanIntrospection {
             if (slot.getTargetDeviceId() >= 0) {
                 sb.append(" device:").append(slot.getTargetDeviceId());
             }
-            if (slot.isDataDependent()) sb.append(" [data-dep]");
             if (slot.isOutputShapeDependsOnInputValues()) sb.append(" [val-dep]");
             sb.append("\n");
         }
@@ -689,17 +686,14 @@ public final class PlanIntrospection {
 
                 // Border color
                 String borderColor = "black";
-                if (slot.isDataDependent()) borderColor = "red";
-                else if (slot.isOutputShapeDependsOnInputValues()) borderColor = "orange";
+                if (slot.isOutputShapeDependsOnInputValues()) borderColor = "orange";
 
                 // Fill color by device
                 int dev = slot.getTargetDeviceId();
                 if (dev < 0) dev = 0;
                 String fill = deviceColors[dev % deviceColors.length];
 
-                // Style
                 String style = "filled";
-                if (slot.isNeedsZeroedOutput()) style = "filled,dashed";
 
                 sb.append(String.format("    slot_%d [label=\"%s\", shape=box, style=\"%s\", fillcolor=\"%s\", color=\"%s\"];\n",
                         si, label, style, fill, borderColor));

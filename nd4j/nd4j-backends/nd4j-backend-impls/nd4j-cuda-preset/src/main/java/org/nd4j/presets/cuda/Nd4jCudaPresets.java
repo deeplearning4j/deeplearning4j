@@ -40,8 +40,20 @@ import org.nd4j.presets.OpExclusionUtils;
                 //going to be the source of ops, see also:
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/buildnativeoperations.sh#L517
-                "generated/include_ops.h",
+                // Subsystem config classes + Environment.h MUST be listed BEFORE any
+                // header that transitively #includes them. TadPack.h → NDArray.h →
+                // DataTypeUtils.h → Environment.h → all config headers, which would
+                // cause header guards to silently skip the explicit parse below.
+                // DataType.h must come first because CoreConfig references sd::DataType.
                 "array/DataType.h",
+                "system/config/CoreConfig.h",
+                "system/config/CudaDeviceConfig.h",
+                "system/config/TritonConfig.h",
+                "system/config/DspConfig.h",
+                "system/config/LifecycleConfig.h",
+                "system/config/PrintConfig.h",
+                "system/Environment.h",
+                "generated/include_ops.h",
                 "array/DataBuffer.h",
                 "array/PointerDeallocator.h",
                 "array/PointerWrapper.h",
@@ -54,7 +66,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "execution/Engine.h",
                 "execution/ExecutionMode.h",
                 "memory/MemoryType.h",
-                "system/Environment.h",
                 "types/utf8string.h",
                 "legacy/NativeOps.h",
                 "memory/ExternalWorkspace.h",
@@ -335,14 +346,12 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 "sd::ops::platforms::HelperVersionRegistry::getAllHelperInfo").skip());
         infoMap.put(new Info("sd::ops::platforms::HelperVersion::toString").javaNames("toVersionString"));
         infoMap.put(new Info("sd::ops::platforms::HelperInfo::getDetailedStatus").javaNames("getDetailedStatusString"));
-        // Skip subsystem config classes — C++ internal API, not needed from Java.
-        // Java callers use Environment's legacy forwarding methods instead.
-        infoMap.put(new Info("sd::config::CoreConfig", "sd::config::CudaDeviceConfig",
-                "sd::config::TritonConfig", "sd::config::DspConfig",
-                "sd::config::LifecycleConfig", "sd::config::PrintConfig",
-                "sd::Environment::core", "sd::Environment::cuda",
-                "sd::Environment::triton", "sd::Environment::dsp",
-                "sd::Environment::lifecycle", "sd::Environment::print").skip());
+        // Subsystem config classes — exposed to Java via env.triton(), env.dsp(), etc.
+        // JavaCPP can't parse std::atomic<T>, so tell it to ignore those private members.
+        // The public getter/setter methods return plain int/bool/int64_t and bind fine.
+        infoMap.put(new Info("std::atomic<bool>", "std::atomic<int>", "std::atomic<int64_t>",
+                "std::atomic<float>", "std::atomic<double>", "std::atomic<long>",
+                "std::atomic<sd::DataType>", "std::atomic<size_t>").cast().skip());
 
 
     }

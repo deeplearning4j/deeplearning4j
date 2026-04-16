@@ -45,17 +45,11 @@ namespace op_detection {
 // ─── Op classification ─────────────────────────────────────────────────────
 
 // Check if an op is a matmul-family op via OpDescriptor traits.
-// Preferred overload — uses the centralized OpTraitTable instead of brittle string sets.
+// Uses the centralized OpTraitTable — the DeclarableOp pointer is resolved at
+// compile time and stored on every NativeSlot, so no string fallback is needed.
 SD_INLINE bool isMatmulOp(sd::ops::DeclarableOp* op) {
   return op && op->getOpDescriptor() &&
          op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_MATMUL);
-}
-
-// String-based fallback for contexts without a resolved DeclarableOp pointer.
-// Prefer the DeclarableOp* overload when the op pointer is available.
-SD_INLINE bool isMatmulOp(const std::string& opName) {
-  return opName == "matmul" || opName == "mmul" || opName == "Mmul" ||
-         opName == "tensormmul" || opName == "Tensormmul";
 }
 
 // ─── Matmul dimension extraction ───────────────────────────────────────────

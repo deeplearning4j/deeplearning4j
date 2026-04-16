@@ -200,6 +200,32 @@ public class NativeOpsHolder {
         }
         deviceNativeOps.setSerializeBlasCalls(serializeBlasCalls);
 
+        // Propagate DSP execution mode from -Dnd4j.dsp.executionMode into libnd4j.
+        // Controls slot-by-slot lifecycle gating: whether actuality ticks, host/device
+        // resyncs, and orphan closes run on buffers owned by an in-flight DSP plan.
+        // Values: LEGACY_UNAWARE | COEXIST_SAFE (default) | STRICT_ISOLATED, or 0/1/2.
+        String dspModeProp = System.getProperty(ND4JSystemProperties.DSP_EXECUTION_MODE);
+        if (dspModeProp != null && !dspModeProp.isEmpty()) {
+            int dspModeValue;
+            String trimmed = dspModeProp.trim();
+            try {
+                dspModeValue = Integer.parseInt(trimmed);
+            } catch (NumberFormatException ex) {
+                String upper = trimmed.toUpperCase();
+                if (upper.equals("LEGACY_UNAWARE") || upper.equals("LEGACY")) {
+                    dspModeValue = 0;
+                } else if (upper.equals("STRICT_ISOLATED") || upper.equals("STRICT")) {
+                    dspModeValue = 2;
+                } else {
+                    dspModeValue = 1;
+                }
+            }
+            deviceNativeOps.dspSetExecutionMode(dspModeValue);
+            if (log.isDebugEnabled()) {
+                log.debug("DSP execution mode set to {} ({})", dspModeValue, dspModeProp);
+            }
+        }
+
         String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
         boolean logInit = Boolean.parseBoolean(logInitProperty);
 

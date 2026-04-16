@@ -247,4 +247,5 @@ public class OpTraitRegressionTest extends BaseNd4jTestWithBackends {
 
         sd.close();
     }
+
 }

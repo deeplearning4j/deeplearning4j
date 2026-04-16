@@ -51,8 +51,9 @@ import org.nd4j.linalg.api.memory.deallocation.OpaqueDataBufferDeallocator;
 import org.nd4j.nativeblas.OpaqueContext;
 import org.nd4j.nativeblas.OpaqueNDArray;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 
 import java.io.Closeable;
 import java.util.*;
@@ -140,12 +141,29 @@ public class DynamicShapePlanExecutor implements Closeable {
     private long totalFlushedBytes;
 
     /** Native C++ plan handle. Compiled once from the serialized plan on first native
-     *  execution attempt. Freed on close(). null means not yet compiled or compilation failed. */
+     *  execution attempt. Freed on close(). null means not yet compiled or compilation failed.
+     *  Can be swapped across executeNative() calls by redispatchForCurrentShapes() when
+     *  placeholder shapes change — the C++ NativePlanCache returns the shape-matched plan. */
     private Pointer nativePlanHandle;
 
     /** Track which plan the native handle was compiled from. If the plan changes,
      *  the native handle must be recompiled. */
     private DynamicShapePlan nativePlanSource;
+
+    /** Cached inputs to dispatchNativePlan — kept across executes so
+     *  redispatchForCurrentShapes() can rebuild JNI arguments without re-serializing. */
+    private byte[] cachedSerializedPlan;
+    private String[] cachedSortedOutputs;
+    private String[] cachedPhKeys;
+
+    /** Per-handle settings cached at compile time and re-applied whenever
+     *  redispatchForCurrentShapes() swaps in a newly-cached native plan handle. */
+    private boolean cachedCudaGraphsEnabled;
+    private int cachedJitModeInt = -1;       // -1 = leave default
+    private boolean cachedExecTiming;
+    private boolean cachedTraceEnabled;
+    private int cachedEffectiveGraphModeCode = -1;   // -1 = leave default
+    private final java.util.Set<Long> configuredHandleAddresses = new java.util.HashSet<>();
 
     /** Graph execution mode currently configured on the native plan handle. */
     private GraphExecutionMode configuredGraphExecutionMode = GraphExecutionMode.AUTO;
@@ -157,21 +175,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** If CUDA graph capture fails, disable CUDA graphs but keep using slot-by-slot native execution. */
     private boolean cudaGraphsFailed;
 
-    /** KV cache retention state: when configured, C++ scatters new KV entries
-     *  into static input buffers, avoiding 60 copyBuffer round-trips per decode step. */
-    private boolean kvCacheRetentionConfigured;
-
-    /** Set of present KV output names managed by C++ scatter. Skip copying these in executeNative(). */
-    private Set<String> kvRetentionOutputNames;
-
-    /** Saved KV retention configuration for re-application after plan recompilation.
-     *  When the plan changes (e.g., fullOutputNames → logitsOnly), the native handle is freed
-     *  and recompiled. These saved params allow automatic KV retention re-configuration
-     *  on the new native handle, preventing the scatter from being silently lost. */
-    private List<String> savedKvPresentOutputNames;
-    private List<String> savedKvPastInputNames;
-    private int savedKvMaxLen;
-    private int savedKvCurrentPos;
+    // Bespoke C++ KV cache retention state was removed — KV cache append now runs as
+    // an ordinary in-graph op (KvScatter via KvCacheManager.scatterNewEntries) on every
+    // decode step and is captured into the CUDA graph like any other op. The C++ DSP
+    // plan is a pure graph executor: no decode-specific or KV-specific lifecycle.
 
     /** Cached OpaqueContext for native execution. Reused across executeNative() calls
      *  to avoid JNI create/delete overhead (~1-2ms). Freed on close(). */
@@ -275,6 +282,32 @@ public class DynamicShapePlanExecutor implements Closeable {
             DeviceMemoryManager.getInstance().switchDevice(nativeExecutionDevice,
                     "DSP.ensureExecutionDevice", "pin-to-plan-device");
         }
+    }
+
+    /**
+     * Resolve the home device for an external input array. Prefer
+     * {@link AffinityManager#getDeviceForArray}, which reads the stable
+     * AllocationPoint metadata populated at buffer creation time. If that
+     * returns an out-of-range value (e.g. host-only arrays that haven't been
+     * synced to any GPU), fall back to {@code fallbackDevice}, which is the
+     * device we will run on anyway — treating "unknown" as "already correct"
+     * avoids needless replication and the syncToSpecial() on the producing
+     * device that follows the first kernel launch will then settle it there.
+     */
+    private int resolveArrayDevice(INDArray arr, int numDevices, int fallbackDevice) {
+        try {
+            Integer devIdObj = Nd4j.getAffinityManager().getDeviceForArray(arr);
+            if (devIdObj != null) {
+                int devId = devIdObj.intValue();
+                if (devId >= 0 && devId < numDevices) {
+                    return devId;
+                }
+            }
+        } catch (Exception ignored) {
+            // AffinityManager may throw on arrays whose allocation point is
+            // gone (closed, poisoned). Treat as unknown.
+        }
+        return fallbackDevice;
     }
 
     /** Cache of constant replicas for the native execution path. Keyed by external input
@@ -610,215 +643,18 @@ public class DynamicShapePlanExecutor implements Closeable {
         return -1;
     }
 
-    /**
-     * Configure KV cache retention in the native C++ plan.
-     * After this call, executeNative() skips copying KV outputs back to Java;
-     * C++ scatters new KV entries into static input buffers internally.
-     *
-     * <p>The mapping is resolved by output variable name, not only by requested output
-     * index, so decode can request logits only while still retaining present KV slots.</p>
-     *
-     * @param plan               the current compiled plan
-     * @param presentOutputNames ordered list of present KV output names
-     * @param pastInputNames     ordered list of corresponding past_key_values input names
-     * @param maxKvLen           static KV buffer size along sequence dimension
-     * @param initialPos         initial cache position (prefillLen)
-     * @return true if retention was configured successfully
-     */
-    public boolean configureKvCacheRetention(DynamicShapePlan plan,
-                                             List<String> presentOutputNames,
-                                             List<String> pastInputNames,
-                                             int maxKvLen, int initialPos) {
-        if (nativePlanHandle == null || nativePlanHandle.isNull()) {
-            log.warn("configureKvCacheRetention: native plan not yet compiled, skipping");
-            return false;
-        }
-        if (presentOutputNames.size() != pastInputNames.size()) {
-            throw new IllegalArgumentException("presentOutputNames and pastInputNames must have the same size");
-        }
-
-        String[] extKeys = plan.getExternalInputKeys();
-        int numMappings = presentOutputNames.size();
-        int[] mappings = new int[numMappings * 3];
-        for (int i = 0; i < numMappings; i++) {
-            String presentName = presentOutputNames.get(i);
-            String pastName = pastInputNames.get(i);
-
-            int presentSlotIdx = findOutputSlotIndex(plan, presentName);
-            int pastExtIdx = findExternalInputIndex(extKeys, pastName);
-            if (presentSlotIdx < 0 || pastExtIdx < 0) {
-                log.warn("configureKvCacheRetention: unresolved mapping present='{}' slot={} past='{}' extIdx={}",
-                        presentName, presentSlotIdx, pastName, pastExtIdx);
-                return false;
-            }
-
-            mappings[i * 3] = encodeDirectOutputSlot(presentSlotIdx);
-            mappings[i * 3 + 1] = pastExtIdx;
-            mappings[i * 3 + 2] = 2;  // seqDim is always 2 for [B,H,S,D]
-        }
-
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        IntPointer mappingsPtr = new IntPointer(mappings);
-        try {
-            nativeOps.configurePlanKvCacheRetention(
-                    nativePlanHandle, mappingsPtr, numMappings, maxKvLen, initialPos);
-        } finally {
-            mappingsPtr.close();
-        }
-
-        this.kvCacheRetentionConfigured = true;
-        this.kvRetentionOutputNames = new HashSet<>(presentOutputNames);
-
-        // Save configuration for re-application after plan recompilation.
-        // When the plan changes (e.g., fullOutputNames → logitsOnly), the native handle is
-        // freed and recompiled. Without saving, KV retention silently disappears.
-        this.savedKvPresentOutputNames = new ArrayList<>(presentOutputNames);
-        this.savedKvPastInputNames = new ArrayList<>(pastInputNames);
-        this.savedKvMaxLen = maxKvLen;
-        this.savedKvCurrentPos = initialPos;
-
-        log.info("KV cache retention configured: {} mappings, maxLen={}, initialPos={}, retainedOutputs={}",
-                numMappings, maxKvLen, initialPos, kvRetentionOutputNames.size());
-        return true;
-    }
-
-    /**
-     * Re-apply saved KV cache retention configuration on a new native plan handle.
-     * Called automatically by compileNativePlan() when the plan changes but KV retention
-     * was previously configured. The present output names must exist in the new plan
-     * (they may map to different slot indices).
-     */
-    private void reapplyKvCacheRetention(DynamicShapePlan plan) {
-        if (savedKvPresentOutputNames == null || nativePlanHandle == null) return;
-
-        // Temporarily clear the flag so configureKvCacheRetention can set it fresh
-        this.kvCacheRetentionConfigured = false;
-        boolean ok = configureKvCacheRetention(plan,
-                savedKvPresentOutputNames, savedKvPastInputNames,
-                savedKvMaxLen, savedKvCurrentPos);
-        if (!ok) {
-            log.warn("KV cache retention re-apply failed on new plan — present outputs may not exist in logits-only plan. " +
-                     "C++ scatter will be disabled for this plan.");
-            // Clear saved state so we don't keep trying
-            this.kvCacheRetentionConfigured = false;
-        }
-    }
-
-    /**
-     * Advance the native KV cache position by 1.
-     * @return new position
-     */
-    public int advanceKvCachePosition() {
-        if (nativePlanHandle == null || !kvCacheRetentionConfigured) return -1;
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        int newPos = nativeOps.advancePlanKvCachePosition(nativePlanHandle);
-        savedKvCurrentPos = newPos;  // Keep saved pos in sync for plan recompilation
-        return newPos;
-    }
-
-    /**
-     * Reset the native KV cache position.
-     */
-    public void resetKvCachePosition(int newPos) {
-        if (nativePlanHandle == null || !kvCacheRetentionConfigured) return;
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        nativeOps.resetPlanKvCachePosition(nativePlanHandle, newPos);
-        savedKvCurrentPos = newPos;  // Keep saved pos in sync for plan recompilation
-    }
-
-    /**
-     * Sync the saved KV cache position to match the actual C++ position.
-     * Unlike {@link #advanceKvCachePosition()}, this does NOT call into C++ —
-     * it only updates {@code savedKvCurrentPos} so that if the plan recompiles
-     * mid-decode, {@link #reapplyKvCacheRetention} restores the correct position.
-     *
-     * <p>Use this when the C++ side already incremented {@code kvCachePosition_}
-     * (e.g., during {@code execute()}) and Java just needs to keep its saved
-     * copy in sync.</p>
-     *
-     * @param pos the actual current KV cache position on the C++ side
-     */
-    public void syncSavedKvPosition(long pos) {
-        this.savedKvCurrentPos = (int) pos;
-    }
+    // The bespoke KV cache retention + decode-input APIs were removed. KV cache
+    // append now runs as an ordinary in-graph op (KvScatter via
+    // KvCacheManager.scatterNewEntries) on every decode step, and decoder inputs
+    // (input_ids, position_ids, attention_mask) are plain ext input NDArrays that
+    // Java writes via normal assign/putScalar. The C++ DSP plan is a pure graph
+    // executor with no decode-specific lifecycle.
 
     /**
      * Get the native plan handle for direct JNI calls.
      */
     public Pointer getNativePlanHandle() {
         return nativePlanHandle;
-    }
-
-    // ── Decode input direct-update (zero putScalar) ──────────────────────
-
-    private boolean decodeInputsConfigured = false;
-
-    /** External input indices for decode inputs — C++ manages these on device,
-     *  so Java must NOT syncToSpecial (which would overwrite device with stale host). */
-    private int decodeInputIdsExtIdx = -1;
-    private int decodePositionIdsExtIdx = -1;
-    private int decodeAttentionMaskExtIdx = -1;
-
-    /**
-     * Configure decode input indices for direct device-side updates.
-     * Call once after plan compilation. After this, {@link #updateDecodeInputs}
-     * writes input_ids, position_ids, and attention_mask directly on device
-     * memory — no JNI putScalar, no host↔device round-trips.
-     *
-     * @param plan      The compiled plan (for external input name→index mapping)
-     * @param maxKvLen  Maximum KV cache length
-     */
-    public void configureDecodeInputs(DynamicShapePlan plan, int maxKvLen) {
-        if (nativePlanHandle == null || nativePlanHandle.isNull()) {
-            log.warn("configureDecodeInputs: native plan not yet compiled, skipping");
-            return;
-        }
-        String[] extKeys = plan.getExternalInputKeys();
-        int inputIdsIdx = -1, posIdsIdx = -1, attnMaskIdx = -1;
-        for (int i = 0; i < extKeys.length; i++) {
-            switch (extKeys[i]) {
-                case "input_ids":      inputIdsIdx = i; break;
-                case "position_ids":   posIdsIdx = i; break;
-                case "attention_mask": attnMaskIdx = i; break;
-            }
-        }
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        nativeOps.configurePlanDecodeInputs(nativePlanHandle,
-                inputIdsIdx, posIdsIdx, attnMaskIdx, maxKvLen);
-        decodeInputsConfigured = true;
-        decodeInputIdsExtIdx = inputIdsIdx;
-        decodePositionIdsExtIdx = posIdsIdx;
-        decodeAttentionMaskExtIdx = attnMaskIdx;
-        log.info("Decode inputs configured: inputIds={} posIds={} attnMask={} maxKvLen={}",
-                inputIdsIdx, posIdsIdx, attnMaskIdx, maxKvLen);
-    }
-
-    /**
-     * Set the next decode token and cache position. Call before execute().
-     * The C++ execute() will write tokenId → input_ids, cachePos → position_ids,
-     * and attention_mask[cachePos-1] = 1 directly on device memory.
-     * Single JNI call, zero host↔device round-trips.
-     *
-     * @param tokenId   Next token ID
-     * @param cachePos  Current cache position
-     */
-    public void setNextDecodeToken(long tokenId, int cachePos) {
-        if (!decodeInputsConfigured || nativePlanHandle == null) {
-            log.warn("setNextDecodeToken SKIPPED: configured={} handle={}",
-                    decodeInputsConfigured, nativePlanHandle != null ? "non-null" : "NULL");
-            return;
-        }
-        log.info("setNextDecodeToken: tokenId={} cachePos={} handle={}", tokenId, cachePos,
-                nativePlanHandle.address());
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        nativeOps.setPlanNextDecodeToken(nativePlanHandle, tokenId, cachePos);
-    }
-
-    /**
-     * Check if decode inputs have been configured.
-     */
-    public boolean isDecodeInputsConfigured() {
-        return decodeInputsConfigured;
     }
 
     /**
@@ -972,21 +808,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         // on the next page, but captured graphs only exist on the original device, causing
         // status 50 (REPLAY ERROR: hasReplayHandle=0) on the new device.
 
-        // Clear saved KV cache retention state so that the next page's decode loop
-        // re-configures it fresh with the correct initial position. Without this,
-        // reapplyKvCacheRetention() on cached handle restore uses the stale position
-        // from the previous page, causing KV scatter to write at a position beyond
-        // the destination buffer's sequence length (dstPtr=NULL, dstSeqLen=0).
-        savedKvPresentOutputNames = null;
-        savedKvPastInputNames = null;
-        savedKvMaxLen = 0;
-        savedKvCurrentPos = 0;
-        kvCacheRetentionConfigured = false;
-        kvRetentionOutputNames = null;
-        decodeInputsConfigured = false;
-        decodeInputIdsExtIdx = -1;
-        decodePositionIdsExtIdx = -1;
-        decodeAttentionMaskExtIdx = -1;
+        // KV cache retention and decode-input direct-update state were removed —
+        // decode is now expressed as ordinary in-graph ops and Java-written ext inputs,
+        // so there is no bespoke state to reset here.
     }
 
     /**
@@ -1010,13 +834,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * <p>Call this between pages when decode shapes are invariant (always [1,1] for input_ids/position_ids).</p>
      */
     public void resetForNextPageDecode() {
-        log.info("DSP resetForNextPageDecode: preserving decode-invariant state");
-        
-        // Use the preserve variant of releaseGpuIntermediates
-        releaseGpuIntermediates(true);
-        
-        // Java-side state reset is handled inside releaseGpuIntermediates(true)
-        // KV cache position and pending decode state already reset there
+        log.info("DSP resetForNextPageDecode: no-op (KV cache is an in-graph scatter; no native state to reset)");
     }
 
     /**
@@ -1067,10 +885,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     public void setMaxKvCacheLength(int maxLen) {
         this.maxKvCacheLength = maxLen;
-        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            nativeOps.setPlanMaxKvCacheLength(nativePlanHandle, maxLen);
-        }
     }
 
     /**
@@ -1081,13 +895,6 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Whether KV cache retention is configured.
-     */
-    public boolean isKvCacheRetentionConfigured() {
-        return kvCacheRetentionConfigured;
-    }
-
-    /**
      * Get the currently compiled DynamicShapePlan (if any).
      */
     public DynamicShapePlan getCurrentPlan() {
@@ -1095,10 +902,13 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Whether a native plan handle is already compiled for the given plan.
+     * Whether a native plan has been compiled for the given plan. Compilation caches the
+     * serialized bytes and per-handle settings; the actual native handle is obtained per
+     * execute via the C++ NativePlanCache (shape-keyed), so we check the cached artifacts
+     * rather than {@code nativePlanHandle}, which is swapped by redispatchForCurrentShapes.
      */
     public boolean isNativePlanCompiled(DynamicShapePlan plan) {
-        return nativePlanHandle != null && !nativePlanHandle.isNull() && nativePlanSource == plan;
+        return cachedSerializedPlan != null && nativePlanSource == plan;
     }
 
     /**
@@ -1126,13 +936,14 @@ public class DynamicShapePlanExecutor implements Closeable {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         boolean planChanged = nativePlanSource != null && nativePlanSource != plan;
 
-        if (nativePlanHandle == null || nativePlanSource != plan) {
+        if (cachedSerializedPlan == null || nativePlanSource != plan) {
             if (planChanged && cudaGraphsFailed) {
                 log.info("Native executor: resetting cudaGraphsFailed on plan recompilation");
                 cudaGraphsFailed = false;
             }
 
             freeNativePlanHandle("PLAN_RECOMPILATION");
+            configuredHandleAddresses.clear();
 
             byte[] serialized = plan.serialize();
             if (serialized == null || serialized.length == 0) {
@@ -1141,73 +952,43 @@ public class DynamicShapePlanExecutor implements Closeable {
                         "Cannot compile native plan. No fallback permitted.");
             }
 
-            BytePointer planBytes = new BytePointer(serialized);
-            try {
-                nativePlanHandle = nativeOps.compileDynamicShapePlan(planBytes, serialized.length);
-            } catch (UnsupportedOperationException e) {
-                nativeExecutorFailed = true;
-                throw new RuntimeException("Native executor: backend does not support compileDynamicShapePlan. " +
-                        "No fallback permitted.", e);
-            } finally {
-                planBytes.close();
-            }
+            // Cache inputs for shape-keyed dispatch. The actual native plan handle is
+            // obtained per-execute through the C++ NativePlanCache; placeholder arrays
+            // aren't required to be bound at compile time (they arrive via sd.output(Map)).
+            List<String> sortedOutputs = new java.util.ArrayList<>(plan.getRequestedOutputs());
+            java.util.Collections.sort(sortedOutputs);
 
-            if (nativePlanHandle == null || nativePlanHandle.isNull()) {
-                nativePlanHandle = null;
-                nativeExecutorFailed = true;
-                throw new RuntimeException("Native executor: compileDynamicShapePlan returned null handle. " +
-                        "No fallback permitted.");
-            }
-
-            boolean cudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
-                    System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
-            if (cudaGraphsEnabled) {
-                try {
-                    nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, true);
-                    DspDiagnostics.record(DspDiagnostics.COMPILE,
-                            "Java: CUDA graphs ENABLED on native plan");
-                } catch (UnsupportedOperationException e) {
-                    DspDiagnostics.record(DspDiagnostics.COMPILE,
-                            "Java: CUDA graphs not supported by backend (CPU?)");
+            String[] extKeys = plan.getExternalInputKeys();
+            byte[] srcTypes = plan.getExternalInputSourceTypes();
+            List<String> phKeys = new java.util.ArrayList<>();
+            for (int pi = 0; pi < extKeys.length; pi++) {
+                if (srcTypes != null && pi < srcTypes.length
+                        && srcTypes[pi] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
+                    phKeys.add(extKeys[pi]);
                 }
-            } else {
-                DspDiagnostics.record(DspDiagnostics.COMPILE,
-                        "Java: CUDA graphs DISABLED (cudaGraphsFailed=" + cudaGraphsFailed + ")");
             }
+
+            cachedSerializedPlan = serialized;
+            cachedSortedOutputs = sortedOutputs.toArray(new String[0]);
+            cachedPhKeys = phKeys.toArray(new String[0]);
+
+            cachedCudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
+                    System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
 
             String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
-            if (!"graph".equalsIgnoreCase(jitModeStr)) {
-                int jitModeInt = 0;  // GRAPH_ONLY
-                if ("jit".equalsIgnoreCase(jitModeStr)) {
-                    jitModeInt = 1;  // JIT_ONLY
-                } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
-                    jitModeInt = 2;  // GRAPH_PLUS_JIT
-                }
-                try {
-                    nativeOps.setPlanJitMode(nativePlanHandle, jitModeInt);
-                    log.info("Native executor: JIT mode set to {} ({})", jitModeStr, jitModeInt);
-                } catch (UnsupportedOperationException e) {
-                    // Backend doesn't support JIT
-                }
+            if ("graph".equalsIgnoreCase(jitModeStr)) {
+                cachedJitModeInt = -1;  // leave default
+            } else if ("jit".equalsIgnoreCase(jitModeStr)) {
+                cachedJitModeInt = 1;
+            } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
+                cachedJitModeInt = 2;
+            } else {
+                cachedJitModeInt = 0;  // GRAPH_ONLY fallback
             }
 
-            boolean execTiming = "true".equalsIgnoreCase(
+            cachedExecTiming = "true".equalsIgnoreCase(
                     System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
-            if (execTiming) {
-                try {
-                    nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, true);
-                } catch (UnsupportedOperationException e) {
-                    // Backend doesn't support timing
-                }
-            }
-
-            if (System.getProperty(ND4JSystemProperties.DSP_TRACE) != null) {
-                try {
-                    nativeOps.setPlanTraceEnabled(nativePlanHandle, true);
-                } catch (UnsupportedOperationException e) {
-                    // Backend doesn't support trace
-                }
-            }
+            cachedTraceEnabled = System.getProperty(ND4JSystemProperties.DSP_TRACE) != null;
 
             nativePlanSource = plan;
             nativeExecutorFailed = false;
@@ -1216,23 +997,16 @@ public class DynamicShapePlanExecutor implements Closeable {
             nativeExecutionDevice = -1;
             log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
                     plan.getSlots().length, plan.getExternalInputKeys().length,
-                    plan.getRequestedOutputs().size(), cudaGraphsEnabled, false);
+                    plan.getRequestedOutputs().size(), cachedCudaGraphsEnabled, false);
             DspDiagnostics.record(DspDiagnostics.COMPILE,
                     "Java: compiled native plan " + plan.getSlots().length + " slots, " +
                     plan.getExternalInputKeys().length + " inputs, " +
-                    plan.getRequestedOutputs().size() + " outputs");
-
-            // Re-apply KV cache retention if it was previously configured but lost.
-            if (savedKvPresentOutputNames != null && !kvCacheRetentionConfigured) {
-                log.info("Native executor: re-applying KV cache retention on new plan (pos={})", savedKvCurrentPos);
-                reapplyKvCacheRetention(plan);
-            }
+                    plan.getRequestedOutputs().size() + " outputs (dispatch deferred to execute time)");
 
             // Cache small constant values NOW while their DataBuffers are still alive.
             // Session cleanup can force-close constant buffers between compilation and
             // first execution. By caching detached copies here, we can restore values
             // even after the originals are closed.
-            String[] extKeys = plan.getExternalInputKeys();
             cachedConstantValues = new HashMap<>();
             int cachedCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
@@ -1261,17 +1035,16 @@ public class DynamicShapePlanExecutor implements Closeable {
             effectiveMode = GraphExecutionMode.AUTO;
         }
 
-        try {
-            nativeOps.setPlanGraphExecutionMode(nativePlanHandle, effectiveMode.getNativeCode());
-            configuredGraphExecutionMode = effectiveMode;
-            log.info("Native executor: mode resolution requested={} resolved={} effective={} tritonAvailable={} fallbackToAuto={}",
-                    requestedMode, resolvedMode, effectiveMode, tritonAvailable, fallbackToAutoIfTritonUnavailable);
-            DspDiagnostics.record(DspDiagnostics.BACKEND,
-                    "Java: mode resolution requested=" + requestedMode + " effective=" + effectiveMode +
-                    " triton=" + tritonAvailable);
-        } catch (UnsupportedOperationException e) {
-            configuredGraphExecutionMode = GraphExecutionMode.AUTO;
-        }
+        cachedEffectiveGraphModeCode = effectiveMode.getNativeCode();
+        configuredGraphExecutionMode = effectiveMode;
+        // Invalidate any previously-configured handles so the new mode is re-applied
+        // to every handle the NativePlanCache returns on the next redispatch.
+        configuredHandleAddresses.clear();
+        log.info("Native executor: mode resolution requested={} resolved={} effective={} tritonAvailable={} fallbackToAuto={}",
+                requestedMode, resolvedMode, effectiveMode, tritonAvailable, fallbackToAutoIfTritonUnavailable);
+        DspDiagnostics.record(DspDiagnostics.BACKEND,
+                "Java: mode resolution requested=" + requestedMode + " effective=" + effectiveMode +
+                " triton=" + tritonAvailable + " (applied lazily on first redispatch)");
 
         return effectiveMode;
     }
@@ -1302,6 +1075,138 @@ public class DynamicShapePlanExecutor implements Closeable {
             return nativeOps.isTritonAvailable();
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Re-dispatch through the C++ NativePlanCache using the current placeholder
+     * shape-info pointers. The cache is O(1) for matching shapes (returns the same
+     * plan handle) and swaps to a different cached plan when shapes differ. This is
+     * what makes shape drift safe — each (outputs, shape-sig) pair gets its own
+     * NativeDynamicShapePlan with its own immutable slots.
+     *
+     * <p>Must be called at the start of every executeNative() after compileNativePlan()
+     * has cached the serialized plan bytes and output/placeholder key lists.
+     */
+    private void redispatchForCurrentShapes(Map<String, INDArray> placeholderArrays) {
+        if (cachedSerializedPlan == null) {
+            throw new IllegalStateException(
+                "redispatchForCurrentShapes: plan not compiled yet — " +
+                "compileNativePlan() must run before executeNative().");
+        }
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        Pointer cache = sd.getOrCreateNativePlanCache();
+
+        BytePointer planBytes = new BytePointer(cachedSerializedPlan);
+        BytePointer[] namePointers = new BytePointer[cachedSortedOutputs.length];
+        for (int ni = 0; ni < cachedSortedOutputs.length; ni++) {
+            namePointers[ni] = new BytePointer(
+                    cachedSortedOutputs[ni].getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        PointerPointer outputNamesPtr = cachedSortedOutputs.length == 0
+                ? new PointerPointer(0)
+                : new PointerPointer(namePointers);
+
+        List<Pointer> phPtrs = new java.util.ArrayList<>();
+        for (String phKey : cachedPhKeys) {
+            INDArray arr = placeholderArrays != null ? placeholderArrays.get(phKey) : null;
+            if (arr == null) {
+                SDVariable v = sd.getVariable(phKey);
+                arr = v != null ? v.getArr() : null;
+            }
+            if (arr == null || arr.shapeInfoDataBuffer() == null) {
+                throw new IllegalStateException(
+                    "redispatchForCurrentShapes: placeholder '" + phKey +
+                    "' has no array at execute time — cannot build shape-keyed cache key.");
+            }
+            phPtrs.add(arr.shapeInfoDataBuffer().addressPointer());
+        }
+        PointerPointer phPtrsPacked = phPtrs.isEmpty()
+                ? new PointerPointer(0)
+                : new PointerPointer(phPtrs.toArray(new Pointer[0]));
+
+        try {
+            Pointer newHandle = nativeOps.dispatchNativePlan(
+                    cache,
+                    planBytes, cachedSerializedPlan.length,
+                    outputNamesPtr, cachedSortedOutputs.length,
+                    phPtrsPacked, phPtrs.size());
+            if (newHandle == null || newHandle.isNull()) {
+                throw new RuntimeException(
+                    "redispatchForCurrentShapes: dispatchNativePlan returned null. " +
+                    "Check C++ logs for NativePlanCache failure.");
+            }
+            // Swap handle if the cache returned a different plan for current shapes.
+            // The C++ cache owns plan lifetimes, so we don't free the old one.
+            boolean swapped = nativePlanHandle == null
+                    || nativePlanHandle.isNull()
+                    || newHandle.address() != nativePlanHandle.address();
+            if (swapped) {
+                nativePlanHandle = newHandle;
+            }
+            // Apply per-handle settings the first time we see each cached handle.
+            applySettingsIfNewHandle(nativeOps, newHandle);
+        } finally {
+            planBytes.close();
+        }
+    }
+
+    /**
+     * Apply the per-handle settings captured at compile time (cudaGraphs, JIT mode,
+     * exec timing, trace, graph execution mode) to a native plan handle the first
+     * time it is seen. Handles returned repeatedly by the C++ NativePlanCache keep
+     * their configuration across executes, so we only configure each address once.
+     */
+    private void applySettingsIfNewHandle(NativeOps nativeOps, Pointer handle) {
+        if (handle == null || handle.isNull()) return;
+        long addr = handle.address();
+        if (!configuredHandleAddresses.add(addr)) return;
+
+        if (cachedCudaGraphsEnabled) {
+            try {
+                nativeOps.setPlanCudaGraphsEnabled(handle, true);
+                DspDiagnostics.record(DspDiagnostics.COMPILE,
+                        "Java: CUDA graphs ENABLED on native plan (addr=" + Long.toHexString(addr) + ")");
+            } catch (UnsupportedOperationException e) {
+                DspDiagnostics.record(DspDiagnostics.COMPILE,
+                        "Java: CUDA graphs not supported by backend (CPU?)");
+            }
+        } else {
+            DspDiagnostics.record(DspDiagnostics.COMPILE,
+                    "Java: CUDA graphs DISABLED (cudaGraphsFailed=" + cudaGraphsFailed + ")");
+        }
+
+        if (cachedJitModeInt >= 0) {
+            try {
+                nativeOps.setPlanJitMode(handle, cachedJitModeInt);
+                log.info("Native executor: JIT mode set to {}", cachedJitModeInt);
+            } catch (UnsupportedOperationException e) {
+                // Backend doesn't support JIT
+            }
+        }
+
+        if (cachedExecTiming) {
+            try {
+                nativeOps.setPlanExecutionTimingEnabled(handle, true);
+            } catch (UnsupportedOperationException e) {
+                // Backend doesn't support timing
+            }
+        }
+
+        if (cachedTraceEnabled) {
+            try {
+                nativeOps.setPlanTraceEnabled(handle, true);
+            } catch (UnsupportedOperationException e) {
+                // Backend doesn't support trace
+            }
+        }
+
+        if (cachedEffectiveGraphModeCode >= 0) {
+            try {
+                nativeOps.setPlanGraphExecutionMode(handle, cachedEffectiveGraphModeCode);
+            } catch (UnsupportedOperationException e) {
+                // Backend ignores mode
+            }
         }
     }
 
@@ -1351,9 +1256,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             long[] sizes   = kvMaxSizes.stream().mapToLong(Long::longValue).toArray();
 
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            // Use the int[]/long[] overload — the Pointer overload dispatches to a no-op default
             nativeOps.setPlanOutputSlotMaxSizes(nativePlanHandle, indices.length, indices, sizes);
-            nativeOps.setPlanMaxKvCacheLength(nativePlanHandle, maxKvCacheLength);
             log.info("Configured max-allocation for {} KV cache slots with maxSeqLen={}",
                     kvSlotIndices.size(), maxKvCacheLength);
         }
@@ -1630,55 +1533,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      *         native plan is compiled
      */
     public int releaseGpuIntermediates() {
-        return releaseGpuIntermediates(false);
-    }
-
-    /**
-     * Release GPU intermediates with option to preserve decode-invariant state.
-     *
-     * @param preserveDecodeState  If true, preserves:
-     *   <ul>
-     *     <li>output slot arrays (decode has invariant shapes)</li>
-     *     <li>CUDA graph replay handles (same kernel graph for decode)</li>
-     *     <li>cuBLAS workspace (same GEMM shapes for decode)</li>
-     *     <li>Batch-zero, batch-D2D, batched-GEMM device arrays</li>
-     *   </ul>
-     *   Only resets:
-     *   <ul>
-     *     <li>KV cache position (kvCachePosition_)</li>
-     *     <li>Decode input pending updates (hasPendingDecodeUpdate_)</li>
-     *   </ul>
-     *
-     * <p>Use this between VLM pages when decode shapes are invariant.</p>
-     *
-     * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
-     */
-    public int releaseGpuIntermediates(boolean preserveDecodeState) {
-        if (preserveDecodeState) {
-            log.info("releaseGpuIntermediates(preserve=true): preserving decode-invariant state");
-            
-            // Reset KV cache position for next page
-            if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                nativeOps.releaseGpuIntermediates(nativePlanHandle, true);
-            }
-            
-            // Reset Java-side KV cache state
-            savedKvPresentOutputNames = null;
-            savedKvPastInputNames = null;
-            savedKvMaxLen = 0;
-            savedKvCurrentPos = 0;
-            kvCacheRetentionConfigured = false;
-            kvRetentionOutputNames = null;
-            
-            // Clear pending decode update state
-            // (decodeInputsConfigured remains true - still valid for next page)
-            
-            log.info("releaseGpuIntermediates(preserve=true): DONE - no GPU memory freed");
-            return 0;
-        }
-        
-        // Full release path
         log.info("releaseGpuIntermediates: START");
         System.out.flush(); System.err.flush();
 
@@ -1754,6 +1608,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                     "Ensure compileNativePlan() is called before executeNative().");
         }
 
+        // Re-dispatch through the C++ NativePlanCache for current placeholder shapes.
+        // O(1) cache hit for matching shapes; swaps to a different plan when shapes drift.
+        // This is what lets the plan cache's shape-keyed dispatch enforce slot immutability —
+        // each shape-sig gets its own plan with its own bound slots.
+        redispatchForCurrentShapes(placeholderArrays);
+
         DspDiagnostics.record(DspDiagnostics.EXECUTE,
                 "Java: executeNative ENTER executionCount=" + executionCount +
                 " frozen=" + shapesFrozen + " slots=" + plan.getSlots().length);
@@ -1816,8 +1676,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
                                         staleNonPlaceholderIndices = java.util.Arrays.copyOf(staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
                                     staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
+                                    resolvedCount++;
+                                } else if (vt == VariableType.VARIABLE) {
+                                    throw new RuntimeException(
+                                        "LIFECYCLE_ERROR: external input '" + extKeys[i] + "' DataBuffer was closed " +
+                                        "between DSP executions — variable was freed while plan active. " +
+                                        "DSP execution failed: cannot pass closed DataBuffer to graph replay fast path. " +
+                                        "(dtype=" + (fresh != null ? fresh.dataType() : "unknown") +
+                                        ", shape=" + (fresh != null ? Arrays.toString(fresh.shape()) : "unknown") + ")");
+                                } else {
+                                    resolvedCount++;
                                 }
-                                resolvedCount++;
                             }
                         } else if (vt == VariableType.PLACEHOLDER && placeholderArrays != null) {
                             stalePlaceholderCount++;
@@ -1889,12 +1758,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                             if (cached != null && cached.data() != null && !cached.data().wasClosed()) {
                                 arr = cached;
                                 restoredFromCacheCount++;
+                            } else if (var.getVariableType() == VariableType.VARIABLE) {
+                                throw new RuntimeException(
+                                    "LIFECYCLE_ERROR: external input '" + varName + "' DataBuffer was closed " +
+                                    "between DSP executions — variable was freed while plan active. " +
+                                    "DSP execution failed: cannot pass closed DataBuffer to graph replay path. " +
+                                    "(dtype=" + arr.dataType() + ", shape=" + Arrays.toString(arr.shape()) + ")");
                             } else {
-                                // DataBuffer was closed but GPU memory may still be valid.
-                                // For constants, pass the original array as-is — the native
-                                // plan uses GPU pointers directly, and the GPU memory has not
-                                // been freed (it's just marked "closed" on the Java side).
-                                // Creating zeros here would corrupt model weights.
+                                // CONSTANT with closed DataBuffer but GPU memory may still be valid.
+                                // Pass the original array — native plan uses GPU pointers directly.
                                 deadConstantCount++;
                                 if (deadConstantCount <= 65) {
                                     log.warn("DEAD_CONSTANT_PASSTHROUGH: ext[{}] '{}' DataBuffer closed but passing original (dtype={}, shape={})",
@@ -2001,27 +1873,56 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // the small GPU may have more free memory initially but OOMs when
                 // model constants (~5GB) get replicated to it.
                 // Tiebreaker: most free memory among devices with equal data.
+                //
+                // We use AffinityManager.getDeviceForArray() instead of dbDeviceId()
+                // because dbDeviceId queries the CUDA device pointer which may be null
+                // for Java-allocated arrays that haven't been synced to device yet.
+                // getDeviceForArray() reads the AllocationPoint metadata that the
+                // allocator sets at buffer creation time — it's always populated and
+                // reflects the logical home device for the buffer.
                 long[] deviceBytes = new long[numDevices];
                 for (INDArray arr : extInputs) {
                     if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
-                        int devId = nOps.dbDeviceId(arr.data().opaqueBuffer());
+                        // Pass -1 as fallback so host-only / unplaced arrays don't
+                        // bias selection toward the current thread's device.
+                        int devId = resolveArrayDevice(arr, numDevices, -1);
                         if (devId >= 0 && devId < numDevices) {
                             deviceBytes[devId] += arr.length() * arr.data().getElementSize();
                         }
                     }
                 }
 
-                // Select the device with the most FREE memory (pool-aware).
-                // Previously used TOTAL memory, which always picked the largest GPU
-                // even when it was nearly full from other processes or model weights.
-                // Using FREE memory (via DeviceMemoryManager.selectBestGpu()) handles:
-                // - Multi-process GPU sharing (staging server, main app)
-                // - Post-vision-encoder memory release (secondary GPU now has more room)
-                // - Asymmetric GPU memory usage from model weight placement
-                // Pool-aware: accounts for cudaMallocAsync reusable pool memory, not
-                // just cudaMemGetInfo free, so devices that ran large graphs (vision
-                // encoder) correctly report reusable memory as available.
-                int bestDevice = DeviceMemoryManager.getInstance().selectBestGpu();
+                // Data locality is the primary selection criterion: native kernels
+                // (Triton, cuBLAS, scalarSimpleShaped, etc.) launch with arg tables
+                // containing raw device pointers, and those pointers are only valid
+                // on the device where the DataBuffer was allocated. Executing on a
+                // different device produces CUDA error 700 (illegal memory access),
+                // which poisons the CUDA context for the entire process.
+                //
+                // Pick the device holding the largest share of input bytes. Ties and
+                // empty-data edge cases (no external inputs placed on any device)
+                // fall back to free-memory selection via selectBestGpu().
+                int bestDataDevice = -1;
+                long bestDataBytes = 0;
+                boolean dataTied = false;
+                for (int d = 0; d < numDevices; d++) {
+                    if (deviceBytes[d] > bestDataBytes) {
+                        bestDataDevice = d;
+                        bestDataBytes = deviceBytes[d];
+                        dataTied = false;
+                    } else if (deviceBytes[d] == bestDataBytes && bestDataBytes > 0) {
+                        dataTied = true;
+                    }
+                }
+
+                int bestDevice;
+                if (bestDataDevice >= 0 && !dataTied) {
+                    bestDevice = bestDataDevice;
+                } else {
+                    // No data placed on any device, or exact tie: fall back to
+                    // pool-aware free-memory selection.
+                    bestDevice = DeviceMemoryManager.getInstance().selectBestGpu();
+                }
                 long bestFree = nOps.getDeviceFreeMemory(bestDevice);
                 nativeExecutionDevice = bestDevice;
                 {
@@ -2044,8 +1945,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
+            // Switch CUDA context to the target device if we're not already on it.
+            // This is independent from input migration below — the thread may already
+            // be on nativeExecutionDevice yet still receive inputs from a different
+            // device (second call with the same cached plan but fresh placeholders).
             if (nativeExecutionDevice != previousDevice) {
-                // Switch to the target device — this changes CUDA context + ContextBuffers
                 DeviceMemoryManager.getInstance().switchDevice(nativeExecutionDevice,
                         "DSP.executeNative", "multi-gpu-coherency");
                 deviceSwitched = true;
@@ -2053,17 +1957,25 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // Invalidate cached exec stream — it belongs to the previous device
                 cachedExecStream = null;
                 execStreamCached = false;
+            }
 
-                // Migrate any off-device inputs to the target device.
-                // For non-peer GPUs, cross-device memory access causes error 700.
-                // Use replicateToDevice() instead of dup() because dup() does a direct
-                // GPU-to-GPU cudaMemcpy which requires peer access. replicateToDevice()
-                // stages through host memory for non-peer GPUs.
-                // Cache constant replicas to avoid re-copying model weights every step.
+            // Migrate any off-device inputs to nativeExecutionDevice, regardless of
+            // whether we just switched devices. The cached nativeExecutionDevice may
+            // match previousDevice while inputs still come from a different device
+            // (e.g. testCrossDeviceMatmulExecution feeds a device-1 placeholder into
+            // a plan that was captured on device 0). Without this migration kernels
+            // launch with cross-device pointers and trigger CUDA error 700.
+            //
+            // For non-peer GPUs, cross-device memory access causes error 700.
+            // Use replicateToDevice() instead of dup() because dup() does a direct
+            // GPU-to-GPU cudaMemcpy which requires peer access. replicateToDevice()
+            // stages through host memory for non-peer GPUs.
+            // Cache constant replicas to avoid re-copying model weights every step.
+            {
                 if (nativeConstantReplicaCache == null) {
                     nativeConstantReplicaCache = new HashMap<>();
                 }
-                
+
                 // Get device management subsystems for tracking
                 TransferSubsystem transferSubsystem = null;
                 ReplicaLeakDetector replicaDetector = null;
@@ -2075,13 +1987,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 } catch (Exception e) {
                     // Subsystems may not be initialized - continue without tracking
                 }
-                
+
                 int migratedCount = 0;
                 long migratedBytes = 0;
                 for (int i = 0; i < extInputs.length; i++) {
                     INDArray arr = extInputs[i];
                     if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
-                        int arrDevice = nOps.dbDeviceId(arr.data().opaqueBuffer());
+                        int arrDevice = resolveArrayDevice(arr, numDevices, nativeExecutionDevice);
                         if (arrDevice >= 0 && arrDevice != nativeExecutionDevice) {
                             // Check if migration is blocked by frozen buffer (pointer stability)
                             if (stabilityGuard != null && stabilityGuard.isFrozen(arr)) {
@@ -2371,12 +2283,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                             cachedInputOpaques[i] = opaqueIn;
                             cachedInputArrays[i] = extInputs[i];
                         } else if (inputIsPlaceholder != null && inputIsPlaceholder[i]) {
-                            // Skip decode inputs managed by C++ (same reason as fast path above)
-                            if (decodeInputsConfigured && (i == decodeInputIdsExtIdx
-                                    || i == decodePositionIdsExtIdx
-                                    || i == decodeAttentionMaskExtIdx)) {
-                                continue;
-                            }
+                            // All placeholders — including decode input_ids / position_ids /
+                            // attention_mask — are plain Java-managed NDArrays; sync host to device.
                             INDArray arr = extInputs[i];
                             if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
                                 OpaqueDataBuffer odb = arr.data().opaqueBuffer();
@@ -2644,18 +2552,12 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
 
             // Frozen fast path: reuse pre-allocated destination arrays (skip allocation,
-            // only copy non-KV outputs). When kvCacheRetentionConfigured, C++ handles
-            // KV scatter internally — skip copying those 60 outputs entirely.
+            // copy all requested outputs — KV cache append is now an ordinary in-graph op
+            // whose writes land directly in Java-owned static buffers, so nothing gets skipped).
             if (shapesFrozen && zeroCopyOutputCache != null) {
                 int copiedOutputs = 0;
                 for (int i = 0; i < numOutputs; i++) {
                     String outputName = requestedOutputs.get(i);
-
-                    // Skip KV outputs — C++ already scattered them into static buffers
-                    if (kvCacheRetentionConfigured && kvRetentionOutputNames != null
-                            && kvRetentionOutputNames.contains(outputName)) {
-                        continue;
-                    }
 
                     OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
                     if (opaqueOut == null || opaqueOut.isNull()) continue;
@@ -2864,17 +2766,25 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedOpContext = null;
         }
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-            log.info("    freeNativePlanHandle: freeDynamicShapePlan (handle={})", nativePlanHandle);
-            try {
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                nativeOps.freeDynamicShapePlan(nativePlanHandle);
-            } catch (Exception e) {
-                log.info("Error freeing native plan handle: {}", e.getMessage());
-            }
+            // Plan lifetime is managed by sd::graph::NativePlanCache (C++) — do NOT free directly.
+            // The cache evicts (and deletes) entries under LRU + memory budget policy.
+            // SameDiff.close() frees the cache via freeNativePlanCache(), which releases all entries.
+            log.info("    freeNativePlanHandle: handle={} is cache-owned, skipping direct free", nativePlanHandle);
         }
         nativePlanHandle = null;
         nativePlanSource = null;
         configuredGraphExecutionMode = GraphExecutionMode.AUTO;
+        // Dispatch-input cache and per-handle settings must also drop so
+        // isNativePlanCompiled() returns false until compileNativePlan() runs again.
+        cachedSerializedPlan = null;
+        cachedSortedOutputs = null;
+        cachedPhKeys = null;
+        cachedEffectiveGraphModeCode = -1;
+        cachedJitModeInt = -1;
+        cachedCudaGraphsEnabled = false;
+        cachedExecTiming = false;
+        cachedTraceEnabled = false;
+        configuredHandleAddresses.clear();
         cachedInputOpaques = null;
         cachedInputArrays = null;
         contextInputRefs = null;
@@ -2890,14 +2800,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         closeNativeConstantReplicaCache();
         cachedRequestedOutputNames = null;
         nativeExecutionDevice = -1;
-        // Reset KV retention flag — the C++ config is on the freed handle.
-        // savedKvPresentOutputNames etc. are intentionally NOT cleared so
-        // reapplyKvCacheRetention() can restore the config on a new handle.
-        kvCacheRetentionConfigured = false;
-        decodeInputsConfigured = false;
-        decodeInputIdsExtIdx = -1;
-        decodePositionIdsExtIdx = -1;
-        decodeAttentionMaskExtIdx = -1;
     }
 
     @Override
@@ -2957,9 +2859,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         freeNativePlanHandle("EXECUTOR_CLOSE");
 
         currentPlan = null;
-        // Clear saved KV retention params — executor is fully closed, no re-apply possible
-        savedKvPresentOutputNames = null;
-        savedKvPastInputNames = null;
         log.info("  DSP close() complete (nativeReplicasClosed={}, zeroCopyClosed={})",
                 nativeReplicasClosed, zeroCopyClosed);
         System.out.flush(); System.err.flush();

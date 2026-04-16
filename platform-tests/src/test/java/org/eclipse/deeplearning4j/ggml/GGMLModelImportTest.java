@@ -23,11 +23,16 @@ package org.eclipse.deeplearning4j.ggml;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.ggml.GGMLImportException;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.ggml.format.GGMLDataType;
 import org.nd4j.ggml.format.GGMLFormat;
+import org.nd4j.ggml.format.GGUFWriter;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -122,9 +127,9 @@ class GGMLModelImportTest {
     void testConversionOptionsDefaults() {
         ConversionOptions options = ConversionOptions.builder().build();
 
-        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT32,
+        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16,
                 options.getQuantizationMode());
-        assertEquals(DataType.FLOAT, options.getTargetDataType());
+        assertEquals(DataType.FLOAT16, options.getTargetDataType());
         assertTrue(options.isPreserveTokenizerInfo());
         assertFalse(options.isForTraining());
         assertTrue(options.isUseMemoryMapping());
@@ -139,7 +144,7 @@ class GGMLModelImportTest {
         ConversionOptions options = ConversionOptions.forInference();
 
         assertFalse(options.isForTraining());
-        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT32,
+        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16,
                 options.getQuantizationMode());
     }
 
@@ -224,6 +229,73 @@ class GGMLModelImportTest {
 
         assertThrows(GGMLImportException.class,
                 () -> GGMLModelImport.importModel(ggufFile, options));
+    }
+
+    @Test
+    @DisplayName("HALF tensors load with exact GGUF shape (rank-1 [1] stays rank-1)")
+    void testHalfTensorShapePreservation() throws IOException, GGMLImportException {
+        // Regression test for SameDiffSerializer.saveAutoShard crash:
+        //   "createOpaqueNDArray: Shape info was empty but buffer was not null!"
+        // Root cause: the old HALF path used Nd4j.create(buf) which defaults to
+        // shape {1, buf.length()}, then conditionally reshaped only when shape.length > 1.
+        // That left rank-1 [1] GGUF tensors as {1, 1} 2D arrays; downstream reshape
+        // to rank-0 then produced a malformed array with isEmpty=true and length=1.
+        // The fix constructs each array with the exact GGUF shape up front.
+        File ggufFile = createGGUFFileWithHalfTensors();
+
+        ConversionOptions options = ConversionOptions.builder()
+                .architectureOverride("generic")
+                .build();
+
+        SameDiff sd = GGMLModelImport.importModel(ggufFile, options);
+        assertNotNull(sd);
+
+        // Shape [1] HALF — the exact case that previously produced [1, 1] 2D.
+        assertHalfConstantShape(sd, "scalar_weight", new long[]{1});
+        // Shape [4] HALF — rank-1 multi-element.
+        assertHalfConstantShape(sd, "vec_weight", new long[]{4});
+        // Shape [3, 3] HALF — rank-2 (symmetric under GGUF column-major reversal).
+        assertHalfConstantShape(sd, "mat_weight", new long[]{3, 3});
+    }
+
+    private void assertHalfConstantShape(SameDiff sd, String varName, long[] expectedShape) {
+        SDVariable var = sd.getVariable(varName);
+        assertNotNull(var, "Variable not found: " + varName);
+        INDArray arr = var.getArr();
+        assertNotNull(arr, "Array not materialized for: " + varName);
+        assertEquals(DataType.HALF, arr.dataType(), "Wrong dtype for " + varName);
+        assertArrayEquals(expectedShape, arr.shape(), "Wrong shape for " + varName);
+        assertEquals(expectedShape.length, arr.rank(), "Wrong rank for " + varName);
+        assertFalse(arr.isEmpty(), "Array should not be empty: " + varName);
+
+        // Regression: this dup() is the exact call that crashed in
+        // SameDiffSerializer.saveSharded → associateArrayWithVariable(arr.dup(), ...)
+        INDArray duped = arr.dup();
+        assertNotNull(duped);
+        assertArrayEquals(expectedShape, duped.shape(), "dup() changed shape for " + varName);
+        assertFalse(duped.isEmpty(), "duped array should not be empty: " + varName);
+    }
+
+    private File createGGUFFileWithHalfTensors() throws IOException {
+        File file = tempDir.resolve("half_shapes.gguf").toFile();
+        try (GGUFWriter writer = new GGUFWriter(file, 3)) {
+            writer.addMetadataString("general.architecture", "generic");
+
+            writer.registerTensor("scalar_weight", new long[]{1}, GGMLDataType.GGML_TYPE_F16);
+            writer.registerTensor("vec_weight", new long[]{4}, GGMLDataType.GGML_TYPE_F16);
+            writer.registerTensor("mat_weight", new long[]{3, 3}, GGMLDataType.GGML_TYPE_F16);
+
+            writer.writeHeader();
+
+            // F16 = 2 bytes per element. Use zeroed bytes — values don't matter for
+            // the shape/dup regression, only the storage size.
+            writer.writeTensorData("scalar_weight", new byte[1 * 2]);
+            writer.writeTensorData("vec_weight", new byte[4 * 2]);
+            writer.writeTensorData("mat_weight", new byte[3 * 3 * 2]);
+
+            writer.finalizeFile();
+        }
+        return file;
     }
 
     private File createMinimalGGUFFile() throws IOException {

@@ -43,12 +43,6 @@
 namespace sd {
 namespace graph {
 
-// ── Batch-zero stubs (GPU-only feature) ─────────────────────────────────────
-
-bool NativeDynamicShapePlan::isBatchZeroActive() { return false; }
-bool NativeDynamicShapePlan::isBatchZeroRegistering() { return false; }
-void NativeDynamicShapePlan::registerBatchZeroBuffer(void*, size_t, int) {}
-
 // ── Frozen graph fast path: not available on CPU ────────────────────────────
 
 Status NativeDynamicShapePlan::platformTryFrozenFastPath(
@@ -129,18 +123,18 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           segment.exec.compiledByBackend = "CPU";
         }
         if (segment.exec.executionCount <= 1) {
-          segment.exec.currentPhase = ExecutionPhase::COMPILING;
+          DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "cpu_graph_first_exec");
         } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-          segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+          DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "cpu_graph_replay_ready");
         } else {
-          segment.exec.currentPhase = ExecutionPhase::COMPILED;
+          DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "cpu_graph_compiled_no_replay");
         }
         return Status::OK;
       }
       // All backends in the cascade failed — fall through to slot-by-slot
       DSP_DIAG(FALLBACK, "NativeDSP::execute: all CPU backends failed for seg[%d-%d] — falling back to slot-by-slot",
                segment.def.startSlot, segment.def.endSlot);
-      goto slot_by_slot;
+      [[fallthrough]];
     }
 
     case SelectedBackend::GPU_COMPILER:
@@ -150,7 +144,6 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 
     case SelectedBackend::SLOT_BY_SLOT:
     default:
-slot_by_slot:
       // Slot-by-slot with FunctionalReplayHandle for caching
       if (!segment.exec.replayHandle && segment.def.isCapturable) {
         segment.exec.replayHandle = GraphReplayFactory::create(0);
@@ -164,16 +157,17 @@ slot_by_slot:
           if (status == Status::OK) {
             segment.exec.replayHandle->endCapture(nullptr);
             segment.exec.replayHandle->finalize();
-            segment.exec.currentPhase = ExecutionPhase::COMPILED;
+            DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "functional_capture_end_ok");
           } else {
             segment.exec.replayHandle.reset();
-            segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+            segment.exec.argTableStable = false;  // Invalidate fast-replay on capture failure
+            DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "functional_capture_failed");
           }
         } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
           segment.exec.replayHandle->replay(nullptr);
-          segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+          DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "functional_replay_ready");
         } else {
-          segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+          DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "non_capturable_slot_by_slot");
         }
 
         segment.exec.compiledByBackend = "slot-by-slot";
@@ -188,47 +182,11 @@ Status NativeDynamicShapePlan::platformCheckPostSegment(GraphSegment& segment) {
   return Status::OK;
 }
 
-// ── KV scatter: CPU fallback using operator() + assign() ────────────────────
-
-void* NativeDynamicShapePlan::platformBeginKvScatter(void* stream) {
-  return nullptr;  // No stream management on CPU
-}
-
-void NativeDynamicShapePlan::platformEndKvScatter(void* savedState) {
-  // No-op on CPU
-}
-
-void NativeDynamicShapePlan::platformScatterKvEntry(
-    NDArray* presentKv, NDArray* staticBuf, int seqDim, int pos, void* stream) {
-  int rank = presentKv->rankOf();
-  LongType lastPos = presentKv->sizeAt(seqDim) - 1;
-  std::vector<LongType> srcIdx(rank * 2), dstIdx(rank * 2);
-  for (int d = 0; d < rank; d++) {
-    if (d == seqDim) {
-      srcIdx[d*2] = lastPos; srcIdx[d*2+1] = lastPos + 1;
-      dstIdx[d*2] = pos; dstIdx[d*2+1] = pos + 1;
-    } else {
-      srcIdx[d*2] = 0; srcIdx[d*2+1] = 0;
-      dstIdx[d*2] = 0; dstIdx[d*2+1] = 0;
-    }
-  }
-  NDArray* srcSlice = (*presentKv)(srcIdx, true);
-  NDArray* dstSlice = (*staticBuf)(dstIdx, true);
-  dstSlice->assign(srcSlice);
-  delete srcSlice;
-  delete dstSlice;
-}
-
-// ── KV capture buffer annotation: no-op on CPU ─────────────────────────────
-
-void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
-  // No capture buffers on CPU
-}
-
 // ── Segment cleanup for rebuild: reset replayHandle on CPU ──────────────────
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   seg.exec.replayHandle.reset();
+  seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
   seg.exec.gapOpsCapturedInGraph = false;
   seg.resolvedCpuBackend = nullptr;
 }
@@ -238,6 +196,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     seg.exec.replayHandle.reset();
+    seg.exec.argTableStable = false;  // Invalidate fast-replay on plan teardown
     seg.exec.gapOpsCapturedInGraph = false;
     seg.resolvedCpuBackend = nullptr;
   }
@@ -306,15 +265,6 @@ void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, vo
   // GPU diagnostic only
 }
 
-void NativeDynamicShapePlan::platformUpdateDecodeInputs(NDArray** ext, int numExt,
-                                                         long long tokenId, int cachePos, void* stream) {
-  // Decode input device writes are GPU-only (Java handles CPU updates)
-}
-
-void NativeDynamicShapePlan::platformPostKvScatterSync(int scattered, int pos, int numMappings) {
-  // No CUDA sync needed on CPU
-}
-
 SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
   return isGraphCapture ? SelectedBackend::SLOT_BY_SLOT : SelectedBackend::CPU_GRAPH;
 }
@@ -354,7 +304,6 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
     seg.exec.currentPhase = ExecutionPhase::WARMUP;
-    seg.exec.segBatchZeroEntries.clear();
     seg.def.shapeKey = 0;
   }
 }

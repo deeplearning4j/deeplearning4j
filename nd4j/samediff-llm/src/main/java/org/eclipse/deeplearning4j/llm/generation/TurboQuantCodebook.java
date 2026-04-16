@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Codebooks are cached by (dimension, bits) key for reuse across layers.</p>
  *
- * @see TurboQuantKvCacheManager
+ * @see UnifiedKvCacheManager
  */
 public class TurboQuantCodebook {
 

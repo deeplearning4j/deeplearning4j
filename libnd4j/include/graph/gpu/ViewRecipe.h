@@ -69,7 +69,7 @@ struct ViewRecipe {
   int sourceSlotIndex;       // Which input/source slot the view is derived from
   int rank;                  // Rank of the output shape
   char outputOrder;          // Frozen output order from warmup/capture
-  LongType outputEws;        // Frozen output EWS from warmup/capture
+  LongType outputEws;        // Contiguous flag stored as EWS: 1 if contiguous, 0 otherwise (EWS is deprecated)
   LongType outputOffset;     // Frozen output offset into the shared data buffer
   LongType outputExtra;      // Frozen output extras/flags (dtype is rewritten at install)
 

@@ -60,7 +60,7 @@ PLATFORM_CHECK(relu, ENGINE_CPU) {
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
     return req;
 }
@@ -131,7 +131,7 @@ PLATFORM_CHECK(sigmoid, ENGINE_CPU) {
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
     return req;
 }
@@ -202,7 +202,7 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
     return req;
 }

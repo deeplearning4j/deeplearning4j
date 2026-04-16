@@ -23,6 +23,7 @@
 #include <graph/cpu/MlxIRBuilder.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/gpu/OpCategoryTable.h>
+#include <helpers/shape.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -276,7 +277,7 @@ std::shared_ptr<void> MlxIRBuilder::ndArrayToMlxArray(NDArray* arr) {
 
   auto dtype = sdTypeToMlxDtypeInternal(arr->dataType());
 
-  if (arr->ews() == 1 && arr->ordering() == 'c') {
+  if (shape::strideDescendingCAscendingF(arr->shapeInfo()) && arr->ordering() == 'c') {
     auto* dataPtr = arr->buffer();
     auto mlxArr = mx::array(dataPtr, shape, dtype);
     return wrap(std::move(mlxArr));

@@ -79,10 +79,8 @@ void DspConfig::initFromEnvironment() {
     int v = readBoolEnvTriState("ND4J_DSP_SYMBOLIC_SHAPES");
     if (v >= 0) setSymbolicShapes(v == 1);
   }
-  {
-    int v = readIntEnv("ND4J_DSP_SYMBOLIC_SHAPE_WARMUP", -1);
-    if (v >= 0) setSymbolicShapeWarmup(v);
-  }
+  // ND4J_DSP_SYMBOLIC_SHAPE_WARMUP removed — warmup is a compile-time constant (2)
+  // in DspConfig::kSymbolicShapeWarmup. Runtime tuning was never used.
 
   // Frozen-shape transition
   {
@@ -180,6 +178,16 @@ void DspConfig::initFromEnvironment() {
   {
     int v = readIntEnv("ND4J_DSP_DIAG_DETAIL_LIMIT", 20);
     if (v > 0) setDiagDetailLimit(v);
+  }
+
+  // Shape-keyed plan cache
+  {
+    float v = readFloatEnv("ND4J_DSP_PLAN_CACHE_BUDGET_FRACTION", -1.0f);
+    if (v >= 0.0f && v <= 1.0f) setPlanCacheBudgetFraction(v);
+  }
+  {
+    int v = readIntEnv("ND4J_DSP_PLAN_CACHE_MAX_PLANS", -1);
+    if (v > 0) setPlanCacheMaxPlans(v);
   }
 }
 

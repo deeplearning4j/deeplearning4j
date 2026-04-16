@@ -20,6 +20,7 @@
 
 package org.nd4j.autodiff.samediff.execution;
 
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.framework.device.TransferEvent;
@@ -82,6 +83,11 @@ public class DspReplayTransferAnalytics {
     public void beginStep(int segmentIdx, long shapeHash) {
         StepContext ctx = new StepContext(segmentIdx, shapeHash, System.nanoTime());
         currentStep.set(ctx);
+        if (DspDiagnostics.isEnabled(DspDiagnostics.TRANSFER)) {
+            DspDiagnostics.recordTimed(DspDiagnostics.TRANSFER, -1, segmentIdx,
+                    null, 0,
+                    "[PHASE_STEP_ENTER] seg=" + segmentIdx + " shapeHash=" + shapeHash);
+        }
     }
 
     /**
@@ -104,6 +110,16 @@ public class DspReplayTransferAnalytics {
         // Accumulate into segment summary
         segmentSummaries.computeIfAbsent(ctx.segmentIdx, SegmentTransferSummary::new)
                 .accumulate(stepSummary);
+
+        if (DspDiagnostics.isEnabled(DspDiagnostics.TRANSFER)) {
+            long stepDurationUs = durationNanos / 1000L;
+            DspDiagnostics.recordTimed(DspDiagnostics.TRANSFER, -1, ctx.segmentIdx,
+                    null, stepDurationUs,
+                    "[PHASE_STEP_EXIT] seg=" + ctx.segmentIdx
+                            + " transfers=" + ctx.transferCount
+                            + " bytes=" + ctx.transferBytes
+                            + " xferUs=" + (ctx.transferDurationNanos / 1000L));
+        }
 
         return stepSummary;
     }
@@ -134,6 +150,18 @@ public class DspReplayTransferAnalytics {
             if (event.getReason() != null) {
                 ctx.bytesByReason.merge(event.getReason(), event.getBytes(), Long::sum);
             }
+        }
+
+        // Emit into the DSP ring buffer so transfers appear in the same timeline
+        // as phase transitions and other diagnostic events.
+        if (DspDiagnostics.isEnabled(DspDiagnostics.TRANSFER)) {
+            int segId = (ctx != null) ? ctx.segmentIdx : -1;
+            long usDuration = event.getDurationNanos() / 1000L;
+            DspDiagnostics.recordTimed(DspDiagnostics.TRANSFER, -1, segId,
+                    event.getVariableName(), usDuration,
+                    "[TRANSFER] dir=" + event.getDirection()
+                            + " reason=" + event.getReason()
+                            + " bytes=" + event.getBytes());
         }
     }
 
@@ -169,6 +197,17 @@ public class DspReplayTransferAnalytics {
                 targetDevice.getDeviceId(), alternative.getDeviceId(),
                 bytes, reason, pressure, System.nanoTime());
         routingDecisions.add(decision);
+
+        if (DspDiagnostics.isEnabled(DspDiagnostics.MULTI_DEVICE)) {
+            StepContext ctx = currentStep.get();
+            int segId = (ctx != null) ? ctx.segmentIdx : -1;
+            DspDiagnostics.recordTimed(DspDiagnostics.MULTI_DEVICE, -1, segId,
+                    null, 0,
+                    "[ROUTING] " + targetDevice.getDeviceId()
+                            + " -> " + alternative.getDeviceId()
+                            + " bytes=" + bytes + " reason=" + reason
+                            + " pressure=" + pressure);
+        }
 
         return alternative;
     }

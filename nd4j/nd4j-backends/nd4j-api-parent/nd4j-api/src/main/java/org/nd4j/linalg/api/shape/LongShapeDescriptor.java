@@ -158,21 +158,21 @@ public class LongShapeDescriptor {
 
     public static LongShapeDescriptor emptyWithShape(long[] shape,@NonNull DataType dataType) {
         if (shape == null || shape.length == 0) {
-            long[] l = new long[0];
-            return fromShape(l, l, 1, 'c', dataType, true);
+            long[] l = new long[]{0};
+            return fromShape(l, new long[]{1}, 1, 'c', dataType, true);
         }
         return fromShape(shape, Nd4j.getStrides(shape, Nd4j.order()), 1, Nd4j.order(), dataType, true);
     }
 
     public static LongShapeDescriptor empty(@NonNull DataType dataType) {
-        long[] l = new long[0];
-        return fromShape(l, l, 1, 'c', dataType, true);
+        long[] l = new long[]{0};
+        return fromShape(l, new long[]{1}, 1, 'c', dataType, true);
     }
 
     public static LongShapeDescriptor fromShape(@NonNull long[] shape, @NonNull long[] strides, long ews, char order, @NonNull DataType dataType, boolean empty) {
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
-        if (empty)
+        if (empty && shape.length > 0)
             extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
 
         return new LongShapeDescriptor(shape, strides, 0, ews, order, extras);

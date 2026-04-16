@@ -514,12 +514,19 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 
   // Track estimated GPU memory for the loaded module (binary size as proxy)
   result.estimatedModuleBytes = binary.size;
+  // Stash residency-cache reload metadata so the launch path can re-load this
+  // kernel from the disk cache after an LRU eviction.  ModuleResidencyCache
+  // registration happens once the kernel has been moved into cache_[key]
+  // (its address is unstable until then).
+  result.diskCacheHash = cacheHash;
+  result.kernelName = irModule.kernelName;
   {
     int currentDevice = 0;
 #ifdef SD_CUDA
     cudaGetDevice(&currentDevice);
 #endif
     recordModuleAlloc(currentDevice, binary.size);
+    result.loadedDeviceId = currentDevice;
   }
 
   // Get kernel function

@@ -133,6 +133,19 @@ extern SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount;
  * graph launch). Set/unset by DSP replay path around ext input sync loops.
  */
 extern SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream;
+
+/**
+ * Per-island slot range filter for composite CUDA graph capture.
+ * When tl_islandSlotMin <= tl_islandSlotMax, TritonGraphBackend::executeSegment
+ * skips sub-kernels whose slot range falls entirely outside [tl_islandSlotMin,
+ * tl_islandSlotMax]. This allows capturing a single Triton island from a
+ * composite (mixed Triton/gap) segment without capturing other islands.
+ * When tl_islandSlotMin > tl_islandSlotMax, no filtering is applied.
+ * Set by the per-island capture loop in NativeDynamicShapePlan_gpubackend.cpp,
+ * cleared after each island's capture completes.
+ */
+extern SD_TLS_EXPORT thread_local int tl_islandSlotMin;
+extern SD_TLS_EXPORT thread_local int tl_islandSlotMax;
 #endif
 #endif  // __JAVACPP_HACK__
 
@@ -204,7 +217,21 @@ class SD_LIB_EXPORT DataBuffer {
   template <typename T>
   void printHostBufferContent(void* buffer, sd::LongType offset, sd::LongType length);
 
-
+  /**
+   * Frozen-phase mutation guard. Throws an exception with a detailed message
+   * if this DataBuffer has one or more frozen references registered
+   * (_frozenRefCount > 0). Call from the top of any method that would mutate
+   * the identity of the backing storage (reallocate, free, setPrimaryBuffer,
+   * setSpecialBuffer, replaceSpecialBuffer, expand, migrate, close, etc.).
+   *
+   * Methods that only copy CONTENT (syncToPrimary/syncToSpecial/writePrimary/
+   * writeSpecial/readPrimary/readSpecial) do NOT need this guard — they don't
+   * change the underlying pointer, so frozen contexts that baked the address
+   * remain valid.
+   *
+   * @param op human-readable name of the calling mutator method
+   */
+  void throwIfFrozen(const char* op) const;
 
   void setCountersToZero();
   void copyCounters(const DataBuffer &other);

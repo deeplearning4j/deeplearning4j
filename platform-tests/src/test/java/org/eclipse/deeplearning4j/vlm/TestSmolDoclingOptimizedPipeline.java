@@ -52,6 +52,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 
@@ -1169,6 +1172,24 @@ public class TestSmolDoclingOptimizedPipeline {
                     .maxNewTokens(config.getMaxTokens())
                     .maxSpeculativeTokens(specTokens)
                     .hiddenSize(ctx.hiddenSize);
+            // Per-step argmax trace: opt-in via -Dvlm.benchmark.argmaxTrace=true. When on,
+            // every decode step logs the sampled token ID + top-K logit snapshot, catching
+            // silent sampling regressions (correct type, wrong value).
+            if (Boolean.parseBoolean(System.getProperty("vlm.benchmark.argmaxTrace", "false"))) {
+                loopBuilder.argmaxTraceEnabled(true);
+                int topK = Integer.getInteger("vlm.benchmark.argmaxTraceTopK", 5);
+                loopBuilder.argmaxTraceTopK(topK);
+            }
+            // Reference token stream: opt-in via -Dvlm.benchmark.referenceTokens=<path>.
+            // The file is read as newline- or whitespace-separated token IDs; each decode
+            // step asserts the sampled token matches. A mismatch throws
+            // TokenStreamDivergenceException with step index + top-K snapshot.
+            int[] referenceTokens = loadReferenceTokenStream();
+            if (referenceTokens != null) {
+                loopBuilder.referenceTokenStream(referenceTokens);
+                log.info("[{}] Reference token stream loaded: {} tokens",
+                        config.getName(), referenceTokens.length);
+            }
             if (draftSpeculator != null) {
                 loopBuilder.speculator(draftSpeculator);
             }
@@ -1995,6 +2016,51 @@ public class TestSmolDoclingOptimizedPipeline {
             log.info("  Draft model config: hidden_size={}", ctx.draftHiddenSize);
         } catch (Exception e) {
             log.warn("  Could not load draft model config, will infer hidden size from embedding table", e);
+        }
+    }
+
+    /**
+     * Load a reference token stream from the file path given by
+     * {@code -Dvlm.benchmark.referenceTokens=<path>}.
+     *
+     * <p>The file is parsed as whitespace-separated integer token IDs — anything
+     * after a {@code #} on a line is treated as a comment. A typical file is one
+     * token ID per line, optionally with a trailing comment describing the token
+     * text.</p>
+     *
+     * <p>Returns {@code null} when the system property is unset, so the call site
+     * can simply skip the wiring. Throws if the property is set but the file is
+     * missing or unparseable — a silent fallback would defeat the purpose.</p>
+     */
+    private static int[] loadReferenceTokenStream() {
+        String path = System.getProperty("vlm.benchmark.referenceTokens");
+        if (path == null || path.isEmpty()) return null;
+        Path p = Paths.get(path);
+        if (!Files.exists(p)) {
+            throw new IllegalArgumentException(
+                    "vlm.benchmark.referenceTokens file not found: " + path);
+        }
+        try {
+            List<String> lines = Files.readAllLines(p);
+            List<Integer> tokens = new ArrayList<>();
+            for (String raw : lines) {
+                int hash = raw.indexOf('#');
+                String line = (hash >= 0 ? raw.substring(0, hash) : raw).trim();
+                if (line.isEmpty()) continue;
+                for (String tok : line.split("\\s+")) {
+                    if (tok.isEmpty()) continue;
+                    try {
+                        tokens.add(Integer.parseInt(tok));
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException(
+                                "Reference token stream contains non-integer token '"
+                                        + tok + "' in " + path, e);
+                    }
+                }
+            }
+            return tokens.stream().mapToInt(Integer::intValue).toArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read reference token stream: " + path, e);
         }
     }
 }

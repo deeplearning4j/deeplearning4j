@@ -841,7 +841,72 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMulBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMulBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMulBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMulBp.class
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMulBp.class,
+                // Audio ops
+                org.nd4j.linalg.api.ops.impl.audio.AWeighting.class,
+                org.nd4j.linalg.api.ops.impl.audio.AudioNormalize.class,
+                org.nd4j.linalg.api.ops.impl.audio.AudioResample.class,
+                org.nd4j.linalg.api.ops.impl.audio.ChromaFeatures.class,
+                org.nd4j.linalg.api.ops.impl.audio.GriffinLim.class,
+                org.nd4j.linalg.api.ops.impl.audio.MFCC.class,
+                org.nd4j.linalg.api.ops.impl.audio.MelFilterbank.class,
+                org.nd4j.linalg.api.ops.impl.audio.MelSpectrogram.class,
+                org.nd4j.linalg.api.ops.impl.audio.PitchDetection.class,
+                org.nd4j.linalg.api.ops.impl.audio.PreEmphasis.class,
+                org.nd4j.linalg.api.ops.impl.audio.SpectralCentroid.class,
+                org.nd4j.linalg.api.ops.impl.audio.SpectralRolloff.class,
+                org.nd4j.linalg.api.ops.impl.audio.WhisperMelSpectrogramOp.class,
+                org.nd4j.linalg.api.ops.impl.audio.ZeroCrossingRate.class,
+                // Image ops
+                org.nd4j.linalg.api.ops.impl.image.AffineGrid.class,
+                org.nd4j.linalg.api.ops.impl.image.GridSample.class,
+                // Adaptive pooling / deformable conv
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2DBp.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2DBp.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D.class,
+                // Additional loss ops
+                org.nd4j.linalg.api.ops.impl.loss.AttentionDistillationLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.CtcLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.DistillationKLLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.FeatureDistillationLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.AttentionDistillationLossBp.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.CtcLossBp.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.DistillationKLLossBp.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.FeatureDistillationLossBp.class,
+                // NLP inference ops
+                org.nd4j.linalg.api.ops.impl.nlp.CbowInference.class,
+                org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference.class,
+                // Reduce bp ops
+                org.nd4j.linalg.api.ops.impl.reduce.TensorMmulBp.class,
+                org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmulBp.class,
+                // Signal / FFT ops
+                org.nd4j.linalg.api.ops.impl.signal.BlackmanWindow.class,
+                org.nd4j.linalg.api.ops.impl.signal.DFT.class,
+                org.nd4j.linalg.api.ops.impl.signal.HammingWindow.class,
+                org.nd4j.linalg.api.ops.impl.signal.HannWindow.class,
+                org.nd4j.linalg.api.ops.impl.signal.STFT.class,
+                // Transform custom ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GGMLDequantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PagedAttentionForward.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PagedKvAppend.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SquaredReLU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention.class,
+                // Updater
+                org.nd4j.linalg.api.ops.impl.updaters.AdaBeliefUpdater.class,
+                // Random / dropout
+                org.nd4j.linalg.api.ops.random.impl.DropOut.class,
+                org.nd4j.linalg.api.ops.random.impl.DropOutBp.class
         ));
 
         System.out.println("Created fn classes");

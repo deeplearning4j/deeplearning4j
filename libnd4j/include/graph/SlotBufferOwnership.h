@@ -24,6 +24,7 @@
 #include <system/common.h>
 
 #include <cstdint>
+#include <unordered_set>
 
 namespace sd {
 namespace graph {
@@ -200,10 +201,24 @@ struct BufferPointerSnapshot {
   void** slotGpuAddresses = nullptr;    // GPU (special) buffer address per slot
   DataBuffer** slotDataBuffers = nullptr; // DataBuffer* identity per slot
   int* slotDeviceIds = nullptr;          // Device ID where each slot buffer lives
+  void** slotPrimaryAddresses = nullptr; // Host (primary) buffer address per slot (may be null)
+  LongType** slotShapeInfoAddresses = nullptr; // Device-side shape info pointer per slot
+  NDArray** slotNDArrayIdentity = nullptr;     // NDArray wrapper identity per slot
+  LongType* slotBufferOffsets = nullptr;       // NDArray::offset() at capture time
+  LongType* slotLengths = nullptr;             // NDArray::lengthOf() at capture time
+  uint8_t* slotActualityFlags = nullptr;       // bit0 = isPrimaryActual, bit1 = isSpecialActual
+  char* slotOrderings = nullptr;               // NDArray::ordering() at capture time ('c' or 'f')
   int numExternalInputs = 0;
   void** extGpuAddresses = nullptr;     // GPU address per external input
   DataBuffer** extDataBuffers = nullptr; // DataBuffer* identity per external input
   int* extDeviceIds = nullptr;           // Device ID where each ext input buffer lives
+  void** extPrimaryAddresses = nullptr;  // Host (primary) buffer address per ext input (may be null)
+  LongType** extShapeInfoAddresses = nullptr;  // Device-side shape info pointer per ext input
+  NDArray** extNDArrayIdentity = nullptr;      // NDArray wrapper identity per ext input
+  LongType* extBufferOffsets = nullptr;        // NDArray::offset() at capture time
+  LongType* extLengths = nullptr;              // NDArray::lengthOf() at capture time
+  uint8_t* extActualityFlags = nullptr;        // bit0 = isPrimaryActual, bit1 = isSpecialActual
+  char* extOrderings = nullptr;                // NDArray::ordering() at capture time ('c' or 'f')
   int capturedDeviceId = -1;             // Device ID where the plan was executing at capture time
   bool valid = false;                    // True if snapshot has been captured
 
@@ -215,9 +230,23 @@ struct BufferPointerSnapshot {
     delete[] slotGpuAddresses; slotGpuAddresses = nullptr;
     delete[] slotDataBuffers; slotDataBuffers = nullptr;
     delete[] slotDeviceIds; slotDeviceIds = nullptr;
+    delete[] slotPrimaryAddresses; slotPrimaryAddresses = nullptr;
+    delete[] slotShapeInfoAddresses; slotShapeInfoAddresses = nullptr;
+    delete[] slotNDArrayIdentity; slotNDArrayIdentity = nullptr;
+    delete[] slotBufferOffsets; slotBufferOffsets = nullptr;
+    delete[] slotLengths; slotLengths = nullptr;
+    delete[] slotActualityFlags; slotActualityFlags = nullptr;
+    delete[] slotOrderings; slotOrderings = nullptr;
     delete[] extGpuAddresses; extGpuAddresses = nullptr;
     delete[] extDataBuffers; extDataBuffers = nullptr;
     delete[] extDeviceIds; extDeviceIds = nullptr;
+    delete[] extPrimaryAddresses; extPrimaryAddresses = nullptr;
+    delete[] extShapeInfoAddresses; extShapeInfoAddresses = nullptr;
+    delete[] extNDArrayIdentity; extNDArrayIdentity = nullptr;
+    delete[] extBufferOffsets; extBufferOffsets = nullptr;
+    delete[] extLengths; extLengths = nullptr;
+    delete[] extActualityFlags; extActualityFlags = nullptr;
+    delete[] extOrderings; extOrderings = nullptr;
     totalSlots = 0;
     numExternalInputs = 0;
     capturedDeviceId = -1;
@@ -226,27 +255,58 @@ struct BufferPointerSnapshot {
 
   /**
    * Capture current buffer state as the baseline.
-   * Records GPU addresses, DataBuffer identities, and device IDs.
+   * Records all pointer/identity/metadata fields for full frozen-phase tracking.
    */
   void capture(NDArray** outputSlots, int numSlots,
                NDArray** externalInputs, int numExt);
 
   /**
-   * Validate that current buffer state matches the snapshot.
-   * Returns true if all pointers match. On mismatch, populates errMsg
-   * with a description of the first violation found.
+   * Null out snapshot entries for "transient" slots — VIEW_OF_WEIGHT slots
+   * whose underlying DataBuffer is NOT in protectedWeightBuffers.  These
+   * slots are views over placeholder external inputs; the placeholder is
+   * supplied fresh each call and its old DataBuffer is legitimately closed
+   * between calls.  The view wrapper is refreshed by slot-exec on the next
+   * call, so the snapshot must not treat the old state as authoritative.
    *
-   * Checks:
-   *   1. Slot GPU addresses unchanged (pointer stability)
-   *   2. Slot DataBuffer identities unchanged (no replacement)
-   *   3. External input GPU addresses unchanged
-   *   4. External input DataBuffers not closed
-   *   5. No null slots that were previously non-null (freed)
-   *   6. Device IDs unchanged (no buffer migration)
+   * Safe to call multiple times (idempotent).  No-op if the snapshot is
+   * invalid or ownership is null.
+   */
+  void pruneTransientViewSlots(
+      const SlotBufferInfo* ownership,
+      const std::unordered_set<DataBuffer*>& protectedWeightBuffers);
+
+  /**
+   * Validate that current buffer state matches the snapshot.
+   * THROW_EXCEPTION on any mismatch — no fallback, no slot-by-slot recovery.
+   *
+   * Checks (for slots AND external inputs):
+   *   1. GPU (special) address unchanged (pointer stability)
+   *   2. DataBuffer identity unchanged (no replacement)
+   *   3. Host (primary) address unchanged (no host reallocation)
+   *   4. Device-side shape info pointer unchanged (no re-registration)
+   *   5. NDArray wrapper identity unchanged (no wrapper replacement)
+   *   6. Buffer offset unchanged (no view base move)
+   *   7. lengthOf() unchanged (shape-frozen invariant)
+   *   8. Actuality flags unchanged (no unexpected primary/special flips)
+   *   9. DataBuffer not closed
+   *   10. No null slots that were previously non-null (freed)
+   *   11. Device IDs unchanged (no buffer migration)
+   *   12. Memory ordering unchanged (no layout flip)
    */
   bool validate(NDArray** outputSlots, int numSlots,
                 NDArray** externalInputs, int numExt,
                 char* errMsg, int errMsgLen) const;
+
+  /**
+   * Detect stale data via actuality flag transitions.
+   * From SHAPES_FROZEN onward, output slots that belong to the graph should
+   * have sAct=1 (device authoritative). If pAct transitions to 1 without
+   * sAct (indicating a host write overwrote device data), that's stale data.
+   * THROW_EXCEPTION on any unexpected transition.
+   */
+  void detectStaleActualityTransitions(NDArray** outputSlots, int numSlots,
+                                       NDArray** externalInputs, int numExt,
+                                       int planPhase) const;
 };
 
 /**

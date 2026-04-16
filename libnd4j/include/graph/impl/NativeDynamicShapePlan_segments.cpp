@@ -644,6 +644,22 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
   }
 
+  // ── Phase guard: compilation must not happen during REPLAYING ────────────
+  if (needsCompile && planPhase_ >= PlanPhase::REPLAYING) {
+    DSP_DIAG(COMPILE,
+             "ERROR: CPU backend compilation triggered during REPLAYING phase for seg[%d-%d] "
+             "(executionCount=%d, planPhase=%d). Demoting plan phase.",
+             seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
+             static_cast<int>(planPhase_));
+#ifndef NDEBUG
+    REQUIRE_TRUE(false, 0,
+                 "DSP phase contract violation: CPU compilation during REPLAYING phase "
+                 "for seg[%d-%d].", seg.def.startSlot, seg.def.endSlot);
+#endif
+    demotePlanPhase(PlanPhase::POINTERS_STABLE,
+                    "CPU compilation triggered during REPLAYING phase");
+  }
+
   if (needsCompile) {
     DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
                  "seg[%d-%d] needs compile: %s (execCount=%d shapeKey=%lld->%lld backend=%s)",
@@ -807,6 +823,9 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d compilationFailed=%d",
                seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                seg.exec.executionCount, seg.def.isCapturable ? 1 : 0, seg.exec.compilationFailed ? 1 : 0);
+
+  prezeroSegmentOutputs(seg, stream);
+
   // Reset per-segment allocation counters
   tl_dspAllocBytes = 0; tl_dspFreeBytes = 0;
   tl_dspAllocCount = 0; tl_dspFreeCount = 0; tl_dspFreeSkipCount = 0;
@@ -1247,42 +1266,62 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
 LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
-  // FNV-1a hash of buffer addresses for all CROSS-SEGMENT inputs.
-  // On CUDA, uses specialBuffer(); on CPU, uses primaryBuffer().
-  // Address changes between executions indicate the graph would have stale pointers.
+  // FNV-1a hash of buffer addresses for all CROSS-SEGMENT inputs plus all
+  // non-PLACEHOLDER external inputs (weights / constants). On CUDA, uses
+  // specialBuffer(); on CPU, uses primaryBuffer(). Address changes between
+  // executions indicate the graph would have stale pointers.
   //
-  // IMPORTANT: External inputs (srcIdx < 0) are EXCLUDED. Java allocates new
-  // arrays for placeholder inputs (position_ids, attention_mask) each decode step,
-  // so their pointers always change. Including them would make the address key
-  // never match, argTableStable would stay false, and the plan would be permanently
-  // stuck at SHAPES_FROZEN — never advancing to POINTERS_STABLE or REPLAYING.
-  // Only cross-segment inputs (internal plan outputs) matter for pointer stability,
-  // since those are the buffers the plan itself manages and expects to be stable.
+  // PLACEHOLDER externals (position_ids, attention_mask, …) are excluded —
+  // Java allocates fresh arrays for them every decode step, so their
+  // pointers always change; hashing them would pin the plan below
+  // POINTERS_STABLE forever. Weights / constants are device-authoritative
+  // and supposed to be stable; a user-visible close+associateArrayWithVariable
+  // rebind on one of them should invalidate the cached replay rather than
+  // silently replay against freed device memory.
   uint64_t hash = dsp::FNV1A64_OFFSET_BASIS;
   auto mix = [&hash](uintptr_t val) {
     dsp::fnv1aMixValue(hash, static_cast<uint64_t>(val));
   };
 
+  // externalInputIsVariable_ is populated at plan-load time, not at
+  // shape-freeze time — in explicit graphExecutionMode (CUDA_GRAPHS,
+  // TRITON, NVRTC_JIT, PTX_JIT) the plan never goes through AUTO_SEAL so
+  // shapesFrozen_ stays false even once graph replay is active. Gate on
+  // the vector being non-empty only.
+  const bool canClassifyExternals = !externalInputIsVariable_.empty();
+
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
+      if (srcIdx < 0) {
+        if (!canClassifyExternals) continue;
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < 0 || extIdx >= numExt) continue;
+        if (extIdx >= static_cast<int>(externalInputIsVariable_.size())) continue;
+        if (externalInputIsVariable_[extIdx]) continue;  // skip placeholders
+        NDArray* extArr = externalInputs[extIdx];
+        if (extArr == nullptr) continue;
+#if defined(SD_CUDA)
+        mix(reinterpret_cast<uintptr_t>(extArr->specialBuffer()));
+#else
+        mix(reinterpret_cast<uintptr_t>(extArr->buffer()));
+#endif
+        continue;
+      }
       NDArray* arr = nullptr;
-      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+      if (srcIdx < totalOutputSlots_) {
         arr = outputSlots_[srcIdx];
       }
-      // Skip external inputs (srcIdx < 0) — their pointers change every step
-      // by design and should not block phase advancement.
       if (arr != nullptr) {
 #if defined(SD_CUDA)
         mix(reinterpret_cast<uintptr_t>(arr->specialBuffer()));
 #else
         mix(reinterpret_cast<uintptr_t>(arr->buffer()));
 #endif
-      } else if (srcIdx >= 0) {
+      } else {
         mix(0);  // cross-segment nullptr sentinel
       }
-      // external input: deliberately not hashed
     }
   }
   return hash;
@@ -1298,13 +1337,13 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   // ── Phase determination ─────────────────────────────────────────────────
   const char* phaseName;
   if (execCount == 0) {
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    DSP_SET_SEG_PHASE(seg, ExecutionPhase::WARMUP, "emulated_replay_exec0");
     phaseName = "WARMUP";
   } else if (execCount == 1) {
-    seg.exec.currentPhase = ExecutionPhase::COMPILING;  // "capture" equivalent
+    DSP_SET_SEG_PHASE(seg, ExecutionPhase::COMPILING, "emulated_replay_capture");  // "capture" equivalent
     phaseName = "EMULATED_CAPTURE";
   } else {
-    seg.exec.currentPhase = ExecutionPhase::REPLAYING;
+    DSP_SET_SEG_PHASE(seg, ExecutionPhase::REPLAYING, "emulated_replay_steady");
     phaseName = "EMULATED_REPLAY";
   }
 

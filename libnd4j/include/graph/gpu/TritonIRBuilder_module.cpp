@@ -1023,12 +1023,17 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // Determine if simple modular indexing suffices (broadcast on outermost dims only)
       // or if we need stride-based indexing (broadcast on inner dims, or non-contiguous).
 
-      // Left-pad input shape with 1s to match output rank
+      // Left-pad input shape with 1s to match output rank.
+      // When inRank > outRank, take only the RIGHTMOST outRank dims from input.
       int outRank = static_cast<int>(refOutputShape.size());
       int inRank = static_cast<int>(arg.shape.size());
       std::vector<LongType> paddedInputShape(outRank, 1);
-      for (int d = 0; d < inRank && d < outRank; d++) {
-        paddedInputShape[outRank - inRank + d] = arg.shape[d];
+      for (int d = 0; d < outRank; d++) {
+        int srcDim = d + (inRank - outRank);  // maps output dim → input dim
+        if (srcDim >= 0 && srcDim < inRank) {
+          paddedInputShape[d] = arg.shape[srcDim];
+        }
+        // else: stays 1 (left-pad for inRank < outRank)
       }
 
       // Check if broadcast is only on outermost dimensions (simple case)
@@ -1060,15 +1065,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         // Compute input strides: use ACTUAL strides from the NDArray when available,
         // falling back to C-contiguous computation when no stride info exists.
-        // Left-pad strides with 0 for rank-padded broadcast dimensions.
+        // Map output dims to input dims: srcDim = d + (inRank - outRank).
         std::vector<LongType> inStrides(outRank);
-        int padOffset = outRank - inRank;
         bool hasActualStrides = (!arg.strides.empty() && static_cast<int>(arg.strides.size()) == inRank);
         for (int d = 0; d < outRank; d++) {
+          int srcDim = d + (inRank - outRank);  // same mapping as paddedInputShape
           if (paddedInputShape[d] <= 1) {
             inStrides[d] = 0;  // broadcast dim (or rank-pad dim)
-          } else if (hasActualStrides && d >= padOffset) {
-            inStrides[d] = arg.strides[d - padOffset];
+          } else if (hasActualStrides && srcDim >= 0 && srcDim < inRank) {
+            inStrides[d] = arg.strides[srcDim];
           } else {
             // Fallback: C-contiguous stride = product of dims below
             LongType stride = 1;
@@ -2440,8 +2445,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
           // Strategy 1: Walk back from K source to find KV cache external inputs.
           if (kSrc >= 0) {
-            for (int s = startSlot; s <= endSlot; s++) {
-              for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+            bool kProducerFoundJit = false;
+            for (int s = startSlot; s <= endSlot && !kProducerFoundJit; s++) {
+              for (int o = 0; o < slots[s].wiring.numOutputs && !kProducerFoundJit; o++) {
                 if (slots[s].wiring.outputSlotIndices[o] == kSrc) {
                   for (int pi = 0; pi < slots[s].wiring.numInputs; pi++) {
                     int psrc = slots[s].wiring.inputSourceIndices[pi];
@@ -2463,12 +2469,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                       }
                     }
                   }
-                  goto kProducerSearchDoneJit;
+                  kProducerFoundJit = true;
                 }
               }
             }
           }
-          kProducerSearchDoneJit:
 
           // Strategy 2: Scan ALL external inputs for 4D KV cache pattern.
           if (derivedSeqK == 0 && externalInputs) {
@@ -5988,8 +5993,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // The K input often comes from a Concat(past_key, current_key) op.
             // Find that concat's past_key external input and use its seqK.
             if (kSrc >= 0) {
-              for (int s = 0; s < totalSlots; s++) {
-                for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+              bool kProducerFound = false;
+              for (int s = 0; s < totalSlots && !kProducerFound; s++) {
+                for (int o = 0; o < slots[s].wiring.numOutputs && !kProducerFound; o++) {
                   if (slots[s].wiring.outputSlotIndices[o] == kSrc) {
                     // Found the producer of K. Check its inputs for external KV cache.
                     for (int pi = 0; pi < slots[s].wiring.numInputs; pi++) {
@@ -6029,12 +6035,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                         }
                       }
                     }
-                    goto kProducerSearchDone;
+                    kProducerFound = true;
                   }
                 }
               }
             }
-            kProducerSearchDone:
 
             // Strategy 2: Scan ALL attention op inputs for 4D KV cache shapes.
             // Covers cases where past_key is a direct input to the attention op.

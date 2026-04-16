@@ -47,6 +47,8 @@
 #include <graph/gpu/TritonIRBuilder_internal.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
+#include <ops/declarable/OpDescriptor.h>
+#include <ops/declarable/OpRegistrator.h>
 #include <system/Environment.h>
 #include <system/common.h>
 
@@ -401,17 +403,72 @@ void TritonIRBuilder::clearSectionedBlockSizeOverride() {
 // getSectionedCooperativeTargetBlocks() moved to TritonIRBuilder_cuda.cu
 // (requires NVCC for CUDA device queries, kept separate from MLIR code)
 
+// Derive a TritonOpCategory from the op trait bitfield stored on OpDescriptor.
+// This is the trait-first fallback path so that newly-added ops don't need manual
+// entries in OpCategoryTable.h / buildOpTable() to be recognized — as long as
+// OpTraitTable.cpp is populated (the single source of truth), routing works.
+static TritonOpCategory categoryFromTraits(uint32_t traits) {
+  using sd::ops::OpTraits;
+  if (traits == 0) return TritonOpCategory::UNSUPPORTED;
+  // Specific / fused traits first — they override generic elementwise classification.
+  if (traits & OpTraits::OP_TRAIT_ATTENTION)          return TritonOpCategory::FUSED_ATTENTION;
+  if (traits & OpTraits::OP_TRAIT_MATMUL)             return TritonOpCategory::MATMUL;
+  if (traits & OpTraits::OP_TRAIT_NORMALIZATION)      return TritonOpCategory::NORMALIZATION;
+  if (traits & OpTraits::OP_TRAIT_REDUCTION)          return TritonOpCategory::REDUCTION;
+  if (traits & OpTraits::OP_TRAIT_IDENTITY)           return TritonOpCategory::IDENTITY;
+  if (traits & OpTraits::OP_TRAIT_CAST)               return TritonOpCategory::CAST;
+  if (traits & OpTraits::OP_TRAIT_COMPARISON)         return TritonOpCategory::COMPARISON;
+  if (traits & OpTraits::OP_TRAIT_LOGICAL)            return TritonOpCategory::LOGICAL;
+  if (traits & OpTraits::OP_TRAIT_TERNARY_ELEMENTWISE) return TritonOpCategory::TERNARY;
+  if (traits & OpTraits::OP_TRAIT_VIEW_PRODUCING)     return TritonOpCategory::SHAPE_MANIPULATION;
+  if (traits & OpTraits::OP_TRAIT_SHAPE_ONLY_OUTPUT)  return TritonOpCategory::CONSTANT_GENERATION;
+  if (traits & OpTraits::OP_TRAIT_CONSTANT_GENERATION) return TritonOpCategory::CONSTANT_GENERATION;
+  if (traits & (OpTraits::OP_TRAIT_GATHER | OpTraits::OP_TRAIT_GATHER_ND |
+                OpTraits::OP_TRAIT_CONCAT | OpTraits::OP_TRAIT_SPLIT |
+                OpTraits::OP_TRAIT_SPLIT_V | OpTraits::OP_TRAIT_STACK |
+                OpTraits::OP_TRAIT_SLICE | OpTraits::OP_TRAIT_TILE |
+                OpTraits::OP_TRAIT_SCATTER_ND | OpTraits::OP_TRAIT_SCATTER_ND_UPDATE |
+                OpTraits::OP_TRAIT_DATA_MOVEMENT))
+    return TritonOpCategory::DATA_MOVEMENT;
+  // Generic elementwise classifications (activation is a subtype of unary).
+  if (traits & OpTraits::OP_TRAIT_UNARY_ELEMENTWISE)  return TritonOpCategory::UNARY_ELEMENTWISE;
+  if (traits & OpTraits::OP_TRAIT_BINARY_ELEMENTWISE) return TritonOpCategory::BINARY_ELEMENTWISE;
+  // Data-dependent ops can't be reliably mapped — stay UNSUPPORTED so the segment
+  // falls back to slot-by-slot execution.
+  return TritonOpCategory::UNSUPPORTED;
+}
+
+// Look up op traits from the live op registry (OpRegistrator → OpDescriptor).
+// Returns 0 if op isn't registered or has no traits set. This lets the Triton
+// layer consult the same trait bitfield that FusionPass / NativePlanCompiler use.
+static uint32_t lookupRegistryTraits(const std::string& opName) {
+  auto* op = sd::ops::OpRegistrator::getInstance().getOperation(opName.c_str());
+  if (op == nullptr) return 0;
+  auto* desc = op->getOpDescriptor();
+  return desc != nullptr ? desc->getTraits() : 0;
+}
+
 bool TritonIRBuilder::isTritonMappable(const std::string& opName) {
   const auto& table = getOpTable();
-  auto it = table.find(opName);
-  if (it != table.end()) return true;
+  if (table.find(opName) != table.end()) return true;
   // Fall back to OpCategoryTable.h (shared category-only table with broader coverage)
   const auto& catTable = getOpCategoryTable();
-  auto catIt = catTable.find(opName);
-  if (catIt != catTable.end()) return true;
-  std::string msg = "TritonIRBuilder::isTritonMappable: op '" + opName + "' is missing from both "
-                    "buildOpTable() and OpCategoryTable.h. Add it to OpCategoryTable.h.";
-  THROW_EXCEPTION(msg.c_str());
+  if (catTable.find(opName) != catTable.end()) return true;
+  // Trait-based fallback: if the op is registered with any classification traits,
+  // consider it mappable (concrete routing is decided by getOpCategory). This means
+  // a newly-added op with proper traits in OpTraitTable.cpp is immediately visible
+  // to the Triton layer without manual entries in the two tables above.
+  uint32_t traits = lookupRegistryTraits(opName);
+  if (traits != 0 && categoryFromTraits(traits) != TritonOpCategory::UNSUPPORTED) {
+    return true;
+  }
+  // Unknown op — do NOT throw. Segment containing this op will have canCompile=false
+  // and fall back to slot-by-slot native execution. Log once for diagnosability.
+  DSP_DIAG(FALLBACK,
+           "TritonIRBuilder::isTritonMappable: op '%s' has no entry in buildOpTable(), "
+           "OpCategoryTable.h, or OpTraitTable.cpp — routing to native fallback. "
+           "Add traits to OpTraitTable.cpp for proper classification.",
+           opName.c_str());
   return false;
 }
 
@@ -420,16 +477,26 @@ TritonOpCategory TritonIRBuilder::getOpCategory(const std::string& opName) {
   auto it = table.find(opName);
   if (it != table.end()) return it->second.category;
   // Fall back to OpCategoryTable.h (shared category-only table with broader coverage).
-  // This allows ops that are categorized but don't have Triton IR mappings to still
-  // be recognized and routed to native fallback during segment analysis.
   const auto& catTable = getOpCategoryTable();
   auto catIt = catTable.find(opName);
   if (catIt != catTable.end()) return catIt->second;
-  // Return UNSUPPORTED instead of throwing — allows graceful fallback to native execution.
+  // Trait-based fallback via OpRegistrator → OpDescriptor. Avoids manual drift between
+  // the hardcoded tables and the authoritative trait table.
+  uint32_t traits = lookupRegistryTraits(opName);
+  if (traits != 0) {
+    TritonOpCategory cat = categoryFromTraits(traits);
+    if (cat != TritonOpCategory::UNSUPPORTED) {
+      DSP_DIAG(FALLBACK,
+               "TritonIRBuilder::getOpCategory: op '%s' resolved via trait fallback "
+               "(traits=0x%08x)", opName.c_str(), traits);
+      return cat;
+    }
+  }
+  // Return UNSUPPORTED — allows graceful fallback to native execution.
   // The segment containing this op will have canCompile=false and fall back to slot-by-slot.
-  DSP_DIAG(FALLBACK, "TritonIRBuilder::getOpCategory: op '%s' is missing from both "
-            "buildOpTable() and OpCategoryTable.h. Falling back to native execution. "
-            "Add it to OpCategoryTable.h for proper categorization.", opName.c_str());
+  DSP_DIAG(FALLBACK, "TritonIRBuilder::getOpCategory: op '%s' not found in buildOpTable(), "
+            "OpCategoryTable.h, or via op traits. Falling back to native execution. "
+            "Add it to OpTraitTable.cpp for proper categorization.", opName.c_str());
   return TritonOpCategory::UNSUPPORTED;
 }
 

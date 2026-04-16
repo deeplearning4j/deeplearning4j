@@ -66,7 +66,7 @@ import java.util.List;
  * <h3>Output</h3>
  * <p>[B, H, Sq, D] attention output</p>
  *
- * @see org.eclipse.deeplearning4j.llm.generation.TurboQuantKvCacheManager
+ * @see org.eclipse.deeplearning4j.llm.generation.UnifiedKvCacheManager
  */
 @NoArgsConstructor
 public class TurboQuantAttention extends DynamicCustomOp {

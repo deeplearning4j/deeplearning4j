@@ -918,6 +918,67 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     default void setTritonKernelOverride(boolean kernelOverride) {}
 
     /**
+     * Returns the Triton module residency budget in bytes. {@code 0} means
+     * unlimited (no LRU eviction of cached modules).
+     */
+    default long tritonModuleResidencyBudgetBytes() {
+        return 0L;
+    }
+
+    /**
+     * Set the Triton module residency budget in bytes. {@code 0} means
+     * unlimited. Non-zero values enable LRU eviction when aggregate module
+     * memory exceeds the budget.
+     */
+    default void setTritonModuleResidencyBudgetBytes(long bytes) {}
+
+    /**
+     * Returns the Triton module residency warn threshold in bytes. {@code 0}
+     * disables the warning.
+     */
+    default long tritonModuleResidencyWarnBytes() {
+        return 0L;
+    }
+
+    /**
+     * Set the Triton module residency warn threshold in bytes. Emits a
+     * diagnostic when aggregate module memory crosses this threshold.
+     */
+    default void setTritonModuleResidencyWarnBytes(long bytes) {}
+
+    /**
+     * Returns the number of times the Triton module residency warn path
+     * has fired since process start (or since
+     * {@link #clearTritonModuleResidencyWarnFireCount()} was last called).
+     * Exposed for tests — the native warn message is emitted via {@code sd_printf}
+     * which writes to native fd 1 and is not visible to Java's
+     * {@code System.setOut}, so tests observe the warn path via this counter.
+     */
+    default long tritonModuleResidencyWarnFireCount() {
+        return 0L;
+    }
+
+    /**
+     * Reset the Triton module residency warn fire count to zero.
+     */
+    default void clearTritonModuleResidencyWarnFireCount() {}
+
+    /**
+     * Returns whether batched Triton module preload is enabled during
+     * {@code platformPrecompileSegments}. When on, every {@code CompiledKernel}'s
+     * gpuModule slot is populated at compile time so the first kernel launches
+     * do not block on {@code cuModuleLoad}.
+     */
+    default boolean tritonBatchPreloadModules() {
+        return true;
+    }
+
+    /**
+     * Enable or disable batched Triton module preload during compilation.
+     */
+    default void setTritonBatchPreloadModules(boolean enabled) {}
+
+    /**
      * Returns explicit Triton warp override (0 means auto).
      */
     default int tritonNumWarps() {
@@ -1255,9 +1316,9 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     /**
      * Replace per-slot memsets with a single batch-zero kernel during CUDA graph capture.
      * Reduces graph node count by ~800. Controlled by ND4J_DSP_BATCH_ZERO env var.
-     * @return true if batch-zero is enabled (default: false)
+     * @return true if batch-zero is enabled (default: true)
      */
-    default boolean dspBatchZero() { return false; }
+    default boolean dspBatchZero() { return true; }
     default void setDspBatchZero(boolean v) {}
 
     /**
@@ -1289,9 +1350,9 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
      * Group consecutive same-shape matmul slots into single cublasGemmBatchedEx calls.
      * Reduces CUDA graph node count by ~96 nodes for typical transformer models.
      * Controlled by ND4J_DSP_BATCHED_GEMM env var.
-     * @return true if batched GEMM grouping is enabled (default: false)
+     * @return true if batched GEMM grouping is enabled (default: true)
      */
-    default boolean dspBatchedGemm() { return false; }
+    default boolean dspBatchedGemm() { return true; }
     default void setDspBatchedGemm(boolean v) {}
 
     // ============== DSP Optimization Flags ==============
@@ -1311,10 +1372,10 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
      * Whether matmul segmentation is enabled in frozen-shapes rebuild.
      * Breaks mega-segments at matmul boundaries so element-wise chains between
      * matmuls get separate Triton fusion.
-     * @return true if matmul segmentation is enabled (default: false)
+     * @return true if matmul segmentation is enabled (default: true)
      */
     default boolean dspMatmulSegmentation() {
-        return false;
+        return true;
     }
 
     default void setDspMatmulSegmentation(boolean enabled) {}
@@ -1412,12 +1473,8 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     default boolean dspSymbolicShapes() { return true; }
     default void setDspSymbolicShapes(boolean enabled) {}
 
-    /**
-     * Number of observation steps before classifying dimensions as static or dynamic.
-     * @return warmup step count (default: 2)
-     */
-    default int dspSymbolicShapeWarmup() { return 2; }
-    default void setDspSymbolicShapeWarmup(int steps) {}
+    // dspSymbolicShapeWarmup removed — warmup steps are baked in as a compile-time
+    // constant (2) in DspConfig::kSymbolicShapeWarmup on the C++ side.
 
     /**
      * Whether capture buffer allocations are routed through CudaMemoryPool for cross-segment reuse.
@@ -1461,8 +1518,8 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
 
     // ============== DSP Freeze / Merge ==============
 
-    /** Whether to merge value-dependent ops into capturable segments after shapes freeze (default: false) */
-    default boolean dspFreezeMergeSegments() { return false; }
+    /** Whether to merge value-dependent ops into capturable segments after shapes freeze (default: true) */
+    default boolean dspFreezeMergeSegments() { return true; }
     default void setDspFreezeMergeSegments(boolean enabled) {}
 
     /** Whether to recompile segments when shapes freeze (default: false) */

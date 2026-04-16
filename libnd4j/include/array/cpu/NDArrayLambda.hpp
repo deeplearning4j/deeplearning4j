@@ -152,7 +152,7 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(
   auto f = this->bufferAsT<T>();
   auto s = other->bufferAsT<T>();
   auto z = target->bufferAsT<T>();
-  auto isTargetOrderEws = !isView() && !target->isView() && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1);
+  auto isTargetOrderEws = !isView() && !target->isView() && this->ordering() == target->ordering() && (shape::strideDescendingCAscendingF(this->shapeInfo()) && shape::strideDescendingCAscendingF(target->shapeInfo()));
   if (other->isScalar()) {
     auto otherVal = s[other->getOffset(0)];
     if (isTargetOrderEws) {
@@ -369,7 +369,7 @@ SD_LIB_HIDDEN void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>
   auto f = this->bufferAsT<T>();
   auto z = target->bufferAsT<T>();
 
-  if (this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1)) {
+  if (this->ordering() == target->ordering() && (shape::strideDescendingCAscendingF(this->shapeInfo()) && shape::strideDescendingCAscendingF(target->shapeInfo()))) {
     auto loop = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) z[e] = func(e, f[e]);
     };

@@ -69,6 +69,14 @@ typedef sd::memory::MultiBackendWorkspace* OpaqueMultiBackendWorkspace;
 
 
 SD_LIB_EXPORT const char* getAllCustomOps();
+
+/**
+ * Look up op trait flags by op name. Returns the OP_TRAIT_* bitmask
+ * (see ops/declarable/OpDescriptor.h) or 0 if the op is not registered.
+ * Backs Java-side trait queries so hardcoded string sets can be deleted.
+ */
+SD_LIB_EXPORT unsigned int getOpTraits(const char* opName);
+
 SD_LIB_EXPORT OpaqueRandomGenerator* createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
 
 SD_LIB_EXPORT OpaqueContext *createGraphContext(int nodeId);
@@ -548,6 +556,66 @@ SD_LIB_EXPORT bool dbSetConstant(OpaqueDataBuffer *dataBuffer, bool isConstant);
  * Check if a buffer is marked as constant.
  */
 SD_LIB_EXPORT bool dbIsConstant(OpaqueDataBuffer *dataBuffer);
+
+// =====================================================
+// DSP Lifecycle Gates — query DSP (DynamicShapePlan) state from Java
+// so the slot-by-slot execution path can defer writes/syncs/closes that
+// would race a live DSP capture or replay. See
+// libnd4j/include/graph/DspLifecycleContext.h for semantics.
+// =====================================================
+
+/**
+ * True if the underlying DataBuffer is registered in one or more frozen DSP
+ * plans. Frozen plans have baked the buffer address into captured CUDA graphs
+ * or slot contexts; the buffer must not be closed, reallocated, or content-
+ * overwritten outside DSP's own reconciliation path.
+ */
+SD_LIB_EXPORT bool dbIsFrozenPlanRegistered(OpaqueDataBuffer *dataBuffer);
+
+/**
+ * True if `dataBuffer` is DSP-protected (frozen plan ref OR constant flag).
+ * This is the single gate the slot-by-slot close() and resync paths consult.
+ */
+SD_LIB_EXPORT bool dbDspProtects(OpaqueDataBuffer *dataBuffer);
+
+/**
+ * True iff the current thread is inside a DSP graph capture session. Returns
+ * the tl_graphExecutionActive flag managed by NativeDynamicShapePlan.
+ */
+SD_LIB_EXPORT bool dspIsCaptureActive();
+
+/**
+ * True iff the current thread is executing under a DSP-owned stream (replay
+ * path or post-capture slot execution on tl_dspExecutionStream).
+ */
+SD_LIB_EXPORT bool dspIsReplayActive();
+
+/**
+ * True iff DSP owns the current thread's execution in ANY form (capture OR
+ * replay OR slot-by-slot fallback with an active DSP stream). This is the
+ * coarse gate Java uses to decide whether to skip tick/sync/close.
+ */
+SD_LIB_EXPORT bool dspIsOwned();
+
+/**
+ * Returns true iff the slot-by-slot path should skip issuing
+ * `syncToSpecial` on this buffer before executing an op. True when DSP
+ * owns the thread AND the buffer is DSP-protected.
+ */
+SD_LIB_EXPORT bool dspShouldSkipResync(OpaqueDataBuffer *dataBuffer);
+
+/**
+ * Returns true iff a slot-by-slot close() on this buffer must be deferred
+ * to avoid freeing memory DSP still references.
+ */
+SD_LIB_EXPORT bool dspShouldDeferClose(OpaqueDataBuffer *dataBuffer);
+
+/**
+ * Process-wide DspExecutionMode (see graph/DspLifecycleContext.h).
+ *   0 = LEGACY_UNAWARE, 1 = COEXIST_SAFE (default), 2 = STRICT_ISOLATED.
+ */
+SD_LIB_EXPORT int  dspGetExecutionMode();
+SD_LIB_EXPORT void dspSetExecutionMode(int mode);
 
 // =====================================================
 // Transfer Metrics API - for tracking device transfers
@@ -1514,6 +1582,42 @@ SD_LIB_EXPORT int executeDynamicShapePlan(
 SD_LIB_EXPORT void freeDynamicShapePlan(sd::Pointer planHandle);
 
 /**
+ * Create a new per-SameDiff native plan cache. Opaque handle owned by caller;
+ * free via freeNativePlanCache().
+ */
+SD_LIB_EXPORT sd::Pointer createNativePlanCache();
+
+/**
+ * Destroy a cache created by createNativePlanCache(). Frees all entries.
+ */
+SD_LIB_EXPORT void freeNativePlanCache(sd::Pointer cacheHandle);
+
+/**
+ * Clear all entries from a cache (does NOT delete the cache itself).
+ */
+SD_LIB_EXPORT void clearNativePlanCacheHandle(sd::Pointer cacheHandle);
+
+/**
+ * Get-or-build a NativeDynamicShapePlan keyed by (outputSet, placeholder shape-info pointer vector).
+ *
+ * @param cacheHandle           cache from createNativePlanCache (non-null)
+ * @param planBytes             serialized Java DynamicShapePlan (for cold-miss build)
+ * @param planBytesLen          byte count of planBytes
+ * @param outputNames           packed C-string array of output variable names, UTF-8, NUL-separated
+ * @param numOutputs            number of output names
+ * @param phShapeInfoPtrs       array of shape-info pointers (from ConstantShapeHelper); identity = key equality
+ * @param numPlaceholders       length of phShapeInfoPtrs
+ * @return                      NativeDynamicShapePlan* as opaque sd::Pointer; owned by cache
+ */
+SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
+                                             sd::Pointer planBytes,
+                                             sd::LongType planBytesLen,
+                                             sd::Pointer outputNames,
+                                             sd::LongType numOutputs,
+                                             sd::Pointer phShapeInfoPtrs,
+                                             sd::LongType numPlaceholders);
+
+/**
  * Clear shape caches in a compiled plan.
  * Must be called when a session resets to avoid stale GPU memory references.
  *
@@ -1540,51 +1644,6 @@ SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
  * @return the number of intermediate NDArrays freed
  */
 SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle);
-
-/**
- * Release GPU intermediates with option to preserve decode-invariant state.
- * When preserveDecodeState=true, preserves output slot arrays, CUDA graph
- * handles, cuBLAS workspace, and batch replay resources.
- *
- * @param planHandle         Handle from compileDynamicShapePlan()
- * @param preserveDecodeState If true, preserve decode-invariant state
- * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
- */
-SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle, bool preserveDecodeState);
-
-/**
- * Configure KV cache retention for a compiled plan.
- * After this call, execute() will scatter new KV entries into static input buffers
- * instead of returning them as outputs, avoiding per-step JNI round-trips.
- *
- * @param planHandle    Handle from compileDynamicShapePlan()
- * @param mappings      Flat array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
- * @param numMappings   Number of KV cache mappings
- * @param maxKvLen      Maximum KV cache length (static buffer size along sequence dimension)
- * @param initialPos    Initial write position (prefillLen)
- */
-SD_LIB_EXPORT void configurePlanKvCacheRetention(
-    sd::Pointer planHandle,
-    const int* mappings,
-    int numMappings,
-    int maxKvLen,
-    int initialPos);
-
-/**
- * Advance the KV cache write position by 1.
- *
- * @param planHandle  Handle from compileDynamicShapePlan()
- * @return the new position value
- */
-SD_LIB_EXPORT int advancePlanKvCachePosition(sd::Pointer planHandle);
-
-/**
- * Reset KV cache write position.
- *
- * @param planHandle  Handle from compileDynamicShapePlan()
- * @param newPos  New write position
- */
-SD_LIB_EXPORT void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos);
 
 // ─── Replay diagnostics (Phase 2) ──────────────────────────────────────────
 
@@ -1636,44 +1695,30 @@ SD_LIB_EXPORT int getSegmentExecutionCount(sd::Pointer planHandle, int segIdx);
 SD_LIB_EXPORT int getPlanSegmentCount(sd::Pointer planHandle);
 
 /**
- * Configure decode input indices for direct device-side updates.
- * Call once after plan compilation. Maps external input names to indices
- * so execute() can write directly to device memory when setNextDecodeToken() is called.
- *
- * @param planHandle           Handle from compileDynamicShapePlan()
- * @param inputIdsExtIdx       External input index for input_ids (-1 if N/A)
- * @param positionIdsExtIdx    External input index for position_ids (-1 if N/A)
- * @param attentionMaskExtIdx  External input index for attention_mask (-1 if N/A)
- * @param maxKvLen             Maximum KV cache length
- */
-SD_LIB_EXPORT void configurePlanDecodeInputs(
-    sd::Pointer planHandle,
-    int inputIdsExtIdx, int positionIdsExtIdx,
-    int attentionMaskExtIdx, int maxKvLen);
-
-/**
- * Update decode inputs directly on device. Replaces Java-side putScalar calls.
- * Writes tokenId → input_ids, cachePos → position_ids, mask[cachePos-1] = 1.
- * Single JNI call, zero host↔device round-trips.
- *
- * @param planHandle       Handle from compileDynamicShapePlan()
- * @param externalInputs   Pointer to external input NDArray* array
- * @param numExternalInputs Number of external inputs
- * @param tokenId          Next token ID to write
- * @param cachePos         Current cache position
- * @param stream           CUDA stream
- */
-/**
- * Set next decode token and cache position. Call before executeDynamicShapePlan().
- * execute() will write these values directly to device memory before graph replay.
+ * Query whether the plan's compilation has been sealed (first phaseCompile()
+ * has completed). Returns 1 if sealed, 0 if not, -1 on error.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @param tokenId     Next token ID
- * @param cachePos    Current cache position
  */
-SD_LIB_EXPORT void setPlanNextDecodeToken(
-    sd::Pointer planHandle, sd::LongType tokenId, int cachePos);
+SD_LIB_EXPORT int isPlanCompilationSealed(sd::Pointer planHandle);
 
+/**
+ * Returns the count of compileSegment() calls that happened AFTER compilation
+ * was sealed. Any value > 0 is a correctness red flag — it means the plan
+ * re-compiled a segment mid-execution which breaks the freeze/capture contract.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Mid-execution compile count, or -1 on error
+ */
+SD_LIB_EXPORT long long getPlanMidExecutionCompileCount(sd::Pointer planHandle);
+
+/**
+ * Resets the mid-execution compile counter to zero. Used by tests that want
+ * to bracket a section and assert zero recompiles happened inside it.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void resetPlanMidExecutionCompileCount(sd::Pointer planHandle);
 
 /**
  * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
@@ -1810,22 +1855,6 @@ SD_LIB_EXPORT void setPlanTraceEnabled(sd::Pointer planHandle, bool enabled);
  */
 SD_LIB_EXPORT void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
                                                const int* slotIndices, const sd::LongType* maxSizes);
-
-/**
- * Set the KV cache sequence position (for slice-based KV cache access).
- *
- * @param planHandle  Handle from compileDynamicShapePlan()
- * @param pos         Current sequence position (where new KV entries will be written)
- */
-SD_LIB_EXPORT void setPlanKvCachePosition(sd::Pointer planHandle, int pos);
-
-/**
- * Set the maximum KV cache length (for pre-allocated attention outputs).
- *
- * @param planHandle  Handle from compileDynamicShapePlan()
- * @param maxLen      Maximum sequence length for KV cache
- */
-SD_LIB_EXPORT void setPlanMaxKvCacheLength(sd::Pointer planHandle, int maxLen);
 
 /**
  * Get the number of graph segments in a compiled plan.

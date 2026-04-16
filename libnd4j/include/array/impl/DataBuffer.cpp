@@ -439,6 +439,33 @@ void DataBuffer::markConstant(bool reallyConstant) {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Frozen-phase mutation guard.
+// Throws immediately if this buffer is registered in one or more frozen
+// NativeDynamicShapePlan contexts. Call from any mutator that would change
+// the identity of the backing storage (reallocate, free, setPrimary/Special,
+// replaceSpecial, expand, migrate, close, etc.). Content-only writes
+// (writePrimary/writeSpecial/syncTo*) must NOT call this — they don't change
+// the underlying pointer.
+void DataBuffer::throwIfFrozen(const char* op) const {
+  int refCount = _frozenRefCount.load(std::memory_order_relaxed);
+  if (refCount > 0) {
+    char msg[384];
+    snprintf(msg, sizeof(msg),
+             "DataBuffer LIFECYCLE VIOLATION: %s called on frozen DataBuffer %p "
+             "(frozenRefCount=%d, primary=%p, special=%p, lenInBytes=%lld) - "
+             "mutation of identity during frozen-phase execution would invalidate "
+             "baked-in GPU addresses held by frozen slot contexts / CUDA graph replay handles",
+             op ? op : "<unknown>",
+             static_cast<const void*>(this),
+             refCount,
+             _primaryBuffer,
+             _specialBuffer,
+             static_cast<long long>(_lenInBytes));
+    THROW_EXCEPTION(msg);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
 // Validation method following DirectShapeTrie pattern
 // Checks for use-after-free, corrupted pointers, and invalid state
 void DataBuffer::validateIntegrity() const {
@@ -543,6 +570,7 @@ size_t DataBuffer::getNumElements()   {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocatePrimary() {
+  throwIfFrozen("allocatePrimary");
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
   if(allocationStackTracePrimary != nullptr) {
@@ -686,6 +714,14 @@ void DataBuffer::deleteBuffers() {
     return;
   }
 
+  // NOTE: intentionally no throwIfFrozen() here. The destructor calls
+  // deleteBuffers() directly, and throwing from a destructor would call
+  // std::terminate. The frozen guard is enforced at the public close()
+  // entry point and at every mutator that replaces pointers
+  // (setPrimaryBuffer, setSpecialBuffer, replaceSpecialBuffer, expand,
+  // migrate, freeGpuOnly, freeGpuOnStream). If a buffer reaches the
+  // destructor while still frozen, that's a separate lifetime bug that
+  // should be caught by the release-path checks in NativeDynamicShapePlan.
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
@@ -720,6 +756,7 @@ DataBuffer::~DataBuffer() {
 
 
 void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
+  throwIfFrozen("setPrimaryBuffer");
   std::lock_guard<std::mutex> lock(_deleteMutex);
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
@@ -735,6 +772,7 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
 }
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
+  throwIfFrozen("setSpecialBuffer");
   std::lock_guard<std::mutex> lock(_deleteMutex);
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
@@ -815,7 +853,10 @@ std::string DataBuffer::getCreationTraceAsString() const {
 
 int DataBuffer::deviceId() const { return _deviceId.load(); }
 
-void DataBuffer::close() { this->deleteBuffers(); }
+void DataBuffer::close() {
+  throwIfFrozen("close");
+  this->deleteBuffers();
+}
 
 void DataBuffer::setDeviceId(int deviceId) { _deviceId = deviceId; }
 

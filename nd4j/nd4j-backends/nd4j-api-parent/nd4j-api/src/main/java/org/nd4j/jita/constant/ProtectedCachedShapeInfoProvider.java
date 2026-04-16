@@ -82,13 +82,16 @@ public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
         long ews = Shape.elementWiseStride(shapeInfo);
         char order = Shape.order(shapeInfo);
         long extras = Shape.extras(shapeInfo);
+        if (shape.length == 0) {
+            extras = extras & ~ArrayOptionsHelper.ATYPE_EMPTY_BIT;
+        }
         return createShapeInformation(shape, stride, ews, order, extras);
     }
 
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type, boolean empty) {
         long extras = ArrayOptionsHelper.setOptionBit(0L, type);
-        if (empty)
+        if (empty && shape.length > 0)
             extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
 
         extras = ArrayOptionsHelper.setDataType(extras, type);

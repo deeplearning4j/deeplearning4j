@@ -32,7 +32,6 @@ namespace graph {
 struct NativeSlot;
 struct GraphSegment;
 struct LoopRegion;
-struct KvCacheMapping;
 
 /**
  * PlanDefinition — Immutable plan structure shared across plan instances.

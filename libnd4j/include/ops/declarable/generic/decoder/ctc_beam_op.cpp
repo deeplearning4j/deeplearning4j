@@ -84,16 +84,16 @@ CUSTOM_OP_IMPL(ctc_beam, 2, 3, false, 0, -2) {
   REQUIRE_TRUE(result_sequences_length->sizeAt(1) == nbest_len, 0,
                "Ctc Beam Search: shape of the result_sequences_length should be {%i, %i} but got { %i, %i}", batchSize0,
                nbest_len, batchSize4, result_sequences_length->sizeAt(1));
-  REQUIRE_TRUE(result_sequences->ews() == 1 && result_sequences->ordering() == 'c', 0,
-               "Ctc Beam Search: result_sequences output should be ews()==1 and c order: %d == ews(1) %c == order(c) ",
-               result_sequences->ews(), result_sequences->ordering());
-  REQUIRE_TRUE(result_probs->ews() == 1 && result_probs->ordering() == 'c', 0,
-               "Ctc Beam Search: result_probs output should be ews()==1 and c order: %d == ews(1) %c == order(c) ",
-               result_probs->ews(), result_probs->ordering());
+  REQUIRE_TRUE(shape::strideDescendingCAscendingF(result_sequences->shapeInfo()) && result_sequences->ordering() == 'c', 0,
+               "Ctc Beam Search: result_sequences output should be contiguous and c order: contiguous=%d, order=%c",
+               shape::strideDescendingCAscendingF(result_sequences->shapeInfo()), result_sequences->ordering());
+  REQUIRE_TRUE(shape::strideDescendingCAscendingF(result_probs->shapeInfo()) && result_probs->ordering() == 'c', 0,
+               "Ctc Beam Search: result_probs output should be contiguous and c order: contiguous=%d, order=%c",
+               shape::strideDescendingCAscendingF(result_probs->shapeInfo()), result_probs->ordering());
   REQUIRE_TRUE(
-      result_sequences_length->ews() == 1 && result_sequences_length->ordering() == 'c', 0,
-      "Ctc Beam Search: result_sequences_length output should be ews()==1 and c order: %d == ews(1) %c == order(c) ",
-      result_sequences_length->ews(), result_sequences_length->ordering());
+      shape::strideDescendingCAscendingF(result_sequences_length->shapeInfo()) && result_sequences_length->ordering() == 'c', 0,
+      "Ctc Beam Search: result_sequences_length output should be contiguous and c order: contiguous=%d, order=%c",
+      shape::strideDescendingCAscendingF(result_sequences_length->shapeInfo()), result_sequences_length->ordering());
 
   helpers::beamSearch(*logit, *sequence_length, *result_sequences, *result_probs, *result_sequences_length,
                                blank_index, beam_width, nbest_len, normalize_logits);

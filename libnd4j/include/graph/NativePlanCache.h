@@ -1,0 +1,142 @@
+/* ******************************************************************************
+ *
+ * Copyright (c) 2024-2026 Contributors
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+#ifndef LIBND4J_NATIVE_PLAN_CACHE_H
+#define LIBND4J_NATIVE_PLAN_CACHE_H
+
+#include <system/common.h>
+#include <graph/NativeDynamicShapePlan.h>
+
+#include <cstdint>
+#include <functional>
+#include <list>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+namespace sd {
+namespace graph {
+
+/**
+ * LRU cache keyed by (outputSetHash, vector<LongType*>) where each pointer is a
+ * shape-info pointer sourced from ConstantShapeHelper.  Because ConstantShapeHelper
+ * deduplicates identical shapes, pointer equality is shape equality — O(1) key
+ * comparison, zero extra memory per key.
+ *
+ * Budget policy (both enforced on every insert):
+ *   1. Hard cap:    lru_.size() > DspConfig::planCacheMaxPlans()  → evict LRU until satisfied.
+ *   2. Memory soft: estimated cache footprint > planCacheBudgetFraction * freeDeviceMem
+ *      → evict LRU until under budget.  "Estimated footprint" is currently approximated
+ *      as (entry_count * kBytesPerPlanEstimate); a TODO marks the place to wire per-plan
+ *      byte accounting once NativeDynamicShapePlan exposes a memoryUsage() API.
+ *
+ * Ownership: the cache owns every NativeDynamicShapePlan* it stores and deletes them on
+ * eviction or destruction.
+ *
+ * Thread-safety: all public methods are guarded by an internal mutex.
+ */
+class SD_LIB_EXPORT NativePlanCache {
+ public:
+  // -------------------------------------------------------------------------
+  // Key type
+  // -------------------------------------------------------------------------
+  struct Key {
+    uint64_t outputSetHash;
+    // Pointer-equality keys: ConstantShapeHelper guarantees same pointer == same shape.
+    std::vector<sd::LongType*> phShapeInfoPtrs;
+
+    bool operator==(const Key& o) const {
+      return outputSetHash == o.outputSetHash && phShapeInfoPtrs == o.phShapeInfoPtrs;
+    }
+  };
+
+  struct KeyHasher {
+    size_t operator()(const Key& k) const noexcept {
+      // Mix outputSetHash with each pointer using a Fibonacci multiplier to spread bits.
+      size_t h = std::hash<uint64_t>{}(k.outputSetHash);
+      for (const auto* p : k.phShapeInfoPtrs) {
+        h ^= std::hash<const void*>{}(p) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+      }
+      return h;
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Construction / destruction
+  // -------------------------------------------------------------------------
+  NativePlanCache();
+  ~NativePlanCache();
+
+  // Non-copyable, non-movable: owns raw pointers and carries a mutex.
+  NativePlanCache(const NativePlanCache&) = delete;
+  NativePlanCache& operator=(const NativePlanCache&) = delete;
+  NativePlanCache(NativePlanCache&&) = delete;
+  NativePlanCache& operator=(NativePlanCache&&) = delete;
+
+  // -------------------------------------------------------------------------
+  // Public API
+  // -------------------------------------------------------------------------
+
+  /**
+   * Lookup `key`.  If found, promote to MRU position and return the stored plan.
+   * If not found, call `factory()` to create a new plan, insert it at MRU, run
+   * budget enforcement (evictIfOverBudgetLocked), then return the new plan.
+   *
+   * Returns the plan pointer (owned by the cache).  Returns nullptr only if
+   * `factory()` itself returns nullptr.
+   */
+  NativeDynamicShapePlan* getOrInsert(
+      const Key& key,
+      const std::function<NativeDynamicShapePlan*()>& factory);
+
+  /**
+   * Remove all entries, deleting every owned plan.
+   */
+  void clear();
+
+  /** Current number of cached entries. */
+  size_t size() const;
+
+ private:
+  // LRU list: front = most-recently-used, back = least-recently-used.
+  using Entry    = std::pair<Key, NativeDynamicShapePlan*>;
+  using LruList  = std::list<Entry>;
+  using ListIter = LruList::iterator;
+
+  mutable std::mutex mutex_;
+  LruList lru_;
+  std::unordered_map<Key, ListIter, KeyHasher> map_;
+
+  /**
+   * Evict LRU entries until both the hard-count cap and the memory-fraction
+   * soft cap are satisfied.  Must be called with mutex_ already held.
+   */
+  void evictIfOverBudgetLocked();
+
+  // Rough per-plan memory estimate used for the soft memory budget.
+  // TODO: replace with NativeDynamicShapePlan::memoryUsage() once available.
+  static constexpr size_t kBytesPerPlanEstimate = 64ULL * 1024 * 1024;  // 64 MiB
+};
+
+}  // namespace graph
+}  // namespace sd
+
+#endif  // LIBND4J_NATIVE_PLAN_CACHE_H

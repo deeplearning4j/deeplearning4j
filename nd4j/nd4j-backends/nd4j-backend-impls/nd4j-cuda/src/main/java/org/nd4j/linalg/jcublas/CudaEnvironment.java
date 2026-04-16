@@ -928,6 +928,46 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public long tritonModuleResidencyBudgetBytes() {
+        return e.triton().moduleResidencyBudgetBytes();
+    }
+
+    @Override
+    public void setTritonModuleResidencyBudgetBytes(long bytes) {
+        e.triton().setModuleResidencyBudgetBytes(bytes);
+    }
+
+    @Override
+    public long tritonModuleResidencyWarnBytes() {
+        return e.triton().moduleResidencyWarnBytes();
+    }
+
+    @Override
+    public void setTritonModuleResidencyWarnBytes(long bytes) {
+        e.triton().setModuleResidencyWarnBytes(bytes);
+    }
+
+    @Override
+    public long tritonModuleResidencyWarnFireCount() {
+        return e.triton().moduleResidencyWarnFireCount();
+    }
+
+    @Override
+    public void clearTritonModuleResidencyWarnFireCount() {
+        e.triton().clearModuleResidencyWarnFireCount();
+    }
+
+    @Override
+    public boolean tritonBatchPreloadModules() {
+        return e.triton().batchPreloadModules();
+    }
+
+    @Override
+    public void setTritonBatchPreloadModules(boolean enabled) {
+        e.triton().setBatchPreloadModules(enabled);
+    }
+
+    @Override
     public int tritonNumWarps() {
         return e.tritonNumWarps();
     }

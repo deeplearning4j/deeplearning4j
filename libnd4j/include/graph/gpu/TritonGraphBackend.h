@@ -170,6 +170,15 @@ class TritonGraphBackend : public GraphBackend {
 
     size_t estimatedModuleBytes;  // Approximate GPU memory for loaded CUmodule (binary size proxy)
 
+    // ── Module residency LRU metadata ──
+    // Used by ModuleResidencyCache to evict cold modules when per-device byte
+    // budget is exceeded.  When evicted, gpuModule and kernelFunction are
+    // nulled out and the kernel is reloaded from the disk cache on next use.
+    std::string diskCacheHash;   // FNV-1a key for disk cache lookup (reload after eviction)
+    std::string kernelName;      // Mangled kernel name (cuModuleGetFunction after reload)
+    int loadedDeviceId;          // Device the module is currently loaded on (-1 if evicted)
+    uint64_t lruTick;            // Monotonic LRU tick — bumped on every touchModule()
+
     // Sub-segment range (absolute slot indices)
     int startSlot_;
     int endSlot_;
@@ -209,6 +218,7 @@ class TritonGraphBackend : public GraphBackend {
           useIndirectArgs(false),
           useMultiPhaseLaunch(false),
           estimatedModuleBytes(0),
+          loadedDeviceId(-1), lruTick(0),
           startSlot_(-1), endSlot_(-1)
 #ifdef SD_CUDA
           , cachedArgTableDevice(nullptr), cachedArgTableBytes(0),
@@ -303,8 +313,84 @@ class TritonGraphBackend : public GraphBackend {
   size_t getTritonModuleMemory(int deviceId) const;
   size_t getTotalTritonModuleMemory() const;
 
+  // ── ModuleResidencyCache (LRU eviction for loaded CUmodules) ──
+  // Bookkeeping is keyed off the per-device byte counters tritonDeviceMemory_
+  // and the per-CompiledKernel lruTick / loadedDeviceId / estimatedModuleBytes
+  // metadata.  When tritonDeviceMemory_[dev] exceeds
+  // env.triton().moduleResidencyBudgetBytes() (if > 0), the least-recently
+  // used kernels on that device are unloaded via cuModuleUnload until usage
+  // drops below the budget.  Evicted kernels are reloaded from the disk
+  // cache (which is atomic) on next launch.
+  //
+  // Thread safety: registerLoadedKernel/unregisterLoadedKernel/evictIfOverBudget
+  // run under loadedKernelsMtx_.  touchModule writes lruTick with relaxed
+  // atomicity (a stale tick is fine — eviction picks the lowest, not the
+  // exact lowest).  reloadModuleIfEvicted is called on the launch thread
+  // and serializes with eviction via loadedKernelsMtx_ when it bumps the
+  // device memory counter.
+
+  // Bump the LRU tick on a kernel launch.  Cheap, lock-free.
+  void touchModule(CompiledKernel* k);
+
+  // Register a freshly-loaded kernel with the residency cache.
+  // Called immediately after cuModuleLoadDataEx + cuModuleGetFunction.
+  // Holds loadedKernelsMtx_ briefly to add to the per-device tracking list
+  // and trigger an eviction sweep if the device is over budget.
+  void registerLoadedKernel(CompiledKernel* k, int deviceId);
+
+  // Remove a kernel from residency tracking (e.g., when its CompiledSegment
+  // is being deleted from cache_ via invalidateCache or
+  // invalidateCacheForSegments).  Does NOT call cuModuleUnload — the caller
+  // is responsible for that.
+  void unregisterLoadedKernel(CompiledKernel* k);
+
+  // Reload an evicted kernel from the disk cache.  Called on the launch
+  // path when gpuModule == nullptr but diskCacheHash is populated.  Returns
+  // Status::OK on success or KERNEL_FAILURE if the disk-cache read or
+  // cuModuleLoadDataEx fails.  Updates k->gpuModule, k->kernelFunction,
+  // k->loadedDeviceId, and k->estimatedModuleBytes; calls recordModuleAlloc
+  // and registers the reloaded kernel with the residency cache.
+  Status reloadModuleIfEvicted(CompiledKernel* k);
+
+  // While tritonDeviceMemory_[deviceId] > moduleResidencyBudgetBytes(),
+  // unload the least-recently-used kernel on that device.  Caller may
+  // optionally exclude one kernel pointer from eviction (e.g., the kernel
+  // that just got loaded so it doesn't immediately evict itself).
+  // Caller must NOT hold loadedKernelsMtx_; the function takes the lock.
+  void evictIfOverBudget(int deviceId, CompiledKernel* dontEvict = nullptr);
+
+  // ── Batched preload (task #4) ─────────────────────────────────────────────
+  // Force-load every CompiledKernel module in the cache into GPU memory in a
+  // single pass.  Called at the end of platformPrecompileSegments so DSP
+  // execution does not pay per-segment lazy-load latency on the first replay,
+  // and so any disk-cache reload work happens up front rather than scattered
+  // through the steady-state hot path.
+  //
+  // For each cached CompiledKernel:
+  //   - If gpuModule != nullptr, count its bytes toward the projected total.
+  //   - Otherwise (e.g., previously evicted), reload from the disk cache via
+  //     reloadModuleIfEvicted() and count the freshly-loaded bytes.
+  //
+  // Before doing any reloads, the projected total is compared against
+  // env.triton().moduleResidencyBudgetBytes() (when > 0); if the projection
+  // exceeds the budget a loud sd_printf warning is emitted but the preload
+  // still runs (the budget is advisory at preload time — eviction will trim
+  // after the fact if needed).
+  //
+  // @param deviceId  Device that the caller has already activated via
+  //                  cudaSetDevice — used both for the budget check and as
+  //                  the device-id passed to recordModuleAlloc on reloads.
+  // @return Status::OK on success, KERNEL_FAILURE if any reload fails.
+  Status preloadAllModules(int deviceId);
+
  private:
   std::atomic<size_t> tritonDeviceMemory_[kMaxTritonDevices]{};
+
+  // Residency LRU bookkeeping
+  mutable std::mutex loadedKernelsMtx_;
+  std::vector<CompiledKernel*> loadedKernels_[kMaxTritonDevices];
+  std::atomic<uint64_t> lruTickCounter_{1};
+  std::atomic<bool> residencyWarned_[kMaxTritonDevices]{};
   // Most recent compilation audit
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
@@ -370,6 +456,12 @@ class TritonGraphBackend : public GraphBackend {
                                const std::string& cacheHash,
                                const TritonIRModule& irModule,
                                TritonCompiledBinary& binary) const;
+  // Reload-from-eviction variant.  Validates against the supplied kernelName
+  // (instead of pulling it from a TritonIRModule) and is callable without an
+  // MLIR context, since reloads happen long after IR build.
+  bool loadBinaryFromDiskCacheByHash(const std::string& cacheHash,
+                                     const std::string& kernelName,
+                                     TritonCompiledBinary& binary) const;
   void writeBinaryToDiskCache(int startSlot, int endSlot,
                               const std::string& cacheHash,
                               const TritonIRModule& irModule,

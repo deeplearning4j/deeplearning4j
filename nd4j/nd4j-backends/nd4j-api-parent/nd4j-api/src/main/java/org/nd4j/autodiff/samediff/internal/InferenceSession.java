@@ -91,12 +91,27 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
 
-    // Ops with data-dependent output shapes that can't be cached even with non-INT/LONG inputs.
-    // Where: output length depends on number of true elements in BOOL input.
-    // unique: output length depends on number of unique values.
-    // Ops with data-dependent output shapes (shape depends on input VALUES, not just input shapes)
-    // These ops are never cacheable and always need INT/LONG input sync.
-    private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("Where", "unique");
+    // Matches OP_TRAIT_DATA_DEPENDENT in libnd4j/include/ops/declarable/OpDescriptor.h (1 << 9).
+    // Ops carrying this trait have output shapes that depend on input VALUES rather than
+    // input shapes alone (e.g. Where, unique). They are never shape-cacheable and always
+    // require INT/LONG input sync.
+    private static final int OP_TRAIT_DATA_DEPENDENT = 1 << 9;
+
+    // Cache of op-name → trait bitmask. The underlying native table is immutable once
+    // initOpTraits() has run, so per-name lookups are memoised to avoid a JNI round-trip
+    // on every op execution.
+    private static final Map<String, Integer> OP_TRAIT_CACHE = new ConcurrentHashMap<>();
+
+    private static boolean isDataDependentOutputOp(String opName) {
+        if (opName == null) return false;
+        Integer cached = OP_TRAIT_CACHE.get(opName);
+        if (cached == null) {
+            int traits = NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraits(opName);
+            cached = traits;
+            OP_TRAIT_CACHE.put(opName, cached);
+        }
+        return (cached & OP_TRAIT_DATA_DEPENDENT) != 0;
+    }
 
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
@@ -1250,8 +1265,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // to reduce cudaMalloc churn for growing shapes (KV cache).
         // NOTE: Cache must be enabled before the plan check — it also prevents premature
         // DataBuffer close in the standard executeOperations path.
-        // Growth factor is scoped to DSP execution only (via withGrowthFactor) to prevent
-        // leaking oversized buffers into standard execution if the plan returns null.
+        // Growth factor is pinned to 1.0 (exact match) during DSP via withGrowthFactor;
+        // any oversize allocation leaves a tail that nullify() cannot zero.
         if (mmgr instanceof ArrayCacheMemoryMgr) {
             ArrayCacheMemoryMgr.setEnableCache(true);
         }
@@ -1281,13 +1296,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
         }
 
-        // Execute with scoped growth factor.
-        // Growth factor 1.1x is active ONLY during DSP execution — if the plan returned
-        // null above, the growth factor stays at its default (1.0) and standard execution
-        // won't create oversized buffers that leak stale data via cuBLAS partial writes.
+        // DSP replay executes a fixed plan with known shapes, so exact-match allocation has
+        // no amortization cost. A >1.0 growth factor creates a gap between logical length
+        // and allocated bytes that nullify() (which zeros logical bytes only) cannot cover,
+        // leaving stale tail data visible to any op that writes fewer bytes than allocated.
         long memBeforeExec = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
         Map<String, INDArray> rawResults;
-        try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.1)) {
+        try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.0)) {
             rawResults = executor.execute(plan, placeholderArrays);
         } catch (RuntimeException e) {
             throw e;
@@ -3498,7 +3513,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Ops with data-dependent output shapes (Where, unique) are never cacheable.
         // Ops with INT/LONG inputs (reshape, permute, create, etc.) ARE cacheable but we
         // include the actual input values in the cache key to handle different values correctly.
-        boolean isDataDependent = DATA_DEPENDENT_OUTPUT_OPS.contains(customOp.opName());
+        boolean isDataDependent = isDataDependentOutputOp(customOp.opName());
         boolean cacheable = !isDataDependent;
         boolean hasIntLongInputs = false;
         if (cacheable) {
@@ -3559,6 +3574,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     if (TIMING_ENABLED) timingIntLongSyncCount++;
                     Nd4j.getExecutioner().commit();
                     NativeOps syncNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    // DSP gate: if DSP owns the current thread (capture or replay),
+                    // pre-shape-calc D2H on protected buffers would either break
+                    // graph capture or race the replay handle. Skip per-buffer.
+                    final boolean dspOwnsThread = syncNativeOps.dspIsOwned();
                     List<INDArray> inputArrays = opContext.getInputArrays();
                     for (int i = 0; i < inputArrays.size(); i++) {
                         INDArray in = inputArrays.get(i);
@@ -3567,7 +3586,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                 || in.dataType() == DataType.BOOL)
                                 && !in.data().isConstant()) {
                             if (isDataDependent || in.length() <= 32) {
-                                syncNativeOps.dbForceSyncToPrimary(in.data().opaqueBuffer());
+                                OpaqueDataBuffer opaque = in.data().opaqueBuffer();
+                                if (dspOwnsThread && syncNativeOps.dbDspProtects(opaque)) {
+                                    continue;
+                                }
+                                syncNativeOps.dbForceSyncToPrimary(opaque);
                             }
                         }
                     }
@@ -3680,13 +3703,22 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // device buffer, producing wrong results (e.g. Where selects wrong branch →
         // broadcast_to gets [1,1] instead of [1,32]). Re-syncing ensures device buffers
         // are current before the kernel launches.
+        //
+        // DSP gate: dspShouldSkipResync is true iff DSP owns the current thread AND the
+        // buffer is DSP-protected. In that case DSP's own capture path already baked the
+        // correct H2D into the replay handle; issuing a second H2D here inserts a stray
+        // stream-0 memcpy node (during capture) or races the replay launch. Skip it.
         if (isDataDependent) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             List<INDArray> syncInputs = opContext.getInputArrays();
             for (int si = 0; si < syncInputs.size(); si++) {
                 INDArray in = syncInputs.get(si);
                 if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()) {
-                    nativeOps.dbSyncToSpecial(in.data().opaqueBuffer());
+                    OpaqueDataBuffer opaque = in.data().opaqueBuffer();
+                    if (nativeOps.dspShouldSkipResync(opaque)) {
+                        continue;
+                    }
+                    nativeOps.dbSyncToSpecial(opaque);
                 }
             }
         }
@@ -3741,7 +3773,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // (in outputArrays[]) were allocated by this method and are not referenced anywhere
         // else — they must be freed immediately to prevent GPU OOM.
         // Skip if effectiveOutputs IS outputArrays (no migration happened).
+        //
+        // DSP gate: dspShouldDeferClose is true iff (a) the buffer is DSP-protected
+        // (frozen-plan ref or constant) OR (b) DSP owns the thread. Either condition
+        // means freeing here would yank memory out from under a live replay handle.
+        // Defer the close — the buffer will be reaped by the plan destructor or the
+        // Java use-tracker once DSP releases its reference.
         if (effectiveOutputs != outputArrays) {
+            NativeOps closeNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             for (int i = 0; i < outputArrays.length; i++) {
                 INDArray preExecArr = outputArrays[i];
                 if (preExecArr == null || preExecArr.wasClosed()) continue;
@@ -3749,6 +3788,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 // closing would corrupt the source) and not already the effective output.
                 boolean isEffective = (i < effectiveOutputs.length && effectiveOutputs[i] == preExecArr);
                 if (!isEffective && !preExecArr.isView()) {
+                    OpaqueDataBuffer preOpaque = preExecArr.data() != null ? preExecArr.data().opaqueBuffer() : null;
+                    if (preOpaque != null && closeNativeOps.dspShouldDeferClose(preOpaque)) {
+                        continue;
+                    }
                     try {
                         preExecArr.close();
                     } catch (Exception e) {

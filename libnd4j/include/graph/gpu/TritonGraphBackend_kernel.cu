@@ -36,6 +36,19 @@ namespace graph {
 
 using namespace triton_internal;
 
+// Cached CUDA device ID for arg table operations.
+// Device never changes during a replay step — caching avoids redundant
+// cudaGetDevice() calls (~5-10us each) in refreshArgTablesForReplay and
+// copyConsolidatedArgTableToDevice.
+static thread_local int tl_cachedCudaDevice = -1;
+
+static inline int getCachedCudaDevice() {
+  if (tl_cachedCudaDevice < 0) {
+    cudaGetDevice(&tl_cachedCudaDevice);
+  }
+  return tl_cachedCudaDevice;
+}
+
 Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeSlot* slots,
                                                 NDArray** externalInputs, int numExternalInputs,
                                                 NDArray** outputSlots, int totalOutputSlots,
@@ -43,6 +56,44 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                                                 NDArray** slotArrayCache) {
   int numBufferArgs = static_cast<int>(compiled.argSlotMapping.size());
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
+
+  // ── ModuleResidencyCache reload + LRU touch ──
+  // If the kernel module was evicted by a prior over-budget sweep, reload it
+  // from the disk cache before we touch any of its launch state.  Touch the
+  // LRU tick on every launch so eviction picks the actually-coldest module.
+  //
+  // We deliberately reload BEFORE the stream-capture check below: a reload
+  // during initial capture is fine (the new function pointer goes into the
+  // captured graph), but evicting some OTHER module mid-capture would
+  // invalidate the in-flight graph.  reloadModuleIfEvicted re-registers the
+  // kernel which can trigger an eviction sweep — guard that by checking
+  // capture status first and skipping the reload if we're already capturing.
+  if (compiled.gpuModule == nullptr) {
+    bool earlyStreamIsCapturing = false;
+    if (actualStream != nullptr) {
+      cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
+      if (cudaStreamIsCapturing(static_cast<cudaStream_t>(actualStream), &capStat) == cudaSuccess &&
+          capStat != cudaStreamCaptureStatusNone) {
+        earlyStreamIsCapturing = true;
+      }
+    }
+    if (earlyStreamIsCapturing) {
+      sd_printf("TritonGraphBackend::executeSingleKernel: cannot reload evicted kernel "
+                "[%d-%d] hash=%s while stream is capturing — would risk invalidating "
+                "the in-flight CUDA graph.\n",
+                compiled.startSlot_, compiled.endSlot_, compiled.diskCacheHash.c_str());
+      return Status::KERNEL_FAILURE;
+    }
+    Status reloadStatus = reloadModuleIfEvicted(&compiled);
+    if (reloadStatus != Status::OK) {
+      DSP_DIAG(EXECUTE,
+               "TritonGraphBackend::executeSingleKernel: reload failed for evicted "
+               "kernel [%d-%d] (hash=%s)",
+               compiled.startSlot_, compiled.endSlot_, compiled.diskCacheHash.c_str());
+      return reloadStatus;
+    }
+  }
+  touchModule(&compiled);
 
   // Clear any sticky CUDA errors left by prior sub-kernel failures.
   // Without this, a device-side error (e.g., misaligned access) from an earlier
@@ -374,6 +425,41 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                            srcArr ? (long long)srcArr->lengthOf() : -1LL);
         }
         DSP_DIAG(EXECUTE, "  SLOT[%d] wiring: %s", si, wireBuf);
+      }
+    }
+  }
+
+  // ── INT64 input buffer dump diagnostic ──
+  // When verify mode is active, dump the actual device contents of INT64 inputs
+  // so we can detect whether the Triton kernel reads stale or wrong data.
+  if (DSP_DIAG_ENABLED(VERIFY)) {
+    for (int i = 0; i < numBufferArgs; i++) {
+      auto& am = compiled.argSlotMapping[i];
+      if (am.isOutput) continue;
+      NDArray* dbgArr = nullptr;
+      if (am.slotIndex < 0) {
+        int ei = -(am.slotIndex + 1);
+        if (ei < numExternalInputs) dbgArr = externalInputs[ei];
+      } else if (am.slotIndex < totalOutputSlots) {
+        dbgArr = outputSlots[am.slotIndex];
+      }
+      if (!dbgArr || dbgArr->lengthOf() == 0) continue;
+      // Only dump INT64 inputs with len <= 64 (attention mask sized)
+      if (dbgArr->dataType() != INT64 || dbgArr->lengthOf() > 64) continue;
+
+      LongType len = dbgArr->lengthOf();
+      std::vector<int64_t> hostBuf(len);
+      auto syncErr = cudaMemcpy(hostBuf.data(), bufferPtrs[i], len * sizeof(int64_t), cudaMemcpyDeviceToHost);
+      if (syncErr == cudaSuccess) {
+        std::string vals;
+        for (LongType e = 0; e < len && vals.size() < 256; e++) {
+          if (e) vals += ",";
+          vals += std::to_string(hostBuf[e]);
+        }
+        DSP_DIAG(VERIFY, "INT64_INPUT_DUMP: subK[%d-%d] ARG[%d] slot=%d len=%lld ptr=%p "
+                 "deviceValues=[%s]",
+                 compiled.startSlot_, compiled.endSlot_, i, am.slotIndex,
+                 (long long)len, bufferPtrs[i], vals.c_str());
       }
     }
   }
@@ -978,31 +1064,9 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
   }
 
-  // Also mark ALL output slots in this sub-kernel's range as device-written.
-  // The argSlotMapping only covers kernel arguments (externally-visible outputs),
-  // but some output slots might be written by the kernel yet not appear in
-  // argSlotMapping (e.g., cross-section intermediates that were merged into
-  // external outputs during IR building). Missing writeSpecial() on these
-  // causes subsequent native gap ops to overwrite fresh GPU data with stale
-  // host data when they call prepareSpecialUse → syncToDevice.
-  int rangeWriteSpecialCount = 0;
-  for (int si = compiled.startSlot_; si <= compiled.endSlot_; si++) {
-    for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
-      int outIdx = slots[si].wiring.outputSlotIndices[o];
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
-        auto* db = outputSlots[outIdx]->dataBuffer();
-        if (db) {
-          db->writeSpecial();
-          rangeWriteSpecialCount++;
-        }
-      }
-    }
-  }
-
-  DSP_DIAG(EXECUTE, "ACTUALITY MARK: [%d-%d] argMap: %d writeSpecial, %d readSpecial; "
-           "range scan: %d writeSpecial",
+  DSP_DIAG(EXECUTE, "ACTUALITY MARK: [%d-%d] argMap: %d writeSpecial, %d readSpecial",
            compiled.startSlot_, compiled.endSlot_,
-           writeSpecialCount, readSpecialCount, rangeWriteSpecialCount);
+           writeSpecialCount, readSpecialCount);
 
   return Status::OK;
 }
@@ -1014,8 +1078,19 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** outputSlots, int totalOutputSlots,
     void* execStream) {
-  int currentDevice = -1;
-  cudaGetDevice(&currentDevice);
+
+  // Phase diagnostic: detect when refresh is called despite argTableStable being true.
+  // This indicates the caller skipped the fast-replay gate, which is a performance bug.
+  // Not a hard assert because verify mode intentionally bypasses the gate.
+#ifndef NDEBUG
+  if (seg.exec.argTableStable) {
+    DSP_DIAG(EXECUTE, "PHASE_WARN: refreshArgTablesForReplay called while argTableStable=true "
+             "for seg[%d-%d] execCount=%d — caller should have used fast-replay path",
+             seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
+  }
+#endif
+
+  int currentDevice = getCachedCudaDevice();
 
   auto& refreshEnv = Environment::getInstance();
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, currentDevice,
@@ -1117,7 +1192,10 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   // ── TRIPWIRE: scan arg tables for NULL (0) pointer entries ──────────
   // A NULL device pointer in the arg table will cause SIGSEGV at address 0x0
   // during cudaGraphLaunch when the kernel tries to dereference it.
-  {
+  // REPLAY OPTIMIZATION: Only run during first few replays (executionCount < 4).
+  // After 3+ successful replays, pointers are stable. Skipping the full scan
+  // saves host-side overhead per segment per step (matches gpubackend tripwire gating).
+  if (seg.exec.executionCount < 4) {
     int nullArgEntries = 0;
     for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
       auto& subKernel = compiledSeg->subKernels[ki];
@@ -1175,8 +1253,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
 }
 
 void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream) {
-  int currentDevice = -1;
-  cudaGetDevice(&currentDevice);
+  int currentDevice = getCachedCudaDevice();
 
   // Dereference void* → cudaStream_t (stream is a pointer-to-cudaStream_t)
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;

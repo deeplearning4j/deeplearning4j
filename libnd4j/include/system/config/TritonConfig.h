@@ -36,6 +36,24 @@ class SD_LIB_EXPORT TritonConfig {
   // Build settings
   std::atomic<int> _buildThreads{8};
   std::atomic<bool> _cacheEnabled{true};
+  // Soft byte budget for resident CUmodule handles per device. When exceeded,
+  // least-recently-used kernels are evicted via cuModuleUnload and reloaded
+  // from the disk cache on next use. 0 = unlimited (no eviction, current
+  // behavior). Set via ND4J_TRITON_MODULE_RESIDENCY_BUDGET_BYTES.
+  std::atomic<int64_t> _moduleResidencyBudgetBytes{0};
+  // If >0, warn (DSP_DIAG + sd_printf) when per-device module memory exceeds
+  // this byte threshold. 0 = no warning. Set via ND4J_TRITON_MODULE_RESIDENCY_WARN_BYTES.
+  std::atomic<int64_t> _moduleResidencyWarnBytes{0};
+  // Counter incremented every time the module-residency warn path fires
+  // (once per device per plan, since the warn flag is latched). Exposed for
+  // tests — sd_printf writes to native fd 1 which Java's System.setOut cannot
+  // intercept, so tests observe the warn path via this counter instead.
+  std::atomic<int64_t> _moduleResidencyWarnFireCount{0};
+  // If true (default), all compiled CompiledKernel modules are force-loaded into
+  // GPU memory in a single batched pass at the end of platformPrecompileSegments,
+  // rather than being loaded lazily on first use. Set via
+  // ND4J_TRITON_BATCH_PRELOAD_MODULES.
+  std::atomic<bool> _batchPreloadModules{true};
   std::atomic<bool> _cooperativeLaunch{false};
   std::atomic<int> _coopTargetBlocks{0};
   std::atomic<int> _maxSubsegmentOps{0};
@@ -111,6 +129,21 @@ class SD_LIB_EXPORT TritonConfig {
   void setBuildThreads(int threads);
   bool cacheEnabled() { return _cacheEnabled.load(); }
   void setCacheEnabled(bool v) { _cacheEnabled.store(v); }
+  int64_t moduleResidencyBudgetBytes() { return _moduleResidencyBudgetBytes.load(); }
+  void setModuleResidencyBudgetBytes(int64_t bytes) {
+    _moduleResidencyBudgetBytes.store(bytes < 0 ? 0 : bytes);
+  }
+  int64_t moduleResidencyWarnBytes() { return _moduleResidencyWarnBytes.load(); }
+  void setModuleResidencyWarnBytes(int64_t bytes) {
+    _moduleResidencyWarnBytes.store(bytes < 0 ? 0 : bytes);
+  }
+  int64_t moduleResidencyWarnFireCount() { return _moduleResidencyWarnFireCount.load(); }
+  void incrementModuleResidencyWarnFireCount() {
+    _moduleResidencyWarnFireCount.fetch_add(1, std::memory_order_relaxed);
+  }
+  void clearModuleResidencyWarnFireCount() { _moduleResidencyWarnFireCount.store(0); }
+  bool batchPreloadModules() { return _batchPreloadModules.load(); }
+  void setBatchPreloadModules(bool v) { _batchPreloadModules.store(v); }
   bool cooperativeLaunch() { return _cooperativeLaunch.load(); }
   void setCooperativeLaunch(bool v) { _cooperativeLaunch.store(v); }
   int coopTargetBlocks() { return _coopTargetBlocks.load(); }

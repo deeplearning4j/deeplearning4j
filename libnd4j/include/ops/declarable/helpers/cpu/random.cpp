@@ -130,7 +130,7 @@ void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArr
     copyAlpha = alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), alpha);
     copyBeta = betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), beta);
   }
-  bool directOutput = output->ews() == 1 && output->ordering() == 'c';
+  bool directOutput = shape::strideDescendingCAscendingF(output->shapeInfo()) && output->ordering() == 'c';
   T* outputBuf = output->dataBuffer()->primaryAsT<T>();
 
   PRAGMA_OMP_PARALLEL_FOR
@@ -180,8 +180,8 @@ void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDA
   auto step = lambda->lengthOf();
   T* lambdaBuf = lambda->dataBuffer()->primaryAsT<T>();
   Z* outputBuf = output->dataBuffer()->primaryAsT<Z>();
-  bool directLa = lambda->ews() == 1 && lambda->ordering() == 'c';
-  bool directOut = output->ews() == 1 && output->ordering() == 'c';
+  bool directLa = shape::strideDescendingCAscendingF(lambda->shapeInfo()) && lambda->ordering() == 'c';
+  bool directOut = shape::strideDescendingCAscendingF(output->shapeInfo()) && output->ordering() == 'c';
   PRAGMA_OMP_PARALLEL_FOR
   for (sd::LongType k = 0; k < shift; k++) {
     auto pos = k * step;

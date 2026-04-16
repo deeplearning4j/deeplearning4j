@@ -21,6 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/DataTypeUtils.h>
+#include <climits>
 #include <exceptions/allocation_exception.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
@@ -79,6 +80,13 @@ SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount = 0;
 // stream 0 and skips per-call cudaStreamSynchronize (caller guarantees ordering
 // via same-stream graph launch or explicit sync). Set/unset by DSP replay path.
 SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream = nullptr;
+
+// Per-island slot range filter for composite CUDA graph capture.
+// When tl_islandSlotMin <= tl_islandSlotMax, TritonGraphBackend::executeSegment
+// skips sub-kernels outside [tl_islandSlotMin, tl_islandSlotMax].
+// INT_MIN/INT_MAX (no restriction) when not in island capture mode.
+SD_TLS_EXPORT thread_local int tl_islandSlotMin = INT_MIN;
+SD_TLS_EXPORT thread_local int tl_islandSlotMax = INT_MAX;
 
 // Capture host workspace: pre-allocated PINNED HOST buffer for eliminating
 // cudaMallocHost calls during CUDA graph capture. H2D memcpy nodes bake the
@@ -143,6 +151,7 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
 }  // namespace
 
 void DataBuffer::expand(const uint64_t size) {
+  throwIfFrozen("expand");
   if (size > _lenInBytes) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
@@ -493,6 +502,7 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
+  throwIfFrozen("allocateSpecial");
   if (_specialBuffer != nullptr) {
     if (isConstant) {
       // Constant buffers are cached and shared - don't migrate them
@@ -1123,6 +1133,7 @@ void DataBuffer::deleteSpecial() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::freeGpuOnly() {
+  throwIfFrozen("freeGpuOnly");
   deleteSpecial();
   deletePrimary();
   closed = true;
@@ -1130,6 +1141,7 @@ void DataBuffer::freeGpuOnly() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::freeGpuOnStream(void* stream) {
+  throwIfFrozen("freeGpuOnStream");
   // Free GPU (special) buffer on the specified CUDA stream.
   // This is used by DSP mid-execution flushing to free on the execution stream
   // instead of the default stream 0. When allocations and frees happen on the
@@ -1364,6 +1376,7 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
 }
 
 void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
+  throwIfFrozen("replaceSpecialBuffer");
   // Replace _specialBuffer WITHOUT calling deleteSpecial() — caller handles old pointer.
   // This is used for weight migration: old pool pointer already freed via cudaFreeAsync,
   // new direct pointer allocated via cudaMalloc.
@@ -1548,15 +1561,9 @@ void DataBuffer::migrate() {
   // frozen slot contexts and/or CUDA graph replay handles. Migrating would free
   // the old pointer and allocate a new one on a different device, leaving the
   // frozen plan with a dangling address → SIGSEGV on next replay.
-  if (isFrozenPlanRegistered()) {
-    // Log blocked migration so silent device violations are visible.
-    // This fires at MEMORY level — enable with ND4J_DSP_DIAGNOSTICS=MEMORY.
-    DSP_DIAG(MEMORY, "FROZEN_MIGRATION_BLOCKED: DataBuffer %p (device=%d, specialBuf=%p, "
-              "frozenRefCount=%d) — migration attempt skipped, buffer registered in frozen plan",
-              static_cast<void*>(this), _deviceId.load(), _specialBuffer,
-              _frozenRefCount.load(std::memory_order_relaxed));
-    return;
-  }
+  // Throw immediately so the offending caller shows up in the stack trace
+  // instead of surfacing later as a corrupted pointer in BufferPointerSnapshot.
+  throwIfFrozen("migrate");
 
   auto currentDeviceId = AffinityManager::currentDeviceId();
   // Use _specialDeviceId for the old buffer since we're migrating the special buffer

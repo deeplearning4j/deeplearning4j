@@ -169,6 +169,14 @@ public interface NativeOps {
 
  String getAllCustomOps();
 
+ /**
+  * Look up op trait flags by op name. Returns the OP_TRAIT_* bitmask
+  * matching {@code libnd4j/include/ops/declarable/OpDescriptor.h}, or 0 if
+  * the op is unknown. Used by the Java session code to replace hardcoded
+  * string sets with a trait query.
+  */
+ int getOpTraits(String opName);
+
  void inspectArray(PointerPointer  extraPointers, Pointer  buffer, LongPointer shapeInfo, Pointer specialBuffer,
                    LongPointer specialShapeInfo, Pointer  debugInfo);
 
@@ -587,6 +595,53 @@ public interface NativeOps {
   * @return True if the buffer is marked as constant
   */
  boolean dbIsConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+
+ // =====================================================
+ // DSP Lifecycle Gates — see libnd4j/include/graph/DspLifecycleContext.h
+ //
+ // These let InferenceSession.executeCustomOp (the slot-by-slot path) ask
+ // the native DSP layer whether its intended mutation (resync, close, tick)
+ // will race an in-flight DSP capture or replay. When it would, the mutation
+ // is deferred to DSP's own reconciliation path.
+ // =====================================================
+
+ /** True if this DataBuffer has one or more frozen DSP plan references. */
+ boolean dbIsFrozenPlanRegistered(OpaqueDataBuffer dataBuffer);
+
+ /** True if `dataBuffer` is DSP-protected (frozen plan ref OR constant flag). */
+ boolean dbDspProtects(OpaqueDataBuffer dataBuffer);
+
+ /** True iff the current thread is inside a DSP graph capture session. */
+ boolean dspIsCaptureActive();
+
+ /** True iff the current thread is executing under a DSP-owned stream. */
+ boolean dspIsReplayActive();
+
+ /** True iff DSP owns the current thread's execution (capture OR replay). */
+ boolean dspIsOwned();
+
+ /**
+  * True iff the slot-by-slot path should skip issuing a pre-exec
+  * dbSyncToSpecial on this buffer (DSP owns the thread + buffer is protected).
+  */
+ boolean dspShouldSkipResync(OpaqueDataBuffer dataBuffer);
+
+ /**
+  * True iff a slot-by-slot close() on this buffer must be deferred to avoid
+  * freeing memory DSP still references.
+  */
+ boolean dspShouldDeferClose(OpaqueDataBuffer dataBuffer);
+
+ /**
+  * Process-wide DspExecutionMode.
+  *   0 = LEGACY_UNAWARE (all gates become no-ops; bisect regressions)
+  *   1 = COEXIST_SAFE (default; slot-by-slot defers state mutations that
+  *       would race a live DSP capture or replay)
+  *   2 = STRICT_ISOLATED (same as COEXIST_SAFE plus hard refusal to touch
+  *       DSP-protected buffers while DSP owns the thread — test-only)
+  */
+ int  dspGetExecutionMode();
+ void dspSetExecutionMode(int mode);
 
  void setShapeBuffer(LongPointer inputShapeData, int dt, LongPointer bufferToSet, char order, int elementWiseStride, boolean isEmpty, boolean isView);
 
@@ -1370,11 +1425,64 @@ public interface NativeOps {
  // ─── Native Graph Executor (DynamicShapePlan) ────────────────────────────
 
  /**
+  * Create a native plan cache. The returned handle owns the lifetimes of all
+  * shape-keyed plan handles dispatched from it. Call {@link #freeNativePlanCache(Pointer)}
+  * to release. Usually one cache per SameDiff instance.
+  */
+ default Pointer createNativePlanCache() {
+     throw new UnsupportedOperationException("createNativePlanCache not implemented in this backend");
+ }
+
+ /**
+  * Free a native plan cache, releasing all compiled plan handles it owns and
+  * all associated GPU memory (capture buffers, workspaces, replay state).
+  */
+ default void freeNativePlanCache(Pointer cache) {
+     throw new UnsupportedOperationException("freeNativePlanCache not implemented in this backend");
+ }
+
+ /**
+  * Clear the cache's in-memory map of shape-keyed plan handles WITHOUT freeing
+  * the cache itself. Typically called when the graph structure changes so stale
+  * shape-keyed handles don't linger.
+  */
+ default void clearNativePlanCacheHandle(Pointer cache) {
+     throw new UnsupportedOperationException("clearNativePlanCacheHandle not implemented in this backend");
+ }
+
+ /**
+  * Dispatch a serialized DynamicShapePlan against a set of placeholder shapes.
+  * Looks up (or compiles on miss) a handle keyed by the placeholder shape signature
+  * and returns it. The returned handle is owned by the cache and must not be freed
+  * by the caller; it remains valid until the cache is cleared or freed.
+  *
+  * @param cache            cache handle from {@link #createNativePlanCache()}
+  * @param planBytes        pointer to the serialized plan bytes
+  * @param planBytesLen     size of the serialized plan in bytes
+  * @param outputNames      {@code char**} of null-terminated output variable names
+  * @param numOutputs       number of output names
+  * @param phShapeInfoPtrs  {@code LongType**} of placeholder shape-info pointers
+  *                         (e.g., from ConstantShapeHelper), in the order declared by the plan
+  * @param numPlaceholders  number of placeholder shape-info pointers
+  * @return handle to the compiled plan for this shape signature (cache-owned), or null on failure
+  */
+ default Pointer dispatchNativePlan(Pointer cache,
+                                    Pointer planBytes, long planBytesLen,
+                                    Pointer outputNames, long numOutputs,
+                                    Pointer phShapeInfoPtrs, long numPlaceholders) {
+     throw new UnsupportedOperationException("dispatchNativePlan not implemented in this backend");
+ }
+
+ /**
   * Compile a serialized DynamicShapePlan into a native C++ executor.
   * @param serializedPlan pointer to the serialized plan bytes
   * @param planSize size of the serialized plan in bytes
   * @return opaque handle to the compiled plan, or null on failure
+  * @deprecated Use {@link #dispatchNativePlan(Pointer, Pointer, long, PointerPointer, int, PointerPointer, int)}
+  *             with a native plan cache instead — shape-keyed dispatch is required to avoid
+  *             in-plan slot mutation across differing input shapes.
   */
+ @Deprecated
  default Pointer compileDynamicShapePlan(Pointer serializedPlan, long planSize) {
      throw new UnsupportedOperationException("compileDynamicShapePlan not implemented in this backend");
  }
@@ -1431,19 +1539,6 @@ public interface NativeOps {
  }
 
 /**
- * Release GPU intermediates with option to preserve decode-invariant state.
- * When preserveDecodeState=true, preserves output slot arrays, CUDA graph
- * handles, cuBLAS workspace, and batch replay resources.
- *
- * @param planHandle handle from compileDynamicShapePlan()
- * @param preserveDecodeState if true, preserve decode-invariant state
-  * @return the number of intermediate NDArrays freed (0 if preserveDecodeState=true)
-  */
- default int releaseGpuIntermediates(Pointer planHandle, boolean preserveDecodeState) {
-     throw new UnsupportedOperationException("releaseGpuIntermediates(preserveDecodeState) not implemented in this backend");
- }
-
- /**
   * Get constant cache bytes for a specific device.
   * @param deviceId the device ID
   * @return number of bytes cached for constants
@@ -1528,62 +1623,6 @@ public interface NativeOps {
   */
  default String inspectTritonCacheBundle(String bundlePath) {
      return "{\"error\": \"not implemented\"}";
- }
-
- /**
-  * Configure KV cache retention for a compiled plan.
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @param mappings flat int array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
-  * @param numMappings number of mappings
-  * @param maxKvLen maximum KV cache length
-  * @param initialPos initial write position (prefillLen)
-  */
- default void configurePlanKvCacheRetention(Pointer planHandle, IntPointer mappings,
-                                            int numMappings, int maxKvLen, int initialPos) {
-     throw new UnsupportedOperationException("configurePlanKvCacheRetention not implemented in this backend");
- }
-
- /**
-  * Advance KV cache write position by 1.
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @return new position
-  */
- default int advancePlanKvCachePosition(Pointer planHandle) {
-     throw new UnsupportedOperationException("advancePlanKvCachePosition not implemented in this backend");
- }
-
- /**
-  * Reset KV cache write position.
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @param newPos new position
-  */
- default void resetPlanKvCachePosition(Pointer planHandle, int newPos) {
-     throw new UnsupportedOperationException("resetPlanKvCachePosition not implemented in this backend");
- }
-
- /**
-  * Configure decode input indices for direct device-side updates.
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @param inputIdsExtIdx external input index for input_ids (-1 if N/A)
-  * @param positionIdsExtIdx external input index for position_ids (-1 if N/A)
-  * @param attentionMaskExtIdx external input index for attention_mask (-1 if N/A)
-  * @param maxKvLen maximum KV cache length
-  */
- default void configurePlanDecodeInputs(Pointer planHandle,
-                                         int inputIdsExtIdx, int positionIdsExtIdx,
-                                         int attentionMaskExtIdx, int maxKvLen) {
-     throw new UnsupportedOperationException("configurePlanDecodeInputs not implemented in this backend");
- }
-
- /**
-  * Set next decode token and cache position. Call before executeDynamicShapePlan().
-  * execute() will write these values directly to device memory before graph replay.
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @param tokenId next token ID
-  * @param cachePos current cache position
-  */
- default void setPlanNextDecodeToken(Pointer planHandle, long tokenId, int cachePos) {
-     throw new UnsupportedOperationException("setPlanNextDecodeToken not implemented in this backend");
  }
 
  /**
@@ -1743,24 +1782,6 @@ public interface NativeOps {
   }
 
   /**
-   * Set the KV cache sequence position (for slice-based KV cache access).
-   * @param planHandle handle from compileDynamicShapePlan()
-   * @param pos current sequence position (where new KV entries will be written)
-   */
-  default void setPlanKvCachePosition(Pointer planHandle, int pos) {
-      // No-op by default
-  }
-
-  /**
-   * Set the maximum KV cache length (for pre-allocated attention outputs).
-   * @param planHandle handle from compileDynamicShapePlan()
-   * @param maxLen maximum sequence length for KV cache
-   */
-  default void setPlanMaxKvCacheLength(Pointer planHandle, int maxLen) {
-      // No-op by default
-  }
-
-  /**
    * Get the number of graph segments in a compiled plan.
    * @param planHandle handle from compileDynamicShapePlan()
    * @return number of segments, or -1 on error
@@ -1891,6 +1912,26 @@ public interface NativeOps {
    * Returns -1 on error.
    */
   int getPlanSegmentCount(Pointer planHandle);
+
+  /**
+   * Check whether the plan's compilation has been sealed (first phaseCompile()
+   * finished). Returns 1 if sealed, 0 if not, -1 if the handle is invalid.
+   */
+  default int isPlanCompilationSealed(Pointer planHandle) { return -1; }
+
+  /**
+   * Count of compileSegment() calls that occurred AFTER the plan was sealed.
+   * Any value &gt; 0 indicates a mid-execution recompile — a correctness red
+   * flag because it breaks freeze/capture invariants.
+   * Returns -1 if the handle is invalid.
+   */
+  default long getPlanMidExecutionCompileCount(Pointer planHandle) { return -1L; }
+
+  /**
+   * Reset the mid-execution compile counter to zero. Used by tests that want
+   * to bracket a section and assert zero recompiles happened inside it.
+   */
+  default void resetPlanMidExecutionCompileCount(Pointer planHandle) { /* no-op default */ }
 
   /**
    * Check if all buffer pointers are stable (same addresses across executions).

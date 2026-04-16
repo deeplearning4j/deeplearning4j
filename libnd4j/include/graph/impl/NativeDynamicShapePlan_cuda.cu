@@ -66,6 +66,17 @@
 namespace sd {
 namespace graph {
 
+// Pre-allocated cross-stream sync event, reused across replay calls to avoid
+// cudaEventCreate/Destroy overhead per step. Lazily created on first use.
+static thread_local cudaEvent_t tl_crossStreamEvent = nullptr;
+
+static inline cudaEvent_t getCrossStreamEvent() {
+  if (tl_crossStreamEvent == nullptr) {
+    cudaEventCreateWithFlags(&tl_crossStreamEvent, cudaEventDisableTiming);
+  }
+  return tl_crossStreamEvent;
+}
+
 namespace {
 
 LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
@@ -207,22 +218,28 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   bool ok = true;
-  int syncedCount = 0;
-  for (int ei = 0; ei < numExternalInputs; ei++) {
-    if (externalInputs[ei] == nullptr) continue;
-    externalInputs[ei]->syncToDevice();
-    syncedCount++;
+  int syncedCount = 0, skippedCount = 0;
+  // Match compositeReplay: only sync variable external inputs when frozen
+  if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
+    for (int ei = 0; ei < numExternalInputs; ei++) {
+      if (externalInputs[ei] == nullptr) continue;
+      if (ei < static_cast<int>(externalInputIsVariable_.size()) &&
+          !externalInputIsVariable_[ei]) {
+        skippedCount++;
+        continue;  // weight directReference: skip sync for non-variable inputs
+      }
+      externalInputs[ei]->syncToDevice();
+      syncedCount++;
+    }
+  } else {
+    for (int ei = 0; ei < numExternalInputs; ei++) {
+      if (externalInputs[ei] == nullptr) continue;
+      externalInputs[ei]->syncToDevice();
+      syncedCount++;
+    }
   }
-  DSP_DIAG(EXECUTE, "NativeDSP::frozenFastPath: synced=%d external inputs", syncedCount);
-
-  // Apply pending decode input updates (input_ids, position_ids, attention_mask)
-  // directly to device memory before replay. Without this, the frozen fast path
-  // skips updateDecodeInputs and the graph reads stale decode metadata.
-  if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
-    updateDecodeInputs(externalInputs, numExternalInputs,
-                       pendingTokenId_, pendingCachePos_, stream);
-  }
-  hasPendingDecodeUpdate_ = false;
+  DSP_DIAG(EXECUTE, "NativeDSP::frozenFastPath: synced=%d skipped=%d external inputs",
+           syncedCount, skippedCount);
 
   if (ok) {
     auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
@@ -237,52 +254,43 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         defaultStream = *defaultStreamPtr;
       }
       if (defaultStream != nullptr && defaultStream != cudaStr) {
-        cudaEvent_t crossStreamEvt;
-        cudaEventCreateWithFlags(&crossStreamEvt, cudaEventDisableTiming);
+        cudaEvent_t crossStreamEvt = getCrossStreamEvent();
         cudaEventRecord(crossStreamEvt, defaultStream);
         cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
-        cudaEventDestroy(crossStreamEvt);
         DSP_DIAG(EXECUTE, "CROSS_STREAM_SYNC: frozen fast path replay stream %p waiting on "
                  "default stream %p for seg[%d-%d]",
                  (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
       }
     }
 
+    // Set DSP execution stream for async H2D copies (matches compositeReplay)
+    sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
+
 #if HAVE_TRITON
-    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
-    if (tritonBackend != nullptr) {
-      tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
-                                               outputSlots_, totalOutputSlots_,
-                                               stream);
+    // Match compositeReplay: gate arg table refresh on !argTableStable
+    if (!seg.exec.argTableStable) {
+      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+      if (tritonBackend != nullptr) {
+        tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
+                                                 outputSlots_, totalOutputSlots_,
+                                                 stream);
+        // Copy consolidated arg table to device after refresh (was missing)
+        tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
+      }
+    } else {
+      DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: argTableStable — skip refresh seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
     }
 #endif
 
-    // Pre-replay batch-zero: zero all output buffers OUTSIDE the graph.
-    // During capture, individual nullify() calls were suppressed (no memset graph
-    // nodes). On replay, outputs must be zeroed before graph launch so that ops
-    // which depend on zero-initialized output buffers produce correct results.
-    // Without this, the frozen fast path skips batch-zero, causing stale output
-    // data from the previous step to leak through partially-written buffers.
-    auto& segBZ = seg.exec.segBatchZeroEntries;
-    if (Environment::getInstance().dspBatchZero() && !segBZ.empty()) {
-      // Refresh batch-zero pointers from current outputSlots_ entries.
-      for (auto& entry : segBZ) {
-        if (entry.outputSlotIndex >= 0 && entry.outputSlotIndex < totalOutputSlots_) {
-          NDArray* cached = outputSlots_[entry.outputSlotIndex];
-          if (cached != nullptr && DSP_BUF(cached) != nullptr) {
-            entry.ptr = DSP_BUF(cached);
-            entry.bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
-          }
-        }
-      }
-      for (auto& entry : segBZ) {
-        if (entry.ptr != nullptr && entry.bytes > 0) {
-          cudaMemsetAsync(entry.ptr, 0, entry.bytes, cudaStr);
-        }
-      }
-      DSP_DIAG(MEMORY, "frozen fast path batch-zero: %d buffers zeroed via cudaMemsetAsync seg[%d-%d]",
-               static_cast<int>(segBZ.size()), seg.def.startSlot, seg.def.endSlot);
-    }
+    // NOTE: prezeroSegmentOutputs is NOT called on the replay hot path. Output
+    // zeroing is captured once during the slot-by-slot capture phase (via
+    // executeSegmentSlotBySlot → prezeroSegmentOutputs) and baked into the CUDA
+    // graph as memset nodes that replay automatically. Additionally, the pre-
+    // capture batchZeroEntries_ loop in NativeDynamicShapePlan_gpubackend.cpp
+    // zeros gap-op outputs once before capture. Issuing per-step cudaMemsetAsync
+    // here would add K async memsets to the hot cudaStr every decode step — the
+    // regression introduced in 316c23fce8.
 
     if (seg.exec.replayHandle->replay(stream)) {
       auto tLaunchDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
@@ -298,10 +306,6 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       seg.exec.executionCount++;
       executeCount_++;
 
-      if (kvCacheRetentionEnabled_) {
-        scatterKvEntries(externalInputs, numExternalInputs, stream);
-        kvCachePosition_++;
-      }
       auto tScatterDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
       if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
       auto tSyncDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
@@ -491,6 +495,43 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
            static_cast<long long>(precompileMs), precompileOk.load(), precompileFail.load());
 
 #if HAVE_TRITON
+  // Batched module preload (task #4): walk the cache once and make sure every
+  // CompiledKernel has a live CUmodule loaded into GPU memory.  This avoids
+  // paying lazy-load latency on the first replay of each segment and gives us
+  // a single checkpoint where the projected per-device residency is compared
+  // against env.triton().moduleResidencyBudgetBytes().  Preload happens on
+  // every device that any task targeted so cross-device caches are warmed up
+  // before execution begins.
+  {
+    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(gpuBackend);
+    if (tritonBackend != nullptr) {
+      std::unordered_set<int> devicesToPreload;
+      for (const auto& task : tasks) {
+        devicesToPreload.insert(task.targetDevice);
+      }
+      int prevDev = 0;
+      cudaGetDevice(&prevDev);
+      for (int d : devicesToPreload) {
+        if (d < 0) continue;
+        cudaError_t setDevErr = cudaSetDevice(d);
+        if (setDevErr != cudaSuccess) {
+          DSP_DIAG(FALLBACK,
+                   "NativeDSP::precompile: cudaSetDevice(%d) failed before preloadAllModules: %s",
+                   d, cudaGetErrorString(setDevErr));
+          cudaGetLastError();
+          continue;
+        }
+        Status preloadStatus = tritonBackend->preloadAllModules(d);
+        if (preloadStatus != Status::OK) {
+          DSP_DIAG(FALLBACK,
+                   "NativeDSP::precompile: preloadAllModules(device=%d) reported failure",
+                   d);
+        }
+      }
+      cudaSetDevice(prevDev);
+    }
+  }
+
   // Report per-device Triton module memory budget
   {
     auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(gpuBackend);
@@ -729,11 +770,29 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       if (status == Status::OK) {
         usedGraph = true;
         if (segment.exec.executionCount <= 1) {
-          segment.exec.currentPhase = ExecutionPhase::COMPILING;
+          DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "gpu_graph_first_exec");
         } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-          segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+          DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "gpu_graph_replay_ready");
         } else {
-          segment.exec.currentPhase = ExecutionPhase::COMPILED;
+          // Check composite replay handles (Triton island+gap segments use these
+          // instead of a monolithic replayHandle).
+          bool hasComposite = false;
+          for (auto& u : segment.exec.compositeReplaySchedule.units) {
+            if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
+              int idx = u.islandIndex;
+              if (idx >= 0 && idx < static_cast<int>(segment.exec.compositeReplaySchedule.compositeReplayHandles.size()) &&
+                  segment.exec.compositeReplaySchedule.compositeReplayHandles[idx] != nullptr &&
+                  segment.exec.compositeReplaySchedule.compositeReplayHandles[idx]->isReady()) {
+                hasComposite = true;
+                break;
+              }
+            }
+          }
+          if (hasComposite) {
+            DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "gpu_graph_composite_replay_ready");
+          } else {
+            DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "gpu_graph_compiled_no_replay");
+          }
         }
         return Status::OK;
       }
@@ -767,22 +826,22 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       }
       usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.compilationFailed);
       if (usedGraph) {
-        segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+        DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "cuda_graph_replay_ready");
       } else if (segment.exec.executionCount <= 1) {
-        segment.exec.currentPhase = ExecutionPhase::COMPILING;
+        DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "cuda_graph_first_exec");
       } else {
-        segment.exec.currentPhase = ExecutionPhase::COMPILED;
+        DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "cuda_graph_compiled_no_replay");
       }
       return Status::OK;
     }
 
     case SelectedBackend::SLOT_BY_SLOT:
-      segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+      DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "backend_slot_by_slot");
       return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
     case SelectedBackend::CPU_GRAPH:
       // CPU graph backend not applicable on CUDA build — treat as slot-by-slot
-      segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+      DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "cpu_graph_on_cuda_build");
       return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
     default: {
@@ -818,48 +877,15 @@ Status NativeDynamicShapePlan::platformCheckPostSegment(GraphSegment& segment) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Platform dispatch: KV scatter
-// ═══════════════════════════════════════════════════════════════════════════════
-
-void* NativeDynamicShapePlan::platformBeginKvScatter(void* stream) {
-  auto* lc = LaunchContext::defaultContext();
-  if (stream != nullptr) {
-    cudaStream_t* saved = lc->getCudaStream();
-    lc->setCudaStream(static_cast<cudaStream_t*>(stream));
-    return saved;
-  }
-  return nullptr;
-}
-
-void NativeDynamicShapePlan::platformEndKvScatter(void* savedState) {
-  if (savedState != nullptr) {
-    LaunchContext::defaultContext()->setCudaStream(static_cast<cudaStream_t*>(savedState));
-  }
-}
-
-void NativeDynamicShapePlan::platformScatterKvEntry(
-    NDArray* presentKv, NDArray* staticBuf, int seqDim, int pos, void* stream) {
-  auto* lc = LaunchContext::defaultContext();
-  ops::helpers::kvScatter(presentKv, staticBuf, pos, lc);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Platform dispatch: KV replay annotation
-// ═══════════════════════════════════════════════════════════════════════════════
-
-void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
-  // Capture-buffer staging has been removed. KV cache inputs are replayed
-  // directly from their canonical buffers, so there is nothing to annotate.
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // Platform dispatch: Segment cleanup for rebuild
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   DSP_DIAG_SEG(GRAPH_REPLAY, seg.def.startSlot,
-               "platformCleanupSegmentForRebuild: seg[%d-%d] hasReplay=%d",
-               seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle ? 1 : 0);
+               "platformCleanupSegmentForRebuild: seg[%d-%d] hasReplay=%d compositeHandles=%d",
+               seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle ? 1 : 0,
+               static_cast<int>(seg.exec.compositeReplaySchedule.compositeReplayHandles.size()));
+  // Clear monolithic replay handle
   if (seg.exec.replayHandle) {
     if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
       seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
@@ -868,7 +894,19 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
     seg.exec.replayHandle->clearExternalAddresses();
     seg.exec.replayHandle.reset();
   }
+  // Clear composite (per-island) replay handles
+  for (auto& h : seg.exec.compositeReplaySchedule.compositeReplayHandles) {
+    if (h) {
+      if (h->getWorkspacePtr() != nullptr) {
+        h->releaseWorkspace(nullptr, seg.def.startSlot);
+      }
+      h->freeHostPointers();
+      h->clearExternalAddresses();
+      h.reset();
+    }
+  }
   seg.exec.gapOpsCapturedInGraph = false;
+  seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
   seg.resolvedCpuBackend = nullptr;
 }
 
@@ -915,6 +953,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
       seg.exec.replayHandle->clearExternalAddresses();
       seg.exec.replayHandle.reset();
     }
+    seg.exec.argTableStable = false;  // Invalidate fast-replay on plan teardown
     seg.exec.gapOpsCapturedInGraph = false;
     seg.resolvedCpuBackend = nullptr;
     delete seg.exec.jitKernel;
@@ -937,9 +976,6 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     cublasWorkspaceBuffer_ = nullptr;
     cublasWorkspaceSize_ = 0;
   }
-
-  // Free batch-zero resources
-  freeBatchZeroResources();
 
   // Free batch D2D resources
   freeBatchD2DResources();
@@ -1113,11 +1149,9 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
       DSP_DIAG(EXECUTE, "platformBeginExecution: cudaStreamSynchronize returned %d (%s)",
                static_cast<int>(syncErr), cudaGetErrorString(syncErr));
     } else {
-      cudaEvent_t defaultStreamEvent;
-      cudaEventCreateWithFlags(&defaultStreamEvent, cudaEventDisableTiming);
+      cudaEvent_t defaultStreamEvent = getCrossStreamEvent();
       cudaEventRecord(defaultStreamEvent, nullptr);
       cudaStreamWaitEvent(cudaStr, defaultStreamEvent, 0);
-      cudaEventDestroy(defaultStreamEvent);
     }
   }
 
@@ -1316,78 +1350,6 @@ void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, vo
   }
 }
 
-void NativeDynamicShapePlan::platformUpdateDecodeInputs(NDArray** ext, int numExt,
-                                                         long long tokenId, int cachePos, void* stream) {
-  cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
-
-  DSP_DIAG(EXECUTE, "updateDecodeInputs: ENTER tokenId=%lld cachePos=%d numExt=%d idsIdx=%d posIdx=%d maskIdx=%d",
-           tokenId, cachePos, numExt, decodeInputIdsExtIdx_, decodePositionIdsExtIdx_, decodeAttentionMaskExtIdx_);
-
-  // input_ids[0] = tokenId
-  if (decodeInputIdsExtIdx_ >= 0 && decodeInputIdsExtIdx_ < numExt) {
-    NDArray* ids = ext[decodeInputIdsExtIdx_];
-    DSP_DIAG(EXECUTE, "updateDecodeInputs: ids NDArray=%p specialBuf=%p len=%lld",
-             ids, ids ? ids->specialBuffer() : nullptr, ids ? (long long)ids->lengthOf() : -1);
-    if (ids != nullptr && ids->specialBuffer() != nullptr) {
-      LongType val = static_cast<LongType>(tokenId);
-      cudaMemcpyAsync(ids->specialBuffer(), &val, sizeof(LongType),
-                      cudaMemcpyHostToDevice, cudaStr);
-      ids->dataBuffer()->writeSpecial();
-    }
-  }
-
-  // position_ids[0] = cachePos
-  if (decodePositionIdsExtIdx_ >= 0 && decodePositionIdsExtIdx_ < numExt) {
-    NDArray* pos = ext[decodePositionIdsExtIdx_];
-    DSP_DIAG(EXECUTE, "updateDecodeInputs: pos NDArray=%p specialBuf=%p len=%lld",
-             pos, pos ? pos->specialBuffer() : nullptr, pos ? (long long)pos->lengthOf() : -1);
-    if (pos != nullptr && pos->specialBuffer() != nullptr) {
-      LongType val = static_cast<LongType>(cachePos);
-      cudaMemcpyAsync(pos->specialBuffer(), &val, sizeof(LongType),
-                      cudaMemcpyHostToDevice, cudaStr);
-      pos->dataBuffer()->writeSpecial();
-    }
-  }
-
-  // attention_mask[cachePos - 1] = 1
-  if (decodeAttentionMaskExtIdx_ >= 0 && decodeAttentionMaskExtIdx_ < numExt && cachePos > 0) {
-    NDArray* mask = ext[decodeAttentionMaskExtIdx_];
-    int writePos = cachePos - 1;
-    DSP_DIAG(EXECUTE, "updateDecodeInputs: mask NDArray=%p specialBuf=%p len=%lld cachePos=%d writePos=%d",
-             mask, mask ? mask->specialBuffer() : nullptr, mask ? (long long)mask->lengthOf() : -1,
-             cachePos, writePos);
-    if (mask != nullptr && mask->specialBuffer() != nullptr) {
-      LongType one = 1;
-      auto maskLen = mask->lengthOf();
-      if (writePos < maskLen) {
-        auto* dst = static_cast<LongType*>(mask->specialBuffer()) + writePos;
-        DSP_DIAG(EXECUTE, "updateDecodeInputs: mask dst=%p (base=%p + %d * %d)",
-                 dst, mask->specialBuffer(), writePos, (int)sizeof(LongType));
-        cudaMemcpyAsync(dst, &one, sizeof(LongType),
-                        cudaMemcpyHostToDevice, cudaStr);
-        mask->dataBuffer()->writeSpecial();
-      } else {
-        DSP_DIAG(EXECUTE, "updateDecodeInputs: SKIP attn_mask write writePos=%d maskLen=%lld (OOB)",
-                 writePos, (long long)maskLen);
-      }
-    }
-  }
-
-  DSP_DIAG(EXECUTE, "updateDecodeInputs: tokenId=%lld cachePos=%d", tokenId, cachePos);
-}
-
-void NativeDynamicShapePlan::platformPostKvScatterSync(int scattered, int pos, int numMappings) {
-  cudaError_t scatterErr = cudaDeviceSynchronize();
-  if (scatterErr != cudaSuccess) {
-    DSP_DIAG(EXECUTE,
-        "KV SCATTER CUDA ERROR: cudaDeviceSynchronize after kvScatterBatched "
-        "returned error %d (%s). scattered=%d pos=%d numMappings=%d",
-        static_cast<int>(scatterErr), cudaGetErrorString(scatterErr),
-        scattered, pos, numMappings);
-    cudaGetLastError();
-  }
-}
-
 SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
   return isGraphCapture ? SelectedBackend::CUDA_GRAPHS : SelectedBackend::GPU_COMPILER;
 }
@@ -1422,7 +1384,6 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.currentPhase = ExecutionPhase::WARMUP;
     seg.exec.jitShapeKey = 0;
     seg.exec.jitCompileFailed = false;
-    seg.exec.segBatchZeroEntries.clear();
     seg.def.shapeKey = 0;
   }
   logGpuMemState("STEP-1-AFTER-SEGMENTS");
@@ -1434,8 +1395,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     cublasWorkspaceSize_ = 0;
   }
 
-  // Free batch-zero, batch-D2D, and batched-GEMM device arrays
-  freeBatchZeroResources();
+  // Free batch-D2D and batched-GEMM device arrays
   freeBatchD2DResources();
   freeBatchedGemmResources();
   logGpuMemState("STEP-1-AFTER-BATCH-RESOURCES");
