@@ -174,6 +174,13 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["relu6"]       = {"relu6",       TritonOpCategory::UNARY_ELEMENTWISE, "custom.relu6",       true};
   table["Relu6"]       = {"Relu6",       TritonOpCategory::UNARY_ELEMENTWISE, "custom.relu6",       true};
 
+  // Activation backward ops — use dedicated backward emitters
+  table["silu_bp"]          = {"silu_bp",          TritonOpCategory::UNARY_ELEMENTWISE, "custom.silu_bp",          true};
+  table["fused_gelu_bp"]    = {"fused_gelu_bp",    TritonOpCategory::UNARY_ELEMENTWISE, "custom.fused_gelu_bp",    true};
+  table["squared_relu_bp"]  = {"squared_relu_bp",  TritonOpCategory::UNARY_ELEMENTWISE, "custom.squared_relu_bp",  true};
+  table["center_and_sharpen_bp"] = {"center_and_sharpen_bp", TritonOpCategory::UNARY_ELEMENTWISE, "custom.center_and_sharpen_bp", true};
+  table["swish_mul_bp"]     = {"swish_mul_bp",     TritonOpCategory::BINARY_ELEMENTWISE, "custom.swish_mul_bp",    true};
+
   // Scalar binary ops (treated as unary with tArgs)
   table["add_scalar"]      = {"add_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.add_scalar",      true};
   table["subtract_scalar"] = {"subtract_scalar", TritonOpCategory::UNARY_ELEMENTWISE, "custom.subtract_scalar", true};
@@ -291,6 +298,15 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["BatchNorm"]            = {"BatchNorm",            TritonOpCategory::NORMALIZATION, "custom.batch_norm",   true};
   table["normalize_moments"]    = {"normalize_moments",    TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};
   table["NormalizeMoments"]     = {"NormalizeMoments",     TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};
+
+  // Normalization backward ops — multi-output (dx + dgamma [+ dbeta])
+  // These use emitNormalizationBackwardSection which writes outputs directly via tt.store.
+  table["rms_norm_bp"]          = {"rms_norm_bp",          TritonOpCategory::NORMALIZATION, "custom.rms_norm_bp",       true};
+  table["RmsNormBp"]            = {"RmsNormBp",            TritonOpCategory::NORMALIZATION, "custom.rms_norm_bp",       true};
+  table["layer_norm_bp"]        = {"layer_norm_bp",        TritonOpCategory::NORMALIZATION, "custom.layer_norm_bp",     true};
+  table["LayerNormBp"]          = {"LayerNormBp",          TritonOpCategory::NORMALIZATION, "custom.layer_norm_bp",     true};
+  table["fused_layer_norm_bp"]  = {"fused_layer_norm_bp",  TritonOpCategory::NORMALIZATION, "custom.layer_norm_bp",     true};
+  table["FusedLayerNormBp"]     = {"FusedLayerNormBp",     TritonOpCategory::NORMALIZATION, "custom.layer_norm_bp",     true};
 
   // Rotary position embedding ops
   table["fused_rope"]           = {"fused_rope",           TritonOpCategory::ROPE, "custom.rope",     true};

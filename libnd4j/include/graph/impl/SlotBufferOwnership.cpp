@@ -838,6 +838,60 @@ bool validateLifecycleForPhase(
     }
   }
 
+  // ── Level 1+: SHAPES_FROZEN — device sync state invariant ──
+  // Rationale: when sync-skip is active in frozen steady-state (executeCount_>=2),
+  // the plan bypasses prepareSpecialUse/registerSpecialUse. That is only safe if
+  // every SLOT_OWNED plan-managed output buffer remains device-authoritative
+  // (isSpecialActual()==true) between executions. If any slot's flags have
+  // flipped (pAct=1,sAct=0), some host write poisoned the device state — the
+  // next op that reads it will trigger syncToDevice and overwrite valid device
+  // data with stale host data. This is the class of bug that silently corrupts
+  // output across decode steps.
+  //
+  // We skip slots that are VIEW_OF_WEIGHT / VIEW_OF_SLOT / WEIGHT / WORKSPACE
+  // because their actuality is owned by a different producer. Only SLOT_OWNED
+  // buffers allocated by this plan must hold the invariant.
+  //
+  // CPU-only builds have no real device — the pAct/sAct flags are vestigial
+  // and always read as pAct=1/sAct=0, which would falsely trigger this check.
+  // Gate on SD_CUDA so the invariant is only enforced where it has meaning.
+#ifdef SD_CUDA
+  if (planPhase >= 1 && ownership != nullptr && outputSlots != nullptr) {
+    for (int i = 0; i < totalSlots; i++) {
+      const auto& info = ownership[i];
+      if (info.ownership != BufferOwnership::SLOT_OWNED) continue;
+      if (outputSlots[i] == nullptr) continue;
+      DataBuffer* db = outputSlots[i]->dataBuffer();
+      if (db == nullptr || db->isClosed()) continue;
+      if (db->getLenInBytes() == 0) continue;  // empty/placeholder — no sync state
+
+      bool sAct = db->isSpecialActual();
+      bool pAct = db->isPrimaryActual();
+
+      // Trace every SLOT_OWNED slot's flags — one line per slot at MEMORY level.
+      DSP_DIAG(MEMORY,
+               "FROZEN_SYNC_STATE: slot %d db=%p len=%lld pAct=%d sAct=%d phase=%d",
+               i, (void*)db, (long long)db->getLenInBytes(),
+               (int)pAct, (int)sAct, planPhase);
+
+      // Device-stale: pAct flipped to 1 but sAct=0 → host wrote over device.
+      if (pAct && !sAct) {
+        snprintf(errMsg, errMsgLen,
+                 "LIFECYCLE_ERROR: SLOT_OWNED slot %d has pAct=1 sAct=0 at SHAPES_FROZEN+ "
+                 "(db=%p len=%lld) — host wrote over device-authoritative buffer between "
+                 "frozen executions. Next op will syncToDevice with stale host data.",
+                 i, (void*)db, (long long)db->getLenInBytes());
+        return false;
+      }
+
+      // Both zero: buffer was never written at all. Legitimate for slots that
+      // prezeroSegmentOutputs cleared but weren't yet executed in this step —
+      // do not fail, just trace. A bad sync-skip interaction would show up as
+      // pAct=1/sAct=0 above, not here.
+    }
+  }
+#endif  // SD_CUDA
+
   return true;
 }
 

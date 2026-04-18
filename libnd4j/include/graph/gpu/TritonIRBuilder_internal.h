@@ -540,5 +540,44 @@ inline mlir::Type commonIntType(mlir::Value lhs, mlir::Value rhs) {
 }  // namespace graph
 }  // namespace sd
 
+// Forward declaration for the multi-output normalization backward emitter.
+// Implemented in TritonIRBuilder_emitters.cpp; called from TritonIRBuilder_module.cpp.
+// Returns false if the op cannot be emitted (wrong opName/missing inputs).
+//
+// Inputs (loaded as padded row-sized tensors, matching the forward norm convention):
+//   dy          — upstream gradient,      shape [paddedRowLen]
+//   x           — forward input,          shape [paddedRowLen]
+//   gamma       — scale (gamma/gain),     shape [paddedRowLen] (nullptr if absent)
+//   mean        — precomputed row mean,   scalar mlir::Value (nullptr if absent)
+//   invStd      — precomputed 1/std,      scalar mlir::Value (nullptr if absent)
+//   epsilon     — small stabilizer for variance
+//   logicalRowLen — actual un-padded row length (for correct reductions)
+//
+// Outputs written directly via tt.store to their respective buffer pointers:
+//   dxPtr       — gradient w.r.t. input  (always required)
+//   dgammaPtr   — gradient w.r.t. gamma  (nullptr → skip dgamma store)
+//   dbetaPtr    — gradient w.r.t. beta   (nullptr → skip dbeta store)
+//
+// All pointers are raw base pointers (scalar mlir::Value of PointerType).
+// The emitter constructs the per-row range and mask internally using rowBase.
+namespace sd {
+namespace graph {
+
+bool emitNormalizationBackwardSection(
+    mlir::OpBuilder& builder, mlir::Location loc,
+    const std::string& opName,
+    mlir::Value dy, mlir::Value x,
+    mlir::Value gamma,
+    mlir::Value mean, mlir::Value invStd,
+    float epsilon,
+    int64_t logicalRowLen,
+    mlir::Value rowBase,
+    mlir::Value dxPtr,
+    mlir::Value dgammaPtr,
+    mlir::Value dbetaPtr);
+
+}  // namespace graph
+}  // namespace sd
+
 #endif  // HAVE_TRITON
 #endif  // LIBND4J_TRITON_IR_BUILDER_INTERNAL_H

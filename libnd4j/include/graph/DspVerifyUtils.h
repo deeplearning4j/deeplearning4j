@@ -521,6 +521,102 @@ inline int dspCompareAddressMaps(const std::unordered_map<int, void*>& mapA,
 
 #endif  // SD_CUDA
 
+#ifndef SD_CUDA
+// ─── CPU stubs for diagnostic helpers referenced from platform-neutral code ──
+// On CPU builds there is no device buffer, so these reuse the host path only.
+
+inline std::string dspShapeStr(NDArray* arr) {
+  if (arr == nullptr) return "null";
+  auto rank = arr->rankOf();
+  std::string s = "[";
+  for (int d = 0; d < rank; d++) {
+    if (d > 0) s += ",";
+    s += std::to_string(arr->sizeAt(d));
+  }
+  s += "]";
+  return s;
+}
+
+template <typename T>
+inline void dspBytesToFloatT(const uint8_t* raw, float* out, int count) {
+  for (int i = 0; i < count; i++) {
+    T val;
+    memcpy(&val, raw + i * sizeof(T), sizeof(T));
+    out[i] = static_cast<float>(val);
+  }
+}
+
+inline void dspBytesToFloat(const uint8_t* raw, DataType dtype, float* out, int count) {
+  BUILD_SINGLE_SELECTOR(dtype, dspBytesToFloatT, (raw, out, count), SD_COMMON_TYPES);
+}
+
+inline std::string dspFormatValues(const float* vals, int count) {
+  std::string s = "[";
+  for (int i = 0; i < count; i++) {
+    if (i > 0) s += ",";
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.6g", vals[i]);
+    s += buf;
+  }
+  s += "]";
+  return s;
+}
+
+inline int dspReadHostValues(DataBuffer* db, DataType dtype, LongType length,
+                             float* hostOut, int maxVals) {
+  if (db == nullptr || db->primary() == nullptr || length <= 0) return 0;
+  int n = std::min(static_cast<int>(length), maxVals);
+  auto* raw = reinterpret_cast<const uint8_t*>(db->primary());
+  dspBytesToFloat(raw, dtype, hostOut, n);
+  return n;
+}
+
+inline std::string dspDumpHostDeviceValues(NDArray* arr, int maxVals = 8) {
+  if (arr == nullptr) return "null";
+  auto* db = arr->dataBuffer();
+  auto dtype = arr->dataType();
+  auto len = arr->lengthOf();
+  int n = std::min(static_cast<int>(len), std::min(maxVals, 16));
+
+  std::string hostStr = "null";
+  float vals[16];
+  if (db && db->primary() != nullptr && n > 0) {
+    int hn = dspReadHostValues(db, dtype, len, vals, n);
+    hostStr = dspFormatValues(vals, hn);
+  }
+
+  char header[256];
+  snprintf(header, sizeof(header), "dtype=%s len=%lld hostAddr=%p",
+            DataTypeUtils::asString(dtype).c_str(), (long long)len,
+            db ? db->primary() : nullptr);
+  return std::string(header) + " host=" + hostStr;
+}
+
+inline void dspDumpSlotInputs(int stepIdx, const char* opName,
+                              int numInputs, const int* inputSourceIndices,
+                              const int8_t* inputSourceTypes,
+                              NDArray** outputSlots, int totalOutputSlots,
+                              NDArray** externalArrays, int numExternals,
+                              const std::vector<std::string>& externalNames,
+                              const char* tag, int maxVals = 4) {
+  DSP_DIAG(VERIFY, "SLOT_INPUTS(%s) step=%d op=%s numInputs=%d", tag, stepIdx, opName, numInputs);
+  for (int i = 0; i < numInputs; i++) {
+    int srcIdx = inputSourceIndices[i];
+    NDArray* srcArr = nullptr;
+    if (srcIdx >= 0) {
+      if (srcIdx < totalOutputSlots) srcArr = outputSlots[srcIdx];
+    } else {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx >= 0 && extIdx < numExternals) srcArr = externalArrays[extIdx];
+    }
+    if (srcArr != nullptr) {
+      std::string info = dspDumpHostDeviceValues(srcArr, maxVals);
+      DSP_DIAG(VERIFY, "  input#%d shape=%s %s", i, dspShapeStr(srcArr).c_str(), info.c_str());
+    }
+  }
+}
+#endif  // !SD_CUDA
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Output validation flags (returned as bitmask per output)
 // ═══════════════════════════════════════════════════════════════════════════

@@ -36,6 +36,7 @@
 #include <graph/GraphReplayHandle.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 #include <graph/DspPhaseUtils.h>
+#include <config.h>
 
 #include <cstring>
 #include <ops/declarable/OpRegistrator.h>
@@ -266,7 +267,18 @@ void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, vo
 }
 
 SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
-  return isGraphCapture ? SelectedBackend::SLOT_BY_SLOT : SelectedBackend::CPU_GRAPH;
+  // Graph capture (CUDA graphs on CPU) is not available on CPU builds.
+  if (isGraphCapture) return SelectedBackend::SLOT_BY_SLOT;
+
+  // CPU_GRAPH requires at least one optional CPU graph backend compiled in
+  // (OneDNN, OpenVINO, ACL, MLIR, NNAPI, or MLX). If none are available,
+  // fall back to SLOT_BY_SLOT so GEM_AUTO doesn't trigger executeSegmentWithCpuGraph
+  // on a plain CPU build with no optional backends registered.
+#if HAVE_ONEDNN || HAVE_OPENVINO || HAVE_ARMCOMPUTE || HAVE_MLIR || HAVE_NNAPI || HAVE_MLX
+  return SelectedBackend::CPU_GRAPH;
+#else
+  return SelectedBackend::SLOT_BY_SLOT;
+#endif
 }
 
 bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const {

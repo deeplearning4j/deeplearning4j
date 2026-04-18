@@ -347,6 +347,23 @@ class TritonIRBuilder {
                                   int batchSize, int numQHeads, int numKvHeads,
                                   int pastSeq, int seqKV, int totalSeq, int headDim);
 
+  // Emit a fused Flash Attention backward kernel (Flash Attention 2 backward).
+  // Inputs:  dO [BM, HD], Q [BM, HD], K [BN, HD], V [BN, HD], O [BM, HD], L [BM] (log-sum-exp)
+  // Outputs: dQ [BM, HD], dK [BN, HD], dV [BN, HD]
+  // Grid: (batch * num_heads, ceil(seqQ / BLOCK_M)) — 2D
+  // Uses softmax recomputation from stored log-sum-exp (L) to avoid O(N^2) memory.
+  // All tensors are in BHSD layout: [batch, heads, seq, headDim].
+  static void emitFusedAttentionBackwardKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                                               mlir::Value dOPtr, mlir::Value qPtr,
+                                               mlir::Value kPtr, mlir::Value vPtr,
+                                               mlir::Value oPtr, mlir::Value lsePtr,
+                                               mlir::Value dQPtr, mlir::Value dKPtr,
+                                               mlir::Value dVPtr,
+                                               int batchSize, int numQHeads,
+                                               int seqQ, int seqK,
+                                               int headDim, float scale,
+                                               int blockM, int blockN);
+
  public:
   // ── Section emitters (TritonIRBuilder_sections.cpp) ──
 

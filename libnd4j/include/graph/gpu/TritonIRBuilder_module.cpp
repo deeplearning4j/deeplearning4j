@@ -2066,6 +2066,149 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
       }
       std::string normKey = normalizeOpToken(slot.ident.opName);
+
+      // ── Normalization backward ops (rms_norm_bp, layer_norm_bp, fused_layer_norm_bp) ──
+      // These produce MULTIPLE outputs (dx + dgamma [+ dbeta]) and write them directly
+      // via tt.store/tt.atomic_add.  They do NOT go through the forward emitNormalizationOp path.
+      {
+        // normalizeOpToken strips underscores and lowercases: rms_norm_bp -> rmsnormbp
+        bool isNormBp = (normKey == "rmsnormbp"           ||
+                         normKey == "layernormbp"          ||
+                         normKey == "layernormalizationbp" ||
+                         normKey == "fusedlayernormbp");
+        if (isNormBp) {
+          // Helper: load a row-tensor from a slot index.
+          // rowWise=true  -> x / dy (offset by pid * logicalRowLen)
+          // rowWise=false -> gamma / beta (column-indexed, no row offset)
+          auto loadBpInput = [&](int inputPos, bool rowWise) -> mlir::Value {
+            if (inputPos >= slot.wiring.numInputs) return mlir::Value();
+            int src = slot.wiring.inputSourceIndices[inputPos];
+
+            auto buildLoad = [&](mlir::Value bufArg, mlir::Type elemTy, int64_t logLen) -> mlir::Value {
+              int64_t padLen = 1;
+              while (padLen < logLen) padLen <<= 1;
+              auto i32Ty    = builder.getI32Type();
+              auto idxTy    = mlir::RankedTensorType::get({padLen}, i32Ty);
+              auto ptrTy    = mlir::cast<mlir::triton::PointerType>(bufArg.getType());
+              auto ptrTenTy = mlir::RankedTensorType::get({padLen}, ptrTy);
+              auto dataTy   = mlir::RankedTensorType::get({padLen}, elemTy);
+
+              auto range = builder.create<mlir::triton::MakeRangeOp>(loc, idxTy, 0, padLen);
+              mlir::Value baseOff;
+              if (rowWise && normMultiRow && normRowOffset) {
+                auto splatOff = builder.create<mlir::triton::SplatOp>(loc, idxTy, normRowOffset);
+                baseOff = builder.create<mlir::arith::AddIOp>(loc, splatOff, range);
+              } else {
+                baseOff = range;
+              }
+
+              auto lenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logLen, 32);
+              auto lenSplat = builder.create<mlir::triton::SplatOp>(loc, idxTy, lenConst);
+              auto localMask = builder.create<mlir::arith::CmpIOp>(
+                  loc, mlir::arith::CmpIPredicate::slt, range, lenSplat);
+
+              auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTenTy, bufArg);
+              auto ptrs    = builder.create<mlir::triton::AddPtrOp>(loc, ptrTenTy, splatPtr, baseOff);
+              // Build a zero constant compatible with the element type
+              mlir::Value zero;
+              if (mlir::isa<mlir::FloatType>(elemTy)) {
+                zero = builder.create<mlir::arith::ConstantOp>(
+                    loc, builder.getFloatAttr(elemTy, 0.0));
+              } else {
+                zero = builder.create<mlir::arith::ConstantOp>(
+                    loc, builder.getIntegerAttr(elemTy, 0));
+              }
+              auto zeroTen = builder.create<mlir::triton::SplatOp>(loc, dataTy, zero);
+              return builder.create<mlir::triton::LoadOp>(
+                  loc, ptrs, localMask, zeroTen,
+                  mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+            };
+
+            // External input
+            if (src < 0) {
+              int extIdx2 = -(src + 1);
+              if (extIdx2 >= numExternalInputs || !externalInputs[extIdx2]) return mlir::Value();
+              auto argIt = std::find_if(result.args.begin(), result.args.end(),
+                  [src](const TritonKernelArg& a){ return a.slotIndex == src; });
+              if (argIt == result.args.end()) return mlir::Value();
+              auto bufArg = getBufferArg(static_cast<int>(argIt - result.args.begin()));
+              if (!bufArg) return mlir::Value();
+              auto sideShape = resolveShapeLocal(src);
+              if (sideShape.empty()) return mlir::Value();
+              // rowWise (x/dy): use logicalRowLen.
+              // non-rowWise (gamma/beta): use last dim (1-D column vector length = logicalRowLen).
+              int64_t logLen = rowWise ? logicalRowLen : static_cast<int64_t>(sideShape.back());
+              auto elemTy2 = getMLIRType(builder, externalInputs[extIdx2]->dataType());
+              return buildLoad(bufArg, elemTy2, logLen);
+            }
+            // Internal SSA
+            auto ssaIt = ssaValues.find(src);
+            if (ssaIt != ssaValues.end()) return ssaIt->second;
+            // Try from kernel args
+            auto argIt = slotToArgIdx.find(src);
+            if (argIt == slotToArgIdx.end()) return mlir::Value();
+            auto bufArg = getBufferArg(argIt->second);
+            if (!bufArg) return mlir::Value();
+            auto ptrTy = mlir::cast<mlir::triton::PointerType>(bufArg.getType());
+            return buildLoad(bufArg, ptrTy.getPointeeType(), logicalRowLen);
+          };
+
+          // Input positions:
+          //   rms_norm_bp:         x=input[0], dy=input[1]
+          //   layer_norm_bp:       x=input[0], gamma=input[1], dy=last
+          //   fused_layer_norm_bp: x=input[0], gamma=input[1], dy=input[2]
+          bool isRmsBp = (normKey == "rmsnormbp");
+          mlir::Value bpX     = inputValue;                         // input[0] always = x
+          mlir::Value bpDy    = loadBpInput(isRmsBp ? 1 : 2, /*rowWise=*/true);
+          mlir::Value bpGamma = isRmsBp ? mlir::Value() : loadBpInput(1, /*rowWise=*/false);
+
+          if (!bpX || !bpDy) {
+            DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: backward norm '%s' at slot %d: missing dy or x",
+                          slot.ident.opName.c_str(), si);
+            continue;
+          }
+
+          // Output pointers: dx=output[0], dgamma=output[1], dbeta=output[2]
+          auto getOutPtr = [&](int outPos) -> mlir::Value {
+            if (outPos >= slot.wiring.numOutputs) return mlir::Value();
+            return getSlotArgPtr(slot.wiring.outputSlotIndices[outPos]);
+          };
+          mlir::Value bpDxPtr     = getOutPtr(0);
+          mlir::Value bpDgammaPtr = getOutPtr(1);
+          mlir::Value bpDbetaPtr  = getOutPtr(2);
+
+          float bpEps = (slot.args.numTArgs > 0 && slot.args.tArgs)
+                        ? static_cast<float>(slot.args.tArgs[0]) : 1e-5f;
+
+          // rowBase: for multiRow = pid * logicalRowLen; else 0
+          mlir::Value bpRowBase = (normMultiRow && normRowOffset)
+              ? normRowOffset
+              : builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32).getResult();
+
+          bool bpOk = emitNormalizationBackwardSection(
+              builder, loc, slot.ident.opName,
+              bpDy, bpX, bpGamma,
+              /*mean=*/mlir::Value(), /*invStd=*/mlir::Value(),
+              bpEps, logicalRowLen, bpRowBase,
+              bpDxPtr, bpDgammaPtr, bpDbetaPtr);
+
+          if (!bpOk) {
+            DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: emitNormalizationBackwardSection failed for '%s' at slot %d",
+                          slot.ident.opName.c_str(), si);
+            continue;
+          }
+
+          // Mark all outputs as inline-stored (skip generic store loop)
+          for (int o = 0; o < slot.wiring.numOutputs; o++) {
+            int outS = slot.wiring.outputSlotIndices[o];
+            normInlineStoredOutputs.insert(outS);
+            // Provide a placeholder SSA value for downstream consumers
+            ssaValues[outS] = inputValue;  // same shape as x/dx
+          }
+          continue;  // Skip the forward normalization path below
+        }
+      }
+
       // For normalization side inputs (gamma, beta), ALWAYS load external inputs directly
       // (SSA values from preloading are flattened to blockSize, which breaks reduction semantics)
       auto getNormInput = [&](int inputPos) -> mlir::Value {
@@ -2270,7 +2413,108 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
     } else if (cat == TritonOpCategory::FUSED_ATTENTION) {
-      // ─── FUSED ATTENTION: Q@K^T + scale + softmax + @V in one kernel ───
+      // ─── FUSED ATTENTION BACKWARD: Flash Attention 2 backward pass ─────────
+      // Backward ops are identified by the _bp suffix. Input layout (BHSD):
+      //   input[0] = dO [B, H, seqQ, HD]  — upstream gradient of output
+      //   input[1] = Q  [B, H, seqQ, HD]
+      //   input[2] = K  [B, H, seqK,  HD]
+      //   input[3] = V  [B, H, seqK,  HD]
+      //   input[4] = O  [B, H, seqQ, HD]  — forward output
+      //   input[5] = L  [B, H, seqQ]      — log-sum-exp from forward softmax
+      //   output[0] = dQ [B, H, seqQ, HD]
+      //   output[1] = dK [B, H, seqK,  HD]
+      //   output[2] = dV [B, H, seqK,  HD]
+      {
+        std::string opLowerBp = slot.ident.opName;
+        std::transform(opLowerBp.begin(), opLowerBp.end(), opLowerBp.begin(), ::tolower);
+        bool isBackward = (opLowerBp.find("_bp") != std::string::npos);
+        if (isBackward) {
+          // Need 6 inputs (dO, Q, K, V, O, L) and 3 outputs (dQ, dK, dV)
+          if (slot.wiring.numInputs >= 6 && slot.wiring.numOutputs >= 3) {
+            int doSrc  = slot.wiring.inputSourceIndices[0];  // dO
+            int qSrc   = slot.wiring.inputSourceIndices[1];  // Q
+            int kSrc   = slot.wiring.inputSourceIndices[2];  // K
+            int vSrc   = slot.wiring.inputSourceIndices[3];  // V
+            int oSrc   = slot.wiring.inputSourceIndices[4];  // O (forward output)
+            int lseSrc = slot.wiring.inputSourceIndices[5];  // L (log-sum-exp)
+            int dqSlot = slot.wiring.outputSlotIndices[0];   // dQ
+            int dkSlot = slot.wiring.outputSlotIndices[1];   // dK
+            int dvSlot = slot.wiring.outputSlotIndices[2];   // dV
+
+            NDArray* qArr = resolveArr(qSrc);
+            NDArray* kArr = resolveArr(kSrc);
+            int batchSize = 1, numQHeads = 1, seqQ = 1, seqK = 1, headDim = 64;
+            if (qArr && qArr->rankOf() >= 4) {
+              // BHSD: [batch, heads, seqQ, headDim]
+              batchSize = static_cast<int>(qArr->sizeAt(0));
+              numQHeads = static_cast<int>(qArr->sizeAt(1));
+              seqQ      = static_cast<int>(qArr->sizeAt(2));
+              headDim   = static_cast<int>(qArr->sizeAt(3));
+            }
+            if (kArr && kArr->rankOf() >= 4) {
+              seqK = static_cast<int>(kArr->sizeAt(2));
+            }
+            if (seqQ <= 0 || seqK <= 0 || headDim <= 0) {
+              DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP at slot %d: invalid dims "
+                        "seqQ=%d seqK=%d headDim=%d — deferring to C++ native", si, seqQ, seqK, headDim);
+              return result;
+            }
+
+            float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+            auto bpTile = chooseFusedAttentionTileConfig(batchSize, numQHeads, seqQ, seqK, headDim);
+            if (!bpTile.fitsSharedMem) {
+              std::string msg = "TritonIRBuilder: fused attention backward '" + slot.ident.opName +
+                  "' at slot " + std::to_string(si) + " cannot fit shared memory";
+              THROW_EXCEPTION(msg.c_str());
+            }
+            int blockM = bpTile.blockM;
+            int blockN = bpTile.blockN;
+
+            auto dOPtrV  = getSlotArgPtr(doSrc);
+            auto qPtrV   = getSlotArgPtr(qSrc);
+            auto kPtrV   = getSlotArgPtr(kSrc);
+            auto vPtrV   = getSlotArgPtr(vSrc);
+            auto oPtrV   = getSlotArgPtr(oSrc);
+            auto lsePtrV = getSlotArgPtr(lseSrc);
+            auto dQPtrV  = getSlotArgPtr(dqSlot);
+            auto dKPtrV  = getSlotArgPtr(dkSlot);
+            auto dVPtrV  = getSlotArgPtr(dvSlot);
+
+            if (dOPtrV && qPtrV && kPtrV && vPtrV && oPtrV && lsePtrV &&
+                dQPtrV && dKPtrV && dVPtrV) {
+              emitFusedAttentionBackwardKernel(
+                  builder, loc,
+                  dOPtrV, qPtrV, kPtrV, vPtrV, oPtrV, lsePtrV,
+                  dQPtrV, dKPtrV, dVPtrV,
+                  batchSize, numQHeads, seqQ, seqK, headDim, scale, blockM, blockN);
+
+              // Load results back into SSA value table so downstream consumers
+              // can reference them (the backward writes to output slot buffers directly)
+              for (int outIdx = 0; outIdx < slot.wiring.numOutputs; outIdx++) {
+                int outSlotIdx = slot.wiring.outputSlotIndices[outIdx];
+                NDArray* outArr = resolveArr(outSlotIdx);
+                DataType outDtype = FLOAT32;
+                if (outArr) outDtype = outArr->dataType();
+                auto loaded = loadBackFromBuffer(outSlotIdx, outDtype);
+                if (loaded) ssaValues[outSlotIdx] = loaded;
+              }
+            } else {
+              std::string msg = "TritonIRBuilder: fused attention backward '" +
+                  slot.ident.opName + "' at slot " + std::to_string(si) +
+                  " — missing kernel arg ptrs. Cannot compile.";
+              THROW_EXCEPTION(msg.c_str());
+            }
+          } else {
+            DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP at slot %d: needs >=6 inputs and >=3 outputs, "
+                      "has %d/%d — deferring to C++ native", si,
+                      slot.wiring.numInputs, slot.wiring.numOutputs);
+            return result;  // result.valid = false → C++ fallback
+          }
+          goto next_slot;  // skip the forward attention handler below
+        }
+      }
+
+      // ─── FUSED ATTENTION (forward): Q@K^T + scale + softmax + @V ───────────
       // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
       if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs >= 1) {
         int qSrc = slot.wiring.inputSourceIndices[0];
@@ -3362,6 +3606,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
       }
     }
+    next_slot: ;  // NOLINT — target for goto in backward attention dispatch
   }
 
   // 2d: Store outputs — tt.store for each output arg
@@ -5020,6 +5265,72 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto outSlotIdx = slot.wiring.outputSlotIndices[0];
 
             std::string normKey = normalizeOpToken(slot.ident.opName);
+
+            // ── Normalization backward ops ──────────────────────────────────────────────
+            // rms_norm_bp, layer_norm_bp, fused_layer_norm_bp produce multiple outputs
+            // (dx + dgamma [+ dbeta]).  Dispatch to emitNormalizationBackwardSection
+            // which writes all outputs directly via tt.store / tt.atomic_add.
+            {
+              // normalizeOpToken strips underscores: rms_norm_bp -> rmsnormbp
+              bool isNormBp = (normKey == "rmsnormbp"           ||
+                               normKey == "layernormbp"          ||
+                               normKey == "layernormalizationbp" ||
+                               normKey == "fusedlayernormbp");
+              if (isNormBp) {
+                bool isRmsBp = (normKey == "rmsnormbp");
+
+                // Load inputs using the existing loadNormInput helper:
+                //   rms_norm_bp:         x=input[0] (already in inputValue), dy=input[1]
+                //   layer/fused_norm_bp: x=input[0] (already in inputValue),
+                //                        gamma=input[1], dy=input[2]
+                mlir::Value bpX     = inputValue;
+                mlir::Value bpDy    = loadNormInput(
+                    slot.wiring.inputSourceIndices[isRmsBp ? 1 : 2], /*rowWise=*/true);
+                mlir::Value bpGamma = isRmsBp ? mlir::Value()
+                                              : loadNormInput(
+                                                    slot.wiring.inputSourceIndices[1], /*rowWise=*/false);
+
+                if (bpX && bpDy) {
+                  // Output pointers: dx=output[0], dgamma=output[1], dbeta=output[2]
+                  auto getSecOutPtr = [&](int outPos) -> mlir::Value {
+                    if (outPos >= slot.wiring.numOutputs) return mlir::Value();
+                    auto it = slotToArgIdx.find(slot.wiring.outputSlotIndices[outPos]);
+                    if (it == slotToArgIdx.end()) return mlir::Value();
+                    return getBufferArg(it->second);
+                  };
+
+                  float bpEps = (slot.args.numTArgs > 0 && slot.args.tArgs)
+                                ? static_cast<float>(slot.args.tArgs[0]) : 1e-5f;
+
+                  bool bpOk = emitNormalizationBackwardSection(
+                      builder, loc, slot.ident.opName,
+                      bpDy, bpX, bpGamma,
+                      /*mean=*/mlir::Value(), /*invStd=*/mlir::Value(),
+                      bpEps, logicalRowLen, rowBase,
+                      getSecOutPtr(0), getSecOutPtr(1), getSecOutPtr(2));
+
+                  if (bpOk) {
+                    // Mark all outputs as custom-stored
+                    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+                      int outS = slot.wiring.outputSlotIndices[o];
+                      customStoredOutputs.insert(outS);
+                      ssaValues[outS] = inputValue;  // placeholder for downstream SSA
+                    }
+                    builder.create<mlir::scf::YieldOp>(loc);
+                    builder.setInsertionPointAfter(rowIf);
+                    continue;  // Skip forward emitNormalizationOp below
+                  } else {
+                    DSP_DIAG_SLOT(FALLBACK, si, "buildSectionedModule: emitNormalizationBackwardSection failed for '%s'",
+                                  slot.ident.opName.c_str());
+                  }
+                } else {
+                  DSP_DIAG_SLOT(FALLBACK, si, "buildSectionedModule: backward norm '%s' at slot %d: missing dy or x",
+                                slot.ident.opName.c_str(), si);
+                }
+                // Fall through to forward path on failure — will throw from emitNormalizationOp
+              }
+            }
+
             auto getNormInput = [&](int inputPos) -> mlir::Value {
               if (inputPos >= slot.wiring.numInputs) return mlir::Value();
               int src = slot.wiring.inputSourceIndices[inputPos];
@@ -5748,10 +6059,95 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::FUSED_ATTENTION: {
         // ── Attention section: emit fused attention kernel ──
         // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
+        // Also handles backward (_bp) ops via emitFusedAttentionBackwardKernel.
         bool loggedAttnTileAdjust = false;
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
           if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION) continue;
+
+          // ── Flash Attention Backward: _bp suffix ops ─────────────────────────
+          {
+            std::string opLowerBpSec = slot.ident.opName;
+            std::transform(opLowerBpSec.begin(), opLowerBpSec.end(), opLowerBpSec.begin(), ::tolower);
+            if (opLowerBpSec.find("_bp") != std::string::npos) {
+              // Backward: needs 6 inputs (dO, Q, K, V, O, L) and 3 outputs (dQ, dK, dV)
+              if (slot.wiring.numInputs >= 6 && slot.wiring.numOutputs >= 3) {
+                int doSrcSec  = slot.wiring.inputSourceIndices[0];  // dO
+                int qSrcSec   = slot.wiring.inputSourceIndices[1];  // Q
+                int kSrcSec   = slot.wiring.inputSourceIndices[2];  // K
+                int vSrcSec   = slot.wiring.inputSourceIndices[3];  // V
+                int oSrcSec   = slot.wiring.inputSourceIndices[4];  // O
+                int lseSrcSec = slot.wiring.inputSourceIndices[5];  // L (log-sum-exp)
+                int dqSlotSec = slot.wiring.outputSlotIndices[0];   // dQ
+                int dkSlotSec = slot.wiring.outputSlotIndices[1];   // dK
+                int dvSlotSec = slot.wiring.outputSlotIndices[2];   // dV
+
+                auto qShapeSec2 = resolveShape(qSrcSec);
+                auto kShapeSec2 = resolveShape(kSrcSec);
+                int batchSizeBp = 1, numQHeadsBp = 1, seqQBp = 1, seqKBp = 1, headDimBp = 64;
+                if (qShapeSec2.size() >= 4) {
+                  batchSizeBp = static_cast<int>(qShapeSec2[0]);
+                  numQHeadsBp = static_cast<int>(qShapeSec2[1]);
+                  seqQBp      = static_cast<int>(qShapeSec2[2]);
+                  headDimBp   = static_cast<int>(qShapeSec2[3]);
+                }
+                if (kShapeSec2.size() >= 4) {
+                  seqKBp = static_cast<int>(kShapeSec2[2]);
+                }
+                if (seqQBp <= 0 || seqKBp <= 0 || headDimBp <= 0) {
+                  DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP sectioned at slot %d: invalid dims "
+                            "seqQ=%d seqK=%d headDim=%d — deferring to C++ native",
+                            si, seqQBp, seqKBp, headDimBp);
+                  result.valid = false;
+                  return result;
+                }
+                float scaleBp = 1.0f / std::sqrt(static_cast<float>(headDimBp));
+                auto bpTileSec = chooseFusedAttentionTileConfig(
+                    batchSizeBp, numQHeadsBp, seqQBp, seqKBp, headDimBp);
+                if (!bpTileSec.fitsSharedMem) {
+                  std::string bpMsg = "TritonIRBuilder::buildSectionedModule: fused attention backward '"
+                      + slot.ident.opName + "' at slot " + std::to_string(si) + " cannot fit shared memory";
+                  THROW_EXCEPTION(bpMsg.c_str());
+                }
+                auto dOPtrSec  = getSlotArgPtr(doSrcSec);
+                auto qPtrSec   = getSlotArgPtr(qSrcSec);
+                auto kPtrSec   = getSlotArgPtr(kSrcSec);
+                auto vPtrSec   = getSlotArgPtr(vSrcSec);
+                auto oPtrSec   = getSlotArgPtr(oSrcSec);
+                auto lsePtrSec = getSlotArgPtr(lseSrcSec);
+                auto dQPtrSec  = getSlotArgPtr(dqSlotSec);
+                auto dKPtrSec  = getSlotArgPtr(dkSlotSec);
+                auto dVPtrSec  = getSlotArgPtr(dvSlotSec);
+                if (dOPtrSec && qPtrSec && kPtrSec && vPtrSec && oPtrSec && lsePtrSec &&
+                    dQPtrSec && dKPtrSec && dVPtrSec) {
+                  emitFusedAttentionBackwardKernel(
+                      builder, loc,
+                      dOPtrSec, qPtrSec, kPtrSec, vPtrSec, oPtrSec, lsePtrSec,
+                      dQPtrSec, dKPtrSec, dVPtrSec,
+                      batchSizeBp, numQHeadsBp, seqQBp, seqKBp, headDimBp,
+                      scaleBp, bpTileSec.blockM, bpTileSec.blockN);
+                  for (int outIdx2 = 0; outIdx2 < slot.wiring.numOutputs; outIdx2++) {
+                    int outSlotIdx2 = slot.wiring.outputSlotIndices[outIdx2];
+                    auto loaded2 = loadBlock(outSlotIdx2, resolveDtype(outSlotIdx2));
+                    if (loaded2) ssaValues[outSlotIdx2] = loaded2;
+                  }
+                } else {
+                  std::string bpMsg2 = "TritonIRBuilder::buildSectionedModule: fused attention backward '"
+                      + slot.ident.opName + "' at slot " + std::to_string(si) +
+                      " — missing kernel arg ptrs. Cannot compile.";
+                  THROW_EXCEPTION(bpMsg2.c_str());
+                }
+              } else {
+                DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP sectioned at slot %d: needs >=6 inputs and "
+                          ">=3 outputs, has %d/%d — deferring to C++ native", si,
+                          slot.wiring.numInputs, slot.wiring.numOutputs);
+                result.valid = false;
+                return result;
+              }
+              continue;  // skip forward attention handler below
+            }
+          }
+
           if (slot.wiring.numInputs < 3 || slot.wiring.numOutputs < 1) continue;
 
           int qSrc = slot.wiring.inputSourceIndices[0];

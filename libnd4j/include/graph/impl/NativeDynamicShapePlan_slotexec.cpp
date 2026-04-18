@@ -30,6 +30,7 @@
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspAnalysisUtils.h>
 #include <graph/FusionPass.h>
+#include <graph/LegacyOpTypeCodes.h>
 #include <ops/OpTraitTable.h>
 #include <system/op_boilerplate.h>
 #include <system/Environment.h>
@@ -419,7 +420,12 @@ static const LongType* buildPermutedViewShapeInfo(const NDArray* input, const Na
       permVec.push_back(dim);
     }
   } else {
-    return nullptr;
+    // Source 3: no explicit permutation — default to plain transpose (reverse all dimensions).
+    // This matches the permute op's own fallback: when width()==1 && numIArgs==0, it calls
+    // x->transpose(). We must use the same semantics here so the view strides are correct.
+    for (int i = rank - 1; i >= 0; i--) {
+      permVec.push_back(i);
+    }
   }
 
   return ShapeUtils::evalPermutedViewShapeInfo(input, permVec.data(), static_cast<int>(permVec.size()));
@@ -1022,20 +1028,34 @@ LongType NativeDynamicShapePlan::computeShapeKey(
     mix(static_cast<LongType>(inputs[i]->isEmpty() ? 1 : 0));
   }
 
-  // Also mix literal values for tiny integer/bool inputs.
-  // These arrays are commonly shape/control tensors; their shape often stays
-  // constant while values change across decode steps (e.g., KV length growth).
-  for (int i = 0; i < numInputs; i++) {
-    if (inputs[i] == nullptr) continue;
-    auto dt = inputs[i]->dataType();
-    auto len = inputs[i]->lengthOf();
-    if ((dt == INT32 || dt == INT64 || dt == BOOL) && len > 0 && len <= 32) {
-      inputs[i]->syncToHost();
-      for (LongType j = 0; j < len; j++) {
-        if (dt == BOOL) {
-          mix(static_cast<LongType>(inputs[i]->e<bool>(j)));
-        } else {
-          mix(inputs[i]->e<LongType>(j));
+  // Mix literal values ONLY for value-dependent slots (ops whose output
+  // shape is a function of input VALUES, not just input shapes — e.g. Reshape
+  // with a shape-tensor input, Gather where output rank depends on indices).
+  //
+  // For non-value-dep ops (the common case — Add, MatMul, Gather output of
+  // fixed-shape tables, etc.) mixing values produces false-positive shape-key
+  // changes: every decode step changes position indices / KV offsets, so the
+  // key changes even though the output shape is identical. That triggers
+  // POST_SEAL_SHAPE_CHANGE → mid-execution Triton compile, wrecking performance
+  // and accuracy (outputs get reallocated every step).
+  //
+  // For value-dep ops the value mixing is required: if we skipped it, Step 2
+  // with the same input SHAPE but different VALUE would get a cache hit on
+  // stale cached output shapes. Line 2171 in executeSegmentSlotBySlot then
+  // recomputes and verifies shapes match for the VALUE_DEP_KEY_UPDATE path.
+  if (slot.flags.outputShapeDependsOnInputValues) {
+    for (int i = 0; i < numInputs; i++) {
+      if (inputs[i] == nullptr) continue;
+      auto dt = inputs[i]->dataType();
+      auto len = inputs[i]->lengthOf();
+      if ((dt == INT32 || dt == INT64 || dt == BOOL) && len > 0 && len <= 32) {
+        inputs[i]->syncToHost();
+        for (LongType j = 0; j < len; j++) {
+          if (dt == BOOL) {
+            mix(static_cast<LongType>(inputs[i]->e<bool>(j)));
+          } else {
+            mix(inputs[i]->e<LongType>(j));
+          }
         }
       }
     }
@@ -1905,12 +1925,54 @@ Status NativeDynamicShapePlan::executeSlot(
     bool needsSync = !shapesFrozen_ || executeCount_ < 2;
     if (needsSync) {
         NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+    } else if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
+      // Trace sync skip: for each input, log pAct/sAct. An input with pAct>sAct
+      // means host was written but device stale — next op touching it will
+      // trigger a syncToDevice that overwrites valid device state with stale
+      // host data. This is the class of bug that silently corrupts decode.
+      auto& fpin = ctx.fastpath_in();
+      for (size_t ii = 0; ii < fpin.size(); ii++) {
+        NDArray* a = fpin[ii];
+        if (a == nullptr) continue;
+        DataBuffer* db = a->dataBuffer();
+        if (db == nullptr || db->isClosed() || db->getLenInBytes() == 0) continue;
+        bool pAct = db->isPrimaryActual();
+        bool sAct = db->isSpecialActual();
+        if (pAct && !sAct) {
+          DSP_DIAG(MEMORY,
+                   "SYNC_SKIP_ANOMALY_IN: slot=%d op=%s inIdx=%zu db=%p len=%lld "
+                   "pAct=1 sAct=0 exec=%d — host poisoned device-authoritative buffer",
+                   stepIdx, slot.ident.opName.c_str(), ii, (void*)db,
+                   (long long)db->getLenInBytes(), executeCount_);
+        }
+      }
     }
 
     auto status = slot.ident.op->execute(&ctx);
 
     if (needsSync) {
         NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+    } else if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
+      // Trace post-exec output state. When registerSpecialUse is skipped, the
+      // output counters aren't ticked — if the op wrote to host rather than
+      // device (pAct=1/sAct=0 post-exec) we MUST know, since subsequent reads
+      // will trigger a bad syncToDevice.
+      auto& fpout = ctx.fastpath_out();
+      for (size_t oi = 0; oi < fpout.size(); oi++) {
+        NDArray* a = fpout[oi];
+        if (a == nullptr) continue;
+        DataBuffer* db = a->dataBuffer();
+        if (db == nullptr || db->isClosed() || db->getLenInBytes() == 0) continue;
+        bool pAct = db->isPrimaryActual();
+        bool sAct = db->isSpecialActual();
+        if (!sAct) {
+          DSP_DIAG(MEMORY,
+                   "SYNC_SKIP_ANOMALY_OUT: slot=%d op=%s outIdx=%zu db=%p len=%lld "
+                   "pAct=%d sAct=0 exec=%d — op did not tick device-write counter",
+                   stepIdx, slot.ident.opName.c_str(), oi, (void*)db,
+                   (long long)db->getLenInBytes(), (int)pAct, executeCount_);
+        }
+      }
     }
 
     auto& ctxOuts = ctx.fastpath_out();
@@ -2222,6 +2284,15 @@ Status NativeDynamicShapePlan::executeSlot(
     ctx.getSArguments()->clear();
     if (slot.args.numSArgs > 0) {
       ctx.getSArguments()->insert(ctx.getSArguments()->end(), slot.args.sArgs, slot.args.sArgs + slot.args.numSArgs);
+    }
+
+    // Legacy reduce/broadcast ops read reduction dims from block.getAxis(), not iArgs.
+    // The Java compiler packs dims into iArgs; mirror them into axis for these op types.
+    if (legacyOpReadsAxisFromIArgs(slot.legacy.legacyOpType)) {
+      ctx.getAxis()->clear();
+      for (int i = 0; i < slot.args.numIArgs; i++) {
+        ctx.getAxis()->emplace_back(static_cast<sd::LongType>(slot.args.iArgs[i]));
+      }
     }
 
     ShapeList inputShapes;
@@ -2643,6 +2714,40 @@ Status NativeDynamicShapePlan::executeSlot(
                                 stream, "view-op-install");
             outputSlots_[slotIdx] = view;
             slotIsViewProducer_[slotIdx] = true;
+            // GATHER-OOB DIAGNOSTIC: trace view creation for target slots
+            if (executeCount_ == 0 && stepIdx >= 1240 && stepIdx <= 1270 && view != nullptr) {
+              view->syncToHost();
+              int _vr = view->rankOf();
+              auto* _vinput = inputs[0];
+              sd_printf("GATHER_DIAG_VIEW_INSTALL: step=%d op=%s slotIdx=%d "
+                        "inputShape=[", stepIdx, slot.ident.opName.c_str(), slotIdx);
+              if (_vinput) {
+                for (int _r = 0; _r < _vinput->rankOf(); _r++)
+                  sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)_vinput->sizeAt(_r));
+              }
+              sd_printf("] inputStrides=[");
+              if (_vinput) {
+                const sd::LongType* _vs = _vinput->stridesOf();
+                for (int _r = 0; _r < _vinput->rankOf(); _r++)
+                  sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)_vs[_r]);
+              }
+              sd_printf("] viewShape=[");
+              for (int _r = 0; _r < _vr; _r++)
+                sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)view->sizeAt(_r));
+              sd_printf("] viewStrides=[");
+              const sd::LongType* _vs2 = view->stridesOf();
+              for (int _r = 0; _r < _vr; _r++)
+                sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)_vs2[_r]);
+              sd_printf("] viewOffset=%lld viewBufAddr=%p\n  viewValues=[",
+                        (long long)view->offset(),
+                        view->dataBuffer() ? view->dataBuffer()->primary() : nullptr);
+              sd::LongType _dvn = sd::math::sd_min(view->lengthOf(), (sd::LongType)32);
+              for (sd::LongType _vi = 0; _vi < _dvn; _vi++) {
+                if (_vi > 0) sd_printf(", ");
+                sd_printf("%lld", (long long)view->e<sd::LongType>(_vi));
+              }
+              sd_printf("]\n");
+            }
           }
         }
 
@@ -2943,6 +3048,15 @@ Status NativeDynamicShapePlan::executeSlot(
     ctx.getSArguments()->insert(ctx.getSArguments()->end(), slot.args.sArgs, slot.args.sArgs + slot.args.numSArgs);
   }
 
+  // Legacy reduce/broadcast ops read reduction dims from block.getAxis(), not iArgs.
+  // The Java compiler packs dims into iArgs; mirror them into axis for these op types.
+  if (legacyOpReadsAxisFromIArgs(slot.legacy.legacyOpType)) {
+    ctx.getAxis()->clear();
+    for (int i = 0; i < slot.args.numIArgs; i++) {
+      ctx.getAxis()->emplace_back(static_cast<sd::LongType>(slot.args.iArgs[i]));
+    }
+  }
+
   ctx.setShapeFunctionOverride(true);
 
   // Shape-key computation and shape functions may sync control tensors to host
@@ -2971,6 +3085,49 @@ Status NativeDynamicShapePlan::executeSlot(
       }
 
       in->syncToDevice();
+    }
+  }
+
+  // ── GATHER-OOB DIAGNOSTIC: dump inputs for slots near gather index corruption ──
+  // Covers Add_1_output_0 (slot 1268) and its producers: split_v (1263/1264),
+  // squeeze (1265/1266), unsqueeze_10 (1267), mul_6 (before add_1).
+  // Extended range to 1240-1270 to capture the Where/permute chain producing slot 1262.
+  // Only on first execution (execCount==0) to avoid log flooding.
+  if (executeCount_ == 0 && stepIdx >= 1240 && stepIdx <= 1270) {
+    sd_printf("GATHER_DIAG_PRE: execCount=%d step=%d op=%s numInputs=%d numOutputs=%d\n",
+              executeCount_, stepIdx, slot.ident.opName.c_str(),
+              slot.wiring.numInputs, numActualOutputs);
+    for (int _di = 0; _di < slot.wiring.numInputs; _di++) {
+      NDArray* _in = inputs[_di];
+      if (_in == nullptr) {
+        sd_printf("  input[%d] = null (srcIdx=%d)\n", _di, slot.wiring.inputSourceIndices[_di]);
+        continue;
+      }
+      _in->syncToHost();
+      auto* _db = _in->dataBuffer();
+      int _rank = _in->rankOf();
+      sd_printf("  input[%d] srcIdx=%d op=%s dtype=%d shape=[", _di, slot.wiring.inputSourceIndices[_di],
+                _di == 0 ? "input0" : "input1",
+                (int)_in->dataType());
+      for (int _r = 0; _r < _rank; _r++) {
+        sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)_in->sizeAt(_r));
+      }
+      sd_printf("] strides=[");
+      const sd::LongType* _strides = _in->stridesOf();
+      for (int _r = 0; _r < _rank; _r++) {
+        sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)_strides[_r]);
+      }
+      sd_printf("] order=%c offset=%lld len=%lld bufAddr=%p pAct=%d sAct=%d\n  values=[",
+                _in->ordering(), (long long)_in->offset(), (long long)_in->lengthOf(),
+                _db ? _db->primary() : nullptr,
+                _db ? (_db->isPrimaryActual() ? 1 : 0) : -1,
+                _db ? (_db->isSpecialActual() ? 1 : 0) : -1);
+      sd::LongType _dumpN = sd::math::sd_min(_in->lengthOf(), (sd::LongType)32);
+      for (sd::LongType _vi = 0; _vi < _dumpN; _vi++) {
+        if (_vi > 0) sd_printf(", ");
+        sd_printf("%lld", (long long)_in->e<sd::LongType>(_vi));
+      }
+      sd_printf("]\n");
     }
   }
 
@@ -3069,6 +3226,23 @@ Status NativeDynamicShapePlan::executeSlot(
   bool needsSync = !shapesFrozen_ || executeCount_ < 2;
   if (needsSync) {
     NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+  } else if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
+    auto& fpin = ctx.fastpath_in();
+    for (size_t ii = 0; ii < fpin.size(); ii++) {
+      NDArray* a = fpin[ii];
+      if (a == nullptr) continue;
+      DataBuffer* db = a->dataBuffer();
+      if (db == nullptr || db->isClosed() || db->getLenInBytes() == 0) continue;
+      bool pAct = db->isPrimaryActual();
+      bool sAct = db->isSpecialActual();
+      if (pAct && !sAct) {
+        DSP_DIAG(MEMORY,
+                 "SYNC_SKIP_ANOMALY_IN(warmup): slot=%d op=%s inIdx=%zu db=%p len=%lld "
+                 "pAct=1 sAct=0 exec=%d — host poisoned device-authoritative buffer",
+                 stepIdx, slot.ident.opName.c_str(), ii, (void*)db,
+                 (long long)db->getLenInBytes(), executeCount_);
+      }
+    }
   }
 
   Status status;
@@ -3149,6 +3323,23 @@ Status NativeDynamicShapePlan::executeSlot(
   // PERFORMANCE: Skip in frozen steady-state to eliminate ~5486 sync calls/step.
   if (needsSync) {
     NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
+  } else if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
+    auto& fpout = ctx.fastpath_out();
+    for (size_t oi = 0; oi < fpout.size(); oi++) {
+      NDArray* a = fpout[oi];
+      if (a == nullptr) continue;
+      DataBuffer* db = a->dataBuffer();
+      if (db == nullptr || db->isClosed() || db->getLenInBytes() == 0) continue;
+      bool pAct = db->isPrimaryActual();
+      bool sAct = db->isSpecialActual();
+      if (!sAct) {
+        DSP_DIAG(MEMORY,
+                 "SYNC_SKIP_ANOMALY_OUT(warmup): slot=%d op=%s outIdx=%zu db=%p len=%lld "
+                 "pAct=%d sAct=0 exec=%d — op did not tick device-write counter",
+                 stepIdx, slot.ident.opName.c_str(), oi, (void*)db,
+                 (long long)db->getLenInBytes(), (int)pAct, executeCount_);
+      }
+    }
   }
 
   for (int i = 0; i < numActualOutputs; i++) {
@@ -3220,6 +3411,45 @@ Status NativeDynamicShapePlan::executeSlot(
                   DataTypeUtils::asString(array->dataType()).c_str(),
                   (long long)len, firstVal, sum);
       }
+    }
+  }
+
+  // ── GATHER-OOB DIAGNOSTIC: dump outputs for slots near gather index corruption ──
+  if (executeCount_ == 0 && stepIdx >= 1240 && stepIdx <= 1270 && status == Status::OK) {
+    sd_printf("GATHER_DIAG_POST: execCount=%d step=%d op=%s numOutputs=%d\n",
+              executeCount_, stepIdx, slot.ident.opName.c_str(), numActualOutputs);
+    for (int _oi = 0; _oi < numActualOutputs; _oi++) {
+      int _outSlot = (_oi < slot.wiring.numOutputs) ? slot.wiring.outputSlotIndices[_oi] : -1;
+      NDArray* _out = (_outSlot >= 0 && _outSlot < totalOutputSlots_) ? outputSlots_[_outSlot] : outputs[_oi];
+      if (_out == nullptr) {
+        sd_printf("  output[%d] outSlot=%d = null\n", _oi, _outSlot);
+        continue;
+      }
+      _out->syncToHost();
+      auto* _db = _out->dataBuffer();
+      int _rank = _out->rankOf();
+      sd_printf("  output[%d] outSlot=%d dtype=%d shape=[", _oi, _outSlot, (int)_out->dataType());
+      for (int _r = 0; _r < _rank; _r++) {
+        sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)_out->sizeAt(_r));
+      }
+      sd_printf("] strides=[");
+      const sd::LongType* _strides2 = _out->stridesOf();
+      for (int _r = 0; _r < _rank; _r++) {
+        sd_printf("%s%lld", _r > 0 ? "x" : "", (long long)_strides2[_r]);
+      }
+      sd_printf("] order=%c offset=%lld len=%lld bufAddr=%p pAct=%d sAct=%d viewProducer=%d\n  values=[",
+                _out->ordering(), (long long)_out->offset(), (long long)_out->lengthOf(),
+                _db ? _db->primary() : nullptr,
+                _db ? (_db->isPrimaryActual() ? 1 : 0) : -1,
+                _db ? (_db->isSpecialActual() ? 1 : 0) : -1,
+                (_outSlot >= 0 && _outSlot < totalOutputSlots_ && slotIsViewProducer_ != nullptr)
+                    ? (slotIsViewProducer_[_outSlot] ? 1 : 0) : -1);
+      sd::LongType _dumpN2 = sd::math::sd_min(_out->lengthOf(), (sd::LongType)32);
+      for (sd::LongType _vi2 = 0; _vi2 < _dumpN2; _vi2++) {
+        if (_vi2 > 0) sd_printf(", ");
+        sd_printf("%lld", (long long)_out->e<sd::LongType>(_vi2));
+      }
+      sd_printf("]\n");
     }
   }
 

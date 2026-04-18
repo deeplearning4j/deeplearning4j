@@ -982,6 +982,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Default: disabled (slot-by-slot execution).
    */
   void setCudaGraphsEnabled(bool enabled) {
+    if (gpuGraphCaptureEnabled_ == enabled) return;  // idempotent: no-op if unchanged
     if (planPhase_ > PlanPhase::SLOT_BY_SLOT) {
       sd_printf("DSP PHASE VIOLATION: setCudaGraphsEnabled called in phase %d\n", (int)planPhase_);
       assert(false && "DSP phase violation: setCudaGraphsEnabled");
@@ -998,6 +999,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * - GRAPH_PLUS_JIT: Try JIT first, fall back to graph capture
    */
   void setJitMode(JitMode mode) {
+    if (jitMode_ == mode) return;  // idempotent: no-op if unchanged
     if (planPhase_ > PlanPhase::SLOT_BY_SLOT) {
       sd_printf("DSP PHASE VIOLATION: setJitMode called in phase %d\n", (int)planPhase_);
       assert(false && "DSP phase violation: setJitMode");

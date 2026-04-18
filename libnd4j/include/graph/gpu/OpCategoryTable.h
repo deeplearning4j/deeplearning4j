@@ -295,6 +295,15 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"BatchNorm",         TritonOpCategory::NORMALIZATION},
     {"rms_norm",          TritonOpCategory::NORMALIZATION},
     {"RmsNorm",           TritonOpCategory::NORMALIZATION},
+    // Backward normalization ops — produce multiple outputs (dx, dgamma, dbeta).
+    // Registered as NORMALIZATION so they share the same section handling path.
+    // The dispatcher detects the _bp suffix and calls emitNormalizationBackwardOp instead.
+    {"rms_norm_bp",         TritonOpCategory::NORMALIZATION},
+    {"RmsNormBp",           TritonOpCategory::NORMALIZATION},
+    {"layer_norm_bp",       TritonOpCategory::NORMALIZATION},
+    {"LayerNormBp",         TritonOpCategory::NORMALIZATION},
+    {"fused_layer_norm_bp", TritonOpCategory::NORMALIZATION},
+    {"FusedLayerNormBp",    TritonOpCategory::NORMALIZATION},
     // rms_norm_linear is a fused norm+matmul — handled as MATMUL category so it gets
     // routed through the Triton compilation path where emitRmsNormLinearKernel provides
     // the single-pass dual-accumulator mega-kernel.
@@ -497,6 +506,21 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"apply_alibi",                TritonOpCategory::FUSED_ATTENTION},
     {"ApplyAlibi",                 TritonOpCategory::FUSED_ATTENTION},
 
+    // ── Attention backward ops ──
+    // These use Flash Attention 2 backward: softmax recomputation from log-sum-exp (LSE)
+    // avoids O(N^2) storage. Produces dQ, dK, dV as outputs.
+    // Input convention (BHSD): (dO, Q, K, V, O, L) → (dQ, dK, dV)
+    {"flash_attention_bp",                   TritonOpCategory::FUSED_ATTENTION},
+    {"FlashAttentionBp",                     TritonOpCategory::FUSED_ATTENTION},
+    {"dot_product_attention_bp",             TritonOpCategory::FUSED_ATTENTION},
+    {"DotProductAttentionBp",                TritonOpCategory::FUSED_ATTENTION},
+    {"dot_product_attention_v2_bp",          TritonOpCategory::FUSED_ATTENTION},
+    {"DotProductAttentionV2Bp",              TritonOpCategory::FUSED_ATTENTION},
+    {"multi_head_dot_product_attention_bp",  TritonOpCategory::FUSED_ATTENTION},
+    {"MultiHeadDotProductAttentionBp",       TritonOpCategory::FUSED_ATTENTION},
+    {"grouped_query_attention_bp",           TritonOpCategory::FUSED_ATTENTION},
+    {"GroupedQueryAttentionBp",              TritonOpCategory::FUSED_ATTENTION},
+
     // ── LLM: KV cache management ──
     {"kv_cache_update",   TritonOpCategory::DATA_MOVEMENT},
     {"KvCacheUpdate",     TritonOpCategory::DATA_MOVEMENT},
@@ -615,6 +639,16 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     // Fused LLM ops
     {"fused_gelu",        TritonOpCategory::UNARY_ELEMENTWISE},
     {"FusedGelu",         TritonOpCategory::UNARY_ELEMENTWISE},
+
+    // ── Activation backward ops (elementwise gradient kernels) ──
+    // These share the emitter category of their forward counterparts.
+    // Attention/normalization _bp ops are intentionally excluded here —
+    // they need custom multi-output emitters that do not yet exist.
+    {"silu_bp",               TritonOpCategory::UNARY_ELEMENTWISE},
+    {"fused_gelu_bp",         TritonOpCategory::UNARY_ELEMENTWISE},
+    {"squared_relu_bp",       TritonOpCategory::UNARY_ELEMENTWISE},
+    {"center_and_sharpen_bp", TritonOpCategory::UNARY_ELEMENTWISE},
+    {"swish_mul_bp",          TritonOpCategory::BINARY_ELEMENTWISE},
   };
   return table;
 }

@@ -905,6 +905,252 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
   return result;
 }
 
+// ─── Normalization backward emitter ─────────────────────────────────────────
+//
+// emitNormalizationBackwardSection
+//   Emits the backward pass for rms_norm_bp and layer_norm_bp / fused_layer_norm_bp
+//   into the current insertion point of `builder`.
+//
+// All tensor-valued inputs (dy, x, gamma) are padded-row tensors of element
+// type f32 (already promoted by the caller via loadRowFromBuffer).
+// The emitter writes dx, dgamma (and dbeta for layer-norm) directly to global
+// memory using tt.store so that each row block handles all its gradient updates.
+//
+// Algorithm — rms_norm_bp
+//   rms   = sqrt(mean(x^2, axis=last) + eps)        # scalar per row
+//   invRms = 1 / rms
+//   x_hat  = x * invRms                              # [paddedRowLen]
+//   dgamma = sum(dy * x_hat, axis=0)                 # [paddedRowLen] — accumulated over rows
+//   coeff  = mean(dy * gamma * x_hat, axis=last)     # scalar per row
+//   dx     = invRms * (dy * gamma - x_hat * coeff)   # [paddedRowLen]
+//
+// Algorithm — layer_norm_bp (uses pre-computed invStd = 1/sqrt(var+eps))
+//   x_hat   = (x - mean) * invStd
+//   dbeta   = sum(dy, axis=0)                         # accumulated over rows
+//   dgamma  = sum(dy * x_hat, axis=0)                 # accumulated over rows
+//   dx_hat  = dy * gamma                              # [paddedRowLen]
+//   coeff1  = mean(dx_hat, axis=last)                 # scalar per row
+//   coeff2  = mean(dx_hat * x_hat, axis=last)         # scalar per row
+//   dx      = invStd * (dx_hat - coeff1 - x_hat * coeff2)
+//
+// Note: dgamma and dbeta are ACCUMULATED across rows (each row's block adds its
+// contribution).  The caller must initialise these buffers to zero before the
+// kernel launch.  Because parallel blocks write to the same dgamma/dbeta
+// locations we use tt.atomic_rmw ADD to avoid data races.
+
+bool emitNormalizationBackwardSection(
+    mlir::OpBuilder& builder, mlir::Location loc,
+    const std::string& opName,
+    mlir::Value dy, mlir::Value x,
+    mlir::Value gamma,
+    mlir::Value mean, mlir::Value invStd,
+    float epsilon,
+    int64_t logicalRowLen,
+    mlir::Value rowBase,
+    mlir::Value dxPtr,
+    mlir::Value dgammaPtr,
+    mlir::Value dbetaPtr) {
+
+  using namespace ir_builder_internal;
+
+  // normalizeOpToken strips all non-alphanumeric chars and lowercases:
+  //   rms_norm_bp -> rmsnormbp, layer_norm_bp -> layernormbp, fused_layer_norm_bp -> fusedlayernormbp
+  std::string opKey = normalizeOpToken(opName);
+  bool isRmsNormBp    = (opKey == "rmsnormbp");
+  bool isLayerNormBp  = (opKey == "layernormbp"          ||
+                          opKey == "layernormalizationbp" ||
+                          opKey == "fusedlayernormbp");
+
+  if (!isRmsNormBp && !isLayerNormBp) {
+    return false;
+  }
+
+  // Compute paddedRowLen = next power-of-2 >= logicalRowLen
+  int64_t paddedRowLen = 1;
+  while (paddedRowLen < logicalRowLen) paddedRowLen <<= 1;
+
+  auto f32Type    = builder.getF32Type();
+  auto i32Type    = builder.getI32Type();
+
+  auto rowTensorType   = mlir::RankedTensorType::get({paddedRowLen}, f32Type);
+  auto rowIdxType      = mlir::RankedTensorType::get({paddedRowLen}, i32Type);
+
+  // ── Build per-row range, global offsets, and mask ──────────────────────────
+  auto rowRange  = builder.create<mlir::triton::MakeRangeOp>(loc, rowIdxType, 0, paddedRowLen);
+  auto rowBaseSplat = builder.create<mlir::triton::SplatOp>(loc, rowIdxType, rowBase);
+  auto rowOffsets = builder.create<mlir::arith::AddIOp>(loc, rowBaseSplat, rowRange);
+
+  auto logRowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+  auto logRowLenSplat = builder.create<mlir::triton::SplatOp>(loc, rowIdxType, logRowLenConst);
+  auto rowMask = builder.create<mlir::arith::CmpIOp>(
+      loc, mlir::arith::CmpIPredicate::slt, rowRange, logRowLenSplat);
+
+  // Helper: promote tensor to f32 (the arithmetic domain for norm math)
+  auto promoteF32 = [&](mlir::Value v) -> mlir::Value {
+    return castTo(builder, loc, v, f32Type);
+  };
+
+  // Ensure dy and x are f32 row tensors
+  dy = promoteF32(dy);
+  x  = promoteF32(x);
+  if (gamma) gamma = promoteF32(gamma);
+  if (mean)  mean  = promoteF32(mean);
+  if (invStd) invStd = promoteF32(invStd);
+
+  // Helper: row-wide reduce-sum → scalar f32
+  auto rowReduceSum = [&](mlir::Value rowTensor) -> mlir::Value {
+    auto op = builder.create<mlir::triton::ReduceOp>(loc, mlir::ValueRange{rowTensor}, /*axis=*/0);
+    {
+      auto& region = op.getCombineOp();
+      auto* block = builder.createBlock(&region, {}, {f32Type, f32Type}, {loc, loc});
+      builder.setInsertionPointToEnd(block);
+      auto s = builder.create<mlir::arith::AddFOp>(loc, block->getArgument(0), block->getArgument(1));
+      builder.create<mlir::triton::ReduceReturnOp>(loc, mlir::ValueRange{s});
+    }
+    builder.setInsertionPointAfter(op);
+    return op->getResult(0);  // scalar f32
+  };
+
+  // Helper: splat a scalar f32 to the row tensor type
+  auto splatF32 = [&](mlir::Value scalar) -> mlir::Value {
+    return builder.create<mlir::triton::SplatOp>(loc, rowTensorType, scalar);
+  };
+
+  // Helper: scalar constant f32
+  auto constF32 = [&](float v) -> mlir::Value {
+    return builder.create<mlir::arith::ConstantOp>(
+        loc, f32Type, builder.getFloatAttr(f32Type, static_cast<double>(v)));
+  };
+
+  // ── Compute invNorm (1/rms or pre-computed invStd) ──────────────────────────
+  // For rms_norm_bp: compute RMS from x on the fly.
+  // For layer_norm_bp: use pre-computed invStd + mean passed from caller.
+
+  mlir::Value invNorm;   // scalar f32: 1/rms or 1/std
+  mlir::Value xHat;      // [paddedRowLen] f32: normalized x
+
+  // Logically correct count = logicalRowLen (not paddedRowLen, which may include padding zeros)
+  auto countF = constF32(static_cast<float>(logicalRowLen));
+
+  if (isRmsNormBp) {
+    // rms = sqrt(mean(x^2) + eps)
+    auto xSq     = builder.create<mlir::arith::MulFOp>(loc, x, x);
+    auto sumXSq  = rowReduceSum(xSq);
+    auto meanXSq = builder.create<mlir::arith::DivFOp>(loc, sumXSq, countF);
+    auto epsVal  = constF32(epsilon);
+    auto varPlusEps = builder.create<mlir::arith::AddFOp>(loc, meanXSq, epsVal);
+    invNorm = builder.create<mlir::math::RsqrtOp>(loc, varPlusEps);   // scalar: 1/rms
+    // x_hat = x * invRms
+    xHat = builder.create<mlir::arith::MulFOp>(loc, x, splatF32(invNorm));
+  } else {
+    // layer_norm_bp: use pre-computed invStd and mean
+    if (invStd && mean) {
+      // invStd and mean are already scalar f32 values loaded by the caller.
+      // Use directly — no row-tensor path needed (callers always pass scalars here).
+      invNorm = invStd;
+      // x_hat = (x - mean) * invStd
+      auto meanSplat = splatF32(mean);
+      auto xCentered = builder.create<mlir::arith::SubFOp>(loc, x, meanSplat);
+      xHat = builder.create<mlir::arith::MulFOp>(loc, xCentered, splatF32(invStd));
+    } else {
+      // Fallback: compute mean and variance from x directly
+      auto sumX  = rowReduceSum(x);
+      auto meanX = builder.create<mlir::arith::DivFOp>(loc, sumX, countF);
+      auto meanSplat = splatF32(meanX);
+      auto xCentered = builder.create<mlir::arith::SubFOp>(loc, x, meanSplat);
+      auto xCentSq = builder.create<mlir::arith::MulFOp>(loc, xCentered, xCentered);
+      auto sumVar = rowReduceSum(xCentSq);
+      auto varVal = builder.create<mlir::arith::DivFOp>(loc, sumVar, countF);
+      auto epsVal = constF32(epsilon);
+      auto varPlusEps = builder.create<mlir::arith::AddFOp>(loc, varVal, epsVal);
+      invNorm = builder.create<mlir::math::RsqrtOp>(loc, varPlusEps);
+      xHat = builder.create<mlir::arith::MulFOp>(loc, xCentered, splatF32(invNorm));
+    }
+  }
+
+  // ── Compute dx ───────────────────────────────────────────────────────────────
+
+  // Apply gamma: dyGamma = dy * gamma (element-wise) — or just dy if no gamma
+  mlir::Value dyGamma = dy;
+  if (gamma) {
+    dyGamma = builder.create<mlir::arith::MulFOp>(loc, dy, gamma);
+  }
+
+  // coeff = mean(dyGamma * xHat, axis=last)  → scalar
+  auto dyGammaXHat = builder.create<mlir::arith::MulFOp>(loc, dyGamma, xHat);
+  auto sumDyGammaXHat = rowReduceSum(dyGammaXHat);
+  auto coeffScalar = builder.create<mlir::arith::DivFOp>(loc, sumDyGammaXHat, countF);
+
+  mlir::Value dx;
+  if (isRmsNormBp) {
+    // dx = invRms * (dyGamma - xHat * coeff)
+    auto xHatCoeff = builder.create<mlir::arith::MulFOp>(loc, xHat, splatF32(coeffScalar));
+    auto dyMinusCoeff = builder.create<mlir::arith::SubFOp>(loc, dyGamma, xHatCoeff);
+    dx = builder.create<mlir::arith::MulFOp>(loc, splatF32(invNorm), dyMinusCoeff);
+  } else {
+    // layer_norm_bp:
+    //   dx_hat = dy * gamma  (= dyGamma)
+    //   coeff1 = mean(dx_hat)
+    //   coeff2 = mean(dx_hat * x_hat) = coeffScalar (computed above)
+    //   dx = invStd * (dx_hat - coeff1 - x_hat * coeff2)
+    auto sumDyGamma = rowReduceSum(dyGamma);
+    auto coeff1 = builder.create<mlir::arith::DivFOp>(loc, sumDyGamma, countF);
+    auto coeff2 = coeffScalar;
+    auto term1 = builder.create<mlir::arith::SubFOp>(loc, dyGamma, splatF32(coeff1));
+    auto xHatCoeff2 = builder.create<mlir::arith::MulFOp>(loc, xHat, splatF32(coeff2));
+    auto dxHat = builder.create<mlir::arith::SubFOp>(loc, term1, xHatCoeff2);
+    dx = builder.create<mlir::arith::MulFOp>(loc, splatF32(invNorm), dxHat);
+  }
+
+  // ── Store dx via tt.store ────────────────────────────────────────────────────
+  if (dxPtr) {
+    auto ptrType = mlir::cast<mlir::triton::PointerType>(dxPtr.getType());
+    auto ptrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
+    auto splatDxPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, dxPtr);
+    auto dxPtrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatDxPtr, rowOffsets);
+    auto dxStore = castTo(builder, loc, dx, ptrType.getPointeeType());
+    builder.create<mlir::triton::StoreOp>(loc, dxPtrs, dxStore, rowMask,
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+  }
+
+  // ── Atomic accumulate dgamma: dgamma[j] += dy[j] * x_hat[j] ─────────────────
+  // dgamma is accumulated over all rows (one per block) using atomic add.
+  // Use a lane-local range (0..paddedRowLen) not offset by rowBase.
+  if (dgammaPtr) {
+    auto dgammaElem = builder.create<mlir::arith::MulFOp>(loc, dy, xHat);
+    auto gammaPtrType = mlir::cast<mlir::triton::PointerType>(dgammaPtr.getType());
+    auto gammaElemType = gammaPtrType.getPointeeType();
+    auto gammaDataTensorType = mlir::RankedTensorType::get({paddedRowLen}, gammaElemType);
+    auto gammaPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, gammaPtrType);
+    // dgamma is indexed by column (j = 0..logicalRowLen-1), not by row+col
+    auto splatGammaPtr = builder.create<mlir::triton::SplatOp>(loc, gammaPtrTensorType, dgammaPtr);
+    auto dgammaPtrs = builder.create<mlir::triton::AddPtrOp>(loc, gammaPtrTensorType, splatGammaPtr, rowRange);
+    auto dgammaStoreVal = castTo(builder, loc, dgammaElem, gammaElemType);
+    builder.create<mlir::triton::AtomicRMWOp>(loc, gammaDataTensorType,
+        mlir::triton::RMWOp::FADD,
+        dgammaPtrs, dgammaStoreVal, rowMask,
+        mlir::triton::MemSemantic::RELAXED, mlir::triton::MemSyncScope::GPU);
+  }
+
+  // ── Atomic accumulate dbeta: dbeta[j] += dy[j] ───────────────────────────────
+  // Only for layer_norm_bp (rms_norm has no beta).
+  if (dbetaPtr && isLayerNormBp) {
+    auto betaPtrType = mlir::cast<mlir::triton::PointerType>(dbetaPtr.getType());
+    auto betaElemType = betaPtrType.getPointeeType();
+    auto betaDataTensorType = mlir::RankedTensorType::get({paddedRowLen}, betaElemType);
+    auto betaPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, betaPtrType);
+    auto splatBetaPtr = builder.create<mlir::triton::SplatOp>(loc, betaPtrTensorType, dbetaPtr);
+    auto dbetaPtrs = builder.create<mlir::triton::AddPtrOp>(loc, betaPtrTensorType, splatBetaPtr, rowRange);
+    auto dbetaStoreVal = castTo(builder, loc, dy, betaElemType);
+    builder.create<mlir::triton::AtomicRMWOp>(loc, betaDataTensorType,
+        mlir::triton::RMWOp::FADD,
+        dbetaPtrs, dbetaStoreVal, rowMask,
+        mlir::triton::MemSemantic::RELAXED, mlir::triton::MemSyncScope::GPU);
+  }
+
+  return true;
+}
+
 }  // namespace graph
 }  // namespace sd
 

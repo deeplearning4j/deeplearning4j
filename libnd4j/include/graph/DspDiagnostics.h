@@ -199,6 +199,20 @@ class SD_LIB_EXPORT DspDiagnostics {
                                   const char* combinedBucketLabel,
                                   bool isInvalidForReplay);
 
+  // ── Array content fingerprint ──
+  // Records an FNV-1a hash over the full host-side payload of arr so step-to-step
+  // content drift of placeholders / external inputs / output slots is visible.
+  // If two consecutive calls for the same array produce the same hash, the
+  // content is identical — this is how we detect "stuck input" bugs where a
+  // placeholder retains last step's bytes.
+  //
+  // Caller contract: must be invoked OUTSIDE CUDA graph capture. The helper
+  // calls arr->syncToHost() so device data is visible on the host; inside
+  // capture that sync would issue a cross-stream memcpy and poison the
+  // capture (see capture-safe accessors rule).
+  void fingerprintArray(const char* tag, int idx, const char* name,
+                        NDArray* arr, int execCount);
+
   // ── External input actuality state dump ──
   // Logs pAct/sAct/bytes/addr for each external input and returns sync counts.
   struct ExtInputSyncResult {
@@ -389,6 +403,17 @@ class SD_LIB_EXPORT DspDiagnostics {
     } \
   } while (0)
 
+// Record a content fingerprint (FNV-1a hash) for an NDArray so repeated-content
+// bugs (stuck placeholders, non-updating KV caches) are visible across steps.
+// Gated on EXECUTE category. Must be called outside stream capture.
+#define DSP_DIAG_FINGERPRINT(TAG, IDX, NAME, ARR, EXEC_COUNT) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_EXECUTE)) { \
+      sd::graph::DspDiagnostics::getInstance().fingerprintArray( \
+          (TAG), (IDX), (NAME), (ARR), (EXEC_COUNT)); \
+    } \
+  } while (0)
+
 // Log a slot WRITE event: who wrote to SLOT_IDX, when, on what STREAM, during PHASE.
 // Gated on MEMORY category. Emits a structured DSP_DIAG_SLOT row that records the
 // code-path tag (e.g. "fast-frozen", "fused-chain-head", "alloc-output") alongside
@@ -430,6 +455,7 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_DUMP_SLOT(TAG, SLOT_IDX, DEV_PTR, NUM_ELEMS) ((void)0)
 #define DSP_DIAG_DUMP_SEG_OUTPUT(TAG, END_SLOT, DEV_PTR, NUM_ELEMS, EXEC_COUNT, STREAM) ((void)0)
 #define DSP_DIAG_DUMP_EXT_INPUTS(EXT_ARRAYS, NUM_EXT, EXEC_COUNT, RESULT_VAR) ((void)0)
+#define DSP_DIAG_FINGERPRINT(TAG, IDX, NAME, ARR, EXEC_COUNT) ((void)0)
 #define DSP_DIAG_SNAPSHOT_ADDRS(TAG, OUT_SLOTS, NUM_OUT, EXT_ARRAYS, NUM_EXT) ((void)0)
 #define DSP_DIAG_COMPARE_ADDRS(TAG_A, TAG_B) (0)
 #define DSP_DIAG_SLOT_WRITE(SLOT_IDX, OP, BYTES, STREAM, PHASE) ((void)0)

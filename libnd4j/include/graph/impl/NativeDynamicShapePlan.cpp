@@ -26,6 +26,7 @@
 #include <sstream>
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/LegacyOpTypeCodes.h>
 
 // Portable buffer accessor for DSP: specialBuffer() on CUDA, buffer() on CPU.
 // CPU specialBuffer() throws when _buffer is nullptr (freed arrays) because
@@ -54,6 +55,16 @@
 #include <ops/declarable/LegacyScalarOp.h>
 #include <ops/declarable/LegacyScalarBoolOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
+#include <ops/declarable/LegacyReduceFloatOp.h>
+#include <ops/declarable/LegacyReduceSameOp.h>
+#include <ops/declarable/LegacyReduceBoolOp.h>
+#include <ops/declarable/LegacyReduceLongOp.h>
+#include <ops/declarable/LegacyReduce3Op.h>
+#include <ops/declarable/LegacyStatsOp.h>
+#include <ops/declarable/LegacyIndexReduceOp.h>
+#include <ops/declarable/LegacyBroadcastOp.h>
+#include <ops/declarable/LegacyBroadcastBoolOp.h>
+#include <ops/declarable/LegacyRandomOp.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 
 #include <algorithm>
@@ -456,6 +467,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
 }
 
 void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
+  if (graphExecutionMode_ == mode) return;  // idempotent: no-op if unchanged
   DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setGraphExecutionMode");
   DSP_DIAG(EXECUTE, "setGraphExecutionMode: %d -> %d", static_cast<int>(graphExecutionMode_), static_cast<int>(mode));
   graphExecutionMode_ = mode;
@@ -640,9 +652,14 @@ class BinaryReader {
   }
 
   std::string readString() {
+    size_t lenPos = pos_;
     int32_t len = read<int32_t>();
     if (len < 0 || pos_ + len > static_cast<size_t>(size_)) {
-      THROW_EXCEPTION("BinaryReader: invalid string length");
+      char buf[256];
+      std::snprintf(buf, sizeof(buf),
+                    "BinaryReader: invalid string length %d at pos %zu (bufSize=%zu, lenFieldPos=%zu)",
+                    static_cast<int>(len), pos_, static_cast<size_t>(size_), lenPos);
+      THROW_EXCEPTION(buf);
     }
     std::string s(reinterpret_cast<const char*>(data_ + pos_), len);
     pos_ += len;
@@ -687,7 +704,10 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
                plan->totalOutputSlots_, plan->numSlots_);
   REQUIRE_TRUE(plan->numExternalInputs_ >= 0 && plan->numExternalInputs_ < 100000, 0,
                "NativeDynamicShapePlan::fromSerializedPlan: invalid numExternalInputs %d", plan->numExternalInputs_);
-  REQUIRE_TRUE(plan->numRequestedOutputs_ >= 0 && plan->numRequestedOutputs_ <= plan->totalOutputSlots_, 0,
+  // numRequestedOutputs_ can exceed totalOutputSlots_ because requested outputs
+  // may reference external inputs (constants/variables/placeholders) not produced by any slot.
+  // Those entries have slotIdx = -1 in requestedOutputSlotIndices_ and are handled downstream.
+  REQUIRE_TRUE(plan->numRequestedOutputs_ >= 0 && plan->numRequestedOutputs_ < 500000, 0,
                "NativeDynamicShapePlan::fromSerializedPlan: invalid numRequestedOutputs %d (totalOutputSlots=%d)",
                plan->numRequestedOutputs_, plan->totalOutputSlots_);
 
@@ -794,34 +814,76 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       slot.cf.loopRegionIndex = reader.read<int32_t>();
     }
 
-    // Resolve op by name (Java and C++ use different hash functions,
-    // so we look up by name string and compute the C++ hash from it)
+    // Resolve op: First try name lookup in OpRegistrator. If found, use it — unless
+    // it's a synonym clash (e.g., DECLARE_SYN(dot, matmul) shadows legacy reduce3 "dot").
+    // Detect synonym clashes by comparing the returned op's actual name against slot name.
     slot.ident.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.ident.opName);
+    if (slot.ident.op && slot.legacy.legacyOpType > 0 && slot.legacy.legacyOpNum >= 0) {
+      // Check for synonym clash: if the registered op's actual name differs from
+      // our requested name, C++ has mapped our name to a different op via DECLARE_SYN.
+      // In that case, discard the synonym match and use the legacy wrapper instead.
+      auto* registeredName = slot.ident.op->getOpName();
+      if (registeredName && slot.ident.opName != std::string(registeredName->c_str())) {
+        sd_debug("NativeDynamicShapePlan: synonym clash for '%s' -> registered as '%s', using legacy wrapper\n",
+                 slot.ident.opName.c_str(), registeredName->c_str());
+        slot.ident.op = nullptr;  // clear synonym match, will fall through to legacy
+      }
+    }
     if (!slot.ident.op && slot.legacy.legacyOpType > 0 && slot.legacy.legacyOpNum >= 0) {
       // Create a legacy op wrapper for ops not in the OpRegistrator
       // (e.g., exp, log, abs, neg, sqrt, sin, cos, etc.)
       sd::ops::DeclarableOp* legacyOp = nullptr;
       switch (slot.legacy.legacyOpType) {
-        case 1:  // LegacyTransformSameOp
+        case LEGACY_TRANSFORM_SAME:
           legacyOp = new sd::ops::LegacyTransformSameOp(slot.legacy.legacyOpNum);
           break;
-        case 2:  // LegacyTransformStrictOp
+        case LEGACY_TRANSFORM_STRICT:
           legacyOp = new sd::ops::LegacyTransformStrictOp(slot.legacy.legacyOpNum);
           break;
-        case 3:  // LegacyTransformFloatOp
+        case LEGACY_TRANSFORM_FLOAT:
           legacyOp = new sd::ops::LegacyTransformFloatOp(slot.legacy.legacyOpNum);
           break;
-        case 4:  // LegacyTransformBoolOp
+        case LEGACY_TRANSFORM_BOOL:
           legacyOp = new sd::ops::LegacyTransformBoolOp(slot.legacy.legacyOpNum);
           break;
-        case 5:  // LegacyScalarOp
+        case LEGACY_SCALAR:
           legacyOp = new sd::ops::LegacyScalarOp(slot.legacy.legacyOpNum);
           break;
-        case 6:  // LegacyPairwiseTransformOp
+        case LEGACY_PAIRWISE_TRANSFORM:
           legacyOp = new sd::ops::LegacyPairwiseTransformOp(slot.legacy.legacyOpNum);
           break;
-        case 7:  // LegacyScalarBoolOp
+        case LEGACY_SCALAR_BOOL:
           legacyOp = new sd::ops::LegacyScalarBoolOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_REDUCE_FLOAT:
+          legacyOp = new sd::ops::LegacyReduceFloatOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_REDUCE_SAME:
+          legacyOp = new sd::ops::LegacyReduceSameOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_REDUCE_BOOL:
+          legacyOp = new sd::ops::LegacyReduceBoolOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_REDUCE_LONG:
+          legacyOp = new sd::ops::LegacyReduceLongOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_REDUCE3:
+          legacyOp = new sd::ops::LegacyReduce3Op(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_STATS:
+          legacyOp = new sd::ops::LegacyStatsOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_INDEX_REDUCE:
+          legacyOp = new sd::ops::LegacyIndexReduceOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_BROADCAST:
+          legacyOp = new sd::ops::LegacyBroadcastOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_BROADCAST_BOOL:
+          legacyOp = new sd::ops::LegacyBroadcastBoolOp(slot.legacy.legacyOpNum);
+          break;
+        case LEGACY_RANDOM:
+          legacyOp = new sd::ops::LegacyRandomOp(slot.legacy.legacyOpNum);
           break;
         default:
           DSP_DIAG(COMPILE, "unknown legacy op type %d for '%s'",
@@ -1128,6 +1190,22 @@ Status NativeDynamicShapePlan::execute(
   }
 
   DspDiagnostics::getInstance().beginStep(executeCount_);
+
+  // When tritonSkipKernels is active, force the plan to behave exactly like
+  // GEM_SLOT_BY_SLOT. The plan was compiled with GEM_TRITON (segments have
+  // selectedBackend=GPU_COMPILER, gpuGraphCaptureEnabled_=true, etc.) but
+  // all compiled kernels are skipped. Force GEM_SLOT_BY_SLOT so that:
+  //   1. phaseCompile is skipped (no pointless Triton compilation)
+  //   2. phaseSlotBySlot is used (no phaseReplay differences)
+  //   3. AUTO_SEAL is skipped (no premature shape freezing)
+  //   4. Segments behave as SLOT_BY_SLOT (no graph capture state changes)
+  if (Environment::getInstance().tritonSkipKernels() &&
+      graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    DSP_DIAG(EXECUTE, "TRITON_SKIP_OVERRIDE: forcing GEM_SLOT_BY_SLOT (was mode=%d)",
+             static_cast<int>(graphExecutionMode_));
+    graphExecutionMode_ = GraphExecutionMode::GEM_SLOT_BY_SLOT;
+    gpuGraphCaptureEnabled_ = false;
+  }
 
   // Set tl_dspExecutionStream at the start of EVERY DSP execution.
   // This allows syncToSpecial() to use async H2D copies on the DSP stream instead
@@ -1541,19 +1619,29 @@ Status NativeDynamicShapePlan::execute(
   // kernel includes frozen constant ops, and replay corrupts their device data.
   detectFrozenConstants();
 
-  // Auto-seal (AUTO mode): after a successful slot-by-slot pass with no explicit
-  // freeze, transition the plan in-place to SHAPES_FROZEN. No re-warmup — the
-  // slot-by-slot pass we just finished populated slot shape caches and segment
-  // execution counts, so platformPrecompileSegments can run directly against the
-  // current state. This seals compilation exactly once per plan lifetime so the
-  // mid-execution compile counter reflects real post-seal Triton compiles going
-  // forward. The eager precompile gate below then calls phaseCompile.
+  // Auto-seal: after a successful slot-by-slot pass with no explicit freeze,
+  // transition the plan in-place to SHAPES_FROZEN. No re-warmup — the slot-by-slot
+  // pass we just finished populated slot shape caches and segment execution counts,
+  // so platformPrecompileSegments can run directly against the current state. This
+  // seals compilation exactly once per plan lifetime so the mid-execution compile
+  // counter reflects real post-seal Triton compiles going forward. The eager
+  // precompile gate below then calls phaseCompile.
+  //
+  // Applies to every mode EXCEPT GEM_SLOT_BY_SLOT. For explicit modes like
+  // GEM_TRITON / GEM_NVRTC_JIT / GEM_CUDA_GRAPHS, the Java side does NOT propagate
+  // shapesFrozen (see DynamicShapePlanExecutor.applySettingsIfNewHandle comment at
+  // line 1248+) — the C++ plan owns its own frozen-state transition. Without this
+  // seal, shapesFrozen_ stays false, executeCount_ never increments (guarded at
+  // line 1476), phaseCompile defers (requires executeCount_>=1), and
+  // platformShouldUseGraph returns false — forcing every segment to run slot-by-slot
+  // for the life of the plan.
   if (!compilationDone_ && !shapesFrozen_ &&
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO &&
+      graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT &&
       planPhase_ == PlanPhase::SLOT_BY_SLOT) {
     DSP_DIAG(COMPILE,
              "AUTO_SEAL: in-place transition SLOT_BY_SLOT -> SHAPES_FROZEN "
-             "(segs=%d extInputs=%d executeCount=%d)",
+             "(mode=%d segs=%d extInputs=%d executeCount=%d)",
+             static_cast<int>(graphExecutionMode_),
              (int)segments_.size(), numExternalInputs, executeCount_);
     shapesFrozen_ = true;
     planPhase_ = PlanPhase::SHAPES_FROZEN;
@@ -1637,10 +1725,16 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // View wrappers deleted inline in slotexec. No batched/deferred close needed.
 
 void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
+  bool wasFrozen = shapesFrozen_;
+  // Idempotent: if already frozen and caller wants to freeze again, no-op.
+  // This handles the case where the plan auto-advanced to SHAPES_FROZEN
+  // during execute() and Java tries to freeze afterward.
+  if (frozen && wasFrozen) {
+    return;
+  }
   if (frozen) {
     DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setShapesFrozen(true)");
   }
-  bool wasFrozen = shapesFrozen_;
   shapesFrozen_ = frozen;
   if (frozen && !wasFrozen) {
     auto status = phaseFreeze();
@@ -2557,6 +2651,11 @@ void NativeDynamicShapePlan::buildSegments() {
   // the shapeKey system handle recompilation transparently.
   auto isSlotCapturable = [](const NativeSlot& slot, int) -> bool {
     if (slot.cf.controlFlowType != CF_NONE) return false;
+    // Legacy reduce/broadcast ops wrap NativeOpExecutioner C-APIs that Triton
+    // cannot emit IR for. Route them to SLOT_BY_SLOT upfront so they execute
+    // via the native kernel path (with axis populated from iArgs in slotexec).
+    // Proactive dispatch based on op nature, not a post-failure fallback.
+    if (legacyOpRequiresSlotBySlot(slot.legacy.legacyOpType)) return false;
     return true;
   };
 

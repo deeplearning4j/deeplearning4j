@@ -23,6 +23,7 @@
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/LegacyOpTypeCodes.h>
 #include <system/Environment.h>
 #include <helpers/logger.h>
 #include <helpers/ShapeUtils.h>
@@ -409,14 +410,19 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         for (auto& argMapping : sk.argSlotMapping) {
           if (argMapping.isOutput) continue;
           NDArray* arr = nullptr;
-          if (argMapping.slotIndex < 0) {
+          bool isExternal = (argMapping.slotIndex < 0);
+          if (isExternal) {
             int extIdx = -(argMapping.slotIndex + 1);
             if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
           } else {
             if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
           }
           if (arr && arr->lengthOf() > 0) {
-            arr->syncToDevice();
+            if (isExternal && arr->dataBuffer()) {
+              arr->dataBuffer()->syncToSpecial(true);
+            } else {
+              arr->syncToDevice();
+            }
           }
         }
       }
@@ -458,8 +464,12 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         }
       }
 
-      // Log all arg addresses for ALL sub-kernels when VERIFY is enabled
-      if (DSP_DIAG_ENABLED(VERIFY)) {
+      // Log all arg addresses for ALL sub-kernels when VERIFY is enabled.
+      // SKIP during stream capture: a->specialBuffer() can call syncToDevice()
+      // if bufferDeviceId != currentDeviceId, issuing a cudaMemcpyAsync on a
+      // non-captured stream that poisons the capture ("previous error during
+      // capture") — later arg-table H2D and endCapture both fail.
+      if (DSP_DIAG_ENABLED(VERIFY) && !streamCaptureActive) {
         for (int ai = 0; ai < numArgs; ai++) {
           auto& am = sk.argSlotMapping[ai];
           NDArray* a = nullptr;
@@ -483,12 +493,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         }
       }
 
-      // Buffer aliasing detection for this sub-kernel
-      detectBufferAliasing(static_cast<int>(ki),
-                           sk.argSlotMapping, sk.startSlot_, sk.endSlot_,
-                           externalInputs, numExternalInputs,
-                           outputSlots, totalOutputSlots,
-                           slots, seg.def.endSlot);
+      // Buffer aliasing detection for this sub-kernel.
+      // SKIP during capture: calls a->specialBuffer() → syncToDevice() poisons capture.
+      if (!streamCaptureActive) {
+        detectBufferAliasing(static_cast<int>(ki),
+                             sk.argSlotMapping, sk.startSlot_, sk.endSlot_,
+                             externalInputs, numExternalInputs,
+                             outputSlots, totalOutputSlots,
+                             slots, seg.def.endSlot);
+      }
     }
 
     // ── Phase 3: Single consolidated H2D ──
@@ -565,9 +578,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                   nextSlotToRun, subKernel.startSlot_ - 1, static_cast<int>(gapStatus));
         return gapStatus;
       }
-      markOrderedRangeDeviceCurrent(nextSlotToRun, subKernel.startSlot_ - 1, slots,
-                                    externalInputs, numExternalInputs,
-                                    outputSlots, totalOutputSlots);
+      // markOrderedRangeDeviceCurrent DISABLED: orderedRangeExecutor_ already handles
+      // actuality via prepareSpecialUse/registerSpecialUse inside executeSegmentSlotBySlot.
+      // readSpecial()/writeSpecial() here is redundant and poisons frozen constant flags.
+      DSP_DIAG(EXECUTE, "markOrderedRangeDeviceCurrent SKIPPED (orderedRangeExecutor handled actuality) [%d-%d]",
+               nextSlotToRun, subKernel.startSlot_ - 1);
 
       // ── Post-gap shape re-validation ──
       // After a gap executes view-producing ops (reshape_no_copy, permute, etc.),
@@ -626,6 +641,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (slot.args.numTArgs > 0) inferCtx.setTArguments(slot.args.tArgs, slot.args.numTArgs);
         if (slot.args.numBArgs > 0) inferCtx.setBArguments(slot.args.bArgs, slot.args.numBArgs);
         if (slot.args.numDArgs > 0) inferCtx.setDArguments(slot.args.dArgs, slot.args.numDArgs);
+
+        // Legacy reduce/broadcast ops read reduction dims from block.getAxis(), not iArgs.
+        // Mirror iArgs into axis so calculateOutputShape picks up the right dims.
+        if (legacyOpReadsAxisFromIArgs(slot.legacy.legacyOpType)) {
+          inferCtx.getAxis()->clear();
+          for (int i = 0; i < slot.args.numIArgs; i++) {
+            inferCtx.getAxis()->emplace_back(static_cast<sd::LongType>(slot.args.iArgs[i]));
+          }
+        }
 
         ShapeList* inferredShapes = nullptr;
         try {
@@ -736,9 +760,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                  subKernel.startSlot_, subKernel.endSlot_, static_cast<int>(skipStatus));
           return skipStatus;
         }
-        markOrderedRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
-                                      externalInputs, numExternalInputs,
-                                      outputSlots, totalOutputSlots);
+        // markOrderedRangeDeviceCurrent DISABLED: orderedRangeExecutor_ already handles
+        // actuality via prepareSpecialUse/registerSpecialUse inside executeSegmentSlotBySlot.
+        // readSpecial()/writeSpecial() here is redundant and poisons frozen constant flags.
+        DSP_DIAG(EXECUTE, "markOrderedRangeDeviceCurrent SKIPPED (orderedRangeExecutor handled actuality) [%d-%d]",
+                 subKernel.startSlot_, subKernel.endSlot_);
         if (!streamCaptureActive) {
           logSlotHashes("SKIP", subKernel.startSlot_, subKernel.endSlot_, slots,
                         outputSlots, totalOutputSlots,
@@ -848,8 +874,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                    static_cast<int>(fullSnapshotBefore.size()));
         }
       }
-      // Buffer aliasing detection for non-consolidated path
-      if (!consolidatedArgsCopied) {
+      // Buffer aliasing detection for non-consolidated path.
+      // SKIP during capture: calls a->specialBuffer() → syncToDevice() poisons capture.
+      if (!consolidatedArgsCopied && !streamCaptureActive) {
         detectBufferAliasing(i,
                              subKernel.argSlotMapping, subKernel.startSlot_, subKernel.endSlot_,
                              externalInputs, numExternalInputs,

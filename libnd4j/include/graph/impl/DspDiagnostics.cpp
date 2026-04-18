@@ -729,6 +729,43 @@ DspDiagnostics::ExtInputSyncResult DspDiagnostics::dumpExternalInputState(
   return result;
 }
 
+// ─── Array content fingerprint (FNV-1a) ──────────────────────────────────────
+// Records a 64-bit hash over the full host-side payload of arr. Used to detect
+// stuck-content bugs (placeholders that don't refresh between decode steps, KV
+// caches that fail to update, etc.) — a repeated fingerprint across execCounts
+// is the smoking gun.
+//
+// Caller contract: must be invoked outside CUDA graph capture. arr->syncToHost()
+// can issue a cross-stream cudaMemcpyAsync which would poison an active capture.
+void DspDiagnostics::fingerprintArray(const char* tag, int idx, const char* name,
+                                       NDArray* arr, int execCount) {
+  if (arr == nullptr) return;
+  arr->syncToHost();
+  auto* db = arr->dataBuffer();
+  if (db == nullptr || db->primary() == nullptr) return;
+
+  size_t elemBytes = arr->sizeOfT();
+  if (elemBytes == 0) elemBytes = 1;
+  size_t totalBytes = static_cast<size_t>(arr->lengthOf()) * elemBytes;
+  const uint8_t* base = static_cast<const uint8_t*>(db->primary()) + arr->offset() * elemBytes;
+
+  // FNV-1a 64-bit over every byte of the payload.
+  uint64_t h = 0xcbf29ce484222325ULL;
+  for (size_t i = 0; i < totalBytes; i++) {
+    h ^= base[i];
+    h *= 0x100000001b3ULL;
+  }
+
+  recordEvent(DSP_DIAG_EXECUTE, -1, -1, -1, tag, 0,
+              "ARRAY_FINGERPRINT tag=%s idx=%d name='%s' dtype=%d len=%lld bytes=%zu "
+              "hash=0x%016llx host=%p dev=%p execCount=%d",
+              tag ? tag : "?", idx, name ? name : "?",
+              static_cast<int>(arr->dataType()),
+              static_cast<long long>(arr->lengthOf()), totalBytes,
+              static_cast<unsigned long long>(h),
+              db->primary(), db->special(), execCount);
+}
+
 // ── Invalid segment bucket summary ──────────────────────────────────────────
 
 void DspDiagnostics::reportSegmentBucketSummary(

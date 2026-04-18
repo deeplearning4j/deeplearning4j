@@ -228,13 +228,15 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         skippedCount++;
         continue;  // weight directReference: skip sync for non-variable inputs
       }
-      externalInputs[ei]->syncToDevice();
+      // forceSync: variable inputs may have isSpecialActual=true from
+      // markOrderedRangeDeviceCurrent (readSpecial poisoning). Force H2D.
+      externalInputs[ei]->dataBuffer()->syncToSpecial(true);
       syncedCount++;
     }
   } else {
     for (int ei = 0; ei < numExternalInputs; ei++) {
       if (externalInputs[ei] == nullptr) continue;
-      externalInputs[ei]->syncToDevice();
+      externalInputs[ei]->dataBuffer()->syncToSpecial(true);
       syncedCount++;
     }
   }
@@ -696,6 +698,24 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
     return false;
   }
 
+  // When tritonSkipKernels=true, ALL compiled sub-kernels are skipped and every slot
+  // is executed via orderedRangeExecutor_ → executeSegmentSlotBySlot. Routing through
+  // executeSegmentWithGpuGraph causes two bugs:
+  //   1. FROZEN→SHAPE_CACHED demotion (lines 4026-4027) removes the guard in
+  //      prezeroSegmentOutputs that skips zeroing FROZEN+isFullyWriting slots.
+  //      Result: accumulation op outputs are wiped with zeros → stuck token every step.
+  //   2. Fragmented execution: executeSegmentSlotBySlot is called once per subkernel
+  //      gap range instead of once for the full segment, causing each fragment to
+  //      re-run prezeroSegmentOutputs independently (double-zero risk) and losing
+  //      the per-segment executionCount increments.
+  // Fix: route directly to executeSegmentSlotBySlot (same path as GEM_SLOT_BY_SLOT)
+  // so slot states remain FROZEN, the isFullyWriting guard fires correctly, and the
+  // full segment executes as one contiguous ordered pass.
+  if (Environment::getInstance().tritonSkipKernels()) {
+    DSP_DIAG_SEG(EXECUTE, segment.def.startSlot, "platformShouldUseGraph: false (tritonSkipKernels=true, routing to slot-by-slot)");
+    return false;
+  }
+
   // Non-frozen execution: use slot-by-slot to avoid memory leaks.
   // Graph capture/replay with tl_graphExecutionActive=true suppresses cudaFreeAsync
   // in deleteSpecial(), causing temporary NDArrays created by ops during capture
@@ -771,11 +791,10 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         usedGraph = true;
         if (segment.exec.executionCount <= 1) {
           DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "gpu_graph_first_exec");
-        } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-          DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "gpu_graph_replay_ready");
         } else {
-          // Check composite replay handles (Triton island+gap segments use these
-          // instead of a monolithic replayHandle).
+          // Check composite replay handles FIRST — Triton island+gap segments use
+          // these instead of a monolithic replayHandle. The sentinel replayHandle
+          // created during composite capture is NOT a captured graph (isReady()=false).
           bool hasComposite = false;
           for (auto& u : segment.exec.compositeReplaySchedule.units) {
             if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
@@ -790,6 +809,8 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           }
           if (hasComposite) {
             DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "gpu_graph_composite_replay_ready");
+          } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+            DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "gpu_graph_replay_ready");
           } else {
             DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "gpu_graph_compiled_no_replay");
           }
@@ -991,7 +1012,17 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
 int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
   int count = 0;
   for (const auto& seg : segments_) {
-    if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) count++;
+    // Check monolithic replay handle (raw CUDA graph capture)
+    if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
+      count++;
+      continue;
+    }
+#if HAVE_TRITON
+    // Check composite replay handles (per-island Triton capture)
+    if (hasCompositeHandles(seg)) {
+      count++;
+    }
+#endif
   }
   return count;
 }
@@ -1144,14 +1175,25 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     }
     DSP_DIAG(EXECUTE, "platformBeginExecution: frozen=%d execCount=%d stream=%p syncing...",
              static_cast<int>(frozen), execCount, static_cast<void*>(cudaStr));
-    if (!frozen || execCount <= 1) {
-      auto syncErr = cudaStreamSynchronize(cudaStr);
-      DSP_DIAG(EXECUTE, "platformBeginExecution: cudaStreamSynchronize returned %d (%s)",
-               static_cast<int>(syncErr), cudaGetErrorString(syncErr));
-    } else {
+    // Always record a CUDA event on the default stream and have the DSP stream
+    // wait for it before starting execution. This ensures any GPU operations
+    // submitted to the default stream between decode steps (KvScatter, assign
+    // ops, etc.) are visible to the DSP execution stream before it reads them.
+    // Without this, the DSP may read stale KV cache data from the previous step
+    // because KvScatter hasn't finished writing to the static KV buffers.
+    // Previously only done for frozen+execCount>1; now done unconditionally.
+    {
       cudaEvent_t defaultStreamEvent = getCrossStreamEvent();
       cudaEventRecord(defaultStreamEvent, nullptr);
       cudaStreamWaitEvent(cudaStr, defaultStreamEvent, 0);
+      DSP_DIAG(EXECUTE, "platformBeginExecution: cross-stream event sync (default->DSP) done");
+    }
+    if (!frozen || execCount <= 1) {
+      // For early executions, also sync the DSP stream itself to ensure
+      // any prior DSP work is complete before starting the new execution.
+      auto syncErr = cudaStreamSynchronize(cudaStr);
+      DSP_DIAG(EXECUTE, "platformBeginExecution: cudaStreamSynchronize returned %d (%s)",
+               static_cast<int>(syncErr), cudaGetErrorString(syncErr));
     }
   }
 
@@ -1249,13 +1291,17 @@ void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int 
 }
 
 void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* stream) {
-  if (!DSP_DIAG_ENABLED(VERIFY) || execCount > 4) return;
+  if (!DSP_DIAG_ENABLED(VERIFY) || execCount > 10) return;
+  // Find the logits output: largest FLOAT32 requested output (vocab-sized).
+  // KV cache outputs are typically rank 4 with small last dim (e.g., 4416),
+  // while logits are rank 2-3 with large last dim (e.g., 49152).
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
     NDArray* arr = (slotIdx >= 0 && slotIdx < totalOutputSlots_) ? outputSlots_[slotIdx] : nullptr;
     if (arr == nullptr) continue;
     void* sbuf = arr->specialBuffer();
-    if (sbuf && arr->dataType() == FLOAT32 && arr->lengthOf() >= 49280) {
+    // Logits: FLOAT32, length >= 10000 (any reasonable vocab), rank <= 3
+    if (sbuf && arr->dataType() == FLOAT32 && arr->lengthOf() >= 10000 && arr->rankOf() <= 3) {
       auto len = arr->lengthOf();
       std::vector<float> fullBuf(len);
       cudaMemcpy(fullBuf.data(), sbuf, len * sizeof(float), cudaMemcpyDeviceToHost);
@@ -1265,8 +1311,8 @@ void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* strea
         if (fullBuf[j] > maxVal) { maxVal = fullBuf[j]; maxIdx = j; }
       }
       DSP_DIAG_SLOT(VERIFY, slotIdx,
-          "logits maxIdx=%d maxVal=%.4f v@44=%.4f v@15539=%.4f",
-          maxIdx, maxVal, fullBuf[44], fullBuf[15539]);
+          "LOGITS_ARGMAX exec=%d reqOut[%d] len=%lld maxIdx=%d maxVal=%.6f",
+          execCount, i, (long long)len, maxIdx, maxVal);
     }
   }
 }

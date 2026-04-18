@@ -432,7 +432,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   // ── INT64 input buffer dump diagnostic ──
   // When verify mode is active, dump the actual device contents of INT64 inputs
   // so we can detect whether the Triton kernel reads stale or wrong data.
-  if (DSP_DIAG_ENABLED(VERIFY)) {
+  // SKIP during stream capture: synchronous cudaMemcpy is not permitted inside capture.
+  if (DSP_DIAG_ENABLED(VERIFY) && !streamIsCapturing) {
     for (int i = 0; i < numBufferArgs; i++) {
       auto& am = compiled.argSlotMapping[i];
       if (am.isOutput) continue;
@@ -562,7 +563,9 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   }
 
   // Log ALL resolved buffer pointers for every sub-kernel
-  if (DSP_DIAG_ENABLED(VERIFY)) {
+  // SKIP during stream capture: a->specialBuffer() can call syncToDevice() →
+  // cross-stream cudaMemcpyAsync poisons the capture (same bug as CONSOL ARG TABLE).
+  if (DSP_DIAG_ENABLED(VERIFY) && !streamIsCapturing) {
     for (int ai = 0; ai < numBufferArgs; ai++) {
       auto& am = compiled.argSlotMapping[ai];
       NDArray* a = nullptr;
