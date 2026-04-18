@@ -35,6 +35,13 @@ LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp(int opNum) : Legacy
 
 LegacyOp *LegacyPairwiseTransformBoolOp::clone() { return new LegacyPairwiseTransformBoolOp(this->_opNum); }
 
+void LegacyPairwiseTransformBoolOp::registerTypes() {
+  // Pairwise-bool ops produce BOOL output regardless of input type.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({BOOL});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);

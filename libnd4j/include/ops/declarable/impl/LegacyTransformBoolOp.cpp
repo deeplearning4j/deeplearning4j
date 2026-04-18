@@ -36,6 +36,13 @@ LegacyTransformBoolOp::LegacyTransformBoolOp(int opNum) : LegacyOp(1, opNum) {
 
 LegacyOp *LegacyTransformBoolOp::clone() { return new LegacyTransformBoolOp(this->_opNum); }
 
+void LegacyTransformBoolOp::registerTypes() {
+  // Transform-bool ops (isnan, isinf, isfinite, etc.) produce BOOL output regardless of input type.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({BOOL});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 Status LegacyTransformBoolOp::validateAndExecute(Context &block) {
   auto input = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);

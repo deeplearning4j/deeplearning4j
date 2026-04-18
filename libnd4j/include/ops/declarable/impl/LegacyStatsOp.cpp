@@ -19,9 +19,12 @@
 //
 // Created by raver119 on 17.10.2017.
 //
+#include <array/ArrayOptions.h>
 #include <array/DataTypeUtils.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/Environment.h>
 
 #include <ops/declarable/LegacyStatsOp.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -54,8 +57,8 @@ Status LegacyStatsOp::validateAndExecute(Context &block) {
                                                 z->specialBuffer(), z->specialShapeInfo(), biasCorrected);
   } else {
     // dimensions for TAD
-    // we should skip first argument here, because it's addressing bias correction
-    std::vector<LongType> dims(*block.getIArguments());
+    // skip iArgs[0] because it's biasCorrected, not a dim
+    std::vector<LongType> dims(block.getIArguments()->begin() + 1, block.getIArguments()->end());
     for (size_t e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
@@ -101,25 +104,24 @@ LegacyOp *LegacyStatsOp::clone() { return new LegacyStatsOp(this->_opNum); }
 ShapeList *LegacyStatsOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
 
-  LongType *newShape;
-  if (block.getIArguments()->size() == 0 ||
-      (block.getIArguments()->size() == 1 && INT_ARG(0) == DataTypeUtils::max<int>())) {
-    // in this case we just return scalar
-    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-    newShape[0] = 2;
-    newShape[1] = 1;
-    newShape[2] = 1;
-    newShape[3] = 1;
-    newShape[4] = 1;
-    newShape[5] = 0;
-    newShape[6] = 1;
-    newShape[7] = 99;
-  } else {
-    sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), inShape, false, true);
-    return SHAPELIST(xShape2);
+  // Summary-stats (variance, stdev) always produce a floating-point result.
+  // Preserve input FP dtype; promote non-FP inputs to the default FP type.
+  DataType inDtype = ArrayOptions::dataType(inShape);
+  DataType outDtype = DataTypeUtils::isR(inDtype) ? inDtype : Environment::getInstance().defaultFloatDataType();
+
+  // iArgs[0] = biasCorrected, iArgs[1..] = reduction dimensions (matches validateAndExecute).
+  // Scalar reduction: no iArgs, just biasCorrected, or biasCorrected + MAX sentinel.
+  const auto nIArgs = block.getIArguments()->size();
+  if (nIArgs == 0 || nIArgs == 1 ||
+      (nIArgs == 2 && INT_ARG(1) == DataTypeUtils::max<int>())) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(outDtype));
   }
 
-  return SHAPELIST(CONSTANT(newShape));
+  // TAD reduction: skip iArgs[0] (biasCorrected) when gathering dimensions.
+  std::vector<sd::LongType> dims(block.getIArguments()->begin() + 1, block.getIArguments()->end());
+  auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
+  sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', &dims, inShape, outDtype, keepDims, false);
+  return SHAPELIST(xShape2);
 }
 }  // namespace ops
 }  // namespace sd

@@ -42,8 +42,17 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
   ExtraArguments extras(*block.getTArguments());
   PointersManager manager(block.launchContext(), "LegacyReduce3Op");
 
-  if (x->isSameShape(y) && (block.getIArguments()->size() == 0 ||
-                            (block.getIArguments()->size() == 1 && INT_ARG(0) == DataTypeUtils::max<int>()))) {
+  // Detect "all dims" reduction: either no iArgs (empty reduce = reduce all),
+  // sentinel iArg[0]=INT_MAX (explicit reduce-all), OR iArgs covering every rank
+  // of x (DSP-packed dims [0..rank-1]). In any of these cases we must take the
+  // scalar fast path — the TAD path below will try to TAD the output with dims
+  // that exceed the output's rank (scalar is rank 2 [1,1]).
+  bool allDimsReduction = (block.getIArguments()->size() == 0) ||
+                          (block.getIArguments()->size() == 1 &&
+                           INT_ARG(0) == DataTypeUtils::max<int>()) ||
+                          (static_cast<LongType>(block.getIArguments()->size()) ==
+                           x->rankOf());
+  if (x->isSameShape(y) && allDimsReduction) {
     // reduce3 to scalar
     NativeOpExecutioner::execReduce3Scalar(
         block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -55,7 +64,7 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
       if (dims[e] < 0) dims[e] += x->rankOf();
 
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
+    auto packY = ConstantTadHelper::getInstance().tadForDimensions(y->shapeInfo(), &dims);
 
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
@@ -67,11 +76,11 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
                            : packX->specialOffsets();
 
     auto yTadShape = Environment::getInstance().isCPU()
-                         ? packZ->primaryShapeInfo()
-                         : packZ->specialOffsets();
+                         ? packY->primaryShapeInfo()
+                         : packY->specialShapeInfo();
     auto yTadOffsets = Environment::getInstance().isCPU()
-                           ? packZ->primaryOffsets()
-                           : packZ->specialOffsets();
+                           ? packY->primaryOffsets()
+                           : packY->specialOffsets();
 
     NativeOpExecutioner::execReduce3(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                      x->specialShapeInfo(), extras.argumentsAsT(z->dataType()), y->buffer(),
@@ -103,29 +112,16 @@ LegacyOp *LegacyReduce3Op::clone() { return new LegacyReduce3Op(this->_opNum); }
  */
 ShapeList *LegacyReduce3Op::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto xShape = inputShape->at(0);
-  auto yShape = inputShape->at(1);
 
-  LongType *zShape = nullptr;
-
-  if (shape::equalsSoft(xShape, yShape) &&
-      (block.getIArguments()->size() == 0 ||
-       (block.getIArguments()->size() == 1 && INT_ARG(0) == DataTypeUtils::max<int>()))) {
-    // reduce3 to scalar case
-    ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-    zShape[0] = 2;
-    zShape[1] = 1;
-    zShape[2] = 1;
-    zShape[3] = 1;
-    zShape[4] = 1;
-    zShape[5] = 0;
-    zShape[6] = 1;
-    zShape[7] = 99;
-  } else {
-    sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), xShape, false, true);
-    return SHAPELIST(xShape2);
-  }
-
-  return SHAPELIST(zShape);
+  // evalReduceShapeInfo handles all cases correctly: empty iArgs (reduce all),
+  // INT_MAX sentinel, full-rank dims list, and partial reductions. It also
+  // preserves dtype from xShape rather than leaving it UNKNOWN, avoiding the
+  // "Shape info created with invalid data type" failure that happened when the
+  // manual scalar-shape buffer below was built with flags=0.
+  auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
+  sd::LongType *xShape2 =
+      ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), xShape, keepDims, false);
+  return SHAPELIST(xShape2);
 }
 }  // namespace ops
 }  // namespace sd

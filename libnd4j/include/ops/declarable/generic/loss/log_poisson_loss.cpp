@@ -74,7 +74,9 @@ CUSTOM_OP_IMPL(log_poisson_loss, 3, 1, true, 0, 1) {
    labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E);
 
  // multiply E on weights
- E *= *weightsBroad;
+ NDArray EWeighted(E.shapeInfo(), false, block.launchContext());
+ E.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), weightsBroad, &EWeighted, false);
+ E.assign(&EWeighted);
 
  switch (reductionMode) {
    case 0: {  // 0 - "none", un-reduced weighted losses with the same shape as labels.
@@ -87,23 +89,24 @@ CUSTOM_OP_IMPL(log_poisson_loss, 3, 1, true, 0, 1) {
    }
    case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
      // all elements of weightsBroad array
-     NDArray* sum = nullptr;
+     NDArray sum(output->dataType(), block.launchContext());
      if (weights->isScalar()) {
-       sum = (*weights) * E.lengthOf();
+       double wVal = weights->e<double>(0);
+       double lenVal = static_cast<double>(E.lengthOf());
+       double sumVal = wVal * lenVal;
+       sum.assign(sumVal);
      } else {
-       sum = weightsBroad->reduceNumber(reduce::Sum);
+       weightsBroad->reduceNumber(reduce::Sum, &sum);
      }
 
-     if (sum->e<double>(0) == 0.) {
-       *output = 0.;
+     if (sum.e<double>(0) == 0.) {
+       double zero = 0.0;
+       output->assign(zero);
      } else {
-       NDArray* sumResult = E.reduceNumber(reduce::Sum);
-       NDArray* assign = (*sumResult) / (*sum);
-       delete sumResult;
-       output->assign(assign);
-       delete assign;
+       NDArray sumE(output->dataType(), block.launchContext());
+       E.reduceNumber(reduce::Sum, &sumE);
+       sumE.applyPairwiseTransform(pairwise::Divide, &sum, output);
      }
-     delete sum;
      break;
    }
    case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
@@ -112,19 +115,18 @@ CUSTOM_OP_IMPL(log_poisson_loss, 3, 1, true, 0, 1) {
      if (weights->isScalar()) {
        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
      } else {
-       NDArray* countResult = weightsBroad->reduceNumber(reduce::CountNonZero);
-       numOfNonZeroWeights = countResult->e<LongType>(0);
-       delete countResult;
+       NDArray countResult(DataType::INT64, block.launchContext());
+       weightsBroad->reduceNumber(reduce::CountNonZero, &countResult);
+       numOfNonZeroWeights = countResult.e<LongType>(0);
      }
 
-     if (numOfNonZeroWeights == 0)
-       (*output) = 0.;
-     else {
-       NDArray* sumResult = E.reduceNumber(reduce::Sum);
-       NDArray* assign = (*sumResult) / double(numOfNonZeroWeights);
-       delete sumResult;
-       output->assign(assign);
-       delete assign;
+     if (numOfNonZeroWeights == 0) {
+       double zero = 0.0;
+       output->assign(zero);
+     } else {
+       NDArray sumE(output->dataType(), block.launchContext());
+       E.reduceNumber(reduce::Sum, &sumE);
+       sumE.applyScalar(scalar::Divide, static_cast<double>(numOfNonZeroWeights), output);
      }
      break;
    }
@@ -171,8 +173,8 @@ DECLARE_SHAPE_FN(log_poisson_loss) {
    outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
  else {  // in this case output has the same shape as labels and predictions
    outShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(outType, shape::order(labelsShapeInfo),
-                                                                        shape::rank(labelsShapeInfo),
-                                                                        shape::shapeOf(labelsShapeInfo))->primary();
+                                                                       shape::rank(labelsShapeInfo),
+                                                                       shape::shapeOf(labelsShapeInfo))->primary();
  }
  return SHAPELIST(outShapeInfo);
 }
@@ -228,40 +230,44 @@ CUSTOM_OP_IMPL(log_poisson_loss_grad, 3, 3, false, 0, 1) {
    NDArray rDiv(labels->shapeInfo(), block.getWorkspace());
    labels->applyScalar(scalar::ReverseDivide, 0.5f, &rDiv);
 
-   // For dLdl - first case
-   NDArray* logLabels = labels->transform(transform::Log);
-   NDArray negLogPredictions = -(*log_predictions);  // unary negation returns value
-   NDArray* temp1 = rDiv + (*logLabels);
-   delete logLabels;
-   NDArray* dLdlTemp1 = (*temp1) + negLogPredictions;
-   delete temp1;
-   dLdl->assign(dLdlTemp1);
-   delete dLdlTemp1;
+   // For dLdl: dLdl = rDiv + log(labels) - log_predictions
+   // i.e. 0.5/labels + log(labels) - log_predictions
+   NDArray logLabels(labels->shapeInfo(), block.getWorkspace());
+   labels->applyTransform(transform::Log, &logLabels);
+
+   NDArray rDivPlusLogLabels(labels->shapeInfo(), block.getWorkspace());
+   rDiv.applyPairwiseTransform(pairwise::Add, &logLabels, &rDivPlusLogLabels);
+
+   // subtract log_predictions: dLdl = rDivPlusLogLabels - log_predictions
+   rDivPlusLogLabels.applyPairwiseTransform(pairwise::Subtract, log_predictions, dLdl);
  } else {
    labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E);
 
-   // For dLdl - second case
-   NDArray dLdlTemp2 = -(*log_predictions);  // unary negation returns value
-   dLdl->assign(&dLdlTemp2);
+   // For dLdl - second case: dLdl = -log_predictions
+   log_predictions->applyTransform(transform::Neg, dLdl);
  }
 
- // For dLdp
- NDArray* expResult = log_predictions->transform(transform::Exp);
- NDArray* dLdpTemp = (*expResult) - (*labels);
- delete expResult;
- dLdp->assign(dLdpTemp);
- delete dLdpTemp;
+ // For dLdp: dLdp = exp(log_predictions) - labels
+ NDArray expLogPred(labels->shapeInfo(), block.getWorkspace());
+ log_predictions->applyTransform(transform::Exp, &expLogPred);
+ expLogPred.applyPairwiseTransform(pairwise::Subtract, labels, dLdp);
 
  switch (reductionMode) {
    case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
 
-     *dLdp *= *weightsBroad;
-     *dLdl *= *weightsBroad;
+     {
+       NDArray dLdpW(dLdp->shapeInfo(), false, block.launchContext());
+       dLdp->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), weightsBroad, &dLdpW, false);
+       dLdp->assign(&dLdpW);
+       NDArray dLdlW(dLdl->shapeInfo(), false, block.launchContext());
+       dLdl->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), weightsBroad, &dLdlW, false);
+       dLdl->assign(&dLdlW);
+     }
 
      if (weights->isScalar()) {
-       NDArray* assign = E.reduceNumber(reduce::Sum);
-       dLdw->assign(assign);
-       delete assign;
+       NDArray sumE(dLdw->dataType(), block.launchContext());
+       E.reduceNumber(reduce::Sum, &sumE);
+       dLdw->assign(&sumE);
      } else if (weights != weightsBroad) {
        std::vector<LongType> axesToReduceAlong =
            ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
@@ -273,65 +279,81 @@ CUSTOM_OP_IMPL(log_poisson_loss_grad, 3, 3, false, 0, 1) {
    case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
      // all elements of weightsBroad array
 
-     NDArray* sum = nullptr;
+     NDArray sum(dLdw->dataType(), block.launchContext());
      if (weights->isScalar()) {
-       sum = (*weights) * E.lengthOf();
+       double wVal = weights->e<double>(0);
+       double lenVal = static_cast<double>(E.lengthOf());
+       double sumVal = wVal * lenVal;
+       sum.assign(sumVal);
      } else {
-       sum = weightsBroad->reduceNumber(reduce::Sum);
+       weightsBroad->reduceNumber(reduce::Sum, &sum);
      }
 
-     if (sum->e<double>(0) == 0.) {
-       *dLdp = 0.;
-       *dLdl = 0.;
-       *dLdw = 0.;
+     if (sum.e<double>(0) == 0.) {
+       double zero = 0.0;
+       dLdp->assign(zero);
+       dLdl->assign(zero);
+       dLdw->assign(zero);
      } else {
-       NDArray* weightsBroadDivSum = (*weightsBroad) / (*sum);
-       *dLdp *= *weightsBroadDivSum;
-       *dLdl *= *weightsBroadDivSum;
-       delete weightsBroadDivSum;
+       // dLdp *= weightsBroad / sum; dLdl *= weightsBroad / sum
+       NDArray weightsBroadDivSum(weightsBroad->shapeInfo(), false, block.launchContext());
+       weightsBroad->applyTrueBroadcast(BroadcastOpsTuple::Divide(), &sum, &weightsBroadDivSum, false);
+       NDArray dLdpR(dLdp->shapeInfo(), false, block.launchContext());
+       dLdp->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &weightsBroadDivSum, &dLdpR, false);
+       dLdp->assign(&dLdpR);
+       NDArray dLdlR(dLdl->shapeInfo(), false, block.launchContext());
+       dLdl->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &weightsBroadDivSum, &dLdlR, false);
+       dLdl->assign(&dLdlR);
 
-       if (weights->isScalar())
-         *dLdw = 0.;
-       else if (weights != weightsBroad) {
+       if (weights->isScalar()) {
+         double zero = 0.0;
+         dLdw->assign(zero);
+       } else if (weights != weightsBroad) {
          std::vector<LongType> axesToReduceAlong =
              ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 
-         NDArray* eMulWeightsBroad = E * (*weightsBroad);
-         NDArray* sumReduced = eMulWeightsBroad->reduceNumber(reduce::Sum);
-         delete eMulWeightsBroad;
+         // numerator = E * sum - E * weightsBroad_sum_reduced
+         // = E * sum - (sum of E*weightsBroad)
+         // dLdw = reduce(numerator / sum^2, axes)
+         NDArray eMulWeightsBroad(labels->shapeInfo(), false, block.launchContext());
+         E.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), weightsBroad, &eMulWeightsBroad, false);
+         NDArray sumReduced(dLdw->dataType(), block.launchContext());
+         eMulWeightsBroad.reduceNumber(reduce::Sum, &sumReduced);
 
-         NDArray* eMulSum = E * (*sum);
-         NDArray* numerator = (*eMulSum) - (*sumReduced);
-         delete eMulSum;
-         delete sumReduced;
+         NDArray eMulSum(labels->shapeInfo(), false, block.launchContext());
+         E.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &sum, &eMulSum, false);
 
-         NDArray* sumSquared = (*sum) * (*sum);
-         NDArray* result = (*numerator) / (*sumSquared);
-         delete numerator;
-         delete sumSquared;
+         NDArray numerator(labels->shapeInfo(), false, block.launchContext());
+         eMulSum.applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &sumReduced, &numerator, false);
 
-         result->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-         delete result;
+         NDArray sumSquared(dLdw->dataType(), block.launchContext());
+         sum.applyPairwiseTransform(pairwise::Multiply, &sum, &sumSquared);
+
+         NDArray result(labels->shapeInfo(), false, block.launchContext());
+         numerator.applyTrueBroadcast(BroadcastOpsTuple::Divide(), &sumSquared, &result, false);
+
+         result.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
        } else {
-         NDArray* eMulWeightsBroad = E * (*weightsBroad);
-         NDArray* sumReduced = eMulWeightsBroad->reduceNumber(reduce::Sum);
-         delete eMulWeightsBroad;
+         NDArray eMulWeightsBroad(labels->shapeInfo(), false, block.launchContext());
+         E.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), weightsBroad, &eMulWeightsBroad, false);
+         NDArray sumReduced(dLdw->dataType(), block.launchContext());
+         eMulWeightsBroad.reduceNumber(reduce::Sum, &sumReduced);
 
-         NDArray* eMulSum = E * (*sum);
-         NDArray* numerator = (*eMulSum) - (*sumReduced);
-         delete eMulSum;
-         delete sumReduced;
+         NDArray eMulSum(labels->shapeInfo(), false, block.launchContext());
+         E.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &sum, &eMulSum, false);
 
-         NDArray* sumSquared = (*sum) * (*sum);
-         NDArray* assign = (*numerator) / (*sumSquared);
-         delete numerator;
-         delete sumSquared;
+         NDArray numerator(labels->shapeInfo(), false, block.launchContext());
+         eMulSum.applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &sumReduced, &numerator, false);
 
-         dLdw->assign(assign);
-         delete assign;
+         NDArray sumSquared(dLdw->dataType(), block.launchContext());
+         sum.applyPairwiseTransform(pairwise::Multiply, &sum, &sumSquared);
+
+         NDArray result(labels->shapeInfo(), false, block.launchContext());
+         numerator.applyTrueBroadcast(BroadcastOpsTuple::Divide(), &sumSquared, &result, false);
+
+         dLdw->assign(&result);
        }
      }
-     delete sum;
      break;
    }
    case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
@@ -341,41 +363,49 @@ CUSTOM_OP_IMPL(log_poisson_loss_grad, 3, 3, false, 0, 1) {
      if (weights->isScalar()) {
        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
      } else {
-       NDArray* countResult = weightsBroad->reduceNumber(reduce::CountNonZero);
-       numOfNonZeroWeights = countResult->e<LongType>(0);
-       delete countResult;
+       NDArray countResult(DataType::INT64, block.launchContext());
+       weightsBroad->reduceNumber(reduce::CountNonZero, &countResult);
+       numOfNonZeroWeights = countResult.e<LongType>(0);
      }
 
      if (numOfNonZeroWeights == 0) {
-       *dLdp = 0.;
-       *dLdl = 0.;
-       *dLdw = 0.;
+       double zero = 0.0;
+       dLdp->assign(zero);
+       dLdl->assign(zero);
+       dLdw->assign(zero);
      } else {
-       auto* numOfNonZeroWeightsScalar =
-           NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
+       NDArray numOfNonZeroWeightsScalar(dLdw->dataType(), block.launchContext());
+       double numNonZeroD = static_cast<double>(numOfNonZeroWeights);
+       numOfNonZeroWeightsScalar.assign(numNonZeroD);
 
        if (weights->isScalar()) {
-         NDArray* sumResult = E.reduceNumber(reduce::Sum);
-         NDArray* assign = (*sumResult) / double(numOfNonZeroWeights);
-         delete sumResult;
-         dLdw->assign(assign);
-         delete assign;
+         NDArray sumE(dLdw->dataType(), block.launchContext());
+         E.reduceNumber(reduce::Sum, &sumE);
+         // sumE and numOfNonZeroWeightsScalar are both scalars
+         sumE.applyPairwiseTransform(pairwise::Divide, &numOfNonZeroWeightsScalar, dLdw);
        } else if (weights != weightsBroad) {
          std::vector<LongType> axesToReduceAlong =
              ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
          E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-         *dLdw /= *numOfNonZeroWeightsScalar;
+         NDArray dLdwResult(dLdw->shapeInfo(), false, block.launchContext());
+         // dLdw and numOfNonZeroWeightsScalar — dLdw may be reduced shape, numOfNZW is scalar
+         dLdw->applyTrueBroadcast(BroadcastOpsTuple::Divide(), &numOfNonZeroWeightsScalar, &dLdwResult, false);
+         dLdw->assign(&dLdwResult);
        } else {
-         NDArray* assign = E / (*numOfNonZeroWeightsScalar);
-         dLdw->assign(assign);
-         delete assign;
+         // E and dLdw are both labels-shaped, numOfNonZeroWeightsScalar is scalar
+         NDArray dLdwResult(dLdw->shapeInfo(), false, block.launchContext());
+         E.applyTrueBroadcast(BroadcastOpsTuple::Divide(), &numOfNonZeroWeightsScalar, &dLdwResult, false);
+         dLdw->assign(&dLdwResult);
        }
 
-       NDArray* temp = (*weightsBroad) / (*numOfNonZeroWeightsScalar);
-       *dLdp *= *temp;
-       *dLdl *= *temp;
-       delete temp;
-       delete numOfNonZeroWeightsScalar;
+       NDArray temp(weightsBroad->shapeInfo(), false, block.launchContext());
+       weightsBroad->applyTrueBroadcast(BroadcastOpsTuple::Divide(), &numOfNonZeroWeightsScalar, &temp, false);
+       NDArray dLdpResult(dLdp->shapeInfo(), false, block.launchContext());
+       dLdp->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &temp, &dLdpResult, false);
+       dLdp->assign(&dLdpResult);
+       NDArray dLdlResult(dLdl->shapeInfo(), false, block.launchContext());
+       dLdl->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &temp, &dLdlResult, false);
+       dLdl->assign(&dLdlResult);
      }
      break;
    }

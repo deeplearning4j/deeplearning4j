@@ -47,28 +47,43 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
                classesDim, logits->rankOf());
 
   std::vector<LongType> dimension = {classesDim};
+  auto ctx = block.launchContext();
 
-  // Compute softmax log - keep all intermediate results alive
+  // maxAlongDim: heap (reduceAlongDimension)
   NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray* shiftedLogits = (*logits) - (*maxAlongDim);
-  NDArray* logExp = shiftedLogits->transform(transform::Exp);
-  NDArray* sumLogExp = logExp->reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray* softmaxRatio = (*logExp) / (*sumLogExp);
-  NDArray* logSoftMax = softmaxRatio->transform(transform::Log);
-  NDArray* negLabels = new NDArray(-(*labels));
-  NDArray* product = (*negLabels) * (*logSoftMax);
-  
-  product->reduceAlongDimension(reduce::Sum, output, &dimension);
-  
-  // Clean up all intermediates at once
+
+  // shiftedLogits = logits - maxAlongDim  (stack)
+  NDArray shiftedLogits(logits->shapeInfo(), false, ctx);
+  logits->applyPairwiseTransform(pairwise::Subtract, maxAlongDim, &shiftedLogits);
+
+  // logExp = exp(shiftedLogits)  (stack)
+  NDArray logExp(shiftedLogits.shapeInfo(), false, ctx);
+  shiftedLogits.applyTransform(transform::Exp, &logExp);
+
+  // sumLogExp: heap (reduceAlongDimension)
+  NDArray* sumLogExp = logExp.reduceAlongDimension(reduce::Sum, &dimension, true);
+
+  // softmaxRatio = logExp / sumLogExp  (stack)
+  NDArray softmaxRatio(logExp.shapeInfo(), false, ctx);
+  logExp.applyPairwiseTransform(pairwise::Divide, sumLogExp, &softmaxRatio);
+
+  // logSoftMax = log(softmaxRatio)  (stack)
+  NDArray logSoftMax(softmaxRatio.shapeInfo(), false, ctx);
+  softmaxRatio.applyTransform(transform::Log, &logSoftMax);
+
+  // negLabels = -labels  (stack)
+  NDArray negLabels(labels->shapeInfo(), false, ctx);
+  labels->applyTransform(transform::Neg, &negLabels);
+
+  // product = negLabels * logSoftMax  (stack)
+  NDArray product(negLabels.shapeInfo(), false, ctx);
+  negLabels.applyPairwiseTransform(pairwise::Multiply, &logSoftMax, &product);
+
+  product.reduceAlongDimension(reduce::Sum, output, &dimension);
+
+  // Clean up heap-allocated intermediates
   delete maxAlongDim;
-  delete shiftedLogits;
-  delete logExp;
   delete sumLogExp;
-  delete softmaxRatio;
-  delete logSoftMax;
-  delete negLabels;
-  delete product;
 
   return Status::OK;
 }
@@ -103,12 +118,11 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits) {
 CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   auto logits = INPUT_VARIABLE(0);
   auto labels = INPUT_VARIABLE(1);
-  auto output = OUTPUT_VARIABLE(0);
 
   auto dLdp = OUTPUT_VARIABLE(0);  // dL/dlogits
   auto dLdl = OUTPUT_VARIABLE(1);  // dL/dlabels
 
-  const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : logits->rankOf()-1;
+  const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : logits->rankOf() - 1;
 
   // input validation
   REQUIRE_TRUE(labels->isSameShape(logits), 0,
@@ -120,39 +134,54 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
                "but got %i and %i correspondingly !",
                classesDim, logits->rankOf());
 
-
   std::vector<LongType> dimension = {classesDim};
+  auto ctx = block.launchContext();
 
-  // Compute softmax - keep all intermediate results alive
+  // Compute softmax
+  // maxAlongDim: heap
   NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray* shiftedLogits = (*logits) - (*maxAlongDim);
-  NDArray* softmax = shiftedLogits->transform(transform::Exp);
-  NDArray* sumSoftmax = softmax->reduceAlongDimension(reduce::Sum, &dimension, true);
-  (*softmax) /= (*sumSoftmax);
+
+  // shiftedLogits = logits - maxAlongDim  (stack)
+  NDArray shiftedLogits(logits->shapeInfo(), false, ctx);
+  logits->applyPairwiseTransform(pairwise::Subtract, maxAlongDim, &shiftedLogits);
+
+  // softmax = exp(shiftedLogits)  (stack, then divide in-place)
+  NDArray softmax(shiftedLogits.shapeInfo(), false, ctx);
+  shiftedLogits.applyTransform(transform::Exp, &softmax);
+
+  // sumSoftmax: heap
+  NDArray* sumSoftmax = softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
+
+  // Normalise: softmax /= sumSoftmax  (safe in-place pairwise divide)
+  softmax.applyPairwiseTransform(pairwise::Divide, sumSoftmax, &softmax);
 
   // dEdp = softmax * sum_i(labels_i) - labels
-  NDArray* labelsPlusEps = (*labels) + (double)1e-6;
-  NDArray* labelSum = labelsPlusEps->reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray* softmaxTimesLabelSum = (*softmax) * (*labelSum);
-  NDArray* dLdpTemp = (*softmaxTimesLabelSum) - (*labels);
-  
-  dLdp->assign(dLdpTemp);
+  // labelsPlusEps = labels + 1e-6  (stack)
+  NDArray labelsPlusEps(labels->shapeInfo(), false, ctx);
+  labels->applyScalar(scalar::Add, (double)1e-6, &labelsPlusEps);
+
+  // labelSum: heap
+  NDArray* labelSum = labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true);
+
+  // softmaxTimesLabelSum = softmax * labelSum  (stack)
+  NDArray softmaxTimesLabelSum(softmax.shapeInfo(), false, ctx);
+  softmax.applyPairwiseTransform(pairwise::Multiply, labelSum, &softmaxTimesLabelSum);
+
+  // dLdp = softmaxTimesLabelSum - labels  (write directly to output)
+  softmaxTimesLabelSum.applyPairwiseTransform(pairwise::Subtract, labels, dLdp);
 
   // dEdl = -log(softmax)
-  NDArray* logSoftmax = softmax->transform(transform::Log);
-  dLdl->assign(logSoftmax);
-  delete logSoftmax;
-  dLdl->applyTransform(transform::Neg, dLdl);
-  
-  // Clean up all intermediates at once
+  // logSoftmax = log(softmax)  (stack)
+  NDArray logSoftmax(softmax.shapeInfo(), false, ctx);
+  softmax.applyTransform(transform::Log, &logSoftmax);
+
+  // dLdl = -logSoftmax  (negate directly into output)
+  logSoftmax.applyTransform(transform::Neg, dLdl);
+
+  // Clean up heap-allocated intermediates
   delete maxAlongDim;
-  delete shiftedLogits;
-  delete softmax;
   delete sumSoftmax;
-  delete labelsPlusEps;
   delete labelSum;
-  delete softmaxTimesLabelSum;
-  delete dLdpTemp;
 
   return Status::OK;
 }

@@ -73,6 +73,7 @@ enum OpTraits : uint32_t {
   OP_TRAIT_SCATTER_ND            = 1 << 26,
   OP_TRAIT_SCATTER_ND_UPDATE     = 1 << 27,
   OP_TRAIT_CAST                  = 1 << 28,
+  OP_TRAIT_BACKWARD              = 1 << 29,  // marks backprop / gradient ops (_bp suffix)
 };
 
 class SD_LIB_EXPORT OpExecTrace {

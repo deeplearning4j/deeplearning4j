@@ -98,6 +98,13 @@ LegacyBroadcastBoolOp::LegacyBroadcastBoolOp(int opNum) : LegacyOp(2, opNum) {
 
 LegacyOp *LegacyBroadcastBoolOp::clone() { return new LegacyBroadcastBoolOp(this->_opNum); }
 
+void LegacyBroadcastBoolOp::registerTypes() {
+  // Broadcast-bool ops (greater, less, equals, etc.) produce BOOL output regardless of input type.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({BOOL});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 /**
  *   If external NDArray wasn't specified - the same shape is returned by all broadcast ops.
  */
