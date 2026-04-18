@@ -68,7 +68,7 @@ PLATFORM_IMPL(gated_delta_rule, ENGINE_CUDA) {
     llamacppUtils::executeGgmlGraphCuda(ctx, graph, ctx.getBackend());
 
     llamacppUtils::copyGgmlCudaToNDArray(ggml_output, output, ctx.getBackend());
-    stateOut->assign(0.0);
+    { double zero = 0.0; stateOut->assign(zero); }
 
     return sd::Status::OK;
 }
@@ -114,7 +114,7 @@ PLATFORM_IMPL(causal_conv1d, ENGINE_CUDA) {
     llamacppUtils::executeGgmlGraphCuda(ctx, graph, ctx.getBackend());
 
     llamacppUtils::copyGgmlCudaToNDArray(ggml_output, output, ctx.getBackend());
-    stateOut->assign(0.0);
+    { double zero = 0.0; stateOut->assign(zero); }
 
     return sd::Status::OK;
 }

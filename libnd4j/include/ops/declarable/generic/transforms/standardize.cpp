@@ -70,6 +70,13 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   // For plain standardization, we do NOT add epsilon (unlike layer_norm)
   input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, stdev, false, &axis);
 
+  // When stdev == 0 (all values in the group are identical), replace 0 with 1
+  // so the result is (x - mean) / 1 = 0 (since x == mean when stdev == 0).
+  // CompareAndSetTransform params: [compare_value, set_value, eps, mode]
+  // mode=0 means "equals": if |elem - compare| <= eps, replace with set_value
+  ExtraArguments stdevArgs({0.0, 1.0, 1e-6, 0.0});
+  stdev.applyTransform(transform::SameOps::CompareAndSetTransform, &stdev, &stdevArgs);
+
   // output = (input - mean) / stdev
   input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
   output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
@@ -117,6 +124,11 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto stdev = stdevRaw->reshape(stdevRaw->ordering(), *meansShape);
   delete meansShape;
   delete stdevRaw;
+
+  // When stdev == 0, replace with 1 to match the forward pass zero-stdev handling.
+  // This prevents Inf in the backward pass when dividing by zero stdev.
+  ExtraArguments zeroStdevBpArgs({0.0, 1.0, 1e-6, 0.0});
+  stdev->applyTransform(transform::SameOps::CompareAndSetTransform, stdev, &zeroStdevBpArgs);
 
   eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
 

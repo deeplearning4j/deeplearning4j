@@ -95,6 +95,10 @@ static constexpr uint32_t TILE = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
 static constexpr uint32_t SCATTER_PARTIAL = OP_TRAIT_DATA_MOVEMENT;
 static constexpr uint32_t SCATTER_ND = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND;
 static constexpr uint32_t SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE;
+// BP: modifier applied to backward / gradient ops. Combined with the primary trait so
+// that the category lookup still returns the correct TritonOpCategory while profiling
+// and diagnostic code can distinguish forward from backward via OP_TRAIT_BACKWARD.
+static constexpr uint32_t BP = OP_TRAIT_BACKWARD;
 
 static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
     static const std::unordered_map<std::string, uint32_t> TABLE = {
@@ -327,19 +331,19 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
 
         // ── LLM attention ops (forward + backprop) ─────────────────────────
         {"dot_product_attention",               ATTN},
-        {"dot_product_attention_bp",            ATTN},
-        {"dot_product_attention_v2_bp",         ATTN},
-        {"multi_head_dot_product_attention_bp", ATTN},
-        {"flash_attention_bp",                  ATTN},
+        {"dot_product_attention_bp",            ATTN | BP},
+        {"dot_product_attention_v2_bp",         ATTN | BP},
+        {"multi_head_dot_product_attention_bp", ATTN | BP},
+        {"flash_attention_bp",                  ATTN | BP},
         {"grouped_query_attention",             ATTN},
-        {"grouped_query_attention_bp",          ATTN},
+        {"grouped_query_attention_bp",          ATTN | BP},
         {"sliding_window_attention",            ATTN},
         {"shared_kv_attention",                 ATTN},
         {"windowed_attention",                  ATTN},
         {"paged_attention_forward",             ATTN},
         {"turbo_quant_attention",               ATTN},
         {"two_way_cross_attention",             ATTN},
-        {"two_way_cross_attention_bp",          ATTN},
+        {"two_way_cross_attention_bp",          ATTN | BP},
         {"vlm_cross_attention",                 ATTN},
         {"apply_alibi",                         ATTN},
         {"relative_position_bias",              ATTN},
@@ -352,25 +356,25 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
 
         // ── Rotary / positional embedding ──────────────────────────────────
         {"rope",         NORM},
-        {"rope_bp",      NORM},
-        {"fused_rope_bp", NORM},
+        {"rope_bp",      NORM | BP},
+        {"fused_rope_bp", NORM | BP},
         {"dual_rope",    NORM},
 
         // ── Normalization backprop / fused variants ────────────────────────
-        {"rms_norm_bp",             NORM},
-        {"rms_norm_linear_bp",      NORM},
-        {"fused_layer_norm_bp",     NORM},
+        {"rms_norm_bp",             NORM | BP},
+        {"rms_norm_linear_bp",      NORM | BP},
+        {"fused_layer_norm_bp",     NORM | BP},
         {"fused_rms_norm_swiglu",   NORM},
-        {"fused_rms_norm_swiglu_bp", NORM},
+        {"fused_rms_norm_swiglu_bp", NORM | BP},
 
         // ── Fused GEMM / SwiGLU ────────────────────────────────────────────
-        {"fused_gemm_swiglu_bp", MATMUL},
+        {"fused_gemm_swiglu_bp", MATMUL | BP},
 
         // ── Activation backprop + novel activations ────────────────────────
-        {"silu_bp",         UNARY_ACT},
-        {"fused_gelu_bp",   UNARY_ACT},
+        {"silu_bp",         UNARY_ACT | BP},
+        {"fused_gelu_bp",   UNARY_ACT | BP},
         {"squared_relu",    UNARY_ACT},
-        {"squared_relu_bp", UNARY_ACT},
+        {"squared_relu_bp", UNARY_ACT | BP},
         {"gated_delta_rule", UNARY_ACT},
 
         // ── Mamba / selective scan / SSM / causal conv ─────────────────────
@@ -382,26 +386,39 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         // ── Fused training kernels ─────────────────────────────────────────
         {"fused_bias_dropout_residual", UNARY_EW},
         {"fused_elementwise_chain",     UNARY_EW},
-        {"swish_mul_bp",                BINARY_EW},
+        {"swish_mul_bp",                BINARY_EW | BP},
         {"center_and_sharpen",          UNARY_EW},
-        {"center_and_sharpen_bp",       UNARY_EW},
+        {"center_and_sharpen_bp",       UNARY_EW | BP},
         {"ema_update",                  DATA_MOVE},
-        {"ema_update_bp",               DATA_MOVE},
+        {"ema_update_bp",               DATA_MOVE | BP},
 
         // ── Quantization / adapter matmuls ─────────────────────────────────
         {"quantized_matmul", MATMUL},
         {"dora_matmul",      MATMUL},
-        {"dora_matmul_bp",   MATMUL},
+        {"dora_matmul_bp",   MATMUL | BP},
         {"lora_matmul",      MATMUL},
-        {"lora_matmul_bp",   MATMUL},
+        {"lora_matmul_bp",   MATMUL | BP},
         {"loha_matmul",      MATMUL},
-        {"loha_matmul_bp",   MATMUL},
+        {"loha_matmul_bp",   MATMUL | BP},
         {"lokr_matmul",      MATMUL},
-        {"lokr_matmul_bp",   MATMUL},
+        {"lokr_matmul_bp",   MATMUL | BP},
 
         // ── GGML / per-layer embedding / misc ──────────────────────────────
         {"ggml_dequantize",     UNARY_EW},
         {"per_layer_embedding", DATA_MOVE_VALDEP},
+
+        // ── Convolution forward + backward ────────────────────────────────
+        // No OP_TRAIT_CONVOLUTION exists — use FULLY_WRITING as the minimal
+        // structural trait. The Triton layer routes these via buildOpTable()
+        // to TritonOpCategory::CONVOLUTION explicitly.
+        {"conv2d",    OP_TRAIT_FULLY_WRITING},
+        {"deconv2d",  OP_TRAIT_FULLY_WRITING},
+        {"im2col",    OP_TRAIT_FULLY_WRITING},
+        {"col2im",    OP_TRAIT_FULLY_WRITING},
+        {"conv2d_bp",    OP_TRAIT_FULLY_WRITING | BP},
+        {"deconv2d_bp",  OP_TRAIT_FULLY_WRITING | BP},
+        {"im2col_bp",    OP_TRAIT_FULLY_WRITING | BP},
+        {"col2im_bp",    OP_TRAIT_FULLY_WRITING | BP},
     };
     return TABLE;
 }
@@ -437,11 +454,19 @@ void initOpTraits() {
     auto& table = getTraitTable();
     auto& registrator = OpRegistrator::getInstance();
 
-    for (auto& entry : table) {
-        auto* op = registrator.getOperation(entry.first.c_str());
-        if (op != nullptr) {
-            // addTraits preserves any traits already set by the class hierarchy
-            op->getOpDescriptor()->addTraits(entry.second);
+    // Iterate all registered op names and apply traits by normalized (lowercase) name lookup.
+    // This is necessary because ops can be registered with mixed case (e.g., "Where" capital W)
+    // while the trait table uses lowercase keys (e.g., "where").  A direct lookup by the
+    // table key would miss ops whose registered name has a different case.
+    for (const auto& opName : registrator.getAllRegisteredOpNames()) {
+        std::string normalized = normalizeOpName(opName);
+        auto it = table.find(normalized);
+        if (it != table.end()) {
+            auto* op = registrator.getOperation(opName.c_str());
+            if (op != nullptr) {
+                // addTraits preserves any traits already set by the class hierarchy
+                op->getOpDescriptor()->addTraits(it->second);
+            }
         }
     }
 

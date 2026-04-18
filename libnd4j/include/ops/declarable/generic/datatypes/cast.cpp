@@ -56,12 +56,13 @@ DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
   if(!block.getDArguments()->empty()) {
     DataType newType = block.dataType(0);
+    bool wasEmpty = ArrayOptions::hasPropertyBitSet(inShape, ARRAY_EMPTY);
     auto desc = new ShapeDescriptor(inShape, newType, true);
     auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-    
+
     // FIX: Clean up the ShapeDescriptor after use
     delete desc;
-    
+
     auto compDataType = ArrayOptions::dataType(newShapeInfo);
     if(compDataType != newType) {
       std::string errorMessage;
@@ -72,13 +73,30 @@ DECLARE_SHAPE_FN(cast) {
       errorMessage += "\n";
       THROW_EXCEPTION(errorMessage.c_str());
     }
+    if (wasEmpty && !ArrayOptions::hasPropertyBitSet(newShapeInfo, ARRAY_EMPTY)) {
+      auto tempShapeInfo = ShapeBuilders::copyShapeInfo(newShapeInfo, true, nullptr);
+      ArrayOptions::setPropertyBit(tempShapeInfo, ARRAY_EMPTY);
+      auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(tempShapeInfo);
+      newShapeInfo = buffer->primary();
+      delete[] tempShapeInfo;
+    }
     auto ret =  SHAPELIST(newShapeInfo);
     return ret;
 
   } else {
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
-    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape,newType));
+    bool wasEmpty = ArrayOptions::hasPropertyBitSet(inShape, ARRAY_EMPTY);
+    auto resultShapeInfo = ConstantShapeHelper::getInstance().castToDataType(inShape, newType);
+    if (wasEmpty && !ArrayOptions::hasPropertyBitSet(resultShapeInfo, ARRAY_EMPTY)) {
+      // EMPTY bit was lost during type cast — re-create with EMPTY bit set
+      auto tempShapeInfo = ShapeBuilders::copyShapeInfo(resultShapeInfo, true, nullptr);
+      ArrayOptions::setPropertyBit(tempShapeInfo, ARRAY_EMPTY);
+      auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(tempShapeInfo);
+      resultShapeInfo = buffer->primary();
+      delete[] tempShapeInfo;
+    }
+    auto ret = SHAPELIST(resultShapeInfo);
     return ret;
   }
 }

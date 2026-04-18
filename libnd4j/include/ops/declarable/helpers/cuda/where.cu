@@ -419,11 +419,12 @@ void _where(LaunchContext* context, NDArray& condition, NDArray& output, memory:
                           (stream, condition.specialBuffer(), condition.specialShapeInfo(), dBuffer, xLen),
                           SD_COMMON_TYPES);
 
-    // Step 2: Copy flags to host and compute exclusive prefix sum
+    // Step 2: Copy flags to host and compute exclusive prefix sum.
+    // WHERE is always executed slot-by-slot (data-dependent, never inside a CUDA graph),
+    // so we must always sync here before reading hBuffer on the CPU.
     std::vector<LongType> hBuffer(xLen);
     cudaMemcpyAsync(hBuffer.data(), dBuffer, xLen * sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
-    // During CUDA graph capture, synchronous calls are illegal.
-    if (!tl_graphExecutionActive) { cudaStreamSynchronize(*stream); }
+    cudaStreamSynchronize(*stream);
 
     // Exclusive prefix sum: positions[i] = number of true elements before index i
     LongType sum = 0;

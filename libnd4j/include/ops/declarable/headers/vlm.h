@@ -194,6 +194,30 @@ DECLARE_CUSTOM_OP(vlm_image_preprocess, 1, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(vlm_2d_position_encode, 1, 1, false, 0, 0);
 #endif
 
+/**
+ * vision_encode_patches - ViT-style patch extraction for VLM training
+ *
+ * Splits an image into non-overlapping square patches and flattens each patch
+ * into a 1-D feature vector. This is the first step of vision encoding in
+ * models such as LLaVA, Idefics, and SmolDocling (ViT-style backbones).
+ *
+ * Input:
+ *   0: image [batch, channels, height, width] — input image(s)
+ *
+ * Outputs:
+ *   0: patches [batch, num_patches, patch_size*patch_size*channels] — flattened patches
+ *   1: num_patches_per_image — INT64 scalar = (H/patch_size) * (W/patch_size)
+ *
+ * Integer arguments:
+ *   0: patch_size — size of each square patch (e.g. 14). height and width
+ *                   must both be divisible by patch_size.
+ *   1: hidden_dim — reserved for API symmetry with downstream projection ops
+ *                   (default 0 = unused in extraction step)
+ */
+#if NOT_EXCLUDED(OP_vision_encode_patches)
+DECLARE_CUSTOM_OP(vision_encode_patches, 1, 2, false, 0, 2);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

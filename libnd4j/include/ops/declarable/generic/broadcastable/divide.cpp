@@ -135,32 +135,29 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
   if (x->isSameShape(y)) {
     // PWT case case
 
-    // X gradient
-    NDArray *gradXTemp = (*epsNext) / (*y);
-    gradX->assign(gradXTemp);
-    delete gradXTemp;
-    // Y gradient
-    NDArray *numerator = (*epsNext) * (*x);
-    NDArray *denominator = (*y) * (*y);
-    NDArray *gradYTemp = (*numerator) / (*denominator);
-    delete numerator;
-    delete denominator;
-    gradY->assign(gradYTemp);
+    // X gradient: gradX = epsNext / y
+    epsNext->applyPairwiseTransform(pairwise::Divide, y, gradX);
+    // Y gradient: gradY = -(epsNext * x) / (y * y)
+    NDArray numerator(epsNext->shapeInfo(), false, block.launchContext());
+    epsNext->applyPairwiseTransform(pairwise::Multiply, x, &numerator);
+    NDArray denominator(y->shapeInfo(), false, block.launchContext());
+    y->applyPairwiseTransform(pairwise::Multiply, y, &denominator);
+    numerator.applyPairwiseTransform(pairwise::Divide, &denominator, gradY);
     gradY->applyTransform(transform::Neg, gradY);
 
   } else if (y->isScalar()) {
     // scalar case
 
-    auto tmp = epsNext->reduceNumber(reduce::Sum);
-    auto tmpX = x->reduceNumber(reduce::Sum);
+    NDArray tmp(gradY->dataType(), block.launchContext());
+    epsNext->reduceNumber(reduce::Sum, &tmp);
+    NDArray tmpX(gradY->dataType(), block.launchContext());
+    x->reduceNumber(reduce::Sum, &tmpX);
 
-    NDArray *temp1 = *tmp * *tmpX;
-    NDArray *ySquared = (*y) * (*y);
-    NDArray *gradYTemp = (*temp1) / (*ySquared);
-    delete temp1;
-    delete ySquared;
-    gradY->assign(gradYTemp);
-    gradY->applyTransform(transform::Neg, gradY);
+    double tmpVal = tmp.e<double>(0);
+    double tmpXVal = tmpX.e<double>(0);
+    double yVal = y->e<double>(0);
+    double gradYVal = -(tmpVal * tmpXVal) / (yVal * yVal);
+    gradY->assign(gradYVal);
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {

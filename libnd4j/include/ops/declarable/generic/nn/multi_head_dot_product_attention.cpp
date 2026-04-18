@@ -117,8 +117,13 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
       shape,
       projectedValues.dataType(), block.launchContext());
   sd::ops::dot_product_attention attention;
-  attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask},
-                    {&attnResults, weights ? OUTPUT_VARIABLE(1) : nullptr}, {}, {normalization, weights}, {});
+  if (weights) {
+    attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask},
+                      {&attnResults, OUTPUT_VARIABLE(1)}, {}, {normalization, 1}, {});
+  } else {
+    attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask},
+                      {&attnResults}, {}, {normalization, 0}, {});
+  }
 
   // Project attention results
   attnResults.permutei({0, 3, 1, 2}, 0, false);

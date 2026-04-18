@@ -114,6 +114,7 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
     delete dLdxTemp;
   }
 
+  delete temp;
   return Status::OK;
 }
 

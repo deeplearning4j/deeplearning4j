@@ -53,43 +53,43 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   // Handle full array reduction (empty axes) vs. dimension-specific reduction
   if (axes.empty()) {
     // Full array reduction: log(sum(exp(x))) = max(x) + log(sum(exp(x - max(x))))
-    auto maxVal = input->reduceNumber(reduce::Max);
-    double maxScalar = maxVal->e<double>(0);
+    NDArray maxVal(output->dataType(), block.launchContext());
+    input->reduceNumber(reduce::Max, &maxVal);
+    double maxScalar = maxVal.e<double>(0);
 
-    auto internal = (*input);
-    internal -= maxScalar;
+    NDArray internal(input->shapeInfo(), false, block.launchContext());
+    input->applyScalar(scalar::Subtract, maxScalar, &internal);
     internal.applyTransform(transform::Exp, &internal);
 
-    auto sumVal = internal.reduceNumber(reduce::Sum);
-    sumVal->applyTransform(transform::Log, sumVal);
+    NDArray sumVal(output->dataType(), block.launchContext());
+    internal.reduceNumber(reduce::Sum, &sumVal);
+    sumVal.applyTransform(transform::Log, &sumVal);
 
-    double result = sumVal->e<double>(0) + maxScalar;
+    double result = sumVal.e<double>(0) + maxScalar;
     output->assign(result);
-    delete maxVal;
-    delete sumVal;
   } else {
     // Dimension-specific reduction
     // Get max along the specified axes
-    auto maxVals = input->reduceAlongDimension(reduce::Max, &axes, true);
+    auto maxValsPtr = input->reduceAlongDimension(reduce::Max, &axes, true);
 
-    auto internal = (*input);
-    internal.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), maxVals, &internal, false);
+    NDArray internal(input->shapeInfo(), false, block.launchContext());
+    input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), maxValsPtr, &internal, false);
     internal.applyTransform(transform::Exp, &internal);
     internal.reduceAlongDimension(reduce::Sum, output, &axes, keepDims);
     output->applyTransform(transform::Log, output);
 
     // Add max back - need to handle keepDims for broadcasting
     if (keepDims) {
-      output->applyPairwiseTransform(sd::pairwise::Add, maxVals, output);
+      output->applyPairwiseTransform(sd::pairwise::Add, maxValsPtr, output);
     } else {
       // maxVals has keepDims=true shape, need to squeeze for broadcasting
-      auto outputShape = output->getShapeAsVector();
-      auto maxValsSqueezed = maxVals->reshape(maxVals->ordering(), *outputShape);
-      output->applyPairwiseTransform(sd::pairwise::Add, maxValsSqueezed, output);
-      delete outputShape;
-      delete maxValsSqueezed;
+      auto outputShapePtr = output->getShapeAsVector();
+      auto maxValsSqueezedPtr = maxValsPtr->reshape(maxValsPtr->ordering(), *outputShapePtr);
+      output->applyPairwiseTransform(sd::pairwise::Add, maxValsSqueezedPtr, output);
+      delete outputShapePtr;
+      delete maxValsSqueezedPtr;
     }
-    delete maxVals;
+    delete maxValsPtr;
   }
   return sd::Status::OK;
 }

@@ -206,15 +206,22 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, N
 void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updates, NDArray& output,
                     const bool calcGrad) {
   const sd::LongType indicesLen = indices.lengthOf();
-  std::vector<sd::LongType> dim = {-1};
+  // evalDimsToExclude returns all dims NOT in the given list.
+  // We pass the last dimension so that the returned set = {0, 1, ..., rank-2},
+  // i.e. the "batch" dimensions that we enumerate over when slicing rows of updates.
+  // (Passing -1 as a sentinel would return ALL dims {0,...,rank-1}, giving scalars instead of rows.)
+  std::vector<sd::LongType> dim = {updates.rankOf() - 1};
   std::vector<sd::LongType > *dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), dim.size(),dim.data());
 
   if (!calcGrad) {
+    // Forward pass: output[i] = updates[i, indices[i]]
+    // i.e., gather the log-softmax value at the label index for each example.
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        auto subArr = updates(i, *dimsToExclude);
+        NDArray* subArr = updates(i, *dimsToExclude);
         auto curr = indices.e<sd::LongType>(i);
-        output.p(i, curr);
+        output.p(i, subArr->e<double>(curr));
+        delete subArr;
       }
     };
 
@@ -222,12 +229,15 @@ void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updat
 
     delete dimsToExclude;
   } else {
+    // Gradient path: updates[i, indices[i]] -= 1
+    // (matches CUDA: y[yOffset] -= 1.f)
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         auto subArr = updates(i, *dimsToExclude);
         auto ind = indices.e<sd::LongType>(i);
-        auto curr = subArr->e<sd::LongType>(ind) - 1.;
-        subArr->p(ind,curr);
+        // Read as double (not LongType) to avoid truncating float softmax values.
+        auto curr = subArr->e<double>(ind) - 1.;
+        subArr->p(ind, curr);
         delete subArr;
       }
     };

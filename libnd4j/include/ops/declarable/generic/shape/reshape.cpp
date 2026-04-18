@@ -190,9 +190,14 @@ void processReshapeArgs(NDArray* x, std::vector<LongType>& reshapeArgs, std::vec
       shapeNew.push_back(1);
     } else if (dim == 0) {
       // ONNX semantics: 0 means "copy dimension from input at same position"
-      // If the position is within input's rank, copy the input dimension
-      // Otherwise treat as empty/zero dimension
-      if (i < static_cast<size_t>(x->rankOf())) {
+      // If the input has zero dimensions and the output rank differs from input rank,
+      // 0 is treated as literal zero (the empty array's zero propagates).
+      if (xHasZeroDim) {
+        // When input has a zero dim, all 0s in reshape args produce 0 in output.
+        // The zero "infects" all 0-marked positions.
+        shapeNew.push_back(0);
+        newShapeEmpty = true;
+      } else if (i < static_cast<size_t>(x->rankOf())) {
         LongType inputDim = x->sizeAt(i);
         shapeNew.push_back(inputDim);
         if (inputDim == 0) {
@@ -201,7 +206,7 @@ void processReshapeArgs(NDArray* x, std::vector<LongType>& reshapeArgs, std::vec
           newShapeLen *= inputDim;
         }
       } else {
-        // Position beyond input rank - treat as 1 (padding case)
+        // Position beyond input rank, no zero in input - treat as 1
         shapeNew.push_back(1);
       }
     } else {
@@ -223,10 +228,50 @@ void computeUnknownDimension(NDArray* x, std::vector<LongType>& shapeNew, int po
                              LongType newShapeLen, bool newShapeEmpty) {
   if (pos != -1) {
     if (x->isEmpty() || x->lengthOf() == 0) {
-      // When input has zero elements, the inferred dimension must be 0
-      // so that the output is also empty.  E.g. [1,0,64] → [-1,64]
-      // should give [0,64] (0 / 64 = 0), not [1,64].
-      shapeNew[pos] = 0;
+      // When input has zero-size dimensions, the output also has zero-size dims.
+      // But the -1 dimension should be computed from the product of NON-ZERO dims
+      // in input vs output, not from lengthOf() (which is 0).
+      //
+      // E.g. input [10, 0] reshape [2, 0, -1]:
+      //   0 at position 1 copies input dim 1 = 0
+      //   Non-zero input product = 10
+      //   Non-zero known output product = 2
+      //   => -1 = 10 / 2 = 5 => output [2, 0, 5]
+      //
+      // E.g. input [1, 0, 64] reshape [-1, 64]:
+      //   Non-zero input product = 1 * 64 = 64
+      //   Non-zero known output product = 64
+      //   But output has a zero dim (from input dim 1) => -1 = 64/64 = 1
+      //   Actually, the output should be [0, 64] — the zero "leaks" into the -1.
+      //   Only when the output already has a zero dim can the -1 be non-zero.
+      bool outputHasZero = false;
+      LongType nonZeroInputProduct = 1;
+      LongType nonZeroKnownOutputProduct = 1;
+
+      for (int i = 0; i < x->rankOf(); i++) {
+        if (x->sizeAt(i) != 0) nonZeroInputProduct *= x->sizeAt(i);
+      }
+
+      for (size_t i = 0; i < shapeNew.size(); i++) {
+        if ((int)i == pos) continue;  // skip the unknown dim
+        if (shapeNew[i] == 0) {
+          outputHasZero = true;
+        } else {
+          nonZeroKnownOutputProduct *= shapeNew[i];
+        }
+      }
+
+      if (outputHasZero) {
+        // Output already has a zero dim — the -1 dimension carries the non-zero ratio
+        if (nonZeroKnownOutputProduct > 0) {
+          shapeNew[pos] = nonZeroInputProduct / nonZeroKnownOutputProduct;
+        } else {
+          shapeNew[pos] = 0;
+        }
+      } else {
+        // No zero in output yet — the -1 must be zero to make output empty
+        shapeNew[pos] = 0;
+      }
       return;
     }
 

@@ -962,6 +962,213 @@ DECLARE_CUSTOM_OP(mamba2_ssm, 5, 2, false, 0, 3);
 DECLARE_CUSTOM_OP(dual_rope, 1, 1, false, 0, 0);
 #endif
 
+/**
+ * simpo_loss - Simple Preference Optimization Loss (arXiv:2405.14734)
+ *
+ * Computes the SimPO loss over a batch of preference pairs using
+ * length-normalized log probabilities and a target reward margin:
+ *
+ *   diff = beta * (avg_chosen_lp - avg_rejected_lp - gamma)
+ *   loss = mean(-log(sigmoid(diff)))
+ *
+ * No reference model is needed. Length normalization is applied externally
+ * by the caller (inputs are already averaged log probabilities).
+ *
+ * Inputs:
+ *   0: chosen_log_probs  [batch] — length-normalized log probs of chosen sequences
+ *   1: rejected_log_probs [batch] — length-normalized log probs of rejected sequences
+ *
+ * Float arguments:
+ *   0: beta  — sharpness parameter (default: 2.5)
+ *   1: gamma — target reward margin (default: 1.0)
+ *
+ * Output:
+ *   0: loss [scalar] — mean SimPO loss over the batch
+ */
+#if NOT_EXCLUDED(OP_simpo_loss)
+DECLARE_CUSTOM_OP(simpo_loss, 2, 1, false, 2, 0);
+/**
+ * simpo_loss_bp - Backward pass for SimPO loss
+ *
+ * Computes gradients of the SimPO loss with respect to chosen and rejected
+ * length-normalized log probabilities.
+ *
+ * The gradient through -log(sigmoid(x)) is: d/dx = sigmoid(-x) = 1 - sigmoid(x)
+ *
+ * Inputs:
+ *   0: chosen_log_probs  [batch]
+ *   1: rejected_log_probs [batch]
+ *   2: grad_output [scalar] — upstream gradient
+ *
+ * Float arguments:
+ *   0: beta  — sharpness parameter
+ *   1: gamma — target reward margin
+ *
+ * Outputs:
+ *   0: d_chosen_lp  [batch] — gradient w.r.t. chosen log probs
+ *   1: d_rejected_lp [batch] — gradient w.r.t. rejected log probs
+ */
+DECLARE_CUSTOM_OP(simpo_loss_bp, 3, 2, false, 2, 0);
+#endif
+
+/**
+ * unpad_input - Remove padding tokens using attention mask (padding-free batching)
+ *
+ * Scans the attention_mask and extracts only real (non-padding) tokens from the
+ * padded batch, producing a compact representation and the metadata needed to
+ * reverse the operation with pad_input.
+ *
+ * Input:
+ *   0: hidden_states [batch, max_seq_len, hidden_dim] — padded input (any float)
+ *   1: attention_mask [batch, max_seq_len] — 1=real token, 0=padding (INT32 or BOOL)
+ *
+ * Output:
+ *   0: unpadded [total_tokens, hidden_dim] — concatenated real tokens
+ *   1: indices [total_tokens] INT64 — flat index into padded batch for each real token
+ *   2: cu_seqlens [batch+1] INT64 — cumulative sequence lengths (starts with 0)
+ *   3: max_seqlen_in_batch [1] INT64 scalar — maximum actual sequence length
+ */
+#if NOT_EXCLUDED(OP_unpad_input)
+DECLARE_CUSTOM_OP(unpad_input, 2, 4, false, 0, 0);
+#endif
+
+/**
+ * pad_input - Scatter unpadded tokens back to padded positions (reverse of unpad_input)
+ *
+ * Input:
+ *   0: unpadded [total_tokens, hidden_dim]
+ *   1: indices [total_tokens] INT64 — from unpad_input output 1
+ *   2: batch_size INT64 scalar
+ *   3: max_seq_len INT64 scalar
+ *
+ * Output:
+ *   0: padded [batch, max_seq_len, hidden_dim] — zero-filled, real tokens placed back
+ */
+#if NOT_EXCLUDED(OP_pad_input)
+DECLARE_CUSTOM_OP(pad_input, 4, 1, false, 0, 0);
+
+/**
+ * pad_input_bp - Backward pass for pad_input
+ *
+ * Gathers gradients from padded positions back to unpadded positions.
+ *
+ * Input:
+ *   0: grad_padded [batch, max_seq_len, hidden_dim]
+ *   1: indices [total_tokens] INT64
+ *
+ * Output:
+ *   0: grad_unpadded [total_tokens, hidden_dim]
+ */
+DECLARE_CUSTOM_OP(pad_input_bp, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * loftq_init - LoftQ LoRA Initialization via Quantization Residual SVD
+ *
+ * Initializes LoRA A and B matrices using the LoftQ algorithm (arXiv:2310.08659).
+ * Computes B and A such that W ≈ Q + B @ A where Q is the quantized weight.
+ * This provides better initialization than random/Kaiming for quantized models.
+ *
+ * Algorithm per iteration:
+ *   1. Q = quantize(W - B@A, quantBits, blockSize)  (first iter: quantize(W))
+ *   2. R = W - Q
+ *   3. [U, S, Vt] = SVD(R, economy)
+ *   4. sqrtS = sqrt(S[:rank])
+ *   5. B = U[:, :rank] @ diag(sqrtS)   → [outDim, rank]
+ *   6. A = diag(sqrtS) @ Vt[:rank, :] → [rank, inDim]
+ *
+ * Input:
+ *   0: weight [outDim, inDim] — pretrained weight matrix (FLOAT32)
+ *
+ * Output:
+ *   0: loraB [outDim, rank]
+ *   1: loraA  [rank, inDim]
+ *
+ * Integer arguments:
+ *   0: rank          — LoRA rank r
+ *   1: numIterations — number of alternating iterations (default 1)
+ *   2: quantBits     — quantization bits: 4 or 8 (default 4)
+ *   3: blockSize     — quantization block size (default 64)
+ *   4: quantType     — 0 = NF4, 1 = FP4 (default 0 = NF4)
+ */
+#if NOT_EXCLUDED(OP_loftq_init)
+DECLARE_CUSTOM_OP(loftq_init, 1, 2, false, 0, 5);
+#endif
+
+/**
+ * checkpoint_offload_d2h - Async device-to-host copy for gradient checkpoint offload.
+ *
+ * During the forward pass of activation checkpointing with async offload, this op
+ * issues a non-blocking D2H DMA transfer on the execution stream so the GPU can
+ * overlap host transfers with subsequent layer compute.
+ *
+ * On CPU backends the copy is a simple synchronous memcpy (no async semantics needed).
+ *
+ * Input:
+ *   0: device_tensor [any shape, any numeric type]
+ *
+ * Output:
+ *   0: host_tensor [same shape and dtype] — resides in CPU RAM
+ *
+ * Integer arguments:
+ *   0: use_pinned_memory (1=pinned/page-locked, 0=pageable; default: 1)
+ *   1: stream_id (CUDA stream index, 0=default execution stream; default: 0)
+ */
+#if NOT_EXCLUDED(OP_checkpoint_offload_d2h)
+DECLARE_CUSTOM_OP(checkpoint_offload_d2h, 1, 1, false, 0, 2);
+#endif
+
+/**
+ * checkpoint_prefetch_h2d - Async host-to-device copy for gradient checkpoint prefetch.
+ *
+ * During the backward pass of activation checkpointing with async offload, this op
+ * issues a non-blocking H2D DMA transfer on the execution stream to bring a
+ * checkpointed activation back to device memory before it is needed.
+ *
+ * On CPU backends the copy is a simple synchronous memcpy.
+ *
+ * Input:
+ *   0: host_tensor [any shape, any numeric type] — resides in CPU RAM
+ *
+ * Output:
+ *   0: device_tensor [same shape and dtype] — resides in GPU VRAM
+ *
+ * Integer arguments:
+ *   0: target_device_id (0=current device; default: 0)
+ */
+#if NOT_EXCLUDED(OP_checkpoint_prefetch_h2d)
+DECLARE_CUSTOM_OP(checkpoint_prefetch_h2d, 1, 1, false, 0, 1);
+#endif
+
+/**
+ * kl_divergence_per_layer - Per-Layer KL Divergence for Adaptive Quantization
+ *
+ * Measures quantization sensitivity by computing the mean KL divergence between
+ * full-precision and quantized-then-dequantized logit outputs on a calibration dataset.
+ *
+ * KL(P||Q) = sum_i P_i * log(P_i / Q_i)
+ * where P = softmax(referenceLogits  / temperature)
+ *       Q = softmax(quantizedLogits / temperature)
+ *
+ * Inputs:
+ *   0: reference_logits [batch, seq, dim] or [batch, dim] — full-precision logits
+ *   1: quantized_logits [batch, seq, dim] or [batch, dim] — quantized logits
+ *
+ * Float arguments:
+ *   0: temperature (default: 1.0) — softmax temperature; higher values produce
+ *      softer distributions and emphasise broad output differences
+ *
+ * Outputs:
+ *   0: kl_div [scalar] — mean KL divergence over all rows (batch * seq positions)
+ *
+ * Notes:
+ * - Identical inputs produce KL = 0; divergent inputs produce KL > 0.
+ * - KL(P||Q) != KL(Q||P) in general (not symmetric).
+ */
+#if NOT_EXCLUDED(OP_kl_divergence_per_layer)
+DECLARE_CUSTOM_OP(kl_divergence_per_layer, 2, 1, false, 1, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

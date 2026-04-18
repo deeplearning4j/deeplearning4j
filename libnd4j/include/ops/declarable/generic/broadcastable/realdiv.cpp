@@ -98,18 +98,16 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
 
   } else if (y->isScalar()) {
     // scalar case
+    NDArray tmp(gradY->dataType(), block.launchContext());
+    epsNext->reduceNumber(reduce::Sum, &tmp);
+    NDArray tmpX(gradY->dataType(), block.launchContext());
+    x->reduceNumber(reduce::Sum, &tmpX);
 
-    auto tmp = epsNext->reduceNumber(reduce::Sum);
-    auto tmpX = x->reduceNumber(reduce::Sum);
-
-    NDArray negTmpX = -*tmpX;
-    NDArray *tmpMulNegTmpX = (*tmp) * negTmpX;
-    NDArray *ySquared = (*y) * (*y);
-    NDArray *gradYTemp = (*tmpMulNegTmpX) / (*ySquared);
-    gradY->assign(gradYTemp);
-    delete tmpMulNegTmpX;
-    delete ySquared;
-    delete gradYTemp;
+    double tmpVal = tmp.e<double>(0);
+    double tmpXVal = tmpX.e<double>(0);
+    double yVal = y->e<double>(0);
+    double gradYVal = -(tmpVal * tmpXVal) / (yVal * yVal);
+    gradY->assign(gradYVal);
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {

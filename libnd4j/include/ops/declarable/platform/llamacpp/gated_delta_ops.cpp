@@ -74,7 +74,7 @@ PLATFORM_IMPL(gated_delta_rule, ENGINE_CPU) {
 
     // State output handling depends on GGML op's output structure
     // If GGML provides state as secondary output, copy it; otherwise zero-init
-    stateOut->assign(0.0);
+    { double zero = 0.0; stateOut->assign(zero); }
 
     return sd::Status::OK;
 }
@@ -121,7 +121,7 @@ PLATFORM_IMPL(causal_conv1d, ENGINE_CPU) {
     llamacppUtils::copyGgmlToNDArray(ggml_output, output);
 
     // State output: last K-1 elements of input
-    stateOut->assign(0.0);
+    { double zero = 0.0; stateOut->assign(zero); }
 
     return sd::Status::OK;
 }

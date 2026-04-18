@@ -109,12 +109,33 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
           sd_printf("%s%lld", r > 0 ? "x" : "", indices->sizeAt(r));
         }
         sd_printf(" dtype=%d\n", (int)indices->dataType());
-        sd::LongType dumpCount = std::min(indices->lengthOf(), (sd::LongType)16);
+        // Also print full stride info for indices
+        sd_printf("GATHER OOB STRIDES: indicesStrides=[");
+        const sd::LongType* _istrides = indices->stridesOf();
+        for (int r = 0; r < indices->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "," : "", (long long)_istrides[r]);
+        }
+        sd_printf("] order=%c offset=%lld bufAddr=%p\n", indices->ordering(),
+                  (long long)indices->offset(),
+                  indices->dataBuffer() ? indices->dataBuffer()->primary() : nullptr);
+        // Print first 32 index values to understand pattern
+        sd::LongType dumpCount = std::min(indices->lengthOf(), (sd::LongType)32);
         for (sd::LongType idx = 0; idx < dumpCount; idx++) {
           auto val = indices->e<sd::LongType>(idx);
           sd_printf("  indices[%lld] = %lld %s\n", idx, val,
                     (val < 0 || val >= dimSize) ? "<-- OOB" : "");
         }
+        // Also print input tensor shape/stride for context
+        sd_printf("GATHER OOB INPUT: inputShape=[");
+        for (int r = 0; r < input->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "x" : "", (long long)input->sizeAt(r));
+        }
+        sd_printf("] inputStrides=[");
+        const sd::LongType* _in_strides = input->stridesOf();
+        for (int r = 0; r < input->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "," : "", (long long)_in_strides[r]);
+        }
+        sd_printf("] order=%c offset=%lld\n", input->ordering(), (long long)input->offset());
       }
     }
 

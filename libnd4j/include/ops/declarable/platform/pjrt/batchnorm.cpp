@@ -223,12 +223,14 @@ PLATFORM_IMPL(batchnorm, ENGINE_TPU) {
   std::unique_ptr<NDArray> defaultGamma, defaultBeta;
   if (!gamma) {
     defaultGamma = std::make_unique<NDArray>(input->ordering(), std::vector<sd::LongType>{inputShape[featureDim]}, input->dataType(), input->getContext());
-    defaultGamma->assign(1.0);
+    double one = 1.0;
+    defaultGamma->assign(one);
     gamma = defaultGamma.get();
   }
   if (!beta) {
     defaultBeta = std::make_unique<NDArray>(input->ordering(), std::vector<sd::LongType>{inputShape[featureDim]}, input->dataType(), input->getContext());
-    defaultBeta->assign(0.0);
+    double zero = 0.0;
+    defaultBeta->assign(zero);
     beta = defaultBeta.get();
   }
 
@@ -313,7 +315,8 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_TPU) {
   std::unique_ptr<NDArray> defaultGamma;
   if (!gamma) {
     defaultGamma = std::make_unique<NDArray>(input->ordering(), std::vector<sd::LongType>{inputShape[featureDim]}, input->dataType(), input->getContext());
-    defaultGamma->assign(1.0);
+    double one = 1.0;
+    defaultGamma->assign(one);
     gamma = defaultGamma.get();
   }
 
