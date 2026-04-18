@@ -236,7 +236,7 @@ void DataBuffer::expand(const uint64_t size) {
 
     _specialBuffer = newSpecialBuffer;
     _lenInBytes = size;
-    _specialAllocBytes = size;
+    _specialAllocBytes = size + 8;  // match actual allocation (size + 8)
     if (_primaryBuffer != nullptr) _primaryAllocBytes = hostAllocSize;
     _isOwnerSpecial = true;
 
@@ -599,7 +599,7 @@ void DataBuffer::allocateSpecial() {
       actualDevice = deviceId;  // workspace allocations stay on requested device
     }
     _isOwnerSpecial = true;
-    _specialAllocBytes = getLenInBytes();
+    _specialAllocBytes = getLenInBytes() + 8;  // match actual allocation (getLenInBytes() + 8)
     tl_dspAllocBytes += getLenInBytes();
     tl_dspAllocCount++;
 

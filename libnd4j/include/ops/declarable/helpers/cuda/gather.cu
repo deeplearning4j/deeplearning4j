@@ -283,6 +283,13 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
       NDArray::registerSpecialUse({output}, {input, pIndices});
     }
 
+    // Free sub-array shape/offset arrays allocated by getSubArrShapeAndOffsets.
+    // Uses RELEASE to match ALLOCATE (handles workspace vs heap correctly).
+    RELEASE(inSubArrShapeInfo, input->getContext()->getWorkspace());
+    RELEASE(inSubArrOffsets, input->getContext()->getWorkspace());
+    RELEASE(outSubArrShapeInfo, output->getContext()->getWorkspace());
+    RELEASE(outSubArrOffsets, output->getContext()->getWorkspace());
+
     if (indices == nullptr) delete pIndices;
   }
 }
