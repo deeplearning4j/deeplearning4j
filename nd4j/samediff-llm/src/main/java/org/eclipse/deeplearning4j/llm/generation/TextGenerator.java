@@ -206,8 +206,9 @@ public class TextGenerator {
                 }
             }
 
-            // Diagnostic: log logits stats for first 3 tokens
-            if (step < 3) {
+            // Diagnostic: log logits stats for first 3 tokens — gated on debug level
+            // to avoid unconditional dup+reduction overhead in the hot path
+            if (log.isDebugEnabled() && step < 3) {
                 INDArray logitsDup = logits.dup();
                 float maxVal = logitsDup.maxNumber().floatValue();
                 float minVal = logitsDup.minNumber().floatValue();
@@ -221,7 +222,7 @@ public class TextGenerator {
                     top5Vals[t] = logitsDup.getFloat(idx);
                     logitsDup.putScalar(idx, Float.NEGATIVE_INFINITY);
                 }
-                log.info("Step {} logits: min={}, max={}, mean={}, top5ids={}, top5vals={}",
+                log.debug("Step {} logits: min={}, max={}, mean={}, top5ids={}, top5vals={}",
                         step, minVal, maxVal, meanVal,
                         java.util.Arrays.toString(top5Ids), java.util.Arrays.toString(top5Vals));
                 logitsDup.close();

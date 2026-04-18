@@ -36,7 +36,7 @@ import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.model.patching.SameDiffGraphPatch;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
-import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheManager;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
@@ -780,8 +780,8 @@ public class VisionLanguageModel implements AutoCloseable {
 
         // Discover decoder inputs/outputs for KV cache
         List<String> decoderInputNames = decoder.inputs();
-        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        String logitsOutputName = ModelIOConfig.findLogitsOutputName(decoder);
+        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
         boolean useKvCache = !kvNames.keyNames.isEmpty() && !kvNames.valueNames.isEmpty();
         long hiddenSize = config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0;
 
@@ -828,7 +828,7 @@ public class VisionLanguageModel implements AutoCloseable {
                     }
                     decoderInputMap.put(inputName, attentionMask);
                 } else if (inputName.equals("_causal_mask")) {
-                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(batchSize, currentSeqLen, totalSeqLen));
+                    decoderInputMap.put(inputName, ModelIOConfig.buildCausalMask(batchSize, currentSeqLen, totalSeqLen));
                 } else if (inputName.equals("position_ids")) {
                     INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
                             .reshape(1, currentSeqLen).castTo(DataType.LONG);
@@ -838,7 +838,7 @@ public class VisionLanguageModel implements AutoCloseable {
                     if (kvCache.containsKey(presentName)) {
                         decoderInputMap.put(inputName, kvCache.get(presentName));
                     } else {
-                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(
+                        decoderInputMap.put(inputName, ModelIOConfig.createEmptyKvCache(
                                 decoder, inputName, batchSize, hiddenSize));
                     }
                 }
@@ -857,11 +857,7 @@ public class VisionLanguageModel implements AutoCloseable {
             for (var entry : decoderInputMap.entrySet()) {
                 String name = entry.getKey();
                 if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
-                INDArray arr = entry.getValue();
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
+                SameDiffMemoryUtils.safeClose(entry.getValue());
             }
 
             // Update KV cache
@@ -953,7 +949,7 @@ public class VisionLanguageModel implements AutoCloseable {
                         } else if (inputName.equals("attention_mask")) {
                             specDecoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSpecSeqLen));
                         } else if (inputName.equals("_causal_mask")) {
-                            specDecoderInputMap.put(inputName, DecoderUtils.buildCausalMask(batchSize, currentSpecSeqLen, totalSpecSeqLen));
+                            specDecoderInputMap.put(inputName, ModelIOConfig.buildCausalMask(batchSize, currentSpecSeqLen, totalSpecSeqLen));
                         } else if (inputName.equals("position_ids")) {
                             INDArray posIds = Nd4j.arange(specPastSeqLen, specPastSeqLen + currentSpecSeqLen)
                                     .reshape(1, currentSpecSeqLen).castTo(DataType.LONG);
@@ -974,11 +970,7 @@ public class VisionLanguageModel implements AutoCloseable {
                     for (var entry : specDecoderInputMap.entrySet()) {
                         String name = entry.getKey();
                         if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
-                        INDArray arr = entry.getValue();
-                        if (arr != null && !arr.wasClosed()) {
-                            arr.setCloseable(true);
-                            arr.close();
-                        }
+                        SameDiffMemoryUtils.safeClose(entry.getValue());
                     }
 
                     INDArray specLogits = specOutputs.get(allOutputNames.get(0));
@@ -1241,17 +1233,19 @@ public class VisionLanguageModel implements AutoCloseable {
 
             frameEmbeddings.add(embedding.dup());
 
-            log.info("Frame {}/{}: output '{}' shape={}, min={}, max={}",
-                    f + 1, numFrames, selected.name,
-                    java.util.Arrays.toString(embedding.shape()),
-                    embedding.minNumber(), embedding.maxNumber());
+            if (log.isDebugEnabled()) {
+                log.debug("Frame {}/{}: output '{}' shape={}, min={}, max={}",
+                        f + 1, numFrames, selected.name,
+                        java.util.Arrays.toString(embedding.shape()),
+                        embedding.minNumber(), embedding.maxNumber());
+            } else {
+                log.info("Frame {}/{}: output '{}' shape={}",
+                        f + 1, numFrames, selected.name,
+                        java.util.Arrays.toString(embedding.shape()));
+            }
 
             for (var entry : outputs.entrySet()) {
-                INDArray arr = entry.getValue();
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
+                SameDiffMemoryUtils.safeClose(entry.getValue());
             }
 
             SameDiffMemoryUtils.safeClose(frameTensor);
@@ -1506,8 +1500,8 @@ public class VisionLanguageModel implements AutoCloseable {
     private GenerationResult decodeFromEmbeddings(INDArray combinedEmbeddings, int promptTokenCount,
                                                    int maxNewTokens, double temperature, boolean doSample) {
         List<String> decoderInputNames = decoder.inputs();
-        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        String logitsOutputName = ModelIOConfig.findLogitsOutputName(decoder);
+        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
         boolean useKvCache = !kvNames.keyNames.isEmpty() && !kvNames.valueNames.isEmpty();
         long hiddenSize = config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0;
 
@@ -1557,7 +1551,7 @@ public class VisionLanguageModel implements AutoCloseable {
                             NDArrayIndex.all(), NDArrayIndex.interval(0, totalSeqLen));
                     decoderInputMap.put(inputName, mask);
                 } else if (inputName.equals("_causal_mask")) {
-                    INDArray causalMask = DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen);
+                    INDArray causalMask = ModelIOConfig.buildCausalMask(currentSeqLen, totalSeqLen);
                     decoderInputMap.put(inputName, causalMask);
                     tempInputs.add(causalMask);
                 } else if (inputName.equals("position_ids")) {
@@ -1577,7 +1571,7 @@ public class VisionLanguageModel implements AutoCloseable {
                     if (kvCache.containsKey(presentName)) {
                         decoderInputMap.put(inputName, kvCache.get(presentName));
                     } else {
-                        INDArray emptyKv = DecoderUtils.createEmptyKvCache(
+                        INDArray emptyKv = ModelIOConfig.createEmptyKvCache(
                                 decoder, inputName, batchSize, hiddenSize);
                         decoderInputMap.put(inputName, emptyKv);
                         tempInputs.add(emptyKv);
@@ -1674,16 +1668,7 @@ public class VisionLanguageModel implements AutoCloseable {
         }
 
         // Flush pending GPU ops and trim memory pool to release freed CUDA memory
-        try {
-            Nd4j.getExecutioner().commit();
-            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
-            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-            for (int d = 0; d < numDevices; d++) {
-                nativeOps.trimMemoryPool(d);
-            }
-        } catch (Exception e) {
-            log.debug("Pool trim after decode: {}", e.getMessage());
-        }
+        SameDiffMemoryUtils.trimAllDevicePools();
 
         long totalNanos = System.nanoTime() - startNanos;
         long totalMs = totalNanos / 1_000_000;
@@ -1732,17 +1717,7 @@ public class VisionLanguageModel implements AutoCloseable {
         // Force CUDA memory pool to release retained memory back to device allocator.
         // Without this, freed GPU allocations stay in the pool (not visible to cudaMemGetInfo)
         // and subsequent pages fail with OOM even though the memory is logically free.
-        try {
-            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
-            Nd4j.getExecutioner().commit();
-            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-            for (int d = 0; d < numDevices; d++) {
-                nativeOps.trimMemoryPool(d);
-            }
-            log.info("Trimmed CUDA memory pool on {} devices", numDevices);
-        } catch (Exception e) {
-            log.debug("Pool trim after session reset: {}", e.getMessage());
-        }
+        SameDiffMemoryUtils.trimAllDevicePools();
     }
 
     /**

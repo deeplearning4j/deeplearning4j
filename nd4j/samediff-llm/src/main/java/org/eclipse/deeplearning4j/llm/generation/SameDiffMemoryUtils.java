@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -127,5 +129,21 @@ public final class SameDiffMemoryUtils {
         }
 
         return freedCount;
+    }
+
+    /**
+     * Trim CUDA memory pools on all devices.
+     * Syncs pending cudaFreeAsync calls and releases physical memory back to the OS.
+     */
+    public static void trimAllDevicePools() {
+        try {
+            var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPoolOnStream(d, null);
+            }
+        } catch (Exception e) {
+            log.debug("Failed to trim memory pools: {}", e.getMessage());
+        }
     }
 }

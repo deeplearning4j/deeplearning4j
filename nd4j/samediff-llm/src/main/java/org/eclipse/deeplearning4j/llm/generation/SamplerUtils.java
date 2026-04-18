@@ -225,16 +225,12 @@ public final class SamplerUtils {
     /**
      * Argmax - find the index of the maximum value.
      *
-     * Uses bulk host transfer (toFloatVector) instead of per-element getFloat()
-     * to avoid O(vocabSize) JNI round-trips. The commit() ensures CUDA kernels
-     * complete before the D2H transfer, and toFloatVector() does a single bulk
-     * copy of the entire array to host memory.
+     * Uses GPU-side argmax to avoid transferring the entire logits tensor to host.
+     * getInt(0) implicitly syncs if needed before the D2H read.
      */
     public static int argmax(INDArray logits) {
-        // Use GPU-side argmax — avoids 200-500ms toFloatVector() D2H transfer overhead
         INDArray flat = logits.rank() == 1 ? logits : logits.reshape(logits.length());
         INDArray result = Nd4j.argMax(flat);
-        Nd4j.getExecutioner().commit();
         int idx = result.getInt(0);
         result.close();
         return idx;
@@ -244,7 +240,8 @@ public final class SamplerUtils {
      * Batch argmax - find the index of the maximum value for each row.
      *
      * Uses GPU-side argmax (Nd4j.argMax) to avoid transferring the entire logits
-     * tensor to host. Only the result indices (one int per batch) are transferred.
+     * tensor to host. Only the result indices (one int per batch) are transferred
+     * via a single bulk toIntVector() call instead of O(batchSize) getInt() calls.
      * Input is dup'd to ensure contiguity (argMax has issues with views).
      */
     public static int[] argmaxBatch(INDArray logits) {
@@ -255,12 +252,7 @@ public final class SamplerUtils {
         INDArray contiguous = logits.isView() ? logits.dup() : logits;
         try {
             INDArray indices = Nd4j.argMax(contiguous, 1);
-            Nd4j.getExecutioner().commit();
-            int batchSize = (int) indices.length();
-            int[] result = new int[batchSize];
-            for (int b = 0; b < batchSize; b++) {
-                result[b] = indices.getInt(b);
-            }
+            int[] result = indices.toIntVector();
             indices.close();
             return result;
         } finally {

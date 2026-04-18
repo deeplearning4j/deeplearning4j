@@ -84,6 +84,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     private List<String> scatterOutputNames;
 
     // ── Quantized state (QUANTIZED strategy) ──
+    @Getter
     private final QuantizedPagedKVCache.QuantFormat quantFormat;
     private final DataType originalDataType;
     private Map<String, INDArray> quantizedBuffers;
@@ -146,6 +147,47 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     }
 
     // ══════════════════════════════════════════════════════════════
+    //  Private KV shape inference (replaces inferEmptyKvBuffer)
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Create an empty KV cache tensor [batchSize, numHeads, 0, headDim] by inferring
+     * head count and dimension from the decoder graph's variable shapes.
+     */
+    private static INDArray inferEmptyKvBuffer(SameDiff decoder, String inputName,
+                                               long batchSize, long hiddenSize) {
+        long numH = -1;
+        long hDim = -1;
+        DataType kvType = DataType.FLOAT;
+
+        SDVariable inputVar = decoder.getVariable(inputName);
+        if (inputVar != null && inputVar.getShape() != null && inputVar.getShape().length >= 4) {
+            long[] shape = inputVar.getShape();
+            if (inputVar.dataType() != null) kvType = inputVar.dataType();
+            if (shape[1] > 0) numH = shape[1];
+            if (shape[3] > 0) hDim = shape[3];
+        }
+
+        if (numH <= 0 || hDim <= 0) {
+            ModelIOConfig defaultConfig = ModelIOConfig.builder().build();
+            String presentName = defaultConfig.inputToPresentName(inputName);
+            SDVariable presentVar = decoder.getVariable(presentName);
+            if (presentVar != null && presentVar.getShape() != null && presentVar.getShape().length >= 4) {
+                long[] shape = presentVar.getShape();
+                if (numH <= 0 && shape[1] > 0) numH = shape[1];
+                if (hDim <= 0 && shape[3] > 0) hDim = shape[3];
+            }
+        }
+
+        if (hDim <= 0 && numH > 0 && hiddenSize > 0) hDim = Math.max(1, hiddenSize / numH);
+        if (numH <= 0 && hDim > 0 && hiddenSize > 0) numH = Math.max(1, hiddenSize / hDim);
+        if (hDim <= 0) hDim = 64;
+        if (numH <= 0) numH = Math.max(1, hiddenSize / hDim);
+
+        return Nd4j.zeros(kvType, batchSize, numH, 0, hDim);
+    }
+
+    // ══════════════════════════════════════════════════════════════
     //  KvCacheManager interface
     // ══════════════════════════════════════════════════════════════
 
@@ -156,7 +198,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
 
     @Override
     public void initializeFromPrefill(Map<String, INDArray> prefillOutputs,
-                                      DecoderUtils.KVCacheNames kvNames,
+                                      ModelIOConfig.KVCacheNames kvNames,
                                       int maxNewTokens, long prefillSeqLen) {
         this.maxKvLen = prefillSeqLen + maxNewTokens;
 
@@ -240,13 +282,12 @@ public class UnifiedKvCacheManager implements KvCacheManager {
 
     @Override
     public void scatterNewEntries(Map<String, INDArray> decoderOutputs,
-                                  DecoderUtils.KVCacheNames kvNames) {
+                                  ModelIOConfig.KVCacheNames kvNames) {
         if (inGraphScatterEnabled) return;
 
         switch (strategy) {
             case STATIC:
-                DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
-                        kvNames.keyNames, kvNames.valueNames, maxKvLen, cachePosition, ioConfig);
+                scatterStaticKvEntries(decoderOutputs, kvNames);
                 break;
             case QUANTIZED:
                 scatterQuantizedEntries(decoderOutputs, kvNames, 1);
@@ -264,16 +305,14 @@ public class UnifiedKvCacheManager implements KvCacheManager {
 
     @Override
     public void scatterMultipleEntries(Map<String, INDArray> decoderOutputs,
-                                       DecoderUtils.KVCacheNames kvNames,
+                                       ModelIOConfig.KVCacheNames kvNames,
                                        int numEntries) {
         if (numEntries <= 0) return;
         if (inGraphScatterEnabled) return;
 
         switch (strategy) {
             case STATIC:
-                DecoderUtils.scatterMultipleKvEntries(staticKvBuffers, decoderOutputs,
-                        kvNames.keyNames, kvNames.valueNames, maxKvLen, cachePosition,
-                        numEntries, ioConfig);
+                scatterStaticMultipleKvEntries(decoderOutputs, kvNames, numEntries);
                 break;
             case QUANTIZED:
                 scatterQuantizedEntries(decoderOutputs, kvNames, numEntries);
@@ -333,7 +372,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
      * @param kvNames present KV output names from the decoder
      * @return list of scatter output variable names (must be requested as graph outputs)
      */
-    public List<String> buildInGraphScatterOps(SameDiff sd, DecoderUtils.KVCacheNames kvNames) {
+    public List<String> buildInGraphScatterOps(SameDiff sd, ModelIOConfig.KVCacheNames kvNames) {
         if (staticKvBuffers == null || staticKvBuffers.isEmpty()) {
             throw new IllegalStateException(
                     "Static KV buffers must be initialized before building in-graph scatter ops");
@@ -383,16 +422,50 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     // ══════════════════════════════════════════════════════════════
 
     private void initStaticFromPrefill(Map<String, INDArray> prefillOutputs,
-                                       DecoderUtils.KVCacheNames kvNames,
+                                       ModelIOConfig.KVCacheNames kvNames,
                                        long prefillSeqLen) {
-        this.staticKvBuffers = DecoderUtils.padKvCacheToStaticSize(
-                prefillOutputs, kvNames.keyNames, kvNames.valueNames, maxKvLen);
+        this.staticKvBuffers = new HashMap<>();
+        List<String> allPresentNames = new ArrayList<>(kvNames.keyNames);
+        allPresentNames.addAll(kvNames.valueNames);
+
+        Nd4j.getExecutioner().commit();
+
+        for (String presentName : allPresentNames) {
+            INDArray prefillKv = prefillOutputs.get(presentName);
+            if (prefillKv == null) continue;
+
+            long[] shape = prefillKv.shape();
+            long batch = shape[0];
+            long heads = shape[1];
+            long prefillLen = shape[2];
+            long dim = shape[3];
+            long padLen = maxKvLen - prefillLen;
+
+            // Build static buffer by concatenating prefill data with zero padding
+            // along the sequence dimension (axis 2). Nd4j.concat runs as a native op
+            // on device — no manual host/device sync needed.
+            INDArray staticBuf;
+            if (padLen > 0) {
+                INDArray padding = Nd4j.zeros(prefillKv.dataType(), batch, heads, padLen, dim);
+                staticBuf = Nd4j.concat(2, prefillKv, padding);
+                padding.close();
+            } else {
+                staticBuf = prefillKv.dup();
+            }
+
+            String pastInputName = ioConfig.presentToInputName(presentName);
+            staticBuf.setCloseable(false);
+            staticKvBuffers.put(pastInputName, staticBuf);
+
+            log.info("  Static KV buffer '{}': [{},{},{},{}] (prefill={} padded to {})",
+                    pastInputName, batch, heads, maxKvLen, dim, prefillLen, maxKvLen);
+        }
     }
 
     private void initStaticEmpty(SameDiff decoder, List<String> pastInputNames, long hiddenSize) {
         this.staticKvBuffers = new HashMap<>();
         for (String pastInputName : pastInputNames) {
-            INDArray empty = DecoderUtils.createEmptyKvCache(decoder, pastInputName, 1, hiddenSize);
+            INDArray empty = inferEmptyKvBuffer(decoder, pastInputName, 1, hiddenSize);
             long numH = empty.size(1);
             long hDim = empty.size(3);
             DataType kvType = empty.dataType();
@@ -401,6 +474,69 @@ public class UnifiedKvCacheManager implements KvCacheManager {
             INDArray buf = Nd4j.zeros(kvType, 1, numH, maxKvLen, hDim);
             buf.setCloseable(false);
             staticKvBuffers.put(pastInputName, buf);
+        }
+    }
+
+    private void scatterStaticKvEntries(Map<String, INDArray> decoderOutputs,
+                                          ModelIOConfig.KVCacheNames kvNames) {
+        List<INDArray> staticList = new ArrayList<>();
+        List<INDArray> presentList = new ArrayList<>();
+
+        List<String> allPresentNames = new ArrayList<>(kvNames.keyNames);
+        allPresentNames.addAll(kvNames.valueNames);
+
+        int skippedClosed = 0;
+        for (String presentName : allPresentNames) {
+            INDArray presentKv = decoderOutputs.get(presentName);
+            if (presentKv == null) continue;
+
+            String pastInputName = ioConfig.presentToInputName(presentName);
+            INDArray staticBuf = staticKvBuffers.get(pastInputName);
+            if (staticBuf != null) {
+                if (staticBuf.wasClosed() || staticBuf.data() == null) { skippedClosed++; continue; }
+                if (presentKv.wasClosed() || presentKv.data() == null) { skippedClosed++; continue; }
+                staticList.add(staticBuf);
+                presentList.add(presentKv);
+            }
+        }
+
+        if (skippedClosed > 0) {
+            log.warn("scatterStaticKvEntries: skipped {} closed arrays at cachePos={}", skippedClosed, cachePosition);
+        }
+        if (staticList.isEmpty()) return;
+
+        Nd4j.exec(new KvScatter(
+                staticList.toArray(new INDArray[0]),
+                presentList.toArray(new INDArray[0]),
+                cachePosition));
+    }
+
+    private void scatterStaticMultipleKvEntries(Map<String, INDArray> decoderOutputs,
+                                                 ModelIOConfig.KVCacheNames kvNames,
+                                                 int numPositions) {
+        if (numPositions <= 0) return;
+
+        List<String> allPresentNames = new ArrayList<>(kvNames.keyNames);
+        allPresentNames.addAll(kvNames.valueNames);
+
+        for (String presentName : allPresentNames) {
+            INDArray presentKv = decoderOutputs.get(presentName);
+            if (presentKv == null) continue;
+
+            String pastInputName = ioConfig.presentToInputName(presentName);
+            INDArray staticBuf = staticKvBuffers.get(pastInputName);
+            if (staticBuf == null) continue;
+
+            INDArray sourceSlice = presentKv.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(maxKvLen, maxKvLen + numPositions),
+                    NDArrayIndex.all());
+
+            INDArray destSlice = staticBuf.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(cachePosition, cachePosition + numPositions),
+                    NDArrayIndex.all());
+            destSlice.assign(sourceSlice);
         }
     }
 
@@ -425,12 +561,12 @@ public class UnifiedKvCacheManager implements KvCacheManager {
                         decoderInputMap.put(inputName, staticBuf);
                     } else {
                         decoderInputMap.put(inputName,
-                                DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                                inferEmptyKvBuffer(decoder, inputName, 1, hiddenSize));
                     }
                 }
             } else {
                 decoderInputMap.put(inputName,
-                        DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                        inferEmptyKvBuffer(decoder, inputName, 1, hiddenSize));
             }
         }
     }
@@ -440,7 +576,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     // ══════════════════════════════════════════════════════════════
 
     private void initQuantizedFromPrefill(Map<String, INDArray> prefillOutputs,
-                                          DecoderUtils.KVCacheNames kvNames,
+                                          ModelIOConfig.KVCacheNames kvNames,
                                           long prefillSeqLen) {
         this.quantizedBuffers = new HashMap<>();
         this.scaleBuffers = new HashMap<>();
@@ -472,7 +608,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
         this.staticKvBuffers = new HashMap<>();
 
         for (String pastInputName : pastInputNames) {
-            INDArray empty = DecoderUtils.createEmptyKvCache(decoder, pastInputName, 1, hiddenSize);
+            INDArray empty = inferEmptyKvBuffer(decoder, pastInputName, 1, hiddenSize);
             long numH = empty.size(1);
             long hDim = empty.size(3);
             DataType kvType = empty.dataType();
@@ -508,13 +644,13 @@ public class UnifiedKvCacheManager implements KvCacheManager {
                 }
             } else {
                 decoderInputMap.put(inputName,
-                        DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                        inferEmptyKvBuffer(decoder, inputName, 1, hiddenSize));
             }
         }
     }
 
     private void scatterQuantizedEntries(Map<String, INDArray> decoderOutputs,
-                                          DecoderUtils.KVCacheNames kvNames,
+                                          ModelIOConfig.KVCacheNames kvNames,
                                           int numEntries) {
         List<String> allPastNames = new ArrayList<>(kvNames.keyNames);
         allPastNames.addAll(kvNames.valueNames);
@@ -607,7 +743,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     // ══════════════════════════════════════════════════════════════
 
     private void initTurboQuantFromPrefill(Map<String, INDArray> prefillOutputs,
-                                            DecoderUtils.KVCacheNames kvNames,
+                                            ModelIOConfig.KVCacheNames kvNames,
                                             long prefillSeqLen) {
         this.turboKeyNames = new ArrayList<>(kvNames.keyNames);
         this.turboValueNames = new ArrayList<>(kvNames.valueNames);
@@ -686,7 +822,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
         Random rng = new Random(42);
 
         for (String inputName : pastInputNames) {
-            INDArray empty = DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize);
+            INDArray empty = inferEmptyKvBuffer(decoder, inputName, 1, hiddenSize);
             long numH = empty.size(1);
             long hDim = empty.size(3);
             DataType kvType = empty.dataType();
@@ -732,13 +868,13 @@ public class UnifiedKvCacheManager implements KvCacheManager {
                 decoderInputMap.put(inputName, staticKvBuffers.get(inputName));
             } else {
                 decoderInputMap.put(inputName,
-                        DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                        inferEmptyKvBuffer(decoder, inputName, 1, hiddenSize));
             }
         }
     }
 
     private void scatterTurboQuantEntries(Map<String, INDArray> decoderOutputs,
-                                           DecoderUtils.KVCacheNames kvNames,
+                                           ModelIOConfig.KVCacheNames kvNames,
                                            int numEntries) {
         if (turboKeyNames != null) {
             for (String keyName : kvNames.keyNames) {
@@ -815,7 +951,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
                 INDArray normalized = keyFloat.div(norm).reshape(1, d);
                 INDArray rotated = normalized.mmul(rotation.transpose());
 
-                float[] rotatedData = rotated.toFloatVector();
+                float[] rotatedData = rotated.dup().data().asFloat();
                 float[] reconstructed = new float[d];
                 for (int i = 0; i < d; i++) {
                     int idx = TurboQuantCodebook.quantize(rotatedData[i], codebook);
@@ -830,7 +966,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
                 double residualNorm = residual.norm2Number().doubleValue();
 
                 INDArray projected = residual.reshape(1, d).mmul(qjl.transpose());
-                float[] projData = projected.toFloatVector();
+                float[] projData = projected.dup().data().asFloat();
                 byte[] signs = new byte[d];
                 for (int i = 0; i < d; i++) {
                     signs[i] = (byte) (projData[i] >= 0 ? 1 : -1);
@@ -880,7 +1016,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
                 INDArray normalized = valFloat.div(norm).reshape(1, d);
                 INDArray rotated = normalized.mmul(rotation.transpose());
 
-                float[] rotatedData = rotated.toFloatVector();
+                float[] rotatedData = rotated.dup().data().asFloat();
                 byte[] indices = new byte[d];
                 for (int i = 0; i < d; i++) {
                     indices[i] = (byte) TurboQuantCodebook.quantize(rotatedData[i], codebook);
@@ -907,10 +1043,13 @@ public class UnifiedKvCacheManager implements KvCacheManager {
         int H = (int) numHeads;
 
         for (int h = 0; h < H; h++) {
+            // Bulk-fetch all norms for this head/range in one transfer instead of per-token getFloat
+            INDArray normsSlice = normsBuf.get(NDArrayIndex.point(0), NDArrayIndex.point(h),
+                    NDArrayIndex.interval(startPos, endPos));
+            float[] normsArr = normsSlice.dup().data().asFloat();
+
             for (long t = startPos; t < endPos; t++) {
-                INDArray idxVec = indicesBuf.get(NDArrayIndex.point(0), NDArrayIndex.point(h),
-                        NDArrayIndex.point(t), NDArrayIndex.all());
-                float norm = normsBuf.getFloat(0, h, t);
+                float norm = normsArr[(int)(t - startPos)];
 
                 if (Math.abs(norm) < 1e-10) {
                     deqBuf.get(NDArrayIndex.point(0), NDArrayIndex.point(h),
@@ -918,9 +1057,14 @@ public class UnifiedKvCacheManager implements KvCacheManager {
                     continue;
                 }
 
+                // Bulk-fetch index vector for this token in one transfer instead of d scalar getInt calls
+                INDArray idxVec = indicesBuf.get(NDArrayIndex.point(0), NDArrayIndex.point(h),
+                        NDArrayIndex.point(t), NDArrayIndex.all());
+                int[] idxData = idxVec.dup().data().asInt();
+
                 float[] dequantized = new float[d];
                 for (int i = 0; i < d; i++) {
-                    int idx = idxVec.getInt(i) & 0xFF;
+                    int idx = idxData[i] & 0xFF;
                     dequantized[i] = TurboQuantCodebook.dequantize(idx, codebook);
                 }
 
@@ -942,7 +1086,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     // ══════════════════════════════════════════════════════════════
 
     private void initPagedFromPrefill(Map<String, INDArray> prefillOutputs,
-                                       DecoderUtils.KVCacheNames kvNames,
+                                       ModelIOConfig.KVCacheNames kvNames,
                                        long prefillSeqLen) {
         this.numLayers = kvNames.keyNames.size();
         this.nameToLayerIndex = new HashMap<>();
@@ -1012,7 +1156,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
         if (numLayers == 0) return;
 
         String firstName = pastInputNames.get(0);
-        INDArray empty = DecoderUtils.createEmptyKvCache(decoder, firstName, 1, hiddenSize);
+        INDArray empty = inferEmptyKvBuffer(decoder, firstName, 1, hiddenSize);
         this.numHeads = empty.size(1);
         this.headDim = empty.size(3);
         this.kvDataType = empty.dataType();
@@ -1047,7 +1191,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     }
 
     private void scatterPagedEntries(Map<String, INDArray> decoderOutputs,
-                                      DecoderUtils.KVCacheNames kvNames,
+                                      ModelIOConfig.KVCacheNames kvNames,
                                       int numEntries) {
         for (int i = 0; i < numEntries; i++) {
             for (int layer = 0; layer < numLayers; layer++) {
@@ -1215,8 +1359,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
         if (buffers != null) {
             for (INDArray buf : buffers.values()) {
                 if (buf != null && !buf.wasClosed()) {
-                    buf.setCloseable(true);
-                    buf.close();
+                    SameDiffMemoryUtils.safeClose(buf);
                 }
             }
         }

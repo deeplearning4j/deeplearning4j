@@ -118,9 +118,10 @@ public class H2OEvictionPolicy implements TokenEvictionPolicy {
             summed = summed.sum(0);
         }
 
-        // Accumulate into per-position scores
+        // Accumulate into per-position scores — bulk D2H transfer avoids O(seqLen) JNI calls
+        float[] summedValues = summed.toFloatVector();
         for (int k = 0; k < len; k++) {
-            cumulativeScores[layerIdx][k] += summed.getFloat(k);
+            cumulativeScores[layerIdx][k] += summedValues[k];
         }
 
         log.trace("H2O updateScores layer={}, keyLen={}", layerIdx, keyLen);

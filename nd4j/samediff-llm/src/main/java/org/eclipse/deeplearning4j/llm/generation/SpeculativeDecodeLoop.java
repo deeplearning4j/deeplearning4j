@@ -110,7 +110,7 @@ public class SpeculativeDecodeLoop {
             SameDiff decoder,
             List<String> decoderInputNames,
             String logitsOutputName,
-            DecoderUtils.KVCacheNames kvCacheNames,
+            ModelIOConfig.KVCacheNames kvCacheNames,
             int batchSize,
             long hiddenSize) {
 
@@ -132,14 +132,14 @@ public class SpeculativeDecodeLoop {
             } else if (inputName.equals("attention_mask")) {
                 probeInputs.put(inputName, Nd4j.ones(DataType.LONG, 1, probeTotalSeqLen));
             } else if (inputName.equals("_causal_mask")) {
-                probeInputs.put(inputName, DecoderUtils.buildCausalMask(1, probeSeqLen, probeTotalSeqLen));
+                probeInputs.put(inputName, ModelIOConfig.buildCausalMask(1, probeSeqLen, probeTotalSeqLen));
             } else if (inputName.equals("position_ids")) {
                 probeInputs.put(inputName, Nd4j.arange(probePastSeqLen, probePastSeqLen + probeSeqLen)
                         .reshape(1, probeSeqLen).castTo(DataType.LONG));
             } else if (inputName.startsWith("past_key_values.")) {
                 // Create minimal KV cache with seqLen=1
-                probeInputs.put(inputName, DecoderUtils.createEmptyKvCache(
-                        decoder, inputName, 1, hiddenSize, probePastSeqLen));
+                probeInputs.put(inputName, ModelIOConfig.createEmptyKvCache(
+                        decoder, inputName, 1, hiddenSize));
             }
         }
 
@@ -151,10 +151,7 @@ public class SpeculativeDecodeLoop {
 
             // Clean up probe outputs
             for (INDArray arr : outputs.values()) {
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
+                SameDiffMemoryUtils.safeClose(arr);
             }
             return true;
         } catch (Exception e) {
@@ -166,11 +163,7 @@ public class SpeculativeDecodeLoop {
         } finally {
             // Clean up probe inputs
             for (var entry : probeInputs.entrySet()) {
-                INDArray arr = entry.getValue();
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
+                SameDiffMemoryUtils.safeClose(entry.getValue());
             }
             decoder.clearPlaceholders(false);
             // Reset the session to clear any stale shape caches and DynamicShapePlanExecutor
@@ -210,7 +203,7 @@ public class SpeculativeDecodeLoop {
             SameDiff decoder,
             List<String> decoderInputNames,
             String logitsOutputName,
-            DecoderUtils.KVCacheNames kvCacheNames,
+            ModelIOConfig.KVCacheNames kvCacheNames,
             Map<String, INDArray> kvCache,
             long pastSeqLen,
             int batchSize,
@@ -274,7 +267,7 @@ public class SpeculativeDecodeLoop {
             } else if (inputName.equals("attention_mask")) {
                 decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSeqLen));
             } else if (inputName.equals("_causal_mask")) {
-                decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(batchSize, currentSeqLen, totalSeqLen));
+                decoderInputMap.put(inputName, ModelIOConfig.buildCausalMask(batchSize, currentSeqLen, totalSeqLen));
             } else if (inputName.equals("position_ids")) {
                 INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
                         .reshape(1, currentSeqLen).castTo(DataType.LONG);
@@ -284,7 +277,7 @@ public class SpeculativeDecodeLoop {
                 if (kvCache.containsKey(presentName)) {
                     decoderInputMap.put(inputName, kvCache.get(presentName));
                 } else {
-                    decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(decoder, inputName, batchSize, hiddenSize));
+                    decoderInputMap.put(inputName, ModelIOConfig.createEmptyKvCache(decoder, inputName, batchSize, hiddenSize));
                 }
             }
         }
@@ -313,20 +306,14 @@ public class SpeculativeDecodeLoop {
                 cooldownRemaining = COOLDOWN_STEPS;
             }
             // Clean up inputs we created
-            tokenTensor.setCloseable(true);
-            tokenTensor.close();
+            SameDiffMemoryUtils.safeClose(tokenTensor);
             embedTokens.clearPlaceholders(false);
             for (var entry : decoderInputMap.entrySet()) {
                 String name = entry.getKey();
-                INDArray arr = entry.getValue();
                 if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
+                SameDiffMemoryUtils.safeClose(entry.getValue());
             }
-            embeddings.setCloseable(true);
-            embeddings.close();
+            SameDiffMemoryUtils.safeClose(embeddings);
             decoder.clearPlaceholders(false);
             recordSpecTiming(specStepStartMs, embedTimeMs, decoderTimeMs);
             return null;
@@ -340,23 +327,21 @@ public class SpeculativeDecodeLoop {
             return null;
         }
 
-        INDArray logits = logitsRaw.dup();
-
         // logits shape: [batchSize, seqLen, vocabSize] or [batchSize, vocabSize]
         // We need logits for each position to verify speculation
         // For batch=1: extract per-position logits and verify
         int vocabSize;
         float[][] logitsPerPosition;
 
-        if (logits.rank() == 3) {
-            vocabSize = (int) logits.size(2);
+        if (logitsRaw.rank() == 3) {
+            vocabSize = (int) logitsRaw.size(2);
             logitsPerPosition = new float[seqLen][];
             for (int p = 0; p < seqLen; p++) {
-                logitsPerPosition[p] = logits.get(
+                logitsPerPosition[p] = logitsRaw.get(
                         NDArrayIndex.point(0),
                         NDArrayIndex.point(p),
                         NDArrayIndex.all()
-                ).dup().toFloatVector();
+                ).toFloatVector();
             }
         } else {
             // Rank 2: only last position logits available, can't verify
@@ -434,22 +419,15 @@ public class SpeculativeDecodeLoop {
         }
 
         // Cleanup
-        logits.close();
-        tokenTensor.setCloseable(true);
-        tokenTensor.close();
+        SameDiffMemoryUtils.safeClose(tokenTensor);
         embedTokens.clearPlaceholders(false);
 
         for (var entry : decoderInputMap.entrySet()) {
             String name = entry.getKey();
-            INDArray arr = entry.getValue();
             if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
-            if (arr != null && !arr.wasClosed()) {
-                arr.setCloseable(true);
-                arr.close();
-            }
+            SameDiffMemoryUtils.safeClose(entry.getValue());
         }
-        embeddings.setCloseable(true);
-        embeddings.close();
+        SameDiffMemoryUtils.safeClose(embeddings);
         decoder.clearPlaceholders(false);
 
         // Reset failure counter on successful speculation

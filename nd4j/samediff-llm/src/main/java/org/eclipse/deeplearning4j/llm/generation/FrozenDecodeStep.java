@@ -73,7 +73,7 @@ public class FrozenDecodeStep implements AutoCloseable {
     private final long maxKvLen;
     private final long hiddenSize;
     private final String logitsOutputName;
-    private final DecoderUtils.KVCacheNames kvNames;
+    private final ModelIOConfig.KVCacheNames kvNames;
     private final List<String> decoderInputNames;
     private final ModelIOConfig ioConfig;
 
@@ -116,7 +116,7 @@ public class FrozenDecodeStep implements AutoCloseable {
         this.logitsOutputName = ioConfig.getLogitsOutputName();
         this.kvNames = ioConfig.getKvCacheNames() != null
                 ? ioConfig.getKvCacheNames()
-                : DecoderUtils.findKVCacheOutputNames(decoder);
+                : ModelIOConfig.findKVCacheOutputNames(decoder);
         this.decoderInputNames = decoder.inputs();
         this.compiled = false;
         this.stepCount = 0;
@@ -146,7 +146,7 @@ public class FrozenDecodeStep implements AutoCloseable {
      * @param kvNames KV cache output names
      */
     public FrozenDecodeStep(SameDiff decoder, int seqLen, long maxKvLen, long hiddenSize,
-                            String logitsOutputName, DecoderUtils.KVCacheNames kvNames) {
+                            String logitsOutputName, ModelIOConfig.KVCacheNames kvNames) {
         this(decoder, seqLen, maxKvLen, hiddenSize,
                 ModelIOConfig.builder()
                         .logitsOutputName(logitsOutputName)
@@ -468,8 +468,13 @@ public class FrozenDecodeStep implements AutoCloseable {
                 NDArrayIndex.interval(maskLen - seqLen, maskLen)).assign(1);
 
         // Position IDs: [1, seqLen] — consecutive from cachePos
-        for (int i = 0; i < seqLen; i++) {
-            reusablePositionIds.putScalar(0, i, cachePos + i);
+        if (seqLen == 1) {
+            reusablePositionIds.putScalar(0, 0, cachePos);
+        } else {
+            // Bulk-set via arange to avoid O(seqLen) JNI calls during prefill
+            INDArray posRange = Nd4j.arange(cachePos, cachePos + seqLen).castTo(DataType.LONG).reshape(1, seqLen);
+            reusablePositionIds.assign(posRange);
+            posRange.close();
         }
 
         // 4D attention bias: [1, 1, seqLen, maxKvLen + seqLen]
@@ -486,11 +491,11 @@ public class FrozenDecodeStep implements AutoCloseable {
             int rowOffset = q * totalLen;
             // Past positions: valid up to cachePos, masked after
             for (int k = (int)cachePos; k < (int)maxKvLen; k++) {
-                biasData[rowOffset + k] = DecoderUtils.MASK_FILL;
+                biasData[rowOffset + k] = ModelIOConfig.MASK_FILL;
             }
             // Current positions: causal — future tokens masked
             for (int k = q + 1; k < seqLen; k++) {
-                biasData[rowOffset + (int)maxKvLen + k] = DecoderUtils.MASK_FILL;
+                biasData[rowOffset + (int)maxKvLen + k] = ModelIOConfig.MASK_FILL;
             }
         }
 
@@ -574,26 +579,11 @@ public class FrozenDecodeStep implements AutoCloseable {
 
     @Override
     public void close() {
-        if (reusableEmbeddings != null && !reusableEmbeddings.wasClosed()) {
-            reusableEmbeddings.setCloseable(true);
-            reusableEmbeddings.close();
-        }
-        if (reusableInputIds != null && !reusableInputIds.wasClosed()) {
-            reusableInputIds.setCloseable(true);
-            reusableInputIds.close();
-        }
-        if (reusableAttentionMask != null && !reusableAttentionMask.wasClosed()) {
-            reusableAttentionMask.setCloseable(true);
-            reusableAttentionMask.close();
-        }
-        if (reusableAttnBias != null && !reusableAttnBias.wasClosed()) {
-            reusableAttnBias.setCloseable(true);
-            reusableAttnBias.close();
-        }
-        if (reusablePositionIds != null && !reusablePositionIds.wasClosed()) {
-            reusablePositionIds.setCloseable(true);
-            reusablePositionIds.close();
-        }
+        SameDiffMemoryUtils.safeClose(reusableEmbeddings);
+        SameDiffMemoryUtils.safeClose(reusableInputIds);
+        SameDiffMemoryUtils.safeClose(reusableAttentionMask);
+        SameDiffMemoryUtils.safeClose(reusableAttnBias);
+        SameDiffMemoryUtils.safeClose(reusablePositionIds);
         // Remove placeholder override so decoder can be reused normally
         String attnReformatNode = ioConfig.getAttnMaskReformatOutput();
         if (attnReformatNode != null && decoder.getPlaceholderOverrides().contains(attnReformatNode)) {

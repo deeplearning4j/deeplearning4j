@@ -110,10 +110,7 @@ public class StaticKvCacheDecodeLoop {
                     : (logits.rank() == 2 ? logits.size(0) : 1);
 
             if (tokenOutput == null || outputBatchSize != batchSize || tokenOutput.wasClosed()) {
-                if (tokenOutput != null && !tokenOutput.wasClosed()) {
-                    tokenOutput.setCloseable(true);
-                    tokenOutput.close();
-                }
+                SameDiffMemoryUtils.safeClose(tokenOutput);
                 tokenOutput = Nd4j.createUninitialized(DataType.INT64, batchSize);
                 outputBatchSize = batchSize;
             }
@@ -140,10 +137,7 @@ public class StaticKvCacheDecodeLoop {
         }
 
         void close() {
-            if (tokenOutput != null && !tokenOutput.wasClosed()) {
-                tokenOutput.setCloseable(true);
-                tokenOutput.close();
-            }
+            SameDiffMemoryUtils.safeClose(tokenOutput);
         }
     }
 
@@ -244,9 +238,9 @@ public class StaticKvCacheDecodeLoop {
         // Resolve I/O names via ModelIOConfig (auto-discover if not provided)
         ModelIOConfig resolvedIOConfig = ioConfig != null ? ioConfig : ModelIOConfig.discover(decoder);
         String logitsOutputName = resolvedIOConfig.getLogitsOutputName();
-        DecoderUtils.KVCacheNames kvNames = resolvedIOConfig.getKvCacheNames() != null
+        ModelIOConfig.KVCacheNames kvNames = resolvedIOConfig.getKvCacheNames() != null
                 ? resolvedIOConfig.getKvCacheNames()
-                : DecoderUtils.findKVCacheOutputNames(decoder);
+                : ModelIOConfig.findKVCacheOutputNames(decoder);
         // Get ALL external inputs — placeholders, constants, variables, and array-type
         // variables that the graph reads. This matches what the DSP compiler discovers.
         List<String> decoderInputNames = decoder.externalInputs();
@@ -441,7 +435,7 @@ public class StaticKvCacheDecodeLoop {
 
             Map<String, INDArray> decoderInputMap;
             try {
-                decoderInputMap = DecoderUtils.buildDecoderInputMap(
+                decoderInputMap = DecoderInputBuilder.buildDecoderInputMap(
                         resolvedIOConfig, decoderInputNames, decoder,
                         currentEmbeddings, currentInputIds,
                         pastSeqLen, currentSeqLen,
@@ -553,32 +547,19 @@ public class StaticKvCacheDecodeLoop {
 
                 // Close present KV outputs — scatter already copied data into static buffers.
                 // Without this, 60 tensors × ~4.5MB = ~270MB leaked per step.
-                int kvClosed = 0;
-                long kvClosedBytes = 0;
-                int kvSkippedClosed = 0, kvSkippedNull = 0;
-                for (String pn : kvNames.keyNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv == null) { kvSkippedNull++; continue; }
-                    if (pv.wasClosed() || pv.data() == null) { kvSkippedClosed++; continue; }
-                    long bytes = pv.data().length() * pv.data().getElementSize();
-                    pv.setCloseable(true);
-                    pv.close();
-                    kvClosed++;
-                    kvClosedBytes += bytes;
-                }
-                for (String pn : kvNames.valueNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv == null) { kvSkippedNull++; continue; }
-                    if (pv.wasClosed() || pv.data() == null) { kvSkippedClosed++; continue; }
-                    long bytes = pv.data().length() * pv.data().getElementSize();
-                    pv.setCloseable(true);
-                    pv.close();
-                    kvClosed++;
-                    kvClosedBytes += bytes;
-                }
-                if (step < 5 || step % 10 == 0) {
-                    log.info("  [KV-CLOSE] step={} closed={} ({}MB) skippedClosed={} skippedNull={}",
-                            step, kvClosed, kvClosedBytes / (1024 * 1024), kvSkippedClosed, kvSkippedNull);
+                //
+                // IMPORTANT: When useDirect=true, the KV output arrays are managed by the
+                // DSP executor's zeroCopyOutputCache. Force-closing them (setCloseable(true) +
+                // close()) destroys the cache entries, causing the cache to be rebuilt every
+                // step — allocating 61 new output arrays (~122MB) that never get freed.
+                // Skip close when direct mode is active; the cache handles their lifecycle.
+                if (!useDirect) {
+                    for (String pn : kvNames.keyNames) {
+                        SameDiffMemoryUtils.safeClose(decoderOutputs.get(pn));
+                    }
+                    for (String pn : kvNames.valueNames) {
+                        SameDiffMemoryUtils.safeClose(decoderOutputs.get(pn));
+                    }
                 }
             } else {
                 // Step 0 (prefill): initialize KV cache via KvCacheManager
@@ -610,12 +591,10 @@ public class StaticKvCacheDecodeLoop {
                         && prefillSession.getDynamicShapePlanExecutor().getCurrentPlan() != null;
                 if (!prefillDspActive) {
                     for (String pn : kvNames.keyNames) {
-                        INDArray pv = decoderOutputs.get(pn);
-                        if (pv != null) { pv.setCloseable(true); pv.close(); }
+                        SameDiffMemoryUtils.safeClose(decoderOutputs.get(pn));
                     }
                     for (String pn : kvNames.valueNames) {
-                        INDArray pv = decoderOutputs.get(pn);
-                        if (pv != null) { pv.setCloseable(true); pv.close(); }
+                        SameDiffMemoryUtils.safeClose(decoderOutputs.get(pn));
                     }
                 }
 
@@ -837,10 +816,7 @@ public class StaticKvCacheDecodeLoop {
                 if (resolvedIOConfig.isKvCacheInput(name)) continue;
                 // Skip arrays managed by the reusable inputs cache
                 if (reusableInputs.containsValue(arr)) continue;
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
+                SameDiffMemoryUtils.safeClose(arr);
             }
             decoder.clearPlaceholders(false);
 
@@ -887,8 +863,7 @@ public class StaticKvCacheDecodeLoop {
                         nops.streamSynchronize(execStr);
                     }
                 }
-                contiguousEmbed.setCloseable(true);
-                contiguousEmbed.close();
+                SameDiffMemoryUtils.safeClose(contiguousEmbed);
             }
             currentEmbeddings = reusableEmbeddings;
             // Reusable fixed-address inputIds: allocate once, update value via putScalar
@@ -899,17 +874,14 @@ public class StaticKvCacheDecodeLoop {
                 Nd4j.getAffinityManager().ensureLocation(reusableInputIds,
                         org.nd4j.linalg.api.concurrency.AffinityManager.Location.DEVICE);
             }
-            if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
-                currentInputIds.setCloseable(true);
-                currentInputIds.close();
+            if (currentInputIds != null && currentInputIds != reusableInputIds) {
+                SameDiffMemoryUtils.safeClose(currentInputIds);
             }
             currentInputIds = reusableInputIds;
             // prevEmbeddings IS reusableEmbeddings after step 1 — don't close it
             if (prevEmbeddings != null && prevEmbeddings != reusableEmbeddings
-                    && prevEmbeddings != prefillEmbeddings
-                    && !prevEmbeddings.wasClosed()) {
-                prevEmbeddings.setCloseable(true);
-                prevEmbeddings.close();
+                    && prevEmbeddings != prefillEmbeddings) {
+                SameDiffMemoryUtils.safeClose(prevEmbeddings);
             }
             pastSeqLen += currentSeqLen;
 
@@ -919,27 +891,19 @@ public class StaticKvCacheDecodeLoop {
                         maxSpeculativeTokens, maxSpeculativeTokens + 1);
                 // Clean up step 0's reusable inputs
                 for (INDArray arr : reusableInputs.values()) {
-                    if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
+                    SameDiffMemoryUtils.safeClose(arr);
                 }
                 reusableInputs.clear();
                 // Close reusable fixed-address decode buffers
-                if (reusableEmbeddings != null && !reusableEmbeddings.wasClosed()) {
-                    reusableEmbeddings.setCloseable(true);
-                    reusableEmbeddings.close();
-                }
-                if (reusableInputIds != null && !reusableInputIds.wasClosed()) {
-                    reusableInputIds.setCloseable(true);
-                    reusableInputIds.close();
-                }
+                SameDiffMemoryUtils.safeClose(reusableEmbeddings);
+                SameDiffMemoryUtils.safeClose(reusableInputIds);
                 // Close any residual non-reusable decode buffers
                 if (currentEmbeddings != null && currentEmbeddings != reusableEmbeddings
-                        && currentEmbeddings != prefillEmbeddings && !currentEmbeddings.wasClosed()) {
-                    currentEmbeddings.setCloseable(true);
-                    currentEmbeddings.close();
+                        && currentEmbeddings != prefillEmbeddings) {
+                    SameDiffMemoryUtils.safeClose(currentEmbeddings);
                 }
-                if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
-                    currentInputIds.setCloseable(true);
-                    currentInputIds.close();
+                if (currentInputIds != null && currentInputIds != reusableInputIds) {
+                    SameDiffMemoryUtils.safeClose(currentInputIds);
                 }
                 reusableTokenSampler.close();
                 // Re-query maxKvLen — it was -1 at loop entry (before prefill initialized the cache)
@@ -961,29 +925,21 @@ public class StaticKvCacheDecodeLoop {
 
         // Release reusable input arrays
         for (INDArray arr : reusableInputs.values()) {
-            if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
+            SameDiffMemoryUtils.safeClose(arr);
         }
         reusableInputs.clear();
         // Close fixed-address reusable buffers (allocated once, reused across all decode steps)
-        if (reusableEmbeddings != null && !reusableEmbeddings.wasClosed()) {
-            reusableEmbeddings.setCloseable(true);
-            reusableEmbeddings.close();
-        }
-        if (reusableInputIds != null && !reusableInputIds.wasClosed()) {
-            reusableInputIds.setCloseable(true);
-            reusableInputIds.close();
-        }
+        SameDiffMemoryUtils.safeClose(reusableEmbeddings);
+        SameDiffMemoryUtils.safeClose(reusableInputIds);
         // currentEmbeddings and currentInputIds alias the reusable buffers after step 1;
         // close only if they still point to a different object (e.g. prefillEmbeddings, or
         // the old non-reusable buffers from before this fix).
         if (currentEmbeddings != null && currentEmbeddings != reusableEmbeddings
-                && currentEmbeddings != prefillEmbeddings && !currentEmbeddings.wasClosed()) {
-            currentEmbeddings.setCloseable(true);
-            currentEmbeddings.close();
+                && currentEmbeddings != prefillEmbeddings) {
+            SameDiffMemoryUtils.safeClose(currentEmbeddings);
         }
-        if (currentInputIds != null && currentInputIds != reusableInputIds && !currentInputIds.wasClosed()) {
-            currentInputIds.setCloseable(true);
-            currentInputIds.close();
+        if (currentInputIds != null && currentInputIds != reusableInputIds) {
+            SameDiffMemoryUtils.safeClose(currentInputIds);
         }
         reusableTokenSampler.close();
 
@@ -1097,9 +1053,9 @@ public class StaticKvCacheDecodeLoop {
 
         // Create and compile frozen decode step with seqLen=K+1, using ModelIOConfig
         String logitsOutputName = specIOConfig.getLogitsOutputName();
-        DecoderUtils.KVCacheNames kvNames = specIOConfig.getKvCacheNames() != null
+        ModelIOConfig.KVCacheNames kvNames = specIOConfig.getKvCacheNames() != null
                 ? specIOConfig.getKvCacheNames()
-                : DecoderUtils.findKVCacheOutputNames(decoder);
+                : ModelIOConfig.findKVCacheOutputNames(decoder);
         FrozenDecodeStep frozenStep = new FrozenDecodeStep(
                 decoder, mergedSeqLen, maxKvLen, resolvedHiddenSize,
                 specIOConfig);
@@ -1495,7 +1451,7 @@ public class StaticKvCacheDecodeLoop {
     }
 
     private void logPresentKvDiagnostics(int step, Map<String, INDArray> decoderOutputs,
-                                         DecoderUtils.KVCacheNames kvNames) {
+                                         ModelIOConfig.KVCacheNames kvNames) {
         for (String pn : kvNames.keyNames) {
             if (pn.contains(".0")) {
                 INDArray pv = decoderOutputs.get(pn);
