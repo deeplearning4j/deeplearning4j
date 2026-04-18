@@ -25,7 +25,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.config.LoftQConfig;
 import org.nd4j.autodiff.samediff.config.LoraConfig;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -91,24 +93,62 @@ public class LoraLayer {
     private SDVariable loraB;
 
     /**
-     * Create the LoRA variables in the SameDiff graph.
+     * Create the LoRA variables in the SameDiff graph using standard initialization.
      *
      * @param sd The SameDiff instance
      */
     public void createVariables(SameDiff sd) {
+        createVariables(sd, null);
+    }
+
+    /**
+     * Create the LoRA variables in the SameDiff graph.
+     * <p>
+     * When {@code pretrainedWeight} is non-null and the config is a {@link LoftQConfig},
+     * both A and B are initialized using the LoftQ algorithm (SVD of the quantization
+     * residual), providing a better starting point than random initialization.
+     * For all other initialization methods, {@code pretrainedWeight} is ignored.
+     *
+     * @param sd               The SameDiff instance
+     * @param pretrainedWeight The original pretrained weight matrix [outFeatures, inFeatures],
+     *                         required for LoftQ initialization; may be null otherwise
+     */
+    public void createVariables(SameDiff sd, INDArray pretrainedWeight) {
         int r = config.getR();
         DataType dtype = DataType.FLOAT;
 
-        // A matrix: [r, inFeatures] - initialized with Kaiming/Xavier
-        INDArray aInit = initializeA(r, inFeatures, dtype);
-        loraA = sd.var(namePrefix + "_lora_A", aInit);
+        String initMethod = config.getInitLoraWeights();
 
-        // B matrix: [outFeatures, r] - initialized to zeros
-        INDArray bInit = Nd4j.zeros(dtype, outFeatures, r);
-        loraB = sd.var(namePrefix + "_lora_B", bInit);
+        if ("loftq".equalsIgnoreCase(initMethod) && config instanceof LoftQConfig && pretrainedWeight != null) {
+            // LoftQ initialization: derive both A and B from SVD of quantization residual
+            LoftQConfig loftQConfig = (LoftQConfig) config;
+            Pair<INDArray, INDArray> abPair = LoftQInitializer.initialize(pretrainedWeight, r, loftQConfig);
+            INDArray bInit = abPair.getFirst();   // [outFeatures, r]
+            INDArray aInit = abPair.getSecond();  // [r, inFeatures]
 
-        log.debug("Created LoRA layer '{}': A[{},{}], B[{},{}], rank={}, scaling={}",
-            namePrefix, r, inFeatures, outFeatures, r, r, config.getScaling());
+            loraA = sd.var(namePrefix + "_lora_A", aInit);
+            loraB = sd.var(namePrefix + "_lora_B", bInit);
+
+            log.info("LoftQ-initialized LoRA layer '{}': A[{},{}], B[{},{}], rank={}, iters={}",
+                namePrefix, r, inFeatures, outFeatures, r, r, loftQConfig.getNumIterations());
+        } else {
+            // Standard initialization
+            if ("loftq".equalsIgnoreCase(initMethod) && pretrainedWeight == null) {
+                log.warn("LoftQ requested for '{}' but no pretrained weight provided; " +
+                    "falling back to kaiming_uniform initialization", namePrefix);
+            }
+
+            // A matrix: [r, inFeatures] - initialized with configured method
+            INDArray aInit = initializeA(r, inFeatures, dtype);
+            loraA = sd.var(namePrefix + "_lora_A", aInit);
+
+            // B matrix: [outFeatures, r] - initialized to zeros
+            INDArray bInit = Nd4j.zeros(dtype, outFeatures, r);
+            loraB = sd.var(namePrefix + "_lora_B", bInit);
+
+            log.debug("Created LoRA layer '{}': A[{},{}], B[{},{}], rank={}, scaling={}",
+                namePrefix, r, inFeatures, outFeatures, r, r, config.getScaling());
+        }
     }
 
     /**
@@ -125,6 +165,7 @@ public class LoraLayer {
                 return Nd4j.randn(dtype, r, inFeatures).muli(config.getInitStd());
 
             case "kaiming_uniform":
+            case "loftq":  // LoftQ fallback (no pretrained weight) uses kaiming_uniform
             default:
                 // Kaiming uniform initialization
                 double bound = Math.sqrt(6.0 / inFeatures);
@@ -195,17 +236,34 @@ public class LoraLayer {
     }
 
     /**
-     * Create a LoRA layer for a given weight matrix.
+     * Create a LoRA layer for a given weight matrix using standard initialization.
      *
-     * @param sd         SameDiff instance
-     * @param namePrefix Name prefix for the LoRA variables
-     * @param config     LoRA configuration
-     * @param inFeatures Input dimension
+     * @param sd          SameDiff instance
+     * @param namePrefix  Name prefix for the LoRA variables
+     * @param config      LoRA configuration
+     * @param inFeatures  Input dimension
      * @param outFeatures Output dimension
      * @return The created LoRA layer
      */
     public static LoraLayer create(SameDiff sd, String namePrefix, LoraConfig config,
                                    int inFeatures, int outFeatures) {
+        return create(sd, namePrefix, config, inFeatures, outFeatures, null);
+    }
+
+    /**
+     * Create a LoRA layer for a given weight matrix, optionally using LoftQ initialization.
+     *
+     * @param sd               SameDiff instance
+     * @param namePrefix       Name prefix for the LoRA variables
+     * @param config           LoRA configuration (use {@link LoftQConfig} to enable LoftQ init)
+     * @param inFeatures       Input dimension
+     * @param outFeatures      Output dimension
+     * @param pretrainedWeight The original weight matrix [outFeatures, inFeatures] for LoftQ;
+     *                         pass null to use standard initialization
+     * @return The created LoRA layer
+     */
+    public static LoraLayer create(SameDiff sd, String namePrefix, LoraConfig config,
+                                   int inFeatures, int outFeatures, INDArray pretrainedWeight) {
         LoraLayer layer = LoraLayer.builder()
             .namePrefix(namePrefix)
             .config(config)
@@ -213,7 +271,7 @@ public class LoraLayer {
             .outFeatures(outFeatures)
             .build();
 
-        layer.createVariables(sd);
+        layer.createVariables(sd, pretrainedWeight);
         return layer;
     }
 }

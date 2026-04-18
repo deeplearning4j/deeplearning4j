@@ -142,11 +142,12 @@ public class Cast extends BaseDynamicTransformOp {
      */
     @Override
     public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
-        if (oc == null || oc.numInputArguments() < 1) {
-            return null;
+        INDArray input = null;
+        if (oc != null && oc.numInputArguments() >= 1) {
+            input = oc.getInputArray(0);
+        } else if (numInputArguments() >= 1) {
+            input = getInputArgument(0);
         }
-
-        INDArray input = oc.getInputArray(0);
         if (input == null) {
             return null;
         }
@@ -156,9 +157,11 @@ public class Cast extends BaseDynamicTransformOp {
         // Get target dtype from iArgs or field
         DataType dtype = this.typeDst;
         if (dtype == null) {
-            List<Long> iArgs = oc.getIArguments();
+            List<Long> iArgs = oc != null ? oc.getIArguments() : null;
             if (iArgs != null && !iArgs.isEmpty()) {
                 dtype = FlatBuffersMapper.getDataTypeFromByte(iArgs.get(0).byteValue());
+            } else if (!this.iArguments.isEmpty()) {
+                dtype = FlatBuffersMapper.getDataTypeFromByte(this.iArguments.get(0).byteValue());
             }
         }
         if (dtype == null) {
@@ -166,9 +169,11 @@ public class Cast extends BaseDynamicTransformOp {
         }
 
         long[] strides = Nd4j.getStrides(outputShape, 'c');
-        boolean isEmpty = false;
-        for (long dim : outputShape) {
-            if (dim == 0) { isEmpty = true; break; }
+        boolean isEmpty = input.isEmpty();
+        if (!isEmpty) {
+            for (long dim : outputShape) {
+                if (dim == 0) { isEmpty = true; break; }
+            }
         }
         LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
         DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);

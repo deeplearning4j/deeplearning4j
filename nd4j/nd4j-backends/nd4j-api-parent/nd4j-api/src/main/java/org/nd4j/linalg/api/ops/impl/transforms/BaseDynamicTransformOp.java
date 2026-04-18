@@ -78,6 +78,11 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
         long[] xShape = x.shape();
         long[] yShape = y.shape();
 
+        // If either input is empty, the output is empty (TF broadcast semantics)
+        if (x.isEmpty() || y.isEmpty()) {
+            return null; // Fall back to C++ which handles empty array broadcasting correctly
+        }
+
         // Shape.broadcastOutputShape has a bug with rank-1 arrays, so only use Java-side
         // inference when ranks are equal (most common case during inference)
         if (xShape.length != yShape.length) {

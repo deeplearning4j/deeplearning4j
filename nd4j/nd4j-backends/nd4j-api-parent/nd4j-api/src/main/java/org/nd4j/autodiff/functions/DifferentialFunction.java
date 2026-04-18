@@ -321,7 +321,10 @@ public abstract class DifferentialFunction {
     protected Integer getIntValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
             Object value = properties.get(propertyName);
-            if (value instanceof Number) {
+            // Only convert integer-typed numbers to Integer. Floating-point values (Double, Float)
+            // must NOT be truncated — same class of bug as getLongValueFromProperty.
+            if (value instanceof Long || value instanceof Integer
+                    || value instanceof Short || value instanceof Byte) {
                 return ((Number) value).intValue();
             }
             if (value instanceof Boolean) {
@@ -336,7 +339,14 @@ public abstract class DifferentialFunction {
     protected Long getLongValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
             Object value = properties.get(propertyName);
-            if (value instanceof Number) {
+            // Only convert integer-typed numbers to Long. Floating-point values (Double, Float)
+            // must NOT be truncated — if a property like "step" holds -0.5, casting to long yields 0,
+            // which corrupts iArguments and triggers "delta should not be equal to zero" in range.cpp.
+            // The caller (DynamicCustomOp.setPropertiesForFunction) iterates both DOUBLE and INT64
+            // descriptors with the same arg name; returning null here prevents the INT64 path from
+            // overwriting tArguments with a zero-truncated iArgument.
+            if (value instanceof Long || value instanceof Integer
+                    || value instanceof Short || value instanceof Byte) {
                 return ((Number) value).longValue();
             }
             if (value instanceof Boolean) {

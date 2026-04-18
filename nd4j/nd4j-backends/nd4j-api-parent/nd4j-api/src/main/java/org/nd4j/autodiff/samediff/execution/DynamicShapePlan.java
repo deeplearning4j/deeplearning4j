@@ -548,8 +548,9 @@ public class DynamicShapePlan implements Closeable {
         int numLoopRegions = (loopRegions != null) ? loopRegions.length : 0;
         size += 4 + numLoopRegions * 24; // count(int32) + 6 ints per region
 
-        // Requested outputs
-        size += outputNameToSlotIndex.size() * 4;
+        // Requested outputs — one slot-index per requestedOutputs entry (may be -1 if unresolved).
+        // Header numRequestedOutputs and body must match; iterate on requestedOutputs in both.
+        size += requestedOutputs.size() * 4;
 
         // External input names (v4+): count + per-name (int32 len + UTF-8 bytes)
         byte[][] extNameBytes = new byte[externalInputKeys.length][];
@@ -568,7 +569,7 @@ public class DynamicShapePlan implements Closeable {
         buf.putInt(slots.length);
         buf.putInt(totalOutputSlots);
         buf.putInt(externalInputKeys.length);
-        buf.putInt(outputNameToSlotIndex.size());
+        buf.putInt(requestedOutputs.size());
 
         // Per-slot
         for (DynamicShapeSlot slot : slots) {

@@ -69,7 +69,7 @@ public class Moments extends DynamicCustomOp {
     }
 
     public Moments(INDArray in, INDArray outMean, INDArray outStd, long... axes) {
-        super(null, new INDArray[]{in}, new INDArray[]{outMean, outStd}, null, axes);
+        super(null, new INDArray[]{in}, new INDArray[]{outMean, outStd});
         this.dimensions = axes;
         addArgs();
     }

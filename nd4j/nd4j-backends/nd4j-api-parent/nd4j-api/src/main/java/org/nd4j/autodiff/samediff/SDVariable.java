@@ -238,11 +238,17 @@ public class SDVariable implements Serializable {
      * @return Shape of the variable
      */
     public long[] getShape() {
-        if (variableType == VariableType.PLACEHOLDER  || shape != null) {
+        if (variableType == VariableType.PLACEHOLDER) {
             return shape;
         } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
+            // Prefer the actual array shape over a cached shape field.
+            // After FlatBuffers deserialization, VARIABLE/CONSTANT shape is not written to the
+            // flatbuffer (only PLACEHOLDER shape is), so the shape field is deserialized as
+            // new long[0] (empty, non-null). Fall through to getArr() to get the real shape.
             if(getArr() != null)
                 return getArr().shape();
+            if(shape != null)
+                return shape;
         }
 
         return null;

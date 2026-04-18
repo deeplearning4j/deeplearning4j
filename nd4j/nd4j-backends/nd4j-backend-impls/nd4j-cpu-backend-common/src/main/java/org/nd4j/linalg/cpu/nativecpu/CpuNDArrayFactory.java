@@ -46,6 +46,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.*;
 
+import java.lang.ref.Reference;
 import java.util.*;
 
 @Slf4j
@@ -771,6 +772,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 arraysOpaque, arraysOpaque,
                 arrays.size(),
                 dimensionsOpaque, ptrMap);
+
+        // Keep the underlying INDArrays alive until the native call completes.
+        // Without this, the JIT can eliminate the last-use of dimensionsINDArray/mapArray
+        // and the GC can free the backing native NDArray* via the DeallocatorService
+        // before shuffle() dereferences it, producing a SIGSEGV in NDArray::shapeInfo().
+        Reference.reachabilityFence(dimensionsINDArray);
+        Reference.reachabilityFence(mapArray);
+        Reference.reachabilityFence(arrays);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

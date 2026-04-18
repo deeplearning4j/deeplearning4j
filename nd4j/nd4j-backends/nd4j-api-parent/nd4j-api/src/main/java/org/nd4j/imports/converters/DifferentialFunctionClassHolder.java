@@ -596,7 +596,6 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RSubBpOp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SquaredDifferenceBpOp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or.class,
@@ -688,6 +687,12 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.random.custom.RandomPoisson.class,
                 org.nd4j.linalg.api.ops.random.custom.RandomShuffle.class,
                 org.nd4j.linalg.api.ops.random.impl.AlphaDropOut.class,
+                // DropOut (BaseRandomOp) must be registered BEFORE CustomDropOut (DynamicCustomOp)
+                // so that CustomDropOut wins in OP_NAME_MAP for the "dropout" opName.
+                // Both return "dropout" from opName(); the last one registered wins.
+                // If DropOut were registered last, FlatBuffers deserialization would reconstruct
+                // CustomDropOut ops as DropOut (losing tArgs/iArgs), breaking DSP compilation.
+                org.nd4j.linalg.api.ops.random.impl.DropOut.class,
                 CustomDropOut.class,
                 org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution.class,
                 org.nd4j.linalg.api.ops.random.impl.BinomialDistribution.class,
@@ -751,13 +756,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention.class,
                 // Norm ops
-                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinearBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwigluBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNormBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU.class,
@@ -776,7 +775,6 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.SiLUBp.class,
                 // KV cache ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize.class,
                 // LoRA / adapter ops
@@ -814,8 +812,6 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample.class,
                 // Shape ops
-                org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy.class,
-                org.nd4j.linalg.api.ops.impl.shape.SetShape.class,
                 org.nd4j.linalg.api.ops.impl.shape.CreateView.class,
                 org.nd4j.linalg.api.ops.impl.shape.OnesAs.class,
                 // Misc ops
@@ -829,19 +825,10 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor.class,
                 org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayRemove.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusBBp.class,
-                // RoPE ops
-                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPEBp.class,
-                // SiLU ops
-                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLUBp.class,
-                // Quantization
-                org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul.class,
-                // Adapter backward ops
-                org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMulBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMulBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMulBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMulBp.class,
+                // Transformer input padding ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PadInput.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PadInputBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.UnpadInput.class,
                 // Audio ops
                 org.nd4j.linalg.api.ops.impl.audio.AWeighting.class,
                 org.nd4j.linalg.api.ops.impl.audio.AudioNormalize.class,
@@ -904,8 +891,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention.class,
                 // Updater
                 org.nd4j.linalg.api.ops.impl.updaters.AdaBeliefUpdater.class,
-                // Random / dropout
-                org.nd4j.linalg.api.ops.random.impl.DropOut.class,
+                // Random / dropout backprop (DropOut is already registered above before CustomDropOut)
                 org.nd4j.linalg.api.ops.random.impl.DropOutBp.class
         ));
 

@@ -168,7 +168,7 @@ public class EvaluationUtils {
             // Then dup to C-order contiguous to ensure correct element mapping during reshape.
             // The C++ INDEX2COORDS macro uses C-order decomposition, so reshaping non-contiguous
             // F-order views directly produces scrambled data.
-            labels2d = labels.permute(0, 2, 1).dup('c');
+            labels2d = BaseEvaluation.dupSafe(labels.permute(0, 2, 1));
             labels2d = labels2d.reshape('c', labelsShape[0] * labelsShape[2], labelsShape[1]);
         }
         return labels2d;
@@ -189,7 +189,7 @@ public class EvaluationUtils {
         }
 
         INDArray oneDMask = reshapeTimeSeriesMaskToVector(outputMask);
-        float[] f = oneDMask.dup().data().asFloat();
+        float[] f = BaseEvaluation.dupSafe(oneDMask).data().asFloat();
         int[] rowsToPull = new int[f.length];
         int usedCount = 0;
         for (int i = 0; i < f.length; i++) {
@@ -220,7 +220,7 @@ public class EvaluationUtils {
             throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
 
         if (timeSeriesMask.ordering() != 'c')
-            timeSeriesMask = timeSeriesMask.dup('c');
+            timeSeriesMask = BaseEvaluation.dupSafe(timeSeriesMask);
 
         return timeSeriesMask.reshape('c', timeSeriesMask.length(), 1);
     }

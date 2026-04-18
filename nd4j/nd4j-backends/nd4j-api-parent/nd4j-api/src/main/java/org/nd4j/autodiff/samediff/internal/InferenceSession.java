@@ -298,6 +298,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected volatile DynamicShapePlan dynamicShapePlan;
     protected final ThreadLocal<DynamicShapePlanExecutor> dynamicShapePlanExecutorTl = new ThreadLocal<>();
 
+    /**
+     * When true, the current call was initiated from SameDiff.outputDirect().
+     * Propagated to DynamicShapePlanExecutor.setDirectOutputMode() in
+     * executeDynamicShapePlanBased() to gate zeroCopyOutputCache population and reuse.
+     * Set/cleared by SameDiff.outputDirect() around the is.output() call.
+     */
+    protected boolean directOutputMode = false;
+
     // ---- Conditional pool trim ----
     // During steady-state decode, the CUDA memory pool reuses freed memory without trimming.
     // Trimming every step wastes time on cudaStreamSynchronize + cudaMemPoolTrimTo when there's
@@ -324,6 +332,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      */
     public DynamicShapePlanExecutor getDynamicShapePlanExecutor() {
         return dynamicShapePlanExecutorTl.get();
+    }
+
+    /** Set whether the current call was initiated from SameDiff.outputDirect(). */
+    public void setDirectOutputMode(boolean directOutputMode) {
+        this.directOutputMode = directOutputMode;
+    }
+
+    public boolean isDirectOutputMode() {
+        return directOutputMode;
     }
 
     /**
@@ -972,6 +989,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         }
                         // Restore cross-device routing suppression before returning.
                         OpaqueDataBuffer.suppressCrossDeviceRouting(false);
+                        // Populate latestRequestedOutputsTl so that subsequent getArr() calls
+                        // on ARRAY-type output variables can find the computed values.
+                        // Without this, sd.outputAll() succeeds but variable.getArr() returns null.
+                        latestRequestedOutputsTl.get().putAll(filteredResults);
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
                 } catch (Exception e) {
@@ -1209,6 +1230,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private DynamicShapePlan getOrCompileDynamicShapePlan(ForwardExecutionDAG dag,
                                                           List<String> requestedOutputs,
                                                           boolean allowCompile) {
+        // When DSP is explicitly disabled (allowCompile=false), skip ALL plan
+        // usage including cached plans. This ensures setDspAutoCompileEnabled(false)
+        // fully disables DSP execution even if a plan was compiled earlier.
+        if (!allowCompile) {
+            return null;
+        }
+
         Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
 
         DynamicShapePlan plan = dynamicShapePlan;
@@ -1224,10 +1252,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (plan != null) {
                 dynamicShapePlan = plan;
                 return plan;
-            }
-
-            if (!allowCompile) {
-                return null;
             }
 
             log.debug("Compiling DynamicShapePlan for {} outputs", outputSet.size());
@@ -1291,6 +1315,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             executor = new DynamicShapePlanExecutor(sameDiff, mmgr);
             dynamicShapePlanExecutorTl.set(executor);
         }
+
+        // Propagate directOutputMode to the executor. This controls whether zeroCopyOutputCache
+        // is used — only safe when the caller uses the returned references directly (outputDirect),
+        // not when the caller dups them (output), which would leave the cache stale.
+        executor.setDirectOutputMode(directOutputMode);
 
         if (!executor.isNativePlanCompiled(plan)) {
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
@@ -1979,8 +2008,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                   Map<String, INDArray> placeholderValues,
                                   Map<String, SDValue> otherPlaceholderValues) {
 
-        // Use cached constant/variable values to avoid thousands of PatriciaTrie lookups per call.
-        // Constants and model weights don't change between autoregressive steps.
+        // Use cached constant values to avoid thousands of PatriciaTrie lookups per call.
+        // Constants never change, so caching is safe.
         Map<String, SDValue> constVarCache = cachedConstVarValues;
         if (constVarCache == null) {
             constVarCache = new HashMap<>();
@@ -1990,15 +2019,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     constVarCache.put(constName, SDValue.create(constValue));
                 }
             }
-            for (String varName : dag.getVariables()) {
-                INDArray varValue = getConstantOrVariable(varName);
-                if (varValue != null) {
-                    constVarCache.put(varName, SDValue.create(varValue));
-                }
-            }
             cachedConstVarValues = constVarCache;
         }
         variableValues.putAll(constVarCache);
+
+        // Variables (model weights) must be re-read every call because they can be
+        // modified externally (e.g., gradient checking perturbs weights via putScalar).
+        // Do NOT cache these — the array contents may change between calls.
+        for (String varName : dag.getVariables()) {
+            INDArray varValue = getConstantOrVariable(varName);
+            if (varValue != null) {
+                variableValues.put(varName, SDValue.create(varValue));
+            }
+        }
 
         // Initialize placeholders (these change every call)
         if (placeholderValues != null) {
@@ -2452,6 +2485,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             if (op instanceof BaseTensorOp) {
                 executeTensorArrayNode(node, variableValues, op, allRequired);
+                return;
+            }
+
+            if (op instanceof Invoke) {
+                executeInvokeNode(node, variableValues, (Invoke) op);
                 return;
             }
 
@@ -3216,6 +3254,57 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to execute tensor array operation " + node.getOperationName(), e);
+        }
+    }
+
+    private void executeInvokeNode(ExecutionNode node, Map<String, SDValue> variableValues, Invoke invoke) {
+        List<String> inputNames = node.getInputVariables();
+        List<String> outputNames = node.getOutputVariables();
+
+        // Collect input arrays and value inputs from variableValues
+        Map<String, INDArray> placeholders = new LinkedHashMap<>();
+        Map<String, SDValue> valuePlaceholders = new LinkedHashMap<>();
+
+        boolean hasValues = false;
+        for (String inputVar : inputNames) {
+            SDValue val = variableValues.get(inputVar);
+            if (val == null) {
+                // Try constants/variables from the model
+                INDArray arr = sameDiff.getArrForVarName(inputVar);
+                if (arr != null) {
+                    placeholders.put(inputVar, arr);
+                }
+            } else if (val.getSdValueType() == SDValueType.TENSOR) {
+                placeholders.put(inputVar, val.getTensorValue());
+            } else {
+                hasValues = true;
+                valuePlaceholders.put(inputVar, val);
+            }
+        }
+
+        // If we have any non-tensor values, promote all inputs to value placeholders
+        if (hasValues) {
+            for (Map.Entry<String, INDArray> entry : placeholders.entrySet()) {
+                valuePlaceholders.put(entry.getKey(), SDValue.create(entry.getValue()));
+            }
+            placeholders.clear();
+        }
+
+        ExecutionResult result = Invoke.doInvoke(invoke, placeholders, valuePlaceholders);
+
+        // Store results in variableValues
+        if (result.hasValues()) {
+            Map<String, SDValue> valueOutputs = result.getValueOutputs();
+            for (Map.Entry<String, SDValue> entry : valueOutputs.entrySet()) {
+                variableValues.put(entry.getKey(), entry.getValue());
+            }
+        } else if (result.hasSingle()) {
+            for (int i = 0; i < outputNames.size() && i < result.numResults(); i++) {
+                INDArray arr = result.resultAt(i);
+                if (arr != null) {
+                    variableValues.put(outputNames.get(i), SDValue.create(arr));
+                }
+            }
         }
     }
 

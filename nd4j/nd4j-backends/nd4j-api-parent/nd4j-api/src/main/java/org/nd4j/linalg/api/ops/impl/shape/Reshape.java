@@ -251,13 +251,38 @@ public class Reshape extends DynamicCustomOp {
 
             INDArray input = inputArguments().get(0);
 
-            // Empty input: output must also be empty. Resolve -1 to 0 and return
-            // an empty array rather than trying to create a view of zero-length data.
+            // Empty input: output must also be empty. Resolve -1 using non-zero
+            // dimension products (mirroring C++ computeUnknownDimension logic).
             if (input.isEmpty() || input.length() == 0) {
                 long[] resolvedShape = shape.clone();
+                int minusOneIdx = -1;
                 for (int i = 0; i < resolvedShape.length; i++) {
                     if (resolvedShape[i] == -1) {
-                        resolvedShape[i] = 0;
+                        minusOneIdx = i;
+                    }
+                }
+                if (minusOneIdx >= 0) {
+                    // Compute using non-zero dimension products
+                    long nonZeroInputProduct = 1;
+                    for (long d : input.shape()) {
+                        if (d != 0) nonZeroInputProduct *= d;
+                    }
+                    long nonZeroKnownOutputProduct = 1;
+                    boolean outputHasZero = false;
+                    for (int i = 0; i < resolvedShape.length; i++) {
+                        if (i == minusOneIdx) continue;
+                        if (resolvedShape[i] == 0) {
+                            outputHasZero = true;
+                        } else {
+                            nonZeroKnownOutputProduct *= resolvedShape[i];
+                        }
+                    }
+                    if (outputHasZero && nonZeroKnownOutputProduct > 0) {
+                        // Other dims already have a zero, so -1 is computed from non-zero products
+                        resolvedShape[minusOneIdx] = nonZeroInputProduct / nonZeroKnownOutputProduct;
+                    } else {
+                        // No other zero dim yet — the -1 position becomes 0 (making output empty)
+                        resolvedShape[minusOneIdx] = 0;
                     }
                 }
                 addOutputArgument(Nd4j.emptyWithShape(resolvedShape, input.dataType()));

@@ -225,6 +225,15 @@ public class MultiBackendNativeOpsHolder {
                 continue;
             }
 
+            // Pre-check: skip GPU/accelerator backends when we can verify the
+            // required native runtime is absent. Loading a JavaCPP class for a
+            // missing backend can call into native code that SIGABRT-kills the JVM
+            // (unrecoverable — no Java exception can catch it).
+            if (deviceType != DeviceType.CPU && !isNativeRuntimeLikelyAvailable(deviceType)) {
+                log.debug("Skipping {} backend: native runtime not detected", info.displayName);
+                continue;
+            }
+
             try {
                 NativeOps ops = loadBackend(info.className);
                 if (ops != null) {
@@ -257,7 +266,7 @@ public class MultiBackendNativeOpsHolder {
                         cudaOps = ops;
                     }
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.debug("{} backend not available: {}", info.displayName, e.getMessage());
             }
         }
@@ -324,6 +333,29 @@ public class MultiBackendNativeOpsHolder {
                 return DeviceDescriptor.fromId(deviceType.getIdentifier() + ":gpu:" + index);
             default:
                 return null;
+        }
+    }
+
+    /**
+     * Quick probe for the native runtime a GPU/accelerator backend needs.
+     * This MUST NOT trigger JavaCPP class loading (which can SIGABRT).
+     */
+    private boolean isNativeRuntimeLikelyAvailable(DeviceType deviceType) {
+        switch (deviceType) {
+            case CUDA_GPU:
+                // Check for the CUDA runtime library on the library path
+                return new java.io.File("/usr/local/cuda/lib64/libcudart.so").exists()
+                        || System.getenv("CUDA_PATH") != null;
+            case ROCM_GPU:
+                return new java.io.File("/opt/rocm/lib/libamdhip64.so").exists()
+                        || System.getenv("ROCM_PATH") != null;
+            case TPU:
+                return System.getenv("TPU_NAME") != null
+                        || System.getenv("TPU_WORKER_HOSTNAMES") != null;
+            case METAL_GPU:
+                return System.getProperty("os.name", "").toLowerCase().contains("mac");
+            default:
+                return true;
         }
     }
 

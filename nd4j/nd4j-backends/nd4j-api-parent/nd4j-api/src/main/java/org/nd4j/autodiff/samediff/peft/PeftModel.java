@@ -281,9 +281,10 @@ public class PeftModel {
         int outFeatures = (int) shape[0];
         int inFeatures = (int) shape[1];
 
-        // Create LoRA layer
+        // Create LoRA layer, passing the pretrained weight for LoftQ initialization
         String loraName = varName.replace("/", "_").replace(":", "_");
-        LoraLayer loraLayer = LoraLayer.create(model, loraName, config, inFeatures, outFeatures);
+        INDArray pretrainedWeight = (config instanceof LoftQConfig) ? weightVar.getArr() : null;
+        LoraLayer loraLayer = LoraLayer.create(model, loraName, config, inFeatures, outFeatures, pretrainedWeight);
         loraLayers.put(varName, loraLayer);
 
         // Track PEFT variables
@@ -783,13 +784,25 @@ public class PeftModel {
 
     /**
      * Freeze the base model parameters.
+     *
+     * Correctly moves arrays from variablesArrays to constantArrays in the SameDiff
+     * storage maps, since the storage is type-keyed: setting variableType alone is
+     * insufficient — we must also re-register the array under the CONSTANT storage.
      */
     private void freezeBaseModel() {
         for (SDVariable var : model.variables()) {
             if (var.getVariableType() == VariableType.VARIABLE) {
                 String name = var.name();
                 if (!peftVariables.contains(name)) {
+                    // Capture the array BEFORE changing the type (array is in variablesArrays).
+                    INDArray arr = var.getArr();
+                    // Change the variable type field.
                     var.setVariableType(VariableType.CONSTANT);
+                    // Re-register the array under the CONSTANT storage map.
+                    // setArrayForVariable dispatches to constantArrays when type == CONSTANT.
+                    if (arr != null) {
+                        model.setArrayForVariable(name, arr);
+                    }
                     frozenVariables.add(name);
                 }
             }

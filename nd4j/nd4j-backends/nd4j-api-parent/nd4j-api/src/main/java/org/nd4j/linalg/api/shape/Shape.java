@@ -30,6 +30,7 @@ import lombok.val;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -3073,9 +3074,7 @@ public class Shape {
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty,boolean isView) {
         boolean isEmpty = empty;
-        if (shape.length == 0) {
-            isEmpty = false;
-        } else if (!empty) {
+        if (!empty && shape.length > 0) {
             for (val v:shape) {
                 if (v == 0) {
                     isEmpty = true;
@@ -3108,9 +3107,6 @@ public class Shape {
 
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
-        if (shape.length == 0) {
-            extras = extras & ~ArrayOptionsHelper.ATYPE_EMPTY_BIT;
-        }
         val dtype = ArrayOptionsHelper.dataType(extras);
         return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
@@ -3645,8 +3641,9 @@ public class Shape {
     public static INDArray ndArrayDimFromInt(int... dimensions) {
         if (dimensions == null || dimensions.length == 0)
             return Nd4j.empty(DataType.INT);
-        else
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             return Nd4j.createFromArray(dimensions);
+        }
     }
 
     /**
@@ -3665,7 +3662,9 @@ public class Shape {
             // to only reduce along the last axis instead of all dimensions.
             return null;
         } else {
-            result = Nd4j.createFromArray(dimensions);
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                result = Nd4j.createFromArray(dimensions);
+            }
         }
         if (result != null) {
             if (result.data() != null) {

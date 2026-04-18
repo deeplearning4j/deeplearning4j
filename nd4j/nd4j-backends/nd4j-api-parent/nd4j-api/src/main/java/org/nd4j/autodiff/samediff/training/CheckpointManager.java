@@ -106,9 +106,11 @@ public class CheckpointManager {
      */
     public void onForwardComplete(String variableName, INDArray activation) {
         if (isCheckpointBoundary(variableName)) {
-            // Keep this activation
-            if (config.isOffloadToHost()) {
-                // Offload to host memory
+            // Keep this activation according to strategy
+            boolean anyOffload = config.isAnyOffload()
+                    || config.isOffloadToHost();  // backwards compat
+            if (anyOffload) {
+                // Offload to host memory (sync; async path handled by CheckpointOffloadManager)
                 INDArray hostCopy = Nd4j.create(activation.dataType(), activation.shape());
                 hostCopy.assign(activation);
                 checkpointedActivations.put(variableName, hostCopy);
@@ -132,7 +134,9 @@ public class CheckpointManager {
         // Direct hit: was checkpointed
         if (checkpointedActivations.containsKey(variableName)) {
             INDArray cached = checkpointedActivations.get(variableName);
-            if (config.isOffloadToHost()) {
+            boolean anyOffload = config.isAnyOffload()
+                    || config.isOffloadToHost();  // backwards compat
+            if (anyOffload) {
                 // Transfer back to device
                 return cached.dup();
             }

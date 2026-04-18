@@ -443,14 +443,23 @@ public class OpaqueNDArray extends Pointer {
         }
         if (array.data() == null || array.data().wasClosed()) {
             // Array has no live data — either never allocated (control flow intermediates)
-            // or DataBuffer was freed (dead branch cleanup). Fall back to uncached creation
-            // with a zero-filled replacement to avoid SIGSEGV from null PointerWrapper.
+            // or DataBuffer was freed (dead branch cleanup).
             DataBuffer shapeInfo = array.shapeInfoDataBuffer();
             if (shapeInfo == null || shapeInfo.wasClosed()) {
                 // Can't even read shape — create a minimal scalar placeholder
                 return fromINDArrayUncached(Nd4j.scalar(0.0f));
             }
-            // Create a zero array with the same shape/dtype
+            // Check if the shape info's EMPTY bit is actually set in the native extras flags.
+            // BaseNDArray.isEmpty() returns true for ANY null data buffer, but the native code
+            // requires the EMPTY bit in shape info to match. Only pass null buffer if the shape
+            // info genuinely marks the array as empty.
+            boolean shapeInfoEmpty = Shape.isEmpty(shapeInfo.asLong());
+            if (shapeInfoEmpty) {
+                // Genuinely empty: null data + EMPTY bit set — pass through to native correctly
+                return fromINDArrayUncached(array);
+            }
+            // Non-empty shape but null data (dead control flow branches, freed buffers).
+            // Create a zero-filled replacement to avoid native "not empty but null buffer" error.
             INDArray replacement = Nd4j.zeros(array.dataType(), array.shape());
             return fromINDArrayUncached(replacement);
         }

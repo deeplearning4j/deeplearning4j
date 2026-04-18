@@ -145,5 +145,18 @@ public enum PeftType {
      * DyLoRA - Dynamic Low-Rank Adaptation.
      * Trains with nested ranks simultaneously.
      */
-    DYLORA
+    DYLORA,
+
+    /**
+     * LoftQ - LoRA-Fine-Tuning-aware Quantization.
+     * Initializes LoRA matrices via SVD of the pretrained weight residual
+     * after quantization. Provides better initialization than random/Kaiming
+     * for quantized models. At inference/training time it behaves as LORA.
+     * <p>
+     * Key parameters: same as LORA plus quantization settings (quantType,
+     * quantBits, blockSize, numIterations)
+     *
+     * @see <a href="https://arxiv.org/abs/2310.08659">LoftQ Paper</a>
+     */
+    LOFTQ
 }

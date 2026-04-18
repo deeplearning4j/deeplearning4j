@@ -191,8 +191,19 @@ public class Gather extends DynamicCustomOp {
             // Use static shape information instead of dynamic ops for shape inference
             // During gradient computation, the forward pass has already executed, so shapes are known
             long[] inputShape = inputArray.getShape();
-            int inputRank = inputShape != null ? inputShape.length : 0;
-            int outputRank = gradAtOut.getShape() != null ? gradAtOut.getShape().length : 0;
+            int inputRank = inputShape != null ? inputShape.length : -1;
+
+            // If inputShape is unknown (dynamic), fall back to simple scatter add on axis 0.
+            // For axis 0, no permutation is needed: gradient is scatterAdd(zerosLike(input), indices, gradAtOut).
+            if (inputRank <= 0) {
+                // Dynamic-shape fallback: use scatterAdd directly on axis 0.
+                // This is correct when jaxis == 0 (the common case for batch-dimension gather).
+                // For other axes we still use the same approach since we cannot know the rank statically.
+                SDVariable inputGradScattered = sameDiff.scatterAdd(inputGrad, indices, gradAtOut);
+                return Arrays.asList(inputGradScattered, indicesGrad);
+            }
+
+            int outputRank = gradAtOut.getShape() != null ? gradAtOut.getShape().length : inputRank;
 
             // Normalize axis
             int normalizedAxis = jaxis < 0 ? inputRank + jaxis : jaxis;

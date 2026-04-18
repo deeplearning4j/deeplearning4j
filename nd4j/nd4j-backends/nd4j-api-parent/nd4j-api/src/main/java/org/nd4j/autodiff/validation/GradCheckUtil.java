@@ -92,6 +92,20 @@ public class GradCheckUtil {
             sd.enableDebugMode();
         }
 
+        // Disable DSP (DynamicShapePlan) during gradient checking.
+        // DSP is designed for repeated inference with fixed VARIABLE inputs (model weights) and
+        // dynamic PLACEHOLDER inputs (e.g. token ids). After the first execution, C++ DSP
+        // auto-seals to SHAPES_FROZEN and marks all VARIABLE inputs as non-syncing "weights",
+        // skipping H2D transfer for VARIABLE arrays even when their host data changes.
+        // Gradient checking MODIFIES VARIABLE arrays via putScalar() between sd.output() calls,
+        // so skipping the sync causes stale GPU data and near-zero numerical gradients.
+        // DSP must be disabled for the duration of gradient checking to ensure each sd.output()
+        // call sees the current (perturbed) variable values.
+        boolean dspAutoCompileBefore = sd.isDspAutoCompileEnabled();
+        boolean dspNativeAutoCompileBefore = sd.isDspNativeAutoCompileEnabled();
+        sd.setDspAutoCompileEnabled(false);
+        sd.setDspNativeAutoCompileEnabled(false);
+
         //Validation sanity checks:
         if(!skipValidation) {
             validateInternalState(sd, true);
@@ -328,6 +342,10 @@ public class GradCheckUtil {
             sd.disableDebugging();
         }
 
+        // Restore DSP state
+        sd.setDspAutoCompileEnabled(dspAutoCompileBefore);
+        sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileBefore);
+
         return totalNFailures == 0;
     }
 
@@ -364,6 +382,12 @@ public class GradCheckUtil {
         if(config.isDebugMode()){
             sd.enableDebugMode();
         }
+
+        // Disable DSP during gradient checking — see checkGradients() for rationale.
+        boolean dspAutoCompileBefore = sd.isDspAutoCompileEnabled();
+        boolean dspNativeAutoCompileBefore = sd.isDspNativeAutoCompileEnabled();
+        sd.setDspAutoCompileEnabled(false);
+        sd.setDspNativeAutoCompileEnabled(false);
 
         //Validation sanity checks:
         if(!config.isSkipValidation()){
@@ -527,6 +551,10 @@ public class GradCheckUtil {
 
             }
         }
+
+        // Restore DSP state
+        sd.setDspAutoCompileEnabled(dspAutoCompileBefore);
+        sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileBefore);
 
         return totalNFailures == 0;
     }

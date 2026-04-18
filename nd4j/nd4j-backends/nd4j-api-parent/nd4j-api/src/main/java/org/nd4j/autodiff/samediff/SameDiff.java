@@ -44,6 +44,7 @@ import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.UpdaterOpsAppender;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.ops.*;
@@ -287,6 +288,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Op creator object for audio processing operations
      */
     public final SDAudio audio = new SDAudio(this);
+
+    /**
+     * Op creator object for training/updater operations
+     */
+    public final SDTraining training = new SDTraining(this);
 
     public final static String INFERENCE_FACTORY_CLASS = "inferencefactory.class";
     private static InferenceFactory INFERENCE_FACTORY;
@@ -2551,6 +2557,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Perform setup for training. Does the following:
      * 1. Infer the set of trainable parameters - unless specified manually by the user
      * 2. Set up the updaters
+     * 3. Append updater ops directly into the "grad" SameDiff graph so the full training
+     *    step (forward + backward + optimizer + weight-update) executes inside a single
+     *    DynamicShapePlan without a Java-C++ round-trip.
      */
     protected void initializeTraining() {
         if (!initializedTraining) {
@@ -2572,9 +2581,35 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 updaterMap.put(v.getName(), gu);
             }
 
+            // Fuse updater ops into the grad graph.
+            // The grad SameDiff must already exist (created by createGradFunction()).
+            // This appends updater ops and weight-assign ops so the DSP plan includes them.
+            SameDiff gradSd = getFunction(GRAD_FN_KEY);
+            if (gradSd != null && !UpdaterOpsAppender.hasUpdaterOps(gradSd)) {
+                boolean minimize = trainingConfig.isMinimize();
+                UpdaterOpsAppender.AppendResult appendResult =
+                        UpdaterOpsAppender.appendUpdaterOps(gradSd, trainingConfig, updaterMap, 0, minimize);
+                // Store on both: the outer SD (for reference) and the grad SD (for TrainingSession access).
+                this.updaterFusionResult = appendResult;
+                gradSd.updaterFusionResult = appendResult;
+                log.info("DSP updater fusion: appended ops for {}/{} variables ({} skipped)",
+                        appendResult.varToWeightUpdatedOutput.size(), updaterMap.size(),
+                        appendResult.skippedVars.size());
+            } else if (gradSd == null) {
+                log.warn("Updater fusion: grad function not yet created; " +
+                         "call createGradFunction() before initializeTraining()");
+            }
+
             initializedTraining = true;
         }
     }
+
+    /**
+     * Result of updater-op fusion into the grad graph. Non-null when updater ops
+     * were successfully appended during {@link #initializeTraining()}.
+     */
+    @Getter
+    private UpdaterOpsAppender.AppendResult updaterFusionResult;
 
     /**
      * Convert the MultiDataSet to a {@code Map<String,INDArray>} based on the TrainingConfig settings.
@@ -3251,14 +3286,30 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             sessions.put(threadId, is);
         }
 
-        ExecutionResult result = is.output(
-                outputs == null ? Collections.emptyList() : Arrays.asList(outputs),
-                placeholders,
-                Collections.emptyMap(),
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                At.defaultAt(Operation.INFERENCE));
+        // Signal to DynamicShapePlanExecutor that this is a direct-mode call.
+        // In direct mode, zeroCopyOutputCache is used: cached output arrays are returned
+        // by reference (not duped), so KV close in the caller correctly invalidates them.
+        // Non-direct calls (SameDiff.output()) dup results, so KV close only touches the
+        // copies — leaving the cache stale. See DynamicShapePlanExecutor.directOutputMode.
+        // We set the flag on the InferenceSession which propagates it to the executor in
+        // executeDynamicShapePlanBased(), covering the case where the executor is created
+        // lazily during this call.
+        is.setDirectOutputMode(true);
+
+        ExecutionResult result;
+        try {
+            result = is.output(
+                    outputs == null ? Collections.emptyList() : Arrays.asList(outputs),
+                    placeholders,
+                    Collections.emptyMap(),
+                    null,
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    At.defaultAt(Operation.INFERENCE));
+        } finally {
+            // Always reset — the next call from output() must see directOutputMode=false.
+            is.setDirectOutputMode(false);
+        }
 
         if (result.getOutputs() != null) {
             Map<String, INDArray> ret = new LinkedHashMap<>();

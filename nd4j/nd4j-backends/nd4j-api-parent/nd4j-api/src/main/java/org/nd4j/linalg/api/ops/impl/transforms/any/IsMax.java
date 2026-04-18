@@ -23,9 +23,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.any;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -78,6 +82,31 @@ public class IsMax extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
+    }
+
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+        INDArray input = oc.getInputArray(0);
+        if (input == null) {
+            return null;
+        }
+        long[] inputShape = input.shape();
+        char order = input.ordering();
+        long[] strides = Nd4j.getStrides(inputShape, order);
+        boolean isEmpty = false;
+        for (long dim : inputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        // ismax always returns BOOL regardless of the input datatype.
+        // The C++ CONFIGURABLE_OP shape function mirrors the input dtype, which causes
+        // the output array to be allocated with the input type (e.g. DOUBLE) instead of
+        // BOOL.  Override here so the InferenceSession allocates a BOOL output array.
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(inputShape, strides, 1, order, DataType.BOOL, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 
     @Override

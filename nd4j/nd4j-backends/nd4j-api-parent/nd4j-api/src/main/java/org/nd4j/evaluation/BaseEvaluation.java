@@ -26,6 +26,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.classification.*;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo;
 import org.nd4j.linalg.api.shape.Shape;
@@ -230,28 +231,62 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
     }
 
-    private static Triple<INDArray,INDArray,INDArray> reshapeSameShapeTo2d(int axis, INDArray labels, INDArray predictions, INDArray mask){
-        long[] permuteDims = new long[labels.rank()];
-        int j = 0;
-        for( int i = 0; i < labels.rank(); i++) {
-            if(i == axis) {
-                continue;
+    /**
+     * Create a C-contiguous heap copy of the given array, safely handling the case where
+     * the source is attached to a closed (out-of-scope) workspace.
+     *
+     * <p>The standard {@code arr.dup('c')} path calls {@code WorkspaceUtils.assertValidArray}
+     * which throws if the source array's workspace scope has been closed (e.g. when evaluation
+     * arrays escape from a model's {@code WS_OUTPUT_MEM} scope). Because we are already inside
+     * {@code scopeOutOfWorkspaces()} the allocation itself is heap-resident; we only need to
+     * bypass the upfront validity assertion when the workspace is genuinely closed.
+     *
+     * <p>The copy is produced by allocating a fresh C-order array and calling
+     * {@code copy.assign(arr)}.  The {@code Assign} op's workspace check skips VIEW arrays
+     * (which permuted slices always are), so it does not re-trigger the validation.
+     *
+     * @param arr source array – may be a view attached to a closed workspace
+     * @return a C-contiguous, heap-resident copy of {@code arr}
+     */
+    static INDArray dupSafe(INDArray arr) {
+        if (arr.isAttached()) {
+            MemoryWorkspace parentWs = arr.data().getParentWorkspace();
+            if (parentWs != null && !parentWs.isScopeActive()) {
+                // Workspace is closed: dup() would throw assertValidArray.
+                // Replicate the view branch of dup('c') without the upfront assertion.
+                INDArray copy = Nd4j.create(arr.dataType(), arr.shape(), 'c');
+                copy.assign(arr);
+                return copy;
             }
-            permuteDims[j++] = i;
         }
-        permuteDims[j] = axis;
-        long size0 = 1;
-        for( int i = 0; i < permuteDims.length - 1; i++) {
-            size0 *= labels.size(permuteDims[i]);
+        // Not attached, or workspace is still open – standard path is safe.
+        return arr.dup('c');
+    }
+
+    private static Triple<INDArray,INDArray,INDArray> reshapeSameShapeTo2d(int axis, INDArray labels, INDArray predictions, INDArray mask){
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            long[] permuteDims = new long[labels.rank()];
+            int j = 0;
+            for( int i = 0; i < labels.rank(); i++) {
+                if(i == axis) {
+                    continue;
+                }
+                permuteDims[j++] = i;
+            }
+            permuteDims[j] = axis;
+            long size0 = 1;
+            for( int i = 0; i < permuteDims.length - 1; i++) {
+                size0 *= labels.size(permuteDims[i]);
+            }
+
+            INDArray labelsPerm = labels.permute(permuteDims);
+            INDArray dupped = dupSafe(labelsPerm).detach();
+            INDArray lOut = dupped.reshape('c',size0, labels.size(axis));
+            INDArray pOut = dupSafe(predictions.permute(permuteDims)).detach().reshape('c',size0, labels.size(axis));
+            INDArray mOut = mask == null ? null : dupSafe(mask.permute(permuteDims)).detach().reshape('c',size0, labels.size(axis));
+
+            return new Triple<>(lOut, pOut, mOut);
         }
-
-        INDArray labelsPerm = labels.permute(permuteDims);
-        INDArray dupped = labelsPerm.dup('c').detach();
-        INDArray lOut = dupped.reshape('c',size0, labels.size(axis));
-        INDArray pOut = predictions.permute(permuteDims).dup('c').detach().reshape('c',size0, labels.size(axis));
-        INDArray mOut = mask == null ? null : mask.permute(permuteDims).dup('c').detach().reshape('c',size0, labels.size(axis));
-
-        return new Triple<>(lOut, pOut, mOut);
     }
 
     @Override

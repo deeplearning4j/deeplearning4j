@@ -81,7 +81,8 @@ import java.util.List;
     @JsonSubTypes.Type(value = PromptTuningConfig.class, name = "prompt_tuning"),
     @JsonSubTypes.Type(value = PrefixTuningConfig.class, name = "prefix_tuning"),
     @JsonSubTypes.Type(value = AdapterConfig.class, name = "adapters"),
-    @JsonSubTypes.Type(value = IA3Config.class, name = "ia3")
+    @JsonSubTypes.Type(value = IA3Config.class, name = "ia3"),
+    @JsonSubTypes.Type(value = LoftQConfig.class, name = "loftq")
 })
 public abstract class PeftConfig implements Serializable {
 

@@ -28,7 +28,14 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.BaseBroadcastBoolOp;
+import org.nd4j.linalg.api.ops.BaseBroadcastOp;
+import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
+import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.BaseReduceSameOp;
 import org.nd4j.linalg.api.ops.BaseScalarBoolOp;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
@@ -38,6 +45,9 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.impl.reduce3.BaseReduce3Op;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -114,7 +124,7 @@ public class DynamicShapePlanCompiler {
             if (node.getNodeType() == ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP) {
                 hasControlFlow = true;
             }
-            // Also detect CF ops by opName
+            // Also detect CF ops and sub-graph delegation ops by opName
             SameDiffOp sdOp = sd.getOps().get(node.getOperationName());
             if (sdOp != null && sdOp.getOp() != null) {
                 String opNameLower = sdOp.getOp().opName().toLowerCase();
@@ -122,6 +132,32 @@ public class DynamicShapePlanCompiler {
                         opNameLower.equals("enter") || opNameLower.equals("exit") ||
                         opNameLower.equals("next_iteration") || opNameLower.equals("loop_cond")) {
                     hasControlFlow = true;
+                }
+                // invoke delegates to a sub-graph — the native executor has no shape
+                // function for it, so DSP compilation must bail out to standard path.
+                if (opNameLower.equals("invoke")) {
+                    log.debug("DSP compile: graph contains 'invoke' op (sub-graph delegation) " +
+                            "which has no native shape function. Falling back to standard path.");
+                    return null;
+                }
+                // Tensor array ops (create_list, stack_list, etc.) are meta-ops handled
+                // by special Java-side logic in InferenceSession. The native executor
+                // has no shape functions for them.
+                if (sdOp.getOp() instanceof org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp) {
+                    log.debug("DSP compile: graph contains tensor array op '{}'. " +
+                            "Falling back to standard path.", opNameLower);
+                    return null;
+                }
+                // Random ops with no input variables carry their shape as constructor
+                // arguments. The native executor's shape inference calls INPUT_VARIABLE(0)
+                // which fails with "Can't find requested variable by index: 0".
+                if (sdOp.getOp() instanceof BaseRandomOp) {
+                    List<String> inputs = sdOp.getInputsToOp();
+                    if (inputs == null || inputs.isEmpty()) {
+                        log.debug("DSP compile: random op '{}' has no input variables. " +
+                                "Falling back to standard path.", opNameLower);
+                        return null;
+                    }
                 }
             }
             opNodes.add(node);
@@ -157,13 +193,34 @@ public class DynamicShapePlanCompiler {
             }
         }
 
-        // Step 3: Assign sequential flat output slot indices per op output variable
+        // Step 3: Assign sequential flat output slot indices per op output variable.
+        // Two different ops MUST NOT produce the same output variable name — that
+        // would alias their output slots and let one op's buffer be read as another's
+        // (e.g. a [512,2] scatter_nd_update buffer flattened into a gather indices
+        // input, producing OOB index errors). Detect collisions explicitly and bail
+        // to the standard path rather than compiling a silently-aliased plan.
         Map<String, Integer> varToOutputSlot = new HashMap<>();
+        // Reverse map only used when a collision fires, to identify the prior producer.
+        Map<Integer, String> slotToProducerOp = new HashMap<>();
         int nextSlotIndex = 0;
 
-        for (ExecutionNode node : opNodes) {
+        for (int producerStep = 0; producerStep < opNodes.size(); producerStep++) {
+            ExecutionNode node = opNodes.get(producerStep);
+            String producerOpName = node.getOperationName();
             for (String outputVar : node.getOutputVariables()) {
-                varToOutputSlot.put(outputVar, nextSlotIndex++);
+                Integer prevSlot = varToOutputSlot.put(outputVar, nextSlotIndex);
+                if (prevSlot != null) {
+                    String prevOp = slotToProducerOp.get(prevSlot);
+                    log.error("DSP compile: output variable name collision — '{}' was already "
+                            + "assigned to slot {} by op '{}', now reassigned to slot {} by op "
+                            + "'{}' at step {}. Plan would silently alias slots; falling back "
+                            + "to standard execution path.",
+                            outputVar, prevSlot, prevOp,
+                            nextSlotIndex, producerOpName, producerStep);
+                    return null;
+                }
+                slotToProducerOp.put(nextSlotIndex, producerOpName);
+                nextSlotIndex++;
             }
         }
         int totalOutputSlots = nextSlotIndex;
@@ -217,6 +274,40 @@ public class DynamicShapePlanCompiler {
                 } else if (op instanceof BaseScalarOp) {
                     legacyOpType = DynamicShapeSlot.LEGACY_SCALAR;
                     legacyOpNum = ((BaseScalarOp) op).opNum();
+                } else if (op instanceof BaseReduce3Op) {
+                    // Must precede BaseReduceFloatOp — BaseReduce3Op extends BaseReduceFloatOp.
+                    legacyOpType = DynamicShapeSlot.LEGACY_REDUCE_3;
+                    legacyOpNum = ((BaseReduce3Op) op).opNum();
+                } else if (op instanceof BaseReduceFloatOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_REDUCE_FLOAT;
+                    legacyOpNum = ((BaseReduceFloatOp) op).opNum();
+                } else if (op instanceof BaseReduceSameOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_REDUCE_SAME;
+                    legacyOpNum = ((BaseReduceSameOp) op).opNum();
+                } else if (op instanceof BaseReduceBoolOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_REDUCE_BOOL;
+                    legacyOpNum = ((BaseReduceBoolOp) op).opNum();
+                } else if (op instanceof BaseReduceLongOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_REDUCE_LONG;
+                    legacyOpNum = ((BaseReduceLongOp) op).opNum();
+                } else if (op instanceof Variance) {
+                    // Variance (and subclass StandardDeviation) extend BaseReduceOp directly,
+                    // bypassing the typed BaseReduce{Float,Same,Bool,Long} branches.
+                    legacyOpType = DynamicShapeSlot.LEGACY_STATS;
+                    legacyOpNum = ((Variance) op).opNum();
+                } else if (op instanceof BaseIndexAccumulation) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_INDEX_REDUCE;
+                    legacyOpNum = ((BaseIndexAccumulation) op).opNum();
+                } else if (op instanceof BaseBroadcastBoolOp) {
+                    // Must precede BaseBroadcastOp in case of any hierarchy overlap.
+                    legacyOpType = DynamicShapeSlot.LEGACY_BROADCAST_BOOL;
+                    legacyOpNum = ((BaseBroadcastBoolOp) op).opNum();
+                } else if (op instanceof BaseBroadcastOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_BROADCAST;
+                    legacyOpNum = ((BaseBroadcastOp) op).opNum();
+                } else if (op instanceof BaseRandomOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_RANDOM;
+                    legacyOpNum = ((BaseRandomOp) op).opNum();
                 }
             }
 
@@ -343,6 +434,42 @@ public class DynamicShapePlanCompiler {
                 }
             }
 
+            // Diagnostic: trace gather op wiring so we can identify the producer
+            // variable when slot-1268-style OOB index errors fire at runtime.
+            if ("gather".equals(opNameLower)) {
+                // Resolve the first output's slot index so we can correlate this
+                // log line with the C++ slot index that fires errors.
+                int firstOutSlot = -1;
+                List<String> myOuts = node.getOutputVariables();
+                if (!myOuts.isEmpty()) {
+                    Integer s = varToOutputSlot.get(myOuts.get(0));
+                    if (s != null) firstOutSlot = s;
+                }
+                StringBuilder sb = new StringBuilder();
+                sb.append("DSP_GATHER_COMPILE step=").append(stepIdx);
+                sb.append(" outSlot=").append(firstOutSlot);
+                sb.append(" op=").append(opName);
+                for (int i = 0; i < numInputs; i++) {
+                    int srcIdx = inputSourceIndices[i];
+                    String srcDesc;
+                    if (srcIdx >= 0) {
+                        srcDesc = "OP_OUTPUT[slot=" + srcIdx + "]";
+                    } else {
+                        int extIdx = -(srcIdx + 1);
+                        String extKey = extIdx < externalInputKeys.size() ?
+                                externalInputKeys.get(extIdx) : "?";
+                        byte t = inputSourceTypes[i];
+                        String typeStr = t == DynamicShapeSlot.SOURCE_CONSTANT ? "CONSTANT" :
+                                t == DynamicShapeSlot.SOURCE_VARIABLE ? "VARIABLE" :
+                                t == DynamicShapeSlot.SOURCE_PLACEHOLDER ? "PLACEHOLDER" : "?";
+                        srcDesc = typeStr + "[ext=" + extIdx + ",name=" + extKey + "]";
+                    }
+                    sb.append(" in[").append(i).append("]=")
+                            .append(inputVarNames[i]).append("→").append(srcDesc);
+                }
+                log.info(sb.toString());
+            }
+
             // Build output wiring
             List<String> outputVars = node.getOutputVariables();
             int numOutputs = outputVars.size();
@@ -397,6 +524,27 @@ public class DynamicShapePlanCompiler {
                 }
             }
 
+            // Legacy transform ops (BaseTransformSameOp, BaseTransformStrictOp,
+            // BaseTransformBoolOp, BaseTransformFloatOp, BaseBroadcastOp, BaseBroadcastBoolOp)
+            // may store runtime parameters in extraArgs rather than tArgs.
+            // For example, CompareAndSet stores [compare, set, eps, mode] in extraArgs.
+            // The C++ LegacyTransformSameOp::validateAndExecute builds ExtraArguments from
+            // block.getTArguments() — if tArgs is empty, argumentsAsT() returns nullptr,
+            // causing SIGSEGV in op_logic(double, double*).
+            // Mirror extraArgs → tArgs so the C++ ExtraArguments is populated.
+            if (!isCustomOp && tArgs.length == 0 && op instanceof org.nd4j.linalg.api.ops.Op) {
+                Object[] extras = ((org.nd4j.linalg.api.ops.Op) op).extraArgs();
+                if (extras != null && extras.length > 0) {
+                    double[] packedT = new double[extras.length];
+                    for (int i = 0; i < extras.length; i++) {
+                        packedT[i] = (extras[i] instanceof Number)
+                            ? ((Number) extras[i]).doubleValue()
+                            : 0.0;
+                    }
+                    tArgs = packedT;
+                }
+            }
+
             // Reduce ops store dimensions and keepDims separately from iArgs/bArgs.
             // The C++ custom op equivalents (e.g., reduce_sum) expect dimensions as
             // iArgs and keepDims as bArgs[0].
@@ -416,6 +564,61 @@ public class DynamicShapePlanCompiler {
                     iArgs = dims;
                 }
                 bArgs = new boolean[]{reduceOp.isKeepDims()};
+
+                // MatchCondition (BaseReduceLongOp) and other reduce ops that carry
+                // numeric extraArgs (e.g., compare/eps/mode for condition reductions) need
+                // those mirrored into tArgs so LegacyReduceLongOp::validateAndExecute can
+                // pass them to the kernel via ExtraArguments.argumentsAsT(x->dataType()).
+                Object[] extras = reduceOp.extraArgs();
+                if (extras != null && extras.length > 0 && tArgs.length == 0) {
+                    double[] packedT = new double[extras.length];
+                    for (int i = 0; i < extras.length; i++) {
+                        packedT[i] = (extras[i] instanceof Number)
+                            ? ((Number) extras[i]).doubleValue()
+                            : 0.0;
+                    }
+                    tArgs = packedT;
+                }
+
+                // LegacyStatsOp (Variance/StandardDeviation) expects iArgs[0] = biasCorrected,
+                // iArgs[1..] = dimensions. This differs from other reduce ops which put dims at iArgs[0..].
+                if (op instanceof Variance) {
+                    Variance varOp = (Variance) op;
+                    long biasCorrected = varOp.isBiasCorrected() ? 1L : 0L;
+                    long[] packed = new long[iArgs.length + 1];
+                    packed[0] = biasCorrected;
+                    System.arraycopy(iArgs, 0, packed, 1, iArgs.length);
+                    iArgs = packed;
+                }
+            }
+
+            // BaseIndexAccumulation (FirstIndex, LastIndex, IAMax, IAMin, IMax, IMin) extends
+            // BaseOp, not BaseReduceOp, so the branch above misses it. Pack dimensions into iArgs
+            // (DSP slot-exec mirrors iArgs into block.getAxis() for LEGACY_INDEX_REDUCE), and
+            // extraArgs (compare, eps, mode for FirstIndex/LastIndex) into tArgs.
+            if (op instanceof BaseIndexAccumulation) {
+                BaseIndexAccumulation idxOp = (BaseIndexAccumulation) op;
+                long[] dims = idxOp.dimensionsArr();
+                if (dims == null || dims.length == 0) {
+                    INDArray dimensionz = idxOp.dimensions();
+                    if (dimensionz != null && !dimensionz.isEmpty()) {
+                        dims = dimensionz.toLongVector();
+                    }
+                }
+                if (dims != null && dims.length > 0) {
+                    iArgs = dims;
+                }
+                Object[] extras = idxOp.extraArgs();
+                if (extras != null && extras.length > 0) {
+                    double[] packedT = new double[extras.length];
+                    for (int i = 0; i < extras.length; i++) {
+                        packedT[i] = (extras[i] instanceof Number)
+                            ? ((Number) extras[i]).doubleValue()
+                            : 0.0;
+                    }
+                    tArgs = packedT;
+                }
+                bArgs = new boolean[]{idxOp.isKeepDims()};
             }
 
             // Determine if all INT/LONG inputs are from external sources (constants/vars/placeholders).

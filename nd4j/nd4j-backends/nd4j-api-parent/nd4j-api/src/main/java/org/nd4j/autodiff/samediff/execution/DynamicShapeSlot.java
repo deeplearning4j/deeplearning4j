@@ -129,13 +129,24 @@ public class DynamicShapeSlot {
 
     /**
      * Legacy op type for ops not registered as DeclarableOp in C++.
-     * 0 = not a legacy op (use CustomOp from OpRegistrator)
-     * 1 = LegacyTransformSameOp
-     * 2 = LegacyTransformStrictOp
-     * 3 = LegacyTransformFloatOp
-     * 4 = LegacyTransformBoolOp
-     * 5 = LegacyScalarOp
-     * 6 = LegacyPairwiseTransformOp
+     * 0  = not a legacy op (use CustomOp from OpRegistrator)
+     * 1  = LegacyTransformSameOp
+     * 2  = LegacyTransformStrictOp
+     * 3  = LegacyTransformFloatOp
+     * 4  = LegacyTransformBoolOp
+     * 5  = LegacyScalarOp
+     * 6  = LegacyPairwiseTransformOp
+     * 7  = LegacyScalarBoolOp
+     * 8  = LegacyReduceFloatOp
+     * 9  = LegacyReduceSameOp
+     * 10 = LegacyReduceBoolOp
+     * 11 = LegacyReduceLongOp
+     * 12 = LegacyReduce3Op
+     * 13 = LegacyStatsOp
+     * 14 = LegacyIndexReduceOp
+     * 15 = LegacyBroadcastOp
+     * 16 = LegacyBroadcastBoolOp
+     * 17 = LegacyRandomOp
      */
     @Builder.Default
     private int legacyOpType = 0;
@@ -153,6 +164,16 @@ public class DynamicShapeSlot {
     public static final int LEGACY_SCALAR = 5;
     public static final int LEGACY_PAIRWISE_TRANSFORM = 6;
     public static final int LEGACY_SCALAR_BOOL = 7;
+    public static final int LEGACY_REDUCE_FLOAT = 8;
+    public static final int LEGACY_REDUCE_SAME = 9;
+    public static final int LEGACY_REDUCE_BOOL = 10;
+    public static final int LEGACY_REDUCE_LONG = 11;
+    public static final int LEGACY_REDUCE_3 = 12;
+    public static final int LEGACY_STATS = 13;
+    public static final int LEGACY_INDEX_REDUCE = 14;
+    public static final int LEGACY_BROADCAST = 15;
+    public static final int LEGACY_BROADCAST_BOOL = 16;
+    public static final int LEGACY_RANDOM = 17;
 
     /** Control flow type constants. */
     public static final byte CF_NONE = 0;

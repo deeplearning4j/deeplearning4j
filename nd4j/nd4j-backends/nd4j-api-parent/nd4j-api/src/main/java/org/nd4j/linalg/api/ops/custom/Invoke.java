@@ -371,6 +371,17 @@ public class Invoke extends DynamicCustomOp {
                     SDVariable v = func.getVariable(varName);
                     if (v != null && v.getShape() != null) {
                         shapeDescriptors.add(LongShapeDescriptor.fromShape(v.getShape(), v.dataType()));
+                    } else if (v != null && v.getVariableType() == VariableType.ARRAY) {
+                        // ARRAY-type sub-graph outputs get shape from execution, not a cached field.
+                        // Infer shape by running the sub-graph's shape inference: feed parent
+                        // input shapes into the sub-graph placeholders and compute.
+                        long[] inferred = inferSubGraphOutputShape(func, v);
+                        DataType dt = v.dataType() != null ? v.dataType() : DataType.DOUBLE;
+                        if (inferred != null) {
+                            shapeDescriptors.add(LongShapeDescriptor.fromShape(inferred, dt));
+                        } else {
+                            shapeDescriptors.add(LongShapeDescriptor.fromShape(new long[]{1}, dt));
+                        }
                     } else {
                         shapeDescriptors.add(LongShapeDescriptor.fromShape(new long[]{1}, DataType.FLOAT));
                     }
@@ -391,5 +402,28 @@ public class Invoke extends DynamicCustomOp {
         }
 
         return outputBuffers;
+    }
+
+    /**
+     * Infer the output shape of a sub-graph variable by propagating parent input
+     * shapes into the sub-graph placeholders.
+     */
+    private long[] inferSubGraphOutputShape(SameDiff func, SDVariable outputVar) {
+        if (subGraphInputVarNames == null || inputVarNames == null || sameDiff == null) {
+            return null;
+        }
+        // Set sub-graph placeholder shapes from parent input shapes
+        for (int i = 0; i < subGraphInputVarNames.length && i < inputVarNames.length; i++) {
+            SDVariable parentInput = sameDiff.getVariable(inputVarNames[i]);
+            SDVariable subInput = func.getVariable(subGraphInputVarNames[i]);
+            if (parentInput != null && subInput != null) {
+                long[] parentShape = parentInput.getShape();
+                if (parentShape != null && subInput.getShape() == null) {
+                    subInput.setShape(parentShape);
+                }
+            }
+        }
+        // Now try to get the output shape — it may resolve via shape inference
+        return outputVar.getShape();
     }
 }

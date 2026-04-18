@@ -172,7 +172,7 @@ public class LongShapeDescriptor {
     public static LongShapeDescriptor fromShape(@NonNull long[] shape, @NonNull long[] strides, long ews, char order, @NonNull DataType dataType, boolean empty) {
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
-        if (empty && shape.length > 0)
+        if (empty)
             extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
 
         return new LongShapeDescriptor(shape, strides, 0, ews, order, extras);

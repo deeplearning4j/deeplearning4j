@@ -136,7 +136,7 @@ public class NDLinalg {
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
    * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
-   * @param beta Defaults to 1.0: the scalar multiplier for c 
+   * @param beta Defaults to 0.0: the scalar multiplier for c 
    * @param transA Whether to transpose a when running multiply 
    * @param transB Whether to transpose b when running multiply 
    * @return output  (FLOATING_POINT type)
@@ -169,7 +169,7 @@ public class NDLinalg {
   public INDArray matmul(INDArray a, INDArray b) {
     NDValidation.validateNumerical("Matmul", "a", a);
     NDValidation.validateNumerical("Matmul", "b", b);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(a, b, 1.0, 1.0, false, false));
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(a, b, 1.0, 0.0, false, false));
     try {
       return __tmp[0];
     } finally {

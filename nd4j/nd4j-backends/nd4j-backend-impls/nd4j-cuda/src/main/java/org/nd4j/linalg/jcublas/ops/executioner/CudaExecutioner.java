@@ -2254,13 +2254,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int targetDeviceId = -1;
         if (outputs != null && !outputs.isEmpty()) {
             INDArray firstOutput = outputs.get(0);
-            if (firstOutput != null) {
+            if (firstOutput != null && !firstOutput.isEmpty() && firstOutput.data() != null) {
                 targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstOutput);
             }
         }
         if (targetDeviceId < 0 && inputs != null && !inputs.isEmpty()) {
             INDArray firstInput = inputs.get(0);
-            if (firstInput != null) {
+            if (firstInput != null && !firstInput.isEmpty() && firstInput.data() != null) {
                 targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
             }
         }
@@ -2280,7 +2280,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 // Migrate all inputs that are on different devices
                 for (int i = 0; i < inputs.size(); i++) {
                     INDArray input = inputs.get(i);
-                    if (input != null) {
+                    if (input != null && !input.isEmpty() && input.data() != null) {
                         int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
                         if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
                             // Migrate this input to the target device

@@ -23,6 +23,7 @@ package org.nd4j.autodiff.samediff.config;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
@@ -47,7 +48,9 @@ import java.io.Serializable;
         @JsonSubTypes.Type(value = PPOConfig.class, name = "ppo"),
         @JsonSubTypes.Type(value = DAPOConfig.class, name = "dapo"),
         @JsonSubTypes.Type(value = GSPOConfig.class, name = "gspo"),
-        @JsonSubTypes.Type(value = DrGRPOConfig.class, name = "drgrpo")
+        @JsonSubTypes.Type(value = DrGRPOConfig.class, name = "drgrpo"),
+        @JsonSubTypes.Type(value = SimPOConfig.class, name = "simpo"),
+        @JsonSubTypes.Type(value = VlmGRPOConfig.class, name = "vlm_grpo")
 })
 public abstract class RLAlignmentConfig implements Serializable {
 
@@ -118,6 +121,7 @@ public abstract class RLAlignmentConfig implements Serializable {
     /**
      * Get the RL alignment method type name.
      */
+    @JsonIgnore
     public abstract String getMethodName();
 
     /**

@@ -113,8 +113,9 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
     protected void addArgs() {
         addBArgument(keepDims);
         if(dimensions != null && dimensions.length > 0) {
-            // -1 or Integer.MAX_VALUE means "full array" - don't pass dimension args for full array reduction
-            if(dimensions.length != 1 || (dimensions[0] != -1 && dimensions[0] != Integer.MAX_VALUE)) {
+            // Integer.MAX_VALUE is a sentinel for "full array" reduction - don't pass it as a dimension arg.
+            // -1 means "last axis" (NumPy convention) and must be passed so C++ can resolve it correctly.
+            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE) {
                 addIArgument(dimensions);
             }
         }

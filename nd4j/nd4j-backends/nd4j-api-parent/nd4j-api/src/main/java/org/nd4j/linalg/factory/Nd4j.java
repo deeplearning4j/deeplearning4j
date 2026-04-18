@@ -183,6 +183,11 @@ public class Nd4j {
     public static final NDImage image = new NDImage();
 
     /**
+     * Training namespace - updater operations for neural network training
+     */
+    public static final NDTraining training = new NDTraining();
+
+    /**
      * Framework namespace - unified access to ND4J internals.
      * Provides transparent access to memory management, op profiling,
      * array lifecycle tracking, and diagnostic facilities.

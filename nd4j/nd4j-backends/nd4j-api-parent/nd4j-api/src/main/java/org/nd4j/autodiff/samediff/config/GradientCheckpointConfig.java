@@ -43,6 +43,13 @@ import java.util.Set;
  *       (use factory method {@link #sqrtN()})</li>
  * </ul>
  *
+ * Checkpoint storage strategy is controlled by {@link CheckpointStrategy}:
+ * <ul>
+ *   <li><b>RECOMPUTE:</b> Standard discard + recompute during backward</li>
+ *   <li><b>OFFLOAD_HOST:</b> Synchronous D2H copy to CPU RAM during forward</li>
+ *   <li><b>OFFLOAD_HOST_ASYNC:</b> Async D2H copy with H2D prefetch for ~2% overhead</li>
+ * </ul>
+ *
  * Adam Gibson
  */
 @Data
@@ -50,6 +57,51 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GradientCheckpointConfig implements Serializable {
+
+    /**
+     * Strategy for checkpoint storage during training.
+     */
+    public enum CheckpointStrategy {
+        /** Standard: discard activations during forward, recompute during backward. */
+        RECOMPUTE,
+        /** Synchronous D2H offload: copy checkpoints to CPU RAM during forward, sync H2D during backward. */
+        OFFLOAD_HOST,
+        /** Async D2H offload: non-blocking D2H during forward, prefetch H2D before backward needs them. */
+        OFFLOAD_HOST_ASYNC
+    }
+
+    /**
+     * Strategy for checkpoint storage.
+     * Default: RECOMPUTE (standard discard + recompute)
+     */
+    @Builder.Default
+    private CheckpointStrategy strategy = CheckpointStrategy.RECOMPUTE;
+
+    /**
+     * Prefetch distance: how many layers ahead to start H2D prefetch during backward.
+     * Only effective when strategy is OFFLOAD_HOST_ASYNC.
+     * Default: 2
+     */
+    @Builder.Default
+    private int prefetchDistance = 2;
+
+    /**
+     * Whether to use pinned (page-locked) host memory for async transfers.
+     * Pinned memory allows zero-copy DMA and is significantly faster for large activations.
+     * Only effective when strategy is OFFLOAD_HOST or OFFLOAD_HOST_ASYNC.
+     * Default: true
+     */
+    @Builder.Default
+    private boolean pinHostMemory = true;
+
+    /**
+     * Maximum host memory budget for offloaded checkpoints in MB.
+     * When exceeded, the manager falls back to RECOMPUTE for additional checkpoints.
+     * 0 = unlimited.
+     * Default: 0
+     */
+    @Builder.Default
+    private long maxHostMemoryMB = 0;
 
     /**
      * Checkpoint every N layers during the forward pass.
@@ -71,7 +123,11 @@ public class GradientCheckpointConfig implements Serializable {
      * Whether to offload checkpointed activations to CPU (host) memory.
      * Reduces GPU memory usage further at the cost of D2H/H2D transfer overhead.
      * Default: false
+     *
+     * @deprecated Use {@link #strategy} with {@link CheckpointStrategy#OFFLOAD_HOST} or
+     *             {@link CheckpointStrategy#OFFLOAD_HOST_ASYNC} instead.
      */
+    @Deprecated
     @Builder.Default
     private boolean offloadToHost = false;
 
@@ -79,7 +135,10 @@ public class GradientCheckpointConfig implements Serializable {
      * Whether to use an async CUDA stream for D2H offloading.
      * Only effective when offloadToHost is true.
      * Default: true
+     *
+     * @deprecated Use {@link #strategy} with {@link CheckpointStrategy#OFFLOAD_HOST_ASYNC} instead.
      */
+    @Deprecated
     @Builder.Default
     private boolean asyncOffload = true;
 
@@ -141,5 +200,47 @@ public class GradientCheckpointConfig implements Serializable {
             return Math.max(1, (int) Math.sqrt(numLayers));
         }
         return checkpointEveryN > 0 ? checkpointEveryN : numLayers;
+    }
+
+    /**
+     * Create an async offload configuration with default prefetch distance (2).
+     * Checkpoints every layer, uses pinned memory, unlimited host budget.
+     */
+    public static GradientCheckpointConfig asyncOffload() {
+        return builder()
+                .strategy(CheckpointStrategy.OFFLOAD_HOST_ASYNC)
+                .checkpointEveryN(1)
+                .pinHostMemory(true)
+                .prefetchDistance(2)
+                .build();
+    }
+
+    /**
+     * Create an async offload configuration with a custom prefetch distance.
+     *
+     * @param prefetchDist Number of layers ahead to begin H2D prefetch during backward.
+     */
+    public static GradientCheckpointConfig asyncOffload(int prefetchDist) {
+        return builder()
+                .strategy(CheckpointStrategy.OFFLOAD_HOST_ASYNC)
+                .checkpointEveryN(1)
+                .pinHostMemory(true)
+                .prefetchDistance(prefetchDist)
+                .build();
+    }
+
+    /**
+     * Check if this config uses async offload strategy.
+     */
+    public boolean isAsyncOffload() {
+        return strategy == CheckpointStrategy.OFFLOAD_HOST_ASYNC;
+    }
+
+    /**
+     * Check if this config uses any host offload strategy (sync or async).
+     */
+    public boolean isAnyOffload() {
+        return strategy == CheckpointStrategy.OFFLOAD_HOST
+                || strategy == CheckpointStrategy.OFFLOAD_HOST_ASYNC;
     }
 }

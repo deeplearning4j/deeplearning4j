@@ -293,7 +293,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(DataType dataType, long[] shape, long[] strides, MemoryWorkspace currentWorkspace) {
-        this(Nd4j.createBuffer(dataType, ArrayUtil.prodLong(shape), false, currentWorkspace), shape, strides, 0, Nd4j.order());
+        this(Nd4j.createBuffer(dataType, shape.length == 0 ? 1 : ArrayUtil.prodLong(shape), false, currentWorkspace), shape, strides, 0, Nd4j.order());
     }
 
 

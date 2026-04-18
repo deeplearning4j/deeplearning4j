@@ -437,12 +437,14 @@ public class ND4JSystemProperties {
 
     /**
      * Applicability: DynamicShapePlan-based training<br>
-     * Description: Enable DSP fast path for training iterations. When enabled, the forward+backward
-     * pass is executed via DynamicShapePlanExecutor instead of per-op execution, with updaters
-     * applied post-execution.
-     * <p>
-     * Default: true
+     * Description: DSP training is implicit — when DSP is built and available,
+     * the training path (forward + backward + optimizer + weight-update) executes via
+     * DynamicShapePlan automatically. No system property needed to enable it.
+     *
+     * @deprecated DSP training is always enabled when DSP is available. This constant
+     *             is retained only for backward compatibility with tests that reference it.
      */
+    @Deprecated
     public static final String DSP_TRAINING_ENABLED = "nd4j.dsp.training.enabled";
 
     /**

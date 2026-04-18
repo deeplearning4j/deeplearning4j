@@ -107,7 +107,7 @@ public class ExpandDims extends DynamicCustomOp {
     @Override
     public Map<String, Object> propertiesForFunction() {
         Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("axis", axis);
+        ret.put("axis", (long) jaxis);
         return ret;
     }
 
