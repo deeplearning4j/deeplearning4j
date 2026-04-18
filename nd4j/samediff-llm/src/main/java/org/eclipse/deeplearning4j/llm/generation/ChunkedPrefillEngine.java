@@ -58,7 +58,7 @@ import java.util.Map;
  * A chunk size of 512 is a good default for most models on consumer GPUs.</p>
  *
  * @author Eclipse Deeplearning4j Contributors
- * @see DecoderUtils
+ * @see ModelIOConfig
  */
 @Slf4j
 public class ChunkedPrefillEngine {
@@ -153,7 +153,7 @@ public class ChunkedPrefillEngine {
         long totalLen = pastLen + chunkLen;
 
         // Build causal mask: [1, 1, chunkLen, totalLen]
-        INDArray causalMask = DecoderUtils.buildCausalMask(chunkLen, totalLen);
+        INDArray causalMask = ModelIOConfig.buildCausalMask(chunkLen, totalLen);
 
         // Build input map for the model
         Map<String, INDArray> inputMap = new HashMap<>();
@@ -174,8 +174,8 @@ public class ChunkedPrefillEngine {
         inputMap.putAll(kvCaches);
 
         // Find output names
-        String logitsName = DecoderUtils.findLogitsOutputName(model);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(model);
+        String logitsName = ModelIOConfig.findLogitsOutputName(model);
+        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheOutputNames(model);
 
         // Collect all output names we need
         List<String> outputNames = new ArrayList<>();

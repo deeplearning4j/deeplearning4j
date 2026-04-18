@@ -69,7 +69,7 @@ public interface KvCacheManager extends AutoCloseable {
      * @param prefillSeqLen   number of tokens in the prefill
      */
     void initializeFromPrefill(Map<String, INDArray> prefillOutputs,
-                               DecoderUtils.KVCacheNames kvNames,
+                               ModelIOConfig.KVCacheNames kvNames,
                                int maxNewTokens, long prefillSeqLen);
 
     /**
@@ -112,7 +112,7 @@ public interface KvCacheManager extends AutoCloseable {
      * @param kvNames         KV cache output names (present key/value names)
      */
     void scatterNewEntries(Map<String, INDArray> decoderOutputs,
-                           DecoderUtils.KVCacheNames kvNames);
+                           ModelIOConfig.KVCacheNames kvNames);
 
     /**
      * Scatter multiple KV entries from a multi-token decode step (speculative decode).
@@ -122,7 +122,7 @@ public interface KvCacheManager extends AutoCloseable {
      * @param numEntries      number of entries to scatter
      */
     void scatterMultipleEntries(Map<String, INDArray> decoderOutputs,
-                                DecoderUtils.KVCacheNames kvNames,
+                                ModelIOConfig.KVCacheNames kvNames,
                                 int numEntries);
 
     /**

@@ -343,7 +343,7 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
 
         for (String inputName : getDecoderInputNames()) {
             if (inputName.startsWith(ioConfig.getKvCachePrefix())) {
-                INDArray empty = DecoderUtils.createEmptyKvCache(draftModel, inputName, 1, hiddenSize);
+                INDArray empty = createEmptyKvCache(draftModel, inputName);
                 long numHeads = empty.size(1);
                 long headDim = empty.size(3);
                 DataType kvType = empty.dataType();
@@ -386,7 +386,7 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
             } else if (ioConfig.isAttentionMask(inputName)) {
                 inputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
             } else if (ioConfig.isCausalMask(inputName)) {
-                inputMap.put(inputName, DecoderUtils.buildCausalMask(1, currentSeqLen, totalSeqLen));
+                inputMap.put(inputName, ModelIOConfig.buildCausalMask(1, currentSeqLen, totalSeqLen));
             } else if (ioConfig.isPositionIds(inputName)) {
                 inputMap.put(inputName, Nd4j.createFromArray(new long[]{draftPastSeqLen}).reshape(1, 1));
             } else if (inputName.startsWith(ioConfig.getKvCachePrefix())) {
@@ -401,7 +401,7 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
                     kvViewDups.add(viewDup);
                     inputMap.put(inputName, viewDup);
                 } else {
-                    inputMap.put(inputName, DecoderUtils.createEmptyKvCache(draftModel, inputName, 1, hiddenSize));
+                    inputMap.put(inputName, createEmptyKvCache(draftModel, inputName));
                 }
             }
         }
@@ -409,7 +409,7 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
         // Build output names: logits + KV cache
         List<String> outputNames = new ArrayList<>();
         outputNames.add(ioConfig.getLogitsOutputName());
-        DecoderUtils.KVCacheNames kvNames = ioConfig.getKvCacheNames();
+        ModelIOConfig.KVCacheNames kvNames = ioConfig.getKvCacheNames();
         outputNames.addAll(kvNames.keyNames);
         outputNames.addAll(kvNames.valueNames);
 
@@ -423,38 +423,23 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
         // Scatter the new KV entry from present outputs into static buffers at draftPastSeqLen.
         // Present KV shape: [batch, heads, draftPastSeqLen+1, dim] (past concat new).
         // The new entry is at the last position (index draftPastSeqLen).
-        DecoderUtils.scatterNewKvEntryAtPosition(
-                staticDraftKvBuffers, outputs,
-                kvNames.keyNames, kvNames.valueNames,
-                0, draftPastSeqLen, (int) draftPastSeqLen);
+        scatterKvEntryAtPosition(staticDraftKvBuffers, outputs, kvNames, draftPastSeqLen, (int) draftPastSeqLen);
 
         // Close duped output arrays from InferenceSession
         for (INDArray arr : outputs.values()) {
-            if (arr != null && !arr.wasClosed()) {
-                arr.setCloseable(true);
-                if (arr.closeable()) {
-                    arr.close();
-                }
-            }
+            SameDiffMemoryUtils.safeClose(arr);
         }
 
         // Close input arrays created for this step (not static KV buffers)
         for (Map.Entry<String, INDArray> entry : inputMap.entrySet()) {
             if (!entry.getKey().startsWith(ioConfig.getKvCachePrefix())) {
-                INDArray arr = entry.getValue();
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
+                SameDiffMemoryUtils.safeClose(entry.getValue());
             }
         }
 
         // Close contiguous KV view dups used as inputs
         for (INDArray dup : kvViewDups) {
-            if (dup != null && !dup.wasClosed()) {
-                dup.setCloseable(true);
-                dup.close();
-            }
+            SameDiffMemoryUtils.safeClose(dup);
         }
 
         draftPastSeqLen++;
@@ -503,18 +488,7 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
         } else {
             posLogits = logits;
         }
-
-        float maxVal = Float.NEGATIVE_INFINITY;
-        int maxIdx = 0;
-        long vocabSize = posLogits.length();
-        for (int v = 0; v < vocabSize; v++) {
-            float val = posLogits.getFloat(v);
-            if (val > maxVal) {
-                maxVal = val;
-                maxIdx = v;
-            }
-        }
-        return maxIdx;
+        return SamplerUtils.argmax(posLogits);
     }
 
     /**
@@ -531,5 +505,43 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
             }
         }
         return -1;
+    }
+
+    /**
+     * Create an empty KV cache for a given input name, inferring shape from the model.
+     * Delegates to ModelIOConfig.createEmptyKvCache with batch=1 and this model's hiddenSize.
+     */
+    private INDArray createEmptyKvCache(SameDiff decoder, String inputName) {
+        return ModelIOConfig.createEmptyKvCache(decoder, inputName, 1, hiddenSize);
+    }
+
+    /**
+     * Scatter the new KV entry from present outputs into static KV buffers at targetPos.
+     * The new entry is extracted from sourcePosition in the present KV output.
+     */
+    private void scatterKvEntryAtPosition(Map<String, INDArray> staticBufs,
+                                           Map<String, INDArray> outputs,
+                                           ModelIOConfig.KVCacheNames kvNames,
+                                           long targetPos, int sourcePosition) {
+        List<String> allPresentNames = new ArrayList<>();
+        allPresentNames.addAll(kvNames.keyNames);
+        allPresentNames.addAll(kvNames.valueNames);
+
+        for (String presentName : allPresentNames) {
+            INDArray presentKv = outputs.get(presentName);
+            if (presentKv == null) continue;
+
+            String pastInputName = ioConfig.presentToInputName(presentName);
+            INDArray staticBuf = staticBufs.get(pastInputName);
+            if (staticBuf == null) continue;
+
+            INDArray sourceSlice = presentKv.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.point(sourcePosition), NDArrayIndex.all());
+            INDArray destSlice = staticBuf.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.point(targetPos), NDArrayIndex.all());
+            destSlice.assign(sourceSlice);
+        }
     }
 }

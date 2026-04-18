@@ -49,6 +49,8 @@ public class ArchitectureRegistry {
         register(new OpenELMArchitecture());
         register(new GptOssArchitecture());
         register(new WhisperArchitecture());
+        register(new GLMArchitecture());
+        register(new Llama4Architecture());
         register(new GenericArchitecture());
     }
 

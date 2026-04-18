@@ -23,40 +23,27 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Configuration for decoder model input/output variable names.
  *
  * <p>Eliminates hardcoded variable name assumptions throughout the decode pipeline.
- * All components (StaticKvCacheDecodeLoop, DraftModelSpeculator, FrozenDecodeStep,
- * DecoderUtils) use this config instead of comparing against string literals like
+ * All components (StaticKvCacheDecodeLoop, DraftModelSpeculator, FrozenDecodeStep)
+ * use this config instead of comparing against string literals like
  * "inputs_embeds", "attention_mask", etc.</p>
  *
  * <p>Provides a {@link #discover(SameDiff)} factory that auto-discovers names from
  * the SameDiff graph, and a builder for explicit configuration.</p>
  *
- * <h3>Usage:</h3>
- * <pre>{@code
- * // Auto-discover from model graph
- * ModelIOConfig config = ModelIOConfig.discover(decoder);
- *
- * // Or configure explicitly
- * ModelIOConfig config = ModelIOConfig.builder()
- *     .inputEmbeddingsName("inputs_embeds")
- *     .inputIdsName("input_ids")
- *     .attentionMaskName("attention_mask")
- *     .causalMaskName("_causal_mask")
- *     .positionIdsName("position_ids")
- *     .kvCachePrefix("past_key_values.")
- *     .kvPresentToInputReplace(new String[]{"present", "past_key_values"})
- *     .logitsOutputName("logits")
- *     .build();
- * }</pre>
- *
- * @see DecoderUtils#buildDecoderInputMap
  * @see DraftModelSpeculator
  * @see FrozenDecodeStep
  * @see StaticKvCacheDecodeLoop
@@ -65,6 +52,173 @@ import java.util.List;
 @Getter
 @Builder
 public class ModelIOConfig {
+
+    /** Mask fill value matching torch.finfo(torch.float32).min */
+    public static final float MASK_FILL = -3.4028235e+38f;
+
+    /**
+     * Holds lists of present key and value output names from a decoder model.
+     */
+    public static class KVCacheNames {
+        public final List<String> keyNames;
+        public final List<String> valueNames;
+
+        public KVCacheNames(List<String> keyNames, List<String> valueNames) {
+            this.keyNames = keyNames;
+            this.valueNames = valueNames;
+        }
+    }
+
+    /**
+     * Find the logits output variable name from a decoder model.
+     */
+    public static String findLogitsOutputName(SameDiff decoder) {
+        for (String outputName : decoder.outputs()) {
+            if (outputName.contains("logit") || outputName.equals("logits")) {
+                return outputName;
+            }
+        }
+        if (!decoder.outputs().isEmpty()) {
+            return decoder.outputs().get(0);
+        }
+        return null;
+    }
+
+    /**
+     * Find the KV cache output names (present key/value) from a decoder model.
+     */
+    public static KVCacheNames findKVCacheOutputNames(SameDiff decoder) {
+        List<String> presentKeyNames = new ArrayList<>();
+        List<String> presentValueNames = new ArrayList<>();
+
+        for (String outputName : decoder.outputs()) {
+            if (outputName.contains("present") && outputName.contains("key")) {
+                presentKeyNames.add(outputName);
+            } else if (outputName.contains("present") && outputName.contains("value")) {
+                presentValueNames.add(outputName);
+            }
+        }
+
+        Collections.sort(presentKeyNames);
+        Collections.sort(presentValueNames);
+
+        return new KVCacheNames(presentKeyNames, presentValueNames);
+    }
+
+    /**
+     * Build a causal attention mask for the decoder (FLOAT dtype).
+     *
+     * For prefill (currentSeqLen &gt; 1): upper-triangular mask filled with MASK_FILL
+     *   mask[q][k] = 0 if k &lt;= (pastSeqLen + q), else MASK_FILL
+     *
+     * For decode (currentSeqLen == 1): all zeros (single token attends to all past)
+     *
+     * @param currentSeqLen number of query tokens in this step
+     * @param totalSeqLen total KV length (past + current)
+     * @return INDArray of shape [1, 1, currentSeqLen, totalSeqLen] with FLOAT dtype
+     */
+    public static INDArray buildCausalMask(long currentSeqLen, long totalSeqLen) {
+        return buildCausalMask(1, currentSeqLen, totalSeqLen);
+    }
+
+    /**
+     * Build a batched causal attention mask for the decoder (FLOAT dtype).
+     *
+     * @param batchSize number of sequences in the batch
+     * @param currentSeqLen number of query tokens in this step
+     * @param totalSeqLen total KV length (past + current)
+     * @return INDArray of shape [batchSize, 1, currentSeqLen, totalSeqLen] with FLOAT dtype
+     */
+    public static INDArray buildCausalMask(long batchSize, long currentSeqLen, long totalSeqLen) {
+        if (currentSeqLen == 1) {
+            return Nd4j.zeros(DataType.FLOAT, batchSize, 1, 1, totalSeqLen);
+        }
+
+        long pastSeqLen = totalSeqLen - currentSeqLen;
+        int Q = (int) currentSeqLen;
+        int K = (int) totalSeqLen;
+        float[] data = new float[Q * K];
+
+        for (int q = 0; q < Q; q++) {
+            int lastVisibleK = (int) pastSeqLen + q;
+            int rowOffset = q * K;
+            for (int k = lastVisibleK + 1; k < K; k++) {
+                data[rowOffset + k] = MASK_FILL;
+            }
+        }
+
+        INDArray singleMask = Nd4j.create(data, new long[]{1, 1, currentSeqLen, totalSeqLen}, 'c');
+
+        if (batchSize == 1) {
+            return singleMask;
+        }
+
+        INDArray mask = Nd4j.tile(singleMask, (int) batchSize, 1, 1, 1);
+        singleMask.close();
+        return mask;
+    }
+
+    /**
+     * Create an empty KV cache tensor for the first decoder step.
+     * Shape is [batchSize, numHeads, 0, headDim].
+     *
+     * Infers numHeads and headDim from the decoder graph's variable shapes.
+     *
+     * @param decoder the SameDiff decoder model
+     * @param inputName the past_key_values input name
+     * @param batchSize batch size
+     * @param hiddenSize model hidden size (used for fallback inference)
+     * @return empty KV cache INDArray
+     */
+    public static INDArray createEmptyKvCache(SameDiff decoder, String inputName, long batchSize, long hiddenSize) {
+        long numHeads = -1;
+        long headDim = -1;
+        DataType kvType = DataType.FLOAT;
+
+        SDVariable inputVar = decoder.getVariable(inputName);
+        if (inputVar != null && inputVar.getShape() != null && inputVar.getShape().length >= 4) {
+            long[] shape = inputVar.getShape();
+            if (inputVar.dataType() != null) {
+                kvType = inputVar.dataType();
+            }
+            if (shape[1] > 0) {
+                numHeads = shape[1];
+            }
+            if (shape[3] > 0) {
+                headDim = shape[3];
+            }
+        }
+
+        if (numHeads <= 0 || headDim <= 0) {
+            ModelIOConfig defaultConfig = ModelIOConfig.builder().build();
+            String presentName = defaultConfig.inputToPresentName(inputName);
+            SDVariable presentVar = decoder.getVariable(presentName);
+            if (presentVar != null && presentVar.getShape() != null && presentVar.getShape().length >= 4) {
+                long[] shape = presentVar.getShape();
+                if (numHeads <= 0 && shape[1] > 0) {
+                    numHeads = shape[1];
+                }
+                if (headDim <= 0 && shape[3] > 0) {
+                    headDim = shape[3];
+                }
+            }
+        }
+
+        if (headDim <= 0 && numHeads > 0 && hiddenSize > 0) {
+            headDim = Math.max(1, hiddenSize / numHeads);
+        }
+        if (numHeads <= 0 && headDim > 0 && hiddenSize > 0) {
+            numHeads = Math.max(1, hiddenSize / headDim);
+        }
+        if (headDim <= 0) {
+            headDim = 64;
+        }
+        if (numHeads <= 0) {
+            numHeads = Math.max(1, hiddenSize / headDim);
+        }
+
+        return Nd4j.zeros(kvType, batchSize, numHeads, 0, headDim);
+    }
 
     // ========== Input Names ==========
 
@@ -111,9 +265,9 @@ public class ModelIOConfig {
 
     /**
      * KV cache output names (present key/value pairs).
-     * Discovered via {@link DecoderUtils#findKVCacheOutputNames(SameDiff)}.
+     * Discovered via {@link #findKVCacheOutputNames(SameDiff)}.
      */
-    private final DecoderUtils.KVCacheNames kvCacheNames;
+    private final KVCacheNames kvCacheNames;
 
     // ========== Encoder-Decoder ==========
 
@@ -257,8 +411,8 @@ public class ModelIOConfig {
      *   <li>Causal mask: first input containing "causal_mask"</li>
      *   <li>Position IDs: first input containing "position_id"</li>
      *   <li>KV cache prefix: detected from first input starting with common KV prefixes</li>
-     *   <li>Logits output: via {@link DecoderUtils#findLogitsOutputName(SameDiff)}</li>
-     *   <li>KV cache outputs: via {@link DecoderUtils#findKVCacheOutputNames(SameDiff)}</li>
+     *   <li>Logits output: via {@link #findLogitsOutputName(SameDiff)}</li>
+     *   <li>KV cache outputs: via {@link #findKVCacheOutputNames(SameDiff)}</li>
      * </ul></p>
      *
      * @param model the SameDiff model to inspect
@@ -339,8 +493,8 @@ public class ModelIOConfig {
         }
 
         // Discover outputs
-        String logitsName = DecoderUtils.findLogitsOutputName(model);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(model);
+        String logitsName = findLogitsOutputName(model);
+        KVCacheNames kvNames = findKVCacheOutputNames(model);
 
         boolean isEncoderDecoder = encoderHiddenName != null;
 

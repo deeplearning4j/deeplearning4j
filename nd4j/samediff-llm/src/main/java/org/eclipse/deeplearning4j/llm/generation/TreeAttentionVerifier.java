@@ -170,14 +170,14 @@ public class TreeAttentionVerifier {
      * @param treeSize total number of nodes in the tree (including root)
      * @param pastSeqLen length of existing KV cache (past tokens to attend to)
      * @return attention mask of shape {@code [1, 1, treeSize, pastSeqLen + treeSize]},
-     *         FLOAT dtype, with {@link DecoderUtils#MASK_FILL} for masked positions
+     *         FLOAT dtype, with {@link ModelIOConfig#MASK_FILL} for masked positions
      */
     public static INDArray buildTreeAttentionMask(TreeNode root, int treeSize, long pastSeqLen) {
         long totalLen = pastSeqLen + treeSize;
         float[] maskData = new float[(int) (treeSize * totalLen)];
 
         // Initialize all tree positions as masked
-        Arrays.fill(maskData, DecoderUtils.MASK_FILL);
+        Arrays.fill(maskData, ModelIOConfig.MASK_FILL);
 
         // For each node, unmask its ancestors and itself (in the tree portion)
         // and all past KV positions
@@ -418,17 +418,6 @@ public class TreeAttentionVerifier {
         } else {
             posLogits = logits;
         }
-
-        float maxVal = Float.NEGATIVE_INFINITY;
-        int maxIdx = 0;
-        long vocabSize = posLogits.length();
-        for (int v = 0; v < vocabSize; v++) {
-            float val = posLogits.getFloat(v);
-            if (val > maxVal) {
-                maxVal = val;
-                maxIdx = v;
-            }
-        }
-        return maxIdx;
+        return SamplerUtils.argmax(posLogits);
     }
 }
