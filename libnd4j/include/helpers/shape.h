@@ -771,7 +771,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF( sd::Lon
   sd::LongType *shapeOf = shape::shapeOf(shapeBuffer);
   char order = shape::order(shapeBuffer);
 
-  if (rank <= 1) return true;
+  if (rank == 0) return true;
+  if (rank == 1) return (strides[0] == 1);
 
   if (shape::isRowVector(shapeBuffer) && strides[0] == 1 && strides[1] == 1) return true;
 

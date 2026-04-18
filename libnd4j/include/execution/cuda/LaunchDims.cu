@@ -1116,9 +1116,14 @@ dim3 stackDims(int length) {
 dim3 topkDims(int numTads) {
   int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
   int blocksPerGrid = static_cast<int>(numTads);
-  int sharedMem = 1024;
   threadsPerBlock = getEnvVariable("GRID_SIZE_TOP_K", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_TOP_K", blocksPerGrid);
+  // The inTopKCuda kernel uses extern __shared__ LongType sharedMem[] with one slot per thread.
+  // Allocate threadsPerBlock * sizeof(LongType) bytes so the parallel reduction does not read
+  // out-of-bounds when activeThreads = blockDim.x / 2 (= 128) and thread 0 reads sharedMem[128].
+  // The previous default of 1024 bytes only covered 128 of the 256 threads (8 bytes each),
+  // causing memory corruption and wrong results.
+  int sharedMem = threadsPerBlock * static_cast<int>(sizeof(long long));
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_TOP_K", sharedMem);
   return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 

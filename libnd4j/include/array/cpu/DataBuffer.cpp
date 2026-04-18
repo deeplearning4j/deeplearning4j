@@ -48,6 +48,15 @@ SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
 SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
 
+// CPU stubs for DSP slot-exec alloc/free accounting thread-locals (declared in DataBuffer.h).
+// NativeDynamicShapePlan_segments.cpp references them unconditionally; the CUDA definitions
+// live in array/cuda/DataBuffer.cu and are not compiled on CPU builds.
+SD_TLS_EXPORT thread_local long long tl_dspAllocBytes = 0;
+SD_TLS_EXPORT thread_local long long tl_dspFreeBytes = 0;
+SD_TLS_EXPORT thread_local int tl_dspAllocCount = 0;
+SD_TLS_EXPORT thread_local int tl_dspFreeCount = 0;
+SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount = 0;
+
 void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
   // No-op on CPU: there is no device (special) buffer to replace.
 }

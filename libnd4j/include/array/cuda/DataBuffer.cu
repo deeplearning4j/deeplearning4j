@@ -1728,9 +1728,32 @@ void DataBuffer::migrate() {
 
       auto peerRes = cudaMemcpyPeer(newBuffer, targetDevice, _specialBuffer, oldDeviceId, getLenInBytes());
       if (peerRes != cudaSuccess) {
+        cudaGetLastError();  // clear sticky error from failed memcpyPeer
+
+        // Re-query pointer attributes — the source pointer may actually reside on
+        // targetDevice despite metadata claiming oldDeviceId. This happens when
+        // CudaMemoryPool failover placed an allocation on a different device than
+        // _specialDeviceId records, or when the async pool's physical placement
+        // differs from the logical device.
         cudaPointerAttributes retryAttrs;
         auto retryRes = cudaPointerGetAttributes(&retryAttrs, _specialBuffer);
         cudaGetLastError();
+
+        if (retryRes == cudaSuccess && retryAttrs.type == cudaMemoryTypeDevice &&
+            retryAttrs.device == targetDevice) {
+          // Source pointer is actually on the target device — use same-device D2D copy
+          sd_printf("DataBuffer::migrate: cudaMemcpyPeer failed (metadata device=%d), but ptr is on target device %d. Using same-device D2D copy.\n",
+                    oldDeviceId, targetDevice);
+          cudaSetDevice(targetDevice);
+          auto d2dRes = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
+          if (d2dRes != cudaSuccess) {
+            std::string err = "DataBuffer::migrate: same-device D2D fallback failed! Error: " +
+                              std::string(cudaGetErrorString(d2dRes)) + ", bytes: " + std::to_string(getLenInBytes());
+            THROW_EXCEPTION(err.c_str());
+          }
+          goto copyDone;
+        }
+
         cudaSetDevice(targetDevice);
         std::string err = "DataBuffer::migrate: cudaMemcpyPeer failed! Error: " + std::string(cudaGetErrorString(peerRes)) +
                           ", bytes: " + std::to_string(getLenInBytes()) +

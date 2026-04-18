@@ -174,7 +174,22 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
     if (isYVector && (isXRowVector || isXColumnVector || isXVector)) {
       // Vector to vector broadcasting
       if (isYRowVector && (isXRowVector || isXVector)) {
-        // Row vector to row vector
+        // Row vector to row vector (or 1D xTAD vs row-vector y).
+        //
+        // Two distinct layouts reach this branch:
+        //
+        // (A) xTAD and y have the SAME length — classic element-wise: walk both
+        //     with their respective strides (nCols == yLength).
+        //
+        // (B) xTAD length > y's non-broadcast dimension — e.g. x=[20,2] TAD'd
+        //     along axis-1 gives 1D TADs of length 20, while y=[1,2] has only 2
+        //     elements.  In this case the TAD index `i` selects which y element
+        //     to use (y[i * yColStride]) and that scalar is broadcast over the
+        //     entire TAD.  Walking y with i1*yStride would be an OOB read.
+        //
+        // Detect case (B): y's non-broadcast length (yLength) is less than nCols.
+        sd::LongType yLength = (yRank == 1) ? yShape[0] : yShape[1];
+
         for (auto i = start; i < stop; i++) {
           auto baseX = x + xTadOffset[i];
           auto baseZ = z + zTadOffset[i];
@@ -183,14 +198,26 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
           sd::LongType yStride = yRank == 1 ? yStrides[0] : yStrides[1];
           sd::LongType zStride = zTadRank ? zTadStrides[zTadRank - 1] : zTadStrides[0];
 
+          if (yLength < nCols) {
+            // Case (B): use outer TAD index i to index into y, then broadcast
+            // that scalar over all nCols elements of this TAD.
+            // y's non-broadcast dim stride is yStride (last dim for a row vector).
+            Y scalarY = *(y + i * yStride);
 
-          PRAGMA_OMP_SIMD
-          for (sd::LongType i1 = 0; i1 < nCols; i1++) {
-            auto rX = baseX + i1 * xStride;
-            auto rY = y + i1 * yStride;
-            auto rZ = baseZ + i1 * zStride;
+            PRAGMA_OMP_SIMD
+            for (sd::LongType i1 = 0; i1 < nCols; i1++) {
+              *(baseZ + i1 * zStride) = OpType::op(*(baseX + i1 * xStride), scalarY);
+            }
+          } else {
+            // Case (A): lengths match — element-wise walk through both arrays.
+            PRAGMA_OMP_SIMD
+            for (sd::LongType i1 = 0; i1 < nCols; i1++) {
+              auto rX = baseX + i1 * xStride;
+              auto rY = y + i1 * yStride;
+              auto rZ = baseZ + i1 * zStride;
 
-            *rZ = OpType::op(*rX, *rY);
+              *rZ = OpType::op(*rX, *rY);
+            }
           }
         }
       }

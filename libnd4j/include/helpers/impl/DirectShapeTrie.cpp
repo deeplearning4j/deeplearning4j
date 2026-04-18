@@ -292,6 +292,14 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
     }
   }
 
+  // Check extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
+  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie
+  LongType extras = shape::extra(shapeInfo);
+  current = findChild(current, extras, 4 + 2 * rank, false, shapeSignature);
+  if (!current) {
+    return nullptr;
+  }
+
   return current ? current->buffer() : nullptr;
 }
 
@@ -443,6 +451,15 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
     current = safeNodePtr;
   }
 
+  // Insert extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
+  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie
+  LongType extras = shape::extra(shapeInfo);
+  safeNodePtr = current->findOrCreateChild(extras, 4 + 2 * rank, false, shapeSignature);
+  if (safeNodePtr == nullptr) {
+    return createFallbackBuffer(shapeInfo, rank);
+  }
+  current = safeNodePtr;
+
   // Check if another thread has already created the buffer
   if (ConstantShapeBuffer* nodeBuffer = current->buffer()) {
     if (shapeInfoEqual(nodeBuffer->primary(), shapeInfo)) {
@@ -571,6 +588,16 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
       THROW_EXCEPTION(msg.c_str());
       return nullptr;
     }
+  }
+
+  // Insert extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
+  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie
+  LongType extras = shape::extra(shapeInfo);
+  current = current->findOrCreateChild(extras, 4 + 2 * rank, false, shapeSignature);
+  if (!current) {
+    std::string msg = "Failed to create extras node";
+    THROW_EXCEPTION(msg.c_str());
+    return nullptr;
   }
 
   if (!current->buffer()) {
