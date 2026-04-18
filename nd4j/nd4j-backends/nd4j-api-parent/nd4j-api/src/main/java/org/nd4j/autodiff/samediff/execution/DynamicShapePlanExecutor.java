@@ -237,6 +237,33 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Cached requested output names list — avoids allocating a new ArrayList per step. */
     private List<String> cachedRequestedOutputNames;
 
+    /**
+     * When true, the current call was initiated from SameDiff.outputDirect() — meaning
+     * the caller manages output array lifetimes and zeroCopyOutputCache may be safely
+     * populated and reused (callers do NOT dup the result).
+     *
+     * When false (default), the call was initiated from SameDiff.output() which DUPS all
+     * results into independent copies before returning them. In that case zeroCopyOutputCache
+     * must NOT be used as a fast-path return, because KV close in the caller only touches the
+     * duped copies — not the cached originals — leaving the cache stale (it holds the
+     * previous step's logits) while appearing valid to the staleness guard.
+     *
+     * Set to true by SameDiff.outputDirect() BEFORE calling is.output(); reset to false
+     * immediately afterward. This field is intentionally not thread-safe — outputDirect()
+     * and output() are always called on the same thread that owns this executor.
+     */
+    private boolean directOutputMode = false;
+
+    /** Allow the SameDiff front-end to tell the executor whether this is a direct-mode call.
+     *  Called from SameDiff.outputDirect() before invoking the InferenceSession. */
+    public void setDirectOutputMode(boolean directOutputMode) {
+        this.directOutputMode = directOutputMode;
+    }
+
+    public boolean isDirectOutputMode() {
+        return directOutputMode;
+    }
+
     /** Count of frozen executeNative() calls. Used to force full input re-set on the
      *  first few calls (warmup + Triton compile) to prevent stale OpaqueNDArray pointers. */
     private int frozenCallCount;
@@ -269,13 +296,20 @@ public class DynamicShapePlanExecutor implements Closeable {
      * cross-device migration and produce CUDA error 700 on non-peer GPUs.
      *
      * <p>If the execution device hasn't been determined yet (first call),
-     * selects the best GPU via {@link DeviceMemoryManager#selectBestGpu()}.
+     * does NOT preemptively select one. The data-locality-based device selection
+     * in {@link #executeNative} will determine the correct device on first execution.
+     * Using selectBestGpu() here would pick by free memory alone, which on asymmetric
+     * multi-GPU systems (e.g., 24GB + 8GB) routes execution to the small GPU that
+     * cannot fit the model weights — producing garbage logits.
      */
     public void ensureExecutionDevice() {
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices <= 1) return;
+        // Only pin if the device was already determined by executeNative's
+        // data-locality scan. Do NOT initialize nativeExecutionDevice here —
+        // selectBestGpu() picks by free memory which is wrong for asymmetric GPUs.
         if (nativeExecutionDevice < 0) {
-            nativeExecutionDevice = DeviceMemoryManager.getInstance().selectBestGpu();
+            return;  // let executeNative determine the correct device
         }
         int currentDevice = DeviceMemoryManager.getInstance().getCurrentDeviceId();
         if (currentDevice != nativeExecutionDevice) {
@@ -357,11 +391,15 @@ public class DynamicShapePlanExecutor implements Closeable {
             placeholderIndices = null;
             frozenControlInputIndices = null;
             frozenDerivedExternalInputIndices = null;
-            // Free native plan handle to release CUDA graph replay handles, capture
-            // buffers, and workspaces. These hold gigabytes of GPU memory (capture
-            // workspace ~512MB, cuBLAS workspace ~256MB, captured graph state, output
-            // slot arrays). Without this, resetSession() recovers almost no GPU memory
-            // and subsequent pages OOM.
+            // Release C++ GPU intermediates (planOwnedArrays_, CUDA graph workspaces,
+            // replay handles, cuBLAS workspace) BEFORE nulling the Java handle.
+            // The C++ plan is cache-owned and survives freeNativePlanHandle(), but its
+            // intermediates hold gigabytes of GPU memory. Without this, vision encoder
+            // intermediates (~3.6GB per frame) accumulate across resetSession() calls
+            // and cause OOM during decoder graph capture.
+            releaseGpuIntermediates();
+            // Free native plan handle reference (skips C++ plan destruction since it's
+            // cache-owned, but clears Java-side cached state).
             freeNativePlanHandle("SESSION_RESET");
             nativeExecutorFailed = false;
             executionCount = 0;
@@ -1100,8 +1138,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         BytePointer planBytes = new BytePointer(cachedSerializedPlan);
         BytePointer[] namePointers = new BytePointer[cachedSortedOutputs.length];
         for (int ni = 0; ni < cachedSortedOutputs.length; ni++) {
-            namePointers[ni] = new BytePointer(
-                    cachedSortedOutputs[ni].getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            // BytePointer(String) appends a NUL terminator, which is required for
+            // the C++ std::string(const char*) constructor to read the correct string.
+            // BytePointer(byte[]) does NOT append NUL, causing std::string to read
+            // garbage bytes past the end, producing unstable outputSetHash values
+            // and triggering unnecessary plan re-creation every ~20 decode steps.
+            namePointers[ni] = new BytePointer(cachedSortedOutputs[ni]);
         }
         PointerPointer outputNamesPtr = cachedSortedOutputs.length == 0
                 ? new PointerPointer(0)
@@ -1132,9 +1174,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                     outputNamesPtr, cachedSortedOutputs.length,
                     phPtrsPacked, phPtrs.size());
             if (newHandle == null || newHandle.isNull()) {
+                String cppError = null;
+                try {
+                    cppError = nativeOps.lastErrorMessage();
+                } catch (Throwable t) {
+                    // swallow - diagnostic only
+                }
+                StringBuilder hex = new StringBuilder();
+                for (int i = 0; i < cachedSerializedPlan.length; i++) {
+                    if (i % 16 == 0) hex.append(String.format("%n  %04d: ", i));
+                    hex.append(String.format("%02x ", cachedSerializedPlan[i] & 0xff));
+                }
                 throw new RuntimeException(
                     "redispatchForCurrentShapes: dispatchNativePlan returned null. " +
-                    "Check C++ logs for NativePlanCache failure.");
+                    "C++ lastErrorMessage=" + (cppError != null && !cppError.isEmpty() ? cppError : "(empty)") +
+                    " — planBytes=" + cachedSerializedPlan.length +
+                    " outputs=" + cachedSortedOutputs.length +
+                    " placeholders=" + phPtrs.size() +
+                    " hexDump:" + hex);
             }
             // Swap handle if the cache returned a different plan for current shapes.
             // The C++ cache owns plan lifetimes, so we don't free the old one.
@@ -1142,6 +1199,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                     || nativePlanHandle.isNull()
                     || newHandle.address() != nativePlanHandle.address();
             if (swapped) {
+                if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                    // Unpin the old plan so it becomes eligible for LRU eviction.
+                    // This MUST happen before the new plan is pinned (which
+                    // getOrInsert already did) to avoid dangling pointers — the
+                    // old plan's GPU resources are freed on eviction.
+                    nativeOps.unpinNativePlan(cache, nativePlanHandle);
+                    log.info("redispatchForCurrentShapes: plan swapped from {} to {} — resetting frozen state",
+                            nativePlanHandle.address(), newHandle.address());
+                    frozenOutputsInitialized = false;
+                    frozenCallCount = 0;
+                    closeZeroCopyOutputCache();
+                    // Clear cached input arrays: the new plan may have different
+                    // external input mappings or slot assignments.
+                    cachedInputArrays = null;
+                    cachedInputOpaques = null;
+                    contextInputRefs = null;
+                    inputIsPlaceholder = null;
+                }
                 nativePlanHandle = newHandle;
             }
             // Apply per-handle settings the first time we see each cached handle.
@@ -1208,6 +1283,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // Backend ignores mode
             }
         }
+
+        // NOTE: Do NOT propagate shapesFrozen here. The C++ plan manages its own frozen
+        // state transition independently based on execution count and shape stability.
+        // Calling setPlanShapesFrozen prematurely (before any execution) causes phaseWarmup
+        // to be dispatched at executeCount_=0, which corrupts slot arrays / shape caches
+        // for subsequent phaseSlotBySlot steps, producing wrong output tokens.
+        // The Java shapesFrozen flag is used only to gate zeroCopyOutputCache and
+        // directOutputMode fast paths on the Java side.
     }
 
     /**
@@ -2554,7 +2637,30 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Frozen fast path: reuse pre-allocated destination arrays (skip allocation,
             // copy all requested outputs — KV cache append is now an ordinary in-graph op
             // whose writes land directly in Java-owned static buffers, so nothing gets skipped).
-            if (shapesFrozen && zeroCopyOutputCache != null) {
+            //
+            // IMPORTANT: Only use the zeroCopyOutputCache when directOutputMode=true.
+            // When called from SameDiff.output() (directOutputMode=false), the caller DUPs all
+            // results into independent copies. KV close in StaticKvCacheDecodeLoop only closes
+            // those duped copies — NOT the cached originals — leaving zeroCopyOutputCache holding
+            // stale data (previous step's logits) while appearing valid to the staleness guard.
+            // Using the stale cache on the next outputDirect() call returns wrong tokens.
+            // By skipping the cache entirely for non-direct calls we force fresh allocation,
+            // and the cache is only built/used for direct calls where the caller uses the
+            // returned references directly (no dup), so KV close invalidates the cache correctly.
+            //
+            // Guard: if any cached output array has been externally closed (e.g., KV outputs
+            // closed by StaticKvCacheDecodeLoop after scatter), the cache is stale. Drop it so
+            // we fall through to the allocation path below and rebuild a fresh cache.
+            if (directOutputMode && shapesFrozen && zeroCopyOutputCache != null) {
+                for (INDArray arr : zeroCopyOutputCache.values()) {
+                    if (arr == null || arr.wasClosed() || arr.data() == null || arr.data().wasClosed()) {
+                        log.info("Native executor: zeroCopyOutputCache stale (closed array detected) — rebuilding");
+                        closeZeroCopyOutputCache();
+                        break;
+                    }
+                }
+            }
+            if (directOutputMode && shapesFrozen && zeroCopyOutputCache != null) {
                 int copiedOutputs = 0;
                 for (int i = 0; i < numOutputs; i++) {
                     String outputName = requestedOutputs.get(i);
@@ -2585,6 +2691,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                     copiedOutputs++;
                 }
 
+                // Sync stream to ensure async D2D copies complete before returning
+                Nd4j.getExecutioner().commit();
+
                 long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
                 if (execMs > 100) {
                     log.info("Native executor: exec={}ms copy={}ms (frozen, {}/{} outputs copied)",
@@ -2595,9 +2704,26 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             Map<String, INDArray> results = new LinkedHashMap<>();
             for (int i = 0; i < numOutputs; i++) {
+                String outputName = requestedOutputs.get(i);
+
+                // When a constant or variable is directly requested as an output (not an op
+                // output), it has no slot index in the native plan. The native plan writes -1
+                // for its slot, so the C++ side sets requestedOutputs[i] = nullptr and the
+                // opContext output is the initial dummy. Detect this by checking if the output
+                // variable is a CONSTANT or VARIABLE in the SameDiff graph (not an op output).
+                SDVariable sdVar = sd.getVariable(outputName);
+                if (sdVar != null && (sdVar.getVariableType() == VariableType.CONSTANT
+                        || sdVar.getVariableType() == VariableType.VARIABLE)) {
+                    INDArray sdArr = sd.getArrForVarName(outputName);
+                    if (sdArr != null) {
+                        results.put(outputName, sdArr.dup());
+                        continue;
+                    }
+                }
+
                 OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
                 if (opaqueOut == null || opaqueOut.isNull()) {
-                    throw new RuntimeException("Native executor: null output at index " + i);
+                    throw new RuntimeException("Native executor: null output at index " + i + " for '" + outputName + "'");
                 }
 
                 // Read shape info from the C++ output NDArray
@@ -2658,7 +2784,6 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
 
-                String outputName = requestedOutputs.get(i);
                 // Verify copy correctness: print first values immediately after copyBuffer
                 if (Nd4j.getEnvironment().isDebugAndVerbose() && result.rank() >= 2 && result.length() > 0) {
                     result.syncToHost();
@@ -2684,8 +2809,19 @@ public class DynamicShapePlanExecutor implements Closeable {
                 results.put(outputName, result);
             }
 
-            // Cache allocated arrays for reuse on subsequent frozen executions
-            if (shapesFrozen && zeroCopyOutputCache == null && !results.isEmpty()) {
+            // Synchronize the CUDA stream to ensure all async D2D copies (copyBuffer)
+            // have completed before returning. Without this, the caller may destroy the
+            // native plan (freeing source output buffers) while the async copies are still
+            // in flight — causing the destination arrays to contain garbage or zeros.
+            // This is critical for the prefill path where the plan is destroyed and
+            // recompiled for static KV shapes immediately after this method returns.
+            Nd4j.getExecutioner().commit();
+
+            // Cache allocated arrays for reuse on subsequent frozen direct-mode executions.
+            // Only cache when directOutputMode=true: when called from SameDiff.output() the
+            // results are duped by the caller so caching here would create a stale cache that
+            // holds previous-step logits yet appears valid to the staleness guard.
+            if (directOutputMode && shapesFrozen && zeroCopyOutputCache == null && !results.isEmpty()) {
                 zeroCopyOutputCache = new LinkedHashMap<>(results);
                 // Mark cached outputs as non-closeable — they are reused across steps
                 for (INDArray arr : zeroCopyOutputCache.values()) {
@@ -2769,7 +2905,17 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Plan lifetime is managed by sd::graph::NativePlanCache (C++) — do NOT free directly.
             // The cache evicts (and deletes) entries under LRU + memory budget policy.
             // SameDiff.close() frees the cache via freeNativePlanCache(), which releases all entries.
-            log.info("    freeNativePlanHandle: handle={} is cache-owned, skipping direct free", nativePlanHandle);
+            // Unpin so this plan becomes eligible for eviction when the cache needs space.
+            try {
+                Pointer cache = sd.getOrCreateNativePlanCache();
+                if (cache != null && !cache.isNull()) {
+                    NativeOps nativeOps2 = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    nativeOps2.unpinNativePlan(cache, nativePlanHandle);
+                }
+            } catch (Exception e) {
+                log.debug("    freeNativePlanHandle: unpin failed (non-fatal): {}", e.getMessage());
+            }
+            log.info("    freeNativePlanHandle: handle={} is cache-owned, unpinned", nativePlanHandle);
         }
         nativePlanHandle = null;
         nativePlanSource = null;
@@ -2853,7 +2999,12 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedOpContext = null;
         }
 
-        // Free native C++ plan handle if compiled
+        // Free native C++ plan handle reference. The plan is cache-owned and will
+        // be cleaned up by the NativePlanCache destructor (or LRU eviction).
+        // Do NOT call releaseGpuIntermediates() here: close() is a final cleanup
+        // and the cache destructor handles freeing GPU resources. Calling it here
+        // would free C++ slot arrays that the cache destructor also frees, causing
+        // a double free on JVM shutdown.
         log.info("  DSP close() step 6: freeNativePlanHandle");
         System.out.flush(); System.err.flush();
         freeNativePlanHandle("EXECUTOR_CLOSE");

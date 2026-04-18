@@ -29,6 +29,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -100,6 +101,10 @@ class SD_LIB_EXPORT NativePlanCache {
    * If not found, call `factory()` to create a new plan, insert it at MRU, run
    * budget enforcement (evictIfOverBudgetLocked), then return the new plan.
    *
+   * The returned plan is automatically pinned (protected from eviction).
+   * The caller MUST call unpinPlan() on the previously-held plan handle before
+   * or after obtaining a new one, so it becomes eligible for eviction.
+   *
    * Returns the plan pointer (owned by the cache).  Returns nullptr only if
    * `factory()` itself returns nullptr.
    */
@@ -108,12 +113,23 @@ class SD_LIB_EXPORT NativePlanCache {
       const std::function<NativeDynamicShapePlan*()>& factory);
 
   /**
-   * Remove all entries, deleting every owned plan.
+   * Unpin a plan that was previously returned by getOrInsert().
+   * Once unpinned, the plan becomes eligible for LRU eviction.
+   * Safe to call with nullptr or a plan not in the cache (no-op).
+   * Triggers eviction check after unpinning.
+   */
+  void unpinPlan(NativeDynamicShapePlan* plan);
+
+  /**
+   * Remove all entries, deleting every owned plan. Clears all pins.
    */
   void clear();
 
   /** Current number of cached entries. */
   size_t size() const;
+
+  /** Current number of pinned (eviction-protected) plans. */
+  size_t pinnedCount() const;
 
  private:
   // LRU list: front = most-recently-used, back = least-recently-used.
@@ -125,9 +141,13 @@ class SD_LIB_EXPORT NativePlanCache {
   LruList lru_;
   std::unordered_map<Key, ListIter, KeyHasher> map_;
 
+  // Plans currently in use by a Java executor. Eviction skips these.
+  std::unordered_set<NativeDynamicShapePlan*> pinnedPlans_;
+
   /**
    * Evict LRU entries until both the hard-count cap and the memory-fraction
-   * soft cap are satisfied.  Must be called with mutex_ already held.
+   * soft cap are satisfied.  Skips pinned plans.
+   * Must be called with mutex_ already held.
    */
   void evictIfOverBudgetLocked();
 

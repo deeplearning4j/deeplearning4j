@@ -416,6 +416,13 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
   }
 }
 
+void unpinNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle) {
+  if (!cacheHandle || !planHandle) return;
+  auto* cache = reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
+  auto* plan  = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+  cache->unpinPlan(plan);
+}
+
 void clearDynamicShapePlanCaches(sd::Pointer planHandle) {
   if (planHandle != nullptr) {
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);

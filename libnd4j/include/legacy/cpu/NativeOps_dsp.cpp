@@ -282,6 +282,13 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
   }
 }
 
+void unpinNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle) {
+  if (!cacheHandle || !planHandle) return;
+  auto* cache = reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
+  auto* plan  = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+  cache->unpinPlan(plan);
+}
+
 void clearDynamicShapePlanCaches(sd::Pointer planHandle) {
   if (planHandle != nullptr) {
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
@@ -331,7 +338,7 @@ int getSegmentExecutionCount(sd::Pointer planHandle, int segIdx) {
 int getPlanSegmentCount(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  return static_cast<int>(plan->getSegmentCount());
+  return static_cast<int>(plan->getSegments().size());
 }
 
 // ─── Model loading ───────────────────────────────────────────────────────────
@@ -751,7 +758,7 @@ bool isPlanSegmentCapturable(sd::Pointer planHandle, int segmentIdx) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return false;
-  return segs[segmentIdx].isCapturable;
+  return segs[segmentIdx].def.isCapturable;
 }
 
 bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmentIdx) {
@@ -966,7 +973,7 @@ void setPlanSegmentBackendOverride(sd::Pointer planHandle, int segIdx, const cha
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegmentsMutable();
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
-  segs[segIdx].backendOverride = backendName ? backendName : "";
+  segs[segIdx].def.backendOverride = backendName ? backendName : "";
 }
 
 void setPlanBackendPriority(sd::Pointer planHandle, const char* priorityList) {

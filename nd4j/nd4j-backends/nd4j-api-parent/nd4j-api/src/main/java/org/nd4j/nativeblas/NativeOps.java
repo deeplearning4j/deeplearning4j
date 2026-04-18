@@ -1474,6 +1474,19 @@ public interface NativeOps {
  }
 
  /**
+  * Unpin a plan handle, making it eligible for LRU eviction.
+  * Must be called when a Java executor swaps to a different plan handle
+  * or when the executor is closed. Paired with the automatic pinning
+  * done by {@link #dispatchNativePlan}.
+  *
+  * @param cacheHandle cache from createNativePlanCache (non-null)
+  * @param planHandle  plan handle from dispatchNativePlan (null is safe — no-op)
+  */
+ default void unpinNativePlan(Pointer cacheHandle, Pointer planHandle) {
+     throw new UnsupportedOperationException("unpinNativePlan not implemented in this backend");
+ }
+
+ /**
   * Compile a serialized DynamicShapePlan into a native C++ executor.
   * @param serializedPlan pointer to the serialized plan bytes
   * @param planSize size of the serialized plan in bytes

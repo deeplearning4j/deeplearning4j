@@ -1618,6 +1618,16 @@ SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                              sd::LongType numPlaceholders);
 
 /**
+ * Unpin a plan handle, making it eligible for LRU eviction.
+ * Must be called when Java swaps to a different plan handle or closes
+ * the executor. Paired with the automatic pinning done by dispatchNativePlan().
+ *
+ * @param cacheHandle  cache from createNativePlanCache (non-null)
+ * @param planHandle   plan handle from dispatchNativePlan (safe to pass null — no-op)
+ */
+SD_LIB_EXPORT void unpinNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle);
+
+/**
  * Clear shape caches in a compiled plan.
  * Must be called when a session resets to avoid stale GPU memory references.
  *
