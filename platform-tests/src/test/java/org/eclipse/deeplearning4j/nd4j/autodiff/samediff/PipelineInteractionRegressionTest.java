@@ -21,7 +21,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
-import org.eclipse.deeplearning4j.llm.generation.StaticKvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.UnifiedKvCacheManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -151,7 +151,7 @@ public class PipelineInteractionRegressionTest {
     @Test
     @DisplayName("KV cache position advances correctly across step 1→2 transition")
     public void testStep1To2KvScatterTransition() {
-        StaticKvCacheManager mgr = new StaticKvCacheManager();
+        UnifiedKvCacheManager mgr = new UnifiedKvCacheManager();
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
 
         // Simulate prefill: fill positions 0..PREFILL_LEN-1 with recognizable data
@@ -167,7 +167,7 @@ public class PipelineInteractionRegressionTest {
                 "After prefill init, cachePos should be " + PREFILL_LEN);
 
         // === Step 1: Java scatter (output() path, cppScatterThisStep=false) ===
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
         Map<String, INDArray> step1Outputs = createPresentKvOutputs(kvNames, 1.0f);
 
         mgr.scatterNewEntries(step1Outputs, kvNames);
@@ -452,18 +452,18 @@ public class PipelineInteractionRegressionTest {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Verify that StaticKvCacheManager.getCachePosition() advances by exactly 1
+     * Verify that UnifiedKvCacheManager.getCachePosition() advances by exactly 1
      * per scatter call over 50 steps, and that no position is ever double-written
      * or skipped.
      */
     @Test
     @DisplayName("KV cache position advances monotonically over 50 scatter steps")
     public void testCachePositionMonotonicOver50Steps() {
-        StaticKvCacheManager mgr = new StaticKvCacheManager();
+        UnifiedKvCacheManager mgr = new UnifiedKvCacheManager();
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
         initializeManager(mgr, staticKvBuffers, PREFILL_LEN);
 
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
         int numSteps = 50;
         Set<Long> positionsWritten = new HashSet<>();
 
@@ -752,11 +752,11 @@ public class PipelineInteractionRegressionTest {
     @Test
     @DisplayName("KV scatter writes to all layers")
     public void testKvScatterAllLayers() {
-        StaticKvCacheManager mgr = new StaticKvCacheManager();
+        UnifiedKvCacheManager mgr = new UnifiedKvCacheManager();
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
         initializeManager(mgr, staticKvBuffers, PREFILL_LEN);
 
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
 
         // Create outputs with layer-specific values
         Map<String, INDArray> outputs = new HashMap<>();
@@ -869,14 +869,14 @@ public class PipelineInteractionRegressionTest {
         return buffers;
     }
 
-    private DecoderUtils.KVCacheNames createKvNames() {
+    private ModelIOConfig.KVCacheNames createKvNames() {
         List<String> keyNames = new ArrayList<>();
         List<String> valueNames = new ArrayList<>();
         for (int i = 0; i < NUM_LAYERS; i++) {
             keyNames.add("present." + i + ".key");
             valueNames.add("present." + i + ".value");
         }
-        return new DecoderUtils.KVCacheNames(keyNames, valueNames);
+        return new ModelIOConfig.KVCacheNames(keyNames, valueNames);
     }
 
     private List<String> createInputNames(boolean includeAttnReformat) {
@@ -895,7 +895,7 @@ public class PipelineInteractionRegressionTest {
         return names;
     }
 
-    private Map<String, INDArray> createPresentKvOutputs(DecoderUtils.KVCacheNames kvNames, float fillValue) {
+    private Map<String, INDArray> createPresentKvOutputs(ModelIOConfig.KVCacheNames kvNames, float fillValue) {
         Map<String, INDArray> outputs = new HashMap<>();
         for (String name : kvNames.keyNames) {
             INDArray present = Nd4j.zeros(DataType.FLOAT, 1, NUM_KV_HEADS, MAX_KV_LEN + 1, HEAD_DIM);
@@ -912,27 +912,27 @@ public class PipelineInteractionRegressionTest {
         return outputs;
     }
 
-    private void initializeManager(StaticKvCacheManager mgr,
+    private void initializeManager(UnifiedKvCacheManager mgr,
                                     Map<String, INDArray> staticKvBuffers,
                                     long initialCachePos) {
         try {
-            var maxKvLenField = StaticKvCacheManager.class.getDeclaredField("maxKvLen");
+            var maxKvLenField = UnifiedKvCacheManager.class.getDeclaredField("maxKvLen");
             maxKvLenField.setAccessible(true);
             maxKvLenField.set(mgr, (long) MAX_KV_LEN);
 
-            var cachePositionField = StaticKvCacheManager.class.getDeclaredField("cachePosition");
+            var cachePositionField = UnifiedKvCacheManager.class.getDeclaredField("cachePosition");
             cachePositionField.setAccessible(true);
             cachePositionField.set(mgr, initialCachePos);
 
-            var initializedField = StaticKvCacheManager.class.getDeclaredField("initialized");
+            var initializedField = UnifiedKvCacheManager.class.getDeclaredField("initialized");
             initializedField.setAccessible(true);
             initializedField.set(mgr, true);
 
-            var buffersField = StaticKvCacheManager.class.getDeclaredField("staticKvBuffers");
+            var buffersField = UnifiedKvCacheManager.class.getDeclaredField("staticKvBuffers");
             buffersField.setAccessible(true);
             buffersField.set(mgr, staticKvBuffers);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize StaticKvCacheManager for test", e);
+            throw new RuntimeException("Failed to initialize UnifiedKvCacheManager for test", e);
         }
     }
 }

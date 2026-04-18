@@ -41,10 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Adam Gibson
  */
-@Slf4j
 @NativeTag
 @Tag(TagNames.NDARRAY_SERDE)
 public class TestFormatting extends BaseNd4jTestWithBackends {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TestFormatting.class);
 
 
     @ParameterizedTest

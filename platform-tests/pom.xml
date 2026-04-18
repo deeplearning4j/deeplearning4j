@@ -607,6 +607,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Audio/TTS support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-audio</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Native HuggingFace tokenizers library (Rust-based, required for tokenization) -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>

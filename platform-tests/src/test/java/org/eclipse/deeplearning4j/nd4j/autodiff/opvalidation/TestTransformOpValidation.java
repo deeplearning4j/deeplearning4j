@@ -1929,10 +1929,12 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     boolean empty = Shape.isEmpty(l.get(0).asLong());
 
                     boolean isBool = isBoolBroadcast(opName);
+                    // Shape info DataBuffer is stored as INT64 - extract the array dtype from shape info extras
+                    DataType outputDtype = Shape.dataType(l.get(0).asLong());
                     if (isBool) {
-                        assertEquals(DataType.BOOL, l.get(0).dataType());
+                        assertEquals(DataType.BOOL, outputDtype);
                     } else {
-                        assertEquals(DataType.FLOAT, l.get(0).dataType());
+                        assertEquals(DataType.FLOAT, outputDtype);
                     }
 
                     assertArrayEquals(new long[0], shape);

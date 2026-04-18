@@ -5,7 +5,7 @@
 Implemented and actively maintained.
 
 Proposed by: Adam Gibson (January 2025)
-Updated by: Runtime maintainers (March 31, 2026)
+Updated by: Runtime maintainers (March 31, 2026; shape-keyed plan cache April 16, 2026; training support April 17, 2026)
 
 ## Context
 
@@ -1575,16 +1575,121 @@ When using CUDA graph capture with cuBLAS ops:
 
 ## Training Support
 
-DSP is not inference-only.
+DSP is not inference-only. The training path fuses forward, backward, updater, and weight-update ops into a single native plan so the entire training step executes in one C++ call with no Java-C++ round-trips between phases.
 
-`TrainingSession` has a DSP training path (`nd4j.dsp.training.enabled`, default true) that:
+### Architecture
 
-- reuses DSP forward execution,
-- extracts losses from DSP results,
-- applies updaters post-execution,
-- falls back to standard training path on failure.
+Training DSP execution flows through `TrainingSession.executeDspTrainingStep()`:
 
-This path bypasses the inference listener gate that normally suppresses DSP fast-path usage.
+1. **Updater fusion** (`UpdaterOpsAppender.appendUpdaterOps`) — at graph-build time, appends updater ops (Adam, SGD, Nesterovs, etc.) and weight-subtract ops directly into the grad SameDiff graph. This means the compiled plan contains forward ops, backward ops, updater ops, and weight-update ops as a single linear sequence of slots.
+
+2. **Single-plan execution** — `executeDynamicShapePlanBased()` compiles and executes the entire fused graph through the native C++ executor. No separate forward pass, backward pass, or updater pass exists at the Java level.
+
+3. **Post-execution sync** (`applyFusedWeightUpdates`) — reads the plan's output tensors and copies updated weights and updater state back into the SDVariable backing arrays so the next iteration sees them as external inputs.
+
+4. **Shape freezing** (`manageShapeFreezing`) — eagerly freezes shapes after the first training iteration. Since training batches are typically same-shaped within an epoch, this enables CUDA graph replay from iteration 1 onward. If shapes change (incomplete last batch, new epoch), the executor unfreezes and re-freezes for the new shape.
+
+### Updater Fusion
+
+`UpdaterOpsAppender` adds the following per trainable variable `w`:
+
+```
+// Already in grad graph:
+w-grad        (backward op output)
+w             (VARIABLE, the weight, as external input)
+
+// Added by UpdaterOpsAppender (example: Adam):
+w__dsp_updater_m    (VARIABLE, first moment, zero-initialized)
+w__dsp_updater_v    (VARIABLE, second moment, zero-initialized)
+
+// Op: adam_updater(w-grad, w__dsp_updater_v, w__dsp_updater_m)
+//   → [w__dsp_upd_grad, v_new, m_new]
+
+// Op: subtract(w, w__dsp_upd_grad) → w__dsp_weight_updated
+```
+
+Updater state arrays are registered as `VARIABLE` type. The plan compiler picks them up as external inputs, and after execution the caller copies the new-state outputs back into the state variable backing arrays.
+
+Supported updaters (all 10 in `org.nd4j.linalg.api.ops.impl.updaters`):
+
+| Updater | Op name | State variables | Outputs |
+|---------|---------|-----------------|---------|
+| SGD | `sgd_updater` | none | 1 (updated gradient) |
+| Nesterovs | `nesterovs_updater` | V (velocity) | 2 |
+| AdaGrad | `adagrad_updater` | G (sum of squares) | 2 |
+| RmsProp | `rmsprop_updater` | G (running average) | 2 |
+| Adam | `adam_updater` | M, V (moments) | 3 |
+| AdaMax | `adamax_updater` | M, V (moments) | 3 |
+| Nadam | `nadam_updater` | M, V (moments) | 3 |
+| AdaBelief | `adabelief_updater` | M, V (moments) | 3 |
+| AdaDelta | `adadelta_updater` | Msg, Msdx | 3 |
+| AMSGrad | `ams_grad_updater` | M, V, H (moments + max) | 4 |
+
+Each updater op requires `calculateOutputDataTypes()` to return the correct number of output types (matching the output count above). This is needed because `sd.dynamic(opName, ...)` in the fusion path triggers `outputVariables()` which calls `calculateOutputDataTypes()` for type inference during graph construction.
+
+### Iteration Counter
+
+Adam and similar updaters need the iteration count as an `iArg`. The iteration is baked into the slot at graph-append time. The current implementation freezes iteration=0 at compile time. For most training workloads the bias correction from the iteration counter converges quickly and the frozen value has negligible effect on convergence. Future work can expose the iteration counter as a placeholder input to avoid plan recompilation.
+
+### Shape-Keyed Plan Caching for Training
+
+Training uses the same shape-keyed `NativePlanCache` as inference. The cache key is `(outputSetHash, placeholderShapeInfoPtrs)` — the set of requested outputs plus the shape metadata pointers of all placeholder arrays.
+
+When batch size is constant (the common case), one plan is compiled and reused for all training iterations. If batch size changes between iterations (e.g., last incomplete batch in an epoch), the cache produces a separate plan entry for each distinct batch size. The `manageShapeFreezing` method handles this:
+
+- First iteration: compile plan, freeze shapes immediately (enables CUDA graph replay).
+- Same-shaped iterations: plan is replayed via CUDA graph (sub-millisecond launch overhead).
+- Shape change detected: unfreeze, re-dispatch through the plan cache (may compile a new plan for the new shape), re-freeze immediately.
+
+This means training performance follows the same pattern as inference: first iteration is slow (plan compilation + CUDA graph capture), subsequent same-shaped iterations are fast (graph replay).
+
+### AUTO_SEAL and setShapesFrozen Idempotency
+
+During DSP execution, the C++ plan can auto-advance from `SLOT_BY_SLOT` to `SHAPES_FROZEN` phase (AUTO_SEAL). After execution, `TrainingSession.manageShapeFreezing()` calls `executor.setShapesFrozen(true)`. If the plan already auto-advanced, this call must be idempotent — attempting to freeze an already-frozen plan is a no-op, not an error. Without this idempotency, the C++ phase assertion `DSP_REQUIRE_PLAN_PHASE_AT_MOST(SLOT_BY_SLOT)` would fire and crash (SIGABRT).
+
+The fix in `NativeDynamicShapePlan::setShapesFrozen(true)`:
+
+```cpp
+if (frozen && wasFrozen) {
+  return;  // Already frozen (e.g., AUTO_SEAL advanced ahead of Java caller)
+}
+```
+
+### DSP vs Non-DSP Training Accuracy
+
+DSP and non-DSP training paths produce numerically different results because:
+
+- DSP fuses ops into a single native execution with different FP32 accumulation order.
+- CUDA graph replay may use different kernel implementations than eager dispatch.
+- Updater ops execute inline in the plan rather than as separate Java-dispatched ops.
+
+Both paths converge correctly (loss decreases, weights update), but exact numerical parity is not guaranteed. In practice, DSP training often converges faster (lower final loss) because the fused execution path reduces intermediate rounding.
+
+### Test Coverage
+
+`DspTrainingE2ETest` in `platform-tests` covers:
+
+| Test | What it validates |
+|------|-------------------|
+| `testLinearTrainingLossDecreases` | Loss decreases with DSP for SGD, Adam, Nesterovs |
+| `testDspTrainingParityWithNonDsp` | Both DSP and non-DSP converge; loss ratio within 10x |
+| `testMlpReluDspTraining` | MLP with ReLU backward under DSP |
+| `testSoftmaxClassifierDspTraining` | Softmax cross-entropy loss under DSP |
+| `testWeightsActuallyUpdated` | Weights differ from initial values after training |
+| `testGradientAccumulationDspTraining` | Multi-step gradient accumulation |
+| `testNormalizationBackwardDspTraining` | Layer norm backward through DSP |
+| `testMultiEpochDspTraining` | Multi-epoch training with shape re-freezing |
+| `testGradientsNonZeroDsp` | Gradients are non-zero after backward |
+| `testUpdaterFusionWeightsUpdated` | Updater fusion produces weight changes |
+| `testDspTrainingNoMemoryLeak` | GPU memory does not grow unboundedly |
+
+### Key Files
+
+- `nd4j/.../execution/UpdaterOpsAppender.java` — fuses updater + weight-update ops into grad graph
+- `nd4j/.../internal/TrainingSession.java` — `executeDspTrainingStep()`, `applyFusedWeightUpdates()`, `manageShapeFreezing()`
+- `nd4j/.../ops/impl/updaters/*.java` — 10 updater op classes with `calculateOutputDataTypes()`
+- `libnd4j/.../impl/NativeDynamicShapePlan.cpp` — `setShapesFrozen()` idempotency fix
+- `platform-tests/.../DspTrainingE2ETest.java` — E2E training tests
 
 ## Plan Introspection (`PlanIntrospection`)
 
@@ -1903,6 +2008,125 @@ New controls added since the last ADR update:
 | `ND4J_TRITON_CAPTURE_MIN_EXEC` | 2 | Execution count before graph capture |
 | `ND4J_TRITON_VERIFY_KERNELS` | false | Run Triton + native, compare outputs |
 
+## Shape-Keyed Plan Cache and Deferred Dispatch (April 2026)
+
+### Motivation
+
+The prior native-execution lifecycle compiled a single `NativeDynamicShapePlan` per `SameDiff`, wired to a fixed slot layout at compile time, and reused it across every `executeNative(...)` call. This broke under shape drift: running the same graph with a sequence of different placeholder shapes (e.g. `gather → mmul` with `seqLens = {4, 6, 4, 9, 6, 4}`) required re-writing the output arrays of existing slots to match the new shapes. That slot mutation tripped `LIFECYCLE_ERROR` guards — once a slot's array had been written, re-binding a differently shaped array into the same slot was unsafe, because downstream consumers held references to the original.
+
+The root problem: one plan per `SameDiff` cannot satisfy N shape signatures. The lifecycle now enforces one plan per *shape signature*, with the shape signature computed from the exact pointer identities of placeholder shape-info (from `ConstantShapeHelper`).
+
+### Architecture
+
+The new lifecycle is a shape-keyed native plan cache owned by C++, with Java holding an opaque cache handle per `SameDiff`. Every `executeNative(...)` call builds a key from current placeholder shapes and dispatches through the cache.
+
+#### Cache Key
+
+Each cache entry is keyed on the tuple `(outputSetHash, std::vector<sd::LongType*> phShapeInfoPtrs)`:
+
+- **`outputSetHash`**: FNV-1a hash of the sorted output-variable names for the call. Distinguishes calls requesting different output sets from the same graph.
+- **`phShapeInfoPtrs`**: vector of raw shape-info pointers obtained from `ConstantShapeHelper::createShapeInfo(...)`. These pointers are interned — two placeholder arrays with identical `(dtype, shape, order)` share the same pointer. Pointer equality is therefore O(1) and captures shape identity without hashing shape data.
+
+Key equality uses element-wise pointer equality on the vector plus `outputSetHash` equality.
+
+#### Cache Ownership and Budget
+
+- Plans are owned by the cache. `NativePlanCache` holds `std::unique_ptr<NativeDynamicShapePlan>` entries.
+- `freeNativePlanHandle()` **does not** free the plan; it only releases Java-side cached state. The plan's lifetime is the cache entry's lifetime.
+- The cache is freed via `freeNativePlanCache(handle)` when the owning `SameDiff` is closed.
+- LRU eviction is driven by two bounds configured on `DspConfig`:
+  - `planCacheBudgetFraction` (default `0.05`) — fraction of device memory the cache may consume before eviction.
+  - `planCacheMaxPlans` (default `64`) — hard upper bound on entry count.
+- Eviction is LRU on last-dispatch time. A dispatched plan is moved to the front of the list.
+
+#### Deferred Dispatch
+
+Compilation and dispatch are separated in time:
+
+- **`compileNativePlan(...)` (Java)** runs when the user explicitly compiles or on first auto-compile. It:
+  - serializes the `DynamicShapePlan` to bytes,
+  - sorts the requested output names,
+  - captures the placeholder key list (variable names, in stable order),
+  - resolves and caches per-handle settings (CUDA graphs, JIT mode, exec timing, trace, graph execution mode).
+  - **Does not** call `dispatchNativePlan`. Placeholder arrays are not yet bound — `sd.output(Map)` supplies them only at execute time.
+- **`redispatchForCurrentShapes(...)` (Java, per execute)** runs on every `executeNative(...)`. It:
+  - resolves each placeholder name to its currently-bound array,
+  - collects the `ConstantShapeHelper` shape-info pointer for each,
+  - passes `(cache, planBytes, sortedOutputs, phShapeInfoPtrs)` to `dispatchNativePlan` via JNI,
+  - receives the (possibly new, possibly cached) plan handle back.
+- The C++ cache makes this O(1) on shape-matches — the dispatcher looks up the key, moves the entry to MRU, and returns the existing handle.
+
+#### Per-Handle Settings Application
+
+Settings (CUDA graphs, JIT mode, timing, trace, graph execution mode) must be applied after `dispatchNativePlan` returns. Since the dispatcher may return an *existing* handle on shape match, settings already applied on that handle don't need re-application. `DynamicShapePlanExecutor` tracks this via `Set<Long> configuredHandleAddresses` and `applySettingsIfNewHandle(nativeOps, handle)` — the first time a handle address is seen, settings are pushed down; thereafter the call is a no-op.
+
+#### Slot Immutability
+
+The prior "mutate slot to fit new shape" code path is gone. `NativeDynamicShapePlan_slotexec.cpp` now **throws** `sd::exceptions::GraphExecutionException` at four sites where a slot's array is about to be re-bound to a differently-shaped buffer. The guarantee: within a single plan instance, a slot's output array is shape-stable for the plan's lifetime. Shape drift is handled one level up, by switching plans via the cache.
+
+#### Flow Summary
+
+```
+compileNativePlan(sd, outputs):
+    bytes    := sd.plan().serialize()
+    outNames := sort(outputs)
+    phKeys   := placeholderNames(sd)
+    settings := resolveSettings(sd)
+    // No native handle yet. Everything stashed in DynamicShapePlanExecutor.
+
+executeNative(sd, placeholders):
+    phPtrs := [ConstantShapeHelper.shapeInfo(p) for p in orderByPhKeys(placeholders)]
+    handle := nativeOps.dispatchNativePlan(cacheHandle, bytes, outNames, phPtrs)
+    // C++ cache: lookup(outHash, phPtrs) → existing plan, or build-and-insert new plan.
+    applySettingsIfNewHandle(handle)
+    runPlan(handle, placeholders)
+```
+
+### JavaCPP Signature Matching
+
+The default Java stub in `NativeOps.java` must match exactly what JavaCPP auto-generates from `NativeOps.h`, or Java method resolution will pick the throwing default and the native binding never fires. Two rules:
+
+- `sd::LongType` in C++ → `long` in Java, not `int`.
+- Arrays of pointers are exposed as `Pointer`, not `PointerPointer`, in the dispatch entrypoints used here.
+
+Concretely, the default stub is:
+
+```java
+default Pointer dispatchNativePlan(Pointer cache,
+                                   Pointer planBytes, long planBytesLen,
+                                   Pointer outputNames, long numOutputs,
+                                   Pointer phShapeInfoPtrs, long numPlaceholders) {
+    throw new UnsupportedOperationException("dispatchNativePlan not implemented in this backend");
+}
+```
+
+Verification: run `javap -p org/nd4j/linalg/jcublas/bindings/Nd4jCuda.class | grep dispatchNativePlan` against the binding JAR. The concrete override must share the exact descriptor with the default. Mismatches surface at runtime as the default being selected over the native override.
+
+### Configuration Surface
+
+On `DspConfig`:
+
+| Property | Default | Purpose |
+|----------|---------|---------|
+| `ND4J_DSP_PLAN_CACHE_BUDGET_FRACTION` | 0.05 | Fraction of device memory used as cache budget (0.0–1.0) |
+| `ND4J_DSP_PLAN_CACHE_MAX_PLANS` | 64 | Hard upper bound on cached plan count |
+
+Both are plumbed through `DspConfig::initFromEnvironment()` and read by `NativePlanCache` at construction time.
+
+### Key Files
+
+- `libnd4j/include/graph/NativePlanCache.h` / `impl/NativePlanCache.cpp` — LRU cache, budget-driven eviction.
+- `libnd4j/include/legacy/NativeOps.h` — `createNativePlanCache`, `freeNativePlanCache`, `clearNativePlanCacheHandle`, `dispatchNativePlan` (all using `sd::LongType` for count params).
+- `libnd4j/include/legacy/{cpu,cuda}/NativeOps_dsp.{cpp,cu}` — JNI entrypoints.
+- `libnd4j/include/graph/impl/NativeDynamicShapePlan_slotexec.cpp` — four slot-immutability `THROW_EXCEPTION` sites.
+- `nd4j/.../nativeblas/NativeOps.java` — default stub (JavaCPP-signature-matching).
+- `nd4j/.../samediff/SameDiff.java` — cache handle field + accessors.
+- `nd4j/.../samediff/execution/DynamicShapePlanExecutor.java` — `compileNativePlan` (defers dispatch), `redispatchForCurrentShapes`, `applySettingsIfNewHandle`, `configuredHandleAddresses`.
+
+### Verification
+
+`TestDspLifecycleMultiExecuteShapeDrift#testGatherMatmulShapeDriftAcrossExecutions` runs `gather → mmul` across `seqLens = {4, 6, 4, 9, 6, 4}` on CUDA 12.9 — each distinct length allocates one cache entry (3 for {4, 6, 9}), repeat lengths hit the cache. All six executions produce correct results.
+
 ## Consequences
 
 ### Benefits
@@ -1911,7 +2135,7 @@ New controls added since the last ADR update:
 - Supports dynamic-shape workloads without static-plan recompilation every step.
 - Provides native single-call execution path with backend policy control.
 - Strict backend commitment — hard errors surface bugs immediately instead of hiding them behind cascades.
-- Supports both inference and training-session integration.
+- Supports both inference and training with fused updater execution (forward + backward + updater + weight update in a single native plan call).
 - Centralized section type configuration eliminates scattered conditional branches.
 - Decomposed compilation units enable independent development and testing of backend stages.
 - Plan introspection and Graphviz export enable debugging without printf.
@@ -1940,7 +2164,7 @@ The current test surface includes:
 
 - correctness parity tests (`TestDSPExecutionCorrectness`)
 - control flow tests (`TestDSPControlFlow`)
-- training-path coverage (`DSPTrainingTest`)
+- training-path coverage (`DspTrainingE2ETest` — 11 test methods covering all 10 updaters, convergence, parity, memory)
 - device placement and cross-device behavior (`TestDSPDevicePlacement`, `TestCrossDeviceDSPExecution`)
 - memory and stall behavior probes (`DSPMemoryAndStallTest`)
 - plan introspection tests (`PlanIntrospectionTest`)
@@ -1959,6 +2183,8 @@ The current test surface includes:
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/PlanIntrospection.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/internal/InferenceSession.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/internal/TrainingSession.java`
+- `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/UpdaterOpsAppender.java`
+- `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/updaters/` (10 updater op classes)
 - `libnd4j/include/graph/NativeDynamicShapePlan.h`
 - `libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp`
 - `libnd4j/include/graph/impl/NativeDynamicShapePlan_segments.cpp`

@@ -2151,8 +2151,9 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .build();
 
         List<DataBuffer> l = op.calculateOutputShape();
-        long[] shape = Shape.shape(l.get(0).asLong());
-        boolean isEmpty = Shape.isEmpty(l.get(0).asLong());
+        long[] rawShapeInfo = l.get(0).asLong();
+        long[] shape = Shape.shape(rawShapeInfo);
+        boolean isEmpty = Shape.isEmpty(rawShapeInfo);
         assertEquals(0, shape.length);
         assertTrue(isEmpty);
     }

@@ -28,6 +28,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
+import org.eclipse.deeplearning4j.llm.generation.PagedKVCache;
+import org.eclipse.deeplearning4j.llm.generation.UnifiedKvCacheManager;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -113,34 +117,32 @@ class TestQuantizedKvCacheManager {
 
     @Test
     void testManagerCreationDefaults() {
-        try (QuantizedKvCacheManager manager = new QuantizedKvCacheManager()) {
-            assertEquals(KvCacheStrategy.QUANTIZED, manager.getStrategy());
-            assertEquals(QuantizedPagedKVCache.QuantFormat.INT8, manager.getQuantFormat());
-            assertFalse(manager.isInitialized());
-            assertFalse(manager.supportsCudaGraphReplay());
-        }
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager(KvCacheStrategy.QUANTIZED, ModelIOConfig.builder().build());
+        assertEquals(KvCacheStrategy.QUANTIZED, manager.getStrategy());
+        assertEquals(QuantizedPagedKVCache.QuantFormat.INT8, manager.getQuantFormat());
+        assertFalse(manager.isInitialized());
+        assertFalse(manager.supportsCudaGraphReplay());
     }
 
     @ParameterizedTest
     @EnumSource(QuantizedPagedKVCache.QuantFormat.class)
     void testManagerCreationWithFormat(QuantizedPagedKVCache.QuantFormat format) {
-        try (QuantizedKvCacheManager manager = new QuantizedKvCacheManager(format, DataType.FLOAT)) {
-            assertEquals(format, manager.getQuantFormat());
-            assertEquals(KvCacheStrategy.QUANTIZED, manager.getStrategy());
-        }
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager(KvCacheStrategy.QUANTIZED, ModelIOConfig.builder().build(),
+                format, DataType.FLOAT, 3, PagedKVCache.DEFAULT_BLOCK_SIZE);
+        assertEquals(format, manager.getQuantFormat());
+        assertEquals(KvCacheStrategy.QUANTIZED, manager.getStrategy());
     }
 
     @Test
     void testManagerCloseWithoutInit() {
-        QuantizedKvCacheManager manager = new QuantizedKvCacheManager();
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager(KvCacheStrategy.QUANTIZED, ModelIOConfig.builder().build());
         assertDoesNotThrow(manager::close);
     }
 
     @Test
     void testManagerGetStaticKvBuffersBeforeInit() {
-        try (QuantizedKvCacheManager manager = new QuantizedKvCacheManager()) {
-            assertNull(manager.getStaticKvBuffers(),
-                    "getStaticKvBuffers should return null before initialization");
-        }
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager(KvCacheStrategy.QUANTIZED, ModelIOConfig.builder().build());
+        assertNull(manager.getStaticKvBuffers(),
+                "getStaticKvBuffers should return null before initialization");
     }
 }

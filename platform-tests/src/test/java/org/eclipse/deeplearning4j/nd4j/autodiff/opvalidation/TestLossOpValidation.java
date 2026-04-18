@@ -341,6 +341,12 @@ public class TestLossOpValidation extends BaseOpValidation {
                             .gradientCheck(doGradCheck)
                             .testFlatBufferSerialization(TestCase.TestSerialization.BOTH);
 
+                    // log_poisson_full has log(labels) + 0.5/labels terms with high curvature,
+                    // causing larger finite-difference errors at large gradient magnitudes
+                    if(fn.equals("log_poisson_full")) {
+                        tc.gradCheckMaxRelativeError(5e-5);
+                    }
+
                     if(reduction == LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT && !weights.equals("none")){
                         tc = tc.gradCheckMask(Collections.singletonMap("weights", w.getArr().neq(0)));
                     }

@@ -86,6 +86,21 @@ The refactor exposed several latent bugs and new compilation errors that were fi
 
 Phase 2 is in progress in the working tree: further simplification of `NativeDynamicShapePlan_gpubackend.cpp` (~2.9K lines removed) and introduction of two new small utility headers — `DspPhaseUtils.h` and `DspVerifyUtils.h` — to isolate phase-transition logic and golden-comparison helpers from the monolith. This is tracked as a separate ADR target once stabilized.
 
+### 9. Shape-Keyed Plan Cache (April 2026)
+
+The structural refactor exposed a second class of bug that the monolith hid: the prior "one plan per `SameDiff`" lifecycle assumed slots were effectively mutable — the same `NativeDynamicShapePlan` was reused across calls with different placeholder shapes, and each call rewrote the affected slots' NDArrays to match the new shape. Once slots became well-defined structs (step 2 above) and `SlotBufferOwnership` gained explicit ownership tracking, the mutation path was visibly incorrect: a slot's array held references from prior dispatch that became dangling after a reshape.
+
+The follow-on work implements a shape-keyed `NativePlanCache` (C++-owned) that turns slot mutation into a compile-time error. The full design is documented in ADR 0061's *Shape-Keyed Plan Cache and Deferred Dispatch* section. The refactor-relevant changes are:
+
+- **`NativeDynamicShapePlan_slotexec.cpp`** — four sites that previously rewrote a slot's `NDArray*` on shape mismatch now `THROW_EXCEPTION(...)`. Slot immutability is a post-condition of the refactor, not a pre-condition of it.
+- **New files** — `libnd4j/include/graph/NativePlanCache.h` and `impl/NativePlanCache.cpp` (LRU cache over `std::unique_ptr<NativeDynamicShapePlan>`), keyed on `(outputSetHash, std::vector<sd::LongType*>)` where the pointers come from `ConstantShapeHelper`.
+- **`NativeOps_dsp.{cpp,cu}`** — new JNI entrypoints `createNativePlanCache`, `freeNativePlanCache`, `clearNativePlanCacheHandle`, `dispatchNativePlan`. `dispatchNativePlan` is the replacement for the old compile-time native bind; it both installs and looks up plans keyed by current shape signature.
+- **`DynamicShapePlanExecutor.java`** — `compileNativePlan(...)` no longer calls a native compile; it serializes bytes, sorts outputs, captures placeholder keys, and stashes per-handle settings. The new `redispatchForCurrentShapes(...)` runs per execute, calls `dispatchNativePlan`, and applies per-handle settings lazily via `configuredHandleAddresses: Set<Long>`.
+- **JavaCPP signature parity** — `NativeOps.java`'s default `dispatchNativePlan` stub must match the JavaCPP-generated descriptor exactly (`sd::LongType` → `long`; pointer-of-pointers → `Pointer`). A mismatch resolves to the throwing default. See ADR 0061 for the confirmation procedure via `javap -p`.
+- **`DspConfig`** — two new properties (`planCacheBudgetFraction`, `planCacheMaxPlans`) bound the cache. Reading from `Environment` → `DspConfig` keeps the configuration surface consistent with other DSP tunables.
+
+This work is the lifecycle counterpart to the structural refactor: step 2 made slots struct-typed so their identity was crisp; step 9 enforces that the identity, once established, is immutable for the plan's lifetime.
+
 ## Consequences
 
 - **Grep-ability restored.** Removing macro indirection and ghost aliases means `grep writeOutputSlot` / `grep outputSlots_` now return authoritative call-site lists. The acceptance gate for each refactor step was "zero remaining old-style field references," enforced by grep.

@@ -31,23 +31,23 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for StaticKvCacheManager — verifies initialization, scatter, and
+ * Tests for UnifiedKvCacheManager — verifies initialization, scatter, and
  * multi-step correctness of the static KV cache management.
  */
-public class TestStaticKvCacheManager {
+public class TestUnifiedKvCacheManager {
 
     private static final int NUM_HEADS = 4;
     private static final int HEAD_DIM = 16;
     private static final int NUM_LAYERS = 2;
 
-    private DecoderUtils.KVCacheNames createKvNames() {
+    private ModelIOConfig.KVCacheNames createKvNames() {
         List<String> keyNames = new ArrayList<>();
         List<String> valueNames = new ArrayList<>();
         for (int i = 0; i < NUM_LAYERS; i++) {
             keyNames.add("present." + i + ".key");
             valueNames.add("present." + i + ".value");
         }
-        return new DecoderUtils.KVCacheNames(keyNames, valueNames);
+        return new ModelIOConfig.KVCacheNames(keyNames, valueNames);
     }
 
     private Map<String, INDArray> createPrefillOutputs(int prefillLen) {
@@ -63,8 +63,8 @@ public class TestStaticKvCacheManager {
 
     @Test
     public void testInitializeFromPrefill() {
-        StaticKvCacheManager manager = new StaticKvCacheManager();
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
         int prefillLen = 10;
         int maxNewTokens = 50;
 
@@ -108,8 +108,8 @@ public class TestStaticKvCacheManager {
 
     @Test
     public void testScatterNewEntries() {
-        StaticKvCacheManager manager = new StaticKvCacheManager();
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
         int prefillLen = 5;
         int maxNewTokens = 10;
 
@@ -153,8 +153,8 @@ public class TestStaticKvCacheManager {
 
     @Test
     public void testMultiStepScatter() {
-        StaticKvCacheManager manager = new StaticKvCacheManager();
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
         int prefillLen = 3;
         int maxNewTokens = 20;
 
@@ -203,8 +203,8 @@ public class TestStaticKvCacheManager {
 
     @Test
     public void testSetCachePosition() {
-        StaticKvCacheManager manager = new StaticKvCacheManager();
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
 
         Map<String, INDArray> prefillOutputs = createPrefillOutputs(5);
         manager.initializeFromPrefill(prefillOutputs, kvNames, 10, 5);
@@ -220,8 +220,8 @@ public class TestStaticKvCacheManager {
 
     @Test
     public void testClose() {
-        StaticKvCacheManager manager = new StaticKvCacheManager();
-        DecoderUtils.KVCacheNames kvNames = createKvNames();
+        UnifiedKvCacheManager manager = new UnifiedKvCacheManager();
+        ModelIOConfig.KVCacheNames kvNames = createKvNames();
 
         Map<String, INDArray> prefillOutputs = createPrefillOutputs(5);
         manager.initializeFromPrefill(prefillOutputs, kvNames, 10, 5);

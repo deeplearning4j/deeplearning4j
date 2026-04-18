@@ -87,6 +87,7 @@ public class TestMultiModelPipeline {
     @Nested
     @DisplayName("ModelType Tests")
     class ModelTypeTests {
+        private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ModelTypeTests.class);
 
         @Test
         @DisplayName("Test Summarizer Prompt Building")
@@ -263,6 +264,7 @@ public class TestMultiModelPipeline {
     @Nested
     @DisplayName("PipelineStage Tests")
     class PipelineStageTests {
+        private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PipelineStageTests.class);
 
         @Test
         @DisplayName("Test Simple Stage Creation")
@@ -313,6 +315,7 @@ public class TestMultiModelPipeline {
     @Nested
     @DisplayName("PipelineResult Tests")
     class PipelineResultTests {
+        private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PipelineResultTests.class);
 
         @Test
         @DisplayName("Test Result Construction")
@@ -420,6 +423,7 @@ public class TestMultiModelPipeline {
     @Nested
     @DisplayName("MultiModelPipeline Integration Tests")
     class MultiModelPipelineIntegrationTests {
+        private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MultiModelPipelineIntegrationTests.class);
 
         @Test
         @DisplayName("Test Pipeline Configuration")
@@ -532,6 +536,7 @@ public class TestMultiModelPipeline {
     @Nested
     @DisplayName("DSP and Memory Management Tests")
     class DspAndMemoryTests {
+        private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DspAndMemoryTests.class);
 
         @Test
         @DisplayName("Test DSP Configuration")

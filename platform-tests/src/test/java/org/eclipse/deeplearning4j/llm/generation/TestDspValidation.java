@@ -520,17 +520,53 @@ public class TestDspValidation {
         log.info("=== Multi-step decode comparison: {} tokens ===", maxTokens);
 
         // Run SLOT_BY_SLOT (reference — known 100% accurate)
-        log.info(">>> Enabling debug+verbose for SLOT_BY_SLOT <<<");
-        Nd4j.getEnvironment().setDebug(true);
-        Nd4j.getEnvironment().setVerbose(true);
         BenchmarkConfig slotConfig = BenchmarkConfig.create("SLOT_BY_SLOT")
                 .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
                 .maxTokens(maxTokens);
         GenerationResult slotResult = runDecode(slotConfig, maxTokens);
-        Nd4j.getEnvironment().setDebug(false);
-        Nd4j.getEnvironment().setVerbose(false);
         int[] slotTokens = slotResult.getTokenIds();
         log.info("SLOT_BY_SLOT: {} tokens, text='{}'", slotTokens.length, slotResult.getText());
+
+        // Run TRITON_SKIP_KERNELS: Triton backend active but all compiled sub-kernels
+        // skipped (routes to native ordered-range executor). If this matches SLOT_BY_SLOT,
+        // the bug is definitively in Triton-compiled sub-kernels, not DSP orchestration.
+        BenchmarkConfig skipConfig = BenchmarkConfig.create("TRITON_SKIP_KERNELS")
+                .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                .tritonSectionFusion(true).tritonCompileAll(true)
+                .tritonSkipKernels(true)
+                .maxTokens(maxTokens);
+        GenerationResult skipResult = runDecode(skipConfig, maxTokens);
+        int[] skipTokens = skipResult.getTokenIds();
+        log.info("TRITON_SKIP_KERNELS: {} tokens, text='{}'", skipTokens.length, skipResult.getText());
+
+        // Compare SLOT_BY_SLOT vs TRITON_SKIP_KERNELS
+        int skipMinLen = Math.min(slotTokens.length, skipTokens.length);
+        int skipMatches = 0;
+        for (int i = 0; i < skipMinLen; i++) {
+            if (slotTokens[i] == skipTokens[i]) skipMatches++;
+        }
+        double skipMatchRate = skipMinLen > 0 ? (double) skipMatches / skipMinLen : 1.0;
+        log.info("SKIP_KERNELS vs SLOT_BY_SLOT: {}/{} ({}%)",
+                skipMatches, skipMinLen, String.format("%.1f", skipMatchRate * 100));
+        if (skipMatchRate >= 0.99) {
+            log.info("CONFIRMED: Triton sub-kernels cause the divergence (skip matches baseline)");
+        } else {
+            log.error("UNEXPECTED: Even with kernels skipped, output diverges — DSP orchestration issue?");
+        }
+
+        // Run TRITON_VERIFY: Triton backend runs BOTH Triton AND native for each sub-kernel,
+        // comparing outputs. Logs HASH_MISMATCH for any kernel that produces different results.
+        // Use tritonVerifyFullSnapshot to capture ALL slot state before/after.
+        BenchmarkConfig verifyConfig = BenchmarkConfig.create("TRITON_VERIFY")
+                .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                .tritonSectionFusion(true).tritonCompileAll(true)
+                .tritonVerifyKernels(true)
+                .tritonVerifyFullSnapshot(true)
+                .maxTokens(maxTokens);
+        GenerationResult verifyResult = runDecode(verifyConfig, maxTokens);
+        int[] verifyTokens = verifyResult.getTokenIds();
+        log.info("TRITON_VERIFY: {} tokens, text='{}'", verifyTokens.length, verifyResult.getText());
+        log.info(">>> Check test output for HASH_MISMATCH / VERIFY lines to identify divergent kernel <<<");
 
         // Run TRITON_NO_GC (the config under investigation)
         BenchmarkConfig tritonConfig = BenchmarkConfig.create("TRITON_NO_GC")
@@ -557,8 +593,15 @@ public class TestDspValidation {
         double matchRate = minLen > 0 ? (double) matches / minLen : 1.0;
         log.info("Token match rate: {}/{} ({}%) first_divergent_step={}",
                 matches, minLen, String.format("%.1f", matchRate * 100), firstDivergentStep);
-        log.info("SLOT_BY_SLOT text: {}", slotResult.getText());
-        log.info("TRITON_NO_GC text: {}", tritonResult.getText());
+
+        // Summary
+        log.info("=== BISECTION SUMMARY ===");
+        log.info("SLOT_BY_SLOT text:        {}", slotResult.getText());
+        log.info("TRITON_SKIP_KERNELS text: {}", skipResult.getText());
+        log.info("TRITON_VERIFY text:       {}", verifyResult.getText());
+        log.info("TRITON_NO_GC text:        {}", tritonResult.getText());
+        log.info("SKIP match rate: {}%", String.format("%.1f", skipMatchRate * 100));
+        log.info("NO_GC match rate: {}%", String.format("%.1f", matchRate * 100));
 
         // Soft assertion — log but don't fail, since we're investigating
         if (matchRate < 0.9) {
