@@ -1095,6 +1095,14 @@ Status NativeDynamicShapePlan::compositeReplay(
        return refreshStatus;
      }
      tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
+
+     // Update captured keys to current addresses so subsequent steps
+     // see matching keys and argTableStable stays true (fast-replay path).
+     // This is critical when staging buffers change ext-input addresses
+     // from capture-time originals to plan-owned stable pointers.
+     seg.exec.capturedInputAddrKey = computeSegmentInputAddrKey(seg, effectiveExternals, numExt);
+     seg.exec.capturedSlotAddrHash = computeSlotAddrHash(
+         outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
    }
  }
 #endif
