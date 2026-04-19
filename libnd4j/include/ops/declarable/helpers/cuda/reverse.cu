@@ -290,7 +290,7 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
     }
 
     // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-    if (!tl_graphExecutionActive) { cudaStreamSynchronize(*stream); }
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) { cudaStreamSynchronize(*stream); }
 
     delete dimensions;
   }

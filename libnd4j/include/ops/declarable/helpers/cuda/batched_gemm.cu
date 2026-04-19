@@ -34,6 +34,8 @@
 
 extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
+extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
 
 
 namespace sd {
@@ -211,7 +213,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
 
   // During CUDA graph capture, cudaStreamSynchronize is illegal. Stream
   // ordering guarantees cuBLAS results are available to downstream kernels.
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) {
       throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);

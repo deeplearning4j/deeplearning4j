@@ -77,7 +77,7 @@ static void activationCUDNN(const LaunchContext* context, NDArray* input, NDArra
       cudnnActivationForward(*handle, actDesc, ptrAlpha, x, input->specialBuffer(),
                              ptrBeta, z, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("activationCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -123,7 +123,7 @@ static void activationBpCUDNN(const LaunchContext* context, NDArray* input, NDAr
                               x, input->specialBuffer(),
                               ptrBeta, dx, gradI->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("activationBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

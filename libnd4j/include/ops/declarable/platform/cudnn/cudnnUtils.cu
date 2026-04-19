@@ -149,7 +149,7 @@ void pooling2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
       STRINGIZE(cudnnPoolingForward),
       cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("pooling2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
   }
@@ -210,7 +210,7 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
       cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x,
                            input->specialBuffer(), beta, x, gradI->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("pooling2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
   }
@@ -310,7 +310,7 @@ void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
       STRINGIZE(cudnnPoolingForward),
       cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("pooling3dCUDNN: cudaStreamSynchronize failed !", cudaErr);
   }
@@ -402,7 +402,7 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
     NDArray::registerSpecialUse({gradI}, {input, gradO});
   }
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("pooling3dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
   }

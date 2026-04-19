@@ -184,6 +184,12 @@ void PointersManager::synchronize() const {
   // being recorded, not executed, so there's nothing to synchronize.
   if (tl_graphExecutionActive) return;
 
+  // During DSP composite replay, all gap ops run on the unified DSP stream
+  // (tl_dspGapStream). FIFO ordering on a single stream guarantees that each
+  // op's kernels complete before the next op's kernels begin. Per-op
+  // cudaStreamSynchronize is redundant and serializes the GPU pipeline.
+  if (tl_dspReplayActive) return;
+
   if (_context != nullptr) {
     cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
     if (cudaResult != 0) throw cuda_exception::build(_funcName + ": cuda stream synchronization failed !", cudaResult);

@@ -91,7 +91,7 @@ static void lrnCUDNN(const LaunchContext* context, NDArray* input, NDArray* outp
                                   ptrAlpha, x, input->specialBuffer(),
                                   ptrBeta, y, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("lrnCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -165,7 +165,7 @@ static void lrnBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gr
                                    x, input->specialBuffer(),
                                    ptrBeta, dx, gradI->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("lrnBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

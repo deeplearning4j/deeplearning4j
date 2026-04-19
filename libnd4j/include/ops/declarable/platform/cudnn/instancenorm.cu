@@ -126,7 +126,7 @@ static void instanceNormCUDNN(const LaunchContext* context, NDArray* input, NDAr
           nullptr,  // estimatedVariance
           epsilon));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("instanceNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

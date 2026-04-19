@@ -270,7 +270,7 @@ static void flashAttentionCUDNN(const LaunchContext* context,
     delete oFlat;
   }
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("flashAttentionCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

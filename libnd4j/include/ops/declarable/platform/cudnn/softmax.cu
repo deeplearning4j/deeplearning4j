@@ -86,7 +86,7 @@ static void softmaxCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
 
   // During CUDA graph capture, stream synchronization is illegal (error 900).
   // Operations are only being recorded, not executed — nothing to synchronize.
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("softmaxCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -142,7 +142,7 @@ static void softmaxBpCUDNN(const LaunchContext* context, NDArray* input, NDArray
                            dy, gradO->specialBuffer(),
                            ptrBeta, dx, gradI->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("softmaxBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

@@ -75,7 +75,7 @@ static void globalAvgPool2dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -127,7 +127,7 @@ static void globalMaxPool2dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -188,7 +188,7 @@ static void globalAvgPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
                            xDesc, input->specialBuffer(),
                            beta, dxDesc, gradI->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -249,7 +249,7 @@ static void globalMaxPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
                            xDesc, input->specialBuffer(),
                            beta, dxDesc, gradI->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -317,7 +317,7 @@ static void globalAvgPool3dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("globalAvgPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -385,7 +385,7 @@ static void globalMaxPool3dCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnPoolingForward(*handle, poolDesc, alpha, xDesc, input->specialBuffer(),
                           beta, yDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("globalMaxPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

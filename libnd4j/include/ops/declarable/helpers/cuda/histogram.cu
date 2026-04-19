@@ -127,7 +127,7 @@ static void histogram_(LaunchContext *context, void *xBuffer, const LongType *xS
   DebugHelper::checkErrorCode(context->getCudaStream(),"histogramKernel failed");
 
   // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     cudaStreamSynchronize(*context->getCudaStream());
     delete tmp;
   }

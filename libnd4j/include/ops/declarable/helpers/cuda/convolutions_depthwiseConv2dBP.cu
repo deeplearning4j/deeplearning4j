@@ -129,7 +129,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
   // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     cudaStreamSynchronize(*input->getContext()->getCudaStream());
   }
 

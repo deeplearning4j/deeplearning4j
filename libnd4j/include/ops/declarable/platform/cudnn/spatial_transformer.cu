@@ -70,7 +70,7 @@ static void gridGeneratorCUDNN(const LaunchContext* context, NDArray* theta, NDA
       STRINGIZE(cudnnSpatialTfGridGeneratorForward),
       cudnnSpatialTfGridGeneratorForward(*handle, stDesc, theta->specialBuffer(), grid->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("gridGeneratorCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -104,7 +104,7 @@ static void gridGeneratorBpCUDNN(const LaunchContext* context, NDArray* gradGrid
       STRINGIZE(cudnnSpatialTfGridGeneratorBackward),
       cudnnSpatialTfGridGeneratorBackward(*handle, stDesc, gradGrid->specialBuffer(), gradTheta->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("gridGeneratorBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -161,7 +161,7 @@ static void gridSamplerCUDNN(const LaunchContext* context, NDArray* input, NDArr
                                     grid->specialBuffer(),
                                     beta, yDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("gridSamplerCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -217,7 +217,7 @@ static void gridSamplerBpCUDNN(const LaunchContext* context,
                                      grid->specialBuffer(),
                                      beta, gradGrid->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("gridSamplerBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

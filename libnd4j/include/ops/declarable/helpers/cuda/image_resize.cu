@@ -140,7 +140,7 @@ static void resizeImage_(LaunchContext* context, NDArray * images, LongType batc
                                                       channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
 
   // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto err = cudaStreamSynchronize(*stream);
     if (err != 0) {
       throw cuda_exception::build("helpers::resizeImage_: Cannot synchronize kernel execution", err);
@@ -195,7 +195,7 @@ static Status resizeBilinearFunctor_(LaunchContext* context, NDArray * images, i
 
   NDArray::prepareSpecialUse({output}, {images});
   resizeImage_<T, F>(context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output);
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     err = cudaStreamSynchronize(*stream);
   }
   NDArray::registerSpecialUse({output}, {images});
@@ -392,7 +392,7 @@ float* initCoeffsTable(const double a, cudaStream_t* stream) {
 
   dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
   initCoefTableKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(static_cast<float>(a), coeffs_table, kTableSize);
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     cudaError_t err = cudaStreamSynchronize(*stream);
     if (err != 0) {
       throw cuda_exception::build("helpers::initCoeffsTable: Cannot synchronize kernel", err);
@@ -456,7 +456,7 @@ static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResiz
                                                                      resizerState.widthScale, outWidth,
                                                                      resizerState.channels, exclude_outside);
   sd::memory::CudaMemoryPool::getInstance().free(pCalcD, irDevId3, nullptr);
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     err = cudaStreamSynchronize(*stream);
     if (err != 0) {
       cuda_exception::build(
@@ -466,7 +466,7 @@ static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResiz
   dim3 launchDims2 = getLaunchDims("image_resize_coeffs_accum");
   // Scale the values so they can be used as offsets into buffers.
   accumulateChannelsKernel<<<launchDims2.x,launchDims.y,launchDims.z, *stream>>>(pXWais, outWidth, resizerState.wStride);
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     err = cudaStreamSynchronize(*stream);
     if (err != 0) {
       cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot synchronize stream after accumulate channels",
@@ -666,7 +666,7 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
   //128,1,512
   bicubicInterpolateWithCachingKernel<T, Scaler>
       <<<bicubDims.x, bicubDims.y, bicubDims.z, *stream>>>(coeffsTable, pInput, resizerStateD, xWais, exclude_outside, pOutput);
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     err = cudaStreamSynchronize(*stream);
     if (err != 0) {
       throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Kernels finished with error", err);
@@ -788,7 +788,7 @@ static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, Cached
   if (cachePool == nullptr) THROW_EXCEPTION("helpers::resizeArea: Cannot allocate memory for cache");
   resizeAreaKernel<T><<<128, 128, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->specialShapeInfo(), outputPtr,
                                                    output->specialShapeInfo(), cachePool);
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     err = cudaStreamSynchronize(*stream);
     if (err != 0) {
       throw cuda_exception::build("helpers::resizeArea: An error occured with kernel running", err);
@@ -814,7 +814,7 @@ Status resizeAreaFunctor_(LaunchContext* context, NDArray * image, int const wid
     dim3 launchDims = getLaunchDims("image_resize_fill_interp");
     fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
     resizeArea<T>(stream, st, xCached, image, output);
-    if (!tl_graphExecutionActive) {
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) {
       cudaError_t err = cudaStreamSynchronize(*stream);
       if (err != 0) {
         throw cuda_exception::build("helpers::resizeAreaFunctor_: Error occured when kernel was running", err);

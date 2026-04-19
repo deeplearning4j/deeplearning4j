@@ -110,7 +110,7 @@ static void layerNormCUDNN(const LaunchContext* context, NDArray* input, NDArray
           saveMean,
           saveInvVar));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("layerNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -184,7 +184,7 @@ static void layerNormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
           mean ? mean->specialBuffer() : nullptr,
           variance ? variance->specialBuffer() : nullptr));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("layerNormBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

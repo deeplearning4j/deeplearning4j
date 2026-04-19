@@ -26,6 +26,8 @@
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
 
+extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
+extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
 
 namespace sd {
 namespace ops {
@@ -443,7 +445,7 @@ static Status _dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray 
 
     // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
     // Ensure all pointer replications are complete before kernel launch
-    if (!tl_graphExecutionActive) { cudaStreamSynchronize(*context->getCudaStream()); }
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) { cudaStreamSynchronize(*context->getCudaStream()); }
 
     // Use grid size based on number of inputs, with reasonable thread count
     int numBlocks = static_cast<int>(inputSize);

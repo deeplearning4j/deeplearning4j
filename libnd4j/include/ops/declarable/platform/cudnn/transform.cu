@@ -99,7 +99,7 @@ static void scaleTensorCUDNN(const LaunchContext* context, NDArray* input, NDArr
       STRINGIZE(cudnnScaleTensor),
       cudnnScaleTensor(*handle, yDesc, output->specialBuffer(), pAlpha));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("scaleTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -135,7 +135,7 @@ static void transformTensorCUDNN(const LaunchContext* context, NDArray* input, N
       cudnnTransformTensor(*handle, pAlpha, xDesc, input->specialBuffer(),
                            pBeta, yDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("transformTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -302,7 +302,7 @@ PLATFORM_IMPL(selu, ENGINE_CUDA) {
       STRINGIZE(cudnnScaleTensor),
       cudnnScaleTensor(*handle, xDesc, output->specialBuffer(), scale));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("selu CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -356,7 +356,7 @@ PLATFORM_IMPL(swish, ENGINE_CUDA) {
       cudnnActivationForward(*handle, actDesc, alpha, xDesc, input->specialBuffer(),
                              beta, xDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("swish CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

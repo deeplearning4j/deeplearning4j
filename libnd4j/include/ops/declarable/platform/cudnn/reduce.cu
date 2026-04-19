@@ -138,7 +138,7 @@ static void reduceTensorCUDNN(const LaunchContext* context, NDArray* input, NDAr
                         alpha, xDesc, input->specialBuffer(),
                         beta, yDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("reduceTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

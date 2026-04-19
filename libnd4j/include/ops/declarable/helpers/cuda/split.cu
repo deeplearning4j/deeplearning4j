@@ -34,6 +34,8 @@
 
 #include <numeric>
 
+extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
+extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
 
 namespace sd {
 namespace ops {
@@ -160,7 +162,7 @@ void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArr
     // During CUDA graph capture, cudaStreamSynchronize is illegal (poisons
     // capture stream). Stream ordering already guarantees the copies complete
     // before any downstream kernel on the same stream.
-    if (!tl_graphExecutionActive) {
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) {
       if (cudaStreamSynchronize(*context->getCudaStream()) != 0)
         THROW_EXCEPTION("split cuda: luckCase1 failed!");
     }

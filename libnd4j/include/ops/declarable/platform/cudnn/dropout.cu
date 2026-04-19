@@ -92,7 +92,7 @@ static void dropoutCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
       cudnnDropoutForward(*handle, dropoutDesc, xDesc, input->specialBuffer(),
                           xDesc, output->specialBuffer(), reserveSpace, reserveSpaceSize));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("dropoutCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -162,7 +162,7 @@ static void dropoutBpCUDNN(const LaunchContext* context, NDArray* gradO, NDArray
       cudnnDropoutBackward(*handle, dropoutDesc, dyDesc, gradO->specialBuffer(),
                            dyDesc, gradI->specialBuffer(), reserveSpace, reserveSpaceSize));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("dropoutBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

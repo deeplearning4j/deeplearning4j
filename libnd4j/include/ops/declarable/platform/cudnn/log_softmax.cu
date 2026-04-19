@@ -77,7 +77,7 @@ static void logSoftmaxCUDNN(const LaunchContext* context, NDArray* input, NDArra
                           ptrAlpha, x, input->specialBuffer(),
                           ptrBeta, z, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("logSoftmaxCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

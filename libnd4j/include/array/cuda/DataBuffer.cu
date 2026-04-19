@@ -45,6 +45,7 @@ namespace sd {
 // Definition of thread-local graph execution flag (declared in DataBuffer.h and DebugHelper.h)
 // SD_TLS_EXPORT needed on Windows/MinGW so __emutls symbols are exported from DLL.
 SD_TLS_EXPORT thread_local bool tl_graphExecutionActive = false;
+SD_TLS_EXPORT thread_local bool tl_dspReplayActive = false;
 SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream = nullptr;
 
 // Thread-local accumulator for pinned host buffers during CUDA graph capture.

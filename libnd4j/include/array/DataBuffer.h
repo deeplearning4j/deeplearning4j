@@ -49,6 +49,16 @@ extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 
 #ifdef SD_CUDA
 /**
+ * Set during DSP composite replay gap-slot execution. Suppresses post-op
+ * cudaStreamSynchronize calls in PointersManager, cuDNN ops, etc.
+ * Unlike tl_graphExecutionActive, this does NOT affect allocation or
+ * memory freeing behavior — it only signals that all work is on a single
+ * unified stream (tl_dspGapStream) where FIFO ordering makes per-op
+ * syncs redundant.
+ */
+extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
+
+/**
  * Captured CUDA stream for the current graph capture session.
  * Some capture-safe paths must enqueue work on the exact captured stream;
  * using a different stream can invalidate capture.

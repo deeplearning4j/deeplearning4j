@@ -169,7 +169,7 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   delete outputNHWC;
 
   // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     cudaStreamSynchronize(*ctx->getCudaStream());
   }
 

@@ -113,7 +113,7 @@ static void conv1dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
                             cudnnAddTensor(*handle, alpha, b, bias->specialBuffer(), alpha, z, output->specialBuffer()));
   }
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("conv1dCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -226,7 +226,7 @@ static void conv1dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
       cudnnConvolutionBackwardData(*handle, alpha, dw, weights->specialBuffer(), dz, gradO->specialBuffer(),
                                    conv, algoGradI, wsGradIData, wsGradISize, beta, dx, gradI->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("conv1dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

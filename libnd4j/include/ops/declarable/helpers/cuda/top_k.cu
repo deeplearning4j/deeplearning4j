@@ -525,7 +525,7 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
   // Clean up device memory for 1D case (after kernel completes via stream sync in caller)
   if (deviceZeroOffset != nullptr) {
     // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-    if (!tl_graphExecutionActive) {
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) {
       cudaStreamSynchronize(*context->getCudaStream());
       sd::memory::CudaMemoryPool::getInstance().free(deviceZeroOffset, topkDevId, nullptr);
     }

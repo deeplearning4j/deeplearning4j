@@ -163,7 +163,7 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
   // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
   auto cudaCtx = block.launchContext();
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     cudaStreamSynchronize(*cudaCtx->getCudaStream());
   }
 

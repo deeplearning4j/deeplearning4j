@@ -107,7 +107,7 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
           input->specialBuffer(), z, output->specialBuffer(), params, gamma->specialBuffer(), beta->specialBuffer(),
           mean->specialBuffer(), variance->specialBuffer(), epsilon));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("batchnormCUDNN: cudaStreamSynchronize failed !", cudaErr);
   }
@@ -206,7 +206,7 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
                                       gamma->specialBuffer(), gradG->specialBuffer(), gradB->specialBuffer(), epsilon,
                                       nullptr /*mean->specialBuffer()*/, nullptr /*variance->specialBuffer()*/));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("batchnormBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
   }

@@ -105,7 +105,7 @@ static void opTensorCUDNN(const LaunchContext* context, NDArray* a, NDArray* b, 
                     pAlpha2, bDesc, b->specialBuffer(),
                     pBeta, cDesc, c->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("opTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -343,7 +343,7 @@ PLATFORM_IMPL(sqrt, ENGINE_CUDA) {
                     alpha, xDesc, input->specialBuffer(),  // B is ignored for SQRT
                     beta, xDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("sqrt CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

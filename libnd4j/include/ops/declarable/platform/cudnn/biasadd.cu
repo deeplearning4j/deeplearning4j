@@ -108,7 +108,7 @@ static void biasaddCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
       STRINGIZE(cudnnAddTensor),
       cudnnAddTensor(*handle, alpha, bDesc, bias->specialBuffer(), alpha, xDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("biasaddCUDNN: cudaStreamSynchronize failed!", cudaErr);
   }

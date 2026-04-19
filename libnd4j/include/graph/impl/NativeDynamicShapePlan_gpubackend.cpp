@@ -1172,14 +1172,23 @@ Status NativeDynamicShapePlan::compositeReplay(
       // needsSync gate in executeSlot sees device data as authoritative and
       // prepareSpecialUse is a no-op. registerSpecialUse in executeSlot ticks
       // gap outputs for downstream islands.
+      //
+      // tl_dspReplayActive: suppress per-op cudaStreamSynchronize in cuDNN ops,
+      // PointersManager::synchronize(), etc. All work is on the unified DSP stream
+      // (tl_dspGapStream) — FIFO ordering makes per-op syncs redundant. Unlike
+      // tl_graphExecutionActive, this does NOT affect allocation/freeing behavior.
+      bool prevReplayActive = tl_dspReplayActive;
+      tl_dspReplayActive = true;
       for (int s = unit.startSlot; s <= unit.endSlot; s++) {
         auto slotStatus = executeSlot(s, effectiveExternals, numExt, stream);
         if (slotStatus != Status::OK) {
+          tl_dspReplayActive = prevReplayActive;
           DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap slot %d FAILED status=%d",
                    s, static_cast<int>(slotStatus));
           return slotStatus;
         }
       }
+      tl_dspReplayActive = prevReplayActive;
 
       // Cross-stream sync after gap ops — no-op when gap stream == cudaStr
       // (gap-stream unification). Retained as safety net if override is disabled.

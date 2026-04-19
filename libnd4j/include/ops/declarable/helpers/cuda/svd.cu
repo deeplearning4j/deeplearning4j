@@ -486,8 +486,8 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   if (devInfo == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for devInfo");
   // During CUDA graph capture, synchronous calls are illegal.
   cudaError_t status2 = cudaSuccess;
-  if (!tl_graphExecutionActive) { status2 = cudaDeviceSynchronize(); }
-  if (!tl_graphExecutionActive) { status2 = cudaDeviceSynchronize(); }
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
   if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
 
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
@@ -524,7 +524,7 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId3, nullptr);
   if (dWork == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for dWork");
   // During CUDA graph capture, synchronous calls are illegal.
-  if (!tl_graphExecutionActive) { status2 = cudaDeviceSynchronize(); }
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
   if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
 
   PointersManager manager(context, "svdBatched");

@@ -89,7 +89,7 @@ PLATFORM_IMPL(softplus, ENGINE_CUDA) {
       cudnnActivationForward(*handle, actDesc, alpha, xDesc, input->specialBuffer(),
                              beta, xDesc, output->specialBuffer()));
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("softplus CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -181,7 +181,7 @@ PLATFORM_IMPL(gelu, ENGINE_CUDA) {
   *output *= temp2;
   *output *= 0.5;
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("gelu CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -253,7 +253,7 @@ PLATFORM_IMPL(mish, ENGINE_CUDA) {
   // Multiply by x: output = x * tanh(softplus(x))
   input->applyPairwiseTransform(pairwise::Multiply, &tanhResult, output);
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("mish CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -322,7 +322,7 @@ PLATFORM_IMPL(hardswish, ENGINE_CUDA) {
   input->applyPairwiseTransform(pairwise::Multiply, &relu6Result, output);
   *output /= 6.0;
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("hardswish CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
@@ -387,7 +387,7 @@ PLATFORM_IMPL(hardsigmoid, ENGINE_CUDA) {
   // Step 3: output = output / 6
   *output /= 6.0;
 
-  if (!tl_graphExecutionActive) {
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) throw cuda_exception::build("hardsigmoid CUDNN: cudaStreamSynchronize failed!", cudaErr);
   }
