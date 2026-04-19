@@ -165,6 +165,8 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           } else {
             segment.exec.replayHandle.reset();
             segment.exec.argTableStable = false;  // Invalidate fast-replay on capture failure
+            segment.exec.addrKeyStableCount = 0;
+            segment.exec.slotAddrStableCount = 0;
             DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "functional_capture_failed");
           }
         } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
@@ -191,6 +193,8 @@ Status NativeDynamicShapePlan::platformCheckPostSegment(GraphSegment& segment) {
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   seg.exec.replayHandle.reset();
   seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
+  seg.exec.addrKeyStableCount = 0;
+  seg.exec.slotAddrStableCount = 0;
   seg.exec.gapOpsCapturedInGraph = false;
   seg.resolvedCpuBackend = nullptr;
 }
@@ -201,6 +205,8 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     seg.exec.replayHandle.reset();
     seg.exec.argTableStable = false;  // Invalidate fast-replay on plan teardown
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
     seg.exec.gapOpsCapturedInGraph = false;
     seg.resolvedCpuBackend = nullptr;
   }
@@ -317,6 +323,8 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     }
     seg.exec.gapOpsCapturedInGraph = false;
     seg.exec.argTableStable = false;
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
     seg.exec.capturedInputAddrKey = 0;
     seg.exec.compilationFailed = false;
     seg.exec.executionCount = 0;

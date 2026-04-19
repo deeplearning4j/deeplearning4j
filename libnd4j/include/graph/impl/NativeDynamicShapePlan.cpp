@@ -335,7 +335,8 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
       const bool isViewOpTag = tag != nullptr &&
           (strcmp(tag, "view-op-install") == 0 ||
            strcmp(tag, "view-op-reuse") == 0 ||
-           strcmp(tag, "ff-view-install") == 0);
+           strcmp(tag, "ff-view-install") == 0 ||
+           strcmp(tag, "view-install") == 0);
       const bool newDbValid = value->dataBuffer() != nullptr &&
           !value->dataBuffer()->isClosed();
       // A view-op tag with the SAME underlying DataBuffer is always a legitimate
@@ -2025,6 +2026,8 @@ void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
       }
       seg.exec.executionCount = 0;
       seg.exec.argTableStable = false;
+      seg.exec.addrKeyStableCount = 0;
+      seg.exec.slotAddrStableCount = 0;
       seg.exec.gapOpsCapturedInGraph = false;
       seg.exec.cachedShapeKey = 0;
       seg.exec.capturedInputAddrKey = 0;
@@ -2185,6 +2188,8 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   for (auto& seg : segments_) {
     seg.exec.executionCount = 0;
     seg.exec.argTableStable = false;
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
     seg.exec.gapOpsCapturedInGraph = false;
     seg.exec.cachedShapeKey = 0;
     seg.exec.capturedInputAddrKey = 0;
@@ -2631,6 +2636,8 @@ void NativeDynamicShapePlan::resetSegmentExecutionState() {
     seg.exec.captureOomRetries = 0;
     if (seg.exec.replayHandle) seg.exec.replayHandle.reset();
     seg.exec.argTableStable = false;
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
     seg.exec.currentPhase = ExecutionPhase::WARMUP;
   }
   compilationDone_ = false;

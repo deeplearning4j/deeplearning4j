@@ -37,10 +37,10 @@ namespace sd {
 namespace graph {
 
 /**
- * LRU cache keyed by (outputSetHash, vector<LongType*>) where each pointer is a
- * shape-info pointer sourced from ConstantShapeHelper.  Because ConstantShapeHelper
- * deduplicates identical shapes, pointer equality is shape equality — O(1) key
- * comparison, zero extra memory per key.
+ * LRU cache keyed by (outputSetHash, content-hash of placeholder shape-info buffers).
+ * The key hashes the actual shape-info CONTENTS (rank, dims, strides, dtype) rather
+ * than pointer addresses, so arrays with the same shape but different allocations
+ * (e.g., KV cache placeholders re-created each decode step) produce the same key.
  *
  * Budget policy (both enforced on every insert):
  *   1. Hard cap:    lru_.size() > DspConfig::planCacheMaxPlans()  → evict LRU until satisfied.
@@ -57,28 +57,38 @@ namespace graph {
 class SD_LIB_EXPORT NativePlanCache {
  public:
   // -------------------------------------------------------------------------
-  // Key type
+  // Key type — content-based (not pointer-based)
   // -------------------------------------------------------------------------
   struct Key {
     uint64_t outputSetHash;
-    // Pointer-equality keys: ConstantShapeHelper guarantees same pointer == same shape.
-    std::vector<sd::LongType*> phShapeInfoPtrs;
+    // Content hash of all placeholder shape-info buffers.
+    // Built by hashShapeInfoContents() from the actual rank/dims/strides/dtype data.
+    uint64_t phShapeContentHash;
+    // Number of placeholders (for equality disambiguation).
+    sd::LongType phCount;
 
     bool operator==(const Key& o) const {
-      return outputSetHash == o.outputSetHash && phShapeInfoPtrs == o.phShapeInfoPtrs;
+      return outputSetHash == o.outputSetHash
+          && phShapeContentHash == o.phShapeContentHash
+          && phCount == o.phCount;
     }
   };
 
   struct KeyHasher {
     size_t operator()(const Key& k) const noexcept {
-      // Mix outputSetHash with each pointer using a Fibonacci multiplier to spread bits.
       size_t h = std::hash<uint64_t>{}(k.outputSetHash);
-      for (const auto* p : k.phShapeInfoPtrs) {
-        h ^= std::hash<const void*>{}(p) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
-      }
+      h ^= std::hash<uint64_t>{}(k.phShapeContentHash) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+      h ^= std::hash<sd::LongType>{}(k.phCount) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
       return h;
     }
   };
+
+  /**
+   * Hash the contents of an array of shape-info pointers. Reads the actual
+   * rank/dims/strides/dtype from each buffer to produce a stable content hash
+   * that is independent of pointer addresses.
+   */
+  static uint64_t hashShapeInfoContents(sd::LongType** ptrs, sd::LongType count);
 
   // -------------------------------------------------------------------------
   // Construction / destruction

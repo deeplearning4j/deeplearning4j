@@ -391,7 +391,8 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     sd::graph::NativePlanCache::Key key;
     key.outputSetHash = h;
     auto** ptrs = reinterpret_cast<sd::LongType**>(phShapeInfoPtrs);
-    key.phShapeInfoPtrs.assign(ptrs, ptrs + numPlaceholders);
+    key.phShapeContentHash = sd::graph::NativePlanCache::hashShapeInfoContents(ptrs, numPlaceholders);
+    key.phCount = numPlaceholders;
 
     // Factory: deserialize and build the plan on cold miss.
     auto factory = [&]() -> sd::graph::NativeDynamicShapePlan* {
@@ -400,10 +401,20 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
 
     auto* plan = cache->getOrInsert(key, factory);
     if (plan) {
-      DSP_DIAG(COMPILE, "dispatchNativePlan: cache returned plan addr=%p fingerprint=0x%016llx "
-               "slots=%d outputSetHash=0x%016llx numPH=%lld",
-               (void*)plan, (unsigned long long)plan->identityFingerprint(),
-               plan->getNumSlots(), (unsigned long long)h, (long long)numPlaceholders);
+      DSP_DIAG(COMPILE, "dispatchNativePlan: plan=%p slots=%d contentHash=0x%016llx cacheSize=%zu",
+               (void*)plan, plan->getNumSlots(),
+               (unsigned long long)key.phShapeContentHash, cache->size());
+      if (DSP_DIAG_ENABLED(COMPILE)) {
+        for (sd::LongType pi = 0; pi < numPlaceholders; pi++) {
+          const sd::LongType* si = ptrs[pi];
+          if (si == nullptr) {
+            DSP_DIAG(COMPILE, "  ph[%lld]: NULL", (long long)pi);
+            continue;
+          }
+          auto infoStr = ShapeUtils::shapeInfoAsString(si);
+          DSP_DIAG(COMPILE, "  ph[%lld]: %s", (long long)pi, infoStr.c_str());
+        }
+      }
     }
     return reinterpret_cast<sd::Pointer>(plan);
   } catch (const std::exception& e) {

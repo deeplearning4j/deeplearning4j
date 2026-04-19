@@ -267,7 +267,8 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     sd::graph::NativePlanCache::Key key;
     key.outputSetHash = h;
     auto** ptrs = reinterpret_cast<sd::LongType**>(phShapeInfoPtrs);
-    key.phShapeInfoPtrs.assign(ptrs, ptrs + numPlaceholders);
+    key.phShapeContentHash = sd::graph::NativePlanCache::hashShapeInfoContents(ptrs, numPlaceholders);
+    key.phCount = numPlaceholders;
 
     // Factory: deserialize and build the plan on cold miss.
     auto factory = [&]() -> sd::graph::NativeDynamicShapePlan* {

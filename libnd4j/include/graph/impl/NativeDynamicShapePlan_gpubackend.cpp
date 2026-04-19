@@ -449,6 +449,8 @@ static void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegment& seg
   exec.capturedSlotAddrHash = 0;
   exec.compilationFailed = false;
   exec.argTableStable = false;
+  exec.addrKeyStableCount = 0;
+  exec.slotAddrStableCount = 0;
   exec.compiledByBackend.clear();
   exec.executionCount = 0;
   exec.lastReplayExecCount = 0;
@@ -906,6 +908,12 @@ Status NativeDynamicShapePlan::compositeReplay(
 
   auto cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
+  // Reset cast cache indices so gap-executed matmuls can reuse persistent
+  // HALF buffers from the cast cache (populated during capture warmup).
+  // Without this, each matmul allocates+frees a HALF buffer per call
+  // (202 matmuls × 2 = 404 cudaMallocAsync/cudaFreeAsync per step).
+  MmulHelper::resetCastCacheIndices();
+
   // Per-step deduplication: access the active PlanExecutionContext to avoid
   // repeating plan-level operations (ext input sync, cross-stream ordering,
   // input address hashing) once per segment when we have 14+ segments.
@@ -1064,7 +1072,13 @@ Status NativeDynamicShapePlan::compositeReplay(
   // than a lifecycle error. Cost: one hash per segment of ext-input + cross-segment
   // slot specialBuffer pointers. NOT cacheable across segments because each segment
   // hashes different internal output slots (cross-segment references).
-  if (seg.exec.argTableStable && seg.exec.capturedInputAddrKey != 0) {
+  //
+  // Performance gate: after ADDR_CHECK_STABLE_THRESHOLD consecutive passes with no
+  // drift detected, skip the hash entirely — pointers are locked-in (model weights
+  // don't rebind mid-inference). The counter resets to 0 on any drift detection so
+  // re-binding is always caught within one step.
+  if (seg.exec.argTableStable && seg.exec.capturedInputAddrKey != 0 &&
+      seg.exec.addrKeyStableCount < GraphSegmentExec::ADDR_CHECK_STABLE_THRESHOLD) {
     LongType currentAddrKey = computeSegmentInputAddrKey(seg, effectiveExternals, numExt);
     if (currentAddrKey != seg.exec.capturedInputAddrKey) {
       DSP_DIAG(FALLBACK,
@@ -1074,6 +1088,14 @@ Status NativeDynamicShapePlan::compositeReplay(
                (long long)currentAddrKey, (long long)seg.exec.capturedInputAddrKey,
                seg.exec.executionCount);
       seg.exec.argTableStable = false;
+      seg.exec.addrKeyStableCount = 0;
+      seg.exec.slotAddrStableCount = 0;
+    } else {
+      seg.exec.addrKeyStableCount++;
+      DSP_DIAG(EXECUTE,
+               "EXT_ADDR_KEY_STABLE: seg[%d-%d] stableCount=%d execCount=%d",
+               seg.def.startSlot, seg.def.endSlot,
+               seg.exec.addrKeyStableCount, seg.exec.executionCount);
     }
   }
 
@@ -1085,7 +1107,10 @@ Status NativeDynamicShapePlan::compositeReplay(
   // fingerprint of "OPTIMAL step N = REF step N-1" stale-output symptoms.
   // The external-input guard above only covers weights/placeholders, not the
   // internal slot buffers produced by earlier ops in the segment.
-  if (seg.exec.argTableStable && seg.exec.capturedSlotAddrHash != 0) {
+  //
+  // Performance gate: same threshold as the ext-input check above.
+  if (seg.exec.argTableStable && seg.exec.capturedSlotAddrHash != 0 &&
+      seg.exec.slotAddrStableCount < GraphSegmentExec::ADDR_CHECK_STABLE_THRESHOLD) {
     LongType currentSlotHash = computeSlotAddrHash(
         outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
     if (currentSlotHash != seg.exec.capturedSlotAddrHash) {
@@ -1096,11 +1121,14 @@ Status NativeDynamicShapePlan::compositeReplay(
                (long long)currentSlotHash, (long long)seg.exec.capturedSlotAddrHash,
                seg.exec.executionCount);
       seg.exec.argTableStable = false;
+      seg.exec.addrKeyStableCount = 0;
+      seg.exec.slotAddrStableCount = 0;
     } else {
+      seg.exec.slotAddrStableCount++;
       DSP_DIAG(EXECUTE,
-               "SLOT_ADDR_STABLE: seg[%d-%d] hash=0x%llx execCount=%d",
+               "SLOT_ADDR_STABLE: seg[%d-%d] hash=0x%llx stableCount=%d execCount=%d",
                seg.def.startSlot, seg.def.endSlot,
-               (long long)currentSlotHash, seg.exec.executionCount);
+               (long long)currentSlotHash, seg.exec.slotAddrStableCount, seg.exec.executionCount);
     }
   }
 
@@ -1180,6 +1208,31 @@ Status NativeDynamicShapePlan::compositeReplay(
       bool prevReplayActive = tl_dspReplayActive;
       tl_dspReplayActive = true;
       for (int s = unit.startSlot; s <= unit.endSlot; s++) {
+        // ── Batched GEMM dispatch in gap loop ──────────────────────────
+        // Same trigger/skip logic as executeSegmentSlotBySlot: the first
+        // member in each group fires executeBatchedGemmGroup; non-first
+        // members are skipped (output already computed by the trigger).
+        if (!batchedGemmGroups_.empty() && s < (int)slotToBatchedGemmGroup_.size()) {
+          int bgIdx = slotToBatchedGemmGroup_[s];
+          if (bgIdx >= 0 && bgIdx < (int)batchedGemmGroups_.size()) {
+            auto& bgGroup = batchedGemmGroups_[bgIdx];
+            if (s == bgGroup.triggerSlot) {
+              cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+              Status batchStatus = executeBatchedGemmGroup(bgIdx, effectiveExternals, numExt, execStream);
+              if (batchStatus != Status::OK) {
+                tl_dspReplayActive = prevReplayActive;
+                DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: batched GEMM group %d FAILED at slot %d status=%d",
+                         bgIdx, s, static_cast<int>(batchStatus));
+                return batchStatus;
+              }
+              continue;
+            } else {
+              // Non-trigger member: output already computed by trigger's batch call
+              continue;
+            }
+          }
+        }
+
         auto slotStatus = executeSlot(s, effectiveExternals, numExt, stream);
         if (slotStatus != Status::OK) {
           tl_dspReplayActive = prevReplayActive;
@@ -3875,6 +3928,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       // Fresh wrappers expose new device addresses — force argTable refresh on
       // the next replay. Graph remains valid; no recapture needed.
       seg.exec.argTableStable = false;
+      seg.exec.addrKeyStableCount = 0;
+      seg.exec.slotAddrStableCount = 0;
       DSP_DIAG(MEMORY,
                "executeSegmentWithGpuGraph: refreshed %d stale view wrappers in seg[%d-%d]",
                viewRefreshResult, seg.def.startSlot, seg.def.endSlot);

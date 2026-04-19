@@ -19,6 +19,7 @@
 
 #include <graph/NativePlanCache.h>
 #include <helpers/logger.h>
+#include <helpers/shape.h>
 #include <system/Environment.h>
 
 #ifdef SD_CUDA
@@ -27,6 +28,32 @@
 
 namespace sd {
 namespace graph {
+
+// ---------------------------------------------------------------------------
+// hashShapeInfoContents — content-based hash of placeholder shape-info buffers
+// ---------------------------------------------------------------------------
+
+uint64_t NativePlanCache::hashShapeInfoContents(sd::LongType** ptrs, sd::LongType count) {
+  // FNV-1a 64-bit over the raw LongType words of each shape-info buffer.
+  // Each buffer is rank*2+4 LongType elements (rank, dims, strides, extras).
+  uint64_t h = 14695981039346656037ULL;
+  for (sd::LongType i = 0; i < count; i++) {
+    const sd::LongType* si = ptrs[i];
+    if (si == nullptr) {
+      // Mix a sentinel for null pointers.
+      h ^= 0xDEAD;
+      h *= 1099511628211ULL;
+      continue;
+    }
+    sd::LongType rank = shape::rank(si);
+    sd::LongType len = shape::shapeInfoLength(rank);
+    for (sd::LongType j = 0; j < len; j++) {
+      h ^= static_cast<uint64_t>(si[j]);
+      h *= 1099511628211ULL;
+    }
+  }
+  return h;
+}
 
 // ---------------------------------------------------------------------------
 // Construction / destruction
@@ -144,10 +171,11 @@ void NativePlanCache::evictIfOverBudgetLocked() {
       // All plans are pinned — cannot evict further.
       break;
     }
-    sd_printf("[NativePlanCache] evict LRU plan (count cap %d): outputSetHash=%llu phPtrs=%zu\n",
+    sd_printf("[NativePlanCache] evict LRU plan (count cap %d): outputSetHash=%llu phCount=%lld contentHash=0x%016llx\n",
               maxPlans,
               (unsigned long long)victim->first.outputSetHash,
-              victim->first.phShapeInfoPtrs.size());
+              (long long)victim->first.phCount,
+              (unsigned long long)victim->first.phShapeContentHash);
     map_.erase(victim->first);
     delete victim->second;
     lru_.erase(victim);
@@ -185,11 +213,12 @@ void NativePlanCache::evictIfOverBudgetLocked() {
           break;
         }
         sd_printf("[NativePlanCache] evict LRU plan (memory budget %.1f%% of %zuMB free): "
-                  "outputSetHash=%llu phPtrs=%zu\n",
+                  "outputSetHash=%llu phCount=%lld contentHash=0x%016llx\n",
                   fraction * 100.0f,
                   freeMem / (1024 * 1024),
                   (unsigned long long)victim->first.outputSetHash,
-                  victim->first.phShapeInfoPtrs.size());
+                  (long long)victim->first.phCount,
+                  (unsigned long long)victim->first.phShapeContentHash);
         map_.erase(victim->first);
         delete victim->second;
         lru_.erase(victim);

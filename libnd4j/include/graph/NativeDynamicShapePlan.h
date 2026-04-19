@@ -606,6 +606,16 @@ struct GraphSegmentExec {
   // Fast-replay: skip arg table refresh and EXT_INPUT_SYNC on replay.
   bool argTableStable = false;
 
+  // Consecutive-stable pass counters for the defensive addr-key and slot-hash
+  // checks in compositeReplay.  Each check increments its counter when it
+  // passes (no drift) and resets to 0 on a mismatch.  After
+  // ADDR_CHECK_STABLE_THRESHOLD consecutive passes the check is skipped —
+  // pointers are locked-in and per-step hashing wastes CPU.
+  // Both counters are reset to 0 whenever argTableStable is cleared.
+  static constexpr int ADDR_CHECK_STABLE_THRESHOLD = 3;
+  int addrKeyStableCount = 0;   // counts consecutive "ext-input key matched" passes
+  int slotAddrStableCount = 0;  // counts consecutive "slot addr hash matched" passes
+
   // Native ordered range ops captured in graph — must not be re-executed after replay.
   bool gapOpsCapturedInGraph = false;
 
@@ -657,6 +667,8 @@ struct GraphSegmentExec {
     symbolicRangeData = nullptr;
     compiledByBackend.clear();
     argTableStable = false;
+    addrKeyStableCount = 0;
+    slotAddrStableCount = 0;
     gapOpsCapturedInGraph = false;
     viewRecipes = ViewRecipeChain();
     compositeReplaySchedule = ReplaySchedule();

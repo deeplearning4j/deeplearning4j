@@ -1442,6 +1442,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     seg.exec.cachedShapeKey = currentShapeKey;
     seg.exec.capturedInputAddrKey = currentAddrKey;
     seg.exec.argTableStable = false;
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
 
     DSP_DIAG(EMULATED_REPLAY,
              "  WARMUP baseline: shapeKey=0x%llx addrKey=0x%llx",
@@ -1710,6 +1712,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
                "CUDA graph replay would succeed without re-capture. (fast path enabled)");
     } else {
       seg.exec.argTableStable = false;  // Disable fast path
+      seg.exec.addrKeyStableCount = 0;
+      seg.exec.slotAddrStableCount = 0;
       if (shapeStable && !addrStable) {
         DSP_DIAG(EMULATED_REPLAY,
                  "  REPLAY with D2D: shapes stable but addresses changed — "
@@ -1754,6 +1758,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
   if (status != Status::OK) {
     seg.exec.argTableStable = false;  // Force stability re-check on next step
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
     DSP_DIAG(EMULATED_REPLAY,
              "  ** EXECUTION FAILED: status=%d — graph capture would also fail here",
              (int)status);

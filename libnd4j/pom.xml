@@ -123,8 +123,10 @@
         <!-- CUDA Parallel Compilation (CUDA 11.2+): can reduce build times by 50% -->
         <!-- libnd4j.cuda.lto: Device LTO (better runtime perf, longer link) -->
         <libnd4j.cuda.lto>OFF</libnd4j.cuda.lto>
-        <!-- libnd4j.cuda.threads: nvcc threads flag (0=auto, parallelizes multi-arch) -->
-        <libnd4j.cuda.threads>0</libnd4j.cuda.threads>
+        <!-- libnd4j.cudabuildthreads: nvcc threads count (0=auto, parallelizes single .cu file compilation) -->
+        <!-- Separate from libnd4j.buildthreads which controls parallel Make jobs (-j) -->
+        <libnd4j.cudabuildthreads>0</libnd4j.cudabuildthreads>
+        <libnd4j.cuda.threads>${libnd4j.cudabuildthreads}</libnd4j.cuda.threads>
         <!-- libnd4j.cuda.splitcompile: nvcc split-compile (0=auto, parallel optimization) -->
         <libnd4j.cuda.splitcompile>0</libnd4j.cuda.splitcompile>
         <libnd4j.vectorization>OFF</libnd4j.vectorization>

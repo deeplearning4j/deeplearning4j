@@ -74,7 +74,7 @@ TEST_CLASS="TestSmolDoclingOptimizedPipeline"
 TEST_METHOD="testOptimizedDoclingPipeline"
 VALIDATION_LOG="$SCRIPT_DIR/dsp-validation.log"
 LOG_FILE="$SCRIPT_DIR/bench-output.log"
-SUREFIRE_OUT="$SCRIPT_DIR/target/surefire-reports/org.eclipse.deeplearning4j.vlm.${TEST_CLASS}-output.txt"
+SUREFIRE_OUT="$SCRIPT_DIR/target/surefire-reports/org.eclipse.deeplearning4j.vlm.${TEST_CLASS}.txt"
 SUREFIRE_XML="$SCRIPT_DIR/target/surefire-reports/TEST-org.eclipse.deeplearning4j.vlm.${TEST_CLASS}.xml"
 MODEL_CACHE="$HOME/.cache/dl4j-vlm-models"
 
@@ -410,6 +410,25 @@ if [ "$VALIDATION_TOKENS" -gt 10 ]; then
 fi
 
 echo "Running DSP validation preflight (${VALIDATION_CLASS}#${VALIDATION_METHOD}, tokens=${VALIDATION_TOKENS})..."
+# Validation runs WITHOUT diagnostic flags — diagnostics add overhead and
+# are only meaningful on the benchmark run. Only pass optimizer/precision flags.
+VALIDATION_ARGS=""
+if $NO_OPTIMIZER; then
+    VALIDATION_ARGS="$VALIDATION_ARGS -Dnd4j.optimizer.enabled=false"
+fi
+if ! $FP16; then
+    VALIDATION_ARGS="$VALIDATION_ARGS -Dnd4j.optimizer.fp16=false"
+fi
+if $NO_FREEZE; then
+    VALIDATION_ARGS="$VALIDATION_ARGS -Dnd4j.dsp.nofreeze=true"
+fi
+if $NO_TRITON; then
+    VALIDATION_ARGS="$VALIDATION_ARGS -Dnd4j.triton.skipKernels=true"
+fi
+if $TRITON_TF32; then
+    VALIDATION_ARGS="$VALIDATION_ARGS -Dnd4j.triton.tf32=1"
+fi
+
 set +e
 $MVN test \
   -Dtest="${VALIDATION_CLASS}#${VALIDATION_METHOD}" \
@@ -417,7 +436,7 @@ $MVN test \
   -Dvlm.validation.configs="$CONFIG" \
   -Dlibnd4j.triton=ON \
   -Dbackend.artifactId=nd4j-cuda-12.9 \
-  $EXTRA_ARGS \
+  $VALIDATION_ARGS \
   2>&1 | tee "$VALIDATION_LOG"
 VALIDATION_RESULT=${PIPESTATUS[0]}
 set -e
@@ -454,13 +473,9 @@ echo "════════════════════════�
 if [ $BUILD_RESULT -ne 0 ]; then
     echo "  STATUS: FAILED (exit code $BUILD_RESULT)"
     echo ""
-    grep -E "FAILED|ERROR|Exception|assert" "$LOG_FILE" | tail -20
-    if $DEBUG_MODE && [ -f "$CUDA_LOG" ]; then
-        echo ""
-        echo "  CUDA driver log (last 20 lines):"
-        tail -20 "$CUDA_LOG"
-    fi
-    exit 1
+    # Still run the Python parser to show metrics + DSP health — a perf assertion
+    # failure means the test ran but didn't meet the target. We still want to see
+    # the actual throughput and DSP health to diagnose why.
 fi
 
 if grep -q "Filtered to 0 configs via vlm.test.configs" "$LOG_FILE"; then
@@ -469,28 +484,33 @@ if grep -q "Filtered to 0 configs via vlm.test.configs" "$LOG_FILE"; then
     exit 1
 fi
 
-if [ "$MAX_TOKENS" -ge 200 ]; then
-    if ! grep -q "CREATING A MYTHIC CHARACTER" "$LOG_FILE" && \
-       ! grep -q "mythic heroes" "$LOG_FILE" && \
-       ! grep -q "hytic heroes" "$LOG_FILE"; then
+# Content check uses surefire report (benchmark only), NOT the tee log
+# which mixes validation + benchmark output
+if [ "$MAX_TOKENS" -ge 200 ] && [ -f "$SUREFIRE_OUT" ]; then
+    if ! grep -q "CREATING A MYTHIC CHARACTER" "$SUREFIRE_OUT" && \
+       ! grep -q "mythic heroes" "$SUREFIRE_OUT" && \
+       ! grep -q "hytic heroes" "$SUREFIRE_OUT"; then
         echo "  STATUS: FAILED (expected mythic passage not found in benchmark output)"
+        echo "  (checked $SUREFIRE_OUT, not the mixed tee log)"
         exit 1
     fi
 fi
 
-# Extract metrics from surefire output or XML
+# Extract metrics from surefire XML (has full stdout) or text fallback.
+# The .txt file is just a summary line — actual test output is in the XML.
 REPORT=""
-if [ -f "$SUREFIRE_OUT" ] && [ -s "$SUREFIRE_OUT" ]; then
-    REPORT="$SUREFIRE_OUT"
-elif [ -f "$SUREFIRE_XML" ]; then
+if [ -f "$SUREFIRE_XML" ]; then
     REPORT="$SUREFIRE_XML"
+elif [ -f "$SUREFIRE_OUT" ] && [ -s "$SUREFIRE_OUT" ]; then
+    REPORT="$SUREFIRE_OUT"
 fi
 
 if [ -n "$REPORT" ]; then
-    python3 - "$REPORT" <<'PYEOF'
+    python3 - "$REPORT" "$MAX_TOKENS" <<'PYEOF'
 import sys, re, xml.etree.ElementTree as ET
 
 report_path = sys.argv[1]
+max_tokens = int(sys.argv[2])
 
 # Get lines from either plain text or XML
 if report_path.endswith('.xml'):
@@ -505,117 +525,245 @@ else:
     with open(report_path) as f:
         lines = f.read().split('\n')
 
-# Decode steps
-steps = []
+# ── FIND THE BENCHMARK RUN ──
+# The surefire output contains ONLY the benchmark test class output.
+# Look for the BenchmarkRunner summary line — this is the authoritative result.
+# Find the [PASS] or [FAIL] summary from BenchmarkRunner.
+# Two formats exist:
+#   [PASS] CONFIG: N tokens, overall=X tok/s, decode=Y tok/s, steady=Z tok/s, ...
+#   [FAIL] CONFIG: IllegalStateException: ... result{...,throughput=Z,...}
+# Prefer [PASS] (has full metrics). Fall back to [FAIL] for throughput extraction.
+benchmark_summary = None
+pass_summary = None
+fail_summary = None
 for l in lines:
-    if 'Step' in l and 'id=' in l:
-        steps.append(l.strip())
-    elif 'throughput' in l.lower() and 'tok/s' in l.lower():
-        steps.append(l.strip())
+    stripped = l.strip()
+    if '[PASS]' in stripped and ('tok/s' in stripped or 'throughput=' in stripped):
+        pass_summary = stripped
+    if '[FAIL]' in stripped and ('tok/s' in stripped or 'throughput=' in stripped):
+        fail_summary = stripped
+# Prefer [PASS] — it has steady=X tok/s format. [FAIL] only has result{throughput=X}.
+benchmark_summary = pass_summary or fail_summary
 
-# Show first 10 + last 5 steps
-print("  Decode Steps:")
-show = steps[:10] + (['  ...'] if len(steps) > 15 else []) + steps[-5:] if len(steps) > 15 else steps
-for s in show:
-    s = re.sub(r'^.*?Step', '    Step', s)
-    s = re.sub(r'^.*?[Dd]ecode throughput', '    Decode throughput', s)
-    print(s)
+# ── EXTRACT THE ONE TRUE METRIC ──
+# Steady-state is the ONLY number that matters for decode performance.
+steady_tps = None
+decode_tps = None
+overall_tps = None
+first_token_ms = None
+config_name = None
+token_count = None
+warmup_steps = None
 
-# Capture buffer summary
-cb_lines = [l for l in lines if 'CAPTURE_BUFFER' in l or 'CROSS_SEG' in l]
-if cb_lines:
-    print("")
-    print("  Capture Buffers:")
-    seen = set()
-    for c in cb_lines:
-        key = re.sub(r'execCount=\d+', 'execCount=N', c)
-        if key not in seen:
-            seen.add(key)
-            print("    " + re.sub(r'^.*?\[EXECUTE\]\s*', '', c.strip()))
+if benchmark_summary:
+    # Try steady=X tok/s format first ([PASS] line)
+    m = re.search(r'steady=([\d.]+)\s*tok/s', benchmark_summary)
+    if m: steady_tps = float(m.group(1))
+    # Fallback: result{...,throughput=X,...} format ([FAIL] line)
+    if steady_tps is None:
+        m = re.search(r'throughput=([\d.]+)', benchmark_summary)
+        if m: steady_tps = float(m.group(1))
+    m = re.search(r'decode=([\d.]+)\s*tok/s', benchmark_summary)
+    if m: decode_tps = float(m.group(1))
+    m = re.search(r'overall=([\d.]+)\s*tok/s', benchmark_summary)
+    if m: overall_tps = float(m.group(1))
+    m = re.search(r'firstToken=([\d.]+)ms', benchmark_summary)
+    if m: first_token_ms = float(m.group(1))
+    m = re.search(r'\]\s+(\w+):', benchmark_summary)
+    if m: config_name = m.group(1)
+    m = re.search(r'(\d+)\s+tokens', benchmark_summary)
+    if m: token_count = int(m.group(1))
+    m = re.search(r'warmup:\s*(\d+)\s*steps', benchmark_summary)
+    if m: warmup_steps = int(m.group(1))
 
-# Key metrics
+# ── DSP HEALTH CHECK ──
+# Extract from the plan stats line (always present in benchmark output).
+# Format: plan: decoder{N/M cap,R replay,H host,valid,captured=C(Sslots),...}
+# Also from the DSP state log: segments=S, captured=C, replays=R
+errors = []
+
+# Parse the plan stats from the [PASS]/[FAIL] summary line
+plan_line = benchmark_summary or ''
+plan_stats_line = None
+for l in lines:
+    if 'segments=' in l and 'captured=' in l and 'replays=' in l:
+        plan_stats_line = l.strip()
+
+# Segments
+seg_count = 0
+m = re.search(r'segments=(\d+)', plan_stats_line or '')
+if m: seg_count = int(m.group(1))
+
+# Captured segments (from "N/M cap" or "captured=N")
+segs_captured = 0
+m = re.search(r'(\d+)/(\d+)\s+cap', plan_line)
+if m: segs_captured = int(m.group(1))
+if segs_captured == 0:
+    m = re.search(r'(?<!\w)captured=(\d+)', plan_stats_line or '')
+    if m: segs_captured = int(m.group(1))
+
+# Replays
+replay_count = 0
+m = re.search(r'replays=(\d+)', plan_stats_line or '')
+if m: replay_count = int(m.group(1))
+if replay_count == 0:
+    m = re.search(r'(\d+)\s+replay', plan_line)
+    if m: replay_count = int(m.group(1))
+
+# Captured slots (from stats=captured=C(Sslots))
+cap_stats_count = 0
+cap_stats_slots = 0
+m = re.search(r'stats=captured=(\d+)\((\d+)slots\)', plan_stats_line or plan_line)
+if m:
+    cap_stats_count = int(m.group(1))
+    cap_stats_slots = int(m.group(2))
+
+# captureValid
+capture_valid = 'captureValid=true' in (plan_stats_line or plan_line)
+
+# PermFailed / OOM
+perm_failed = 0
+m = re.search(r'permFailed=(\d+)', plan_line)
+if m: perm_failed = int(m.group(1))
+
+oom_retrying = 0
+m = re.search(r'oomRetrying=(\d+)', plan_line)
+if m: oom_retrying = int(m.group(1))
+
+# Triton launch count
+triton_launches = 0
+m = re.search(r'triton:\s*launches=(\d+)', plan_line)
+if m: triton_launches = int(m.group(1))
+
+# DSP_DIAG lines (only present with --diag-all, but check anyway)
+composite_replay_count = sum(1 for l in lines if 'COMPOSITE_REPLAY_ENTER' in l)
+composite_capture_ok = sum(1 for l in lines if 'COMPOSITE_CAPTURE_COMPLETE' in l)
+island_launches = sum(1 for l in lines if 'COMPOSITE_REPLAY: island' in l and 'launching' in l)
+capture_failures = sum(1 for l in lines if 'CAPTURE_FAIL' in l or 'launch FAILED' in l)
+arg_stable_count = sum(1 for l in lines if 'ARG_TABLE_STABLE' in l)
+
+# ── BUILD ERROR LIST ──
+if segs_captured == 0 and seg_count > 0:
+    errors.append(f"NO SEGMENTS CAPTURED: {seg_count} segments but 0 captured — CUDA graph capture not working")
+if not capture_valid and seg_count > 0:
+    errors.append("CAPTURE INVALID: captureValid=false — graph capture failed or was invalidated")
+if replay_count == 0 and segs_captured > 0:
+    errors.append(f"NO REPLAYS: {segs_captured} captured but 0 replayed — graph replay not firing")
+if capture_failures > 0:
+    errors.append(f"CAPTURE FAILURES: {capture_failures} — graphs failing during capture/launch")
+if perm_failed > 0:
+    errors.append(f"PERMANENT FAILURES: {perm_failed} segments permanently failed capture")
+if oom_retrying > 0:
+    errors.append(f"OOM RETRYING: {oom_retrying} segments hit OOM during graph instantiation")
+
+# ── DECODE STEPS ──
+# Show ONLY the benchmark run steps (after the last "[PREFILL] Step 0")
+all_steps = []
+last_prefill_idx = -1
+for i, l in enumerate(lines):
+    if '[PREFILL] Step 0' in l:
+        last_prefill_idx = i
+
+# Collect steps from the last (benchmark) decode loop only
+if last_prefill_idx >= 0:
+    for l in lines[last_prefill_idx:]:
+        if ('Step' in l and 'id=' in l) or ('Steady-state' in l) or ('Decode throughput' in l):
+            all_steps.append(l.strip())
+
+# ── PRINT RESULTS ──
 print("")
-print("  ─────────────────────────────────")
-for l in lines:
-    m = re.search(r'[Dd]ecode throughput:\s*([\d.]+)\s*tok/s', l)
-    if m:
-        tps = float(m.group(1))
-        status = "OK" if tps >= 100 else "BELOW TARGET"
-        print(f"  DECODE THROUGHPUT: {m.group(1)} tok/s  [{status}]")
+print(f"  Config:  {config_name or 'UNKNOWN'}")
+print(f"  Tokens:  {token_count or max_tokens}")
+if warmup_steps is not None:
+    print(f"  Warmup:  {warmup_steps} steps")
+print("")
 
-# Correctness check
-all_text = '\n'.join(lines)
+# The one number
+print("  ┌─────────────────────────────────────────────┐")
+if steady_tps is not None:
+    status = "OK" if steady_tps >= 100 else "BELOW TARGET"
+    bar = "█" * min(int(steady_tps), 50) + "░" * max(0, 50 - min(int(steady_tps), 50))
+    print(f"  │  STEADY-STATE: {steady_tps:>7.2f} tok/s  [{status:>12s}] │")
+else:
+    print(f"  │  STEADY-STATE: ???     tok/s  [NO DATA]       │")
+print("  └─────────────────────────────────────────────┘")
+print("")
+
+# Supporting numbers
+if decode_tps is not None:
+    print(f"  Decode (incl warmup): {decode_tps:.2f} tok/s")
+if first_token_ms is not None:
+    print(f"  First token latency:  {first_token_ms:.0f} ms")
+
+# Decode steps (last run only)
+if all_steps:
+    print("")
+    print("  Steps (benchmark run only):")
+    show = all_steps[:8] + (['    ...'] if len(all_steps) > 13 else []) + all_steps[-5:] if len(all_steps) > 13 else all_steps
+    for s in show:
+        s = re.sub(r'^.*?(\[(?:PREFILL|WARMUP|STEADY)\])', r'    \1', s)
+        s = re.sub(r'^.*?[Dd]ecode throughput', '    Decode throughput', s)
+        s = re.sub(r'^.*?[Ss]teady-state', '    Steady-state', s)
+        print(s)
+
+# Correctness
+print("")
+all_text = '\n'.join(lines[last_prefill_idx:] if last_prefill_idx >= 0 else lines)
 has_doctag = 'doctag' in all_text
 has_english = any(w in all_text.lower() for w in ['mythic', 'hero', 'path', 'ability', 'tier'])
 garbage = all_text.count('UserT') > 3
 repeat_lt = sum(1 for l in lines if "'<' (id=44)" in l) > 10
 
 if garbage:
-    print("  CORRECTNESS:      FAIL — repeating garbage (UserT)")
+    print("  CORRECTNESS: FAIL — repeating garbage (UserT)")
 elif repeat_lt:
-    print("  CORRECTNESS:      FAIL — repeating '<' tokens (stale replay)")
+    print("  CORRECTNESS: FAIL — repeating '<' tokens (stale replay)")
 elif has_doctag and has_english:
-    print("  CORRECTNESS:      PASS — doctag + coherent English")
+    print("  CORRECTNESS: PASS")
 elif has_doctag:
-    print("  CORRECTNESS:      PARTIAL — doctag present, check text quality")
+    print("  CORRECTNESS: PARTIAL — doctag present, check text quality")
 else:
-    print("  CORRECTNESS:      UNKNOWN — no doctag found")
+    print("  CORRECTNESS: UNKNOWN — no doctag found (may need more tokens)")
+
+# DSP Health — always extracted from plan stats (no --diag-all needed)
+print("")
+print("  ─── DSP Health ──────────────────────────────────")
+print(f"  Segments:          {seg_count}")
+print(f"  Captured:          {segs_captured}/{seg_count}")
+print(f"  Replays:           {replay_count}")
+print(f"  Capture valid:     {capture_valid}")
+print(f"  Triton launches:   {triton_launches}")
+print(f"  Perm failures:     {perm_failed}")
+print(f"  OOM retrying:      {oom_retrying}")
+# DSP_DIAG detail (only with --diag-all)
+if composite_replay_count > 0 or island_launches > 0 or arg_stable_count > 0:
+    print(f"  [diag] Composite replay enters: {composite_replay_count}")
+    print(f"  [diag] Island launches:         {island_launches}")
+    print(f"  [diag] Arg table stable:        {arg_stable_count}")
+    print(f"  [diag] Capture failures:        {capture_failures}")
+
+if errors:
+    print("")
+    print("  *** ERRORS — fix these before trusting perf numbers ***")
+    for e in errors:
+        print(f"  *** {e}")
+else:
+    print("")
+    print("  Health: OK")
 
 PYEOF
 else
-    echo "  No surefire report found. Grep from log:"
-    grep -E "tok/s|throughput|Performance|CAPTURE_BUFFER" "$LOG_FILE" | tail -10
+    echo "  No surefire report found at: $SUREFIRE_OUT"
+    echo "  Check benchmark log: $LOG_FILE"
 fi
 
+echo ""
+echo "═══════════════════════════════════════════════════════════"
+echo "  Logs:"
+echo "    Benchmark:  $LOG_FILE"
+echo "    Validation: $VALIDATION_LOG"
+echo "    Surefire:   $SUREFIRE_OUT"
 echo "═══════════════════════════════════════════════════════════"
 
-if $DEBUG_MODE; then
-    echo ""
-    echo "  Debug files:"
-    [ -f "$SCRIPT_DIR/cuda-driver.log" ] && echo "    CUDA driver:     $SCRIPT_DIR/cuda-driver.log"
-    echo "    Benchmark log:   $LOG_FILE"
-    echo "    Surefire report: $SUREFIRE_OUT"
-    echo ""
-    # Show lineage tracking summary if present
-    if grep -q "LINEAGE\|FROZEN\|EXT_INPUT" "$LOG_FILE" 2>/dev/null; then
-        echo "  Lineage/Frozen/ExtInput tracking (last 30 lines):"
-        grep -E "LINEAGE|FROZEN|EXT_INPUT_DISCOVER" "$LOG_FILE" | tail -30
-    fi
-fi
-
-# Show diagnostic summary if any diag mode was enabled
-if $DIAG_REPLAY || $DIAG_STREAM || $DIAG_DEVICE || $DIAG_ALL; then
-    echo ""
-    echo "  ─── DSP Diagnostics Summary ─────────────────────────"
-
-    if $DIAG_REPLAY || $DIAG_ALL; then
-        echo "  Graph Replay:"
-        CAPTURE_FAIL=$(grep -c "CAPTURE_FAILED\|capture failed\|captureFailed=true" "$LOG_FILE" 2>/dev/null || true)
-        REPLAY_OK=$(grep -c "REPLAYING\|graph replay active" "$LOG_FILE" 2>/dev/null || true)
-        echo "    Capture failures: $CAPTURE_FAIL"
-        echo "    Replay active:    $REPLAY_OK events"
-        grep -E "GRAPH_REPLAY.*phase|capture.*fail|replay.*error" "$LOG_FILE" 2>/dev/null | tail -10
-    fi
-
-    if $DIAG_STREAM || $DIAG_ALL; then
-        echo "  Stream Sync:"
-        SYNC_EVENTS=$(grep -c "STREAM_SYNC\|stream.*sync\|cudaStreamSynchronize" "$LOG_FILE" 2>/dev/null || true)
-        echo "    Sync events: $SYNC_EVENTS"
-        grep -E "STREAM_SYNC|stream.*stall|sync.*miss" "$LOG_FILE" 2>/dev/null | tail -10
-    fi
-
-    if $DIAG_DEVICE || $DIAG_ALL; then
-        echo "  Multi-Device:"
-        TRANSFERS=$(grep -c "TRANSFER\|D2D\|H2D\|D2H" "$LOG_FILE" 2>/dev/null || true)
-        DEVICE_SWITCH=$(grep -c "MULTI_DEVICE\|device.*switch\|switchDevice" "$LOG_FILE" 2>/dev/null || true)
-        echo "    Transfer events:  $TRANSFERS"
-        echo "    Device switches:  $DEVICE_SWITCH"
-        grep -E "MULTI_DEVICE|memory.*pressure|reroute" "$LOG_FILE" 2>/dev/null | tail -10
-    fi
-
-    if [ -n "$DIAG_JSON" ] && [ -f "$DIAG_JSON" ]; then
-        echo ""
-        echo "  JSON diagnostic report: $DIAG_JSON"
-    fi
-    echo "  ─────────────────────────────────────────────────────"
-fi
+# Exit with build result — 0 for pass, non-zero for fail
+exit $BUILD_RESULT

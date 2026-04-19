@@ -909,6 +909,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         evictSeg.exec.compilationFailed = false;
         evictSeg.exec.gapOpsCapturedInGraph = false;
         evictSeg.exec.argTableStable = false;
+        evictSeg.exec.addrKeyStableCount = 0;
+        evictSeg.exec.slotAddrStableCount = 0;
         evictSeg.exec.compiledByBackend.clear();
         // Reset execution count so evicted segment goes through warmup -> capture again
         evictSeg.exec.executionCount = 0;
@@ -1316,8 +1318,6 @@ void NativeDynamicShapePlan::performReplayVerify(
 // ═══════════════════════════════════════════════════════════════════════════
 NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     NDArray** externalArrays, int numExt, void* stream) {
-  // Staging disabled for baseline verification — return passthrough
-  return externalArrays;
   if (!shapesFrozen_ || externalInputIsVariable_.empty() || numExt <= 0) {
     return externalArrays;
   }

@@ -648,6 +648,15 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     return;
   }
 
+  // During DSP composite replay, gap ops run with frozen shapes — all shape
+  // values are cached and don't need D2H sync. syncToPrimary triggers
+  // cudaStreamSynchronize(stream=0) which is a full GPU pipeline drain
+  // (~30-50us per call). With 818 reshape_no_copy calls per step, this adds
+  // ~40ms/step of pure sync overhead. Skip D2H entirely during replay.
+  if (tl_dspReplayActive) {
+    return;
+  }
+
   if (isPrimaryActual() && !forceSync) {
     return;
   }

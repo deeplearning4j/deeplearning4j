@@ -954,6 +954,8 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
   }
   seg.exec.gapOpsCapturedInGraph = false;
   seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
+  seg.exec.addrKeyStableCount = 0;
+  seg.exec.slotAddrStableCount = 0;
   seg.resolvedCpuBackend = nullptr;
 }
 
@@ -1001,6 +1003,8 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
       seg.exec.replayHandle.reset();
     }
     seg.exec.argTableStable = false;  // Invalidate fast-replay on plan teardown
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
     seg.exec.gapOpsCapturedInGraph = false;
     seg.resolvedCpuBackend = nullptr;
     delete seg.exec.jitKernel;
@@ -1391,8 +1395,7 @@ void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* strea
 
 void NativeDynamicShapePlan::platformDetectAndPrepareBatchedGemm(NDArray** ext, int numExt, void* stream) {
   if (shapesFrozen_ && executeCount_ == 1 && batchedGemmGroups_.empty() &&
-      Environment::getInstance().dspBatchedGemm() &&
-      !gpuGraphCaptureEnabled_) {
+      Environment::getInstance().dspBatchedGemm()) {
     detectBatchedGemmGroups(ext, numExt);
     if (!batchedGemmGroups_.empty()) {
       cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
@@ -1489,6 +1492,8 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     }
     seg.exec.gapOpsCapturedInGraph = false;
     seg.exec.argTableStable = false;
+    seg.exec.addrKeyStableCount = 0;
+    seg.exec.slotAddrStableCount = 0;
     seg.exec.capturedInputAddrKey = 0;
     seg.exec.compilationFailed = false;
     seg.exec.executionCount = 0;

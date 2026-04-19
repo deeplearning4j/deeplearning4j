@@ -1200,6 +1200,23 @@ public class DynamicShapePlanExecutor implements Closeable {
                     || newHandle.address() != nativePlanHandle.address();
             if (swapped) {
                 if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                    // HARD ERROR: if the plan swaps after frozen/replay state is established,
+                    // the cache is returning different plans for the same shapes. This means
+                    // every decode step creates a new plan, destroying all replay/capture
+                    // progress and annihilating throughput. This is a catastrophic bug.
+                    if (shapesFrozen || frozenCallCount > 2) {
+                        throw new RuntimeException(
+                            "PLAN_CACHE_BUG: plan handle swapped from " +
+                            Long.toHexString(nativePlanHandle.address()) + " to " +
+                            Long.toHexString(newHandle.address()) + " AFTER frozen state was established " +
+                            "(frozenCallCount=" + frozenCallCount + ", shapesFrozen=" + shapesFrozen + "). " +
+                            "The plan cache is returning different plans for the same shapes on every step, " +
+                            "destroying all graph replay progress. This indicates the cache key is not " +
+                            "stable across steps (pointer-address vs content-based hashing bug). " +
+                            "executionCount=" + executionCount +
+                            " phKeys=" + (cachedPhKeys != null ? cachedPhKeys.length : "null") +
+                            " outputs=" + (cachedSortedOutputs != null ? cachedSortedOutputs.length : "null"));
+                    }
                     // Unpin the old plan so it becomes eligible for LRU eviction.
                     // This MUST happen before the new plan is pinned (which
                     // getOrInsert already did) to avoid dangling pointers — the

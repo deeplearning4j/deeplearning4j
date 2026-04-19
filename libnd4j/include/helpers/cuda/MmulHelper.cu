@@ -44,6 +44,8 @@
 
 // Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
 extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
+// Declared in DataBuffer.h / DataBuffer.cu — true during DSP composite replay gap execution
+extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
 
 // cuBLAS workspace buffer+size set by NativeDynamicShapePlan.
 // cublasSetStream() resets the user-provided workspace (cuBLAS docs), so we must
@@ -833,6 +835,11 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effB = const_cast<NDArray*>(B);
 
+ // Use cast cache during graph capture OR gap replay — both need persistent
+ // buffers. During gap replay, the cache was populated during capture warmup
+ // and indices are reset per step via resetCastCacheIndices().
+ bool useCastCache = tl_graphExecutionActive || tl_dspReplayActive;
+
  // FP16 compute: auto-cast both-FP32 matmul inputs to HALF for TensorCore throughput.
  // cublasSgemmEx handles HALF×HALF→FLOAT32 with FP32 accumulation (~2x throughput on sm_60+).
  // Always enabled for FP32 inputs on compute capability 6.0+ (Pascal and newer).
@@ -841,7 +848,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    // models on the same thread. If a different model (e.g., draft model with seqLen=1)
    // populated the cache, shapes will differ from the current model (e.g., target with
    // seqLen=6). Clear and rebuild when shapes don't match.
-   bool cacheShapeMatch = tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
+   bool cacheShapeMatch = useCastCache && tl_castIdxA < tl_castCacheA.size()
        && tl_castIdxB < tl_castCacheB.size()
        && tl_castCacheA[tl_castIdxA]->isSameShape(effA)
        && tl_castCacheB[tl_castIdxB]->isSameShape(effB);
@@ -853,7 +860,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      cachedB->assign(effB);
      effB = cachedB;
    } else {
-     if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
+     if (useCastCache && tl_castIdxA < tl_castCacheA.size()) {
        // Shape mismatch during graph execution — cache is stale from another model.
        // Clear and let the warmup path rebuild it on next non-capture execution.
        MmulHelper::clearCastCache();
@@ -874,15 +881,15 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (aType == FLOAT32 && bType == HALF) {
      const bool sameLogicalA =
          tl_lastCaptureCastArrayA != nullptr && tl_lastCaptureCastSourceA == A;
-     if (tl_graphExecutionActive && sameLogicalA && tl_castIdxA < tl_castCacheA.size()) {
+     if (useCastCache && sameLogicalA && tl_castIdxA < tl_castCacheA.size()) {
        // q/k/v and gate/up projections commonly reuse the same row-vector activation
        // back-to-back during decode. Reuse the already-cast HALF buffer and only
        // advance the cache index so capture and replay consume buffers in the same order.
        tl_castIdxA++;
        effA = tl_lastCaptureCastArrayA;
-     } else if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
+     } else if (useCastCache && tl_castIdxA < tl_castCacheA.size()
                 && tl_castCacheA[tl_castIdxA]->isSameShape(effA)) {
-       // During capture: reuse persistent buffer, assign launches FLOAT→HALF kernel (captured)
+       // During capture/replay: reuse persistent buffer, assign launches FLOAT→HALF kernel
        NDArray* cached = tl_castCacheA[tl_castIdxA++];
        cached->assign(effA);
        tl_lastCaptureCastSourceA = A;
@@ -897,10 +904,10 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    } else if (aType == HALF && bType == FLOAT32) {
      const bool sameLogicalB =
          tl_lastCaptureCastArrayB != nullptr && tl_lastCaptureCastSourceB == B;
-     if (tl_graphExecutionActive && sameLogicalB && tl_castIdxB < tl_castCacheB.size()) {
+     if (useCastCache && sameLogicalB && tl_castIdxB < tl_castCacheB.size()) {
        tl_castIdxB++;
        effB = tl_lastCaptureCastArrayB;
-     } else if (tl_graphExecutionActive && tl_castIdxB < tl_castCacheB.size()
+     } else if (useCastCache && tl_castIdxB < tl_castCacheB.size()
                 && tl_castCacheB[tl_castIdxB]->isSameShape(effB)) {
        NDArray* cached = tl_castCacheB[tl_castIdxB++];
        cached->assign(effB);

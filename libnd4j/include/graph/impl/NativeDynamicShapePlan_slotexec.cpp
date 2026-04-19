@@ -1346,6 +1346,10 @@ Status NativeDynamicShapePlan::executeSlot(
           ffViewCtx.setOutputArray(0, ffNewView);
           ffViewCtx.setInputArray(0, input0);
           outputSlots_[outSi] = ffNewView;
+          // Keep ownership metadata pointing at the new DataBuffer
+          if (slotOwnership_ != nullptr) {
+            slotOwnership_[outSi].dataBuffer = ffNewView->dataBuffer();
+          }
           // Slot-write site: fast-frozen view install. Bump generation AFTER
           // the view has been wired into the slot array.
           slot.bumpGeneration();
@@ -1887,6 +1891,11 @@ Status NativeDynamicShapePlan::executeSlot(
             ctx2.setOutputArray(0, newView);
             ctx2.setInputArray(0, input0);
             outputSlots_[si] = newView;
+            // Keep ownership metadata pointing at the new DataBuffer so
+            // validateLifecycleForPhase sees the refreshed buffer identity.
+            if (slotOwnership_ != nullptr) {
+              slotOwnership_[si].dataBuffer = newView->dataBuffer();
+            }
             // Slot-write site: frozen view install. Output slot pointer has
             // been updated to the new view; bump generation so readers can
             // detect a fresh view rotation.

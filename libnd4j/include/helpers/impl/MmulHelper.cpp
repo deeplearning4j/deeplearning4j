@@ -1270,7 +1270,7 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
         // Sync stream before freeing temporary arrays to ensure async GEMM completes.
         // During CUDA graph capture, stream sync is illegal (poisons the capture).
         // The dup'd arrays live until end of capture; graph replay uses fixed addresses.
-        if (!tl_graphExecutionActive) {
+        if (!tl_graphExecutionActive && !tl_dspReplayActive) {
           auto* lc = LaunchContext::defaultContext();
           if (lc->getCudaStream() != nullptr) {
             cudaStreamSynchronize(*lc->getCudaStream());
