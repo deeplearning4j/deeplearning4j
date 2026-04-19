@@ -45,6 +45,7 @@ CUSTOM_OP_IMPL(squared_relu, 1, 1, true, 0, 0) {
 DECLARE_TYPES(squared_relu) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
 }
 
 DECLARE_SHAPE_FN(squared_relu) {
@@ -70,6 +71,7 @@ CUSTOM_OP_IMPL(squared_relu_bp, 2, 1, true, 0, 0) {
 DECLARE_TYPES(squared_relu_bp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(squared_relu_bp) {

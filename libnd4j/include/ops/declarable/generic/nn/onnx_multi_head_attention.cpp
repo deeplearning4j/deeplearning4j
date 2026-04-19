@@ -377,7 +377,8 @@ DECLARE_TYPES(onnx_multi_head_attention) {
       ->setAllowedInputTypes(4, {ALL_FLOATS})   // past_key (optional)
       ->setAllowedInputTypes(5, {ALL_FLOATS})   // past_value (optional)
       ->setAllowedInputTypes(6, {ALL_INTS})     // cache_position (optional, INT64 scalar)
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(onnx_multi_head_attention) {

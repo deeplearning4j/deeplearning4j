@@ -66,6 +66,7 @@ CUSTOM_OP_IMPL(dual_rope, 1, 1, false, 0, 0) {
 DECLARE_TYPES(dual_rope) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(dual_rope) {

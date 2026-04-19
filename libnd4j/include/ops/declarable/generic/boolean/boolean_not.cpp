@@ -52,6 +52,7 @@ OP_IMPL(boolean_not, 1, 1, true) {
 
 DECLARE_TYPES(boolean_not) {
   getOpDescriptor()->setAllowedInputTypes(0, BOOL)->setAllowedOutputTypes(0, BOOL);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_LOGICAL);
 }
 }  // namespace ops
 }  // namespace sd

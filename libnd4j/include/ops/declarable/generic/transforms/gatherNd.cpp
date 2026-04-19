@@ -80,6 +80,7 @@ DECLARE_TYPES(gather_nd) {
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS, BOOL})
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS, BOOL});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_GATHER_ND);
 }
 
 DECLARE_SHAPE_FN(gather_nd) {

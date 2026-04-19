@@ -91,6 +91,7 @@ DECLARE_TYPES(pad) {
       ->setAllowedInputTypes(0, sd::DataType::ANY)
       ->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64})  // INT32 with TF
       ->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 DECLARE_SHAPE_FN(pad) {

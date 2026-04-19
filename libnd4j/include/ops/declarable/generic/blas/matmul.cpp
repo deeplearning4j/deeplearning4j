@@ -221,6 +221,7 @@ DECLARE_TYPES(matmul) {
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////

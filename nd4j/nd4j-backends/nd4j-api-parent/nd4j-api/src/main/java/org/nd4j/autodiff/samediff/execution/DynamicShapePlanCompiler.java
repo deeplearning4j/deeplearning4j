@@ -721,6 +721,65 @@ public class DynamicShapePlanCompiler {
             }
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        // Post-build structural validation — catch wiring bugs at compile time.
+        // ═══════════════════════════════════════════════════════════════════
+        {
+            int selfRefErrors = 0;
+            int forwardRefWarnings = 0;
+            for (int stepIdx = 0; stepIdx < slots.length; stepIdx++) {
+                DynamicShapeSlot slot = slots[stepIdx];
+                if (slot == null) continue;
+                int[] srcIndices = slot.getInputSourceIndices();
+                int[] outSlots = slot.getOutputSlotIndices();
+                if (srcIndices == null || outSlots == null) continue;
+
+                for (int i = 0; i < srcIndices.length; i++) {
+                    int srcIdx = srcIndices[i];
+                    if (srcIdx < 0) continue;  // external input
+
+                    // Self-reference: input reads from this step's own output
+                    for (int outSlot : outSlots) {
+                        if (outSlot == srcIdx) {
+                            selfRefErrors++;
+                            log.error("DSP VALIDATION: SELF-REFERENCE at step {} ({}): "
+                                    + "input[{}] srcIdx={} == own outputSlot. "
+                                    + "inputVar='{}' outputVars={}",
+                                    stepIdx, slot.getOpName(), i, srcIdx,
+                                    slot.getInputVarNames() != null && i < slot.getInputVarNames().length
+                                            ? slot.getInputVarNames()[i] : "?",
+                                    slot.getOutputVarNames() != null
+                                            ? Arrays.toString(slot.getOutputVarNames()) : "?");
+                        }
+                    }
+
+                    // Forward reference: input from a later step (non-CF only)
+                    int producerStep = srcIdx < slotProducerStep.length
+                            ? slotProducerStep[srcIdx] : -1;
+                    if (producerStep > stepIdx
+                            && slot.getControlFlowType() == DynamicShapeSlot.CF_NONE) {
+                        forwardRefWarnings++;
+                        log.warn("DSP VALIDATION: FORWARD-REF at step {} ({}): "
+                                + "input[{}] srcIdx={} produced by later step {} ({})",
+                                stepIdx, slot.getOpName(), i, srcIdx,
+                                producerStep,
+                                slots[producerStep] != null
+                                        ? slots[producerStep].getOpName() : "?");
+                    }
+                }
+            }
+
+            if (selfRefErrors > 0) {
+                log.error("DSP VALIDATION FAILED: {} self-referencing input(s) — "
+                        + "falling back to standard execution path", selfRefErrors);
+                return null;
+            }
+            if (forwardRefWarnings > 0) {
+                log.warn("DSP VALIDATION: {} forward reference(s) in non-CF ops — "
+                        + "may cause NULL inputs at runtime", forwardRefWarnings);
+            }
+        }
+
         // Step 5: Mark output slots that are final outputs as never releasable
         Set<Integer> finalOutputSlots = new HashSet<>();
         for (String outputName : requestedOutputs) {

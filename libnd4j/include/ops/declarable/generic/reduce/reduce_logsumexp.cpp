@@ -94,7 +94,7 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   return sd::Status::OK;
 }
 DECLARE_TYPES(reduce_logsumexp) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 DECLARE_SHAPE_FN(reduce_logsumexp) {
   const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;

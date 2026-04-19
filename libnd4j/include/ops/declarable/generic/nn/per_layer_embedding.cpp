@@ -78,7 +78,8 @@ DECLARE_TYPES(per_layer_embedding) {
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_INTS})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
+      ->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 DECLARE_SHAPE_FN(per_layer_embedding) {

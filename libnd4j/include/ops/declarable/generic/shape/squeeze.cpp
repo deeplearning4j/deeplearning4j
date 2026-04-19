@@ -94,7 +94,10 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   return Status::OK;
 }
 
-DECLARE_TYPES(squeeze) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(squeeze) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
+}
 
 DECLARE_SHAPE_FN(squeeze) {
   auto shapeList = SHAPELIST();

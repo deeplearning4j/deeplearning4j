@@ -32,7 +32,7 @@ namespace sd {
 namespace ops {
 
 DECLARE_TYPES(argmin) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setAllowedOutputTypes({ALL_INTS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {

@@ -116,6 +116,63 @@ void kvScatterBatched(const KvScatterEntry* entries, int numEntries,
   BUILD_SINGLE_SELECTOR(dtype, kvScatterBatched_, (entries, numEntries), SD_FLOAT_TYPES);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Dynamic-position batched KV scatter (CPU)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+template <typename T>
+static void kvScatterDynBatched_(const KvScatterDynEntry* entries, int numEntries) {
+  // Compute total slices across all entries for a single parallel_for
+  std::vector<int> sliceOffsets(numEntries + 1);
+  sliceOffsets[0] = 0;
+  for (int i = 0; i < numEntries; i++) {
+    sliceOffsets[i + 1] = sliceOffsets[i] + static_cast<int>(entries[i].heads);
+  }
+  int totalSlices = sliceOffsets[numEntries];
+
+  // Read cachePos from the shared host pointer (same pointer as used on device side)
+  // All entries share the same kvPosPtr pointing to the plan's position scalar.
+  LongType cachePos = (numEntries > 0 && entries[0].kvPosPtr != nullptr)
+                      ? *entries[0].kvPosPtr
+                      : 0;
+
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto globalSlice = start; globalSlice < stop; globalSlice++) {
+      // Binary search for the entry this slice belongs to
+      int lo = 0, hi = numEntries - 1;
+      while (lo < hi) {
+        int mid = (lo + hi) / 2;
+        if (sliceOffsets[mid + 1] <= globalSlice) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+      const KvScatterDynEntry& e = entries[lo];
+      auto h = static_cast<LongType>(globalSlice - sliceOffsets[lo]);
+
+      auto srcOffset = h * e.srcSeqLen * e.dim + e.lastPos * e.dim;
+      auto dstOffset = h * e.dstSeqLen * e.dim + cachePos * e.dim;
+
+      const T* __restrict src = reinterpret_cast<const T*>(e.srcPtr) + srcOffset;
+      T* __restrict dst = reinterpret_cast<T*>(e.dstPtr) + dstOffset;
+
+      PRAGMA_OMP_SIMD
+      for (LongType d = 0; d < e.dim; d++) {
+        dst[d] = src[d];
+      }
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, totalSlices);
+}
+
+void kvScatterDynBatched(const KvScatterDynEntry* entries, int numEntries,
+                          DataType dtype, LaunchContext* context) {
+  if (numEntries == 0) return;
+  BUILD_SINGLE_SELECTOR(dtype, kvScatterDynBatched_, (entries, numEntries), SD_FLOAT_TYPES);
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

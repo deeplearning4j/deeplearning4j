@@ -241,6 +241,9 @@ public class StaticKvCacheDecodeLoop {
         ModelIOConfig.KVCacheNames kvNames = resolvedIOConfig.getKvCacheNames() != null
                 ? resolvedIOConfig.getKvCacheNames()
                 : ModelIOConfig.findKVCacheOutputNames(decoder);
+
+        // Reusable decode-step diagnostics — auto-enables on accuracy failure
+        DecodeStepDiagnostics stepDiag = new DecodeStepDiagnostics();
         // Get ALL external inputs — placeholders, constants, variables, and array-type
         // variables that the graph reads. This matches what the DSP compiler discovers.
         List<String> decoderInputNames = decoder.externalInputs();
@@ -306,6 +309,7 @@ public class StaticKvCacheDecodeLoop {
         // table points to this fixed address and reads the fresh .assign() data.
         INDArray reusableEmbeddings = null;  // allocated on first decode step
         INDArray reusableInputIds = null;
+        INDArray pendingEmbedClose = null;  // deferred close: freed at start of next step
         long pastSeqLen = 0;
 
         // Per-step timing
@@ -772,6 +776,11 @@ public class StaticKvCacheDecodeLoop {
             // Must run BEFORE the stop-token check so a divergent EOS is still caught.
             traceAndVerifyToken(step, nextTokenId, tokenText, logitsRaw, phaseLabel);
 
+            // Reusable decode-step diagnostics: logit health, KV mutation, present KV health.
+            // Auto-enables full diagnostics on accuracy failure (consecutive zero-logit or argmax=0).
+            stepDiag.diagnoseStep(step, logitsRaw, decoderInputMap, decoderOutputs,
+                    kvNames, resolvedIOConfig, nextTokenId);
+
             // Log every 10 steps or first 6, with [WARMUP] or [STEADY] label
             if (step < 6 || step % 10 == 0) {
                 double currentTokPerSec = step > 0 && stepElapsedMs > 0 ? 1000.0 / stepElapsedMs : 0;
@@ -845,25 +854,20 @@ public class StaticKvCacheDecodeLoop {
                 // dup() creates a contiguous copy on the GPU at a temporary address;
                 // assign() then copies from that contiguous buffer into the fixed-address
                 // reusableEmbeddings, keeping the stable GPU pointer for CUDA graph replay.
+                // Close the previous step's temp embed (safe now — the assign kernel
+                // and all subsequent graph replay have completed on the same stream).
+                if (pendingEmbedClose != null) {
+                    SameDiffMemoryUtils.safeClose(pendingEmbedClose);
+                    pendingEmbedClose = null;
+                }
                 INDArray contiguousEmbed = rowEmbed.dup();
                 reusableEmbeddings.assign(contiguousEmbed);
-                // CRITICAL: sync the exec stream BEFORE closing contiguousEmbed.
-                // execTransformAny launches the assign kernel ASYNCHRONOUSLY — the GPU
-                // copy from contiguousEmbed → reusableEmbeddings is still in-flight when
-                // control returns to Java. Calling close() before the sync releases
-                // contiguousEmbed's GPU memory while the kernel is still reading from it,
-                // causing a use-after-free: the kernel reads freed/reused GPU memory and
-                // writes stale/garbage data into reusableEmbeddings. The CUDA graph replay
-                // then reads that garbage at step 3, producing wrong output tokens.
-                // Fix: wait for the assign kernel to complete, THEN release the source buffer.
-                {
-                    org.nd4j.nativeblas.NativeOps nops = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                    org.bytedeco.javacpp.Pointer execStr = nops.lcExecutionStream(nops.defaultLaunchContext());
-                    if (execStr != null && !execStr.isNull()) {
-                        nops.streamSynchronize(execStr);
-                    }
-                }
-                SameDiffMemoryUtils.safeClose(contiguousEmbed);
+                // Defer close: assign() launches asynchronously on the exec stream.
+                // Closing contiguousEmbed immediately would free GPU memory while the
+                // kernel is still reading from it.  Instead, defer the close to the
+                // start of the NEXT step — by then the entire decode (including graph
+                // replay) has run on the same stream, guaranteeing the assign completed.
+                pendingEmbedClose = contiguousEmbed;
             }
             currentEmbeddings = reusableEmbeddings;
             // Reusable fixed-address inputIds: allocate once, update value via putScalar
@@ -895,6 +899,7 @@ public class StaticKvCacheDecodeLoop {
                 }
                 reusableInputs.clear();
                 // Close reusable fixed-address decode buffers
+                SameDiffMemoryUtils.safeClose(pendingEmbedClose);
                 SameDiffMemoryUtils.safeClose(reusableEmbeddings);
                 SameDiffMemoryUtils.safeClose(reusableInputIds);
                 // Close any residual non-reusable decode buffers
@@ -929,6 +934,7 @@ public class StaticKvCacheDecodeLoop {
         }
         reusableInputs.clear();
         // Close fixed-address reusable buffers (allocated once, reused across all decode steps)
+        SameDiffMemoryUtils.safeClose(pendingEmbedClose);
         SameDiffMemoryUtils.safeClose(reusableEmbeddings);
         SameDiffMemoryUtils.safeClose(reusableInputIds);
         // currentEmbeddings and currentInputIds alias the reusable buffers after step 1;
@@ -1011,6 +1017,8 @@ public class StaticKvCacheDecodeLoop {
         log.info("  Latency P50/P90/P99: {}ms / {}ms / {}ms", p50Ms, p90Ms, p99Ms);
         log.info("  Total decode time: {}ms ({} tokens)", totalDecodeMs, generatedTokens.size());
         log.info("========================================");
+
+        stepDiag.logSummary(generatedTokens.size());
 
         int generated = tokenIds.length;
         return GenerationResult.builder()

@@ -70,8 +70,20 @@ class SD_LIB_EXPORT CudaGraphReplayHandle : public GraphReplayHandle {
 
   // ── CUDA-specific access ──────────────────────────────────────────────
 
-  /** Get the underlying CudaGraphHandle for CUDA-specific diagnostics. */
-  std::shared_ptr<sd::cuda::CudaGraphHandle> getNativeHandle() const { return handle_; }
+  /**
+   * Get the underlying CudaGraphHandle for CUDA-specific diagnostics.
+   *
+   * Returns a raw (non-owning) pointer — the CudaGraphHandle's lifetime is
+   * governed by this CudaGraphReplayHandle's shared_ptr member.  Callers
+   * must NOT cache or extend the returned pointer past the
+   * CudaGraphReplayHandle's lifetime.
+   *
+   * Previously returned shared_ptr by value — the refcount-increment
+   * instruction (lock addl) could be scheduled after the owning unique_ptr
+   * was reset, touching a freed control block (SIGSEGV with R13=0x9,
+   * RSI=0xdeadbeefcafebabe).  Raw pointer eliminates this hazard entirely.
+   */
+  sd::cuda::CudaGraphHandle* getNativeHandle() const { return handle_.get(); }
 
   /**
    * Get the number of nodes in the captured CUDA graph.

@@ -342,6 +342,7 @@ DECLARE_SHAPE_FN(range) {
 
 DECLARE_TYPES(range) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 }  // namespace ops
 }  // namespace sd

@@ -239,12 +239,15 @@ static void fuseReductionEpilogues(NativeSlot* slots, int numSlots,
 
         auto chain = extendElementwiseChain(s, slots, numSlots, fused, consumerCounts);
         if (chain.size() > 1) {
-            // Mark chain tail as fused (head is the reduction, already not fused)
+            // Mark chain members as fused to prevent other passes from re-fusing them.
+            // Do NOT set isFusedChainTail — there is no corresponding head with
+            // fusedChainHead/fusedChainLength/fusedChainOpCodes set up, so setting
+            // the tail flag would cause these ops to return OK without executing,
+            // leaving their output slots NULL.
             for (size_t i = 1; i < chain.size(); i++) {
                 fused[chain[i]] = true;
-                slots[chain[i]].fusedChain.isFusedChainTail = true;
             }
-            DSP_DIAG(FUSION, "REDUCTION_EPILOGUE: slots [%d] + %zu elementwise tail ops",
+            DSP_DIAG(FUSION, "REDUCTION_EPILOGUE: slots [%d] + %zu elementwise tail ops (reserved, not tail-marked)",
                      s, chain.size() - 1);
         }
     }
@@ -266,11 +269,15 @@ static void fuseNormalizationEpilogues(NativeSlot* slots, int numSlots,
 
         auto chain = extendElementwiseChain(s, slots, numSlots, fused, consumerCounts);
         if (chain.size() > 1) {
+            // Mark chain members as fused to prevent other passes from re-fusing them.
+            // Do NOT set isFusedChainTail — there is no corresponding head with
+            // fusedChainHead/fusedChainLength/fusedChainOpCodes set up, so setting
+            // the tail flag would cause these ops to return OK without executing,
+            // leaving their output slots NULL.
             for (size_t i = 1; i < chain.size(); i++) {
                 fused[chain[i]] = true;
-                slots[chain[i]].fusedChain.isFusedChainTail = true;
             }
-            DSP_DIAG(FUSION, "NORM_EPILOGUE: slots [%d] + %zu elementwise tail ops",
+            DSP_DIAG(FUSION, "NORM_EPILOGUE: slots [%d] + %zu elementwise tail ops (reserved, not tail-marked)",
                      s, chain.size() - 1);
         }
     }

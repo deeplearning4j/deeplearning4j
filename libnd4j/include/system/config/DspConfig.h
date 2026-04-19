@@ -44,7 +44,7 @@ class SD_LIB_EXPORT DspConfig {
 
   // Optimization flags
   std::atomic<bool> _castElimination{true};
-  std::atomic<bool> _matmulSegmentation{true};
+  std::atomic<bool> _matmulSegmentation{false};
   std::atomic<bool> _fp16Compute{false};
   std::atomic<bool> _cublasTf32Enabled{false};
   std::atomic<bool> _cublasCaptureWorkspace{true};

@@ -1795,6 +1795,57 @@ public interface NativeOps {
   }
 
   /**
+   * Configure plan-managed KV scatter for CUDA-graph-compatible decode loops.
+   *
+   * After this call the plan executes a batched KV scatter after each execute(),
+   * updating static KV buffers at the current position and incrementing the
+   * position scalar. Eliminates the Java-side scatterNewEntries() round-trip.
+   *
+   * @param planHandle          handle from compileDynamicShapePlan()
+   * @param presentSlotIndices  int[] of output slot indices for present KV tensors
+   * @param staticKvBufferPtrs  Pointer[] of NDArray native handles for static KV buffers
+   * @param numPairs            number of (present, static) pairs
+   * @param dtypeInt            DataType code of the KV tensors
+   * @param heads               number of attention heads
+   * @param srcSeqLen           present sequence length (typically 1 for decode)
+   * @param dstSeqLen           static buffer sequence length (= maxKvLen)
+   * @param dim                 head dimension
+   * @param kvPositionPtr       LongPointer to device-accessible int64 position scalar
+   */
+  default void configurePlanKvScatter(Pointer planHandle,
+                                       int[] presentSlotIndices,
+                                       Pointer[] staticKvBufferPtrs,
+                                       long numPairs,
+                                       int dtypeInt,
+                                       long heads,
+                                       long srcSeqLen,
+                                       long dstSeqLen,
+                                       long dim,
+                                       LongPointer kvPositionPtr) {
+      // No-op by default
+  }
+
+  /**
+   * Reset the KV cache position managed by the plan (e.g., after prefill).
+   *
+   * @param planHandle  handle from compileDynamicShapePlan()
+   * @param position    new cache position value
+   */
+  default void resetPlanKvCachePosition(Pointer planHandle, long position) {
+      // No-op by default
+  }
+
+  /**
+   * Get the current KV cache position managed by the plan.
+   *
+   * @param planHandle  handle from compileDynamicShapePlan()
+   * @return current position, or -1 if KV scatter not configured
+   */
+  default long getPlanKvCachePosition(Pointer planHandle) {
+      return -1L;
+  }
+
+  /**
    * Get the number of graph segments in a compiled plan.
    * @param planHandle handle from compileDynamicShapePlan()
    * @return number of segments, or -1 on error

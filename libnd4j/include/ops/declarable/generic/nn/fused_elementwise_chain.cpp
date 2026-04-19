@@ -93,6 +93,7 @@ DECLARE_SHAPE_FN(fused_elementwise_chain) {
 DECLARE_TYPES(fused_elementwise_chain) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

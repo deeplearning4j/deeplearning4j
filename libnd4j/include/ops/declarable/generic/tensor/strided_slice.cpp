@@ -809,7 +809,10 @@ DECLARE_SHAPE_FN(strided_slice_bp) {
   return SHAPELIST(CONSTANT(inShape));
 }
 
-DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY); }
+DECLARE_TYPES(strided_slice) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_SLICE);
+}
 
 DECLARE_TYPES(strided_slice_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY);

@@ -154,6 +154,7 @@ DECLARE_SHAPE_FN(lokr_matmul) {
 
 DECLARE_TYPES(lokr_matmul) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(lokr_matmul_bp, 6, 5, false, 0, 2) {
@@ -254,6 +255,7 @@ DECLARE_SHAPE_FN(lokr_matmul_bp) {
 
 DECLARE_TYPES(lokr_matmul_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

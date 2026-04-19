@@ -41,6 +41,7 @@ CONFIGURABLE_OP_IMPL(tanh, 1, 1, true, 0, 0) {
 
 DECLARE_TYPES(tanh) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
 }
 
 CONFIGURABLE_OP_IMPL(tanh_bp, 2, 1, true, 0, 0) {

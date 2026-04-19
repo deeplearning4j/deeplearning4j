@@ -82,6 +82,14 @@ namespace sd { namespace graph { class TritonGraphBackend; } }
 #include <graph/hexagon/HexagonGraphBackend.h>
 #endif
 
+// DSP gap-stream override — defined in LaunchContext.cu (file scope, no namespace).
+// When set, LaunchContext::getCudaStream() returns this stream instead of the
+// default contextBuffers exec stream. This makes gap ops (matmul, reshape, etc.)
+// run on the DSP execution stream (cudaStr), eliminating cross-stream event syncs.
+#ifdef SD_CUDA
+extern thread_local cudaStream_t tl_dspGapStream;
+#endif
+
 namespace sd {
 namespace graph {
 
@@ -906,12 +914,28 @@ Status NativeDynamicShapePlan::compositeReplay(
   assert(execCtx != nullptr && "compositeReplay called outside execute() — activeExecCtx_ is null");
 
   // Cross-stream sync: ensure Java .assign() writes on default stream are visible.
-  // Only needed once per step — subsequent segments see the same default-stream state.
+  // MUST happen BEFORE the gap-stream override below — syncCrossStream reads
+  // the real default stream via getCudaStream(). With the override active,
+  // getCudaStream() returns cudaStr, making the sync a no-op.
   if (!execCtx->crossStreamSynced) {
     syncCrossStream(cudaStr, "compositeReplay",
                     seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
     execCtx->crossStreamSynced = true;
   }
+
+  // ── Gap-stream unification ─────────────────────────────────────────────
+  // Redirect LaunchContext::getCudaStream() to return cudaStr for the
+  // duration of compositeReplay. This makes gap ops (matmul, reshape, etc.)
+  // run on the same CUDA stream as Triton island graph replay, eliminating
+  // all cross-stream event syncs (28 cudaEventRecord + cudaStreamWaitEvent
+  // calls per segment per step with 14 islands). The cross-stream sync
+  // guards below become no-ops because gapStream == cudaStr.
+  // RAII: restored automatically on any exit path (early return, exception).
+  struct GapStreamGuard {
+    cudaStream_t prev;
+    GapStreamGuard(cudaStream_t s) : prev(tl_dspGapStream) { tl_dspGapStream = s; }
+    ~GapStreamGuard() { tl_dspGapStream = prev; }
+  } gapStreamGuard(cudaStr);
 
   // Set DSP execution stream for async H2D copies
   sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
@@ -1139,32 +1163,26 @@ Status NativeDynamicShapePlan::compositeReplay(
     if (unit.kind == REPLAY_UNIT_GAP) {
       DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap [%d-%d]", unit.startSlot, unit.endSlot);
       // Gap slots execute real ops (including matmul for logits) via executeSlot.
-      // In frozen steady-state (exec >= 2), executeSlot's needsSync gate is false,
-      // which skips prepareSpecialUse/registerSpecialUse. But gap ops' inputs may
-      // come from preceding CUDA graph islands whose replay wrote to device memory
-      // WITHOUT updating actuality flags (no registerSpecialUse in graph replay).
-      // Without forceSync, the gap op's prepareSpecialUse is skipped, so it may:
-      //   1. Read stale host data instead of fresh device data (if isPrimaryActual)
-      //   2. Not mark its output as device-written (no registerSpecialUse)
-      // Result: matmul at slot 2742 produces zeros from exec=2 onward.
-      forceSync_ = true;
+      // With gap-stream unification (tl_dspGapStream), gap ops run on cudaStr —
+      // the same stream as island graph replay. FIFO ordering guarantees gap ops
+      // see island outputs without explicit sync.
+      //
+      // forceSync_ is no longer needed: preceding island replay's tickWriteDevice()
+      // (below) updates actuality flags on island outputs, so the frozen-state
+      // needsSync gate in executeSlot sees device data as authoritative and
+      // prepareSpecialUse is a no-op. registerSpecialUse in executeSlot ticks
+      // gap outputs for downstream islands.
       for (int s = unit.startSlot; s <= unit.endSlot; s++) {
         auto slotStatus = executeSlot(s, effectiveExternals, numExt, stream);
         if (slotStatus != Status::OK) {
-          forceSync_ = false;
           DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap slot %d FAILED status=%d",
                    s, static_cast<int>(slotStatus));
           return slotStatus;
         }
       }
-      forceSync_ = false;
 
-      // ── Cross-stream sync after gap ops ──────────────────────────────────
-      // Gap ops run on LaunchContext's default stream, which may differ from
-      // cudaStr (the DSP/graph replay stream). The next unit might be an
-      // island replay on cudaStr. Without sync, the island's graph reads
-      // gap outputs before they're written. Event-based: make cudaStr wait
-      // for gap stream completion, without blocking the CPU.
+      // Cross-stream sync after gap ops — no-op when gap stream == cudaStr
+      // (gap-stream unification). Retained as safety net if override is disabled.
       {
         auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
         cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
@@ -1194,18 +1212,21 @@ Status NativeDynamicShapePlan::compositeReplay(
         return Status::KERNEL_FAILURE;
       }
 
-      // ── Cross-stream sync after island replay ────────────────────────────
-      // Graph replay launches on `cudaStr` (the DSP execution stream), but
-      // subsequent gap ops execute via executeSlot → op->execute() which uses
-      // the LaunchContext's default stream (typically a different cudaStream_t).
-      // Without synchronization, gap ops may start reading island output
-      // buffers before the graph replay finishes writing them — the output
-      // is still zero from prezeroSegmentOutputs. This produces all-zero
-      // logits from the gap matmul, resulting in stuck <|endoftext|> tokens.
-      //
-      // Uses event-based sync (GPU-side dependency) rather than
-      // cudaStreamSynchronize (CPU-blocks). The gap stream waits for the
-      // event recorded on cudaStr — the CPU continues immediately.
+      // ── Per-island actuality tick ────────────────────────────────────────
+      // Graph replay writes to device memory directly without calling
+      // registerSpecialUse. Tick actuality on island output slots IMMEDIATELY
+      // after replay so subsequent gap ops see device data as authoritative.
+      // This replaces forceSync_ — gap ops' needsSync gate sees
+      // isSpecialActual > isPrimaryActual and skips prepareSpecialUse.
+      for (int s = unit.startSlot; s <= unit.endSlot && s < totalOutputSlots_; s++) {
+        NDArray* arr = outputSlots_[s];
+        if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
+          arr->tickWriteDevice();
+        }
+      }
+
+      // Cross-stream sync after island replay — no-op when gap stream == cudaStr
+      // (gap-stream unification). Retained as safety net if override is disabled.
       {
         auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
         cudaStream_t gapStream = lcStream ? *lcStream : nullptr;

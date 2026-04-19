@@ -436,7 +436,8 @@ DECLARE_TYPES(dot_product_attention_v2) {
       ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS, BOOL})  // attentionBias/keyCache (optional)
       ->setAllowedInputTypes(6, {ALL_FLOATS, ALL_INTS, BOOL})  // valueCache (optional)
       ->setAllowedInputTypes(7, {ALL_INTS})                    // cache_position (optional)
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2) {
@@ -632,6 +633,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
 DECLARE_TYPES(dot_product_attention_v2_bp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2_bp) {

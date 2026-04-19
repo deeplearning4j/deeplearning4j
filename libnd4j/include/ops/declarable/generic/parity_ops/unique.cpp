@@ -91,6 +91,7 @@ DECLARE_TYPES(unique) {
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
 }
 
 DECLARE_TYPES(unique_with_counts) {

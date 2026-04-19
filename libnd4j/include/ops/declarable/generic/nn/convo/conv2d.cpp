@@ -205,11 +205,13 @@ DECLARE_TYPES(conv2d) {
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(conv2d_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -423,6 +425,7 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
 
 DECLARE_TYPES(conv2d_input_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(conv2d_input_bp) {

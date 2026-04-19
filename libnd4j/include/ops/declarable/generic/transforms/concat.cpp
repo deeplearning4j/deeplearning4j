@@ -264,6 +264,7 @@ DECLARE_SYN(concatv2, concat);
 
 DECLARE_TYPES(concat) {
   getOpDescriptor()->setAllowedInputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CONCAT);
 }
 
 //////////////////////////////////////////////////////////////////////////

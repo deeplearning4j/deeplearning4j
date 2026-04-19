@@ -66,7 +66,10 @@ DECLARE_SHAPE_FN(create) {
   return SHAPELIST(sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
 }
 
-DECLARE_TYPES(create) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS, sd::DataType::BOOL})->setAllowedOutputTypes(ANY); }
+DECLARE_TYPES(create) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_INTS, sd::DataType::BOOL})->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+}
 }  // namespace ops
 }  // namespace sd
 

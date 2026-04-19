@@ -122,7 +122,8 @@ CUSTOM_OP_IMPL(shared_kv_attention, 3, 1, false, 0, 0) {
 DECLARE_TYPES(shared_kv_attention) {
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
-        ->setAllowedOutputTypes({ALL_FLOATS});
+        ->setAllowedOutputTypes({ALL_FLOATS})
+        ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(shared_kv_attention) {

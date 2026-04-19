@@ -94,7 +94,8 @@ DECLARE_TYPES(smooth_quant) {
         ->setAllowedInputTypes(1, {INT8, FLOAT32})         // quantized weight
         ->setAllowedInputTypes(2, {FLOAT32})               // smooth scale
         ->setAllowedInputTypes(3, {FLOAT32})               // weight scale
-        ->setAllowedOutputTypes({ALL_FLOATS});
+        ->setAllowedOutputTypes({ALL_FLOATS})
+        ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(smooth_quant) {

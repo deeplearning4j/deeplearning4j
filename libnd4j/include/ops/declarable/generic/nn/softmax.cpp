@@ -31,7 +31,7 @@ namespace sd {
 namespace ops {
 
 DECLARE_TYPES(softmax) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true)->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {

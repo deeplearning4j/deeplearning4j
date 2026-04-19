@@ -96,7 +96,8 @@ DECLARE_TYPES(turbo_quant_attention) {
       ->setAllowedInputTypes(4, {ALL_FLOATS})         // QJL_matrix
       ->setAllowedInputTypes(5, {ALL_FLOATS})         // V
       ->setAllowedInputTypes(6, {ALL_FLOATS})         // attention_mask
-      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
+      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(turbo_quant_attention) {

@@ -1346,6 +1346,122 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Configure native plan KV scatter for CUDA-graph-compatible decode loops.
+     *
+     * <p>After this call the C++ plan executes batched KV scatter after each execute(),
+     * writing present KV outputs into static KV buffers at the current position.
+     * This eliminates the Java-side scatterNewEntries() round-trip.</p>
+     *
+     * <p>Must be called after the first execution step (when slot indices are known)
+     * and before the decode loop begins.</p>
+     *
+     * @param firstStepResults  Output map from the first execution step
+     * @param plan              The compiled DSP plan (for slot index lookup)
+     * @param staticKvBuffers   Map from present-KV output name to static buffer INDArray
+     * @param kvPositionPtr     LongPointer to device-accessible int64 position scalar
+     */
+    public void configureNativePlanKvScatter(Map<String, INDArray> firstStepResults,
+                                              DynamicShapePlan plan,
+                                              Map<String, INDArray> staticKvBuffers,
+                                              LongPointer kvPositionPtr) {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) return;
+        if (firstStepResults == null || staticKvBuffers == null || staticKvBuffers.isEmpty()) return;
+        if (kvPositionPtr == null) return;
+
+        Map<String, Integer> outputNameToSlot = plan.getOutputNameToSlotIndex();
+
+        List<Integer> presentSlotIndices = new ArrayList<>();
+        List<OpaqueNDArray> staticBufList = new ArrayList<>();
+        long heads = -1, srcSeqLen = -1, dstSeqLen = -1, dim = -1;
+        int dtypeInt = -1;
+
+        for (Map.Entry<String, INDArray> entry : firstStepResults.entrySet()) {
+            String outputName = entry.getKey();
+            boolean isKvPresent = outputName.contains("present")
+                    && (outputName.contains("key") || outputName.contains("value"));
+            if (!isKvPresent) continue;
+
+            Integer slotIdx = outputNameToSlot.get(outputName);
+            if (slotIdx == null || slotIdx < 0) continue;
+
+            INDArray presentArr = entry.getValue();
+            if (presentArr == null || presentArr.rank() != 4) continue;
+
+            // Find the corresponding static buffer
+            // The static buffer is keyed by the past input name, which is derived from the present name.
+            // Try several common naming conventions:
+            INDArray staticBuf = staticKvBuffers.get(outputName);
+            if (staticBuf == null) {
+                // Try replacing 'present_' with 'past_'
+                String pastName = outputName.replace("present_", "past_");
+                staticBuf = staticKvBuffers.get(pastName);
+            }
+            if (staticBuf == null) continue;
+            if (staticBuf.rank() != 4) continue;
+
+            presentSlotIndices.add(slotIdx);
+            staticBufList.add(OpaqueNDArray.fromINDArray(staticBuf));
+
+            // Extract shape info from first pair (all pairs are assumed uniform)
+            if (heads < 0) {
+                heads = presentArr.size(1);
+                srcSeqLen = presentArr.size(2);
+                dstSeqLen = staticBuf.size(2);
+                dim = presentArr.size(3);
+                dtypeInt = presentArr.dataType().toInt();
+            }
+
+            log.debug("KV scatter: slot {} ({}) -> static buf shape={}", slotIdx, outputName,
+                    java.util.Arrays.toString(staticBuf.shape()));
+        }
+
+        if (presentSlotIndices.isEmpty() || heads < 0) {
+            log.warn("configureNativePlanKvScatter: no KV output pairs found — skipping");
+            return;
+        }
+
+        int numPairs = presentSlotIndices.size();
+        int[] slotIndicesArr = presentSlotIndices.stream().mapToInt(Integer::intValue).toArray();
+
+        // Build Pointer[] containing OpaqueNDArray* for each static buffer
+        Pointer[] staticPtrs = new Pointer[numPairs];
+        for (int i = 0; i < numPairs; i++) {
+            staticPtrs[i] = staticBufList.get(i);
+        }
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.configurePlanKvScatter(nativePlanHandle,
+                slotIndicesArr, staticPtrs, numPairs,
+                dtypeInt, heads, srcSeqLen, dstSeqLen, dim,
+                kvPositionPtr);
+
+        log.info("Configured native plan KV scatter: {} pairs, heads={}, srcSeq={}, dstSeq={}, dim={}",
+                numPairs, heads, srcSeqLen, dstSeqLen, dim);
+    }
+
+    /**
+     * Reset the KV cache position tracked by the native plan.
+     * Call this after prefill with the prefill sequence length.
+     *
+     * @param position  new cache position (e.g., prefill sequence length)
+     */
+    public void resetNativePlanKvPosition(long position) {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) return;
+        NativeOpsHolder.getInstance().getDeviceNativeOps()
+                .resetPlanKvCachePosition(nativePlanHandle, position);
+    }
+
+    /**
+     * Get the current KV cache position tracked by the native plan.
+     * Returns -1 if KV scatter is not configured.
+     */
+    public long getNativePlanKvPosition() {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) return -1L;
+        return NativeOpsHolder.getInstance().getDeviceNativeOps()
+                .getPlanKvCachePosition(nativePlanHandle);
+    }
+
+    /**
      * Execute the plan with the given placeholder arrays.
      *
      * @param plan              the compiled plan

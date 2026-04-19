@@ -191,6 +191,7 @@ DECLARE_SYN(ClipByValue, clipbyvalue);
 
 DECLARE_TYPES(clipbyvalue) {
  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+ getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

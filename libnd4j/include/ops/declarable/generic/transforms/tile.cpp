@@ -65,6 +65,7 @@ DECLARE_TYPES(tile) {
       ->setAllowedInputTypes(0, sd::DataType::ANY)
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_TILE);
 }
 
 DECLARE_SHAPE_FN(tile) {

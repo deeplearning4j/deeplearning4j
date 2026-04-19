@@ -236,6 +236,90 @@ struct PlanExecutionContext {
   bool stagingBuffersSynced = false;
 
   // ══════════════════════════════════════════════════════════════════════
+  // Execution flow tracking
+  //
+  // Records WHAT happened during this execute() call and in what order.
+  // Every significant state mutation (auto-seal, frozen constant detection,
+  // phase transition, compilation) is logged here with a monotonic sequence
+  // number so post-mortem analysis shows the exact flow.
+  //
+  // FlowEvent is a compact record — no heap strings. Each event type has
+  // a fixed meaning; numeric fields carry context-dependent detail.
+  // ══════════════════════════════════════════════════════════════════════
+
+  enum class FlowEventType : uint8_t {
+    EXECUTE_ENTRY = 0,          // execute() entered; detail1=execCount, detail2=frozen
+    AUTO_SEAL_FIRED = 1,        // auto-seal set shapesFrozen_=true; detail1=old_execCount, detail2=new_execCount
+    RESEGMENT = 2,              // resegmentForFreeze(); detail1=old_seg_count, detail2=new_seg_count
+    FROZEN_CONST_DETECT = 3,    // detectFrozenConstants(); detail1=frozen_count, detail2=total_slots
+    PHASE_COMPILE = 4,          // phaseCompile(); detail1=num_segments_compiled
+    PHASE_DISPATCH = 5,         // phase dispatch; detail1=dispatchMode
+    SLOT_EXEC_FAIL = 6,         // slot execution failed; detail1=slotIdx, detail2=status
+    SLOT_FROZEN_SKIP = 7,       // frozen constant slot skipped; detail1=slotIdx
+    PHASE_TRANSITION = 8,       // planPhase_ changed; detail1=old_phase, detail2=new_phase
+    EXEC_COUNT_INC = 9,         // executeCount_ incremented; detail1=old, detail2=new
+    DERIVED_STATE_REFRESH = 10, // populateDerivedState re-called after mutation
+  };
+
+  struct FlowEvent {
+    FlowEventType type;
+    int detail1 = 0;
+    int detail2 = 0;
+  };
+
+  static constexpr int kMaxFlowEvents = 64;
+  FlowEvent flowEvents[kMaxFlowEvents];
+  int flowEventCount = 0;
+
+  /** Record a flow event. Silently drops if buffer full. */
+  SD_INLINE void recordFlow(FlowEventType type, int d1 = 0, int d2 = 0) {
+    if (flowEventCount < kMaxFlowEvents) {
+      flowEvents[flowEventCount++] = {type, d1, d2};
+    }
+  }
+
+  /** Get human-readable name for a flow event type. */
+  static SD_INLINE const char* flowEventName(FlowEventType type) {
+    switch (type) {
+      case FlowEventType::EXECUTE_ENTRY:        return "EXECUTE_ENTRY";
+      case FlowEventType::AUTO_SEAL_FIRED:      return "AUTO_SEAL_FIRED";
+      case FlowEventType::RESEGMENT:            return "RESEGMENT";
+      case FlowEventType::FROZEN_CONST_DETECT:  return "FROZEN_CONST_DETECT";
+      case FlowEventType::PHASE_COMPILE:        return "PHASE_COMPILE";
+      case FlowEventType::PHASE_DISPATCH:       return "PHASE_DISPATCH";
+      case FlowEventType::SLOT_EXEC_FAIL:       return "SLOT_EXEC_FAIL";
+      case FlowEventType::SLOT_FROZEN_SKIP:     return "SLOT_FROZEN_SKIP";
+      case FlowEventType::PHASE_TRANSITION:     return "PHASE_TRANSITION";
+      case FlowEventType::EXEC_COUNT_INC:       return "EXEC_COUNT_INC";
+      case FlowEventType::DERIVED_STATE_REFRESH: return "DERIVED_STATE_REFRESH";
+      default:                                  return "UNKNOWN";
+    }
+  }
+
+  /** Log all recorded flow events via DSP_DIAG. Called on error or at execution end. */
+  SD_INLINE void dumpFlowLog(int execCount) {
+    DSP_DIAG(EXECUTE, "FLOW_LOG exec=%d (%d events):", execCount, flowEventCount);
+    for (int i = 0; i < flowEventCount; i++) {
+      auto& e = flowEvents[i];
+      DSP_DIAG(EXECUTE, "  FLOW[%d] %s d1=%d d2=%d",
+               i, flowEventName(e.type), e.detail1, e.detail2);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Frozen constant tracking
+  //
+  // Populated by detectFrozenConstants() so downstream code and
+  // diagnostics can inspect what was frozen and why.
+  // ══════════════════════════════════════════════════════════════════════
+
+  int frozenConstCount = 0;      // Slots marked FROZEN_CONSTANT
+  int shapeOnlyTraitCount = 0;   // Slots with OP_TRAIT_SHAPE_ONLY_OUTPUT
+  int valueIndepCount = 0;       // Value-independent slots (subset of frozen)
+  int viewAliasUnfrozen = 0;     // Frozen slots un-frozen due to buffer aliasing
+  int javaManagedSlots = 0;      // Output slots not produced by any plan op
+
+  // ══════════════════════════════════════════════════════════════════════
   // Segment execution tracking
   //
   // Per-execution counters for tracing what happened at the segment level.
@@ -445,11 +529,19 @@ struct PlanExecutionContext {
     if (!diagAnyEnabled) return;
     DSP_DIAG(EXECUTE,
         "EXEC_SUMMARY exec=%d mode=%s sync=%s(stream=%d event=%d) "
-        "segs(total=%d warmup=%d captured=%d replayed=%d sbs=%d direct=%d fail=%d invalidated=%d)",
+        "segs(total=%d warmup=%d captured=%d replayed=%d sbs=%d direct=%d fail=%d invalidated=%d) "
+        "frozen(const=%d shapeOnly=%d valueIndep=%d viewUnfrozen=%d javaManaged=%d) "
+        "flow(%d events)",
         execCount, dispatchModeName(), syncLevelName(),
         streamSyncCount, eventSyncCount,
         segmentsTotal, segmentsWarmup, segmentsCaptured, segmentsReplayed,
-        segmentsSlotBySlot, segmentsDirect, segmentsFailed, segmentsInvalidated);
+        segmentsSlotBySlot, segmentsDirect, segmentsFailed, segmentsInvalidated,
+        frozenConstCount, shapeOnlyTraitCount, valueIndepCount, viewAliasUnfrozen,
+        javaManagedSlots, flowEventCount);
+    // On failure or when diagnostics are verbose, dump the full flow log
+    if (segmentsFailed > 0) {
+      dumpFlowLog(execCount);
+    }
   }
 };
 

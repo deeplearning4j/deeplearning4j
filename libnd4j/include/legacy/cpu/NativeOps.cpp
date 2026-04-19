@@ -2663,6 +2663,44 @@ void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
     plan->setOutputSlotMaxSizes(slotIndices, maxSizes, static_cast<int>(numSlots));
 }
 
+void configurePlanKvScatter(sd::Pointer planHandle,
+                             const int* presentSlotIndices,
+                             const sd::Pointer* staticKvBufferPtrs,
+                             sd::LongType numPairs,
+                             int dtypeInt,
+                             sd::LongType heads,
+                             sd::LongType srcSeqLen,
+                             sd::LongType dstSeqLen,
+                             sd::LongType dim,
+                             sd::LongType* kvPositionPtr) {
+    if (planHandle == nullptr || presentSlotIndices == nullptr ||
+        staticKvBufferPtrs == nullptr || numPairs <= 0 || kvPositionPtr == nullptr) {
+        return;
+    }
+
+    std::vector<sd::NDArray*> staticBufs(numPairs);
+    for (sd::LongType i = 0; i < numPairs; i++) {
+        staticBufs[i] = reinterpret_cast<sd::NDArray*>(staticKvBufferPtrs[i]);
+    }
+
+    auto dtype = static_cast<sd::DataType>(dtypeInt);
+    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+    plan->configureKvScatter(presentSlotIndices, staticBufs.data(),
+                              static_cast<int>(numPairs),
+                              dtype, heads, srcSeqLen, dstSeqLen, dim,
+                              kvPositionPtr);
+}
+
+void resetPlanKvCachePosition(sd::Pointer planHandle, sd::LongType position) {
+    if (planHandle == nullptr) return;
+    reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle)->resetKvCachePosition(position);
+}
+
+sd::LongType getPlanKvCachePosition(sd::Pointer planHandle) {
+    if (planHandle == nullptr) return -1LL;
+    return reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle)->getKvCachePosition();
+}
+
 // Constant Cache Statistics API (CPU)
 SD_LIB_EXPORT sd::LongType getConstantCacheBytes(int deviceId) {
     return sd::ConstantHelper::getInstance().getCachedAmount(deviceId);

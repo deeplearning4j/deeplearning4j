@@ -52,6 +52,7 @@ CONFIGURABLE_OP_IMPL(fused_gelu, 1, 1, true, 0, 0) {
 DECLARE_TYPES(fused_gelu) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
 }
 
 CONFIGURABLE_OP_IMPL(fused_gelu_bp, 2, 1, true, 0, 0) {
@@ -67,6 +68,7 @@ CONFIGURABLE_OP_IMPL(fused_gelu_bp, 2, 1, true, 0, 0) {
 DECLARE_TYPES(fused_gelu_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -95,6 +97,7 @@ DECLARE_SHAPE_FN(fused_layer_norm) {
 DECLARE_TYPES(fused_layer_norm) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(fused_layer_norm_bp, 3, 2, false, 0, 0) {
@@ -127,6 +130,7 @@ DECLARE_SHAPE_FN(fused_layer_norm_bp) {
 DECLARE_TYPES(fused_layer_norm_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -167,6 +171,7 @@ DECLARE_SHAPE_FN(fused_rope) {
 DECLARE_TYPES(fused_rope) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(fused_rope_bp, 2, 1, false, 0, 0) {
@@ -194,6 +199,7 @@ DECLARE_SHAPE_FN(fused_rope_bp) {
 DECLARE_TYPES(fused_rope_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -225,6 +231,7 @@ DECLARE_SHAPE_FN(fused_bias_dropout_residual) {
 DECLARE_TYPES(fused_bias_dropout_residual) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -263,6 +270,7 @@ DECLARE_SHAPE_FN(fused_rms_norm_swiglu) {
 DECLARE_TYPES(fused_rms_norm_swiglu) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(fused_rms_norm_swiglu_bp, 5, 4, false, 0, 0) {
@@ -302,6 +310,7 @@ DECLARE_SHAPE_FN(fused_rms_norm_swiglu_bp) {
 DECLARE_TYPES(fused_rms_norm_swiglu_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 

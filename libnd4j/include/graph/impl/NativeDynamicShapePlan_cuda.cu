@@ -38,6 +38,7 @@
 #include <graph/DspVerifyUtils.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/DspStreamGuard.h>
+#include <graph/PlanExecutionContext.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
@@ -65,6 +66,8 @@
 
 namespace sd {
 namespace graph {
+
+using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
 
 // Pre-allocated cross-stream sync event, reused across replay calls to avoid
 // cudaEventCreate/Destroy overhead per step. Lazily created on first use.
@@ -228,15 +231,26 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         skippedCount++;
         continue;  // weight directReference: skip sync for non-variable inputs
       }
-      // forceSync: variable inputs may have isSpecialActual=true from
-      // markOrderedRangeDeviceCurrent (readSpecial poisoning). Force H2D.
-      externalInputs[ei]->dataBuffer()->syncToSpecial(true);
+      // Force H2D only when host is authoritative (isPrimaryActual).
+      // Variable inputs may have isSpecialActual=true from markOrderedRangeDeviceCurrent
+      // (readSpecial poisoning), so syncToSpecial(false) would skip the H2D copy.
+      // But KV buffers are updated on device by KvScatter — isPrimaryActual()=false.
+      // Forcing H2D when host is stale would overwrite valid device KV data with zeros.
+      auto* db = externalInputs[ei]->dataBuffer();
+      if (db != nullptr && db->isPrimaryActual()) {
+        db->syncToSpecial(true);  // Force H2D: host has newer data
+      }
+      // else: device is authoritative (KvScatter or initial load) — no H2D needed
       syncedCount++;
     }
   } else {
     for (int ei = 0; ei < numExternalInputs; ei++) {
       if (externalInputs[ei] == nullptr) continue;
-      externalInputs[ei]->dataBuffer()->syncToSpecial(true);
+      // Same guard: only force H2D when host is authoritative
+      auto* db = externalInputs[ei]->dataBuffer();
+      if (db != nullptr && db->isPrimaryActual()) {
+        db->syncToSpecial(true);
+      }
       syncedCount++;
     }
   }
@@ -307,6 +321,18 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       totalGraphReplays_++;
       seg.exec.executionCount++;
       executeCount_++;
+
+      // Tick actuality on all segment output slots — CUDA graph replay writes device
+      // memory directly without registerSpecialUse. Without this, Java-side getFloat()
+      // calls syncToHost() which checks isSpecialActual() — if not ticked, it sees
+      // stale host data. compositeReplay() has this at gpubackend:1199; the frozen fast
+      // path was missing it, causing D2H reads to return stale zeros.
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
+        NDArray* arr = outputSlots_[s];
+        if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
+          arr->tickWriteDevice();
+        }
+      }
 
       auto tScatterDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
       if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
@@ -1154,79 +1180,111 @@ static void logGpuMemState(const char* label) {
 }
 
 void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, int execCount) {
-  // Create DspStreamGuard (heap-allocated so it lives for full execute() scope)
-  struct ExecutionState {
-    std::unique_ptr<sd::graph::DspStreamGuard> streamGuard;
-  };
-  auto* state = new ExecutionState();
+  auto* ctx = new PlanExecutionContext();
+  ctx->execCount = execCount;
+  ctx->frozen = frozen;
+  // Compute needsFullSync and isFrozenSteadyState early — used in this method's
+  // sync decisions. The full populateDerivedState() call happens later in execute().
+  ctx->needsFullSync = !frozen || execCount <= 1;
+  ctx->isFrozenSteadyState = frozen && execCount > 1;
+
+  // Resolve CUDA streams and set up DspStreamGuard RAII
   if (stream != nullptr) {
-    state->streamGuard = std::make_unique<sd::graph::DspStreamGuard>(
-        *static_cast<cudaStream_t*>(stream));
+    ctx->dspStream = *static_cast<cudaStream_t*>(stream);
+    ctx->streamGuard = new DspStreamGuard(ctx->dspStream);
+
+    // Resolve LC default stream (a real async stream from ContextBuffers,
+    // NOT CUDA stream 0). Post-execution ops (KvScatter, assign, mask updates)
+    // run on this stream.
+    auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    ctx->lcDefaultStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
   }
 
-  // Stream ordering: ensure all async CUDA operations from Java complete before DSP execution.
+  // Stream ordering: ensure all async CUDA operations from Java complete
+  // before DSP execution begins.
   if (stream != nullptr) {
-    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
     // Check for prior CUDA errors before attempting sync
     auto priorErr = cudaGetLastError();
     if (priorErr != cudaSuccess) {
       DSP_DIAG(EXECUTE, "platformBeginExecution: PRIOR CUDA ERROR before sync: %s (%d)",
                cudaGetErrorString(priorErr), static_cast<int>(priorErr));
     }
-    DSP_DIAG(EXECUTE, "platformBeginExecution: frozen=%d execCount=%d stream=%p syncing...",
-             static_cast<int>(frozen), execCount, static_cast<void*>(cudaStr));
-    // Always record a CUDA event on the default stream and have the DSP stream
-    // wait for it before starting execution. This ensures any GPU operations
-    // submitted to the default stream between decode steps (KvScatter, assign
-    // ops, etc.) are visible to the DSP execution stream before it reads them.
-    // Without this, the DSP may read stale KV cache data from the previous step
-    // because KvScatter hasn't finished writing to the static KV buffers.
-    // Previously only done for frozen+execCount>1; now done unconditionally.
+    DSP_DIAG(EXECUTE, "platformBeginExecution: frozen=%d execCount=%d dspStream=%p lcDefault=%p",
+             static_cast<int>(frozen), execCount,
+             static_cast<void*>(ctx->dspStream), static_cast<void*>(ctx->lcDefaultStream));
+
+    // Cross-stream sync: make the DSP stream wait for both the LC default
+    // stream and CUDA stream 0 before starting execution.
     {
-      cudaEvent_t defaultStreamEvent = getCrossStreamEvent();
-      cudaEventRecord(defaultStreamEvent, nullptr);
-      cudaStreamWaitEvent(cudaStr, defaultStreamEvent, 0);
-      DSP_DIAG(EXECUTE, "platformBeginExecution: cross-stream event sync (default->DSP) done");
+      cudaEvent_t evt = getCrossStreamEvent();
+      // 1) LC default stream → DSP stream
+      if (ctx->lcDefaultStream != nullptr && ctx->lcDefaultStream != ctx->dspStream) {
+        cudaEventRecord(evt, ctx->lcDefaultStream);
+        cudaStreamWaitEvent(ctx->dspStream, evt, 0);
+      }
+      // 2) CUDA stream 0 → DSP stream (cuBLAS default handle, misc)
+      cudaEventRecord(evt, nullptr);
+      cudaStreamWaitEvent(ctx->dspStream, evt, 0);
+      ctx->recordEventSync();  // Track: cross-stream event ordering at entry
+      DSP_DIAG(EXECUTE, "platformBeginExecution: cross-stream sync done");
     }
-    if (!frozen || execCount <= 1) {
-      // For early executions, also sync the DSP stream itself to ensure
-      // any prior DSP work is complete before starting the new execution.
-      auto syncErr = cudaStreamSynchronize(cudaStr);
+    if (ctx->needsFullSync) {
+      // For early executions (warmup, capture), also sync the DSP stream
+      // itself to ensure any prior DSP work is complete.
+      auto syncErr = cudaStreamSynchronize(ctx->dspStream);
+      ctx->recordStreamSync();  // Track: full stream sync at entry
       DSP_DIAG(EXECUTE, "platformBeginExecution: cudaStreamSynchronize returned %d (%s)",
                static_cast<int>(syncErr), cudaGetErrorString(syncErr));
     }
   }
 
-  return static_cast<void*>(state);
+  return static_cast<void*>(ctx);
 }
 
 void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* stream, bool frozen, int execCount) {
-  // Cross-stream synchronization
+  auto* ctx = static_cast<PlanExecutionContext*>(executionState);
+
+  // Cross-stream synchronization: make post-execution streams wait for DSP.
   if (stream != nullptr) {
-    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
-    DSP_DIAG(EXECUTE, "platformEndExecution: frozen=%d execCount=%d stream=%p syncing...",
-             static_cast<int>(frozen), execCount, static_cast<void*>(cudaStr));
-    if (frozen && execCount > 1) {
+    DSP_DIAG(EXECUTE, "platformEndExecution: frozen=%d execCount=%d syncLevel=%s "
+             "dspStream=%p lcDefault=%p",
+             static_cast<int>(ctx->frozen), ctx->execCount, ctx->syncLevelName(),
+             static_cast<void*>(ctx->dspStream), static_cast<void*>(ctx->lcDefaultStream));
+
+    if (ctx->isFrozenSteadyState) {
+      // Lightweight event-based sync for steady-state frozen replay.
       if (executionCompleteEvent_ == nullptr) {
         cudaEvent_t evt;
         cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
         executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
       }
       cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-      cudaEventRecord(evt, cudaStr);
-      cudaStreamWaitEvent(nullptr, evt, 0);
+      cudaEventRecord(evt, ctx->dspStream);
+      // Make BOTH CUDA stream 0 AND the LC default stream wait for DSP.
+      // Post-execution ops (KvScatter, assign, etc.) run on the LC default
+      // stream. Without this ordering, they read outputs the DSP stream
+      // hasn't finished writing yet.
+      cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
+      if (ctx->lcDefaultStream != nullptr && ctx->lcDefaultStream != ctx->dspStream) {
+        cudaStreamWaitEvent(ctx->lcDefaultStream, evt, 0);
+        DSP_DIAG(EXECUTE, "platformEndExecution: lcDefault=%p waiting on DSP=%p",
+                 (void*)ctx->lcDefaultStream, (void*)ctx->dspStream);
+      }
+      ctx->recordEventSync();  // Track: event-based ordering at exit
     } else {
-      auto syncErr = cudaStreamSynchronize(cudaStr);
-      DSP_DIAG(EXECUTE, "platformEndExecution: cudaStreamSynchronize returned %d (%s)",
-               static_cast<int>(syncErr), cudaGetErrorString(syncErr));
+      // Full sync for early executions (warmup, capture).
+      auto syncErr = cudaStreamSynchronize(ctx->dspStream);
+      ctx->recordStreamSync();  // Track: full stream sync at exit
+      DSP_DIAG(EXECUTE, "platformEndExecution: cudaStreamSynchronize returned %d (%s) syncLevel=%s",
+               static_cast<int>(syncErr), cudaGetErrorString(syncErr), ctx->syncLevelName());
     }
   }
 
-  // Free the execution state (DspStreamGuard destroyed here via unique_ptr)
-  struct ExecutionState {
-    std::unique_ptr<sd::graph::DspStreamGuard> streamGuard;
-  };
-  delete static_cast<ExecutionState*>(executionState);
+  // Explicitly delete the stream guard before the context.
+  // DspStreamGuard restores tl_dspExecutionStream to its previous value.
+  delete ctx->streamGuard;
+  ctx->streamGuard = nullptr;
+  delete ctx;
 }
 
 void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount) {
@@ -1292,6 +1350,18 @@ void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int 
 
 void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* stream) {
   if (!DSP_DIAG_ENABLED(VERIFY) || execCount > 10) return;
+
+  // Sync the DSP stream BEFORE reading GPU data.
+  // Without this, cudaMemcpy races against in-flight GPU writes from the
+  // DSP stream and reads zeros or stale data. The `stream` parameter was
+  // previously unused — now we use it to synchronize.
+  if (stream != nullptr) {
+    cudaStream_t dspStr = *static_cast<cudaStream_t*>(stream);
+    cudaStreamSynchronize(dspStr);
+    DSP_DIAG(VERIFY, "LOGITS_ARGMAX: synced dspStream=%p before read (exec=%d)",
+             static_cast<void*>(dspStr), execCount);
+  }
+
   // Find the logits output: largest FLOAT32 requested output (vocab-sized).
   // KV cache outputs are typically rank 4 with small last dim (e.g., 4416),
   // while logits are rank 2-3 with large last dim (e.g., 49152).
@@ -1307,12 +1377,14 @@ void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* strea
       cudaMemcpy(fullBuf.data(), sbuf, len * sizeof(float), cudaMemcpyDeviceToHost);
       float maxVal = -1e30f;
       int maxIdx = -1;
+      bool allZero = true;
       for (int j = 0; j < (int)len; j++) {
+        if (fullBuf[j] != 0.0f) allZero = false;
         if (fullBuf[j] > maxVal) { maxVal = fullBuf[j]; maxIdx = j; }
       }
       DSP_DIAG_SLOT(VERIFY, slotIdx,
-          "LOGITS_ARGMAX exec=%d reqOut[%d] len=%lld maxIdx=%d maxVal=%.6f",
-          execCount, i, (long long)len, maxIdx, maxVal);
+          "LOGITS_ARGMAX exec=%d reqOut[%d] len=%lld maxIdx=%d maxVal=%.6f allZero=%d",
+          execCount, i, (long long)len, maxIdx, maxVal, allZero ? 1 : 0);
     }
   }
 }
@@ -1428,6 +1500,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
     seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     seg.exec.jitShapeKey = 0;
     seg.exec.jitCompileFailed = false;
     seg.def.shapeKey = 0;

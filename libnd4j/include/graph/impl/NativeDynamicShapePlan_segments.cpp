@@ -28,6 +28,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
+#include <graph/PlanExecutionContext.h>
 #include <ops/OpTraitTable.h>
 
 // Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
@@ -848,6 +849,21 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   while (stepIdx <= seg.def.endSlot) {
     NativeSlot& slot = slots_[stepIdx];
 
+    DSP_DIAG_SLOT(EXECUTE, stepIdx,
+                  "STEP_ENTER step=%d op=%s cf=%d numIn=%d numOut=%d outSlots=[%d%s%s] "
+                  "identity=%d fusedHead=%d fusedTail=%d fusedLen=%d frozenConst=%d",
+                  stepIdx, slot.ident.opName.c_str(),
+                  (int)slot.cf.controlFlowType,
+                  slot.wiring.numInputs, slot.wiring.numOutputs,
+                  slot.wiring.numOutputs > 0 ? slot.wiring.outputSlotIndices[0] : -1,
+                  slot.wiring.numOutputs > 1 ? "," : "",
+                  slot.wiring.numOutputs > 1 ? std::to_string(slot.wiring.outputSlotIndices[1]).c_str() : "",
+                  slot.flags.isIdentityOp ? 1 : 0,
+                  slot.fusedChain.isFusedChainHead ? 1 : 0,
+                  slot.fusedChain.isFusedChainTail ? 1 : 0,
+                  slot.fusedChain.fusedChainLength,
+                  slot.frozenConstantSlot() ? 1 : 0);
+
     // ── Control flow dispatch ────────────────────────────────────────
     if (slot.cf.controlFlowType != CF_NONE) {
       // Dead propagation: if all inputs are dead and this is not a Merge, propagate dead
@@ -1157,6 +1173,17 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 #endif
 
     if (status != Status::OK) {
+      // Record the failure in the execution flow log FIRST so it's
+      // available even if the exception below is caught by a caller.
+      auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
+      if (execCtx != nullptr) {
+        execCtx->recordFlow(PlanExecutionContext::FlowEventType::SLOT_EXEC_FAIL,
+                             stepIdx, static_cast<int>(status));
+        // Dump entire flow log on failure so we can see exactly what
+        // happened this execution (auto-seal, frozen constants, etc.)
+        execCtx->dumpFlowLog(executeCount_);
+      }
+
       char buf[1024];
       const char* existingMsg =
           sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
@@ -1170,6 +1197,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
       DSP_DIAG(FALLBACK, "%s", buf);
 
+      // Log full input details for the failing slot
       auto& failedSlot = slots_[stepIdx];
       for (int i = 0; i < failedSlot.wiring.numInputs; i++) {
         int srcIdx = failedSlot.wiring.inputSourceIndices[i];
@@ -1179,9 +1207,23 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             // Protect rankOf() call — if shapeInfo is null, rankOf() would throw
             // and propagate out of this catch handler, causing cascading failures.
             try {
-              DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: rank=%lld shapeInfo=%p db=%p",
+              // Check if the source slot is frozen — if so, that's critical diagnostic info
+              bool srcIsFrozen = false;
+              for (int fs = 0; fs < numSlots_; fs++) {
+                for (int fo = 0; fo < slots_[fs].wiring.numOutputs; fo++) {
+                  if (slots_[fs].wiring.outputSlotIndices[fo] == srcIdx) {
+                    srcIsFrozen = slots_[fs].frozenConstantSlot();
+                    break;
+                  }
+                }
+                if (srcIsFrozen) break;
+              }
+              DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: rank=%lld shape=%s "
+                        "shapeInfo=%p db=%p frozenSrc=%d",
                         i, srcIdx, (long long)inp->rankOf(),
-                        (void*)inp->shapeInfo(), (void*)inp->dataBuffer());
+                        ShapeUtils::shapeAsString(inp).c_str(),
+                        (void*)inp->shapeInfo(), (void*)inp->dataBuffer(),
+                        srcIsFrozen ? 1 : 0);
             } catch (...) {
               DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: ptr=%p (shapeInfo INVALID)",
                         i, srcIdx, (void*)inp);
@@ -1191,6 +1233,26 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           }
         } else {
           DSP_DIAG(FALLBACK, "  input[%d] from external[%d]", i, -(srcIdx + 1));
+        }
+      }
+
+      // Log output slot info for the failing slot
+      for (int o = 0; o < failedSlot.wiring.numOutputs; o++) {
+        int outIdx = failedSlot.wiring.outputSlotIndices[o];
+        NDArray* out = (outIdx >= 0 && outIdx < totalOutputSlots_) ? outputSlots_[outIdx] : nullptr;
+        if (out != nullptr) {
+          try {
+            DSP_DIAG(FALLBACK, "  output[%d] outputSlot[%d]: rank=%lld shape=%s db=%p",
+                      o, outIdx, (long long)out->rankOf(),
+                      ShapeUtils::shapeAsString(out).c_str(),
+                      (void*)out->dataBuffer());
+          } catch (...) {
+            DSP_DIAG(FALLBACK, "  output[%d] outputSlot[%d]: ptr=%p (shapeInfo INVALID)",
+                      o, outIdx, (void*)out);
+          }
+        } else {
+          DSP_DIAG(FALLBACK, "  output[%d] outputSlot[%d]: %s", o, outIdx,
+                    outIdx >= 0 ? "null" : "invalid-idx");
         }
       }
 

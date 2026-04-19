@@ -52,7 +52,8 @@ DECLARE_TYPES(greater_equal) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, BOOL);
+      ->setAllowedOutputTypes(0, BOOL)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_COMPARISON);
 }
 }  // namespace ops
 }  // namespace sd

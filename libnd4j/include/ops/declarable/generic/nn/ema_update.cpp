@@ -42,6 +42,7 @@ CUSTOM_OP_IMPL(ema_update, 2, 1, false, 0, 0) {
 DECLARE_TYPES(ema_update) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(ema_update) {
@@ -68,6 +69,7 @@ CUSTOM_OP_IMPL(ema_update_bp, 3, 2, false, 0, 0) {
 DECLARE_TYPES(ema_update_bp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(ema_update_bp) {

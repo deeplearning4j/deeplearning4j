@@ -112,7 +112,10 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
   return Status::OK;
 }
 
-DECLARE_TYPES(slice) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(slice) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_SLICE);
+}
 
 DECLARE_SHAPE_FN(slice) {
   auto inShape = inputShape->at(0);

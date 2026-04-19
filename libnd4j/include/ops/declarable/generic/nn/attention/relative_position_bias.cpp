@@ -90,7 +90,8 @@ DECLARE_TYPES(relative_position_bias) {
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
         ->setAllowedInputTypes(1, {ALL_INTS})
-        ->setAllowedOutputTypes({ALL_FLOATS});
+        ->setAllowedOutputTypes({ALL_FLOATS})
+        ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(relative_position_bias) {

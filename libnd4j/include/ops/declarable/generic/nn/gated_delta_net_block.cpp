@@ -67,7 +67,8 @@ CUSTOM_OP_IMPL(gated_delta_net_block, 7, 3, false, 0, 3) {
 DECLARE_TYPES(gated_delta_net_block) {
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
-        ->setAllowedOutputTypes({ALL_FLOATS});
+        ->setAllowedOutputTypes({ALL_FLOATS})
+        ->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(gated_delta_net_block) {

@@ -91,7 +91,8 @@ DECLARE_TYPES(tensormmul) {
       ->setAllowedInputTypes(0, {FLOAT32, DOUBLE, HALF})
       ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
       ->setAllowedInputTypes(2, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF})
+      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 // Comparator for sorting indices vector based on comparison of array values
@@ -255,7 +256,8 @@ DECLARE_TYPES(tensormmul_bp) {
       ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
       ->setAllowedInputTypes(2, {FLOAT32, DOUBLE, HALF})
       ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(1, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedOutputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 }  // namespace ops
 }  // namespace sd

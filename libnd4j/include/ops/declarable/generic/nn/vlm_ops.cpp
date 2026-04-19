@@ -293,6 +293,7 @@ DECLARE_SHAPE_FN(vlm_cross_attention) {
 DECLARE_TYPES(vlm_cross_attention) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 

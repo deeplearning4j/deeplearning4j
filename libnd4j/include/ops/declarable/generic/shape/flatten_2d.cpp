@@ -57,6 +57,7 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
 
 DECLARE_TYPES(flatten_2d) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
 }
 
 DECLARE_SHAPE_FN(flatten_2d) {

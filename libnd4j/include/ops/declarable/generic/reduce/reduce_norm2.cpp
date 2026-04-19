@@ -92,7 +92,7 @@ DECLARE_SHAPE_FN(reduce_norm2) {
 }
 
 DECLARE_TYPES(reduce_norm2) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 

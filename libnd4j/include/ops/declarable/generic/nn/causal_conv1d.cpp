@@ -69,7 +69,8 @@ CUSTOM_OP_IMPL(causal_conv1d, 2, 2, false, 0, 0) {
 DECLARE_TYPES(causal_conv1d) {
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
-        ->setAllowedOutputTypes({ALL_FLOATS});
+        ->setAllowedOutputTypes({ALL_FLOATS})
+        ->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(causal_conv1d) {

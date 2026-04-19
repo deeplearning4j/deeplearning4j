@@ -54,7 +54,10 @@ CUSTOM_OP_IMPL(repeat, 1, 1, true, 0, -1) {
   return Status::OK;
 }
 
-DECLARE_TYPES(repeat) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(repeat) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+}
 
 DECLARE_SHAPE_FN(repeat) {
   auto input = INPUT_VARIABLE(0);

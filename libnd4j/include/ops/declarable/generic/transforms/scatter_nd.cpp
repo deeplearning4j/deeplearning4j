@@ -92,6 +92,7 @@ DECLARE_TYPES(scatter_nd) {
       ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_SCATTER_ND);
 }
 
 ////////////////////////////////////////////////////////////////////////

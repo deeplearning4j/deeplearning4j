@@ -174,6 +174,7 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(permute) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
 }
 
 //////////////////////////////////////////////////////////////////////////

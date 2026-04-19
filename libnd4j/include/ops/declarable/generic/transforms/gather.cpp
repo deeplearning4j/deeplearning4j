@@ -154,6 +154,7 @@ DECLARE_TYPES(gather) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS, BOOL});
   getOpDescriptor()->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS, BOOL});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_GATHER);
 }
 
 DECLARE_SHAPE_FN(gather) {

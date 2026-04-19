@@ -84,9 +84,9 @@ SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream = nullptr;
 // Per-island slot range filter for composite CUDA graph capture.
 // When tl_islandSlotMin <= tl_islandSlotMax, TritonGraphBackend::executeSegment
 // skips sub-kernels outside [tl_islandSlotMin, tl_islandSlotMax].
-// INT_MIN/INT_MAX (no restriction) when not in island capture mode.
-SD_TLS_EXPORT thread_local int tl_islandSlotMin = INT_MIN;
-SD_TLS_EXPORT thread_local int tl_islandSlotMax = INT_MAX;
+// INT_MAX/INT_MIN (min > max = no restriction) when not in island capture mode.
+SD_TLS_EXPORT thread_local int tl_islandSlotMin = INT_MAX;
+SD_TLS_EXPORT thread_local int tl_islandSlotMax = INT_MIN;
 
 // Capture host workspace: pre-allocated PINNED HOST buffer for eliminating
 // cudaMallocHost calls during CUDA graph capture. H2D memcpy nodes bake the

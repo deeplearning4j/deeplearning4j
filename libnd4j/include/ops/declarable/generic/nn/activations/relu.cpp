@@ -41,7 +41,10 @@ CONFIGURABLE_OP_IMPL(relu, 1, 1, true, 1, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(relu) { getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true); }
+DECLARE_TYPES(relu) {
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
+}
 
 CONFIGURABLE_OP_IMPL(relu_bp, 2, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);

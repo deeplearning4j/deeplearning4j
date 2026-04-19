@@ -86,7 +86,8 @@ DECLARE_TYPES(col2im) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedOutputTypes(0, INHERIT)
-      ->setSameMode(true);
+      ->setSameMode(true)
+      ->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

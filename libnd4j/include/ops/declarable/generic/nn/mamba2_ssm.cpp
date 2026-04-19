@@ -104,7 +104,8 @@ CUSTOM_OP_IMPL(mamba2_ssm, 5, 2, false, 0, 3) {
 DECLARE_TYPES(mamba2_ssm) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(mamba2_ssm) {

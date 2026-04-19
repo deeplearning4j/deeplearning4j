@@ -63,7 +63,8 @@ DECLARE_TYPES(Pow) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
+      ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {

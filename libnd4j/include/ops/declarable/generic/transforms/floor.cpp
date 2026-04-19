@@ -39,7 +39,10 @@ OP_IMPL(Floor, 1, 1, true) {
 }
 DECLARE_SYN(floor, Floor);
 
-DECLARE_TYPES(Floor) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(Floor) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 }  // namespace ops
 }  // namespace sd
 

@@ -451,6 +451,167 @@ public class TestSigmoidXentDebug {
     }
 
     @Test
+    public void testSigmoidXentDirect() {
+        Nd4j.getRandom().setSeed(12345);
+        int minibatch = 10;
+        int nOut = 4;
+
+        INDArray logits = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+        INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution(labelsArr, 0.5));
+
+        log.info("=== logits first row: {}", logits.getRow(0));
+        log.info("=== labels first row: {}", labelsArr.getRow(0));
+
+        // Expected: max(x,0) - x*y + log(1+exp(-|x|))
+        INDArray maxX0 = Transforms.max(logits, 0.0);
+        INDArray xTimesY = logits.mul(labelsArr);
+        INDArray logTerm = Transforms.log(Transforms.exp(Transforms.abs(logits).neg()).add(1.0));
+        INDArray expected = maxX0.sub(xTimesY).add(logTerm);
+        log.info("=== maxX0 first row: {}", maxX0.getRow(0));
+        log.info("=== xTimesY first row: {}", xTimesY.getRow(0));
+        log.info("=== logTerm first row: {}", logTerm.getRow(0));
+        log.info("=== Expected first row: {}", expected.getRow(0));
+
+        // Direct C++ op
+        INDArray weightsArr = Nd4j.scalar(DataType.DOUBLE, 1.0);
+        INDArray outputArr = Nd4j.create(DataType.DOUBLE, minibatch, nOut);
+        org.nd4j.linalg.api.ops.DynamicCustomOp op = org.nd4j.linalg.api.ops.DynamicCustomOp.builder("sigm_cross_entropy_loss")
+                .addInputs(logits, weightsArr, labelsArr)
+                .addOutputs(outputArr)
+                .addIntegerArguments(0)  // NONE reduction
+                .addFloatingPointArguments(0.0)  // no label smoothing
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        log.info("=== Actual first row: {}", outputArr.getRow(0));
+        log.info("=== Match? {}", expected.equalsWithEps(outputArr, 1e-6));
+    }
+
+    @Test
+    public void testLogLossExpectedComputation() {
+        // Test the log loss expected value computation from testLoss2d
+        Nd4j.getRandom().setSeed(12345);
+        int minibatch = 10;
+        int nOut = 4;
+
+        INDArray predictionsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+        INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+
+        // Replicate testLoss2d's log case
+        double eps = 1e-7;
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution(labelsArr, 0.5));
+        predictionsArr = Nd4j.rand(predictionsArr.shape()).muli(0.8).addi(0.1);
+
+        // Method 1: Original test code (chained in-place ops)
+        INDArray logP = Transforms.log(predictionsArr.add(eps), true);
+        INDArray log1p = Transforms.log(predictionsArr.rsub(1.0).add(eps), true);
+        INDArray expOutOriginal = labelsArr.mul(logP).addi(labelsArr.rsub(1).mul(log1p)).negi();
+        log.info("=== Method 1 (chained in-place): first row = {}", expOutOriginal.getRow(0));
+
+        // Method 2: No in-place ops
+        INDArray term1 = labelsArr.mul(logP);
+        INDArray term2 = labelsArr.rsub(1.0).mul(log1p);
+        INDArray expOutSafe = term1.add(term2).neg();
+        log.info("=== Method 2 (no in-place): first row = {}", expOutSafe.getRow(0));
+
+        // Method 3: Direct DynamicCustomOp
+        INDArray weightsArr = Nd4j.scalar(DataType.DOUBLE, 1.0);
+        INDArray outputArr = Nd4j.create(DataType.DOUBLE, minibatch, nOut);
+        org.nd4j.linalg.api.ops.DynamicCustomOp op = org.nd4j.linalg.api.ops.DynamicCustomOp.builder("log_loss")
+                .addInputs(predictionsArr, weightsArr, labelsArr)
+                .addOutputs(outputArr)
+                .addIntegerArguments(0)  // NONE reduction
+                .addFloatingPointArguments(eps)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        log.info("=== Method 3 (C++ op NONE): first row = {}", outputArr.getRow(0));
+
+        // Compare
+        log.info("=== Methods match? m1==m2: {}, m2==m3: {}, m1==m3: {}",
+                expOutOriginal.equalsWithEps(expOutSafe, 1e-6),
+                expOutSafe.equalsWithEps(outputArr, 1e-6),
+                expOutOriginal.equalsWithEps(outputArr, 1e-6));
+    }
+
+    @Test
+    public void testAbsDiffViaOpValidation() {
+        // Exact replica of testLoss2d for absdiff + MEAN_BY_WEIGHT + weights=none
+        int minibatch = 10;
+        int nOut = 4;
+
+        SameDiff sd = SameDiff.create();
+        sd.setDspAutoCompileEnabled(false);
+        sd.setDspNativeAutoCompileEnabled(false);
+        SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
+        SDVariable labels = sd.var("labels", DataType.DOUBLE, -1, nOut);
+
+        // weights="none" → w=null → BaseLoss creates constant scalar 1.0
+        INDArray wArrBroadcast = Nd4j.ones(DataType.DOUBLE, minibatch, nOut);
+
+        INDArray predictionsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+        INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+
+        // expOut computation exactly like testLoss2d
+        INDArray expOut = Transforms.abs(predictionsArr.sub(labelsArr));
+        log.info("=== expOut shape: {}, sum: {}", Arrays.toString(expOut.shape()), expOut.sumNumber());
+
+        // weights="none" → no multiplication
+
+        // MEAN_BY_WEIGHT reduction
+        double wSum = wArrBroadcast.sumNumber().doubleValue();
+        log.info("=== wArrBroadcast sum: {}", wSum);
+        INDArray sumResult = expOut.sum();
+        log.info("=== sum() result: getDouble(0)={}, toString={}, shape={}, length={}", sumResult.getDouble(0), sumResult, Arrays.toString(sumResult.shape()), sumResult.length());
+        log.info("=== sumResult data buffer length={}", sumResult.data().length());
+        log.info("=== expOut data buffer length={}", expOut.data().length());
+        log.info("=== same data buffer? {}", sumResult.data() == expOut.data());
+        log.info("=== sumResult isView={}", sumResult.isView());
+        double manualExpected = sumResult.getDouble(0) / wSum;
+        log.info("=== manual division: {} / {} = {}", sumResult.getDouble(0), wSum, manualExpected);
+
+        // Test: use div (not in-place) instead
+        INDArray divResult = sumResult.div(wSum);
+        log.info("=== div result: getDouble(0)={}", divResult.getDouble(0));
+
+        // Test: use sumNumber().doubleValue() / wSum as a scalar
+        double sumVal = expOut.sumNumber().doubleValue();
+        log.info("=== sumNumber()={}", sumVal);
+        INDArray manualScalar = Nd4j.scalar(DataType.DOUBLE, sumVal / wSum);
+        log.info("=== manual scalar: {}", manualScalar.getDouble(0));
+
+        sumResult.divi(wSum);
+        log.info("=== sumResult after divi: getDouble(0)={}, toString={}", sumResult.getDouble(0), sumResult);
+
+        // Use the manual scalar as expected
+        expOut = manualScalar;
+        log.info("=== expOut (using manual scalar): {}", expOut);
+
+        SDVariable loss = sd.loss().absoluteDifference("loss", labels, predictions, null, LossReduce.MEAN_BY_WEIGHT);
+
+        sd.associateArrayWithVariable(predictionsArr, predictions);
+        sd.associateArrayWithVariable(labelsArr, labels);
+
+        // Now run via OpValidation (same as testLoss2d)
+        org.nd4j.autodiff.validation.TestCase tc = new org.nd4j.autodiff.validation.TestCase(sd)
+                .expectedOutput("loss", expOut)
+                .gradientCheck(false)
+                .testFlatBufferSerialization(org.nd4j.autodiff.validation.TestCase.TestSerialization.BOTH);
+
+        String error = org.nd4j.autodiff.validation.OpValidation.validate(tc);
+        log.info("=== OpValidation result: {}", error);
+
+        // Also run manually to compare
+        Map<String, INDArray> placeholders = new HashMap<>();
+        placeholders.put("in", predictionsArr);
+        placeholders.put("labels", labelsArr);
+        Map<String, INDArray> out = sd.output(placeholders, "loss");
+        log.info("=== Manual sd.output result: {}", out.get("loss"));
+        log.info("=== Expected: {}", expOut);
+
+        assertNull(error, "OpValidation failed: " + error);
+    }
+
+    @Test
     public void testAbsDiffAllReductions() {
         Nd4j.getRandom().setSeed(12345);
         int minibatch = 10;

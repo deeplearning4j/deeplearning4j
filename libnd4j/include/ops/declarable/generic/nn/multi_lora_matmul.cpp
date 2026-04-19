@@ -109,7 +109,8 @@ DECLARE_TYPES(multi_lora_matmul) {
         ->setAllowedInputTypes(2, {ALL_FLOATS})    // lora A
         ->setAllowedInputTypes(3, {ALL_FLOATS})    // lora B
         ->setAllowedInputTypes(4, {INT64, INT32})  // adapter IDs
-        ->setAllowedOutputTypes({ALL_FLOATS});
+        ->setAllowedOutputTypes({ALL_FLOATS})
+        ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(multi_lora_matmul) {

@@ -170,65 +170,149 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
 }
 
 // ── Batch D2D copy kernel ──────────────────────────────────────────────────
-// Replaces ~357 individual cudaMemcpyAsync D2D calls with a single kernel.
-// Each thread block copies one buffer using vectorized int4 reads/writes.
+// Replaces N individual cudaMemcpyAsync D2D calls with a single kernel launch.
+// Each thread block handles one buffer using vectorized int4 reads/writes
+// (16 bytes per load/store). Grid: numBuffers blocks × 256 threads.
+//
+// The three device-side arrays (srcPtrs, dstPtrs, sizes) are uploaded once
+// via H2D memcpy from pinned host arrays before launch. Destination pointers
+// and sizes are static after prepareBatchD2DDevice() (they don't change
+// across decode steps); only source pointers need re-upload each step.
 
-__global__ void batchD2DKernel(void** srcPtrs, void** dstPtrs, size_t* sizes, int numBuffers) {
-  int bid = blockIdx.x;
+SD_KERNEL void batchD2DKernel(void** srcPtrs, void** dstPtrs,
+                              size_t* sizes, int numBuffers) {
+  const int bid = blockIdx.x;
   if (bid >= numBuffers) return;
 
-  const char* src = (const char*)srcPtrs[bid];
-  char* dst = (char*)dstPtrs[bid];
-  size_t sz = sizes[bid];
+  const char* src = static_cast<const char*>(srcPtrs[bid]);
+  char* dst = static_cast<char*>(dstPtrs[bid]);
+  const size_t sz = sizes[bid];
   if (src == nullptr || dst == nullptr || sz == 0) return;
 
-  // Vectorized copy using int4 (16 bytes per read/write)
-  const int4* s4 = (const int4*)src;
-  int4* d4 = (int4*)dst;
-  int n4 = sz / 16;
+  // Vectorized bulk copy — int4 = 16 bytes per transaction.
+  // Requires 16-byte alignment which cudaMalloc guarantees (256-byte aligned).
+  const int4* s4 = reinterpret_cast<const int4*>(src);
+  int4* d4 = reinterpret_cast<int4*>(dst);
+  const int n4 = static_cast<int>(sz / 16);
   for (int i = threadIdx.x; i < n4; i += blockDim.x) {
     d4[i] = s4[i];
   }
 
-  // Handle remainder bytes
-  int base = n4 * 16;
-  for (int i = base + threadIdx.x; i < (int)sz; i += blockDim.x) {
+  // Remainder bytes (0-15) — byte-wise fallback
+  const int base = n4 * 16;
+  for (int i = base + threadIdx.x; i < static_cast<int>(sz); i += blockDim.x) {
     dst[i] = src[i];
   }
 }
 
+// ── Batch memset kernel ──────────────────────────────────────────────────
+// Replaces N individual cudaMemsetAsync calls (prezero) with a single kernel.
+// Each thread block zeroes one buffer using vectorized int4 stores.
+// Same grid geometry as batchD2DKernel.
+
+SD_KERNEL void batchMemsetKernel(void** dstPtrs, size_t* sizes, int numBuffers) {
+  const int bid = blockIdx.x;
+  if (bid >= numBuffers) return;
+
+  char* dst = static_cast<char*>(dstPtrs[bid]);
+  const size_t sz = sizes[bid];
+  if (dst == nullptr || sz == 0) return;
+
+  // Vectorized bulk zero — int4 = 16 bytes per store
+  int4* d4 = reinterpret_cast<int4*>(dst);
+  const int4 zero4 = make_int4(0, 0, 0, 0);
+  const int n4 = static_cast<int>(sz / 16);
+  for (int i = threadIdx.x; i < n4; i += blockDim.x) {
+    d4[i] = zero4;
+  }
+
+  // Remainder bytes (0-15)
+  const int base = n4 * 16;
+  for (int i = base + threadIdx.x; i < static_cast<int>(sz); i += blockDim.x) {
+    dst[i] = 0;
+  }
+}
+
+// ── Host/device array management ────────────────────────────────────────
+
 void NativeDynamicShapePlan::prepareBatchD2DDevice(int count, cudaStream_t stream) {
   if (count <= 0) return;
 
-  // Reuse existing arrays if capacity is sufficient; reallocate if too small
-  if (batchD2DAllocated_ < count) {
-    freeBatchD2DResources();
-    cudaMalloc(&batchD2DDeviceSrcPtrs_, count * sizeof(void*));
-    cudaMalloc(&batchD2DDeviceDstPtrs_, count * sizeof(void*));
-    cudaMalloc(&batchD2DDeviceSizes_, count * sizeof(size_t));
-    cudaMallocHost(&batchD2DHostSrcPtrs_, count * sizeof(void*));
-    cudaMallocHost(&batchD2DHostDstPtrs_, count * sizeof(void*));
-    cudaMallocHost(&batchD2DHostSizes_, count * sizeof(size_t));
-    batchD2DAllocated_ = count;
-  }
+  if (batchD2DAllocated_ >= count) return;
+
+  // Capacity insufficient — free old arrays and allocate at requested size
+  freeBatchD2DResources();
+
+  auto check = [](cudaError_t err, const char* what) {
+    if (err != cudaSuccess) {
+      sd_printf("prepareBatchD2DDevice %s failed: %s\n", what, cudaGetErrorString(err));
+    }
+  };
+
+  check(cudaMalloc(&batchD2DDeviceSrcPtrs_, count * sizeof(void*)),    "device src");
+  check(cudaMalloc(&batchD2DDeviceDstPtrs_, count * sizeof(void*)),    "device dst");
+  check(cudaMalloc(&batchD2DDeviceSizes_,   count * sizeof(size_t)),   "device sizes");
+  check(cudaMallocHost(&batchD2DHostSrcPtrs_, count * sizeof(void*)),  "pinned src");
+  check(cudaMallocHost(&batchD2DHostDstPtrs_, count * sizeof(void*)),  "pinned dst");
+  check(cudaMallocHost(&batchD2DHostSizes_,   count * sizeof(size_t)), "pinned sizes");
+  batchD2DAllocated_ = count;
 }
+
+// ── Launch: batched D2D copy ────────────────────────────────────────────
 
 void NativeDynamicShapePlan::launchBatchD2D(cudaStream_t stream) {
   if (batchD2DCount_ <= 0) return;
 
-  // Upload src pointers (updated each step) to device
+  // Source pointers change each step (Java rebinds externals) — upload them.
+  // Destination pointers and sizes are static (uploaded once in prepare/setup),
+  // so only srcPtrs needs a per-step H2D copy.
   cudaMemcpyAsync(batchD2DDeviceSrcPtrs_, batchD2DHostSrcPtrs_,
                   batchD2DCount_ * sizeof(void*), cudaMemcpyHostToDevice, stream);
 
-  // Launch single kernel: one block per buffer, 256 threads per block
-  int threadsPerBlock = 256;
-  batchD2DKernel<<<batchD2DCount_, threadsPerBlock, 0, stream>>>(
+  // One block per buffer, 256 threads per block. Each block handles one buffer
+  // independently — no inter-block sync needed. 256 threads gives 4KB of int4
+  // loads per thread-block iteration, sufficient bandwidth for typical buffer sizes.
+  constexpr int kThreadsPerBlock = 256;
+  batchD2DKernel<<<batchD2DCount_, kThreadsPerBlock, 0, stream>>>(
       static_cast<void**>(batchD2DDeviceSrcPtrs_),
       static_cast<void**>(batchD2DDeviceDstPtrs_),
       static_cast<size_t*>(batchD2DDeviceSizes_),
       batchD2DCount_);
-  DSP_DIAG(EXECUTE, "launchBatchD2D: single kernel (%d buffers, %d blocks)",
-           batchD2DCount_, batchD2DCount_);
+  DSP_DIAG(EXECUTE, "launchBatchD2D: %d buffers in 1 kernel launch", batchD2DCount_);
+}
+
+// ── Launch: batched memset (prezero) ────────────────────────────────────
+// Accepts raw arrays of destination pointers and sizes (host memory).
+// Uploads to device pinned arrays, then launches batchMemsetKernel.
+// Caller can pass batchZeroEntries_ data or prezero-collected data.
+
+void NativeDynamicShapePlan::launchBatchMemset(cudaStream_t stream,
+                                                void** dstPtrsHost,
+                                                size_t* sizesHost,
+                                                int count) {
+  if (count <= 0) return;
+
+  // Ensure device-side arrays are large enough
+  prepareBatchD2DDevice(count, stream);
+
+  // Copy caller-provided arrays into pinned host memory
+  auto** pinnedDst = static_cast<void**>(batchD2DHostDstPtrs_);
+  auto* pinnedSizes = static_cast<size_t*>(batchD2DHostSizes_);
+  memcpy(pinnedDst, dstPtrsHost, count * sizeof(void*));
+  memcpy(pinnedSizes, sizesHost, count * sizeof(size_t));
+
+  // Upload to device
+  cudaMemcpyAsync(batchD2DDeviceDstPtrs_, pinnedDst,
+                  count * sizeof(void*), cudaMemcpyHostToDevice, stream);
+  cudaMemcpyAsync(batchD2DDeviceSizes_, pinnedSizes,
+                  count * sizeof(size_t), cudaMemcpyHostToDevice, stream);
+
+  constexpr int kThreadsPerBlock = 256;
+  batchMemsetKernel<<<count, kThreadsPerBlock, 0, stream>>>(
+      static_cast<void**>(batchD2DDeviceDstPtrs_),
+      static_cast<size_t*>(batchD2DDeviceSizes_),
+      count);
+  DSP_DIAG(MEMORY, "launchBatchMemset: %d buffers zeroed in 1 kernel launch", count);
 }
 
 void NativeDynamicShapePlan::freeBatchD2DResources() {

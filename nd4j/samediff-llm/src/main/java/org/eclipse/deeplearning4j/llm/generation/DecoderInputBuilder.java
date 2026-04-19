@@ -226,10 +226,11 @@ public class DecoderInputBuilder {
             long totalSeqLen = maxKvLen + currentSeqLen;
             if (canReuse && reusableInputs.containsKey(inputName)) {
                 INDArray mask = reusableInputs.get(inputName);
+                // Delta update: previous step already set [0..cachePos-2]=1 and
+                // [totalSeqLen-1]=1.  Just mark the newly cached position.
                 if (cachePos > 0) {
-                    mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
+                    mask.putScalar(new long[]{0, cachePos - 1}, 1);
                 }
-                mask.putScalar(0, totalSeqLen - 1, 1);
                 decoderInputMap.put(inputName, mask);
             } else {
                 INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
@@ -257,19 +258,27 @@ public class DecoderInputBuilder {
         if (usePadded) {
             long totalSeqLen = maxKvLen + currentSeqLen;
             INDArray causalMask;
+            boolean reused = false;
             if (canReuse && reusableInputs.containsKey(inputName)) {
                 causalMask = reusableInputs.get(inputName);
+                reused = true;
             } else {
                 causalMask = Nd4j.zeros(DataType.FLOAT, 1, 1, currentSeqLen, totalSeqLen);
                 if (canReuse) reusableInputs.put(inputName, causalMask);
             }
             if (currentSeqLen == 1) {
-                // Bulk fill: set all to MASK_FILL, then unmask [0..cachePos] with a single assign.
-                // Replaces O(maxKvLen - cachePos) putScalar JNI calls with 2 bulk ops.
-                causalMask.assign(ModelIOConfig.MASK_FILL);
-                if (cachePos + 1 > 0) {
-                    causalMask.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, cachePos + 1)).assign(0.0f);
+                if (reused) {
+                    // Delta update: the buffer already has the correct state from the
+                    // previous step — positions [0..cachePos-1] = 0.0f and
+                    // [cachePos..totalSeqLen-1] = MASK_FILL.  Just unmask position cachePos.
+                    causalMask.putScalar(new long[]{0, 0, 0, cachePos}, 0.0f);
+                } else {
+                    // First call: full fill then unmask prefix.
+                    causalMask.assign(ModelIOConfig.MASK_FILL);
+                    if (cachePos + 1 > 0) {
+                        causalMask.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.interval(0, cachePos + 1)).assign(0.0f);
+                    }
                 }
             } else {
                 causalMask.assign(ModelIOConfig.buildCausalMask(currentSeqLen, totalSeqLen));

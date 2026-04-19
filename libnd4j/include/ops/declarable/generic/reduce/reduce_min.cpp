@@ -105,7 +105,7 @@ DECLARE_SHAPE_FN(reduce_min) {
   return SHAPELIST(outShapeInfo);
 }
 
-DECLARE_TYPES(reduce_min) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(reduce_min) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true)->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING); }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {

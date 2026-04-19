@@ -111,6 +111,7 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
 
 DECLARE_TYPES(reshape) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 bool handleOptionalOrder(std::vector<LongType> &reshapeArgs, char &ordering) {

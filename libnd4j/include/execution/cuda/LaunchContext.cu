@@ -56,6 +56,15 @@ sd::ContextBuffers& contextBuffersForCurrentDevice() {
 // Kept as a macro-like reference for minimal code changes.
 #define contextBuffers (contextBuffersForCurrentDevice())
 
+// DSP gap-stream override for LaunchContext::getCudaStream().
+// When set (non-null), getCudaStream() returns a pointer to this stream
+// instead of the thread-local contextBuffers exec stream. This makes gap
+// ops (matmul, reshape, etc.) in compositeReplay run on the DSP execution
+// stream (cudaStr), eliminating all cross-stream event syncs between
+// Triton islands and gap ops. Set/cleared by compositeReplay around gap
+// unit execution. Same pattern as tl_dspExecutionStream for H2D copies.
+thread_local cudaStream_t tl_dspGapStream = nullptr;
+
 namespace sd {
 
 // This avoids static destruction order crashes during JVM shutdown
@@ -199,6 +208,14 @@ void* LaunchContext::getCublasHandle() const { return CublasHelper::getInstance(
 void* LaunchContext::getCusolverHandle() const { return CublasHelper::getInstance().solver(); };
 
 cudaStream_t* LaunchContext::getCudaStream() const {
+  // DSP gap-stream override: when compositeReplay sets tl_dspGapStream,
+  // gap ops (matmul, reshape, etc.) run on the DSP execution stream
+  // instead of the default contextBuffers stream. This eliminates all
+  // cross-stream event syncs between Triton islands and gap ops.
+  if (tl_dspGapStream != nullptr) {
+    return &tl_dspGapStream;
+  }
+
   // IMPORTANT: Always use the thread-local contextBuffers stream instead of external stream
   // The external stream pointer passed from Java may point to freed memory if the
   // contextBuffers was reinitialized between the time Java obtained the pointer and now.

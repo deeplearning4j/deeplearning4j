@@ -52,6 +52,7 @@ CUSTOM_OP_IMPL(token_sample, 1, 1, false, 0, 0) {
 DECLARE_TYPES(token_sample) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({INT64});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(token_sample) {

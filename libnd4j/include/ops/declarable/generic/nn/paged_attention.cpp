@@ -94,7 +94,8 @@ DECLARE_TYPES(paged_attention_forward) {
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedInputTypes(3, {INT32})
       ->setAllowedInputTypes(4, {INT32})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
+      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(paged_attention_forward) {
@@ -176,7 +177,8 @@ DECLARE_TYPES(paged_kv_append) {
       ->setAllowedInputTypes(3, {ALL_FLOATS})
       ->setAllowedInputTypes(4, {INT32})
       ->setAllowedInputTypes(5, {INT32})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
+      ->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 DECLARE_SHAPE_FN(paged_kv_append) {

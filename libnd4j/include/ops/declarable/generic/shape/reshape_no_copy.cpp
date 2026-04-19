@@ -331,6 +331,7 @@ DECLARE_TYPES(reshape_no_copy) {
       ->setAllowedInputTypes(sd::DataType::ANY)
       ->setAllowedOutputTypes(sd::DataType::ANY)
       ->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 }  // namespace ops
 }  // namespace sd

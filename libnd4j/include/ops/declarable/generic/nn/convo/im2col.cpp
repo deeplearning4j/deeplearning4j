@@ -139,14 +139,16 @@ DECLARE_TYPES(im2col) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)
-      ->setSameMode(true);
+      ->setSameMode(true)
+      ->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(im2col_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)
-      ->setSameMode(true);
+      ->setSameMode(true)
+      ->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(im2col_bp) {

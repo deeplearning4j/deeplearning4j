@@ -129,6 +129,7 @@ DECLARE_SHAPE_FN(rms_norm) {
 DECLARE_TYPES(rms_norm) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
@@ -189,6 +190,7 @@ DECLARE_SHAPE_FN(rms_norm_bp) {
 DECLARE_TYPES(rms_norm_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -248,6 +250,7 @@ DECLARE_SHAPE_FN(rope) {
 DECLARE_TYPES(rope) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(rope_bp, 2, 1, false, 0, 0) {
@@ -304,6 +307,7 @@ DECLARE_SHAPE_FN(rope_bp) {
 DECLARE_TYPES(rope_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -327,6 +331,7 @@ CONFIGURABLE_OP_IMPL(silu, 1, 1, true, 0, 0) {
 DECLARE_TYPES(silu) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
 }
 
 CONFIGURABLE_OP_IMPL(silu_bp, 2, 1, true, 0, 0) {
@@ -369,6 +374,7 @@ CONFIGURABLE_OP_IMPL(silu_bp, 2, 1, true, 0, 0) {
 DECLARE_TYPES(silu_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -403,6 +409,7 @@ DECLARE_SHAPE_FN(quantized_matmul) {
 DECLARE_TYPES(quantized_matmul) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -439,6 +446,7 @@ DECLARE_SHAPE_FN(grouped_query_attention) {
 DECLARE_TYPES(grouped_query_attention) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(grouped_query_attention_bp, 4, 3, false, 0, 0) {
@@ -497,6 +505,7 @@ DECLARE_SHAPE_FN(grouped_query_attention_bp) {
 DECLARE_TYPES(grouped_query_attention_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -533,6 +542,7 @@ DECLARE_SHAPE_FN(flash_attention) {
 DECLARE_TYPES(flash_attention) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(flash_attention_bp, 4, 3, false, 0, 0) {
@@ -606,6 +616,7 @@ DECLARE_SHAPE_FN(flash_attention_bp) {
 DECLARE_TYPES(flash_attention_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -669,6 +680,7 @@ DECLARE_SHAPE_FN(kv_cache_update) {
 DECLARE_TYPES(kv_cache_update) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 #endif
 
@@ -721,6 +733,7 @@ DECLARE_SHAPE_FN(apply_alibi) {
 DECLARE_TYPES(apply_alibi) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -755,6 +768,7 @@ DECLARE_SHAPE_FN(sliding_window_attention) {
 DECLARE_TYPES(sliding_window_attention) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -783,6 +797,7 @@ CONFIGURABLE_OP_IMPL(swish_mul, 2, 1, true, 0, 0) {
 DECLARE_TYPES(swish_mul) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 CONFIGURABLE_OP_IMPL(swish_mul_bp, 3, 2, true, 0, 0) {
@@ -837,6 +852,7 @@ CONFIGURABLE_OP_IMPL(swish_mul_bp, 3, 2, true, 0, 0) {
 DECLARE_TYPES(swish_mul_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -892,6 +908,7 @@ DECLARE_SHAPE_FN(fused_gemm_swiglu) {
 DECLARE_TYPES(fused_gemm_swiglu) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(fused_gemm_swiglu_bp, 4, 3, false, 0, 0) {
@@ -974,6 +991,7 @@ DECLARE_SHAPE_FN(fused_gemm_swiglu_bp) {
 DECLARE_TYPES(fused_gemm_swiglu_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -1042,6 +1060,7 @@ DECLARE_SHAPE_FN(rms_norm_linear) {
 DECLARE_TYPES(rms_norm_linear) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(rms_norm_linear_bp, 4, 3, false, 0, 0) {
@@ -1142,6 +1161,7 @@ DECLARE_SHAPE_FN(rms_norm_linear_bp) {
 DECLARE_TYPES(rms_norm_linear_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -1276,6 +1296,7 @@ DECLARE_SHAPE_FN(column_parallel_linear) {
 DECLARE_TYPES(column_parallel_linear) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -1322,6 +1343,7 @@ DECLARE_SHAPE_FN(row_parallel_linear) {
 DECLARE_TYPES(row_parallel_linear) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -1371,6 +1393,7 @@ DECLARE_TYPES(kv_cache_quantize) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes(0, {DataType::INT8});
     getOpDescriptor()->setAllowedOutputTypes(1, {DataType::FLOAT32});
+    getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 #endif
 
@@ -1407,6 +1430,7 @@ DECLARE_TYPES(kv_cache_dequantize) {
     getOpDescriptor()->setAllowedInputTypes(0, {DataType::INT8, DataType::UINT8});
     getOpDescriptor()->setAllowedInputTypes(1, {DataType::FLOAT32});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -1450,6 +1474,7 @@ DECLARE_SHAPE_FN(ggml_dequantize) {
 DECLARE_TYPES(ggml_dequantize) {
     getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({DataType::FLOAT32, DataType::HALF, DataType::BFLOAT16});
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 

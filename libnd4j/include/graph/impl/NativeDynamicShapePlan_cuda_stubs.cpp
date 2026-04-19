@@ -32,6 +32,7 @@
 #ifndef SD_CUDA
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/PlanExecutionContext.h>
 #include <graph/GraphBackend.h>
 #include <graph/GraphReplayHandle.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
@@ -43,6 +44,8 @@
 
 namespace sd {
 namespace graph {
+
+using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
 
 // ── Frozen graph fast path: not available on CPU ────────────────────────────
 
@@ -222,11 +225,18 @@ void NativeDynamicShapePlan::platformMaybeSplitIfEnabled() {
 // ── Additional platform dispatch stubs (extracted from NativeDynamicShapePlan.cpp) ──
 
 void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, int execCount) {
-  return nullptr;  // No stream management on CPU
+  auto* ctx = new PlanExecutionContext();
+  ctx->execCount = execCount;
+  ctx->frozen = frozen;
+  // Compute early derived state — used by this method's sync decisions.
+  // Full populateDerivedState() is called later in execute().
+  ctx->needsFullSync = !frozen || execCount <= 1;
+  ctx->isFrozenSteadyState = frozen && execCount > 1;
+  return static_cast<void*>(ctx);
 }
 
 void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* stream, bool frozen, int execCount) {
-  // No cross-stream sync on CPU
+  delete static_cast<PlanExecutionContext*>(executionState);
 }
 
 void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount) {
@@ -316,6 +326,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
     seg.exec.currentPhase = ExecutionPhase::WARMUP;
+    seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     seg.def.shapeKey = 0;
   }
 }

@@ -65,6 +65,45 @@ struct KvScatterEntry {
 SD_LIB_HIDDEN void kvScatterBatched(const KvScatterEntry* entries, int numEntries,
                                       DataType dtype, LaunchContext* context);
 
+/**
+ * Descriptor for a dynamic-position KV scatter entry.
+ * Like KvScatterEntry but cachePos is read from a device-side (or host-side on CPU)
+ * int64 scalar at execution time — enabling CUDA graph replay where only the
+ * position value changes between steps (the pointer stays fixed).
+ *
+ * kvPosPtr must point to a long/int64 value containing the current cache position.
+ * On CUDA: this MUST be a device-accessible address (allocated via cudaMalloc/pool).
+ * On CPU:  this can be any int64* (the value is read directly).
+ */
+struct KvScatterDynEntry {
+    const void* srcPtr;    // present's specialBuffer (device) / buffer (CPU)
+    void* dstPtr;          // static buffer's specialBuffer (device) / buffer (CPU)
+    const LongType* kvPosPtr;  // pointer to int64 cache position (device on CUDA, host on CPU)
+    LongType heads;
+    LongType srcSeqLen;
+    LongType dstSeqLen;
+    LongType dim;
+    LongType lastPos;      // srcSeqLen - 1
+};
+
+/**
+ * Batch multiple dynamic-position KV scatter operations.
+ *
+ * Like kvScatterBatched but reads cachePos from entries[i].kvPosPtr at runtime.
+ * This is CUDA graph compatible: the position pointer address is baked into the
+ * graph at capture time; only the VALUE at that address changes between replays
+ * (via cudaMemcpyAsync before each replay).
+ *
+ * All entries MUST share the same kvPosPtr (they all use the same cache position).
+ *
+ * @param entries    array of dynamic scatter descriptors
+ * @param numEntries number of entries
+ * @param dtype      data type of all entries (must be uniform)
+ * @param context    launch context
+ */
+SD_LIB_HIDDEN void kvScatterDynBatched(const KvScatterDynEntry* entries, int numEntries,
+                                        DataType dtype, LaunchContext* context);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

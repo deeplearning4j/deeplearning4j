@@ -103,6 +103,7 @@ DECLARE_SHAPE_FN(cast) {
 
 DECLARE_TYPES(cast) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CAST);
 }
 }  // namespace ops
 }  // namespace sd

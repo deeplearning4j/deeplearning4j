@@ -599,7 +599,15 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     const auto& cfg = getSectionTypeConfig(section.type);
     if (shouldStayNativeOrdered(cfg, compileAll, includedTypes)) return true;
 
-    if (sectionLooksLikeShapeControl(section)) {
+    // Shape-control heuristic: catches small-integer bookkeeping ops (position IDs,
+    // axis scalars) that are cheaper to run natively than compile.  BUT: if the user
+    // explicitly listed this section type in includedTypes, respect that intent —
+    // the heuristic must not override an explicit compile request.  In LLM decode
+    // (batch=1, seq=1), legitimate data-movement GATHERs produce int64 length-1
+    // tensors that trip the heuristic even though they should be compiled.
+    bool explicitlyIncluded = !includedTypes.empty() &&
+                              includedTypes.find(cfg.type) != includedTypes.end();
+    if (!explicitlyIncluded && sectionLooksLikeShapeControl(section)) {
       return true;
     }
 

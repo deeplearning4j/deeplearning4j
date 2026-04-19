@@ -42,6 +42,7 @@ CUSTOM_OP_IMPL(center_and_sharpen, 2, 1, false, 0, 0) {
 DECLARE_TYPES(center_and_sharpen) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(center_and_sharpen) {
@@ -68,6 +69,7 @@ CUSTOM_OP_IMPL(center_and_sharpen_bp, 3, 2, false, 0, 0) {
 DECLARE_TYPES(center_and_sharpen_bp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(center_and_sharpen_bp) {

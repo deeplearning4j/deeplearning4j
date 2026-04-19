@@ -77,7 +77,7 @@ DECLARE_SHAPE_FN(normalize_moments) {
 }
 
 DECLARE_TYPES(normalize_moments) {
-  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 

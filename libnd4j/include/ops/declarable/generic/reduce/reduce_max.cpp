@@ -112,7 +112,7 @@ DECLARE_SHAPE_FN(reduce_max) {
   return SHAPELIST(outShapeInfo);
 }
 
-DECLARE_TYPES(reduce_max) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(reduce_max) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true)->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING); }
 
 
 //////////////////////////////////////////////////////////////////////////

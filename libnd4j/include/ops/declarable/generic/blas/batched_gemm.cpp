@@ -215,7 +215,8 @@ DECLARE_SHAPE_FN(batched_gemm) {
 DECLARE_TYPES(batched_gemm) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 
@@ -346,7 +347,8 @@ DECLARE_SHAPE_FN(batched_gemm_bp) {
 DECLARE_TYPES(batched_gemm_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

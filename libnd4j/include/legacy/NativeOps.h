@@ -1867,6 +1867,46 @@ SD_LIB_EXPORT void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongTyp
                                                const int* slotIndices, const sd::LongType* maxSizes);
 
 /**
+ * Configure plan-managed KV scatter for CUDA-graph-compatible decode loops.
+ *
+ * After this call the plan executes a batched KV scatter after each execute(),
+ * updating static KV buffers at the current position and incrementing the
+ * position scalar. This eliminates the Java-side scatterNewEntries() round-trip.
+ *
+ * @param planHandle          The native plan handle
+ * @param presentSlotIndices  Array of output slot indices for present KV tensors
+ * @param staticKvBufferPtrs  Array of sd::Pointer (NDArray*) for static KV buffers
+ * @param numPairs            Number of (present, static) pairs
+ * @param dtypeInt            DataType code of the KV tensors
+ * @param heads               Number of attention heads
+ * @param srcSeqLen           Present sequence length (typically 1 for decode)
+ * @param dstSeqLen           Static buffer sequence length (= maxKvLen)
+ * @param dim                 Head dimension
+ * @param kvPositionPtr       Pointer to device-accessible int64 position scalar
+ */
+SD_LIB_EXPORT void configurePlanKvScatter(sd::Pointer planHandle,
+                                           const int* presentSlotIndices,
+                                           const sd::Pointer* staticKvBufferPtrs,
+                                           sd::LongType numPairs,
+                                           int dtypeInt,
+                                           sd::LongType heads,
+                                           sd::LongType srcSeqLen,
+                                           sd::LongType dstSeqLen,
+                                           sd::LongType dim,
+                                           sd::LongType* kvPositionPtr);
+
+/**
+ * Reset the KV cache position managed by the plan (e.g., after prefill).
+ */
+SD_LIB_EXPORT void resetPlanKvCachePosition(sd::Pointer planHandle, sd::LongType position);
+
+/**
+ * Get the current KV cache position managed by the plan.
+ * Returns -1 if KV scatter is not configured.
+ */
+SD_LIB_EXPORT sd::LongType getPlanKvCachePosition(sd::Pointer planHandle);
+
+/**
  * Get the number of graph segments in a compiled plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()

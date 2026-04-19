@@ -915,6 +915,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int getNumSlots() const { return numSlots_; }
 
   /**
+   * Identity fingerprint: FNV-1a hash of (numSlots, all opNames, all output wiring).
+   * Computed at deserialization time. Plans deserialized from identical bytes
+   * produce identical fingerprints. Different fingerprints = different plan structure.
+   */
+  uint64_t identityFingerprint() const { return identityFingerprint_; }
+
+  /**
    * Get the total number of output slots (intermediate + final).
    */
   int getTotalOutputSlots() const { return totalOutputSlots_; }
@@ -1371,6 +1378,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Use when all external input shapes are guaranteed constant across steps.
   bool shapesFrozen_;
   int executeCount_;  // Tracks executions since shapes were frozen
+  uint64_t identityFingerprint_ = 0; // FNV-1a hash of (numSlots, opNames, wiring) — set at deserialization
   bool forceSync_;    // When true, executeSlot forces prepareSpecialUse/registerSpecialUse
                       // regardless of executeCount_. Used during pre-capture warmup at exec=2+.
   bool compilationDone_;  // True after platformPrecompileSegments succeeds; skip phaseCompile
@@ -1465,6 +1473,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Internal methods
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
+  void resegmentForFreeze();
   SelectedBackend resolveBackendForSegment(bool isCapturable) const;
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
@@ -1753,6 +1762,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int batchD2DAllocated_ = 0;               // Allocated capacity
 
   void freeBatchD2DResources();
+  void prepareBatchD2DDevice(int count, cudaStream_t stream);
+  void launchBatchD2D(cudaStream_t stream);
+  void launchBatchMemset(cudaStream_t stream, void** dstPtrsHost, size_t* sizesHost, int count);
 #else
   void freeBatchD2DResources() {}
 #endif

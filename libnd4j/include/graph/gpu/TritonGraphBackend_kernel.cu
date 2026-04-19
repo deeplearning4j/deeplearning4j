@@ -1232,13 +1232,14 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   }
   // ── END TRIPWIRE ───────────────────────────────────────────────────
 
-  // Mark arg table stable when no INTERNAL slot pointers changed.
-  // External input pointer changes are expected (Java may allocate fresh buffers each
-  // decode step) and are handled correctly by the arg table refresh + D2D copy.
-  // Only internal slot pointer changes indicate real instability that prevents fast replay.
-  // This allows fast replay to kick in even when Java uses fresh allocation patterns,
-  // as long as the plan's internal output slot pointers are frozen.
-  if (totalChangedInternalPtrs == 0 && refreshedCount > 0) {
+  // Mark arg table stable ONLY when ALL pointers (internal AND external) are unchanged.
+  // The fast replay path in compositeReplay skips refreshArgTablesForReplay entirely
+  // when argTableStable=true. If external pointers changed but we mark stable, the
+  // CUDA graph reads stale external pointers → reads freed GPU memory → heap corruption.
+  // Previously this only checked internal pointers, assuming external changes were
+  // "handled by the arg table refresh + D2D copy." But the fast replay path SKIPS
+  // that refresh — so ALL pointer changes must prevent fast replay.
+  if (totalChangedPtrs == 0 && refreshedCount > 0) {
     seg.exec.argTableStable = true;
     DSP_DIAG(EXECUTE, "ARG_TABLE_STABLE: seg[%d-%d] %d sub-kernels, fast-replay enabled "
              "(extChanges=%d internalChanges=%d)",
@@ -1246,10 +1247,10 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
              totalChangedPtrs - totalChangedInternalPtrs, totalChangedInternalPtrs);
   } else {
     seg.exec.argTableStable = false;
-    if (totalChangedInternalPtrs > 0) {
-      DSP_DIAG(EXECUTE, "ARG_TABLE_UNSTABLE: seg[%d-%d] %d internal ptrs changed (ext=%d)",
-               seg.def.startSlot, seg.def.endSlot, totalChangedInternalPtrs,
-               totalChangedPtrs - totalChangedInternalPtrs);
+    if (totalChangedPtrs > 0) {
+      DSP_DIAG(EXECUTE, "ARG_TABLE_UNSTABLE: seg[%d-%d] %d ptrs changed (ext=%d internal=%d)",
+               seg.def.startSlot, seg.def.endSlot, totalChangedPtrs,
+               totalChangedPtrs - totalChangedInternalPtrs, totalChangedInternalPtrs);
     }
   }
   return Status::OK;

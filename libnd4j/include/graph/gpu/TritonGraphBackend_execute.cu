@@ -545,6 +545,16 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // tl_islandSlotMin > tl_islandSlotMax means no filter (normal execution).
   bool islandFilterActive = (tl_islandSlotMin <= tl_islandSlotMax);
 
+  if (streamCaptureActive) {
+    DSP_DIAG(EXECUTE, "CAPTURE_EXEC_ENTRY: seg[%d-%d] islandFilter=%d filterRange=[%d-%d] "
+             "subKernels=%d consolidatedArgsCopied=%d",
+             seg.def.startSlot, seg.def.endSlot,
+             islandFilterActive ? 1 : 0, tl_islandSlotMin, tl_islandSlotMax,
+             static_cast<int>(compiledSeg->subKernels.size()),
+             consolidatedArgsCopied ? 1 : 0);
+  }
+
+  int captureFilteredCount = 0, captureLaunchedCount = 0, captureSkippedCount = 0;
   int nextSlotToRun = seg.def.startSlot;
   for (int i = 0; i < (int)compiledSeg->subKernels.size(); i++) {
     auto& subKernel = compiledSeg->subKernels[i];
@@ -559,6 +569,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
          subKernel.startSlot_ > tl_islandSlotMax)) {
       DSP_DIAG(EXECUTE, "ISLAND_FILTER_SKIP: sub-kernel [%d-%d] outside island [%d-%d] — skipped",
                subKernel.startSlot_, subKernel.endSlot_, tl_islandSlotMin, tl_islandSlotMax);
+      captureFilteredCount++;
       nextSlotToRun = subKernel.endSlot_ + 1;
       continue;
     }
@@ -600,6 +611,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       // metadata. We create a new NDArray that wraps the SAME DataBuffer with
       // the correct shape, so the consolidated arg table's device pointer remains
       // valid. Only when element counts differ do we allocate a fresh buffer.
+      //
+      // SKIP during CUDA graph capture: gaps are not executed during capture (they
+      // return OK immediately), so there is nothing to re-validate. Allocating new
+      // NDArrays during capture would inject cudaMalloc nodes into the graph and
+      // create buffer address mismatches on replay — causing SIGSEGV.
+      if (streamCaptureActive) {
+        DSP_DIAG(EXECUTE, "POST_GAP_RESHAPE SKIPPED during capture [gap %d-%d]",
+                 nextSlotToRun, subKernel.startSlot_ - 1);
+      } else {
       for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
         auto& slot = slots[si];
         // Check if any input comes from the gap range
@@ -713,7 +733,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         }
         delete inferredShapes;
       }
-
+      }  // end else (!streamCaptureActive) — POST_GAP_RESHAPE
       // Hash gap outputs
       if (!streamCaptureActive) {
         logSlotHashes("GAP", nextSlotToRun, subKernel.startSlot_ - 1, slots,
@@ -749,6 +769,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         (tritonMaxSubKernelIndex >= 0 && i > tritonMaxSubKernelIndex);
 
     if (skipThisKernel) {
+      if (streamCaptureActive) captureSkippedCount++;
       if (orderedRangeExecutor_) {
         if (!tritonSkipKernels && tritonMaxSubKernelIndex >= 0) {
           DSP_DIAG(EXECUTE, "TritonGraphBackend: subK[%d] [%d-%d] SKIPPED (index > maxSubKernelIndex=%d)",
@@ -899,8 +920,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         return status;
       }
 
-      DSP_DIAG(EXECUTE, "SUBKERNEL EXIT OK: subK[%d] [%d-%d] execCount=%d",
-               i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount);
+      if (streamCaptureActive) captureLaunchedCount++;
+      DSP_DIAG(EXECUTE, "SUBKERNEL EXIT OK: subK[%d] [%d-%d] execCount=%d capturing=%d",
+               i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount,
+               streamCaptureActive ? 1 : 0);
 
       // Hash Triton outputs
       if (!streamCaptureActive) {
@@ -1373,6 +1396,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         tritonSkipKernels ? 1 : 0, attnCount);
   }
 
+
+  if (streamCaptureActive) {
+    DSP_DIAG(EXECUTE, "CAPTURE_EXEC_SUMMARY: seg[%d-%d] launched=%d filtered=%d skipped=%d "
+             "total_subK=%d islandFilter=[%d-%d]",
+             seg.def.startSlot, seg.def.endSlot,
+             captureLaunchedCount, captureFilteredCount, captureSkippedCount,
+             static_cast<int>(compiledSeg->subKernels.size()),
+             tl_islandSlotMin, tl_islandSlotMax);
+  }
 
   return Status::OK;
 }

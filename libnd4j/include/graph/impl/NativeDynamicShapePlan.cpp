@@ -696,6 +696,12 @@ class BinaryReader {
 
 NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     const void* data, LongType size) {
+  // Ensure op traits are populated before the fusion pass runs.
+  // Without this, the fusion pass sees no OP_TRAIT_REDUCTION/NORMALIZATION traits
+  // on the first deserialization (before NativePlanCompiler::compile is called),
+  // leading to non-deterministic fusion results across plan instances.
+  sd::ops::initOpTraits();
+
   BinaryReader reader(static_cast<const uint8_t*>(data), size);
 
   // Read header
@@ -968,6 +974,89 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     std::fill(std::begin(slot.fusedChain.fusedChainSecondaryInputSources), std::end(slot.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // Structural integrity validation — catch corruption BEFORE execution.
+  // These checks are O(slots × max_outputs) and run once at deserialization.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    // Track which step produces each output slot (for ordering + uniqueness checks).
+    std::vector<int> outputSlotProducer(plan->totalOutputSlots_, -1);
+    for (int s = 0; s < plan->numSlots_; s++) {
+      auto& slot = plan->slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        int si = slot.wiring.outputSlotIndices[o];
+        if (si < 0 || si >= plan->totalOutputSlots_) continue;
+        if (outputSlotProducer[si] != -1 && outputSlotProducer[si] != s) {
+          sd_printf("DSP VALIDATION ERROR: output slot %d produced by BOTH step %d (%s) "
+                    "and step %d (%s) — duplicate output slot assignment\n",
+                    si, outputSlotProducer[si],
+                    plan->slots_[outputSlotProducer[si]].ident.opName.c_str(),
+                    s, slot.ident.opName.c_str());
+          REQUIRE_TRUE(false, 0,
+                       "NativeDynamicShapePlan::fromSerializedPlan: output slot %d assigned "
+                       "to multiple steps (%d and %d) — plan wiring is corrupt", si,
+                       outputSlotProducer[si], s);
+        }
+        outputSlotProducer[si] = s;
+      }
+    }
+
+    // Check for self-references and dependency ordering violations.
+    int selfRefCount = 0;
+    int forwardRefCount = 0;
+    for (int s = 0; s < plan->numSlots_; s++) {
+      auto& slot = plan->slots_[s];
+      // Collect this step's output slots for self-reference detection
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        int srcIdx = slot.wiring.inputSourceIndices[i];
+        if (srcIdx < 0) continue;  // external input — always valid
+        if (srcIdx >= plan->totalOutputSlots_) continue;  // range-checked above
+
+        // Self-reference: input reads from a slot produced by THIS step
+        bool isSelfRef = false;
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          if (slot.wiring.outputSlotIndices[o] == srcIdx) {
+            isSelfRef = true;
+            break;
+          }
+        }
+        if (isSelfRef) {
+          selfRefCount++;
+          sd_printf("DSP VALIDATION ERROR: step %d (%s) input[%d] srcIdx=%d is a "
+                    "SELF-REFERENCE (reads its own output slot) — plan wiring corrupt\n",
+                    s, slot.ident.opName.c_str(), i, srcIdx);
+        }
+
+        // Forward reference: input reads from a slot produced by a LATER step.
+        // (Control flow ops with loop-back are exempt — they legitimately read
+        // from later steps via NextIteration→Merge cycles.)
+        int producerStep = outputSlotProducer[srcIdx];
+        if (producerStep > s && slot.cf.controlFlowType == CF_NONE) {
+          forwardRefCount++;
+          DSP_DIAG(COMPILE,
+                   "DSP VALIDATION WARNING: step %d (%s) input[%d] srcIdx=%d is produced "
+                   "by LATER step %d (%s) — forward reference (may indicate wiring bug)",
+                   s, slot.ident.opName.c_str(), i, srcIdx,
+                   producerStep, plan->slots_[producerStep].ident.opName.c_str());
+        }
+      }
+    }
+
+    if (selfRefCount > 0) {
+      REQUIRE_TRUE(false, 0,
+                   "NativeDynamicShapePlan::fromSerializedPlan: %d self-referencing input(s) "
+                   "detected — plan wiring is corrupt. An op cannot read its own output slot "
+                   "as input. This typically indicates a bug in the Java DynamicShapePlanCompiler.",
+                   selfRefCount);
+    }
+
+    if (forwardRefCount > 0) {
+      DSP_DIAG(COMPILE,
+               "NativeDynamicShapePlan: %d forward reference(s) in non-CF ops — "
+               "execution ordering may cause NULL inputs", forwardRefCount);
+    }
+  }
+
   // Read release schedule
   plan->releaseAtStep_ = new int*[plan->numSlots_];
   plan->releaseAtStepCounts_ = new int[plan->numSlots_];
@@ -1183,6 +1272,32 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   // Notify diagnostics that a plan was compiled
   DspDiagnostics::getInstance().beginPlanExecution(
       plan->numSlots_, static_cast<int>(plan->segments_.size()));
+
+  // Compute plan identity fingerprint: FNV-1a hash over (numSlots, all opNames in order).
+  // Logged at creation and on every cache hit to detect plan-swap mismatches where
+  // different plans have the same cache key.
+  {
+    uint64_t fp = 14695981039346656037ULL;  // FNV offset basis
+    auto mixByte = [&](uint8_t b) { fp ^= b; fp *= 1099511628211ULL; };
+    auto mixInt = [&](int v) {
+      for (int shift = 0; shift < 32; shift += 8) mixByte(static_cast<uint8_t>((v >> shift) & 0xFF));
+    };
+    mixInt(plan->numSlots_);
+    for (int s = 0; s < plan->numSlots_; s++) {
+      const auto& name = plan->slots_[s].ident.opName;
+      for (char c : name) mixByte(static_cast<uint8_t>(c));
+      mixByte(0);  // NUL separator
+      // Also mix output slot indices to catch wiring differences
+      for (int o = 0; o < plan->slots_[s].wiring.numOutputs; o++) {
+        mixInt(plan->slots_[s].wiring.outputSlotIndices[o]);
+      }
+    }
+    plan->identityFingerprint_ = fp;
+    DSP_DIAG(COMPILE, "plan identity fingerprint: 0x%016llx (addr=%p slots=%d segs=%d)",
+             (unsigned long long)fp, (void*)plan, plan->numSlots_,
+             static_cast<int>(plan->segments_.size()));
+  }
+
   DSP_DIAG(COMPILE, "plan compiled: %d slots, %d segments, planDef refCount=%d",
            plan->numSlots_, static_cast<int>(plan->segments_.size()),
            plan->planDef_ ? plan->planDef_->refCount() : -1);
@@ -1196,6 +1311,12 @@ Status NativeDynamicShapePlan::execute(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** requestedOutputs, int numRequestedOutputs,
     void* stream) {
+
+  DSP_DIAG(EXECUTE, "NativeDynamicShapePlan::execute ENTER addr=%p fingerprint=0x%016llx "
+           "slots=%d extIn=%d/%d execCount=%d frozen=%d",
+           (void*)this, (unsigned long long)identityFingerprint_,
+           numSlots_, numExternalInputs, numExternalInputs_,
+           executeCount_, shapesFrozen_ ? 1 : 0);
 
   if (numExternalInputs != numExternalInputs_) {
     DSP_DIAG(EXECUTE, "NativeDynamicShapePlan::execute: expected %d external inputs, got %d",
@@ -1243,6 +1364,8 @@ Status NativeDynamicShapePlan::execute(
       !externalInputIsVariable_.empty(),
       executionTimingEnabled_);
   execCtx->segmentsTotal = static_cast<int>(segments_.size());
+  execCtx->recordFlow(PlanExecutionContext::FlowEventType::EXECUTE_ENTRY,
+                       executeCount_, shapesFrozen_ ? 1 : 0);
 
   // Begin DSP diagnostic step tracking (endDiag called at end of execute,
   // including early return paths via the context's lifecycle tracking).
@@ -1500,6 +1623,8 @@ Status NativeDynamicShapePlan::execute(
 
   // Phase dispatch — resolved once by populateDerivedState(), read here.
   Status phaseStatus = Status::OK;
+  execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_DISPATCH,
+                       static_cast<int>(execCtx->dispatchMode));
   DSP_DIAG(EXECUTE, "PHASE_DISPATCH: %s (frozen=%d execCount=%d mode=%d)",
            execCtx->dispatchModeName(), static_cast<int>(shapesFrozen_),
            executeCount_, execCtx->graphExecutionMode);
@@ -1641,6 +1766,8 @@ Status NativeDynamicShapePlan::execute(
 #endif
     DSP_DIAG(EXECUTE, "EXEC_COUNT_INCREMENT: %d -> %d shapesFrozen=%d",
              prevCount, executeCount_, shapesFrozen_ ? 1 : 0);
+    execCtx->recordFlow(PlanExecutionContext::FlowEventType::EXEC_COUNT_INC,
+                         prevCount, executeCount_);
   }
 
   // Re-classify slot ownership after the first frozen execution (capture step).
@@ -1701,14 +1828,6 @@ Status NativeDynamicShapePlan::execute(
     advancePlanPhase();
   }
 
-  // Frozen constant detection MUST run BEFORE Triton precompilation.
-  // detectFrozenConstants() marks shape_of and other constant-producing slots as
-  // FROZEN_CONSTANT. The Triton IR builder checks frozenConstantSlot() and skips
-  // these slots — preventing the compiled kernel from overwriting frozen constant
-  // device buffers during graph replay. If precompilation runs first, the Triton
-  // kernel includes frozen constant ops, and replay corrupts their device data.
-  detectFrozenConstants();
-
   // Auto-seal: after a successful slot-by-slot pass with no explicit freeze,
   // transition the plan in-place to SHAPES_FROZEN. No re-warmup — the slot-by-slot
   // pass we just finished populated slot shape caches and segment execution counts,
@@ -1728,21 +1847,56 @@ Status NativeDynamicShapePlan::execute(
   if (!compilationDone_ && !shapesFrozen_ &&
       graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT &&
       planPhase_ == PlanPhase::SLOT_BY_SLOT) {
+    int oldExecCount = executeCount_;
+    int oldSegCount = static_cast<int>(segments_.size());
     DSP_DIAG(COMPILE,
              "AUTO_SEAL: in-place transition SLOT_BY_SLOT -> SHAPES_FROZEN "
              "(mode=%d segs=%d extInputs=%d executeCount=%d)",
              static_cast<int>(graphExecutionMode_),
-             (int)segments_.size(), numExternalInputs, executeCount_);
+             oldSegCount, numExternalInputs, executeCount_);
+    execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_TRANSITION,
+                         static_cast<int>(planPhase_), static_cast<int>(PlanPhase::SHAPES_FROZEN));
     shapesFrozen_ = true;
+    resegmentForFreeze();
+    int newSegCount = static_cast<int>(segments_.size());
+    execCtx->recordFlow(PlanExecutionContext::FlowEventType::RESEGMENT, oldSegCount, newSegCount);
     planPhase_ = PlanPhase::SHAPES_FROZEN;
     if (executeCount_ < 1) executeCount_ = 1;
+    execCtx->recordFlow(PlanExecutionContext::FlowEventType::AUTO_SEAL_FIRED,
+                         oldExecCount, executeCount_);
+
+    // Auto-seal mutated shapesFrozen_ and executeCount_ — the derived state
+    // snapshot taken at execute() entry is now stale. Re-derive so downstream
+    // phase dispatch, sync gates, and diagnostic checks see the sealed state.
+    execCtx->populateDerivedState(
+        shapesFrozen_, executeCount_,
+        static_cast<int>(graphExecutionMode_),
+        Environment::getInstance().tritonSkipKernels(),
+        Environment::getInstance().tritonGraphCapture(),
+        Environment::getInstance().tritonVerifyKernels(),
+        !externalInputIsVariable_.empty(),
+        executionTimingEnabled_);
+    execCtx->recordFlow(PlanExecutionContext::FlowEventType::DERIVED_STATE_REFRESH,
+                         executeCount_, shapesFrozen_ ? 1 : 0);
   }
+
+  // Frozen constant detection MUST run AFTER auto-seal (which sets shapesFrozen_
+  // and executeCount_) but BEFORE Triton precompilation. detectFrozenConstants()
+  // gates on shapesFrozen_ && executeCount_ == 1, so it must see the sealed state.
+  // It marks shape_of and other constant-producing slots as FROZEN_CONSTANT. The
+  // Triton IR builder checks frozenConstantSlot() and skips these slots —
+  // preventing the compiled kernel from overwriting frozen constant device buffers
+  // during graph replay. If precompilation runs first, the Triton kernel includes
+  // frozen constant ops, and replay corrupts their device data.
+  detectFrozenConstants();
 
   // Eager precompilation: after warmup (executeCount_ just became 1), all shapes
   // are populated in outputSlots_. Compile all Triton modules now so the 2nd
   // execute() goes straight to replay instead of blocking on compilation.
   // compilationDone_ gate ensures this only happens once per plan lifecycle.
   if (!compilationDone_ && shapesFrozen_ && executeCount_ == 1) {
+    execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_COMPILE,
+                         static_cast<int>(segments_.size()));
     phaseCompile(externalInputs, numExternalInputs);
   }
 
@@ -2014,13 +2168,29 @@ Status NativeDynamicShapePlan::phaseFreeze() {
     }
   }
 
-  DSP_DIAG(SEGMENT, "SEGMENT_MAP: %d segments (frozen first exec)", (int)segments_.size());
+  DSP_DIAG(SEGMENT, "SEGMENT_MAP_BEFORE_FREEZE: %d segments", (int)segments_.size());
   for (int i = 0; i < (int)segments_.size(); i++) {
     auto& s = segments_[i];
     DSP_DIAG(SEGMENT, "  seg[%d]: slots[%d-%d] capturable=%d hasReplay=%d "
              "compilationFailed=%d execCount=%d",
              i, s.def.startSlot, s.def.endSlot, s.def.isCapturable,
              s.exec.replayHandle != nullptr, s.exec.compilationFailed, s.exec.executionCount);
+  }
+
+  // Resegment or reset existing segments.
+  // resegmentForFreeze() cleans up old segments and rebuilds with the frozen
+  // MAX_SEGMENT_SIZE (100,000), collapsing 14 segments into 1-2. If merge is
+  // disabled or there's only 1 segment, just reset execution state in place.
+  resegmentForFreeze();
+  for (auto& seg : segments_) {
+    seg.exec.executionCount = 0;
+    seg.exec.argTableStable = false;
+    seg.exec.gapOpsCapturedInGraph = false;
+    seg.exec.cachedShapeKey = 0;
+    seg.exec.capturedInputAddrKey = 0;
+    seg.exec.capturedCreateValueKey = 0;
+    seg.exec.compilationFailed = false;
+    seg.exec.currentPhase = ExecutionPhase::WARMUP;
   }
 
   planPhase_ = PlanPhase::SHAPES_FROZEN;
@@ -2036,19 +2206,6 @@ Status NativeDynamicShapePlan::phaseFreeze() {
 
   executeCount_ = 0;
   compilationDone_ = false;
-  for (auto& seg : segments_) {
-    seg.exec.executionCount = 0;
-    if (seg.exec.replayHandle) {
-      platformCleanupSegmentForRebuild(seg);
-    }
-    seg.exec.argTableStable = false;
-    seg.exec.gapOpsCapturedInGraph = false;
-    seg.exec.cachedShapeKey = 0;
-    seg.exec.capturedInputAddrKey = 0;
-    seg.exec.capturedCreateValueKey = 0;
-    seg.exec.compilationFailed = false;
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
-  }
 
   for (auto* db : protectedWeightBuffers_) {
     if (db != nullptr) db->addFrozenRef();
@@ -2843,6 +3000,39 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturab
   }
 }
 
+// ─── Resegmentation on freeze ────────────────────────────────────────────────
+//
+// During initial compilation (shapesFrozen_=false), buildSegments() uses a
+// conservative MAX_SEGMENT_SIZE (200 slots) because shape variability limits
+// graph capture scope.  After shapes freeze, the cap becomes 100,000 —
+// resegmenting collapses ~14 segments into 1-2, eliminating per-segment
+// overhead (compositeReplay calls, arg table refresh, shape key hashing,
+// cross-stream sync) that dominates decode latency.
+//
+// Requires:
+//   - shapesFrozen_ == true  (so buildSegments uses the large cap)
+//   - planPhase_ == SLOT_BY_SLOT  (buildSegments' phase guard)
+//   - dspFreezeMergeSegments() config enabled
+//
+// Called from both phaseFreeze() and the AUTO_SEAL path in execute().
+
+void NativeDynamicShapePlan::resegmentForFreeze() {
+  if (!Environment::getInstance().dspFreezeMergeSegments()) return;
+  int oldSegCount = static_cast<int>(segments_.size());
+  if (oldSegCount <= 1) return;
+
+  for (auto& seg : segments_) {
+    if (seg.exec.replayHandle) {
+      platformCleanupSegmentForRebuild(seg);
+    }
+  }
+  segments_.clear();
+  buildSegments();
+
+  DSP_DIAG(SEGMENT, "RESEGMENT: %d -> %d segments (shapes frozen, merge enabled)",
+           oldSegCount, static_cast<int>(segments_.size()));
+}
+
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────
 
 void NativeDynamicShapePlan::buildSegments() {
@@ -2877,13 +3067,15 @@ void NativeDynamicShapePlan::buildSegments() {
   // The old isDataDependent exclusion was for CUDA graph capture which
   // required fixed output shapes. CPU backends (OneDNN/OpenVINO) and
   // the shapeKey system handle recompilation transparently.
-  auto isSlotCapturable = [](const NativeSlot& slot, int) -> bool {
+  const bool frozen = shapesFrozen_;
+  auto isSlotCapturable = [frozen](const NativeSlot& slot, int) -> bool {
     if (slot.cf.controlFlowType != CF_NONE) return false;
     // Legacy reduce/broadcast ops wrap NativeOpExecutioner C-APIs that Triton
-    // cannot emit IR for. Route them to SLOT_BY_SLOT upfront so they execute
-    // via the native kernel path (with axis populated from iArgs in slotexec).
-    // Proactive dispatch based on op nature, not a post-failure fallback.
-    if (legacyOpRequiresSlotBySlot(slot.legacy.legacyOpType)) return false;
+    // cannot emit IR for. During initial build (pre-freeze), route them to
+    // SLOT_BY_SLOT so they execute via the native kernel path.
+    // After freeze, axes/shapes are stable — these ops can be captured in
+    // CUDA graphs alongside everything else, enabling single-segment replay.
+    if (!frozen && legacyOpRequiresSlotBySlot(slot.legacy.legacyOpType)) return false;
     return true;
   };
 

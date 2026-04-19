@@ -221,11 +221,12 @@ int executeDynamicShapePlan(
 
     void* cudaStream = (stream != nullptr) ? reinterpret_cast<void*>(stream) : nullptr;
 
-    // Trim the CUDA memory pool before execution to reclaim reserved-but-unused memory.
-    // The pool reserves memory for future allocations but doesn't release it back to CUDA.
-    // After the first execution, there can be hundreds of MB of reserved-but-unused memory
-    // that prevents even basic CUDA operations (stream creation, module loading) from succeeding.
-    {
+    // Trim the CUDA memory pool to reclaim reserved-but-unused memory.
+    // Only trim during early executions (warmup/capture) when large transient
+    // allocations create pool bloat. In frozen steady-state replay, no new
+    // allocations occur and trimPool's internal cudaStreamSynchronize on dirty
+    // free streams would needlessly block the CPU.
+    if (!plan->isShapesFrozen() || !plan->isCompilationSealed()) {
       int devId = 0;
       cudaGetDevice(&devId);
       memory::CudaMemoryPool::getInstance().trimPool(devId);
@@ -260,35 +261,24 @@ int executeDynamicShapePlan(
     // CudaExecutioner checks lastErrorCode() after execCustomOp2.
     setError(0, "");
 
-    // ── Definitive post-execute CUDA error check ──────────────────────────
-    // Synchronize the device and check for latent CUDA errors (e.g., error 700
-    // from kernels that wrote to invalid GPU memory). This catches errors that
-    // the per-slot diagnostic in executeSegmentSlotBySlot might miss if the error
-    // manifests on a different stream or after all slots complete.
-    // Without this, the latent error surfaces as "cudaMallocAsync failed" when Java
-    // allocates output arrays, making the root cause impossible to identify.
+    // ── Non-blocking post-execute CUDA error check ─────────────────────────
+    // Check for sticky CUDA errors (e.g., error 700 from kernels that wrote to
+    // invalid GPU memory) WITHOUT blocking the CPU. platformEndExecution() already
+    // handles stream ordering via event-based sync (cudaEventRecord +
+    // cudaStreamWaitEvent) — a full cudaDeviceSynchronize here would serialize the
+    // entire GPU pipeline and destroy throughput (measured: 9.6 vs 87 tok/s).
+    //
+    // cudaPeekAtLastError() returns any sticky error from a prior async kernel
+    // failure without blocking. If a kernel truly wrote to invalid memory, the
+    // error will be caught here on this step or the next.
     {
-      cudaError_t postExecErr = cudaDeviceSynchronize();
-      if (postExecErr != cudaSuccess) {
-        char buf[512];
-        snprintf(buf, sizeof(buf),
-                 "POST-EXECUTE CUDA ERROR: cudaDeviceSynchronize after plan->execute() "
-                 "returned error %d (%s). A kernel during execution accessed invalid GPU memory. "
-                 "numInputs=%d numOutputs=%d",
-                 static_cast<int>(postExecErr), cudaGetErrorString(postExecErr),
-                 numInputs, numOutputs);
-        sd_printf("%s\n", buf);
-        cudaGetLastError(); // clear sticky error
-        setError(static_cast<int>(postExecErr), buf);
-        return static_cast<int>(postExecErr);
-      }
-      // Also check cudaPeekAtLastError for non-synchronous errors
       cudaError_t peekErr = cudaPeekAtLastError();
       if (peekErr != cudaSuccess) {
         char buf[512];
         snprintf(buf, sizeof(buf),
-                 "POST-EXECUTE CUDA PEEK ERROR: cudaPeekAtLastError after plan->execute() "
-                 "returned error %d (%s). numInputs=%d numOutputs=%d",
+                 "POST-EXECUTE CUDA ERROR: cudaPeekAtLastError after plan->execute() "
+                 "returned error %d (%s). A kernel during execution accessed invalid GPU memory. "
+                 "numInputs=%d numOutputs=%d",
                  static_cast<int>(peekErr), cudaGetErrorString(peekErr),
                  numInputs, numOutputs);
         sd_printf("%s\n", buf);
@@ -409,6 +399,12 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     };
 
     auto* plan = cache->getOrInsert(key, factory);
+    if (plan) {
+      DSP_DIAG(COMPILE, "dispatchNativePlan: cache returned plan addr=%p fingerprint=0x%016llx "
+               "slots=%d outputSetHash=0x%016llx numPH=%lld",
+               (void*)plan, (unsigned long long)plan->identityFingerprint(),
+               plan->getNumSlots(), (unsigned long long)h, (long long)numPlaceholders);
+    }
     return reinterpret_cast<sd::Pointer>(plan);
   } catch (const std::exception& e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -754,8 +750,8 @@ static sd::cuda::CudaGraphHandle* getNativeCudaGraph(const GraphSegment& seg) {
   if (!seg.exec.replayHandle || !seg.exec.replayHandle->isReady()) return nullptr;
   auto* cudaReplay = dynamic_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get());
   if (!cudaReplay) return nullptr;
-  auto nativeHandle = cudaReplay->getNativeHandle();
-  return nativeHandle ? nativeHandle.get() : nullptr;
+  auto* nativeHandle = cudaReplay->getNativeHandle();
+  return nativeHandle;
 }
 
 void printPlanCapturedGraphDebug(sd::Pointer planHandle) {
@@ -1864,4 +1860,70 @@ int dspDetectStaleOutputs(sd::Pointer planHandle, float* prevNorms, bool* staleO
         outputs[i] = (slotIdx >= 0 && slotIdx < plan->getTotalOutputSlots()) ? outputSlots[slotIdx] : nullptr;
     }
     return sd::graph::dspDetectStaleOutputs(outputs.data(), numOutputs, prevNorms, staleOut, epsilon);
+}
+
+// ─── Native KV scatter configuration ────────────────────────────────────────
+
+/**
+ * Configure plan-managed KV scatter for CUDA-graph-compatible decode loops.
+ *
+ * After this call, the plan executes a batched KV scatter after each execute(),
+ * updating the static KV buffers at the current position and incrementing the
+ * position scalar. This eliminates the Java-side scatterNewEntries() round-trip.
+ *
+ * @param planHandle          The native plan handle
+ * @param presentSlotIndices  Array of output slot indices for present KV tensors
+ * @param staticKvBuffers     Array of sd::Pointer (NDArray*) for static KV buffers
+ * @param numPairs            Number of (present, static) pairs
+ * @param dtypeInt            DataType code of the KV tensors
+ * @param heads               Number of attention heads
+ * @param srcSeqLen           Present sequence length (typically 1 for decode)
+ * @param dstSeqLen           Static buffer sequence length (= maxKvLen)
+ * @param dim                 Head dimension
+ * @param kvPositionPtr       Pointer to device-side int64 position scalar (plan updates it)
+ */
+void configurePlanKvScatter(sd::Pointer planHandle,
+                             const int* presentSlotIndices,
+                             const sd::Pointer* staticKvBufferPtrs,
+                             sd::LongType numPairs,
+                             int dtypeInt,
+                             sd::LongType heads,
+                             sd::LongType srcSeqLen,
+                             sd::LongType dstSeqLen,
+                             sd::LongType dim,
+                             sd::LongType* kvPositionPtr) {
+    if (planHandle == nullptr || presentSlotIndices == nullptr ||
+        staticKvBufferPtrs == nullptr || numPairs <= 0 || kvPositionPtr == nullptr) {
+        return;
+    }
+
+    // Collect NDArray* from opaque Pointer array
+    std::vector<NDArray*> staticBufs(numPairs);
+    for (sd::LongType i = 0; i < numPairs; i++) {
+        staticBufs[i] = reinterpret_cast<NDArray*>(staticKvBufferPtrs[i]);
+    }
+
+    auto dtype = static_cast<sd::DataType>(dtypeInt);
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    plan->configureKvScatter(presentSlotIndices, staticBufs.data(),
+                              static_cast<int>(numPairs),
+                              dtype, heads, srcSeqLen, dstSeqLen, dim,
+                              kvPositionPtr);
+}
+
+/**
+ * Reset the KV cache position managed by the plan (e.g., after prefill).
+ */
+void resetPlanKvCachePosition(sd::Pointer planHandle, sd::LongType position) {
+    if (planHandle == nullptr) return;
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->resetKvCachePosition(position);
+}
+
+/**
+ * Get the current KV cache position managed by the plan.
+ * Returns -1 if KV scatter is not configured.
+ */
+sd::LongType getPlanKvCachePosition(sd::Pointer planHandle) {
+    if (planHandle == nullptr) return -1LL;
+    return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getKvCachePosition();
 }

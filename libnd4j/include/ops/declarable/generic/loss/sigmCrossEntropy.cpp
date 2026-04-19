@@ -78,13 +78,39 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
     newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing, newLabels);
   }
 
-  NDArray E(logits->shapeInfo(), logits->dataType(), false, block.launchContext());
+  // Numerically stable sigmoid cross entropy:
+  // E = max(x, 0) - x * y + log(1 + exp(-|x|))
+  // Uses explicit NDArray operations instead of LAMBDA_TT which has CUDA issues.
+  auto ctx = block.launchContext();
+  NDArray E(logits->shapeInfo(), logits->dataType(), false, ctx);
+  {
+    // max(x, 0) = (x + |x|) / 2
+    NDArray absX(logits->shapeInfo(), logits->dataType(), false, ctx);
+    logits->applyTransform(transform::Abs, &absX);
+    NDArray maxX0(logits->shapeInfo(), logits->dataType(), false, ctx);
+    logits->applyPairwiseTransform(pairwise::Add, &absX, &maxX0);
+    maxX0.applyScalar(scalar::Divide, 2.0, &maxX0);
 
-  // logits - labels * logits + log(1 + exp(-logits)) -> take into account numerical stability at large logits
-  helpers::sigmCrossEntropy(block.launchContext(), logits, newLabels, &E);
+    NDArray xTimesY(logits->shapeInfo(), logits->dataType(), false, ctx);
+    logits->applyPairwiseTransform(pairwise::Multiply, newLabels, &xTimesY);
+
+    // log(1 + exp(-|x|))
+    NDArray negAbsX(logits->shapeInfo(), logits->dataType(), false, ctx);
+    absX.applyTransform(transform::Neg, &negAbsX);
+    NDArray expNegAbsX(logits->shapeInfo(), logits->dataType(), false, ctx);
+    negAbsX.applyTransform(transform::Exp, &expNegAbsX);
+    NDArray onePlusExp(logits->shapeInfo(), logits->dataType(), false, ctx);
+    expNegAbsX.applyScalar(scalar::Add, 1.0, &onePlusExp);
+    NDArray logTerm(logits->shapeInfo(), logits->dataType(), false, ctx);
+    onePlusExp.applyTransform(transform::Log, &logTerm);
+
+    NDArray temp(logits->shapeInfo(), logits->dataType(), false, ctx);
+    maxX0.applyPairwiseTransform(pairwise::Subtract, &xTimesY, &temp);
+    temp.applyPairwiseTransform(pairwise::Add, &logTerm, &E);
+  }
 
   // multiply E on weights — stack-allocated result
-  NDArray EWeighted(labels->shapeInfo(), false, block.launchContext());
+  NDArray EWeighted(labels->shapeInfo(), false, ctx);
   if (weightsBroad->isScalar()) {
     E.applyScalarArr(scalar::Multiply, weightsBroad, &EWeighted);
   } else {
@@ -253,21 +279,60 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing.e<float>(0), newLabels);
   }
 
-  NDArray E(logits->shapeInfo(), logits->dataType(), false, block.launchContext());
+  auto ctx = block.launchContext();
 
-  // logits - labels * logits + log(1 + exp(-logits)) -> take into account numerical stability at large logits
-  helpers::sigmCrossEntropy(block.launchContext(), logits, newLabels, &E);
+  // E = max(x,0) - x*y + log(1+exp(-|x|))  (numerically stable sigmoid cross entropy)
+  NDArray E(logits->shapeInfo(), logits->dataType(), false, ctx);
+  {
+    // max(x, 0) = (x + |x|) / 2
+    NDArray absX(logits->shapeInfo(), logits->dataType(), false, ctx);
+    logits->applyTransform(transform::Abs, &absX);
+    NDArray maxX0(logits->shapeInfo(), logits->dataType(), false, ctx);
+    logits->applyPairwiseTransform(pairwise::Add, &absX, &maxX0);
+    maxX0.applyScalar(scalar::Divide, 2.0, &maxX0);
 
-  // dLdp = 1 - labels - 1 / (1 + exp(logits))
-  helpers::sigmCrossEntropyGrad(block.launchContext(), logits, newLabels, dLdp);
+    NDArray xTimesY(logits->shapeInfo(), logits->dataType(), false, ctx);
+    logits->applyPairwiseTransform(pairwise::Multiply, newLabels, &xTimesY);
+
+    // log(1 + exp(-|x|))
+    NDArray negAbsX(logits->shapeInfo(), logits->dataType(), false, ctx);
+    absX.applyTransform(transform::Neg, &negAbsX);
+    NDArray expNegAbsX(logits->shapeInfo(), logits->dataType(), false, ctx);
+    negAbsX.applyTransform(transform::Exp, &expNegAbsX);
+    NDArray onePlusExp(logits->shapeInfo(), logits->dataType(), false, ctx);
+    expNegAbsX.applyScalar(scalar::Add, 1.0, &onePlusExp);
+    NDArray logTerm(logits->shapeInfo(), logits->dataType(), false, ctx);
+    onePlusExp.applyTransform(transform::Log, &logTerm);
+
+    NDArray temp(logits->shapeInfo(), logits->dataType(), false, ctx);
+    maxX0.applyPairwiseTransform(pairwise::Subtract, &xTimesY, &temp);
+    temp.applyPairwiseTransform(pairwise::Add, &logTerm, &E);
+  }
+
+  // dL/dlogits = 1 - labels - 1/(1+exp(logits))  (numerically stable)
+  // For x <= 0: 1 - y - 1/(1+exp(x))
+  // For x > 0:  1 - y - exp(-x)/(1+exp(-x))  =  1 - y - 1/(1+exp(x))  [same formula]
+  // Using sigmoid: dL/dlogits = sigmoid(logits) - labels
+  {
+    // sigmoid(x) = 1 / (1 + exp(-x))
+    NDArray negLogits(logits->shapeInfo(), logits->dataType(), false, ctx);
+    logits->applyTransform(transform::Neg, &negLogits);
+    NDArray expNegLogits(logits->shapeInfo(), logits->dataType(), false, ctx);
+    negLogits.applyTransform(transform::Exp, &expNegLogits);
+    NDArray onePlusExpNeg(logits->shapeInfo(), logits->dataType(), false, ctx);
+    expNegLogits.applyScalar(scalar::Add, 1.0, &onePlusExpNeg);
+    NDArray sigmoid(logits->shapeInfo(), logits->dataType(), false, ctx);
+    onePlusExpNeg.applyTransform(transform::Reciprocal, &sigmoid);
+
+    // dLdp = sigmoid - labels
+    sigmoid.applyPairwiseTransform(pairwise::Subtract, newLabels, dLdp);
+  }
 
   // dLdl = logits * (labelsSmoothing - 1) = -logits * (1 - labelsSmoothing)
   {
     double smoothingMinus1 = labelsSmoothing.e<double>(0) - 1.0;
     logits->applyScalar(scalar::Multiply, smoothingMinus1, dLdl);
   }
-
-  auto ctx = block.launchContext();
 
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array

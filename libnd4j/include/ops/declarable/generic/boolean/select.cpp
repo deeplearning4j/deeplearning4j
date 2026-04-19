@@ -141,7 +141,8 @@ DECLARE_TYPES(select) {
       ->setAllowedInputTypes(0, BOOL)
       ->setAllowedInputTypes(1, ANY)
       ->setAllowedInputTypes(2, ANY)
-      ->setAllowedOutputTypes(1, INHERIT);
+      ->setAllowedOutputTypes(1, INHERIT)
+      ->addTraits(OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

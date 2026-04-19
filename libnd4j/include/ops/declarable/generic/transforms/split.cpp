@@ -83,6 +83,7 @@ CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
 
 DECLARE_TYPES(split) {
   getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_SPLIT);
 }
 
 DECLARE_SHAPE_FN(split) {

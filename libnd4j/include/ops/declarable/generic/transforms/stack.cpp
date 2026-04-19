@@ -94,6 +94,7 @@ DECLARE_SYN(Pack, stack);
 
 DECLARE_TYPES(stack) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_STACK);
 }
 
 DECLARE_SHAPE_FN(stack) {

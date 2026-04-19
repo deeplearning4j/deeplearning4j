@@ -139,6 +139,7 @@ public class BenchmarkConfig {
                 .cublasTf32(true)
                 .tritonTf32(true)
                 .dspBatchedGemm(true)
+                .dspFreezeMergeSegments(true)
                 .maxTokens(250).minDiversityPct(30);
     }
 

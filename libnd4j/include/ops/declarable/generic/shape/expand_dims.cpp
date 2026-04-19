@@ -52,7 +52,10 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
   return Status::OK;
 }
 
-DECLARE_TYPES(expand_dims) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(expand_dims) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
+}
 
 DECLARE_SHAPE_FN(expand_dims) {
   auto inShape = inputShape->at(0);

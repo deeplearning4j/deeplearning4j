@@ -133,7 +133,13 @@ inline bool shouldBeStandalone(const SectionTypeConfig& cfg,
 inline bool shouldStayNativeOrdered(const SectionTypeConfig& cfg,
                                     bool compileAll,
                                     const std::unordered_set<KernelSectionType>& includedTypes) {
-  if (cfg.alwaysNativeOrdered) return true;
+  // Explicit includedTypes override alwaysNativeOrdered — if the caller explicitly
+  // lists a type, they want it compiled.  CONST_GEN has alwaysNativeOrdered=true as
+  // the safe default, but the OPTIMAL config explicitly includes it.
+  bool explicitlyIncluded = !includedTypes.empty() &&
+                            includedTypes.find(cfg.type) != includedTypes.end();
+
+  if (cfg.alwaysNativeOrdered && !explicitlyIncluded) return true;
 
   if (!compileAll) {
     // Default: only compiledByDefault types (ELEMENTWISE, IDENTITY) are compiled
@@ -142,7 +148,7 @@ inline bool shouldStayNativeOrdered(const SectionTypeConfig& cfg,
 
   // compileAll mode with include types filter: compile compiledByDefault + explicitly listed
   if (!includedTypes.empty()) {
-    if (!cfg.compiledByDefault && includedTypes.find(cfg.type) == includedTypes.end()) {
+    if (!cfg.compiledByDefault && !explicitlyIncluded) {
       return true;
     }
   }
