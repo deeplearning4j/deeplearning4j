@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/PlanExecutionContext.h>
 #include <graph/NativePlanCompiler.h>
 #include <system/op_boilerplate.h>
 #include <graph/DspStreamGuard.h>
@@ -281,7 +282,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr), slotIsViewProducer_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
       gpuGraphCaptureEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
-      shapesFrozen_(false), executeCount_(0), compilationDone_(false), executionTimingEnabled_(false), traceEnabled_(false),
+      shapesFrozen_(false), executeCount_(0), forceSync_(false), compilationDone_(false), executionTimingEnabled_(false), traceEnabled_(false),
       cpuGraphBackend_(nullptr), cpuGraphBackendChecked_(false),
       gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
@@ -501,6 +502,10 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing platform GPU resources");
   platformFreePlanResources();
 
+  // Release KV scatter config (clears entry list, nulls position pointer).
+  // kvPositionDevice_ is NOT freed here — it's owned by the Java caller.
+  releaseKvScatterResources();
+
   // Free symbolic shape range profiles from all segments
   for (auto& seg : segments_) {
     if (seg.exec.symbolicRangeData != nullptr) {
@@ -552,6 +557,21 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     delete[] outputSlots_;
   }
   // outputSlots_ owns the NDArray* array — do NOT delete[] separately
+
+  // Free placeholder staging buffers (plan-owned stable device buffers for variable inputs)
+  if (placeholderStagingBuffers_ != nullptr) {
+    int freedStaging = 0;
+    for (int i = 0; i < numExternalInputs_; i++) {
+      if (placeholderStagingBuffers_[i] != nullptr) {
+        delete placeholderStagingBuffers_[i];
+        freedStaging++;
+      }
+    }
+    delete[] placeholderStagingBuffers_;
+    placeholderStagingBuffers_ = nullptr;
+  }
+  delete[] effectiveExternals_;
+  effectiveExternals_ = nullptr;
 
   // Free view producer flags
   delete[] slotIsViewProducer_;
@@ -1189,7 +1209,13 @@ Status NativeDynamicShapePlan::execute(
     return Status::BAD_ARGUMENTS;
   }
 
-  DspDiagnostics::getInstance().beginStep(executeCount_);
+  // ── PlanExecutionContext: consolidates all per-execute() state ─────────
+  // Created by platformBeginExecution (CUDA: stream guard + cross-stream sync,
+  // CPU: minimal struct). Destroyed by platformEndExecution at end of execute().
+  // Cast from void* to typed pointer — header keeps void* to avoid rebuild cascade.
+  void* executionStatePtr = platformBeginExecution(stream, shapesFrozen_, executeCount_);
+  auto* execCtx = static_cast<PlanExecutionContext*>(executionStatePtr);
+  activeExecCtx_ = executionStatePtr;  // Expose to _gpubackend.cpp methods
 
   // When tritonSkipKernels is active, force the plan to behave exactly like
   // GEM_SLOT_BY_SLOT. The plan was compiled with GEM_TRITON (segments have
@@ -1199,33 +1225,39 @@ Status NativeDynamicShapePlan::execute(
   //   2. phaseSlotBySlot is used (no phaseReplay differences)
   //   3. AUTO_SEAL is skipped (no premature shape freezing)
   //   4. Segments behave as SLOT_BY_SLOT (no graph capture state changes)
-  if (Environment::getInstance().tritonSkipKernels() &&
-      graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-    DSP_DIAG(EXECUTE, "TRITON_SKIP_OVERRIDE: forcing GEM_SLOT_BY_SLOT (was mode=%d)",
-             static_cast<int>(graphExecutionMode_));
+  bool tritonSkip = Environment::getInstance().tritonSkipKernels();
+  if (tritonSkip && graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
     graphExecutionMode_ = GraphExecutionMode::GEM_SLOT_BY_SLOT;
     gpuGraphCaptureEnabled_ = false;
   }
 
-  // Set tl_dspExecutionStream at the start of EVERY DSP execution.
-  // This allows syncToSpecial() to use async H2D copies on the DSP stream instead
-  // of falling back to stream 0 with full cudaStreamSynchronize.
-  // Without this, we get 657k sync calls per decode step.
-  //
-  // Multi-device safety: tl_dspExecutionStream is thread-local, and each thread
-  // executes on a single device at a time. The stream comes from the LaunchContext
-  // which is device-specific, so this is safe for multi-device execution.
-  //
-  // RAII guard: automatically restores the previous tl_dspExecutionStream value
-  // when execute() returns (including early returns and exceptions).
-  // Platform-specific stream setup + ordering (DspStreamGuard on CUDA, no-op on CPU).
-  // executionStatePtr is freed by platformEndExecution at end of execute().
-  void* executionStatePtr = platformBeginExecution(stream, shapesFrozen_, executeCount_);
+  // Populate all derived state once — every method reads from the context,
+  // not from scattered plan fields. This eliminates re-derivation of the same
+  // conditions across execute(), platform methods, and segment dispatch.
+  execCtx->populateDerivedState(
+      shapesFrozen_, executeCount_,
+      static_cast<int>(graphExecutionMode_),
+      tritonSkip,
+      Environment::getInstance().tritonGraphCapture(),
+      Environment::getInstance().tritonVerifyKernels(),
+      !externalInputIsVariable_.empty(),
+      executionTimingEnabled_);
+  execCtx->segmentsTotal = static_cast<int>(segments_.size());
 
-  DSP_DIAG(EXECUTE, "step %d: frozen=%d segs=%d graphCapture=%d ext=%d",
-           executeCount_, static_cast<int>(shapesFrozen_),
+  // Begin DSP diagnostic step tracking (endDiag called at end of execute,
+  // including early return paths via the context's lifecycle tracking).
+  execCtx->beginDiag(executeCount_);
+
+  DSP_DIAG(EXECUTE, "step %d: mode=%s frozen=%d segs=%d graphCapture=%d ext=%d "
+           "steadyState=%d fullSync=%d graphReplay=%d varFilter=%d",
+           executeCount_, execCtx->dispatchModeName(),
+           static_cast<int>(shapesFrozen_),
            static_cast<int>(segments_.size()),
-           static_cast<int>(gpuGraphCaptureEnabled_), numExternalInputs);
+           static_cast<int>(gpuGraphCaptureEnabled_), numExternalInputs,
+           execCtx->isFrozenSteadyState ? 1 : 0,
+           execCtx->needsFullSync ? 1 : 0,
+           execCtx->allowGraphCaptureReplay ? 1 : 0,
+           execCtx->useVariableFilter ? 1 : 0);
 
   // Lifecycle validation must only track protected weight/constant external
   // inputs — placeholders are supplied fresh per call and legitimately get a
@@ -1293,7 +1325,12 @@ Status NativeDynamicShapePlan::execute(
   // Returns OK if fast path handled execution, MAYBE to fall through.
   auto fastPathResult = platformTryFrozenFastPath(
       externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream);
-  if (fastPathResult != Status::MAYBE) return fastPathResult;
+  if (fastPathResult != Status::MAYBE) {
+    execCtx->endDiag(executeCount_);
+    activeExecCtx_ = nullptr;
+    platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
+    return fastPathResult;
+  }
 
   // ── Phase-aware lifecycle validation ─────────────────────────────────────
   // Hard errors (not logs) when buffer lifecycle is violated during frozen execution.
@@ -1319,6 +1356,9 @@ Status NativeDynamicShapePlan::execute(
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
           static_cast<int>(Status::KERNEL_FAILURE));
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg);
+      execCtx->endDiag(executeCount_);
+      activeExecCtx_ = nullptr;
+      platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
       return Status::KERNEL_FAILURE;
     }
 
@@ -1446,50 +1486,64 @@ Status NativeDynamicShapePlan::execute(
     std::memset(slotIsDead_, 0, sizeof(bool) * slotIsDeadSize_);
   }
 
-  // Timing instrumentation
-  using Clock = std::chrono::high_resolution_clock;
-  auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+  // Timing instrumentation — record start via execution context
+  execCtx->t0 = execCtx->now();
   PhaseExecutionStats phaseStats;
-  bool phaseHandledPostSegments = false;
-  bool phaseHandledOutputs = false;
 
   // Step 1b: Parallel precompilation of all GPU-compilable segments.
   // Skip the first frozen warmup because shapes are still being populated.
   // phaseCompile() itself checks compilationDone_ and returns immediately if already done.
-  if (!compilationDone_ && !(shapesFrozen_ && executeCount_ == 0) &&
-      graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+  if (!compilationDone_ && !execCtx->isFirstFrozenWarmup &&
+      execCtx->dispatchMode != ExecutionDispatchMode::SLOT_BY_SLOT) {
     phaseCompile(externalInputs, numExternalInputs);
   }
 
+  // Phase dispatch — resolved once by populateDerivedState(), read here.
   Status phaseStatus = Status::OK;
-  if (shapesFrozen_ && executeCount_ == 0) {
-    DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phaseWarmup (frozen=%d execCount=%d mode=%d)",
-             static_cast<int>(shapesFrozen_), executeCount_, static_cast<int>(graphExecutionMode_));
-    phaseStatus = phaseWarmup(externalInputs, numExternalInputs, stream, &phaseStats);
-  } else if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-    DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phaseSlotBySlot (frozen=%d execCount=%d mode=%d)",
-             static_cast<int>(shapesFrozen_), executeCount_, static_cast<int>(graphExecutionMode_));
-    phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
-  } else {
-    DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phaseReplay (frozen=%d execCount=%d mode=%d)",
-             static_cast<int>(shapesFrozen_), executeCount_, static_cast<int>(graphExecutionMode_));
-    phaseStatus = phaseReplay(externalInputs, numExternalInputs, requestedOutputs,
-                              numRequestedOutputs, stream, &phaseStats);
-    phaseHandledPostSegments = true;
-    phaseHandledOutputs = true;
+  DSP_DIAG(EXECUTE, "PHASE_DISPATCH: %s (frozen=%d execCount=%d mode=%d)",
+           execCtx->dispatchModeName(), static_cast<int>(shapesFrozen_),
+           executeCount_, execCtx->graphExecutionMode);
+
+  switch (execCtx->dispatchMode) {
+    case ExecutionDispatchMode::WARMUP:
+      phaseStatus = phaseWarmup(externalInputs, numExternalInputs, stream, &phaseStats);
+      break;
+    case ExecutionDispatchMode::SLOT_BY_SLOT:
+      phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
+      break;
+    case ExecutionDispatchMode::REPLAY:
+      phaseStatus = phaseReplay(externalInputs, numExternalInputs, requestedOutputs,
+                                numRequestedOutputs, stream, &phaseStats);
+      execCtx->phaseHandledPostSegments = true;
+      execCtx->phaseHandledOutputs = true;
+      break;
   }
   DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phase returned status=%d", static_cast<int>(phaseStatus));
-  if (phaseStatus != Status::OK) return phaseStatus;
+  if (phaseStatus != Status::OK) {
+    execCtx->endDiag(executeCount_);
+    activeExecCtx_ = nullptr;
+    platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
+    return phaseStatus;
+  }
 
-  auto tSegsDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+  // ── Native KV scatter post-execution ─────────────────────────────────────
+  // When the plan manages KV cache updates natively (configureKvScatter was called),
+  // run the batched scatter here — after all segment execution, before outputs are
+  // collected. This eliminates the Java-side scatterNewEntries() round-trip and
+  // makes the scatter part of the same CUDA stream as the main graph execution.
+  if (kvScatterConfigured_) {
+    executeKvScatterPostExec(stream);
+  }
 
-  if (!phaseHandledPostSegments) {
-    platformPostSegmentPoolManagement(shapesFrozen_, executeCount_);
+  execCtx->tSegsDone = execCtx->now();
+
+  if (!execCtx->phaseHandledPostSegments) {
+    platformPostSegmentPoolManagement(execCtx->frozen, execCtx->execCount);
   }
 
   // ── Consistency assertions: verify slot reuse and replay integrity ───
   // These checks run after every execution to catch lifecycle bugs early.
-  if (DSP_DIAG_ENABLED(VERIFY)) {
+  if (execCtx->diagVerifyEnabled) {
     int nullSlots = 0, liveSlots = 0, viewSlots = 0;
     int replaySegs = 0, slotBySlotSegsCount = 0, compilationFailedSegs = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
@@ -1514,7 +1568,7 @@ Status NativeDynamicShapePlan::execute(
              phaseStats.graphReplaySegs, phaseStats.slotBySlotSegs);
   }
 
-  if (!phaseHandledOutputs) {
+  if (!execCtx->phaseHandledOutputs) {
     for (int i = 0; i < numRequestedOutputs_; i++) {
       int slotIdx = requestedOutputSlotIndices_[i];
       if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
@@ -1525,8 +1579,10 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-  // Diagnostic: dump requested output slot info and argmax for logits comparison
-  if (DSP_DIAG_ENABLED(VERIFY) && sd::graph::DspDiagnostics::getInstance().withinExecLimit(executeCount_)) {
+  // Diagnostic: dump requested output slot info and argmax for logits comparison.
+  // Uses execCtx->diagVerifyEnabled (precomputed at entry) instead of re-checking
+  // DSP_DIAG_ENABLED(VERIFY) && withinExecLimit() at every diagnostic site.
+  if (execCtx->diagVerifyEnabled) {
     for (int i = 0; i < numRequestedOutputs_; i++) {
       int slotIdx = requestedOutputSlotIndices_[i];
       if (requestedOutputs[i] != nullptr) {
@@ -1541,17 +1597,51 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-  auto tOutputsDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+  // Log execution summary with segment dispatch breakdown and sync state
+  execCtx->logExecutionSummary(executeCount_);
+
+  execCtx->tOutputsDone = execCtx->now();
 
   // Step 4: No flush needed — arrays persist (one array per slot)
-  auto tFlushDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+  execCtx->tFlushDone = execCtx->now();
 
   // Log plan-owned array count and total GPU allocation
   DSP_DIAG(MEMORY, "DSP_EXEC_END execCount=%d: planOwnedArrays=%d totalSlots=%d",
             executeCount_, (int)planOwnedArrays_.size(), totalOutputSlots_);
 
-  // Track execution count for shapes-frozen optimization
-  if (shapesFrozen_) executeCount_++;
+  // Track execution count for shapes-frozen optimization.
+  //
+  // Assertion 5: Execution count monotonicity.
+  // executeCount_ must only increase during active execution. A value that is
+  // not strictly greater than the pre-increment value indicates corruption —
+  // either a race (two threads executing the same plan), an integer overflow,
+  // or a bug that resets the count mid-execution without going through the
+  // intentional reset paths (setShapesFrozen(false), phaseFreeze).
+  //
+  // NOTE: intentional resets (executeCount_ = 0) happen in setShapesFrozen()
+  // and phaseFreeze() BEFORE execute() is called, so this assertion NEVER
+  // fires at those sites. It only fires if the count goes backward DURING
+  // a call to execute(), which is always a bug.
+  if (shapesFrozen_) {
+    int prevCount = executeCount_;
+    executeCount_++;
+    // Post-increment sanity: new value must be exactly prevCount+1.
+    // If not, something corrupted the field during this execute() call.
+#ifndef NDEBUG
+    if (executeCount_ != prevCount + 1) {
+      DSP_DIAG(EXECUTE,
+               "EXEC_COUNT_MONOTONICITY_VIOLATION: expected %d got %d "
+               "(shapesFrozen=%d planPhase=%d) — possible concurrent execution or "
+               "mid-execute reset",
+               prevCount + 1, executeCount_,
+               shapesFrozen_ ? 1 : 0, static_cast<int>(planPhase_));
+      assert(executeCount_ == prevCount + 1 &&
+             "EXEC_COUNT_MONOTONICITY: executeCount_ did not increment by exactly 1");
+    }
+#endif
+    DSP_DIAG(EXECUTE, "EXEC_COUNT_INCREMENT: %d -> %d shapesFrozen=%d",
+             prevCount, executeCount_, shapesFrozen_ ? 1 : 0);
+  }
 
   // Re-classify slot ownership after the first frozen execution (capture step).
   // The capture execution replaces slot arrays (new allocations for different shapes),
@@ -1662,12 +1752,12 @@ Status NativeDynamicShapePlan::execute(
   // changes for consecutive executions, split it at the midpoint.
   platformMaybeSplitIfEnabled();
 
-  // Print timing breakdown
-  if (executionTimingEnabled_) {
-    auto segMs = std::chrono::duration_cast<std::chrono::microseconds>(tSegsDone - t0).count();
-    auto outMs = std::chrono::duration_cast<std::chrono::microseconds>(tOutputsDone - tSegsDone).count();
-    auto flushMs = std::chrono::duration_cast<std::chrono::microseconds>(tFlushDone - tOutputsDone).count();
-    auto totalMs = std::chrono::duration_cast<std::chrono::microseconds>(tFlushDone - t0).count();
+  // Print timing breakdown via execution context timing points
+  if (execCtx->timingEnabled) {
+    auto segMs = std::chrono::duration_cast<std::chrono::microseconds>(execCtx->tSegsDone - execCtx->t0).count();
+    auto outMs = std::chrono::duration_cast<std::chrono::microseconds>(execCtx->tOutputsDone - execCtx->tSegsDone).count();
+    auto flushMs = std::chrono::duration_cast<std::chrono::microseconds>(execCtx->tFlushDone - execCtx->tOutputsDone).count();
+    auto totalMs = std::chrono::duration_cast<std::chrono::microseconds>(execCtx->tFlushDone - execCtx->t0).count();
     DSP_DIAG(TIMING, "segments=%lldus outputs=%lldus flush=%lldus total=%lldus (%d segs, %d slots) | graph=%lldus(%d segs/%d slots) sbs=%lldus(%d segs/%d slots)",
              segMs, outMs, flushMs, totalMs,
              static_cast<int>(segments_.size()), numSlots_,
@@ -1675,9 +1765,10 @@ Status NativeDynamicShapePlan::execute(
              phaseStats.slotBySlotUs, phaseStats.slotBySlotSegs, phaseStats.slotBySlotSlots);
   }
 
-  DspDiagnostics::getInstance().endStep(executeCount_);
-
-  // Cross-stream synchronization + DspStreamGuard cleanup
+  // End DSP diagnostic step + cross-stream sync + DspStreamGuard cleanup.
+  // execCtx->endDiag() is safe to call even if already ended by an early return path.
+  execCtx->endDiag(executeCount_);
+  activeExecCtx_ = nullptr;
   platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
   executionStatePtr = nullptr;
 
@@ -2573,6 +2664,143 @@ void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const
       outputSlotMaxSizes_[slotIndices[i]] = maxSizes[i];
     }
   }
+}
+
+// ─── Native KV scatter post-execution ───────────────────────────────────────
+
+void NativeDynamicShapePlan::configureKvScatter(const int* presentSlotIndices,
+                                                 NDArray** staticKvBuffers,
+                                                 int numPairs,
+                                                 DataType dtype,
+                                                 LongType heads,
+                                                 LongType srcSeqLen,
+                                                 LongType dstSeqLen,
+                                                 LongType dim,
+                                                 LongType* kvPositionDevice) {
+  if (presentSlotIndices == nullptr || staticKvBuffers == nullptr ||
+      numPairs <= 0 || kvPositionDevice == nullptr) {
+    sd_printf("NativeDynamicShapePlan::configureKvScatter: invalid arguments\n");
+    return;
+  }
+
+  kvScatterEntries_.clear();
+  kvScatterEntries_.reserve(numPairs);
+
+  for (int i = 0; i < numPairs; i++) {
+    int slotIdx = presentSlotIndices[i];
+    if (slotIdx < 0 || slotIdx >= totalOutputSlots_) {
+      sd_printf("NativeDynamicShapePlan::configureKvScatter: slot index %d out of range [0, %d)\n",
+                slotIdx, totalOutputSlots_);
+      continue;
+    }
+    if (staticKvBuffers[i] == nullptr) {
+      sd_printf("NativeDynamicShapePlan::configureKvScatter: staticKvBuffers[%d] is null\n", i);
+      continue;
+    }
+
+    NativeKvScatterEntry entry;
+    entry.presentSlotIdx = slotIdx;
+    entry.staticBuf = staticKvBuffers[i];
+    entry.heads = heads;
+    entry.srcSeqLen = srcSeqLen;
+    entry.dstSeqLen = dstSeqLen;
+    entry.dim = dim;
+    kvScatterEntries_.push_back(entry);
+  }
+
+  kvScatterDtype_ = dtype;
+  kvPositionDevice_ = kvPositionDevice;
+  kvScatterConfigured_ = !kvScatterEntries_.empty();
+
+  DSP_DIAG(EXECUTE, "configureKvScatter: %d entries configured dtype=%d heads=%lld srcSeq=%lld dstSeq=%lld dim=%lld",
+           (int)kvScatterEntries_.size(), (int)dtype,
+           (long long)heads, (long long)srcSeqLen, (long long)dstSeqLen, (long long)dim);
+}
+
+void NativeDynamicShapePlan::resetKvCachePosition(LongType position) {
+  if (!kvScatterConfigured_ || kvPositionDevice_ == nullptr) return;
+  *kvPositionDevice_ = position;
+}
+
+LongType NativeDynamicShapePlan::getKvCachePosition() const {
+  if (!kvScatterConfigured_ || kvPositionDevice_ == nullptr) return -1LL;
+  return *kvPositionDevice_;
+}
+
+void NativeDynamicShapePlan::executeKvScatterPostExec(void* stream) {
+  if (!kvScatterConfigured_ || kvScatterEntries_.empty() || kvPositionDevice_ == nullptr) return;
+
+  // Build dynamic scatter entries from current output slot state
+  std::vector<sd::ops::helpers::KvScatterDynEntry> dynEntries;
+  dynEntries.reserve(kvScatterEntries_.size());
+
+  LongType currentPos = *kvPositionDevice_;
+
+  for (auto& entry : kvScatterEntries_) {
+    NDArray* present = outputSlots_[entry.presentSlotIdx];
+    if (present == nullptr) {
+      DSP_DIAG(EXECUTE, "executeKvScatterPostExec: present slot %d is null — skipping",
+               entry.presentSlotIdx);
+      continue;
+    }
+
+    sd::ops::helpers::KvScatterDynEntry dynEntry;
+#ifdef SD_CUDA
+    dynEntry.srcPtr = present->specialBuffer();
+    dynEntry.dstPtr = entry.staticBuf->specialBuffer();
+#else
+    dynEntry.srcPtr = present->buffer();
+    dynEntry.dstPtr = entry.staticBuf->buffer();
+#endif
+    dynEntry.kvPosPtr = kvPositionDevice_;
+    dynEntry.heads = entry.heads;
+    // Use actual present tensor's seqLen (may differ from configured srcSeqLen in edge cases)
+    dynEntry.srcSeqLen = present->rankOf() >= 3 ? present->sizeAt(2) : entry.srcSeqLen;
+    dynEntry.dstSeqLen = entry.dstSeqLen;
+    dynEntry.dim = entry.dim;
+    dynEntry.lastPos = dynEntry.srcSeqLen - 1;
+
+    dynEntries.push_back(dynEntry);
+  }
+
+  if (dynEntries.empty()) return;
+
+  // Validate position is in range
+  LongType maxPos = kvScatterEntries_[0].dstSeqLen;
+  if (currentPos < 0 || currentPos >= maxPos) {
+    DSP_DIAG(EXECUTE, "executeKvScatterPostExec: cachePos=%lld out of range [0, %lld) — skipping",
+             (long long)currentPos, (long long)maxPos);
+    return;
+  }
+
+  DSP_DIAG(EXECUTE, "executeKvScatterPostExec: scatter %d pairs at cachePos=%lld",
+           (int)dynEntries.size(), (long long)currentPos);
+
+  auto* ctx = sd::LaunchContext::defaultContext();
+  sd::ops::helpers::kvScatterDynBatched(dynEntries.data(), static_cast<int>(dynEntries.size()),
+                                         kvScatterDtype_, ctx);
+
+  // Tick actuality on static KV buffers — the scatter kernel wrote to device memory
+  // directly without registerSpecialUse. Without tickWriteDevice, the DataBuffer's
+  // isSpecialActual() stays false, and subsequent syncToSpecial calls would no-op
+  // (or worse, overwrite valid device data with stale host zeros).
+  for (auto& entry : kvScatterEntries_) {
+    if (entry.staticBuf != nullptr && entry.staticBuf->dataBuffer() != nullptr) {
+      entry.staticBuf->tickWriteDevice();
+    }
+  }
+
+  // Advance the position counter by 1
+  (*kvPositionDevice_)++;
+}
+
+void NativeDynamicShapePlan::releaseKvScatterResources() {
+  // Note: kvPositionDevice_ is owned by the caller (Java side), not by the plan.
+  // The plan does NOT free it — it's managed by the Java UnifiedKvCacheManager
+  // or whoever called configureKvScatter. We just clear the pointer.
+  kvScatterEntries_.clear();
+  kvPositionDevice_ = nullptr;
+  kvScatterConfigured_ = false;
 }
 
 // ─── Backend resolution (one-time, at segment build) ────────────────────────

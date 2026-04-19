@@ -541,6 +541,20 @@ struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
  * Mutable execution state — changes per-execution.
  */
 struct GraphSegmentExec {
+  // Explicit lifecycle state — replaces the implicit state machine derived from
+  // executionCount thresholds, nullable handles, and boolean flags.
+  // All transitions go through SegmentLifecycle functions in _gpubackend.cpp.
+  enum class SegmentLifecycleState : uint8_t {
+    NEEDS_WARMUP    = 0,  // First slot-by-slot run to populate shape caches
+    NEEDS_COMPILE   = 1,  // Backend compile pass needed (Triton, NVRTC)
+    CAPTURE_PENDING = 2,  // Compiled, waiting for CUDA graph capture
+    CAPTURED        = 3,  // Graph handles valid and ready
+    REPLAYING       = 4,  // Steady-state graph replay every step
+    FAILED          = 5,  // Permanent failure — never attempt again
+    OOM_DEFERRED    = 6,  // OOM during capture — deferred retry pending
+  };
+  SegmentLifecycleState lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
+
   int executionCount = 0;
 
   // If true, never attempt graph capture/compilation for this segment.
@@ -622,6 +636,7 @@ struct GraphSegmentExec {
   ExecutionPhase currentPhase = ExecutionPhase::WARMUP;
 
   void reset() {
+    lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     executionCount = 0;
     compilationFailed = false;
     captureOomRetries = 0;
@@ -1129,6 +1144,22 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool isExecutionTimingEnabled() const { return executionTimingEnabled_; }
 
   /**
+   * Access the active PlanExecutionContext during execute() lifetime.
+   * Returns nullptr outside of execute(). Cast to PlanExecutionContext*
+   * in .cpp/.cu files that include PlanExecutionContext.h.
+   */
+  void* activeExecutionContext() const { return activeExecCtx_; }
+
+  /**
+   * Ensure plan-owned staging buffers exist for variable external inputs,
+   * then D2D copy current data into them. Returns pointer to internal
+   * effectiveExternals_ array (staging buffers for variable inputs,
+   * original pointers for non-variable inputs). Only active when frozen.
+   * Called once per step (gated by PlanExecutionContext dedup flag).
+   */
+  NDArray** ensureAndSyncStagingBuffers(NDArray** externalArrays, int numExt, void* stream);
+
+  /**
    * Enable/disable trace logging for DSP execution decisions.
    * When enabled, logs segment dispatch, graph capture/replay decisions,
    * and error paths via DSP_DIAG macros (to stderr).
@@ -1190,6 +1221,48 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots);
 
   /**
+   * Configure native-plan KV scatter: run scatter as a post-execution step so
+   * KV cache updates happen inside the plan without a Java round-trip.
+   *
+   * Call once after initialization, before the first execute() call.
+   * The plan takes ownership of the position buffer (frees it on destroy/reset).
+   *
+   * @param presentSlotIndices  Output slot indices that hold "present" KV tensors
+   * @param staticKvBuffers     Corresponding static KV buffer pointers (must outlive the plan)
+   * @param numPairs            Number of (present, static) pairs
+   * @param dtype               Data type of all KV tensors (must be uniform)
+   * @param heads               Number of attention heads (uniform across all pairs)
+   * @param srcSeqLen           Present sequence length (uniform — always 1 for decode)
+   * @param dstSeqLen           Static buffer sequence length (= maxKvLen)
+   * @param dim                 Head dimension (uniform)
+   * @param kvPositionDevice    Device-accessible int64 scalar pointer holding the current
+   *                            cache position. Updated by the plan after each execute().
+   *                            On CUDA: must be a device pointer; on CPU: host pointer is fine.
+   *                            The plan increments the value at this address after each scatter.
+   */
+  void configureKvScatter(const int* presentSlotIndices,
+                           NDArray** staticKvBuffers,
+                           int numPairs,
+                           DataType dtype,
+                           LongType heads,
+                           LongType srcSeqLen,
+                           LongType dstSeqLen,
+                           LongType dim,
+                           LongType* kvPositionDevice);
+
+  /**
+   * Reset the KV cache position to a specific value (e.g., after prefill).
+   * No-op if KV scatter is not configured.
+   */
+  void resetKvCachePosition(LongType position);
+
+  /**
+   * Get the current KV cache position managed by the plan.
+   * Returns -1 if KV scatter is not configured.
+   */
+  LongType getKvCachePosition() const;
+
+  /**
    * Validate that a compiled CPU graph (oneDNN/ACL) covers all ops in the segment.
    * Returns true if every op was compiled by the backend.
    * When any ops are missing, logs warnings and returns false.
@@ -1198,6 +1271,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * @return true if all ops were compiled, false if any were skipped
    */
   bool validateCompiledCpuGraph(int segmentIndex = -1) const;
+
+  // Segment cleanup — public so SegmentLifecycle::invalidateForRebuild can call it.
+  void cleanupSegmentForRebuild(GraphSegment& seg, const char* reason);
 
   friend class NativePlanCompiler;
 
@@ -1295,6 +1371,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Use when all external input shapes are guaranteed constant across steps.
   bool shapesFrozen_;
   int executeCount_;  // Tracks executions since shapes were frozen
+  bool forceSync_;    // When true, executeSlot forces prepareSpecialUse/registerSpecialUse
+                      // regardless of executeCount_. Used during pre-capture warmup at exec=2+.
   bool compilationDone_;  // True after platformPrecompileSegments succeeds; skip phaseCompile
 
   // Count of compileSegment() calls that occurred AFTER compilationDone_ was set
@@ -1326,6 +1404,26 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // cudaStreamSynchronize (~1.4ms) with event-based ordering (~0.1ms).
   void* executionCompleteEvent_ = nullptr;  // cudaEvent_t (stored as void* to avoid cuda header)
 #endif
+
+  // Active execution context — valid only during execute() lifetime.
+  // Set by execute() after platformBeginExecution, cleared before platformEndExecution.
+  // Allows _gpubackend.cpp methods to access per-step state (dedup flags, sync tracking)
+  // without threading PlanExecutionContext* through every method signature.
+  // void* to avoid including PlanExecutionContext.h from this header.
+  void* activeExecCtx_ = nullptr;
+
+  // Plan-owned device buffers for variable (placeholder) external inputs.
+  // When frozen, data is D2D-copied from the caller's external input into these
+  // stable buffers. All GPU code paths (arg table build, capture, replay) resolve
+  // external inputs through these buffers, making arg table pointers inherently
+  // stable regardless of Java-side allocation patterns.
+  //
+  // Raw arrays sized to numExternalInputs_, allocated ONCE on first frozen
+  // execute, NEVER resized. Same ownership pattern as outputSlots_.
+  // Staging buffers are plan-owned NDArrays; effectiveExternals_ contains
+  // staging pointers for variable inputs, original pointers for non-variable.
+  NDArray** placeholderStagingBuffers_ = nullptr;
+  NDArray** effectiveExternals_ = nullptr;
 
   // Per-execution timing breakdown (enabled by setExecutionTimingEnabled)
   bool executionTimingEnabled_;
@@ -1507,7 +1605,38 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                                     int numExt, void* stream);
   GraphBackend* getGpuGraphBackend();
   void clearGpuBackendFailedCache();
+
+  // ── Segment lifecycle dispatch methods ──
+  // Each handles one phase of the segment state machine.
+  // Called from executeSegmentWithGpuGraph based on lifecycleState.
+  Status segDispatchWarmup(GraphSegment& seg, NDArray** externalArrays,
+                           int numExt, void* stream);
+  // segDispatchCompile — handles one compile cycle for a segment.
+  // segShapeKey is passed by reference: the shape-change recompile path
+  // recomputes the key after a mini-warmup and writes the new value back
+  // so the caller's seg.def.shapeKey assignment uses the correct key.
+  Status segDispatchCompile(GraphSegment& seg, NDArray** externalArrays,
+                            int numExt, void* stream, LongType& segShapeKey);
+
 #ifdef SD_CUDA
+  // segDispatchReplay — attempts composite replay for a segment that has
+  // captured composite handles. Returns OK if replay succeeded, MAYBE if
+  // replay conditions not met (caller falls through to capture/direct).
+  Status segDispatchReplay(GraphSegment& seg, NDArray** externalArrays,
+                           int numExt, void* stream,
+                           bool allowTritonCudaGraphReplay,
+                           bool createValuesStable, bool extAddrsStable,
+                           LongType segShapeKey, const char* backendName);
+
+  // segDispatchCaptureOrDirect — handles CUDA graph capture AND direct
+  // (non-capture) Triton execution. Includes TritonOrderedRangeGuard RAII,
+  // capture decision, composite/monolithic capture, and direct fallback.
+  // SegCaptureCtx bundles pre-computed state from the preamble.
+  struct SegCaptureCtx;
+  Status segDispatchCaptureOrDirect(GraphSegment& seg, NDArray** externalArrays,
+                                    int numExt, void* stream,
+                                    SegCaptureCtx& ctx);
+
   void proactivePreCaptureMemoryCleanup(GraphSegment& seg, int segIdx, void* stream);
   int evictLruGraphs(int segIdx, size_t neededBytes, void* stream);
 
@@ -1542,6 +1671,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setCublasWorkspaceForCapture(void* stream);
   void setCublasWorkspaceForWarmup();
   void restoreCublasWorkspaceAfterCapture(void* stream);
+  void abortCapture(GraphSegment& seg, bool freeHostPtrs, bool didPushCtx, int captureDevice,
+                    cudaStream_t prevCaptureStream,
+                    const std::vector<NativeSlot::SlotState>& savedSlotState,
+                    void* stream);
 #endif
 
   // Cross-device input migration: tracks arrays copied to a different device
@@ -1558,6 +1691,36 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::unordered_map<int, LongType> outputSlotMaxSizes_;
   // Tracks which slots have been pre-allocated at max size
   std::unordered_set<int> maxAllocatedSlots_;
+
+  // ── Native KV scatter post-execution (plan-managed KV cache updates) ────────
+  // When configured, the plan runs batched KV scatter after each segment execution,
+  // eliminating the Java-side scatterNewEntries() round-trip. The position counter
+  // lives in a device-accessible (on CUDA) or host (on CPU) int64 scalar and is
+  // incremented by the plan after each scatter.
+  //
+  // This is CUDA graph capture-compatible because:
+  //   - Entry device pointers (srcPtr, dstPtr) are stable across steps
+  //   - kvPositionDevice_ address is stable; only the VALUE changes between steps
+  //   - Position update uses cudaMemcpyAsync (baked into graph at capture time)
+  struct NativeKvScatterEntry {
+    int presentSlotIdx;     // Output slot holding present KV tensor
+    NDArray* staticBuf;     // Static KV buffer (not owned — passed by Java/caller)
+    LongType heads;
+    LongType srcSeqLen;
+    LongType dstSeqLen;
+    LongType dim;
+  };
+  std::vector<NativeKvScatterEntry> kvScatterEntries_;
+  DataType kvScatterDtype_ = DataType::FLOAT32;
+  LongType* kvPositionDevice_ = nullptr;  // Device-accessible int64 position scalar (owned)
+  bool kvScatterConfigured_ = false;
+
+  // Execute native KV scatter as a post-execution step.
+  // Called from execute() after all phase dispatch completes.
+  void executeKvScatterPostExec(void* stream);
+
+  // Release KV scatter resources (called from destructor and releaseGpuIntermediates)
+  void releaseKvScatterResources();
 
 #ifdef SD_CUDA
   // ── Pre-capture batch-zero ─────────────────────────────────────────────
@@ -1589,8 +1752,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int batchD2DCount_ = 0;                   // Number of valid entries
   int batchD2DAllocated_ = 0;               // Allocated capacity
 
-  void prepareBatchD2DDevice(int count, cudaStream_t stream);
-  void launchBatchD2D(cudaStream_t stream);
   void freeBatchD2DResources();
 #else
   void freeBatchD2DResources() {}

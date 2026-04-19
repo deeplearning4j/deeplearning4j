@@ -483,7 +483,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   if (hasValueDependentShapeOps) {
     std::vector<NDArray*> preWarmupOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
 
+    // Force needsSync=true in executeSlot during this pre-capture warmup.
+    // At exec=2, executeCount_=2 → needsSync=false → prepareSpecialUse/
+    // registerSpecialUse skipped → ops read stale device memory.
+    forceSync_ = true;
     auto warmStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    forceSync_ = false;
     if (warmStatus != Status::OK) {
       seg.exec.compilationFailed = true;
       return warmStatus;
@@ -552,7 +557,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   seg.exec.replayHandle = GraphReplayFactory::create(currentDevice);
   auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get());
-  auto handle = cudaReplay->getNativeHandle();
+  auto* handle = cudaReplay->getNativeHandle();
 
   cudaGetLastError();
   if (cudaStr != nullptr) {
@@ -1189,31 +1194,6 @@ void NativeDynamicShapePlan::performReplayVerify(
   dspDumpVariableExternals(externalArrays, numExt, externalInputIsVariable_,
                            externalInputNames_, "before-fresh");
 
-  // DIAGNOSTIC: Dump small VARIABLE externals with both host AND device values
-  {
-    cudaDeviceSynchronize();
-    for (int ei = 0; ei < numExt; ei++) {
-      if (ei < (int)externalInputIsVariable_.size() && externalInputIsVariable_[ei] &&
-          externalArrays[ei] != nullptr && externalArrays[ei]->lengthOf() <= 8) {
-        auto* arr = externalArrays[ei];
-        auto* db = arr->dataBuffer();
-        int n = std::min((int)arr->lengthOf(), 8);
-        int elemSize = DataTypeUtils::sizeOf(arr->dataType());
-        std::vector<uint8_t> hostBytes(n * elemSize), devBytes(n * elemSize);
-        if (db && db->primary()) std::memcpy(hostBytes.data(), static_cast<char*>(arr->buffer()), n * elemSize);
-        if (arr->specialBuffer()) cudaMemcpy(devBytes.data(), arr->specialBuffer(), n * elemSize, cudaMemcpyDeviceToHost);
-        float hv[8]={0}, dv[8]={0};
-        dspBytesToFloat(hostBytes.data(), arr->dataType(), hv, n);
-        dspBytesToFloat(devBytes.data(), arr->dataType(), dv, n);
-        std::string name = (ei < (int)externalInputNames_.size()) ? externalInputNames_[ei] : "?";
-        DSP_DIAG(VERIFY, "PRE_FRESH ext#%d:\"%s\" len=%d pAct=%d sAct=%d host=[%.0f,%.0f,%.0f,%.0f] dev=[%.0f,%.0f,%.0f,%.0f]",
-                  ei, name.c_str(), n,
-                  db ? (db->isPrimaryActual()?1:0) : -1,
-                  db ? (db->isSpecialActual()?1:0) : -1,
-                  hv[0],hv[1],hv[2],hv[3], dv[0],dv[1],dv[2],dv[3]);
-      }
-    }
-  }
 
   auto freshStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
 
@@ -1313,6 +1293,111 @@ void NativeDynamicShapePlan::performReplayVerify(
     DSP_DIAG(VERIFY, "REPLAY_VERIFY SUMMARY: ALL MATCH (%zu slots, maxDiff=%.6g) path=%s execCount=%d",
               snaps.size(), worstMaxDiff, pathLabel, executeCount_);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ensureAndSyncStagingBuffers — plan-owned stable device buffers for
+// variable (placeholder) external inputs.
+//
+// When shapes are frozen, placeholder inputs always have the same shape.
+// This method allocates a plan-owned device buffer for each variable input
+// (once), then D2D-copies current data from the caller's external input into
+// the staging buffer. The returned pointer array substitutes staging buffers
+// for variable inputs and keeps original pointers for non-variable ones.
+//
+// Both arrays (placeholderStagingBuffers_, effectiveExternals_) are raw
+// NDArray** allocated once with new[], NEVER resized. Same ownership
+// pattern as outputSlots_. This guarantees that specialBuffer() pointers
+// captured in CUDA graph arg tables remain valid for the plan's lifetime.
+//
+// All downstream GPU code (arg table build, capture, replay) resolves
+// external inputs through the returned array, so arg table pointers are
+// inherently stable no matter how Java allocates its input arrays.
+// ═══════════════════════════════════════════════════════════════════════════
+NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
+    NDArray** externalArrays, int numExt, void* stream) {
+  // Staging disabled for baseline verification — return passthrough
+  return externalArrays;
+  if (!shapesFrozen_ || externalInputIsVariable_.empty() || numExt <= 0) {
+    return externalArrays;
+  }
+
+  cudaStream_t cudaStr = (stream != nullptr)
+      ? *static_cast<cudaStream_t*>(stream) : nullptr;
+
+  // One-time allocation — fixed size, never resized.
+  if (placeholderStagingBuffers_ == nullptr) {
+    placeholderStagingBuffers_ = new NDArray*[numExt]();  // zero-initialized
+    effectiveExternals_ = new NDArray*[numExt]();
+  }
+
+  for (int i = 0; i < numExt; i++) {
+    // Non-variable inputs (model weights) — pass through directly.
+    // Their specialBuffer() is already stable (same DataBuffer for plan lifetime).
+    if (i >= static_cast<int>(externalInputIsVariable_.size()) ||
+        !externalInputIsVariable_[i]) {
+      effectiveExternals_[i] = externalArrays[i];
+      continue;
+    }
+
+    NDArray* ext = externalArrays[i];
+    if (ext == nullptr || ext->isEmpty()) {
+      effectiveExternals_[i] = ext;
+      continue;
+    }
+
+    // Skip staging for KV cache buffers. KV caches are written by GPU kernels
+    // (KV scatter) during execution — their device buffer is the source of truth,
+    // and their pointers are already stable (static buffers owned by the caller).
+    // D2D-copying them into staging would capture stale pre-scatter data.
+    //
+    // Detection: match the external input's device buffer address against the
+    // static KV buffers registered via configureKvScatter(). NDArray pointers
+    // differ (Java creates fresh wrappers), so compare specialBuffer() addresses.
+    if (kvScatterConfigured_ && ext->specialBuffer() != nullptr) {
+      bool isKvBuffer = false;
+      void* extDevAddr = ext->specialBuffer();
+      for (auto& entry : kvScatterEntries_) {
+        if (entry.staticBuf != nullptr &&
+            entry.staticBuf->specialBuffer() == extDevAddr) {
+          isKvBuffer = true;
+          break;
+        }
+      }
+      if (isKvBuffer) {
+        effectiveExternals_[i] = externalArrays[i];
+        continue;
+      }
+    }
+
+    NDArray* staging = placeholderStagingBuffers_[i];
+
+    // Allocate staging buffer on first use. Shapes are frozen — this
+    // allocation happens exactly once per variable input. The staging
+    // NDArray and its device buffer persist for the plan's lifetime,
+    // giving all arg tables a stable specialBuffer() pointer.
+    if (staging == nullptr) {
+      staging = new NDArray(ext->ordering(), *ext->getShapeAsVector(),
+                            ext->dataType(), LaunchContext::defaultContext());
+      placeholderStagingBuffers_[i] = staging;
+    }
+
+    // D2D copy: external input (already H2D-synced) → plan-owned staging buffer.
+    // Async on the execution stream — no CPU sync needed.
+    void* dstBuf = staging->specialBuffer();
+    void* srcBuf = ext->specialBuffer();
+    if (dstBuf != nullptr && srcBuf != nullptr) {
+      size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+      if (bytes > 0) {
+        cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+      }
+    }
+    staging->dataBuffer()->writeSpecial();
+
+    effectiveExternals_[i] = staging;
+  }
+
+  return effectiveExternals_;
 }
 
 }  // namespace graph

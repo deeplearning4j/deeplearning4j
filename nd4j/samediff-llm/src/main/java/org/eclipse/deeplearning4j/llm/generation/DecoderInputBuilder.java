@@ -166,7 +166,16 @@ public class DecoderInputBuilder {
                     decoderInputMap.put(inputName, encoderAttentionMask);
                 } else if (encoderOutputs != null) {
                     long encoderSeqLen = encoderOutputs.size(1);
-                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, encoderSeqLen));
+                    // Reuse the encoder attention mask — it's always ones(1, encoderSeqLen) with
+                    // the same shape every decode step. Fresh allocation each step changes the
+                    // specialBuffer() pointer, preventing CUDA graph fast replay (argTableStable).
+                    if (canReuse && reusableInputs.containsKey(inputName)) {
+                        decoderInputMap.put(inputName, reusableInputs.get(inputName));
+                    } else {
+                        INDArray mask = Nd4j.ones(DataType.LONG, 1, encoderSeqLen);
+                        if (canReuse) reusableInputs.put(inputName, mask);
+                        decoderInputMap.put(inputName, mask);
+                    }
                 }
             } else if (inputName.equals(ioConfig.getAttnMaskReformatOutput())) {
                 buildAttnMaskReformatOverride(ioConfig, decoderInputMap, inputName, canReuse, usePadded,
