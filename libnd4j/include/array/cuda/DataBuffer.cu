@@ -65,10 +65,6 @@ SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
 SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
 
-// Suppress memory frees during capture even when tl_graphExecutionActive=false.
-// Set by capture orchestrator to decouple "don't free external memory" from
-// "use capture workspace + suppress D2H".
-SD_TLS_EXPORT thread_local bool tl_captureSkipFrees = false;
 
 // Per-step GPU allocation/free tracking for leak diagnosis
 SD_TLS_EXPORT thread_local long long tl_dspAllocBytes = 0;
@@ -576,6 +572,66 @@ void DataBuffer::allocateSpecial() {
     int actualDevice = deviceId;
     if (_workspace == nullptr) {
       size_t allocSize = getLenInBytes() + 8;
+
+      // ── Capture workspace bump allocation ────────────────────────────────
+      // During CUDA graph capture, allocate from the pre-allocated capture
+      // workspace (bump allocator) instead of CudaMemoryPool::allocate().
+      //
+      // WHY: CudaMemoryPool uses cudaMallocAsync, which creates MemAlloc
+      // graph nodes. The async pool reuses freed GPU addresses within the
+      // same step — two ops can get the same address if the first op's
+      // output is freed before the second allocates. The captured graph
+      // bakes these overlapping addresses. On replay, the pool may resolve
+      // differently → address mismatch → wrong data flows between ops.
+      // This was the root cause of the 49.6% accuracy mega-graph bug
+      // (commit 321884f564).
+      //
+      // The capture workspace is a single contiguous GPU allocation made
+      // BEFORE capture begins. Bump-allocating from it guarantees:
+      //   1. No MemAlloc/MemFree graph nodes (no async pool interaction)
+      //   2. Unique non-overlapping addresses (monotonic bump pointer)
+      //   3. Addresses persist across replay (workspace lives for graph lifetime)
+      //
+      // Same pattern as PointersManager::allocateDevMem() (line 66-76).
+      // deleteSpecial() already handles workspace-interior buffers correctly
+      // (lines 1060-1079: checks isInCaptureWorkspace, skips CUDA free).
+      if (tl_graphExecutionActive && tl_captureWorkspace != nullptr) {
+        size_t aligned = (allocSize + 255) & ~255ULL;  // 256-byte alignment
+        if (tl_captureWorkspaceOffset + aligned <= tl_captureWorkspaceSize) {
+          _specialBuffer = reinterpret_cast<int8_t*>(
+              static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset);
+          tl_captureWorkspaceOffset += aligned;
+          // Workspace-allocated: NOT owned by this DataBuffer (workspace
+          // lifecycle manages the memory). Set _isOwnerSpecial=false below
+          // so deleteSpecial() doesn't try to free an interior pointer.
+          _isOwnerSpecial = false;
+          _specialAllocBytes = allocSize;
+          _specialDeviceId.store(deviceId);
+          _deviceId.store(deviceId);
+          tl_dspAllocBytes += getLenInBytes();
+          tl_dspAllocCount++;
+#if defined(SD_GCC_FUNCTRACE)
+          array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+              _specialBuffer, getLenInBytes(), getDataType(),
+              array::BufferType::SPECIAL, this, true /*workspace*/);
+#endif
+          DSP_DIAG(MEMORY, "CAPTURE_WORKSPACE_ALLOC: %zu bytes @ offset=%zu/%zu ptr=%p",
+                   allocSize, tl_captureWorkspaceOffset - aligned,
+                   tl_captureWorkspaceSize, (void*)_specialBuffer);
+          // Skip the pool allocation, failover, and memory counter paths below.
+          // Jump to the end of the allocation block (after _isOwnerSpecial is set).
+          goto alloc_done;
+        }
+        // Workspace exhausted — fall through to pool allocation.
+        // This is NOT ideal during capture (creates MemAlloc nodes), but
+        // prevents hard failure. The capture workspace size should be tuned
+        // to avoid this (Environment::dspCaptureWorkspaceMb).
+        DSP_DIAG(MEMORY, "CAPTURE_WORKSPACE_EXHAUSTED: need %zu, remaining %zu/%zu — "
+                 "falling through to cudaMallocAsync (will create MemAlloc graph node)",
+                 aligned, tl_captureWorkspaceSize - tl_captureWorkspaceOffset,
+                 tl_captureWorkspaceSize);
+      }
+
       // During CUDA graph capture, allocations MUST use the captured stream.
       // Using nullptr (legacy default stream) causes implicit sync with the captured
       // stream in DEFAULT scheduling mode, invalidating the capture (error 901).
@@ -620,6 +676,8 @@ void DataBuffer::allocateSpecial() {
       memory::MemoryCounter::getInstance().countIn(actualDevice >= 0 ? actualDevice : deviceId, getLenInBytes());
       memory::MemoryCounter::getInstance().countIn(memory::MemoryType::DEVICE, getLenInBytes());
     }
+alloc_done:  // Target for capture-workspace goto (skips pool alloc + counters already set)
+    (void)0;  // Empty statement after label (C++ requires statement after label)
   } else if(getLenInBytes() == 0) {
     std::string errorMessage;
     errorMessage += "DataBuffer::allocateSpecial: ";
@@ -1057,7 +1115,7 @@ void DataBuffer::deleteSpecial() {
     // The memory stays allocated; it will be freed when the NDArray is deleted
     // AFTER capture completes (via flushPendingClose or normal destruction).
     // Workspace-allocated memory is managed by the workspace lifecycle, not freed individually.
-    if ((tl_graphExecutionActive || tl_captureSkipFrees) && _workspace == nullptr) {
+    if (tl_graphExecutionActive && _workspace == nullptr) {
       // Check if this buffer is within the capture workspace (bump-allocated during capture)
       bool inWorkspace = false;
       if (tl_captureWorkspace != nullptr) {

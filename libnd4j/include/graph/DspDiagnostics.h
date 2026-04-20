@@ -444,6 +444,82 @@ class SD_LIB_EXPORT DspDiagnostics {
     } \
   } while (0)
 
+// Emit a titled summary banner as a single ring-buffer event.
+// Fuses a section title and formatted body into one recordEvent call,
+// replacing multi-call blocks like "=== TITLE === \n details \n ===".
+#define DSP_DIAG_BANNER(CAT, TITLE, FMT, ...) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_##CAT)) { \
+      sd::graph::DspDiagnostics::getInstance().recordEvent( \
+          sd::graph::DSP_DIAG_##CAT, -1, -1, -1, nullptr, 0, \
+          "=== %s === " FMT, (TITLE), ##__VA_ARGS__); \
+    } \
+  } while (0)
+
+// Emit a standardized LIFECYCLE state transition event.
+// STATE_NAME_FN: a callable that maps lifecycleState to const char* (e.g. stateName).
+// OLD_STATE: the current lifecycle state value.
+// NEW_STATE_STR: string literal for the destination state.
+// FMT/...: optional additional context appended after the arrow.
+#define DSP_DIAG_LIFECYCLE(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_EXECUTE)) { \
+      sd::graph::DspDiagnostics::getInstance().recordEvent( \
+          sd::graph::DSP_DIAG_EXECUTE, -1, -1, -1, nullptr, 0, \
+          "LIFECYCLE: %s -> " NEW_STATE_STR " " FMT, \
+          (STATE_NAME_FN)(OLD_STATE), ##__VA_ARGS__); \
+    } \
+  } while (0)
+
+// ─── Throw helpers ──────────────────────────────────────────────────────────
+//
+// Consolidate the pervasive  char buf[N]; snprintf(...); THROW_EXCEPTION(buf)
+// triple into single-call macros.  Every throw site automatically records a
+// diagnostic event (when the category is enabled) so errors are visible in the
+// ring buffer even when the exception is caught upstream.
+
+// General throw — logs to category CAT then throws.
+#define DSP_THROW(CAT, FMT, ...) \
+  do { \
+    char _dsp_throw_buf[512]; \
+    snprintf(_dsp_throw_buf, sizeof(_dsp_throw_buf), FMT, ##__VA_ARGS__); \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_##CAT)) { \
+      sd::graph::DspDiagnostics::getInstance().recordEvent( \
+          sd::graph::DSP_DIAG_##CAT, -1, -1, -1, nullptr, 0, "%s", _dsp_throw_buf); \
+    } \
+    THROW_EXCEPTION(_dsp_throw_buf); \
+  } while (0)
+
+// Segment-tagged throw — embeds seg=[startSlot-endSlot] in the diagnostic event.
+#define DSP_THROW_SEG(CAT, SEG_START, FMT, ...) \
+  do { \
+    char _dsp_throw_buf[512]; \
+    snprintf(_dsp_throw_buf, sizeof(_dsp_throw_buf), FMT, ##__VA_ARGS__); \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_##CAT)) { \
+      sd::graph::DspDiagnostics::getInstance().recordEvent( \
+          sd::graph::DSP_DIAG_##CAT, -1, (SEG_START), -1, nullptr, 0, "%s", _dsp_throw_buf); \
+    } \
+    THROW_EXCEPTION(_dsp_throw_buf); \
+  } while (0)
+
+// CUDA error throw — appends cudaGetErrorString(ERR) and clears the sticky error.
+#ifdef SD_CUDA
+#define DSP_THROW_CUDA(CAT, ERR, FMT, ...) \
+  do { \
+    char _dsp_throw_buf[512]; \
+    snprintf(_dsp_throw_buf, sizeof(_dsp_throw_buf), FMT ": %s", \
+             ##__VA_ARGS__, cudaGetErrorString(ERR)); \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_##CAT)) { \
+      sd::graph::DspDiagnostics::getInstance().recordEvent( \
+          sd::graph::DSP_DIAG_##CAT, -1, -1, -1, nullptr, 0, "%s", _dsp_throw_buf); \
+    } \
+    cudaGetLastError(); \
+    THROW_EXCEPTION(_dsp_throw_buf); \
+  } while (0)
+#else
+#define DSP_THROW_CUDA(CAT, ERR, FMT, ...) DSP_THROW(CAT, FMT, ##__VA_ARGS__)
+#endif
+
 #else  // __CUDA_ARCH__
 
 #define DSP_DIAG_ENABLED(CAT)                     false
@@ -460,6 +536,11 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_COMPARE_ADDRS(TAG_A, TAG_B) (0)
 #define DSP_DIAG_SLOT_WRITE(SLOT_IDX, OP, BYTES, STREAM, PHASE) ((void)0)
 #define DSP_DIAG_SLOT_ZERO(SLOT_IDX, REASON, STREAM, PHASE) ((void)0)
+#define DSP_DIAG_BANNER(CAT, TITLE, FMT, ...) ((void)0)
+#define DSP_DIAG_LIFECYCLE(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) ((void)0)
+#define DSP_THROW(CAT, FMT, ...)             do { THROW_EXCEPTION("DSP error"); } while (0)
+#define DSP_THROW_SEG(CAT, SEG_START, FMT, ...) do { THROW_EXCEPTION("DSP error"); } while (0)
+#define DSP_THROW_CUDA(CAT, ERR, FMT, ...)   do { THROW_EXCEPTION("DSP error"); } while (0)
 
 #endif  // __CUDA_ARCH__
 

@@ -39,9 +39,7 @@
 namespace sd {
 namespace graph {
 
-// Op classification is now driven by OpDescriptor traits (see OpTraitTable.h).
-// No more static op name sets — all classification comes from the centralized
-// trait table, populated once at init time.
+// Op classification is driven by OpDescriptor traits (see OpTraitTable.h).
 
 /**
  * Get the op name for a given op hash by looking it up in the OpRegistrator.
@@ -102,7 +100,6 @@ static bool isNormalizationSlot(const NativeSlot& slot) {
  * 2. B must have exactly one primary input that comes from A's output
  * 3. B must not be data-dependent (output shape depends on input values)
  * 4. For binary ops, the second input must be external (constant/variable/placeholder)
- * 5. Both must target the same device
  */
 static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
                            int slotAOutputIdx) {
@@ -239,11 +236,8 @@ static void fuseReductionEpilogues(NativeSlot* slots, int numSlots,
 
         auto chain = extendElementwiseChain(s, slots, numSlots, fused, consumerCounts);
         if (chain.size() > 1) {
-            // Mark chain members as fused to prevent other passes from re-fusing them.
-            // Do NOT set isFusedChainTail — there is no corresponding head with
-            // fusedChainHead/fusedChainLength/fusedChainOpCodes set up, so setting
-            // the tail flag would cause these ops to return OK without executing,
-            // leaving their output slots NULL.
+            // Mark chain members as fused (but NOT as isFusedChainTail — no
+            // corresponding head is set up, so tail-marking would skip execution).
             for (size_t i = 1; i < chain.size(); i++) {
                 fused[chain[i]] = true;
             }
@@ -269,11 +263,8 @@ static void fuseNormalizationEpilogues(NativeSlot* slots, int numSlots,
 
         auto chain = extendElementwiseChain(s, slots, numSlots, fused, consumerCounts);
         if (chain.size() > 1) {
-            // Mark chain members as fused to prevent other passes from re-fusing them.
-            // Do NOT set isFusedChainTail — there is no corresponding head with
-            // fusedChainHead/fusedChainLength/fusedChainOpCodes set up, so setting
-            // the tail flag would cause these ops to return OK without executing,
-            // leaving their output slots NULL.
+            // Mark chain members as fused (but NOT as isFusedChainTail — no
+            // corresponding head is set up, so tail-marking would skip execution).
             for (size_t i = 1; i < chain.size(); i++) {
                 fused[chain[i]] = true;
             }
@@ -365,11 +356,9 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 0.5: Cast sink through matmul — mark FP16→FP32 casts as identity when
-    // ALL consumers are matmul ops. MmulHelper already handles mixed (HALF, FP32)
-    // inputs internally via cublasSgemmEx, so the explicit cast is redundant.
-    // In transformer models, a single FP16→FP32 cast often feeds multiple matmuls
-    // (e.g., Q/K/V projections share the same hidden state cast), so we must check
-    // that ALL consumers (not just one) are matmul ops before sinking.
+    // ALL consumers are matmul ops. MmulHelper handles mixed (HALF, FP32) inputs
+    // internally via cublasSgemmEx, so the explicit cast is redundant. All
+    // consumers must be matmul ops (not just one) to safely eliminate the cast.
     if (Environment::getInstance().dspCastSinkMatmul()) {
         int castsSunk = 0;
         int castsSkippedNonMatmulConsumer = 0;
@@ -550,11 +539,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             if (slots[j].wiring.numInputs != 2) continue;
 
             // One input must be matmul output, other must be a 1D bias vector.
-            // 2D residuals (e.g., transformer x + matmul(x)) are NOT bias and
-            // would corrupt output if treated as bias by cuBLASLt.
-            //
-            // Find the external operand and check its rank using the
-            // externalInputRanks observed during slot-by-slot warmup.
+            // 2D operands are residual adds (not bias) and must not be fused.
             bool foundMatmulOutput = false;
             int externalSrcIdx = INT_MIN;  // raw inputSourceIndices value (negative)
             for (int k = 0; k < slots[j].wiring.numInputs; k++) {
@@ -757,13 +742,7 @@ int FusionPass::applyFusions(
         switch (fusion.type) {
 
             case FusionCandidate::ELEMENTWISE_CHAIN: {
-                // For a chain A → B → C → ...:
-                // Each op after A reuses its primary input buffer as its output.
-                // This eliminates intermediate allocations — the chain runs in-place
-                // through a single buffer.
-                //
-                // The first op (A) allocates normally. B writes its output into A's
-                // output buffer. C writes into B's (=A's) output buffer. Etc.
+                // Ops after the head reuse the head's output buffer (in-place chain).
                 if (fusion.slotIndices.size() < 2) break;
 
                 for (size_t i = 1; i < fusion.slotIndices.size(); i++) {

@@ -20,9 +20,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 
-// ZLUDA builds define SD_CUDA but the actual GPU is AMD (HIP) or Intel (Level Zero).
-// ZLUDA's CUDA graph translation is incomplete — use native APIs instead.
-// Check ZLUDA targets BEFORE SD_CUDA so the native handle is selected.
+// ZLUDA: check native targets before SD_CUDA to select the correct replay handle.
 #if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
 #include <graph/hip/HipGraphReplayHandle.h>
 #elif defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_INTEL)
@@ -155,11 +153,8 @@ std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(int deviceId) {
   DSP_DIAG_DEV(BACKEND, deviceId,
                "GraphReplayFactory::create: deviceId=%d hwReplay=%d",
                deviceId, hasHardwareReplay() ? 1 : 0);
-  // ── ZLUDA builds: bypass CUDA graph translation, use native APIs ──────
-  // ZLUDA defines SD_CUDA but the GPU is actually AMD or Intel.
-  // ZLUDA's CUDA graph API coverage is incomplete (missing cuGraphLaunch
-  // in official v5, partial in lshqqytiger fork). Native HIP/L0 graph
-  // APIs are production-ready, so use them directly.
+  // ZLUDA defines SD_CUDA but targets AMD (HIP) or Intel (Level Zero) GPUs.
+  // ZLUDA's CUDA graph translation is incomplete — use native graph APIs.
 #if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
   DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating HipGraphReplayHandle (ZLUDA AMD)");
   return std::make_unique<HipGraphReplayHandle>(deviceId);

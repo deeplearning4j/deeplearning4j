@@ -464,27 +464,28 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
 
   // Diagnostic: show pool stats alongside cudaMemGetInfo so we can distinguish
   // "pool holds reserved memory" from "GPU genuinely full"
-  size_t poolUsed = 0, poolReserved = 0;
-  getStats(currentDeviceId, poolUsed, poolReserved);
+  if (DSP_DIAG_ENABLED(MEMORY)) {
+    size_t poolUsed = 0, poolReserved = 0;
+    getStats(currentDeviceId, poolUsed, poolReserved);
 
-  // Also check MemoryCounter (C++ side tracking) and host memory
-  size_t mcDevice = MemoryCounter::getInstance().allocatedDevice(currentDeviceId);
-  size_t mcHost = MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST);
-  size_t mcDeviceGroup = MemoryCounter::getInstance().allocatedGroup(MemoryType::DEVICE);
-  size_t pinnedUsed = pinnedHostBytesUsed_.load();
+    size_t mcDevice = MemoryCounter::getInstance().allocatedDevice(currentDeviceId);
+    size_t mcHost = MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST);
+    size_t mcDeviceGroup = MemoryCounter::getInstance().allocatedGroup(MemoryType::DEVICE);
+    size_t pinnedUsed = pinnedHostBytesUsed_.load();
 
-  sd_printf("CudaMemoryPool::allocateFailover: MEMORY DIAGNOSTIC on device %d:\n"
-            "  cudaMemGetInfo: free=%zu MB, total=%zu MB\n"
-            "  Pool: used=%zu MB, reserved=%zu MB (reclaimable=%zu MB)\n"
-            "  MemoryCounter: device[%d]=%zu MB, deviceGroup=%zu MB, hostGroup=%zu MB\n"
-            "  Pinned host fallback: %zu MB\n"
-            "  Requested: %zu bytes (%.2f MB)\n",
-            currentDeviceId,
-            currentFreeMem / (1024*1024), currentTotalMem / (1024*1024),
-            poolUsed / (1024*1024), poolReserved / (1024*1024), (poolReserved - poolUsed) / (1024*1024),
-            currentDeviceId, mcDevice / (1024*1024), mcDeviceGroup / (1024*1024), mcHost / (1024*1024),
-            pinnedUsed / (1024*1024),
-            size, size / (1024.0*1024.0));
+    sd_printf("CudaMemoryPool::allocateFailover: MEMORY DIAGNOSTIC on device %d:\n"
+              "  cudaMemGetInfo: free=%zu MB, total=%zu MB\n"
+              "  Pool: used=%zu MB, reserved=%zu MB (reclaimable=%zu MB)\n"
+              "  MemoryCounter: device[%d]=%zu MB, deviceGroup=%zu MB, hostGroup=%zu MB\n"
+              "  Pinned host fallback: %zu MB\n"
+              "  Requested: %zu bytes (%.2f MB)\n",
+              currentDeviceId,
+              currentFreeMem / (1024*1024), currentTotalMem / (1024*1024),
+              poolUsed / (1024*1024), poolReserved / (1024*1024), (poolReserved - poolUsed) / (1024*1024),
+              currentDeviceId, mcDevice / (1024*1024), mcDeviceGroup / (1024*1024), mcHost / (1024*1024),
+              pinnedUsed / (1024*1024),
+              size, size / (1024.0*1024.0));
+  }
 
   if (prevDev != currentDeviceId) {
     cudaSetDevice(prevDev);
@@ -497,22 +498,24 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     trimPool(currentDeviceId);
 
     // Log post-trim state to see how much memory was actually recovered
-    size_t postTrimFree = 0, postTrimTotal = 0;
-    size_t postTrimPoolUsed = 0, postTrimPoolReserved = 0;
-    {
-      int prevDev2 = -1;
-      cudaGetDevice(&prevDev2);
-      if (prevDev2 != currentDeviceId) cudaSetDevice(currentDeviceId);
-      cudaMemGetInfo(&postTrimFree, &postTrimTotal);
-      if (prevDev2 != currentDeviceId) cudaSetDevice(prevDev2);
+    if (DSP_DIAG_ENABLED(MEMORY)) {
+      size_t postTrimFree = 0, postTrimTotal = 0;
+      size_t postTrimPoolUsed = 0, postTrimPoolReserved = 0;
+      {
+        int prevDev2 = -1;
+        cudaGetDevice(&prevDev2);
+        if (prevDev2 != currentDeviceId) cudaSetDevice(currentDeviceId);
+        cudaMemGetInfo(&postTrimFree, &postTrimTotal);
+        if (prevDev2 != currentDeviceId) cudaSetDevice(prevDev2);
+      }
+      getStats(currentDeviceId, postTrimPoolUsed, postTrimPoolReserved);
+      sd_printf("CudaMemoryPool::allocateFailover: After trim on device %d: "
+                "cudaFree=%zu MB (was %zu MB, recovered %zu MB), pool used=%zu MB, reserved=%zu MB\n",
+                currentDeviceId,
+                postTrimFree / (1024*1024), currentFreeMem / (1024*1024),
+                (postTrimFree > currentFreeMem ? (postTrimFree - currentFreeMem) : 0) / (1024*1024),
+                postTrimPoolUsed / (1024*1024), postTrimPoolReserved / (1024*1024));
     }
-    getStats(currentDeviceId, postTrimPoolUsed, postTrimPoolReserved);
-    sd_printf("CudaMemoryPool::allocateFailover: After trim on device %d: "
-              "cudaFree=%zu MB (was %zu MB, recovered %zu MB), pool used=%zu MB, reserved=%zu MB\n",
-              currentDeviceId,
-              postTrimFree / (1024*1024), currentFreeMem / (1024*1024),
-              (postTrimFree > currentFreeMem ? (postTrimFree - currentFreeMem) : 0) / (1024*1024),
-              postTrimPoolUsed / (1024*1024), postTrimPoolReserved / (1024*1024));
 
     // trimPool() restores the caller's original device. Switch back to the
     // requested device before retrying so the retry allocation lands where the
@@ -752,10 +755,6 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     // Non-workspace memory during capture — also skip to prevent MemFree graph nodes
     return;
   }
-  // Note: tl_captureSkipFrees is NOT checked here — gap op temps allocated during
-  // capture via cudaMallocAsync need paired MemFree nodes (cudaFreeAsync).
-  // External memory is protected by DataBuffer::deleteSpecial() which checks
-  // tl_graphExecutionActive and returns early.
 
   // Check host allocations with exception handling.
   // Two checks: (1) exact match for base pointers, (2) range check for interior
@@ -1050,8 +1049,10 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
 
   // Diagnostic: pool state BEFORE trim
   size_t preUsed = 0, preReserved = 0;
-  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &preUsed);
-  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &preReserved);
+  if (DSP_DIAG_ENABLED(MEMORY)) {
+    cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &preUsed);
+    cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &preReserved);
+  }
 
   // Sync the provided stream first (caller expects this stream's work to complete).
   if (stream != nullptr) {
@@ -1091,8 +1092,10 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
 
   // Diagnostic: pool state AFTER sync, BEFORE trim
   size_t postSyncUsed = 0, postSyncReserved = 0;
-  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &postSyncUsed);
-  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &postSyncReserved);
+  if (DSP_DIAG_ENABLED(MEMORY)) {
+    cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &postSyncUsed);
+    cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &postSyncReserved);
+  }
 
   // Trim to release unused reserved memory back to the device
   cudaError_t trimErr = cudaMemPoolTrimTo(pools_[deviceId], 0);
@@ -1102,8 +1105,10 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
 
   // Diagnostic: pool state AFTER trim
   size_t postTrimUsed = 0, postTrimReserved = 0;
-  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &postTrimUsed);
-  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &postTrimReserved);
+  if (DSP_DIAG_ENABLED(MEMORY)) {
+    cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &postTrimUsed);
+    cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &postTrimReserved);
+  }
 
   DSP_DIAG(MEMORY, "trimPoolOnStream(dev=%d stream=%p): "
             "dirtyStreams=%d | "

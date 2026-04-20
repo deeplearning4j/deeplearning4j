@@ -35,18 +35,9 @@ namespace graph {
 void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<int>& gapSlots) {
   batchZeroEntries_.clear();
 
-  // Only zero output buffers for gap (native fallback) slots — NOT Triton sub-kernel
-  // outputs. Triton sub-kernels fully overwrite their outputs; zeroing them would add
-  // unnecessary work and potentially interfere with multi-phase kernel correctness.
-  //
-  // Must match the exact set of buffers that per-slot nullify() touches during capture.
-  // Slots that return early without nullify must be skipped here:
-  //   - frozenConstantSlot: early return, no execution
-  //   - isIdentityOp: wires output=input, no allocation/nullify
-  //   - isFusedChainTail: head already computed result, tail returns early
-  //   - inPlaceFused: output IS the input, no separate buffer
-  //   - view producers: share input's DataBuffer
-  //   - isFusedChainHead: nullifies only the LAST chain slot's output, not head's own
+  // Zero only gap (native fallback) slot outputs — Triton sub-kernels fully
+  // overwrite theirs. Skip slots that don't allocate/nullify their own output
+  // (identity, fused tail, in-place fused, views, frozen constants).
   int skippedIdentity = 0, skippedTail = 0, skippedHead = 0, skippedView = 0;
   for (int s = 0; s < numSlots_; s++) {
     // Only include gap slots (slots NOT covered by any Triton sub-kernel)
@@ -142,9 +133,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       void* devPtr = cached->specialBuffer();
       if (devPtr == nullptr) continue;
 
-      // Use getLenInBytes() from the DataBuffer — this is the FULL allocation size
-      // (including any padding/overallocation). Must match setToZeroBuffers() semantics
-      // which also zeros getLenInBytes(), not just lengthOf() * sizeOfT().
+      // Use getLenInBytes() (full allocation size) to match setToZeroBuffers().
       size_t bytes = cached->dataBuffer()->getLenInBytes();
       if (bytes <= 0) continue;
 
@@ -170,14 +159,8 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
 }
 
 // ── Batch D2D copy kernel ──────────────────────────────────────────────────
-// Replaces N individual cudaMemcpyAsync D2D calls with a single kernel launch.
-// Each thread block handles one buffer using vectorized int4 reads/writes
-// (16 bytes per load/store). Grid: numBuffers blocks × 256 threads.
-//
-// The three device-side arrays (srcPtrs, dstPtrs, sizes) are uploaded once
-// via H2D memcpy from pinned host arrays before launch. Destination pointers
-// and sizes are static after prepareBatchD2DDevice() (they don't change
-// across decode steps); only source pointers need re-upload each step.
+// Single kernel launch replaces N individual cudaMemcpyAsync D2D calls.
+// One block per buffer, vectorized int4 (16B) reads/writes.
 
 SD_KERNEL void batchD2DKernel(void** srcPtrs, void** dstPtrs,
                               size_t* sizes, int numBuffers) {
@@ -269,9 +252,7 @@ void NativeDynamicShapePlan::launchBatchD2D(cudaStream_t stream) {
   cudaMemcpyAsync(batchD2DDeviceSrcPtrs_, batchD2DHostSrcPtrs_,
                   batchD2DCount_ * sizeof(void*), cudaMemcpyHostToDevice, stream);
 
-  // One block per buffer, 256 threads per block. Each block handles one buffer
-  // independently — no inter-block sync needed. 256 threads gives 4KB of int4
-  // loads per thread-block iteration, sufficient bandwidth for typical buffer sizes.
+  // One block per buffer, 256 threads per block.
   constexpr int kThreadsPerBlock = 256;
   batchD2DKernel<<<batchD2DCount_, kThreadsPerBlock, 0, stream>>>(
       static_cast<void**>(batchD2DDeviceSrcPtrs_),

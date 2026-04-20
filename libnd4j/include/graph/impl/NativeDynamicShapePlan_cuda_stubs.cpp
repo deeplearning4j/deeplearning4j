@@ -136,8 +136,9 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         return Status::OK;
       }
       // All backends in the cascade failed — fall through to slot-by-slot
-      DSP_DIAG(FALLBACK, "NativeDSP::execute: all CPU backends failed for seg[%d-%d] — falling back to slot-by-slot",
-               segment.def.startSlot, segment.def.endSlot);
+      DSP_THROW_SEG(COMPILE, segment.def.startSlot,
+                   "NativeDSP::execute: all CPU backends failed for seg[%d-%d]",
+                   segment.def.startSlot, segment.def.endSlot);
       [[fallthrough]];
     }
 
@@ -333,7 +334,6 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureOomRetries = 0;
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
     seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     seg.def.shapeKey = 0;
   }

@@ -40,6 +40,7 @@
 #include <cuda_fp16.h>
 #include <exceptions/cuda_exception.h>
 
+#include <algorithm>
 #include <queue>
 #include <unordered_set>
 
@@ -239,6 +240,68 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
             fromArray, fromCache);
 }
 
+// ── Post-merge slot dispatch reconciliation ──────────────────────────────────
+// Slot-level dispatch tables (batchedGemmGroups_, slotToBatchedGemmGroup_) are
+// built before island merging and can reference slots across multiple replay
+// units. After merging, slots in merged groups are replayed by a CUDA graph.
+// If a batched GEMM group's trigger slot lands in a merged unit, it never fires
+// during replay — orphaning non-trigger members in unmerged gaps (their matmul
+// output stays as zeros from prezero → degenerate output).
+//
+// One pass over units to collect merged slots, one pass over groups to fix up.
+
+void NativeDynamicShapePlan::reconcileSlotDispatchAfterMerge(const ReplaySchedule& sched) {
+  if (batchedGemmGroups_.empty()) return;
+
+  // Pass 1: collect merged slot indices into a dense boolean vector (O(1) lookup)
+  int mapSize = static_cast<int>(slotToBatchedGemmGroup_.size());
+  std::vector<bool> isMerged(mapSize, false);
+  bool anyMerged = false;
+  for (auto& u : sched.units) {
+    if (u.mergedGroupId < 0) continue;
+    for (int s = u.startSlot; s <= u.endSlot && s < mapSize; s++) {
+      isMerged[s] = true;
+      slotToBatchedGemmGroup_[s] = -1;  // clear mapping immediately
+    }
+    anyMerged = true;
+  }
+  if (!anyMerged) return;
+
+  // Pass 2: fix up each group — remove merged members, update trigger, disable if <2
+  int disabledGroups = 0, removedSlots = 0;
+  for (int gi = 0; gi < static_cast<int>(batchedGemmGroups_.size()); gi++) {
+    auto& group = batchedGemmGroups_[gi];
+
+    auto it = std::remove_if(group.slotIndices.begin(), group.slotIndices.end(),
+                             [&](int s) { return s < mapSize && isMerged[s]; });
+    int removed = static_cast<int>(std::distance(it, group.slotIndices.end()));
+    if (removed == 0) continue;
+
+    group.slotIndices.erase(it, group.slotIndices.end());
+    removedSlots += removed;
+
+    if (static_cast<int>(group.slotIndices.size()) < 2) {
+      // Too few for batching — unmap remaining members so they fall through
+      // to individual executeSlot dispatch in the replay loop
+      for (int s : group.slotIndices) {
+        slotToBatchedGemmGroup_[s] = -1;
+      }
+      group.slotIndices.clear();
+      group.triggerSlot = -1;
+      disabledGroups++;
+    } else {
+      // Reassign trigger + update mapping (group index unchanged, no erasure)
+      group.triggerSlot = group.slotIndices.front();
+      for (int s : group.slotIndices) {
+        slotToBatchedGemmGroup_[s] = gi;
+      }
+    }
+  }
+
+  DSP_DIAG(EXECUTE, "reconcileSlotDispatchAfterMerge: %d matmul slots removed, %d groups disabled",
+           removedSlots, disabledGroups);
+}
+
 // ── Device resource allocation ───────────────────────────────────────────────
 
 void NativeDynamicShapePlan::prepareBatchedGemmDevice(cudaStream_t stream) {
@@ -276,7 +339,6 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 
   // 0. Pre-populate outputSlots_ for ALL members from slot cache.
   //    This ensures downstream ops can find each member's output array.
-  // Phase 2: outputSlots_ == outputSlots_ (unified), no separate restore needed
 
   // 1. Populate host pointer arrays from current slot inputs/outputs
   for (int b = 0; b < batchCount; b++) {

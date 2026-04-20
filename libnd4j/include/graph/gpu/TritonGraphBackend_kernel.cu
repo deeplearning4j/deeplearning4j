@@ -237,7 +237,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       // Fallback: gap slots (CONST_GEN, SHAPE_MANIP, etc.) may have been skipped
       // by the frozen constant optimization during gap execution, leaving
       // outputSlots_[si] null. When the pre-exec restoration is also skipped
-      // (seg.exec.executionCount > 2 optimization), the slot stays null. Restore
+      // (frozen replay with valid replayHandle), the slot stays null. Restore
       // from outputSlots_ which retains the array from the warmup step.
       if (!arr && slotArrayCache && argMapping.slotIndex < totalOutputSlots) {
         arr = slotArrayCache[argMapping.slotIndex];
@@ -1085,13 +1085,11 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   // Phase diagnostic: detect when refresh is called despite argTableStable being true.
   // This indicates the caller skipped the fast-replay gate, which is a performance bug.
   // Not a hard assert because verify mode intentionally bypasses the gate.
-#ifndef NDEBUG
   if (seg.exec.argTableStable) {
     DSP_DIAG(EXECUTE, "PHASE_WARN: refreshArgTablesForReplay called while argTableStable=true "
              "for seg[%d-%d] execCount=%d — caller should have used fast-replay path",
              seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
   }
-#endif
 
   int currentDevice = getCachedCudaDevice();
 
@@ -1195,10 +1193,8 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   // ── TRIPWIRE: scan arg tables for NULL (0) pointer entries ──────────
   // A NULL device pointer in the arg table will cause SIGSEGV at address 0x0
   // during cudaGraphLaunch when the kernel tries to dereference it.
-  // REPLAY OPTIMIZATION: Only run during first few replays (executionCount < 4).
-  // After 3+ successful replays, pointers are stable. Skipping the full scan
-  // saves host-side overhead per segment per step (matches gpubackend tripwire gating).
-  if (seg.exec.executionCount < 4) {
+  // Only runs when DSP_DIAG EXECUTE is enabled — zero cost in production.
+  if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_EXECUTE)) {
     int nullArgEntries = 0;
     for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
       auto& subKernel = compiledSeg->subKernels[ki];

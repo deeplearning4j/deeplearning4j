@@ -69,17 +69,6 @@ namespace graph {
 
 using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
 
-// Pre-allocated cross-stream sync event, reused across replay calls to avoid
-// cudaEventCreate/Destroy overhead per step. Lazily created on first use.
-static thread_local cudaEvent_t tl_crossStreamEvent = nullptr;
-
-static inline cudaEvent_t getCrossStreamEvent() {
-  if (tl_crossStreamEvent == nullptr) {
-    cudaEventCreateWithFlags(&tl_crossStreamEvent, cudaEventDisableTiming);
-  }
-  return tl_crossStreamEvent;
-}
-
 namespace {
 
 LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
@@ -260,9 +249,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   if (ok) {
     auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
-    // CRITICAL FIX: Cross-stream ordering for stable-address variable inputs.
-    // .assign() on reusable buffers runs on the default LaunchContext stream.
-    // Graph replay launches on cudaStr. Without ordering, replay reads stale data.
+    // Cross-stream ordering: .assign() runs on the default stream while graph
+    // replay launches on cudaStr. Ensure cudaStr waits on the default stream.
     {
       cudaStream_t defaultStream = nullptr;
       auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
@@ -270,9 +258,12 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         defaultStream = *defaultStreamPtr;
       }
       if (defaultStream != nullptr && defaultStream != cudaStr) {
-        cudaEvent_t crossStreamEvt = getCrossStreamEvent();
-        cudaEventRecord(crossStreamEvt, defaultStream);
-        cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
+        auto* execCtxFast = static_cast<PlanExecutionContext*>(activeExecutionContext());
+        cudaEvent_t crossStreamEvt = (execCtxFast != nullptr) ? execCtxFast->crossStreamEvent : nullptr;
+        if (crossStreamEvt != nullptr) {
+          cudaEventRecord(crossStreamEvt, defaultStream);
+          cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
+        }
         DSP_DIAG(EXECUTE, "CROSS_STREAM_SYNC: frozen fast path replay stream %p waiting on "
                  "default stream %p for seg[%d-%d]",
                  (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
@@ -299,14 +290,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
 #endif
 
-    // NOTE: prezeroSegmentOutputs is NOT called on the replay hot path. Output
-    // zeroing is captured once during the slot-by-slot capture phase (via
-    // executeSegmentSlotBySlot → prezeroSegmentOutputs) and baked into the CUDA
-    // graph as memset nodes that replay automatically. Additionally, the pre-
-    // capture batchZeroEntries_ loop in NativeDynamicShapePlan_gpubackend.cpp
-    // zeros gap-op outputs once before capture. Issuing per-step cudaMemsetAsync
-    // here would add K async memsets to the hot cudaStr every decode step — the
-    // regression introduced in 316c23fce8.
+    // prezeroSegmentOutputs is NOT called on the replay hot path — output zeroing
+    // is captured into the CUDA graph during the slot-by-slot capture phase and
+    // replays automatically. Per-step cudaMemsetAsync here would be redundant work.
 
     if (seg.exec.replayHandle->replay(stream)) {
       auto tLaunchDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
@@ -322,11 +308,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       seg.exec.executionCount++;
       executeCount_++;
 
-      // Tick actuality on all segment output slots — CUDA graph replay writes device
-      // memory directly without registerSpecialUse. Without this, Java-side getFloat()
-      // calls syncToHost() which checks isSpecialActual() — if not ticked, it sees
-      // stale host data. compositeReplay() has this at gpubackend:1199; the frozen fast
-      // path was missing it, causing D2H reads to return stale zeros.
+      // Tick actuality: CUDA graph replay writes device memory directly without
+      // registerSpecialUse. Without this tick, syncToHost sees stale host data.
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
         NDArray* arr = outputSlots_[s];
         if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
@@ -343,8 +326,6 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         performReplayVerify(seg, externalInputs, numExternalInputs, stream, "CUDA_GRAPHS");
       }
 
-      // pendingClose_ removed: arrays persist (one array per slot)
-
       if (executionTimingEnabled_) {
         auto copyUs = std::chrono::duration_cast<std::chrono::microseconds>(tCopyDone - t0).count();
         auto launchUs = std::chrono::duration_cast<std::chrono::microseconds>(tLaunchDone - tCopyDone).count();
@@ -359,9 +340,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
   }
 
-  DSP_DIAG(FALLBACK, "NativeDSP::execute: frozen fast path failed (ok=%d), falling back to full path",
+  DSP_DIAG(EXECUTE, "NativeDSP::execute: frozen fast path not applicable (ok=%d), using full path",
            static_cast<int>(ok));
-  return Status::MAYBE;  // Fall through to full execution path
+  return Status::MAYBE;  // Not applicable — use full execution path
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -488,7 +469,7 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
       const auto& task = tasks[i];
       cudaError_t setDevErr = cudaSetDevice(task.targetDevice);
       if (setDevErr != cudaSuccess) {
-        DSP_DIAG(FALLBACK, "NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s",
+        DSP_DIAG(COMPILE, "NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s",
                  task.targetDevice, task.segIdx, cudaGetErrorString(setDevErr));
         cudaGetLastError();
         precompileFail++;
@@ -543,17 +524,15 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
         if (d < 0) continue;
         cudaError_t setDevErr = cudaSetDevice(d);
         if (setDevErr != cudaSuccess) {
-          DSP_DIAG(FALLBACK,
-                   "NativeDSP::precompile: cudaSetDevice(%d) failed before preloadAllModules: %s",
-                   d, cudaGetErrorString(setDevErr));
-          cudaGetLastError();
-          continue;
+          cudaSetDevice(prevDev);
+          DSP_THROW_CUDA(COMPILE, setDevErr,
+                         "NativeDSP::precompile: cudaSetDevice(%d) failed before preloadAllModules",
+                         d);
         }
         Status preloadStatus = tritonBackend->preloadAllModules(d);
         if (preloadStatus != Status::OK) {
-          DSP_DIAG(FALLBACK,
-                   "NativeDSP::precompile: preloadAllModules(device=%d) reported failure",
-                   d);
+          cudaSetDevice(prevDev);
+          DSP_THROW(COMPILE, "NativeDSP::precompile: preloadAllModules(device=%d) failed", d);
         }
       }
       cudaSetDevice(prevDev);
@@ -724,30 +703,19 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
     return false;
   }
 
-  // When tritonSkipKernels=true, ALL compiled sub-kernels are skipped and every slot
-  // is executed via orderedRangeExecutor_ → executeSegmentSlotBySlot. Routing through
-  // executeSegmentWithGpuGraph causes two bugs:
-  //   1. FROZEN→SHAPE_CACHED demotion (lines 4026-4027) removes the guard in
-  //      prezeroSegmentOutputs that skips zeroing FROZEN+isFullyWriting slots.
-  //      Result: accumulation op outputs are wiped with zeros → stuck token every step.
-  //   2. Fragmented execution: executeSegmentSlotBySlot is called once per subkernel
-  //      gap range instead of once for the full segment, causing each fragment to
-  //      re-run prezeroSegmentOutputs independently (double-zero risk) and losing
-  //      the per-segment executionCount increments.
-  // Fix: route directly to executeSegmentSlotBySlot (same path as GEM_SLOT_BY_SLOT)
-  // so slot states remain FROZEN, the isFullyWriting guard fires correctly, and the
-  // full segment executes as one contiguous ordered pass.
+  // When tritonSkipKernels=true, route directly to slot-by-slot execution.
+  // Going through executeSegmentWithGpuGraph would demote FROZEN→SHAPE_CACHED
+  // (breaking the prezero isFullyWriting guard) and fragment execution into
+  // per-subkernel ranges (double-zero risk, lost executionCount increments).
   if (Environment::getInstance().tritonSkipKernels()) {
     DSP_DIAG_SEG(EXECUTE, segment.def.startSlot, "platformShouldUseGraph: false (tritonSkipKernels=true, routing to slot-by-slot)");
     return false;
   }
 
   // Non-frozen execution: use slot-by-slot to avoid memory leaks.
-  // Graph capture/replay with tl_graphExecutionActive=true suppresses cudaFreeAsync
-  // in deleteSpecial(), causing temporary NDArrays created by ops during capture
-  // to leak their GPU memory (~260 MB/step for decoder models). With changing shapes
-  // (KV cache grows each step), each step triggers a new capture, compounding the leak.
-  // Slot-by-slot execution properly frees all temporaries.
+  // Graph capture with tl_graphExecutionActive=true suppresses cudaFreeAsync,
+  // leaking temporary NDArrays. When shapes change each step, new captures
+  // compound the leak. Slot-by-slot execution properly frees all temporaries.
   if (!shapesFrozen_) return false;
 
   bool tryCapture = (segment.def.isCapturable || (shapesFrozen_ && executeCount_ > 0))
@@ -778,10 +746,10 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     void* stream, bool& usedGraph) {
   usedGraph = false;
 
-  DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d phase=%d",
+  DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d phase=%s",
            segment.def.startSlot, segment.def.endSlot,
            static_cast<int>(segment.def.selectedBackend), static_cast<int>(segment.def.isCapturable),
-           segment.exec.executionCount, static_cast<int>(segment.exec.currentPhase));
+           segment.exec.executionCount, segment.exec.displayPhaseName());
 
   switch (segment.def.selectedBackend) {
     case SelectedBackend::GPU_COMPILER: {
@@ -789,27 +757,21 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       if (!gpuBackend) {
         // GPU_COMPILER was selected but no backend is available at runtime.
         // This is a configuration error — throw rather than silently degrading.
-        char buf[256];
-        snprintf(buf, sizeof(buf),
-                 "NativeDSP::execute: seg[%d-%d] selectedBackend=GPU_COMPILER but "
-                 "getGpuGraphBackend() returned null. No GPU backend available.",
-                 segment.def.startSlot, segment.def.endSlot);
-        DSP_DIAG(COMPILE, "%s", buf);
-        THROW_EXCEPTION(buf);
+        DSP_THROW_SEG(COMPILE, segment.def.startSlot,
+                      "NativeDSP::execute: seg[%d-%d] selectedBackend=GPU_COMPILER but "
+                      "getGpuGraphBackend() returned null. No GPU backend available.",
+                      segment.def.startSlot, segment.def.endSlot);
       }
 
       // Compilation has permanently failed for this segment. This means a prior
       // attempt to compile or capture failed and was recorded. Throw immediately
       // so the failure is visible rather than silently producing wrong results.
       if (segment.exec.compilationFailed) {
-        char buf[256];
-        snprintf(buf, sizeof(buf),
-                 "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s "
-                 "compilationFailed=true — prior compilation/capture failed permanently. "
-                 "Fix the root cause.",
-                 executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name());
-        DSP_DIAG(COMPILE, "%s", buf);
-        THROW_EXCEPTION(buf);
+        DSP_THROW_SEG(COMPILE, segment.def.startSlot,
+                      "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s "
+                      "compilationFailed=true — prior compilation/capture failed permanently. "
+                      "Fix the root cause.",
+                      executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name());
       }
 
       auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
@@ -818,18 +780,28 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         if (segment.exec.executionCount <= 1) {
           DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "gpu_graph_first_exec");
         } else {
-          // Check composite replay handles FIRST — Triton island+gap segments use
+          // Check merged + composite replay handles — Triton island+gap segments use
           // these instead of a monolithic replayHandle. The sentinel replayHandle
           // created during composite capture is NOT a captured graph (isReady()=false).
           bool hasComposite = false;
-          for (auto& u : segment.exec.compositeReplaySchedule.units) {
-            if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
-              int idx = u.islandIndex;
-              if (idx >= 0 && idx < static_cast<int>(segment.exec.compositeReplaySchedule.compositeReplayHandles.size()) &&
-                  segment.exec.compositeReplaySchedule.compositeReplayHandles[idx] != nullptr &&
-                  segment.exec.compositeReplaySchedule.compositeReplayHandles[idx]->isReady()) {
-                hasComposite = true;
-                break;
+          // Check merged handles first (island-merged capture groups)
+          for (auto& h : segment.exec.compositeReplaySchedule.mergedReplayHandles) {
+            if (h != nullptr && h->isReady()) {
+              hasComposite = true;
+              break;
+            }
+          }
+          // Fallback: check individual composite handles
+          if (!hasComposite) {
+            for (auto& u : segment.exec.compositeReplaySchedule.units) {
+              if (u.kind == REPLAY_UNIT_TRITON_ISLAND && u.mergedGroupId < 0) {
+                int idx = u.islandIndex;
+                if (idx >= 0 && idx < static_cast<int>(segment.exec.compositeReplaySchedule.compositeReplayHandles.size()) &&
+                    segment.exec.compositeReplaySchedule.compositeReplayHandles[idx] != nullptr &&
+                    segment.exec.compositeReplaySchedule.compositeReplayHandles[idx]->isReady()) {
+                  hasComposite = true;
+                  break;
+                }
               }
             }
           }
@@ -847,29 +819,21 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       // GPU backend execution failed. Mark as failed and throw immediately.
       // Silent fallback to slot-by-slot masks the real bug.
       segment.exec.compilationFailed = true;
-      {
-        char buf[256];
-        snprintf(buf, sizeof(buf),
-                 "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d. "
-                 "GPU compilation/capture failed — fix the root cause.",
-                 executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name(),
-                 static_cast<int>(status));
-        DSP_DIAG(COMPILE, "%s", buf);
-        THROW_EXCEPTION(buf);
-      }
+      DSP_THROW_SEG(COMPILE, segment.def.startSlot,
+                    "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d. "
+                    "GPU compilation/capture failed — fix the root cause.",
+                    executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name(),
+                    static_cast<int>(status));
     }
 
     case SelectedBackend::CUDA_GRAPHS: {
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
         segment.exec.compilationFailed = true;
-        char buf[256];
-        snprintf(buf, sizeof(buf),
-                 "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d. "
-                 "Graph capture failed — fix the root cause.",
-                 segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
-        DSP_DIAG(COMPILE, "%s", buf);
-        THROW_EXCEPTION(buf);
+        DSP_THROW_SEG(COMPILE, segment.def.startSlot,
+                      "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d. "
+                      "Graph capture failed — fix the root cause.",
+                      segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
       }
       usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.compilationFailed);
       if (usedGraph) {
@@ -891,15 +855,11 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "cpu_graph_on_cuda_build");
       return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
-    default: {
-      char buf[256];
-      snprintf(buf, sizeof(buf),
-               "NativeDSP::execute: seg[%d-%d] unknown selectedBackend=%d",
-               segment.def.startSlot, segment.def.endSlot,
-               static_cast<int>(segment.def.selectedBackend));
-      DSP_DIAG(COMPILE, "%s", buf);
-      THROW_EXCEPTION(buf);
-    }
+    default:
+      DSP_THROW_SEG(EXECUTE, segment.def.startSlot,
+                    "NativeDSP::execute: seg[%d-%d] unknown selectedBackend=%d",
+                    segment.def.startSlot, segment.def.endSlot,
+                    static_cast<int>(segment.def.selectedBackend));
   }
 }
 
@@ -910,15 +870,11 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 Status NativeDynamicShapePlan::platformCheckPostSegment(GraphSegment& segment) {
   auto lastErr = cudaGetLastError();
   if (lastErr != cudaSuccess) {
-    char buf[512];
-    snprintf(buf, sizeof(buf), "CUDA error after segment [%d-%d] (execCount=%d shapesFrozen=%d): %d (%s)",
-             segment.def.startSlot, segment.def.endSlot,
-             executeCount_, static_cast<int>(shapesFrozen_),
-             static_cast<int>(lastErr), cudaGetErrorString(lastErr));
-    DSP_DIAG(FALLBACK, "NativeDynamicShapePlan: %s", buf);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(lastErr));
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-    return Status::KERNEL_FAILURE;
+    DSP_THROW_CUDA(EXECUTE, lastErr,
+                   "CUDA error after segment [%d-%d] (execCount=%d shapesFrozen=%d): %d",
+                   segment.def.startSlot, segment.def.endSlot,
+                   executeCount_, static_cast<int>(shapesFrozen_),
+                   static_cast<int>(lastErr));
   }
   return Status::OK;
 }
@@ -940,6 +896,23 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
     seg.exec.replayHandle->freeHostPointers();
     seg.exec.replayHandle->clearExternalAddresses();
     seg.exec.replayHandle.reset();
+  }
+  // Clear merged replay handles (island-merged capture groups)
+  for (auto& h : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
+    if (h) {
+      if (h->getWorkspacePtr() != nullptr) {
+        h->releaseWorkspace(nullptr, seg.def.startSlot);
+      }
+      h->freeHostPointers();
+      h->clearExternalAddresses();
+      h.reset();
+    }
+  }
+  seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
+  // Clear merged group tags on schedule units
+  for (auto& u : seg.exec.compositeReplaySchedule.units) {
+    u.mergedGroupId = -1;
+    u.isMergedLeader = false;
   }
   // Clear composite (per-island) replay handles
   for (auto& h : seg.exec.compositeReplaySchedule.compositeReplayHandles) {
@@ -1130,8 +1103,8 @@ void NativeDynamicShapePlan::printCaptureAudit() const {
   DSP_DIAG(COMPILE, "capture audit: %zu nodes from %zu ops, %d host-only",
            totalNodes, lastCaptureAudit_.size(), hostOnlyCount);
   if (hostOnlyCount > 0) {
-    DSP_DIAG(FALLBACK, "%d host-only ops in captured graph - outputs stale on replay",
-             hostOnlyCount);
+    DSP_THROW(COMPILE, "%d host-only ops in captured graph — outputs stale on replay",
+              hostOnlyCount);
   }
 }
 
@@ -1192,6 +1165,11 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   ctx->needsFullSync = !frozen || execCount <= 1;
   ctx->isFrozenSteadyState = frozen && execCount > 1;
 
+  // Create the per-execution cross-stream sync event.
+  // This replaces the file-scope thread_local tl_crossStreamEvent so each
+  // execute() call owns its event and there is no hidden per-thread state.
+  cudaEventCreateWithFlags(&ctx->crossStreamEvent, cudaEventDisableTiming);
+
   // Resolve CUDA streams and set up DspStreamGuard RAII
   if (stream != nullptr) {
     ctx->dspStream = *static_cast<cudaStream_t*>(stream);
@@ -1220,7 +1198,7 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     // Cross-stream sync: make the DSP stream wait for both the LC default
     // stream and CUDA stream 0 before starting execution.
     {
-      cudaEvent_t evt = getCrossStreamEvent();
+      cudaEvent_t evt = ctx->crossStreamEvent;
       // 1) LC default stream → DSP stream
       if (ctx->lcDefaultStream != nullptr && ctx->lcDefaultStream != ctx->dspStream) {
         cudaEventRecord(evt, ctx->lcDefaultStream);
@@ -1282,6 +1260,12 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
       DSP_DIAG(EXECUTE, "platformEndExecution: cudaStreamSynchronize returned %d (%s) syncLevel=%s",
                static_cast<int>(syncErr), cudaGetErrorString(syncErr), ctx->syncLevelName());
     }
+  }
+
+  // Destroy the per-execution cross-stream sync event.
+  if (ctx->crossStreamEvent != nullptr) {
+    cudaEventDestroy(ctx->crossStreamEvent);
+    ctx->crossStreamEvent = nullptr;
   }
 
   // Explicitly delete the stream guard before the context.
@@ -1355,10 +1339,7 @@ void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int 
 void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* stream) {
   if (!DSP_DIAG_ENABLED(VERIFY) || execCount > 10) return;
 
-  // Sync the DSP stream BEFORE reading GPU data.
-  // Without this, cudaMemcpy races against in-flight GPU writes from the
-  // DSP stream and reads zeros or stale data. The `stream` parameter was
-  // previously unused — now we use it to synchronize.
+  // Sync the DSP stream before reading GPU data to avoid racing in-flight writes.
   if (stream != nullptr) {
     cudaStream_t dspStr = *static_cast<cudaStream_t*>(stream);
     cudaStreamSynchronize(dspStr);
@@ -1504,7 +1485,6 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureOomRetries = 0;
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
     seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     seg.exec.jitShapeKey = 0;
     seg.exec.jitCompileFailed = false;

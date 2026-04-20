@@ -52,6 +52,7 @@
 #include <chrono>
 #include <memory>
 #include <cstdint>
+#include <unordered_map>
 
 #ifdef SD_CUDA
 #include <cuda_runtime.h>
@@ -60,22 +61,6 @@
 
 namespace sd {
 namespace graph {
-
-/**
- * ExecutionDispatchMode — the resolved phase dispatch for this execute() call.
- *
- * Computed once at execute() entry from (shapesFrozen_, executeCount_,
- * graphExecutionMode_, tritonSkipKernels). Replaces the scattered if/else
- * chain at lines 1464-1479 in NativeDynamicShapePlan.cpp.
- *
- * All phase methods and platform dispatch read this instead of re-deriving
- * the mode from raw booleans.
- */
-enum class ExecutionDispatchMode : uint8_t {
-  WARMUP = 0,         // First frozen execution (shapesFrozen_ && executeCount_ == 0)
-  SLOT_BY_SLOT = 1,   // Forced slot-by-slot (GEM_SLOT_BY_SLOT or tritonSkipKernels)
-  REPLAY = 2,         // Normal decode path — per-segment graph replay or capture
-};
 
 /**
  * SyncLevel — what level of GPU synchronization has been performed.
@@ -102,6 +87,25 @@ struct PlanExecutionContext {
   cudaStream_t dspStream = nullptr;        // The DSP execution stream (from caller)
   cudaStream_t lcDefaultStream = nullptr;  // LaunchContext default exec stream
   DspStreamGuard* streamGuard = nullptr;  // Owned, explicit delete in platformEndExecution
+
+  /**
+   * Cross-stream sync event for this execution.
+   * Created by platformBeginExecution(), destroyed by platformEndExecution().
+   * Replaces the file-scope thread_local tl_crossStreamEvent in _gpubackend.cpp
+   * and _cuda.cu so the event lifetime is tied to the execution context rather
+   * than the thread. Passed explicitly to syncCrossStream() and used inline in
+   * platformTryFrozenFastPath() and platformBeginExecution().
+   */
+  cudaEvent_t crossStreamEvent = nullptr;
+
+  /**
+   * FNV-1a fingerprints of variable external inputs from the previous
+   * compositeReplay call. Detects stuck inputs that never change between
+   * execution steps. Replaces tl_prevVariableFingerprints (was thread_local
+   * in _gpubackend.cpp) so state is per-plan-execution, not per-thread.
+   * Keyed by external-input index.
+   */
+  std::unordered_map<int, uint64_t> prevVariableFingerprints;
 #endif
 
   // ══════════════════════════════════════════════════════════════════════
@@ -120,9 +124,6 @@ struct PlanExecutionContext {
   // across execute(), platform methods, and segment dispatch.
   // All are set by populateDerivedState() called from execute().
   // ══════════════════════════════════════════════════════════════════════
-
-  /** The resolved dispatch mode for this execute() call. */
-  ExecutionDispatchMode dispatchMode = ExecutionDispatchMode::WARMUP;
 
   /**
    * Frozen steady-state: frozen && execCount > 1.
@@ -163,6 +164,13 @@ struct PlanExecutionContext {
    * When true, graphExecutionMode_ was overridden to GEM_SLOT_BY_SLOT.
    */
   bool forcedSlotBySlot = false;
+
+  /**
+   * Normal decode path: not first-frozen-warmup and not forced-slot-by-slot.
+   * Complement of isFirstFrozenWarmup and forcedSlotBySlot.
+   * Controls: per-segment graph replay or capture.
+   */
+  bool isReplay = false;
 
   /**
    * Whether VERIFY diagnostics should fire for this execution.
@@ -253,7 +261,7 @@ struct PlanExecutionContext {
     RESEGMENT = 2,              // resegmentForFreeze(); detail1=old_seg_count, detail2=new_seg_count
     FROZEN_CONST_DETECT = 3,    // detectFrozenConstants(); detail1=frozen_count, detail2=total_slots
     PHASE_COMPILE = 4,          // phaseCompile(); detail1=num_segments_compiled
-    PHASE_DISPATCH = 5,         // phase dispatch; detail1=dispatchMode
+    PHASE_DISPATCH = 5,         // phase dispatch; detail1=graphExecutionMode (0=REPLAY,1=SLOT_BY_SLOT), isFirstFrozenWarmup if warmup
     SLOT_EXEC_FAIL = 6,         // slot execution failed; detail1=slotIdx, detail2=status
     SLOT_FROZEN_SKIP = 7,       // frozen constant slot skipped; detail1=slotIdx
     PHASE_TRANSITION = 8,       // planPhase_ changed; detail1=old_phase, detail2=new_phase
@@ -486,26 +494,20 @@ struct PlanExecutionContext {
     // Timing
     timingEnabled = execTimingEnabled;
 
-    // Dispatch mode
-    if (isFirstFrozenWarmup) {
-      dispatchMode = ExecutionDispatchMode::WARMUP;
-    } else if (graphExecutionMode == 1) {  // GEM_SLOT_BY_SLOT
-      dispatchMode = ExecutionDispatchMode::SLOT_BY_SLOT;
-    } else {
-      dispatchMode = ExecutionDispatchMode::REPLAY;
-    }
+    // Dispatch booleans — replaces ExecutionDispatchMode enum
+    // isFirstFrozenWarmup already set above.
+    // forcedSlotBySlot already set above.
+    isReplay = !isFirstFrozenWarmup && graphExecutionMode != 1;  // not warmup, not GEM_SLOT_BY_SLOT
   }
 
   /**
-   * Return a human-readable name for the dispatch mode.
+   * Return a human-readable name for the resolved dispatch mode.
+   * Derived from the three dispatch booleans — no enum required.
    */
   SD_INLINE const char* dispatchModeName() const {
-    switch (dispatchMode) {
-      case ExecutionDispatchMode::WARMUP:       return "WARMUP";
-      case ExecutionDispatchMode::SLOT_BY_SLOT: return "SLOT_BY_SLOT";
-      case ExecutionDispatchMode::REPLAY:       return "REPLAY";
-      default:                                  return "UNKNOWN";
-    }
+    return isFirstFrozenWarmup ? "WARMUP"
+         : (graphExecutionMode == 1) ? "SLOT_BY_SLOT"
+         : "REPLAY";
   }
 
   /**

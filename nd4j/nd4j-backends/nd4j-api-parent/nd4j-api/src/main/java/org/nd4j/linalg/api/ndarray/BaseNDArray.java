@@ -2105,7 +2105,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         DataBuffer localData = this.data;
         if (localData == null) {
-            return this;
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: dup() called on an INDArray with null DataBuffer. " +
+                "shape=" + java.util.Arrays.toString(this.shape()) +
+                ", wasClosed=" + this.wasClosed() +
+                ". The buffer was freed/released but the INDArray reference is still in use.");
+        }
+        if (localData.wasClosed()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: dup() called on an INDArray with CLOSED DataBuffer. " +
+                "shape=" + java.util.Arrays.toString(this.shape()) +
+                ". The buffer was freed/released but the INDArray reference is still in use.");
         }
 
         if (this.isCompressed() && this.ordering() == order) {
@@ -2120,7 +2130,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // Re-check data buffer after autoDecompress as it might have changed
         localData = this.data;
         if (localData == null) {
-            return this;
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: dup() — DataBuffer became null after autoDecompress. " +
+                "shape=" + java.util.Arrays.toString(this.shape()));
         }
 
         // When the ordering changes or the array is a view, we need to create a new

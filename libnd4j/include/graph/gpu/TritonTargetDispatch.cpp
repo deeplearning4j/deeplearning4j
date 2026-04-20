@@ -230,6 +230,35 @@ long long elapsedMsSince(const std::chrono::steady_clock::time_point& start) {
           std::chrono::steady_clock::now() - start).count());
 }
 
+// RAII guard that emits DSP_DIAG START on construction and DONE (with elapsed time)
+// on destruction. Consolidates the 4 compile-phase START/DONE pairs.
+struct DspCompilePhaseGuard {
+  long long compileId_;
+  const char* phaseName_;
+  std::chrono::steady_clock::time_point start_;
+  uint32_t category_;
+
+  DspCompilePhaseGuard(long long id, const char* phase, uint32_t cat)
+      : compileId_(id), phaseName_(phase),
+        start_(std::chrono::steady_clock::now()), category_(cat) {
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(category_)) {
+      sd::graph::DspDiagnostics::getInstance().recordEvent(
+          category_, -1, -1, -1, nullptr, 0,
+          "TritonTargetDispatch::compile[%lld]: phase=%s START",
+          compileId_, phaseName_);
+    }
+  }
+
+  ~DspCompilePhaseGuard() {
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(category_)) {
+      sd::graph::DspDiagnostics::getInstance().recordEvent(
+          category_, -1, -1, -1, nullptr, 0,
+          "TritonTargetDispatch::compile[%lld]: phase=%s DONE elapsedMs=%lld",
+          compileId_, phaseName_, elapsedMsSince(start_));
+    }
+  }
+};
+
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
 class TritonPassProgressInstrumentation final : public mlir::PassInstrumentation {
  public:
@@ -762,9 +791,9 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   }
 
   // Phase 1-2: TTIR -> TTGIR
-  const auto phase12Start = std::chrono::steady_clock::now();
-  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR START", compileId);
-  {
+  { // DspCompilePhaseGuard scope: emits TTIR_TO_TTGIR START/DONE automatically
+    DspCompilePhaseGuard phase12Guard(compileId, "TTIR_TO_TTGIR", sd::graph::DSP_DIAG_COMPILE);
+    {
     mlir::PassManager pm(moduleOp->getContext());
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
@@ -837,15 +866,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       return result;
     }
 
-  }
-  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR DONE elapsedMs=%lld",
-            compileId, elapsedMsSince(phase12Start));
+    }
+  } // phase12Guard destructor fires here, emitting TTIR_TO_TTGIR DONE
 
   // Phase 4: TTGIR -> LLVM MLIR dialect
   // Pass order matches Triton 3.6.0 NVIDIA backend (compiler.py make_llir)
-  const auto phase4Start = std::chrono::steady_clock::now();
-  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT START", compileId);
-  {
+  { // DspCompilePhaseGuard scope: emits TTGIR_TO_LLVM_DIALECT START/DONE automatically
+    DspCompilePhaseGuard phase4Guard(compileId, "TTGIR_TO_LLVM_DIALECT", sd::graph::DSP_DIAG_COMPILE);
+    {
     // Register LLVM dialect inliner interface (required by GluonInline pass in 3.6.0)
     // Thread-safety: appendDialectRegistry modifies MLIR context global state.
     // Must be serialized across concurrent compilation threads.
@@ -980,9 +1008,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
               "Module dumped to /tmp/triton_mlir_dump.txt\n");
       return result;
     }
-  }
-  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT DONE elapsedMs=%lld",
-            compileId, elapsedMsSince(phase4Start));
+    } // closes inner brace from line 876
+  } // phase4Guard destructor fires here, emitting TTGIR_TO_LLVM_DIALECT DONE
 
   // Triton's AllocateSharedMemory pass stores kernel shared memory usage
   // in the module attribute "triton_gpu.shared".
@@ -1015,29 +1042,28 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   std::unique_ptr<llvm::Module> llvmModule;
 
-  const auto phase5Start = std::chrono::steady_clock::now();
-  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR START", compileId);
-  llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
-  tritonInProtectedRegion = false;
-  if (!llvmModule) {
+  { // DspCompilePhaseGuard scope: emits MLIR_TO_LLVM_IR START/DONE automatically
+    DspCompilePhaseGuard phase5Guard(compileId, "MLIR_TO_LLVM_IR", sd::graph::DSP_DIAG_COMPILE);
+    llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
+    tritonInProtectedRegion = false;
+    if (!llvmModule) {
 #ifdef SD_CUDA
-    cudaGetLastError();  // Clear sticky CUDA errors from failed translation
+      cudaGetLastError();  // Clear sticky CUDA errors from failed translation
 #endif
-    std::string postLowerDump;
-    llvm::raw_string_ostream postOS(postLowerDump);
-    moduleOp->print(postOS);
-    // Write to file since sd_printf may be swallowed by surefire
-    FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
-    if (diagFile) {
-      fprintf(diagFile, "=== TRANSLATION FAILED ===\n%s\n=== END ===\n", postLowerDump.c_str());
-      fclose(diagFile);
+      std::string postLowerDump;
+      llvm::raw_string_ostream postOS(postLowerDump);
+      moduleOp->print(postOS);
+      // Write to file since sd_printf may be swallowed by surefire
+      FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
+      if (diagFile) {
+        fprintf(diagFile, "=== TRANSLATION FAILED ===\n%s\n=== END ===\n", postLowerDump.c_str());
+        fclose(diagFile);
+      }
+      fprintf(stderr, "TritonTargetDispatch::compile: MLIR -> LLVM IR translation failed. "
+              "Post-lowering module dumped to /tmp/triton_mlir_dump.txt\n");
+      return result;
     }
-    fprintf(stderr, "TritonTargetDispatch::compile: MLIR -> LLVM IR translation failed. "
-            "Post-lowering module dumped to /tmp/triton_mlir_dump.txt\n");
-    return result;
-  }
-  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR DONE elapsedMs=%lld",
-            compileId, elapsedMsSince(phase5Start));
+  } // phase5Guard destructor fires here, emitting MLIR_TO_LLVM_IR DONE
 
   // Phase 5b: Link libdevice for NVIDIA math intrinsics (__nv_sqrtf, __nv_expf, etc.)
   // The math-to-LLVM pass lowers math.sqrt/exp/log/etc. to calls to __nv_* functions
@@ -1105,8 +1131,6 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   // Phase 6: LLVM IR -> target ISA
   // Initialize LLVM targets
-  const auto phase6Start = std::chrono::steady_clock::now();
-  DSP_DIAG(JIT, "TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM START", compileId);
   // Thread-safety: LLVM target initialization modifies global state
   // (TargetRegistry linked list). Must only be called once across all threads.
   static std::once_flag llvmInitFlag;
@@ -1116,78 +1140,82 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     llvm::InitializeAllAsmPrinters();
   });
 
+  // Declare outside guard scope so triple is accessible after the phase for the
+  // post-phase DSP_DIAG "generated N bytes" log line.
   std::string triple;
   std::string proc;
   std::string features;
 
-  switch (target) {
-    case TritonGpuTarget::NVIDIA:
-      triple = "nvptx64-nvidia-cuda";
-      proc = (computeCapability == 90) ? "sm_90a" : ("sm_" + std::to_string(computeCapability));
-      break;
-    case TritonGpuTarget::AMD:
-      triple = "amdgcn-amd-amdhsa";
-      proc = result.targetArch;
-      break;
-    case TritonGpuTarget::INTEL:
-      triple = "spir64-unknown-unknown";
-      proc = "";
-      break;
-    default:
+  { // DspCompilePhaseGuard scope: emits LLVM_IR_TO_ASM START/DONE automatically
+    DspCompilePhaseGuard phase6Guard(compileId, "LLVM_IR_TO_ASM", sd::graph::DSP_DIAG_JIT);
+
+    switch (target) {
+      case TritonGpuTarget::NVIDIA:
+        triple = "nvptx64-nvidia-cuda";
+        proc = (computeCapability == 90) ? "sm_90a" : ("sm_" + std::to_string(computeCapability));
+        break;
+      case TritonGpuTarget::AMD:
+        triple = "amdgcn-amd-amdhsa";
+        proc = result.targetArch;
+        break;
+      case TritonGpuTarget::INTEL:
+        triple = "spir64-unknown-unknown";
+        proc = "";
+        break;
+      default:
+        return result;
+    }
+
+    llvmModule->setTargetTriple(llvm::Triple(triple));
+
+    std::string lookupError;
+    auto* llvmTarget = llvm::TargetRegistry::lookupTarget(triple, lookupError);
+    if (!llvmTarget) {
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: LLVM target lookup failed for '%s': %s",
+                triple.c_str(), lookupError.c_str());
       return result;
-  }
+    }
 
-  llvmModule->setTargetTriple(llvm::Triple(triple));
+    llvm::TargetOptions targetOptions;
+    targetOptions.AllowFPOpFusion =
+        env.tritonEnableFpFusion() ? llvm::FPOpFusion::Fast : llvm::FPOpFusion::Strict;
+    auto targetMachine = std::unique_ptr<llvm::TargetMachine>(
+        llvmTarget->createTargetMachine(triple, proc, features,
+                                         targetOptions, llvm::Reloc::PIC_));
+    if (!targetMachine) {
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: failed to create TargetMachine for %s/%s",
+                triple.c_str(), proc.c_str());
+      return result;
+    }
 
-  std::string lookupError;
-  auto* llvmTarget = llvm::TargetRegistry::lookupTarget(triple, lookupError);
-  if (!llvmTarget) {
-    DSP_DIAG(JIT, "TritonTargetDispatch::compile: LLVM target lookup failed for '%s': %s",
-              triple.c_str(), lookupError.c_str());
-    return result;
-  }
+    llvmModule->setDataLayout(targetMachine->createDataLayout());
 
-  llvm::TargetOptions targetOptions;
-  targetOptions.AllowFPOpFusion =
-      env.tritonEnableFpFusion() ? llvm::FPOpFusion::Fast : llvm::FPOpFusion::Strict;
-  auto targetMachine = std::unique_ptr<llvm::TargetMachine>(
-      llvmTarget->createTargetMachine(triple, proc, features,
-                                       targetOptions, llvm::Reloc::PIC_));
-  if (!targetMachine) {
-    DSP_DIAG(JIT, "TritonTargetDispatch::compile: failed to create TargetMachine for %s/%s",
-              triple.c_str(), proc.c_str());
-    return result;
-  }
+    // Emit assembly (PTX text for NVIDIA, assembly for AMD)
+    llvm::SmallString<0> asmBuffer;
+    llvm::raw_svector_ostream asmStream(asmBuffer);
+    llvm::legacy::PassManager codegenPM;
 
-  llvmModule->setDataLayout(targetMachine->createDataLayout());
+    if (targetMachine->addPassesToEmitFile(codegenPM, asmStream, nullptr,
+                                            llvm::CodeGenFileType::AssemblyFile)) {
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: TargetMachine can't emit assembly for %s",
+                triple.c_str());
+      return result;
+    }
 
-  // Emit assembly (PTX text for NVIDIA, assembly for AMD)
-  llvm::SmallString<0> asmBuffer;
-  llvm::raw_svector_ostream asmStream(asmBuffer);
-  llvm::legacy::PassManager codegenPM;
+    codegenPM.run(*llvmModule);
+    std::string asmOutput(asmBuffer.begin(), asmBuffer.end());
 
-  if (targetMachine->addPassesToEmitFile(codegenPM, asmStream, nullptr,
-                                          llvm::CodeGenFileType::AssemblyFile)) {
-    DSP_DIAG(JIT, "TritonTargetDispatch::compile: TargetMachine can't emit assembly for %s",
-              triple.c_str());
-    return result;
-  }
+    if (asmOutput.empty()) {
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: empty output for %s", result.targetArch.c_str());
+      return result;
+    }
 
-  codegenPM.run(*llvmModule);
-  std::string asmOutput(asmBuffer.begin(), asmBuffer.end());
+    result.size = asmOutput.size();
+    result.data = new char[result.size + 1];
+    std::memcpy(result.data, asmOutput.data(), result.size);
+    static_cast<char*>(result.data)[result.size] = '\0';
+  } // phase6Guard destructor fires here, emitting LLVM_IR_TO_ASM DONE
 
-  if (asmOutput.empty()) {
-    DSP_DIAG(JIT, "TritonTargetDispatch::compile: empty output for %s", result.targetArch.c_str());
-    return result;
-  }
-
-  result.size = asmOutput.size();
-  result.data = new char[result.size + 1];
-  std::memcpy(result.data, asmOutput.data(), result.size);
-  static_cast<char*>(result.data)[result.size] = '\0';
-
-  DSP_DIAG(JIT, "TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM DONE elapsedMs=%lld",
-            compileId, elapsedMsSince(phase6Start));
   DSP_DIAG(JIT, "TritonTargetDispatch::compile: generated %zu bytes for %s (%s)",
             result.size, result.targetArch.c_str(), triple.c_str());
   DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: DONE totalElapsedMs=%lld",

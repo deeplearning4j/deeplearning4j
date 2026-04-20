@@ -72,15 +72,8 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   cublasSetStream_v2(*handlePtr, stream != nullptr
       ? *static_cast<cudaStream_t*>(stream) : nullptr);
 
-  // Set an explicit cuBLAS workspace to prevent cuBLAS from creating internal
-  // MemAlloc/MemFree graph nodes during CUDA graph capture. Without workspace,
-  // each cuBLAS GEMM creates its own MemAlloc node — for a model with ~210 matmuls,
-  // this produces 210 MemAlloc + 210 MemFree nodes. On graph launch, the runtime
-  // must allocate memory for ALL MemAlloc nodes simultaneously, which fails with OOM
-  // when device memory is tight (e.g., speculative decode with two models loaded).
-  //
-  // Controlled via Environment::cublasCaptureWorkspace() (toggled per-config from Java).
-  // Also respects ND4J_CUBLAS_CAPTURE_WORKSPACE env var at startup.
+  // Explicit workspace prevents cuBLAS from creating per-GEMM MemAlloc/MemFree
+  // graph nodes during capture, which cause OOM on graph launch.
   bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
 
   if (useCublasWorkspace) {
@@ -96,10 +89,7 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
 }
 
 void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
-  // Set the SAME explicit workspace during warmup as during capture.
-  // This ensures cuBLAS selects identical GEMM algorithms in both paths,
-  // preventing floating-point divergence from different algorithm choices.
-  // Reads from Environment dynamically so it can be toggled per-config.
+  // Same workspace as capture so cuBLAS selects identical algorithms.
   if (!sd::Environment::getInstance().cublasCaptureWorkspace()) return;
 
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());

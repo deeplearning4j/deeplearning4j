@@ -22,6 +22,7 @@
 #include <array/NDArray.h>
 #include <graph/Context.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspExecutionTrace.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/FusionPass.h>
 #include <graph/generated/graph_generated.h>
@@ -156,23 +157,13 @@ enum class PlanPhase : uint8_t {
   REPLAYING = 3,         // Steady state — graph replay active
 };
 
-/**
- * ExecutionPhase — the ACTUAL runtime execution mode of a segment.
- *
- * Unlike GraphExecutionMode (which is the user's PREFERENCE), ExecutionPhase
- * tracks what a segment is ACTUALLY doing right now. This enables programmatic
- * assertions about execution stage at both C++ and Java levels.
- *
- * Lifecycle: WARMUP → COMPILING → COMPILED → REPLAYING (capturable segments)
- *            SLOT_BY_SLOT (non-capturable segments, always)
- */
-enum class ExecutionPhase : uint8_t {
-  WARMUP = 0,          // First execution — slot-by-slot for shape population
-  COMPILING = 1,       // Backend is compiling (Triton, NVRTC, CUDA graph capture)
-  COMPILED = 2,        // Compiled, first post-compile execution
-  REPLAYING = 3,       // Steady state — graph replay or compiled kernel reuse
-  SLOT_BY_SLOT = 4,    // Non-capturable segment — always slot-by-slot
-};
+// ExecutionPhase REMOVED — unified into SegmentLifecycleState (in GraphSegmentExec).
+// Mapping for callers that previously used ExecutionPhase:
+//   WARMUP      → lifecycleState == NEEDS_WARMUP
+//   COMPILING   → lifecycleState == NEEDS_COMPILE
+//   COMPILED    → lifecycleState == CAPTURE_PENDING or CAPTURED
+//   REPLAYING   → lifecycleState == REPLAYING
+//   SLOT_BY_SLOT → lifecycleState == FAILED (or non-capturable segment)
 
 // FlatGraph is in the ::graph namespace (FlatBuffer-generated)
 
@@ -390,25 +381,24 @@ struct NativeSlot {
    * explicit ordered states and documented transitions.
    *
    * State transitions (ordered — each state includes all prior guarantees):
-   *   UNINITIALIZED → WARMUP:         First execution begins
    *   WARMUP → SHAPE_CACHED:          Shape cache populated, view status determined
-   *   SHAPE_CACHED → COMPILED:        Segment compiled/captured
-   *   COMPILED → FROZEN:              Shapes frozen, context reuse enabled
+   *   SHAPE_CACHED → FROZEN:          Shapes frozen, context reuse enabled
    *   FROZEN → FROZEN_CONSTANT:       Output never changes, skip execution entirely
    *
    * Backward transitions:
    *   Any → WARMUP:                   Plan invalidation (shape change, etc.)
    *   FROZEN/FROZEN_CONSTANT → SHAPE_CACHED:  Unfreeze
    */
+  // SlotState simplified: UNINITIALIZED and COMPILED removed (both were dead states).
+  // UNINITIALIZED was only used as default init, never tested. COMPILED had zero references.
+  // Progression: WARMUP → SHAPE_CACHED → FROZEN → FROZEN_CONSTANT
   enum class SlotState : uint8_t {
-    UNINITIALIZED = 0,
-    WARMUP,           // First execution (shape inference + view detection)
-    SHAPE_CACHED,     // Shape cache populated, view status determined
-    COMPILED,         // Segment compiled/captured
-    FROZEN,           // Shapes frozen, context reuse enabled
-    FROZEN_CONSTANT,  // Output never changes, skip execution entirely
+    WARMUP = 0,           // Initial + invalidation state (shape inference + view detection)
+    SHAPE_CACHED,         // Shape cache populated, view status determined
+    FROZEN,               // Shapes frozen, context reuse enabled
+    FROZEN_CONSTANT,      // Output never changes, skip execution entirely
   };
-  SlotState state_ = SlotState::UNINITIALIZED;
+  SlotState state_ = SlotState::WARMUP;
 
   /**
    * Per-slot monotonic write generation.
@@ -523,6 +513,19 @@ struct ReplayScheduleUnit {
   int startSlot;
   int endSlot;
   int islandIndex;  // For TRITON_ISLAND: index into compositeReplayHandles
+
+  // ── Island merging through capture-safe gaps ──
+  // A gap is "capture-safe" if ALL its slots launch CUDA kernels (no view ops,
+  // no identity ops, no shape-only ops, no frozen constants). Such gaps can be
+  // captured into the preceding island's CUDA graph instead of running natively.
+  bool isCaptureSafe = false;
+
+  // Merged capture group tracking. Units with the same non-negative mergedGroupId
+  // share one merged CudaGraphReplayHandle. The isMergedLeader unit triggers the
+  // graph launch; other units in the group are skipped during replay.
+  int mergedGroupId = -1;    // -1 = not merged. >=0 = index into mergedReplayHandles
+  bool isMergedLeader = false;
+
   ReplayScheduleUnit() : kind(REPLAY_UNIT_GAP), startSlot(0), endSlot(0), islandIndex(-1) {}
   ReplayScheduleUnit(ReplayUnitKind k, int s, int e, int idx)
       : kind(k), startSlot(s), endSlot(e), islandIndex(idx) {}
@@ -531,6 +534,9 @@ struct ReplaySchedule {
   std::vector<ReplayScheduleUnit> units;
   // Individual capture handles for each Triton island in the schedule.
   std::vector<std::unique_ptr<GraphReplayHandle>> compositeReplayHandles;
+  // Merged capture handles — one per merged group (island + capture-safe gap sequences).
+  // Indexed by ReplayScheduleUnit::mergedGroupId.
+  std::vector<std::unique_ptr<GraphReplayHandle>> mergedReplayHandles;
 };
 
 // Batch-zero entry used by NativeDynamicShapePlan::batchZeroEntries_.
@@ -607,12 +613,8 @@ struct GraphSegmentExec {
   bool argTableStable = false;
 
   // Consecutive-stable pass counters for the defensive addr-key and slot-hash
-  // checks in compositeReplay.  Each check increments its counter when it
-  // passes (no drift) and resets to 0 on a mismatch.  After
-  // ADDR_CHECK_STABLE_THRESHOLD consecutive passes the check is skipped —
-  // pointers are locked-in and per-step hashing wastes CPU.
-  // Both counters are reset to 0 whenever argTableStable is cleared.
-  static constexpr int ADDR_CHECK_STABLE_THRESHOLD = 3;
+  // checks in compositeReplay. Tracked for diagnostic telemetry only — the
+  // checks themselves only run when DSP_DIAG VERIFY is enabled.
   int addrKeyStableCount = 0;   // counts consecutive "ext-input key matched" passes
   int slotAddrStableCount = 0;  // counts consecutive "slot addr hash matched" passes
 
@@ -642,8 +644,35 @@ struct GraphSegmentExec {
   // Zero if the segment is not capturable or consolidation hasn't run.
   int replayUnitCount = 0;
 
-  // Execution phase tracking — ACTUAL runtime mode (not user preference).
-  ExecutionPhase currentPhase = ExecutionPhase::WARMUP;
+  // ExecutionPhase REMOVED — use lifecycleState for all phase queries.
+  // Convenience: maps lifecycle state to display name for diagnostics.
+  const char* displayPhaseName() const {
+    switch (lifecycleState) {
+      case SegmentLifecycleState::NEEDS_WARMUP:    return "WARMUP";
+      case SegmentLifecycleState::NEEDS_COMPILE:   return "COMPILING";
+      case SegmentLifecycleState::CAPTURE_PENDING: return "COMPILED";
+      case SegmentLifecycleState::CAPTURED:        return "COMPILED";
+      case SegmentLifecycleState::REPLAYING:       return "REPLAYING";
+      case SegmentLifecycleState::FAILED:          return "SLOT_BY_SLOT";
+      case SegmentLifecycleState::OOM_DEFERRED:    return "OOM_DEFERRED";
+      default:                                     return "UNKNOWN";
+    }
+  }
+
+  // JNI-compatible integer encoding matching the old ExecutionPhase values:
+  //   0=WARMUP, 1=COMPILING, 2=COMPILED, 3=REPLAYING, 4=SLOT_BY_SLOT
+  int getExecutionPhaseCode() const {
+    switch (lifecycleState) {
+      case SegmentLifecycleState::NEEDS_WARMUP:    return 0;
+      case SegmentLifecycleState::NEEDS_COMPILE:   return 1;
+      case SegmentLifecycleState::CAPTURE_PENDING: return 2;
+      case SegmentLifecycleState::CAPTURED:        return 2;
+      case SegmentLifecycleState::REPLAYING:       return 3;
+      case SegmentLifecycleState::FAILED:          return 4;
+      case SegmentLifecycleState::OOM_DEFERRED:    return 0;
+      default:                                     return -1;
+    }
+  }
 
   void reset() {
     lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
@@ -674,7 +703,6 @@ struct GraphSegmentExec {
     compositeReplaySchedule = ReplaySchedule();
     replaySignatureHash = 0;
     replayUnitCount = 0;
-    currentPhase = ExecutionPhase::WARMUP;
   }
 };
 
@@ -1188,6 +1216,22 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool isTraceEnabled() const { return traceEnabled_; }
 
   /**
+   * Access the structured execution trace ring buffer.
+   * Always non-null after construction. Records segment dispatches,
+   * slot writes, graph captures/replays, phase transitions, and errors.
+   * Useful for post-mortem diagnostics — call dumpTrace() on crash/error.
+   */
+  DspExecutionTrace* getTrace() const { return trace_; }
+
+  /**
+   * Dump the last `count` trace events to `out` (default: stderr, 64 events).
+   * No-op if trace is null.
+   */
+  void dumpTrace(FILE* out = stderr, int count = 64) const {
+    DSP_TRACE_DUMP(trace_, out, count);
+  }
+
+  /**
    * Get the capture audit for the most recent CUDA graph capture.
    * Each entry shows which op contributed how many CUDA graph nodes.
    * Empty if no capture has been performed or CUDA graphs are disabled.
@@ -1451,6 +1495,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Trace logging for execution decisions (enabled by setTraceEnabled / -Dnd4j.dsp.trace)
   bool traceEnabled_ = false;
 
+  // Structured execution trace ring buffer — always allocated, records every
+  // segment dispatch, slot write, graph capture/replay, phase transition, and
+  // error. Call dumpTrace() to dump the last N events on crash or error.
+  DspExecutionTrace* trace_ = nullptr;
+
 #ifdef SD_CUDA
   // Capture audit: per-op CUDA node contribution tracking
   std::vector<sd::cuda::CaptureAuditEntry> lastCaptureAudit_;
@@ -1541,10 +1590,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   //          one or more wrappers were refreshed), or -1 if any view-producer
   //          slot could not be refreshed (caller must trigger graph invalidation).
   int refreshStaleViewWrappersInSegment(GraphSegment& seg, NDArray** externalArrays, int numExt);
-  // Unified pre-segment zero pass — walks slots in [seg.def.startSlot, seg.def.endSlot]
-  // and zeroes outputs for slots with needsZeroedOutput. Replaces the 12 scattered
-  // nullify/memset sites that previously handled this per-slot. Safe to call during
-  // CUDA graph capture (memsets get recorded into the graph).
+  // Unified pre-segment zero pass — zeroes outputs for slots with needsZeroedOutput.
+  // Safe to call during CUDA graph capture (memsets get recorded into the graph).
   void prezeroSegmentOutputs(const GraphSegment& seg, void* stream);
   Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
@@ -1806,6 +1853,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   const LongType* resolveInputShapeInfo(int srcIdx, NDArray** externalArrays, int numExt) const;
   void detectBatchedGemmGroups(NDArray** externalArrays, int numExt);
+  void reconcileSlotDispatchAfterMerge(const ReplaySchedule& sched);
   void prepareBatchedGemmDevice(cudaStream_t stream);
   Status executeBatchedGemmGroup(int groupIdx, NDArray** externalArrays, int numExt, cudaStream_t stream);
   void freeBatchedGemmResources();

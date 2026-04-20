@@ -42,7 +42,7 @@ void CudaPointerDeallocator::release(void *ptr) {
   // driver query that invalidates the capture (error 901). Skip the attributes
   // check and free directly through CudaMemoryPool. cudaFreeAsync() is
   // stream-ordered and safe during capture in relaxed mode.
-  if (tl_graphExecutionActive || tl_captureSkipFrees) {
+  if (tl_graphExecutionActive) {
     int dev;
     cudaGetDevice(&dev);
     memory::CudaMemoryPool::getInstance().free(ptr, dev, nullptr);

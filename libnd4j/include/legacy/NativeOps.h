@@ -2043,8 +2043,8 @@ SD_LIB_EXPORT int getPlanFrozenExecutionCount(sd::Pointer planHandle);
 
 /**
  * Get the slot state for a specific slot.
- * Returns SlotState as int: 0=UNINITIALIZED, 1=WARMUP, 2=SHAPE_CACHED,
- *   3=COMPILED, 4=FROZEN, 5=FROZEN_CONSTANT. Returns -1 if invalid.
+ * Returns SlotState as int: 0=WARMUP, 1=SHAPE_CACHED,
+ *   2=FROZEN, 3=FROZEN_CONSTANT. Returns -1 if invalid.
  */
 SD_LIB_EXPORT int getPlanSlotState(sd::Pointer planHandle, int slotIdx);
 

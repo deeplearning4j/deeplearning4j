@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspExecutionTrace.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/NativePlanCompiler.h>
 #include <system/op_boilerplate.h>
@@ -126,8 +127,13 @@ bool segmentBlocksPlanPhase(const GraphSegment& seg) {
 // This is the standalone equivalent of NativeDynamicShapePlan::hasCompositeHandles().
 bool segmentHasReadyCompositeHandles(const GraphSegment& seg) {
   auto& sched = seg.exec.compositeReplaySchedule;
+  // Check merged replay handles first
+  for (auto& h : sched.mergedReplayHandles) {
+    if (h != nullptr && h->isReady()) return true;
+  }
+  // Fallback: check individual composite handles (unmerged islands)
   for (auto& u : sched.units) {
-    if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
+    if (u.kind == REPLAY_UNIT_TRITON_ISLAND && u.mergedGroupId < 0) {
       int idx = u.islandIndex;
       if (idx >= 0 && idx < static_cast<int>(sched.compositeReplayHandles.size()) &&
           sched.compositeReplayHandles[idx] != nullptr &&
@@ -140,7 +146,8 @@ bool segmentHasReadyCompositeHandles(const GraphSegment& seg) {
 }
 
 bool segmentIsCompiledSteadyState(const GraphSegment& seg, int minExecutionCountExclusive) {
-  if (seg.exec.currentPhase != ExecutionPhase::COMPILED) return false;
+  if (seg.exec.lifecycleState != GraphSegmentExec::SegmentLifecycleState::CAPTURE_PENDING &&
+      seg.exec.lifecycleState != GraphSegmentExec::SegmentLifecycleState::CAPTURED) return false;
   if (seg.exec.executionCount <= minExecutionCountExclusive) return false;
 
   switch (seg.def.selectedBackend) {
@@ -175,7 +182,7 @@ bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* s
       return seg.exec.argTableStable;
 
     case SelectedBackend::CPU_GRAPH:
-      return seg.exec.currentPhase == ExecutionPhase::REPLAYING ||
+      return seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING ||
              segmentIsCompiledSteadyState(seg, 1);
 
     case SelectedBackend::GPU_COMPILER: {
@@ -186,7 +193,7 @@ bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* s
           (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) ||
           segmentHasReadyCompositeHandles(seg);
 
-      if (seg.exec.currentPhase == ExecutionPhase::REPLAYING) {
+      if (seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING) {
         const bool expectsReplay =
             hasReadyReplay || seg.exec.compiledByBackend == "Triton GPU";
         if (!expectsReplay) return true;
@@ -214,11 +221,11 @@ bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg, NativeSlot* sl
 
   switch (seg.def.selectedBackend) {
     case SelectedBackend::EMULATED_REPLAY:
-      return seg.exec.currentPhase == ExecutionPhase::REPLAYING &&
+      return seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING &&
              seg.exec.argTableStable;
 
     case SelectedBackend::CPU_GRAPH:
-      return seg.exec.currentPhase == ExecutionPhase::REPLAYING ||
+      return seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING ||
              segmentIsCompiledSteadyState(seg, 2);
 
     case SelectedBackend::GPU_COMPILER: {
@@ -229,12 +236,12 @@ bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg, NativeSlot* sl
           segmentHasReadyCompositeHandles(seg);
 
       if (hasReadyReplay) {
-        return seg.exec.currentPhase == ExecutionPhase::REPLAYING &&
+        return seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING &&
                (!needsReplayInvariantTracking || seg.exec.argTableStable);
       }
-      // No replay mechanism ready. If phase is REPLAYING but no handles,
+      // No replay mechanism ready. If lifecycle is REPLAYING but no handles,
       // the segment is not actually replaying.
-      if (seg.exec.currentPhase == ExecutionPhase::REPLAYING) {
+      if (seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING) {
         return !needsReplayInvariantTracking || seg.exec.argTableStable;
       }
       return segmentIsCompiledSteadyState(seg, 2) &&
@@ -244,7 +251,7 @@ bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg, NativeSlot* sl
     case SelectedBackend::CUDA_GRAPHS:
     case SelectedBackend::SLOT_BY_SLOT:
       return seg.exec.replayHandle && seg.exec.replayHandle->isReady() &&
-             seg.exec.currentPhase == ExecutionPhase::REPLAYING;
+             seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING;
   }
 
   return false;
@@ -288,14 +295,13 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
       hasControlFlow_(false), loopRegions_(nullptr), numLoopRegions_(0),
       slotIsDead_(nullptr), slotIsDeadSize_(0),
-      slotOwnership_(nullptr)
-      {}
+      slotOwnership_(nullptr) {
+  trace_ = new DspExecutionTrace();
+}
 
 void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const char* tag) {
   if (slotIdx < 0 || slotIdx >= totalOutputSlots_) {
-    char buf[128];
-    snprintf(buf, sizeof(buf), "writeOutputSlot: index %d out of range [0, %d)", slotIdx, totalOutputSlots_);
-    THROW_EXCEPTION(buf);
+    DSP_THROW(EXECUTE, "writeOutputSlot: index %d out of range [0, %d)", slotIdx, totalOutputSlots_);
   }
 
   NDArray* old = outputSlots_[slotIdx];
@@ -325,7 +331,11 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
           old->dataBuffer() != nullptr &&
           value->dataBuffer() != nullptr &&
           old->dataBuffer() == value->dataBuffer();
-      const bool sameView = sameBuffer &&
+      // Old view may have been destructed (use-after-free from stale view
+      // refresh) — _shapeInfo is nullptr after destructor. hasValidShapeInfo()
+      // detects this without throwing.
+      const bool oldShapeValid = old->hasValidShapeInfo();
+      const bool sameView = sameBuffer && oldShapeValid &&
           old->offset() == value->offset() &&
           old->dataType() == value->dataType() &&
           shape::shapeEquals(old->shapeInfo(), value->shapeInfo()) &&
@@ -352,16 +362,13 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
       // only when the slot is flagged as a view producer.
       const bool allowViewProducerDbSwap = isViewProducerSlot && isViewOpTag && newDbValid;
       if (!sameView && !allowSameBufferViewSwap && !allowViewProducerDbSwap) {
-        char buf[256];
-        snprintf(buf, sizeof(buf),
+        DSP_THROW(EXECUTE,
                  "LIFECYCLE VIOLATION: NDArray pointer replacement at slot %d (tag=%s) "
                  "during frozen phase (phase=%d execCount=%d). old=%p new=%p "
                  "oldDb=%p newDb=%p",
                  slotIdx, tag, (int)planPhase_, executeCount_,
                  (void*)old, (void*)value,
                  (void*)(old->dataBuffer()), (void*)(value->dataBuffer()));
-        DSP_DIAG(FALLBACK, "%s", buf);
-        THROW_EXCEPTION(buf);
       }
       if (!sameView && allowViewProducerDbSwap) {
         DSP_DIAG(MEMORY,
@@ -385,12 +392,11 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   // Triton island should only be written by the graph itself (via kernel output).
   // Writing from the host indicates a phase violation (e.g., a slot-by-slot op
   // overwriting a graph-owned buffer). Gated behind diagnostics to avoid overhead.
-#ifndef NDEBUG
   if (planPhase_ >= PlanPhase::REPLAYING && executeCount_ > 2 &&
       old != nullptr && value != nullptr && old != value) {
     // Check if this slot belongs to any segment currently in REPLAYING phase
     for (const auto& seg : segments_) {
-      if (seg.exec.currentPhase == ExecutionPhase::REPLAYING &&
+      if (seg.exec.lifecycleState == GraphSegmentExec::SegmentLifecycleState::REPLAYING &&
           slotIdx >= seg.def.startSlot && slotIdx <= seg.def.endSlot) {
         // Check if this is a Triton island slot (not a gap)
         bool isIslandSlot = false;
@@ -402,22 +408,33 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
           }
         }
         if (isIslandSlot) {
-          DSP_DIAG(FALLBACK, "PHASE_VIOLATION: writeOutputSlot(%d, tag=%s) writes to "
+          DSP_DIAG(EXECUTE, "PHASE_VIOLATION: writeOutputSlot(%d, tag=%s) writes to "
                    "Triton island slot during REPLAYING phase — graph owns this buffer. "
                    "seg[%d-%d] execCount=%d",
                    slotIdx, tag, seg.def.startSlot, seg.def.endSlot, executeCount_);
-          assert(false && "writeOutputSlot to Triton island slot during REPLAYING");
+          REQUIRE_TRUE(false, 0,
+                       "DSP phase contract violation: writeOutputSlot(%d) to Triton island slot "
+                       "during REPLAYING phase for seg[%d-%d].",
+                       slotIdx, seg.def.startSlot, seg.def.endSlot);
         }
         break;
       }
     }
   }
-#endif
 
-  if (value != nullptr && value->dataBuffer() != nullptr && value->dataBuffer()->isClosed()) {
-    char buf[128];
-    snprintf(buf, sizeof(buf), "LIFECYCLE VIOLATION: writing closed DataBuffer at slot %d (tag=%s)", slotIdx, tag);
-    THROW_EXCEPTION(buf);
+  // Always-on validity check: catch closed, destroyed, corrupt, or null-GPU arrays
+  // at the moment they enter the slot system — not later when a kernel crashes.
+  if (value != nullptr && value->hasValidShapeInfo() && !value->isEmpty()) {
+    ArrayInvalidReason reason = validateArrayForExecution(value);
+    if (reason != ArrayInvalidReason::VALID) {
+      DataBuffer* db = value->dataBuffer();
+      DSP_THROW(MEMORY,
+               "ARRAY_INVALID in writeOutputSlot: slot=%d tag=%s reason=%s "
+               "DataBuffer=%p exec=%d phase=%d — "
+               "invalid array being installed into slot system",
+               slotIdx, tag, arrayInvalidReasonName(reason),
+               (void*)db, executeCount_, static_cast<int>(planPhase_));
+    }
   }
 
   if (value != nullptr && value != old &&
@@ -430,13 +447,16 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   DSP_DIAG(MEMORY, "WRITE_SLOT: slot=%d tag=%s phase=%d execCount=%d",
            slotIdx, tag, static_cast<int>(planPhase_), executeCount_);
 
-  // Free the OLD array when it's being replaced, IF:
-  // 1. old != value (actually being replaced, not a no-op write)
-  // 2. old is plan-owned (we allocated it, safe to delete)
-  // 3. old's DataBuffer is not a protected weight buffer
-  // 4. old's DataBuffer is not shared with any other slot (including views)
-  // Without this, replaced arrays stay in planOwnedArrays_ but are unreachable
-  // from outputSlots_[], causing ~240 MB/step GPU memory leak in large models.
+  // Capture old buffer address BEFORE any deletion — specialBuffer() calls
+  // shapeInfo() internally (via sizeOfT→dataType), so calling DSP_BUF_SAFE
+  // after delete is use-after-free on the destroyed NDArray's _shapeInfo.
+  uint64_t oldBufAddr = 0;
+  if (old != nullptr && old->dataBuffer() != nullptr) {
+    oldBufAddr = reinterpret_cast<uint64_t>(DSP_BUF_SAFE(old));
+  }
+
+  // Free the OLD plan-owned array when it's being replaced, unless its
+  // DataBuffer is a protected weight or shared with another slot.
   if (old != nullptr && old != value) {
     bool isPlanOwned = planOwnedArrays_.count(old) > 0;
     if (isPlanOwned) {
@@ -455,13 +475,38 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
         if (!referencedElsewhere) {
           planOwnedArrays_.erase(old);
           delete old;
+          old = nullptr;  // Prevent any further access to freed memory
+          DSP_DIAG(MEMORY, "WRITE_SLOT_FREE: slot=%d freed old plan-owned array (db=%p)",
+                   slotIdx, (void*)oldDb);
         }
+      } else {
+        DSP_DIAG(MEMORY, "WRITE_SLOT_SKIP_FREE: slot=%d old array %p has protected weight db=%p — not freed",
+                 slotIdx, (void*)old, (void*)oldDb);
       }
     } else {
       // NOT plan-owned but being replaced — this is a potential leak.
       long long leakedBytes = old->dataBuffer() ? (long long)old->dataBuffer()->getLenInBytes() : 0;
       DSP_DIAG(MEMORY, "WRITE_SLOT_LEAK: slot=%d tag=%s old=%p NOT plan-owned, bytes=%lld planOwned=%d",
                slotIdx, tag, (void*)old, leakedBytes, (int)planOwnedArrays_.size());
+    }
+  }
+
+  // Structured trace: record every slot write with buffer identity.
+  // When the buffer address changes (replacement), emit BUFFER_REPLACED so
+  // post-mortem analysis can distinguish genuine replacements from same-buffer
+  // re-writes (e.g. in-place ops that reuse the same allocation).
+  // Uses pre-captured oldBufAddr — old NDArray may have been deleted above.
+  {
+    uint64_t newAddr = (value != nullptr && value->dataBuffer() != nullptr)
+        ? reinterpret_cast<uint64_t>(DSP_BUF_SAFE(value)) : 0;
+    if (oldBufAddr != 0 && oldBufAddr != newAddr) {
+      // Buffer REPLACED — record both old and new addresses.
+      if (trace_ != nullptr) trace_->recordBufferReplaced(-1, slotIdx,
+                                                          static_cast<uint32_t>(executeCount_),
+                                                          oldBufAddr, newAddr);
+    } else {
+      DSP_TRACE_SLOT_WRITTEN(trace_, -1, slotIdx,
+                             static_cast<uint32_t>(executeCount_), newAddr);
     }
   }
 
@@ -630,6 +675,11 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   delete execState_;
   execState_ = nullptr;
 
+  // Free the structured execution trace ring buffer.
+  // Do this last so trace recording is valid throughout destruction.
+  delete trace_;
+  trace_ = nullptr;
+
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: DONE plan=%p", this);
 
   // Finalize diagnostics AFTER all cleanup so destructor logging is captured
@@ -676,11 +726,9 @@ class BinaryReader {
     size_t lenPos = pos_;
     int32_t len = read<int32_t>();
     if (len < 0 || pos_ + len > static_cast<size_t>(size_)) {
-      char buf[256];
-      std::snprintf(buf, sizeof(buf),
-                    "BinaryReader: invalid string length %d at pos %zu (bufSize=%zu, lenFieldPos=%zu)",
-                    static_cast<int>(len), pos_, static_cast<size_t>(size_), lenPos);
-      THROW_EXCEPTION(buf);
+      DSP_THROW(COMPILE,
+                "BinaryReader: invalid string length %d at pos %zu (bufSize=%zu, lenFieldPos=%zu)",
+                static_cast<int>(len), pos_, static_cast<size_t>(size_), lenPos);
     }
     std::string s(reinterpret_cast<const char*>(data_ + pos_), len);
     pos_ += len;
@@ -1250,7 +1298,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     }
   }
 
-  // ── Phase 3: Build shared immutable PlanDefinition ─────────────────────
+  // ── Build shared immutable PlanDefinition ───────────────────────────────
   {
     auto builder = PlanDefinition::Builder();
     builder.setNumSlots(plan->numSlots_)
@@ -1267,7 +1315,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     plan->planDef_ = builder.build();
   }
 
-  // ── Phase 4: Create per-instance ExecutionState ────────────────────────
+  // ── Create per-instance ExecutionState ──────────────────────────────────
   plan->execState_ = new ExecutionState(plan->totalOutputSlots_);
 
   // Notify diagnostics that a plan was compiled
@@ -1476,14 +1524,10 @@ Status NativeDynamicShapePlan::execute(
         frozenSnapshot_.valid ? &frozenSnapshot_ : nullptr,
         errMsg, sizeof(errMsg));
     if (!lifecycleOk) {
-      DSP_DIAG(FALLBACK, "LIFECYCLE_VALIDATION_FAILED: %s", errMsg);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
-          static_cast<int>(Status::KERNEL_FAILURE));
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg);
       execCtx->endDiag(executeCount_);
       activeExecCtx_ = nullptr;
       platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
-      return Status::KERNEL_FAILURE;
+      DSP_THROW(VERIFY, "LIFECYCLE_VALIDATION_FAILED: %s", errMsg);
     }
 
     if (frozenSnapshot_.valid) {
@@ -1496,23 +1540,25 @@ Status NativeDynamicShapePlan::execute(
 
   if (planPhase_ >= PlanPhase::REPLAYING) {
     // In REPLAYING phase, every replay-eligible segment must still be in
-    // backend-specific steady state. If any segment drops out, demote.
+    // backend-specific steady state. If any segment drops out, throw.
     for (size_t si = 0; si < segments_.size(); si++) {
       auto& seg = segments_[si];
       if (!segmentIsFullyReplayingForPlanPhase(seg, slots_)) {
-        demotePlanPhase(PlanPhase::POINTERS_STABLE,
-            "segment no longer satisfies replay steady state");
-        DSP_DIAG(FALLBACK, "  seg[%d-%d] details: backend=%d execPhase=%d "
-                  "segExecCount=%d handleReady=%d compositeReady=%d argStable=%d execCount=%d",
-                  seg.def.startSlot, seg.def.endSlot,
-                  static_cast<int>(seg.def.selectedBackend),
-                  static_cast<int>(seg.exec.currentPhase),
-                  seg.exec.executionCount,
-                  seg.exec.replayHandle && seg.exec.replayHandle->isReady() ? 1 : 0,
-                  segmentHasReadyCompositeHandles(seg) ? 1 : 0,
-                  seg.exec.argTableStable ? 1 : 0,
-                  executeCount_);
-        break;
+        // demotePlanPhase throws — include segment details in the reason
+        char reason[512];
+        snprintf(reason, sizeof(reason),
+                 "segment no longer satisfies replay steady state: seg[%d-%d] "
+                 "backend=%d execPhase=%s segExecCount=%d handleReady=%d "
+                 "compositeReady=%d argStable=%d execCount=%d",
+                 seg.def.startSlot, seg.def.endSlot,
+                 static_cast<int>(seg.def.selectedBackend),
+                 seg.exec.displayPhaseName(),
+                 seg.exec.executionCount,
+                 seg.exec.replayHandle && seg.exec.replayHandle->isReady() ? 1 : 0,
+                 segmentHasReadyCompositeHandles(seg) ? 1 : 0,
+                 seg.exec.argTableStable ? 1 : 0,
+                 executeCount_);
+        demotePlanPhase(PlanPhase::POINTERS_STABLE, reason);
       }
     }
   }
@@ -1535,6 +1581,55 @@ Status NativeDynamicShapePlan::execute(
   // segment-local caches each execute; capturable graph-replay segments keep caches.
 
   // replayManagedSlots REMOVED: arrays persist (one array per slot), no protection needed.
+
+  // ── Always-on pre-execution array validity scan ─────────────────────────
+  // Catch closed/destroyed/corrupt DataBuffers BEFORE any op runs.
+  // NOT gated behind diagnostics — these are cheap field reads and catching
+  // invalid state here prevents mysterious crashes deep in kernel execution.
+  if (slotOwnership_ != nullptr) {
+    int closed = detectClosedBuffers(slotOwnership_, totalOutputSlots_,
+                                     outputSlots_, externalInputs, numExternalInputs);
+    if (closed > 0) {
+      DSP_THROW(MEMORY,
+               "LIFECYCLE_ERROR: %d closed DataBuffer(s) found at execute() entry "
+               "(execCount=%d phase=%d) — use-after-free imminent. "
+               "Enable DSP_DIAG_MEMORY for per-slot details.",
+               closed, executeCount_, static_cast<int>(planPhase_));
+    }
+  }
+
+  // Validate ALL external inputs — these cross the JNI boundary and can go
+  // stale between Java and C++ execution (GC, session cleanup, etc.).
+  {
+    char extErr[512] = {};
+    int extInvalid = 0;
+    for (int i = 0; i < numExternalInputs; i++) {
+      if (externalInputs[i] == nullptr) continue;
+      ArrayInvalidReason reason = validateArrayForExecution(externalInputs[i]);
+      if (reason != ArrayInvalidReason::VALID) {
+        extInvalid++;
+        if (extInvalid == 1) {
+          DataBuffer* db = (reason != ArrayInvalidReason::NULL_ARRAY &&
+                            reason != ArrayInvalidReason::NULL_SHAPE_INFO)
+              ? externalInputs[i]->dataBuffer() : nullptr;
+          snprintf(extErr, sizeof(extErr),
+                   "ARRAY_INVALID external input %d: reason=%s DataBuffer=%p "
+                   "exec=%d phase=%d",
+                   i, arrayInvalidReasonName(reason), (void*)db,
+                   executeCount_, static_cast<int>(planPhase_));
+        }
+        DSP_DIAG(MEMORY,
+                 "ARRAY_INVALID_EXT_INPUT: idx=%d reason=%s exec=%d phase=%d",
+                 i, arrayInvalidReasonName(reason),
+                 executeCount_, static_cast<int>(planPhase_));
+      }
+    }
+    if (extInvalid > 0) {
+      DSP_THROW(MEMORY,
+               "LIFECYCLE_ERROR: %d invalid external input(s) at execute() entry: %s",
+               extInvalid, extErr);
+    }
+  }
 
   // Build protected weight buffer set (once on first execute).
   // DataBuffers from external constants/variables must NEVER be freed. View ops
@@ -1576,10 +1671,8 @@ Status NativeDynamicShapePlan::execute(
     lifecycleExternalInputPtrs = lifecycleExternalInputs.data();
   }
 
-  // ── One array per slot: NO cleanup between executions ────────────────────
-  // Same plan = same shapes. Arrays allocated on first execution, reused forever.
-  // View ops create lightweight wrappers that are deleted inline when replaced.
-  // No free→null→restore cycle. No pendingClose_. No release schedule.
+  // Arrays allocated on first execution, reused for all subsequent executions.
+  // View ops create lightweight wrappers deleted inline when replaced.
   DSP_DIAG(MEMORY, "execute: arrays persist (exec=%d, frozen=%d, slots=%d)",
            executeCount_, shapesFrozen_ ? 1 : 0, totalOutputSlots_);
 
@@ -1618,34 +1711,35 @@ Status NativeDynamicShapePlan::execute(
   // Skip the first frozen warmup because shapes are still being populated.
   // phaseCompile() itself checks compilationDone_ and returns immediately if already done.
   if (!compilationDone_ && !execCtx->isFirstFrozenWarmup &&
-      execCtx->dispatchMode != ExecutionDispatchMode::SLOT_BY_SLOT) {
+      !execCtx->forcedSlotBySlot && execCtx->graphExecutionMode != 1) {
     phaseCompile(externalInputs, numExternalInputs);
   }
 
   // Phase dispatch — resolved once by populateDerivedState(), read here.
   Status phaseStatus = Status::OK;
   execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_DISPATCH,
-                       static_cast<int>(execCtx->dispatchMode));
+                       execCtx->graphExecutionMode);
   DSP_DIAG(EXECUTE, "PHASE_DISPATCH: %s (frozen=%d execCount=%d mode=%d)",
            execCtx->dispatchModeName(), static_cast<int>(shapesFrozen_),
            executeCount_, execCtx->graphExecutionMode);
 
-  switch (execCtx->dispatchMode) {
-    case ExecutionDispatchMode::WARMUP:
-      phaseStatus = phaseWarmup(externalInputs, numExternalInputs, stream, &phaseStats);
-      break;
-    case ExecutionDispatchMode::SLOT_BY_SLOT:
-      phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
-      break;
-    case ExecutionDispatchMode::REPLAY:
-      phaseStatus = phaseReplay(externalInputs, numExternalInputs, requestedOutputs,
-                                numRequestedOutputs, stream, &phaseStats);
-      execCtx->phaseHandledPostSegments = true;
-      execCtx->phaseHandledOutputs = true;
-      break;
+  if (execCtx->isFirstFrozenWarmup) {
+    phaseStatus = phaseWarmup(externalInputs, numExternalInputs, stream, &phaseStats);
+  } else if (!execCtx->isReplay) {  // GEM_SLOT_BY_SLOT or forced-slot-by-slot
+    phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
+  } else {
+    phaseStatus = phaseReplay(externalInputs, numExternalInputs, requestedOutputs,
+                              numRequestedOutputs, stream, &phaseStats);
+    execCtx->phaseHandledPostSegments = true;
+    execCtx->phaseHandledOutputs = true;
   }
   DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phase returned status=%d", static_cast<int>(phaseStatus));
   if (phaseStatus != Status::OK) {
+    // Structured trace: record the error and dump the last 128 events for diagnostics.
+    DSP_TRACE_ERROR(trace_, -1, -1,
+                    static_cast<uint32_t>(executeCount_),
+                    static_cast<uint64_t>(phaseStatus));
+    dumpTrace(stderr, 128);
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
     platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
@@ -1753,7 +1847,6 @@ Status NativeDynamicShapePlan::execute(
     executeCount_++;
     // Post-increment sanity: new value must be exactly prevCount+1.
     // If not, something corrupted the field during this execute() call.
-#ifndef NDEBUG
     if (executeCount_ != prevCount + 1) {
       DSP_DIAG(EXECUTE,
                "EXEC_COUNT_MONOTONICITY_VIOLATION: expected %d got %d "
@@ -1761,10 +1854,10 @@ Status NativeDynamicShapePlan::execute(
                "mid-execute reset",
                prevCount + 1, executeCount_,
                shapesFrozen_ ? 1 : 0, static_cast<int>(planPhase_));
-      assert(executeCount_ == prevCount + 1 &&
-             "EXEC_COUNT_MONOTONICITY: executeCount_ did not increment by exactly 1");
+      REQUIRE_TRUE(false, 0,
+                   "EXEC_COUNT_MONOTONICITY: executeCount_ expected %d but got %d.",
+                   prevCount + 1, executeCount_);
     }
-#endif
     DSP_DIAG(EXECUTE, "EXEC_COUNT_INCREMENT: %d -> %d shapesFrozen=%d",
              prevCount, executeCount_, shapesFrozen_ ? 1 : 0);
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::EXEC_COUNT_INC,
@@ -1772,16 +1865,8 @@ Status NativeDynamicShapePlan::execute(
   }
 
   // Re-classify slot ownership after the first frozen execution (capture step).
-  // The capture execution replaces slot arrays (new allocations for different shapes),
-  // which invalidates the compile-time ownership classification. Without this,
-  // the next execution's lifecycle validation fails with "stale ownership".
-  //
-  // Uses the unified classifyAndUpdateOwnership() which checks external inputs
-  // (protected AND placeholder) → VIEW_OF_WEIGHT, then earlier slots → VIEW_OF_SLOT,
-  // then falls through to SLOT_OWNED. This correctly classifies view-producer slots
-  // (squeeze/expand_dims/reshape) whose output wraps a placeholder's DataBuffer —
-  // previously these fell through to SLOT_OWNED and pruneTransientViewSlots skipped
-  // them, leaving stale placeholder pointers in the snapshot.
+  // Capture execution may replace slot arrays, invalidating compile-time
+  // ownership classification. Re-classify so lifecycle validation passes.
   if (shapesFrozen_ && executeCount_ == 2 && slotOwnership_ != nullptr && outputSlots_ != nullptr) {
     for (int i = 0; i < totalOutputSlots_; i++) {
       if (outputSlots_[i] == nullptr) {
@@ -1981,14 +2066,16 @@ void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
   if (frozen) {
     DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setShapesFrozen(true)");
   }
-  shapesFrozen_ = frozen;
   if (frozen && !wasFrozen) {
     auto status = phaseFreeze();
     if (status != Status::OK) {
-      DSP_DIAG(FALLBACK, "setShapesFrozen(true): phaseFreeze failed with status %d",
+      DSP_THROW(COMPILE,
+               "setShapesFrozen(true): phaseFreeze failed with status %d — "
+               "plan NOT frozen (would leave partially-frozen inconsistent state)",
                static_cast<int>(status));
     }
   }
+  shapesFrozen_ = frozen;
   if (!frozen) {
     for (auto* db : protectedWeightBuffers_) {
       if (db != nullptr) db->removeFrozenRef();
@@ -2036,7 +2123,6 @@ void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
       seg.exec.captureOomRetries = 0;
       seg.exec.captureRetryAfterExec = 0;
       seg.exec.lastReplayExecCount = 0;
-      seg.exec.currentPhase = ExecutionPhase::WARMUP;
     }
     clearAllShapeCachesForce();
     frozenSnapshot_.clear();
@@ -2070,6 +2156,10 @@ void NativeDynamicShapePlan::advancePlanPhase() {
     if (allStable) {
       pointersStable_ = true;
       const char* oldPhase = dsp::planPhaseName(planPhase_);
+      DSP_TRACE_PHASE(trace_, -1,
+                      static_cast<uint8_t>(planPhase_),
+                      static_cast<uint8_t>(PlanPhase::POINTERS_STABLE),
+                      static_cast<uint32_t>(executeCount_));
       planPhase_ = PlanPhase::POINTERS_STABLE;
       DSP_DIAG(EXECUTE, "[PHASE_TRANSITION] plan %s -> POINTERS_STABLE reason=all_segments_pointers_stable frozenExec=%d",
                oldPhase, frozenExecutionCount_);
@@ -2091,6 +2181,10 @@ void NativeDynamicShapePlan::advancePlanPhase() {
     }
     if (hasReplayEligibleSegment && allReplaying && planPhase_ != PlanPhase::REPLAYING) {
       const char* oldPhase = dsp::planPhaseName(planPhase_);
+      DSP_TRACE_PHASE(trace_, -1,
+                      static_cast<uint8_t>(planPhase_),
+                      static_cast<uint8_t>(PlanPhase::REPLAYING),
+                      static_cast<uint32_t>(executeCount_));
       planPhase_ = PlanPhase::REPLAYING;
       DSP_DIAG(EXECUTE, "[PHASE_TRANSITION] plan %s -> REPLAYING reason=all_segments_fully_replaying frozenExec=%d",
                oldPhase, frozenExecutionCount_);
@@ -2114,44 +2208,29 @@ void NativeDynamicShapePlan::advancePlanPhase() {
           }
         }
         int totalIslandHandles = 0;
+        int totalMergedGroups = 0;
         for (auto& s : segments_) {
           totalIslandHandles += static_cast<int>(s.exec.compositeReplaySchedule.compositeReplayHandles.size());
+          totalMergedGroups += static_cast<int>(s.exec.compositeReplaySchedule.mergedReplayHandles.size());
         }
-        DSP_DIAG(COMPILE,
-                 "======== WARMUP COMPLETE — COMPILATION SUMMARY ========");
-        DSP_DIAG(COMPILE,
-                 "  Segments: %d total, %d compiled, %d captured, %d failed, %d slot-by-slot",
+        DSP_DIAG_BANNER(COMPILE, "WARMUP COMPLETE",
+                 "segs=%d compiled=%d captured=%d failed=%d sbs=%d "
+                 "islands=%d mergedGroups=%d replays=%d warmupExec=%d",
                  static_cast<int>(segments_.size()), compiledSegs, capturedSegs,
-                 failedSegs, slotBySlotSegs);
-        DSP_DIAG(COMPILE,
-                 "  Island graphs: %d total (composite capture handles)",
-                 totalIslandHandles);
-        DSP_DIAG(COMPILE,
-                 "  Total graph replays so far: %d",
-                 totalGraphReplays_);
-        DSP_DIAG(COMPILE,
-                 "  Warmup executions: %d (since shapes frozen)",
-                 frozenExecutionCount_);
-        DSP_DIAG(COMPILE,
-                 "  All subsequent executions will use graph replay only.");
-        DSP_DIAG(COMPILE,
-                 "  Any compilation after this point is a BUG.");
-        DSP_DIAG(COMPILE,
-                 "========================================================");
+                 failedSegs, slotBySlotSegs,
+                 totalIslandHandles, totalMergedGroups,
+                 totalGraphReplays_, frozenExecutionCount_);
       }
     }
   }
 }
 
 void NativeDynamicShapePlan::demotePlanPhase(PlanPhase targetPhase, const char* reason) {
-  const char* oldPhase = dsp::planPhaseName(planPhase_);
-  const char* newPhase = dsp::planPhaseName(targetPhase);
-  DSP_DIAG(FALLBACK, "[PHASE_TRANSITION] plan %s -> %s reason=%s frozenExec=%d kind=demotion",
-           oldPhase, newPhase, reason, frozenExecutionCount_);
-  planPhase_ = targetPhase;
-  if (targetPhase < PlanPhase::POINTERS_STABLE) {
-    pointersStable_ = false;
-  }
+  DSP_THROW(FALLBACK,
+           "[PHASE_TRANSITION] plan %s -> %s reason=%s frozenExec=%d kind=demotion — "
+           "phase demotion is an error, not a fallback",
+           dsp::planPhaseName(planPhase_), dsp::planPhaseName(targetPhase),
+           reason, frozenExecutionCount_);
 }
 
 Status NativeDynamicShapePlan::phaseFreeze() {
@@ -2195,12 +2274,26 @@ Status NativeDynamicShapePlan::phaseFreeze() {
     seg.exec.capturedInputAddrKey = 0;
     seg.exec.capturedCreateValueKey = 0;
     seg.exec.compilationFailed = false;
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
   }
 
   planPhase_ = PlanPhase::SHAPES_FROZEN;
   pointersStable_ = false;
   frozenExecutionCount_ = 0;
+
+  // Validate view reference count consistency at freeze boundary.
+  // Mismatched refcounts indicate missed addViewRef/removeViewRef calls
+  // during warmup execution — catch these before they cause leaked buffers.
+  if (slotOwnership_ != nullptr && outputSlots_ != nullptr) {
+    int staleCount = detectStaleOwnership(slotOwnership_, totalOutputSlots_, outputSlots_);
+    if (staleCount > 0) {
+      DSP_DIAG(MEMORY, "phaseFreeze: WARNING: %d stale ownership entries detected — "
+               "re-classifying before freeze", staleCount);
+    }
+    if (!validateViewRefCounts(slotOwnership_, totalOutputSlots_, outputSlots_)) {
+      DSP_DIAG(MEMORY, "phaseFreeze: WARNING: viewRefCount inconsistency detected — "
+               "view reference tracking may be corrupted");
+    }
+  }
 
   DSP_DIAG(EXECUTE, "[PHASE_TRANSITION] plan SLOT_BY_SLOT -> SHAPES_FROZEN reason=phaseFreeze "
             "segments=%d slots=%d extInputs=%d mergeSegments=%d recompile=%d",
@@ -2265,9 +2358,9 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     }
     platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
 
-    segment.exec.currentPhase = segment.def.isCapturable
-        ? ExecutionPhase::WARMUP
-        : ExecutionPhase::SLOT_BY_SLOT;
+    segment.exec.lifecycleState = segment.def.isCapturable
+        ? GraphSegmentExec::SegmentLifecycleState::NEEDS_WARMUP
+        : GraphSegmentExec::SegmentLifecycleState::FAILED;
 
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
@@ -2419,9 +2512,9 @@ Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int num
     }
     platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
 
-    segment.exec.currentPhase = segment.def.isCapturable
-        ? ExecutionPhase::WARMUP
-        : ExecutionPhase::SLOT_BY_SLOT;
+    segment.exec.lifecycleState = segment.def.isCapturable
+        ? GraphSegmentExec::SegmentLifecycleState::NEEDS_WARMUP
+        : GraphSegmentExec::SegmentLifecycleState::FAILED;
 
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
@@ -2483,9 +2576,9 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
           segment, externalInputs, numExternalInputs, stream, segUsedGraph);
       if (status != Status::OK) return status;
     } else {
-      segment.exec.currentPhase = segment.def.isCapturable
-          ? ExecutionPhase::WARMUP
-          : ExecutionPhase::SLOT_BY_SLOT;
+      segment.exec.lifecycleState = segment.def.isCapturable
+          ? GraphSegmentExec::SegmentLifecycleState::NEEDS_WARMUP
+          : GraphSegmentExec::SegmentLifecycleState::FAILED;
       auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) return status;
     }
@@ -2638,7 +2731,6 @@ void NativeDynamicShapePlan::resetSegmentExecutionState() {
     seg.exec.argTableStable = false;
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
-    seg.exec.currentPhase = ExecutionPhase::WARMUP;
   }
   compilationDone_ = false;
 }
@@ -2661,8 +2753,8 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
                                          "DEVICE_SWITCH", "CAPTURE_FAILURE", "SHAPE_CHANGE", "ERROR_RECOVERY"};
     const char* reasonName = reasonNames[static_cast<int>(destructionReason_)];
     if (planPhase_ != PlanPhase::SLOT_BY_SLOT) {
-      DSP_DIAG(FALLBACK, "[PHASE_TRANSITION] plan %s -> SLOT_BY_SLOT reason=releaseGpuIntermediates "
-               "kind=demotion destructionReason=%s", oldPhaseName, reasonName);
+      DSP_DIAG(MEMORY, "[PHASE_TRANSITION] plan %s -> SLOT_BY_SLOT reason=releaseGpuIntermediates "
+               "kind=teardown destructionReason=%s", oldPhaseName, reasonName);
       planPhase_ = PlanPhase::SLOT_BY_SLOT;
       pointersStable_ = false;
       frozenExecutionCount_ = 0;
@@ -2690,6 +2782,28 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   std::unordered_set<NDArray*> deleted;
 
   if (outputSlots_) {
+    // ── Build requested output protection set ────────────────────────────
+    // Requested output slots (logits, etc.) must NEVER be freed during
+    // releaseGpuIntermediates — Java may still hold references to their
+    // DataBuffers via zeroCopyOutputCache or direct pointers. Also protect
+    // any slot whose DataBuffer is shared with a requested output (views).
+    std::unordered_set<int> requestedOutputSlotSet;
+    std::unordered_set<DataBuffer*> requestedOutputDataBuffers;
+    if (requestedOutputSlotIndices_ != nullptr) {
+      for (int i = 0; i < numRequestedOutputs_; i++) {
+        int si = requestedOutputSlotIndices_[i];
+        if (si >= 0 && si < totalOutputSlots_) {
+          requestedOutputSlotSet.insert(si);
+          if (outputSlots_[si] != nullptr && outputSlots_[si]->dataBuffer() != nullptr) {
+            requestedOutputDataBuffers.insert(outputSlots_[si]->dataBuffer());
+          }
+        }
+      }
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: protecting %zu requested output slots "
+               "(%zu unique DataBuffers)",
+               requestedOutputSlotSet.size(), requestedOutputDataBuffers.size());
+    }
+
     // Re-classify ownership for ALL slots based on the CURRENT outputSlots_[] arrays.
     // protectedWeightBuffers_ contains DataBuffers from ALL external inputs (built
     // during execute()). Any slot whose DataBuffer matches an external input is
@@ -2704,7 +2818,9 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
           slotOwnership_[i].ownership = BufferOwnership::UNSET;
           continue;
         }
-        if (protectedWeightBuffers_.count(db) > 0) {
+        // Requested output DataBuffers are protected just like weight buffers.
+        if (protectedWeightBuffers_.count(db) > 0 ||
+            requestedOutputDataBuffers.count(db) > 0) {
           slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_WEIGHT;
           slotOwnership_[i].dataBuffer = db;
           continue;
@@ -2725,15 +2841,27 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
         }
       }
       DSP_DIAG(MEMORY, "releaseGpuIntermediates: re-classified ownership for %d slots "
-               "(%zu protected external buffers)", totalOutputSlots_, protectedWeightBuffers_.size());
+               "(%zu protected external buffers, %zu protected output buffers)",
+               totalOutputSlots_, protectedWeightBuffers_.size(),
+               requestedOutputDataBuffers.size());
     }
 
     if (slotOwnership_) {
       // First pass: null out all VIEW_OF_SLOT entries (they'll be invalidated
       // when their parent SLOT_OWNED buffer is freed).
+      // SKIP requested output slots — their DataBuffer must persist.
       for (int i = 0; i < totalOutputSlots_; i++) {
         if (outputSlots_[i] != nullptr &&
             slotOwnership_[i].ownership == BufferOwnership::VIEW_OF_SLOT) {
+          // Protect requested output slots and any slot sharing their DataBuffer.
+          if (requestedOutputSlotSet.count(i) > 0 ||
+              requestedOutputDataBuffers.count(outputSlots_[i]->dataBuffer()) > 0) {
+            DSP_DIAG(MEMORY,
+                     "releaseGpuIntermediates: PROTECTING VIEW_OF_SLOT slot %d "
+                     "(requested output or shares DataBuffer with requested output)",
+                     i);
+            continue;
+          }
           // Don't delete — the parent owns the buffer. Just null out.
           outputSlots_[i] = nullptr;
           slotOwnership_[i].reset();
@@ -2741,9 +2869,26 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       }
       // Second pass: free SLOT_OWNED buffers that are plan-owned.
       // Only delete arrays the plan created (in planOwnedArrays_).
+      // SKIP requested output slots — their DataBuffer must persist for Java.
       for (int i = 0; i < totalOutputSlots_; i++) {
         if (outputSlots_[i] != nullptr &&
             slotOwnership_[i].ownership == BufferOwnership::SLOT_OWNED) {
+          // Protect requested output slots
+          if (requestedOutputSlotSet.count(i) > 0) {
+            DSP_DIAG(MEMORY,
+                     "releaseGpuIntermediates: PROTECTING SLOT_OWNED slot %d "
+                     "(requested output — DataBuffer %p must persist for Java)",
+                     i, (void*)outputSlots_[i]->dataBuffer());
+            continue;
+          }
+          // Also protect any slot whose DataBuffer is shared with a requested output
+          if (requestedOutputDataBuffers.count(outputSlots_[i]->dataBuffer()) > 0) {
+            DSP_DIAG(MEMORY,
+                     "releaseGpuIntermediates: PROTECTING SLOT_OWNED slot %d "
+                     "(DataBuffer %p shared with requested output)",
+                     i, (void*)outputSlots_[i]->dataBuffer());
+            continue;
+          }
           slotOwnership_[i].viewRefCount = 0;
           if (planOwnedArrays_.count(outputSlots_[i]) > 0 &&
               deleted.insert(outputSlots_[i]).second) {
@@ -2756,9 +2901,20 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
         }
       }
     } else {
-      // Fallback: no ownership info — only free plan-owned arrays
+      // Fallback: no ownership info — only free plan-owned arrays.
+      // Still protect requested output slots.
       for (int i = 0; i < totalOutputSlots_; i++) {
         if (outputSlots_[i] != nullptr && planOwnedArrays_.count(outputSlots_[i]) > 0) {
+          // Protect requested output slots
+          if (requestedOutputSlotSet.count(i) > 0) {
+            DSP_DIAG(MEMORY,
+                     "releaseGpuIntermediates: PROTECTING slot %d (requested output, fallback path)",
+                     i);
+            continue;
+          }
+          if (requestedOutputDataBuffers.count(outputSlots_[i]->dataBuffer()) > 0) {
+            continue;
+          }
           if (deleted.insert(outputSlots_[i]).second) {
             planOwnedArrays_.erase(outputSlots_[i]);
             delete outputSlots_[i];

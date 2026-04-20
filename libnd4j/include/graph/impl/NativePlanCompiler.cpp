@@ -46,16 +46,8 @@ std::string normalizeOpName(const std::string& opName) {
 }
 }  // namespace
 
-// ─── Op classification ─────────────────────────────────────────────────────
-//
-// Op classification is now driven by OpDescriptor traits (see OpTraitTable.h).
-// The centralized OpTraitTable replaces the scattered hardcoded lists that
-// previously lived here. Traits are populated once via initOpTraits() and
-// queried via op->getOpDescriptor()->hasAnyTrait(...).
-//
-// For ops not resolved via OpRegistrator (e.g., control flow ops without a
-// DeclarableOp), we fall back to the trait table lookup by name.
-//
+// Op classification is driven by OpDescriptor traits (see OpTraitTable.h).
+// For ops not in OpRegistrator (e.g., control flow), fall back to name lookup.
 
 static bool hasOpTrait(sd::ops::DeclarableOp* op, uint32_t trait) {
   if (op && op->getOpDescriptor()) {
@@ -189,9 +181,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     auto* node = opNodes[stepIdx];
     NativeSlot& slot = plan->slots_[stepIdx];
 
-    // Op identification.
-    // NOTE: FlatGraph opNum hashes can differ from native HashHelper hashes.
-    // Resolve by op name first, then normalize slot.ident.opHash to native hash.
+    // Op identification — resolve by name first since FlatGraph hashes may differ.
     LongType serializedOpHash = node->opNum();
     slot.ident.opHash = serializedOpHash;
     slot.ident.opName = node->opName() ? node->opName()->str() :
@@ -268,12 +258,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.flags.isDataDependent = isDataDep;
     slot.flags.isIdentityOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_IDENTITY);
     slot.flags.isViewCapableOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
-    // Trait-driven output-zeroing classification. Computed once; runtime reads
-    // slot.flags.needsZeroedOutput without re-deciding.
-    //   aliasesInput  → view/identity output overlaps input; zeroing would corrupt input.
-    //   fullyWrites   → op overwrites every output byte; zeroing is wasted work.
-    //   partialWriter → scatter writes only at index positions; must be zeroed.
-    //   dataDep       → variable output length into oversized buffer; must be zeroed.
+    // Output-zeroing classification (computed once, read at runtime).
     bool aliasesInput  = slot.flags.isViewCapableOp || slot.flags.isIdentityOp;
     bool fullyWrites   = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_FULLY_WRITING);
     bool partialWriter = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND) ||
@@ -390,11 +375,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
     }
     slot.flags.needsIntLongSync = hasIntLong || isDataDep;
-    // Use OpTraitTable's VALUE_DEPENDENT_SHAPE trait to determine which ops have
-    // output shapes that depend on input VALUES (not just shapes). This drives
-    // shapeStatic=false propagation AND shape key value-hashing for graph replay.
-    // The trait table is the single source of truth — no more hardcoded lists or
-    // hasIntLong heuristics. If an op is missing from the table, add it there.
+    // VALUE_DEPENDENT_SHAPE trait: ops whose output shapes depend on input VALUES
+    // (not just shapes). Drives shapeStatic=false and shape key value-hashing.
     bool isValueDepShape = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
     slot.flags.outputShapeDependsOnInputValues = isValueDepShape || isDataDep;
 
@@ -434,11 +416,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         // Set structural iArg count from centralized OpTraitTable
         slot.flags.structuralIArgCount = sd::ops::getStructuralIArgCount(slot.ident.opName);
 
-        // Cap iArgs when data comes from input tensors.
-        // Generic version of the old strided_slice-specific fix:
-        // When an op has structural iArgs (masks, mode flags, axis) followed by data iArgs
-        // (begin/end/strides, split sizes, etc.), and the data comes from input tensors,
-        // we must cap to only the structural iArgs so the op reads data from inputs.
+        // Cap iArgs to structural-only when data comes from input tensors.
+        // Ops like strided_slice have structural iArgs (masks, flags) followed by
+        // data iArgs (begin/end/strides) — cap so the op reads data from inputs.
         if (slot.flags.structuralIArgCount >= 0 && numToUse > slot.flags.structuralIArgCount
             && slot.wiring.numInputs > 1) {
           DSP_DIAG(COMPILE, "Capping iArgs for op %s from %d to %d (structural only, data from inputs)",
@@ -509,11 +489,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
   }
 
-  // Build externalInputIsVariable_ by scanning all slot input source types.
-  // Only PLACEHOLDER inputs need forced H2D before graph replay — these are the
-  // dynamic inputs (attention_mask, position_ids, input_ids, inputs_embeds) that
-  // Java updates each decode step. SOURCE_VARIABLE (model weights) should NOT be
-  // force-synced — their device buffers are authoritative after initial model load.
+  // Build externalInputIsVariable_: only PLACEHOLDER inputs need forced H2D
+  // before graph replay (dynamic inputs that Java updates each step).
+  // SOURCE_VARIABLE (model weights) are device-authoritative after initial load.
   plan->externalInputIsVariable_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < numSteps; s++) {
     auto& slot = plan->slots_[s];
@@ -551,9 +529,6 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   // ── Step 7: Allocate execution state ──────────────────────────────────────
   plan->outputSlots_ = new NDArray*[totalOutputSlots];
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * totalOutputSlots);
-
-  // outputSlots_ unified with outputSlots_ (same pointer, Phase 2)
-  // outputSlots_ removed: now a macro alias to outputSlots_ (same pointer).
 
   plan->slotIsViewProducer_ = new bool[totalOutputSlots];
   std::memset(plan->slotIsViewProducer_, 0, sizeof(bool) * totalOutputSlots);
@@ -693,9 +668,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   // Build CUDA graph segments
   plan->buildSegments();
 
-  // ── Phase 3: Build shared immutable PlanDefinition ─────────────────────
-  // Populated alongside existing fields as a behavioral no-op.
-  // Future phases will migrate reads to use planDef_ instead.
+  // ── Build shared immutable PlanDefinition ───────────────────────────────
   {
     auto builder = PlanDefinition::Builder();
     builder.setNumSlots(plan->numSlots_)
@@ -715,14 +688,12 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
              plan->planDef_->numExternalInputs(), plan->planDef_->refCount());
   }
 
-  // ── Phase 4: Create per-instance ExecutionState ────────────────────────
-  // Populated alongside existing fields as a behavioral no-op.
-  // Future phases will migrate mutable state into execState_.
+  // ── Create per-instance ExecutionState ──────────────────────────────────
   plan->execState_ = new ExecutionState(plan->totalOutputSlots_);
   DSP_DIAG(COMPILE, "ExecutionState created: %d output slots", plan->totalOutputSlots_);
 
   // Diagnostic: count how many slots need zeroed output and compilation summary
-  {
+  if (DSP_DIAG_ENABLED(COMPILE) || DSP_DIAG_ENABLED(SHAPE)) {
     int needsZero = 0, skipZero = 0, customOps = 0, cfOps = 0;
     int dataDep = 0, valueDep = 0, identityOps = 0, fusedChains = 0;
     for (int i = 0; i < plan->numSlots_; i++) {

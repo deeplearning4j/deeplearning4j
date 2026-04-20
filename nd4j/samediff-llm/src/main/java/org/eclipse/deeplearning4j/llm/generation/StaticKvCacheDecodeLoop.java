@@ -39,6 +39,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.util.ArrayList;
@@ -106,6 +107,19 @@ public class StaticKvCacheDecodeLoop {
         }
 
         int sample(INDArray logits) {
+            if (logits.wasClosed()) {
+                throw new IllegalStateException(
+                    "BUFFER_LIFECYCLE: ReusableTokenSampler.sample() received a CLOSED logits array. " +
+                    "shape=" + java.util.Arrays.toString(logits.shape()));
+            }
+            DataBuffer db = logits.data();
+            if (db == null || db.wasClosed()) {
+                throw new IllegalStateException(
+                    "BUFFER_LIFECYCLE: ReusableTokenSampler.sample() received logits with " +
+                    (db == null ? "null" : "CLOSED") + " DataBuffer. " +
+                    "shape=" + java.util.Arrays.toString(logits.shape()) +
+                    ". The DSP output buffer was freed before sampling.");
+            }
             long batchSize = logits.rank() == 3 ? logits.size(0)
                     : (logits.rank() == 2 ? logits.size(0) : 1);
 
@@ -523,6 +537,29 @@ public class StaticKvCacheDecodeLoop {
                         usingStaticKv, useDirect, cachePos,
                         new IllegalStateException("Missing logits output '" + logitsOutputName
                                 + "' from requested outputs " + Arrays.toString(requestedOutputNames)));
+            }
+            // Validate logits buffer IMMEDIATELY — catch freed/null OpaqueDataBuffer
+            // here (step + context) instead of deep in getDeviceId()/dup().
+            {
+                DataBuffer logitsBuf = logitsRaw.data();
+                if (logitsBuf == null) {
+                    throw decodeStageFailure("LOGITS_BUFFER_NULL", step, pastSeqLen, currentSeqLen,
+                            usingStaticKv, useDirect, cachePos,
+                            new IllegalStateException(
+                                "BUFFER_LIFECYCLE: logits output '" + logitsOutputName +
+                                "' has null DataBuffer immediately after DSP execution. " +
+                                "shape=" + java.util.Arrays.toString(logitsRaw.shape()) +
+                                ", wasClosed=" + logitsRaw.wasClosed()));
+                }
+                if (logitsBuf.wasClosed()) {
+                    throw decodeStageFailure("LOGITS_BUFFER_CLOSED", step, pastSeqLen, currentSeqLen,
+                            usingStaticKv, useDirect, cachePos,
+                            new IllegalStateException(
+                                "BUFFER_LIFECYCLE: logits output '" + logitsOutputName +
+                                "' DataBuffer is CLOSED immediately after DSP execution. " +
+                                "shape=" + java.util.Arrays.toString(logitsRaw.shape()) +
+                                ". The buffer was freed between DSP return and logits extraction."));
+                }
             }
             // Mixed precision decoder (HALF weights + FLOAT activations) keeps logits in FLOAT.
             // If a future full-HALF path produces HALF logits, cast to FLOAT for sampling precision.

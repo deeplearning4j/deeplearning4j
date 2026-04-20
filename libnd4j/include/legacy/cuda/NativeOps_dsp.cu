@@ -898,7 +898,7 @@ int getPlanSegmentExecutionPhase(sd::Pointer planHandle, int segmentIdx) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return -1;
-  return static_cast<int>(segs[segmentIdx].exec.currentPhase);
+  return segs[segmentIdx].exec.getExecutionPhaseCode();
 }
 
 int getPlanPhase(sd::Pointer planHandle) {

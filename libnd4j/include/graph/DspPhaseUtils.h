@@ -39,7 +39,7 @@ namespace graph {
 
 // ─── Forward declarations ────────────────────────────────────────────────
 enum class PlanPhase : uint8_t;
-enum class ExecutionPhase : uint8_t;
+// ExecutionPhase REMOVED — unified into SegmentLifecycleState
 
 namespace dsp {
 
@@ -52,11 +52,37 @@ SD_INLINE const char* planPhaseName(PlanPhase phase) {
   return (idx >= 0 && idx < 4) ? names[idx] : "UNKNOWN";
 }
 
-SD_INLINE const char* executionPhaseName(ExecutionPhase phase) {
-  static const char* names[] = {"WARMUP", "COMPILING", "COMPILED",
-                                "REPLAYING", "SLOT_BY_SLOT"};
-  int idx = static_cast<int>(phase);
-  return (idx >= 0 && idx < 5) ? names[idx] : "UNKNOWN";
+// executionPhaseName REMOVED — use GraphSegmentExec::displayPhaseName() or
+// SegmentLifecycle::stateName() instead
+
+// ─── Status enum string helper (shared across translation units) ─────────
+// Replaces duplicate statusName_gpu / statusName_seg switch tables.
+SD_INLINE const char* dspStatusName(Status status) {
+  switch (status) {
+    case Status::OK:             return "OK";
+    case Status::BAD_INPUT:      return "BAD_INPUT";
+    case Status::BAD_SHAPE:      return "BAD_SHAPE";
+    case Status::BAD_RANK:       return "BAD_RANK";
+    case Status::BAD_PARAMS:     return "BAD_PARAMS";
+    case Status::BAD_OUTPUT:     return "BAD_OUTPUT";
+    case Status::BAD_RNG:        return "BAD_RNG";
+    case Status::BAD_EPSILON:    return "BAD_EPSILON";
+    case Status::BAD_GRADIENTS:  return "BAD_GRADIENTS";
+    case Status::BAD_BIAS:       return "BAD_BIAS";
+    case Status::VALIDATION:     return "VALIDATION";
+    case Status::BAD_GRAPH:      return "BAD_GRAPH";
+    case Status::BAD_LENGTH:     return "BAD_LENGTH";
+    case Status::BAD_DIMENSIONS: return "BAD_DIMENSIONS";
+    case Status::BAD_ORDER:      return "BAD_ORDER";
+    case Status::BAD_ARGUMENTS:  return "BAD_ARGUMENTS";
+    case Status::DOUBLE_WRITE:   return "DOUBLE_WRITE";
+    case Status::DOUBLE_READ:    return "DOUBLE_READ";
+    case Status::KERNEL_FAILURE: return "KERNEL_FAILURE";
+    case Status::EQ_TRUE:        return "EQ_TRUE";
+    case Status::EQ_FALSE:       return "EQ_FALSE";
+    case Status::MAYBE:          return "MAYBE";
+    default:                     return "UNKNOWN";
+  }
 }
 
 }  // namespace dsp
@@ -114,36 +140,37 @@ SD_INLINE const char* executionPhaseName(ExecutionPhase phase) {
     }                                                                           \
   } while (0)
 
-// ─── Segment execution phase transition event ──────────────────────────────
+// ─── Segment lifecycle diagnostic event ──────────────────────────────────────
 //
-// Emits a standardized [PHASE_TRANSITION] event on every segment phase change
-// and performs the assignment in one step. The event prefix "[PHASE_TRANSITION]"
-// matches the one used for plan-level transitions, so a single grep/parse yields
-// a complete phase timeline for a test run.
+// DSP_SET_SEG_PHASE is now a diagnostic-only log. The actual lifecycle state
+// is set by SegmentLifecycle:: transition functions in _gpubackend.cpp.
+// This macro logs the current lifecycle state with a reason tag for grep/parse.
 //
 // Usage:
-//   DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "cpu_graph_first_exec");
-//
-// SEG must be a GraphSegment reference with .def.startSlot / .def.endSlot /
-// .exec.currentPhase / .exec.executionCount accessible at the call site.
+//   DSP_LOG_SEG_PHASE(segment, "cpu_graph_first_exec");
 
-#define DSP_SET_SEG_PHASE(SEG, NEW_PHASE, REASON)                              \
+#define DSP_LOG_SEG_PHASE(SEG, REASON)                                         \
   do {                                                                          \
-    const char* _oldName = sd::graph::dsp::executionPhaseName((SEG).exec.currentPhase); \
-    const char* _newName = sd::graph::dsp::executionPhaseName((NEW_PHASE));    \
-    (SEG).exec.currentPhase = (NEW_PHASE);                                     \
     DSP_DIAG(EXECUTE,                                                          \
-             "[PHASE_TRANSITION] seg[%d-%d] %s -> %s reason=%s execCount=%d",  \
+             "[SEG_PHASE] seg[%d-%d] lifecycle=%s reason=%s execCount=%d",     \
              (SEG).def.startSlot, (SEG).def.endSlot,                           \
-             _oldName, _newName, (REASON), (SEG).exec.executionCount);         \
+             (SEG).exec.displayPhaseName(), (REASON),                          \
+             (SEG).exec.executionCount);                                        \
   } while (0)
+
+// Legacy compatibility: DSP_SET_SEG_PHASE now just logs (no state assignment).
+// Call sites that used to set ExecutionPhase should use SegmentLifecycle::
+// transition functions for the actual state change, and this macro for logging.
+#define DSP_SET_SEG_PHASE(SEG, NEW_PHASE_UNUSED, REASON)                       \
+  DSP_LOG_SEG_PHASE(SEG, REASON)
 
 #else  // __CUDA_ARCH__
 
 #define DSP_REQUIRE_PLAN_PHASE_AT_MOST(maxPhase, methodName)  ((void)0)
 #define DSP_REQUIRE_PLAN_PHASE_EXACT(requiredPhase, methodName) ((void)0)
 #define DSP_REQUIRE_PLAN_PHASE_AT_LEAST(minPhase, methodName)  ((void)0)
-#define DSP_SET_SEG_PHASE(SEG, NEW_PHASE, REASON) ((void)0)
+#define DSP_LOG_SEG_PHASE(SEG, REASON) ((void)0)
+#define DSP_SET_SEG_PHASE(SEG, NEW_PHASE_UNUSED, REASON) ((void)0)
 
 #endif  // __CUDA_ARCH__
 

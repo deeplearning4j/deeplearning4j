@@ -1944,6 +1944,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public DataBuffer dup() {
+        if (released.get()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: dup() called on a CLOSED DataBuffer. " +
+                "length=" + length + ", type=" + type +
+                ". The buffer was freed but a caller is still trying to duplicate it. " +
+                "Check for premature buffer deallocation in DSP output lifecycle.");
+        }
+        if (ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: dup() called but ptrDataBuffer is null (buffer already released). " +
+                "length=" + length + ", type=" + type);
+        }
         lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         DataBuffer buffer = create(this.length);
@@ -2234,16 +2246,41 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public int targetDevice() {
+        if (released.get()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: targetDevice() called on a CLOSED DataBuffer. " +
+                "The buffer was released via close()/release() but something still holds a reference. " +
+                "length=" + length + ", type=" + type +
+                ". Check for premature buffer deallocation — likely DSP output freed while still in use.");
+        }
+        if (ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: targetDevice() called but ptrDataBuffer is null. " +
+                "The buffer was released via close()/release() (ptrDataBuffer set to null). " +
+                "length=" + length + ", type=" + type);
+        }
         return AtomicAllocator.getInstance().getAllocationPoint(this).getDeviceId();
     }
 
     @Override
     public void syncToPrimary(){
+        if (released.get() || ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: syncToPrimary() called on a " +
+                (released.get() ? "CLOSED" : "null-ptrDataBuffer") + " DataBuffer. " +
+                "length=" + length + ", type=" + type);
+        }
         ptrDataBuffer.syncToPrimary();
     }
 
     @Override
     public void syncToSpecial(){
+        if (released.get() || ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: syncToSpecial() called on a " +
+                (released.get() ? "CLOSED" : "null-ptrDataBuffer") + " DataBuffer. " +
+                "length=" + length + ", type=" + type);
+        }
         ptrDataBuffer.syncToSpecial();
     }
 
@@ -2264,7 +2301,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public DeviceDescriptor getOwnerDevice() {
         if (ownerDevice == null) {
-            // Default to CUDA device based on allocation point
+            if (released.get()) {
+                throw new IllegalStateException(
+                    "BUFFER_LIFECYCLE: getOwnerDevice() called on a CLOSED DataBuffer. " +
+                    "length=" + length + ", type=" + type +
+                    ". The buffer was freed but a caller is still trying to determine its device. " +
+                    "This typically means a DSP output was freed by closeSlotArrayCache/releaseGpuIntermediates " +
+                    "before TOKEN_SAMPLE or dup() could use it.");
+            }
             int deviceId = targetDevice();
             ownerDevice = DeviceDescriptor.cuda(deviceId);
         }

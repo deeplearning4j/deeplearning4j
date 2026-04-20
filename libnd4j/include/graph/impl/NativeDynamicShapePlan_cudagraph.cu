@@ -30,6 +30,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
+#include <graph/CaptureStateGuard.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
@@ -341,10 +342,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                   synced, seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
       }
 
-      // CRITICAL FIX: Cross-stream ordering for stable-address variable inputs.
-      // .assign() on reusable buffers runs on the default LaunchContext stream.
-      // Graph replay launches on cudaStr. Without ordering, replay reads stale data.
-      // Make cudaStr wait on the default stream's prior work via a CUDA event.
+      // Cross-stream ordering: .assign() on reusable buffers runs on the default
+      // stream while graph replay launches on cudaStr. Make cudaStr wait on the
+      // default stream so replay sees the updated data.
       {
         cudaStream_t defaultStream = nullptr;
         auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
@@ -396,14 +396,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         }
       }
 
-      // NOTE: prezeroSegmentOutputs is NOT called on the replay hot path.
-      // Output zeroing is captured once during the slot-by-slot capture phase
-      // (executeSegmentSlotBySlot → prezeroSegmentOutputs) and baked into the
-      // CUDA graph as memset nodes that replay automatically. Additionally,
-      // the pre-capture batchZeroEntries_ loop in NativeDynamicShapePlan_
-      // gpubackend.cpp zeros gap-op outputs once before capture. Issuing per-
-      // step cudaMemsetAsync here would add K async memsets to the hot cudaStr
-      // every decode step — the regression introduced in 316c23fce8.
+      // prezeroSegmentOutputs is NOT called on the replay hot path — output zeroing
+      // is captured into the CUDA graph during the slot-by-slot capture phase and
+      // replays automatically. Per-step cudaMemsetAsync here would be redundant work.
 
       if (replayInputsStable && seg.exec.replayHandle->replay(stream)) {
         seg.exec.lastReplayExecCount = executeCount_;
@@ -413,16 +408,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
 
       if (replayInputsStable) {
-        DSP_DIAG(FALLBACK, "graph replay failed for seg[%d-%d], "
-                 "falling back to slot-by-slot", seg.def.startSlot, seg.def.endSlot);
         clearGraphStreamError(cudaStr);
         platformCleanupSegmentForRebuild(seg);
+        DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
+                      "CUDA graph replay failed for seg[%d-%d]",
+                      seg.def.startSlot, seg.def.endSlot);
       }
     } else {
-      DSP_DIAG(FALLBACK, "graph replay invalidated for seg[%d-%d]: input addresses drifted since capture",
-               seg.def.startSlot, seg.def.endSlot);
       clearGraphStreamError(cudaStr);
       platformCleanupSegmentForRebuild(seg);
+      DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
+                    "CUDA graph replay invalidated for seg[%d-%d]: input addresses drifted since capture",
+                    seg.def.startSlot, seg.def.endSlot);
     }
   }
 
@@ -447,12 +444,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
              "warmup/compile/capture phases. Demoting plan phase.",
              seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
              static_cast<int>(planPhase_));
-#ifndef NDEBUG
     REQUIRE_TRUE(false, 0,
                  "DSP phase contract violation: CUDA graph capture during REPLAYING phase "
                  "for seg[%d-%d]. Fix the phase management bug.",
                  seg.def.startSlot, seg.def.endSlot);
-#endif
     demotePlanPhase(PlanPhase::POINTERS_STABLE,
                     "CUDA graph capture triggered during REPLAYING phase");
   }
@@ -512,16 +507,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   int currentDevice = 0;
   cudaError_t currentDeviceErr = cudaGetDevice(&currentDevice);
   if (currentDeviceErr != cudaSuccess) {
-    DSP_DIAG(FALLBACK, "cudaGetDevice failed during graph capture setup "
-             "for seg[%d-%d]: %s",
-             seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(currentDeviceErr));
-    cudaGetLastError();
-    seg.exec.compilationFailed = true;
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_THROW_CUDA(COMPILE, currentDeviceErr,
+                   "cudaGetDevice failed during graph capture setup for seg[%d-%d]",
+                   seg.def.startSlot, seg.def.endSlot);
   }
   if (!scheduler.deviceSupportsGraphs(currentDevice)) {
-    seg.exec.compilationFailed = true;
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "device %d does not support CUDA graphs for seg[%d-%d]",
+                  currentDevice, seg.def.startSlot, seg.def.endSlot);
   }
 
   // ── PRE-CAPTURE MEMORY CHECK ──
@@ -544,14 +537,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
     size_t requiredFree = estimatedCaptureBytes * 2;
     if (requiredFree > gpuFree) {
-      DSP_DIAG_SEG(MEMORY, segIdx, "skipping graph capture for seg[%d-%d] (%d ops): "
-                   "estimated %zuMB (2x %zuMB) > free %zuMB (total %zuMB)",
-                   seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
-                   requiredFree / (1024 * 1024),
-                   estimatedCaptureBytes / (1024 * 1024),
-                   gpuFree / (1024 * 1024),
-                   gpuTotal / (1024 * 1024));
-      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      DSP_THROW_SEG(MEMORY, seg.def.startSlot,
+                    "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
+                    "estimated %zuMB (2x %zuMB) > free %zuMB (total %zuMB)",
+                    seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
+                    requiredFree / (1024 * 1024),
+                    estimatedCaptureBytes / (1024 * 1024),
+                    gpuFree / (1024 * 1024),
+                    gpuTotal / (1024 * 1024));
     }
   }
 
@@ -563,9 +556,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   if (cudaStr != nullptr) {
     auto syncErr = cudaStreamSynchronize(cudaStr);
     if (syncErr != cudaSuccess) {
-      cudaGetLastError();
-      seg.exec.compilationFailed = true;
-      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      DSP_THROW_CUDA(COMPILE, syncErr,
+                     "cudaStreamSynchronize failed before graph capture for seg[%d-%d]",
+                     seg.def.startSlot, seg.def.endSlot);
     }
   }
 
@@ -589,7 +582,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     cudaStreamSynchronize(cudaStr);
   }
 
-  const cudaStream_t prevCaptureStream = tl_graphCaptureStream;
   cudaStream_t resolvedCaptureStream = cudaStr;
   if (resolvedCaptureStream == nullptr) {
     auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
@@ -597,7 +589,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       resolvedCaptureStream = *defaultStreamPtr;
     }
   }
-  tl_graphCaptureStream = resolvedCaptureStream;
 
   // Allocate capture workspace
   static size_t CAPTURE_WORKSPACE_SIZE = []() -> size_t {
@@ -610,15 +601,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     int deviceId = 0;
     cudaGetDevice(&deviceId);
     if (!seg.exec.replayHandle->allocateWorkspace(CAPTURE_WORKSPACE_SIZE, deviceId, nullptr, seg.def.startSlot)) {
-      DSP_DIAG_SEG(FALLBACK, segIdx, "capture workspace alloc failed for seg[%d-%d], graph will contain cudaMallocAsync nodes",
-                   seg.def.startSlot, seg.def.endSlot);
+      DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                    "capture workspace allocation failed for seg[%d-%d]: graph would contain "
+                    "cudaMallocAsync nodes which cannot be replayed safely",
+                    seg.def.startSlot, seg.def.endSlot);
     }
   }
-  tl_captureWorkspace = seg.exec.replayHandle->getWorkspacePtr();
-  tl_captureWorkspaceSize = seg.exec.replayHandle->getWorkspaceBytes();
-  tl_captureWorkspaceOffset = 0;
-  DSP_DIAG_SEG(MEMORY, segIdx, "tl_captureWorkspace=%p size=%zu for capture",
-               tl_captureWorkspace, tl_captureWorkspaceSize);
 
   // Allocate pinned host workspace for H2D source copies during capture.
   // This eliminates cudaMallocHost calls during capture — all host data for
@@ -626,43 +614,32 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   void* captureHostWs = nullptr;
   auto hostWsErr = cudaMallocHost(&captureHostWs, CAPTURE_HOST_WORKSPACE_SIZE);
   if (hostWsErr != cudaSuccess) {
-    cudaGetLastError();
     captureHostWs = nullptr;
-    DSP_DIAG_SEG(FALLBACK, segIdx, "capture host workspace alloc failed (%zu bytes), H2D copies may use non-pinned sources",
-                 CAPTURE_HOST_WORKSPACE_SIZE);
+    DSP_THROW_CUDA(MEMORY, hostWsErr,
+                   "capture host workspace allocation failed (%zu bytes) for seg[%d-%d]",
+                   CAPTURE_HOST_WORKSPACE_SIZE, seg.def.startSlot, seg.def.endSlot);
   }
-  tl_captureHostWorkspace = captureHostWs;
-  tl_captureHostWorkspaceSize = (captureHostWs != nullptr) ? CAPTURE_HOST_WORKSPACE_SIZE : 0;
-  tl_captureHostWorkspaceOffset = 0;
 
-  tl_graphExecutionActive = true;
-  tl_capturedHostPtrs.clear();
-  tl_captureReplicateCache.clear();
+  // RAII guard manages all capture TLS. On scope exit:
+  // - restores previous tl_graphCaptureStream
+  // - clears workspace/host workspace TLS
+  // - frees captured host ptrs if commit() was not called
+  CaptureStateGuard captureGuard(resolvedCaptureStream,
+      seg.exec.replayHandle->getWorkspacePtr(),
+      seg.exec.replayHandle->getWorkspaceBytes(),
+      captureHostWs,
+      (captureHostWs != nullptr) ? CAPTURE_HOST_WORKSPACE_SIZE : 0);
 
-  // Track the host workspace as a single captured host pointer for lifetime management
   if (captureHostWs != nullptr) {
-    tl_capturedHostPtrs.push_back(captureHostWs);
+    captureGuard.trackHostPtr(captureHostWs);
   }
+
+  DSP_DIAG_SEG(MEMORY, segIdx, "tl_captureWorkspace=%p size=%zu for capture",
+               tl_captureWorkspace, tl_captureWorkspaceSize);
 
   if (!handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed)) {
-    DSP_DIAG(FALLBACK, "graph capture begin failed for seg[%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-    tl_graphExecutionActive = false;
-    tl_graphCaptureStream = prevCaptureStream;
-    tl_captureWorkspace = nullptr;
-    tl_captureWorkspaceSize = 0;
-    tl_captureWorkspaceOffset = 0;
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureHostWorkspace = nullptr;
-    tl_captureHostWorkspaceSize = 0;
-    tl_captureHostWorkspaceOffset = 0;
-    tl_captureReplicateCache.clear();
     restoreCublasWorkspaceAfterCapture(stream);
     clearGraphStreamError(cudaStr);
-    seg.exec.compilationFailed = true;
     platformCleanupSegmentForRebuild(seg);
     for (auto& [extIdx, origPtr] : savedExternalInputs) {
       externalArrays[extIdx] = origPtr;
@@ -675,7 +652,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
     }
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "CUDA graph capture beginCapture failed for seg[%d-%d]",
+                  seg.def.startSlot, seg.def.endSlot);
   }
 
   bool captureOk = true;
@@ -735,30 +714,47 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
     }
   } catch (const std::exception& e) {
-    DSP_DIAG(FALLBACK, "exception during graph capture at slot %d (%s): %s",
-             lastCaptureSlot, slots_[lastCaptureSlot].ident.opName.c_str(), e.what());
-    captureOk = false;
-    std::string msg(e.what());
-    if (msg.find("allocation failed") != std::string::npos) {
-      captureOomFailure = true;
+    // Guard destructor handles TLS cleanup + host ptr freeing on rethrow.
+    tl_graphExecutionActive = false;  // deactivate before endCapture
+    handle->endCapture(cudaStr);
+    clearGraphStreamError(cudaStr);
+    restoreCublasWorkspaceAfterCapture(stream);
+    for (auto& [extIdx, origPtr] : savedExternalInputs) {
+      externalArrays[extIdx] = origPtr;
     }
+    for (auto& [slotIdx, origPtr] : savedOutputSlots) {
+      outputSlots_[slotIdx] = origPtr;
+    }
+    std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+    }
+    platformCleanupSegmentForRebuild(seg);
+    throw;  // rethrow — guard destructor frees host ptrs + restores remaining TLS
   } catch (...) {
-    DSP_DIAG(FALLBACK, "unknown exception during graph capture");
-    captureOk = false;
-    captureOomFailure = true;
+    tl_graphExecutionActive = false;
+    handle->endCapture(cudaStr);
+    clearGraphStreamError(cudaStr);
+    restoreCublasWorkspaceAfterCapture(stream);
+    for (auto& [extIdx, origPtr] : savedExternalInputs) {
+      externalArrays[extIdx] = origPtr;
+    }
+    for (auto& [slotIdx, origPtr] : savedOutputSlots) {
+      outputSlots_[slotIdx] = origPtr;
+    }
+    std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+    }
+    platformCleanupSegmentForRebuild(seg);
+    THROW_EXCEPTION("Unknown exception during CUDA graph capture");
   }
 
-  // Capture phase complete — reset the flag
-  size_t captureWorkspaceUsed = tl_captureWorkspaceOffset;
-  tl_graphExecutionActive = false;
-  tl_graphCaptureStream = prevCaptureStream;
-  tl_captureWorkspace = nullptr;
-  tl_captureWorkspaceSize = 0;
-  tl_captureWorkspaceOffset = 0;
-  // Reset host workspace thread-locals (ownership moves to tl_capturedHostPtrs → replay handle)
-  tl_captureHostWorkspace = nullptr;
-  tl_captureHostWorkspaceSize = 0;
-  tl_captureHostWorkspaceOffset = 0;
+  // Capture phase complete — save workspace used before guard clears TLS.
+  // The guard destructor will run at function scope exit and restore all
+  // capture TLS. We save the offset now while it is still valid.
+  size_t captureWorkspaceUsed = captureGuard.workspaceUsed();
+  tl_graphExecutionActive = false;  // deactivate before endCapture (guard restores remaining TLS at scope exit)
   restoreCublasWorkspaceAfterCapture(stream);
 
   for (auto& [extIdx, origPtr] : savedExternalInputs) {
@@ -771,18 +767,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   if (!captureOk) {
     handle->endCapture(cudaStr);
 
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-
     cudaGetLastError();
 
     if (cudaStr != nullptr) {
       cudaStreamSynchronize(cudaStr);
       cudaGetLastError();
     }
+
+    // Guard destructor will free captured host ptrs (commit() not called yet).
 
     if (captureOomFailure && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
       seg.exec.captureOomRetries++;
@@ -793,13 +785,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    seg.exec.captureRetryAfterExec);
     } else {
       seg.exec.compilationFailed = true;
-      DSP_DIAG_SEG(FALLBACK, segIdx, "graph capture permanently failed for seg[%d-%d] (oom=%s, retries=%d)",
-                   seg.def.startSlot, seg.def.endSlot,
-                   captureOomFailure ? "true" : "false",
-                   seg.exec.captureOomRetries);
     }
 
-    // Arrays persist — no pendingClose_ cleanup needed on capture failure
+    // Arrays persist across capture failures — only slot state needs restoring.
 
     platformCleanupSegmentForRebuild(seg);
 
@@ -810,12 +798,17 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
     }
     invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "CUDA graph capture failed for seg[%d-%d] (oom=%s, retries=%d)",
+                  seg.def.startSlot, seg.def.endSlot,
+                  captureOomFailure ? "true" : "false",
+                  seg.exec.captureOomRetries);
   }
 
   // Helper lambda to restore slot state on capture failure.
   auto cleanupCaptureBuffersOnFailure = [&seg, &savedFrozenContextReady, this]() {
-    // Arrays persist — no pendingClose_ cleanup needed on capture failure
+    // Arrays persist across capture failures — only slot state needs restoring.
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
     }
@@ -823,39 +816,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (!handle->endCapture(cudaStr)) {
     cudaGetLastError();
-    DSP_DIAG(FALLBACK, "graph capture end failed for seg[%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-    cudaGetLastError();
     cudaStreamSynchronize(cudaStr);
     cudaGetLastError();
-    seg.exec.compilationFailed = true;
+    // Guard destructor frees host ptrs (commit() not called).
     cleanupCaptureBuffersOnFailure();
     platformCleanupSegmentForRebuild(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "CUDA graph endCapture failed for seg[%d-%d]",
+                  seg.def.startSlot, seg.def.endSlot);
   }
 
   if (!handle->instantiate()) {
-    // ── OOM eviction: free older/smaller graphs to reclaim GPU memory ──────
-    // When instantiation fails with OOM (cudaErrorMemoryAllocation = 2), we
-    // evict up to MAX_OOM_RETRIES existing captured graphs, starting with the
-    // smallest (fewest CUDA graph nodes). This frees the GPU memory consumed
-    // by their cudaGraphExec_t + cudaGraph_t + workspace.
-    //
-    // Since instantiate() destroys _graph on failure, we cannot retry the
-    // instantiation directly. Instead, after eviction we use the deferred
-    // OOM retry mechanism (captureRetryAfterExec) to re-capture on the very
-    // next execution — by which time the evicted memory is available.
-    //
-    // Evicted segments are fully reset so they can re-capture later when
-    // memory pressure decreases (other segments may also be evicted by then,
-    // or the evicted segment may no longer be needed).
+    // ── OOM eviction: free smallest captured graphs to reclaim GPU memory ──
+    // instantiate() destroys _graph on failure, so we defer re-capture to the
+    // next execution via captureRetryAfterExec.
     int numEvicted = 0;
     if (handle->wasLastInstantiateOom()) {
       DSP_DIAG(MEMORY, "graph instantiate OOM for seg[%d-%d], attempting eviction (up to %d segments)",
@@ -946,24 +922,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                seg.exec.captureRetryAfterExec, numEvicted);
     } else {
-      DSP_DIAG(FALLBACK, "graph instantiate failed for seg[%d-%d] (oom=%s, retries=%d, evicted=%d)",
-               seg.def.startSlot, seg.def.endSlot,
-               handle->wasLastInstantiateOom() ? "true" : "false",
-               seg.exec.captureOomRetries, numEvicted);
       seg.exec.compilationFailed = true;
     }
 
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
+    // Guard destructor frees host ptrs (commit() not called).
     clearGraphStreamError(cudaStr);
     cleanupCaptureBuffersOnFailure();
     platformCleanupSegmentForRebuild(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "CUDA graph instantiate failed for seg[%d-%d] (oom=%s, retries=%d, evicted=%d)",
+                  seg.def.startSlot, seg.def.endSlot,
+                  handle->wasLastInstantiateOom() ? "true" : "false",
+                  seg.exec.captureOomRetries, numEvicted);
   }
 
   cudaGetLastError();
@@ -992,10 +964,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    "marking segment as non-capturable",
                    seg.def.startSlot, seg.def.endSlot);
       seg.exec.compilationFailed = true;
-      for (auto* ptr : tl_capturedHostPtrs) {
-        if (ptr != nullptr) cudaFreeHost(ptr);
-      }
-      tl_capturedHostPtrs.clear();
+      // tl_capturedHostPtrs is already clear at this point (guard cleared it on construction,
+      // and the empty graph path produces no host allocations). The guard destructor will
+      // iterate an empty vector — no double-free.
       tl_captureReplicateCache.clear();
       platformCleanupSegmentForRebuild(seg);
       seg.exec.executionCount++;
@@ -1005,27 +976,26 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (!handle->launchAsync(cudaStr)) {
     cudaGetLastError();
-    DSP_DIAG(FALLBACK, "graph launch failed for seg[%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
+    // Guard destructor frees host ptrs (commit() not called).
     clearGraphStreamError(cudaStr);
     seg.exec.compilationFailed = true;
     cleanupCaptureBuffersOnFailure();
     platformCleanupSegmentForRebuild(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "CUDA graph launchAsync failed for seg[%d-%d]",
+                  seg.def.startSlot, seg.def.endSlot);
   }
 
+  // Transfer host pointer ownership to the replay handle, then commit the guard
+  // so its destructor does NOT free them (they now belong to the replay handle).
   for (auto* ptr : tl_capturedHostPtrs) {
     seg.exec.replayHandle->addCapturedHostPtr(ptr);
   }
   tl_capturedHostPtrs.clear();
   tl_captureReplicateCache.clear();
+  captureGuard.commit();  // ownership transferred — guard must NOT free host ptrs
 
   // replayHandle is already set (created before capture began)
   seg.exec.cachedShapeKey = segShapeKey;
@@ -1299,22 +1269,9 @@ void NativeDynamicShapePlan::performReplayVerify(
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ensureAndSyncStagingBuffers — plan-owned stable device buffers for
-// variable (placeholder) external inputs.
-//
-// When shapes are frozen, placeholder inputs always have the same shape.
-// This method allocates a plan-owned device buffer for each variable input
-// (once), then D2D-copies current data from the caller's external input into
-// the staging buffer. The returned pointer array substitutes staging buffers
-// for variable inputs and keeps original pointers for non-variable ones.
-//
-// Both arrays (placeholderStagingBuffers_, effectiveExternals_) are raw
-// NDArray** allocated once with new[], NEVER resized. Same ownership
-// pattern as outputSlots_. This guarantees that specialBuffer() pointers
-// captured in CUDA graph arg tables remain valid for the plan's lifetime.
-//
-// All downstream GPU code (arg table build, capture, replay) resolves
-// external inputs through the returned array, so arg table pointers are
-// inherently stable no matter how Java allocates its input arrays.
+// variable (placeholder) external inputs. Ensures specialBuffer() pointers
+// in CUDA graph arg tables remain valid for the plan's lifetime regardless
+// of how Java allocates its input arrays.
 // ═══════════════════════════════════════════════════════════════════════════
 NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     NDArray** externalArrays, int numExt, void* stream) {

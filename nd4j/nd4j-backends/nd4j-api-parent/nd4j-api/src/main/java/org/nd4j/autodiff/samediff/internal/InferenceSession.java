@@ -518,6 +518,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 snapshot.put(arr.data(), Boolean.TRUE);
             }
         }
+        // Include DataBuffers captured by the executor at compile time.
+        // These may no longer be reachable via sameDiff.variables() if a constant's
+        // array was swapped during execution (associateArrayWithVariable).
+        DynamicShapePlanExecutor exec = dynamicShapePlanExecutorTl.get();
+        if (exec != null) {
+            IdentityHashMap<DataBuffer, Boolean> execProtected = exec.getProtectedConstantBuffers();
+            if (execProtected != null) {
+                snapshot.putAll(execProtected);
+            }
+        }
         return snapshot;
     }
 

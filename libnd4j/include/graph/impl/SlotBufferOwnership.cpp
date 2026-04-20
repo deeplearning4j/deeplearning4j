@@ -48,9 +48,7 @@ BufferOwnership classifyBufferOwnership(
     }
   }
 
-  // A slot can only alias buffers that already exist in execution order.
-  // Scanning future slots lets stale later views invert ownership
-  // (for example marking a broadcast output as a view of a later reshape).
+  // Only scan earlier slots — scanning future slots risks stale alias inversion.
   for (int i = 0; i < slotIdx && i < totalOutputSlots; i++) {
     if (outputSlots[i] != nullptr && outputSlots[i]->dataBuffer() == outBuffer) {
       if (parentSlotIdxOut != nullptr) {
@@ -123,6 +121,11 @@ void classifyAndUpdateOwnership(
     NDArray** outputSlots, int totalOutputSlots,
     SlotBufferInfo* ownershipArray) {
 
+  // Remember previous ownership for change detection
+  BufferOwnership prevOwnership = info.ownership;
+  DataBuffer* prevDataBuffer = info.dataBuffer;
+  int prevParentSlotIdx = info.parentSlotIdx;
+
   // 1. Null output or null dataBuffer → UNSET
   if (outArray == nullptr || outArray->dataBuffer() == nullptr) {
     info.ownership = BufferOwnership::UNSET;
@@ -169,6 +172,21 @@ void classifyAndUpdateOwnership(
 
   DSP_DIAG(MEMORY, "OWNERSHIP_CLASSIFY: slot %d → %s",
            slotIdx, bufferOwnershipName(info.ownership));
+
+  // Ownership change detection — log transitions that indicate buffer lifecycle events
+  if (prevOwnership != BufferOwnership::UNSET && prevOwnership != info.ownership) {
+    DSP_DIAG(MEMORY,
+             "OWNERSHIP_CHANGE: slot %d %s → %s (prevDb=%p newDb=%p prevParent=%d newParent=%d)",
+             slotIdx, bufferOwnershipName(prevOwnership), bufferOwnershipName(info.ownership),
+             (void*)prevDataBuffer, (void*)info.dataBuffer,
+             prevParentSlotIdx, info.parentSlotIdx);
+  } else if (prevDataBuffer != nullptr && prevDataBuffer != info.dataBuffer) {
+    DSP_DIAG(MEMORY,
+             "OWNERSHIP_BUFFER_SWAP: slot %d ownership=%s unchanged but DataBuffer changed "
+             "(prev=%p new=%p) — buffer replaced in-place",
+             slotIdx, bufferOwnershipName(info.ownership),
+             (void*)prevDataBuffer, (void*)info.dataBuffer);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -337,14 +355,6 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
 
     DataBuffer* currentDb = outputSlots[i]->dataBuffer();
     if (currentDb != slotDataBuffers[i]) {
-      // DIAGNOSTIC: extra info for slot 420
-      if (i == 420 && outputSlots[i] != nullptr) {
-        DSP_DIAG(VERIFY,
-            "DIAG_SLOT420: snapshot=%p current=%p arr=%p special=%p len=%lld rank=%d",
-            (void*)slotDataBuffers[i], (void*)currentDb,
-            (void*)outputSlots[i], (void*)outputSlots[i]->specialBuffer(),
-            (long long)outputSlots[i]->lengthOf(), outputSlots[i]->rankOf());
-      }
       snprintf(errMsg, errMsgLen,
                "LIFECYCLE_ERROR: slot %d DataBuffer replaced during frozen execution "
                "(snapshot=%p current=%p) — ownership violated",
@@ -352,16 +362,8 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
       return false;
     }
 
-    // NOTE: the "is-closed" check for slot DataBuffers lives in the outer
-    // validateLifecycleForPhase() caller at the SHAPES_FROZEN level.  That
-    // caller has access to protectedWeightBuffers and can correctly
-    // distinguish a true protected-weight UAF from a transient placeholder
-    // view whose wrapper got closed between calls and will be refreshed on
-    // the imminent re-execution of its producing op.  Duplicating the check
-    // here (without that context) produced false positives for slots whose
-    // ownership was classified as SLOT_OWNED but actually aliased a
-    // placeholder external input (e.g., squeeze/expandDims creating a
-    // distinct DataBuffer* wrapper over shared placeholder memory).
+    // "is-closed" check lives in validateLifecycleForPhase() which has the
+    // protectedWeightBuffers context needed to avoid false positives.
 
     void* currentGpu = outputSlots[i]->specialBuffer();
     if (slotGpuAddresses[i] != nullptr && currentGpu != slotGpuAddresses[i]) {
@@ -431,14 +433,9 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
       }
     }
 
-    // Actuality flag check: only flag the two dangerous transitions.
-    // Benign transitions (e.g. 0x03 -> 0x02 when host copy becomes stale but
-    // device remains authoritative) must NOT fail validation.
-    //   * snapSAct && !curSAct          -> device lost authoritative data
-    //   * !curSAct && curPAct && snapSAct -> host overwrote device-authoritative data
-    // detectStaleActualityTransitions() applies identical logic with a hard
-    // throw; the check here mirrors it so a bad transition is caught before
-    // any further validation continues.
+    // Actuality flag check: flag only dangerous transitions (device lost
+    // authoritative data, or host overwrote device data). Benign transitions
+    // like 0x03→0x02 (host stale, device still authoritative) pass.
     if (slotActualityFlags != nullptr && currentDb != nullptr) {
       uint8_t currentFlags = 0;
       if (currentDb->isPrimaryActual()) currentFlags |= 1;
@@ -665,22 +662,18 @@ void BufferPointerSnapshot::detectStaleActualityTransitions(
 
     // sAct was set at capture → now cleared: device data was invalidated
     if (snapSAct && !curSAct) {
-      char buf[256];
-      snprintf(buf, sizeof(buf),
+      DSP_THROW(MEMORY,
                "STALE_DATA: slot %d lost isSpecialActual during frozen phase %d "
                "(snapshot=0x%02x current=0x%02x) — device buffer was invalidated without a known writer",
                i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
-      THROW_EXCEPTION(buf);
     }
 
     // pAct appeared without sAct: host wrote to a device-authoritative buffer
     if (!curSAct && curPAct && snapSAct) {
-      char buf[256];
-      snprintf(buf, sizeof(buf),
+      DSP_THROW(MEMORY,
                "STALE_DATA: slot %d has pAct=1 sAct=0 during frozen phase %d "
                "(snapshot=0x%02x current=0x%02x) — host write overwrote device-authoritative data",
                i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
-      THROW_EXCEPTION(buf);
     }
   }
 
@@ -700,21 +693,17 @@ void BufferPointerSnapshot::detectStaleActualityTransitions(
     bool curPAct = (currentFlags & 1) != 0;
 
     if (snapSAct && !curSAct) {
-      char buf[256];
-      snprintf(buf, sizeof(buf),
+      DSP_THROW(MEMORY,
                "STALE_DATA: ext input %d lost isSpecialActual during frozen phase %d "
                "(snapshot=0x%02x current=0x%02x) — device buffer was invalidated without a known writer",
                i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
-      THROW_EXCEPTION(buf);
     }
 
     if (!curSAct && curPAct && snapSAct) {
-      char buf[256];
-      snprintf(buf, sizeof(buf),
+      DSP_THROW(MEMORY,
                "STALE_DATA: ext input %d has pAct=1 sAct=0 during frozen phase %d "
                "(snapshot=0x%02x current=0x%02x) — host write overwrote device-authoritative data",
                i, planPhase, (unsigned)snapFlags, (unsigned)currentFlags);
-      THROW_EXCEPTION(buf);
     }
   }
 }
@@ -839,22 +828,11 @@ bool validateLifecycleForPhase(
   }
 
   // ── Level 1+: SHAPES_FROZEN — device sync state invariant ──
-  // Rationale: when sync-skip is active in frozen steady-state (executeCount_>=2),
-  // the plan bypasses prepareSpecialUse/registerSpecialUse. That is only safe if
-  // every SLOT_OWNED plan-managed output buffer remains device-authoritative
-  // (isSpecialActual()==true) between executions. If any slot's flags have
-  // flipped (pAct=1,sAct=0), some host write poisoned the device state — the
-  // next op that reads it will trigger syncToDevice and overwrite valid device
-  // data with stale host data. This is the class of bug that silently corrupts
-  // output across decode steps.
-  //
-  // We skip slots that are VIEW_OF_WEIGHT / VIEW_OF_SLOT / WEIGHT / WORKSPACE
-  // because their actuality is owned by a different producer. Only SLOT_OWNED
-  // buffers allocated by this plan must hold the invariant.
-  //
-  // CPU-only builds have no real device — the pAct/sAct flags are vestigial
-  // and always read as pAct=1/sAct=0, which would falsely trigger this check.
-  // Gate on SD_CUDA so the invariant is only enforced where it has meaning.
+  // In frozen steady-state the plan skips prepareSpecialUse/registerSpecialUse,
+  // so every SLOT_OWNED buffer must remain device-authoritative (sAct=true).
+  // If pAct=1 && sAct=0, a host write poisoned the device state.
+  // Only SLOT_OWNED buffers are checked — views/weights have external owners.
+  // CPU builds: pAct/sAct flags are vestigial, gated on SD_CUDA.
 #ifdef SD_CUDA
   if (planPhase >= 1 && ownership != nullptr && outputSlots != nullptr) {
     for (int i = 0; i < totalSlots; i++) {
@@ -893,6 +871,391 @@ bool validateLifecycleForPhase(
 #endif  // SD_CUDA
 
   return true;
+}
+
+bool validateViewRefCounts(
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots) {
+
+  if (ownership == nullptr || outputSlots == nullptr) return true;
+
+  bool valid = true;
+
+  for (int i = 0; i < totalSlots; i++) {
+    const auto& info = ownership[i];
+    if (info.ownership != BufferOwnership::SLOT_OWNED) continue;
+
+    // Count actual VIEW_OF_SLOT children pointing at this slot
+    int actualViewCount = 0;
+    for (int j = 0; j < totalSlots; j++) {
+      if (j == i) continue;
+      if (ownership[j].ownership == BufferOwnership::VIEW_OF_SLOT &&
+          ownership[j].parentSlotIdx == i) {
+        actualViewCount++;
+      }
+    }
+
+    if (actualViewCount != info.viewRefCount) {
+      DSP_DIAG(MEMORY,
+               "VIEW_REF_MISMATCH: slot %d (SLOT_OWNED) has viewRefCount=%d "
+               "but %d VIEW_OF_SLOT children actually reference it "
+               "— refcount leak or missed removeViewRef()",
+               i, info.viewRefCount, actualViewCount);
+      valid = false;
+    }
+  }
+
+  // Check for VIEW_OF_SLOT entries whose parent is no longer SLOT_OWNED
+  for (int i = 0; i < totalSlots; i++) {
+    const auto& info = ownership[i];
+    if (info.ownership != BufferOwnership::VIEW_OF_SLOT) continue;
+    if (info.parentSlotIdx < 0 || info.parentSlotIdx >= totalSlots) {
+      DSP_DIAG(MEMORY,
+               "VIEW_DANGLING_PARENT: slot %d is VIEW_OF_SLOT with invalid "
+               "parentSlotIdx=%d (totalSlots=%d)",
+               i, info.parentSlotIdx, totalSlots);
+      valid = false;
+      continue;
+    }
+    if (ownership[info.parentSlotIdx].ownership != BufferOwnership::SLOT_OWNED) {
+      DSP_DIAG(MEMORY,
+               "VIEW_ORPHANED: slot %d is VIEW_OF_SLOT(parent=%d) but parent "
+               "ownership is %s, not SLOT_OWNED — parent was re-classified "
+               "without updating children",
+               i, info.parentSlotIdx,
+               bufferOwnershipName(ownership[info.parentSlotIdx].ownership));
+      valid = false;
+    }
+  }
+
+  return valid;
+}
+
+int detectStaleOwnership(
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots) {
+
+  if (ownership == nullptr || outputSlots == nullptr) return 0;
+
+  int staleCount = 0;
+  for (int i = 0; i < totalSlots; i++) {
+    const auto& info = ownership[i];
+    if (info.ownership == BufferOwnership::UNSET) continue;
+    if (info.dataBuffer == nullptr) continue;
+
+    if (outputSlots[i] == nullptr) {
+      DSP_DIAG(MEMORY,
+               "STALE_OWNERSHIP: slot %d ownership=%s tracks DataBuffer %p "
+               "but outputSlot is NULL — slot was freed without clearing ownership",
+               i, bufferOwnershipName(info.ownership), (void*)info.dataBuffer);
+      staleCount++;
+      continue;
+    }
+
+    DataBuffer* actualDb = outputSlots[i]->dataBuffer();
+    if (actualDb != info.dataBuffer) {
+      DSP_DIAG(MEMORY,
+               "STALE_OWNERSHIP: slot %d ownership=%s tracks DataBuffer %p "
+               "but actual is %p — buffer was replaced without re-classification",
+               i, bufferOwnershipName(info.ownership),
+               (void*)info.dataBuffer, (void*)actualDb);
+      staleCount++;
+    }
+  }
+
+  return staleCount;
+}
+
+int detectClosedBuffers(
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots,
+    NDArray** externalInputs, int numExternalInputs) {
+
+  int closedCount = 0;
+
+  // Check output slots — skip view slots (VIEW_OF_WEIGHT, VIEW_OF_SLOT)
+  // because their buffers are stale from the prior execution and will be
+  // recreated by the view-creating op (reshape_no_copy, permute, etc.)
+  // on the current execution. Only persistent slots (SLOT_OWNED, WEIGHT,
+  // UNSET) represent state that should remain valid between executions.
+  if (outputSlots != nullptr) {
+    for (int i = 0; i < totalSlots; i++) {
+      if (outputSlots[i] == nullptr) continue;
+      if (ownership != nullptr &&
+          (ownership[i].ownership == BufferOwnership::VIEW_OF_WEIGHT ||
+           ownership[i].ownership == BufferOwnership::VIEW_OF_SLOT)) {
+        continue;
+      }
+      DataBuffer* db = outputSlots[i]->dataBuffer();
+      if (db != nullptr && db->isClosed()) {
+        const char* ownershipStr = (ownership != nullptr)
+            ? bufferOwnershipName(ownership[i].ownership)
+            : "unknown";
+        DSP_DIAG(MEMORY,
+                 "CLOSED_BUFFER: slot %d DataBuffer %p is CLOSED "
+                 "(ownership=%s, len=%lld) — use-after-free risk",
+                 i, (void*)db, ownershipStr,
+                 (long long)db->getLenInBytes());
+        closedCount++;
+      }
+    }
+  }
+
+  // Check external inputs
+  if (externalInputs != nullptr) {
+    for (int i = 0; i < numExternalInputs; i++) {
+      if (externalInputs[i] == nullptr) continue;
+      DataBuffer* db = externalInputs[i]->dataBuffer();
+      if (db != nullptr && db->isClosed()) {
+        DSP_DIAG(MEMORY,
+                 "CLOSED_BUFFER: external input %d DataBuffer %p is CLOSED "
+                 "(len=%lld) — weight/constant was freed while plan active",
+                 i, (void*)db, (long long)db->getLenInBytes());
+        closedCount++;
+      }
+    }
+  }
+
+  return closedCount;
+}
+
+// =============================================================================
+// Always-On Array Validity Assertions
+// =============================================================================
+
+const char* arrayInvalidReasonName(ArrayInvalidReason reason) {
+  switch (reason) {
+    case ArrayInvalidReason::VALID:              return "VALID";
+    case ArrayInvalidReason::NULL_ARRAY:         return "NULL_ARRAY";
+    case ArrayInvalidReason::NULL_SHAPE_INFO:    return "NULL_SHAPE_INFO";
+    case ArrayInvalidReason::NULL_DATABUFFER:    return "NULL_DATABUFFER";
+    case ArrayInvalidReason::DESTROYED_DATABUFFER: return "DESTROYED_DATABUFFER";
+    case ArrayInvalidReason::CLOSED_DATABUFFER:  return "CLOSED_DATABUFFER";
+    case ArrayInvalidReason::INVALID_DATABUFFER: return "INVALID_DATABUFFER";
+    case ArrayInvalidReason::NULL_GPU_POINTER:   return "NULL_GPU_POINTER";
+    default:                                     return "UNKNOWN";
+  }
+}
+
+ArrayInvalidReason validateArrayForExecution(const NDArray* arr) {
+  if (arr == nullptr)
+    return ArrayInvalidReason::NULL_ARRAY;
+
+  // NDArray methods lack const qualifiers. Cast once — all reads below are
+  // logically const (no sync, no allocation, no mutation).
+  NDArray* a = const_cast<NDArray*>(arr);
+
+  // Check shape info validity FIRST using non-throwing accessor.
+  // shapeInfo() throws when _shapeInfo is nullptr (destructed/stale NDArray),
+  // and isEmpty() calls shapeInfo() internally — both must be avoided
+  // until we know the shape info is valid.
+  if (!a->hasValidShapeInfo())
+    return ArrayInvalidReason::NULL_SHAPE_INFO;
+
+  // Empty arrays (scalar-empty, rank-0-empty, etc.) have no DataBuffer by design.
+  // Nd4j.empty() creates arrays with null data — always valid.
+  // Safe to call now because hasValidShapeInfo() passed.
+  if (a->isEmpty())
+    return ArrayInvalidReason::VALID;
+
+  DataBuffer* db = a->dataBuffer();
+  if (db == nullptr)
+    return ArrayInvalidReason::NULL_DATABUFFER;
+
+  // Check in order of severity: use-after-free > closed > corrupt
+  if (db->isDestroyed())
+    return ArrayInvalidReason::DESTROYED_DATABUFFER;
+
+  if (db->isClosed())
+    return ArrayInvalidReason::CLOSED_DATABUFFER;
+
+  if (!db->isValid())
+    return ArrayInvalidReason::INVALID_DATABUFFER;
+
+#ifdef SD_CUDA
+  // On CUDA, non-empty arrays must have a GPU buffer allocated.
+  // special() is a plain pointer read — no sync, no side effects.
+  if (db->special() == nullptr && a->lengthOf() > 0)
+    return ArrayInvalidReason::NULL_GPU_POINTER;
+#endif
+
+  return ArrayInvalidReason::VALID;
+}
+
+int validateSlotInputs(
+    int slotIdx, const char* opName,
+    NDArray** outputSlots, int totalOutputSlots,
+    NDArray** externalInputs, int numExternalInputs,
+    const int* inputSourceIndices, int numInputs,
+    int executeCount, int planPhase,
+    char* errMsg, int errMsgLen) {
+
+  if (inputSourceIndices == nullptr || numInputs <= 0) return 0;
+
+  int invalidCount = 0;
+  bool firstError = true;
+
+  for (int i = 0; i < numInputs; i++) {
+    int srcIdx = inputSourceIndices[i];
+    NDArray* input = nullptr;
+    const char* sourceKind = "unknown";
+    int resolvedIdx = -1;
+
+    if (srcIdx >= 0) {
+      // Slot-sourced input
+      if (srcIdx < totalOutputSlots) {
+        input = outputSlots[srcIdx];
+      }
+      sourceKind = "slot";
+      resolvedIdx = srcIdx;
+    } else {
+      // External input (negative index encoding: extIdx = -(srcIdx + 1))
+      int extIdx = -(srcIdx + 1);
+      if (extIdx >= 0 && extIdx < numExternalInputs) {
+        input = externalInputs[extIdx];
+      }
+      sourceKind = "ext";
+      resolvedIdx = -(srcIdx + 1);
+    }
+
+    // Null inputs are allowed for some ops (optional inputs).
+    // Only validate non-null inputs.
+    if (input == nullptr) continue;
+
+    ArrayInvalidReason reason = validateArrayForExecution(input);
+    if (reason != ArrayInvalidReason::VALID) {
+      invalidCount++;
+      if (firstError && errMsg != nullptr && errMsgLen > 0) {
+        firstError = false;
+        DataBuffer* db = nullptr;
+        if (reason != ArrayInvalidReason::NULL_ARRAY &&
+            reason != ArrayInvalidReason::NULL_SHAPE_INFO) {
+          db = input->dataBuffer();
+        }
+        snprintf(errMsg, errMsgLen,
+                 "ARRAY_INVALID at slot %d input %d (op=%s): reason=%s "
+                 "source=%s[%d] DataBuffer=%p "
+                 "exec=%d phase=%d",
+                 slotIdx, i, opName ? opName : "?",
+                 arrayInvalidReasonName(reason),
+                 sourceKind, resolvedIdx,
+                 (void*)db,
+                 executeCount, planPhase);
+      }
+      // Log every invalid input (not just the first) via DSP_DIAG
+      DSP_DIAG(MEMORY,
+               "ARRAY_INVALID_INPUT: slot=%d input=%d op=%s reason=%s "
+               "source=%s[%d] exec=%d phase=%d",
+               slotIdx, i, opName ? opName : "?",
+               arrayInvalidReasonName(reason),
+               sourceKind, resolvedIdx,
+               executeCount, planPhase);
+    }
+  }
+
+  return invalidCount;
+}
+
+int validateSlotOutputs(
+    int slotIdx, const char* opName,
+    NDArray** outputSlots, int totalOutputSlots,
+    const int* outputSlotIndices, int numOutputs,
+    int executeCount, int planPhase,
+    char* errMsg, int errMsgLen) {
+
+  if (outputSlotIndices == nullptr || numOutputs <= 0) return 0;
+
+  int invalidCount = 0;
+  bool firstError = true;
+
+  for (int i = 0; i < numOutputs; i++) {
+    int si = outputSlotIndices[i];
+    if (si < 0 || si >= totalOutputSlots) continue;
+
+    NDArray* output = outputSlots[si];
+    // Null outputs are legitimate for some ops (conditional branches, dead slots).
+    if (output == nullptr) continue;
+
+    ArrayInvalidReason reason = validateArrayForExecution(output);
+    if (reason != ArrayInvalidReason::VALID) {
+      invalidCount++;
+      if (firstError && errMsg != nullptr && errMsgLen > 0) {
+        firstError = false;
+        DataBuffer* db = nullptr;
+        if (reason != ArrayInvalidReason::NULL_ARRAY &&
+            reason != ArrayInvalidReason::NULL_SHAPE_INFO) {
+          db = output->dataBuffer();
+        }
+        snprintf(errMsg, errMsgLen,
+                 "ARRAY_INVALID at slot %d output %d (outputSlot=%d, op=%s): reason=%s "
+                 "DataBuffer=%p "
+                 "exec=%d phase=%d",
+                 slotIdx, i, si, opName ? opName : "?",
+                 arrayInvalidReasonName(reason),
+                 (void*)db,
+                 executeCount, planPhase);
+      }
+      DSP_DIAG(MEMORY,
+               "ARRAY_INVALID_OUTPUT: slot=%d output=%d outputSlot=%d op=%s reason=%s "
+               "exec=%d phase=%d",
+               slotIdx, i, si, opName ? opName : "?",
+               arrayInvalidReasonName(reason),
+               executeCount, planPhase);
+    }
+  }
+
+  return invalidCount;
+}
+
+int validateSlotRange(
+    int startSlot, int endSlot,
+    NDArray** outputSlots, int totalOutputSlots,
+    int executeCount, int planPhase,
+    char* errMsg, int errMsgLen) {
+
+  if (outputSlots == nullptr) return 0;
+
+  int invalidCount = 0;
+  bool firstError = true;
+
+  // Clamp range to valid bounds
+  if (startSlot < 0) startSlot = 0;
+  if (endSlot >= totalOutputSlots) endSlot = totalOutputSlots - 1;
+
+  for (int i = startSlot; i <= endSlot; i++) {
+    NDArray* arr = outputSlots[i];
+    // Null slots are legitimate (dead branches, conditional outputs).
+    if (arr == nullptr) continue;
+
+    ArrayInvalidReason reason = validateArrayForExecution(arr);
+    if (reason != ArrayInvalidReason::VALID) {
+      invalidCount++;
+      if (firstError && errMsg != nullptr && errMsgLen > 0) {
+        firstError = false;
+        DataBuffer* db = nullptr;
+        if (reason != ArrayInvalidReason::NULL_ARRAY &&
+            reason != ArrayInvalidReason::NULL_SHAPE_INFO) {
+          db = arr->dataBuffer();
+        }
+        snprintf(errMsg, errMsgLen,
+                 "ARRAY_INVALID at slot %d (range [%d-%d]): reason=%s "
+                 "DataBuffer=%p "
+                 "exec=%d phase=%d",
+                 i, startSlot, endSlot,
+                 arrayInvalidReasonName(reason),
+                 (void*)db,
+                 executeCount, planPhase);
+      }
+      DSP_DIAG(MEMORY,
+               "ARRAY_INVALID_RANGE: slot=%d range=[%d-%d] reason=%s "
+               "exec=%d phase=%d",
+               i, startSlot, endSlot,
+               arrayInvalidReasonName(reason),
+               executeCount, planPhase);
+    }
+  }
+
+  return invalidCount;
 }
 
 }  // namespace graph

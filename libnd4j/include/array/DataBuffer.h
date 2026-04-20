@@ -116,14 +116,6 @@ extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset;
 extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
 
-/**
- * When true, memory frees (cudaFreeAsync, cudaFree) are suppressed even when
- * tl_graphExecutionActive is false. This allows gap ops to run with normal
- * allocation/sync paths during CUDA graph capture while preventing MemFree
- * graph nodes for memory allocated OUTSIDE the capture session.
- * Set by capture orchestrator, cleared after capture ends.
- */
-extern SD_TLS_EXPORT thread_local bool tl_captureSkipFrees;
 
 /**
  * Per-step GPU allocation/free tracking for leak diagnosis.

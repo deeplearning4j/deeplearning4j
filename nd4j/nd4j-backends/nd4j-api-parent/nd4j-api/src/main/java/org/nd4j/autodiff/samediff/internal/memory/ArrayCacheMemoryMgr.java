@@ -151,9 +151,21 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             }
         }
 
+        // Build native-address protection set for identity-mismatched wrappers
+        HashSet<Long> protectedAddresses = new HashSet<>();
+        for (DataBuffer pb : fullProtection.keySet()) {
+            if (pb != null && !pb.wasClosed() && pb.opaqueBuffer() != null && !pb.opaqueBuffer().isNull()) {
+                protectedAddresses.add(pb.opaqueBuffer().address());
+            }
+        }
+
         for (DataBuffer buf : deferred.keySet()) {
             if (buf.wasClosed()) continue;
             if (fullProtection.containsKey(buf)) continue;
+            // Fall back to native address check for identity-mismatched wrappers
+            if (!protectedAddresses.isEmpty() && buf.opaqueBuffer() != null
+                    && !buf.opaqueBuffer().isNull()
+                    && protectedAddresses.contains(buf.opaqueBuffer().address())) continue;
             // Don't skip constant-poisoned buffers: anything not in fullProtection that's
             // marked constant is a poisoned intermediate. Force-close it.
             try {
@@ -768,12 +780,34 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             }
         }
 
+        // Build native-address protection set alongside the IdentityHashMap.
+        // IdentityHashMap uses Java == on DataBuffer objects, but the same native
+        // OpaqueDataBuffer can be wrapped by different Java DataBuffer instances
+        // (e.g., after detach() in SingleThreadArrayHolder). Using native pointer
+        // addresses catches these identity mismatches and prevents force-closing
+        // real model constants that happen to have a different Java wrapper.
+        HashSet<Long> protectedAddresses = new HashSet<>();
+        if (protectedBuffers != null) {
+            for (DataBuffer pb : protectedBuffers.keySet()) {
+                if (pb != null && !pb.wasClosed() && pb.opaqueBuffer() != null && !pb.opaqueBuffer().isNull()) {
+                    protectedAddresses.add(pb.opaqueBuffer().address());
+                }
+            }
+        }
+
         int skippedProtected = 0;
         int forceClosedConstant = 0;
         int closedNormal = 0;
         long closedBytes = 0;
         for (DataBuffer buf : uniqueBuffers.keySet()) {
             if (protectedBuffers != null && protectedBuffers.containsKey(buf)) {
+                skippedProtected++;
+                continue;
+            }
+            // Fall back to native address check for identity-mismatched wrappers
+            if (!protectedAddresses.isEmpty() && !buf.wasClosed()
+                    && buf.opaqueBuffer() != null && !buf.opaqueBuffer().isNull()
+                    && protectedAddresses.contains(buf.opaqueBuffer().address())) {
                 skippedProtected++;
                 continue;
             }
@@ -788,7 +822,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             } else if (buf.isConstant() && !buf.isAttached()) {
                 // Constant-poisoned intermediate: the buffer was marked isConstant=true
                 // by setCloseable(false) on placeholder arrays, propagated through shared
-                // DataBuffers. Since it's not in protectedBuffers, it's safe to force-close.
+                // DataBuffers. Since it's not in protectedBuffers (checked by both Java
+                // identity and native address), it's safe to force-close.
                 try {
                     closedBytes += buf.length() * buf.getElementSize();
                     buf.setConstant(false);

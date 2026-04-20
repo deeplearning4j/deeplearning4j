@@ -730,13 +730,9 @@ DspDiagnostics::ExtInputSyncResult DspDiagnostics::dumpExternalInputState(
 }
 
 // ─── Array content fingerprint (FNV-1a) ──────────────────────────────────────
-// Records a 64-bit hash over the full host-side payload of arr. Used to detect
-// stuck-content bugs (placeholders that don't refresh between decode steps, KV
-// caches that fail to update, etc.) — a repeated fingerprint across execCounts
-// is the smoking gun.
-//
-// Caller contract: must be invoked outside CUDA graph capture. arr->syncToHost()
-// can issue a cross-stream cudaMemcpyAsync which would poison an active capture.
+// 64-bit hash over the host-side payload. Detects stuck inputs that never change
+// between execution steps (repeated fingerprint across execCounts).
+// Must be invoked outside CUDA graph capture — syncToHost() would poison capture.
 void DspDiagnostics::fingerprintArray(const char* tag, int idx, const char* name,
                                        NDArray* arr, int execCount) {
   if (arr == nullptr) return;

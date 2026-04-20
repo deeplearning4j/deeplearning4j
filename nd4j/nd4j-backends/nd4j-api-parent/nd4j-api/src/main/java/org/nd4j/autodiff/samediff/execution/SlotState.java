@@ -25,7 +25,7 @@ package org.nd4j.autodiff.samediff.execution;
  *
  * <p>State transitions (ordered — each state includes all prior guarantees):</p>
  * <pre>
- *   UNINITIALIZED → WARMUP → SHAPE_CACHED → COMPILED → FROZEN → FROZEN_CONSTANT
+ *   WARMUP → SHAPE_CACHED → FROZEN → FROZEN_CONSTANT
  * </pre>
  *
  * <p>Backward transitions:</p>
@@ -37,18 +37,14 @@ package org.nd4j.autodiff.samediff.execution;
  * <p>Mirrors the C++ {@code NativeSlot::SlotState} enum in NativeDynamicShapePlan.h.</p>
  */
 public enum SlotState {
-    /** Initial state */
-    UNINITIALIZED(0),
     /** First execution (shape inference + view detection) */
-    WARMUP(1),
+    WARMUP(0),
     /** Shape cache populated, view status determined */
-    SHAPE_CACHED(2),
-    /** Segment compiled/captured */
-    COMPILED(3),
+    SHAPE_CACHED(1),
     /** Shapes frozen, context reuse enabled */
-    FROZEN(4),
+    FROZEN(2),
     /** Output never changes, skip execution entirely */
-    FROZEN_CONSTANT(5);
+    FROZEN_CONSTANT(3);
 
     private final int nativeCode;
 

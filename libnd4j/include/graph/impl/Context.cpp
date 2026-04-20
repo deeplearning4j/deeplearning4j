@@ -756,10 +756,8 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
     THROW_EXCEPTION("Context::setOutputArray: _context was corrupted during _fastpath_out.resize!");
   }
 
-  // Check for null shapeInfo before accessing it - use try-catch because shapeInfo() throws when null
-  try {
-    array->shapeInfo();
-  } catch (...) {
+  // Check for valid shapeInfo before accessing it
+  if (!array->hasValidShapeInfo()) {
     std::string errorMessage;
     errorMessage += std::string("Context::setOutputArray: Array at index ");
     errorMessage += std::to_string(index);

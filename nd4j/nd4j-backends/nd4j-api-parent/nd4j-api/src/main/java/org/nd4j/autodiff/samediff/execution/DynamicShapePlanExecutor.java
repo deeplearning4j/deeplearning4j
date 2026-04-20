@@ -210,10 +210,12 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  Only these need syncToSpecial on the frozen fast path. Constants never change. */
     private boolean[] inputIsPlaceholder;
 
-    /** Cached constant values: detached copies of small constant arrays (≤32 elements)
-     *  made when they are first resolved with live DataBuffers. Used to restore values
-     *  when session cleanup force-closes constant DataBuffers. Key = external input index. */
-    private Map<Integer, INDArray> cachedConstantValues;
+    /** Strong references to ALL constant DataBuffers used by this plan.
+     *  Prevents session cleanup from closing constants that are shared across
+     *  multiple plans (e.g., vision encoder + decoder). These references ensure
+     *  the DataBuffers remain alive for the lifetime of this executor.
+     *  Populated at compile time, nulled on close(). */
+    private IdentityHashMap<DataBuffer, Boolean> protectedConstantBuffers;
 
     /** Cached indices of placeholder inputs. Built on first frozen call to avoid
      *  iterating all 1332 external inputs every step. Only ~3 are placeholders
@@ -508,7 +510,33 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     private boolean isProtectedExternalBuffer(DataBuffer buf) {
-        return isCurrentExternalInputBuffer(buf);
+        if (isCurrentExternalInputBuffer(buf)) return true;
+        if (protectedConstantBuffers != null && protectedConstantBuffers.containsKey(buf)) return true;
+        return false;
+    }
+
+    /**
+     * Single authoritative check: is this array's data accessible for GPU execution?
+     * Checks Java DataBuffer, OpaqueDataBuffer pointer, and wasClosed flag in one place.
+     * Empty arrays (shape=[], data=null) are always considered live — they have no
+     * DataBuffer by design (Nd4j.empty() creates arrays with null data).
+     */
+    public static boolean isArrayLive(INDArray arr) {
+        if (arr == null || arr.wasClosed()) return false;
+        if (arr.isEmpty()) return true;
+        DataBuffer db = arr.data();
+        if (db == null || db.wasClosed()) return false;
+        OpaqueDataBuffer odb = db.opaqueBuffer();
+        return odb != null && !odb.isNull();
+    }
+
+    /**
+     * Returns the set of constant DataBuffers protected by this executor.
+     * Used by session cleanup code to avoid closing constants that are still
+     * referenced by an active plan.
+     */
+    public IdentityHashMap<DataBuffer, Boolean> getProtectedConstantBuffers() {
+        return protectedConstantBuffers;
     }
 
     private int closeReplicaCache(Map<Integer, INDArray> cache) {
@@ -597,6 +625,11 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (arr != null && !arr.wasClosed() && arr.data() != null) {
                 protectedBuffers.put(arr.data(), Boolean.TRUE);
             }
+        }
+        // Also include DataBuffers captured at compile time — these may no longer
+        // be reachable via sd.variables() if the variable's array was swapped.
+        if (protectedConstantBuffers != null) {
+            protectedBuffers.putAll(protectedConstantBuffers);
         }
         return protectedBuffers;
     }
@@ -1041,25 +1074,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                     plan.getExternalInputKeys().length + " inputs, " +
                     plan.getRequestedOutputs().size() + " outputs (dispatch deferred to execute time)");
 
-            // Cache small constant values NOW while their DataBuffers are still alive.
-            // Session cleanup can force-close constant buffers between compilation and
-            // first execution. By caching detached copies here, we can restore values
-            // even after the originals are closed.
-            cachedConstantValues = new HashMap<>();
-            int cachedCount = 0;
+            // Hold strong references to ALL constant DataBuffers used by this plan.
+            // This prevents session cleanup (destroySession / closePooledResources) from
+            // closing constants that are shared across multiple plans (e.g., vision encoder
+            // + decoder). The protection set is checked by all cleanup paths.
+            protectedConstantBuffers = new IdentityHashMap<>();
+            int protectedCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
                 SDVariable var = sd.getVariable(extKeys[i]);
                 if (var != null && var.getVariableType() == VariableType.CONSTANT) {
                     INDArray arr = var.getArr();
-                    if (arr != null && arr.data() != null && !arr.data().wasClosed()
-                            && arr.length() <= 32) {
-                        cachedConstantValues.put(i, arr.dup());
-                        cachedCount++;
+                    if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                        protectedConstantBuffers.put(arr.data(), Boolean.TRUE);
+                        protectedCount++;
                     }
                 }
             }
-            if (cachedCount > 0) {
-                log.info("Native executor: cached {} small constant values at compile time", cachedCount);
+            if (protectedCount > 0) {
+                log.info("Native executor: protecting {} constant DataBuffers for plan lifetime", protectedCount);
             }
         }
 
@@ -1662,23 +1694,46 @@ public class DynamicShapePlanExecutor implements Closeable {
             deferredClose.clear();
         }
 
+        // Build a set of DataBuffers that belong to zeroCopyOutputCache entries.
+        // These must NOT be freed here — they're still needed by callers until
+        // closeZeroCopyOutputCache() runs later in the releaseGpuIntermediates sequence.
+        Set<DataBuffer> outputProtectedBuffers = new HashSet<>();
+        if (zeroCopyOutputCache != null) {
+            for (INDArray outArr : zeroCopyOutputCache.values()) {
+                if (outArr != null && !outArr.wasClosed() && outArr.data() != null) {
+                    outputProtectedBuffers.add(outArr.data());
+                }
+            }
+        }
+
         // Collect eligible buffers from the cache into pendingClose.
         // The persistent dedup sets (seenIdentity, closedOdbAddresses) from the previous
         // execute() call will correctly skip buffers already freed during execution.
         int collected = 0;
+        int protectedOutputCount = 0;
         for (int i = 0; i < slotArrayCache.length; i++) {
             INDArray arr = slotArrayCache[i];
             if (arr != null && !arr.wasClosed()) {
                 DataBuffer buf = arr.data();
                 if (buf != null && !buf.wasClosed()) {
+                    // Skip buffers that belong to requested outputs (zeroCopyOutputCache).
+                    // These will be freed by closeZeroCopyOutputCache() later.
+                    if (outputProtectedBuffers.contains(buf)) {
+                        protectedOutputCount++;
+                        slotArrayCache[i] = null;
+                        continue;
+                    }
                     // Undo setCloseable(false) poisoning from directExecHelper().
                     // Session intermediates are marked constant via setCloseable(false)
                     // → setConstant(true). Without undoing this, the slot cache cannot
                     // free ANY buffers during session reset, leaking all GPU memory.
+                    // BUT: never un-poison real constants protected by the plan.
                     if (buf.isConstant() && !buf.isAttached()) {
-                        try {
-                            buf.setConstant(false);
-                        } catch (Exception ignored) {}
+                        if (protectedConstantBuffers == null || !protectedConstantBuffers.containsKey(buf)) {
+                            try {
+                                buf.setConstant(false);
+                            } catch (Exception ignored) {}
+                        }
                     }
                     if (!buf.isConstant()) {
                         pendingClose.add(buf);
@@ -1687,6 +1742,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
             slotArrayCache[i] = null;
+        }
+        if (protectedOutputCount > 0) {
+            log.info("    closeSlotArrayCache: protected {} output buffers from premature free",
+                     protectedOutputCount);
         }
 
         if (collected == 0) {
@@ -1855,76 +1914,56 @@ public class DynamicShapePlanExecutor implements Closeable {
             System.arraycopy(cachedInputArrays, 0, extInputs, 0, extKeys.length);
             // Re-resolve any inputs whose DataBuffer has been freed between steps.
             // This can happen when setCloseable(true)+close() is called on KV outputs
-            // that share a DataBuffer with past_key_values inputs, or when deferred
-            // close evicts constant DataBuffers during long Triton compilations.
+            // that share a DataBuffer with past_key_values inputs.
+            // Constants are protected by protectedConstantBuffers and should never be stale.
             int staleCount = 0;
             int resolvedCount = 0;
             int staleConstantCount = 0;
             int stalePlaceholderCount = 0;
             int staleOtherCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
-                if (extInputs[i] != null) {
-                    DataBuffer db = extInputs[i].data();
-                    if (db == null || db.wasClosed()) {
-                        staleCount++;
-                        SDVariable var = sd.getVariable(extKeys[i]);
-                        VariableType vt = var != null ? var.getVariableType() : null;
-                        if (var != null && (vt == VariableType.CONSTANT
-                                || vt == VariableType.VARIABLE)) {
-                            staleConstantCount++;
-                            INDArray fresh = var.getArr();
-                            if (fresh != null && fresh.data() != null && !fresh.data().wasClosed()) {
-                                extInputs[i] = fresh;
-                                cachedInputArrays[i] = fresh;
-                                // Track for frozen fast path — must call setGraphContextInputArray
-                                if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
-                                if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
-                                    staleNonPlaceholderIndices = java.util.Arrays.copyOf(staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
-                                staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
-                                resolvedCount++;
-                            } else {
-                                // Dead constant: try to restore from cached values
-                                INDArray cached = cachedConstantValues != null ? cachedConstantValues.get(i) : null;
-                                if (cached != null && cached.data() != null && !cached.data().wasClosed()) {
-                                    extInputs[i] = cached;
-                                    cachedInputArrays[i] = cached;
-                                    if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
-                                    if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
-                                        staleNonPlaceholderIndices = java.util.Arrays.copyOf(staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
-                                    staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
-                                    resolvedCount++;
-                                } else if (vt == VariableType.VARIABLE) {
-                                    throw new RuntimeException(
-                                        "LIFECYCLE_ERROR: external input '" + extKeys[i] + "' DataBuffer was closed " +
-                                        "between DSP executions — variable was freed while plan active. " +
-                                        "DSP execution failed: cannot pass closed DataBuffer to graph replay fast path. " +
-                                        "(dtype=" + (fresh != null ? fresh.dataType() : "unknown") +
-                                        ", shape=" + (fresh != null ? Arrays.toString(fresh.shape()) : "unknown") + ")");
-                                } else {
-                                    resolvedCount++;
-                                }
-                            }
-                        } else if (vt == VariableType.PLACEHOLDER && placeholderArrays != null) {
-                            stalePlaceholderCount++;
-                            // Placeholder: re-resolve from placeholderArrays map
-                            INDArray ph = placeholderArrays.get(extKeys[i]);
-                            if (ph != null && ph.data() != null && !ph.data().wasClosed()) {
-                                extInputs[i] = ph;
-                                // DON'T update cachedInputArrays here — let the fast path
-                                // detect the change (extInputs[i] != cachedInputArrays[i])
-                                // and call setGraphContextInputArray to update C++ side.
-                                resolvedCount++;
-                            } else {
-                                DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                                    "Java: ext[" + i + "] '" + extKeys[i] + "' type=PLACEHOLDER" +
-                                    " STALE, placeholder not available in map");
-                            }
+                if (extInputs[i] != null && !isArrayLive(extInputs[i])) {
+                    staleCount++;
+                    SDVariable var = sd.getVariable(extKeys[i]);
+                    VariableType vt = var != null ? var.getVariableType() : null;
+                    if (var != null && (vt == VariableType.CONSTANT
+                            || vt == VariableType.VARIABLE)) {
+                        staleConstantCount++;
+                        INDArray fresh = var.getArr();
+                        if (isArrayLive(fresh)) {
+                            extInputs[i] = fresh;
+                            cachedInputArrays[i] = fresh;
+                            if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
+                            if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
+                                staleNonPlaceholderIndices = java.util.Arrays.copyOf(staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
+                            staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
+                            resolvedCount++;
                         } else {
-                            staleOtherCount++;
-                            DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                                "Java: ext[" + i + "] '" + extKeys[i] + "' type=" + vt +
-                                " STALE but not CONST/VAR/PLACEHOLDER — cannot re-resolve!");
+                            throw new RuntimeException(
+                                "LIFECYCLE_ERROR: external input '" + extKeys[i] + "' (type=" + vt +
+                                ") DataBuffer was closed between DSP executions — " +
+                                "constant/variable was freed while plan active. " +
+                                "This indicates a bug in session cleanup: protectedConstantBuffers " +
+                                "should have prevented this closure. " +
+                                "(dtype=" + (fresh != null ? fresh.dataType() : "unknown") +
+                                ", shape=" + (fresh != null ? Arrays.toString(fresh.shape()) : "unknown") + ")");
                         }
+                    } else if (vt == VariableType.PLACEHOLDER && placeholderArrays != null) {
+                        stalePlaceholderCount++;
+                        INDArray ph = placeholderArrays.get(extKeys[i]);
+                        if (ph != null && ph.data() != null && !ph.data().wasClosed()) {
+                            extInputs[i] = ph;
+                            resolvedCount++;
+                        } else {
+                            DspDiagnostics.record(DspDiagnostics.FALLBACK,
+                                "Java: ext[" + i + "] '" + extKeys[i] + "' type=PLACEHOLDER" +
+                                " STALE, placeholder not available in map");
+                        }
+                    } else {
+                        staleOtherCount++;
+                        DspDiagnostics.record(DspDiagnostics.FALLBACK,
+                            "Java: ext[" + i + "] '" + extKeys[i] + "' type=" + vt +
+                            " STALE but not CONST/VAR/PLACEHOLDER — cannot re-resolve!");
                     }
                 }
             }
@@ -1950,11 +1989,6 @@ public class DynamicShapePlanExecutor implements Closeable {
             DspDiagnostics.record(DspDiagnostics.EXECUTE,
                     "Java: external inputs SLOW PATH (resolving " + extKeys.length + " inputs fresh)");
             extInputs = new INDArray[extKeys.length];
-            if (cachedConstantValues == null) {
-                cachedConstantValues = new HashMap<>();
-            }
-            int deadConstantCount = 0;
-            int restoredFromCacheCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
                 String varName = extKeys[i];
                 INDArray arr = null;
@@ -1968,32 +2002,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     var.getVariableType() == VariableType.VARIABLE ||
                                     var.getVariableType() == VariableType.ARRAY)) {
                         arr = var.getArr();
-                        if (arr != null && (arr.data() == null || arr.data().wasClosed())) {
-                            // DataBuffer closed by session cleanup. Restore from cache if available.
-                            INDArray cached = cachedConstantValues.get(i);
-                            if (cached != null && cached.data() != null && !cached.data().wasClosed()) {
-                                arr = cached;
-                                restoredFromCacheCount++;
-                            } else if (var.getVariableType() == VariableType.VARIABLE) {
-                                throw new RuntimeException(
-                                    "LIFECYCLE_ERROR: external input '" + varName + "' DataBuffer was closed " +
-                                    "between DSP executions — variable was freed while plan active. " +
-                                    "DSP execution failed: cannot pass closed DataBuffer to graph replay path. " +
-                                    "(dtype=" + arr.dataType() + ", shape=" + Arrays.toString(arr.shape()) + ")");
-                            } else {
-                                // CONSTANT with closed DataBuffer but GPU memory may still be valid.
-                                // Pass the original array — native plan uses GPU pointers directly.
-                                deadConstantCount++;
-                                if (deadConstantCount <= 65) {
-                                    log.warn("DEAD_CONSTANT_PASSTHROUGH: ext[{}] '{}' DataBuffer closed but passing original (dtype={}, shape={})",
-                                             i, varName, arr.dataType(), Arrays.toString(arr.shape()));
-                                }
-                            }
-                        } else if (arr != null && arr.data() != null && !arr.data().wasClosed()
-                                   && var.getVariableType() == VariableType.CONSTANT
-                                   && arr.length() <= 32 && !cachedConstantValues.containsKey(i)) {
-                            // Buffer is alive — cache a detached copy for future recovery
-                            cachedConstantValues.put(i, arr.dup());
+                        if (arr != null && !isArrayLive(arr)) {
+                            throw new RuntimeException(
+                                "LIFECYCLE_ERROR: external input '" + varName + "' (type=" +
+                                var.getVariableType() + ") DataBuffer was closed between DSP executions — " +
+                                "constant/variable was freed while plan active. " +
+                                "This indicates a bug in session cleanup: protectedConstantBuffers " +
+                                "should have prevented this closure. " +
+                                "(dtype=" + arr.dataType() + ", shape=" + Arrays.toString(arr.shape()) + ")");
                         }
                     }
                 }
@@ -2003,10 +2019,6 @@ public class DynamicShapePlanExecutor implements Closeable {
                             "All external inputs must be resolved. No fallback permitted.");
                 }
                 extInputs[i] = arr;
-            }
-            if (deadConstantCount > 0 || restoredFromCacheCount > 0) {
-                log.info("DEAD_CONSTANT_SUMMARY: {} dead, {} restored from cache, {} total ext inputs",
-                         deadConstantCount, restoredFromCacheCount, extKeys.length);
             }
         }
 
@@ -2750,9 +2762,33 @@ public class DynamicShapePlanExecutor implements Closeable {
                     execMs * 1000, "Java: native execution OK " + execMs + "ms" +
                     " frozen=" + shapesFrozen + " executionCount=" + executionCount);
 
-            // NOTE: No need to clearLastError() on success path — error was already
-            // cleared on line 4538 when status != 0. If status == 0, there's no error.
-            // Removing this unconditional JNI call saves ~1-2us per step.
+            // ── Always-on: validate output arrays immediately after native returns ──
+            // C++ execution succeeded (status=0) but output arrays may still be
+            // invalid (null OpaqueDataBuffer, closed buffer, wrong device). Catch
+            // these NOW rather than when getFloat()/toFloatVector() crashes later.
+            for (int i = 0; i < numOutputs; i++) {
+                OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
+                if (opaqueOut == null || opaqueOut.isNull()) {
+                    throw new IllegalStateException(
+                        "ARRAY_INVALID: C++ returned null OpaqueNDArray for output " + i +
+                        " after successful DSP execution (executionCount=" + executionCount +
+                        ", frozen=" + shapesFrozen + "). " +
+                        "This indicates the output slot was never populated by any op.");
+                }
+                // Check the underlying buffers are accessible
+                Pointer specialBuf = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
+                long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
+                if (length > 0 && (specialBuf == null || specialBuf.isNull())) {
+                    Pointer primaryBuf = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);
+                    if (primaryBuf == null || primaryBuf.isNull()) {
+                        throw new IllegalStateException(
+                            "ARRAY_INVALID: output " + i + " has length=" + length +
+                            " but both GPU and host buffers are null after DSP execution " +
+                            "(executionCount=" + executionCount + ", frozen=" + shapesFrozen + "). " +
+                            "The DataBuffer was likely closed/freed during execution.");
+                    }
+                }
+            }
 
             // Extract output arrays from context.
             // C++ wrote NDArray* pointers back into the context's output slots.
@@ -3143,6 +3179,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         freeNativePlanHandle("EXECUTOR_CLOSE");
 
         currentPlan = null;
+        // Release strong refs to constant DataBuffers AFTER all cleanup steps.
+        // Now that the plan is fully closed, these constants no longer need protection.
+        protectedConstantBuffers = null;
         log.info("  DSP close() complete (nativeReplicasClosed={}, zeroCopyClosed={})",
                 nativeReplicasClosed, zeroCopyClosed);
         System.out.flush(); System.err.flush();

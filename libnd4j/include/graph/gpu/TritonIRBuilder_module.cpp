@@ -407,7 +407,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   // Diagnostic: print slot wiring for small sub-kernels (or first sub-kernel in segment)
-  if (endSlot - startSlot < 100) {
+  if (DSP_DIAG_ENABLED(COMPILE) && endSlot - startSlot < 100) {
     for (int i = startSlot; i <= endSlot; i++) {
       std::string inSrcs;
       for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
@@ -510,7 +510,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
           inputArgs.push_back(arg);
           // Diagnostic: print compile-time values of small external inputs
-          if (arr.lengthOf() <= 10) {
+          if (DSP_DIAG_ENABLED(COMPILE) && arr.lengthOf() <= 10) {
             arr.syncToHost();
             std::string vals;
             for (LongType e = 0; e < arr.lengthOf(); e++) {

@@ -77,17 +77,9 @@ namespace sd {
 namespace graph {
 
 namespace {
+// Status enum string helper — delegates to shared dsp::dspStatusName in DspPhaseUtils.h.
 const char* statusName_seg(Status status) {
-  switch (status) {
-    case Status::OK: return "OK";
-    case Status::BAD_INPUT: return "BAD_INPUT";
-    case Status::BAD_SHAPE: return "BAD_SHAPE";
-    case Status::BAD_RANK: return "BAD_RANK";
-    case Status::BAD_PARAMS: return "BAD_PARAMS";
-    case Status::BAD_OUTPUT: return "BAD_OUTPUT";
-    case Status::KERNEL_FAILURE: return "KERNEL_FAILURE";
-    default: return "UNKNOWN";
-  }
+  return dsp::dspStatusName(status);
 }
 
 uint32_t resolveSegmentShapeTraits(const NativeSlot& slot) {
@@ -534,12 +526,10 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   // If all backends have been exhausted for this segment, throw — do not silently fall back
   if (seg.exec.compilationFailed) {
-    char buf[256];
-    snprintf(buf, sizeof(buf),
-             "executeSegmentWithCpuGraph: seg[%d-%d] permanently failed — all backends exhausted. "
-             "Fix the compilation failure instead of falling back to slot-by-slot.",
-             seg.def.startSlot, seg.def.endSlot);
-    THROW_EXCEPTION(buf);
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "executeSegmentWithCpuGraph: seg[%d-%d] permanently failed — all backends exhausted. "
+                  "Fix the compilation failure instead of falling back to slot-by-slot.",
+                  seg.def.startSlot, seg.def.endSlot);
   }
 
   // If we already resolved a backend for this segment, use it directly
@@ -550,12 +540,10 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   // Cascade through the backend chain to find one that works
   const auto& chain = getCpuGraphBackendChain();
   if (chain.empty()) {
-    char buf[256];
-    snprintf(buf, sizeof(buf),
-             "executeSegmentWithCpuGraph: no CPU graph backends available for seg[%d-%d]. "
-             "Cannot execute — a backend must be configured.",
-             seg.def.startSlot, seg.def.endSlot);
-    THROW_EXCEPTION(buf);
+    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                  "executeSegmentWithCpuGraph: no CPU graph backends available for seg[%d-%d]. "
+                  "Cannot execute — a backend must be configured.",
+                  seg.def.startSlot, seg.def.endSlot);
   }
 
   // Warmup must happen before any backend tries to compile (needs output shapes)
@@ -598,12 +586,10 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   // ALL backends exhausted — hard failure, do not silently fall back
   seg.exec.compilationFailed = true;
-  char buf[256];
-  snprintf(buf, sizeof(buf),
-           "cascade: ALL %d backends failed for seg[%d-%d]. Fix the backend compilation — "
-           "silent fallback to slot-by-slot is not permitted.",
-           (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
-  THROW_EXCEPTION(buf);
+  DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                "cascade: ALL %d backends failed for seg[%d-%d]. Fix the backend compilation — "
+                "silent fallback to slot-by-slot is not permitted.",
+                (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
 }
 
 // ─── Execute segment with a specific backend (shared logic) ─────────────────
@@ -614,24 +600,8 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   const char* backendName = backend->name();
 
-  // Compute shape key for cache lookup.
-  // When shapes are frozen and the key was already computed, reuse it — the shapes
-  // cannot change so the hash is stable. Saves iterating all cross-segment inputs.
-  // EXCEPTION: segments with value-dependent ops must ALWAYS recompute the shape key
-  // because input VALUES (hashed by computeSegmentShapeKey for small inputs ≤32 elements)
-  // can change even when shapes are frozen. Without this guard, the cached key would
-  // miss value changes in reshape targets, broadcast dims, etc., causing replay with
-  // stale output shapes.
-  //
-  // REPLAY OPTIMIZATION: During stable replay (executionCount >= 3), skip shape key
-  // computation entirely — even for hasValueDepOps segments. The shape key was
-  // validated at capture time. Value-dependent inputs are handled by capture buffer
-  // refresh, not by shape key changes. If a value change truly requires graph
-  // invalidation, the createValueKey mechanism catches it. Skipping shape key here
-  // eliminates N syncToHost calls per step (one per small INT/INT64 cross-segment
-  // input array).
   // ── Shape key: detect if segment needs recompilation ──
-  // Frozen + cached key: reuse. Otherwise: compute once and cache.
+  // Frozen + cached key: reuse (shapes can't change). Otherwise: compute and cache.
   LongType segShapeKey;
   bool needsCompile;
   if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
@@ -652,11 +622,9 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
              "(executionCount=%d, planPhase=%d). Demoting plan phase.",
              seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
              static_cast<int>(planPhase_));
-#ifndef NDEBUG
     REQUIRE_TRUE(false, 0,
                  "DSP phase contract violation: CPU compilation during REPLAYING phase "
                  "for seg[%d-%d].", seg.def.startSlot, seg.def.endSlot);
-#endif
     demotePlanPhase(PlanPhase::POINTERS_STABLE,
                     "CPU compilation triggered during REPLAYING phase");
   }
@@ -694,12 +662,10 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
     if (!allCompiled) {
       seg.exec.compilationFailed = true;
-      char buf[256];
-      snprintf(buf, sizeof(buf),
-               "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
-               "Fix the backend to compile all ops — silent fallback is not permitted.",
-               backendName, seg.def.startSlot, seg.def.endSlot);
-      THROW_EXCEPTION(buf);
+      DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                    "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
+                    "Fix the backend to compile all ops — silent fallback is not permitted.",
+                    backendName, seg.def.startSlot, seg.def.endSlot);
     } else {
       DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
                    "%s VALIDATION OK: seg[%d-%d] all %d ops compiled successfully",
@@ -709,16 +675,9 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   seg.exec.cachedShapeKey = segShapeKey;
   seg.def.shapeKey = segShapeKey;
-  // tl_graphExecutionActive must NOT be set here. This function drives CPU graph
-  // backends (OneDNN, ACL, MLIR, etc.) and Triton warmup. tl_graphExecutionActive
-  // is a CUDA-graph-capture-specific guard that suppresses frees, skips syncs, and
-  // routes allocations through capture workspace. Setting it during non-capture
-  // execution causes:
-  //  - Memory leaks (~224 MB/step from unsuppressed temporary buffers)
-  //  - Silent correctness bugs (skipped debug checks, wrong allocation paths)
-  //  - Stale data in Triton warmup (sync guards suppressed)
-  // Actual CUDA graph capture manages tl_graphExecutionActive around
-  // beginCapture/endCapture in executeSegmentWithGpuGraph.
+  // tl_graphExecutionActive must NOT be set here — it is a CUDA-graph-capture
+  // guard that suppresses frees and skips syncs. This function drives non-capture
+  // paths (CPU backends, Triton warmup). Capture manages the flag internally.
   DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
            seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
@@ -733,6 +692,21 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   if (status == Status::OK) {
     seg.exec.executionCount++;
     totalGraphReplays_++;
+
+    // ── Always-on segment boundary validation (backend path) ──────────────
+    char segErr[512] = {};
+    int segInvalid = validateSlotRange(
+        seg.def.startSlot, seg.def.endSlot,
+        outputSlots_, totalOutputSlots_,
+        executeCount_, static_cast<int>(planPhase_),
+        segErr, sizeof(segErr));
+    if (segInvalid > 0) {
+      DSP_THROW(MEMORY,
+               "SEGMENT_BOUNDARY_INVALID: %d invalid array(s) at end of seg[%d-%d] "
+               "(backend=%s, segExecCount=%d): %s",
+               segInvalid, seg.def.startSlot, seg.def.endSlot,
+               backendName, seg.exec.executionCount, segErr);
+    }
   }
 
   return status;
@@ -968,13 +942,11 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           if (slot.cf.loopBackTarget >= 0 && slot.cf.loopBackTarget >= seg.def.startSlot) {
             loopIterations++;
             if (loopIterations >= MAX_LOOP_ITERATIONS) {
-              char buf[256];
-              snprintf(buf, sizeof(buf),
-                       "loop iteration limit (%d) reached at slot %d (%s) in seg[%d-%d]. "
-                       "Possible infinite loop in control flow.",
-                       MAX_LOOP_ITERATIONS, stepIdx, slots_[stepIdx].ident.opName.c_str(),
-                       seg.def.startSlot, seg.def.endSlot);
-              THROW_EXCEPTION(buf);
+              DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
+                            "loop iteration limit (%d) reached at slot %d (%s) in seg[%d-%d]. "
+                            "Possible infinite loop in control flow.",
+                            MAX_LOOP_ITERATIONS, stepIdx, slots_[stepIdx].ident.opName.c_str(),
+                            seg.def.startSlot, seg.def.endSlot);
             }
             // Clear dead flags for loop body range
             if (slotIsDead_ && slot.cf.loopRegionIndex >= 0 && slot.cf.loopRegionIndex < numLoopRegions_) {
@@ -1034,14 +1006,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             continue;
           }
           // Batched GEMM failure is a hard error — do not silently fall back to individual execution
-          {
-            char buf[256];
-            snprintf(buf, sizeof(buf),
-                     "batched GEMM group %d failed (status=%d) at slot %d (%s). "
-                     "Fix the batched GEMM execution — silent fallback to individual execution is not permitted.",
-                     bgIdx, (int)batchStatus, stepIdx, slots_[stepIdx].ident.opName.c_str());
-            THROW_EXCEPTION(buf);
-          }
+          DSP_THROW(EXECUTE,
+                    "batched GEMM group %d failed (status=%d) at slot %d (%s). "
+                    "Fix the batched GEMM execution — silent fallback to individual execution is not permitted.",
+                    bgIdx, (int)batchStatus, stepIdx, slots_[stepIdx].ident.opName.c_str());
         } else {
           // Non-first member: output already computed by the trigger's batch call.
           // Release schedule removed: arrays persist (one array per slot)
@@ -1089,17 +1057,35 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           continue;  // retry the slot execution after trimming
         }
 #endif
-        char buf[512];
-        snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
-                 stepIdx, slots_[stepIdx].ident.opName.c_str(), e.what());
-        THROW_EXCEPTION(buf);
+        DSP_THROW(EXECUTE, "slot %d (%s) threw exception: %s",
+                  stepIdx, slots_[stepIdx].ident.opName.c_str(), e.what());
       } catch (...) {
-        char buf[512];
-        snprintf(buf, sizeof(buf), "slot %d (%s) threw unknown exception",
-                 stepIdx, slots_[stepIdx].ident.opName.c_str());
-        THROW_EXCEPTION(buf);
+        DSP_THROW(EXECUTE, "slot %d (%s) threw unknown exception",
+                  stepIdx, slots_[stepIdx].ident.opName.c_str());
       }
     } while (shouldRetry);
+
+    // ── Always-on post-slot output validation ─────────────────────────────
+    // After each slot executes, verify its outputs are valid before the next
+    // slot reads them as inputs. Catches the exact slot that produces an
+    // invalid array, rather than discovering it N slots later.
+    if (status == Status::OK) {
+      auto& doneSlot = slots_[stepIdx];
+      char postSlotErr[512] = {};
+      int badOutputs = validateSlotOutputs(
+          stepIdx, doneSlot.ident.opName.c_str(),
+          outputSlots_, totalOutputSlots_,
+          doneSlot.wiring.outputSlotIndices, doneSlot.wiring.numOutputs,
+          executeCount_, static_cast<int>(planPhase_),
+          postSlotErr, sizeof(postSlotErr));
+      if (badOutputs > 0) {
+        DSP_THROW(MEMORY,
+                 "SLOT_OUTPUT_INVALID: %d invalid output(s) detected AFTER slot %d (%s) "
+                 "execution: %s",
+                 badOutputs, stepIdx, doneSlot.ident.opName.c_str(), postSlotErr);
+      }
+    }
+
     // ── Diagnostic: per-slot CUDA error check on warmup execution ──────
     // On the first execution of each segment (warmup), synchronize the device
     // after every slot to catch latent CUDA kernel errors (error 700) at the
@@ -1114,19 +1100,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     // non-capturing stream during Triton graph capture, but cudaDeviceSynchronize
     // would still try to sync the capturing stream.
 #ifdef SD_CUDA
-    if (status == Status::OK && seg.exec.executionCount == 0 && !streamIsCapturing
-        && tl_graphCaptureStream == nullptr) {
+    if (DSP_DIAG_ENABLED(EXECUTE) && status == Status::OK && seg.exec.executionCount == 0
+        && !streamIsCapturing && tl_graphCaptureStream == nullptr) {
       cudaError_t syncErr = cudaDeviceSynchronize();
       if (syncErr != cudaSuccess) {
-        char buf[1024];
-        snprintf(buf, sizeof(buf),
-                 "CUDA ERROR 700 DIAGNOSTIC: cudaDeviceSynchronize after slot %d (%s) "
-                 "returned error %d (%s). This kernel accessed invalid GPU memory. "
-                 "seg=[%d-%d] execCount=%d shapesFrozen=%d",
-                 stepIdx, slots_[stepIdx].ident.opName.c_str(),
-                 static_cast<int>(syncErr), cudaGetErrorString(syncErr),
-                 seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
-        DSP_DIAG(EXECUTE, "%s", buf);
         // Log all inputs to the failing slot
         auto& faultSlot = slots_[stepIdx];
         for (int i = 0; i < faultSlot.wiring.numInputs; i++) {
@@ -1166,8 +1143,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                      i, si, out ? "db=null" : "null");
           }
         }
-        cudaGetLastError(); // clear sticky error
-        THROW_EXCEPTION(buf);
+        DSP_THROW_CUDA(EXECUTE, syncErr,
+                       "CUDA ERROR 700 DIAGNOSTIC: cudaDeviceSynchronize after slot %d (%s) "
+                       "returned error %d. This kernel accessed invalid GPU memory. "
+                       "seg=[%d-%d] execCount=%d shapesFrozen=%d",
+                       stepIdx, slots_[stepIdx].ident.opName.c_str(),
+                       static_cast<int>(syncErr),
+                       seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
       }
     }
 #endif
@@ -1195,7 +1177,6 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",
                  stepIdx, slots_[stepIdx].ident.opName.c_str(), static_cast<int>(status));
       }
-      DSP_DIAG(FALLBACK, "%s", buf);
 
       // Log full input details for the failing slot
       auto& failedSlot = slots_[stepIdx];
@@ -1218,21 +1199,21 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                 }
                 if (srcIsFrozen) break;
               }
-              DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: rank=%lld shape=%s "
+              DSP_DIAG(EXECUTE, "  input[%d] from outputSlot[%d]: rank=%lld shape=%s "
                         "shapeInfo=%p db=%p frozenSrc=%d",
                         i, srcIdx, (long long)inp->rankOf(),
                         ShapeUtils::shapeAsString(inp).c_str(),
                         (void*)inp->shapeInfo(), (void*)inp->dataBuffer(),
                         srcIsFrozen ? 1 : 0);
             } catch (...) {
-              DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: ptr=%p (shapeInfo INVALID)",
+              DSP_DIAG(EXECUTE, "  input[%d] from outputSlot[%d]: ptr=%p (shapeInfo INVALID)",
                         i, srcIdx, (void*)inp);
             }
           } else {
-            DSP_DIAG(FALLBACK, "  input[%d] from outputSlot[%d]: null", i, srcIdx);
+            DSP_DIAG(EXECUTE, "  input[%d] from outputSlot[%d]: null", i, srcIdx);
           }
         } else {
-          DSP_DIAG(FALLBACK, "  input[%d] from external[%d]", i, -(srcIdx + 1));
+          DSP_DIAG(EXECUTE, "  input[%d] from external[%d]", i, -(srcIdx + 1));
         }
       }
 
@@ -1242,16 +1223,16 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         NDArray* out = (outIdx >= 0 && outIdx < totalOutputSlots_) ? outputSlots_[outIdx] : nullptr;
         if (out != nullptr) {
           try {
-            DSP_DIAG(FALLBACK, "  output[%d] outputSlot[%d]: rank=%lld shape=%s db=%p",
+            DSP_DIAG(EXECUTE, "  output[%d] outputSlot[%d]: rank=%lld shape=%s db=%p",
                       o, outIdx, (long long)out->rankOf(),
                       ShapeUtils::shapeAsString(out).c_str(),
                       (void*)out->dataBuffer());
           } catch (...) {
-            DSP_DIAG(FALLBACK, "  output[%d] outputSlot[%d]: ptr=%p (shapeInfo INVALID)",
+            DSP_DIAG(EXECUTE, "  output[%d] outputSlot[%d]: ptr=%p (shapeInfo INVALID)",
                       o, outIdx, (void*)out);
           }
         } else {
-          DSP_DIAG(FALLBACK, "  output[%d] outputSlot[%d]: %s", o, outIdx,
+          DSP_DIAG(EXECUTE, "  output[%d] outputSlot[%d]: %s", o, outIdx,
                     outIdx >= 0 ? "null" : "invalid-idx");
         }
       }
@@ -1259,13 +1240,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 #ifdef SD_CUDA
       cudaGetLastError();
 #endif
-      THROW_EXCEPTION(buf);
+      DSP_THROW(EXECUTE, "%s", buf);
     }
 
     // Classify ownership for all outputs produced by this slot.
-    // This populates slotOwnership_[si] with SLOT_OWNED, VIEW_OF_SLOT,
-    // VIEW_OF_WEIGHT, etc., and maintains viewRefCount on parent slots.
-    // Runs in parallel with existing cleanup logic during Phase 1 integration.
     if (slotOwnership_ != nullptr) {
       for (int o = 0; o < slot.wiring.numOutputs; o++) {
         int si = slot.wiring.outputSlotIndices[o];
@@ -1309,6 +1287,26 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
            (tl_dspAllocBytes - tl_dspFreeBytes) / (1024*1024));
 
   seg.exec.executionCount++;
+
+  // ── Always-on segment boundary validation ─────────────────────────────
+  // After a slot-by-slot segment completes, verify all outputs in the segment
+  // range are valid before downstream segments read them as inputs.
+  {
+    char segErr[512] = {};
+    int segInvalid = validateSlotRange(
+        seg.def.startSlot, seg.def.endSlot,
+        outputSlots_, totalOutputSlots_,
+        executeCount_, static_cast<int>(planPhase_),
+        segErr, sizeof(segErr));
+    if (segInvalid > 0) {
+      DSP_THROW(MEMORY,
+               "SEGMENT_BOUNDARY_INVALID: %d invalid array(s) at end of seg[%d-%d] "
+               "(slot-by-slot, segExecCount=%d): %s",
+               segInvalid, seg.def.startSlot, seg.def.endSlot,
+               seg.exec.executionCount, segErr);
+    }
+  }
+
   return Status::OK;
 }
 

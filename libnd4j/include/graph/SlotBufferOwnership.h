@@ -331,6 +331,145 @@ bool validateLifecycleForPhase(
     const BufferPointerSnapshot* snapshot,
     char* errMsg, int errMsgLen);
 
+/**
+ * Validate viewRefCount consistency across all slots.
+ * For each SLOT_OWNED slot, verify that viewRefCount matches the actual
+ * number of VIEW_OF_SLOT children that reference it.
+ * Returns true if consistent; logs violations and returns false otherwise.
+ */
+bool validateViewRefCounts(
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots);
+
+/**
+ * Detect stale ownership entries — slots whose tracked DataBuffer no longer
+ * matches the actual NDArray's DataBuffer. This indicates a slot was
+ * replaced (new allocation or view swap) without re-classifying ownership.
+ * Returns the number of stale entries found (0 = all consistent).
+ * Logs each stale entry via DSP_DIAG(MEMORY, ...).
+ */
+int detectStaleOwnership(
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots);
+
+/**
+ * Detect closed DataBuffers in live slots. Returns count of closed buffers found.
+ * Logs each via DSP_DIAG(MEMORY, ...) with slot index and ownership type.
+ */
+int detectClosedBuffers(
+    const SlotBufferInfo* ownership, int totalSlots,
+    NDArray** outputSlots,
+    NDArray** externalInputs, int numExternalInputs);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Always-On Array Validity Assertions
+//
+// These check that an NDArray is in a valid state for execution. Every check
+// is a plain field read — no sync, no allocation, no side effects. Designed
+// to run at EVERY transition point (pre-slot, post-slot, segment boundary,
+// JNI entry) without measurable overhead.
+//
+// NOT gated behind diagnostics. Invalid arrays are caught immediately with
+// a rich diagnostic message identifying exactly WHAT failed, WHERE (slot,
+// segment, phase), and WHEN (execution count).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Identifies exactly which validity check failed for an NDArray.
+ * Ordered from most severe (use-after-free) to least (missing GPU pointer).
+ */
+enum class ArrayInvalidReason : uint8_t {
+  VALID = 0,              // All checks passed
+  NULL_ARRAY,             // NDArray* is nullptr (unexpected for a wired slot)
+  NULL_SHAPE_INFO,        // shapeInfo() is nullptr (corrupted or uninitialized)
+  NULL_DATABUFFER,        // dataBuffer() is nullptr on a non-empty array
+  DESTROYED_DATABUFFER,   // magic == 0xDEADBEEF: use-after-free
+  CLOSED_DATABUFFER,      // isClosed() == true: freed between steps
+  INVALID_DATABUFFER,     // isValid() false but not destroyed/closed (corrupt magic)
+  NULL_GPU_POINTER,       // special() is nullptr on CUDA for a non-empty array
+};
+
+/**
+ * Human-readable name for an ArrayInvalidReason value.
+ */
+const char* arrayInvalidReasonName(ArrayInvalidReason reason);
+
+/**
+ * Validate a single NDArray for execution readiness.
+ * Returns VALID if the array can be safely passed to a kernel.
+ * Returns the first failing check otherwise.
+ *
+ * NULL arrays return NULL_ARRAY (callers that allow null inputs should
+ * check for null before calling this).
+ * Empty arrays (isEmpty() == true) always return VALID — they have no
+ * DataBuffer by design.
+ *
+ * Cost: 3-5 field reads (pointer, magic number, closed flag, GPU pointer).
+ * No sync, no allocation, no side effects.
+ */
+ArrayInvalidReason validateArrayForExecution(const NDArray* arr);
+
+/**
+ * Validate all inputs for a slot BEFORE execution.
+ * Resolves each input from outputSlots (for slot-sourced) or externalInputs
+ * (for external-sourced) using inputSourceIndices, then validates each.
+ *
+ * Returns 0 if all inputs valid, or the count of invalid inputs.
+ * On failure, populates errMsg with details about the FIRST invalid input.
+ *
+ * Always-on — not gated behind diagnostics.
+ *
+ * @param slotIdx           The slot about to execute
+ * @param opName            Op name for diagnostic messages
+ * @param outputSlots       Plan's output slot array
+ * @param totalOutputSlots  Size of outputSlots
+ * @param externalInputs    External input array (weights, placeholders)
+ * @param numExternalInputs Size of externalInputs
+ * @param inputSourceIndices Wiring: >=0 means outputSlots[idx], <0 means externalInputs[-(idx+1)]
+ * @param numInputs         Number of inputs for this slot
+ * @param executeCount      Current plan execution count (for diagnostics)
+ * @param planPhase         Current plan phase as int (for diagnostics)
+ * @param errMsg            Buffer for error message (null-safe)
+ * @param errMsgLen         Size of errMsg buffer
+ */
+int validateSlotInputs(
+    int slotIdx, const char* opName,
+    NDArray** outputSlots, int totalOutputSlots,
+    NDArray** externalInputs, int numExternalInputs,
+    const int* inputSourceIndices, int numInputs,
+    int executeCount, int planPhase,
+    char* errMsg, int errMsgLen);
+
+/**
+ * Validate all outputs for a slot AFTER execution.
+ * Checks each output slot index to verify the produced array is valid.
+ *
+ * Returns 0 if all outputs valid, or the count of invalid outputs.
+ * On failure, populates errMsg with details about the FIRST invalid output.
+ *
+ * Always-on — not gated behind diagnostics.
+ */
+int validateSlotOutputs(
+    int slotIdx, const char* opName,
+    NDArray** outputSlots, int totalOutputSlots,
+    const int* outputSlotIndices, int numOutputs,
+    int executeCount, int planPhase,
+    char* errMsg, int errMsgLen);
+
+/**
+ * Validate all arrays in a slot range [startSlot, endSlot].
+ * Used at segment boundaries to verify all outputs in the completed
+ * segment are valid before the next segment reads them as inputs.
+ *
+ * Returns 0 if all valid, or the count of invalid arrays.
+ * On failure, populates errMsg with details about the FIRST invalid array.
+ */
+int validateSlotRange(
+    int startSlot, int endSlot,
+    NDArray** outputSlots, int totalOutputSlots,
+    int executeCount, int planPhase,
+    char* errMsg, int errMsgLen);
+
 }  // namespace graph
 }  // namespace sd
 

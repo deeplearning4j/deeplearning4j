@@ -1251,9 +1251,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
     }
 
-    // Per-slot fingerprint for Triton sub-kernel outputs (exec >= 2 only)
+    // Per-slot fingerprint for Triton sub-kernel outputs (debug+verbose only)
     if (!streamCaptureActive && !skipThisKernel &&
-        seg.exec.executionCount >= 2 &&
         sd::Environment::getInstance().isDebugAndVerbose()) {
       for (auto& argMap : subKernel.argSlotMapping) {
         if (!argMap.isOutput) continue;

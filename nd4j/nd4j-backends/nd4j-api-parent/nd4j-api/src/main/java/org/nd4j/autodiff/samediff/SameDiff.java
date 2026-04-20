@@ -4685,6 +4685,19 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
         }
 
+        // Include DataBuffers captured by the executor at compile time.
+        // Constants may have been swapped in the variable map during execution
+        // (associateArrayWithVariable), making them unreachable via variables().
+        // The executor holds the original DataBuffers that C++ still references.
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        if (executor != null) {
+            IdentityHashMap<DataBuffer, Boolean> execProtected =
+                    executor.getProtectedConstantBuffers();
+            if (execProtected != null) {
+                protectedBuffers.putAll(execProtected);
+            }
+        }
+
         IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
         Map<VarId, SDValue> nodeOutputs = session.getNodeValueOutputs();
         if (nodeOutputs != null) {
@@ -4724,7 +4737,21 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             nodeOutputs.clear();
         }
 
-        log.info("destroySession: uniqueBuffers={}, protectedBuffers={}", uniqueBuffers.size(), protectedBuffers.size());
+        // Build native-address protection set alongside the IdentityHashMap.
+        // IdentityHashMap uses Java == on DataBuffer objects, but the same native
+        // OpaqueDataBuffer can be wrapped by different Java DataBuffer instances
+        // (e.g., after detach() in SingleThreadArrayHolder). Using native pointer
+        // addresses catches these identity mismatches and prevents force-closing
+        // real model constants that happen to have a different Java wrapper.
+        HashSet<Long> protectedAddresses = new HashSet<>();
+        for (DataBuffer pb : protectedBuffers.keySet()) {
+            if (pb != null && !pb.wasClosed() && pb.opaqueBuffer() != null && !pb.opaqueBuffer().isNull()) {
+                protectedAddresses.add(pb.opaqueBuffer().address());
+            }
+        }
+
+        log.info("destroySession: uniqueBuffers={}, protectedBuffers={}, protectedAddresses={}",
+                uniqueBuffers.size(), protectedBuffers.size(), protectedAddresses.size());
         int closedCount = 0;
         int skippedReleased = 0;
         int skippedAttached = 0;
@@ -4732,6 +4759,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         int skippedProtected = 0;
         for (DataBuffer buf : uniqueBuffers.keySet()) {
             if (protectedBuffers.containsKey(buf)) {
+                skippedProtected++;
+                continue;
+            }
+            // Fall back to native address check for identity-mismatched wrappers
+            if (!protectedAddresses.isEmpty() && !buf.wasClosed()
+                    && buf.opaqueBuffer() != null && !buf.opaqueBuffer().isNull()
+                    && protectedAddresses.contains(buf.opaqueBuffer().address())) {
                 skippedProtected++;
                 continue;
             }

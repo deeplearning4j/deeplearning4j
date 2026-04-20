@@ -565,6 +565,14 @@ class SD_LIB_EXPORT NDArray {
 
 
   SD_INLINE DataBuffer shapeInfoDataBuffer();
+
+  /**
+   * Non-throwing check: returns true if this NDArray has valid shape info
+   * (either _shapeInfoBuffer with valid primary() or direct _shapeInfo).
+   * Use this before calling shapeInfo() when the array may be stale/destructed.
+   */
+  SD_INLINE bool hasValidShapeInfo();
+
   /**
    * Returns True if it's legally empty NDArray, or false otherwise
    * @return
@@ -2151,6 +2159,24 @@ DataBuffer NDArray::shapeInfoDataBuffer()   {
 
 }
 
+////////////////////////////////////////////////////////////////////////
+SD_INLINE bool NDArray::hasValidShapeInfo() {
+  // Check _shapeInfoBuffer first — it can refresh _shapeInfo
+  if (_shapeInfoBuffer != nullptr) {
+    LongType* p = _shapeInfoBuffer->primary();
+    if (p != nullptr) {
+      LongType rank = p[0];
+      return rank >= 0 && rank <= SD_MAX_RANK;
+    }
+    return false;
+  }
+  // No buffer — check raw _shapeInfo pointer
+  if (_shapeInfo != nullptr) {
+    LongType rank = _shapeInfo[0];
+    return rank >= 0 && rank <= SD_MAX_RANK;
+  }
+  return false;
+}
 
 ////////////////////////////////////////////////////////////////////////
 SD_INLINE LongType *NDArray::specialShapeInfo()  {
