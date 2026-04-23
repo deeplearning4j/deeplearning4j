@@ -1136,11 +1136,14 @@ Status NativeDynamicShapePlan::executeSlot(
         shapesFrozen_ ? 1 : 0);
   }
 
-  // ── Always-on input validation ────────────────────────────────────────────
+  // ── Input validation ───────────────────────────────────────────────────────
   // Catch invalid inputs AS SOON AS they'd be consumed — not after a kernel
   // crashes on a null GPU pointer giving a cryptic dbDeviceId exception.
   // Cost: one field-read per input. No sync, no allocation.
-  {
+  // Skip during frozen steady-state replay (execCount >= 3): by that point all
+  // slot inputs have been validated on prior executions and buffers are stable.
+  // This eliminates ~1500 validateSlotInputs calls per decode step.
+  if (executeCount_ < 3 || !shapesFrozen_) {
     char slotErr[512] = {};
     int badInputs = validateSlotInputs(
         stepIdx, slot.ident.opName.c_str(),

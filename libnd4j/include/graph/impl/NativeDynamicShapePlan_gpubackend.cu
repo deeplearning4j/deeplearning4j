@@ -1140,10 +1140,31 @@ Status NativeDynamicShapePlan::compositeReplay(
       bool prevReplayActive = tl_dspReplayActive;
       tl_dspReplayActive = true;
       bool gapOutputPointersChanged = false;
+      // When arg tables are stable AND pointers are stable, gap slots cannot
+      // change output buffer addresses — skip the per-slot snapshot/diff overhead.
+      bool skipPtrTracking = seg.exec.argTableStable && pointersStable_;
       for (int s = unit.startSlot; s <= unit.endSlot; s++) {
-        void* outputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
-        snapshotSlotOutputBuffers(slots_[s], outputSlots_, totalOutputSlots_,
-                                  outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT);
+        // ── Frozen constant / identity / fused-tail early skip ────────────
+        // These slots never change their output buffers. Skipping before
+        // snapshotSlotOutputBuffers + executeSlot + slotOutputBuffersChanged
+        // eliminates ~1000 unnecessary per-slot function calls per step.
+        if (shapesFrozen_ && executeCount_ >= 2) {
+          auto& gapSlot = slots_[s];
+          if (gapSlot.frozenConstantSlot()) continue;
+          if (gapSlot.flags.isIdentityOp) {
+            // Identity ops alias input→output. The alias is already installed;
+            // just tick device actuality so downstream reads see fresh data.
+            if (gapSlot.wiring.numOutputs >= 1) {
+              int si = gapSlot.wiring.outputSlotIndices[0];
+              if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
+                outputSlots_[si]->tickWriteDevice();
+              }
+            }
+            continue;
+          }
+          if (gapSlot.fusedChain.isFusedChainTail) continue;
+        }
+
         // ── Batched GEMM dispatch in gap loop ──────────────────────────
         if (!batchedGemmGroups_.empty() && s < (int)slotToBatchedGemmGroup_.size()) {
           int bgIdx = slotToBatchedGemmGroup_[s];
@@ -1158,10 +1179,14 @@ Status NativeDynamicShapePlan::compositeReplay(
                          bgIdx, s, static_cast<int>(batchStatus));
                 return batchStatus;
               }
-              if (!gapOutputPointersChanged &&
-                  slotOutputBuffersChanged(slots_[s], outputSlots_, totalOutputSlots_,
-                                           outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT)) {
-                gapOutputPointersChanged = true;
+              if (!skipPtrTracking && !gapOutputPointersChanged) {
+                void* outputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
+                snapshotSlotOutputBuffers(slots_[s], outputSlots_, totalOutputSlots_,
+                                          outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT);
+                if (slotOutputBuffersChanged(slots_[s], outputSlots_, totalOutputSlots_,
+                                             outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT)) {
+                  gapOutputPointersChanged = true;
+                }
               }
               continue;
             } else {
@@ -1171,10 +1196,6 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
 
         // ── View-op fast path: skip executeSlot() when the backing buffer is unchanged ──
-        // reshape_no_copy and other view-capable ops in FROZEN state just alias an input
-        // buffer. If the output NDArray already points to the same DataBuffer as input0,
-        // the view is still valid — no dispatch needed. tickWriteDevice() keeps device
-        // actuality up to date. Falls through to executeSlot() when the check fails.
         if (!dsp_disable_view_fastpath() &&
             s < totalOutputSlots_ &&
             slots_[s].flags.isViewCapableOp &&
@@ -1199,17 +1220,18 @@ Status NativeDynamicShapePlan::compositeReplay(
             if (currentOut != nullptr && input0 != nullptr &&
                 currentOut->dataBuffer() != nullptr &&
                 currentOut->dataBuffer() == input0->dataBuffer()) {
-              // View is still valid — same backing DataBuffer. Skip full dispatch.
               currentOut->tickWriteDevice();
               dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
-              if (!gapOutputPointersChanged &&
-                  slotOutputBuffersChanged(slots_[s], outputSlots_, totalOutputSlots_,
-                                           outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT)) {
-                gapOutputPointersChanged = true;
-              }
               continue;
             }
           }
+        }
+
+        // Snapshot output buffers BEFORE executeSlot (only when tracking changes).
+        void* outputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
+        if (!skipPtrTracking && !gapOutputPointersChanged) {
+          snapshotSlotOutputBuffers(slots_[s], outputSlots_, totalOutputSlots_,
+                                    outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT);
         }
 
         auto slotStatus = executeSlot(s, effectiveExternals, numExt, stream);
@@ -1219,7 +1241,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                    s, static_cast<int>(slotStatus));
           return slotStatus;
         }
-        if (!gapOutputPointersChanged &&
+        if (!skipPtrTracking && !gapOutputPointersChanged &&
             slotOutputBuffersChanged(slots_[s], outputSlots_, totalOutputSlots_,
                                      outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT)) {
           gapOutputPointersChanged = true;

@@ -89,19 +89,24 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
     dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
-  std::unordered_set<int> segOutputSlots;
+  // Use a flat bitvector instead of unordered_set for O(1) lookup.
+  // Thread-local to avoid per-call allocation in the hot replay path.
+  static thread_local std::vector<bool> isSegOutput;
+  if (static_cast<int>(isSegOutput.size()) < totalOutputSlots_) {
+    isSegOutput.resize(totalOutputSlots_, false);
+  }
+  // Clear only the segment range (much cheaper than clearing the whole vector).
+  int clearStart = std::max(0, seg.def.startSlot);
+  int clearEnd = std::min(totalOutputSlots_, seg.def.endSlot + 1);
+  for (int i = clearStart; i < clearEnd; i++) isSegOutput[i] = false;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numOutputs; i++) {
-      segOutputSlots.insert(slot.wiring.outputSlotIndices[i]);
+      int oi = slot.wiring.outputSlotIndices[i];
+      if (oi >= 0 && oi < totalOutputSlots_) isSegOutput[oi] = true;
     }
   }
 
-  // externalInputIsVariable_ is populated at plan-load time, not at
-  // shape-freeze time — in explicit graphExecutionMode (CUDA_GRAPHS,
-  // TRITON, NVRTC_JIT, PTX_JIT) the plan never goes through AUTO_SEAL so
-  // shapesFrozen_ stays false even once graph replay is active. Gate on
-  // the vector being non-empty only.
   const bool canClassifyExternals = !externalInputIsVariable_.empty();
 
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
@@ -109,23 +114,16 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
-        // External input. PLACEHOLDER externals are skipped — Java allocates
-        // fresh arrays for them every call and they'd make the key never
-        // match. Non-PLACEHOLDER externals (SOURCE_VARIABLE / SOURCE_CONSTANT)
-        // are device-authoritative weights that are supposed to be stable
-        // for the plan's lifetime: hash their specialBuffer so a user-visible
-        // close+associateArrayWithVariable() rebind invalidates the cached
-        // replay handle instead of replaying against freed device memory.
         if (!canClassifyExternals) continue;
         int extIdx = -(srcIdx + 1);
         if (extIdx < 0 || extIdx >= numExt) continue;
         if (extIdx >= static_cast<int>(externalInputIsVariable_.size())) continue;
-        if (externalInputIsVariable_[extIdx]) continue;  // skip placeholders
+        if (externalInputIsVariable_[extIdx]) continue;
         NDArray* extArr = externalInputs[extIdx];
         if (extArr == nullptr) continue;
         mix(reinterpret_cast<LongType>(extArr->specialBuffer()));
-      } else if (segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
-        if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
+      } else if (srcIdx < totalOutputSlots_ && !isSegOutput[srcIdx]) {
+        if (outputSlots_[srcIdx] != nullptr) {
           mix(reinterpret_cast<LongType>(outputSlots_[srcIdx]->specialBuffer()));
         }
       }
