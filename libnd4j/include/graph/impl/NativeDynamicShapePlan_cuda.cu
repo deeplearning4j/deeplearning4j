@@ -177,7 +177,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     // Per-address comparison: catches address changes that the hash may miss
     // (e.g. CUDA pool reuses an address for a different allocation, changing
     // only a subset of the hashed values in a way that produces a collision).
-    if (seg0.exec.capturedInputAddrKey != 0) {
+    if (pointersStable_) {
+      // All pointers (inputs + slots) confirmed stable — skip both hashes
+      frozenFastPathInputStable = true;
+    } else if (seg0.exec.capturedInputAddrKey != 0) {
       // Prefer the filtered/staged address key when available. Triton decode
       // stabilizes variable placeholder inputs via plan-owned staging buffers;
       // comparing raw external addresses first would reject replay on every
@@ -232,6 +235,28 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
+  // Set DSP execution stream BEFORE the ext input sync loop so that
+  // syncToSpecial() routes H2D copies to the DSP stream (async, no per-call
+  // cudaStreamSynchronize). Without this, each syncToSpecial uses stream 0
+  // with a blocking sync per call — N pipeline drains for N variable inputs.
+  // The compositeReplay path in gpubackend.cu already does this correctly.
+  sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
+
+  // Lazily populate variableExternalInputIndices_ from externalInputIsVariable_
+  // so the sync loop below iterates only variable inputs (2-3) not all (~1333).
+  if (!variableIndicesCached_ && !externalInputIsVariable_.empty()) {
+    variableExternalInputIndices_.clear();
+    for (int i = 0; i < static_cast<int>(externalInputIsVariable_.size()); ++i) {
+      if (externalInputIsVariable_[i]) {
+        variableExternalInputIndices_.push_back(i);
+      }
+    }
+    variableIndicesCached_ = true;
+    DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: cached %d variable ext input indices out of %d total",
+             static_cast<int>(variableExternalInputIndices_.size()),
+             static_cast<int>(externalInputIsVariable_.size()));
+  }
+
   if (fastPathApplicable) {
     bool ok = true;
   int syncedCount = 0, skippedCount = 0;
@@ -285,9 +310,6 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                  (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
       }
     }
-
-    // Set DSP execution stream for async H2D copies (matches compositeReplay)
-    sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
 
 #if HAVE_TRITON
     // Match compositeReplay: gate arg table refresh on !argTableStable
@@ -395,14 +417,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         SegmentLifecycle::markReplaying(seg.exec);
       }
 
-      // Tick actuality for all slots in segment (compositeReplay already did this,
-      // but tick again to be safe in case the compositeReplay path changed).
-      for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
-        NDArray* arr = outputSlots_[s];
-        if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
-          arr->tickWriteDevice();
-        }
-      }
+      // compositeReplay already ticks all segment slots at its canonical end
+      // (gpubackend.cu:1340-1345). No need to double-tick here.
 
       if (executionTimingEnabled_) {
         auto tDone = Clock::now();
