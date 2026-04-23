@@ -643,7 +643,7 @@ void BufferPointerSnapshot::detectStaleActualityTransitions(
     NDArray** externalInputs, int numExt,
     int planPhase) const {
   if (!valid) return;
-  if (planPhase < 1) return;  // Only check from SHAPES_FROZEN (1) onward
+  if (planPhase < 2) return;  // Only check from POINTERS_STABLE (2) onward
 
   int checkSlots = std::min(totalSlots, numSlots);
   for (int i = 0; i < checkSlots; i++) {
@@ -816,10 +816,12 @@ bool validateLifecycleForPhase(
     }
   }
 
-  // ── Level 1+: SHAPES_FROZEN — snapshot drift detection ──
-  // Gate lowered from POINTERS_STABLE to SHAPES_FROZEN so identity/address/
-  // shape-info/offset/length drift is caught as soon as shapes are frozen.
-  if (planPhase >= 1 && snapshot != nullptr) {  // SHAPES_FROZEN
+  // ── Level 2: POINTERS_STABLE — snapshot drift detection ──
+  // Buffer identity/address checks only become authoritative once the plan has
+  // observed stable pointers across replay-eligible segments. SHAPES_FROZEN
+  // still allows legitimate buffer churn while the plan converges on stable
+  // steady-state allocations.
+  if (planPhase >= 2 && snapshot != nullptr) {  // POINTERS_STABLE
     if (!snapshot->validate(outputSlots, totalSlots,
                             externalInputs, numExternalInputs,
                             errMsg, errMsgLen)) {
@@ -827,14 +829,14 @@ bool validateLifecycleForPhase(
     }
   }
 
-  // ── Level 1+: SHAPES_FROZEN — device sync state invariant ──
+  // ── Level 2: POINTERS_STABLE — device sync state invariant ──
   // In frozen steady-state the plan skips prepareSpecialUse/registerSpecialUse,
   // so every SLOT_OWNED buffer must remain device-authoritative (sAct=true).
   // If pAct=1 && sAct=0, a host write poisoned the device state.
   // Only SLOT_OWNED buffers are checked — views/weights have external owners.
   // CPU builds: pAct/sAct flags are vestigial, gated on SD_CUDA.
 #ifdef SD_CUDA
-  if (planPhase >= 1 && ownership != nullptr && outputSlots != nullptr) {
+  if (planPhase >= 2 && ownership != nullptr && outputSlots != nullptr) {
     for (int i = 0; i < totalSlots; i++) {
       const auto& info = ownership[i];
       if (info.ownership != BufferOwnership::SLOT_OWNED) continue;

@@ -43,6 +43,7 @@ inline int readBoolEnvTriState(const char* name) {
   const char* v = std::getenv(name);
   if (v == nullptr) return -1;  // not set
   std::string s(v);
+  if (s.empty()) return -1;  // not set — preserve C++ default
   if (s == "1" || s == "true" || s == "TRUE" || s == "ON" || s == "yes") return 1;
   return 0;
 }

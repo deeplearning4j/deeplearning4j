@@ -35,10 +35,12 @@ namespace graph {
 void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<int>& gapSlots) {
   batchZeroEntries_.clear();
 
-  // Zero only gap (native fallback) slot outputs — Triton sub-kernels fully
-  // overwrite theirs. Skip slots that don't allocate/nullify their own output
-  // (identity, fused tail, in-place fused, views, frozen constants).
+  // Zero only gap (native fallback) slot outputs that actually need a
+  // zero-before-write pass. This must match the generic replay prezero rules:
+  // skip outputs that are fully overwritten, identity/view aliases, fused tails,
+  // in-place writes, and frozen constants.
   int skippedIdentity = 0, skippedTail = 0, skippedHead = 0, skippedView = 0;
+  int skippedNoZeroNeeded = 0, skippedFullyWriting = 0;
   for (int s = 0; s < numSlots_; s++) {
     // Only include gap slots (slots NOT covered by any Triton sub-kernel)
     if (gapSlots.find(s) == gapSlots.end()) continue;
@@ -48,6 +50,13 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     // Skip frozen constants — they don't execute
     if (slot.frozenConstantSlot()) {
       DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=frozen-constant",
+                   s, slot.ident.opName.c_str());
+      continue;
+    }
+
+    if (!slot.flags.needsZeroedOutput) {
+      skippedNoZeroNeeded++;
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=no-zero-needed",
                    s, slot.ident.opName.c_str());
       continue;
     }
@@ -71,6 +80,13 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     // Skip in-place fused — output IS the input
     if (slot.flags.inPlaceFused) {
       DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=in-place-fused",
+                   s, slot.ident.opName.c_str());
+      continue;
+    }
+
+    if (slot.state_ >= NativeSlot::SlotState::FROZEN && slot.flags.isFullyWriting) {
+      skippedFullyWriting++;
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=fully-writing",
                    s, slot.ident.opName.c_str());
       continue;
     }
@@ -152,9 +168,10 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
     }
   }
 
-  DSP_DIAG(MEMORY, "collectBatchZeroTargets: %d buffers to zero (gapSlots=%d, skipped: identity=%d tail=%d head=%d view=%d)",
+  DSP_DIAG(MEMORY, "collectBatchZeroTargets: %d buffers to zero (gapSlots=%d, skipped: noZero=%d fullyWriting=%d identity=%d tail=%d head=%d view=%d)",
            static_cast<int>(batchZeroEntries_.size()),
            static_cast<int>(gapSlots.size()),
+           skippedNoZeroNeeded, skippedFullyWriting,
            skippedIdentity, skippedTail, skippedHead, skippedView);
 }
 

@@ -335,12 +335,101 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
     seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
-    seg.def.shapeKey = 0;
+    seg.def.shapeKeyState.reset();
   }
 }
 
 void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
   // No GPU memory pool migration on CPU
+}
+
+// ── Slot execution platform dispatch stubs ────────────────────────────────────
+
+void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& seg, void* stream) {
+  // CPU path: individual nullify for qualifying output buffers
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    if (s < 0 || s >= numSlots_) continue;
+    NativeSlot& slot = slots_[s];
+
+    if (slot.frozenConstantSlot()) continue;
+    if (!slot.flags.needsZeroedOutput) continue;
+    if (slot.flags.isViewCapableOp) continue;
+    if (slot.flags.isIdentityOp) continue;
+    if (slot.flags.inPlaceFused) continue;
+    if (slot.fusedChain.isFusedChainTail) continue;
+
+    if (slot.state_ >= NativeSlot::SlotState::FROZEN && slot.flags.isFullyWriting) continue;
+
+    bool didZero = false;
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      int outIdx = slot.wiring.outputSlotIndices[o];
+      if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
+      if (slotIsViewProducer_ != nullptr && slotIsViewProducer_[outIdx]) continue;
+      NDArray* arr = outputSlots_[outIdx];
+      if (arr == nullptr) continue;
+      if (arr->isView()) continue;
+      auto* db = arr->dataBuffer();
+      if (db == nullptr) continue;
+      size_t bytes = db->getLenInBytes();
+      if (bytes == 0) continue;
+      arr->nullify();
+      didZero = true;
+    }
+    if (didZero) slot.bumpGeneration();
+  }
+}
+
+void NativeDynamicShapePlan::platformReconcileOutputActuality(
+    const char* stage, int stepIdx, const NativeSlot& slot, NDArray* output) {
+  // No device actuality tracking on CPU — no-op
+  (void)stage;
+  (void)stepIdx;
+  (void)slot;
+  (void)output;
+}
+
+bool NativeDynamicShapePlan::platformValidateSlotInputBuffer(
+    int stepIdx, const NativeSlot& slot, int inputIdx, NDArray* input) {
+  if (input == nullptr || input->isEmpty()) return true;
+  auto* db = input->dataBuffer();
+  if (db == nullptr) return true;
+  // On CPU, validate the primary (host) buffer
+  if (db->primary() == nullptr) {
+    return false;
+  }
+  return true;
+}
+
+bool NativeDynamicShapePlan::platformValidateReusableSlotBuffer(NDArray* cached) {
+  if (cached == nullptr) return true;
+  auto* db = cached->dataBuffer();
+  if (db == nullptr) return true;
+  // On CPU, a non-empty array with null primary buffer is invalid
+  if (db->primary() == nullptr && !cached->isEmpty()) {
+    return false;
+  }
+  return true;
+}
+
+void NativeDynamicShapePlan::platformSetLtEpilogue(const NativeSlot& slot, NDArray* biasArray) {
+  // cublasLt epilogue not available on CPU — no-op
+  (void)slot;
+  (void)biasArray;
+}
+
+void NativeDynamicShapePlan::platformClearLtEpilogue() {
+  // cublasLt epilogue not available on CPU — no-op
+}
+
+void NativeDynamicShapePlan::platformLogSlotOutput(
+    int stepIdx, const char* opName, const char* tag,
+    const int* outputSlotIndices, int numOutputs) {
+  // Triton verify logging not available on CPU — no-op
+  (void)stepIdx;
+  (void)opName;
+  (void)tag;
+  (void)outputSlotIndices;
+  (void)numOutputs;
 }
 
 }  // namespace graph

@@ -499,20 +499,24 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
-  throwIfFrozen("allocateSpecial");
+  // Fast path: if special buffer already exists on the correct device,
+  // no mutation occurs — skip the frozen guard entirely.
   if (_specialBuffer != nullptr) {
     if (isConstant) {
-      // Constant buffers are cached and shared - don't migrate them
       return;
     }
     auto currentDeviceId = AffinityManager::currentDeviceId();
     auto bufferDeviceId = _deviceId.load();
-    if (bufferDeviceId != currentDeviceId) {
-      // Buffer exists but on wrong device - migrate it
-      migrate();
+    if (bufferDeviceId == currentDeviceId) {
+      return;  // Already allocated on correct device — no-op
     }
+    // Buffer exists but on wrong device — migrate requires mutation
+    throwIfFrozen("allocateSpecial (device migration)");
+    migrate();
     return;
   }
+  // Actual allocation needed — guard against frozen mutation
+  throwIfFrozen("allocateSpecial");
 
   if (_lenInBytes == 0) {
     // Use getLenInBytes() which handles scalar fallback (sizeOfElement for 0-length buffers)
@@ -1668,6 +1672,23 @@ void DataBuffer::migrate() {
   if (_lenInBytes > MAX_MIGRATE_BYTES) {
     sd_printf("DataBuffer::migrate: CORRUPTED _lenInBytes=%zu (>16GB). Skipping migration.\n", _lenInBytes);
     return;
+  }
+
+  // Validate _lenInBytes is consistent with _dataType. A buffer smaller than one
+  // element of its declared type is metadata corruption (e.g., heap overrun stomping
+  // _lenInBytes from a valid value to 1). Skip rather than copying 1 byte via
+  // cudaMemcpy — that fails with "invalid argument" when the source pointer is
+  // inside a CUDA allocation smaller than the advertised size.
+  {
+    auto elementSize = DataTypeUtils::sizeOfElement(_dataType);
+    if (elementSize > 0 && _lenInBytes < elementSize) {
+      sd_printf("DataBuffer::migrate: CORRUPTED _lenInBytes=%zu < sizeOfElement(%d)=%zu for dataType=%d. "
+                "primary=%p special=%p oldDevice=%d currentDevice=%d. Skipping migration.\n",
+                _lenInBytes, static_cast<int>(_dataType), elementSize,
+                static_cast<int>(_dataType),
+                _primaryBuffer, _specialBuffer, oldDeviceId, currentDeviceId);
+      return;
+    }
   }
 
   // Validate _specialBuffer pointer using cudaPointerGetAttributes.

@@ -31,6 +31,7 @@ import org.eclipse.deeplearning4j.model.benchmark.*;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.VisionEncoder;
 import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
@@ -63,8 +64,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * SmolDocling pipeline test with builder-based configuration matrix.
  *
- * Loads models ONCE, then loops through all meaningful combinations of
- * execution mode, Triton include types, fusion, graph capture, and arg table opts.
+ * Loads models ONCE via {@link GenerationPipeline} and {@link VisionEncoder},
+ * then loops through all meaningful combinations of execution mode, Triton
+ * include types, fusion, graph capture, and arg table opts.
  *
  * Uses shared {@link BenchmarkRunner} infrastructure for the reset/configure/compile/decode/validate loop.
  *
@@ -79,29 +81,6 @@ public class TestSmolDoclingOptimizedPipeline {
     private static String pdfPath;
     private static int specificPage = -1;
     private static int renderDpi = 150;
-
-    // ─── PipelineContext: shared state loaded once ─────────────────────────
-
-    private static class PipelineContext {
-        SameDiff decoder;
-        SameDiff embedTokens;
-        Tokenizer tokenizer;
-        INDArray inputsEmbeds;
-        int[] promptTokenIds;
-        long hiddenSize;
-        // Draft model for speculative decoding (lazily loaded)
-        SameDiff draftDecoder;
-        int draftDeviceId = -1;
-        long draftHiddenSize;
-        // Pipeline setup timings
-        long downloadMs;
-        long importMs;
-        long visionMs;
-        long embedMs;
-        int visionFrames;
-        int decoderOps;
-        int embedOps;
-    }
 
     // ─── Configuration matrix: performance-focused configs ──────────────────
     //
@@ -140,10 +119,22 @@ public class TestSmolDoclingOptimizedPipeline {
         List<BenchmarkConfig> configs = new ArrayList<>();
 
         // Core configs: OPTIMAL (Triton) and SLOT_BY_SLOT (cuBLAS baseline).
-        // Additional configs can be added here when needed for debugging.
         if (triton) {
             configs.add(BenchmarkConfig.optimal());
-
+            // DIAG_TIMING mirrors OPTIMAL but enables per-step native timing instrumentation.
+            // Use with: -Dvlm.test.configs=DIAG_TIMING
+            // Output: COMPOSITE_REPLAY_TIMING lines with prezero/units/actTick breakdown per step.
+            configs.add(BenchmarkConfig.create("DIAG_TIMING")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true).tritonTf32(true)
+                    .dspBatchedGemm(true).dspFreezeMergeSegments(true)
+                    .dspExecutionTiming(true)  // enable per-step native timing
+                    .maxTokens(30).minDiversityPct(0));
         }
 
         // SLOT_BY_SLOT baseline — no Triton, no graph capture, proves model works
@@ -159,7 +150,10 @@ public class TestSmolDoclingOptimizedPipeline {
 
         // ── Additional configs below only run with vlm.test.configs=<name> ──
         if (triton) {
-            // Bisect: each adds ONE OPTIMAL setting to the noGC baseline
+            configs.add(BenchmarkConfig.create("TRITON_NO_GC")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
             configs.add(BenchmarkConfig.create("BISECT_argTable")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
@@ -200,67 +194,47 @@ public class TestSmolDoclingOptimizedPipeline {
                     .dspBatchedGemm(true)
                     .maxTokens(10).minDiversityPct(0));
 
-            // Triton WITHOUT graph capture + VERIFY — compares each Triton section vs slot-by-slot
             configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_VERIFY")
                     .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .tritonVerifyKernels(true)
                     .maxTokens(3).minDiversityPct(0));
-
-            // Triton WITHOUT graph capture — isolates Triton kernel correctness
             configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC")
                     .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .maxTokens(10).minDiversityPct(0));
-
-            // Triton + GC but WITHOUT ATTENTION
             configs.add(BenchmarkConfig.create("DIAG_Triton_gc_noATTN")
                     .tritonIncludeTypes(COMPILE_ALL_TYPES)
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .maxTokens(10).minDiversityPct(0));
-
-            // ── Binary search: isolate which OPTIMAL setting causes wrong output ──
-            // Baseline: DIAG_TRITON_noGC (correct). Each adds ONE OPTIMAL setting.
-
-            // Binary search: add graph capture only
             configs.add(BenchmarkConfig.create("BISECT_graphCapture")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
                     .maxTokens(10).minDiversityPct(0));
-
-            // Binary search: add consolidated arg table only
             configs.add(BenchmarkConfig.create("BISECT_argTable")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .maxTokens(10).minDiversityPct(0));
-
-            // Binary search: add batched GEMM only
             configs.add(BenchmarkConfig.create("BISECT_batchedGemm")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .dspBatchedGemm(true)
                     .maxTokens(10).minDiversityPct(0));
-
-            // Binary search: add TF32 only
             configs.add(BenchmarkConfig.create("BISECT_tf32")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .cublasTf32(true).tritonTf32(true)
                     .maxTokens(10).minDiversityPct(0));
-
-            // Binary search: graph capture + arg table (no batched gemm, no tf32)
             configs.add(BenchmarkConfig.create("BISECT_gc_argTable")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .maxTokens(10).minDiversityPct(0));
-
-            // Binary search: everything EXCEPT graph capture
             configs.add(BenchmarkConfig.create("BISECT_noGC")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
@@ -275,774 +249,19 @@ public class TestSmolDoclingOptimizedPipeline {
         return configs;
     }
 
-    // Placeholder for extended configs — add debugging configs here as needed.
-    // They only run when vlm.test.configs property selects them by name.
-    @SuppressWarnings("unused")
-    private static void _extendedConfigsPlaceholder() {
-        // configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages1_tf32").tritonIncludeTypes(...).maxTokens(250));
-    }
-    // ──── END of config definitions ─────
-    // NOTE: The block below is dead code from old configs, left in a comment for reference.
-    /*
-    DEAD_CODE_START
-                    .tritonNumWarps(4).tritonNumStages(1)
-                    .cublasTf32(true).cublasCaptureWorkspace(true)
-                    .dspBatchedGemm(true)
-                    .maxTokens(250).minDiversityPct(30));
-
-            // Workspace OFF + stages=1 + TF32
-            configs.add(BenchmarkConfig.create("WORKSPACE_OFF_stages1_tf32")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(1)
-                    .cublasTf32(true).cublasCaptureWorkspace(false)
-                    .dspBatchedGemm(true)
-                    .maxTokens(250).minDiversityPct(30));
-
-            // Workspace ON + stages=2 + no TF32 (committed best before workspace change)
-            configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages2_noTf32")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(2)
-                    .cublasTf32(false).cublasCaptureWorkspace(true)
-                    .dspBatchedGemm(true)
-                    .maxTokens(250).minDiversityPct(30));
-
-            // Workspace OFF + stages=2 + no TF32 (original committed config)
-            configs.add(BenchmarkConfig.create("WORKSPACE_OFF_stages2_noTf32")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(2)
-                    .cublasTf32(false).cublasCaptureWorkspace(false)
-                    .dspBatchedGemm(true)
-                    .maxTokens(250).minDiversityPct(30));
-
-            // Workspace ON + stages=2 + TF32 (test if TF32 compensates for workspace divergence)
-            configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages2_tf32")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(2)
-                    .cublasTf32(true).cublasCaptureWorkspace(true)
-                    .dspBatchedGemm(true)
-                    .maxTokens(250).minDiversityPct(30));
-
-            // Workspace OFF + stages=2 + TF32
-            configs.add(BenchmarkConfig.create("WORKSPACE_OFF_stages2_tf32")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true).tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(2)
-                    .cublasTf32(true).cublasCaptureWorkspace(false)
-                    .dspBatchedGemm(true)
-                    .maxTokens(250).minDiversityPct(30));
-
-            // blockN=64 variant: lower shared mem (36KB vs 71KB), better occupancy, more K-loop iterations
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages1_tf32_blockN64")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(1)
-                    .tritonAttentionBlockN(64)
-                    .cublasTf32(true)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(35));
-
-            // Warps/stages tuning experiments for 100 tok/s target
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages1")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionMinScore(4.0f)
-                    .tritonNumWarps(4).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages1_noFusionScoring")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionMinScore(4.0f)
-                    .tritonNumWarps(4).tritonNumStages(2)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_noFusionScoring")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(2)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_MATMUL_gc_argOpt_batchGemmOnly_warps4_stages2_noFusionScoring")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM_AND_MATMUL + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(2)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages2")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionMinScore(4.0f)
-                    .tritonNumWarps(2).tritonNumStages(2)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages2_noFusionScoring")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(2).tritonNumStages(2)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_noFusionScoring")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionScoring(false)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_score4")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionMinScore(4.0f)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_score3")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionMinScore(3.0f)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_noPermuteSeq1")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonSpecializePermuteSeq1(false)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_noConcat_gc_argOpt_batchGemmOnly_warps2_stages1")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM_NO_CONCAT + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_MATMUL_gc_argOpt_batchGemmOnly_warps2_stages1")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM_AND_MATMUL + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
-
-            // Diagnostic twin of the default path without CUDA graph replay.
-            // This keeps the same Triton/default op mix so op timing can attribute
-            // the replay-time kernels back to actual ops.
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_noGC_argOpt_batchGemmOnly_warps2_stages1")
-                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonNumWarps(2).tritonNumStages(1)
-                    .dspBatchedGemm(true)
-                    .maxTokens(20).minDiversityPct(0));
-        }
-
-        // ── Additional configs below only run with vlm.test.configs=<name> or ALL ──
-        if (!triton) return configs;
-
-        // 2. compileAll: individual section types (bisect crashes)
-        for (String singleType : new String[]{"GATHER", "STACK", "CONST_GEN", "CONCAT", "SPLIT"}) {
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_" + singleType)
-                    .tritonIncludeTypes(singleType)
-                    .tritonSectionFusion(true)
-                    .tritonCompileAll(true)
-                    .maxTokens(20));
-        }
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_safe")
-                .tritonIncludeTypes("GATHER,STACK")
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .maxTokens(50));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .maxTokens(50));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_gc")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .maxTokens(20));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        // Diagnostic: GC + verify to find replay divergence
-        configs.add(BenchmarkConfig.create("TRITON_gc_argOpt_VERIFY")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .tritonVerifyKernels(true)
-                .tritonVerifyFullSnapshot(true)
-                .maxTokens(5)
-                .minDiversityPct(0));
-
-        // Diagnostic: GC + force-recapture (re-capture every step, tests freshness)
-        configs.add(BenchmarkConfig.create("TRITON_gc_argOpt_FORCE_RECAP")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .tritonForceRecapture(true)
-                .maxTokens(10)
-                .minDiversityPct(0));
-
-        // Isolation: consolidated arg table only (no dirty tracking)
-        configs.add(BenchmarkConfig.create("TRITON_gc_consolidatedOnly")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(false)
-                .maxTokens(20)
-                .minDiversityPct(0));
-
-        // Isolation: dirty tracking only (no consolidated arg table)
-        configs.add(BenchmarkConfig.create("TRITON_gc_dirtyTrackingOnly")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(false)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(20)
-                .minDiversityPct(0));
-
-        // 3. FULL types: attention is biggest win (+23%)
-        configs.add(BenchmarkConfig.create("TRITON_FULL_fused")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .maxTokens(50));
-
-        configs.add(BenchmarkConfig.create("TRITON_FULL_fused_gc")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_FULL_fused_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        // 4. compileAll + FULL types combined
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_FULL")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonExcludeOps("matmul,batched_gemm")
-                .maxTokens(50));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_FULL_gc")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonExcludeOps("matmul,batched_gemm")
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        // 5. Combined high-performance GC configs
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_FULL_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonExcludeOps("matmul,batched_gemm")
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_MAX_PERF_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonProfile("MAX_PERF")
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        // 6. DSP optimization flags (standalone)
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_castElim")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .dspCastElimination(true)
-                .maxTokens(50));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_fp16compute")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .dspFp16Compute(true)
-                .maxTokens(50));
-
-        // 7. DSP optimization flags + GC variants
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_castElim_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .dspCastElimination(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_fp16_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .dspFp16Compute(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        // 8. MAX_PERF profile (standalone, no GC)
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_MAX_PERF")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES)
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .tritonProfile("MAX_PERF")
-                .maxTokens(50));
-
-        // 9. Ultimate combined: ATTN + castElim + fp16compute + GC + argOpt
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_fp16_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .dspCastElimination(true)
-                .dspFp16Compute(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        // 10. ATTN + castElim only (no fp16compute), to isolate contributions
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_gc_argOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true)
-                .tritonCompileAll(true)
-                .dspCastElimination(true)
-                .tritonGraphCapture(true)
-                .tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true)
-                .tritonArgDirtyTracking(true)
-                .maxTokens(100)
-                .minDiversityPct(0));
-
-        // 11. Batch-zero + batched GEMM node reduction configs
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchZero")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .dspBatchZero(true).dspBatchZeroKernel(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        // Regression repro: enabling the full batch-ops bundle makes decode step 2 much slower.
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchOps")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .dspBatchZero(true).dspBatchZeroKernel(true)
-                .dspBatchedGemm(true)
-                .dspCastSinkMatmul(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("CUDA_GRAPHS_batchOps")
-                .executionMode(GraphExecutionMode.CUDA_GRAPHS)
-                .dspBatchZero(true).dspBatchZeroKernel(true)
-                .dspBatchedGemm(true)
-                .maxTokens(50));
-
-        // Isolation config: batched GEMM only (no batch-zero) to isolate correctness
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly_warps2")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .tritonNumWarps(2)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly_warps2_stages1")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .tritonNumWarps(2).tritonNumStages(1)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly_warps2_stages1_castElim")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .tritonNumWarps(2).tritonNumStages(1)
-                .dspBatchedGemm(true)
-                .dspCastElimination(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly_warps2_stages1_castSink")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .tritonNumWarps(2).tritonNumStages(1)
-                .dspBatchedGemm(true)
-                .dspCastSinkMatmul(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly_warps2_stages1_ctas2")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .tritonNumWarps(2).tritonNumStages(1).tritonNumCTAs(2)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly_warps1_stages1")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .tritonNumWarps(1).tritonNumStages(1)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly_warps4_stages1")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .tritonNumWarps(4).tritonNumStages(1)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        // Experimental combinations built from the best non-regressing knobs measured so far.
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_batchGemmOnly")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_gc_noArgOpt")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .dspCastElimination(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_gc_noArgOpt_batchGemmOnly")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .dspCastElimination(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_gc_noArgOpt_MAX_PERF")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .dspCastElimination(true)
-                .tritonProfile("MAX_PERF")
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_gc_noArgOpt_batchGemmOnly_MAX_PERF")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .dspCastElimination(true)
-                .tritonProfile("MAX_PERF")
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        // Launch-tuning sweep: these only became meaningful once explicit overrides
-        // stopped getting clobbered by the Triton profile defaults.
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps4")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(4)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps2")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(2)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps4_stages1")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(4).tritonNumStages(1)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps4_batchGemmOnly")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(4)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps4_stages1_batchGemmOnly")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(4).tritonNumStages(1)
-                .dspBatchedGemm(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps1")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(1)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps2_stages1")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(2).tritonNumStages(1)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps2_ctas2")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(2).tritonNumCTAs(2)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gc_noArgOpt_warps2_noFpFusion")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(2).tritonEnableFpFusion(false)
-                .maxTokens(100).minDiversityPct(0));
-
-        // Scope-tuning sweep: compile only the fused attention path and let the rest
-        // fall back to the native kernels if that reduces Triton section overhead.
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_only_gc")
-                .tritonIncludeTypes("ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_only_gc_warps2_stages1")
-                .tritonIncludeTypes("ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(2).tritonNumStages(1)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_ATTN_gather_stack_gc_warps2_stages1")
-                .tritonIncludeTypes("GATHER,STACK,ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(2).tritonNumStages(1)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_TRUE_FULL_gc")
-                .tritonIncludeTypes(FULL_TRITON_TYPES)
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .maxTokens(100).minDiversityPct(0));
-
-        configs.add(BenchmarkConfig.create("TRITON_TRUE_FULL_gc_warps2_stages1")
-                .tritonIncludeTypes(FULL_TRITON_TYPES)
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonNumWarps(2).tritonNumStages(1)
-                .maxTokens(100).minDiversityPct(0));
-
-        return configs;
-    DEAD_CODE_END
-    */
-
     // ─── Setup ─────────────────────────────────────────────────────────────
 
     @BeforeAll
     public static void setup() {
-        // Maven surefire sets undefined ${...} properties to empty string, not null.
-        // Check for both null and empty to ensure defaults apply.
         String optEnabled = System.getProperty("nd4j.optimizer.enabled");
         if (optEnabled == null || optEnabled.isEmpty()) {
             System.setProperty("nd4j.optimizer.enabled", "true");
         }
-        // Pre-cast FP32 weight constants to FP16 at model load time via optimizer.
-        // This halves weight memory bandwidth and avoids the runtime per-matmul double-cast
-        // that dspFp16Compute uses. MmulHelper's mixed-type path handles HALF×FLOAT
-        // automatically, casting only the FP32 activation (1 cast vs 2).
         String fp16Prop = System.getProperty("nd4j.optimizer.fp16");
         if (fp16Prop == null || fp16Prop.isEmpty()) {
             System.setProperty("nd4j.optimizer.fp16", "true");
         }
         System.setProperty("nd4j.optimizer.logApplied", "true");
-
-        // Debug flags passed via run-benchmark.sh or -D Maven properties
 
         pdfPath = System.getProperty("vlm.test.pdf.path");
         String pageStr = System.getProperty("vlm.test.pdf.page");
@@ -1060,42 +279,209 @@ public class TestSmolDoclingOptimizedPipeline {
     @Test
     @DisplayName("Optimized SmolDocling: Configuration matrix sweep")
     public void testOptimizedDoclingPipeline() throws Exception {
-        long setupPhaseStart = phaseStart("PIPELINE_SETUP", benchmarkInputSummary());
-        PipelineContext ctx;
-        try {
-            ctx = loadModelsAndPrepareEmbeddings();
-        } catch (Throwable t) {
-            throw phaseFailure("PIPELINE_SETUP", benchmarkInputSummary(), t);
-        }
-        phaseSuccess("PIPELINE_SETUP", setupPhaseStart,
-                benchmarkInputSummary() + " " + summarizeTensor("inputsEmbeds", ctx.inputsEmbeds));
+        Nd4j.getEnvironment().setTritonBuildThreads(4);
 
-        // Assert pipeline setup produced valid state
-        assertNotNull(ctx.decoder, "Decoder model must be loaded");
-        assertNotNull(ctx.embedTokens, "EmbedTokens model must be loaded");
-        assertNotNull(ctx.tokenizer, "Tokenizer must be loaded");
-        assertNotNull(ctx.inputsEmbeds, "Input embeddings must be prepared");
-        assertFalse(ctx.inputsEmbeds.wasClosed(), "Input embeddings must not be closed");
-        assertTrue(ctx.hiddenSize > 0, "Hidden size must be positive, got: " + ctx.hiddenSize);
-        assertTrue(ctx.promptTokenIds.length > 0, "Prompt token IDs must not be empty");
-        assertTrue(ctx.decoderOps > 0, "Decoder should have ops");
+        // ── Phase 1: Download models ──
+        long phaseNs = phaseStart("DOWNLOAD_MODELS", benchmarkInputSummary());
+        long downloadMs;
+        VLMModelDownloader.DownloadResult visionDl, decoderDl, embedTokensDl, tokenizerDl;
+        try {
+            long t0 = System.currentTimeMillis();
+            visionDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+            decoderDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
+            embedTokensDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
+            tokenizerDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
+            VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+            downloadMs = System.currentTimeMillis() - t0;
+        } catch (Throwable t) {
+            throw phaseFailure("DOWNLOAD_MODELS", benchmarkInputSummary(), t);
+        }
+        phaseSuccess("DOWNLOAD_MODELS", phaseNs, "downloadMs=" + downloadMs);
+
+        // ── Phase 2: Load tokenizer ──
+        phaseNs = phaseStart("TOKENIZER_LOAD", "tokenizer=" + safeFileName(tokenizerDl.getModelFile()));
+        Tokenizer tokenizer;
+        try {
+            tokenizer = HuggingFaceTokenizer.fromFile(tokenizerDl.getModelFile());
+            assertNotNull(tokenizer, "Tokenizer failed to load");
+            assertTrue(tokenizer.getVocabSize() > 0, "Tokenizer vocab size must be positive");
+        } catch (Throwable t) {
+            throw phaseFailure("TOKENIZER_LOAD", "tokenizer=" + safeFileName(tokenizerDl.getModelFile()), t);
+        }
+        phaseSuccess("TOKENIZER_LOAD", phaseNs, "vocabSize=" + tokenizer.getVocabSize());
+
+        // ── Phase 3: Import ONNX models ──
+        phaseNs = phaseStart("IMPORT_MODELS", "decoder=" + safeFileName(decoderDl.getModelFile()));
+        long importMs;
+        SameDiff visionEncoderSd, decoder, embedTokensSd;
+        try {
+            long importStart = System.currentTimeMillis();
+            boolean forceReoptimize = Boolean.getBoolean("vlm.model.cache.disable");
+            if (forceReoptimize) {
+                OnnxModelCache.invalidateCache(decoderDl.getModelFile().getAbsolutePath());
+            }
+            SameDiff[] models = OnnxModelCache.importAllWithCache(
+                    visionDl.getModelFile().getAbsolutePath(),
+                    decoderDl.getModelFile().getAbsolutePath(),
+                    embedTokensDl.getModelFile().getAbsolutePath()
+            );
+            visionEncoderSd = models[0];
+            decoder = models[1];
+            embedTokensSd = models[2];
+            importMs = System.currentTimeMillis() - importStart;
+
+            assertNotNull(visionEncoderSd, "Vision encoder import failed");
+            assertNotNull(decoder, "Decoder import failed");
+            assertNotNull(embedTokensSd, "EmbedTokens import failed");
+            assertTrue(decoder.getOps().size() > 0, "Decoder has no ops");
+            assertTrue(embedTokensSd.getOps().size() > 0, "EmbedTokens has no ops");
+        } catch (Throwable t) {
+            throw phaseFailure("IMPORT_MODELS", "decoder=" + safeFileName(decoderDl.getModelFile()), t);
+        }
+        phaseSuccess("IMPORT_MODELS", phaseNs,
+                "visionOps=" + visionEncoderSd.getOps().size()
+                        + " decoderOps=" + decoder.getOps().size()
+                        + " embedOps=" + embedTokensSd.getOps().size());
+
+        // Log decoder op-type distribution
+        Map<String, Integer> opCounts = new TreeMap<>();
+        for (var entry : decoder.getOps().entrySet()) {
+            var op = entry.getValue().getOp();
+            String opName = op != null ? op.opName() : "null";
+            opCounts.merge(opName, 1, Integer::sum);
+        }
+        log.info("Decoder op distribution ({} total):", decoder.getOps().size());
+        opCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(25)
+                .forEach(e -> log.info("  {} x {}", e.getValue(), e.getKey()));
+
+        // ── Phase 4: Image preprocessing ──
+        int targetSize = 512;
+        phaseNs = phaseStart("IMAGE_PREPROCESS", benchmarkInputSummary());
+        BufferedImage pdfImage;
+        ImageTiler.SplitImageResult splitResult;
+        INDArray imageInput;
+        int visionFrames;
+        try {
+            pdfImage = loadImageFromPdfOrGenerate();
+            assertNotNull(pdfImage, "Failed to load/generate test image");
+            BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
+            splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, -1);
+            visionFrames = splitResult.getTotalFrames();
+            assertTrue(visionFrames > 0, "No vision frames produced");
+
+            PreprocessorConfig ppConfig = new PreprocessorConfig();
+            ppConfig.setSize(new PreprocessorConfig.ImageSize(targetSize, targetSize));
+            ppConfig.setDoRescale(true);
+            ppConfig.setRescaleFactor(1.0 / 255.0);
+            ppConfig.setDoNormalize(true);
+            ppConfig.setImageMean(new double[]{0.5, 0.5, 0.5});
+            ppConfig.setImageStd(new double[]{0.5, 0.5, 0.5});
+            VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
+            imageInput = VisionEncoderUtils.preprocessFrames(splitResult.frames, preprocessor, targetSize);
+            preprocessor.shutdown();
+            assertNotNull(imageInput, "Image preprocessing returned null");
+        } catch (Throwable t) {
+            throw phaseFailure("IMAGE_PREPROCESS", benchmarkInputSummary(), t);
+        }
+        phaseSuccess("IMAGE_PREPROCESS", phaseNs,
+                "image=" + pdfImage.getWidth() + "x" + pdfImage.getHeight() + " frames=" + visionFrames);
+
+        // ── Phase 5: Vision encoding via VisionEncoder ──
+        phaseNs = phaseStart("VISION_ENCODE", "frames=" + visionFrames);
+        INDArray visionEmbeddings;
+        long visionMs;
+        try {
+            VisionEncoder visionEncoder = VisionEncoder.builder()
+                    .model(visionEncoderSd)
+                    .targetSize(targetSize)
+                    .build();
+
+            VisionEncoder.Result visionResult = visionEncoder.encode(imageInput, visionFrames, splitResult);
+            visionEmbeddings = visionResult.getEmbeddings();
+            visionMs = visionResult.getEncodingTimeMs();
+
+            assertFalse(visionEmbeddings.wasClosed(), "Vision embeddings closed");
+            assertTrue(visionEmbeddings.rank() == 3, "Vision embeddings should be rank 3, got " + visionEmbeddings.rank());
+            log.info("Vision encoder done [{}ms]: shape={}", visionMs, Arrays.toString(visionEmbeddings.shape()));
+
+            imageInput.close();
+            visionEncoder.freeModelMemory();
+        } catch (Throwable t) {
+            throw phaseFailure("VISION_ENCODE", "frames=" + visionFrames, t);
+        }
+        phaseSuccess("VISION_ENCODE", phaseNs,
+                "frames=" + visionFrames + " " + summarizeTensor("visionEmbeddings", visionEmbeddings));
+
+        // ── Phase 6: Build GenerationPipeline + merge embeddings ──
+        phaseNs = phaseStart("PIPELINE_SETUP", "building GenerationPipeline + merging embeddings");
+        GenerationPipeline pipeline;
+        INDArray inputsEmbeds;
+        int[] promptTokenIds;
+        long hiddenSize;
+        long embedMs;
+        try {
+            pipeline = GenerationPipeline.create(
+                    GenerationPipelineConfig.builder()
+                            .decoder(decoder)
+                            .embedTokens(embedTokensSd)
+                            .tokenizer(tokenizer)
+                            .samplingConfig(SamplingConfig.greedy())
+                            .maxNewTokens(256)
+                            .build());
+
+            long embedStart = System.currentTimeMillis();
+            int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+            assertTrue(imageTokenId >= 0, "Image token ID should be non-negative");
+
+            int imageSeqLenPerFrame = (int) visionEmbeddings.size(1) / visionFrames;
+            assertTrue(imageSeqLenPerFrame > 0, "Image seq len per frame must be positive");
+
+            String imagePrompt = ImagePromptBuilder.buildImagePromptString(
+                    splitResult.numRows, splitResult.numCols, imageSeqLenPerFrame);
+            String chatPrompt = "<|im_start|>User:" + imagePrompt
+                    + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+            promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
+            assertTrue(promptTokenIds.length > 0, "Prompt encoding produced no tokens");
+
+            INDArray textEmbeddings = pipeline.embedTokens(promptTokenIds);
+            assertNotNull(textEmbeddings, "embed_tokens produced no output");
+
+            hiddenSize = visionEmbeddings.shape()[2];
+            assertEquals(hiddenSize, textEmbeddings.shape()[2],
+                    "Hidden size mismatch: vision=" + hiddenSize + " text=" + textEmbeddings.shape()[2]);
+
+            inputsEmbeds = EmbeddingMerger.mergeEmbeddings(
+                    textEmbeddings, visionEmbeddings, promptTokenIds, imageTokenId);
+            assertNotNull(inputsEmbeds, "Merged embeddings are null");
+            assertFalse(inputsEmbeds.wasClosed(), "Merged embeddings are closed");
+            assertTrue(inputsEmbeds.rank() == 3, "Merged embeddings should be rank 3");
+
+            if (textEmbeddings.closeable() && !textEmbeddings.wasClosed()) textEmbeddings.close();
+            embedMs = System.currentTimeMillis() - embedStart;
+            log.info("Embeddings merged [{}ms]: shape={}", embedMs, Arrays.toString(inputsEmbeds.shape()));
+        } catch (Throwable t) {
+            throw phaseFailure("PIPELINE_SETUP", "building GenerationPipeline + merging embeddings", t);
+        }
+        phaseSuccess("PIPELINE_SETUP", phaseNs,
+                summarizeTokens("promptTokenIds", promptTokenIds) + " "
+                        + summarizeTensor("inputsEmbeds", inputsEmbeds));
 
         log.info("Pipeline setup complete: download={}ms import={}ms vision={}ms embed={}ms",
-                ctx.downloadMs, ctx.importMs, ctx.visionMs, ctx.embedMs);
+                downloadMs, importMs, visionMs, embedMs);
         log.info("  decoder={} ops, embed={} ops, hiddenSize={}, promptTokens={}, frames={}",
-                ctx.decoderOps, ctx.embedOps, ctx.hiddenSize, ctx.promptTokenIds.length, ctx.visionFrames);
+                decoder.getOps().size(), embedTokensSd.getOps().size(), hiddenSize,
+                promptTokenIds.length, visionFrames);
 
+        // ── Phase 7: Configuration matrix sweep ──
         List<BenchmarkConfig> configs = getAllConfigs();
 
-        // Filter configs by name if vlm.test.configs is set (comma-separated).
-        // "ALL" loads every config (handled in getAllConfigs). Specific names filter the list.
         String filterProp = System.getProperty("vlm.test.configs");
         if (filterProp != null && !filterProp.isEmpty() && !"ALL".equalsIgnoreCase(filterProp)) {
             Set<String> keep = Set.of(filterProp.split(","));
             configs.removeIf(c -> !keep.contains(c.getName()));
 
-            // If filtering produced an empty list, try to create configs dynamically
-            // from GraphExecutionMode enum names (e.g. --config SLOT_BY_SLOT).
             if (configs.isEmpty()) {
                 for (String name : keep) {
                     try {
@@ -1105,16 +491,12 @@ public class TestSmolDoclingOptimizedPipeline {
                                 .maxTokens(100)
                                 .minDiversityPct(0));
                         log.info("Dynamically created config '{}' from GraphExecutionMode enum", name);
-                    } catch (IllegalArgumentException ignored) {
-                        // not a valid GraphExecutionMode name — skip
-                    }
+                    } catch (IllegalArgumentException ignored) { }
                 }
             }
-
             log.info("Filtered to {} configs via vlm.test.configs: {}", configs.size(), keep);
         }
 
-        // Override maxTokens for all configs if vlm.test.maxTokens is set
         String maxTokensOverride = System.getProperty("vlm.test.maxTokens");
         if (maxTokensOverride != null && !maxTokensOverride.isEmpty()) {
             int mt = Integer.parseInt(maxTokensOverride);
@@ -1122,96 +504,64 @@ public class TestSmolDoclingOptimizedPipeline {
             log.info("Override maxTokens={} for all {} configs", mt, configs.size());
         }
 
-        List<SameDiff> models = List.of(ctx.decoder, ctx.embedTokens);
+        List<SameDiff> models = List.of(decoder, embedTokensSd);
 
-        // Compile function: delegates to BenchmarkConfigApplier
+        // Capture for lambdas
+        final INDArray finalInputsEmbeds = inputsEmbeds;
+        final int[] finalPromptTokenIds = promptTokenIds;
+        final GenerationPipeline finalPipeline = pipeline;
+
+        // Compile function
         BenchmarkRunner.CompileFunction compileFn = config -> {
             String configSummary = summarizeConfig(config);
-            long phaseNs = phaseStart("CONFIG_COMPILE", configSummary);
+            long compPhaseNs = phaseStart("CONFIG_COMPILE", configSummary);
             try {
                 BenchmarkConfigApplier.compileModels(
-                        ctx.decoder, "decoder", ctx.embedTokens, "embed_tokens", config);
-                logDspState("POST_COMPILE " + config.getName(), ctx.decoder);
-                phaseSuccess("CONFIG_COMPILE", phaseNs, configSummary);
+                        decoder, "decoder", embedTokensSd, "embed_tokens", config);
+                logDspState("POST_COMPILE " + config.getName(), decoder);
+                phaseSuccess("CONFIG_COMPILE", compPhaseNs, configSummary);
             } catch (Throwable t) {
-                logDspState("COMPILE_FAILURE " + config.getName(), ctx.decoder);
+                logDspState("COMPILE_FAILURE " + config.getName(), decoder);
                 throw phaseFailure("CONFIG_COMPILE", configSummary, t);
             }
         };
 
-        // Decode function: wraps StaticKvCacheDecodeLoop
+        // Decode function — benchmark the GenerationPipeline path by default.
+        // Optional old-decoder comparison is available via -Dvlm.test.compareOldDecoder=true
         BenchmarkRunner.DecodeFunction decodeFn = config -> {
             String configSummary = summarizeConfig(config);
-            long phaseNs = phaseStart("CONFIG_DECODE",
+            long decPhaseNs = phaseStart("CONFIG_DECODE",
                     configSummary + " "
-                            + summarizeTokens("promptTokenIds", ctx.promptTokenIds) + " "
-                            + summarizeTensor("inputsEmbeds", ctx.inputsEmbeds));
-            String specTokensProp = System.getProperty("vlm.speculative.tokens", "0");
-            int specTokens = (specTokensProp == null || specTokensProp.isEmpty()) ? 0 : Integer.parseInt(specTokensProp);
-            boolean useDraft = config.isUseDraftModel()
-                    || "true".equalsIgnoreCase(System.getProperty("vlm.speculative.draft"));
-            if (useDraft && specTokens == 0) {
-                specTokens = config.getDraftModelK() > 0 ? config.getDraftModelK() : 5;
-            }
+                            + summarizeTokens("promptTokenIds", finalPromptTokenIds) + " "
+                            + summarizeTensor("inputsEmbeds", finalInputsEmbeds));
 
-            // Build draft model speculator if requested
-            Speculator draftSpeculator = null;
-            if (useDraft && specTokens > 0) {
-                draftSpeculator = buildDraftModelSpeculator(ctx, specTokens);
-            }
-
-            // Auto-discover I/O names from the decoder model graph
-            ModelIOConfig decoderIOConfig = ModelIOConfig.discover(ctx.decoder);
-
-            StaticKvCacheDecodeLoop.StaticKvCacheDecodeLoopBuilder loopBuilder = StaticKvCacheDecodeLoop.builder()
-                    .decoder(ctx.decoder)
-                    .embedTokens(ctx.embedTokens)
-                    .tokenizer(ctx.tokenizer)
-                    .ioConfig(decoderIOConfig)
-                    .samplingConfig(SamplingConfig.greedy())
-                    .maxNewTokens(config.getMaxTokens())
-                    .maxSpeculativeTokens(specTokens)
-                    .hiddenSize(ctx.hiddenSize);
-            // Per-step argmax trace: opt-in via -Dvlm.benchmark.argmaxTrace=true. When on,
-            // every decode step logs the sampled token ID + top-K logit snapshot, catching
-            // silent sampling regressions (correct type, wrong value).
-            if (Boolean.parseBoolean(System.getProperty("vlm.benchmark.argmaxTrace", "false"))) {
-                loopBuilder.argmaxTraceEnabled(true);
-                int topK = Integer.getInteger("vlm.benchmark.argmaxTraceTopK", 5);
-                loopBuilder.argmaxTraceTopK(topK);
-            }
-            // Reference token stream: opt-in via -Dvlm.benchmark.referenceTokens=<path>.
-            // The file is read as newline- or whitespace-separated token IDs; each decode
-            // step asserts the sampled token matches. A mismatch throws
-            // TokenStreamDivergenceException with step index + top-K snapshot.
-            int[] referenceTokens = loadReferenceTokenStream();
-            if (referenceTokens != null) {
-                loopBuilder.referenceTokenStream(referenceTokens);
-                log.info("[{}] Reference token stream loaded: {} tokens",
-                        config.getName(), referenceTokens.length);
-            }
-            if (draftSpeculator != null) {
-                loopBuilder.speculator(draftSpeculator);
-            }
             try {
-                logDspState("PRE_DECODE " + config.getName(), ctx.decoder);
-                GenerationResult result = loopBuilder.build().decode(ctx.inputsEmbeds, ctx.promptTokenIds);
-                logDspState("POST_DECODE " + config.getName(), ctx.decoder);
-                phaseSuccess("CONFIG_DECODE", phaseNs, summarizeResult(result));
+                logDspState("PRE_DECODE " + config.getName(), decoder);
+                GenerationResult result = finalPipeline.generate(finalInputsEmbeds.dup(), finalPromptTokenIds, config.getMaxTokens());
+                maybeCompareAgainstOldDecoder(
+                        config,
+                        decoder,
+                        embedTokensSd,
+                        tokenizer,
+                        hiddenSize,
+                        finalInputsEmbeds,
+                        finalPromptTokenIds,
+                        result);
+                logDspState("POST_DECODE " + config.getName(), decoder);
+                phaseSuccess("CONFIG_DECODE", decPhaseNs, summarizeResult(result));
                 return result;
             } catch (Throwable t) {
-                logDspState("DECODE_FAILURE " + config.getName(), ctx.decoder);
+                logDspState("DECODE_FAILURE " + config.getName(), decoder);
                 throw phaseFailure("CONFIG_DECODE", configSummary, t);
             }
         };
 
-        // Validate function: structural tags + diversity checks
+        // Validate function
         BenchmarkRunner.ValidateFunction validateFn = (config, result) -> {
-            long phaseNs = phaseStart("FINAL_VALIDATE",
-                    config.getName() + " " + summarizeResult(result));
+            long valPhaseNs = phaseStart("FINAL_VALIDATE", config.getName() + " " + summarizeResult(result));
             try {
                 validateResult(config, result);
-                phaseSuccess("FINAL_VALIDATE", phaseNs, config.getName());
+                phaseSuccess("FINAL_VALIDATE", valPhaseNs, config.getName());
             } catch (Throwable t) {
                 throw phaseFailure("FINAL_VALIDATE",
                         config.getName() + " " + summarizeResult(result), t);
@@ -1223,15 +573,249 @@ public class TestSmolDoclingOptimizedPipeline {
                 configs, List.of("decoder", "embed_tokens"), models,
                 compileFn, decodeFn, validateFn, "vlm.config");
 
-        ctx.tokenizer.close();
+        tokenizer.close();
         org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
 
-        // Print report (throws if any config failed)
         StringBuilder pipelineInfo = new StringBuilder();
         pipelineInfo.append(String.format("Pipeline setup: download=%dms import=%dms vision=%dms embed=%dms\n\n",
-                ctx.downloadMs, ctx.importMs, ctx.visionMs, ctx.embedMs));
+                downloadMs, importMs, visionMs, embedMs));
         log.info("{}", pipelineInfo);
         BenchmarkRunner.printReport(results);
+    }
+
+    private void maybeCompareAgainstOldDecoder(BenchmarkConfig config,
+                                               SameDiff decoder,
+                                               SameDiff embedTokensSd,
+                                               Tokenizer tokenizer,
+                                               long hiddenSize,
+                                               INDArray inputsEmbeds,
+                                               int[] promptTokenIds,
+                                               GenerationResult pipelineResult) throws Exception {
+        if (!Boolean.parseBoolean(System.getProperty("vlm.test.compareOldDecoder", "false"))) {
+            return;
+        }
+
+        ModelIOConfig decoderIOConfig = ModelIOConfig.discover(decoder);
+        String specTokensProp = System.getProperty("vlm.speculative.tokens", "0");
+        int specTokens = (specTokensProp == null || specTokensProp.isEmpty()) ? 0 : Integer.parseInt(specTokensProp);
+        boolean useDraft = config.isUseDraftModel()
+                || "true".equalsIgnoreCase(System.getProperty("vlm.speculative.draft"));
+        if (useDraft && specTokens == 0) {
+            specTokens = config.getDraftModelK() > 0 ? config.getDraftModelK() : 5;
+        }
+
+        StaticKvCacheDecodeLoop.StaticKvCacheDecodeLoopBuilder loopBuilder = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokensSd)
+                .tokenizer(tokenizer)
+                .ioConfig(decoderIOConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(config.getMaxTokens())
+                .maxSpeculativeTokens(specTokens)
+                .hiddenSize(hiddenSize);
+        if (Boolean.parseBoolean(System.getProperty("vlm.benchmark.argmaxTrace", "false"))) {
+            loopBuilder.argmaxTraceEnabled(true);
+            int topK = Integer.getInteger("vlm.benchmark.argmaxTraceTopK", 5);
+            loopBuilder.argmaxTraceTopK(topK);
+        }
+        int[] referenceTokens = loadReferenceTokenStream();
+        if (referenceTokens != null) {
+            loopBuilder.referenceTokenStream(referenceTokens);
+            log.info("[{}] Reference token stream loaded: {} tokens", config.getName(), referenceTokens.length);
+        }
+
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokensSd);
+        GenerationResult oldResult = loopBuilder.build().decode(inputsEmbeds.dup(), promptTokenIds);
+
+        int[] oldTokens = oldResult.getTokenIds();
+        int[] newTokens = pipelineResult.getTokenIds();
+        int minLen = Math.min(oldTokens.length, newTokens.length);
+        int firstDivergent = -1;
+        for (int i = 0; i < minLen; i++) {
+            if (oldTokens[i] != newTokens[i]) {
+                firstDivergent = i;
+                break;
+            }
+        }
+
+        log.info("[{}] Old/new comparison: oldLen={} newLen={} firstDivergent={} old='{}' new='{}'",
+                config.getName(),
+                oldTokens.length,
+                newTokens.length,
+                firstDivergent,
+                oldResult.getText(),
+                pipelineResult.getText());
+
+        assertArrayEquals(oldTokens, newTokens,
+                config.getName() + ": GenerationPipeline diverged from StaticKvCacheDecodeLoop"
+                        + " firstDivergent=" + firstDivergent);
+    }
+
+    // ─── Dual-decode test: GenerationPipeline vs StaticKvCacheDecodeLoop ───
+
+    @Test
+    @DisplayName("GenerationPipeline (native decode) vs StaticKvCacheDecodeLoop (old) — token parity on mythic PDF")
+    public void testGenerationPipelineVsOldDecoder() throws Exception {
+        int maxTokens = Integer.getInteger("vlm.test.maxTokens", 30);
+
+        // ── Phase 1: Download models ──
+        var visionDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+        var decoderDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
+        var embedTokensDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
+        var tokenizerDl = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
+        VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerDl.getModelFile());
+
+        SameDiff[] models = OnnxModelCache.importAllWithCache(
+                visionDl.getModelFile().getAbsolutePath(),
+                decoderDl.getModelFile().getAbsolutePath(),
+                embedTokensDl.getModelFile().getAbsolutePath()
+        );
+        SameDiff visionEncoderSd = models[0];
+        SameDiff decoder = models[1];
+        SameDiff embedTokensSd = models[2];
+
+        // ── Phase 2: Image preprocessing ──
+        int targetSize = 512;
+        BufferedImage pdfImage = loadImageFromPdfOrGenerate();
+        BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
+        ImageTiler.SplitImageResult splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, -1);
+
+        PreprocessorConfig ppConfig = new PreprocessorConfig();
+        ppConfig.setSize(new PreprocessorConfig.ImageSize(targetSize, targetSize));
+        ppConfig.setDoRescale(true);
+        ppConfig.setRescaleFactor(1.0 / 255.0);
+        ppConfig.setDoNormalize(true);
+        ppConfig.setImageMean(new double[]{0.5, 0.5, 0.5});
+        ppConfig.setImageStd(new double[]{0.5, 0.5, 0.5});
+        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
+        INDArray imageInput = VisionEncoderUtils.preprocessFrames(splitResult.frames, preprocessor, targetSize);
+        preprocessor.shutdown();
+
+        // ── Phase 3: Vision encoding ──
+        VisionEncoder visionEncoder = VisionEncoder.builder()
+                .model(visionEncoderSd)
+                .targetSize(targetSize)
+                .build();
+        VisionEncoder.Result visionResult = visionEncoder.encode(imageInput, splitResult.getTotalFrames(), splitResult);
+        INDArray visionEmbeddings = visionResult.getEmbeddings();
+        imageInput.close();
+        visionEncoder.freeModelMemory();
+
+        // ── Phase 4: Build GenerationPipeline and merge embeddings ──
+        GenerationPipeline pipeline = GenerationPipeline.create(
+                GenerationPipelineConfig.builder()
+                        .decoder(decoder)
+                        .embedTokens(embedTokensSd)
+                        .tokenizer(tokenizer)
+                        .samplingConfig(SamplingConfig.greedy())
+                        .maxNewTokens(maxTokens)
+                        .build());
+
+        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+        int imageSeqLenPerFrame = (int) visionEmbeddings.size(1) / splitResult.getTotalFrames();
+        String imagePrompt = ImagePromptBuilder.buildImagePromptString(
+                splitResult.numRows, splitResult.numCols, imageSeqLenPerFrame);
+        String chatPrompt = "<|im_start|>User:" + imagePrompt
+                + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+        int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
+
+        INDArray textEmbeddings = pipeline.embedTokens(promptTokenIds);
+        long hiddenSize = visionEmbeddings.shape()[2];
+        INDArray inputsEmbeds = EmbeddingMerger.mergeEmbeddings(
+                textEmbeddings, visionEmbeddings, promptTokenIds, imageTokenId);
+        textEmbeddings.close();
+
+        log.info("Dual-decode test: maxTokens={}, promptTokens={}, hiddenSize={}",
+                maxTokens, promptTokenIds.length, hiddenSize);
+
+        // ── Phase 5: Run OLD decoder (StaticKvCacheDecodeLoop) ──
+        ModelIOConfig decoderIOConfig = ModelIOConfig.discover(decoder);
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokensSd);
+
+        StaticKvCacheDecodeLoop oldLoop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokensSd)
+                .tokenizer(tokenizer)
+                .ioConfig(decoderIOConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(maxTokens)
+                .hiddenSize(hiddenSize)
+                .build();
+
+        GenerationResult oldResult = oldLoop.decode(inputsEmbeds.dup(), promptTokenIds);
+        int[] oldTokens = oldResult.getTokenIds();
+        String oldText = oldResult.getText();
+        log.info("OLD decoder: {} tokens, text='{}'", oldTokens.length, oldText);
+
+        // ── Phase 6: Run NEW pipeline (GenerationPipeline) ──
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokensSd);
+
+        GenerationResult newResult = pipeline.generate(inputsEmbeds.dup(), promptTokenIds, maxTokens);
+        int[] newTokens = newResult.getTokenIds();
+        String newText = newResult.getText();
+        log.info("NEW pipeline: {} tokens, text='{}'", newTokens.length, newText);
+
+        // ── Phase 7: Token-by-token comparison ──
+        int minLen = Math.min(oldTokens.length, newTokens.length);
+        int matches = 0;
+        int firstDivergent = -1;
+        for (int i = 0; i < minLen; i++) {
+            if (oldTokens[i] == newTokens[i]) {
+                matches++;
+            } else if (firstDivergent < 0) {
+                firstDivergent = i;
+            }
+        }
+        double matchRate = minLen > 0 ? (double) matches / minLen : 0.0;
+        log.info("Token match rate: {}/{} ({}%) firstDivergent={}",
+                matches, minLen, String.format("%.1f", matchRate * 100), firstDivergent);
+
+        if (firstDivergent >= 0) {
+            log.error("FIRST DIVERGENCE at step {}: old={} ('{}') new={} ('{}')",
+                    firstDivergent,
+                    oldTokens[firstDivergent],
+                    tokenizer.decode(new int[]{oldTokens[firstDivergent]}, false),
+                    newTokens[firstDivergent],
+                    tokenizer.decode(new int[]{newTokens[firstDivergent]}, false));
+        }
+
+        // ── Phase 8: Content validation ──
+        // Both should produce structural DocTags
+        assertTrue(oldText.contains("<") && oldText.contains(">"),
+                "Old decoder should produce structural tags. Text: " + oldText);
+        assertTrue(newText.contains("<") && newText.contains(">"),
+                "GenerationPipeline should produce structural tags. Text: " + newText);
+
+        // Both should contain mythic-related content (paragraphs, not just titles)
+        String lowerOld = oldText.toLowerCase();
+        String lowerNew = newText.toLowerCase();
+        boolean oldHasMythic = lowerOld.contains("mythic") || lowerOld.contains("hero")
+                || lowerOld.contains("creating a mythic") || lowerOld.contains("path");
+        boolean newHasMythic = lowerNew.contains("mythic") || lowerNew.contains("hero")
+                || lowerNew.contains("creating a mythic") || lowerNew.contains("path");
+
+        log.info("Old has mythic content: {}", oldHasMythic);
+        log.info("New has mythic content: {}", newHasMythic);
+
+        // The critical assertion: tokens MUST match
+        assertArrayEquals(oldTokens, newTokens,
+                "GenerationPipeline diverges from StaticKvCacheDecodeLoop. "
+                        + "Old text: " + oldText + " New text: " + newText);
+
+        // Soft check: if old decoder has mythic content, new should too
+        if (oldHasMythic) {
+            assertTrue(newHasMythic,
+                    "Old decoder has mythic content but GenerationPipeline does not. "
+                            + "New text: " + newText);
+        }
+
+        tokenizer.close();
+        org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
     }
 
     // ─── validateResult ────────────────────────────────────────────────────
@@ -1265,7 +849,6 @@ public class TestSmolDoclingOptimizedPipeline {
     private void validateResult(BenchmarkConfig config, GenerationResult result) {
         String name = config.getName();
 
-        // Basic generation assertions
         assertNotNull(result.getText(), name + ": generated text is null");
         assertTrue(result.getGeneratedTokenCount() > 0,
                 name + ": should have generated at least one token");
@@ -1281,24 +864,24 @@ public class TestSmolDoclingOptimizedPipeline {
 
         String trimmed = result.getText().trim();
 
-        // Structural tag check
         if (config.isExpectStructuralTags() && result.getGeneratedTokenCount() >= 10) {
             boolean hasDocTags = trimmed.contains("<") && trimmed.contains(">");
-            if (hasDocTags) {
-                Set<String> tagTypes = extractTagTypes(trimmed);
-                assertFalse(tagTypes.isEmpty(),
-                        name + ": found angle brackets but extracted no tag types");
-                boolean hasStructuralTags = tagTypes.stream().anyMatch(t ->
-                        t.equals("doctag") || t.equals("page") || t.equals("text") ||
-                                t.equals("section_header") || t.equals("otsl") || t.equals("table"));
-                assertTrue(hasStructuralTags,
-                        name + ": expected structural DocTags in " + result.getGeneratedTokenCount() +
-                                " tokens. Tags found: " + tagTypes +
-                                ". Text: " + trimmed.substring(0, Math.min(200, trimmed.length())));
-            }
+            assertTrue(hasDocTags,
+                    name + ": expected structural DocTags in the generated text, but found none. Text: "
+                            + trimmed.substring(0, Math.min(200, trimmed.length())));
+
+            Set<String> tagTypes = extractTagTypes(trimmed);
+            assertFalse(tagTypes.isEmpty(),
+                    name + ": found angle brackets but extracted no tag types");
+            boolean hasStructuralTags = tagTypes.stream().anyMatch(t ->
+                    t.equals("doctag") || t.equals("page") || t.equals("text") ||
+                            t.equals("section_header") || t.equals("otsl") || t.equals("table"));
+            assertTrue(hasStructuralTags,
+                    name + ": expected structural DocTags in " + result.getGeneratedTokenCount() +
+                            " tokens. Tags found: " + tagTypes +
+                            ". Text: " + trimmed.substring(0, Math.min(200, trimmed.length())));
         }
 
-        // Degeneracy check
         if (result.getGeneratedTokenCount() >= 10) {
             int[] tokenIds = result.getTokenIds();
             Set<Integer> uniqueTokens = new HashSet<>();
@@ -1311,7 +894,6 @@ public class TestSmolDoclingOptimizedPipeline {
                             " unique (min " + config.getMinDiversityPct() + "%)");
         }
 
-        // Throughput check
         if (result.getGeneratedTokenCount() >= 5) {
             assertTrue(result.getTokensPerSecond() > 0.1,
                     name + ": throughput too low: " +
@@ -1355,287 +937,6 @@ public class TestSmolDoclingOptimizedPipeline {
 
         present.close();
         staticBuf.close();
-    }
-
-    // ─── loadModelsAndPrepareEmbeddings: one-time pipeline setup ──────────
-
-    private PipelineContext loadModelsAndPrepareEmbeddings() throws Exception {
-        PipelineContext ctx = new PipelineContext();
-        Nd4j.getEnvironment().setTritonBuildThreads(4);
-
-        long phaseNs;
-
-        // Download
-        phaseNs = phaseStart("DOWNLOAD_MODELS", benchmarkInputSummary());
-        VLMModelDownloader.DownloadResult visionResult;
-        VLMModelDownloader.DownloadResult decoderResult;
-        VLMModelDownloader.DownloadResult embedTokensResult;
-        VLMModelDownloader.DownloadResult tokenizerResult;
-        try {
-            long t0 = System.currentTimeMillis();
-            log.info("Downloading models...");
-            visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
-            decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
-            embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
-            tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
-            VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
-            ctx.downloadMs = System.currentTimeMillis() - t0;
-            log.info("Download done [{}ms]", ctx.downloadMs);
-        } catch (Throwable t) {
-            throw phaseFailure("DOWNLOAD_MODELS", benchmarkInputSummary(), t);
-        }
-        phaseSuccess("DOWNLOAD_MODELS", phaseNs,
-                "decoder=" + safeFileName(decoderResult.getModelFile())
-                        + " vision=" + safeFileName(visionResult.getModelFile())
-                        + " embed=" + safeFileName(embedTokensResult.getModelFile())
-                        + " tokenizer=" + safeFileName(tokenizerResult.getModelFile()));
-
-        // Tokenizer
-        phaseNs = phaseStart("TOKENIZER_LOAD", "tokenizer=" + safeFileName(tokenizerResult.getModelFile()));
-        try {
-            ctx.tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
-            assertNotNull(ctx.tokenizer, "Tokenizer failed to load");
-            assertTrue(ctx.tokenizer.getVocabSize() > 0, "Tokenizer vocab size must be positive");
-            log.info("Tokenizer loaded: vocab_size={}", ctx.tokenizer.getVocabSize());
-        } catch (Throwable t) {
-            throw phaseFailure("TOKENIZER_LOAD",
-                    "tokenizer=" + safeFileName(tokenizerResult.getModelFile()), t);
-        }
-        phaseSuccess("TOKENIZER_LOAD", phaseNs, "vocabSize=" + ctx.tokenizer.getVocabSize());
-
-        // Import ONNX
-        phaseNs = phaseStart("IMPORT_MODELS", "decoder=" + safeFileName(decoderResult.getModelFile()));
-        SameDiff visionEncoder;
-        try {
-            long importStart = System.currentTimeMillis();
-            log.info("Importing ONNX models...");
-            boolean forceReoptimize = Boolean.getBoolean("vlm.model.cache.disable");
-            if (forceReoptimize) {
-                OnnxModelCache.invalidateCache(decoderResult.getModelFile().getAbsolutePath());
-            }
-            SameDiff[] models = OnnxModelCache.importAllWithCache(
-                    visionResult.getModelFile().getAbsolutePath(),
-                    decoderResult.getModelFile().getAbsolutePath(),
-                    embedTokensResult.getModelFile().getAbsolutePath()
-            );
-            visionEncoder = models[0];
-            ctx.decoder = models[1];
-            ctx.embedTokens = models[2];
-            ctx.importMs = System.currentTimeMillis() - importStart;
-
-            assertNotNull(visionEncoder, "Vision encoder import failed");
-            assertNotNull(ctx.decoder, "Decoder import failed");
-            assertNotNull(ctx.embedTokens, "EmbedTokens import failed");
-            ctx.decoderOps = ctx.decoder.getOps().size();
-            ctx.embedOps = ctx.embedTokens.getOps().size();
-            assertTrue(ctx.decoderOps > 0, "Decoder has no ops");
-            assertTrue(ctx.embedOps > 0, "EmbedTokens has no ops");
-            assertTrue(visionEncoder.getOps().size() > 0, "Vision encoder has no ops");
-
-            log.info("ONNX import done [{}ms]: vision={} ops, decoder={} ops, embed={} ops",
-                    ctx.importMs, visionEncoder.getOps().size(), ctx.decoderOps, ctx.embedOps);
-        } catch (Throwable t) {
-            throw phaseFailure("IMPORT_MODELS",
-                    "decoder=" + safeFileName(decoderResult.getModelFile()), t);
-        }
-        phaseSuccess("IMPORT_MODELS", phaseNs,
-                "visionOps=" + visionEncoder.getOps().size()
-                        + " decoderOps=" + ctx.decoderOps
-                        + " embedOps=" + ctx.embedOps);
-
-        // Log op-type distribution for the decoder to verify optimizer ran
-        Map<String, Integer> opCounts = new java.util.TreeMap<>();
-        for (var entry : ctx.decoder.getOps().entrySet()) {
-            var op = entry.getValue().getOp();
-            String opName = op != null ? op.opName() : "null";
-            opCounts.merge(opName, 1, Integer::sum);
-        }
-        log.info("Decoder op distribution ({} total):", ctx.decoderOps);
-        opCounts.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .limit(25)
-                .forEach(e -> log.info("  {} x {}", e.getValue(), e.getKey()));
-        int rmsNormCount = opCounts.getOrDefault("rms_norm", 0);
-        log.info("  rms_norm ops: {} (expected ~61 if optimizer ran)", rmsNormCount);
-        if (rmsNormCount == 0) {
-            log.warn("WARNING: No rms_norm ops found in decoder! GraphOptimizer may not have run. " +
-                     "Check nd4j.optimizer.enabled=true and delete stale SDZ caches if needed.");
-        }
-
-        // Image preprocessing
-        int targetSize = 512;
-        phaseNs = phaseStart("IMAGE_PREPROCESS", benchmarkInputSummary());
-        BufferedImage pdfImage;
-        ImageTiler.SplitImageResult splitResult;
-        INDArray imageInput;
-        try {
-            pdfImage = loadImageFromPdfOrGenerate();
-            assertNotNull(pdfImage, "Failed to load/generate test image");
-            assertTrue(pdfImage.getWidth() > 0 && pdfImage.getHeight() > 0, "Test image has zero dimensions");
-
-            BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
-            splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, 9);
-            ctx.visionFrames = splitResult.getTotalFrames();
-            assertTrue(ctx.visionFrames > 0, "No vision frames produced");
-
-            PreprocessorConfig ppConfig = new PreprocessorConfig();
-            ppConfig.setSize(new PreprocessorConfig.ImageSize(targetSize, targetSize));
-            ppConfig.setDoRescale(true);
-            ppConfig.setRescaleFactor(1.0 / 255.0);
-            ppConfig.setDoNormalize(true);
-            ppConfig.setImageMean(new double[]{0.5, 0.5, 0.5});
-            ppConfig.setImageStd(new double[]{0.5, 0.5, 0.5});
-            VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
-            imageInput = VisionEncoderUtils.preprocessFrames(splitResult.frames, preprocessor, targetSize);
-            preprocessor.shutdown();
-            assertNotNull(imageInput, "Image preprocessing returned null");
-            assertFalse(imageInput.wasClosed(), "Image tensor closed after preprocessing");
-        } catch (Throwable t) {
-            throw phaseFailure("IMAGE_PREPROCESS", benchmarkInputSummary(), t);
-        }
-        phaseSuccess("IMAGE_PREPROCESS", phaseNs,
-                "image=" + pdfImage.getWidth() + "x" + pdfImage.getHeight()
-                        + " frames=" + ctx.visionFrames + " "
-                        + summarizeTensor("imageInput", imageInput));
-
-        // Vision encoder - process each frame sequentially
-        phaseNs = phaseStart("VISION_ENCODE",
-                "frames=" + ctx.visionFrames + " " + summarizeTensor("imageInput", imageInput));
-        INDArray visionEmbeddings;
-        try {
-            long visionStart = System.currentTimeMillis();
-            log.info("Running vision encoder on {} frames...", ctx.visionFrames);
-            List<String> visionInputNames = visionEncoder.inputs();
-            String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
-            assertFalse(visionInputNames.isEmpty(), "Vision encoder has no inputs");
-            assertTrue(visionOutputNames.length > 0, "Vision encoder has no outputs");
-
-            List<INDArray> frameEmbeddings = new ArrayList<>();
-            for (int frameIdx = 0; frameIdx < ctx.visionFrames; frameIdx++) {
-                INDArray frameSlice = imageInput.get(
-                        NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
-                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
-
-                Map<String, INDArray> visionInputMap = new HashMap<>();
-                for (String inputName : visionInputNames) {
-                    if (inputName.equals("pixel_values")) {
-                        visionInputMap.put(inputName, singleFrame);
-                    } else if (inputName.equals("pixel_attention_mask")) {
-                        ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
-                        visionInputMap.put(inputName,
-                                ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
-                    }
-                }
-
-                Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
-                assertNotNull(visionOutputs, "Vision encoder output null for frame " + frameIdx);
-                assertFalse(visionOutputs.isEmpty(), "Vision encoder output empty for frame " + frameIdx);
-
-                VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
-                assertNotNull(selected, "Vision encoder selected output null for frame " + frameIdx);
-                assertNotNull(selected.tensor, "Vision encoder selected tensor null for frame " + frameIdx);
-                assertTrue(selected.tensor.rank() >= 2, "Vision output rank < 2 for frame " + frameIdx);
-
-                INDArray out = selected.tensor.dup();
-                assertFalse(out.wasClosed(), "Vision output dup closed for frame " + frameIdx);
-                frameEmbeddings.add(out);
-
-                for (var entry : visionOutputs.entrySet()) {
-                    INDArray arr = entry.getValue();
-                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-                }
-                singleFrame.close();
-            }
-
-            // Clean up vision encoder
-            visionEncoder.clearPlaceholders(false);
-            visionEncoder.clearOpInputs();
-            visionEncoder.resetSession();
-            Nd4j.getExecutioner().commit();
-
-            assertEquals(ctx.visionFrames, frameEmbeddings.size(),
-                    "Frame embedding count mismatch: expected " + ctx.visionFrames);
-
-            visionEmbeddings = frameEmbeddings.size() == 1
-                    ? frameEmbeddings.get(0).dup()
-                    : Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0])).dup();
-            for (INDArray fe : frameEmbeddings) {
-                if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
-            }
-            imageInput.close();
-            ctx.visionMs = System.currentTimeMillis() - visionStart;
-
-            assertFalse(visionEmbeddings.wasClosed(), "Concatenated vision embeddings closed");
-            assertTrue(visionEmbeddings.rank() == 3, "Vision embeddings should be rank 3, got " + visionEmbeddings.rank());
-            log.info("Vision encoder done [{}ms]: shape={}", ctx.visionMs,
-                    Arrays.toString(visionEmbeddings.shape()));
-        } catch (Throwable t) {
-            throw phaseFailure("VISION_ENCODE", "frames=" + ctx.visionFrames, t);
-        }
-        phaseSuccess("VISION_ENCODE", phaseNs,
-                "frames=" + ctx.visionFrames + " " + summarizeTensor("visionEmbeddings", visionEmbeddings));
-
-        freeModelConstants(visionEncoder, "vision encoder");
-
-        // Build prompt + embeddings
-        phaseNs = phaseStart("PROMPT_EMBED",
-                "visionFrames=" + ctx.visionFrames + " " + summarizeTensor("visionEmbeddings", visionEmbeddings));
-        try {
-            long embedStart = System.currentTimeMillis();
-            int imageTokenId = ImagePromptBuilder.resolveImageTokenId(ctx.tokenizer);
-            assertTrue(imageTokenId >= 0, "Image token ID should be non-negative");
-
-            int imageSeqLenPerFrame = (int) visionEmbeddings.size(1) / ctx.visionFrames;
-            assertTrue(imageSeqLenPerFrame > 0, "Image seq len per frame must be positive");
-
-            String imagePrompt = ImagePromptBuilder.buildImagePromptString(
-                    splitResult.numRows, splitResult.numCols, imageSeqLenPerFrame);
-            String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
-            ctx.promptTokenIds = ctx.tokenizer.encode(chatPrompt, false).getIds();
-            assertTrue(ctx.promptTokenIds.length > 0, "Prompt encoding produced no tokens");
-
-            INDArray promptIdsTensor = Nd4j.createFromArray(ctx.promptTokenIds)
-                    .reshape(1, ctx.promptTokenIds.length).castTo(DataType.LONG);
-            String embedInputName = ctx.embedTokens.inputs().isEmpty() ? "input_ids" : ctx.embedTokens.inputs().get(0);
-            String[] embedOutputNames = ctx.embedTokens.outputs().toArray(new String[0]);
-            Map<String, INDArray> embedOutputs = ctx.embedTokens.output(
-                    Map.of(embedInputName, promptIdsTensor), embedOutputNames);
-            assertNotNull(embedOutputs, "EmbedTokens output is null");
-            assertFalse(embedOutputs.isEmpty(), "EmbedTokens produced no output");
-
-            INDArray textEmbeddings = null;
-            for (var entry : embedOutputs.entrySet()) {
-                textEmbeddings = entry.getValue().dup();
-            }
-            assertNotNull(textEmbeddings, "embed_tokens produced no output");
-            assertFalse(textEmbeddings.wasClosed(), "Text embeddings closed after dup");
-
-            ctx.hiddenSize = visionEmbeddings.shape()[2];
-            assertEquals(ctx.hiddenSize, textEmbeddings.shape()[2],
-                    "Hidden size mismatch: vision=" + ctx.hiddenSize + " text=" + textEmbeddings.shape()[2]);
-            assertTrue(ctx.hiddenSize > 0, "Hidden size must be positive");
-
-            ctx.inputsEmbeds = EmbeddingMerger.mergeEmbeddings(
-                    textEmbeddings, visionEmbeddings, ctx.promptTokenIds, imageTokenId);
-            assertNotNull(ctx.inputsEmbeds, "Merged embeddings are null");
-            assertFalse(ctx.inputsEmbeds.wasClosed(), "Merged embeddings are closed");
-            assertTrue(ctx.inputsEmbeds.rank() == 3,
-                    "Merged embeddings should be rank 3, got " + ctx.inputsEmbeds.rank());
-
-            if (textEmbeddings.closeable() && !textEmbeddings.wasClosed()) textEmbeddings.close();
-            ctx.embedMs = System.currentTimeMillis() - embedStart;
-            log.info("Embeddings merged [{}ms]: shape={}", ctx.embedMs,
-                    Arrays.toString(ctx.inputsEmbeds.shape()));
-        } catch (Throwable t) {
-            throw phaseFailure("PROMPT_EMBED",
-                    "visionFrames=" + ctx.visionFrames + " " + summarizeTensor("visionEmbeddings", visionEmbeddings), t);
-        }
-        phaseSuccess("PROMPT_EMBED", phaseNs,
-                summarizeTokens("promptTokenIds", ctx.promptTokenIds) + " "
-                        + summarizeTensor("inputsEmbeds", ctx.inputsEmbeds));
-
-        return ctx;
     }
 
     // ─── Utility helpers ──────────────────────────────────────────────────
@@ -1692,9 +993,7 @@ public class TestSmolDoclingOptimizedPipeline {
     }
 
     private String summarizeTensor(String label, INDArray arr) {
-        if (arr == null) {
-            return label + "{null}";
-        }
+        if (arr == null) return label + "{null}";
 
         StringBuilder sb = new StringBuilder(label).append("{shape=");
         try {
@@ -1743,15 +1042,11 @@ public class TestSmolDoclingOptimizedPipeline {
             sb.append("?,fingerprintError=").append(t.getClass().getSimpleName())
                     .append(":").append(t.getMessage());
         }
-
         return sb.append("}").toString();
     }
 
     private String summarizeTokens(String label, int[] tokens) {
-        if (tokens == null) {
-            return label + "{null}";
-        }
-
+        if (tokens == null) return label + "{null}";
         int preview = Math.min(tokens.length, 8);
         int tailStart = Math.max(0, tokens.length - 8);
         return label + "{count=" + tokens.length
@@ -1761,10 +1056,7 @@ public class TestSmolDoclingOptimizedPipeline {
     }
 
     private String summarizeResult(GenerationResult result) {
-        if (result == null) {
-            return "result{null}";
-        }
-
+        if (result == null) return "result{null}";
         return "result{tokens=" + result.getGeneratedTokenCount()
                 + ",finish=" + result.getFinishReason()
                 + ",throughputLabel=" + effectiveThroughputLabel(result)
@@ -1775,14 +1067,9 @@ public class TestSmolDoclingOptimizedPipeline {
     }
 
     private String safeSnippet(String text, int maxChars) {
-        if (text == null) {
-            return "<null>";
-        }
-
+        if (text == null) return "<null>";
         String normalized = text.replace('\n', ' ').replace('\r', ' ').trim();
-        if (normalized.length() <= maxChars) {
-            return normalized;
-        }
+        if (normalized.length() <= maxChars) return normalized;
         return normalized.substring(0, maxChars) + "...";
     }
 
@@ -1791,18 +1078,14 @@ public class TestSmolDoclingOptimizedPipeline {
     }
 
     private void logDspState(String phase, SameDiff model) {
-        if (!isDspStateLoggingEnabled() || model == null) {
-            return;
-        }
-
+        if (!isDspStateLoggingEnabled() || model == null) return;
         try {
             DspDebugger debugger = DspDebugger.attach(model);
             DspDebugger.PlanReport planReport = debugger.analyzePlan();
             DspDebugger.GraphReplayReport replayReport = debugger.analyzeGraphReplay();
 
             if (planReport.errorMessage != null || replayReport.errorMessage != null) {
-                log.info("[DSP] {} plan={} replay={}",
-                        phase, planReport.errorMessage, replayReport.errorMessage);
+                log.info("[DSP] {} plan={} replay={}", phase, planReport.errorMessage, replayReport.errorMessage);
                 return;
             }
 
@@ -1865,202 +1148,7 @@ public class TestSmolDoclingOptimizedPipeline {
         return img;
     }
 
-    private void freeModelConstants(SameDiff model, String label) {
-        int closedArrays = 0;
-        long closedBytes = 0;
-        for (org.nd4j.autodiff.samediff.ArrayHolder holder :
-                new org.nd4j.autodiff.samediff.ArrayHolder[]{model.getConstantArrays(), model.getVariablesArrays()}) {
-            for (String name : new ArrayList<>(holder.arrayNames())) {
-                INDArray arr = holder.removeArray(name);
-                if (arr != null && !arr.wasClosed()) {
-                    closedBytes += arr.length() * arr.dataType().width();
-                    arr.data().setConstant(false);
-                    arr.close();
-                    closedArrays++;
-                }
-            }
-        }
-        Nd4j.getExecutioner().commit();
-        log.info("  Freed {} {} arrays ({}MB)", closedArrays, label, closedBytes / (1024 * 1024));
-    }
-
-    // ─── Draft model speculation support ──────────────────────────────────
-
-    /**
-     * Build a DraftModelSpeculator using SmolLM2-135M as the draft model.
-     * Lazy-loads the draft model into PipelineContext on first call.
-     */
-    private Speculator buildDraftModelSpeculator(PipelineContext ctx, int maxSpecTokens) {
-        try {
-            if (ctx.draftDecoder == null) {
-                loadDraftModel(ctx);
-            }
-
-            // Extract embedding table from draft model
-            INDArray draftEmbeddingTable = null;
-            for (org.nd4j.autodiff.samediff.SDVariable var : ctx.draftDecoder.variables()) {
-                if (var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.CONSTANT
-                        || var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.VARIABLE) {
-                    INDArray arr = var.getArr();
-                    if (arr != null && arr.rank() == 2) {
-                        if (draftEmbeddingTable == null || arr.length() > draftEmbeddingTable.length()) {
-                            draftEmbeddingTable = arr;
-                        }
-                    }
-                }
-            }
-
-            if (draftEmbeddingTable == null) {
-                throw new RuntimeException("Could not extract embedding table from draft model");
-            }
-
-            long draftHidden = ctx.draftHiddenSize > 0 ? ctx.draftHiddenSize : draftEmbeddingTable.size(1);
-
-            // Auto-discover I/O names from the draft model graph
-            ModelIOConfig draftIOConfig = ModelIOConfig.discover(ctx.draftDecoder);
-
-            // Embed function: direct table lookup
-            final INDArray embedTable = draftEmbeddingTable;
-            final long hidden = draftHidden;
-            java.util.function.Function<int[], INDArray> embedFn = tokenIds -> {
-                INDArray emb = Nd4j.zeros(DataType.FLOAT, 1, tokenIds.length, hidden);
-                for (int i = 0; i < tokenIds.length; i++) {
-                    emb.get(NDArrayIndex.point(0), NDArrayIndex.point(i), NDArrayIndex.all())
-                            .assign(embedTable.getRow(tokenIds[i]));
-                }
-                return emb;
-            };
-
-            // Decode function: greedy argmax from logits
-            java.util.function.Function<INDArray, Integer> decodeFn = logits -> {
-                INDArray lastLogits;
-                if (logits.rank() == 3) {
-                    lastLogits = logits.get(NDArrayIndex.point(0),
-                            NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
-                } else if (logits.rank() == 2) {
-                    lastLogits = logits.get(NDArrayIndex.point(0), NDArrayIndex.all());
-                } else {
-                    lastLogits = logits;
-                }
-                return Nd4j.argMax(lastLogits).getInt(0);
-            };
-
-            log.info("  Draft model speculator: hidden={}, logits={}, kvLayers={}",
-                    draftHidden, draftIOConfig.getLogitsOutputName(),
-                    draftIOConfig.getKvCacheNames() != null ? draftIOConfig.getKvCacheNames().keyNames.size() : 0);
-
-            long draftVocabSize = draftEmbeddingTable.size(0);
-            return new DraftModelSpeculator(
-                    "draft-smollm2-135m",
-                    ctx.draftDecoder,
-                    embedFn,
-                    decodeFn,
-                    draftIOConfig,
-                    draftHidden,
-                    draftVocabSize,
-                    maxSpecTokens,
-                    256,
-                    ctx.draftDeviceId);
-        } catch (Exception e) {
-            log.error("Failed to build draft model speculator, falling back to ngram", e);
-            return null;
-        }
-    }
-
-    /**
-     * Load SmolLM2-135M ONNX model as the draft decoder.
-     */
-    private void loadDraftModel(PipelineContext ctx) throws Exception {
-        log.info("  Loading SmolLM2-135M draft model...");
-        long startMs = System.currentTimeMillis();
-
-        // Download ONNX model
-        VLMModelDownloader.DownloadResult draftResult = VLMModelDownloader.download(
-                VLMModelDownloader.VLMModel.SMOLLM2_135M_DECODER);
-        File draftOnnx = draftResult.getModelFile();
-        log.info("  Draft model downloaded: {} ({}MB)", draftOnnx.getName(),
-                draftOnnx.length() / (1024 * 1024));
-
-        // Load draft model on device 1 (if available) to reduce memory pressure on
-        // device 0 where the target model's CUDA graph needs memory for replay.
-        // The draft model is small (~515MB) and runs without CUDA graph acceleration.
-        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        int draftDevice = numDevices > 1 ? 1 : 0;
-        int origDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        if (draftDevice != origDevice) {
-            log.info("  Loading draft model on device {} (freeing device {} for target model graph)",
-                    draftDevice, origDevice);
-            DeviceMemoryManager.getInstance().switchDevice(draftDevice, "loadDraftModel", "draft-load");
-        }
-
-        // Import via SDZ cache (same path as main models)
-        ctx.draftDecoder = OnnxModelCache.importWithCache(draftOnnx.getAbsolutePath());
-
-        // Restore original device
-        if (draftDevice != origDevice) {
-            DeviceMemoryManager.getInstance().switchDevice(origDevice, "loadDraftModel", "restore");
-        }
-
-        ctx.draftDeviceId = draftDevice;
-        long elapsed = System.currentTimeMillis() - startMs;
-        log.info("  Draft model loaded in {}ms on device {}, ops={}", elapsed, draftDevice,
-                ctx.draftDecoder.ops().length);
-
-        // Try to read hidden size from config
-        try {
-            VLMModelDownloader.DownloadResult configResult = VLMModelDownloader.download(
-                    VLMModelDownloader.VLMModel.SMOLLM2_135M_CONFIG);
-            org.eclipse.deeplearning4j.llm.config.ModelConfig modelConfig =
-                    org.eclipse.deeplearning4j.llm.config.ModelConfig.fromFile(configResult.getModelFile());
-            ctx.draftHiddenSize = modelConfig.getHiddenSize();
-            log.info("  Draft model config: hidden_size={}", ctx.draftHiddenSize);
-        } catch (Exception e) {
-            log.warn("  Could not load draft model config, will infer hidden size from embedding table", e);
-        }
-    }
-
-    /**
-     * Load a reference token stream from the file path given by
-     * {@code -Dvlm.benchmark.referenceTokens=<path>}.
-     *
-     * <p>The file is parsed as whitespace-separated integer token IDs — anything
-     * after a {@code #} on a line is treated as a comment. A typical file is one
-     * token ID per line, optionally with a trailing comment describing the token
-     * text.</p>
-     *
-     * <p>Returns {@code null} when the system property is unset, so the call site
-     * can simply skip the wiring. Throws if the property is set but the file is
-     * missing or unparseable — a silent fallback would defeat the purpose.</p>
-     */
     private static int[] loadReferenceTokenStream() {
-        String path = System.getProperty("vlm.benchmark.referenceTokens");
-        if (path == null || path.isEmpty()) return null;
-        Path p = Paths.get(path);
-        if (!Files.exists(p)) {
-            throw new IllegalArgumentException(
-                    "vlm.benchmark.referenceTokens file not found: " + path);
-        }
-        try {
-            List<String> lines = Files.readAllLines(p);
-            List<Integer> tokens = new ArrayList<>();
-            for (String raw : lines) {
-                int hash = raw.indexOf('#');
-                String line = (hash >= 0 ? raw.substring(0, hash) : raw).trim();
-                if (line.isEmpty()) continue;
-                for (String tok : line.split("\\s+")) {
-                    if (tok.isEmpty()) continue;
-                    try {
-                        tokens.add(Integer.parseInt(tok));
-                    } catch (NumberFormatException e) {
-                        throw new IllegalArgumentException(
-                                "Reference token stream contains non-integer token '"
-                                        + tok + "' in " + path, e);
-                    }
-                }
-            }
-            return tokens.stream().mapToInt(Integer::intValue).toArray();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read reference token stream: " + path, e);
-        }
+        return ReferenceTokenStream.loadFromSystemProperty("vlm.benchmark.referenceTokens");
     }
 }

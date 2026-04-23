@@ -37,7 +37,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests that exercise the EXACT execution paths used by StaticKvCacheDecodeLoop:
+ * Tests that exercise the EXACT execution paths used by GenerationPipeline:
  *
  * - SameDiff.output() for steps 0-1 (with setCloseable protection)
  * - SameDiff.outputDirect() for steps 2+ (NO setCloseable protection)
@@ -139,7 +139,7 @@ public class SameDiffDecodePathTest {
      *
      * Run multiple steps through SameDiff, switching from output() (steps 0-1)
      * to outputDirect() (steps 2+), with growing KV views — exactly like
-     * StaticKvCacheDecodeLoop. Verify each step produces valid output.
+     * GenerationPipeline. Verify each step produces valid output.
      */
     @Test
     @DisplayName("testOutputDirect_growingShapes_multiStep")
@@ -185,7 +185,7 @@ public class SameDiffDecodePathTest {
             }
 
             // Use output() for steps 0-1, outputDirect() for steps 2+
-            // This matches StaticKvCacheDecodeLoop behavior
+            // This matches GenerationPipeline behavior
             Map<String, INDArray> result;
             boolean useDirect = step >= 2;
             if (useDirect) {
@@ -240,7 +240,7 @@ public class SameDiffDecodePathTest {
         SameDiff sd = buildMhaGraph();
         String attnName = sd.outputs().get(0);
 
-        // Enable DSP auto-compile (matches what StaticKvCacheDecodeLoop does)
+        // Enable DSP auto-compile (matches what the decode pipeline does)
         sd.setDspAutoCompileEnabled(true);
         sd.setDspNativeAutoCompileEnabled(true);
 
@@ -277,7 +277,7 @@ public class SameDiffDecodePathTest {
                 ph.put("past_value", emptyV);
             }
 
-            // Use outputDirect for step >= 2 (like StaticKvCacheDecodeLoop)
+            // Use outputDirect for step >= 2 (like the decode pipeline)
             Map<String, INDArray> result;
             boolean useDirect = step >= 2;
             if (useDirect) {
@@ -425,7 +425,7 @@ public class SameDiffDecodePathTest {
      *
      * The most specific reproduction: enable DSP, run steps 0-1 with output()
      * (DSP compiles on step 1), then run steps 2+ with outputDirect() and
-     * growing shapes. This is the EXACT StaticKvCacheDecodeLoop path.
+     * growing shapes. This is the EXACT GenerationPipeline decode path.
      */
     @Test
     @DisplayName("testFullDecodePathWithDsp")

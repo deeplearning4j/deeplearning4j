@@ -32,12 +32,32 @@ namespace sd {
 namespace graph {
 
 bool jitCanFuseSegment(NativeSlot* slots, int start, int end) {
+  // Any op that is not NVRTC-jittable falls through to an identity pass-through
+  // in generateCudaSource() / generatePtx(). View-producing and data-movement ops
+  // (reshape, permute, squeeze, expand_dims, slice, strided_slice, gather, concat,
+  // etc.) are in SHAPE_MANIPULATION / DATA_MOVEMENT categories. In a flat 1D
+  // element-wise kernel every thread reads position [idx] from inputs and writes
+  // to outputs[idx] — there is no way to express a reshape (which remaps indices),
+  // a permute (which reorders axes), or any gather/scatter. Fusing a segment that
+  // contains such ops silently produces wrong data: the non-jittable slots emit
+  // the identity of their input instead of their actual computation.
+  //
+  // Rule: if ANY slot in the range is not NVRTC-jittable, reject the whole segment.
+  // The only exception is IDENTITY/CAST (already in isNvrtcJittable) and UNSUPPORTED
+  // ops that are already gated by isNvrtcJittable returning false here.
   int fusible = 0;
   for (int i = start; i <= end; i++) {
     auto cat = getOpCategoryFromName(slots[i].ident.opName);
-    if (isNvrtcJittable(cat)) {
-      fusible++;
+    if (!isNvrtcJittable(cat)) {
+      // Non-jittable op present — the generated kernel would produce wrong results
+      // (identity pass-through instead of the actual op). Reject the entire segment.
+      DSP_DIAG(JIT,
+               "jitCanFuseSegment: segment [%d-%d] contains non-jittable op '%s' "
+               "(category=%d) at slot %d — segment ineligible for JIT fusion",
+               start, end, slots[i].ident.opName.c_str(), static_cast<int>(cat), i);
+      return false;
     }
+    fusible++;
   }
   return fusible >= JIT_MIN_FUSIBLE_OPS;
 }
@@ -64,9 +84,12 @@ Status jitExecuteSegment(
     compiled = &it->second;
   }
 
-  // Build kernel arguments
-  std::vector<void*> kernelArgs;
-  kernelArgs.reserve(compiled->argMap.size() + 1);
+  // Build kernel arguments.
+  // cuLaunchKernel expects void** kernelParams where each element POINTS TO
+  // the parameter value. For pointer params, we store the pointer values in
+  // argValues[] and then argPtrs[i] = &argValues[i].
+  std::vector<void*> argValues;
+  argValues.reserve(compiled->argMap.size());
 
   LongType nElements = 0;
 
@@ -88,7 +111,7 @@ Status jitExecuteSegment(
       return Status::KERNEL_FAILURE;
     }
 
-    kernelArgs.push_back(arr->specialBuffer());
+    argValues.push_back(arr->specialBuffer());
 
     if (am.isOutput && nElements == 0) {
       nElements = arr->lengthOf();
@@ -96,7 +119,14 @@ Status jitExecuteSegment(
   }
 
   int nElem32 = static_cast<int>(nElements);
-  kernelArgs.push_back(&nElem32);
+
+  // Build the indirection array: each entry points to the corresponding value
+  std::vector<void*> argPtrs;
+  argPtrs.reserve(argValues.size() + 1);
+  for (size_t i = 0; i < argValues.size(); i++) {
+    argPtrs.push_back(&argValues[i]);
+  }
+  argPtrs.push_back(&nElem32);
 
   // Launch config
   unsigned int blockSize = 256;
@@ -111,8 +141,8 @@ Status jitExecuteSegment(
       gridSize, 1, 1,
       blockSize, 1, 1,
       0, actualStream,
-      kernelArgs.data(),
-      static_cast<int>(kernelArgs.size()));
+      argPtrs.data(),
+      static_cast<int>(argPtrs.size()));
 
   if (!ok) {
     DSP_DIAG(EXECUTE, "%s::executeSegment: kernel launch failed for segment [%d-%d]",

@@ -58,9 +58,10 @@ enum DspDiagCategory : uint32_t {
   DSP_DIAG_MULTI_DEVICE    = (1u << 15),  // Multi-device orchestration (device selection, P2P, migrations)
   DSP_DIAG_GRAPH_REPLAY    = (1u << 16),  // Graph replay phases (capture, instantiate, launch, address validation)
   DSP_DIAG_SEGMENT_BUCKETS = (1u << 17),  // Invalid segment bucket classification and gap analysis
+  DSP_DIAG_LIFECYCLE       = (1u << 18),  // FrozenPlan/SegmentExecutor state transitions (build/seal/replace)
 
   DSP_DIAG_NONE     = 0u,
-  DSP_DIAG_ALL      = 0x3FFFFu     // All 18 categories
+  DSP_DIAG_ALL      = 0x7FFFFu     // All 19 categories
 };
 
 // ─── Detail level ────────────────────────────────────────────────────────────
@@ -90,7 +91,7 @@ struct DspDiagEvent {
 
 // ─── Per-category aggregate stats ────────────────────────────────────────────
 
-static constexpr int DSP_DIAG_NUM_CATEGORIES = 18;
+static constexpr int DSP_DIAG_NUM_CATEGORIES = 19;
 
 struct DspDiagCategoryStats {
   int64_t eventCount;
@@ -461,7 +462,8 @@ class SD_LIB_EXPORT DspDiagnostics {
 // OLD_STATE: the current lifecycle state value.
 // NEW_STATE_STR: string literal for the destination state.
 // FMT/...: optional additional context appended after the arrow.
-#define DSP_DIAG_LIFECYCLE(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) \
+// NOTE: renamed from DSP_DIAG_LIFECYCLE to avoid collision with DSP_DIAG_LIFECYCLE category constant.
+#define DSP_DIAG_STATE_TRANSITION(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) \
   do { \
     if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_EXECUTE)) { \
       sd::graph::DspDiagnostics::getInstance().recordEvent( \
@@ -470,6 +472,8 @@ class SD_LIB_EXPORT DspDiagnostics {
           (STATE_NAME_FN)(OLD_STATE), ##__VA_ARGS__); \
     } \
   } while (0)
+// Backward compat alias (callers being migrated)
+#define DSP_DIAG_LIFECYCLE_TRANSITION DSP_DIAG_STATE_TRANSITION
 
 // ─── Throw helpers ──────────────────────────────────────────────────────────
 //
@@ -537,7 +541,8 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_SLOT_WRITE(SLOT_IDX, OP, BYTES, STREAM, PHASE) ((void)0)
 #define DSP_DIAG_SLOT_ZERO(SLOT_IDX, REASON, STREAM, PHASE) ((void)0)
 #define DSP_DIAG_BANNER(CAT, TITLE, FMT, ...) ((void)0)
-#define DSP_DIAG_LIFECYCLE(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) ((void)0)
+#define DSP_DIAG_STATE_TRANSITION(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) ((void)0)
+#define DSP_DIAG_LIFECYCLE_TRANSITION DSP_DIAG_STATE_TRANSITION
 #define DSP_THROW(CAT, FMT, ...)             do { THROW_EXCEPTION("DSP error"); } while (0)
 #define DSP_THROW_SEG(CAT, SEG_START, FMT, ...) do { THROW_EXCEPTION("DSP error"); } while (0)
 #define DSP_THROW_CUDA(CAT, ERR, FMT, ...)   do { THROW_EXCEPTION("DSP error"); } while (0)

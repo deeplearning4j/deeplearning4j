@@ -29,7 +29,6 @@
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
 #include <graph/PlanExecutionContext.h>
-#include <ops/OpTraitTable.h>
 
 // Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
 #ifdef SD_CUDA
@@ -43,7 +42,6 @@
 #include <system/Environment.h>
 
 #include <algorithm>
-#include <cstring>
 #include <unordered_set>
 
 #ifdef SD_CUDA
@@ -82,34 +80,6 @@ const char* statusName_seg(Status status) {
   return dsp::dspStatusName(status);
 }
 
-uint32_t resolveSegmentShapeTraits(const NativeSlot& slot) {
-  uint32_t traits = 0;
-  if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
-    traits |= slot.ident.op->getOpDescriptor()->getTraits();
-  }
-  // Fallback: look up traits by op name from the trait table.
-  if (traits == 0 && !slot.ident.opName.empty()) {
-    traits |= sd::ops::getOpTraitsByName(slot.ident.opName);
-  }
-  if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-  if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
-  if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-  if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
-  return traits;
-}
-
-int findProducerStep(const GraphSegment& seg, NativeSlot* slots, int outputSlotIdx) {
-  if (slots == nullptr || outputSlotIdx < 0) return -1;
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    const auto& slot = slots[s];
-    for (int o = 0; o < slot.wiring.numOutputs; o++) {
-      if (slot.wiring.outputSlotIndices[o] == outputSlotIdx) {
-        return s;
-      }
-    }
-  }
-  return -1;
-}
 }  // namespace
 
 // ─── Segment shape key computation ──────────────────────────────────────────
@@ -221,6 +191,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
+  // Hash array shape signature: rank + dims + length + dtype.
   auto mixArraySignature = [&](NDArray* arr) {
     if (arr == nullptr) return;
 
@@ -232,33 +203,6 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
     mix(static_cast<LongType>(arr->lengthOf()));
     mix(static_cast<LongType>(arr->dataType()));
-
-    // Hash actual DATA VALUES for small inputs (≤32 elements).
-    // This makes the shape key sensitive to value changes in shape tensors,
-    // axis constants, broadcast targets, reshape dims, etc. — eliminating the
-    // need for a hardcoded "value-dependent shape op" list.
-    // Only small inputs are hashed to avoid GPU→CPU sync overhead on large tensors.
-    // We read directly from the host buffer after syncToHost() instead of using
-    // e<T>() which has significant per-element overhead on CUDA arrays.
-    LongType len = arr->lengthOf();
-    if (len > 0 && len <= 32) {
-      arr->syncToHost();
-      auto* db = arr->dataBuffer();
-      if (db != nullptr && db->primary() != nullptr) {
-        auto dt = arr->dataType();
-        auto sizeOfElem = DataTypeUtils::sizeOf(dt);
-        const auto* hostPtr = static_cast<const int8_t*>(db->primary());
-        auto offset = arr->offset();
-        for (LongType e = 0; e < len; e++) {
-          LongType val = 0;
-          const auto* elemPtr = hostPtr + (offset + e) * sizeOfElem;
-          if (sizeOfElem <= 8) {
-            std::memcpy(&val, elemPtr, sizeOfElem);
-          }
-          mix(val);
-        }
-      }
-    }
   };
 
   mix(seg.def.startSlot);
@@ -309,78 +253,14 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
   }
 
-  // Value-dependent-shape consumers can be fed by small internal subgraphs
-  // (for example concat -> create) whose boundary inputs are external/cross-segment
-  // but whose current values are invisible to the plain cross-input key above.
-  // Walk those internal producer chains and mix their boundary array signatures
-  // plus op structure so frozen replay sees internal shape-driving variance.
-  auto mixShapeDriverChain = [&](auto&& self, int srcIdx,
-                                 std::unordered_set<int>& visiting) -> void {
-    if (srcIdx < 0) {
-      int extIdx = -(srcIdx + 1);
-      mix(static_cast<LongType>(0xE1));
-      mix(extIdx);
-      if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
-        mixArraySignature(externalInputs[extIdx]);
-      }
-      return;
-    }
-
-    int producerStep = findProducerStep(seg, slots_, srcIdx);
-    if (producerStep < 0) {
-      mix(static_cast<LongType>(0xC1));
-      mix(srcIdx);
-      if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
-        mixArraySignature(outputSlots_[srcIdx]);
-      }
-      return;
-    }
-
-    if (visiting.count(producerStep) != 0) {
-      mix(static_cast<LongType>(0x51));
-      mix(producerStep);
-      return;
-    }
-
-    visiting.insert(producerStep);
-    NativeSlot& producer = slots_[producerStep];
-    mix(static_cast<LongType>(0xA1));
-    mix(producerStep);
-    mix(static_cast<LongType>(resolveSegmentShapeTraits(producer)));
-    mix(static_cast<LongType>(producer.wiring.numInputs));
-    mix(static_cast<LongType>(producer.wiring.numOutputs));
-    mix(static_cast<LongType>(producer.args.numIArgs));
-    for (int a = 0; a < producer.args.numIArgs; a++) {
-      mix(static_cast<LongType>(producer.args.iArgs[a]));
-    }
-    mix(static_cast<LongType>(producer.args.numTArgs));
-    if (!producer.ident.opName.empty()) {
-      for (const char* p = producer.ident.opName.c_str(); *p != '\0'; p++) {
-        mix(static_cast<LongType>(*p));
-      }
-    }
-    for (int i = 0; i < producer.wiring.numInputs; i++) {
-      self(self, producer.wiring.inputSourceIndices[i], visiting);
-    }
-    visiting.erase(producerStep);
-  };
-
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    NativeSlot& slot = slots_[s];
-    const uint32_t traits = resolveSegmentShapeTraits(slot);
-    if ((traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) == 0) continue;
-
-    for (int i = 0; i < slot.wiring.numInputs; i++) {
-      const int srcIdx = slot.wiring.inputSourceIndices[i];
-      if (srcIdx < 0 || segOutputSlots.find(srcIdx) == segOutputSlots.end()) continue;
-
-      mix(static_cast<LongType>(0xD1));
-      mix(s);
-      mix(srcIdx);
-      std::unordered_set<int> visiting;
-      mixShapeDriverChain(mixShapeDriverChain, srcIdx, visiting);
-    }
-  }
+  // NOTE: Value-dependent-shape ops (reshape, broadcast_to, etc.) do NOT
+  // need data value hashing at the segment level. Reasons:
+  //   1. During warmup (execCount==0), segments always run slot-by-slot.
+  //   2. The per-slot computeShapeKey() in _slotexec.cpp hashes values
+  //      gated on outputShapeDependsOnInputValues — handles correctness.
+  //   3. After shapes freeze, the frozen fast-path returns the cached key.
+  //   4. iArgs (already hashed above) encode the same shape info for most ops.
+  // Removing syncToHost here eliminates GPU→CPU sync during key computation.
 
   // Cache for future frozen calls
   if (shapesFrozen_) {
@@ -609,7 +489,8 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     needsCompile = false;
   } else {
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    needsCompile = (seg.exec.executionCount == 1) || (seg.def.shapeKey != segShapeKey);
+    seg.def.shapeKeyState.recordComputed(segShapeKey);
+    needsCompile = (seg.exec.executionCount == 1) || seg.def.shapeKeyState.hasDrifted();
     if (shapesFrozen_) {
       seg.exec.cachedShapeKey = segShapeKey;  // cache for future frozen calls
     }
@@ -635,7 +516,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
                  seg.def.startSlot, seg.def.endSlot,
                  seg.exec.executionCount == 1 ? "first-compile" : "shape-key-changed",
                  seg.exec.executionCount,
-                 static_cast<long long>(seg.def.shapeKey),
+                 static_cast<long long>(seg.def.shapeKeyState.compiledShapeKey),
                  static_cast<long long>(segShapeKey),
                  backendName);
   }
@@ -674,7 +555,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   }
 
   seg.exec.cachedShapeKey = segShapeKey;
-  seg.def.shapeKey = segShapeKey;
+  seg.def.shapeKeyState.markCompiled(segShapeKey);
   // tl_graphExecutionActive must NOT be set here — it is a CUDA-graph-capture
   // guard that suppresses frees and skips syncs. This function drives non-capture
   // paths (CPU backends, Triton warmup). Capture manages the flag internally.

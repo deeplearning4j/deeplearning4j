@@ -60,7 +60,10 @@ std::string NvrtcGraphBackend::getComputeArch() {
   int device = 0;
   cudaGetDevice(&device);
   cudaGetDeviceProperties(&props, device);
-  return "compute_" + std::to_string(props.major * 10 + props.minor);
+  // Use sm_XX (not compute_XX) so NVRTC generates CUBIN directly.
+  // This avoids PTX version mismatch between toolkit and driver
+  // (e.g., NVRTC 12.9 emits PTX 8.8 but driver 570.x only JITs PTX ≤8.7).
+  return "sm_" + std::to_string(props.major * 10 + props.minor);
 }
 
 // ---- Segment fusibility (delegates to shared logic) ----
@@ -466,8 +469,8 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   std::string arch = "--gpu-architecture=" + getComputeArch();
-  const char* opts[] = {arch.c_str()};
 
+  const char* opts[] = {arch.c_str()};
   nvRes = nvrtcCompileProgram(prog, 1, opts);
   if (nvRes != NVRTC_SUCCESS) {
     // Get compilation log
@@ -483,17 +486,29 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return false;
   }
 
-  // Get PTX
-  size_t ptxSize = 0;
-  nvrtcGetPTXSize(prog, &ptxSize);
-  std::string ptx(ptxSize, '\0');
-  nvrtcGetPTX(prog, &ptx[0]);
-  nvrtcDestroyProgram(&prog);
-
-  // Load PTX module
-  compiled.gpuModule = GpuKernelLauncher::loadPtxModule(ptx.c_str(), ptx.size());
+  // Get CUBIN (native code, no driver JIT needed — avoids PTX version mismatch)
+  size_t cubinSize = 0;
+  nvrtcGetCUBINSize(prog, &cubinSize);
+  if (cubinSize == 0) {
+    // Fallback: if CUBIN not available (shouldn't happen with sm_XX target),
+    // try PTX path
+    DSP_DIAG(COMPILE, "NvrtcGraphBackend: no CUBIN output, falling back to PTX for segment [%d-%d]",
+             seg.def.startSlot, seg.def.endSlot);
+    size_t ptxSize = 0;
+    nvrtcGetPTXSize(prog, &ptxSize);
+    std::string ptx(ptxSize, '\0');
+    nvrtcGetPTX(prog, &ptx[0]);
+    nvrtcDestroyProgram(&prog);
+    compiled.gpuModule = GpuKernelLauncher::loadPtxModule(ptx.c_str(), ptx.size());
+  } else {
+    std::vector<char> cubin(cubinSize);
+    nvrtcGetCUBIN(prog, cubin.data());
+    nvrtcDestroyProgram(&prog);
+    // Load CUBIN via same cuModuleLoadDataEx (handles both PTX and CUBIN)
+    compiled.gpuModule = GpuKernelLauncher::loadPtxModule(cubin.data(), cubinSize);
+  }
   if (!compiled.gpuModule) {
-    DSP_DIAG(COMPILE, "NvrtcGraphBackend: PTX module load failed for segment [%d-%d]",
+    DSP_DIAG(COMPILE, "NvrtcGraphBackend: module load failed for segment [%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
     return false;
   }
@@ -515,8 +530,8 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     cache_[key] = std::move(compiled);
   }
 
-  DSP_DIAG(JIT, "NvrtcGraphBackend: compiled segment [%d-%d] (%zu bytes PTX, shape key %lld)",
-            seg.def.startSlot, seg.def.endSlot, ptxSize, shapeKey);
+  DSP_DIAG(JIT, "NvrtcGraphBackend: compiled segment [%d-%d] (shape key %lld)",
+            seg.def.startSlot, seg.def.endSlot, shapeKey);
   return true;
 }
 
@@ -526,7 +541,7 @@ Status NvrtcGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           NDArray** externalInputs, int numExternalInputs,
                                           NDArray** outputSlots, int totalOutputSlots,
                                           void* stream) {
-  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
+  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
   return jitExecuteSegment(key, cache_, cacheMtx_, "NvrtcGraphBackend",
                            slots, externalInputs, numExternalInputs,
                            outputSlots, totalOutputSlots, stream);

@@ -78,6 +78,9 @@ SUREFIRE_OUT="$SCRIPT_DIR/target/surefire-reports/org.eclipse.deeplearning4j.vlm
 SUREFIRE_XML="$SCRIPT_DIR/target/surefire-reports/TEST-org.eclipse.deeplearning4j.vlm.${TEST_CLASS}.xml"
 MODEL_CACHE="$HOME/.cache/dl4j-vlm-models"
 
+# Backend: cuda (default) or cpu
+BACKEND="cuda"
+
 # Defaults
 DEBUG_MODE=false
 NSYS_MODE=false
@@ -100,6 +103,10 @@ TRITON_TF32=false
 NO_ATTN_OVERRIDE=false
 NO_DIRECT=false
 NO_TRITON=false
+DISABLE_VIEW_FASTPATH=false
+DISABLE_CAST_HWM=false
+DISABLE_WS_SKIP=false
+DSP_TIMING=false
 DIAG_REPLAY=false
 DIAG_STREAM=false
 DIAG_DEVICE=false
@@ -109,6 +116,10 @@ DIAG_JSON=""
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --backend)
+            BACKEND="$2"
+            shift 2
+            ;;
         --debug)
             DEBUG_MODE=true
             shift
@@ -215,6 +226,22 @@ while [[ $# -gt 0 ]]; do
             DIAG_REPLAY=true
             shift
             ;;
+        --disable-view-fastpath)
+            DISABLE_VIEW_FASTPATH=true
+            shift
+            ;;
+        --disable-cast-hwm)
+            DISABLE_CAST_HWM=true
+            shift
+            ;;
+        --disable-ws-skip)
+            DISABLE_WS_SKIP=true
+            shift
+            ;;
+        --dsp-timing)
+            DSP_TIMING=true
+            shift
+            ;;
         --diag-stream)
             DIAG_STREAM=true
             shift
@@ -239,7 +266,9 @@ while [[ $# -gt 0 ]]; do
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
             echo "       [--draft] [--speculative K] [--no-cublas-workspace] [--no-freeze]"
             echo "       [--triton-tf32] [--no-triton-tf32]"
-            echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
+echo "       [--disable-view-fastpath] [--disable-cast-hwm] [--disable-ws-skip]"
+echo "       [--dsp-timing]"
+echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
             exit 1
             ;;
     esac
@@ -272,10 +301,14 @@ $NO_ATTN_OVERRIDE    && echo "  AttnOverride:       DISABLED (use model's attn_m
 $NO_DIRECT           && echo "  Direct exec:        DISABLED (use output() instead of outputDirect())"
 $NO_TRITON           && echo "  Triton:             DISABLED (native CUDA ops only)"
 $TRITON_TF32         && echo "  Triton TF32:        ON  (10-bit mantissa for Triton DotOps)"
+$DISABLE_VIEW_FASTPATH && echo "  ISOLATION: view-op fast path DISABLED"
+$DISABLE_CAST_HWM     && echo "  ISOLATION: cast cache HWM DISABLED (reset to 0)"
+$DISABLE_WS_SKIP      && echo "  ISOLATION: workspace skip DISABLED (live gaps use workspace)"
 $DIAG_REPLAY  && echo "  Diag:     GRAPH_REPLAY (capture/instantiate/launch phases)"
 $DIAG_STREAM  && echo "  Diag:     STREAM_SYNC (stream ordering, event waits)"
 $DIAG_DEVICE  && echo "  Diag:     MULTI_DEVICE (device selection, P2P, migrations)"
 $DIAG_ALL     && echo "  Diag:     ALL categories at FULL level"
+$DSP_TIMING   && echo "  Diag:     DSP_TIMING (COMPOSITE_REPLAY breakdown)"
 [ -n "$DIAG_JSON" ] && echo "  Diag JSON: $DIAG_JSON"
 $OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
 $OP_TIMING_DETAILED && echo "  OpTiming: detailed phase breakdown ON"
@@ -333,6 +366,21 @@ fi
 
 if $TRITON_TF32; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.triton.tf32=1"
+fi
+
+# Isolation flags — disable individual replay mechanisms for debugging
+if $DISABLE_VIEW_FASTPATH; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.disableViewFastpath=1"
+fi
+if $DISABLE_CAST_HWM; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.disableCastHwm=1"
+fi
+if $DISABLE_WS_SKIP; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.disableWsSkip=1"
+fi
+
+if $DSP_TIMING; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.timing=1"
 fi
 
 if $DRAFT_MODEL; then
@@ -429,13 +477,36 @@ if $TRITON_TF32; then
     VALIDATION_ARGS="$VALIDATION_ARGS -Dnd4j.triton.tf32=1"
 fi
 
+# ─── Backend resolution ──────────────────────────────────────────────
+if [ "$BACKEND" = "cpu" ]; then
+    BACKEND_ARTIFACT="nd4j-native"
+    TRITON_FLAG=""
+    # CPU-specific: add OMP thread configuration
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.omp.numthreads=${OMP_NUM_THREADS:-$(nproc)}"
+    # Skip CUDA-only flags
+    NSYS_MODE=false
+    DRAFT_MODEL=false
+    SPECULATIVE_K=0
+    NO_CUBLAS_WORKSPACE=false
+    TRITON_TF32=false
+    NO_TRITON=false
+    echo "[backend] CPU mode: artifact=$BACKEND_ARTIFACT"
+elif [ "$BACKEND" = "cuda" ]; then
+    BACKEND_ARTIFACT="nd4j-cuda-12.9"
+    TRITON_FLAG="-Dlibnd4j.triton=ON"
+    echo "[backend] CUDA mode: artifact=$BACKEND_ARTIFACT"
+else
+    echo "ERROR: Unknown backend '$BACKEND'. Use 'cuda' or 'cpu'."
+    exit 1
+fi
+
 set +e
 $MVN test \
   -Dtest="${VALIDATION_CLASS}#${VALIDATION_METHOD}" \
   -Dvlm.validation.tokens="$VALIDATION_TOKENS" \
   -Dvlm.validation.configs="$CONFIG" \
-  -Dlibnd4j.triton=ON \
-  -Dbackend.artifactId=nd4j-cuda-12.9 \
+  $TRITON_FLAG \
+  -Dbackend.artifactId=$BACKEND_ARTIFACT \
   $VALIDATION_ARGS \
   2>&1 | tee "$VALIDATION_LOG"
 VALIDATION_RESULT=${PIPESTATUS[0]}
@@ -458,8 +529,8 @@ $MVN test \
   -Dvlm.test.pdf.path=pathfinder-mythic.pdf \
   -Dvlm.test.pdf.page=10 \
   -Dvlm.test.configs="$CONFIG" \
-  -Dlibnd4j.triton=ON \
-  -Dbackend.artifactId=nd4j-cuda-12.9 \
+  $TRITON_FLAG \
+  -Dbackend.artifactId=$BACKEND_ARTIFACT \
   $EXTRA_ARGS \
   2>&1 | tee "$LOG_FILE"
 BUILD_RESULT=${PIPESTATUS[0]}

@@ -319,6 +319,23 @@ struct SlotFlags {
   int ltEpilogueBiasSourceIdx = -1;
   // Structural iArg count
   int structuralIArgCount = -1;       // -1 = all iArgs are structural
+
+  /**
+   * True if this slot's output shape changes between decode steps (e.g. attention
+   * mask growth, KV cache views with growing sequence dimension, position IDs).
+   *
+   * Set during phaseWarmup when a shape-reassign fires (step3-warmup-reassign or
+   * fused-chain-warmup-reassign paths), or propagated transitively from any input
+   * slot that is already dynamic.
+   *
+   * Effect on execution:
+   *   - Slot is excluded from the frozen fast path (executeSlot early-return).
+   *   - Slot's output DataBuffer is NOT frozen (addFrozenRef skipped in phaseWarmup).
+   *   - Slot always runs via the normal (non-frozen) execution path every step.
+   *
+   * This flag is set once during warmup and never cleared (immutable after freeze).
+   */
+  bool isDynamicShape = false;
 };
 
 /** Fused elementwise chain metadata. */
@@ -460,12 +477,80 @@ struct NativeSlot {
 /**
  * Immutable segment definition — set at buildSegments(), never changes.
  */
+/**
+ * ShapeKeyState — explicit lifecycle for the segment shape key.
+ *
+ * The shape key identifies a unique set of shapes flowing through a segment.
+ * It determines whether a cached compilation/graph can be reused or must be
+ * rebuilt. The lifecycle is:
+ *
+ *   UNSET (0)        → after buildSegments() or invalidateForRebuild()
+ *   WARMUP_COMPUTED  → after first executeSegmentSlotBySlot() computes it
+ *   COMPILED_WITH    → after backend->compileSegment() succeeds (this is the "reference" key)
+ *   STABLE           → subsequent executions compute same key → no recompile
+ *   DRIFTED          → subsequent execution computes DIFFERENT key → triggers recompile
+ *
+ * Invariant: if compiledShapeKey != 0 and currentShapeKey != compiledShapeKey,
+ * the segment MUST recompile before executing compiled code.
+ */
+struct ShapeKeyState {
+  /// The shape key that was used when the segment was last successfully compiled.
+  /// Zero means "never compiled" — the segment needs its first compile.
+  LongType compiledShapeKey = 0;
+
+  /// The shape key computed on the most recent execution (may differ from compiled).
+  /// Used for comparison: if current != compiled, shapes drifted.
+  LongType lastComputedKey = 0;
+
+  /// Frozen cache: when shapes are frozen, this caches the key to avoid recomputation.
+  /// Zero means "not cached" — must compute fresh.
+  LongType frozenCacheKey = 0;
+
+  /// Returns true if shapes have been compiled and current key matches.
+  bool isStable() const {
+    return compiledShapeKey != 0 && lastComputedKey == compiledShapeKey;
+  }
+
+  /// Returns true if shapes drifted since last compile (needs recompile).
+  bool hasDrifted() const {
+    return compiledShapeKey != 0 && lastComputedKey != 0 && lastComputedKey != compiledShapeKey;
+  }
+
+  /// Returns true if the segment has never been compiled.
+  bool neverCompiled() const { return compiledShapeKey == 0; }
+
+  /// Record a fresh compilation with this key.
+  void markCompiled(LongType key) {
+    compiledShapeKey = key;
+    lastComputedKey = key;
+  }
+
+  /// Record a freshly computed key (before deciding compile vs replay).
+  void recordComputed(LongType key) { lastComputedKey = key; }
+
+  /// Full reset (invalidation).
+  void reset() {
+    compiledShapeKey = 0;
+    lastComputedKey = 0;
+    frozenCacheKey = 0;
+  }
+
+  /// Diagnostic string for logging.
+  const char* statusName() const {
+    if (compiledShapeKey == 0) return "UNSET";
+    if (lastComputedKey == 0) return "COMPILED_NO_CURRENT";
+    if (lastComputedKey == compiledShapeKey) return "STABLE";
+    return "DRIFTED";
+  }
+};
+
 struct GraphSegmentDef {
   int startSlot = 0;
   int endSlot = 0;
   bool isCapturable = false;
   bool hasValueDepOps = false;         // True if any slot has outputShapeDependsOnInputValues
-  LongType shapeKey = 0;               // Initial shape key from buildSegments
+  /// Structured shape key lifecycle. All shape key reads/writes go through this.
+  ShapeKeyState shapeKeyState;
 
   // User-forced backend override (empty = automatic selection via priority chain)
   std::string backendOverride;
@@ -487,6 +572,45 @@ struct GraphSegmentDef {
   };
   SegmentContract contract;
 };
+
+/**
+ * SegmentDispatchEvent — significant events during segment execution.
+ * Used for structured logging: when any of these fires, it's always logged
+ * regardless of diagnostic level, so post-mortem analysis can trace exactly
+ * what happened and why.
+ */
+enum class SegmentDispatchEvent : uint8_t {
+  WARMUP_START,           // Entering warmup (first slot-by-slot execution)
+  WARMUP_DONE,           // Warmup completed OK, transitioning to NEEDS_COMPILE
+  COMPILE_START,         // Starting compilation
+  COMPILE_DONE,          // Compilation succeeded
+  COMPILE_FAILED,        // Compilation failed
+  SHAPE_KEY_COMPUTED,    // Shape key freshly computed
+  SHAPE_KEY_MATCHED,     // Computed key matches compiled key (no recompile needed)
+  SHAPE_KEY_DRIFTED,     // Computed key differs from compiled key (recompile triggered)
+  SHAPE_KEY_STORED,      // Shape key stored after successful execution
+  RECOMPILE_TRIGGERED,   // Mid-execution recompile due to shape drift
+  CAPTURE_START,         // CUDA graph capture starting
+  CAPTURE_DONE,         // Capture succeeded
+  REPLAY_START,         // Graph replay starting
+  REPLAY_DONE,          // Replay succeeded
+  DIRECT_EXEC_START,    // Direct (non-captured) execution starting
+  DIRECT_EXEC_DONE,     // Direct execution succeeded
+  INVALIDATE,           // Segment invalidated (full reset)
+};
+
+// One-line event logger: always prints for significant events regardless of DSP_DIAG level.
+// Format: [DSP_EVENT] seg[start-end] EVENT execCount=N shapeKey=compiled/current detail
+#define DSP_SEG_EVENT(seg, event, ...) do { \
+  sd_printf("[DSP_EVENT] seg[%d-%d] %s execCount=%d shapeKey=%s compiled=%lld current=%lld " , \
+            (seg).def.startSlot, (seg).def.endSlot, \
+            #event, (seg).exec.executionCount, \
+            (seg).def.shapeKeyState.statusName(), \
+            (long long)(seg).def.shapeKeyState.compiledShapeKey, \
+            (long long)(seg).def.shapeKeyState.lastComputedKey); \
+  sd_printf(__VA_ARGS__); \
+  sd_printf("\n"); \
+} while (0)
 
 /**
  * Composite replay unit — one element of a mixed segment's replay schedule.
@@ -537,6 +661,15 @@ struct ReplaySchedule {
   // Merged capture handles — one per merged group (island + capture-safe gap sequences).
   // Indexed by ReplayScheduleUnit::mergedGroupId.
   std::vector<std::unique_ptr<GraphReplayHandle>> mergedReplayHandles;
+
+  // Cast-cache high-water marks recorded right after all merged-group captures
+  // complete.  The merged CUDA graphs bake in device pointers for cast-cache
+  // slots [0, mergedCastHwmA) (A-side) and [0, mergedCastHwmB) (B-side).
+  // At replay time, unmerged gap matmuls must start their cast-cache indices
+  // from these values so they don't alias the merged graphs' baked pointers.
+  // Zero when no merged captures exist (falls back to full reset to 0).
+  size_t mergedCastHwmA = 0;
+  size_t mergedCastHwmB = 0;
 };
 
 // Batch-zero entry used by NativeDynamicShapePlan::batchZeroEntries_.
@@ -776,7 +909,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    *   Release schedule: for each step: count(int32) + slotIndices[count](int32)
    *   Requested outputs: for each output: slotIndex(int32)
    */
-  static NativeDynamicShapePlan* fromSerializedPlan(const void* data, LongType size);
+  static NativeDynamicShapePlan* fromSerializedPlan(const void* data, LongType size,
+                                                     GraphExecutionMode mode = GraphExecutionMode::GEM_AUTO);
 
   /**
    * Construct from a FlatGraph + pre-loaded variables.
@@ -804,6 +938,32 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * @return Status::OK on success
    */
   Status execute(
+      NDArray** externalInputs, int numExternalInputs,
+      NDArray** requestedOutputs, int numRequestedOutputs,
+      void* stream);
+
+  /**
+   * Steady-state fast path for autoregressive decode loops.
+   *
+   * PRECONDITIONS (caller must ensure):
+   *   - planPhase_ >= REPLAYING (plan is in steady-state graph replay)
+   *   - shapesFrozen_ == true
+   *   - executeCount_ >= 3 (past warmup + capture + first replay)
+   *   - tritonVerifyKernels is false (no golden comparison needed)
+   *
+   * Skips: lifecycle validation, buffer scanning, fingerprinting, view wrapper
+   * refresh, frozen snapshot detection, closed-buffer detection, external input
+   * validation, ownership reclassification, phase advancement, diagnostics.
+   *
+   * Keeps: platformBeginExecution (stream setup), phaseReplay (segment dispatch
+   * + compositeReplay), output collection, executeCount_ increment,
+   * platformEndExecution (completion event).
+   *
+   * Returns Status::BAD_ARGUMENTS if preconditions are not met (falls back to
+   * full execute()). This is NOT an error — it means the plan has not yet
+   * reached steady state.
+   */
+  Status executeSteadyState(
       NDArray** externalInputs, int numExternalInputs,
       NDArray** requestedOutputs, int numRequestedOutputs,
       void* stream);
@@ -943,6 +1103,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Get the number of external inputs expected by this plan.
    */
   int getNumExternalInputs() const { return numExternalInputs_; }
+
+  /**
+   * Get the last external inputs array passed to execute().
+   * Only valid after at least one execute() call. Returns nullptr before first call.
+   * The returned pointer is owned by the caller of execute() — the plan does NOT own it.
+   */
+  NDArray** getLastExternalInputs() const { return lastExternalInputs_; }
+  int getLastNumExternalInputs() const { return lastNumExternalInputs_; }
 
   /**
    * Get the number of requested outputs.
@@ -1364,6 +1532,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numSlots_;
   int totalOutputSlots_;
   int numExternalInputs_;
+  NDArray** lastExternalInputs_ = nullptr;       // last ext inputs passed to execute() (not owned)
+  int lastNumExternalInputs_ = 0;               // size of lastExternalInputs_
   std::vector<std::string> externalInputNames_;  // name for each external input index
   std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
   std::vector<int> variableExternalInputIndices_;  // cached indices where externalInputIsVariable_[i]=true (replay optimization)
@@ -1395,6 +1565,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   //   slotViewOutputs_ → ownership == VIEW_OF_SLOT with parentSlotIdx
   //   per-execute dedup HashSet → O(1) ownership check
   SlotBufferInfo* slotOwnership_;
+
+  // Dirty bitmap (generation counter): tracks which output slots were written
+  // during the current execution. Used to optimize tickWriteDevice() in steady
+  // state — only dirty slots need to be ticked instead of all totalOutputSlots_.
+  // Generation counter avoids the O(N) std::fill per step of a bool vector.
+  std::vector<uint32_t> dirtySlotGenerations_;
+  uint32_t currentDirtyGeneration_ = 1;
 
   // Graph segments for CUDA Graphs
   std::vector<GraphSegment> segments_;
@@ -1467,6 +1644,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // the default stream (stream 0) before argmax/sampling. This replaces full
   // cudaStreamSynchronize (~1.4ms) with event-based ordering (~0.1ms).
   void* executionCompleteEvent_ = nullptr;  // cudaEvent_t (stored as void* to avoid cuda header)
+
+  // Cached steady-state execution context — reused by executeSteadyState() to
+  // avoid heap allocation + CUDA event create/destroy on every decode step.
+  // void* to avoid including PlanExecutionContext.h from this header.
+  // Owned by the plan, created on first use, destroyed in releaseGpuIntermediates.
+  void* steadyStateExecCtx_ = nullptr;
+  void* steadyStateCrossStreamEvent_ = nullptr;  // cudaEvent_t, reused across steps
 #endif
 
   // Active execution context — valid only during execute() lifetime.
@@ -1668,6 +1852,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformReleaseSegmentGpuResources();
   void platformMigrateWeightsAndClearCaches();
 
+  // ── Slot execution platform dispatch (NativeDynamicShapePlan_slotexec_cuda.cu / _cuda_stubs.cpp) ──
+  // These abstract CUDA-specific slot execution behavior (prezero, actuality,
+  // buffer validation, cublasLt epilogue, verify logging).
+  void platformPrezeroSegmentOutputs(const GraphSegment& seg, void* stream);
+  void platformReconcileOutputActuality(const char* stage, int stepIdx,
+                                         const NativeSlot& slot, NDArray* output);
+  bool platformValidateSlotInputBuffer(int stepIdx, const NativeSlot& slot,
+                                        int inputIdx, NDArray* input);
+  bool platformValidateReusableSlotBuffer(NDArray* cached);
+  void platformSetLtEpilogue(const NativeSlot& slot, NDArray* biasArray);
+  void platformClearLtEpilogue();
+  void platformLogSlotOutput(int stepIdx, const char* opName, const char* tag,
+                              const int* outputSlotIndices, int numOutputs);
+
   // ── GPU graph backend (NativeDynamicShapePlan_gpubackend.cpp) ──
   Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
@@ -1682,7 +1880,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // segDispatchCompile — handles one compile cycle for a segment.
   // segShapeKey is passed by reference: the shape-change recompile path
   // recomputes the key after a mini-warmup and writes the new value back
-  // so the caller's seg.def.shapeKey assignment uses the correct key.
+  // so the caller's shapeKeyState.markCompiled() uses the correct key.
   Status segDispatchCompile(GraphSegment& seg, NDArray** externalArrays,
                             int numExt, void* stream, LongType& segShapeKey);
 

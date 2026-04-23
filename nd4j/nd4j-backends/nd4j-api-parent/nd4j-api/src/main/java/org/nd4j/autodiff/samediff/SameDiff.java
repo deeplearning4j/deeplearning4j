@@ -4339,11 +4339,25 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     /**
      * Freeze DSP shapes for the current thread's executor, enabling CUDA graph capture
      * and buffer reuse. The executor must already exist (i.e., at least one output() call
-     * must have been made). Call {@link #setDspShapesFrozen(boolean)} with false to unfreeze.
+     * must have been made).
+     * <p>
+     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
+     * REPLAYING. Calling this method with {@code frozen=false} is illegal — backward
+     * transitions are architectural errors. If shapes change, destroy the current plan via
+     * {@link DynamicShapePlanExecutor#resetForNextPage()} and let the plan cache create a
+     * fresh entry for the new shape.
      *
-     * @param frozen true to freeze shapes, false to unfreeze
+     * @param frozen true to freeze shapes; false is illegal and throws IllegalArgumentException
+     * @throws IllegalArgumentException if frozen is false (backward phase transitions are banned)
      */
     public void setDspShapesFrozen(boolean frozen) {
+        if (!frozen) {
+            throw new IllegalArgumentException(
+                "LIFECYCLE VIOLATION: setDspShapesFrozen(false) is illegal. " +
+                "Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING). " +
+                "Backward transitions are banned. To handle a shape change, call " +
+                "executor.resetForNextPage() to destroy the current plan and let the cache compile a fresh one.");
+        }
         long threadId = Thread.currentThread().getId();
         InferenceSession session = sessions.get(threadId);
         if (session == null) {
@@ -4355,8 +4369,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             log.warn("setDspShapesFrozen: no DSP executor for thread {} — run output() with DSP enabled first", threadId);
             return;
         }
-        dsp.setShapesFrozen(frozen);
-        log.info("DSP shapes {}", frozen ? "frozen" : "unfrozen");
+        dsp.setShapesFrozen(true);
+        log.info("DSP shapes frozen");
     }
 
     /**
@@ -4594,7 +4608,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                                                             GraphExecutionMode requestedMode,
                                                             boolean fallbackToAutoIfTritonUnavailable) {
         // Persist the requested mode so subsequent recompilations (e.g., KV shape
-        // recompile inside StaticKvCacheDecodeLoop) use the same mode.
+        // recompile inside the GenerationPipeline decode loop) use the same mode.
         this.graphExecutionMode = requestedMode;
         this.dspFallbackToAutoIfTritonUnavailable = fallbackToAutoIfTritonUnavailable;
         List<String> out = normalizeCompileOutputs(requestedOutputs);

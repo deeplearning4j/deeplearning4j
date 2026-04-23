@@ -32,6 +32,7 @@
 
 #include <numeric>
 #include <unordered_map>
+#include <utility>
 
 #include "../MmulHelper.h"
 #include "../cublasHelper.h"
@@ -185,7 +186,32 @@ void MmulHelper::resetCastCacheIndices() {
   tl_lastCaptureCastSourceB = nullptr;
   tl_lastCaptureCastArrayA = nullptr;
   tl_lastCaptureCastArrayB = nullptr;
-  tl_ltAlgoCache.clear();
+  // NOTE: tl_ltAlgoCache is intentionally NOT cleared here.
+  // The algo cache is keyed by {M, N, K, types, flags} — different shapes have
+  // separate entries, so there is no stale-key risk between steps.  Preserving
+  // the cache ensures that capture and replay use the SAME algorithm as warmup
+  // (selected with workspace=0).  Clearing it between warmup and capture forces
+  // re-selection with a different workspace size, causing algorithm divergence
+  // and numerical accuracy regression in merged CUDA graph replay.
+}
+
+void MmulHelper::resetCastCacheIndicesTo(size_t hwmA, size_t hwmB) {
+  // Clamp to actual cache sizes — the high-water mark must not exceed them.
+  tl_castIdxA = (hwmA < tl_castCacheA.size()) ? hwmA : 0;
+  tl_castIdxB = (hwmB < tl_castCacheB.size()) ? hwmB : 0;
+  // Clear per-call reuse maps: they were populated during capture and
+  // are no longer valid for the current replay step's unmerged gap matmuls.
+  tl_captureCastReuseA.clear();
+  tl_captureCastReuseB.clear();
+  tl_lastCaptureCastSourceA = nullptr;
+  tl_lastCaptureCastSourceB = nullptr;
+  tl_lastCaptureCastArrayA = nullptr;
+  tl_lastCaptureCastArrayB = nullptr;
+  // NOTE: tl_ltAlgoCache is intentionally NOT cleared here — see resetCastCacheIndices().
+}
+
+std::pair<size_t, size_t> MmulHelper::getCastCacheHighWaterMark() {
+  return {tl_castIdxA, tl_castIdxB};
 }
 
 void MmulHelper::clearCastCache() {

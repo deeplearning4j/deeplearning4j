@@ -1180,7 +1180,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           void* stream) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
-  SegmentCacheKey key{startSlot, endSlot, seg.def.shapeKey};
+  SegmentCacheKey key{startSlot, endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
   CompiledModel* compiled = nullptr;
   {

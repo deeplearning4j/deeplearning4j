@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * don't grow unboundedly. This directly investigates the root cause of
  * degenerate VLM output (exploding attention scores).
  *
- * The decode pattern simulates what StaticKvCacheDecodeLoop does:
+ * The decode pattern simulates what the decode pipeline does:
  * 1. Prefill: run MHA with Q/K/V from embeddings (seqLen > 1)
  * 2. Pad KV to static size (maxKvLen)
  * 3. Decode steps: run MHA with seqLen=1, scatter new KV entry into static buffer

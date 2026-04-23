@@ -36,6 +36,7 @@
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
+#include <graph/DspSegmentLifecycle.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/DspStreamGuard.h>
 #include <graph/PlanExecutionContext.h>
@@ -68,6 +69,8 @@ namespace sd {
 namespace graph {
 
 using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
+
+using namespace SegmentLifecycle;
 
 namespace {
 
@@ -165,7 +168,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   bool allowFrozenGraphFastPath =
       (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO ||
-       graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS);
+       graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS ||
+       graphExecutionMode_ == GraphExecutionMode::GEM_TRITON);
   bool frozenFastPathInputStable = true;
   bool frozenFastPathSlotsStable = true;
   if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1) {
@@ -173,24 +177,43 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     // Per-address comparison: catches address changes that the hash may miss
     // (e.g. CUDA pool reuses an address for a different allocation, changing
     // only a subset of the hashed values in a way that produces a collision).
-    if (seg0.exec.replayHandle && !seg0.exec.replayHandle->getCapturedExternalAddresses().empty()) {
-      frozenFastPathInputStable = externalAddrsMatch(seg0, externalInputs, numExternalInputs);
-    } else if (seg0.exec.capturedInputAddrKey != 0) {
-      // Legacy fallback: hash-based check for graphs captured before the
-      // per-address snapshot was introduced.
+    if (seg0.exec.capturedInputAddrKey != 0) {
+      // Prefer the filtered/staged address key when available. Triton decode
+      // stabilizes variable placeholder inputs via plan-owned staging buffers;
+      // comparing raw external addresses first would reject replay on every
+      // step even though the captured graph is bound to the stable staged
+      // pointers.
       frozenFastPathInputStable =
           (computeSegmentInputAddrKey(seg0, externalInputs, numExternalInputs) == seg0.exec.capturedInputAddrKey);
+    } else if (seg0.exec.replayHandle && !seg0.exec.replayHandle->getCapturedExternalAddresses().empty()) {
+      frozenFastPathInputStable = externalAddrsMatch(seg0, externalInputs, numExternalInputs);
     }
-    if (seg0.exec.capturedSlotAddrHash != 0) {
+    if (pointersStable_) {
+      frozenFastPathSlotsStable = true;
+    } else if (seg0.exec.capturedSlotAddrHash != 0) {
       frozenFastPathSlotsStable =
           (computeSlotAddrHash(outputSlots_, seg0.def.startSlot, seg0.def.endSlot, totalOutputSlots_) ==
            seg0.exec.capturedSlotAddrHash);
     }
   }
-  if (!(allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1 &&
+  bool fastPathApplicable = allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1 &&
         frozenFastPathInputStable && frozenFastPathSlotsStable &&
         segments_[0].exec.replayHandle != nullptr &&
-        segments_[0].exec.replayHandle->isReady())) {
+        segments_[0].exec.replayHandle->isReady();
+  bool compositeFastPathApplicable = false;
+  if (!fastPathApplicable && allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ >= 1 && segments_.size() == 1 &&
+      frozenFastPathInputStable && frozenFastPathSlotsStable &&
+      !Environment::getInstance().tritonVerifyKernels()) {
+    compositeFastPathApplicable = hasCompositeHandles(segments_[0]);
+  }
+  DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: allow=%d frozen=%d execCount=%d segs=%d inputStable=%d slotStable=%d hasHandle=%d ready=%d compositeReady=%d -> %s",
+           (int)allowFrozenGraphFastPath, (int)shapesFrozen_, (int)executeCount_, (int)segments_.size(),
+           (int)frozenFastPathInputStable, (int)frozenFastPathSlotsStable,
+           (int)(segments_[0].exec.replayHandle != nullptr),
+           (int)(segments_[0].exec.replayHandle ? segments_[0].exec.replayHandle->isReady() : 0),
+           (int)compositeFastPathApplicable,
+           (fastPathApplicable || compositeFastPathApplicable) ? "OK" : "MAYBE");
+  if (!fastPathApplicable && !compositeFastPathApplicable) {
     return Status::MAYBE;  // Fast path not applicable
   }
 
@@ -209,29 +232,22 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
-  bool ok = true;
+  if (fastPathApplicable) {
+    bool ok = true;
   int syncedCount = 0, skippedCount = 0;
-  // Match compositeReplay: only sync variable external inputs when frozen
-  if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
-    for (int ei = 0; ei < numExternalInputs; ei++) {
-      if (externalInputs[ei] == nullptr) continue;
-      if (ei < static_cast<int>(externalInputIsVariable_.size()) &&
-          !externalInputIsVariable_[ei]) {
-        skippedCount++;
-        continue;  // weight directReference: skip sync for non-variable inputs
-      }
-      // Force H2D only when host is authoritative (isPrimaryActual).
-      // Variable inputs may have isSpecialActual=true from markOrderedRangeDeviceCurrent
-      // (readSpecial poisoning), so syncToSpecial(false) would skip the H2D copy.
-      // But KV buffers are updated on device by KvScatter — isPrimaryActual()=false.
-      // Forcing H2D when host is stale would overwrite valid device KV data with zeros.
+  // Steady-state: iterate only cached variable indices instead of all external inputs
+  if (!variableExternalInputIndices_.empty()) {
+    for (int idx = 0; idx < static_cast<int>(variableExternalInputIndices_.size()); ++idx) {
+      int ei = variableExternalInputIndices_[idx];
+      if (ei < 0 || ei >= numExternalInputs || externalInputs[ei] == nullptr) continue;
       auto* db = externalInputs[ei]->dataBuffer();
       if (db != nullptr && db->isPrimaryActual()) {
         db->syncToSpecial(true);  // Force H2D: host has newer data
       }
-      // else: device is authoritative (KvScatter or initial load) — no H2D needed
       syncedCount++;
     }
+    skippedCount = numExternalInputs - static_cast<int>(variableExternalInputIndices_.size());
+    if (skippedCount < 0) skippedCount = 0;
   } else {
     for (int ei = 0; ei < numExternalInputs; ei++) {
       if (externalInputs[ei] == nullptr) continue;
@@ -308,6 +324,14 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       seg.exec.executionCount++;
       executeCount_++;
 
+      if (seg.exec.lifecycleState == SegmentLifecycleState::CAPTURED) {
+        DSP_TRACE_LIFECYCLE(trace_, static_cast<int8_t>(0),
+                            static_cast<uint8_t>(seg.exec.lifecycleState),
+                            static_cast<uint8_t>(SegmentLifecycleState::REPLAYING),
+                            static_cast<uint32_t>(executeCount_));
+        SegmentLifecycle::markReplaying(seg.exec);
+      }
+
       // Tick actuality: CUDA graph replay writes device memory directly without
       // registerSpecialUse. Without this tick, syncToHost sees stale host data.
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
@@ -340,8 +364,55 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
   }
 
-  DSP_DIAG(EXECUTE, "NativeDSP::execute: frozen fast path not applicable (ok=%d), using full path",
-           static_cast<int>(ok));
+    DSP_DIAG(EXECUTE, "NativeDSP::execute: frozen fast path not applicable (ok=%d), using full path",
+             static_cast<int>(ok));
+  } else {
+    // Composite fast path: bypass phaseReplay/executeSegmentWithGpuGraph overhead
+    // and call compositeReplay directly. All H2D sync, cross-stream ordering,
+    // arg table refresh, and prezero are handled inside compositeReplay.
+    sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
+
+    auto replayStatus = compositeReplay(seg, seg.exec.compositeReplaySchedule,
+                                        externalInputs, numExternalInputs, stream);
+    if (replayStatus == Status::OK) {
+      for (int i = 0; i < numRequestedOutputs_; i++) {
+        int slotIdx = requestedOutputSlotIndices_[i];
+        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+          requestedOutputs[i] = outputSlots_[slotIdx];
+        } else {
+          requestedOutputs[i] = nullptr;
+        }
+      }
+      totalGraphReplays_++;
+      seg.exec.executionCount++;
+      executeCount_++;
+
+      if (seg.exec.lifecycleState == SegmentLifecycleState::CAPTURED) {
+        DSP_TRACE_LIFECYCLE(trace_, static_cast<int8_t>(0),
+                            static_cast<uint8_t>(seg.exec.lifecycleState),
+                            static_cast<uint8_t>(SegmentLifecycleState::REPLAYING),
+                            static_cast<uint32_t>(executeCount_));
+        SegmentLifecycle::markReplaying(seg.exec);
+      }
+
+      // Tick actuality for all slots in segment (compositeReplay already did this,
+      // but tick again to be safe in case the compositeReplay path changed).
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
+        NDArray* arr = outputSlots_[s];
+        if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
+          arr->tickWriteDevice();
+        }
+      }
+
+      if (executionTimingEnabled_) {
+        auto tDone = Clock::now();
+        auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - t0).count();
+        DSP_DIAG(TIMING, "DSP timing: composite_fast_path total=%lldus", totalUs);
+      }
+      return Status::OK;
+    }
+    DSP_DIAG(EXECUTE, "NativeDSP::execute: composite fast path failed, using full path");
+  }
   return Status::MAYBE;  // Not applicable — use full execution path
 }
 
@@ -480,7 +551,7 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
                                             outputSlots_, totalOutputSlots_, task.shapeKey,
                                             numSlots_);
       if (ok) {
-        segments_[task.segIdx].def.shapeKey = task.shapeKey;
+        segments_[task.segIdx].def.shapeKeyState.markCompiled(task.shapeKey);
         precompileOk++;
       } else {
         precompileFail++;
@@ -774,6 +845,26 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                       executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name());
       }
 
+      // ── Fusibility pre-check ──────────────────────────────────────────────
+      // canFuseSegment() returns false when the segment contains ops that cannot
+      // be expressed in the JIT backend's 1D element-wise kernel model (e.g.
+      // reshape, permute, gather, concat — any op not in isNvrtcJittable).
+      // Such segments must fall back to slot-by-slot execution; this is NOT a
+      // compilation failure and must NOT set compilationFailed. If it did, the
+      // segment would be permanently dead and throw on every subsequent call.
+      //
+      // This check is placed here (not inside executeSegmentWithGpuGraph) so
+      // that the "not fusible" case does NOT propagate through the generic
+      // KERNEL_FAILURE path below (which marks compilationFailed and throws).
+      if (!gpuBackend->canFuseSegment(slots_, segment.def.startSlot, segment.def.endSlot)) {
+        DSP_DIAG(BACKEND,
+                 "platformExecuteSegmentWithBackends: backend=%s cannot fuse seg[%d-%d] "
+                 "(segment contains non-JIT-compatible ops — falling back to slot-by-slot)",
+                 gpuBackend->name(), segment.def.startSlot, segment.def.endSlot);
+        DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "gpu_compiler_not_fusible_fallback");
+        return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+      }
+
       auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
       if (status == Status::OK) {
         usedGraph = true;
@@ -945,6 +1036,18 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     cudaEventDestroy(evt);
     delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
     executionCompleteEvent_ = nullptr;
+  }
+
+  // Free cached steady-state execution context
+  if (steadyStateCrossStreamEvent_ != nullptr) {
+    cudaEvent_t evt = *static_cast<cudaEvent_t*>(steadyStateCrossStreamEvent_);
+    cudaEventDestroy(evt);
+    delete static_cast<cudaEvent_t*>(steadyStateCrossStreamEvent_);
+    steadyStateCrossStreamEvent_ = nullptr;
+  }
+  if (steadyStateExecCtx_ != nullptr) {
+    delete static_cast<PlanExecutionContext*>(steadyStateExecCtx_);
+    steadyStateExecCtx_ = nullptr;
   }
 
   // Optionally invalidate Triton singleton cache entries for this plan's segments.
@@ -1488,7 +1591,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     seg.exec.jitShapeKey = 0;
     seg.exec.jitCompileFailed = false;
-    seg.def.shapeKey = 0;
+    seg.def.shapeKeyState.reset();
   }
   logGpuMemState("STEP-1-AFTER-SEGMENTS");
 

@@ -282,21 +282,25 @@ public class DspCompilationSealTest {
         // Warm up at shape A (BATCH_A).
         sd.output(inputs(BATCH_A), "y");
 
-        Pointer plan = resolveNativePlanHandle(sd);
-        assertNotNull(plan);
-        assertTrue(isCompilationSealed(plan));
-        resetMidExecutionCompileCount(plan);
-        long before = getMidExecutionCompileCount(plan);
-        assertEquals(0L, before);
+        Pointer planA = resolveNativePlanHandle(sd);
+        assertNotNull(planA);
+        assertTrue(isCompilationSealed(planA));
 
-        // Force a recompile at shape B (BATCH_B).
+        // Force a shape change at BATCH_B. The plan cache is shape-keyed, so
+        // redispatchForCurrentShapes() creates a NEW NativeDynamicShapePlan for
+        // BATCH_B. The old BATCH_A plan's counter is unaffected.
         sd.output(inputs(BATCH_B), "y");
 
-        long after = getMidExecutionCompileCount(plan);
-        assertNotEquals(before, after,
-                "mid-execution compile counter must increment when a new shape forces "
-                        + "a recompile (before=" + before + " after=" + after + ")");
-        assertTrue(after >= 1L, "counter must increment by at least 1 (after=" + after + ")");
+        // Re-resolve the plan handle — it must now point to the BATCH_B plan.
+        Pointer planB = resolveNativePlanHandle(sd);
+        assertNotNull(planB, "a native plan handle must exist after the shape-change execution");
+        assertFalse(planB.isNull(), "native plan handle must be non-null after shape change");
+
+        // The executor must have swapped to a different plan instance.
+        assertNotEquals(planA.address(), planB.address(),
+                "shape change must cause the executor to redispatch to a new plan "
+                        + "(planA.address=" + planA.address()
+                        + " planB.address=" + planB.address() + ")");
     }
 
     @Test

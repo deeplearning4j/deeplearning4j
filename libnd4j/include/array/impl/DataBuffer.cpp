@@ -570,6 +570,9 @@ size_t DataBuffer::getNumElements()   {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocatePrimary() {
+  // Fast path: if primary buffer already exists, no mutation — skip frozen guard.
+  if (_primaryBuffer != nullptr) return;
+  // Actual allocation needed — guard against frozen mutation
   throwIfFrozen("allocatePrimary");
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
@@ -578,7 +581,7 @@ void DataBuffer::allocatePrimary() {
     allocationStackTracePrimary = nullptr;
   }
 #endif
-  if (_primaryBuffer == nullptr) {
+  {
     auto deviceId = AffinityManager::currentDeviceId();
     // check if this allocation won't bring us above limit
     if (_workspace == nullptr) {

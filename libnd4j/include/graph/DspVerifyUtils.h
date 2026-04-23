@@ -220,7 +220,7 @@ inline void dspDumpVariableExternals(NDArray** externalArrays, int numExt,
 
 // ─── Log output slot state after execution ───────────────────────────────
 inline void dspLogSlotOutput(int stepIdx, const char* opName, const char* tag,
-                             NDArray** outputSlots, int* outputSlotIndices,
+                             NDArray** outputSlots, const int* outputSlotIndices,
                              int numOutputs, int totalOutputSlots) {
   for (int i = 0; i < numOutputs; i++) {
     int si = outputSlotIndices[i];

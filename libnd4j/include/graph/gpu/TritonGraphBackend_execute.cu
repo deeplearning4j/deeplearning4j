@@ -299,7 +299,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   auto& execEnv = Environment::getInstance();
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, execDevice,
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice,
                       execEnv.tritonCompileAll(),
                       std::hash<std::string>()(execEnv.tritonExcludeOps())};
 
@@ -312,7 +312,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       for (const auto& entry : cache_) {
         if (entry.first.startSlot == seg.def.startSlot &&
             entry.first.endSlot == seg.def.endSlot &&
-            entry.first.shapeKey == seg.def.shapeKey) {
+            entry.first.shapeKey == seg.def.shapeKeyState.compiledShapeKey) {
           cachedDeviceId = entry.first.deviceId;
           break;
         }
@@ -321,11 +321,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: kernel cache miss for segment [%d-%d] "
                  "(shapeKey=%lld, activeDevice=%d, targetDeviceId=%d). "
                  "Found compiled kernel for deviceId=%d but cross-device module reuse is disallowed.",
-                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, execDevice, targetDevice, cachedDeviceId);
+                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice, targetDevice, cachedDeviceId);
       } else {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: no compiled kernel for segment [%d-%d] "
                  "(shapeKey=%lld, deviceId=%d)",
-                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, execDevice);
+                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice);
       }
       return Status::KERNEL_FAILURE;
     }
@@ -594,6 +594,60 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       // readSpecial()/writeSpecial() here is redundant and poisons frozen constant flags.
       DSP_DIAG(EXECUTE, "markOrderedRangeDeviceCurrent SKIPPED (orderedRangeExecutor handled actuality) [%d-%d]",
                nextSlotToRun, subKernel.startSlot_ - 1);
+
+      // ── Post-gap consolidated arg table re-copy ──
+      // Gap ops (reshape, permute, view ops) update outputSlots[] with new NDArray
+      // wrappers whose specialBuffer() may differ from the addresses baked into the
+      // consolidated arg table during Phase 2 (before any sub-kernels launched).
+      // Without this re-copy, subsequent Triton sub-kernels read from the stale GPU
+      // arg table and use capture-time buffer addresses instead of the fresh ones
+      // installed by the gap op. This causes the first post-capture direct execution
+      // to produce identical output to the capture — the "stale RESHAPE_MATMUL" bug.
+      if (consolidatedArgsCopied && useConsolidated &&
+          compiledSeg->consolidatedArgTableHostPinned &&
+          compiledSeg->consolidatedArgTableDevice &&
+          compiledSeg->consolidatedArgTableBytes > 0 &&
+          !streamCaptureActive) {
+        // Re-populate host-pinned arg table entries for ALL subsequent sub-kernels
+        // (gap may have changed slot pointers that are inputs to any of them).
+        for (size_t rki = i; rki < compiledSeg->subKernels.size(); rki++) {
+          auto& rsk = compiledSeg->subKernels[rki];
+          if (!rsk.useIndirectArgs || !rsk.cachedArgTableHostPinned) continue;
+          auto* hostPinned = static_cast<int64_t*>(rsk.cachedArgTableHostPinned);
+          int numArgs = static_cast<int>(rsk.argSlotMapping.size());
+          for (int ai = 0; ai < numArgs; ai++) {
+            auto& argMap = rsk.argSlotMapping[ai];
+            NDArray* arr = nullptr;
+            if (argMap.slotIndex < 0) {
+              int extIdx = -(argMap.slotIndex + 1);
+              if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
+            } else {
+              if (argMap.slotIndex < totalOutputSlots) arr = outputSlots[argMap.slotIndex];
+            }
+            if (arr) {
+              void* sbuf = arr->specialBuffer();
+              if (sbuf) hostPinned[ai] = reinterpret_cast<int64_t>(sbuf);
+            }
+          }
+        }
+        // Re-copy entire consolidated arg table to device
+        auto reErr = cudaMemcpyAsync(
+            compiledSeg->consolidatedArgTableDevice,
+            compiledSeg->consolidatedArgTableHostPinned,
+            compiledSeg->consolidatedArgTableBytes,
+            cudaMemcpyHostToDevice,
+            static_cast<cudaStream_t>(actualStream));
+        if (reErr != cudaSuccess) {
+          DSP_DIAG(MEMORY, "TritonGraphBackend: post-gap arg table re-copy FAILED: %s",
+                    cudaGetErrorString(reErr));
+          cudaGetLastError();
+        } else {
+          DSP_DIAG(EXECUTE, "POST_GAP_ARG_TABLE_RECOPY: re-copied %zu bytes after gap [%d-%d] for seg[%d-%d]",
+                   compiledSeg->consolidatedArgTableBytes,
+                   nextSlotToRun, subKernel.startSlot_ - 1,
+                   seg.def.startSlot, seg.def.endSlot);
+        }
+      }
 
       // ── Post-gap shape re-validation ──
       // After a gap executes view-producing ops (reshape_no_copy, permute, etc.),
@@ -1418,7 +1472,7 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   auto& gapEnv = sd::Environment::getInstance();
   bool compileAll = gapEnv.tritonCompileAll();
   size_t excludeOpsHash = std::hash<std::string>()(gapEnv.tritonExcludeOps());
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, activeDevice, compileAll, excludeOpsHash};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, activeDevice, compileAll, excludeOpsHash};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
   auto it = cache_.find(key);

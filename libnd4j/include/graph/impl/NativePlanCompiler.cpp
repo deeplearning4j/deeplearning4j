@@ -170,6 +170,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   auto* plan = new NativeDynamicShapePlan();
   plan->numSlots_ = numSteps;
   plan->totalOutputSlots_ = totalOutputSlots;
+  plan->dirtySlotGenerations_.resize(totalOutputSlots, 0);
   plan->numExternalInputs_ = static_cast<int>(externalInputKeys.size());
   plan->externalInputNames_ = externalInputKeys;
   plan->slots_ = new NativeSlot[numSteps];

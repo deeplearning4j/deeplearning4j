@@ -142,4 +142,21 @@ public class ImageTilerParallelTest extends BaseNd4jTestWithBackends {
         assertEquals(sequential.numRows, parallel.numRows);
         assertEquals(sequential.numCols, parallel.numCols);
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testParallelMatchesSequential_ContentRegions_RectangularImage(Nd4jBackend backend) {
+        BufferedImage img = createTestImage(800, 400);
+
+        ImageTiler.SplitImageResult sequential = ImageTiler.splitImageForVLM(img, 512);
+        ImageTiler.SplitImageResult parallel = ImageTiler.splitImageForVLMParallel(img, 512, 9, 4);
+
+        assertEquals(sequential.contentRegions.size(), parallel.contentRegions.size());
+        for (int i = 0; i < sequential.contentRegions.size(); i++) {
+            ImageTiler.ContentRegion seq = sequential.contentRegions.get(i);
+            ImageTiler.ContentRegion par = parallel.contentRegions.get(i);
+            assertEquals(seq.width, par.width, "content width mismatch at frame " + i);
+            assertEquals(seq.height, par.height, "content height mismatch at frame " + i);
+        }
+    }
 }

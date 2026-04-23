@@ -1094,7 +1094,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   int currentDevice = getCachedCudaDevice();
 
   auto& refreshEnv = Environment::getInstance();
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, currentDevice,
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
 
@@ -1105,7 +1105,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     if (it == cache_.end()) {
       DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
                 "(shapeKey=%lld, device=%d) → marking argTableStable (no arg tables to refresh)",
-                seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, currentDevice);
+                seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice);
       // No Triton sub-kernels = no arg tables to refresh. Mark stable so fast replay
       // path can be used (skip iterating over all external inputs for sync checks).
       seg.exec.argTableStable = true;
@@ -1261,7 +1261,7 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   auto& refreshEnv = Environment::getInstance();
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey, currentDevice,
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
 

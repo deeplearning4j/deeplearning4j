@@ -595,8 +595,51 @@ std::string PtxGraphBackend::generatePtx(
   int maxFloatRegs = std::max(8, ra.nextFloat + 1);
   int maxPredRegs = std::max(2, ra.nextPred + 1);
 
+  // PTX ISA version must be compatible with the target SM architecture.
+  // Mapping sourced from LLVM NVPTX getMinPTXVersionForSM() (2026).
+  // NOTE: Blackwell numbering is non-monotonic in PTX requirements:
+  //   sm_110 (11.0 family, Jetson Thor) needs PTX 9.0
+  //   sm_120/121 (12.x family, RTX 50xx) needs PTX 8.7/8.8
+  //   sm_100/103 (10.x family, B100/B200/B300) needs PTX 8.6/8.8
+  // So we use a switch on major version first, then minor.
+  const char* ptxVersion;
+  int smMajor = smVersion / 10;
+  int smMinor = smVersion % 10;
+  switch (smMajor) {
+    case 12:  // Blackwell consumer (RTX 50xx): sm_120->8.7, sm_121->8.8
+      ptxVersion = (smMinor >= 1) ? "8.8" : "8.7";
+      break;
+    case 11:  // Jetson Thor: sm_110->9.0
+      ptxVersion = "9.0";
+      break;
+    case 10:  // Blackwell datacenter (B100/B200/B300): sm_100/101->8.6, sm_103->8.8
+      ptxVersion = (smMinor >= 3) ? "8.8" : "8.6";
+      break;
+    case 9:   // Hopper: sm_90->7.8 (sm_90a needs 8.0 but we emit base sm_90)
+      ptxVersion = "7.8";
+      break;
+    case 8:   // Ampere/Ada: sm_80->7.0, sm_86->7.1, sm_87->7.4, sm_88->9.0, sm_89->7.8
+      if      (smMinor >= 9) ptxVersion = "7.8";
+      else if (smMinor == 8) ptxVersion = "9.0";  // sm_88 (future arch, per LLVM)
+      else if (smMinor >= 7) ptxVersion = "7.4";
+      else if (smMinor >= 6) ptxVersion = "7.1";
+      else                   ptxVersion = "7.0";
+      break;
+    case 7:   // Volta/Turing: sm_70->6.0, sm_72->6.1, sm_75->6.3
+      if      (smMinor >= 5) ptxVersion = "6.3";
+      else if (smMinor >= 2) ptxVersion = "6.1";
+      else                   ptxVersion = "6.0";
+      break;
+    case 6:   // Pascal: sm_60/61/62->5.0
+      ptxVersion = "5.0";
+      break;
+    default:  // Maxwell and older: sm_53->4.2, sm_50/52->4.1
+      ptxVersion = (smMinor >= 3) ? "4.2" : "4.1";
+      break;
+  }
+
   std::ostringstream ptx;
-  ptx << ".version 7.0\n";
+  ptx << ".version " << ptxVersion << "\n";
   ptx << ".target sm_" << smVersion << "\n";
   ptx << ".address_size 64\n\n";
 
@@ -731,7 +774,7 @@ Status PtxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                         NDArray** externalInputs, int numExternalInputs,
                                         NDArray** outputSlots, int totalOutputSlots,
                                         void* stream) {
-  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
+  JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
   return jitExecuteSegment(key, cache_, cacheMtx_, "PtxGraphBackend",
                            slots, externalInputs, numExternalInputs,
                            outputSlots, totalOutputSlots, stream);

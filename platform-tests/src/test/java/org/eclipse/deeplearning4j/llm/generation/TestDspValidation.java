@@ -28,6 +28,7 @@ import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
+import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
@@ -225,9 +226,15 @@ public class TestDspValidation {
 
         hiddenSize = visionEmbeddings.size(-1);
 
-        // Prepare prompt embeddings
-        String prompt = "<|im_start|>user\nConvert this page to docling.\n<|im_end|>\n<|im_start|>assistant\n";
-        int[] encoded = tokenizer.encode(prompt).getIds();
+        // Match the real SmolDocling benchmark prompt path: expand the image prompt
+        // so the merged embedding sequence actually contains the vision tokens.
+        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+        int imageSeqLenPerFrame = (int) visionEmbeddings.shape()[1] / splitResult.getTotalFrames();
+        String imagePrompt = ImagePromptBuilder.buildImagePromptString(
+                splitResult.numRows, splitResult.numCols, imageSeqLenPerFrame);
+        String chatPrompt = "<|im_start|>User:" + imagePrompt
+                + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+        int[] encoded = tokenizer.encode(chatPrompt, false).getIds();
         promptTokenIds = encoded;
 
         INDArray tokenIds = Nd4j.createFromArray(new int[][]{encoded}).castTo(DataType.INT64);
@@ -240,12 +247,19 @@ public class TestDspValidation {
         INDArray textEmbeddings = embedOutputs.values().iterator().next().dup();
         tokenIds.close();
 
-        // Find image token ID (typically 49190 for SmolDocling)
-        int imageTokenId = 49190;
-        inputsEmbeds = EmbeddingMerger.mergeEmbeddings(textEmbeddings, visionEmbeddings, encoded, imageTokenId);
+        long expectedImageSlots = visionEmbeddings.shape()[1];
+        long actualImageSlots = ImagePromptBuilder.countOccurrences(encoded, imageTokenId);
+        assertEquals(expectedImageSlots, actualImageSlots,
+                "Benchmark-style prompt must expose one <image> slot per vision token. "
+                        + "visionSeqLen=" + expectedImageSlots + " imageSlots=" + actualImageSlots);
 
-        log.info("Models loaded: decoder={} ops, embed={} ops, hiddenSize={}, promptTokens={}",
-                decoder.getOps().size(), embedTokens.getOps().size(), hiddenSize, promptTokenIds.length);
+        inputsEmbeds = EmbeddingMerger.mergeEmbeddings(textEmbeddings, visionEmbeddings, encoded, imageTokenId);
+        assertEquals(promptTokenIds.length, inputsEmbeds.size(1),
+                "Merged embedding sequence length must match prompt token length");
+
+        log.info("Models loaded: decoder={} ops, embed={} ops, hiddenSize={}, promptTokens={}, imageSlots={}",
+                decoder.getOps().size(), embedTokens.getOps().size(), hiddenSize,
+                promptTokenIds.length, actualImageSlots);
         modelsLoaded = true;
     }
 
@@ -262,6 +276,51 @@ public class TestDspValidation {
             allConfigs.add(BenchmarkConfig.create("TRITON_NO_GC")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(tokens));
+
+            allConfigs.add(BenchmarkConfig.create("BISECT_argTable")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .maxTokens(tokens));
+
+            allConfigs.add(BenchmarkConfig.create("BISECT_batchedGemm")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(tokens));
+
+            allConfigs.add(BenchmarkConfig.create("BISECT_tf32")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .cublasTf32(true).tritonTf32(true)
+                    .maxTokens(tokens));
+
+            allConfigs.add(BenchmarkConfig.create("BISECT_graphCapture_only")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
+                    .maxTokens(tokens));
+
+            allConfigs.add(BenchmarkConfig.create("BISECT_graphCapture_allSettings")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true).tritonTf32(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(tokens));
+
+            allConfigs.add(BenchmarkConfig.create("BISECT_noGC_allSettings")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true).tritonTf32(true)
+                    .dspBatchedGemm(true)
                     .maxTokens(tokens));
 
             allConfigs.add(BenchmarkConfig.optimal().maxTokens(tokens));
@@ -899,7 +958,7 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
         BenchmarkConfigApplier.apply(config);
@@ -916,17 +975,17 @@ public class TestDspValidation {
         List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
         BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
                 .ioConfig(ioConfig)
                 .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(2))
+                .maxNewTokens(getTokens(5))
                 .hiddenSize(hiddenSize)
-                .build();
+                .build());
 
-        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
         assertNotNull(result, "Decode result should exist");
 
         InferenceSession session = decoder.getOrCreateSession();
@@ -970,7 +1029,7 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
         BenchmarkConfigApplier.apply(config);
@@ -987,17 +1046,17 @@ public class TestDspValidation {
         List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
         BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
                 .ioConfig(ioConfig)
                 .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(2))
+                .maxNewTokens(getTokens(5))
                 .hiddenSize(hiddenSize)
-                .build();
+                .build());
 
-        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
         assertNotNull(result, "Decode result should exist");
 
         InferenceSession session = decoder.getOrCreateSession();
@@ -1047,7 +1106,7 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
         BenchmarkConfigApplier.apply(config);
@@ -1064,17 +1123,17 @@ public class TestDspValidation {
         List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
         BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
                 .ioConfig(ioConfig)
                 .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(2))
+                .maxNewTokens(getTokens(5))
                 .hiddenSize(hiddenSize)
-                .build();
+                .build());
 
-        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
         assertNotNull(result, "Decode result should exist");
 
         InferenceSession session = decoder.getOrCreateSession();
@@ -1132,7 +1191,7 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
         BenchmarkConfigApplier.apply(config);
@@ -1149,17 +1208,17 @@ public class TestDspValidation {
         List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
         BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
                 .ioConfig(ioConfig)
                 .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(2))
+                .maxNewTokens(getTokens(5))
                 .hiddenSize(hiddenSize)
-                .build();
+                .build());
 
-        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
         assertNotNull(result, "Decode result should exist");
 
         InferenceSession session = decoder.getOrCreateSession();
@@ -1191,7 +1250,7 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(2));
+        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
         BenchmarkConfigApplier.apply(config);
@@ -1208,17 +1267,17 @@ public class TestDspValidation {
         List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
         BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
                 .ioConfig(ioConfig)
                 .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(2))
+                .maxNewTokens(getTokens(5))
                 .hiddenSize(hiddenSize)
-                .build();
+                .build());
 
-        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
         assertNotNull(result, "Decode result should exist");
 
         InferenceSession session = decoder.getOrCreateSession();
@@ -1267,7 +1326,7 @@ public class TestDspValidation {
             decoder.compileNativeDynamicShapePlan(outputs, config.getExecutionMode(), true);
         }
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
@@ -1275,9 +1334,9 @@ public class TestDspValidation {
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(maxTokens)
                 .hiddenSize(hiddenSize)
-                .build();
+                .build());
 
-        return loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        return pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
     }
 
     // ─── Memory diagnostics ──────────────────────────────────────────────
@@ -1322,13 +1381,13 @@ public class TestDspValidation {
                 (totalMem - baselineFree) / (1024*1024));
 
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
                 .ioConfig(ioConfig).samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(steps).hiddenSize(hiddenSize)
-                .build();
+                .build());
 
-        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
         log.info("[DECODE] generated {} tokens: {}", result.getTokenIds().length,
                 result.getText().substring(0, Math.min(80, result.getText().length())));
 
@@ -1388,12 +1447,22 @@ public class TestDspValidation {
         var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int device = Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue();
 
-        // Model config for SmolDocling: 30 layers, 9 heads, headDim=64, FLOAT16 KV
+        // Model config for SmolDocling: 30 layers, headDim=64, FLOAT16 KV
+        // GQA: KV heads != query heads — detect dynamically
         final int numLayers = 30;
-        final int numHeads = 9;
         final int headDim = 64;
+        final long hiddenSizeVal = 576;
         final DataType kvType = DataType.HALF;
         final int seqLen = 10; // initial prompt length
+
+        // Detect actual KV head count from model graph (GQA: KV heads != query heads)
+        final int numHeads;
+        {
+            String firstKvInput = "past_key_values.0.key";
+            INDArray probe = ModelIOConfig.createEmptyKvCache(decoder, firstKvInput, 1, hiddenSizeVal);
+            numHeads = (int) probe.size(1);
+            probe.close();
+        }
 
         // Discover decoder I/O
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
@@ -1712,11 +1781,19 @@ public class TestDspValidation {
 
         // SmolDocling model constants
         final int numLayers = 30;
-        final int numHeads = 9;
         final int headDim = 64;
         final long hiddenSizeVal = 576;
         final DataType kvType = DataType.HALF;
         final int maxKvLen = 20;
+
+        // Detect actual KV head count from model graph (GQA: KV heads != query heads)
+        final int numHeads;
+        {
+            String firstKvInput = "past_key_values.0.key";
+            INDArray probe = ModelIOConfig.createEmptyKvCache(decoder, firstKvInput, 1, hiddenSizeVal);
+            numHeads = (int) probe.size(1);
+            probe.close();
+        }
 
         // ── Setup: reset decoder, enable DSP, compile ──
         BenchmarkConfigApplier.resetModelState(decoder);
@@ -1816,9 +1893,12 @@ public class TestDspValidation {
             newPos.close();
         });
 
-        // ── VARIANT D: New attention_mask each step (growing by 1 element) ──
+        // ── VARIANT D: New attention_mask + KV caches each step (growing by 1 element) ──
+        // The model derives the causal mask from KV cache seqLen, so attention mask and
+        // KV cache dimensions must grow together to avoid shape mismatches in the add op.
         runVariant("D_GROWING_ATTN_MASK", nativeOps, device, 5, step -> {
-            int maskLen = maxKvLen + 1 + step; // grows each step
+            int kvSeqLen = maxKvLen + step;     // KV cache grows each step
+            int maskLen = kvSeqLen + 1;          // mask = kvSeqLen + 1 (current token)
             INDArray newMask = Nd4j.zeros(DataType.LONG, 1, maskLen);
             newMask.putScalar(0, 0, 1);
             newMask.putScalar(0, maskLen - 1, 1);
@@ -1827,9 +1907,27 @@ public class TestDspValidation {
             for (String name : decoderInputNames) {
                 if (name.contains("attention_mask")) { variantMap.put(name, newMask); break; }
             }
+            // Replace KV caches with matching seqLen dimension
+            for (int i = 0; i < numLayers; i++) {
+                String keyName = "past_key_values." + i + ".key";
+                String valName = "past_key_values." + i + ".value";
+                if (decoderInputNames.contains(keyName))
+                    variantMap.put(keyName, Nd4j.zeros(kvType, 1, numHeads, kvSeqLen, headDim));
+                if (decoderInputNames.contains(valName))
+                    variantMap.put(valName, Nd4j.zeros(kvType, 1, numHeads, kvSeqLen, headDim));
+            }
             Map<String, INDArray> out = decoder.output(variantMap, fullOutputArray);
             for (INDArray arr : out.values()) {
                 if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+            }
+            // Close the per-step KV arrays
+            for (int i = 0; i < numLayers; i++) {
+                String keyName = "past_key_values." + i + ".key";
+                String valName = "past_key_values." + i + ".value";
+                INDArray k = variantMap.get(keyName);
+                if (k != null && k != staticKvBuffers.get(keyName) && k.closeable() && !k.wasClosed()) k.close();
+                INDArray v = variantMap.get(valName);
+                if (v != null && v != staticKvBuffers.get(valName) && v.closeable() && !v.wasClosed()) v.close();
             }
             newMask.close();
         });
@@ -1914,11 +2012,11 @@ public class TestDspValidation {
                 new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        StaticKvCacheDecodeLoop paddedLoop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline paddedPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
                 .ioConfig(ioConfig).samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                .build();
+                .build());
 
         // Establish clean baseline
         Nd4j.getExecutioner().commit();
@@ -1928,7 +2026,7 @@ public class TestDspValidation {
                 mb(paddedBeforeFree));
 
         // Run first decode (padded mode)
-        GenerationResult paddedResult1 = paddedLoop.decode(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult paddedResult1 = paddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
         Nd4j.getExecutioner().commit();
         nativeOps.trimMemoryPool(device);
         long paddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
@@ -1963,14 +2061,14 @@ public class TestDspValidation {
         decoder.compileNativeDynamicShapePlan(
                 new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
-        StaticKvCacheDecodeLoop paddedLoop2 = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline paddedPipeline2 = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
                 .ioConfig(ioConfig).samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                .build();
+                .build());
 
         long paddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-        GenerationResult paddedResult2 = paddedLoop2.decode(altPrefillEmbeds, altTokenIds);
+        GenerationResult paddedResult2 = paddedPipeline2.generate(altPrefillEmbeds, altTokenIds);
         Nd4j.getExecutioner().commit();
         nativeOps.trimMemoryPool(device);
         long paddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
@@ -2003,11 +2101,11 @@ public class TestDspValidation {
                     new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
             ModelIOConfig nonPaddedIoConfig = ModelIOConfig.discover(decoder);
-            StaticKvCacheDecodeLoop nonPaddedLoop = StaticKvCacheDecodeLoop.builder()
+            GenerationPipeline nonPaddedPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                     .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
                     .ioConfig(nonPaddedIoConfig).samplingConfig(SamplingConfig.greedy())
                     .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                    .build();
+                    .build());
 
             Nd4j.getExecutioner().commit();
             nativeOps.trimMemoryPool(device);
@@ -2016,7 +2114,7 @@ public class TestDspValidation {
                     mb(nonPaddedBeforeFree));
 
             // First decode — non-padded (shapes change each step)
-            GenerationResult nonPaddedResult1 = nonPaddedLoop.decode(inputsEmbeds.dup(), promptTokenIds);
+            GenerationResult nonPaddedResult1 = nonPaddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
             Nd4j.getExecutioner().commit();
             nativeOps.trimMemoryPool(device);
             long nonPaddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
@@ -2033,14 +2131,14 @@ public class TestDspValidation {
             decoder.compileNativeDynamicShapePlan(
                     new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
-            StaticKvCacheDecodeLoop nonPaddedLoop2 = StaticKvCacheDecodeLoop.builder()
+            GenerationPipeline nonPaddedPipeline2 = GenerationPipeline.create(GenerationPipelineConfig.builder()
                     .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
                     .ioConfig(nonPaddedIoConfig).samplingConfig(SamplingConfig.greedy())
                     .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                    .build();
+                    .build());
 
             long nonPaddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-            GenerationResult nonPaddedResult2 = nonPaddedLoop2.decode(altPrefillEmbeds.dup(), altTokenIds);
+            GenerationResult nonPaddedResult2 = nonPaddedPipeline2.generate(altPrefillEmbeds.dup(), altTokenIds);
             Nd4j.getExecutioner().commit();
             nativeOps.trimMemoryPool(device);
             long nonPaddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();

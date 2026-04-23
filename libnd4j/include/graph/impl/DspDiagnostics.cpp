@@ -45,7 +45,7 @@ static const char* const sCategoryNames[DSP_DIAG_NUM_CATEGORIES] = {
     "FUSION",  "VERIFY",   "KV_CACHE", "FALLBACK",
     "TRANSFER", "EMULATED_REPLAY",
     "STREAM_SYNC", "MULTI_DEVICE", "GRAPH_REPLAY",
-    "SEGMENT_BUCKETS"
+    "SEGMENT_BUCKETS", "LIFECYCLE"
 };
 
 // ─── Singleton ───────────────────────────────────────────────────────────────

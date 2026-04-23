@@ -102,6 +102,29 @@ public class ImageTilerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSplitRectangularImageUsesAspectPreservingPadding(Nd4jBackend backend) {
+        BufferedImage rectangular = new BufferedImage(800, 400, BufferedImage.TYPE_INT_RGB);
+        ImageTiler.SplitImageResult result = ImageTiler.splitImageForVLM(rectangular, 512);
+
+        assertEquals(1, result.numRows);
+        assertEquals(2, result.numCols);
+        assertEquals(3, result.getTotalFrames());
+
+        for (BufferedImage frame : result.frames) {
+            assertEquals(512, frame.getWidth());
+            assertEquals(512, frame.getHeight());
+        }
+
+        assertEquals(400, result.contentRegions.get(0).width);
+        assertEquals(400, result.contentRegions.get(0).height);
+        assertEquals(400, result.contentRegions.get(1).width);
+        assertEquals(400, result.contentRegions.get(1).height);
+        assertEquals(512, result.contentRegions.get(2).width);
+        assertEquals(256, result.contentRegions.get(2).height);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResizeLongestEdge(Nd4jBackend backend) {
         BufferedImage image = new BufferedImage(800, 400, BufferedImage.TYPE_INT_RGB);
         BufferedImage resized = ImageTiler.resizeLongestEdge(image, 200);
@@ -126,14 +149,14 @@ public class ImageTilerTest extends BaseNd4jTestWithBackends {
     public void testCreatePixelAttentionMask(Nd4jBackend backend) {
         // Full content → all ones
         INDArray fullMask = ImageTiler.createPixelAttentionMask(512, 512, 512);
-        assertArrayEquals(new long[]{1, 1, 512, 512}, fullMask.shape());
+        assertArrayEquals(new long[]{1, 512, 512}, fullMask.shape());
         assertEquals(DataType.BOOL, fullMask.dataType());
         // Cast BOOL to INT32 for sum (BOOL doesn't support sum directly)
         assertEquals(512L * 512L, fullMask.castTo(DataType.INT32).sumNumber().longValue());
 
         // Partial content → ones in content area, zeros in padding
         INDArray partialMask = ImageTiler.createPixelAttentionMask(300, 200, 512);
-        assertArrayEquals(new long[]{1, 1, 512, 512}, partialMask.shape());
+        assertArrayEquals(new long[]{1, 512, 512}, partialMask.shape());
 
         // Content area (200 rows x 300 cols) should be 1
         long onesCount = partialMask.castTo(DataType.INT32).sumNumber().longValue();

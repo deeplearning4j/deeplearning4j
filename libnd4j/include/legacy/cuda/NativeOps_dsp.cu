@@ -365,7 +365,8 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                sd::Pointer outputNames,
                                sd::LongType numOutputs,
                                sd::Pointer phShapeInfoPtrs,
-                               sd::LongType numPlaceholders) {
+                               sd::LongType numPlaceholders,
+                               int graphExecutionMode) {
   try {
     if (!cacheHandle) throw std::runtime_error("dispatchNativePlan: cacheHandle is null");
 
@@ -393,10 +394,15 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     auto** ptrs = reinterpret_cast<sd::LongType**>(phShapeInfoPtrs);
     key.phShapeContentHash = sd::graph::NativePlanCache::hashShapeInfoContents(ptrs, numPlaceholders);
     key.phCount = numPlaceholders;
+    key.graphExecutionMode = graphExecutionMode;
 
     // Factory: deserialize and build the plan on cold miss.
+    // Mode is passed to fromSerializedPlan so it's set BEFORE buildSegments() —
+    // segments are born with the correct selectedBackend (one flow, no reclassification).
     auto factory = [&]() -> sd::graph::NativeDynamicShapePlan* {
-      return NativeDynamicShapePlan::fromSerializedPlan(planBytes, planBytesLen);
+      return NativeDynamicShapePlan::fromSerializedPlan(
+          planBytes, planBytesLen,
+          static_cast<sd::graph::GraphExecutionMode>(graphExecutionMode));
     };
 
     auto* plan = cache->getOrInsert(key, factory);
@@ -1816,7 +1822,8 @@ const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
         json += ",\"isCapturable\":" + std::string(seg.def.isCapturable ? "true" : "false");
         json += ",\"compilationFailed\":" + std::string(seg.exec.compilationFailed ? "true" : "false");
         json += ",\"hasReplayHandle\":" + std::string(seg.exec.replayHandle ? "true" : "false");
-        json += ",\"shapeKey\":" + std::to_string(seg.def.shapeKey);
+        json += ",\"shapeKey\":" + std::to_string(seg.def.shapeKeyState.compiledShapeKey);
+        json += ",\"shapeKeyStatus\":\"" + std::string(seg.def.shapeKeyState.statusName()) + "\"";
         // Op histogram
         json += ",\"ops\":{";
         bool first = true;
@@ -1938,3 +1945,45 @@ sd::LongType getPlanKvCachePosition(sd::Pointer planHandle) {
     if (planHandle == nullptr) return -1LL;
     return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getKvCachePosition();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FrozenPlan Hierarchy API (Step 6)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+int executeFrozenPlan(sd::Pointer planHandle, OpaqueContext* opContext, sd::Pointer stream) {
+    // Step 1 compatibility: delegates to existing executeDynamicShapePlan
+    return executeDynamicShapePlan(planHandle, opContext, stream);
+}
+
+int isFrozenPlanSealed(sd::Pointer planHandle) {
+    if (planHandle == nullptr) return -1;
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    return plan->getPlanPhaseCode() >= 3 ? 1 : 0;
+}
+
+int getFrozenPlanBuildPassCount(sd::Pointer planHandle) {
+    if (planHandle == nullptr) return -1;
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    int phase = plan->getPlanPhaseCode();
+    if (phase >= 3) return 2;  // REPLAYING = sealed
+    return phase;
+}
+
+int getSegmentExecutorPhase(sd::Pointer planHandle, int segIdx) {
+    if (planHandle == nullptr) return -1;
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    const auto& segments = plan->getSegments();
+    if (segIdx < 0 || segIdx >= static_cast<int>(segments.size())) return -1;
+
+    int phaseCode = segments[segIdx].exec.getExecutionPhaseCode();
+    switch (phaseCode) {
+        case 0: return 0;  // WARMUP → BUILDING
+        case 1: return 0;  // COMPILING → BUILDING
+        case 2: return 0;  // COMPILED → BUILDING
+        case 3: return 1;  // REPLAYING → SEALED
+        case 4: return 2;  // SLOT_BY_SLOT (failed) → FAILED
+        default: return -1;
+    }
+}
+
+// FrozenPlan API v1 - cache invalidation marker

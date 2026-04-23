@@ -549,7 +549,7 @@ Status OneDnnGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
   CompiledSegment* compiled = nullptr;
   {

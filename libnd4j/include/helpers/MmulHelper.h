@@ -25,6 +25,7 @@
 #ifndef LIBND4J_MMULHELPER_H
 #define LIBND4J_MMULHELPER_H
 #include "array/NDArray.h"
+#include <utility>
 
 namespace sd {
 
@@ -190,6 +191,25 @@ class SD_LIB_EXPORT MmulHelper {
    * reused in the same order as the non-capture warmup execution.
    */
   static void resetCastCacheIndices();
+
+  /**
+   * Reset the mixed-precision cast cache indices to the given high-water-mark
+   * values instead of 0.  Used during composite replay when a merged CUDA
+   * graph already "owns" cast-cache slots [0, hwmA) / [0, hwmB): unmerged
+   * gap matmuls must start from the high-water mark so they don't alias the
+   * baked-in device pointers inside the merged graph.
+   *
+   * @param hwmA  First A-cache index not owned by any merged graph
+   * @param hwmB  First B-cache index not owned by any merged graph
+   */
+  static void resetCastCacheIndicesTo(size_t hwmA, size_t hwmB);
+
+  /**
+   * Return the current cast-cache indices (A and B) as a pair.
+   * Called after merged-capture completes to record the high-water mark:
+   * the merged graph owns cache slots [0, idxA) and [0, idxB).
+   */
+  static std::pair<size_t, size_t> getCastCacheHighWaterMark();
 
   /**
    * Clear the entire cast cache (delete buffers and reset indices).

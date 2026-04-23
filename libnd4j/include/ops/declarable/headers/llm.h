@@ -1169,6 +1169,46 @@ DECLARE_CUSTOM_OP(checkpoint_prefetch_h2d, 1, 1, false, 0, 1);
 DECLARE_CUSTOM_OP(kl_divergence_per_layer, 2, 1, false, 1, 0);
 #endif
 
+/**
+ * autoregressive_decode - Full autoregressive decode loop in C++
+ *
+ * Runs the complete autoregressive decode loop natively, eliminating
+ * per-step Java↔C++ round-trips. Given a compiled NativeDynamicShapePlan,
+ * prefill embeddings, embedding table, and configuration, executes:
+ *   plan.execute → kv_scatter → token_sample → embed lookup → advance → repeat
+ *
+ * The plan must be compiled and frozen before calling this op. The op does
+ * NOT compile plans — it only executes them.
+ *
+ * Input:
+ *   0: prefillEmbeddings [1, seqLen, hidden] — merged embeddings for step 0
+ *   1: embeddingTable [vocabSize, hidden] — for token→embedding lookup between steps
+ *   2: inputIds [1, seqLen] INT64 — prompt token IDs for step 0
+ *   3: attentionMask [1, 1, seqLen, maxKvLen] FLOAT — initial attention mask
+ *   4: positionIds [1, seqLen] INT64 — initial position IDs
+ *   5..5+2N-1: staticKvBuffers — N key + N value static KV cache tensors
+ *
+ * Integer arguments:
+ *   0: maxNewTokens — maximum decode steps
+ *   1: eosTokenId — end-of-sequence token
+ *   2: numKvPairs — number of KV layer pairs (N)
+ *   3: prefillSeqLen — length of the prefill sequence
+ *   4...: additional stop token IDs (variable length)
+ *
+ * Float arguments:
+ *   0: temperature (0.0 = greedy/argmax)
+ *   1: topP nucleus threshold (0.0 = disabled)
+ *   2: topK as float (cast to int internally, 0 = disabled)
+ *
+ * Output:
+ *   0: generatedTokenIds [maxNewTokens] INT64 — produced token sequence
+ *   1: tokenCount [1] INT64 scalar — actual number of tokens generated
+ *   2: timingInfo [5] FLOAT — prefillMs, avgDecodeMs, tokPerSec, p50Ms, p99Ms
+ */
+#if NOT_EXCLUDED(OP_autoregressive_decode)
+DECLARE_CUSTOM_OP(autoregressive_decode, 3, 3, false, 3, 5);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

@@ -173,6 +173,14 @@ bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, NativeSlot* slo
   return dsp::segmentHasInternalValueShapeInputs(seg, slots);
 }
 
+bool isSmallIntegralControlArray(NDArray* arr) {
+  if (arr == nullptr) return false;
+  const auto dt = arr->dataType();
+  if (dt != INT32 && dt != INT64 && dt != BOOL) return false;
+  const auto len = arr->lengthOf();
+  return len > 0 && len <= 32;
+}
+
 bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* slots) {
   if (!segmentBlocksPlanPhase(seg)) return true;
   const bool needsReplayInvariantTracking = segmentHasInternalValueShapeInputs(seg, slots);
@@ -295,8 +303,12 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
       hasControlFlow_(false), loopRegions_(nullptr), numLoopRegions_(0),
       slotIsDead_(nullptr), slotIsDeadSize_(0),
-      slotOwnership_(nullptr) {
-  trace_ = new DspExecutionTrace();
+      slotOwnership_(nullptr),
+      dirtySlotGenerations_(),
+      currentDirtyGeneration_(1) {
+  trace_ = DspDiagnostics::getInstance().isEnabled(DSP_DIAG_ALL)
+             ? new DspExecutionTrace()
+             : nullptr;
 }
 
 void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const char* tag) {
@@ -307,13 +319,19 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   NDArray* old = outputSlots_[slotIdx];
 
   // DIAGNOSTIC: trace writes to the configured trace slot (ND4J_DSP_TRACE_SLOT)
-  if (DSP_DIAG_ENABLED(MEMORY) && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
+  // across all phases, not just frozen execution. The warmup path is where
+  // shared-session vision failures currently manifest, so restricting this to
+  // frozen phases hides the relevant slot lineage.
+  if (DSP_DIAG_ENABLED(MEMORY)) {
     int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
     if (ts >= 0 && slotIdx == ts) {
       auto* oldDb = old != nullptr ? old->dataBuffer() : nullptr;
       auto* newDb = value != nullptr ? value->dataBuffer() : nullptr;
-      DSP_DIAG(MEMORY, "WOS_%d: tag=%s old=%p new=%p oldDb=%p newDb=%p exec=%d phase=%d",
+      DSP_DIAG(MEMORY,
+               "WOS_%d: tag=%s old=%p new=%p oldDb=%p newDb=%p oldShape=%s newShape=%s exec=%d phase=%d",
                slotIdx, tag, (void*)old, (void*)value, (void*)oldDb, (void*)newDb,
+               old != nullptr ? ShapeUtils::shapeAsString(old).c_str() : "null",
+               value != nullptr ? ShapeUtils::shapeAsString(value).c_str() : "null",
                executeCount_, (int)planPhase_);
     }
   }
@@ -515,10 +533,12 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
 
 void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
   if (graphExecutionMode_ == mode) return;  // idempotent: no-op if unchanged
+  // Mode is set once at plan creation (part of cache key). Phase guard ensures
+  // this is never called after the plan has advanced — one flow, no reclassification.
   DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setGraphExecutionMode");
   DSP_DIAG(EXECUTE, "setGraphExecutionMode: %d -> %d", static_cast<int>(graphExecutionMode_), static_cast<int>(mode));
   graphExecutionMode_ = mode;
-  // Reset cached backends so mode changes take effect immediately.
+  // Reset cached backends so buildSegments() uses the correct mode.
   gpuGraphBackendChecked_ = false;
   gpuGraphBackend_ = nullptr;
   cpuGraphBackendChecked_ = false;
@@ -526,8 +546,6 @@ void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
   cpuGraphBackendChainBuilt_ = false;
   cpuGraphBackendChain_.clear();
   // Enable GPU graph capture for all modes except SLOT_BY_SLOT.
-  // JIT backends (Triton/NVRTC/PTX) use graph capture when they
-  // can't handle a segment (unsupported ops, etc).
   if (mode != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
     gpuGraphCaptureEnabled_ = true;
   }
@@ -744,7 +762,7 @@ class BinaryReader {
 };
 
 NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
-    const void* data, LongType size) {
+    const void* data, LongType size, GraphExecutionMode mode) {
   // Ensure op traits are populated before the fusion pass runs.
   // Without this, the fusion pass sees no OP_TRAIT_REDUCTION/NORMALIZATION traits
   // on the first deserialization (before NativePlanCompiler::compile is called),
@@ -769,6 +787,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   auto* plan = new NativeDynamicShapePlan();
   plan->numSlots_ = reader.read<int32_t>();
   plan->totalOutputSlots_ = reader.read<int32_t>();
+  plan->dirtySlotGenerations_.resize(plan->totalOutputSlots_, 0);
   plan->numExternalInputs_ = reader.read<int32_t>();
   plan->numRequestedOutputs_ = reader.read<int32_t>();
 
@@ -1278,7 +1297,13 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     }
   }
 
-  // Build graph segments for GPU graph capture
+  // Set mode BEFORE buildSegments() so segments get the correct selectedBackend.
+  // buildSegments() calls resolveBackendForSegment() which reads graphExecutionMode_.
+  if (mode != GraphExecutionMode::GEM_AUTO) {
+    plan->setGraphExecutionMode(mode);
+  }
+
+  // Build graph segments for GPU graph capture.
   plan->buildSegments();
 
   // Detect and apply fusion candidates
@@ -1378,6 +1403,15 @@ Status NativeDynamicShapePlan::execute(
               numRequestedOutputs_, numRequestedOutputs);
     return Status::BAD_ARGUMENTS;
   }
+
+  // Clear dirty bitmap.
+  std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
+
+  // Store reference to current external inputs (valid only during this execute() call).
+  // NOTE: This pointer is only valid while this function is on the stack. Do NOT use
+  // it after execute() returns — the caller's vector is destroyed on return.
+  lastExternalInputs_ = externalInputs;
+  lastNumExternalInputs_ = numExternalInputs;
 
   // ── PlanExecutionContext: consolidates all per-execute() state ─────────
   // Created by platformBeginExecution (CUDA: stream guard + cross-stream sync,
@@ -1498,6 +1532,14 @@ Status NativeDynamicShapePlan::execute(
   auto fastPathResult = platformTryFrozenFastPath(
       externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream);
   if (fastPathResult != Status::MAYBE) {
+    if (fastPathResult == Status::OK && shapesFrozen_ && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
+      // Keep phase accounting in sync with the normal execute() path. Without this,
+      // a successful frozen fast-path return can bypass frozenExecutionCount_ and
+      // advancePlanPhase(), leaving the plan stuck at SHAPES_FROZEN even while
+      // replay is already stable.
+      frozenExecutionCount_++;
+      advancePlanPhase();
+    }
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
     platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
@@ -1514,6 +1556,19 @@ Status NativeDynamicShapePlan::execute(
   // the non-merged case where each segment's slots have stable buffers) incorrectly
   // rejects these buffer replacements as "stale ownership".
   if (planPhase_ >= PlanPhase::SHAPES_FROZEN && executeCount_ > 0) {
+    // Refresh stale view wrappers BEFORE lifecycle validation.
+    // View-producer slots (squeeze, reshape, expand_dims, permute) share their
+    // input's DataBuffer. When the input array is replaced between calls (e.g.,
+    // a new placeholder), the view wrapper becomes stale — its DataBuffer pointer
+    // no longer matches slotOwnership_[].dataBuffer. Refreshing here ensures the
+    // lifecycle validator sees consistent ownership for view slots.
+    if (shapesFrozen_ && slotIsViewProducer_ != nullptr) {
+      for (int segIdx = 0; segIdx < (int)segments_.size(); segIdx++) {
+        auto& seg = segments_[segIdx];
+        refreshStaleViewWrappersInSegment(seg, externalInputs, numExternalInputs);
+      }
+    }
+
     char errMsg[512] = {};
     bool lifecycleOk = validateLifecycleForPhase(
         static_cast<int>(planPhase_),
@@ -1836,12 +1891,12 @@ Status NativeDynamicShapePlan::execute(
   // not strictly greater than the pre-increment value indicates corruption —
   // either a race (two threads executing the same plan), an integer overflow,
   // or a bug that resets the count mid-execution without going through the
-  // intentional reset paths (setShapesFrozen(false), phaseFreeze).
+  // intentional reset path (releaseGpuIntermediates teardown path).
   //
-  // NOTE: intentional resets (executeCount_ = 0) happen in setShapesFrozen()
-  // and phaseFreeze() BEFORE execute() is called, so this assertion NEVER
-  // fires at those sites. It only fires if the count goes backward DURING
-  // a call to execute(), which is always a bug.
+  // NOTE: intentional resets (executeCount_ = 0) happen in
+  // releaseGpuIntermediates() (teardown) BEFORE execute() is called, so this
+  // assertion NEVER fires at that site. It only fires if the count goes backward
+  // DURING a call to execute(), which is always a bug.
   if (shapesFrozen_) {
     int prevCount = executeCount_;
     executeCount_++;
@@ -1881,36 +1936,125 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-  // ── Plan-level phase advancement ───────────────────────────────────────────
-  // Phase transitions are automatic based on observed stability.
-  // Snapshot capture and frozenExecutionCount_ increment happen here (need
-  // external inputs), then advancePlanPhase() handles the transitions.
-  if (shapesFrozen_ && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
-    frozenExecutionCount_++;
+  auto captureFrozenSnapshotIfReady = [&]() {
+    if (!shapesFrozen_ || planPhase_ < PlanPhase::POINTERS_STABLE) return;
+    if (frozenSnapshot_.valid) return;
 
-    // Capture a buffer pointer snapshot after the first frozen execution.
-    if (frozenExecutionCount_ == 1 && !frozenSnapshot_.valid) {
-      frozenSnapshot_.capture(outputSlots_, totalOutputSlots_,
-                               lifecycleExternalInputPtrs, numExternalInputs);
-      // Null out snapshot entries for transient VIEW_OF_WEIGHT slots whose
-      // underlying DataBuffer is a placeholder (not in protectedWeightBuffers_).
-      // These views are refreshed each call by slot-exec, so the captured
-      // pointers/identity are not authoritative and must be skipped in validate().
-      frozenSnapshot_.pruneTransientViewSlots(slotOwnership_, protectedWeightBuffers_);
+    frozenSnapshot_.capture(outputSlots_, totalOutputSlots_,
+                             lifecycleExternalInputPtrs, numExternalInputs);
+    // Null out snapshot entries for transient VIEW_OF_WEIGHT slots whose
+    // underlying DataBuffer is a placeholder (not in protectedWeightBuffers_).
+    // These views are refreshed each call by slot-exec, so the captured
+    // pointers/identity are not authoritative and must be skipped in validate().
+    frozenSnapshot_.pruneTransientViewSlots(slotOwnership_, protectedWeightBuffers_);
 
-      DSP_DIAG(EXECUTE, "LIFECYCLE: captured buffer pointer snapshot (%d slots, %d extInputs)",
-               totalOutputSlots_, numExternalInputs);
-      {
-        int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
-        if (ts >= 0 && ts < totalOutputSlots_ && outputSlots_[ts] != nullptr) {
-          DSP_DIAG(MEMORY, "SNAPSHOT_SLOT_%d: arr=%p db=%p special=%p len=%lld",
-                   ts, (void*)outputSlots_[ts], (void*)outputSlots_[ts]->dataBuffer(),
-                   (void*)outputSlots_[ts]->specialBuffer(),
-                   (long long)outputSlots_[ts]->lengthOf());
+    // Dynamic output slots are intentionally mutable during frozen execution:
+    // their buffers may be replaced by plan-internal control/value-shape
+    // updates, and they are excluded from addFrozenRef()/frozen fast-path
+    // assumptions. Skip them in the frozen snapshot so lifecycle validation
+    // continues to enforce pointer stability only for replay-stable outputs.
+    if (frozenSnapshot_.slotDataBuffers != nullptr && outputSlots_ != nullptr) {
+      std::vector<bool> dynOutputSlot(totalOutputSlots_, false);
+      for (int s = 0; s < numSlots_; s++) {
+        if (!slots_[s].flags.isDynamicShape) continue;
+        for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+          const int oi = slots_[s].wiring.outputSlotIndices[o];
+          if (oi >= 0 && oi < totalOutputSlots_) {
+            dynOutputSlot[oi] = true;
+          }
         }
+      }
+
+      // Fused elementwise chains install the LAST chain slot's output buffer
+      // into every chain-member output slot (see fused-chain-member writes in
+      // slotexec). Those member output slots are logical aliases, not stable
+      // storage. Snapshotting them as independent frozen outputs creates false
+      // positives when warmup/unfused aliases are replaced by the fused chain's
+      // shared output buffer on later executions. Keep lifecycle validation on
+      // the canonical tail output slot and prune the member aliases.
+      std::vector<bool> fusedChainAliasOutputSlot(totalOutputSlots_, false);
+      for (int s = 0; s < numSlots_; s++) {
+        const auto& slot = slots_[s];
+        if (slot.fusedChain.fusedChainLength <= 1) continue;
+
+        const int lastChainIdx = slot.fusedChain.fusedChainLength - 1;
+        const int lastSlotIdx = slot.fusedChain.fusedChainSlots[lastChainIdx];
+        if (lastSlotIdx < 0 || lastSlotIdx >= numSlots_) continue;
+        const int lastOutputSlotIdx = slots_[lastSlotIdx].wiring.numOutputs > 0
+                                          ? slots_[lastSlotIdx].wiring.outputSlotIndices[0]
+                                          : -1;
+
+        for (int ci = 0; ci < lastChainIdx; ci++) {
+          const int memberSlotIdx = slot.fusedChain.fusedChainSlots[ci];
+          if (memberSlotIdx < 0 || memberSlotIdx >= numSlots_) continue;
+          if (slots_[memberSlotIdx].wiring.numOutputs <= 0) continue;
+          const int oi = slots_[memberSlotIdx].wiring.outputSlotIndices[0];
+          if (oi >= 0 && oi < totalOutputSlots_ && oi != lastOutputSlotIdx) {
+            fusedChainAliasOutputSlot[oi] = true;
+          }
+        }
+      }
+
+      auto clearSnapshotSlot = [&](int i) {
+        if (frozenSnapshot_.slotGpuAddresses != nullptr) frozenSnapshot_.slotGpuAddresses[i] = nullptr;
+        frozenSnapshot_.slotDataBuffers[i] = nullptr;
+        if (frozenSnapshot_.slotDeviceIds != nullptr) frozenSnapshot_.slotDeviceIds[i] = -1;
+        if (frozenSnapshot_.slotPrimaryAddresses != nullptr) frozenSnapshot_.slotPrimaryAddresses[i] = nullptr;
+        if (frozenSnapshot_.slotShapeInfoAddresses != nullptr) frozenSnapshot_.slotShapeInfoAddresses[i] = nullptr;
+        if (frozenSnapshot_.slotNDArrayIdentity != nullptr) frozenSnapshot_.slotNDArrayIdentity[i] = nullptr;
+        if (frozenSnapshot_.slotBufferOffsets != nullptr) frozenSnapshot_.slotBufferOffsets[i] = 0;
+        if (frozenSnapshot_.slotLengths != nullptr) frozenSnapshot_.slotLengths[i] = 0;
+        if (frozenSnapshot_.slotActualityFlags != nullptr) frozenSnapshot_.slotActualityFlags[i] = 0;
+        if (frozenSnapshot_.slotOrderings != nullptr) frozenSnapshot_.slotOrderings[i] = 0;
+      };
+
+      int prunedDynamicSlots = 0;
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (!dynOutputSlot[i] || frozenSnapshot_.slotDataBuffers[i] == nullptr) continue;
+        clearSnapshotSlot(i);
+        prunedDynamicSlots++;
+      }
+
+      if (prunedDynamicSlots > 0) {
+        DSP_DIAG(MEMORY,
+            "LIFECYCLE: pruned %d dynamic output slot(s) from frozen snapshot",
+            prunedDynamicSlots);
+      }
+
+      int prunedFusedAliasSlots = 0;
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (!fusedChainAliasOutputSlot[i] || frozenSnapshot_.slotDataBuffers[i] == nullptr) continue;
+        clearSnapshotSlot(i);
+        prunedFusedAliasSlots++;
+      }
+
+      if (prunedFusedAliasSlots > 0) {
+        DSP_DIAG(MEMORY,
+            "LIFECYCLE: pruned %d fused-chain alias output slot(s) from frozen snapshot",
+            prunedFusedAliasSlots);
       }
     }
 
+    DSP_DIAG(EXECUTE, "LIFECYCLE: captured buffer pointer snapshot (%d slots, %d extInputs)",
+             totalOutputSlots_, numExternalInputs);
+    {
+      int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
+      if (ts >= 0 && ts < totalOutputSlots_ && outputSlots_[ts] != nullptr) {
+        DSP_DIAG(MEMORY, "SNAPSHOT_SLOT_%d: arr=%p db=%p special=%p len=%lld",
+                 ts, (void*)outputSlots_[ts], (void*)outputSlots_[ts]->dataBuffer(),
+                 (void*)outputSlots_[ts]->specialBuffer(),
+                 (long long)outputSlots_[ts]->lengthOf());
+      }
+    }
+  };
+
+  // ── Plan-level phase advancement ───────────────────────────────────────────
+  // Phase transitions are automatic based on observed stability.
+  // frozenExecutionCount_ increments here and advancePlanPhase() handles the
+  // transitions. Snapshot capture is deferred until the END of the execution,
+  // after post-warmup compile/fusion has finished mutating slot buffers.
+  if (shapesFrozen_ && planPhase_ >= PlanPhase::SHAPES_FROZEN) {
+    frozenExecutionCount_++;
     advancePlanPhase();
   }
 
@@ -1992,6 +2136,13 @@ Status NativeDynamicShapePlan::execute(
   // changes for consecutive executions, split it at the midpoint.
   platformMaybeSplitIfEnabled();
 
+  // Capture the frozen snapshot only after ALL post-warmup mutation has
+  // completed AND the plan has reached POINTERS_STABLE. SHAPES_FROZEN still
+  // allows legitimate pointer churn while segments converge on steady-state
+  // allocations, so the baseline must be taken only once pointer stability is
+  // actually observed.
+  captureFrozenSnapshotIfReady();
+
   // Print timing breakdown via execution context timing points
   if (execCtx->timingEnabled) {
     auto segMs = std::chrono::duration_cast<std::chrono::microseconds>(execCtx->tSegsDone - execCtx->t0).count();
@@ -2012,6 +2163,205 @@ Status NativeDynamicShapePlan::execute(
   platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
   executionStatePtr = nullptr;
 
+  return Status::OK;
+}
+
+// ─── Steady-State Fast Path ─────────────────────────────────────────────────
+//
+// executeSteadyState() is the hot-path replacement for execute() during
+// autoregressive decode. It eliminates ~200ms of per-step CPU overhead by
+// skipping ALL validation, lifecycle checks, and diagnostic instrumentation.
+//
+// The full execute() performs per step:
+//   - detectClosedBuffers (scans all 2700+ slots)
+//   - External input validation (per-array DataBuffer checks)
+//   - Lifecycle external inputs filtering (vector alloc + scan)
+//   - refreshStaleViewWrappersInSegment (all segments x slots)
+//   - validateLifecycleForPhase (scans all slots)
+//   - frozenSnapshot transitions (scans all slots)
+//   - REPLAYING segment validation (checks all segments)
+//   - Post-exec consistency assertions (scans all slots)
+//   - Ownership reclassification (only useful at execCount==2)
+//   - Phase advancement (only useful during transitions)
+//
+// executeSteadyState() skips ALL of the above and goes directly to:
+//   platformBeginExecution -> phaseReplay -> outputs -> executeCount_++ -> platformEndExecution
+//
+// SAFETY: The caller (autoregressive_decode.cu) ensures the plan has been
+// through full execute() for the first few steps, validating correctness.
+// By step 4+, if the plan had any lifecycle issues, they would have been
+// caught. The steady-state path trusts that the plan is healthy.
+
+Status NativeDynamicShapePlan::executeSteadyState(
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** requestedOutputs, int numRequestedOutputs,
+    void* stream) {
+
+  // Precondition check: fall back to full execute() if not in steady state
+  if (!shapesFrozen_ || executeCount_ < 3 ||
+      planPhase_ < PlanPhase::REPLAYING ||
+      Environment::getInstance().tritonVerifyKernels()) {
+    DSP_DIAG(EXECUTE, "[DSP_GATE] FALLBACK execute() — shapesFrozen=%d executeCount=%d planPhase=%d verifyKernels=%d",
+             (int)shapesFrozen_, (int)executeCount_, (int)planPhase_,
+             (int)Environment::getInstance().tritonVerifyKernels());
+    return execute(externalInputs, numExternalInputs,
+                   requestedOutputs, numRequestedOutputs, stream);
+  }
+  DSP_DIAG(EXECUTE, "[DSP_GATE] FAST executeSteadyState() — executeCount=%d planPhase=%d",
+           (int)executeCount_, (int)planPhase_);
+
+  // Quick argument count validation (cheap)
+  if (numExternalInputs != numExternalInputs_) {
+    return Status::BAD_ARGUMENTS;
+  }
+  if (numRequestedOutputs != numRequestedOutputs_) {
+    return Status::BAD_ARGUMENTS;
+  }
+
+  // Clear dirty bitmap.
+  std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
+
+  // Store reference to current external inputs
+  lastExternalInputs_ = externalInputs;
+  lastNumExternalInputs_ = numExternalInputs;
+
+  // Reuse cached PlanExecutionContext — avoid heap alloc/free per step.
+  // On first call, create the context and a reusable cross-stream event.
+  // On subsequent calls, just reset the dedup flags.
+  PlanExecutionContext* execCtx;
+  if (steadyStateExecCtx_ != nullptr) {
+    execCtx = static_cast<PlanExecutionContext*>(steadyStateExecCtx_);
+    // Reset per-step dedup flags (these start false in fresh contexts)
+    execCtx->extInputsSynced = false;
+    execCtx->crossStreamSynced = false;
+    execCtx->stagingBuffersSynced = false;
+    execCtx->phaseHandledPostSegments = false;
+    execCtx->phaseHandledOutputs = false;
+    execCtx->flowEventCount = 0;
+    execCtx->streamSyncCount = 0;
+    execCtx->eventSyncCount = 0;
+  } else {
+    execCtx = new PlanExecutionContext();
+    steadyStateExecCtx_ = static_cast<void*>(execCtx);
+  }
+
+#ifdef SD_CUDA
+  // Save previous DSP stream for RAII-style restore at all exit points
+  // tl_dspExecutionStream is declared at file scope via DataBuffer.h (included by DspStreamGuard.h)
+  cudaStream_t prevDspStream = tl_dspExecutionStream;
+
+  // Reuse cross-stream event (avoid cudaEventCreate/Destroy per step)
+  if (steadyStateCrossStreamEvent_ == nullptr) {
+    cudaEvent_t evt;
+    cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+    steadyStateCrossStreamEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+  }
+  execCtx->crossStreamEvent = *static_cast<cudaEvent_t*>(steadyStateCrossStreamEvent_);
+
+  // Resolve CUDA streams and set DSP execution stream
+  if (stream != nullptr) {
+    execCtx->dspStream = *static_cast<cudaStream_t*>(stream);
+    tl_dspExecutionStream = execCtx->dspStream;
+
+    auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    execCtx->lcDefaultStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
+
+    // Event-based cross-stream ordering (no cudaStreamSynchronize in steady state)
+    cudaEvent_t evt = execCtx->crossStreamEvent;
+    if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
+      cudaEventRecord(evt, execCtx->lcDefaultStream);
+      cudaStreamWaitEvent(execCtx->dspStream, evt, 0);
+    }
+    cudaEventRecord(evt, nullptr);  // CUDA stream 0
+    cudaStreamWaitEvent(execCtx->dspStream, evt, 0);
+  }
+#endif
+
+  // Populate derived state for steady state.
+  execCtx->execCount = executeCount_;
+  execCtx->frozen = true;
+  execCtx->isFrozenSteadyState = true;
+  execCtx->isFirstFrozenWarmup = false;
+  execCtx->needsFullSync = false;
+  execCtx->forcedSlotBySlot = false;
+  execCtx->graphExecutionMode = static_cast<int>(graphExecutionMode_);
+  execCtx->allowGraphCaptureReplay = Environment::getInstance().tritonGraphCapture();
+  execCtx->useVariableFilter = !externalInputIsVariable_.empty();
+  execCtx->tritonVerifyEnabled = false;
+  execCtx->diagAnyEnabled = false;
+  execCtx->diagVerifyEnabled = false;
+  execCtx->timingEnabled = executionTimingEnabled_;
+  execCtx->isReplay = true;
+  execCtx->segmentsTotal = static_cast<int>(segments_.size());
+
+  activeExecCtx_ = static_cast<void*>(execCtx);
+
+  // Clear stale CUDA errors (single cheap call)
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+
+  // Use platformTryFrozenFastPath — this is the SAME fast path that execute()
+  // uses in steady state. It handles ext input H2D sync, cross-stream ordering,
+  // arg table refresh, and single-graph replay in one tight function.
+  // phaseReplay is heavier (segment iteration, lifecycle checks) and was causing
+  // accuracy issues because the ext input sync flow differs from the frozen fast path.
+  bool usedFrozenFastPath = false;
+  auto result = platformTryFrozenFastPath(
+      externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream);
+
+  if (result == Status::MAYBE) {
+    // Frozen fast path not applicable — fall back to full phaseReplay.
+    // This shouldn't happen in steady state, but handle gracefully.
+    PhaseExecutionStats phaseStats;
+    result = phaseReplay(externalInputs, numExternalInputs,
+                         requestedOutputs, numRequestedOutputs,
+                         stream, &phaseStats);
+  } else if (result == Status::OK) {
+    usedFrozenFastPath = true;
+  }
+
+  if (result != Status::OK) {
+    activeExecCtx_ = nullptr;
+#ifdef SD_CUDA
+    if (stream != nullptr) {
+      tl_dspExecutionStream = prevDspStream;
+    }
+#endif
+    return result;
+  }
+
+  // Native KV scatter (if configured on the plan)
+  if (kvScatterConfigured_) {
+    executeKvScatterPostExec(stream);
+  }
+
+  // platformTryFrozenFastPath increments executeCount_ internally when OK.
+  // Only increment here if phaseReplay was used instead.
+  if (!usedFrozenFastPath) {
+    executeCount_++;
+  }
+
+#ifdef SD_CUDA
+  // Event-based completion signal (reuses executionCompleteEvent_)
+  if (stream != nullptr) {
+    if (executionCompleteEvent_ == nullptr) {
+      cudaEvent_t evt;
+      cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+      executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+    }
+    cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+    cudaEventRecord(evt, execCtx->dspStream);
+    cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
+    if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
+      cudaStreamWaitEvent(execCtx->lcDefaultStream, evt, 0);
+    }
+
+    // Restore DspStreamGuard
+    tl_dspExecutionStream = prevDspStream;
+  }
+#endif
+
+  activeExecCtx_ = nullptr;
   return Status::OK;
 }
 
@@ -2056,77 +2406,59 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // View wrappers deleted inline in slotexec. No batched/deferred close needed.
 
 void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
+  // ── Lifecycle enforcement: phases are LINEAR and IMMUTABLE ───────────────
+  // Once a plan is frozen it stays frozen forever. Backwards transitions are
+  // architectural errors — the plan cache manages separate entries for each
+  // distinct shape key, so there is NEVER a valid reason to unfreeze an
+  // existing plan. If shapes change, the caller must destroy this plan and let
+  // the cache produce a fresh entry for the new shape.
+  if (!frozen) {
+    DSP_THROW(EXECUTE,
+              "LIFECYCLE VIOLATION: setShapesFrozen(false) called on plan %p (phase=%s). "
+              "Phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING. "
+              "Backwards transitions are illegal. Destroy this plan and let the plan cache create "
+              "a fresh entry for the new shape.",
+              this, dsp::planPhaseName(planPhase_));
+  }
+
   bool wasFrozen = shapesFrozen_;
   // Idempotent: if already frozen and caller wants to freeze again, no-op.
   // This handles the case where the plan auto-advanced to SHAPES_FROZEN
   // during execute() and Java tries to freeze afterward.
-  if (frozen && wasFrozen) {
+  if (wasFrozen) {
     return;
   }
-  if (frozen) {
-    DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setShapesFrozen(true)");
-  }
-  if (frozen && !wasFrozen) {
-    auto status = phaseFreeze();
-    if (status != Status::OK) {
-      DSP_THROW(COMPILE,
-               "setShapesFrozen(true): phaseFreeze failed with status %d — "
-               "plan NOT frozen (would leave partially-frozen inconsistent state)",
-               static_cast<int>(status));
-    }
-  }
-  shapesFrozen_ = frozen;
-  if (!frozen) {
-    for (auto* db : protectedWeightBuffers_) {
-      if (db != nullptr) db->removeFrozenRef();
-    }
 
-    if (outputSlots_ != nullptr) {
-      for (int i = 0; i < totalOutputSlots_; i++) {
-        if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
-          outputSlots_[i]->dataBuffer()->removeFrozenRef();
-        }
-      }
-      DSP_DIAG(MEMORY, "setShapesFrozen(false): removed frozen ref from %d output slot DataBuffers", totalOutputSlots_);
-    }
+  DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SLOT_BY_SLOT, "setShapesFrozen(true)");
 
-    for (int i = 0; i < numSlots_; i++) {
-      if (slots_[i].state_ >= NativeSlot::SlotState::FROZEN) {
-        slots_[i].state_ = NativeSlot::SlotState::SHAPE_CACHED;
-      }
-    }
-    frozenConstantDetectionDone_ = false;
+  // ── LIFECYCLE VIOLATION: freezing after execute ────────────────────────
+  // If executeCount_ > 0, the plan has already executed N times unfrozen.
+  // After freeze, isFirstFrozenWarmup = (executeCount == 0) will be FALSE,
+  // meaning the warmup/capture phase is skipped entirely. The plan jumps
+  // straight to replay without ever capturing CUDA graphs or establishing
+  // baseline output buffers. This causes stale buffer reuse and
+  // non-deterministic results.
+  //
+  // Correct lifecycle: compile → freeze → warmup execute → replay.
+  // Freezing after execute violates this ordering.
+  REQUIRE_TRUE(executeCount_ == 0, 0,
+               "LIFECYCLE VIOLATION in setShapesFrozen(true): executeCount=%d > 0. "
+               "The plan has already executed %d times without being frozen. "
+               "Freezing now means isFirstFrozenWarmup will never be true — "
+               "the warmup/capture phase will be skipped, causing stale buffers "
+               "and non-deterministic replay. "
+               "Fix: freeze the plan BEFORE the first execute(), or let auto-seal "
+               "handle the transition (auto-seal fires during execute).",
+               executeCount_, executeCount_);
 
-    {
-      const char* oldPhase = dsp::planPhaseName(planPhase_);
-      DSP_DIAG(EXECUTE, "[PHASE_TRANSITION] plan %s -> SLOT_BY_SLOT reason=setShapesFrozen(false) kind=unfreeze",
-               oldPhase);
-    }
-    planPhase_ = PlanPhase::SLOT_BY_SLOT;
-    pointersStable_ = false;
-    frozenExecutionCount_ = 0;
-    executeCount_ = 0;
-    compilationDone_ = false;
-    for (auto& seg : segments_) {
-      if (seg.exec.replayHandle) {
-        platformCleanupSegmentForRebuild(seg);
-      }
-      seg.exec.executionCount = 0;
-      seg.exec.argTableStable = false;
-      seg.exec.addrKeyStableCount = 0;
-      seg.exec.slotAddrStableCount = 0;
-      seg.exec.gapOpsCapturedInGraph = false;
-      seg.exec.cachedShapeKey = 0;
-      seg.exec.capturedInputAddrKey = 0;
-      seg.exec.capturedCreateValueKey = 0;
-      seg.exec.compilationFailed = false;
-      seg.exec.captureOomRetries = 0;
-      seg.exec.captureRetryAfterExec = 0;
-      seg.exec.lastReplayExecCount = 0;
-    }
-    clearAllShapeCachesForce();
-    frozenSnapshot_.clear();
+  auto status = phaseFreeze();
+  if (status != Status::OK) {
+    DSP_THROW(COMPILE,
+             "setShapesFrozen(true): phaseFreeze failed with status %d — "
+             "plan NOT frozen (would leave partially-frozen inconsistent state)",
+             static_cast<int>(status));
   }
+  shapesFrozen_ = true;
 }
 
 // ─── Phase lifecycle methods ──────────────────────────────────────────────
@@ -2237,6 +2569,7 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   DSP_REQUIRE_PLAN_PHASE_EXACT(PlanPhase::SLOT_BY_SLOT, "phaseFreeze");
   auto& env = Environment::getInstance();
   bool mergeSegments = env.dspFreezeMergeSegments();
+  frozenSnapshot_.clear();
 
   // ── Fusion pass (slot-by-slot → freeze transition) ──────────────────
   if (numSlots_ > 1) {
@@ -2305,18 +2638,13 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   executeCount_ = 0;
   compilationDone_ = false;
 
-  for (auto* db : protectedWeightBuffers_) {
-    if (db != nullptr) db->addFrozenRef();
-  }
-
-  if (outputSlots_ != nullptr) {
-    for (int i = 0; i < totalOutputSlots_; i++) {
-      if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
-        outputSlots_[i]->dataBuffer()->addFrozenRef();
-      }
-    }
-    DSP_DIAG(MEMORY, "phaseFreeze: added frozen ref to %d output slot DataBuffers", totalOutputSlots_);
-  }
+  // NOTE: Neither protectedWeightBuffers_ nor outputSlots_ DataBuffers are
+  // frozen here. ALL freezing happens at the end of phaseWarmup() after warmup
+  // execution completes. Freezing before warmup prevents warmup from executing
+  // correctly: reshape ops create zero-copy views of weight buffers and call
+  // z->buffer() which triggers allocatePrimary on device-only buffers. The
+  // frozen refs protect against mutation during graph capture/replay — warmup
+  // is internal execution that needs full write access to everything.
 
   return Status::OK;
 }
@@ -2346,6 +2674,18 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
   }
 
   platformClearCastCache();
+
+  // Reset ALL slot states to WARMUP. The unfrozen pass left slots in various
+  // states (SHAPE_CACHED, FROZEN, FROZEN_CONSTANT) with cached shapes from
+  // prefill execution. Warmup re-executes with decode-time inputs so shapes
+  // may differ. Without this reset, slots with frozenContextReady()=true would
+  // use stale cached output shapes/types from the unfrozen pass.
+  for (int i = 0; i < numSlots_; i++) {
+    if (slots_[i].state_ > NativeSlot::SlotState::WARMUP) {
+      slots_[i].state_ = NativeSlot::SlotState::WARMUP;
+      slots_[i].shapeCache.cachedOutputShapes.clear();
+    }
+  }
 
   // Execute all segments slot-by-slot to populate shapes
   int segIdx = 0;
@@ -2408,6 +2748,221 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     stats->slotBySlotUs = slotBySlotUs;
     stats->slotBySlotSegs = slotBySlotSegs;
     stats->slotBySlotSlots = slotBySlotSlots;
+  }
+
+  // ── Dynamic-shape transitive propagation ─────────────────────────────────
+  // After warmup execution, some slots may have been marked isDynamicShape=true
+  // by the step3-warmup-reassign or fused-chain-warmup-reassign paths (shape
+  // drift detected during this warmup execution vs. the prior SLOT_BY_SLOT pass).
+  //
+  // Propagate transitively: if slot S is dynamic, any downstream slot T whose
+  // input comes from one of S's output slot indices is also dynamic. This handles
+  // cases like slot 347 being a view of slot 346 (dynamic KV cache slice).
+  //
+  // Algorithm: build a set of "dynamic output slot indices" from direct markings,
+  // then iterate slots in topological order (they are already topologically sorted
+  // by construction) and propagate. One forward pass is sufficient.
+  if (numSlots_ > 0) {
+    // Build set of output slot indices produced by already-dynamic slots.
+    // Using a flat bool array indexed by output slot index for O(1) lookup.
+    std::vector<bool> isDynamicOutputSlot(totalOutputSlots_, false);
+    for (int s = 0; s < numSlots_; s++) {
+      if (slots_[s].flags.isDynamicShape) {
+        for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+          int oi = slots_[s].wiring.outputSlotIndices[o];
+          if (oi >= 0 && oi < totalOutputSlots_) {
+            isDynamicOutputSlot[oi] = true;
+          }
+        }
+      }
+    }
+
+    // Forward pass: mark downstream slots dynamic if any of their inputs
+    // comes from a dynamic output slot index.
+    int propagatedCount = 0;
+    for (int s = 0; s < numSlots_; s++) {
+      auto& sl = slots_[s];
+      if (sl.flags.isDynamicShape) {
+        // Already dynamic — just keep its output slots flagged.
+        for (int o = 0; o < sl.wiring.numOutputs; o++) {
+          int oi = sl.wiring.outputSlotIndices[o];
+          if (oi >= 0 && oi < totalOutputSlots_) {
+            isDynamicOutputSlot[oi] = true;
+          }
+        }
+        continue;
+      }
+      // Check if any input comes from a dynamic output slot.
+      bool inputIsDynamic = false;
+      for (int i = 0; i < sl.wiring.numInputs && !inputIsDynamic; i++) {
+        int src = sl.wiring.inputSourceIndices[i];
+        if (src >= 0 && src < totalOutputSlots_ && isDynamicOutputSlot[src]) {
+          inputIsDynamic = true;
+        }
+      }
+      if (inputIsDynamic) {
+        sl.flags.isDynamicShape = true;
+        propagatedCount++;
+        DSP_DIAG(SHAPE,
+            "phaseWarmup: slot %d (%s) marked isDynamicShape=true (transitive propagation)",
+            s, sl.ident.opName.c_str());
+        // Mark this slot's outputs as dynamic too for downstream propagation.
+        for (int o = 0; o < sl.wiring.numOutputs; o++) {
+          int oi = sl.wiring.outputSlotIndices[o];
+          if (oi >= 0 && oi < totalOutputSlots_) {
+            isDynamicOutputSlot[oi] = true;
+          }
+        }
+      }
+    }
+
+    // Some value-dependent shape ops are driven by a small plan-internal
+    // control chain (for example equals/cast/concat feeding Where). Those
+    // upstream control producers can legitimately rotate their buffers across
+    // frozen executions even when the large downstream payload tensors remain
+    // shape-stable. Mark the upstream control chain dynamic AFTER the forward
+    // pass so we do not flood the dynamic flag into the large downstream data
+    // path.
+    int controlAncestorCount = 0;
+    std::vector<uint8_t> visited(numSlots_, 0);
+    std::vector<int> worklist;
+    for (int s = 0; s < numSlots_; s++) {
+      if (slots_[s].flags.outputShapeDependsOnInputValues) {
+        worklist.push_back(s);
+        visited[s] = 1;
+      }
+    }
+
+    while (!worklist.empty()) {
+      const int consumerStep = worklist.back();
+      worklist.pop_back();
+      const auto& consumer = slots_[consumerStep];
+
+      for (int i = 0; i < consumer.wiring.numInputs; i++) {
+        const int srcIdx = consumer.wiring.inputSourceIndices[i];
+        NDArray* srcArr = dsp::resolveInputSourceArray(srcIdx, outputSlots_, totalOutputSlots_,
+                                                       externalInputs, numExternalInputs);
+        if (!isSmallIntegralControlArray(srcArr)) continue;
+        if (srcIdx < 0) continue;  // external control tensors are tracked separately
+
+        const int producerStep = dsp::findProducingStepForOutputSlot(slots_, numSlots_, srcIdx);
+        if (producerStep < 0 || producerStep >= numSlots_) continue;
+
+        if (!slots_[producerStep].flags.isDynamicShape) {
+          slots_[producerStep].flags.isDynamicShape = true;
+          controlAncestorCount++;
+          DSP_DIAG(SHAPE,
+              "phaseWarmup: slot %d (%s) marked isDynamicShape=true "
+              "(plan-internal control ancestor of value-dependent slot %d (%s))",
+              producerStep, slots_[producerStep].ident.opName.c_str(),
+              consumerStep, consumer.ident.opName.c_str());
+        }
+
+        if (!visited[producerStep]) {
+          visited[producerStep] = 1;
+          worklist.push_back(producerStep);
+        }
+      }
+    }
+
+    int dynamicCount = 0;
+    for (int s = 0; s < numSlots_; s++) {
+      if (slots_[s].flags.isDynamicShape) dynamicCount++;
+    }
+    DSP_DIAG(SHAPE,
+        "phaseWarmup: dynamic-shape classification done — %d slots total "
+        "(%d direct + %d propagated + %d upstream-control) out of %d slots",
+        dynamicCount,
+        dynamicCount - propagatedCount - controlAncestorCount,
+        propagatedCount, controlAncestorCount, numSlots_);
+  }
+
+  // Ensure all DataBuffers have both primary and special allocations BEFORE
+  // freezing. Once frozen, allocatePrimary/allocateSpecial will throw.
+  // On CUDA, warmup may leave some buffers with only one side allocated:
+  //   - weight buffers that are device-authoritative may have special but no primary
+  //   - output slot buffers that only wrote to host may have primary but no special
+  // All allocations MUST complete before addFrozenRef().
+#if defined(SD_CUDA)
+  {
+    auto ensureFullAllocation = [](DataBuffer* db) {
+      if (db == nullptr || !db->isValid()) return;
+      // If special (device) buffer exists but primary (host) doesn't, allocate primary.
+      if (db->special() != nullptr && db->primary() == nullptr) {
+        db->allocatePrimary();
+      }
+      // If primary (host) exists but special (device) doesn't, sync to device.
+      // syncToSpecial allocates the device buffer and copies from host.
+      if (db->primary() != nullptr && db->special() == nullptr) {
+        db->syncToSpecial();
+      }
+    };
+
+    int weightEnsuredCount = 0;
+    for (auto* db : protectedWeightBuffers_) {
+      ensureFullAllocation(db);
+      if (db != nullptr) weightEnsuredCount++;
+    }
+
+    int outputEnsuredCount = 0;
+    if (outputSlots_ != nullptr) {
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+          ensureFullAllocation(outputSlots_[i]->dataBuffer());
+          outputEnsuredCount++;
+        }
+      }
+    }
+    DSP_DIAG(MEMORY,
+        "phaseWarmup: ensured full primary+special allocation before freeze — "
+        "weights=%d outputSlots=%d",
+        weightEnsuredCount, outputEnsuredCount);
+  }
+#endif
+
+  // Freeze ALL DataBuffers NOW — warmup execution is complete, buffers are
+  // fully allocated (both device and host as needed). From this point on,
+  // they are protected against external mutation during graph capture/replay.
+  //
+  // Exception: dynamic-shape slots are excluded — their DataBuffers must remain
+  // mutable so they can be reallocated when the output shape changes each step.
+  for (auto* db : protectedWeightBuffers_) {
+    if (db != nullptr) db->addFrozenRef();
+  }
+  DSP_DIAG(MEMORY, "phaseWarmup: added frozen ref to %d protectedWeightBuffers (post-warmup)",
+           (int)protectedWeightBuffers_.size());
+
+  if (outputSlots_ != nullptr) {
+    // Build a set of output slot indices owned by dynamic slots (to skip freezing).
+    // A flat bool array indexed by output slot index gives O(1) lookup.
+    std::vector<bool> dynOutputSlot(totalOutputSlots_, false);
+    for (int s = 0; s < numSlots_; s++) {
+      if (slots_[s].flags.isDynamicShape) {
+        for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+          int oi = slots_[s].wiring.outputSlotIndices[o];
+          if (oi >= 0 && oi < totalOutputSlots_) {
+            dynOutputSlot[oi] = true;
+          }
+        }
+      }
+    }
+
+    int frozenCount = 0, skippedCount = 0;
+    for (int i = 0; i < totalOutputSlots_; i++) {
+      if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
+        if (dynOutputSlot[i]) {
+          // Dynamic-shape slot: leave DataBuffer unfrozen so it can be reallocated.
+          skippedCount++;
+        } else {
+          outputSlots_[i]->dataBuffer()->addFrozenRef();
+          frozenCount++;
+        }
+      }
+    }
+    DSP_DIAG(MEMORY,
+        "phaseWarmup: addFrozenRef for output slot DataBuffers — "
+        "frozen=%d skipped_dynamic=%d total=%d",
+        frozenCount, skippedCount, totalOutputSlots_);
   }
 
   return Status::OK;
@@ -2547,6 +3102,21 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
   DSP_DIAG(EXECUTE, "phaseReplay: BEGIN segments=%d extInputs=%d frozen=%d phase=%d execCount=%d",
            (int)segments_.size(), numExternalInputs, shapesFrozen_ ? 1 : 0,
            static_cast<int>(planPhase_), executeCount_);
+
+  // ── LIFECYCLE CHECK: phaseReplay requires prior compilation ─────────
+  // Replay dispatches segments to compiled backends (Triton, CUDA graphs).
+  // If compilation never ran, segments have no compiled kernels and will
+  // silently fall through to slot-by-slot — which is correct behavior but
+  // indicates a lifecycle anomaly when graphExecutionMode != SLOT_BY_SLOT.
+  if (!compilationDone_ &&
+      graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    DSP_DIAG(EXECUTE,
+             "LIFECYCLE_WARNING: phaseReplay entered with compilationDone=false "
+             "and mode=%d (not SLOT_BY_SLOT). Segments will fall through to "
+             "slot-by-slot execution. This means the compile phase was skipped — "
+             "check auto-seal lifecycle and executeCount transition.",
+             static_cast<int>(graphExecutionMode_));
+  }
 
   size_t poolUsedPreSegs = 0, poolReservedPreSegs = 0;
   platformPreReplayPoolStats(poolUsedPreSegs, poolReservedPreSegs);
@@ -2723,6 +3293,7 @@ void NativeDynamicShapePlan::clearAllShapeCachesForce() {
 
 void NativeDynamicShapePlan::resetSegmentExecutionState() {
   demotePlanPhase(PlanPhase::SLOT_BY_SLOT, "resetSegmentExecutionState");
+  frozenSnapshot_.clear();
   for (auto& seg : segments_) {
     seg.exec.executionCount = 0;
     seg.exec.compilationFailed = false;
@@ -2758,6 +3329,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       planPhase_ = PlanPhase::SLOT_BY_SLOT;
       pointersStable_ = false;
       frozenExecutionCount_ = 0;
+      frozenSnapshot_.clear();
     }
   }
 
@@ -2780,6 +3352,9 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // (classified as VIEW_OF_WEIGHT from capture), leaking ~1.7 GB per page cycle.
   int freedCount = 0;
   std::unordered_set<NDArray*> deleted;
+  // Declared here (outside the if-block below) so Step 5 can iterate it after
+  // the if-block closes. Populated inside the block before passes 1 and 2 null slots.
+  std::unordered_set<DataBuffer*> frozenOutputSlotDbs;
 
   if (outputSlots_) {
     // ── Build requested output protection set ────────────────────────────
@@ -2844,6 +3419,41 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
                "(%zu protected external buffers, %zu protected output buffers)",
                totalOutputSlots_, protectedWeightBuffers_.size(),
                requestedOutputDataBuffers.size());
+    }
+
+    // ── Pre-collect frozen output slot DataBuffers for ref cleanup ──────────
+    // addFrozenRef() was called once per non-dynamic output slot in phaseWarmup.
+    // The passes below may null out slot entries (VIEW_OF_SLOT in pass 1, SLOT_OWNED
+    // in pass 2). If we only call removeFrozenRef() for non-null slots AFTER the
+    // passes, the nulled slots' refs are SILENTLY LEAKED, causing frozenRefCount to
+    // accumulate by (numFreedSlots) each releaseGpuIntermediates() cycle.
+    // FIX: snapshot all non-dynamic DataBuffers that received addFrozenRef() BEFORE
+    // the passes null them. Step 5 iterates this snapshot instead of outputSlots_.
+    // Note: frozenOutputSlotDbs is declared in outer scope so Step 5 can access it.
+    std::vector<bool> dynOutputSlotPre(totalOutputSlots_, false);
+    if (shapesFrozen_ && outputSlots_ != nullptr && slots_ != nullptr) {
+      // Build dynamic-slot flags (same logic as Step 5, done early so we can use it here).
+      for (int s = 0; s < numSlots_; s++) {
+        if (slots_[s].flags.isDynamicShape) {
+          for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+            int oi = slots_[s].wiring.outputSlotIndices[o];
+            if (oi >= 0 && oi < totalOutputSlots_) {
+              dynOutputSlotPre[oi] = true;
+            }
+          }
+        }
+      }
+      // Collect: one removeFrozenRef() per unique non-dynamic DataBuffer.
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr && !dynOutputSlotPre[i] &&
+            outputSlots_[i]->dataBuffer() != nullptr) {
+          frozenOutputSlotDbs.insert(outputSlots_[i]->dataBuffer());
+        }
+      }
+      DSP_DIAG(MEMORY,
+          "releaseGpuIntermediates: pre-collected %zu unique frozen output slot DataBuffers "
+          "(will removeFrozenRef in Step 5 regardless of pass-nulling)",
+          frozenOutputSlotDbs.size());
     }
 
     if (slotOwnership_) {
@@ -2944,19 +3554,37 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       }
     }
     
-    // ALSO remove frozen ref count from all output slot DataBuffers.
-    // These were protected during frozen execution to prevent SIGSEGV.
-    if (outputSlots_ != nullptr) {
-      for (int i = 0; i < totalOutputSlots_; i++) {
-        if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
-          outputSlots_[i]->dataBuffer()->removeFrozenRef();
+    // ALSO remove frozen ref count from all non-dynamic output slot DataBuffers.
+    // Dynamic-shape slots were never frozen (addFrozenRef was skipped for them
+    // in phaseWarmup), so removeFrozenRef must also be skipped — otherwise we
+    // decrement a ref count that was never incremented.
+    //
+    // CRITICAL: Use the pre-collected frozenOutputSlotDbs set (built BEFORE passes 1 and 2
+    // nulled out VIEW_OF_SLOT and SLOT_OWNED entries). The old approach of iterating
+    // outputSlots_[i] after the passes would MISS all nulled slots, leaking exactly
+    // (numNulledSlots) frozen refs per releaseGpuIntermediates() cycle. Over N cycles
+    // this accumulates to frozenRefCount = N * numNulledSlots (e.g., 120 after 2 tests
+    // × 60 nulled slots each), eventually causing LIFECYCLE VIOLATION on allocatePrimary.
+    {
+      int removedCount = 0;
+      for (auto* db : frozenOutputSlotDbs) {
+        if (db != nullptr) {
+          db->removeFrozenRef();
+          removedCount++;
         }
       }
-      DSP_DIAG(MEMORY, "releaseGpuIntermediates: removed frozen ref from %d output slot DataBuffers", totalOutputSlots_);
+      DSP_DIAG(MEMORY,
+          "releaseGpuIntermediates: removeFrozenRef for output slot DataBuffers — "
+          "removed=%d (pre-collected set, pass-nulled slots included)",
+          removedCount);
     }
   }
-  // Reset shapesFrozen_ so the plan goes through the full warmup-capture-replay
-  // lifecycle from scratch. Without this, stale segment state (shapeKey, cachedShapeKey)
+  // ── Teardown-only lifecycle reset ────────────────────────────────────────
+  // This is the ONLY legitimate place that resets shapesFrozen_ to false.
+  // It is NOT an "unfreeze" — it is a cold reset after full GPU resource teardown.
+  // The public setShapesFrozen(false) API is BANNED (throws LIFECYCLE VIOLATION).
+  // After this reset, the plan is cold and can be re-warmed by the plan cache for
+  // the same shape. Without this, stale segment state (shapeKey, cachedShapeKey)
   // causes Triton recompilation to be skipped, and the plan tries to replay
   // CUDA graphs that were destroyed, leading to error 700.
   shapesFrozen_ = false;

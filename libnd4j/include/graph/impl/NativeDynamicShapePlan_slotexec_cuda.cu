@@ -142,8 +142,8 @@ void NativeDynamicShapePlan::platformReconcileOutputActuality(
   const bool specialActual = db->isSpecialActual();
   const bool needsDeviceVisibleControl =
       slot.flags.isDataDependent || slot.flags.outputShapeDependsOnInputValues ||
-      (output->dataType() == INT32 || output->dataType() == INT64 || output->dataType() == BOOL) &&
-      output->lengthOf() > 0 && output->lengthOf() <= 32;
+      ((output->dataType() == INT32 || output->dataType() == INT64 || output->dataType() == BOOL) &&
+       output->lengthOf() > 0 && output->lengthOf() <= 32);
 
   if (primaryActual && !specialActual) {
     if (needsDeviceVisibleControl) {

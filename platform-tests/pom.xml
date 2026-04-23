@@ -1630,6 +1630,7 @@
                         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
+                        <LD_LIBRARY_PATH>/usr/local/cuda/targets/x86_64-linux/lib:/usr/local/cuda/lib64</LD_LIBRARY_PATH>
                         <CUDA_LAUNCH_BLOCKING>${cuda.launch.blocking}</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>${omp.num.threads}</OMP_NUM_THREADS>
@@ -1665,6 +1666,9 @@
                         <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
                         <ND4J_TRITON_TF32>${nd4j.triton.tf32}</ND4J_TRITON_TF32>
                         <ND4J_DSP_TRACE_SLOT>${nd4j.dsp.traceSlot}</ND4J_DSP_TRACE_SLOT>
+                        <ND4J_DSP_DISABLE_VIEW_FASTPATH>${nd4j.dsp.disableViewFastpath}</ND4J_DSP_DISABLE_VIEW_FASTPATH>
+                        <ND4J_DSP_DISABLE_CAST_HWM>${nd4j.dsp.disableCastHwm}</ND4J_DSP_DISABLE_CAST_HWM>
+                        <ND4J_DSP_DISABLE_WS_SKIP>${nd4j.dsp.disableWsSkip}</ND4J_DSP_DISABLE_WS_SKIP>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->

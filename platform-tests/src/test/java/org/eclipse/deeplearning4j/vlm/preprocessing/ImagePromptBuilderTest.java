@@ -58,6 +58,9 @@ public class ImagePromptBuilderTest extends BaseNd4jTestWithBackends {
         // 2 rows, 3 cols, 2 image tokens per tile
         String prompt = ImagePromptBuilder.buildImagePromptString(2, 3, 2);
 
+        // Global frame should be emitted before tile descriptors in packed layout
+        assertTrue(prompt.indexOf("<global-img>") < prompt.indexOf("<row_1_col_1>"));
+
         // Should have row/col tokens for each tile
         assertTrue(prompt.contains("<row_1_col_1>"));
         assertTrue(prompt.contains("<row_1_col_2>"));
@@ -72,6 +75,11 @@ public class ImagePromptBuilderTest extends BaseNd4jTestWithBackends {
         // Total <image> tokens: (2*3 tiles + 1 global) * 2 tokens = 14
         int imageCount = countSubstring(prompt, "<image>");
         assertEquals(14, imageCount);
+
+        // Packed global-first layout should still preserve descriptor order
+        assertTrue(prompt.indexOf("<row_1_col_1>") < prompt.indexOf("<row_1_col_2>"));
+        assertTrue(prompt.indexOf("<row_1_col_2>") < prompt.indexOf("<row_1_col_3>"));
+        assertTrue(prompt.indexOf("<row_1_col_3>") < prompt.indexOf("<row_2_col_1>"));
     }
 
     @ParameterizedTest

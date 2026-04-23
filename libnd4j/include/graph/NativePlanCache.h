@@ -66,11 +66,14 @@ class SD_LIB_EXPORT NativePlanCache {
     uint64_t phShapeContentHash;
     // Number of placeholders (for equality disambiguation).
     sd::LongType phCount;
+    // GraphExecutionMode — each mode gets its own plan (one flow, no reclassification).
+    int graphExecutionMode;
 
     bool operator==(const Key& o) const {
       return outputSetHash == o.outputSetHash
           && phShapeContentHash == o.phShapeContentHash
-          && phCount == o.phCount;
+          && phCount == o.phCount
+          && graphExecutionMode == o.graphExecutionMode;
     }
   };
 
@@ -79,6 +82,7 @@ class SD_LIB_EXPORT NativePlanCache {
       size_t h = std::hash<uint64_t>{}(k.outputSetHash);
       h ^= std::hash<uint64_t>{}(k.phShapeContentHash) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
       h ^= std::hash<sd::LongType>{}(k.phCount) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+      h ^= std::hash<int>{}(k.graphExecutionMode) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
       return h;
     }
   };

@@ -1899,7 +1899,7 @@ bool OpenVinoGraphBackend::compileSegment(
   DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: SUCCESS inputs=%d outputs=%d",
            seg.def.startSlot, seg.def.endSlot, (int)compiled.inputSlotMap.size(), (int)compiled.outputSlotMap.size());
   cache_[cacheKey] = std::move(compiled);
-  seg.def.shapeKey = shapeKey;
+  seg.def.shapeKeyState.markCompiled(shapeKey);
   return true;
 }
 
@@ -1911,14 +1911,14 @@ Status OpenVinoGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
-  SegmentCacheKey cacheKey{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKey};
+  SegmentCacheKey cacheKey{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
   auto it = cache_.find(cacheKey);
   if (it == cache_.end() || !it->second.valid) {
     DSP_DIAG(EXECUTE, "OpenVINO: no compiled segment for [%d-%d] shapeKey=%lld cacheSize=%d found=%d",
-             seg.def.startSlot, seg.def.endSlot, (long long)seg.def.shapeKey,
+             seg.def.startSlot, seg.def.endSlot, (long long)seg.def.shapeKeyState.compiledShapeKey,
              (int)cache_.size(), it != cache_.end() ? 1 : 0);
     return Status::KERNEL_FAILURE;
   }

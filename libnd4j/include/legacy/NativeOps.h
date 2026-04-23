@@ -1598,7 +1598,7 @@ SD_LIB_EXPORT void freeNativePlanCache(sd::Pointer cacheHandle);
 SD_LIB_EXPORT void clearNativePlanCacheHandle(sd::Pointer cacheHandle);
 
 /**
- * Get-or-build a NativeDynamicShapePlan keyed by (outputSet, placeholder shape-info pointer vector).
+ * Get-or-build a NativeDynamicShapePlan keyed by (outputSet, placeholder shape-info, mode).
  *
  * @param cacheHandle           cache from createNativePlanCache (non-null)
  * @param planBytes             serialized Java DynamicShapePlan (for cold-miss build)
@@ -1607,6 +1607,7 @@ SD_LIB_EXPORT void clearNativePlanCacheHandle(sd::Pointer cacheHandle);
  * @param numOutputs            number of output names
  * @param phShapeInfoPtrs       array of shape-info pointers (from ConstantShapeHelper); identity = key equality
  * @param numPlaceholders       length of phShapeInfoPtrs
+ * @param graphExecutionMode    GraphExecutionMode ordinal — each mode gets its own plan
  * @return                      NativeDynamicShapePlan* as opaque sd::Pointer; owned by cache
  */
 SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
@@ -1615,7 +1616,8 @@ SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                              sd::Pointer outputNames,
                                              sd::LongType numOutputs,
                                              sd::Pointer phShapeInfoPtrs,
-                                             sd::LongType numPlaceholders);
+                                             sd::LongType numPlaceholders,
+                                             int graphExecutionMode);
 
 /**
  * Unpin a plan handle, making it eligible for LRU eviction.
@@ -1729,6 +1731,53 @@ SD_LIB_EXPORT long long getPlanMidExecutionCompileCount(sd::Pointer planHandle);
  * @param planHandle  Handle from compileDynamicShapePlan()
  */
 SD_LIB_EXPORT void resetPlanMidExecutionCompileCount(sd::Pointer planHandle);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FrozenPlan Hierarchy API (Step 6) — New unified execution interface
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Execute a FrozenPlan. Unified entry point that auto-manages build → seal → replay.
+ * Delegates to executeDynamicShapePlan internally (Step 1 compatibility).
+ *
+ * @param planHandle  Handle from dispatchNativePlan()
+ * @param opContext   OpaqueContext with inputs/outputs set
+ * @param stream      CUDA stream pointer (nullptr for CPU)
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int executeFrozenPlan(
+    sd::Pointer planHandle,
+    OpaqueContext* opContext,
+    sd::Pointer stream);
+
+/**
+ * Check whether a FrozenPlan is sealed (all segments completed build phase).
+ *
+ * @param planHandle  Handle from dispatchNativePlan()
+ * @return 1 if sealed, 0 if still building, -1 if invalid
+ */
+SD_LIB_EXPORT int isFrozenPlanSealed(sd::Pointer planHandle);
+
+/**
+ * Get the build pass count for a FrozenPlan.
+ * 0 = needs warmup, 1 = needs compile/capture, 2+ = sealed (replay only).
+ *
+ * @param planHandle  Handle from dispatchNativePlan()
+ * @return build pass count, -1 if invalid
+ */
+SD_LIB_EXPORT int getFrozenPlanBuildPassCount(sd::Pointer planHandle);
+
+/**
+ * Get the segment executor phase for a specific segment.
+ * Returns: 0=BUILDING, 1=SEALED, 2=FAILED, -1=invalid.
+ *
+ * @param planHandle  Handle from dispatchNativePlan()
+ * @param segIdx      Segment index (0-based)
+ * @return Phase code
+ */
+SD_LIB_EXPORT int getSegmentExecutorPhase(sd::Pointer planHandle, int segIdx);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 
 /**
  * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
