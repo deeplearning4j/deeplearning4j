@@ -24,6 +24,7 @@
 
 #include <ops/declarable/headers/util.h>
 #include <ops/declarable/helpers/print_variable.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
@@ -43,7 +44,7 @@ CUSTOM_OP_IMPL(print_variable, 1, 1, true, 0, 0) {
   bool printSpecial = false;
   if (block.numB() > 0) printSpecial = B_ARG(0);
 
-  if (printSpecial && !Environment::getInstance().isCPU()) {
+  if (printSpecial && !sd::env_isCPU()) {
     // only specific backends support special printout. for cpu-based backends it's the same as regular print
 
     if (block.width() == 2)

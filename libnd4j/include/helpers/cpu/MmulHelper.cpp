@@ -27,6 +27,7 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/env_functions.h>
 #include <system/openmp_pragmas.h>
 namespace sd {
 
@@ -306,7 +307,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const bool bRowMajor = (B->strideAt(1) == 1) && (B->strideAt(0) == N);
   const bool cRowMajor = (C->strideAt(1) == 1) && (C->strideAt(0) == N);
 
-  if (ABC && aRowMajor && bRowMajor && cRowMajor && Environment::getInstance().isEnableBlas()) {
+  if (ABC && aRowMajor && bRowMajor && cRowMajor && sd::env_isEnableBlas()) {
     // Validate dimensions before BLAS call to prevent crashes
     if (M <= 0 || N <= 0 || K <= 0) {
       std::string errorMessage = "MmulHelper::mmul (fast path): Invalid matrix dimensions. ";
@@ -329,6 +330,20 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
                          A->bufferAsT<double>(), K, B->bufferAsT<double>(), N, beta,
                          C->bufferAsT<double>(), N);
       return C;
+    } else if ((aType == DataType::HALF || aType == DataType::BFLOAT16) && blasHelper.hasGEMM(DataType::FLOAT32)) {
+      // FP16/BF16 pre-cast path: cast to FP32, run sgemm, cast result back.
+      // Avoids per-element half→float→half conversion in usualGemm inner loop.
+      auto *aF32 = A->cast(DataType::FLOAT32);
+      auto *bF32 = B->cast(DataType::FLOAT32);
+      std::vector<LongType> cShape = {M, N};
+      NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
+      blasHelper.sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                         aF32->bufferAsT<float>(), K, bF32->bufferAsT<float>(), N, (float)beta,
+                         cF32.bufferAsT<float>(), N);
+      C->assign(&cF32);
+      delete aF32;
+      delete bF32;
+      return C;
     }
   }
 
@@ -337,7 +352,24 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
 
-  if ((!typeFloat && !typeDouble) || !Environment::getInstance().isEnableBlas()) {
+  // FP16/BF16 pre-cast for non-contiguous layouts — cast to FP32 and use sgemm
+  if ((!typeFloat && !typeDouble) && (aType == DataType::HALF || aType == DataType::BFLOAT16)
+      && ABC && BlasHelper::getInstance().hasGEMM(DataType::FLOAT32) && sd::env_isEnableBlas()) {
+    auto *aF32 = A->cast(DataType::FLOAT32);
+    auto *bF32 = B->cast(DataType::FLOAT32);
+    std::vector<LongType> cShape = {M, N};
+    NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
+    auto blasLock2 = BlasHelper::getInstance().lockBlas();
+    BlasHelper::getInstance().sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                       aF32->bufferAsT<float>(), K, bF32->bufferAsT<float>(), N, (float)beta,
+                       cF32.bufferAsT<float>(), N);
+    C->assign(&cF32);
+    delete aF32;
+    delete bF32;
+    return C;
+  }
+
+  if ((!typeFloat && !typeDouble) || !sd::env_isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     NDArray *pA = const_cast<NDArray*>(A);
@@ -470,7 +502,7 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
   const bool typeDouble = hasGemv && AXY && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemv && AXY && aType == DataType::FLOAT32;
 
-  if ((!typeDouble && !typeFloat) || !Environment::getInstance().isEnableBlas()) {
+  if ((!typeDouble && !typeFloat) || !sd::env_isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     NDArray* pA(const_cast<NDArray*>(A));

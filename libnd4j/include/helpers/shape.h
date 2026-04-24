@@ -1867,7 +1867,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::Long
 SD_LIB_EXPORT SD_INLINE bool validateShapeInfoGuardBytes(const sd::LongType *shapeInfo) {
 #ifndef __CUDACC__
   // Only validate in debug mode to avoid performance overhead in production
-  if (!sd::Environment::getInstance().isDebug()) {
+  if (!sd::env_isDebug()) {
     return true;
   }
 
@@ -3011,7 +3011,7 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
   const sd::LongType maxRank = rank(maxShapeInfo);
   minOffset = 0;
   sd::LongType first, last, stride, n(isStrided ? 3 : 2);
-  const bool logSubArrayDebug = sd::Environment::getInstance().isDebug() && std::getenv("SD_SUBARRAY_DEBUG") != nullptr;
+  const bool logSubArrayDebug = sd::env_isDebug() && std::getenv("SD_SUBARRAY_DEBUG") != nullptr;
 
   // Enhanced debugging - log input parameters
   if (logSubArrayDebug) {

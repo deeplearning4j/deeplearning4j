@@ -263,7 +263,7 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
 
     /**
      * Synchronize the draft model's KV cache after the target model has verified tokens.
-     * Called by StaticKvCacheDecodeLoop after verification to save a checkpoint
+     * Called by the decode loop after verification to save a checkpoint
      * at the accepted position for rollback on the next speculation round.
      *
      * @param acceptedCount number of speculative tokens accepted by the target model

@@ -28,6 +28,7 @@
 #include <loops/reduce3.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -67,7 +68,7 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
 
   Z extraParamsVals[3] = {(Z)0.0f, (Z)0.0f, (Z)0.0f};
   Z startingVal = OpType::startingValue(x);
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   Z intermediate[64];
   Z extraParamsLocal[3 * 64];
 

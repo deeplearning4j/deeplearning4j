@@ -22,6 +22,7 @@
 #include <execution/Threads.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/scatter.h>
+#include <system/env_functions.h>
 
 #include <numeric>
 #if NOT_EXCLUDED(OP_scatter)
@@ -91,7 +92,7 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDA
       }
     };
 
-    samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
+    samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::env_maxThreads());
   } else {  // outRank > 1
 
     int sizeOfDims = indRank;
@@ -110,7 +111,7 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDA
       }
     };
 
-    samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
+    samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::env_maxThreads());
   }
 }
 
@@ -194,7 +195,7 @@ static void scatterND_(pairwise::Ops op, NDArray& indices, NDArray& updates,
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, yLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
+  samediff::Threads::parallel_for(func, 0, yLen, 1, lock ? 1 : sd::env_maxThreads());
 }
 
 void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDArray& updates,

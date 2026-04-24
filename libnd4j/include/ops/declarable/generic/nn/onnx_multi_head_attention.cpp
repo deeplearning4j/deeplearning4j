@@ -29,6 +29,7 @@
 #include <helpers/FlashAttentionHelper.h>
 #include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/headers/nn.h>
+#include <system/env_functions.h>
 #include <cmath>
 
 namespace sd {
@@ -299,7 +300,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   }
   
   // Diagnostic: dump Q checksum at the divergent position before FlashAttention
-  if (Environment::getInstance().isDebugAndVerbose()) {
+  if (sd::env_isDebugAndVerbose()) {
     qReshaped->syncToHost();
     kFinal->syncToHost();
     // Q is [batch, seqQ, numHeads, headDim] = [1, 17, 9, 64]

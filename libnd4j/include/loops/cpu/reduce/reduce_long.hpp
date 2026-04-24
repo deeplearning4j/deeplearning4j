@@ -28,6 +28,7 @@
 #include <loops/reduce_long.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -61,7 +62,7 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
     return;
   }
 
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
@@ -162,7 +163,7 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
   // Converting double→LongType would truncate 0.5→0, breaking comparisons.
   auto compatibleExtraParams = reinterpret_cast<X*>(vextraParams);
 
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD

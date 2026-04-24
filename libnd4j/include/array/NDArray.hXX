@@ -5274,12 +5274,17 @@ utf8string NDArray::e(const sd::LongType i)  {
 /////////////////////////////////////////////////////////////////////////
 template <typename T>
 T NDArray::e( sd::LongType i) {
-  // note: we'd validate this but depending on how a buffer is created
-  //(basically if it's passed in as a void buffer) the number of elements
-  // can be wrong. This at least happens in calculateOutputShapes2(..) and may
-  // or may not happen in other places. Ideally, in the future we'd fix that.
-  // sometimes we don't know the number of elements.
-  // Due to this we have to omit validation here.
+  if (!isScalar() && i >= lengthOf()) {
+    std::string errorMessage;
+    errorMessage += "NDArray::e(i): index is out of range: [";
+    errorMessage += StringUtils::valueToString<sd::LongType>(i);
+    errorMessage += "] vs length ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(lengthOf());
+    errorMessage += ", array shape: ";
+    errorMessage += ShapeUtils::shapeAsString(this);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   const auto rp = getOffset(i);
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
@@ -5287,6 +5292,7 @@ T NDArray::e( sd::LongType i) {
   if (getDataBuffer() != nullptr && _shapeInfo != nullptr) {
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
   }
+  return static_cast<T>(0);
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_COMMON_TYPES_ALL);
 BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_STRING_TYPES);

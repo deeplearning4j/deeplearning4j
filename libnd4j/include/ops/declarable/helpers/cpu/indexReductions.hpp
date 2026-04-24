@@ -23,6 +23,7 @@
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/reductions.h>
+#include <system/env_functions.h>
 
 #include <cmath>
 #include <memory>
@@ -405,7 +406,7 @@ static void argIndexCase1Scalar(const int& second_rank, const sd::LongType* inne
                                 const sd::LongType* inner_strides, const X* bufferX, Z* outputZ) {
   sd::LongType inner_total;
   sd::LongType inner_last = 0;
-  int maxThreads = sd::Environment::getInstance().maxMasterThreads();
+  int maxThreads = sd::env_maxMasterThreads();
   if (second_rank == 1) {
     inner_total = inner_bases[0];
     if (inner_total < threadingThreshold) {
@@ -762,7 +763,7 @@ static void argIndexCaseNonScalar(const int& first_rank, const int& output_rank,
                 func(0, 0, total, 1);
 #else
   //
-  uint32_t numThreads = sd::Environment::getInstance().maxMasterThreads();
+  uint32_t numThreads = sd::env_maxMasterThreads();
   sd::LongType inner_total = getLength<true>(inner_bases, second_rank);
   if (total * inner_total <= threadingThreshold) {
     numThreads = 1;

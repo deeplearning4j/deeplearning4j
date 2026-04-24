@@ -22,21 +22,23 @@ package org.eclipse.deeplearning4j.audio.whisper;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
-import org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Whisper decoder that delegates to {@link StaticKvCacheDecodeLoop} with encoder-decoder support.
+ * Whisper decoder that delegates to {@link GenerationPipeline} with encoder-decoder support.
  * <p>
  * All decode paths use the samediff-llm infrastructure for KV cache management,
  * GPU-side token sampling, and optional CUDA graph replay.
@@ -56,7 +58,7 @@ public class WhisperDecoder {
     }
 
     /**
-     * Decode using {@link StaticKvCacheDecodeLoop} with encoder-decoder mode.
+     * Decode using {@link GenerationPipeline} with encoder-decoder mode.
      * <p>
      * The encoder output is passed to the decoder at every step as cross-attention context.
      *
@@ -67,30 +69,28 @@ public class WhisperDecoder {
      * @return GenerationResult with decoded tokens and timing metrics
      */
     public GenerationResult decode(SameDiff decoder, WhisperTokenizer tokenizer,
-                                    INDArray encoderOutput, int[] promptTokens) {
+                                    INDArray encoderOutput, int[] promptTokens) throws IOException {
         Set<Integer> stopTokens = new HashSet<>();
         stopTokens.add(WhisperTokenizer.EOT);
 
-        // Build dummy prefill embeddings for shape inference
         long hiddenSize = encoderOutput.size(2);
         INDArray prefillEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, promptTokens.length, hiddenSize);
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(decoder)
-                .tokenizer(tokenizer)
-                .samplingConfig(samplingConfig)
-                .maxNewTokens(maxTokens)
-                .kvCacheStrategy(kvCacheStrategy)
-                .additionalStopTokenIds(stopTokens)
-                .hiddenSize(hiddenSize)
-                .encoderDecoder(true)
-                .encoderOutputs(encoderOutput)
-                .ioConfig(ModelIOConfig.builder()
-                        .encoderDecoder(true)
-                        .build())
-                .build();
+        GenerationPipeline pipeline = GenerationPipeline.create(
+                GenerationPipelineConfig.builder()
+                        .decoder(decoder)
+                        .embedTokens(decoder)
+                        .tokenizer(tokenizer)
+                        .samplingConfig(samplingConfig)
+                        .maxNewTokens(maxTokens)
+                        .kvCacheStrategy(kvCacheStrategy)
+                        .additionalStopTokenIds(stopTokens)
+                        .hiddenSize(hiddenSize)
+                        .ioConfig(ModelIOConfig.builder()
+                                .encoderDecoder(true)
+                                .build())
+                        .build());
 
-        return loop.decode(prefillEmbeddings, promptTokens);
+        return pipeline.generate(prefillEmbeddings, promptTokens, maxTokens);
     }
 }

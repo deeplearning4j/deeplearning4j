@@ -22,6 +22,7 @@
 #include <array/DataTypeUtils.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/env_functions.h>
 
 #include <ops/declarable/LegacyReduce3Op.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -68,17 +69,17 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
 
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-    auto xTadShape = Environment::getInstance().isCPU()
+    auto xTadShape = sd::env_isCPU()
                          ? packX->primaryShapeInfo()
                          : packX->specialShapeInfo();
-    auto xTadOffsets = Environment::getInstance().isCPU()
+    auto xTadOffsets = sd::env_isCPU()
                            ? packX->primaryOffsets()
                            : packX->specialOffsets();
 
-    auto yTadShape = Environment::getInstance().isCPU()
+    auto yTadShape = sd::env_isCPU()
                          ? packY->primaryShapeInfo()
                          : packY->specialShapeInfo();
-    auto yTadOffsets = Environment::getInstance().isCPU()
+    auto yTadOffsets = sd::env_isCPU()
                            ? packY->primaryOffsets()
                            : packY->specialOffsets();
 

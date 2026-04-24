@@ -21,6 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <execution/ThreadPool.h>
+#include <system/Environment.h>
 #include <vector>
 #include <thread>
 #include <helpers/logger.h>
@@ -381,6 +382,10 @@ int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType sto
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_for got start > stop");
 
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto delta = (stop - start);
 
   if (numThreads > delta)
@@ -460,6 +465,10 @@ int Threads::parallel_for(FUNC_1D function, sd::LongType start, sd::LongType sto
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_for got start > stop");
 
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto delta = (stop - start);
 
   // in some cases we just fire func as is
@@ -481,6 +490,10 @@ int Threads::parallel_for(FUNC_2D function, int64_t startX, int64_t stopX, int64
 
   if (startY > stopY)
     THROW_EXCEPTION("Threads::parallel_for got startY > stopY");
+
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   // number of elements per loop
   auto delta_x = (stopX - startX);
@@ -575,6 +588,10 @@ int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64
   if (startZ > stopZ)
     THROW_EXCEPTION("Threads::parallel_for got startZ > stopZ");
 
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto delta_x = stopX - startX;
   auto delta_y = stopY - startY;
   auto delta_z = stopZ - startZ;
@@ -642,6 +659,9 @@ int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64
 }
 
 int Threads::parallel_do(FUNC_DO function, sd::LongType numThreads) {
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   if (numThreads == 1) {
     function(0, numThreads);
@@ -697,6 +717,10 @@ int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongTyp
                                sd::LongType increment, sd::LongType numThreads) {
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_long got start > stop");
+
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   auto delta = (stop - start);
   if (delta == 0 || numThreads == 1)
@@ -759,6 +783,10 @@ int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongTyp
 double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t start, int64_t stop, int64_t increment, uint64_t numThreads) {
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_long got start > stop");
+
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   auto delta = (stop - start);
   if (delta == 0 || numThreads == 1)
@@ -827,6 +855,11 @@ int  Threads::parallel_aligned_increment(FUNC_1D function, int64_t start, int64_
                                          uint32_t req_numThreads) {
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_for got start > stop");
+
+  // Resolve sentinel: 0 means "use Environment default"
+  if (req_numThreads == 0)
+    req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto num_elements = (stop - start);
   //this way we preserve increment starts offset
   //so we will partition considering delta but not total elements

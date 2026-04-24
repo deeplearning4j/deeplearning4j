@@ -48,6 +48,7 @@
 #include <loops/transform_same.h>
 #include <loops/transform_strict.h>
 #include <system/op_boilerplate.h>
+#include <system/env_functions.h>
 #include <helpers/ConstantTadHelper.h>
 #include <system/selective_rendering.h>
 
@@ -59,7 +60,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("SF7 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("SF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -90,7 +91,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
   auto reductionPointer = lc->getReductionPointer();
   sd::LongType* allocationPointer = lc->getAllocationPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("LF7 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("LF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -130,7 +131,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("BF7 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("BF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -406,11 +407,11 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext* lc, int opNum, const
   auto allocationPointer = lc->getAllocationPointer();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("D119 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("D119 opType:[%i]\n", opNum);
 
   dim3 launchDims = getReduceAllDims(shape::length(hZShapeInfo));
 
-  if (sd::Environment::getInstance().isVerbose() && launchDims.x == 1) printf("AD119 opType:[%i]\n", opNum);
+  if (sd::env_isVerbose() && launchDims.x == 1) printf("AD119 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);

@@ -20,6 +20,7 @@
 // @author raver119@gmail.com
 //
 #include <helpers/ShapeBuilders.h>
+#include <system/env_functions.h>
 #include <cstring>
 
 #include "array/ShapeDescriptor.h"
@@ -35,7 +36,7 @@ LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
   // Initialize shape info portion to zero to avoid uninitialized memory issues
   memset(ret, 0, bufferLen * sizeof(LongType));
   // Initialize guard bytes to known pattern to detect buffer overflows
-  if (sd::Environment::getInstance().isDebug()) {
+  if (sd::env_isDebug()) {
     uint8_t* guardBytes = reinterpret_cast<uint8_t*>(ret) + (bufferLen * sizeof(LongType));
     memset(guardBytes, 0xAB, SHAPE_ALLOC_PADDING);
   }
@@ -71,7 +72,7 @@ LongType* ShapeBuilders::createScalarShapeInfo(const DataType dataType, memory::
   newShape[4] = 1;
   newShape[5] = 99;
 
-   if (sd::Environment::getInstance().isDebug()) {
+   if (sd::env_isDebug()) {
     // Guard bytes go right after the shape info data (inside the padding region)
     // This allows detecting buffer overruns into the padding
     uint8_t* guardBytes = reinterpret_cast<uint8_t*>(newShape) + (lenOfShapeInfo * sizeof(LongType));
@@ -98,7 +99,7 @@ LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const Lo
   newShape[4] = 1;
   newShape[5] = 99;
 
-   if (sd::Environment::getInstance().isDebug()) {
+   if (sd::env_isDebug()) {
     // Guard bytes go right after the shape info data (inside the padding region)
     // This allows detecting buffer overruns into the padding
     uint8_t* guardBytes = reinterpret_cast<uint8_t*>(newShape) + (6 * sizeof(LongType));
@@ -141,7 +142,7 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
     // Set order (at position length-1)
     shapeInfo[shape::shapeInfoLength(rank) - 1] = order;
 
-    if (sd::Environment::getInstance().isDebug()) {
+    if (sd::env_isDebug()) {
       uint8_t* guardBytes = reinterpret_cast<uint8_t*>(shapeInfo) + (shape::shapeInfoLength(rank) * sizeof(LongType));
       memset(guardBytes, 0xAB, SHAPE_ALLOC_PADDING);
     }
@@ -163,7 +164,7 @@ LongType* ShapeBuilders::copyShapeInfoWithNewType(const LongType* inShapeInfo, c
   // Copy the basic shape structure
   memcpy(newShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
 
-  if (sd::Environment::getInstance().isDebug()) {
+  if (sd::env_isDebug()) {
     uint8_t* guardBytes = reinterpret_cast<uint8_t*>(newShapeInfo) + (shape::shapeInfoLength(rank) * sizeof(LongType));
     memset(guardBytes, 0xAB, SHAPE_ALLOC_PADDING);
   }
@@ -193,7 +194,7 @@ LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char o
     // Initialize to zero to avoid uninitialized memory issues
     memset(shapeInfo, 0, shape::shapeInfoLength(rank) * sizeof(LongType));
 
-    if (sd::Environment::getInstance().isDebug()) {
+    if (sd::env_isDebug()) {
       uint8_t* guardBytes = reinterpret_cast<uint8_t*>(shapeInfo) + (shape::shapeInfoLength(rank) * sizeof(LongType));
       memset(guardBytes, 0xAB, SHAPE_ALLOC_PADDING);
     }

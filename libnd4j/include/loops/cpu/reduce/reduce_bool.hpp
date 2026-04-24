@@ -28,6 +28,7 @@
 #include <loops/reduce_bool.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
     using namespace simdOps;
 
@@ -59,7 +60,7 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
   }
 
   auto startingValue = OpType::startingValue(x);
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   X intermediate[64];
 
   PRAGMA_OMP_SIMD

@@ -40,7 +40,8 @@ struct GraphSegment;
 struct CompilationAuditEntry {
   int slotIndex = -1;
   std::string opName;
-  bool wasCompiled = false;    // true if backend included this op
+  bool wasCompiled = false;    // true if backend compiled this op via its graph API
+  bool isNativeHandled = false; // true if backend will execute this op natively (not an error)
   std::string reason;          // why it was skipped (e.g., "unmappable op kind")
 };
 

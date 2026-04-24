@@ -24,6 +24,7 @@
 #if NOT_EXCLUDED(OP_fill)
 
 #include <ops/declarable/headers/parity_ops.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
@@ -108,7 +109,7 @@ DECLARE_SHAPE_FN(fill) {
   } else if (block.width() > 1) {
     dataType = INPUT_VARIABLE(1)->dataType();
   } else if (block.numT() > 0) {
-    dataType = Environment::getInstance().defaultFloatDataType();
+    dataType = static_cast<sd::DataType>(sd::env_defaultFloatDataType());
   } else if (block.numI() > 0) {
     dataType = INT32;
   } else if (block.numB() > 0) {

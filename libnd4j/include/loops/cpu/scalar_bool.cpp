@@ -23,6 +23,7 @@
 
 #include <execution/Threads.h>
 #include <helpers/LoopKind.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -61,7 +62,7 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
 
   const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
   const int numTads = shape::length(xShapeInfo) / tadLength;
-  int num_threads = sd::math::sd_min(numTads, sd::Environment::getInstance().maxThreads());
+  int num_threads = sd::math::sd_min(numTads, sd::env_maxThreads());
 
   for (auto r = start; r < stop; r++) {
     auto oZ = z + zTadOffsets[r];

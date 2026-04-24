@@ -46,6 +46,7 @@
 #include <graph/gpu/TritonGraphBackend.h>
 #endif
 
+#include <system/env_functions.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
@@ -67,7 +68,7 @@ static inline cudaEvent_t getCrossStreamEvent() {
 
 // Default capture host workspace size (32MB, configurable via ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB)
 static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
-  size_t mb = static_cast<size_t>(Environment::getInstance().dsp().captureHostWorkspaceMb());
+  size_t mb = static_cast<size_t>(sd::env_dspCaptureHostWorkspaceMb());
   return mb * 1024ULL * 1024ULL;
 }();
 
@@ -429,7 +430,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       platformCleanupSegmentForRebuild(seg);
     }
     seg.exec.cachedShapeKey = segShapeKey;
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    if (shapeChanged) inShapeChangeWarmup_ = true;
+    auto warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    if (shapeChanged) inShapeChangeWarmup_ = false;
+    return warmupResult;
   }
 
   // ── CAPTURE ──
@@ -480,7 +484,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // At exec=2, executeCount_=2 → needsSync=false → prepareSpecialUse/
     // registerSpecialUse skipped → ops read stale device memory.
     forceSync_ = true;
+    inShapeChangeWarmup_ = true;
     auto warmStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    inShapeChangeWarmup_ = false;
     forceSync_ = false;
     if (warmStatus != Status::OK) {
       seg.exec.compilationFailed = true;
@@ -560,7 +566,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  const size_t CUBLAS_WORKSPACE_SIZE = Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
+  const size_t CUBLAS_WORKSPACE_SIZE = sd::env_dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
   ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
   setCublasWorkspaceForCapture(stream);
 
@@ -590,7 +596,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   // Allocate capture workspace
   static size_t CAPTURE_WORKSPACE_SIZE = []() -> size_t {
-    size_t mb = static_cast<size_t>(Environment::getInstance().dsp().captureWorkspaceMb());
+    size_t mb = static_cast<size_t>(sd::env_dspCaptureWorkspaceMb());
     return mb * 1024ULL * 1024ULL;
   }();
   DSP_DIAG_SEG(MEMORY, segIdx, "capture workspace check seg[%d-%d]: ptr=%p bytes=%zu",

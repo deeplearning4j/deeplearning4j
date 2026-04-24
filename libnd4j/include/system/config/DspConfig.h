@@ -64,7 +64,7 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<bool> _capturePoolEnabled{true};
   std::atomic<long long> _capturePoolMaxBytes{1073741824LL};
   std::atomic<int> _captureHostWorkspaceMb{32};
-  std::atomic<int> _captureWorkspaceMb{128};
+  std::atomic<int> _captureWorkspaceMb{512};
 
   // OOM retry
   std::atomic<int> _captureOomMaxRetries{3};

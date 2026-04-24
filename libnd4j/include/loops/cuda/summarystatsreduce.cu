@@ -29,7 +29,7 @@
 #include <loops/summarystatsreduce.h>
 #include <ops/ops.h>
 #include <ops/specials_cuda.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/float16.h>
 #include <types/types.h>
@@ -316,7 +316,7 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduceScalar(
   auto z = reinterpret_cast<Z*>(vz);
   auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("D16 opNum:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("D16 opNum:[%i]\n", opNum);
 
   summaryStatsReduceKernel<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       opNum,
@@ -350,7 +350,7 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
   auto z = static_cast<Z*>(vz);
   auto extraParams = static_cast<Z*>(vextraParams);
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F17 opNum:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("F17 opNum:[%i]\n", opNum);
 
   auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
 

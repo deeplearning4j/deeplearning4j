@@ -111,6 +111,7 @@ struct PatternMatch {
     SOFTMAX_DECOMPOSED,
     ATTENTION_QKV,
     FFN_BLOCK,
+    TWO_LAYER_MLP,           // matmul→activation→matmul: candidate for fused kernel (FastVLA pattern)
     FUSED_ATTENTION_OP,
     MIXED_MEGA_SEGMENT
   };

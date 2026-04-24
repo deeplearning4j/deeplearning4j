@@ -21,6 +21,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/env_functions.h>
 
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -118,8 +119,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
           extras.argumentsAsT(x->dataType()), reinterpret_cast<LongType *>(z->buffer()), z->shapeInfo(),
           z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)dims.size(),
-          Environment::getInstance().isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
-          Environment::getInstance().isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
+          sd::env_isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
+          sd::env_isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }
   } else {
     // TF mode
@@ -148,8 +149,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
           extras.argumentsAsT(x->dataType()), reinterpret_cast<LongType *>(z->buffer()), z->shapeInfo(),
           z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)axis.size(),
-          Environment::getInstance().isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
-          Environment::getInstance().isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
+          sd::env_isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
+          sd::env_isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }
   }
 

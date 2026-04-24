@@ -235,6 +235,10 @@ void TritonConfig::initFromEnvironment() {
     int v = readBoolEnvTriState("ND4J_TRITON_GRAPH_DOT_VERBOSE");
     if (v >= 0) setGraphDotVerbose(v == 1);
   }
+  {
+    int v = readBoolEnvTriState("ND4J_TRITON_MERGED_CAPTURE_THROUGH_VIEWS");
+    if (v >= 0) setMergedCaptureThroughViews(v == 1);
+  }
 
   // Compilation scope
   {

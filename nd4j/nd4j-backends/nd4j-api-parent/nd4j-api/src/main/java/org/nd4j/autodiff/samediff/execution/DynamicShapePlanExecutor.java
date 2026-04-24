@@ -189,7 +189,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Zero-copy output cache: when shapesFrozen, wraps C++ output pointers via
      *  dbCreateExternalDataBuffer instead of allocating + copyBuffer per step.
      *  These INDArrays point directly to C++ memory and must NOT be closed by callers.
-     *  Cleared on close() and when setShapesFrozen(false) is called. */
+     *  Cleared on close(), releaseGpuIntermediates(), and resetForNextPage(). */
     private Map<String, INDArray> zeroCopyOutputCache;
 
     /** Cached OpaqueNDArray wrappers for external inputs when shapesFrozen.
@@ -729,49 +729,100 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Enable/disable "shapes frozen" mode on the native plan.
+     * Get the cached OpaqueContext that holds all external inputs for plan execution.
+     * This context is persistent across calls and can be passed to native decode ops.
+     * Returns null if no context has been created yet.
+     */
+    public OpaqueContext getCachedOpContext() {
+        return cachedOpContext;
+    }
+
+    /**
+     * Find the index of an external input by name.
+     * Returns -1 if not found.
+     */
+    public int findExternalInputIndex(String name) {
+        if (name == null || currentPlan == null) return -1;
+        String[] extKeys = currentPlan.getExternalInputKeys();
+        return findExternalInputIndex(extKeys, name);
+    }
+
+    /**
+     * Find the index of a requested output by name.
+     * Returns -1 if not found.
+     */
+    public int findOutputIndex(String name) {
+        if (name == null || currentPlan == null) return -1;
+        List<String> outputs = new java.util.ArrayList<>(currentPlan.getRequestedOutputs());
+        for (int i = 0; i < outputs.size(); i++) {
+            if (outputs.get(i).equals(name)) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Get a snapshot of the current external inputs array.
+     * This is the full array of INDArrays that the native plan needs for execution.
+     * Returns null if no plan is compiled.
+     */
+    public INDArray[] getExternalInputsSnapshot() {
+        if (externalInputs == null) return null;
+        return java.util.Arrays.copyOf(externalInputs, externalInputs.length);
+    }
+
+    /**
+     * Freeze shapes on the native plan, enabling CUDA graph capture and buffer reuse.
      * When frozen, shape inference and cache clearing are skipped between executions.
      * Use during static KV decode where all external input shapes are guaranteed constant.
      * The first execution after enabling will still do full shape inference to populate
      * the cache; subsequent executions skip shape work entirely.
+     * <p>
+     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
+     * REPLAYING. Calling this method with {@code frozen=false} is illegal — backward
+     * transitions are architectural errors. If shapes change, call {@link #resetForNextPage()}
+     * to destroy the current plan and let the cache compile a fresh entry.
+     *
+     * @param frozen true to freeze shapes; false throws IllegalArgumentException
+     * @throws IllegalArgumentException if frozen is false
      */
     public void setShapesFrozen(boolean frozen) {
+        if (!frozen) {
+            throw new IllegalArgumentException(
+                "LIFECYCLE VIOLATION: setShapesFrozen(false) is illegal. " +
+                "Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING). " +
+                "Backward transitions are banned. To handle a shape change, call " +
+                "resetForNextPage() to destroy the current plan and let the cache compile a fresh one.");
+        }
         boolean wasFrozen = this.shapesFrozen;
-        this.shapesFrozen = frozen;
-        if (frozen && !wasFrozen) {
-            log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={})",
-                    nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java");
-            DspDiagnostics.record(DspDiagnostics.SHAPE,
-                    "Java: shapes FROZEN (executionCount=" + executionCount + ")");
-        } else if (!frozen && wasFrozen) {
-            log.info("FROZEN_TRANSITION: FROZEN → unfrozen (caches cleared)");
-            DspDiagnostics.record(DspDiagnostics.SHAPE,
-                    "Java: shapes UNFROZEN (executionCount=" + executionCount + ")");
+        if (wasFrozen) {
+            // Idempotent: already frozen, nothing to do.
+            return;
         }
-        // Always clear frozen-state caches on ANY transition (freeze or unfreeze).
-        // When entering frozen mode, stale caches from a previous plan/seqLen would cause
-        // shape mismatches (e.g., zeroCopyOutputCache has [1,576] from seqLen=1 but new plan
-        // needs [6,576] for seqLen=6). When leaving frozen mode, caches must also be cleared
-        // so the next execution does full shape inference.
-        {
-            closeZeroCopyOutputCache();
-            cachedInputOpaques = null;
-            cachedInputArrays = null;
-            contextInputRefs = null;
-            inputIsPlaceholder = null;
-            placeholderIndices = null;
-            frozenControlInputIndices = null;
-            frozenDerivedExternalInputIndices = null;
-            frozenOutputsInitialized = false;
-            frozenCallCount = 0;
-            cachedExecStream = null;
-            execStreamCached = false;
-            frozenExtBufferSnapshot = null;
-            frozenExtShapeSnapshot = null;
-        }
+        this.shapesFrozen = true;
+        log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={})",
+                nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java");
+        DspDiagnostics.record(DspDiagnostics.SHAPE,
+                "Java: shapes FROZEN (executionCount=" + executionCount + ")");
+        // Clear frozen-state caches when entering frozen mode. Stale caches from a previous
+        // plan/seqLen would cause shape mismatches (e.g., zeroCopyOutputCache has [1,576]
+        // from seqLen=1 but new plan needs [6,576] for seqLen=6).
+        closeZeroCopyOutputCache();
+        cachedInputOpaques = null;
+        cachedInputArrays = null;
+        contextInputRefs = null;
+        inputIsPlaceholder = null;
+        placeholderIndices = null;
+        frozenControlInputIndices = null;
+        frozenDerivedExternalInputIndices = null;
+        frozenOutputsInitialized = false;
+        frozenCallCount = 0;
+        cachedExecStream = null;
+        execStreamCached = false;
+        frozenExtBufferSnapshot = null;
+        frozenExtShapeSnapshot = null;
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            nativeOps.setPlanShapesFrozen(nativePlanHandle, frozen);
+            nativeOps.setPlanShapesFrozen(nativePlanHandle, true);
         }
     }
 
@@ -830,16 +881,15 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Reset executor state for next-page reuse WITHOUT destroying the native plan handle.
-     * Clears all cached inputs, slot arrays, and unfreezes shapes so the next execution
-     * does full shape inference (needed for prefill with different seq_len).
-     * The native plan handle (compiled Triton kernels + CUDA graph) is preserved.
+     * Reset executor state for next-page reuse.
+     * Releases GPU intermediates (CUDA graphs, replay workspaces) and destroys the current
+     * native plan handle so the next execution starts with a fresh plan from the cache.
+     * Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
+     * REPLAYING) and cannot go backwards — unfreezing is illegal. Destroying the handle
+     * and letting the cache create a fresh entry is the only correct reset path.
      */
     public void resetForNextPage() {
-        log.info("DSP resetForNextPage: clearing caches, preserving native plan handle");
-        if (shapesFrozen) {
-            setShapesFrozen(false);
-        }
+        log.info("DSP resetForNextPage: releasing GPU intermediates and destroying native plan handle");
         cachedInputArrays = null;
         cachedInputOpaques = null;
         contextInputRefs = null;
@@ -850,9 +900,22 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         // Release C++ intermediate GPU memory (CUDA graphs, replay workspaces, cuBLAS workspace,
         // non-weight output slot NDArrays). This also calls closeSlotArrayCache() internally.
+        // releaseGpuIntermediates does a teardown-only shapesFrozen_=false reset in C++ so the
+        // plan goes cold before the handle is unpinned back to the cache.
         releaseGpuIntermediates();
 
         closeZeroCopyOutputCache();
+
+        // Free the native plan handle — unpin it back to the cache so it is eligible for
+        // eviction. The next call to executeDynamicShapePlanBased() will compile a fresh plan
+        // for whatever shape the next page uses. Plan phases are linear and immutable, so we
+        // cannot reuse a frozen plan for a different shape.
+        freeNativePlanHandle("PAGE_RESET");
+        // Reset Java-side tracking that freeNativePlanHandle clears (shapesFrozen is on the
+        // Java side only; the C++ plan is gone).
+        shapesFrozen = false;
+        nativeExecutorFailed = false;
+        executionCount = 0;
 
         // Drain ArrayCacheMemoryMgr state: deferred close buffers accumulate across pages
         // because nothing drains them between page boundaries. The cache itself holds arrays
@@ -871,13 +934,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         frozenOutputsInitialized = false;
         frozenCallCount = 0;
-        nativeExecutorFailed = false;
-        executionCount = 0;
-        // Do NOT reset nativeExecutionDevice here. CUDA graphs are device-specific —
-        // once captured on device N, all subsequent executions must stay on device N.
-        // Resetting to -1 causes selectBestGpu() to pick a different device (e.g., device 1)
-        // on the next page, but captured graphs only exist on the original device, causing
-        // status 50 (REPLAY ERROR: hasReplayHandle=0) on the new device.
+        // Do NOT reset nativeExecutionDevice here. The next page should use the same GPU device
+        // for consistency (CUDA contexts, memory topology, etc. are device-specific).
 
         // KV cache retention and decode-input direct-update state were removed —
         // decode is now expressed as ordinary in-graph ops and Java-written ext inputs,
@@ -1030,13 +1088,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             java.util.Collections.sort(sortedOutputs);
 
             String[] extKeys = plan.getExternalInputKeys();
-            byte[] srcTypes = plan.getExternalInputSourceTypes();
+            // Hash ALL external input shapes into the plan cache key, not just
+            // placeholders. Any external shape change (KV cache growth, attention
+            // mask resize, etc.) must dispatch to a different plan instance.
+            // Intermediates are deterministic from externals, so only externals matter.
             List<String> phKeys = new java.util.ArrayList<>();
             for (int pi = 0; pi < extKeys.length; pi++) {
-                if (srcTypes != null && pi < srcTypes.length
-                        && srcTypes[pi] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
-                    phKeys.add(extKeys[pi]);
-                }
+                phKeys.add(extKeys[pi]);
             }
 
             cachedSerializedPlan = serialized;
@@ -1190,7 +1248,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             if (arr == null || arr.shapeInfoDataBuffer() == null) {
                 throw new IllegalStateException(
-                    "redispatchForCurrentShapes: placeholder '" + phKey +
+                    "redispatchForCurrentShapes: external input '" + phKey +
                     "' has no array at execute time — cannot build shape-keyed cache key.");
             }
             phPtrs.add(arr.shapeInfoDataBuffer().addressPointer());
@@ -1200,11 +1258,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                 : new PointerPointer(phPtrs.toArray(new Pointer[0]));
 
         try {
+            // Pass mode as part of cache key — each mode gets its own plan (one flow).
+            int modeForDispatch = cachedEffectiveGraphModeCode >= 0
+                    ? cachedEffectiveGraphModeCode : 0;
             Pointer newHandle = nativeOps.dispatchNativePlan(
                     cache,
                     planBytes, cachedSerializedPlan.length,
                     outputNamesPtr, cachedSortedOutputs.length,
-                    phPtrsPacked, phPtrs.size());
+                    phPtrsPacked, phPtrs.size(),
+                    modeForDispatch);
             if (newHandle == null || newHandle.isNull()) {
                 String cppError = null;
                 try {
@@ -1325,13 +1387,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
 
-        if (cachedEffectiveGraphModeCode >= 0) {
-            try {
-                nativeOps.setPlanGraphExecutionMode(handle, cachedEffectiveGraphModeCode);
-            } catch (UnsupportedOperationException e) {
-                // Backend ignores mode
-            }
-        }
+        // NOTE: graphExecutionMode is part of the cache key — each mode gets its
+        // own plan at creation time (one flow, no reclassification). No need to call
+        // setPlanGraphExecutionMode here.
 
         // NOTE: Do NOT propagate shapesFrozen here. The C++ plan manages its own frozen
         // state transition independently based on execution count and shape stability.
@@ -2479,6 +2537,36 @@ public class DynamicShapePlanExecutor implements Closeable {
                             }
                         }
                     }
+
+                    // Generic catch-all: any external input whose INDArray identity changed
+                    // must be rebound into the native context, even if it was not classified
+                    // as a placeholder, derived external, or small integral control input.
+                    // This keeps the frozen fast path correct for graphs where mutable
+                    // execution inputs are surfaced as non-placeholder externals.
+                    int genericRebindCount = 0;
+                    for (int i = 0; i < extInputs.length; i++) {
+                        INDArray arr = extInputs[i];
+                        if (arr == null || arr == cachedInputArrays[i]) {
+                            continue;
+                        }
+                        if (arr.data() == null || arr.data().wasClosed()) {
+                            throw new IllegalStateException(
+                                    "FROZEN_FAST_PATH: external input '" + extKeys[i]
+                                            + "' changed identity but is not live");
+                        }
+
+                        arr.syncToDevice();
+                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                        nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+                        cachedInputOpaques[i] = opaqueIn;
+                        cachedInputArrays[i] = arr;
+                        genericRebindCount++;
+                    }
+                    if (genericRebindCount > 0) {
+                        DspDiagnostics.record(DspDiagnostics.EXECUTE,
+                                "Java: FROZEN_FAST_PATH rebound " + genericRebindCount
+                                        + " identity-changed external inputs");
+                    }
                 } else {
                     // Fallback: full iteration (should not happen after first frozen call)
                     for (int i = 0; i < extInputs.length; i++) {
@@ -2809,7 +2897,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             //
             // IMPORTANT: Only use the zeroCopyOutputCache when directOutputMode=true.
             // When called from SameDiff.output() (directOutputMode=false), the caller DUPs all
-            // results into independent copies. KV close in StaticKvCacheDecodeLoop only closes
+            // results into independent copies. KV close in the decode loop only closes
             // those duped copies — NOT the cached originals — leaving zeroCopyOutputCache holding
             // stale data (previous step's logits) while appearing valid to the staleness guard.
             // Using the stale cache on the next outputDirect() call returns wrong tokens.
@@ -2818,7 +2906,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // returned references directly (no dup), so KV close invalidates the cache correctly.
             //
             // Guard: if any cached output array has been externally closed (e.g., KV outputs
-            // closed by StaticKvCacheDecodeLoop after scatter), the cache is stale. Drop it so
+            // closed by the GenerationPipeline after scatter), the cache is stale. Drop it so
             // we fall through to the allocation path below and rebuild a fresh cache.
             if (directOutputMode && shapesFrozen && zeroCopyOutputCache != null) {
                 for (INDArray arr : zeroCopyOutputCache.values()) {

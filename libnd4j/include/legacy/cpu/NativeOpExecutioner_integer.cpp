@@ -21,6 +21,7 @@
 #include <loops/broadcasting_int.h>
 #include <loops/pairwise_int.h>
 #include <loops/scalar_int.h>
+#include <system/env_functions.h>
 #include <types/types.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -146,7 +147,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
       !allowParallelism
       ? 1
       : sd::math::sd_max(
-          1, sd::math::sd_min(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+          1, sd::math::sd_min(zLen / 1024, sd::env_maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////

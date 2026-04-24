@@ -257,6 +257,26 @@ class AttentionPatternDetector : public PatternDetector {
 class FFNBlockDetector : public PatternDetector {
  public:
   const char* name() const override { return "FFNBlock"; }
+
+  // Check if an op name is a recognized activation function
+  static bool isActivationOp(const std::string& opName) {
+    std::string lower = opName;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    return lower == "relu" || lower == "sigmoid" || lower == "tanh" ||
+           lower == "gelu" || lower == "silu" || lower == "swish" ||
+           lower == "mish" || lower == "elu" || lower == "selu" ||
+           lower == "softplus" || lower == "hardtanh" || lower == "relu6" ||
+           lower == "hardsigmoid" || lower == "hardswish" || lower == "celu" ||
+           lower == "fused_gelu";
+  }
+
+  // Check if an op name is a bias add (add, biasadd, add_scalar)
+  static bool isBiasAddOp(const std::string& opName) {
+    std::string lower = opName;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    return lower == "add" || lower == "biasadd" || lower == "bias_add" || lower == "add_scalar";
+  }
+
   std::vector<PatternMatch> detect(const SegmentProfile& profile,
                                     NativeSlot* slots, int startSlot) override {
     std::vector<PatternMatch> results;
@@ -276,14 +296,47 @@ class FFNBlockDetector : public PatternDetector {
       int secondMatmul = matmulLocals[mi + 1];
       bool hasActivation = false;
       bool hasHeavyweight = false;
+
+      // Track if intermediate ops form a clean bias+activation pattern
+      // for the two-layer MLP fusion (FastVLA pattern)
+      bool hasBiasAdd = false;
+      bool hasCleanActivation = false;
+      int intermediateOps = 0;
+
       for (int j = firstMatmul + 1; j < secondMatmul; j++) {
         auto cat = profile.nodes[j].category;
         if (TritonIRBuilder::isElementwiseCompatible(cat)) hasActivation = true;
         if (cat == TritonOpCategory::REDUCTION || cat == TritonOpCategory::NORMALIZATION) {
           hasHeavyweight = true;
         }
+        // Check for clean bias+activation pattern
+        const auto& opName = profile.nodes[j].opName;
+        if (isBiasAddOp(opName)) hasBiasAdd = true;
+        if (isActivationOp(opName)) hasCleanActivation = true;
+        intermediateOps++;
       }
+
       if (hasActivation && !hasHeavyweight) {
+        // Check if this matches the two-layer MLP fusion pattern:
+        // matmul → [bias_add] → activation → matmul, with a small number of
+        // intermediate ops (bias + activation = 1-2 ops between matmuls).
+        // This pattern can be fused into a single kernel where the intermediate
+        // hidden activation stays in registers (FastVLA approach).
+        if (hasCleanActivation && intermediateOps <= 3) {
+          PatternMatch m;
+          m.type = PatternMatch::TWO_LAYER_MLP;
+          m.priority = 90;  // Higher priority than generic FFN_BLOCK (85)
+          for (int j = firstMatmul; j <= secondMatmul; j++) {
+            m.localIndices.push_back(j);
+          }
+          m.description = "two-layer MLP (FastVLA fusion candidate): matmul[" +
+                           std::to_string(profile.nodes[firstMatmul].slotIndex) +
+                           "] → " + (hasBiasAdd ? "bias+" : "") + "activation → matmul[" +
+                           std::to_string(profile.nodes[secondMatmul].slotIndex) + "]";
+          results.push_back(m);
+        }
+
+        // Also emit the generic FFN_BLOCK pattern at lower priority
         PatternMatch m;
         m.type = PatternMatch::FFN_BLOCK;
         m.priority = 85;
@@ -638,6 +691,7 @@ SegmentAnalysis TritonIRBuilder::classifyAndAnalyze(const SegmentProfile& profil
         analysis.pattern = SegmentKernelPattern::WHOLE_GRAPH;
         break;
       case PatternMatch::FFN_BLOCK:
+      case PatternMatch::TWO_LAYER_MLP:
         analysis.pattern = SegmentKernelPattern::WHOLE_GRAPH;
         break;
       case PatternMatch::SOFTMAX_DECOMPOSED:
@@ -778,6 +832,7 @@ SegmentKernelPattern TritonIRBuilder::classifySegment(NativeSlot* slots, int sta
       return SegmentKernelPattern::FUSED_ATTENTION;
     case PatternMatch::ATTENTION_QKV:
     case PatternMatch::FFN_BLOCK:
+    case PatternMatch::TWO_LAYER_MLP:
     case PatternMatch::MIXED_MEGA_SEGMENT:
       return SegmentKernelPattern::WHOLE_GRAPH;
     case PatternMatch::SOFTMAX_DECOMPOSED:

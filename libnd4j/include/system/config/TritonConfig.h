@@ -38,9 +38,11 @@ class SD_LIB_EXPORT TritonConfig {
   std::atomic<bool> _cacheEnabled{true};
   // Soft byte budget for resident CUmodule handles per device. When exceeded,
   // least-recently-used kernels are evicted via cuModuleUnload and reloaded
-  // from the disk cache on next use. 0 = unlimited (no eviction, current
-  // behavior). Set via ND4J_TRITON_MODULE_RESIDENCY_BUDGET_BYTES.
-  std::atomic<int64_t> _moduleResidencyBudgetBytes{0};
+  // from the disk cache on next use. 0 = unlimited (no eviction).
+  // Default 512MB — sufficient for all SmolDocling Triton kernels while
+  // preventing unbounded GPU memory consumption when more op types are compiled.
+  // Set via ND4J_TRITON_MODULE_RESIDENCY_BUDGET_BYTES.
+  std::atomic<int64_t> _moduleResidencyBudgetBytes{536870912LL};
   // If >0, warn (DSP_DIAG + sd_printf) when per-device module memory exceeds
   // this byte threshold. 0 = no warning. Set via ND4J_TRITON_MODULE_RESIDENCY_WARN_BYTES.
   std::atomic<int64_t> _moduleResidencyWarnBytes{0};
@@ -90,6 +92,7 @@ class SD_LIB_EXPORT TritonConfig {
   std::atomic<bool> _graphReinstantiate{false};
   std::atomic<bool> _graphAutoFree{false};
   std::atomic<bool> _graphDotVerbose{false};
+  std::atomic<bool> _mergedCaptureThroughViews{false};
 
   // Compilation scope
   std::atomic<bool> _compileAll{false};
@@ -210,6 +213,8 @@ class SD_LIB_EXPORT TritonConfig {
   void setGraphAutoFree(bool v) { _graphAutoFree.store(v); }
   bool graphDotVerbose() { return _graphDotVerbose.load(); }
   void setGraphDotVerbose(bool v) { _graphDotVerbose.store(v); }
+  bool mergedCaptureThroughViews() { return _mergedCaptureThroughViews.load(); }
+  void setMergedCaptureThroughViews(bool v) { _mergedCaptureThroughViews.store(v); }
 
   // --- Compilation scope ---
   bool compileAll() { return _compileAll.load(); }

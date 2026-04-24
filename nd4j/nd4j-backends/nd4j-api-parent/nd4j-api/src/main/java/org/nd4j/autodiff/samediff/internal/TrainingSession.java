@@ -884,7 +884,13 @@ public class TrainingSession extends InferenceSession {
      * Training batches within an epoch have consistent shapes, so we freeze eagerly
      * after the first successful DSP execution to enable CUDA graph replay from
      * iteration 1 onward. If a shape change occurs (incomplete last batch, new epoch
-     * with different data), the executor detects the mismatch and we unfreeze here.
+     * with different data), the current native plan is destroyed and a fresh one is
+     * compiled for the new shape on the next iteration.
+     * <p>
+     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
+     * REPLAYING. Backward transitions (unfreezing) are illegal. When shapes change, the
+     * only correct action is to destroy the existing plan and let the cache produce a
+     * fresh entry for the new shape.
      */
     private void manageShapeFreezing(Map<String, INDArray> placeholders) {
         if (placeholders == null || placeholders.isEmpty()) {
@@ -905,24 +911,27 @@ public class TrainingSession extends InferenceSession {
         }
 
         // Eager freeze: training batches are same-shaped within an epoch.
-        // Freeze after first execution so iteration 1+ gets graph replay.
-        // If shapes change (last incomplete batch, new epoch), unfreeze.
+        // Freeze after first successful execution so iteration 1+ gets graph replay.
+        // If shapes change (last incomplete batch, new epoch with different data),
+        // destroy the current plan — phases are linear and immutable, so unfreezing
+        // is illegal. The plan cache will compile a fresh entry for the new shape.
         if (previousPlaceholderShapes == null) {
-            // First iteration: record shapes and freeze immediately
+            // First iteration: freeze immediately so subsequent same-shaped iterations
+            // get graph replay.
             if (!executor.isShapesFrozen()) {
                 executor.setShapesFrozen(true);
                 log.info("DSP training: froze shapes eagerly after first iteration");
             }
         } else if (!shapesMatch(previousPlaceholderShapes, currentShapes)) {
-            // Shape changed: unfreeze so executor recomputes shapes
-            if (executor.isShapesFrozen()) {
-                executor.setShapesFrozen(false);
-                log.info("DSP training: unfroze shapes due to shape change");
-            }
-            // Re-freeze immediately for the new shape — next iteration will
-            // likely have the same shape again (new epoch, consistent batches)
-            executor.setShapesFrozen(true);
-            log.info("DSP training: re-froze shapes for new batch shape");
+            // Shape changed. Destroy the current plan (releasing GPU intermediates and
+            // unpinning the handle back to the cache). Reset previousPlaceholderShapes
+            // to null so the next call treats it as a "first iteration" and freezes after
+            // the new plan executes successfully.
+            log.info("DSP training: shape change detected — destroying plan for new shape");
+            executor.resetForNextPage();
+            previousPlaceholderShapes = null;
+            dspStepCount++;
+            return;
         }
         // If shapes match previous and already frozen: nothing to do (graph replay)
 

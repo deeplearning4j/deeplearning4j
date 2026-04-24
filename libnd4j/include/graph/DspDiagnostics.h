@@ -20,7 +20,7 @@
 #define LIBND4J_DSP_DIAGNOSTICS_H
 
 #include <system/common.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <array/NDArray.h>
 
 #include <atomic>
@@ -129,7 +129,7 @@ class SD_LIB_EXPORT DspDiagnostics {
   // When Environment debug+verbose is ON, ALL DSP diagnostics are enabled
   // so that DSP_DIAG macros produce output alongside standard op debug logging.
   bool isEnabled(uint32_t category) const {
-    if (sd::Environment::getInstance().isDebugAndVerbose()) return true;
+    if (sd::env_isDebugAndVerbose()) return true;
     return (enabledMask_.load(std::memory_order_relaxed) & category) != 0;
   }
 
@@ -362,7 +362,7 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_SNAPSHOT_ADDRS(TAG, OUT_SLOTS, NUM_OUT, EXT_ARRAYS, NUM_EXT) \
   do { \
     if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_EXECUTE) \
-        && sd::Environment::getInstance().isDebug()) { \
+        && sd::env_isDebug()) { \
       sd::graph::DspDiagnostics::getInstance().snapshotAddresses( \
           (TAG), (void**)(OUT_SLOTS), (NUM_OUT), (void**)(EXT_ARRAYS), (NUM_EXT)); \
     } \
@@ -370,7 +370,7 @@ class SD_LIB_EXPORT DspDiagnostics {
 
 #define DSP_DIAG_COMPARE_ADDRS(TAG_A, TAG_B) \
   (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_EXECUTE) \
-   && sd::Environment::getInstance().isDebug() \
+   && sd::env_isDebug() \
    ? sd::graph::DspDiagnostics::getInstance().compareAddressSnapshots((TAG_A), (TAG_B)) : 0)
 
 // Dump leading float values of an output slot's device buffer.
@@ -378,7 +378,7 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_DUMP_SLOT(TAG, SLOT_IDX, DEV_PTR, NUM_ELEMS) \
   do { \
     if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_EXECUTE) \
-        && sd::Environment::getInstance().isDebug()) { \
+        && sd::env_isDebug()) { \
       sd::graph::DspDiagnostics::getInstance().dumpSlotBuffer( \
           (TAG), (SLOT_IDX), (DEV_PTR), (NUM_ELEMS)); \
     } \

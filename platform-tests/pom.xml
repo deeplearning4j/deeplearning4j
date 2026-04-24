@@ -1669,6 +1669,8 @@
                         <ND4J_DSP_DISABLE_VIEW_FASTPATH>${nd4j.dsp.disableViewFastpath}</ND4J_DSP_DISABLE_VIEW_FASTPATH>
                         <ND4J_DSP_DISABLE_CAST_HWM>${nd4j.dsp.disableCastHwm}</ND4J_DSP_DISABLE_CAST_HWM>
                         <ND4J_DSP_DISABLE_WS_SKIP>${nd4j.dsp.disableWsSkip}</ND4J_DSP_DISABLE_WS_SKIP>
+                        <ND4J_DSP_CAPTURE_WORKSPACE_MB>${nd4j.dsp.captureWorkspaceMb}</ND4J_DSP_CAPTURE_WORKSPACE_MB>
+                        <ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB>${nd4j.dsp.captureHostWorkspaceMb}</ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->

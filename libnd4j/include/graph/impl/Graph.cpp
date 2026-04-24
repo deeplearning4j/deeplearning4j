@@ -28,6 +28,7 @@
 #include <helpers/ShapeUtils.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <system/env_functions.h>
 
 #include <vector>
 
@@ -752,7 +753,7 @@ void Graph::prepareOutputs() {
     // we're adding final nodes of the graph. those, not used as input anywhere
     sd_debug("Paring nodes... \n", "");
 
-    if (Environment::getInstance().isDebugAndVerbose()) {
+    if (sd::env_isDebugAndVerbose()) {
       // sd_printv("current _output", _output);
     }
     //_output.clear();
@@ -796,7 +797,7 @@ void Graph::prepareOutputs() {
         // FIXME: we don't really need search here.
 
         if (std::find(_output.begin(), _output.end(), node->id()) == _output.end()) _output.emplace_back(node->id());
-      } else if (Environment::getInstance().isDebugAndVerbose()) {
+      } else if (sd::env_isDebugAndVerbose()) {
         sd_debug("Node [%i:<%s>] has %i outputs announced:\n", v, node->name()->c_str(), node->output()->size());
         printf("{");
         for (auto s : *node->output()) {

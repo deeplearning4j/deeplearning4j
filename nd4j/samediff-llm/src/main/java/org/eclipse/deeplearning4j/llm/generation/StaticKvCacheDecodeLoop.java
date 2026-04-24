@@ -226,6 +226,15 @@ public class StaticKvCacheDecodeLoop {
     private final int[] referenceTokenStream;
 
     /**
+     * When true (default), uses fixed-address reusable buffers for embeddings and
+     * input IDs across decode steps. This enables CUDA graph replay stability but
+     * was the root cause of stale-data bugs (see f8e83ff4c9). When false, allocates
+     * fresh buffers each step — address drift forces graph re-evaluation.
+     */
+    @Builder.Default
+    private final boolean useReusableBuffers = true;
+
+    /**
      * Create the appropriate KvCacheManager based on the configured strategy.
      *
      * <p>Currently supports STATIC strategy (the only one with a complete KvCacheManager
@@ -875,54 +884,54 @@ public class StaticKvCacheDecodeLoop {
                 throw decodeStageFailure("TOKEN_EMBED_LOOKUP", step, pastSeqLen, currentSeqLen,
                         usingStaticKv, useDirect, cachePos, e);
             }
-            // Reusable fixed-address embedding buffer: allocate once, update via .assign() each step.
-            // Cross-stream CUDA event sync (b997c15894) ensures .assign() on the default stream
-            // completes before graph replay launches on the DSP stream.
-            // The consolidated arg table refresh (copyConsolidatedArgTableToDevice) correctly
-            // updates device-side pointer arrays with the stable address before replay.
-            // No H2D embedding node is baked into the captured graph: during capture,
-            // sAct=true → syncToSpecial() returns early, so no memcpy node overwrites fresh data.
-            if (reusableEmbeddings == null) {
-                reusableEmbeddings = rowEmbed.dup();  // allocate once with correct shape+dtype
-            } else {
-                // Assign from a contiguous dup of the view to guarantee correct GPU data.
-                // rowEmbed is a view into the embedding table — assigning directly from
-                // a view can misread the strided source on CUDA due to view offset handling.
-                // dup() creates a contiguous copy on the GPU at a temporary address;
-                // assign() then copies from that contiguous buffer into the fixed-address
-                // reusableEmbeddings, keeping the stable GPU pointer for CUDA graph replay.
-                // Close the previous step's temp embed (safe now — the assign kernel
-                // and all subsequent graph replay have completed on the same stream).
-                if (pendingEmbedClose != null) {
-                    SameDiffMemoryUtils.safeClose(pendingEmbedClose);
-                    pendingEmbedClose = null;
+            if (useReusableBuffers) {
+                // Reusable fixed-address embedding buffer: allocate once, update via .assign() each step.
+                // Cross-stream CUDA event sync (b997c15894) ensures .assign() on the default stream
+                // completes before graph replay launches on the DSP stream.
+                if (reusableEmbeddings == null) {
+                    reusableEmbeddings = rowEmbed.dup();
+                } else {
+                    if (pendingEmbedClose != null) {
+                        SameDiffMemoryUtils.safeClose(pendingEmbedClose);
+                        pendingEmbedClose = null;
+                    }
+                    INDArray contiguousEmbed = rowEmbed.dup();
+                    reusableEmbeddings.assign(contiguousEmbed);
+                    pendingEmbedClose = contiguousEmbed;
                 }
-                INDArray contiguousEmbed = rowEmbed.dup();
-                reusableEmbeddings.assign(contiguousEmbed);
-                // Defer close: assign() launches asynchronously on the exec stream.
-                // Closing contiguousEmbed immediately would free GPU memory while the
-                // kernel is still reading from it.  Instead, defer the close to the
-                // start of the NEXT step — by then the entire decode (including graph
-                // replay) has run on the same stream, guaranteeing the assign completed.
-                pendingEmbedClose = contiguousEmbed;
-            }
-            currentEmbeddings = reusableEmbeddings;
-            // Reusable fixed-address inputIds: allocate once, update value via putScalar
-            if (reusableInputIds == null) {
-                reusableInputIds = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                currentEmbeddings = reusableEmbeddings;
+                if (reusableInputIds == null) {
+                    reusableInputIds = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                } else {
+                    reusableInputIds.putScalar(new int[]{0, 0}, nextTokenId);
+                    Nd4j.getAffinityManager().ensureLocation(reusableInputIds,
+                            org.nd4j.linalg.api.concurrency.AffinityManager.Location.DEVICE);
+                }
+                if (currentInputIds != null && currentInputIds != reusableInputIds) {
+                    SameDiffMemoryUtils.safeClose(currentInputIds);
+                }
+                currentInputIds = reusableInputIds;
+                if (prevEmbeddings != null && prevEmbeddings != reusableEmbeddings
+                        && prevEmbeddings != prefillEmbeddings) {
+                    SameDiffMemoryUtils.safeClose(prevEmbeddings);
+                }
             } else {
-                reusableInputIds.putScalar(new int[]{0, 0}, nextTokenId);
-                Nd4j.getAffinityManager().ensureLocation(reusableInputIds,
-                        org.nd4j.linalg.api.concurrency.AffinityManager.Location.DEVICE);
-            }
-            if (currentInputIds != null && currentInputIds != reusableInputIds) {
-                SameDiffMemoryUtils.safeClose(currentInputIds);
-            }
-            currentInputIds = reusableInputIds;
-            // prevEmbeddings IS reusableEmbeddings after step 1 — don't close it
-            if (prevEmbeddings != null && prevEmbeddings != reusableEmbeddings
-                    && prevEmbeddings != prefillEmbeddings) {
-                SameDiffMemoryUtils.safeClose(prevEmbeddings);
+                // Fresh buffer each step: address changes force CUDA graph replay to
+                // detect drift and re-capture when needed. The reusable pattern above
+                // caused graph replay to read stale data at step 3+ (f8e83ff4c9).
+                currentEmbeddings = rowEmbed.dup();
+                INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
+                    currentInputIds.setCloseable(true);
+                    currentInputIds.close();
+                }
+                currentInputIds = newTokenTensor;
+                if (prevEmbeddings != null && prevEmbeddings != currentEmbeddings
+                        && prevEmbeddings != prefillEmbeddings
+                        && !prevEmbeddings.wasClosed()) {
+                    prevEmbeddings.setCloseable(true);
+                    prevEmbeddings.close();
+                }
             }
             pastSeqLen += currentSeqLen;
 

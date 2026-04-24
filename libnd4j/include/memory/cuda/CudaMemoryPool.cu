@@ -250,15 +250,25 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       if (actualDeviceId) *actualDeviceId = deviceId;
       return ptr;
     }
-    // Workspace exhausted — return nullptr to abort the current op gracefully.
+    // Workspace exhausted — THROW so the caller gets a stack trace.
     // Falling through to cudaMallocAsync during graph capture corrupts the capture
     // stream (error 901 / invalid argument), making the entire capture invalid.
-    // Returning nullptr causes the op to fail, which sets compilationFailed=true on the
-    // segment and falls back to slot-by-slot execution for this segment.
-    sd_printf("CudaMemoryPool: capture workspace exhausted (%zu + %zu > %zu), "
-              "returning nullptr (aborting capture) for %zu bytes\n",
-              tl_captureWorkspaceOffset, aligned, tl_captureWorkspaceSize, size);
-    return nullptr;
+    // Previously returned nullptr (silent failure) — the caller got a null buffer
+    // and crashed with a misleading KERNEL_FAILURE. Now we throw with actionable
+    // diagnostic info so the user can increase the workspace size.
+    {
+      std::string errMsg =
+          "CudaMemoryPool: CAPTURE WORKSPACE OOM — workspace exhausted during CUDA graph capture.\n"
+          "  workspace_used=" + std::to_string(tl_captureWorkspaceOffset / (1024*1024)) + "MB"
+          "  requested=" + std::to_string(aligned / (1024*1024)) + "MB"
+          "  workspace_total=" + std::to_string(tl_captureWorkspaceSize / (1024*1024)) + "MB"
+          "  (used+requested=" + std::to_string((tl_captureWorkspaceOffset + aligned) / (1024*1024)) + "MB"
+          " > total=" + std::to_string(tl_captureWorkspaceSize / (1024*1024)) + "MB)\n"
+          "  FIX: Increase capture workspace via Environment property:\n"
+          "    -Dnd4j.dsp.captureWorkspaceMb=512  (or higher)\n"
+          "  or env var: ND4J_DSP_CAPTURE_WORKSPACE_MB=512";
+      THROW_EXCEPTION(errMsg.c_str());
+    }
   }
   if (tl_graphExecutionActive && tl_captureWorkspace == nullptr) {
     // This should be unreachable: the capture code in NativeDynamicShapePlan_gpubackend.cpp

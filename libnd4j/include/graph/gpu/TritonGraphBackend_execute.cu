@@ -324,8 +324,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                  seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice, targetDevice, cachedDeviceId);
       } else {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: no compiled kernel for segment [%d-%d] "
-                 "(shapeKey=%lld, deviceId=%d)",
-                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice);
+                 "(shapeKey=%lld, deviceId=%d, compileAll=%d, excludeHash=%zu). "
+                 "Cache has %zu entries:",
+                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice,
+                 key.compileAll ? 1 : 0, key.excludeOpsHash, cache_.size());
+        for (const auto& entry : cache_) {
+          DSP_DIAG(EXECUTE, "  cached: [%d-%d] shapeKey=%lld dev=%d compileAll=%d excHash=%zu",
+                   entry.first.startSlot, entry.first.endSlot, entry.first.shapeKey,
+                   entry.first.deviceId, entry.first.compileAll ? 1 : 0, entry.first.excludeOpsHash);
+        }
       }
       return Status::KERNEL_FAILURE;
     }

@@ -251,6 +251,12 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["dot_product_attention_v2"] = {"dot_product_attention_v2", TritonOpCategory::FUSED_ATTENTION, "custom.flash_attn", true};
   table["DotProductAttention"]      = {"DotProductAttention",      TritonOpCategory::FUSED_ATTENTION, "custom.flash_attn", true};
   table["DotProductAttentionV2"]    = {"DotProductAttentionV2",    TritonOpCategory::FUSED_ATTENTION, "custom.flash_attn", true};
+  // Cross-attention: Q from one modality, K/V from another (FastVLA pattern).
+  // Maps to the same Flash Attention kernel — structurally identical to self-attention.
+  table["cross_attention"]          = {"cross_attention",          TritonOpCategory::FUSED_ATTENTION, "custom.flash_attn", true};
+  table["CrossAttention"]           = {"CrossAttention",           TritonOpCategory::FUSED_ATTENTION, "custom.flash_attn", true};
+  table["vision_language_cross_attention"] = {"vision_language_cross_attention", TritonOpCategory::FUSED_ATTENTION, "custom.flash_attn", true};
+  table["VisionLanguageCrossAttention"]   = {"VisionLanguageCrossAttention",   TritonOpCategory::FUSED_ATTENTION, "custom.flash_attn", true};
 
   // Reductions
   table["reduce_sum"]    = {"reduce_sum",    TritonOpCategory::REDUCTION, "tt.reduce sum",  false};
@@ -294,6 +300,10 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   // fused_gemm_swiglu: GatedMLP, treated as MATMUL for segment/section handling
   table["fused_gemm_swiglu"]    = {"fused_gemm_swiglu",    TritonOpCategory::MATMUL,        "custom.fused_gemm_swiglu", true};
   table["FusedGemmSwiglu"]      = {"FusedGemmSwiglu",      TritonOpCategory::MATMUL,        "custom.fused_gemm_swiglu", true};
+  // fused_two_layer_mlp: Two chained matmuls with intermediate activation (FastVLA pattern).
+  // activation2(activation1(x @ W1 + b1) @ W2 + b2) — intermediate stays in registers.
+  table["fused_two_layer_mlp"]  = {"fused_two_layer_mlp",  TritonOpCategory::MATMUL,        "custom.fused_two_layer_mlp", true};
+  table["FusedTwoLayerMlp"]     = {"FusedTwoLayerMlp",     TritonOpCategory::MATMUL,        "custom.fused_two_layer_mlp", true};
   table["batch_norm"]           = {"batch_norm",           TritonOpCategory::NORMALIZATION, "custom.batch_norm",   true};
   table["BatchNorm"]            = {"BatchNorm",            TritonOpCategory::NORMALIZATION, "custom.batch_norm",   true};
   table["normalize_moments"]    = {"normalize_moments",    TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};

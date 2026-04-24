@@ -30,6 +30,7 @@
 #include <openvino/openvino.hpp>
 #include <openvino/op/ops.hpp>
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -46,16 +47,16 @@ namespace graph {
  * compiles via ov::Core::compile_model("CPU"), caches by shape key,
  * and executes with zero-copy ov::Tensor wrappers around NDArray host buffers.
  *
- * OpenVINO provides broader op coverage than oneDNN Graph (~200 vs ~80 ops),
- * including Gather, GatherND, ScatterNDUpdate, Where/Select, Split, Slice,
- * and full comparison/logical op families. It also offers Snippets JIT for
- * element-wise fusion and oneDNN BRGEMM for matmul/conv.
- *
- * Priority: after oneDNN Graph (which has built-in MHA/MLP fusion patterns
- * that are faster for those specific patterns), before ARM ACL.
+ * Supports mixed segments: ops that can't be mapped to OV (SSM recurrence)
+ * are executed natively via the NativeSlotExecutor callback. The segment is
+ * split into OV "islands" around native ops, and execution interleaves
+ * compiled OV inference with native slot-by-slot execution.
  */
 class OpenVinoGraphBackend : public GraphBackend {
  public:
+  // Callback type for executing native (non-OV) slot ranges
+  using NativeSlotExecutor = std::function<Status(int startSlot, int endSlot)>;
+
   OpenVinoGraphBackend();
   ~OpenVinoGraphBackend() override;
 
@@ -80,23 +81,48 @@ class OpenVinoGraphBackend : public GraphBackend {
 
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
+  // Native slot executor management (thread-local, set by the plan executor)
+  void setNativeSlotExecutor(NativeSlotExecutor executor);
+  void clearNativeSlotExecutor();
+
   static OpenVinoGraphBackend& getInstance();
 
  private:
   ov::Core core_;
 
-  // Cached compiled segment
+  // A contiguous range of slots executed natively (not through OV)
+  struct NativeRange {
+    int startSlot;
+    int endSlot;
+  };
+
+  // A compiled OV island covering a contiguous range of OV-compilable slots
+  struct OvIsland {
+    int startSlot;
+    int endSlot;
+    std::shared_ptr<ov::CompiledModel> compiled;
+    std::shared_ptr<ov::InferRequest> request;
+    std::vector<int> inputSlotMap;   // OV input index -> source slot/ext index
+    std::vector<int> outputSlotMap;  // OV output index -> outputSlot index
+  };
+
+  // Execution schedule step: either an OV island or a native range
+  struct ExecutionStep {
+    bool isNative;
+    int index;  // index into ovIslands or nativeRanges
+  };
+
+  // Cached compiled segment with mixed execution support
   struct CompiledSegment {
     LongType shapeKey;
     bool valid;
 
-    std::shared_ptr<ov::CompiledModel> compiled;
-    std::shared_ptr<ov::InferRequest> request;
-
-    // Maps OV model input index -> source: >=0 = outputSlot index, <0 = -(externalInputIndex+1)
-    std::vector<int> inputSlotMap;
-    // Maps OV model output index -> outputSlot index
-    std::vector<int> outputSlotMap;
+    // OV islands (compiled subgraphs between native ops)
+    std::vector<OvIsland> ovIslands;
+    // Native ranges (slots executed via NativeSlotExecutor)
+    std::vector<NativeRange> nativeRanges;
+    // Interleaved execution order
+    std::vector<ExecutionStep> executionSchedule;
 
     // Per-slot compilation audit
     std::vector<CompilationAuditEntry> compilationAudit;
@@ -111,16 +137,23 @@ class OpenVinoGraphBackend : public GraphBackend {
   // Most recent compilation audit
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
+  // Thread-local native executor (set by plan before executeSegment)
+  static thread_local NativeSlotExecutor nativeExecutor_;
+
   // Check if an op name is mappable to an OpenVINO opset13 operation
   static bool isOpenVinoMappable(const std::string& opName);
+
+  // Check if an op must run natively (too complex/stateful for OV decomposition)
+  static bool isNativeDeferredOp(const std::string& opName);
 
   // Map NDArray DataType to OpenVINO element type
   static ov::element::Type mapDataType(DataType dt);
 
-  // Build an ov::Model from a segment of slots
-  CompiledSegment buildModel(NativeSlot* slots, int startSlot, int endSlot,
-                             NDArray** externalInputs, int numExternalInputs,
-                             NDArray** outputSlots, int totalOutputSlots);
+  // Build an OV model from a contiguous range of OV-compilable slots
+  OvIsland buildIsland(NativeSlot* slots, int startSlot, int endSlot,
+                       NDArray** externalInputs, int numExternalInputs,
+                       NDArray** outputSlots, int totalOutputSlots,
+                       int segStartSlot, int segEndSlot);
 };
 
 }  // namespace graph

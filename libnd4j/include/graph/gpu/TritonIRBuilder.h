@@ -298,6 +298,22 @@ class TritonIRBuilder {
                                   int M, int N, int K,
                                   int blockM, int blockN, int blockK);
 
+  // Emit a fused two-layer MLP kernel (FastVLA pattern):
+  //   out = tanh(ReLU(x @ W1 + b1) @ W2 + b2)
+  // Outer loop tiles over H (hidden dim) so the intermediate activation h1
+  // stays in registers. Inner K-loop accumulates x @ W1_tile. After each
+  // H-tile: add b1, apply ReLU, multiply by W2_tile into output accumulator.
+  // After all H-tiles: add b2, apply tanh.
+  // Inputs:  x [M, D], W1 [D, H], b1 [H], W2 [H, A], b2 [A]
+  // Output:  out [M, A]
+  // Grid:    (ceil(M/blockM), ceil(A/blockA)) — 2D
+  static void emitFusedTwoLayerMLPKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                                          mlir::Value xPtr, mlir::Value w1Ptr,
+                                          mlir::Value b1Ptr, mlir::Value w2Ptr,
+                                          mlir::Value b2Ptr, mlir::Value outPtr,
+                                          int M, int D, int H, int A,
+                                          int blockM, int blockH, int blockK, int blockA);
+
   static void emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location loc,
                                mlir::Value aPtr, mlir::Value bPtr, mlir::Value cPtr,
                                int M, int N, int K,

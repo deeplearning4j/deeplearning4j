@@ -848,6 +848,309 @@ void TritonIRBuilder::emitGatedMLPKernel(
             M, N, K);
 }
 
+// ─── Fused Two-Layer MLP emission (FastVLA pattern) ─────────────────────────
+//
+// Computes: out = tanh(ReLU(x @ W1 + b1) @ W2 + b2)
+//
+// Key insight (from FastVLA _action_fwd_kernel): tile over H (hidden dimension)
+// so the intermediate activation h1 = ReLU(x @ W1 + b1) stays in registers.
+// For each H-tile:
+//   1. Inner K-loop: accumulate x @ W1_tile (D tiles, blockK at a time)
+//   2. Add b1 tile, apply ReLU — still in registers
+//   3. Multiply h1_tile @ W2_tile, accumulate into output
+// After all H-tiles: add b2, apply tanh.
+//
+// Memory traffic: reads x once per H-tile, W1 once total, W2 once total.
+// The intermediate [M, H] activation never touches global memory.
+//
+// Grid: (ceil(M/blockM), ceil(A/blockA)) — 2D
+// Inputs:  x [M, D], W1 [D, H], b1 [H], W2 [H, A], b2 [A]
+// Output:  out [M, A]
+
+void TritonIRBuilder::emitFusedTwoLayerMLPKernel(
+    mlir::OpBuilder& builder, mlir::Location loc,
+    mlir::Value xPtr, mlir::Value w1Ptr, mlir::Value b1Ptr,
+    mlir::Value w2Ptr, mlir::Value b2Ptr, mlir::Value outPtr,
+    int M, int D, int H, int A,
+    int blockM, int blockH, int blockK, int blockA) {
+
+  DSP_DIAG(JIT, "emitFusedTwoLayerMLPKernel: M=%d D=%d H=%d A=%d block=(%d,%d,%d,%d)",
+           M, D, H, A, blockM, blockH, blockK, blockA);
+
+  auto f32Type = builder.getF32Type();
+  auto i32Type = builder.getI32Type();
+
+  auto xPtrType = mlir::cast<mlir::triton::PointerType>(xPtr.getType());
+  auto xElemType = xPtrType.getPointeeType();
+  auto w1PtrType = mlir::cast<mlir::triton::PointerType>(w1Ptr.getType());
+  auto w1ElemType = w1PtrType.getPointeeType();
+  auto w2PtrType = mlir::cast<mlir::triton::PointerType>(w2Ptr.getType());
+  auto w2ElemType = w2PtrType.getPointeeType();
+  auto outPtrTypeVal = mlir::cast<mlir::triton::PointerType>(outPtr.getType());
+  auto outElemType = outPtrTypeVal.getPointeeType();
+
+  bool useTf32 = mlir::isa<mlir::Float32Type>(xElemType) &&
+                 sd::Environment::getInstance().tritonTf32Enabled();
+  auto dotPrecision = useTf32 ? mlir::triton::InputPrecision::TF32
+                               : mlir::triton::InputPrecision::IEEE;
+
+  // Program IDs: 2D grid (M tiles, A tiles)
+  auto pidM = builder.create<mlir::triton::GetProgramIdOp>(
+      loc, i32Type, mlir::triton::ProgramIDDim::X);
+  auto pidA = builder.create<mlir::triton::GetProgramIdOp>(
+      loc, i32Type, mlir::triton::ProgramIDDim::Y);
+
+  auto blockMConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockM, 32);
+  auto blockAConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockA, 32);
+  auto mOffset = builder.create<mlir::arith::MulIOp>(loc, pidM, blockMConst);
+  auto aOffset = builder.create<mlir::arith::MulIOp>(loc, pidA, blockAConst);
+
+  auto i32BmType = mlir::RankedTensorType::get({blockM}, i32Type);
+  auto i32BaType = mlir::RankedTensorType::get({blockA}, i32Type);
+  auto i32BhType = mlir::RankedTensorType::get({blockH}, i32Type);
+  auto i32BkType = mlir::RankedTensorType::get({blockK}, i32Type);
+
+  auto rangeM = builder.create<mlir::triton::MakeRangeOp>(loc, i32BmType, 0, blockM);
+  auto rangeA = builder.create<mlir::triton::MakeRangeOp>(loc, i32BaType, 0, blockA);
+
+  auto splatMOffset = builder.create<mlir::triton::SplatOp>(loc, i32BmType, mOffset);
+  auto mIndices = builder.create<mlir::arith::AddIOp>(loc, splatMOffset, rangeM);
+  auto splatAOffset = builder.create<mlir::triton::SplatOp>(loc, i32BaType, aOffset);
+  auto aIndices = builder.create<mlir::arith::AddIOp>(loc, splatAOffset, rangeA);
+
+  // Output accumulator: [blockM, blockA] in f32
+  auto accType = mlir::RankedTensorType::get({blockM, blockA}, f32Type);
+  auto zeroF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.0));
+  auto outAccInit = builder.create<mlir::triton::SplatOp>(loc, accType, zeroF);
+
+  // ── Outer loop over H tiles ──
+  // For each H-tile, we compute h1_tile = ReLU(x @ W1_tile + b1_tile),
+  // then accumulate out_acc += h1_tile @ W2_tile. The intermediate h1_tile
+  // stays in registers across both matmuls — zero global memory traffic.
+  auto hStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto hEnd = builder.create<mlir::arith::ConstantIntOp>(loc, H, 32);
+  auto hStep = builder.create<mlir::arith::ConstantIntOp>(loc, blockH, 32);
+
+  auto hLoop = builder.create<mlir::scf::ForOp>(
+      loc, hStart, hEnd, hStep,
+      mlir::ValueRange{outAccInit.getResult()});
+
+  builder.setInsertionPointToStart(hLoop.getBody());
+  auto hIdx = hLoop.getInductionVar();
+  auto outAccIter = hLoop.getBody()->getArgument(1);
+
+  // H-tile indices
+  auto splatHOffset = builder.create<mlir::triton::SplatOp>(loc, i32BhType, hIdx);
+  auto rangeH = builder.create<mlir::triton::MakeRangeOp>(loc, i32BhType, 0, blockH);
+  auto hIndices = builder.create<mlir::arith::AddIOp>(loc, splatHOffset, rangeH);
+
+  // ── Inner K-loop: accumulate h1_tile = x @ W1_tile ──
+  // x is [M, D], W1 is [D, H]. For this H-tile, we compute the
+  // [blockM, blockH] matmul by tiling over D in blockK chunks.
+  auto h1Type = mlir::RankedTensorType::get({blockM, blockH}, f32Type);
+  auto h1Init = builder.create<mlir::triton::SplatOp>(loc, h1Type, zeroF);
+
+  auto kStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto kEnd = builder.create<mlir::arith::ConstantIntOp>(loc, D, 32);
+  auto kStep = builder.create<mlir::arith::ConstantIntOp>(loc, blockK, 32);
+
+  auto kLoop = builder.create<mlir::scf::ForOp>(
+      loc, kStart, kEnd, kStep,
+      mlir::ValueRange{h1Init.getResult()});
+
+  builder.setInsertionPointToStart(kLoop.getBody());
+  auto kIdx = kLoop.getInductionVar();
+  auto h1AccIter = kLoop.getBody()->getArgument(1);
+
+  // K-tile indices
+  auto splatKOffset = builder.create<mlir::triton::SplatOp>(loc, i32BkType, kIdx);
+  auto rangeK = builder.create<mlir::triton::MakeRangeOp>(loc, i32BkType, 0, blockK);
+  auto kIndices = builder.create<mlir::arith::AddIOp>(loc, splatKOffset, rangeK);
+
+  // Load x tile [blockM, blockK]: x[m, k] at offset m*D + k
+  auto dConst = builder.create<mlir::arith::ConstantIntOp>(loc, D, 32);
+  auto mExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, mIndices, 1);
+  auto kExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndices, 0);
+  auto i32BmBkType = mlir::RankedTensorType::get({blockM, blockK}, i32Type);
+  auto dSplat = builder.create<mlir::triton::SplatOp>(loc,
+      mlir::RankedTensorType::get({blockM, 1}, i32Type), dConst);
+  auto mTimesD = builder.create<mlir::arith::MulIOp>(loc, mExpanded, dSplat);
+  auto mTimesDBC = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBkType, mTimesD);
+  auto kBC = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBkType, kExpanded);
+  auto xOffsets = builder.create<mlir::arith::AddIOp>(loc, mTimesDBC, kBC);
+
+  auto xPtrTensorType = mlir::RankedTensorType::get({blockM, blockK},
+      mlir::triton::PointerType::get(xElemType, 1));
+  auto xSplat = builder.create<mlir::triton::SplatOp>(loc, xPtrTensorType, xPtr);
+  auto xPtrs = builder.create<mlir::triton::AddPtrOp>(loc, xPtrTensorType, xSplat, xOffsets);
+  auto xLoaded = builder.create<mlir::triton::LoadOp>(loc,
+      xPtrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+  // Load W1 tile [blockK, blockH]: W1[k, h] at offset k*H + h
+  auto hConst = builder.create<mlir::arith::ConstantIntOp>(loc, H, 32);
+  auto kExpandedW1 = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndices, 1);
+  auto hExpandedW1 = builder.create<mlir::triton::ExpandDimsOp>(loc, hIndices, 0);
+  auto i32BkBhType = mlir::RankedTensorType::get({blockK, blockH}, i32Type);
+  auto hSplatW1 = builder.create<mlir::triton::SplatOp>(loc,
+      mlir::RankedTensorType::get({blockK, 1}, i32Type), hConst);
+  auto kTimesH = builder.create<mlir::arith::MulIOp>(loc, kExpandedW1, hSplatW1);
+  auto kTimesHBC = builder.create<mlir::triton::BroadcastOp>(loc, i32BkBhType, kTimesH);
+  auto hBCW1 = builder.create<mlir::triton::BroadcastOp>(loc, i32BkBhType, hExpandedW1);
+  auto w1Offsets = builder.create<mlir::arith::AddIOp>(loc, kTimesHBC, hBCW1);
+
+  auto w1PtrTensorType = mlir::RankedTensorType::get({blockK, blockH},
+      mlir::triton::PointerType::get(w1ElemType, 1));
+  auto w1Splat = builder.create<mlir::triton::SplatOp>(loc, w1PtrTensorType, w1Ptr);
+  auto w1Ptrs = builder.create<mlir::triton::AddPtrOp>(loc, w1PtrTensorType, w1Splat, w1Offsets);
+  auto w1Loaded = builder.create<mlir::triton::LoadOp>(loc,
+      w1Ptrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+  // h1_acc += x @ W1_tile
+  auto h1Result = builder.create<mlir::triton::DotOp>(
+      loc, h1Type, xLoaded, w1Loaded, h1AccIter,
+      dotPrecision, /*maxNumImpreciseAcc=*/0);
+
+  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{h1Result});
+
+  // ── After K-loop: add b1 and apply ReLU ──
+  builder.setInsertionPointAfter(kLoop);
+  auto h1Final = kLoop.getResult(0);  // [blockM, blockH] f32
+
+  // Load b1 tile [blockH] and broadcast to [blockM, blockH]
+  auto b1PtrType = mlir::cast<mlir::triton::PointerType>(b1Ptr.getType());
+  auto b1ElemType = b1PtrType.getPointeeType();
+  auto b1PtrTensorType = mlir::RankedTensorType::get({blockH},
+      mlir::triton::PointerType::get(b1ElemType, 1));
+  auto b1Splat = builder.create<mlir::triton::SplatOp>(loc, b1PtrTensorType, b1Ptr);
+  auto b1Ptrs = builder.create<mlir::triton::AddPtrOp>(loc, b1PtrTensorType, b1Splat, hIndices);
+  auto b1Loaded = builder.create<mlir::triton::LoadOp>(loc,
+      b1Ptrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+  // Cast b1 to f32 if needed, then broadcast [blockH] -> [blockM, blockH]
+  mlir::Value b1F32 = b1Loaded.getResult();
+  if (b1ElemType != f32Type) {
+    auto b1F32VType = mlir::RankedTensorType::get({blockH}, f32Type);
+    b1F32 = builder.create<mlir::arith::ExtFOp>(loc, b1F32VType, b1F32);
+  }
+  auto b1Expanded = builder.create<mlir::triton::ExpandDimsOp>(loc, b1F32, 0);
+  auto b1Broadcast = builder.create<mlir::triton::BroadcastOp>(loc, h1Type, b1Expanded);
+
+  auto h1WithBias = builder.create<mlir::arith::AddFOp>(loc, h1Final, b1Broadcast);
+
+  // ReLU: max(h1 + b1, 0)
+  auto zeroSplat = builder.create<mlir::triton::SplatOp>(loc, h1Type, zeroF);
+  auto h1Relu = builder.create<mlir::arith::MaximumFOp>(loc, h1WithBias, zeroSplat);
+
+  // ── Multiply h1_relu @ W2_tile and accumulate ──
+  // W2 is [H, A]. Load W2 tile [blockH, blockA]: W2[h, a] at offset h*A + a
+  auto aConst = builder.create<mlir::arith::ConstantIntOp>(loc, A, 32);
+  auto hExpandedW2 = builder.create<mlir::triton::ExpandDimsOp>(loc, hIndices, 1);
+  auto aExpandedW2 = builder.create<mlir::triton::ExpandDimsOp>(loc, aIndices, 0);
+  auto i32BhBaType = mlir::RankedTensorType::get({blockH, blockA}, i32Type);
+  auto aSplatW2 = builder.create<mlir::triton::SplatOp>(loc,
+      mlir::RankedTensorType::get({blockH, 1}, i32Type), aConst);
+  auto hTimesA = builder.create<mlir::arith::MulIOp>(loc, hExpandedW2, aSplatW2);
+  auto hTimesABC = builder.create<mlir::triton::BroadcastOp>(loc, i32BhBaType, hTimesA);
+  auto aBCW2 = builder.create<mlir::triton::BroadcastOp>(loc, i32BhBaType, aExpandedW2);
+  auto w2Offsets = builder.create<mlir::arith::AddIOp>(loc, hTimesABC, aBCW2);
+
+  auto w2PtrTensorType = mlir::RankedTensorType::get({blockH, blockA},
+      mlir::triton::PointerType::get(w2ElemType, 1));
+  auto w2Splat = builder.create<mlir::triton::SplatOp>(loc, w2PtrTensorType, w2Ptr);
+  auto w2Ptrs = builder.create<mlir::triton::AddPtrOp>(loc, w2PtrTensorType, w2Splat, w2Offsets);
+  auto w2Loaded = builder.create<mlir::triton::LoadOp>(loc,
+      w2Ptrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+  // Cast h1_relu to match w2 dtype for tt.dot (both inputs must match)
+  mlir::Value h1ForDot = h1Relu;
+  if (w2ElemType != f32Type) {
+    auto h1CastType = mlir::RankedTensorType::get({blockM, blockH}, w2ElemType);
+    h1ForDot = builder.create<mlir::arith::TruncFOp>(loc, h1CastType, h1Relu);
+  }
+
+  // out_acc += h1_relu @ W2_tile
+  auto outAccResult = builder.create<mlir::triton::DotOp>(
+      loc, accType, h1ForDot, w2Loaded, outAccIter,
+      dotPrecision, /*maxNumImpreciseAcc=*/0);
+
+  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{outAccResult});
+
+  // ── After H-loop: add b2 and apply tanh ──
+  builder.setInsertionPointAfter(hLoop);
+  auto outFinal = hLoop.getResult(0);  // [blockM, blockA] f32
+
+  // Load b2 tile [blockA] and broadcast to [blockM, blockA]
+  auto b2PtrType = mlir::cast<mlir::triton::PointerType>(b2Ptr.getType());
+  auto b2ElemType = b2PtrType.getPointeeType();
+  auto b2PtrTensorType = mlir::RankedTensorType::get({blockA},
+      mlir::triton::PointerType::get(b2ElemType, 1));
+  auto b2Splat = builder.create<mlir::triton::SplatOp>(loc, b2PtrTensorType, b2Ptr);
+  auto b2Ptrs = builder.create<mlir::triton::AddPtrOp>(loc, b2PtrTensorType, b2Splat, aIndices);
+  auto b2Loaded = builder.create<mlir::triton::LoadOp>(loc,
+      b2Ptrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+  mlir::Value b2F32 = b2Loaded.getResult();
+  if (b2ElemType != f32Type) {
+    auto b2F32VType = mlir::RankedTensorType::get({blockA}, f32Type);
+    b2F32 = builder.create<mlir::arith::ExtFOp>(loc, b2F32VType, b2F32);
+  }
+  auto b2Expanded = builder.create<mlir::triton::ExpandDimsOp>(loc, b2F32, 0);
+  auto b2Broadcast = builder.create<mlir::triton::BroadcastOp>(loc, accType, b2Expanded);
+
+  auto outWithBias = builder.create<mlir::arith::AddFOp>(loc, outFinal, b2Broadcast);
+
+  // Tanh via numerically stable sigmoid: tanh(x) = 2 * sigmoid(2x) - 1
+  // This matches FastVLA's approach and avoids precision issues with direct tanh.
+  auto twoConst = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 2.0));
+  auto twoSplat = builder.create<mlir::triton::SplatOp>(loc, accType, twoConst);
+  auto twoX = builder.create<mlir::arith::MulFOp>(loc, twoSplat, outWithBias);
+  auto negTwoX = builder.create<mlir::arith::NegFOp>(loc, twoX);
+  auto expNegTwoX = builder.create<mlir::math::ExpOp>(loc, negTwoX);
+  auto oneConst = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 1.0));
+  auto oneSplat = builder.create<mlir::triton::SplatOp>(loc, accType, oneConst);
+  auto denom = builder.create<mlir::arith::AddFOp>(loc, oneSplat, expNegTwoX);
+  auto sigmoid2x = builder.create<mlir::arith::DivFOp>(loc, oneSplat, denom);
+  auto twoSigmoid = builder.create<mlir::arith::MulFOp>(loc, twoSplat, sigmoid2x);
+  auto tanhResult = builder.create<mlir::arith::SubFOp>(loc, twoSigmoid, oneSplat);
+
+  // Cast and store output
+  mlir::Value storeVal = tanhResult;
+  if (outElemType != f32Type) {
+    auto outTileType = mlir::RankedTensorType::get({blockM, blockA}, outElemType);
+    if (mlir::isa<mlir::FloatType>(outElemType)) {
+      storeVal = builder.create<mlir::arith::TruncFOp>(loc, outTileType, tanhResult);
+    }
+  }
+
+  // Store: out[m, a] at offset m*A + a
+  auto mExpandedOut = builder.create<mlir::triton::ExpandDimsOp>(loc, mIndices, 1);
+  auto aExpandedOut = builder.create<mlir::triton::ExpandDimsOp>(loc, aIndices, 0);
+  auto i32BmBaType = mlir::RankedTensorType::get({blockM, blockA}, i32Type);
+  auto aSplatOut = builder.create<mlir::triton::SplatOp>(loc,
+      mlir::RankedTensorType::get({blockM, 1}, i32Type), aConst);
+  auto mTimesAOut = builder.create<mlir::arith::MulIOp>(loc, mExpandedOut, aSplatOut);
+  auto mTimesABCOut = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBaType, mTimesAOut);
+  auto aBCOut = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBaType, aExpandedOut);
+  auto outOffsets = builder.create<mlir::arith::AddIOp>(loc, mTimesABCOut, aBCOut);
+
+  auto outPtrTensorType = mlir::RankedTensorType::get({blockM, blockA},
+      mlir::triton::PointerType::get(outElemType, 1));
+  auto outSplat = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outPtr);
+  auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, outSplat, outOffsets);
+
+  builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, /*mask=*/mlir::Value(),
+                                         mlir::triton::CacheModifier::NONE,
+                                         mlir::triton::EvictionPolicy::NORMAL);
+
+  DSP_DIAG(JIT, "TritonIRBuilder: emitted FusedTwoLayerMLP kernel M=%d D=%d H=%d A=%d "
+            "(h1 stays in registers, zero intermediate HBM traffic)", M, D, H, A);
+}
+
 // ─── Fused attention (Flash Attention) emission ─────────────────────────────
 
 void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,

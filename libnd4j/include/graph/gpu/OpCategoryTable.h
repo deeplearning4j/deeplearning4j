@@ -324,6 +324,12 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"MultiHeadAttention",         TritonOpCategory::FUSED_ATTENTION},
     {"dot_product_attention_v2",   TritonOpCategory::FUSED_ATTENTION},
     {"DotProductAttentionV2",      TritonOpCategory::FUSED_ATTENTION},
+    // cross_attention: Q from one modality, K/V from another (e.g. text queries attend to
+    // visual features). Maps to the existing Flash Attention kernel via FUSED_ATTENTION.
+    {"cross_attention",            TritonOpCategory::FUSED_ATTENTION},
+    {"CrossAttention",             TritonOpCategory::FUSED_ATTENTION},
+    {"vision_language_cross_attention", TritonOpCategory::FUSED_ATTENTION},
+    {"VisionLanguageCrossAttention",   TritonOpCategory::FUSED_ATTENTION},
 
     // ── Shape manipulation ──
     {"reshape",           TritonOpCategory::SHAPE_MANIPULATION},
@@ -534,6 +540,12 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"FusedBiasDropoutResidual",   TritonOpCategory::FUSED_LLM},
     {"fused_elementwise_chain",    TritonOpCategory::FUSED_LLM},
     {"FusedElementwiseChain",      TritonOpCategory::FUSED_LLM},
+    // fused_two_layer_mlp: Two chained matmuls with intermediate activation in a single kernel.
+    // Computes activation2(activation1(x @ W1 + b1) @ W2 + b2) without writing the intermediate
+    // hidden activation to global memory. Ported from FastVLA's _action_fwd_kernel pattern.
+    // Categorized as MATMUL for segment/section handling (same as fused_gemm_swiglu).
+    {"fused_two_layer_mlp",        TritonOpCategory::MATMUL},
+    {"FusedTwoLayerMlp",           TritonOpCategory::MATMUL},
 
     // ── LLM: Fused activations/normalization ──
     {"fused_gelu",        TritonOpCategory::UNARY_ELEMENTWISE},

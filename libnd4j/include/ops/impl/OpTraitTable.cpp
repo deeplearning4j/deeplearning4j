@@ -225,6 +225,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"row_parallel_linear",    MATMUL},
         {"multi_lora_matmul",      MATMUL},
         {"fused_gemm_swiglu",      MATMUL},
+        {"fused_two_layer_mlp",    MATMUL},
 
         // ── Reduction ops ──────────────────────────────────────────────────
         // NOTE: Many are DeclarableReductionOp subclasses → auto-derived.
@@ -345,6 +346,8 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"two_way_cross_attention",             ATTN},
         {"two_way_cross_attention_bp",          ATTN | BP},
         {"vlm_cross_attention",                 ATTN},
+        {"cross_attention",                     ATTN},
+        {"vision_language_cross_attention",      ATTN},
         {"apply_alibi",                         ATTN},
         {"relative_position_bias",              ATTN},
 

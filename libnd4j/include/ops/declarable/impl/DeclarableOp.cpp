@@ -22,6 +22,7 @@
 #include <array/NDArrayFactory.h>
 #include <exceptions/datatype_exception.h>
 #include <exceptions/graph_exception.h>
+#include <system/env_functions.h>
 #include <graph/profiling/GraphProfile.h>
 #include <graph/profiling/NodeProfile.h>
 #include <graph/profiling/OpTimingTracker.h>
@@ -310,7 +311,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
   auto fp = ctx.isFastPath();
 
   if (ctx.isInplace()) {
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       if (fp) {
         //
       } else {
@@ -368,7 +369,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     ShapeList inSha;
     int results = 0;
 
-    if (Environment::getInstance().isProfiling() && node != nullptr) inputStart = std::chrono::system_clock::now();
+    if (sd::env_isProfiling() && node != nullptr) inputStart = std::chrono::system_clock::now();
 
     // we build list of input shapes
     if (fp) {
@@ -412,7 +413,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     }
 
     // optionally saving input time
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       inputEnd = std::chrono::system_clock::now();
       auto inputTime = std::chrono::duration_cast<std::chrono::nanoseconds>(inputEnd - inputStart).count();
       node->setInputTime(inputTime);
@@ -425,7 +426,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
-    if (sd::Environment::getInstance().isDebugAndVerbose()) {
+    if (sd::env_isDebugAndVerbose()) {
       sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
       sd_printf("Input shapes:\n",0);
       for (int e = 0; e < inSha.size(); e++) {
@@ -451,7 +452,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     results = outSha->size();
 
     // optionally saving shapeTime
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       shapeEnd = std::chrono::system_clock::now();
       auto prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(shapeEnd - shapeStart).count();
       node->setShapeFunctionTime(prepTime);
@@ -470,7 +471,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         std::pair<int, int> pair(ctx.nodeId(), cnt++);
 
         if (!ctx.isValueAvailable(pair.second)) {
-          if (Environment::getInstance().isDebugAndVerbose())
+          if (sd::env_isDebugAndVerbose())
             shape::printShapeInfoLinear("OP PREPARE OUTPUTS: Going to create variable with shape", out);
 
           // we're creating non-initialized array here
@@ -577,7 +578,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     delete outSha;
 
     // saving arrayTime
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       arrayEnd = std::chrono::system_clock::now();
       auto arrayTime = std::chrono::duration_cast<std::chrono::nanoseconds>(arrayEnd - arrayStart).count();
       node->setArrayTime(arrayTime);
@@ -973,7 +974,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   sd::LongType memoryBefore =
       block->workspace() == nullptr ? 0L : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
-  if (Environment::getInstance().isProfiling()) timeEnter = std::chrono::system_clock::now();
+  if (sd::env_isProfiling()) timeEnter = std::chrono::system_clock::now();
 
   // Phase: VALIDATION
   {
@@ -993,7 +994,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     numOutputs = this->prepareOutputs(*block);
   }
 
-  if (Environment::getInstance().isProfiling()) {
+  if (sd::env_isProfiling()) {
     timeStart = std::chrono::system_clock::now();
     prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeStart - timeEnter).count();
   }
@@ -1014,7 +1015,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #ifdef __cpp_exceptions
   try {
     // platform helpers use might be forbidden for various reasons, so we'll check it out first
-    if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
+    if (block->helpersAllowed() && sd::env_helpersAllowed()) {
       // Use the new multi-backend kernel selection infrastructure
       // This will auto-tune and select the best available backend helper
       {
@@ -1088,7 +1089,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   }
 #else
   // platform helpers use might be forbidden for various reasons, so we'll check it out first
-  if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
+  if (block->helpersAllowed() && sd::env_helpersAllowed()) {
     // Use the new multi-backend kernel selection infrastructure
     // This will auto-tune and select the best available backend helper
     {
@@ -1125,7 +1126,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #endif
 #endif
   // optionally saving execution time
-  if (Environment::getInstance().isProfiling()) {
+  if (sd::env_isProfiling()) {
     timeEnd = std::chrono::system_clock::now();
     outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
     block->setInnerTime(outerTime);
@@ -1133,11 +1134,11 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
              static_cast<sd::LongType>(prepTime), static_cast<sd::LongType>(outerTime));
   }
 
-  if (Environment::getInstance().isProfiling() && block->getVariableSpace() != nullptr) {
+  if (sd::env_isProfiling() && block->getVariableSpace() != nullptr) {
   }
 
   // now we print out all outputs for this node
-  if (sd::Environment::getInstance().isDebugAndVerbose()) {
+  if (sd::env_isDebugAndVerbose()) {
     std::string * opName = this->getOpName();
     if(opName == nullptr) {
       THROW_EXCEPTION("Op name is null!");

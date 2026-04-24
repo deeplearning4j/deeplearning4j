@@ -75,10 +75,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <system/common.h>
+#include <system/env_functions.h>
 #include <system/type_boilerplate.h>
 
-#define ELEMENT_THRESHOLD sd::Environment::getInstance().elementwiseThreshold()
-#define TAD_THRESHOLD sd::Environment::getInstance().tadThreshold()
+#define ELEMENT_THRESHOLD sd::env_elementwiseThreshold()
+#define TAD_THRESHOLD sd::env_tadThreshold()
 
 // Helper to pick the correct macro based on the number of arguments.
 // This macro works by “peeling” off up to 10 parameters; if only one parameter is passed,
@@ -113,7 +114,7 @@
 #endif
 
 #define DEBUG_CALL(STREAM)                             \
-  if (sd::Environment::getInstance().isDebug()) {      \
+  if (sd::env_isDebug()) {                              \
     cudaError_t tRes = cudaStreamSynchronize(*STREAM); \
     checkCudaErrors(tRes);                             \
     if (tRes != 0) {                                   \
@@ -121,7 +122,7 @@
     };                                                 \
   }
 #define DEBUG_KERNEL(STREAM, OP_NUM)                                                             \
-  if (sd::Environment::getInstance().isDebug()) {                                                \
+  if (sd::env_isDebug()) {                                                                       \
     cudaError_t tRes = cudaStreamSynchronize(*STREAM);                                           \
     checkCudaErrors(tRes);                                                                       \
     if (tRes != 0) {                                                                             \

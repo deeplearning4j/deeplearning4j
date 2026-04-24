@@ -31,6 +31,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/specials.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 namespace sd {
 
@@ -350,7 +351,7 @@ template <typename T>
 void SpecialMethods<T>::sortGeneric(NDArray *input, bool descending) {
   auto x = input->bufferAsT<T>();
   auto xShapeInfo = input->shapeInfo();
-  quickSort_parallel(input, Environment::getInstance().maxMasterThreads(), descending);
+  quickSort_parallel(input, sd::env_maxMasterThreads(), descending);
 }
 
 template <typename T>

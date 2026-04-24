@@ -26,6 +26,7 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
+#include <system/env_functions.h>
 #include <sstream>
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -38,7 +39,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 // default constructor
 DataBuffer::DataBuffer() {
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer() default constructor\n");
     fflush(stdout);
   }
@@ -70,7 +71,7 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   if(other._dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const DataBuffer& other) copy constructor\n");
     fflush(stdout);
   }
@@ -114,7 +115,7 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
   if(dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf(
         "DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
@@ -156,7 +157,7 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
@@ -185,7 +186,7 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
@@ -249,7 +250,7 @@ DataBuffer::DataBuffer(const sd::LongType lenInBytes, const DataType dataType, m
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
     fflush(stdout);
   }
@@ -294,7 +295,7 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(DataBuffer&& other) move constructor\n");
     fflush(stdout);
   }
@@ -345,7 +346,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   if(other._dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("DataBuffer assignment operator: dataType is UNKNOWN !");
   }
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::operator=(const DataBuffer& other) assignment operator\n");
     fflush(stdout);
   }
@@ -382,7 +383,7 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
     THROW_EXCEPTION("DataBuffer move assignment operator: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::operator=(DataBuffer&& other) move assignment operator\n");
     fflush(stdout);
   }
@@ -585,7 +586,7 @@ void DataBuffer::allocatePrimary() {
     auto deviceId = AffinityManager::currentDeviceId();
     // check if this allocation won't bring us above limit
     if (_workspace == nullptr) {
-      if (Environment::getInstance().isCPU()) {
+      if (sd::env_isCPU()) {
         // on cpu backend we validate against device 0 for now
         if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
           THROW_EXCEPTION(allocation_exception::build("Requested amount exceeds HOST device limits",
@@ -622,7 +623,7 @@ void DataBuffer::allocatePrimary() {
 
     // count in towards current deviceId if we're not in workspace mode
     if (_workspace == nullptr) {
-      if (Environment::getInstance().isCPU())  // we don't want this counter to be added to CUDA device
+      if (sd::env_isCPU())  // we don't want this counter to be added to CUDA device
         memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
 
       memory::MemoryCounter::getInstance().countIn(memory::MemoryType::HOST, getLenInBytes());
@@ -679,7 +680,7 @@ void DataBuffer::deletePrimary() {
       }
     }
 
-    if(Environment::getInstance().isDeletePrimary()) {
+    if(sd::env_isDeletePrimary()) {
 #if defined(SD_GCC_FUNCTRACE)
       // Record deallocation before releasing memory
       array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
@@ -694,7 +695,7 @@ void DataBuffer::deletePrimary() {
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
-      if (Environment::getInstance().isCPU()) memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
+      if (sd::env_isCPU()) memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
 
       memory::MemoryCounter::getInstance().countOut(memory::MemoryType::HOST, getLenInBytes());
     }

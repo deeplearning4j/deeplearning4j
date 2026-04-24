@@ -26,11 +26,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.audio.feature.WhisperMelSpectrogram;
 import org.eclipse.deeplearning4j.audio.io.AudioLoader;
 import org.eclipse.deeplearning4j.audio.transform.AudioPreprocessor;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
-import org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.convert.GGMLToSameDiffConverter;
@@ -55,7 +56,7 @@ import java.util.Set;
 /**
  * Main Whisper speech recognition model.
  * <p>
- * Uses the encoder-decoder path in {@link StaticKvCacheDecodeLoop} for efficient
+ * Uses {@link GenerationPipeline} for efficient
  * autoregressive decoding with static KV cache and optional CUDA graph replay.
  * <p>
  * Usage:
@@ -223,7 +224,7 @@ public class WhisperModel implements Closeable {
     /**
      * Transcribe from raw audio samples.
      */
-    public WhisperDecoderResult transcribe(INDArray audio, int sampleRate) {
+    public WhisperDecoderResult transcribe(INDArray audio, int sampleRate) throws IOException {
         return transcribe(audio, sampleRate, "en", "transcribe", false);
     }
 
@@ -231,7 +232,7 @@ public class WhisperModel implements Closeable {
      * Transcribe from raw audio samples with options.
      */
     public WhisperDecoderResult transcribe(INDArray audio, int sampleRate,
-                                            String language, String task, boolean timestamps) {
+                                            String language, String task, boolean timestamps) throws IOException {
         if (sampleRate != config.getSampleRate()) {
             AudioPreprocessor preprocessor = AudioPreprocessor.builder()
                     .targetSampleRate(config.getSampleRate())
@@ -248,24 +249,24 @@ public class WhisperModel implements Closeable {
     /**
      * Transcribe from pre-computed mel spectrogram features.
      */
-    public WhisperDecoderResult transcribeMel(INDArray melFeatures) {
+    public WhisperDecoderResult transcribeMel(INDArray melFeatures) throws IOException {
         return transcribeMel(melFeatures, "en", "transcribe", false);
     }
 
     /**
-     * Transcribe from pre-computed mel spectrogram features using StaticKvCacheDecodeLoop.
+     * Transcribe from pre-computed mel spectrogram features using GenerationPipeline.
      *
      * <p>Pipeline:
      * <ol>
      *   <li>Run encoder on mel features → encoder hidden states</li>
      *   <li>Build prompt tokens (SOT + language + task)</li>
      *   <li>Build prefill embeddings from prompt tokens</li>
-     *   <li>Create StaticKvCacheDecodeLoop with encoderDecoder=true, pass encoder outputs</li>
+     *   <li>Create GenerationPipeline with encoderDecoder=true</li>
      *   <li>Decode → GenerationResult → WhisperDecoderResult</li>
      * </ol>
      */
     public WhisperDecoderResult transcribeMel(INDArray melFeatures, String language,
-                                               String task, boolean timestamps) {
+                                               String task, boolean timestamps) throws IOException {
         // Step 1: Run encoder
         log.debug("Running Whisper encoder...");
         Map<String, INDArray> encoderPlaceholders = new HashMap<>();
@@ -301,26 +302,25 @@ public class WhisperModel implements Closeable {
         // Discover decoder's embedding model (use decoder itself if no separate embed model)
         SameDiff embedModel = decoder; // Whisper decoder has internal embeddings
 
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedModel)
-                .tokenizer(tokenizer)
-                .samplingConfig(samplingConfig)
-                .maxNewTokens(maxTokens)
-                .kvCacheStrategy(kvCacheStrategy)
-                .additionalStopTokenIds(stopTokens)
-                .hiddenSize(encoderHidden.size(2))
-                .encoderDecoder(true)
-                .encoderOutputs(encoderHidden)
-                .ioConfig(ModelIOConfig.builder()
-                        .encoderDecoder(true)
-                        .encoderHiddenStatesName(findEncoderHiddenInputName())
-                        .build())
-                .build();
+        GenerationPipeline pipeline = GenerationPipeline.create(
+                GenerationPipelineConfig.builder()
+                        .decoder(decoder)
+                        .embedTokens(embedModel)
+                        .tokenizer(tokenizer)
+                        .samplingConfig(samplingConfig)
+                        .maxNewTokens(maxTokens)
+                        .kvCacheStrategy(kvCacheStrategy)
+                        .additionalStopTokenIds(stopTokens)
+                        .hiddenSize(encoderHidden.size(2))
+                        .ioConfig(ModelIOConfig.builder()
+                                .encoderDecoder(true)
+                                .encoderHiddenStatesName(findEncoderHiddenInputName())
+                                .build())
+                        .build());
 
         // Step 5: Decode
-        log.debug("Running Whisper decoder via StaticKvCacheDecodeLoop (encoder-decoder mode)...");
-        GenerationResult genResult = loop.decode(prefillEmbeddings, promptTokens);
+        log.debug("Running Whisper decoder via GenerationPipeline (encoder-decoder mode)...");
+        GenerationResult genResult = pipeline.generate(prefillEmbeddings, promptTokens, maxTokens);
 
         // Step 6: Build result
         int[] decodedTokens = genResult.getTokenIds();

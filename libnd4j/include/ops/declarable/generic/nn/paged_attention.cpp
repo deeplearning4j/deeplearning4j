@@ -187,7 +187,7 @@ DECLARE_SHAPE_FN(paged_kv_append) {
   auto rank = shape::rank(inShape);
   auto dtype = ArrayOptions::dataType(inShape);
 
-  auto newShapeInfo = new LongType[shape::shapeInfoLength(rank)];
+  auto newShapeInfo = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
   memcpy(newShapeInfo, inShape, shape::shapeInfoByteLength(rank));
   ArrayOptions::resetFlags(newShapeInfo);
   ArrayOptions::setDataType(newShapeInfo, dtype);

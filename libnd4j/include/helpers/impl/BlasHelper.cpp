@@ -20,6 +20,7 @@
 //  @author raver119@gmail.com
 //
 #include <helpers/BlasHelper.h>
+#include <system/env_functions.h>
 #include <cstdlib>
 #include <string>
 
@@ -151,7 +152,7 @@ void BlasHelper::initializeDeviceFunctions(Pointer *functions) {
 #if defined(HAS_FLOAT32)
 template <>
 bool BlasHelper::hasGEMV<float>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
@@ -164,7 +165,7 @@ bool BlasHelper::hasGEMV<float>() {
 #if defined(HAS_DOUBLE)
 template <>
 bool BlasHelper::hasGEMV<double>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
@@ -233,7 +234,7 @@ bool BlasHelper::hasGEMV<LongType>() {
 bool BlasHelper::hasGEMV(const DataType dtype) {
 #if defined(HAS_FLOAT32)
   if (dtype == FLOAT32) {
-    if (Environment::getInstance().blasFallback()) return false;
+    if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
@@ -244,7 +245,7 @@ bool BlasHelper::hasGEMV(const DataType dtype) {
 #endif
 #if defined(HAS_DOUBLE)
   if (dtype == DOUBLE) {
-    if (Environment::getInstance().blasFallback()) return false;
+    if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
@@ -259,7 +260,7 @@ bool BlasHelper::hasGEMV(const DataType dtype) {
 #if defined(HAS_FLOAT32)
 template <>
 bool BlasHelper::hasGEMM<float>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
@@ -272,7 +273,7 @@ bool BlasHelper::hasGEMM<float>() {
 #if defined(HAS_DOUBLE)
 template <>
 bool BlasHelper::hasGEMM<double>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
@@ -285,7 +286,7 @@ bool BlasHelper::hasGEMM<double>() {
 #if defined(HAS_FLOAT16)
 template <>
 bool BlasHelper::hasGEMM<float16>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
   // MKL supports float16 GEMM via cblas_gemm_f16f16f32
 #if MKL_AVAILABLE
   return true;
@@ -298,7 +299,7 @@ bool BlasHelper::hasGEMM<float16>() {
 #if defined(HAS_BFLOAT16)
 template <>
 bool BlasHelper::hasGEMM<bfloat16>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
   // MKL supports bfloat16 GEMM via cblas_gemm_bf16bf16f32
   return _hasBf16gemm;
 }
@@ -349,7 +350,7 @@ bool BlasHelper::hasGEMM<LongType>() {
 bool BlasHelper::hasGEMM(const DataType dtype) {
 #if defined(HAS_FLOAT32)
   if (dtype == FLOAT32) {
-    if (Environment::getInstance().blasFallback()) return false;
+    if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
@@ -360,7 +361,7 @@ bool BlasHelper::hasGEMM(const DataType dtype) {
 #endif
 #if defined(HAS_DOUBLE)
   if (dtype == DOUBLE) {
-    if (Environment::getInstance().blasFallback()) return false;
+    if (sd::env_blasFallback()) return false;
 
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
@@ -371,7 +372,7 @@ bool BlasHelper::hasGEMM(const DataType dtype) {
 #endif
 #if defined(HAS_FLOAT16)
   if (dtype == HALF) {
-    if (Environment::getInstance().blasFallback()) return false;
+    if (sd::env_blasFallback()) return false;
 #if MKL_AVAILABLE
     return true;
 #else
@@ -381,7 +382,7 @@ bool BlasHelper::hasGEMM(const DataType dtype) {
 #endif
 #if defined(HAS_BFLOAT16)
   if (dtype == BFLOAT16) {
-    if (Environment::getInstance().blasFallback()) return false;
+    if (sd::env_blasFallback()) return false;
     return _hasBf16gemm;
   }
 #endif
@@ -391,7 +392,7 @@ bool BlasHelper::hasGEMM(const DataType dtype) {
 #if defined(HAS_FLOAT32)
 template <>
 bool BlasHelper::hasBatchedGEMM<float>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
 
   // Note: cblas_sgemm_batch may not be available in all OpenBLAS builds
   // Only enable for __EXTERNAL_BLAS__ which is typically MKL
@@ -410,7 +411,7 @@ bool BlasHelper::hasBatchedGEMM<float>() {
 #if defined(HAS_DOUBLE)
 template <>
 bool BlasHelper::hasBatchedGEMM<double>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
 
   // Note: cblas_dgemm_batch may not be available in all OpenBLAS builds
   // Only enable for __EXTERNAL_BLAS__ which is typically MKL
@@ -429,7 +430,7 @@ bool BlasHelper::hasBatchedGEMM<double>() {
 #if defined(HAS_FLOAT16)
 template <>
 bool BlasHelper::hasBatchedGEMM<float16>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
   // MKL supports batched float16 GEMM via cblas_gemm_bf16bf16f32_batch
 #if MKL_AVAILABLE
   return true;
@@ -442,7 +443,7 @@ bool BlasHelper::hasBatchedGEMM<float16>() {
 #if defined(HAS_BFLOAT16)
 template <>
 bool BlasHelper::hasBatchedGEMM<bfloat16>() {
-  if (Environment::getInstance().blasFallback()) return false;
+  if (sd::env_blasFallback()) return false;
   // MKL supports batched bfloat16 GEMM
   return _hasBf16gemmBatch;
 }

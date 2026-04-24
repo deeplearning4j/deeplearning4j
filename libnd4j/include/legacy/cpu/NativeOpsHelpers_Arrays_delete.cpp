@@ -17,7 +17,7 @@
 
 #include <array/NDArray.h>
 #include <helpers/logger.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <atomic>
 #include <legacy/NativeOps.h>
 
@@ -39,7 +39,7 @@ void deleteNDArray(OpaqueNDArray array) {
     return;
   }
 
-  if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     sd_printf("deleteNDArray: deleting NDArray at %p, shapeInfo=%p\n",
               array, array->shapeInfo());
     fflush(stdout);
@@ -50,7 +50,7 @@ void deleteNDArray(OpaqueNDArray array) {
   // On CPU, just delete the array directly - all operations are synchronous
   delete array;
 
-  if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     sd_printf("deleteNDArray: successfully deleted NDArray\n");
     fflush(stdout);
   }

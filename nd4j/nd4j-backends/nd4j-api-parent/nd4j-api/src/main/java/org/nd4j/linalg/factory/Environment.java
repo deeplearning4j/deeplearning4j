@@ -1562,6 +1562,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
         setTritonDumpArgs(false);
         setTritonDumpGraphDot(false);
         setTritonAllowFallbackCapture(false);
+        setTritonMergedCaptureThroughViews(false);
         setDspBatchZero(false);
         setDspBatchZeroKernel(false);
         setDspBatchedGemm(false);
@@ -1589,7 +1590,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
         // ── Optimal overrides (matches BenchmarkConfig.optimal() exactly) ──
         // NEVER compile MATMUL (cuBLAS 2.8x faster)
         // Flash attention (+ATTENTION) gives +30% decode speed with CUDA graph capture
-        setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION");
+        setTritonIncludeTypes("CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION");
         setTritonSectionFusion(true);
         setTritonCompileAll(true);
         setTritonGraphCapture(true);
@@ -1597,6 +1598,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
         setTritonConsolidatedArgTable(true);
         setTritonArgDirtyTracking(true);
         setTritonFusionScoring(false);
+        setTritonMergedCaptureThroughViews(true);
         setTritonNumWarps(4);
         setTritonNumStages(1);
         setCublasTf32Enabled(true);

@@ -102,6 +102,16 @@ void DspConfig::initFromEnvironment() {
     if (v > 0) setCapturePoolMaxBytes(v);
   }
 
+  // Capture workspace sizes
+  {
+    int v = readIntEnv("ND4J_DSP_CAPTURE_WORKSPACE_MB", -1);
+    if (v > 0) setCaptureWorkspaceMb(v);
+  }
+  {
+    int v = readIntEnv("ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB", -1);
+    if (v > 0) setCaptureHostWorkspaceMb(v);
+  }
+
   // OOM retry
   {
     int v = readIntEnv("ND4J_DSP_CAPTURE_OOM_MAX_RETRIES", -1);

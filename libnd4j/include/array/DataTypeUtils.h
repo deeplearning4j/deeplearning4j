@@ -28,7 +28,6 @@
 #include <array/ArrayOptions.h>
 #include <array/DataType.h>
 #include <graph/generated/array_generated.h>
-#include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>
 #include <types/float16.h>
@@ -85,11 +84,11 @@ class SD_LIB_EXPORT DataTypeUtils {
 
   SD_INLINE static SD_HOST_DEVICE bool isS(DataType dataType);
 
-  SD_INLINE static DataType pickPairwiseResultType(DataType typeX, DataType typeY);
+  static DataType pickPairwiseResultType(DataType typeX, DataType typeY);
 
-  SD_INLINE static DataType pickPairwiseResultType(const LongType *shapeInfo1, const LongType *shapeInfo2);
+  static DataType pickPairwiseResultType(const LongType *shapeInfo1, const LongType *shapeInfo2);
 
-  SD_INLINE static DataType pickFloatingType(DataType typeX);
+  static DataType pickFloatingType(DataType typeX);
 
   template <typename T1, typename T2>
   SD_INLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
@@ -200,12 +199,6 @@ class SD_LIB_EXPORT DataTypeUtils {
 ///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 
-SD_INLINE DataType DataTypeUtils::pickFloatingType(DataType typeX) {
-  // if proposed dataType is already floating point - return it
-  if (isR(typeX)) return typeX;
-  return Environment::getInstance().defaultFloatDataType();
-}
-
 SD_INLINE bool DataTypeUtils::isR(DataType dataType) {
   return false
 #ifdef HAS_FLOAT32
@@ -268,49 +261,6 @@ SD_INLINE bool DataTypeUtils::isU(DataType dataType) {
          || dataType == UINT64
 #endif
          ;
-}
-
-SD_INLINE DataType DataTypeUtils::pickPairwiseResultType(DataType typeX, DataType typeY) {
-  // if both dtypes are the same - just return it
-  if (typeX == typeY) return typeX;
-  auto sd_max = [](DataType typeX, DataType typeY) { return typeX > typeY ? typeX : typeY; };
-  auto rX = isR(typeX);
-  auto rY = isR(typeY);
-
-  // if X is float - use it
-  if (rX && !rY) return typeX;
-
-  // if Y is float - use it
-  if (!rX && rY) return typeY;
-
-  // if both data types are float - return biggest one
-  if (rX && rY) {
-    // if we allow precision boost, then we pick bigger data type
-    if (Environment::getInstance().precisionBoostAllowed()) {
-      return sd_max(typeX, typeY);
-    } else {
-      // and we return first operand otherwise
-      return typeX;
-    }
-  }
-
-  // if that's not real type, we apply same rules
-  if (!rX && !rY) {
-    if (Environment::getInstance().precisionBoostAllowed()) {
-      return sd_max(typeX, typeY);
-    } else {
-      // and we return first operand otherwise
-      return typeX;
-    }
-  }
-
-  return typeX;
-}
-
-///////////////////////////////////////////////////////////////////
-SD_INLINE DataType DataTypeUtils::pickPairwiseResultType(const LongType *shapeInfo1,
-                                                             const LongType *shapeInfo2) {
-  return pickPairwiseResultType(ArrayOptions::dataType(shapeInfo1), ArrayOptions::dataType(shapeInfo2));
 }
 
 ///////////////////////////////////////////////////////////////////

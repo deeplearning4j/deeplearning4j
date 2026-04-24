@@ -82,6 +82,9 @@ public class BenchmarkConfig {
     boolean tritonFusionScoring = true;
     float tritonFusionMinScore = 5.0f;
 
+    // Merged capture through views
+    boolean tritonMergedCaptureThroughViews;
+
     // cuBLAS flags
     boolean cublasTf32;
     boolean tritonTf32;  // TF32 precision for Triton-compiled DotOps (default OFF for accuracy)
@@ -96,6 +99,7 @@ public class BenchmarkConfig {
     boolean dspBatchedGemm;
     boolean dspFreezeMergeSegments;
     boolean dspFreezeRecompile;
+    boolean dspExecutionTiming;  // enable DSP per-step timing instrumentation in native code
 
     // Draft model speculation
     boolean useDraftModel;
@@ -129,18 +133,19 @@ public class BenchmarkConfig {
      */
     public static BenchmarkConfig optimal() {
         return create("OPTIMAL")
-                .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                .tritonIncludeTypes("CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION")
                 .tritonSectionFusion(true)
                 .tritonCompileAll(true)
                 .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
                 .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                 .tritonFusionScoring(false)
+                .tritonMergedCaptureThroughViews(true)
                 .tritonNumWarps(4).tritonNumStages(1)
                 .cublasTf32(true)
                 .tritonTf32(true)
                 .dspBatchedGemm(true)
                 .dspFreezeMergeSegments(true)
-                .maxTokens(250).minDiversityPct(30);
+                .maxTokens(250).minDiversityPct(20);
     }
 
     // Fluent setters
@@ -169,6 +174,7 @@ public class BenchmarkConfig {
     public BenchmarkConfig tritonMaxSubsegmentOps(int n) { this.tritonMaxSubsegmentOps = n; return this; }
     public BenchmarkConfig tritonMaxSubsegmentSections(int n) { this.tritonMaxSubsegmentSections = n; return this; }
     public BenchmarkConfig tritonAllowFallbackCapture(boolean b) { this.tritonAllowFallbackCapture = b; return this; }
+    public BenchmarkConfig tritonMergedCaptureThroughViews(boolean b) { this.tritonMergedCaptureThroughViews = b; return this; }
     public BenchmarkConfig tritonBuildThreads(int n) { this.tritonBuildThreads = n; return this; }
     public BenchmarkConfig tritonProfile(String p) { this.tritonProfile = p; return this; }
     
@@ -199,6 +205,7 @@ public class BenchmarkConfig {
     public BenchmarkConfig dspBatchedGemm(boolean b) { this.dspBatchedGemm = b; return this; }
     public BenchmarkConfig dspFreezeMergeSegments(boolean b) { this.dspFreezeMergeSegments = b; return this; }
     public BenchmarkConfig dspFreezeRecompile(boolean b) { this.dspFreezeRecompile = b; return this; }
+    public BenchmarkConfig dspExecutionTiming(boolean b) { this.dspExecutionTiming = b; return this; }
     public BenchmarkConfig useDraftModel(boolean b) { this.useDraftModel = b; return this; }
     public BenchmarkConfig draftModelK(int n) { this.draftModelK = n; return this; }
     public BenchmarkConfig validationMode(boolean b) { this.validationMode = b; return this; }
@@ -231,6 +238,7 @@ public class BenchmarkConfig {
     public int getTritonMaxSubsegmentOps() { return tritonMaxSubsegmentOps; }
     public int getTritonMaxSubsegmentSections() { return tritonMaxSubsegmentSections; }
     public boolean isTritonAllowFallbackCapture() { return tritonAllowFallbackCapture; }
+    public boolean isTritonMergedCaptureThroughViews() { return tritonMergedCaptureThroughViews; }
     public int getTritonBuildThreads() { return tritonBuildThreads; }
     public String getTritonProfile() { return tritonProfile; }
     
@@ -261,6 +269,7 @@ public class BenchmarkConfig {
     public boolean isDspBatchedGemm() { return dspBatchedGemm; }
     public boolean isDspFreezeMergeSegments() { return dspFreezeMergeSegments; }
     public boolean isDspFreezeRecompile() { return dspFreezeRecompile; }
+    public boolean isDspExecutionTiming() { return dspExecutionTiming; }
     public boolean isUseDraftModel() { return useDraftModel; }
     public int getDraftModelK() { return draftModelK; }
     public boolean isValidationMode() { return validationMode; }
@@ -291,6 +300,7 @@ public class BenchmarkConfig {
         if (tritonMaxSubsegmentOps > 0) sb.append(" maxSubOps=").append(tritonMaxSubsegmentOps);
         if (tritonMaxSubsegmentSections > 0) sb.append(" maxSubSections=").append(tritonMaxSubsegmentSections);
         if (tritonAllowFallbackCapture) sb.append(" fallbackCapture");
+        if (tritonMergedCaptureThroughViews) sb.append(" mergedCaptureViews");
         if (dspCastElimination) sb.append(" castElim");
         if (dspCastSinkMatmul) sb.append(" castSinkMatmul");
         if (dspFp16Compute) sb.append(" fp16compute");

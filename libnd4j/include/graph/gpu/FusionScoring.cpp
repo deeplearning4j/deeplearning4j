@@ -26,6 +26,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <array/DataType.h>
 #include <graph/DspDiagnostics.h>
+#include <system/env_functions.h>
 
 #include <unordered_set>
 #include <algorithm>
@@ -128,7 +129,7 @@ float scoreSectionFusionRange(
   bool nextIsAttention = nextSection.type == KernelSectionType::FUSED_ATTENTION;
   bool nextIsAttnAdj = isAttentionAdjacentType(nextSection.type);
   bool allowAttentionNeighborhoodMismatch =
-      sd::Environment::getInstance().tritonFuseAttentionNeighborhoods() &&
+      sd::env_tritonFuseAttentionNeighborhoods() &&
       ((rangeHasAttention && nextIsAttnAdj) || (nextIsAttention && rangeHasAttnAdj));
 
   // Allow matmul/normalization epilogue fusion: a MATMUL or NORMALIZATION section

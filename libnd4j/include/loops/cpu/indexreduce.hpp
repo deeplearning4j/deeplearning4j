@@ -28,6 +28,7 @@
 #include <loops/legacy_ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -69,7 +70,7 @@ sd::LongType IndexReduce<X, Z>::execScalar(const void *vx, const sd::LongType *x
 
  sd::LongType xShapeInfoCast[SD_MAX_RANK];
  bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
- int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+ int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
  IndexValue<X> intermediatery[64];
  for (int e = 0; e < maxThreads; e++) intermediatery[e].index = -1;
 

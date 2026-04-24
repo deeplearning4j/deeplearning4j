@@ -1854,6 +1854,116 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
               builder.setInsertionPointAfter(iLoop);
             }
           }
+        } else if (lower == "fused_two_layer_mlp" || lower == "fusedtwolayermlp") {
+          // fused_two_layer_mlp(x, W1, b1, W2, b2) = tanh(ReLU(x @ W1 + b1) @ W2 + b2)
+          // CPU fallback: sequential matmul → bias → activation → matmul → bias → activation
+          if (slot.wiring.numInputs >= 5 && slot.wiring.numOutputs > 0) {
+            int xSrc = slot.wiring.inputSourceIndices[0];
+            int w1Src = slot.wiring.inputSourceIndices[1];
+            int b1Src = slot.wiring.inputSourceIndices[2];
+            int w2Src = slot.wiring.inputSourceIndices[3];
+            int b2Src = slot.wiring.inputSourceIndices[4];
+            int outIdx = slot.wiring.outputSlotIndices[0];
+            auto xMem = getMemref(xSrc);
+            auto w1Mem = getMemref(w1Src);
+            auto b1Mem = getMemref(b1Src);
+            auto w2Mem = getMemref(w2Src);
+            auto b2Mem = getMemref(b2Src);
+            auto outMem = getMemref(outIdx);
+            if (xMem && w1Mem && b1Mem && w2Mem && b2Mem && outMem) {
+              auto* xArr = bufferArgs[sourceToArgIdx[xSrc]].array;
+              auto* w1Arr = bufferArgs[sourceToArgIdx[w1Src]].array;
+              auto* w2Arr = bufferArgs[sourceToArgIdx[w2Src]].array;
+              int64_t M = (xArr->rankOf() >= 2) ? xArr->sizeAt(0) : 1;
+              int64_t D = (xArr->rankOf() >= 2) ? xArr->sizeAt(1) : xArr->lengthOf();
+              int64_t H = (w1Arr->rankOf() >= 2) ? w1Arr->sizeAt(1) : 1;
+              int64_t A = (w2Arr->rankOf() >= 2) ? w2Arr->sizeAt(1) : 1;
+
+              // Sequential approach: for each (i, a), compute the full fused MLP
+              auto zeroIdx3 = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+              auto oneIdx3 = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+              auto zeroF3 = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 0.0));
+              auto mConst = builder.create<mlir::arith::ConstantIndexOp>(loc, M);
+              auto aConst = builder.create<mlir::arith::ConstantIndexOp>(loc, A);
+              auto hConst = builder.create<mlir::arith::ConstantIndexOp>(loc, H);
+              auto dConst = builder.create<mlir::arith::ConstantIndexOp>(loc, D);
+
+              // for i in M
+              auto iLoop3 = builder.create<mlir::scf::ForOp>(loc, zeroIdx3, mConst, oneIdx3);
+              builder.setInsertionPointToStart(iLoop3.getBody());
+              auto iIv3 = iLoop3.getInductionVar();
+
+              // for a in A
+              auto aLoop3 = builder.create<mlir::scf::ForOp>(loc, zeroIdx3, aConst, oneIdx3);
+              builder.setInsertionPointToStart(aLoop3.getBody());
+              auto aIv3 = aLoop3.getInductionVar();
+
+              // out_acc = 0; for h in H: h1 = relu(sum_d(x[i,d]*W1[d,h]) + b1[h]);
+              //                           out_acc += h1 * W2[h,a]
+              auto hLoop3 = builder.create<mlir::scf::ForOp>(loc, zeroIdx3, hConst, oneIdx3,
+                  mlir::ValueRange{zeroF3.getResult()});
+              builder.setInsertionPointToStart(hLoop3.getBody());
+              auto hIv3 = hLoop3.getInductionVar();
+              auto outAcc3 = hLoop3.getBody()->getArgument(1);
+
+              // sum_d: x[i,d] * W1[d,h]
+              auto dLoop3 = builder.create<mlir::scf::ForOp>(loc, zeroIdx3, dConst, oneIdx3,
+                  mlir::ValueRange{zeroF3.getResult()});
+              builder.setInsertionPointToStart(dLoop3.getBody());
+              auto dIv3 = dLoop3.getInductionVar();
+              auto h1Acc3 = dLoop3.getBody()->getArgument(1);
+
+              auto iTimesD3 = builder.create<mlir::arith::MulIOp>(loc, iIv3, dConst);
+              auto xIdx3 = builder.create<mlir::arith::AddIOp>(loc, iTimesD3, dIv3);
+              auto xV3 = builder.create<mlir::memref::LoadOp>(loc, xMem, mlir::ValueRange{xIdx3});
+              auto dTimesH3 = builder.create<mlir::arith::MulIOp>(loc, dIv3, hConst);
+              auto w1Idx3 = builder.create<mlir::arith::AddIOp>(loc, dTimesH3, hIv3);
+              auto w1V3 = builder.create<mlir::memref::LoadOp>(loc, w1Mem, mlir::ValueRange{w1Idx3});
+              auto prod3 = builder.create<mlir::arith::MulFOp>(loc, xV3, w1V3);
+              auto newH1Acc3 = builder.create<mlir::arith::AddFOp>(loc, h1Acc3, prod3);
+              builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newH1Acc3});
+              builder.setInsertionPointAfter(dLoop3);
+              auto h1Sum3 = dLoop3.getResult(0);
+
+              // h1 = relu(h1Sum + b1[h])
+              auto b1V3 = builder.create<mlir::memref::LoadOp>(loc, b1Mem, mlir::ValueRange{hIv3});
+              auto h1WithBias3 = builder.create<mlir::arith::AddFOp>(loc, h1Sum3, b1V3);
+              auto h1Relu3 = builder.create<mlir::arith::MaximumFOp>(loc, h1WithBias3, zeroF3);
+
+              // out_acc += h1_relu * W2[h, a]
+              auto hTimesA3 = builder.create<mlir::arith::MulIOp>(loc, hIv3, aConst);
+              auto w2Idx3 = builder.create<mlir::arith::AddIOp>(loc, hTimesA3, aIv3);
+              auto w2V3 = builder.create<mlir::memref::LoadOp>(loc, w2Mem, mlir::ValueRange{w2Idx3});
+              auto contrib3 = builder.create<mlir::arith::MulFOp>(loc, h1Relu3, w2V3);
+              auto newOutAcc3 = builder.create<mlir::arith::AddFOp>(loc, outAcc3, contrib3);
+              builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newOutAcc3});
+              builder.setInsertionPointAfter(hLoop3);
+              auto outSum3 = hLoop3.getResult(0);
+
+              // out = tanh(outSum + b2[a]): tanh(x) = 2*sigmoid(2x) - 1
+              auto b2V3 = builder.create<mlir::memref::LoadOp>(loc, b2Mem, mlir::ValueRange{aIv3});
+              auto outWithBias3 = builder.create<mlir::arith::AddFOp>(loc, outSum3, b2V3);
+              auto twoC3 = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 2.0));
+              auto twoX3 = builder.create<mlir::arith::MulFOp>(loc, twoC3, outWithBias3);
+              auto negTwoX3 = builder.create<mlir::arith::NegFOp>(loc, twoX3);
+              auto expNeg3 = builder.create<mlir::math::ExpOp>(loc, negTwoX3);
+              auto oneC3 = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(f32Type, 1.0));
+              auto denom3 = builder.create<mlir::arith::AddFOp>(loc, oneC3, expNeg3);
+              auto sig3 = builder.create<mlir::arith::DivFOp>(loc, oneC3, denom3);
+              auto twoSig3 = builder.create<mlir::arith::MulFOp>(loc, twoC3, sig3);
+              auto tanh3 = builder.create<mlir::arith::SubFOp>(loc, twoSig3, oneC3);
+
+              // Store result: out[i*A + a] = tanh
+              auto iTimesA3 = builder.create<mlir::arith::MulIOp>(loc, iIv3, aConst);
+              auto outIdx3 = builder.create<mlir::arith::AddIOp>(loc, iTimesA3, aIv3);
+              builder.create<mlir::memref::StoreOp>(loc, tanh3, outMem, mlir::ValueRange{outIdx3});
+
+              builder.create<mlir::scf::YieldOp>(loc);  // end a loop
+              builder.setInsertionPointAfter(aLoop3);
+              builder.create<mlir::scf::YieldOp>(loc);  // end i loop
+              builder.setInsertionPointAfter(iLoop3);
+            }
+          }
         }
         break;
       }

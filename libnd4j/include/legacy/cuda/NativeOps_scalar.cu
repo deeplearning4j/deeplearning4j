@@ -32,7 +32,7 @@
 #include <loops/scalar.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <array/ArrayOptions.h>
 #include <helpers/shape.h>
 #include <execution/cuda/LaunchDims.h>

@@ -1170,6 +1170,26 @@ public class ND4JSystemProperties {
     public static final String CUBLAS_CAPTURE_WORKSPACE = "nd4j.cublas.captureWorkspace";
 
     /**
+     * Applicability: CUDA DSP capture<br>
+     * Description: Size in MB of the pre-allocated workspace used during CUDA graph capture.
+     * Ops that allocate GPU memory during capture use this workspace instead of cudaMallocAsync
+     * (which cannot be used during capture). If the workspace is too small, capture fails with
+     * an OOM error. Increase this value for larger models.
+     * <p>
+     * Default: 256
+     */
+    public static final String DSP_CAPTURE_WORKSPACE_MB = "nd4j.dsp.captureWorkspaceMb";
+
+    /**
+     * Applicability: CUDA DSP capture<br>
+     * Description: Size in MB of the host-side workspace used during CUDA graph capture
+     * for pinned host memory allocations (e.g., shape info replication).
+     * <p>
+     * Default: 32
+     */
+    public static final String DSP_CAPTURE_HOST_WORKSPACE_MB = "nd4j.dsp.captureHostWorkspaceMb";
+
+    /**
      * Applicability: SameDiff execution<br>
      * Description: Enable per-op timing instrumentation.
      * <p>

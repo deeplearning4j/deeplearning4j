@@ -26,6 +26,7 @@
 #if HAVE_VLM
 
 #include <ggml-backend.h>
+#include <system/env_functions.h>
 
 #ifdef GGML_USE_CUDA
 #include <ggml-cuda.h>
@@ -261,7 +262,7 @@ bool VlmBackendManager::initializeCpuBackend() {
 
     // Set number of threads
     int numThreads = _config.numThreads > 0 ?
-        _config.numThreads : sd::Environment::getInstance().maxMasterThreads();
+        _config.numThreads : sd::env_maxMasterThreads();
     ggml_backend_cpu_set_n_threads(_cpuBackend, numThreads);
 
     _allBackends.push_back(_cpuBackend);

@@ -194,7 +194,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopTadXZ(const LongType* xShapeInfo, const
                                                const LongType* tadShapeInfo) {
   // Check for small array optimization first
   if (shape::rank(xShapeInfo) == 2 &&
-      shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance().elementwiseThreshold()) {
+      shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= sd::env_elementwiseThreshold()) {
     return SMALLARR2DX;
   }
 

@@ -1112,6 +1112,16 @@ public class CudaEnvironment implements Environment {
         e.setTritonDumpGraphDot(dump);
     }
 
+    @Override
+    public boolean tritonMergedCaptureThroughViews() {
+        return e.tritonMergedCaptureThroughViews();
+    }
+
+    @Override
+    public void setTritonMergedCaptureThroughViews(boolean v) {
+        e.setTritonMergedCaptureThroughViews(v);
+    }
+
     // Triton debugging flags
     @Override
     public boolean tritonSkipKernels() {

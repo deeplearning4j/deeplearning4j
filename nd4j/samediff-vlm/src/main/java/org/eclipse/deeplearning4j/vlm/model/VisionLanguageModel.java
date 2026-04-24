@@ -36,6 +36,8 @@ import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.model.patching.SameDiffGraphPatch;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheManager;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
@@ -619,7 +621,7 @@ public class VisionLanguageModel implements AutoCloseable {
         // Release vision encoder GPU intermediates before decode
         releaseVisionEncoderGpuMemory();
 
-        // Use StaticKvCacheDecodeLoop (optimized: native KV scatter, CUDA graphs, outputDirect)
+        // Use GenerationPipeline for decode
         return decodeWithStaticLoop(combinedEmbeddings, promptIds, maxNewTokens,
                 temperature, doSample);
     }
@@ -1952,34 +1954,34 @@ public class VisionLanguageModel implements AutoCloseable {
     }
 
     /**
-     * Decode using StaticKvCacheDecodeLoop for optimized throughput (Triton, CUDA graphs, native KV scatter).
+     * Decode using GenerationPipeline for optimized throughput (Triton, CUDA graphs, native KV scatter).
      */
     private GenerationResult decodeWithStaticLoop(INDArray combinedEmbeddings, int[] promptIds,
                                                    int maxNewTokens, double temperature, boolean doSample) {
-        long hiddenSz = config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0;
-
-        org.eclipse.deeplearning4j.llm.generation.SamplingConfig samplingCfg = doSample
-                ? org.eclipse.deeplearning4j.llm.generation.SamplingConfig.builder()
+        SamplingConfig samplingCfg = doSample
+                ? SamplingConfig.builder()
                         .temperature(temperature).topP(0.95).doSample(true).build()
-                : org.eclipse.deeplearning4j.llm.generation.SamplingConfig.greedy();
+                : SamplingConfig.greedy();
 
         // Auto-discover I/O names from the decoder model graph
-        org.eclipse.deeplearning4j.llm.generation.ModelIOConfig decoderIOConfig =
-                org.eclipse.deeplearning4j.llm.generation.ModelIOConfig.discover(decoder);
+        ModelIOConfig decoderIOConfig = ModelIOConfig.discover(decoder);
 
-        org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop loop =
-                org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop.builder()
-                        .decoder(decoder)
-                        .embedTokens(embedTokens)
-                        .tokenizer(tokenizer)
-                        .ioConfig(decoderIOConfig)
-                        .samplingConfig(samplingCfg)
-                        .maxNewTokens(maxNewTokens)
-                        .hiddenSize(hiddenSz)
-                        .build();
+        try {
+            GenerationPipeline pipeline = GenerationPipeline.create(
+                    GenerationPipelineConfig.builder()
+                            .decoder(decoder)
+                            .embedTokens(embedTokens)
+                            .tokenizer(tokenizer)
+                            .ioConfig(decoderIOConfig)
+                            .samplingConfig(samplingCfg)
+                            .maxNewTokens(maxNewTokens)
+                            .hiddenSize(config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0)
+                            .build());
 
-        log.info("Using StaticKvCacheDecodeLoop for optimized decode (hiddenSize={})", hiddenSz);
-        return loop.decode(combinedEmbeddings, promptIds);
+            return pipeline.generate(combinedEmbeddings, promptIds, maxNewTokens);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create generation pipeline", e);
+        }
     }
 
     /**

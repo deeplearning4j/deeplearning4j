@@ -25,7 +25,7 @@
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/StringUtils.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <loops/legacy_ops.h>
 #include <loops/reduce_same.h>
 #include <loops/scalar.h>

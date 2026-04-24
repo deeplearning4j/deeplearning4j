@@ -27,6 +27,7 @@
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
 #include <helpers/TransferMetrics.h>
@@ -537,7 +538,7 @@ void DataBuffer::allocateSpecial() {
     }
   }
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+  if(sd::env_isFuncTracePrintAllocate()) {
     allocationStackTraceSpecial = new StackTrace();
     allocationStackTraceSpecial->load_here();
   }

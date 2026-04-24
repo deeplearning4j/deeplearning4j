@@ -45,7 +45,7 @@ import java.util.Map;
  *
  * @author Eclipse Deeplearning4j Contributors
  * @see ModelIOConfig
- * @see StaticKvCacheDecodeLoop
+ * @see GenerationPipeline
  */
 @Slf4j
 public class DecoderInputBuilder {
@@ -184,7 +184,8 @@ public class DecoderInputBuilder {
         }
 
         String embedsName = ioConfig.getInputEmbeddingsName();
-        if (embedsName != null && !decoderInputMap.containsKey(embedsName)) {
+        if (embedsName != null && !decoderInputMap.containsKey(embedsName)
+                && (decoder == null || decoder.hasVariable(embedsName))) {
             decoderInputMap.put(embedsName, embeddings);
         }
 

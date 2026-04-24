@@ -8,6 +8,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 #include <algorithm>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -114,7 +115,7 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
   }
 
   auto startingValue = static_cast<typename OpType::InterType>(OpType::startingValue(x));
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
@@ -327,7 +328,7 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, sd::LongType xEw
     }
   }
 
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   using InterType = typename OpType::InterType;
   InterType intermediate[64];
 

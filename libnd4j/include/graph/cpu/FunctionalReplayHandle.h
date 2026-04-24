@@ -77,6 +77,15 @@ class SD_LIB_EXPORT FunctionalReplayHandle : public GraphReplayHandle {
   /** Get the number of recorded ops. */
   int getRecordedOpCount() const { return static_cast<int>(recordedOps_.size()); }
 
+  /** Get the recorded slot indices that actually need execution.
+   *  These are the non-trivial slots (not frozen constants, not fused chain
+   *  tails, not identity ops). Used by executeSegmentSlotBySlot to skip
+   *  iteration over trivially skippable slots. */
+  const std::vector<int>& getExecutableSlotIndices() const { return executableSlotIndices_; }
+
+  /** Whether the executable slot index list has been built. */
+  bool hasExecutableSlotIndices() const { return !executableSlotIndices_.empty(); }
+
  private:
   /** Recorded op entry from the capture pass. */
   struct RecordedOp {
@@ -86,6 +95,9 @@ class SD_LIB_EXPORT FunctionalReplayHandle : public GraphReplayHandle {
 
   ReplayState state_;
   std::vector<RecordedOp> recordedOps_;
+  /** Slot indices that were actually executed (not skipped) during capture.
+   *  Built during finalize() from the recordedOps_ list. */
+  std::vector<int> executableSlotIndices_;
   int replayCount_;
   double lastReplayTimeMs_;
 };

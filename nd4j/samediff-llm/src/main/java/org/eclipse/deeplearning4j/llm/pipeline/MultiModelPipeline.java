@@ -59,7 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>Model reuse detection and optimization</li>
  *   <li>Structured output parsing for each model type</li>
  *   <li>KV cache strategy support (STATIC, PAGED, QUANTIZED, TURBOQUANT)</li>
- *   <li>Uses {@link org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop} 
+ *   <li>Uses native autoregressive decode
  *       for efficient autoregressive decoding with {@link org.eclipse.deeplearning4j.llm.generation.KvCacheManager}</li>
  * </ul>
  *
@@ -69,7 +69,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *     <ul>
  *       <li>Token embedding via direct lookup or embed_tokens model</li>
  *       <li>KV cache management via configured {@code KvCacheStrategy}</li>
- *       <li>Autoregressive decode loop with {@code StaticKvCacheDecodeLoop}</li>
+ *       <li>Autoregressive decode loop via GenerationPipeline</li>
  *       <li>Memory-safe cleanup via {@code SameDiffMemoryUtils}</li>
  *     </ul>
  *   </li>
@@ -116,7 +116,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see PipelineStage
  * @see PipelineResult
  * @see org.eclipse.deeplearning4j.llm.generation.GenerationPipeline
- * @see org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop
  * @see org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy
  * @see org.eclipse.deeplearning4j.llm.generation.KvCacheManager
  */

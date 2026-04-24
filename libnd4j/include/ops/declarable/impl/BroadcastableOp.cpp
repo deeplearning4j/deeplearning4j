@@ -22,6 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/BroadcastableOp.h>
 #include <system/op_boilerplate.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
@@ -37,7 +38,7 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   auto outputs = _descriptor->getOutputTypesForOutput(0);
   sd::DataType dtype = block.dataType(0);
   if (block.dataType(0) != sd::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == sd::DataType::BOOL)) {
-    if (Environment::getInstance().isExperimentalBuild()) {
+    if (sd::env_isExperimentalBuild()) {
       if (shape::length(y) > shape::length(x)) {
         dtype = DataTypeUtils::pickPairwiseResultType(y, x);
       } else {

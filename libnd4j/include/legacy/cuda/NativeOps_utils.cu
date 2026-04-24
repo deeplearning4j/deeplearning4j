@@ -22,7 +22,7 @@
  */
 
 #include <cuda.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <system/buffer.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <legacy/NativeOps.h>

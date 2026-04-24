@@ -416,8 +416,12 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                     "refresh outputSlots_ before recompilation.");
       // Invalidate cached graph
       SegmentLifecycle::invalidateForRebuild(this, seg, "shape_change");
+#ifdef SD_CUDA
       batchD2DCount_ = 0;
+#endif
+      inShapeChangeWarmup_ = true;
       auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      inShapeChangeWarmup_ = false;
       if (warmupStatus != Status::OK) {
         DSP_DIAG(COMPILE, "segDispatchCompile: shape-change warmup FAILED for seg[%d-%d] status=%d",
                  seg.def.startSlot, seg.def.endSlot, static_cast<int>(warmupStatus));
@@ -448,6 +452,13 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                           static_cast<uint32_t>(executeCount_));
     }
     SegmentLifecycle::markCompiled(seg.exec, backendName, segShapeKey);
+    // Store the compiled shape key so the Triton cache lookup key matches.
+    // This MUST only happen when compilation actually occurred — the caller
+    // previously did this unconditionally, which overwrote compiledShapeKey
+    // on non-compilation execs with a new shape key (e.g. KV cache grew),
+    // causing KERNEL_FAILURE on the Triton cache lookup.
+    seg.def.shapeKeyState.markCompiled(segShapeKey);
+    DSP_SEG_EVENT(seg, SHAPE_KEY_STORED, "compilation complete");
   }
 
   // On first compilation, validate coverage

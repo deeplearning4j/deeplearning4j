@@ -91,16 +91,14 @@ public class GenerationResult {
     /**
      * Steady-state throughput after warmup/capture settling, in tokens per second.
      *
-     * <p>For {@link StaticKvCacheDecodeLoop}, this is the average over fast-path
-     * decode steps 3+.</p>
+     * <p>This is the average over fast-path decode steps 3+.</p>
      */
     private final double steadyStateTokensPerSecond;
 
     /**
      * Late steady-state throughput after replay has fully settled, in tokens per second.
      *
-     * <p>For {@link StaticKvCacheDecodeLoop}, this is the average over decode
-     * steps 20+ when available.</p>
+     * <p>This is the average over decode steps 20+ when available.</p>
      */
     private final double lateSteadyStateTokensPerSecond;
 

@@ -37,10 +37,11 @@ namespace sd {
 namespace graph {
 
 /**
- * LRU cache keyed by (outputSetHash, content-hash of placeholder shape-info buffers).
+ * LRU cache keyed by (outputSetHash, content-hash of ALL external input shape-info buffers).
  * The key hashes the actual shape-info CONTENTS (rank, dims, strides, dtype) rather
  * than pointer addresses, so arrays with the same shape but different allocations
- * (e.g., KV cache placeholders re-created each decode step) produce the same key.
+ * produce the same key. All externals (placeholders, variables, constants) are included
+ * so that any shape change (KV cache growth, mask resize) dispatches to a different plan.
  *
  * Budget policy (both enforced on every insert):
  *   1. Hard cap:    lru_.size() > DspConfig::planCacheMaxPlans()  → evict LRU until satisfied.
@@ -61,10 +62,11 @@ class SD_LIB_EXPORT NativePlanCache {
   // -------------------------------------------------------------------------
   struct Key {
     uint64_t outputSetHash;
-    // Content hash of all placeholder shape-info buffers.
+    // Content hash of ALL external input shape-info buffers (placeholders + variables).
     // Built by hashShapeInfoContents() from the actual rank/dims/strides/dtype data.
+    // Any external shape change (KV cache growth, mask resize) produces a different key.
     uint64_t phShapeContentHash;
-    // Number of placeholders (for equality disambiguation).
+    // Number of external inputs (for equality disambiguation).
     sd::LongType phCount;
     // GraphExecutionMode — each mode gets its own plan (one flow, no reclassification).
     int graphExecutionMode;

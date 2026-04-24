@@ -10,6 +10,7 @@
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/scalar_bool.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -39,5 +40,5 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
       !allowParallelism
       ? 1
       : sd::math::sd_max(
-          1, sd::math::sd_min(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+          1, sd::math::sd_min(zLen / 1024, sd::env_maxMasterThreads())));
 }

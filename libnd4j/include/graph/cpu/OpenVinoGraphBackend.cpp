@@ -34,6 +34,17 @@
 namespace sd {
 namespace graph {
 
+// Thread-local native executor for mixed-segment interleaving
+thread_local OpenVinoGraphBackend::NativeSlotExecutor OpenVinoGraphBackend::nativeExecutor_ = nullptr;
+
+void OpenVinoGraphBackend::setNativeSlotExecutor(NativeSlotExecutor executor) {
+  nativeExecutor_ = std::move(executor);
+}
+
+void OpenVinoGraphBackend::clearNativeSlotExecutor() {
+  nativeExecutor_ = nullptr;
+}
+
 // ─── Singleton ──────────────────────────────────────────────────────────────
 
 OpenVinoGraphBackend& OpenVinoGraphBackend::getInstance() {
@@ -288,9 +299,14 @@ bool OpenVinoGraphBackend::isOpenVinoMappable(const std::string& opName) {
     "conv2d", "Conv2d", "Conv2D", "conv2D",
     "conv3d", "Conv3d",
     "depthwise_conv2d", "DepthwiseConv2d",
+    "causal_conv1d", "CausalConv1d",
     "maxpool2d", "MaxPool2d",
     "avgpool2d", "AvgPool2d",
     "deconv2d", "deconv3d",
+
+    // ── SSM recurrence (complex stateful ops -- deferred to runtime) ──
+    "gated_delta_rule", "GatedDeltaRule",
+    "mamba2_ssm", "Mamba2SSM", "Mamba2Ssm",
 
     // ── ROPE (complex composition -- marked mappable for coverage counting) ──
     "rope", "Rope",
@@ -304,6 +320,28 @@ bool OpenVinoGraphBackend::isOpenVinoMappable(const std::string& opName) {
   };
 
   return mappable.count(opName) > 0;
+}
+
+// ─── Native-deferred ops ────────────────────────────────────────────────────
+// These ops are in the mappable list (for canFuseSegment coverage), but are
+// too complex or stateful to decompose into OV opset. They run natively via
+// the NativeSlotExecutor callback during mixed-segment execution.
+
+bool OpenVinoGraphBackend::isNativeDeferredOp(const std::string& opName) {
+  // Only genuinely sequential/stateful ops that CAN'T be decomposed into a
+  // static OV graph. Everything else should be properly implemented.
+  static const std::unordered_set<std::string> deferred = {
+    // Sequential SSM recurrence: state[t] depends on state[t-1]. No OV scan op.
+    "gated_delta_rule", "GatedDeltaRule",
+    "mamba2_ssm", "Mamba2SSM", "Mamba2Ssm",
+    // TODO: implement these as OV decompositions instead of deferring
+    "rope", "Rope", "fused_rope", "FusedRope",
+    "dot_product_attention", "DotProductAttention",
+    "dot_product_attention_v2", "DotProductAttentionV2",
+    "multi_head_attention", "MultiHeadAttention",
+    "onnx_multi_head_attention", "OnnxMultiHeadAttention",
+  };
+  return deferred.count(opName) > 0;
 }
 
 // ─── canFuseSegment ─────────────────────────────────────────────────────────
@@ -340,23 +378,33 @@ bool OpenVinoGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end)
     }
   }
 
-  bool canFuse = mappableOps == totalOps && mappableOps >= 1;
-  DSP_DIAG(SEGMENT, "OpenVinoGraphBackend::canFuseSegment [%d-%d]: mappable=%d/%d canFuse=%s",
-           start, end, mappableOps, totalOps, canFuse ? "true" : "false");
-  // Accept any segment where all ops are mappable — no minimum op count.
-  // Every mappable op benefits from OpenVINO compilation.
+  // Accept if all ops are either OV-mappable or native-deferred.
+  // Need at least 1 OV-compilable op (non-deferred) to justify the segment.
+  int ovCompilableOps = 0;
+  for (int i = start; i <= end; i++) {
+    if (isOpenVinoMappable(slots[i].ident.opName) && !isNativeDeferredOp(slots[i].ident.opName)) {
+      ovCompilableOps++;
+    }
+  }
+  bool canFuse = mappableOps == totalOps && ovCompilableOps >= 1;
+  DSP_DIAG(SEGMENT, "OpenVinoGraphBackend::canFuseSegment [%d-%d]: mappable=%d/%d ovCompilable=%d canFuse=%s",
+           start, end, mappableOps, totalOps, ovCompilableOps, canFuse ? "true" : "false");
   return canFuse;
 }
 
-// ─── buildModel ─────────────────────────────────────────────────────────────
+// ─── buildIsland ────────────────────────────────────────────────────────────
+// Builds an OV model from a contiguous range of OV-compilable slots.
+// segStartSlot/segEndSlot define the outer segment boundary for context.
 
-OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
+OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
     NativeSlot* slots, int startSlot, int endSlot,
     NDArray** externalInputs, int numExternalInputs,
-    NDArray** outputSlots, int totalOutputSlots) {
+    NDArray** outputSlots, int totalOutputSlots,
+    int segStartSlot, int segEndSlot) {
 
-  CompiledSegment result;
-  result.valid = false;
+  OvIsland result;
+  result.startSlot = startSlot;
+  result.endSlot = endSlot;
 
   // Track tensor nodes by their source index (slot output index or external input)
   // Key: >=0 = outputSlot index, <0 = -(externalInputIndex+1)
@@ -456,6 +504,9 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         params.push_back(param);
         tensorMap[srcIdx] = param->output(0);
         inputSourceMap.push_back(srcIdx);
+        DSP_DIAG(COMPILE, "OpenVINO: buildIsland[%d-%d] param srcIdx=%d shape=%s dtype=%s allDynamic=%d hasArr=%d",
+                 startSlot, endSlot, srcIdx, pshape.to_string().c_str(),
+                 dtype.get_type_name().c_str(), allDynamic, (arr != nullptr));
       }
     }
   }
@@ -467,15 +518,13 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
   for (int s = startSlot; s <= endSlot; s++) {
     const std::string& opName = slots[s].ident.opName;
 
-    CompilationAuditEntry audit;
-    audit.slotIndex = s;
-    audit.opName = opName;
-
     if (!isOpenVinoMappable(opName)) {
-      audit.wasCompiled = false;
-      audit.reason = "unmappable op: " + opName;
-      result.compilationAudit.push_back(audit);
       DSP_DIAG(COMPILE, "OpenVINO: skipping unmappable op '%s' at slot %d", opName.c_str(), s);
+      continue;
+    }
+
+    // Native-deferred ops: skip silently — compileSegment handled them as NativeRange
+    if (isNativeDeferredOp(opName)) {
       continue;
     }
 
@@ -485,6 +534,30 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
     // at runtime and cascade into broken models. Fail the segment cleanly so DSP
     // can pick another backend.
     std::vector<ov::Output<ov::Node>> inputs;
+    {
+      std::string inputInfo;
+      for (int inp = 0; inp < slots[s].wiring.numInputs; inp++) {
+        int srcIdx = slots[s].wiring.inputSourceIndices[inp];
+        if (!inputInfo.empty()) inputInfo += ", ";
+        inputInfo += "src" + std::to_string(srcIdx);
+        auto it2 = tensorMap.find(srcIdx);
+        if (it2 != tensorMap.end()) {
+          inputInfo += "=" + it2->second.get_partial_shape().to_string();
+        } else {
+          inputInfo += "=MISSING";
+        }
+      }
+      DSP_DIAG(COMPILE, "OpenVINO: buildIsland slot %d op '%s' inputs=[%s] numOut=%d outSlots=[%s]",
+               s, opName.c_str(), inputInfo.c_str(), slots[s].wiring.numOutputs,
+               [&]() -> std::string {
+                 std::string r;
+                 for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
+                   if (!r.empty()) r += ",";
+                   r += std::to_string(slots[s].wiring.outputSlotIndices[o]);
+                 }
+                 return r;
+               }().c_str());
+    }
     for (int inp = 0; inp < slots[s].wiring.numInputs; inp++) {
       int srcIdx = slots[s].wiring.inputSourceIndices[inp];
       auto it = tensorMap.find(srcIdx);
@@ -503,21 +576,16 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
 
       // OpenVINO elementwise ops require matching input types.
       // Auto-cast mismatched binary inputs to the higher-precision type.
+      // Harmonize binary input types: cast input[1] to match input[0]'s type.
+      // input[0] is the "activation" (data flowing through the graph) and determines
+      // the output type. Upcasting to f32 would poison all downstream ops and force
+      // expensive conversions at every output boundary.
       auto harmonizeBinaryTypes = [](ov::Output<ov::Node>& a, ov::Output<ov::Node>& b) {
         auto ta = a.get_element_type();
         auto tb = b.get_element_type();
         if (ta != tb) {
-          // Pick the "wider" floating type, or float32 as fallback
-          ov::element::Type target = ov::element::f32;
-          if (ta.is_real() && tb.is_real()) {
-            target = (ta.bitwidth() >= tb.bitwidth()) ? ta : tb;
-          } else if (ta.is_real()) {
-            target = ta;
-          } else if (tb.is_real()) {
-            target = tb;
-          }
-          if (ta != target) a = std::make_shared<ov::op::v0::Convert>(a, target)->output(0);
-          if (tb != target) b = std::make_shared<ov::op::v0::Convert>(b, target)->output(0);
+          // Cast b to match a (activation-dominant: output type follows input[0])
+          b = std::make_shared<ov::op::v0::Convert>(b, ta)->output(0);
         }
       };
 
@@ -754,34 +822,49 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         if (inputs.size() >= 1) node = std::make_shared<ov::op::v4::SoftPlus>(inputs[0]);
       }
       // ── Scalar ops (second operand from tArgs[0]) ──
+      // Create the scalar constant in the SAME dtype as the input to avoid
+      // mixed-type validation failures (e.g. f16 input + f32 constant).
       else if (opName == "add_scalar") {
         if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
+          auto inType = inputs[0].get_element_type();
+          auto scalar = ov::op::v0::Constant::create(inType, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Add>(inputs[0], scalar);
         }
       } else if (opName == "subtract_scalar" || opName == "sub_scalar") {
         if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
+          auto inType = inputs[0].get_element_type();
+          auto scalar = ov::op::v0::Constant::create(inType, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Subtract>(inputs[0], scalar);
         }
       } else if (opName == "multiply_scalar" || opName == "mul_scalar") {
         if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
+          auto inType = inputs[0].get_element_type();
+          auto scalar = ov::op::v0::Constant::create(inType, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Multiply>(inputs[0], scalar);
         }
       } else if (opName == "divide_scalar" || opName == "div_scalar") {
         if (inputs.size() >= 1 && slots[s].args.numTArgs > 0) {
-          auto scalar = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(slots[s].args.tArgs[0])});
+          auto inType = inputs[0].get_element_type();
+          auto scalar = ov::op::v0::Constant::create(inType, {}, {static_cast<float>(slots[s].args.tArgs[0])});
           node = std::make_shared<ov::op::v1::Divide>(inputs[0], scalar);
         }
       }
 
       // ── MatMul ──
+      // For MatMul: cast input[1] (weight) to match input[0] (activation) type.
+      // This ensures the output type equals the activation type — no downstream
+      // conversion needed.  harmonizeBinaryTypes upcasts to the WIDER type which
+      // would force f32 outputs when only the weight is f32, requiring expensive
+      // post-matmul conversion back to f16.
       else if (opName == "matmul" || opName == "MatMul" || opName == "mmul" ||
                opName == "batch_matmul" || opName == "BatchMatMul" ||
                opName == "tensormmul" || opName == "TensorMmul" ||
                opName == "batched_gemm" || opName == "BatchedGemm") {
         if (inputs.size() >= 2) {
+          auto actType = inputs[0].get_element_type();
+          if (inputs[1].get_element_type() != actType) {
+            inputs[1] = std::make_shared<ov::op::v0::Convert>(inputs[1], actType)->output(0);
+          }
           bool transpA = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
           bool transpB = (slots[s].args.numBArgs > 1) ? slots[s].args.bArgs[1] : false;
           node = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], transpA, transpB);
@@ -789,6 +872,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
       } else if (opName == "xw_plus_b" || opName == "XwPlusB") {
         // Compose: MatMul(x, w) + b
         if (inputs.size() >= 3) {
+          auto actType = inputs[0].get_element_type();
+          if (inputs[1].get_element_type() != actType) {
+            inputs[1] = std::make_shared<ov::op::v0::Convert>(inputs[1], actType)->output(0);
+          }
           auto mm = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], false, false);
           node = std::make_shared<ov::op::v1::Add>(mm->output(0), inputs[2]);
         }
@@ -796,13 +883,16 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // Compose: silu(x @ W_gate) * (x @ W_up)
         // Input 0: x [M, K], Input 1: W_gate [K, N], Input 2: W_up [K, N]
         if (inputs.size() >= 3) {
-          // gate = x @ W_gate
+          auto actType = inputs[0].get_element_type();
+          if (inputs[1].get_element_type() != actType) {
+            inputs[1] = std::make_shared<ov::op::v0::Convert>(inputs[1], actType)->output(0);
+          }
           auto gate = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], false, false);
-          // up = x @ W_up
+          if (inputs[2].get_element_type() != actType) {
+            inputs[2] = std::make_shared<ov::op::v0::Convert>(inputs[2], actType)->output(0);
+          }
           auto up = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[2], false, false);
-          // silu(gate) = gate * sigmoid(gate)
           auto silu = std::make_shared<ov::op::v4::Swish>(gate->output(0));
-          // output = silu(gate) * up
           node = std::make_shared<ov::op::v1::Multiply>(silu->output(0), up->output(0));
         }
       }
@@ -891,8 +981,12 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           auto normed = std::make_shared<ov::op::v1::Divide>(inputs[0], rms->output(0));
           auto scaled = std::make_shared<ov::op::v1::Multiply>(normed->output(0), inputs[1]);
 
-          // Linear: scaled @ W
-          node = std::make_shared<ov::op::v0::MatMul>(scaled->output(0), inputs[2], false, false);
+          // Linear: scaled @ W — cast W to match scaled's type (activation-dominant)
+          ov::Output<ov::Node> scaledOut = scaled->output(0);
+          if (inputs[2].get_element_type() != scaledOut.get_element_type()) {
+            inputs[2] = std::make_shared<ov::op::v0::Convert>(inputs[2], scaledOut.get_element_type())->output(0);
+          }
+          node = std::make_shared<ov::op::v0::MatMul>(scaledOut, inputs[2], false, false);
         }
       } else if (opName == "batchnorm" || opName == "BatchNorm" || opName == "batchnorm_inference" || opName == "batch_norm") {
         // BatchNormInference: input, gamma, beta, mean, variance
@@ -1059,7 +1153,10 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
                      inputs[0].get_partial_shape().to_string().c_str());
             auto shape_const = ov::op::v0::Constant::create(
                 ov::element::i64, {targetShape.size()}, targetShape);
-            node = std::make_shared<ov::op::v1::Reshape>(inputs[0], shape_const, false);
+            // allow_special_zero=true: required for dynamic-shape models where
+            // input dims may be unknown at graph construction time. Without this,
+            // OV's reshape validation fails when it can't verify element counts.
+            node = std::make_shared<ov::op::v1::Reshape>(inputs[0], shape_const, true);
           }
         }
       } else if (opName == "permute" || opName == "Permute" || opName == "Transpose" || opName == "transpose") {
@@ -1131,7 +1228,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           if (!targetShape.empty()) {
             auto shape_const = ov::op::v0::Constant::create(
                 ov::element::i64, {targetShape.size()}, targetShape);
-            node = std::make_shared<ov::op::v1::Reshape>(inputs[0], shape_const, false);
+            node = std::make_shared<ov::op::v1::Reshape>(inputs[0], shape_const, true);
           }
         }
       } else if (opName == "flatten" || opName == "Flatten") {
@@ -1216,7 +1313,7 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         // Reshape using second input's shape
         if (inputs.size() >= 2) {
           auto target_shape = std::make_shared<ov::op::v3::ShapeOf>(inputs[1], ov::element::i64);
-          node = std::make_shared<ov::op::v1::Reshape>(inputs[0], target_shape->output(0), false);
+          node = std::make_shared<ov::op::v1::Reshape>(inputs[0], target_shape->output(0), true);
         }
       }
 
@@ -1244,7 +1341,34 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
             DSP_DIAG(COMPILE, "OpenVINO: concat slot %d input[%zu] shape=%s",
                      s, ci, inputs[ci].get_partial_shape().to_string().c_str());
           }
-          ov::OutputVector concatInputs(inputs.begin(), inputs.end());
+          // Normalize all inputs to the same rank by prepending size-1 dimensions.
+          // OpenVINO Concat requires all inputs to have the same rank; if some
+          // inputs are scalars (rank 0) or lower rank, reshape them up front.
+          int maxRankConcat = 0;
+          for (size_t ci = 0; ci < inputs.size(); ci++) {
+            auto ps = inputs[ci].get_partial_shape();
+            if (ps.rank().is_static()) {
+              int r = static_cast<int>(ps.rank().get_length());
+              if (r > maxRankConcat) maxRankConcat = r;
+            }
+          }
+          ov::OutputVector concatInputs;
+          for (size_t ci = 0; ci < inputs.size(); ci++) {
+            auto ps = inputs[ci].get_partial_shape();
+            int r = ps.rank().is_static() ? static_cast<int>(ps.rank().get_length()) : maxRankConcat;
+            if (r < maxRankConcat) {
+              // Prepend (maxRankConcat - r) dimensions of size 1 via successive Unsqueeze(axis=0)
+              ov::Output<ov::Node> promoted = inputs[ci];
+              for (int d = 0; d < (maxRankConcat - r); d++) {
+                auto leading_ax = ov::op::v0::Constant::create(ov::element::i64, {1}, {0});
+                auto usq = std::make_shared<ov::op::v0::Unsqueeze>(promoted, leading_ax);
+                promoted = usq->output(0);
+              }
+              concatInputs.push_back(promoted);
+            } else {
+              concatInputs.push_back(inputs[ci]);
+            }
+          }
           node = std::make_shared<ov::op::v0::Concat>(concatInputs, axis);
         }
       } else if (opName == "split" || opName == "Split") {
@@ -1256,27 +1380,86 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       } else if (opName == "slice" || opName == "Slice" || opName == "strided_slice" || opName == "StridedSlice") {
         if (inputs.size() >= 1 && slots[s].args.numIArgs >= 2) {
-          // Extract begin, end, strides from iArgs
+          // nd4j strided_slice iArgs layout:
+          //   [beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask,
+          //    begin_0..begin_N, end_0..end_N, strides_0..strides_N]
+          // First 5 ints are mask flags, then begin/end/strides follow.
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
-          std::vector<int64_t> begin, end, strides;
-          // iArgs layout: begin..., end..., strides...
-          int argsPerDim = slots[s].args.numIArgs / 3;
+
+          // Parse masks from first 5 iArgs (if available)
+          int64_t beginMaskBits = (slots[s].args.numIArgs > 0) ? slots[s].args.iArgs[0] : 0;
+          int64_t endMaskBits = (slots[s].args.numIArgs > 1) ? slots[s].args.iArgs[1] : 0;
+          int64_t ellipsisMaskBits = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 0;
+          int64_t newAxisMaskBits = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 0;
+          int64_t shrinkAxisMaskBits = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 0;
+
+          int dataStart = 5;
+          int remainingArgs = slots[s].args.numIArgs - dataStart;
+          int argsPerDim = remainingArgs / 3;
           if (argsPerDim <= 0) argsPerDim = rank;
+
+          std::vector<int64_t> begin, end, strides;
           for (int d = 0; d < argsPerDim && d < rank; d++) {
-            begin.push_back(slots[s].args.iArgs[d]);
-            end.push_back(slots[s].args.iArgs[argsPerDim + d]);
-            int64_t stride = (2 * argsPerDim + d < slots[s].args.numIArgs)
-                              ? slots[s].args.iArgs[2 * argsPerDim + d] : 1;
+            begin.push_back(slots[s].args.iArgs[dataStart + d]);
+            end.push_back(slots[s].args.iArgs[dataStart + argsPerDim + d]);
+            int64_t stride = (dataStart + 2 * argsPerDim + d < slots[s].args.numIArgs)
+                              ? slots[s].args.iArgs[dataStart + 2 * argsPerDim + d] : 1;
             if (stride == 0) stride = 1;  // OpenVINO rejects stride=0
             strides.push_back(stride);
           }
+
+          // Convert bitmask to per-dim vectors for OV
+          std::vector<int64_t> beginMask(begin.size(), 0);
+          std::vector<int64_t> endMask(end.size(), 0);
+          std::vector<int64_t> newAxisMask(begin.size(), 0);
+          std::vector<int64_t> shrinkAxisMask(begin.size(), 0);
+          std::vector<int64_t> ellipsisMask(begin.size(), 0);
+          for (size_t d = 0; d < begin.size(); d++) {
+            if (beginMaskBits & (1LL << d)) beginMask[d] = 1;
+            if (endMaskBits & (1LL << d)) endMask[d] = 1;
+            if (newAxisMaskBits & (1LL << d)) newAxisMask[d] = 1;
+            if (shrinkAxisMaskBits & (1LL << d)) shrinkAxisMask[d] = 1;
+            if (ellipsisMaskBits & (1LL << d)) ellipsisMask[d] = 1;
+          }
+
+          {
+            std::string rawArgs = "[";
+            for (int ia = 0; ia < slots[s].args.numIArgs; ia++) {
+              if (ia > 0) rawArgs += ",";
+              rawArgs += std::to_string(slots[s].args.iArgs[ia]);
+            }
+            rawArgs += "]";
+            std::string beginStr = "[", endStr = "[", stridesStr = "[";
+            for (size_t i = 0; i < begin.size(); i++) {
+              if (i > 0) { beginStr += ","; endStr += ","; stridesStr += ","; }
+              beginStr += std::to_string(begin[i]);
+              endStr += std::to_string(end[i]);
+              stridesStr += std::to_string(strides[i]);
+            }
+            beginStr += "]"; endStr += "]"; stridesStr += "]";
+            DSP_DIAG(COMPILE, "OpenVINO: strided_slice slot %d: input=%s begin=%s end=%s strides=%s "
+                     "beginMask=%lld endMask=%lld shrinkMask=%lld newAxisMask=%lld rawIArgs=%s",
+                     s, inputs[0].get_partial_shape().to_string().c_str(),
+                     beginStr.c_str(), endStr.c_str(), stridesStr.c_str(),
+                     (long long)beginMaskBits, (long long)endMaskBits,
+                     (long long)shrinkAxisMaskBits, (long long)newAxisMaskBits,
+                     rawArgs.c_str());
+          }
+
           auto begin_const = ov::op::v0::Constant::create(ov::element::i64, {begin.size()}, begin);
           auto end_const = ov::op::v0::Constant::create(ov::element::i64, {end.size()}, end);
           auto strides_const = ov::op::v0::Constant::create(ov::element::i64, {strides.size()}, strides);
-          std::vector<int64_t> beginMask(begin.size(), 0);
-          std::vector<int64_t> endMask(end.size(), 0);
+          // OV requires ellipsis_mask to have at most 1 set bit. If no ellipsis bits are
+          // set, pass an empty vector (not a vector of zeros — OV checks vector size for
+          // the "at most 1 ellipsis" constraint, which converts the AxisSet from the mask).
+          // Same for new_axis and shrink — pass empty when unused to avoid confusing OV's
+          // mask-to-AxisSet conversion.
+          std::vector<int64_t> newAxisMaskFinal = (newAxisMaskBits != 0) ? newAxisMask : std::vector<int64_t>{};
+          std::vector<int64_t> shrinkAxisMaskFinal = (shrinkAxisMaskBits != 0) ? shrinkAxisMask : std::vector<int64_t>{};
+          std::vector<int64_t> ellipsisMaskFinal = (ellipsisMaskBits != 0) ? ellipsisMask : std::vector<int64_t>{};
           node = std::make_shared<ov::op::v1::StridedSlice>(
-              inputs[0], begin_const, end_const, strides_const, beginMask, endMask);
+              inputs[0], begin_const, end_const, strides_const,
+              beginMask, endMask, newAxisMaskFinal, shrinkAxisMaskFinal, ellipsisMaskFinal);
         }
       } else if (opName == "tile" || opName == "Tile" || opName == "repeat" || opName == "Repeat") {
         if (inputs.size() >= 1) {
@@ -1320,8 +1503,6 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
               auto squeezed = std::make_shared<ov::op::v0::Squeeze>(split_node->output(o), sq_axes);
               tensorMap[outIdx] = squeezed->output(0);
             }
-            audit.wasCompiled = true;
-            result.compilationAudit.push_back(audit);
             continue;  // handled all outputs manually
           } else {
             auto sq_axes = ov::op::v0::Constant::create(ov::element::i64, {1}, {axis});
@@ -1329,15 +1510,48 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
           }
         }
       } else if (opName == "stack" || opName == "Stack") {
-        // Unsqueeze each input along axis, then concat
+        // Unsqueeze each input along axis, then concat.
+        // All inputs must have the same rank before unsqueeze so that after
+        // unsqueeze they all reach rank N+1.  When inputs have mixed ranks
+        // (e.g. scalars mixed with rank-1 tensors) we first promote every
+        // input to the common (maximum) rank by prepending leading size-1
+        // dimensions, then apply the unsqueeze uniformly.
         if (inputs.size() >= 1) {
           int axis = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
+
+          // 1. Find the maximum rank across all inputs.
+          int maxRankStack = 0;
+          for (size_t i = 0; i < inputs.size(); i++) {
+            auto ps = inputs[i].get_partial_shape();
+            if (ps.rank().is_static()) {
+              int r = static_cast<int>(ps.rank().get_length());
+              if (r > maxRankStack) maxRankStack = r;
+            }
+          }
+
+          // 2. Promote lower-rank inputs to maxRankStack by prepending size-1 dims.
+          ov::OutputVector promoted;
+          for (size_t i = 0; i < inputs.size(); i++) {
+            auto ps = inputs[i].get_partial_shape();
+            int r = ps.rank().is_static() ? static_cast<int>(ps.rank().get_length()) : maxRankStack;
+            ov::Output<ov::Node> cur = inputs[i];
+            for (int d = 0; d < (maxRankStack - r); d++) {
+              auto leading_ax = ov::op::v0::Constant::create(ov::element::i64, {1}, {0});
+              auto usq = std::make_shared<ov::op::v0::Unsqueeze>(cur, leading_ax);
+              cur = usq->output(0);
+            }
+            promoted.push_back(cur);
+          }
+
+          // 3. Unsqueeze all (now same-rank) inputs along the stack axis.
           auto ax_const = ov::op::v0::Constant::create(ov::element::i64, {1}, {axis});
           ov::OutputVector unsqueezed;
-          for (size_t i = 0; i < inputs.size(); i++) {
-            auto usq = std::make_shared<ov::op::v0::Unsqueeze>(inputs[i], ax_const);
+          for (size_t i = 0; i < promoted.size(); i++) {
+            auto usq = std::make_shared<ov::op::v0::Unsqueeze>(promoted[i], ax_const);
             unsqueezed.push_back(usq->output(0));
           }
+
+          // 4. Concatenate along the same axis.
           node = std::make_shared<ov::op::v0::Concat>(unsqueezed, axis);
         }
       } else if (opName == "pad" || opName == "Pad") {
@@ -1467,8 +1681,6 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
             int outIdx = slots[s].wiring.outputSlotIndices[o];
             tensorMap[outIdx] = inputs[0];
           }
-          audit.wasCompiled = true;
-          result.compilationAudit.push_back(audit);
           continue;  // skip node creation — identity is a wire
         }
       }
@@ -1758,29 +1970,185 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         }
       }
 
-      // ── ROPE (complex composition -- deferred to runtime) ──
-      else if (opName == "rope" || opName == "Rope" || opName == "fused_rope" || opName == "FusedRope") {
-        audit.wasCompiled = true;
-        audit.reason = "complex op - deferred to runtime";
-        result.compilationAudit.push_back(audit);
-        continue;
+      // ── Causal Conv1D (depthwise causal 1D convolution with state) ──
+      // Decomposes into: transpose → pad → GroupConv1D → bias → activation → transpose
+      // Plus a slice for state_out. Has 2 outputs so wires tensorMap directly.
+      else if (opName == "causal_conv1d" || opName == "CausalConv1d") {
+        // inputs[0] = x [B,L,D], inputs[1] = weight [D,K] or [K,D]
+        // optional inputs[2] = bias [D] or state_in [B,D,K-1]
+        // optional inputs[3] = state_in [B,D,K-1]
+        if (inputs.size() >= 2) {
+          int activation = (slots[s].args.numIArgs > 0) ? static_cast<int>(slots[s].args.iArgs[0]) : 0;
+          int wFormat = (slots[s].args.numIArgs > 1) ? static_cast<int>(slots[s].args.iArgs[1]) : 0;
+
+          auto x_input = inputs[0];  // [B,L,D]
+          auto w_input = inputs[1];  // [D,K] or [K,D]
+          auto dtype = x_input.get_element_type();
+
+          // Harmonize weight type to match input
+          if (w_input.get_element_type() != dtype) {
+            w_input = std::make_shared<ov::op::v0::Convert>(w_input, dtype)->output(0);
+          }
+
+          // Transpose x from [B,L,D] → [B,D,L] for GroupConv
+          auto perm_blk = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{3},
+              std::vector<int64_t>{0, 2, 1});
+          auto x_bdl = std::make_shared<ov::op::v1::Transpose>(x_input, perm_blk)->output(0);
+
+          // Get K from weight shape. For wFormat=0: weight is [D,K], K is dim 1.
+          // For wFormat=1: weight is [K,D], K is dim 0.
+          // We need weight in [D,K] order for the reshape below.
+          auto w_dk = w_input;
+          if (wFormat == 1) {
+            // Transpose [K,D] → [D,K]
+            auto w_perm = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{2},
+                std::vector<int64_t>{1, 0});
+            w_dk = std::make_shared<ov::op::v1::Transpose>(w_input, w_perm)->output(0);
+          }
+
+          // Reshape weight [D,K] → [D,1,1,K] for OV GroupConvolution
+          // GroupConv expects: [GROUPS, C_OUT/GROUPS, C_IN/GROUPS, K] = [D, 1, 1, K]
+          auto w_shape = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{4},
+              std::vector<int64_t>{0, 1, 1, 0});
+          // Use ShapeOf + Gather to get D and K dynamically
+          auto w_shape_node = std::make_shared<ov::op::v3::ShapeOf>(w_dk);
+          auto idx_0 = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{1}, std::vector<int64_t>{0});
+          auto idx_1 = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{1}, std::vector<int64_t>{1});
+          auto axis_0 = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{}, std::vector<int64_t>{0});
+          auto D_val = std::make_shared<ov::op::v8::Gather>(w_shape_node, idx_0, axis_0)->output(0);
+          auto K_val = std::make_shared<ov::op::v8::Gather>(w_shape_node, idx_1, axis_0)->output(0);
+          auto one = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{1}, std::vector<int64_t>{1});
+          auto target_shape = std::make_shared<ov::op::v0::Concat>(
+              ov::OutputVector{D_val, one, one, K_val}, 0)->output(0);
+          auto w_grouped = std::make_shared<ov::op::v1::Reshape>(w_dk, target_shape, true)->output(0);
+
+          // Pad x_bdl [B,D,L] with K-1 zeros on the left (causal padding)
+          // Pad format: pads_begin [0,0,K-1], pads_end [0,0,0]
+          auto zero_i = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{1}, std::vector<int64_t>{0});
+          auto km1 = std::make_shared<ov::op::v1::Subtract>(K_val, one)->output(0);
+          auto pads_begin = std::make_shared<ov::op::v0::Concat>(
+              ov::OutputVector{zero_i, zero_i, km1}, 0)->output(0);
+          auto pads_end = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{3},
+              std::vector<int64_t>{0, 0, 0});
+          auto pad_val = std::make_shared<ov::op::v0::Constant>(dtype, ov::Shape{}, std::vector<float>{0.0f});
+
+          ov::Output<ov::Node> x_padded;
+          // If state_in is provided (inputs[2] with rank 3 or inputs[3]), concat it
+          bool hasStateIn = false;
+          ov::Output<ov::Node> stateInNode;
+          if (inputs.size() >= 4) {
+            stateInNode = inputs[3];
+            hasStateIn = true;
+          } else if (inputs.size() == 3) {
+            // Check if input[2] is state_in (rank 3) or bias (rank 1)
+            // At graph build time, use the partial shape to distinguish
+            auto rank2 = inputs[2].get_partial_shape().rank();
+            if (rank2.is_static() && rank2.get_length() == 3) {
+              stateInNode = inputs[2];
+              hasStateIn = true;
+            }
+          }
+
+          if (hasStateIn) {
+            // Concat state_in [B,D,K-1] with x_bdl [B,D,L] along axis 2
+            if (stateInNode.get_element_type() != dtype) {
+              stateInNode = std::make_shared<ov::op::v0::Convert>(stateInNode, dtype)->output(0);
+            }
+            x_padded = std::make_shared<ov::op::v0::Concat>(
+                ov::OutputVector{stateInNode, x_bdl}, 2)->output(0);
+          } else {
+            x_padded = std::make_shared<ov::op::v12::Pad>(
+                x_bdl, pads_begin, pads_end, pad_val, ov::op::PadMode::CONSTANT)->output(0);
+          }
+
+          // GroupConvolution: groups=D, 1D conv along last dim
+          // Input: [B,D,L+K-1], Weights: [D,1,1,K]
+          // Output: [B,D,L]
+          ov::Strides conv_strides{1};
+          ov::CoordinateDiff conv_pads_begin{0};
+          ov::CoordinateDiff conv_pads_end{0};
+          ov::Strides conv_dilations{1};
+          auto conv = std::make_shared<ov::op::v1::GroupConvolution>(
+              x_padded, w_grouped, conv_strides, conv_pads_begin, conv_pads_end, conv_dilations);
+          ov::Output<ov::Node> convOut = conv->output(0);  // [B,D,L]
+
+          // Optional bias: inputs[2] if rank 1
+          bool hasBias = false;
+          ov::Output<ov::Node> biasNode;
+          if (inputs.size() >= 4) {
+            biasNode = inputs[2];
+            hasBias = true;
+          } else if (inputs.size() == 3) {
+            auto rank2 = inputs[2].get_partial_shape().rank();
+            if (rank2.is_static() && rank2.get_length() == 1) {
+              biasNode = inputs[2];
+              hasBias = true;
+            }
+          }
+          if (hasBias) {
+            if (biasNode.get_element_type() != dtype) {
+              biasNode = std::make_shared<ov::op::v0::Convert>(biasNode, dtype)->output(0);
+            }
+            // Reshape bias [D] → [1,D,1] for broadcasting with [B,D,L]
+            auto bias_shape = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{3},
+                std::vector<int64_t>{1, -1, 1});
+            auto bias_reshaped = std::make_shared<ov::op::v1::Reshape>(biasNode, bias_shape, false)->output(0);
+            convOut = std::make_shared<ov::op::v1::Add>(convOut, bias_reshaped)->output(0);
+          }
+
+          // Optional SiLU activation (activation == 1): y = x * sigmoid(x)
+          if (activation == 1) {
+            auto sigmoid = std::make_shared<ov::op::v0::Sigmoid>(convOut)->output(0);
+            convOut = std::make_shared<ov::op::v1::Multiply>(convOut, sigmoid)->output(0);
+          }
+
+          // Transpose convOut [B,D,L] → [B,L,D] for output 0
+          auto output0 = std::make_shared<ov::op::v1::Transpose>(convOut, perm_blk)->output(0);
+
+          // State output: last K-1 timesteps of x_bdl [B,D,L] → [B,D,K-1]
+          // StridedSlice on axis 2: [B,D, L-(K-1) : L]
+          auto x_shape_node = std::make_shared<ov::op::v3::ShapeOf>(x_bdl);
+          auto L_val = std::make_shared<ov::op::v8::Gather>(x_shape_node,
+              std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{1}, std::vector<int64_t>{2}),
+              axis_0)->output(0);
+          auto start_state = std::make_shared<ov::op::v1::Subtract>(L_val, km1)->output(0);
+          // Pad start/stop/step to rank-3 [0,0,start] / [0,0,L] / [1,1,1]
+          auto ss_begin = std::make_shared<ov::op::v0::Concat>(
+              ov::OutputVector{zero_i, zero_i, start_state}, 0)->output(0);
+          auto ss_end = std::make_shared<ov::op::v0::Concat>(
+              ov::OutputVector{zero_i, zero_i, L_val}, 0)->output(0);
+          auto ss_step = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{3},
+              std::vector<int64_t>{1, 1, 1});
+          // begin_mask/end_mask: mask dims 0,1 (batch, channel) so they pass through fully
+          std::vector<int64_t> mask_01 = {1, 1, 0};
+          auto output1 = std::make_shared<ov::op::v1::StridedSlice>(
+              x_bdl, ss_begin, ss_end, ss_step, mask_01, mask_01)->output(0);
+
+          // Wire both outputs into tensorMap directly
+          if (slots[s].wiring.numOutputs >= 1) {
+            tensorMap[slots[s].wiring.outputSlotIndices[0]] = output0;
+          }
+          if (slots[s].wiring.numOutputs >= 2) {
+            tensorMap[slots[s].wiring.outputSlotIndices[1]] = output1;
+          }
+
+          DSP_DIAG(COMPILE, "OpenVINO: causal_conv1d slot %d: activation=%d wFormat=%d hasBias=%d hasState=%d "
+                   "x_input=%s w_dk=%s x_bdl=%s convOut=%s output0=%s output1=%s",
+                   s, activation, wFormat, hasBias, hasStateIn,
+                   x_input.get_partial_shape().to_string().c_str(),
+                   w_dk.get_partial_shape().to_string().c_str(),
+                   x_bdl.get_partial_shape().to_string().c_str(),
+                   convOut.get_partial_shape().to_string().c_str(),
+                   output0.get_partial_shape().to_string().c_str(),
+                   output1.get_partial_shape().to_string().c_str());
+          continue;  // skip standard wiring — already done
+        }
       }
 
-      // ── Attention (complex composition -- deferred to runtime) ──
-      else if (opName == "dot_product_attention" || opName == "DotProductAttention" ||
-               opName == "dot_product_attention_v2" || opName == "DotProductAttentionV2" ||
-               opName == "multi_head_attention" || opName == "MultiHeadAttention" ||
-               opName == "onnx_multi_head_attention" || opName == "OnnxMultiHeadAttention") {
-        audit.wasCompiled = true;
-        audit.reason = "complex op - deferred to runtime";
-        result.compilationAudit.push_back(audit);
-        continue;
-      }
+      // ── ROPE / Attention / SSM: already filtered by isNativeDeferredOp above ──
+      // (These branches are unreachable but kept as defensive guards)
 
       if (!node) {
-        audit.wasCompiled = false;
-        audit.reason = "failed to create OV node for op: " + opName;
-        result.compilationAudit.push_back(audit);
         DSP_DIAG(COMPILE, "OpenVINO: failed to create node for '%s' at slot %d",
                  opName.c_str(), s);
         continue;
@@ -1792,9 +2160,6 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
         int nodeOutputIdx = std::min(o, static_cast<int>(node->get_output_size()) - 1);
         tensorMap[outIdx] = node->output(nodeOutputIdx);
       }
-
-      audit.wasCompiled = true;
-      result.compilationAudit.push_back(audit);
     }
   }
 
@@ -1808,11 +2173,31 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
     }
   }
 
-  // Create Results for externally visible outputs
+  // Create Results for externally visible outputs.
+  // If the graph's compute type diverged from the expected output type (e.g. f32
+  // intermediates from RMSNorm but output NDArray is f16), insert a Convert node
+  // before the Result. This is a graph-level cast — OpenVINO fuses it into the
+  // last kernel so there's no runtime temporary buffer.
   for (int outIdx : externallyConsumed) {
     auto it = tensorMap.find(outIdx);
     if (it == tensorMap.end()) continue;
-    results.push_back(std::make_shared<ov::op::v0::Result>(it->second));
+
+    auto graphOutput = it->second;
+    auto graphType = graphOutput.get_element_type();
+
+    // Determine expected output type from the NDArray that warmup populated
+    NDArray* outArr = (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots)
+                      ? outputSlots[outIdx] : nullptr;
+    if (outArr != nullptr) {
+      auto expectedType = mapDataType(outArr->dataType());
+      if (graphType != expectedType) {
+        DSP_DIAG(COMPILE, "OpenVINO: output slot %d type mismatch: graph=%s expected=%s, inserting Convert",
+                 outIdx, graphType.get_type_name().c_str(), expectedType.get_type_name().c_str());
+        graphOutput = std::make_shared<ov::op::v0::Convert>(graphOutput, expectedType)->output(0);
+      }
+    }
+
+    results.push_back(std::make_shared<ov::op::v0::Result>(graphOutput));
     outputSourceMap.push_back(outIdx);
   }
 
@@ -1825,23 +2210,22 @@ OpenVinoGraphBackend::CompiledSegment OpenVinoGraphBackend::buildModel(
   // Build the model
   try {
     auto model = std::make_shared<ov::Model>(results, params, "dsp_segment");
-    auto compiled = core_.compile_model(model, "CPU");
-    result.compiled = std::make_shared<ov::CompiledModel>(compiled);
+    auto compiledModel = core_.compile_model(model, "CPU");
+    result.compiled = std::make_shared<ov::CompiledModel>(compiledModel);
     result.request = std::make_shared<ov::InferRequest>(result.compiled->create_infer_request());
     result.inputSlotMap = inputSourceMap;
     result.outputSlotMap = outputSourceMap;
-    result.valid = true;
 
-    DSP_DIAG(COMPILE, "OpenVINO: compiled model with %zu params, %zu results",
-             params.size(), results.size());
+    DSP_DIAG(COMPILE, "OpenVINO: compiled island [%d-%d] with %zu params, %zu results",
+             startSlot, endSlot, params.size(), results.size());
   } catch (const std::exception& e) {
     // OpenVINO exceptions often have multiline messages with nested cause.
     // Log full message to stderr for visibility.
-    fprintf(stderr, "OpenVINO compile_model FAILED seg[%d-%d]: %s\n", startSlot, endSlot, e.what());
+    fprintf(stderr, "OpenVINO compile_model FAILED island[%d-%d]: %s\n", startSlot, endSlot, e.what());
     fflush(stderr);
-    DSP_DIAG(COMPILE, "OpenVINO: compile_model FAILED seg[%d-%d] (%zu params, %zu results)",
+    DSP_DIAG(COMPILE, "OpenVINO: compile_model FAILED island[%d-%d] (%zu params, %zu results)",
              startSlot, endSlot, params.size(), results.size());
-    result.valid = false;
+    // Leave result.compiled / result.request null — caller checks for null to detect failure
   }
 
   return result;
@@ -1870,34 +2254,102 @@ bool OpenVinoGraphBackend::compileSegment(
     return true;
   }
 
-  DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: cache MISS, building model (shapeKey=0x%llx)",
+  DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: cache MISS, building islands (shapeKey=0x%llx)",
            seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
 
   CompiledSegment compiled;
-  try {
-    compiled = buildModel(slots, seg.def.startSlot, seg.def.endSlot,
-                          externalInputs, numExternalInputs,
-                          outputSlots, totalOutputSlots);
-  } catch (const std::exception& e) {
-    DSP_DIAG(COMPILE, "OpenVINO: buildModel[%d-%d] exception: %s",
-             seg.def.startSlot, seg.def.endSlot, e.what());
-    return false;
-  } catch (...) {
-    DSP_DIAG(COMPILE, "OpenVINO: buildModel[%d-%d] unknown exception",
-             seg.def.startSlot, seg.def.endSlot);
-    return false;
-  }
   compiled.shapeKey = shapeKey;
+
+  const int segStart = seg.def.startSlot;
+  const int segEnd   = seg.def.endSlot;
+
+  // Scan the segment and identify contiguous OV-compilable ranges vs native ranges.
+  // A slot is "native" if it's in the deferred set; otherwise it's OV-compilable.
+  int s = segStart;
+  while (s <= segEnd) {
+    const std::string& opName = slots[s].ident.opName;
+
+    if (isNativeDeferredOp(opName)) {
+      // Start a native range — extend until a non-deferred op
+      int nativeStart = s;
+      while (s <= segEnd && isNativeDeferredOp(slots[s].ident.opName)) {
+        // Build audit entry for native slot
+        CompilationAuditEntry audit;
+        audit.slotIndex = s;
+        audit.opName = slots[s].ident.opName;
+        audit.wasCompiled = false;
+        audit.isNativeHandled = true;
+        audit.reason = "native-deferred op";
+        compiled.compilationAudit.push_back(audit);
+        s++;
+      }
+      int nativeEnd = s - 1;
+      int nativeIdx = static_cast<int>(compiled.nativeRanges.size());
+      compiled.nativeRanges.push_back({nativeStart, nativeEnd});
+      compiled.executionSchedule.push_back({true, nativeIdx});
+      DSP_DIAG(COMPILE, "OpenVINO: native range [%d-%d]", nativeStart, nativeEnd);
+    } else {
+      // Start an OV island — extend until a native-deferred op
+      int islandStart = s;
+      while (s <= segEnd && !isNativeDeferredOp(slots[s].ident.opName)) {
+        s++;
+      }
+      int islandEnd = s - 1;
+
+      OvIsland island;
+      try {
+        island = buildIsland(slots, islandStart, islandEnd,
+                             externalInputs, numExternalInputs,
+                             outputSlots, totalOutputSlots,
+                             segStart, segEnd);
+      } catch (const std::exception& e) {
+        DSP_DIAG(COMPILE, "OpenVINO: buildIsland[%d-%d] exception: %s",
+                 islandStart, islandEnd, e.what());
+        return false;
+      } catch (...) {
+        DSP_DIAG(COMPILE, "OpenVINO: buildIsland[%d-%d] unknown exception",
+                 islandStart, islandEnd);
+        return false;
+      }
+
+      bool islandOk = (island.compiled != nullptr && island.request != nullptr);
+
+      // Build audit entries for slots in this island
+      for (int sl = islandStart; sl <= islandEnd; sl++) {
+        CompilationAuditEntry audit;
+        audit.slotIndex = sl;
+        audit.opName = slots[sl].ident.opName;
+        audit.wasCompiled = islandOk;
+        if (!islandOk) audit.reason = "island compilation failed";
+        compiled.compilationAudit.push_back(audit);
+      }
+
+      if (!islandOk) {
+        DSP_DIAG(COMPILE, "OpenVINO: island [%d-%d] failed to compile", islandStart, islandEnd);
+        return false;
+      }
+
+      int islandIdx = static_cast<int>(compiled.ovIslands.size());
+      compiled.ovIslands.push_back(std::move(island));
+      compiled.executionSchedule.push_back({false, islandIdx});
+      DSP_DIAG(COMPILE, "OpenVINO: OV island [%d-%d] compiled (island %d)",
+               islandStart, islandEnd, islandIdx);
+    }
+  }
+
+  // Segment is valid if at least one OV island compiled successfully
+  compiled.valid = !compiled.ovIslands.empty();
 
   lastCompilationAudit_ = compiled.compilationAudit;
 
   if (!compiled.valid) {
-    DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: FAILED", seg.def.startSlot, seg.def.endSlot);
+    DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: no OV islands compiled",
+             segStart, segEnd);
     return false;
   }
 
-  DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: SUCCESS inputs=%d outputs=%d",
-           seg.def.startSlot, seg.def.endSlot, (int)compiled.inputSlotMap.size(), (int)compiled.outputSlotMap.size());
+  DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: SUCCESS islands=%d nativeRanges=%d",
+           segStart, segEnd, (int)compiled.ovIslands.size(), (int)compiled.nativeRanges.size());
   cache_[cacheKey] = std::move(compiled);
   seg.def.shapeKeyState.markCompiled(shapeKey);
   return true;
@@ -1924,99 +2376,132 @@ Status OpenVinoGraphBackend::executeSegment(
   }
 
   auto& compiled = it->second;
-  if (!compiled.request) {
-    DSP_DIAG(EXECUTE, "OpenVINO: compiled segment for [%d-%d] has null request", seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-  auto& request = *compiled.request;
 
-  try {
-  // Set input tensors (zero-copy from NDArray host buffers)
-  auto ovDtype = [](DataType dt) { return mapDataType(dt); };
-  for (size_t i = 0; i < compiled.inputSlotMap.size(); i++) {
-    int srcIdx = compiled.inputSlotMap[i];
-    NDArray* arr = nullptr;
-    if (srcIdx < 0) {
-      int extIdx = -(srcIdx + 1);
-      if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
-    } else {
-      if (srcIdx < totalOutputSlots) arr = outputSlots[srcIdx];
-    }
-    if (!arr) {
-      DSP_DIAG(EXECUTE, "OpenVINO: missing input array for source %d", srcIdx);
-      return Status::BAD_INPUT;
-    }
-    if (arr->buffer() == nullptr) {
-      if (arr->isEmpty() || arr->lengthOf() == 0) {
-        // Empty array (e.g. KV cache on first decode step with seq_len=0).
-        // OpenVINO requires non-null data pointer — provide a dummy.
-        static int8_t dummyBuf[8] = {0};
-        int rank = arr->rankOf();
-        ov::Shape shape(rank);
-        for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
-        request.set_input_tensor(static_cast<int>(i),
-            ov::Tensor(ovDtype(arr->dataType()), shape, dummyBuf));
-        continue;
+  // Lambda to execute a single OV island — captures mapDataType via class scope
+  auto runIsland = [&](OvIsland& island) -> Status {
+    auto ovDtype = [](DataType dt) { return mapDataType(dt); };
+    auto& request = *island.request;
+    auto& compiledModel = *island.compiled;
+
+    // Set input tensors (zero-copy from NDArray host buffers)
+    for (size_t i = 0; i < island.inputSlotMap.size(); i++) {
+      int srcIdx = island.inputSlotMap[i];
+      NDArray* arr = nullptr;
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
+      } else {
+        if (srcIdx < totalOutputSlots) arr = outputSlots[srcIdx];
       }
-      DSP_DIAG(EXECUTE, "OpenVINO: input array for source %d has NULL buffer (len=%lld)",
-               srcIdx, (long long)arr->lengthOf());
-      return Status::KERNEL_FAILURE;
-    }
-
-    int rank = arr->rankOf();
-    ov::Shape shape(rank);
-    for (int d = 0; d < rank; d++) {
-      shape[d] = static_cast<size_t>(arr->sizeAt(d));
-    }
-    request.set_input_tensor(static_cast<int>(i),
-        ov::Tensor(ovDtype(arr->dataType()), shape, arr->buffer()));
-  }
-
-  // Set output tensors (zero-copy into NDArray host buffers)
-  for (size_t i = 0; i < compiled.outputSlotMap.size(); i++) {
-    int outIdx = compiled.outputSlotMap[i];
-    if (outIdx < 0 || outIdx >= totalOutputSlots || !outputSlots[outIdx]) {
-      DSP_DIAG(EXECUTE, "OpenVINO: missing output slot %d", outIdx);
-      return Status::BAD_OUTPUT;
-    }
-    NDArray* arr = outputSlots[outIdx];
-    if (arr->buffer() == nullptr) {
-      DSP_DIAG(EXECUTE, "OpenVINO: output slot %d has NULL buffer", outIdx);
-      return Status::KERNEL_FAILURE;
-    }
-    int rank = arr->rankOf();
-    ov::Shape shape(rank);
-    for (int d = 0; d < rank; d++) {
-      shape[d] = static_cast<size_t>(arr->sizeAt(d));
-    }
-
-    try {
-      request.set_output_tensor(static_cast<int>(i),
+      if (!arr) {
+        DSP_DIAG(EXECUTE, "OpenVINO: missing input array for source %d", srcIdx);
+        return Status::BAD_INPUT;
+      }
+      if (arr->buffer() == nullptr) {
+        if (arr->isEmpty() || arr->lengthOf() == 0) {
+          // Empty array — provide a dummy non-null pointer for OV
+          static int8_t dummyBuf[8] = {0};
+          int rank = arr->rankOf();
+          ov::Shape shape(rank);
+          for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
+          request.set_input_tensor(static_cast<int>(i),
+              ov::Tensor(ovDtype(arr->dataType()), shape, dummyBuf));
+          continue;
+        }
+        DSP_DIAG(EXECUTE, "OpenVINO: input array for source %d has NULL buffer (len=%lld)",
+                 srcIdx, (long long)arr->lengthOf());
+        return Status::KERNEL_FAILURE;
+      }
+      int rank = arr->rankOf();
+      ov::Shape shape(rank);
+      for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
+      request.set_input_tensor(static_cast<int>(i),
           ov::Tensor(ovDtype(arr->dataType()), shape, arr->buffer()));
+    }
+
+    // Set output tensors (zero-copy into NDArray host buffers).
+    // Use the model's actual output shape (not the NDArray shape) because graph ops
+    // like stack may produce a different rank than the NDArray (e.g. [4,1] vs [4]).
+    for (size_t i = 0; i < island.outputSlotMap.size(); i++) {
+      int outIdx = island.outputSlotMap[i];
+      if (outIdx < 0 || outIdx >= totalOutputSlots || !outputSlots[outIdx]) {
+        DSP_DIAG(EXECUTE, "OpenVINO: missing output slot %d", outIdx);
+        return Status::BAD_OUTPUT;
+      }
+      NDArray* arr = outputSlots[outIdx];
+      if (arr->buffer() == nullptr) {
+        DSP_DIAG(EXECUTE, "OpenVINO: output slot %d has NULL buffer", outIdx);
+        return Status::KERNEL_FAILURE;
+      }
+      ov::Shape shape;
+      auto modelOutputShape = compiledModel.output(static_cast<int>(i)).get_partial_shape();
+      if (modelOutputShape.is_static()) {
+        shape = modelOutputShape.get_shape();
+      } else {
+        int rank = arr->rankOf();
+        shape.resize(rank);
+        for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
+      }
+      try {
+        request.set_output_tensor(static_cast<int>(i),
+            ov::Tensor(ovDtype(arr->dataType()), shape, arr->buffer()));
+      } catch (const std::exception& e) {
+        DSP_DIAG(EXECUTE, "OpenVINO: set_output_tensor[%zu] FAILED for slot %d: %s "
+                 "(modelShape=%s arrLen=%lld)",
+                 i, outIdx, e.what(),
+                 modelOutputShape.to_string().c_str(),
+                 (long long)arr->lengthOf());
+        return Status::KERNEL_FAILURE;
+      }
+    }
+
+    // Run inference
+    try {
+      request.infer();
     } catch (const std::exception& e) {
-      DSP_DIAG(EXECUTE, "OpenVINO: set_output_tensor[%zu] FAILED for slot %d: %s",
-               i, outIdx, e.what());
+      DSP_DIAG(EXECUTE, "OpenVINO: infer() failed: %s", e.what());
       return Status::KERNEL_FAILURE;
     }
-  }
 
-  // Run inference
-  try {
-    request.infer();
-  } catch (const std::exception& e) {
-    DSP_DIAG(EXECUTE, "OpenVINO: infer() failed: %s", e.what());
-    return Status::KERNEL_FAILURE;
-  }
-
-  // Mark output arrays as host-authoritative
-  for (size_t i = 0; i < compiled.outputSlotMap.size(); i++) {
-    int outIdx = compiled.outputSlotMap[i];
-    if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
-      outputSlots[outIdx]->tickWriteHost();
+    // Mark output arrays as host-authoritative
+    for (size_t i = 0; i < island.outputSlotMap.size(); i++) {
+      int outIdx = island.outputSlotMap[i];
+      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
+        outputSlots[outIdx]->tickWriteHost();
+      }
     }
-  }
+    return Status::OK;
+  };
 
-  return Status::OK;
+  try {
+    // Walk the execution schedule in order: OV islands and native ranges interleaved
+    for (const auto& step : compiled.executionSchedule) {
+      if (!step.isNative) {
+        // OV island step
+        auto& island = compiled.ovIslands[step.index];
+        Status st = runIsland(island);
+        if (st != Status::OK) {
+          DSP_DIAG(EXECUTE, "OpenVINO: island %d execution failed", step.index);
+          return st;
+        }
+      } else {
+        // Native range step
+        auto& range = compiled.nativeRanges[step.index];
+        if (!nativeExecutor_) {
+          DSP_DIAG(EXECUTE, "OpenVINO: native range [%d-%d] requires NativeSlotExecutor but none is set",
+                   range.startSlot, range.endSlot);
+          return Status::KERNEL_FAILURE;
+        }
+        Status st = nativeExecutor_(range.startSlot, range.endSlot);
+        if (st != Status::OK) {
+          DSP_DIAG(EXECUTE, "OpenVINO: native range [%d-%d] execution failed",
+                   range.startSlot, range.endSlot);
+          return st;
+        }
+      }
+    }
+
+    return Status::OK;
 
   } catch (const std::exception& e) {
     DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] exception: %s",

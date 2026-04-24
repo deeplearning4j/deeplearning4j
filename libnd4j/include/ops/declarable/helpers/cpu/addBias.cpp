@@ -28,6 +28,7 @@
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/addBias.h>
+#include <system/env_functions.h>
 #include <exceptions/datatype_exception.h>
 
 #include <cmath>
@@ -841,7 +842,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
       if (isContinuous) {
         // we can choose other inc and index for that case
         // but for now lets choose all till the last one
-        sd::LongType req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+        sd::LongType req_numThreads = sd::env_maxMasterThreads();
         isContinuous = false;
         if (rank > 2) {
           if (req_numThreads < 2 || bases[rank - 1] >= req_numThreads) {
@@ -979,7 +980,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
     if (order == 'c' && isContinuous) {
       // sometimes last dimension is too big and multithreading could suffer using unfair partitioning
       // so we will do it only when inc is smaller our value or multithreading turned off
-      sd::LongType req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+      sd::LongType req_numThreads = sd::env_maxMasterThreads();
       if (req_numThreads < 2 || numNC >= static_cast<size_t>(req_numThreads)  || inc <= 2 * 8196 || rank == 3) {
         inc = numHW;
       } else {

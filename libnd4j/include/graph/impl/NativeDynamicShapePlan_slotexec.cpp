@@ -1143,6 +1143,34 @@ Status NativeDynamicShapePlan::executeSlot(
   // Skip during frozen steady-state replay (execCount >= 3): by that point all
   // slot inputs have been validated on prior executions and buffers are stable.
   // This eliminates ~1500 validateSlotInputs calls per decode step.
+  // ── Raw pointer sanity check (always runs) ───────────────────────────────
+  // The full validateSlotInputs is gated on execCount < 3 for perf, but
+  // pointer-level corruption (freed NDArrays) must ALWAYS be caught. This is
+  // cheap: one comparison per input, no dereference.
+  for (int i = 0; i < slot.wiring.numInputs; i++) {
+    int srcIdx = slot.wiring.inputSourceIndices[i];
+    NDArray* inp = nullptr;
+    if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+      inp = outputSlots_[srcIdx];
+    } else if (srcIdx < 0) {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx >= 0 && extIdx < numExt) inp = externalArrays[extIdx];
+    }
+    if (inp == nullptr) continue;
+    uintptr_t addr = reinterpret_cast<uintptr_t>(inp);
+    if (addr < 0x10000) {
+      char msg[512];
+      snprintf(msg, sizeof(msg),
+               "DSP LIFECYCLE ERROR: slot %d (%s) input[%d] is a stale/freed pointer "
+               "%p (srcIdx=%d). This indicates a plan lifecycle bug — an upstream slot's "
+               "output was freed but its outputSlot entry was not nulled. "
+               "execCount=%d shapesFrozen=%d planPhase=%d",
+               stepIdx, slot.ident.opName.c_str(), i, (void*)inp, srcIdx,
+               executeCount_, shapesFrozen_ ? 1 : 0, static_cast<int>(planPhase_));
+      THROW_EXCEPTION(msg);
+    }
+  }
+
   if (executeCount_ < 3 || !shapesFrozen_) {
     char slotErr[512] = {};
     int badInputs = validateSlotInputs(
@@ -1280,6 +1308,47 @@ Status NativeDynamicShapePlan::executeSlot(
     // Non-view-capable ops: refresh inputs → conditional nullify → execute → write outputs
     {
       auto& ffCtx = *contextPool_[stepIdx];
+
+      // ── Lifecycle assertion: validate context pool outputs are not stale ──
+      // If a segment was invalidated (forceRecapture, OOM, shape change) without
+      // resetting slot states, the context pool may hold freed NDArray pointers.
+      // Catch this upstream rather than crashing inside the op kernel.
+      {
+        auto& ffOuts = ffCtx.fastpath_out();
+        for (int i = 0; i < slot.wiring.numOutputs && i < static_cast<int>(ffOuts.size()); i++) {
+          NDArray* outArr = ffOuts[i];
+          if (outArr == nullptr) continue;
+          // Low-pointer-value sentinel: freed memory often has small sentinel values.
+          // Valid NDArray pointers on 64-bit systems are > 0x10000.
+          uintptr_t addr = reinterpret_cast<uintptr_t>(outArr);
+          if (addr < 0x10000) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "DSP LIFECYCLE ERROR: frozen fast-path slot %d (%s) has stale "
+                     "context pool output[%d] = %p (freed NDArray). This indicates a "
+                     "segment rebuild did not reset slot states or clear context pool. "
+                     "execCount=%d shapesFrozen=%d",
+                     stepIdx, slot.ident.opName.c_str(), i, (void*)outArr,
+                     executeCount_, shapesFrozen_ ? 1 : 0);
+            THROW_EXCEPTION(msg);
+          }
+          // Structural check: shapeInfo buffer pointer sanity
+          auto* sib = outArr->shapeInfoConstBuffer();
+          if (sib != nullptr) {
+            uintptr_t sibAddr = reinterpret_cast<uintptr_t>(sib);
+            if (sibAddr < 0x10000) {
+              char msg[512];
+              snprintf(msg, sizeof(msg),
+                       "DSP LIFECYCLE ERROR: frozen fast-path slot %d (%s) context pool "
+                       "output[%d] has corrupted shapeInfoConstBuffer = %p (use-after-free). "
+                       "execCount=%d shapesFrozen=%d",
+                       stepIdx, slot.ident.opName.c_str(), i, (void*)sib,
+                       executeCount_, shapesFrozen_ ? 1 : 0);
+              THROW_EXCEPTION(msg);
+            }
+          }
+        }
+      }
 
       for (int i = 0; i < slot.wiring.numInputs; i++) {
         int srcIdx = slot.wiring.inputSourceIndices[i];

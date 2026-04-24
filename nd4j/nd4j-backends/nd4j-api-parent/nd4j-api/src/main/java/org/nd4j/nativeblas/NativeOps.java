@@ -1469,7 +1469,8 @@ public interface NativeOps {
  default Pointer dispatchNativePlan(Pointer cache,
                                     Pointer planBytes, long planBytesLen,
                                     Pointer outputNames, long numOutputs,
-                                    Pointer phShapeInfoPtrs, long numPlaceholders) {
+                                    Pointer phShapeInfoPtrs, long numPlaceholders,
+                                    int graphExecutionMode) {
      throw new UnsupportedOperationException("dispatchNativePlan not implemented in this backend");
  }
 
@@ -1996,6 +1997,59 @@ public interface NativeOps {
    * to bracket a section and assert zero recompiles happened inside it.
    */
   default void resetPlanMidExecutionCompileCount(Pointer planHandle) { /* no-op default */ }
+
+  // ═══���═══════════════════════════════════════════════════════════════════════
+  // FrozenPlan API — new unified execution entry point (Step 6 hierarchy)
+  // ════════════════════════════���══════════════════════════════════════════════
+
+  /**
+   * Execute a FrozenPlan. This is the single entry point for DSP execution
+   * in the new hierarchy. Internally handles warmup, compilation, capture,
+   * and replay phases automatically.
+   *
+   * @param planHandle handle from dispatchNativePlan() (internally a FrozenPlan*)
+   * @param opContext OpaqueContext with inputs/outputs set
+   * @param stream CUDA stream pointer (null for CPU)
+   * @return 0 on success, non-zero on failure
+   */
+  default int executeFrozenPlan(Pointer planHandle,
+                                OpaqueContext opContext,
+                                Pointer stream) {
+      // Delegates to existing executeDynamicShapePlan for backward compatibility
+      return executeDynamicShapePlan(planHandle, opContext, stream);
+  }
+
+  /**
+   * Check whether a FrozenPlan is sealed (all segments completed build phase
+   * and are in steady-state replay).
+   *
+   * @param planHandle plan handle
+   * @return 1 if sealed, 0 if still building, -1 if invalid handle
+   */
+  default int isFrozenPlanSealed(Pointer planHandle) {
+      return isPlanCompilationSealed(planHandle);
+  }
+
+  /**
+   * Get the build pass count for a FrozenPlan.
+   * 0 = needs warmup, 1 = needs compile/capture, 2+ = sealed (replay only).
+   *
+   * @param planHandle plan handle
+   * @return build pass count, or -1 if invalid handle
+   */
+  default int getFrozenPlanBuildPassCount(Pointer planHandle) { return -1; }
+
+  /**
+   * Get the segment executor phase for a specific segment in a FrozenPlan.
+   * Returns: 0=BUILDING, 1=SEALED, 2=FAILED, -1=invalid.
+   *
+   * @param planHandle plan handle
+   * @param segIdx segment index
+   * @return phase code
+   */
+  default int getSegmentExecutorPhase(Pointer planHandle, int segIdx) { return -1; }
+
+  // ════��══════════════════════════���═══════════════════════════════════════════
 
   /**
    * Check if all buffer pointers are stable (same addresses across executions).

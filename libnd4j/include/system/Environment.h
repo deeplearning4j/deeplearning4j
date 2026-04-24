@@ -358,6 +358,8 @@ class SD_LIB_EXPORT Environment {
   void setTritonFusionScoring(bool v) { _triton.setFusionScoring(v); }
   float tritonFusionMinScore() { return _triton.fusionMinScore(); }
   void setTritonFusionMinScore(float v) { _triton.setFusionMinScore(v); }
+  bool tritonMergedCaptureThroughViews() { return _triton.mergedCaptureThroughViews(); }
+  void setTritonMergedCaptureThroughViews(bool v) { _triton.setMergedCaptureThroughViews(v); }
 
   // --- DSP Config ---
   bool dspBatchZero() { return _dsp.batchZero(); }

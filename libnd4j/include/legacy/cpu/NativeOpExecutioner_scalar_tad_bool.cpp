@@ -10,6 +10,7 @@
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/scalar_bool.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -40,5 +41,5 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
 
   auto yLen = shape::length(hScalarShapeInfo);
   samediff::Threads::parallel_tad(func, 0, yLen, 1,
-                                  sd::math::sd_min(yLen, sd::Environment::getInstance().maxMasterThreads()));
+                                  sd::math::sd_min(yLen, sd::env_maxMasterThreads()));
 }

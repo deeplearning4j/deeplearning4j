@@ -32,15 +32,25 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.common.config.ND4JSystemProperties;
 
+import org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.bytedeco.javacpp.Pointer;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Unified LLM inference pipeline that wraps {@link StaticKvCacheDecodeLoop} and
- * eliminates all manual wiring boilerplate.
+ * Unified LLM inference pipeline that eliminates all manual wiring boilerplate.
  *
  * <p>Handles model loading (from paths or pre-loaded instances), I/O auto-discovery,
  * embedding table extraction, tokenization, and decode loop construction. Users
@@ -69,12 +79,16 @@ import java.util.function.Function;
  *         .build());
  * }</pre>
  *
+ * <p>Decoding is always performed by the native {@code autoregressive_decode} C++ op
+ * ({@link AutoregressiveDecode}), which runs the full decode loop in C++ and eliminates
+ * per-step Java&lt;&rarr;C++ round-trips.</p>
+ *
  * <p>For VLM (vision-language model) use cases, call
  * {@link #generate(INDArray, int[])} with pre-built embeddings that include
  * merged vision and text tokens.</p>
  *
  * @see GenerationPipelineConfig
- * @see StaticKvCacheDecodeLoop
+ * @see AutoregressiveDecode
  * @see GenerationResult
  * @see ModelIOConfig
  */
@@ -201,13 +215,11 @@ public class GenerationPipeline implements AutoCloseable {
 
         SameDiff embedTokens = config.getEmbedTokens();
         boolean ownsEmbedTokens = false;
-        if (embedTokens == null) {
-            if (config.getEmbedTokensPath() == null) {
-                throw new IllegalArgumentException("Either embedTokens or embedTokensPath must be provided");
-            }
+        if (embedTokens == null && config.getEmbedTokensPath() != null) {
             embedTokens = loadModel(config.getEmbedTokensPath(), modelLoader);
             ownsEmbedTokens = true;
         }
+        // embedTokens may be null here — single-model mode uses decoder for embeddings
 
         // 2. Auto-discover I/O names
         ModelIOConfig ioConfig = config.getIoConfig();
@@ -216,19 +228,20 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         // 3. Resolve embed_tokens input/output names
-        String embedInputName = embedTokens.inputs().isEmpty()
+        SameDiff embedSource = embedTokens != null ? embedTokens : decoder;
+        String embedInputName = embedSource.inputs().isEmpty()
                 ? (ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids")
-                : embedTokens.inputs().get(0);
-        String[] embedOutputNames = embedTokens.outputs().toArray(new String[0]);
+                : embedSource.inputs().get(0);
+        String[] embedOutputNames = embedSource.outputs().toArray(new String[0]);
 
-        // 4. Auto-detect hidden size
+        // 4. Auto-detect hidden size (use embedTokens if available, else decoder)
         long resolvedHiddenSize = config.getHiddenSize();
         if (resolvedHiddenSize <= 0) {
-            resolvedHiddenSize = detectHiddenSize(embedTokens);
+            resolvedHiddenSize = detectHiddenSize(embedSource);
         }
 
-        // 5. Extract embedding table for direct lookup
-        INDArray embeddingTable = extractEmbeddingTable(embedTokens);
+        // 5. Extract embedding table for direct lookup (from embedTokens or decoder)
+        INDArray embeddingTable = extractEmbeddingTable(embedSource);
 
         // 6. Load draft decoder for speculative decoding
         SameDiff draftDecoder = config.getDraftDecoder();
@@ -238,10 +251,10 @@ public class GenerationPipeline implements AutoCloseable {
             ownsDraftDecoder = true;
         }
 
-        log.info("GenerationPipeline created: decoder ops={}, embedTokens ops={}, hiddenSize={}, "
+        log.info("GenerationPipeline created: decoder ops={}, embedTokens={}, hiddenSize={}, "
                         + "embeddingTable={}, draftDecoder={}, kvStrategy={}, dsp={}",
                 decoder.getOps().size(),
-                embedTokens.getOps().size(),
+                embedTokens != null ? embedTokens.getOps().size() + " ops" : "single-model mode (using decoder)",
                 resolvedHiddenSize,
                 embeddingTable != null ? java.util.Arrays.toString(embeddingTable.shape()) : "null (fallback to SameDiff.output())",
                 draftDecoder != null ? draftDecoder.getOps().size() + " ops" : "disabled",
@@ -266,7 +279,7 @@ public class GenerationPipeline implements AutoCloseable {
      * Generate text from a text prompt using default max tokens.
      *
      * <p>Tokenizes the prompt, embeds tokens via the embedding table (or embed_tokens model),
-     * builds a {@link StaticKvCacheDecodeLoop}, and runs autoregressive decoding.</p>
+     * and runs autoregressive decoding via the native {@code autoregressive_decode} C++ op.</p>
      *
      * @param prompt the input text prompt
      * @return generation result with text, token IDs, timing, and throughput metrics
@@ -277,6 +290,9 @@ public class GenerationPipeline implements AutoCloseable {
 
     /**
      * Generate text from a text prompt with a specified max token count.
+     *
+     * <p>Tokenizes the prompt, embeds tokens, and runs the native
+     * {@code autoregressive_decode} C++ op.</p>
      *
      * @param prompt the input text prompt
      * @param maxNewTokens maximum number of tokens to generate
@@ -289,10 +305,290 @@ public class GenerationPipeline implements AutoCloseable {
             throw new IllegalArgumentException("Prompt encoding produced no tokens");
         }
 
-        // Embed tokens
-        INDArray embeddings = embedTokens(promptTokenIds);
+        // Single-model mode: no separate embedTokens model was provided.
+        // The decoder handles its own embedding lookup internally
+        // (input_ids → gather → transformer → logits).
+        // Use a simple autoregressive loop like TextGenerator.
+        // Note: the decoder may still have an inputs_embeds variable, but without
+        // a separate embedTokens model, input_ids is the intended entry point.
+        if (embedTokens == null) {
+            return generateSimple(promptTokenIds, maxNewTokens);
+        }
 
+        // Two-model mode: embed tokens externally, then run native decode
+        INDArray embeddings = embedTokens(promptTokenIds);
         return generate(embeddings, promptTokenIds, maxNewTokens);
+    }
+
+    /**
+     * Simple autoregressive generation for single-model GGUF models.
+     *
+     * <p>The decoder graph handles embedding lookup internally (input_ids → gather → transformer → logits).
+     * Each step feeds input_ids and reads logits. No KV cache, no static padding — shapes grow each step.</p>
+     */
+    private GenerationResult generateSimple(int[] promptTokenIds, int maxNewTokens) {
+        // Check if the model has KV cache outputs — if so, use static-KV decode
+        // for fixed shapes after prefill, enabling DSP plan reuse and replay.
+        ModelIOConfig.KVCacheNames kvNames = ioConfig.getKvCacheNames();
+        if (kvNames == null) {
+            kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
+        }
+        if (kvNames != null && !kvNames.keyNames.isEmpty()) {
+            return generateSimpleWithKvCache(promptTokenIds, maxNewTokens, kvNames);
+        }
+        return generateSimpleNoKvCache(promptTokenIds, maxNewTokens);
+    }
+
+    /**
+     * KV-cached autoregressive generation for single-model GGUF.
+     *
+     * <p>Prefill: full prompt → logits + present KV. Then decode with static KV buffers
+     * at seqLen=1 per step. After warmup, shapes are stable and DSP replay kicks in.</p>
+     */
+    private GenerationResult generateSimpleWithKvCache(int[] promptTokenIds, int maxNewTokens,
+                                                        ModelIOConfig.KVCacheNames kvNames) {
+        long startTime = System.currentTimeMillis();
+
+        int eosTokenId = tokenizer.getEosTokenId();
+        Set<Integer> stopTokenIds = new HashSet<>();
+        stopTokenIds.add(eosTokenId);
+        if (config.getAdditionalStopTokenIds() != null) {
+            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
+        }
+
+        String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
+        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "logits";
+        int prefillSeqLen = promptTokenIds.length;
+        long maxKvLen = prefillSeqLen + maxNewTokens;
+        boolean dspActive = decoder.isDspAutoCompileEnabled();
+        List<String> decoderInputNames = decoder.inputs();
+        Map<String, INDArray> reusableInputs = new HashMap<>();
+
+        // Build all output names: logits + present KV
+        List<String> allOutputNames = new ArrayList<>();
+        allOutputNames.add(logitsName);
+        allOutputNames.addAll(kvNames.keyNames);
+        allOutputNames.addAll(kvNames.valueNames);
+
+        // ══════════════════════════════════════════════════════════════════════
+        // PREFILL: run decoder with full prompt to get initial logits + KV
+        // ══════════════════════════════════════════════════════════════════════
+        INDArray prefillInputIds = Nd4j.createFromArray(promptTokenIds)
+                .reshape(1, prefillSeqLen).castTo(DataType.INT64);
+
+        Map<String, INDArray> prefillInputMap = DecoderInputBuilder.buildDecoderInputMap(
+                ioConfig, decoderInputNames, decoder,
+                null, prefillInputIds,
+                0, prefillSeqLen,
+                null, maxKvLen, 0,
+                false, hiddenSize,
+                reusableInputs, dspActive);
+
+        Map<String, INDArray> prefillOutputs = decoder.output(
+                prefillInputMap, allOutputNames.toArray(new String[0]));
+
+        // Sample first token from prefill logits
+        INDArray prefillLogits = prefillOutputs.get(logitsName);
+        int firstToken = javaArgmax(prefillLogits, prefillLogits.shape()[1] - 1);
+        prefillLogits.close();
+        prefillInputIds.close();
+
+        List<Integer> generatedTokens = new ArrayList<>();
+        generatedTokens.add(firstToken);
+        long firstTokenMs = System.currentTimeMillis() - startTime;
+
+        if (stopTokenIds.contains(firstToken)) {
+            closeKvOutputs(prefillOutputs, kvNames, logitsName);
+            return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // PAD KV caches to static size for fixed-shape decode
+        // ══════════════════════════════════════════════════════════════════════
+        Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
+        for (String keyName : kvNames.keyNames) {
+            INDArray presentKv = prefillOutputs.get(keyName);
+            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            String inputName = ioConfig.presentToInputName(keyName);
+            staticKvBuffers.put(inputName, padded);
+            presentKv.close();
+        }
+        for (String valName : kvNames.valueNames) {
+            INDArray presentKv = prefillOutputs.get(valName);
+            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            String inputName = ioConfig.presentToInputName(valName);
+            staticKvBuffers.put(inputName, padded);
+            presentKv.close();
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // DECODE LOOP: seqLen=1 per step with static KV buffers
+        // ══════════════════════════════════════════════════════════════════════
+        int currentToken = firstToken;
+        long steadyStart = System.currentTimeMillis();
+        int steadyTokens = 0;
+
+        for (int step = 1; step < maxNewTokens; step++) {
+            long cachePos = prefillSeqLen + step - 1;
+
+            INDArray decodeInputIds = Nd4j.createFromArray(new int[]{currentToken})
+                    .reshape(1, 1).castTo(DataType.INT64);
+
+            Map<String, INDArray> decodeInputMap = DecoderInputBuilder.buildDecoderInputMap(
+                    ioConfig, decoderInputNames, decoder,
+                    null, decodeInputIds,
+                    cachePos, 1,
+                    staticKvBuffers, maxKvLen, cachePos,
+                    true, hiddenSize,
+                    reusableInputs, dspActive);
+
+            Map<String, INDArray> decodeOutputs = decoder.output(
+                    decodeInputMap, allOutputNames.toArray(new String[0]));
+
+            // Sample next token
+            INDArray decodeLogits = decodeOutputs.get(logitsName);
+            int nextToken = javaArgmax(decodeLogits, 0);
+            decodeLogits.close();
+            decodeInputIds.close();
+
+            // Scatter decode KV into static buffers
+            for (String keyName : kvNames.keyNames) {
+                INDArray presentKv = decodeOutputs.get(keyName);
+                INDArray staticBuf = staticKvBuffers.get(ioConfig.presentToInputName(keyName));
+                if (presentKv != null && staticBuf != null) {
+                    scatterKvToStatic(presentKv, staticBuf, cachePos);
+                    presentKv.close();
+                }
+            }
+            for (String valName : kvNames.valueNames) {
+                INDArray presentKv = decodeOutputs.get(valName);
+                INDArray staticBuf = staticKvBuffers.get(ioConfig.presentToInputName(valName));
+                if (presentKv != null && staticBuf != null) {
+                    scatterKvToStatic(presentKv, staticBuf, cachePos);
+                    presentKv.close();
+                }
+            }
+
+            generatedTokens.add(nextToken);
+            steadyTokens++;
+            currentToken = nextToken;
+            if (stopTokenIds.contains(nextToken)) break;
+        }
+
+        // Cleanup
+        for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+        long endTime = System.currentTimeMillis();
+        long steadyMs = endTime - steadyStart;
+        double steadyTokPerSec = steadyMs > 0 ? (steadyTokens * 1000.0 / steadyMs) : 0;
+        return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs, steadyTokPerSec);
+    }
+
+    /**
+     * Fallback: no KV cache available, shapes grow each step. No replay possible.
+     */
+    private GenerationResult generateSimpleNoKvCache(int[] promptTokenIds, int maxNewTokens) {
+        long startTime = System.currentTimeMillis();
+
+        int eosTokenId = tokenizer.getEosTokenId();
+        Set<Integer> stopTokenIds = new HashSet<>();
+        stopTokenIds.add(eosTokenId);
+        if (config.getAdditionalStopTokenIds() != null) {
+            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
+        }
+
+        String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
+        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "logits";
+
+        int[] currentIds = promptTokenIds;
+        List<Integer> generatedTokens = new ArrayList<>();
+        long firstTokenMs = 0;
+
+        for (int step = 0; step < maxNewTokens; step++) {
+            INDArray inputIds = Nd4j.createFromArray(currentIds)
+                    .reshape(1, currentIds.length).castTo(DataType.INT64);
+
+            Map<String, INDArray> outputs = decoder.output(
+                    Map.of(inputIdsName, inputIds), logitsName);
+
+            INDArray logits = outputs.get(logitsName);
+            int nextToken = javaArgmax(logits, logits.shape()[1] - 1);
+            logits.close();
+            inputIds.close();
+
+            if (step == 0) {
+                firstTokenMs = System.currentTimeMillis() - startTime;
+            }
+
+            generatedTokens.add(nextToken);
+            if (stopTokenIds.contains(nextToken)) break;
+
+            int[] newIds = new int[currentIds.length + 1];
+            System.arraycopy(currentIds, 0, newIds, 0, currentIds.length);
+            newIds[currentIds.length] = nextToken;
+            currentIds = newIds;
+        }
+
+        return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+    }
+
+    /** Java-side argmax at a specific sequence position in [1, seqLen, vocab] logits. */
+    private static int javaArgmax(INDArray logits, long seqPos) {
+        INDArray slice = logits.get(
+                NDArrayIndex.point(0),
+                NDArrayIndex.point(seqPos),
+                NDArrayIndex.all()).dup();
+        float[] values = slice.data().asFloat();
+        int best = 0;
+        float bestVal = values[0];
+        for (int j = 1; j < values.length; j++) {
+            if (values[j] > bestVal) {
+                bestVal = values[j];
+                best = j;
+            }
+        }
+        slice.close();
+        return best;
+    }
+
+    private GenerationResult buildResult(List<Integer> generatedTokens, int[] promptTokenIds,
+                                          Set<Integer> stopTokenIds, long startTime, long firstTokenMs) {
+        return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs, 0);
+    }
+
+    private GenerationResult buildResult(List<Integer> generatedTokens, int[] promptTokenIds,
+                                          Set<Integer> stopTokenIds, long startTime, long firstTokenMs,
+                                          double steadyStateTokPerSec) {
+        long endTime = System.currentTimeMillis();
+        long timeMs = endTime - startTime;
+        int[] tokenIds = generatedTokens.stream().mapToInt(Integer::intValue).toArray();
+        String text = tokenizer.decode(tokenIds, false);
+        boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+
+        return GenerationResult.builder()
+                .text(text)
+                .tokenIds(tokenIds)
+                .generatedTokenCount(tokenIds.length)
+                .promptTokenCount(promptTokenIds.length)
+                .totalTokenCount(promptTokenIds.length + tokenIds.length)
+                .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                .generationTimeMs(timeMs)
+                .firstTokenLatencyMs(firstTokenMs)
+                .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                .steadyStateTokensPerSecond(steadyStateTokPerSec)
+                .build();
+    }
+
+    private static void closeKvOutputs(Map<String, INDArray> outputs, ModelIOConfig.KVCacheNames kvNames,
+                                        String logitsName) {
+        for (String name : kvNames.keyNames) {
+            INDArray arr = outputs.get(name);
+            if (arr != null) arr.close();
+        }
+        for (String name : kvNames.valueNames) {
+            INDArray arr = outputs.get(name);
+            if (arr != null) arr.close();
+        }
     }
 
     /**
@@ -313,14 +609,626 @@ public class GenerationPipeline implements AutoCloseable {
     /**
      * Generate text from pre-built embeddings with a specified max token count.
      *
+     * <p>Runs the native {@code autoregressive_decode} C++ op.</p>
+     *
      * @param prefillEmbeddings merged embeddings [1, seqLen, hiddenSize]
      * @param promptTokenIds the prompt token IDs (used for input_ids at step 0)
      * @param maxNewTokens maximum number of tokens to generate
      * @return generation result
      */
     public GenerationResult generate(INDArray prefillEmbeddings, int[] promptTokenIds, int maxNewTokens) {
-        StaticKvCacheDecodeLoop loop = buildDecodeLoop(maxNewTokens);
-        return loop.decode(prefillEmbeddings, promptTokenIds);
+        return generate(prefillEmbeddings, promptTokenIds, maxNewTokens, null);
+    }
+
+    /**
+     * Generate text from pre-built embeddings with per-call decode options.
+     *
+     * <p>Runs the native {@code autoregressive_decode} C++ op. The {@link DecodeOptions}
+     * parameter is accepted for API compatibility; per-call overrides that require
+     * Java-side control are not supported by the native op.</p>
+     *
+     * @param prefillEmbeddings merged embeddings [1, seqLen, hiddenSize]
+     * @param promptTokenIds the prompt token IDs (used for input_ids at step 0)
+     * @param maxNewTokens maximum number of tokens to generate
+     * @param options per-call decode options (nullable)
+     * @return generation result
+     */
+    public GenerationResult generate(INDArray prefillEmbeddings, int[] promptTokenIds,
+                                     int maxNewTokens, DecodeOptions options) {
+        return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens);
+    }
+
+    /**
+     * Generate text using the native {@code autoregressive_decode} C++ op.
+     *
+     * <p>The native op runs the full decode loop in C++, eliminating per-step
+     * Java to C++ round-trips. Steps:
+     * <ol>
+     *   <li>Execute a prefill step via decoder.output() to (a) produce initial KV caches
+     *       and (b) trigger DSP compilation so we can get the native plan handle.</li>
+     *   <li>Pad KV caches to static size, prepare decode-step inputs (seqLen=1).</li>
+     *   <li>Execute the first decode step to warm up decode-shape compilation.</li>
+     *   <li>Extract the native plan handle and external input metadata.</li>
+     *   <li>Invoke AutoregressiveDecode op — the C++ side does the rest:
+     *       plan.execute() per step, token sampling, KV scatter, embedding lookup,
+     *       mask/pos/inputIds updates, stop condition checking.</li>
+     * </ol>
+     * </p>
+     */
+    private GenerationResult generateNative(INDArray prefillEmbeddings, int[] promptTokenIds, int maxNewTokens) {
+        long startTime = System.currentTimeMillis();
+
+        // If a previous generation left the DSP executor frozen, reset the decoder
+        // session completely.  Reusing a frozen plan for a new generation causes
+        // PLAN_CACHE_BUG (stale plan handle) and LIFECYCLE_VALIDATION_FAILED
+        // (stale output buffer snapshots).  Plan phases are strictly linear and
+        // cannot be unwound; the only correct reset path is session destruction.
+        // We also clear the native plan cache because cached CUDA graphs capture
+        // device pointers that become stale when the session's output buffers are
+        // freed. Reusing a cached graph with stale pointers produces silent
+        // divergence (wrong tokens) or crashes.
+        //
+        // Only reset when a session actually exists — unconditional reset would
+        // destroy externally-compiled plans (e.g., benchmark compile phase).
+        InferenceSession existingSession = decoder.getOrCreateSession();
+        if (existingSession != null) {
+            DynamicShapePlanExecutor existingExecutor = existingSession.getDynamicShapePlanExecutor();
+            if (existingExecutor != null && existingExecutor.isShapesFrozen()) {
+                log.info("[Lifecycle] Resetting frozen DSP executor for new generation");
+                decoder.clearDynamicShapePlanCache();
+                decoder.resetSession();
+            }
+        }
+
+        // Resolve EOS token and stop tokens
+        int eosTokenId = tokenizer.getEosTokenId();
+        Set<Integer> stopTokenIds = new HashSet<>();
+        stopTokenIds.add(eosTokenId);
+        Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
+        if (endOfUtteranceTokenId != null) {
+            stopTokenIds.add(endOfUtteranceTokenId);
+        }
+        if (config.getAdditionalStopTokenIds() != null) {
+            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
+        }
+
+        // Resolve sampling config
+        SamplingConfig sampling = config.getSamplingConfig() != null
+                ? config.getSamplingConfig() : SamplingConfig.greedy();
+
+        // Discover KV output names from decoder
+        ModelIOConfig.KVCacheNames kvNames = ioConfig.getKvCacheNames();
+        if (kvNames == null) {
+            kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
+        }
+        int numKvPairs = kvNames.keyNames.size();
+
+        // Build all output names: logits + present KV
+        List<String> allOutputNames = new ArrayList<>();
+        allOutputNames.add(ioConfig.getLogitsOutputName());
+        allOutputNames.addAll(kvNames.keyNames);
+        allOutputNames.addAll(kvNames.valueNames);
+
+        int prefillSeqLen = promptTokenIds.length;
+        long maxKvLen = prefillSeqLen + maxNewTokens;
+        boolean dspActive = decoder.isDspAutoCompileEnabled();
+        List<String> decoderInputNames = decoder.inputs();
+        Map<String, INDArray> reusableInputs = new HashMap<>();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 1: Prefill — run decoder with full prompt to get initial KV caches
+        //         and trigger DSP plan compilation.
+        // ══════════════════════════════════════════════════════════════════════
+        INDArray currentInputIds = Nd4j.createFromArray(promptTokenIds)
+                .reshape(1, prefillSeqLen).castTo(DataType.INT64);
+
+        Map<String, INDArray> prefillInputMap = DecoderInputBuilder.buildDecoderInputMap(
+                ioConfig, decoderInputNames, decoder,
+                prefillEmbeddings, currentInputIds,
+                0, prefillSeqLen,
+                null, maxKvLen, 0,
+                false, hiddenSize,
+                reusableInputs, dspActive);
+
+        Map<String, INDArray> prefillOutputs = decoder.output(
+                prefillInputMap, allOutputNames.toArray(new String[0]));
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 2: Pad KV caches to static size and prepare decode-step state
+        // ══════════════════════════════════════════════════════════════════════
+        Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
+        for (String keyName : kvNames.keyNames) {
+            INDArray presentKv = prefillOutputs.get(keyName);
+            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            String inputName = ioConfig.presentToInputName(keyName);
+            staticKvBuffers.put(inputName, padded);
+            presentKv.close();
+        }
+        for (String valName : kvNames.valueNames) {
+            INDArray presentKv = prefillOutputs.get(valName);
+            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            String inputName = ioConfig.presentToInputName(valName);
+            staticKvBuffers.put(inputName, padded);
+            presentKv.close();
+        }
+        Nd4j.getExecutioner().commit();
+
+        // Sample first token from prefill logits — Java-side argmax
+        INDArray prefillLogits = prefillOutputs.get(ioConfig.getLogitsOutputName());
+        INDArray firstLogitsSlice = prefillLogits.get(NDArrayIndex.point(0),
+                NDArrayIndex.point(prefillLogits.shape()[1] - 1),
+                NDArrayIndex.all()).dup();
+        float[] firstLogitValues = firstLogitsSlice.data().asFloat();
+        int firstTokenId = 0;
+        float firstMaxVal = firstLogitValues[0];
+        for (int j = 1; j < firstLogitValues.length; j++) {
+            if (firstLogitValues[j] > firstMaxVal) {
+                firstMaxVal = firstLogitValues[j];
+                firstTokenId = j;
+            }
+        }
+        firstLogitsSlice.close();
+        prefillLogits.close();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 3: Build decode-step arrays ONCE, then execute a warmup step.
+        //
+        // These arrays have the EXACT shapes the C++ native loop will use.
+        // The warmup compiles the DSP plan for these shapes, and the native
+        // loop reuses the same plan handle — no shape mismatch, no plan swap.
+        // ══════════════════════════════════════════════════════════════════════
+        // dup() is MANDATORY: getRow().reshape() returns a VIEW into embeddingTable.
+        // assign() at line 642 writes into this buffer — without dup(), that corrupts
+        // the persistent weight matrix, making subsequent runs non-deterministic.
+        INDArray decodeEmbeddings = embeddingTable.getRow(firstTokenId).reshape(1, 1, hiddenSize).dup();
+        INDArray decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
+                .reshape(1, 1).castTo(DataType.INT64);
+
+        // Mask dimension: maxKvLen + 1 (past KV positions + current query position).
+        // The model's internal attention ops produce [1,1,1,maxKvLen+1] tensors and
+        // add them to the causal mask — shapes MUST match.
+        long totalSeqLen = maxKvLen + 1;
+
+        // Causal mask: [1, 1, 1, totalSeqLen] FLOAT — MASK_FILL for unfilled positions, 0.0 for filled.
+        // Uses PADDED layout (query at totalSeqLen-1), matching DecoderInputBuilder with dspActive=true.
+        // This is the layout the old StaticKvCacheDecodeLoop uses and it produces correct output.
+        //   1. Fill everything with MASK_FILL (-3.4028235e+38f) = masked
+        //   2. Unmask [0..prefillSeqLen] with 0.0f (filled KV positions from prefill)
+        // The C++ kernel updates this per step: unmask position currentPosition with 0.0f.
+        INDArray decodeCausalMask = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, totalSeqLen);
+        decodeCausalMask.assign(ModelIOConfig.MASK_FILL);
+        if (prefillSeqLen + 1 > 0) {
+            decodeCausalMask.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(0, prefillSeqLen + 1)).assign(0.0f);
+        }
+
+        // Attention mask: [1, totalSeqLen] LONG (0/1 values, updated per step by C++ kernel).
+        // Uses PADDED layout (query at totalSeqLen-1), matching DecoderInputBuilder with dspActive=true.
+        //   1. Valid past KV positions: [0, prefillSeqLen-1] = 1
+        //   2. Query position: totalSeqLen-1 = 1
+        //   3. Future padding: [prefillSeqLen, totalSeqLen-2] = 0
+        INDArray decodeAttentionMask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
+        decodeAttentionMask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, prefillSeqLen)).assign(1);
+        decodeAttentionMask.putScalar(0, totalSeqLen - 1, 1);
+
+        // Position IDs: [1, 1] INT64
+        INDArray decodePosIds = Nd4j.createFromArray(new long[]{prefillSeqLen})
+                .reshape(1, 1);
+
+        // ── attn_mask_reformat override ──────────────────────────────────────
+        // The model's internal attn_mask_reformat subgraph can produce incorrect
+        // masks for multi-token padded static-KV decode (seqLen > 1). For single-
+        // token decode the subgraph is correct — the override is only needed for
+        // speculative decoding where seqLen = K+1 > 1. Matches FrozenDecodeStep:
+        // it only adds the override when seqLen > 1.
+        String attnReformatNode = ioConfig.getAttnMaskReformatOutput();
+        INDArray decodeAttnMaskReformat = null;
+        // Decode embeddings shape: [1, 1, hiddenSize] → seqLen = 1. No override.
+        boolean needsAttnOverride = false;
+        if (needsAttnOverride && attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
+            decoder.addPlaceholderOverride(attnReformatNode);
+            decoder.getVariable(attnReformatNode).setShape(-1, -1, -1, -1);
+            // Build initial bias: [1, 1, 1, maskLen] FLOAT.
+            //   [0, prefillSeqLen) = 0.0f (already unmasked past KV)
+            //   [prefillSeqLen, maxKvLen) = MASK_FILL (future empty KV)
+            //   [maxKvLen] = 0.0f (query position)
+            decodeAttnMaskReformat = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, totalSeqLen);
+            if (prefillSeqLen < maxKvLen) {
+                decodeAttnMaskReformat.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(prefillSeqLen, maxKvLen)).assign(ModelIOConfig.MASK_FILL);
+            }
+        }
+
+        // Build decode input map directly from these arrays — single source of truth.
+        Map<String, INDArray> decodeInputMap = new HashMap<>();
+        String embedsName = ioConfig.getInputEmbeddingsName();
+        if (embedsName != null && decoder.hasVariable(embedsName)) decodeInputMap.put(embedsName, decodeEmbeddings);
+        String idsName = ioConfig.getInputIdsName();
+        if (idsName != null) decodeInputMap.put(idsName, decodeInputIds);
+        String maskName = ioConfig.getAttentionMaskName();
+        if (maskName != null && decoder.hasVariable(maskName))
+            decodeInputMap.put(maskName, decodeAttentionMask);
+        String causalName = ioConfig.getCausalMaskName();
+        if (causalName != null && decoder.hasVariable(causalName))
+            decodeInputMap.put(causalName, decodeCausalMask);
+        String posName = ioConfig.getPositionIdsName();
+        if (posName != null && decoder.hasVariable(posName))
+            decodeInputMap.put(posName, decodePosIds);
+        if (decodeAttnMaskReformat != null && decoder.hasVariable(attnReformatNode)) {
+            decodeInputMap.put(attnReformatNode, decodeAttnMaskReformat);
+        }
+        // Static KV buffers
+        for (Map.Entry<String, INDArray> entry : staticKvBuffers.entrySet()) {
+            if (decoder.hasVariable(entry.getKey())) {
+                decodeInputMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+        // Associate internal model inputs (non-placeholder variables)
+        DecoderInputBuilder.associateInternalModelInputs(ioConfig,
+                new ArrayList<>(decodeInputMap.keySet()), decoder, decodeInputMap);
+
+        Map<String, INDArray> decodeOutputs = decoder.output(
+                decodeInputMap, allOutputNames.toArray(new String[0]));
+
+        // Sample second token — Java-side argmax
+        INDArray decodeLogits = decodeOutputs.get(ioConfig.getLogitsOutputName());
+        INDArray secondLogitsSlice = decodeLogits.get(NDArrayIndex.point(0),
+                NDArrayIndex.point(0),
+                NDArrayIndex.all()).dup();
+        float[] secondLogitValues = secondLogitsSlice.data().asFloat();
+        int secondTokenId = 0;
+        float secondMaxVal = secondLogitValues[0];
+        for (int j = 1; j < secondLogitValues.length; j++) {
+            if (secondLogitValues[j] > secondMaxVal) {
+                secondMaxVal = secondLogitValues[j];
+                secondTokenId = j;
+            }
+        }
+        secondLogitsSlice.close();
+        decodeLogits.close();
+
+        // Scatter decode step KV into static buffers (position = prefillSeqLen)
+        for (String keyName : kvNames.keyNames) {
+            INDArray presentKv = decodeOutputs.get(keyName);
+            INDArray staticBuf = staticKvBuffers.get(ioConfig.presentToInputName(keyName));
+            if (presentKv != null && staticBuf != null) {
+                scatterKvToStatic(presentKv, staticBuf, prefillSeqLen);
+            }
+        }
+        for (String valName : kvNames.valueNames) {
+            INDArray presentKv = decodeOutputs.get(valName);
+            INDArray staticBuf = staticKvBuffers.get(ioConfig.presentToInputName(valName));
+            if (presentKv != null && staticBuf != null) {
+                scatterKvToStatic(presentKv, staticBuf, prefillSeqLen);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 4: Get native plan handle and resolve external input indices
+        // ══════════════════════════════════════════════════════════════════════
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session != null ? session.getDynamicShapePlanExecutor() : null;
+        Pointer planHandle = executor != null ? executor.getNativePlanHandle() : null;
+
+        // If plan not available, fall back to returning just the two tokens we already have
+        if (planHandle == null || planHandle.isNull()) {
+            log.warn("Native plan handle not available — returning partial result from warmup steps");
+            currentInputIds.close();
+            decodeEmbeddings.close();
+            decodeInputIds.close();
+            decodeCausalMask.close();
+            decodeAttentionMask.close();
+            decodePosIds.close();
+            if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
+
+            List<Integer> tokens = new ArrayList<>();
+            tokens.add(firstTokenId);
+            if (!stopTokenIds.contains(firstTokenId)) {
+                tokens.add(secondTokenId);
+            }
+
+            int[] tokenIds = tokens.stream().mapToInt(Integer::intValue).toArray();
+            String text = tokenizer.decode(tokenIds, false);
+            long endTime = System.currentTimeMillis();
+            long timeMs = endTime - startTime;
+
+            for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+            return GenerationResult.builder()
+                    .text(text)
+                    .tokenIds(tokenIds)
+                    .generatedTokenCount(tokenIds.length)
+                    .promptTokenCount(prefillSeqLen)
+                    .totalTokenCount(prefillSeqLen + tokenIds.length)
+                    .finishReason(stopTokenIds.contains(tokenIds[tokenIds.length-1])
+                            ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                    .generationTimeMs(timeMs)
+                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                    .steadyStateTokensPerSecond(0)
+                    .build();
+        }
+
+        // Freeze shapes explicitly after warmup decode, matching the old
+        // StaticKvCacheDecodeLoop behavior. This ensures the Java executor
+        // and native plan both agree that shapes are frozen, enabling the
+        // fastest replay path and stable Triton cache keys.
+        if (executor != null && executor.getCurrentPlan() != null) {
+            executor.setShapesFrozen(true);
+            log.info("[Perf] Shapes frozen after warmup decode (planPhase={} pointersStable={})",
+                    executor.getPlanPhase(), executor.arePointersStable());
+        }
+
+        // Resolve ext input indices by name
+        // The plan's external input keys array tells us which index maps to each named input
+        int embeddingsExtIdx = decoder.hasVariable(ioConfig.getInputEmbeddingsName())
+                ? resolveExtInputIdx(executor, ioConfig.getInputEmbeddingsName()) : -1;
+        int maskExtIdx = resolveExtInputIdx(executor, ioConfig.getAttentionMaskName());
+        int causalMaskExtIdx = ioConfig.getCausalMaskName() != null
+                ? resolveExtInputIdx(executor, ioConfig.getCausalMaskName()) : -1;
+        int posIdsExtIdx = resolveExtInputIdx(executor, ioConfig.getPositionIdsName());
+        int inputIdsExtIdx = resolveExtInputIdx(executor, ioConfig.getInputIdsName());
+        int attnMaskReformatExtIdx = (attnReformatNode != null && decoder.hasVariable(attnReformatNode))
+                ? resolveExtInputIdx(executor, attnReformatNode) : -1;
+
+        // Resolve logits output index
+        int logitsOutputIdx = resolveOutputIdx(executor, ioConfig.getLogitsOutputName());
+
+        // Resolve KV indices
+        int[] kvInputExtIndices = new int[2 * numKvPairs];
+        int[] kvOutputIndices = new int[2 * numKvPairs];
+        int ki = 0;
+        for (String keyName : kvNames.keyNames) {
+            String inputName = ioConfig.presentToInputName(keyName);
+            kvInputExtIndices[ki] = resolveExtInputIdx(executor, inputName);
+            kvOutputIndices[ki] = resolveOutputIdx(executor, keyName);
+            ki++;
+        }
+        for (String valName : kvNames.valueNames) {
+            String inputName = ioConfig.presentToInputName(valName);
+            kvInputExtIndices[ki] = resolveExtInputIdx(executor, inputName);
+            kvOutputIndices[ki] = resolveOutputIdx(executor, valName);
+            ki++;
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 5: Execute the native AutoregressiveDecode op.
+        //         Remaining tokens (maxNewTokens - 2 already generated) are
+        //         generated entirely in C++ with zero JNI round-trips.
+        //
+        //         Reuse the decode-step arrays from STEP 3 — same shapes,
+        //         same plan, no cache miss. Just update values for step 2.
+        // ══════════════════════════════════════════════════════════════════════
+        int remainingTokens = maxNewTokens - 2;  // 2 already generated (prefill + 1 decode step)
+
+        // Update the decode arrays for the second token (values only, shapes unchanged).
+        // Embeddings: overwrite with secondTokenId embedding
+        INDArray secondEmbed = embeddingTable.getRow(secondTokenId).reshape(1, 1, hiddenSize);
+        decodeEmbeddings.assign(secondEmbed);
+        secondEmbed.close();
+        // Input IDs: overwrite with secondTokenId
+        decodeInputIds.putScalar(new long[]{0, 0}, secondTokenId);
+        // Attention mask: unmask the KV position written by the warmup step.
+        // Padded layout: the query stays at totalSeqLen-1. Each step unmasks the
+        // KV position that was just written (cachePos = prefillSeqLen after warmup).
+        decodeAttentionMask.putScalar(new long[]{0, prefillSeqLen}, 1);
+        // Position IDs: advance to prefillSeqLen + 1
+        decodePosIds.putScalar(new long[]{0, 0}, prefillSeqLen + 1);
+        // Causal mask: unmask the KV position written by the warmup step.
+        // Mirrors DecoderInputBuilder delta update: putScalar(cachePos, 0.0f)
+        decodeCausalMask.putScalar(new long[]{0, 0, 0, prefillSeqLen}, 0.0f);
+        // attn_mask_reformat: unmask the KV position written by the warmup step
+        if (decodeAttnMaskReformat != null) {
+            decodeAttnMaskReformat.putScalar(new long[]{0, 0, 0, prefillSeqLen}, 0.0f);
+        }
+
+        // Force H2D sync so device buffers are current BEFORE the native decode op.
+        // .assign() / .putScalar() write to the host side, leaving isPrimaryActual=true
+        // and isSpecialActual=false. When the C++ plan captures a CUDA graph on its
+        // first execution, syncToSpecial sees isSpecialActual=false and records an H2D
+        // memcpy node into the graph. On every subsequent replay, that captured H2D
+        // overwrites the decode loop's kernel updates (embed lookup, mask update, etc.)
+        // with stale capture-time host data → degenerate output.
+        // By syncing here, isSpecialActual becomes true, the capture skips the H2D
+        // recording, and graph replay sees the decode loop's fresh device-side updates.
+        Nd4j.getExecutioner().commit();
+        decodeEmbeddings.syncToDevice();
+        decodeInputIds.syncToDevice();
+        decodeAttentionMask.syncToDevice();
+        decodePosIds.syncToDevice();
+        decodeCausalMask.syncToDevice();
+        if (decodeAttnMaskReformat != null) {
+            decodeAttnMaskReformat.syncToDevice();
+        }
+        for (INDArray kvBuf : staticKvBuffers.values()) {
+            kvBuf.syncToDevice();
+        }
+
+        // Collect static KV buffers as array
+        INDArray[] staticKvArray = new INDArray[2 * numKvPairs];
+        int idx = 0;
+        for (String keyName : kvNames.keyNames) {
+            staticKvArray[idx++] = staticKvBuffers.get(ioConfig.presentToInputName(keyName));
+        }
+        for (String valName : kvNames.valueNames) {
+            staticKvArray[idx++] = staticKvBuffers.get(ioConfig.presentToInputName(valName));
+        }
+
+        // Get the persistent OpaqueContext that has all ext inputs registered.
+        // This context is reused across executeNative() calls by the Java executor.
+        Pointer contextHandle = executor.getCachedOpContext();
+        int numPlanExternalInputs = executor.getCurrentPlan() != null
+                ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
+        int numPlanOutputs = allOutputNames.size();
+
+        // Execute the native decode op
+        if (remainingTokens > 0) {
+            AutoregressiveDecode op = new AutoregressiveDecode(
+                    decodeEmbeddings,
+                    embeddingTable,
+                    decodeInputIds,
+                    decodeAttentionMask,
+                    decodePosIds,
+                    staticKvArray,
+                    planHandle,
+                    contextHandle,
+                    numPlanExternalInputs,
+                    numPlanOutputs,
+                    embeddingsExtIdx,
+                    maskExtIdx,
+                    causalMaskExtIdx,
+                    posIdsExtIdx,
+                    inputIdsExtIdx,
+                    logitsOutputIdx,
+                    attnMaskReformatExtIdx,
+                    kvInputExtIndices,
+                    kvOutputIndices,
+                    remainingTokens,
+                    eosTokenId,
+                    numKvPairs,
+                    prefillSeqLen + 1,  // current position after 2 warmup steps
+                    sampling.isGreedy() ? 0.0 : sampling.getTemperature(),
+                    sampling.isGreedy() ? 0 : sampling.getTopK(),
+                    sampling.isGreedy() ? 0.0 : sampling.getTopP(),
+                    stopTokenIds);
+
+            INDArray[] results = Nd4j.getExecutioner().exec(op);
+            INDArray nativeTokenIds = results[0];
+            INDArray nativeTokenCount = results[1];
+            INDArray nativeTimingInfo = results[2];
+
+            int nativeCount = nativeTokenCount.getInt(0);
+
+            // Combine: firstToken + secondToken + native tokens
+            List<Integer> allTokens = new ArrayList<>();
+            allTokens.add(firstTokenId);
+            if (!stopTokenIds.contains(firstTokenId)) {
+                allTokens.add(secondTokenId);
+                if (!stopTokenIds.contains(secondTokenId)) {
+                    for (int i = 0; i < nativeCount; i++) {
+                        int tok = (int) nativeTokenIds.getLong(i);
+                        allTokens.add(tok);
+                        if (stopTokenIds.contains(tok)) break;
+                    }
+                }
+            }
+
+            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
+            String text = tokenizer.decode(tokenIds, false);
+            long endTime = System.currentTimeMillis();
+            long timeMs = endTime - startTime;
+
+            // Use native timing for steady-state metrics
+            float totalMs = nativeTimingInfo.getFloat(0);
+            float tokPerSec = nativeTimingInfo.getFloat(2);
+
+            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+
+            // Cleanup
+            currentInputIds.close();
+            decodeEmbeddings.close();
+            decodeInputIds.close();
+            decodeCausalMask.close();
+            decodeAttentionMask.close();
+            decodePosIds.close();
+            if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
+
+            for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+            return GenerationResult.builder()
+                    .text(text)
+                    .tokenIds(tokenIds)
+                    .generatedTokenCount(tokenIds.length)
+                    .promptTokenCount(prefillSeqLen)
+                    .totalTokenCount(prefillSeqLen + tokenIds.length)
+                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                    .generationTimeMs(timeMs)
+                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                    .steadyStateTokensPerSecond(tokPerSec)
+                    .build();
+        } else {
+            // Only 2 warmup tokens generated, no remaining to decode natively
+            currentInputIds.close();
+            decodeEmbeddings.close();
+            decodeInputIds.close();
+            decodeCausalMask.close();
+            decodeAttentionMask.close();
+            decodePosIds.close();
+            if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
+
+            // Clamp returned tokens to maxNewTokens — the warmup always
+            // generates 2 tokens internally, but the caller asked for fewer.
+            List<Integer> allTokens = new ArrayList<>();
+            if (maxNewTokens >= 1) {
+                allTokens.add(firstTokenId);
+            }
+            if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) {
+                allTokens.add(secondTokenId);
+            }
+
+            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
+            String text = tokenizer.decode(tokenIds, false);
+            long endTime = System.currentTimeMillis();
+            long timeMs = endTime - startTime;
+            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+
+            for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+            return GenerationResult.builder()
+                    .text(text)
+                    .tokenIds(tokenIds)
+                    .generatedTokenCount(tokenIds.length)
+                    .promptTokenCount(prefillSeqLen)
+                    .totalTokenCount(prefillSeqLen + tokenIds.length)
+                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                    .generationTimeMs(timeMs)
+                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                    .steadyStateTokensPerSecond(0)
+                    .build();
+        }
+    }
+
+    /**
+     * Scatter a present KV [batch, heads, 1, dim] into a static buffer at cachePos.
+     */
+    private static void scatterKvToStatic(INDArray presentKv, INDArray staticBuf, long cachePos) {
+        // presentKv shape: [batch, heads, seqLen, dim] — take last position
+        long seqLen = presentKv.shape()[2];
+        INDArray slice = presentKv.get(
+                NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
+        staticBuf.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.point(cachePos), NDArrayIndex.all()).assign(slice);
+    }
+
+    /**
+     * Resolve an external input index by name from the plan executor.
+     */
+    private static int resolveExtInputIdx(DynamicShapePlanExecutor executor, String name) {
+        if (name == null || executor == null) return -1;
+        return executor.findExternalInputIndex(name);
+    }
+
+    /**
+     * Resolve an output index by name from the plan executor.
+     */
+    private static int resolveOutputIdx(DynamicShapePlanExecutor executor, String name) {
+        if (name == null || executor == null) return -1;
+        return executor.findOutputIndex(name);
+    }
+
+    /**
+     * Pad a KV cache tensor from [batch, heads, seqLen, dim] to [batch, heads, maxKvLen, dim].
+     */
+    private static INDArray padKvToStaticSize(INDArray presentKv, long maxKvLen) {
+        long[] shape = presentKv.shape();
+        long batch = shape[0], heads = shape[1], seqLen = shape[2], dim = shape[3];
+        if (seqLen >= maxKvLen) {
+            return presentKv.dup();
+        }
+        INDArray padding = Nd4j.zeros(presentKv.dataType(), batch, heads, maxKvLen - seqLen, dim);
+        INDArray result = Nd4j.concat(2, presentKv, padding);
+        padding.close();
+        return result;
     }
 
     // ==================== Streaming ====================
@@ -329,23 +1237,47 @@ public class GenerationPipeline implements AutoCloseable {
      * Generate text with streaming token-by-token callback.
      *
      * <p>Each token is decoded and passed to the callback as it is generated.
-     * The callback receives the decoded text for each individual token.</p>
+     * The callback receives the decoded text for each individual token.
+     * Pipeline defaults are used for decode options.</p>
      *
      * @param prompt the input text prompt
      * @param tokenCallback called with each generated token's decoded text
      */
     public void generateStream(String prompt, Consumer<String> tokenCallback) {
-        generateStream(prompt, config.getMaxNewTokens(), tokenCallback);
+        generateStream(prompt, config.getMaxNewTokens(), tokenCallback, null);
     }
 
     /**
      * Generate text with streaming and a specified max token count.
+     *
+     * <p>Pipeline defaults are used for decode options.</p>
      *
      * @param prompt the input text prompt
      * @param maxNewTokens maximum number of tokens to generate
      * @param tokenCallback called with each generated token's decoded text
      */
     public void generateStream(String prompt, int maxNewTokens, Consumer<String> tokenCallback) {
+        generateStream(prompt, maxNewTokens, tokenCallback, null);
+    }
+
+    /**
+     * Generate text with streaming, a specified max token count, and per-call decode options.
+     *
+     * <p>Each token is decoded and passed to the callback as it is generated.
+     * The {@link DecodeOptions} parameter is accepted for API compatibility.
+     * Pass {@code null} to use pipeline defaults.</p>
+     *
+     * <p>Runs the full native {@code autoregressive_decode} C++ op, then streams the
+     * result token by token via the callback. This post-hoc streaming is sufficient
+     * for most use cases.</p>
+     *
+     * @param prompt the input text prompt
+     * @param maxNewTokens maximum number of tokens to generate
+     * @param tokenCallback called with each generated token's decoded text
+     * @param options per-call decode options (nullable)
+     */
+    public void generateStream(String prompt, int maxNewTokens, Consumer<String> tokenCallback,
+                               DecodeOptions options) {
         // Tokenize and embed
         int[] promptTokenIds = tokenizer.encode(prompt, true).getIds();
         if (promptTokenIds == null || promptTokenIds.length == 0) {
@@ -354,19 +1286,13 @@ public class GenerationPipeline implements AutoCloseable {
 
         INDArray embeddings = embedTokens(promptTokenIds);
 
-        // Build decode loop with streaming callback
-        StaticKvCacheDecodeLoop.StaticKvCacheDecodeLoopBuilder builder = createBaseLoopBuilder(maxNewTokens);
-        StaticKvCacheDecodeLoop loop = builder.build();
-
-        // Use decode with per-token tracking
-        // For true streaming, the decode loop would need a callback parameter.
-        // For now, we run decode and stream the result token by token.
-        GenerationResult result = loop.decode(embeddings, promptTokenIds);
+        // Run the full native decode, then stream the result token by token.
+        GenerationResult result = generate(embeddings, promptTokenIds, maxNewTokens, options);
 
         // Stream decoded tokens
         if (result.getTokenIds() != null) {
             for (int tokenId : result.getTokenIds()) {
-                String tokenText = tokenizer.decode(new int[]{tokenId}, true);
+                String tokenText = tokenizer.decode(new int[]{tokenId}, false);
                 tokenCallback.accept(tokenText);
             }
         }
@@ -439,10 +1365,13 @@ public class GenerationPipeline implements AutoCloseable {
     /**
      * Embed token IDs into embeddings using the extracted embedding table or the embed_tokens model.
      *
+     * <p>Uses direct table lookup when an embedding table was extracted at pipeline creation,
+     * falling back to a full SameDiff.output() call otherwise.</p>
+     *
      * @param tokenIds token IDs to embed
      * @return embeddings [1, seqLen, hiddenSize]
      */
-    private INDArray embedTokens(int[] tokenIds) {
+    public INDArray embedTokens(int[] tokenIds) {
         if (embeddingTable != null) {
             // Direct table lookup -- avoids full SameDiff.output() per call
             INDArray emb = Nd4j.zeros(DataType.FLOAT, 1, tokenIds.length, hiddenSize);
@@ -454,6 +1383,11 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         // Fallback: run embed_tokens model via SameDiff
+        if (embedTokens == null) {
+            throw new IllegalStateException(
+                    "No embedding table found and no embedTokens model provided. "
+                    + "Single-model mode requires a discoverable embedding table in the decoder.");
+        }
         INDArray inputIdsTensor = Nd4j.createFromArray(tokenIds)
                 .reshape(1, tokenIds.length).castTo(DataType.LONG);
         try {
@@ -471,42 +1405,6 @@ public class GenerationPipeline implements AutoCloseable {
         } finally {
             SameDiffMemoryUtils.safeClose(inputIdsTensor);
         }
-    }
-
-    /**
-     * Build a {@link StaticKvCacheDecodeLoop} with the pipeline's configuration.
-     */
-    private StaticKvCacheDecodeLoop buildDecodeLoop(int maxNewTokens) {
-        return createBaseLoopBuilder(maxNewTokens).build();
-    }
-
-    /**
-     * Create a pre-configured decode loop builder with all pipeline settings applied.
-     */
-    private StaticKvCacheDecodeLoop.StaticKvCacheDecodeLoopBuilder createBaseLoopBuilder(int maxNewTokens) {
-        StaticKvCacheDecodeLoop.StaticKvCacheDecodeLoopBuilder builder = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .maxNewTokens(maxNewTokens)
-                .hiddenSize(hiddenSize)
-                .samplingConfig(config.getSamplingConfig())
-                .kvCacheStrategy(config.getKvCacheStrategy())
-                .turboQuantBits(config.getTurboQuantBits())
-                .ioConfig(ioConfig);
-
-        if (config.getAdditionalStopTokenIds() != null) {
-            builder.additionalStopTokenIds(config.getAdditionalStopTokenIds());
-        }
-
-        // Configure speculative decoding if draft model is available
-        if (draftDecoder != null && config.getMaxSpeculativeTokens() > 0) {
-            Speculator speculator = buildDraftSpeculator();
-            builder.speculator(speculator)
-                    .maxSpeculativeTokens(config.getMaxSpeculativeTokens());
-        }
-
-        return builder;
     }
 
     /**
@@ -546,15 +1444,25 @@ public class GenerationPipeline implements AutoCloseable {
             };
         }
 
-        // Decode function: greedy argmax from logits
+        // Decode function: greedy argmax from logits — Java-side argmax
         Function<INDArray, Integer> decodeFn = logits -> {
             // logits shape: [1, seqLen, vocabSize] -- take last position
             long seqLen = logits.shape()[1];
             INDArray lastLogits = logits.get(
                     NDArrayIndex.point(0),
                     NDArrayIndex.point(seqLen - 1),
-                    NDArrayIndex.all());
-            return Nd4j.argMax(lastLogits.dup(), -1).getInt(0);
+                    NDArrayIndex.all()).dup();
+            float[] vals = lastLogits.data().asFloat();
+            int bestIdx = 0;
+            float bestVal = vals[0];
+            for (int j = 1; j < vals.length; j++) {
+                if (vals[j] > bestVal) {
+                    bestVal = vals[j];
+                    bestIdx = j;
+                }
+            }
+            lastLogits.close();
+            return bestIdx;
         };
 
         return new DraftModelSpeculator(

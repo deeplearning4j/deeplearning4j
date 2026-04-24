@@ -79,9 +79,20 @@ public class BenchmarkConfigApplier {
     }
 
     /**
-     * Apply all environment flags from a benchmark config.
+     * Apply all environment flags from a benchmark config (no executor, no per-step timing).
      */
     public static void apply(BenchmarkConfig config) {
+        apply(config, null);
+    }
+
+    /**
+     * Apply all environment flags from a benchmark config.
+     * @param config benchmark configuration
+     * @param executor optional DSP executor — if provided and config enables
+     *                 dspExecutionTiming, per-step native timing is enabled on the plan.
+     */
+    public static void apply(BenchmarkConfig config,
+                             org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor executor) {
         Environment env = Nd4j.getEnvironment();
 
         // Reset ALL Triton flags to defaults
@@ -108,6 +119,7 @@ public class BenchmarkConfigApplier {
         env.setTritonDumpArgs(false);
         env.setTritonDumpGraphDot(false);
         env.setTritonAllowFallbackCapture(false);
+        env.setTritonMergedCaptureThroughViews(false);
 
         // Apply the named profile first, then let explicit config fields override it.
         // This keeps profile defaults useful without silently discarding per-config tuning.
@@ -130,6 +142,7 @@ public class BenchmarkConfigApplier {
             env.setTritonVerbose(config.isTritonVerbose());
             env.setTritonDumpSections(config.isTritonDumpSections());
             env.setTritonAllowFallbackCapture(config.isTritonAllowFallbackCapture());
+            env.setTritonMergedCaptureThroughViews(config.isTritonMergedCaptureThroughViews());
             env.setTritonEnableFpFusion(config.isTritonEnableFpFusion());
             if (config.getTritonCoopTargetBlocks() > 0) env.setTritonCoopTargetBlocks(config.getTritonCoopTargetBlocks());
             if (config.getTritonNumWarps() > 0) env.setTritonNumWarps(config.getTritonNumWarps());
@@ -171,15 +184,23 @@ public class BenchmarkConfigApplier {
         env.setDspFreezeMergeSegments(config.isDspFreezeMergeSegments());
         env.setDspFreezeRecompile(config.isDspFreezeRecompile());
 
+        // DSP execution timing: enables per-step timing instrumentation in native code
+        if (config.isDspExecutionTiming() && executor != null) {
+            executor.setExecutionTimingEnabled(true);
+        }
+
         // Enable DSP diagnostics for graph capture configs.
+        // MEMORY is NOT auto-enabled — it emits ~1661 fprintf+fflush calls per decode
+        // step at FULL level (writeOutputSlot/SLOT_WRITE for every slot), which adds
+        // ~250ms/step of I/O overhead and drops throughput from 100+ to ~4 tok/s.
         // EXECUTE is NOT auto-enabled — it triggers per-step cudaStreamSynchronize
         // for argmax logging (~5ms penalty per decode step). Enable explicitly via
-        // -Dnd4j.dsp.diagnostics=EXECUTE when needed for debugging.
+        // -Dnd4j.dsp.diagnostics=MEMORY,EXECUTE when needed for debugging.
         if (config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS) {
             DspDiagnostics.enableCategories(
                     DspDiagnostics.COMPILE | DspDiagnostics.FALLBACK |
-                    DspDiagnostics.BACKEND | DspDiagnostics.MEMORY);
-            DspDiagnostics.setLevel(DspDiagnostics.LEVEL_FULL);
+                    DspDiagnostics.BACKEND);
+            DspDiagnostics.setLevel(DspDiagnostics.LEVEL_DETAILED);
         }
 
         log.info("  Config applied: mode={} types='{}' fusion={} gc={} argTable={} dirty={} " +

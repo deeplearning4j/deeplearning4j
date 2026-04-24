@@ -27,6 +27,7 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <exceptions/cuda_exception.h>
+#include <system/env_functions.h>
 
 #include <chrono>
 #include <algorithm>
@@ -142,8 +143,18 @@ bool CudaGraphHandle::endCapture(cudaStream_t stream) {
     std::lock_guard<std::mutex> lock(_mutex);
 
     if (_state != GraphState::CAPTURING) {
-        sd_print("CudaGraphHandle::endCapture - Not currently capturing\n");
-        return false;
+        if (_state == GraphState::CAPTURED || _state == GraphState::INSTANTIATED ||
+            _state == GraphState::EMPTY) {
+            // Benign: endCapture called on a handle that already completed capture
+            // (composite replay cleanup, abort paths). Not an error — return false.
+            return false;
+        }
+        // ERROR or EXECUTING state — a real lifecycle bug. Throw with stack trace.
+        std::string errMsg = "CudaGraphHandle::endCapture — NOT currently capturing (state=" +
+            std::to_string(static_cast<int>(_state)) +
+            "). Likely cause: capture workspace OOM aborted capture mid-stream. "
+            "Increase capture workspace: -Dnd4j.dsp.captureWorkspaceMb=512";
+        THROW_EXCEPTION(errMsg.c_str());
     }
 
     // Set device
@@ -268,7 +279,7 @@ bool CudaGraphHandle::reInstantiate() {
     }
 
     // Re-create exec from the same captured graph
-    unsigned long long instantiateFlags = Environment::getInstance().tritonGraphAutoFree()
+    unsigned long long instantiateFlags = sd::env_tritonGraphAutoFree()
         ? cudaGraphInstantiateFlagAutoFreeOnLaunch : 0;
     cudaError_t err = cudaGraphInstantiateWithFlags(&_graphExec, _graph, instantiateFlags);
 

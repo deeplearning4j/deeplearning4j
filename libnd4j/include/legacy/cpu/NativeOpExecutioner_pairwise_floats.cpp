@@ -17,6 +17,7 @@
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/pairwise_transform.h>
+#include <system/env_functions.h>
 #include <types/types.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -64,5 +65,5 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   auto zLen = shape::length(hZShapeInfo);
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
-      sd::math::sd_max(1, sd::math::sd_min(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      sd::math::sd_max(1, sd::math::sd_min(zLen / 1024, sd::env_maxMasterThreads())));
 }

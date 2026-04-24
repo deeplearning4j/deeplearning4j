@@ -824,6 +824,8 @@ public class CpuEnvironment implements Environment {
     @Override public void setTritonGraphCapture(boolean v) { e.setTritonGraphCapture(v); }
     @Override public boolean tritonDumpGraphDot() { return e.tritonDumpGraphDot(); }
     @Override public void setTritonDumpGraphDot(boolean v) { e.setTritonDumpGraphDot(v); }
+    @Override public boolean tritonMergedCaptureThroughViews() { return e.tritonMergedCaptureThroughViews(); }
+    @Override public void setTritonMergedCaptureThroughViews(boolean v) { e.setTritonMergedCaptureThroughViews(v); }
     @Override public boolean tritonSkipKernels() { return e.tritonSkipKernels(); }
     @Override public void setTritonSkipKernels(boolean v) { e.setTritonSkipKernels(v); }
     @Override public boolean tritonVerifyKernels() { return e.tritonVerifyKernels(); }

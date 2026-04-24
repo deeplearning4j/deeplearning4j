@@ -44,7 +44,7 @@
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
 #include <graph/gpu/ViewRecipe.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 
 // Forward declaration — full definition in DspStreamGuard.h
 // (included only in .cpp/.cu files that use the guard)
@@ -856,8 +856,8 @@ struct GraphSegment {
   NDArray** slotArrayCache = nullptr;
 
   // Runtime-configurable OOM retry constants (read from Environment)
-  static int maxOomRetries() { return sd::Environment::getInstance().dspCaptureOomMaxRetries(); }
-  static int retryInterval() { return sd::Environment::getInstance().dspCaptureOomRetryInterval(); }
+  static int maxOomRetries();
+  static int retryInterval();
 
   // Reset resolvedCpuBackend when exec state is reset (e.g., shape change rebuild)
   void resetCpuBackend() { resolvedCpuBackend = nullptr; }
@@ -1610,6 +1610,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // shape key computation, and unnecessary output zeroing between executions.
   // Use when all external input shapes are guaranteed constant across steps.
   bool shapesFrozen_;
+  bool inShapeChangeWarmup_ = false;  // True during segDispatchCompile's shape-change warmup pass.
+                                       // Allows slot shape reassignment in step3_allocateOutputs.
   int executeCount_;  // Tracks executions since shapes were frozen
   uint64_t identityFingerprint_ = 0; // FNV-1a hash of (numSlots, opNames, wiring) — set at deserialization
   bool forceSync_;    // When true, executeSlot forces prepareSpecialUse/registerSpecialUse
@@ -1638,6 +1640,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Violations are hard errors, not diagnostic logs.
   BufferPointerSnapshot frozenSnapshot_;
 
+  // Cached steady-state execution context — reused by executeSteadyState() to
+  // avoid heap allocation per step on both CPU and CUDA.
+  // void* to avoid including PlanExecutionContext.h from this header.
+  // Owned by the plan, created on first use, destroyed in destructor/releaseGpuIntermediates.
+  void* steadyStateExecCtx_ = nullptr;
+
 #ifdef SD_CUDA
   // CUDA event for lightweight cross-stream synchronization.
   // Recorded on the DSP execution stream after graph replay, then waited on by
@@ -1645,11 +1653,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // cudaStreamSynchronize (~1.4ms) with event-based ordering (~0.1ms).
   void* executionCompleteEvent_ = nullptr;  // cudaEvent_t (stored as void* to avoid cuda header)
 
-  // Cached steady-state execution context — reused by executeSteadyState() to
-  // avoid heap allocation + CUDA event create/destroy on every decode step.
-  // void* to avoid including PlanExecutionContext.h from this header.
-  // Owned by the plan, created on first use, destroyed in releaseGpuIntermediates.
-  void* steadyStateExecCtx_ = nullptr;
   void* steadyStateCrossStreamEvent_ = nullptr;  // cudaEvent_t, reused across steps
 #endif
 
@@ -1911,8 +1914,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                           NDArray** externalArrays, int numExt, void* stream);
   Status compositeReplay(GraphSegment& seg, ReplaySchedule& sched,
                          NDArray** externalArrays, int numExt, void* stream);
-  bool hasCompositeHandles(const GraphSegment& seg) const;
 #endif
+  bool hasCompositeHandles(const GraphSegment& seg) const;
 
   // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)
   GraphBackend* cpuGraphBackend_;

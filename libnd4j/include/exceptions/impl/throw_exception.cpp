@@ -51,10 +51,6 @@ void safeSetErrorContext(int errorCode, const char* errorMessage) {
 #if defined(SD_GCC_FUNCTRACE)
 void throwException(const char* exceptionMessage) {
 #ifndef __CUDA_CC__
-  // Diagnostic: verify this code path executes
-  fprintf(stderr, "\n[throwException] SD_GCC_FUNCTRACE build - capturing stack trace\n");
-  fflush(stderr);
-
   // Print exception message first
   fprintf(stderr, "=== EXCEPTION: %s ===\n", exceptionMessage);
   fflush(stderr);
@@ -91,11 +87,6 @@ void throwException(const char* exceptionMessage) {
 }
 #else
 void throwException(const char* exceptionMessage) {
-  // Diagnostic: verify this code path executes
-  fprintf(stderr, "\n[throwException] Non-functrace build - no stack trace available\n");
-  fprintf(stderr, "Exception: %s\n", exceptionMessage);
-  fflush(stderr);
-
   // Set error context for Java to retrieve using safe wrapper
   safeSetErrorContext(1, exceptionMessage);
 

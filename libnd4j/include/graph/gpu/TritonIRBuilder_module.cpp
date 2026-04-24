@@ -2354,6 +2354,19 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
     } else if (cat == TritonOpCategory::MATMUL) {
+      // ── Check for fused_two_layer_mlp before generic matmul path ──
+      {
+        std::string opLower = slot.ident.opName;
+        std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+        if ((opLower == "fused_two_layer_mlp" || opLower == "fusedtwolayermlp") &&
+            slot.wiring.numInputs >= 5 && slot.wiring.numOutputs >= 1) {
+          // This op needs the sectioned module builder; mark unsupported in 1D path
+          // so it falls through to native execution rather than crashing.
+          DSP_DIAG(FALLBACK, "fused_two_layer_mlp at slot %d — requires sectioned module, "
+                   "skipping in 1D elementwise builder", si);
+          goto next_slot;
+        }
+      }
       // ─── MATMUL: per-element scalar K-loop matmul (correct, no tensor cores) ───
       // For standalone matmul ops within a 1D element-wise segment.
       // Small pure-matmul segments go through buildMatmulModule instead.
@@ -5833,6 +5846,57 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 if (gM > 0 && gN > 0 && gK > 0) {
                   emitGatedMLPKernel(builder, loc, xPtr, wGatePtr, wUpPtr, outArgPtr,
                                       gM, gN, gK, 128, 128, 32);
+                  DataType outDtype = resolveDtype(outSlot);
+                  auto loaded = loadBlock(outSlot, outDtype);
+                  if (loaded) {
+                    for (int o = 0; o < slot.wiring.numOutputs; o++)
+                      ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
+                  }
+                  continue;
+                }
+              }
+            }
+          }
+
+          // ── Check for fused_two_layer_mlp: use dedicated two-layer MLP kernel (FastVLA) ──
+          // Computes: tanh(ReLU(x @ W1 + b1) @ W2 + b2) in a single kernel.
+          // Inputs: x [M,D], W1 [D,H], b1 [H], W2 [H,A], b2 [A]
+          {
+            std::string opLower = slot.ident.opName;
+            std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+            if ((opLower == "fused_two_layer_mlp" || opLower == "fusedtwolayermlp") && slot.wiring.numInputs >= 5) {
+              int xSrc = slot.wiring.inputSourceIndices[0];
+              int w1Src = slot.wiring.inputSourceIndices[1];
+              int b1Src = slot.wiring.inputSourceIndices[2];
+              int w2Src = slot.wiring.inputSourceIndices[3];
+              int b2Src = slot.wiring.inputSourceIndices[4];
+              int outSlot = slot.wiring.outputSlotIndices[0];
+              auto xArgPtr = getSlotArgPtr(xSrc);
+              auto w1ArgPtr = getSlotArgPtr(w1Src);
+              auto b1ArgPtr = getSlotArgPtr(b1Src);
+              auto w2ArgPtr = getSlotArgPtr(w2Src);
+              auto b2ArgPtr = getSlotArgPtr(b2Src);
+              auto outArgPtr = getSlotArgPtr(outSlot);
+              auto xShape = resolveShape(xSrc);
+              auto w1Shape = resolveShape(w1Src);
+              auto w2Shape = resolveShape(w2Src);
+              if (xArgPtr && w1ArgPtr && b1ArgPtr && w2ArgPtr && b2ArgPtr && outArgPtr &&
+                  xShape.size() >= 2 && w1Shape.size() >= 2 && w2Shape.size() >= 2) {
+                int mlpM = static_cast<int>(xShape[xShape.size() - 2]);    // batch
+                int mlpD = static_cast<int>(xShape[xShape.size() - 1]);    // input dim
+                int mlpH = static_cast<int>(w1Shape[w1Shape.size() - 1]);  // hidden dim
+                int mlpA = static_cast<int>(w2Shape[w2Shape.size() - 1]);  // output dim
+                if (mlpM > 0 && mlpD > 0 && mlpH > 0 && mlpA > 0) {
+                  // Block sizes: blockM=16 (small batch typical for VLA/decode),
+                  // blockH=256 (hidden tile stays in registers), blockK=32, blockA=32
+                  int bM = std::min(16, mlpM);
+                  int bH = std::min(256, mlpH);
+                  int bK = 32;
+                  int bA = (mlpA <= 16) ? 16 : 32;
+                  emitFusedTwoLayerMLPKernel(builder, loc, xArgPtr, w1ArgPtr, b1ArgPtr,
+                                              w2ArgPtr, b2ArgPtr, outArgPtr,
+                                              mlpM, mlpD, mlpH, mlpA,
+                                              bM, bH, bK, bA);
                   DataType outDtype = resolveDtype(outSlot);
                   auto loaded = loadBlock(outSlot, outDtype);
                   if (loaded) {

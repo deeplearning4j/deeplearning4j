@@ -12,6 +12,7 @@
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/scalar.h>
+#include <system/env_functions.h>
 #include <types/types.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -34,5 +35,5 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
                                  SD_COMMON_TYPES);
   };
 
-  samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::sd_min(yLen, sd::Environment::getInstance().maxMasterThreads()));
+  samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::sd_min(yLen, sd::env_maxMasterThreads()));
 }

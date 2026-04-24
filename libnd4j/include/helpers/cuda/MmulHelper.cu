@@ -37,6 +37,7 @@
 #include "../MmulHelper.h"
 #include "../cublasHelper.h"
 #include "execution/cuda/LaunchDims.h"
+#include <system/env_functions.h>
 #include <config.h>
 #if HAVE_CUTLASS
 #include <helpers/CutlassGemmHelper.h>
@@ -830,7 +831,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (C->isEmpty()) return C;
 
- const int major = Environment::getInstance().capabilities()[AffinityManager::currentDeviceId()].first();
+ const int major = sd::env_deviceCapabilityMajor(AffinityManager::currentDeviceId());
 
 #if HAVE_CUTLASS
  // Try CUTLASS dispatch before cuBLAS path.
@@ -1155,7 +1156,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  const int incx = X->strideAt(xLenDim);
  const int incy = Y->strideAt(yLenDim);
 
- const int major = Environment::getInstance().capabilities()[AffinityManager::currentDeviceId()].first();
+ const int major = sd::env_deviceCapabilityMajor(AffinityManager::currentDeviceId());
 
  const auto aType = A->dataType();
  const auto xType = X->dataType();

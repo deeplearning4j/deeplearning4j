@@ -170,7 +170,8 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
       // all synchronous or use nullptr stream, which would poison the capture
       // stream (error 901). Abort immediately — the caller's capture segment
       // will fall back to slot-by-slot execution.
-      THROW_EXCEPTION("[DEVICE] replicatePointer: capture workspace exhausted during CUDA graph capture");
+      THROW_EXCEPTION("[DEVICE] replicatePointer: capture workspace exhausted during CUDA graph capture. "
+                      "Increase via -Dnd4j.dsp.captureWorkspaceMb=512 or ND4J_DSP_CAPTURE_WORKSPACE_MB=512");
     }
     if (ptr == nullptr) {
       // Shape buffers are tiny (~200 bytes). Failure likely means a stale CUDA

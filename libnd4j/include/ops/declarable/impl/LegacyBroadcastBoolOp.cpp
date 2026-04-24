@@ -21,6 +21,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
+#include <system/env_functions.h>
 
 #include <ops/declarable/LegacyBroadcastBoolOp.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -44,10 +45,10 @@ Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
   PointersManager manager(block.launchContext(), "LegacyBroadcastBoolOp");
-  auto pTadShape = Environment::getInstance().isCPU()
+  auto pTadShape = sd::env_isCPU()
                    ? packX->primaryShapeInfo()
                    : packX->specialShapeInfo();
-  auto pTadOffsets = Environment::getInstance().isCPU()
+  auto pTadOffsets = sd::env_isCPU()
                      ? packX->primaryOffsets()
                      : packX->specialOffsets();
 
@@ -67,10 +68,10 @@ Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
 
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
 
-    auto zTadShape = Environment::getInstance().isCPU()
+    auto zTadShape = sd::env_isCPU()
                      ? packZ->primaryShapeInfo()
                      : packZ->specialShapeInfo();
-    auto zTadOffsets = Environment::getInstance().isCPU()
+    auto zTadOffsets = sd::env_isCPU()
                        ? packZ->primaryOffsets()
                        : packZ->specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOffsets,
 

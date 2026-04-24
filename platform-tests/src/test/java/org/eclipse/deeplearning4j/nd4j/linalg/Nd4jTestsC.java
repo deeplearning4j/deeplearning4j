@@ -8972,99 +8972,13 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray bigRow1 = Nd4j.ones(DataType.FLOAT, hidden).mul(50.0f);
         INDArray bigRow2 = Nd4j.ones(DataType.FLOAT, hidden).mul(-40.0f);
 
-        // Diagnostic: check get() view properties before put
+        // put large values via view assign
         INDArray view2 = arr.get(NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all());
-        System.out.println("View shape: " + java.util.Arrays.toString(view2.shape()));
-        System.out.println("View strides: " + java.util.Arrays.toString(view2.stride()));
-        System.out.println("View offset: " + view2.offset());
-        System.out.println("View isView: " + view2.isView());
-        System.out.println("View data length: " + view2.data().length());
-        System.out.println("Arr data length: " + arr.data().length());
-        System.out.println("View data == Arr data: " + (view2.data() == arr.data()));
-
-        // Test 1: Does assign() on the view work?
         view2.assign(bigRow1);
-        Nd4j.getExecutioner().commit();  // Force CUDA stream sync
-        System.out.println("After view2.assign(bigRow1) + commit:");
-        System.out.println("  view2 max: " + view2.maxNumber());
-        System.out.println("  arr max: " + arr.maxNumber());
-        System.out.println("  arr[0,2,:] via get: " + arr.get(NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all()));
-
-        // Test 2: Does put() work?
-        INDArray arr2 = Nd4j.zeros(DataType.FLOAT, batch, seqLen, hidden);
-        arr2.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all()}, bigRow1);
         Nd4j.getExecutioner().commit();
-        System.out.println("After arr2.put([0,2,:], bigRow1) + commit:");
-        System.out.println("  arr2 max: " + arr2.maxNumber());
-        System.out.println("  arr2[0,2,:] via get: " + arr2.get(NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all()));
 
-        // Test 3: Does putRow work on a 2D slice?
-        INDArray arr3 = Nd4j.zeros(DataType.FLOAT, seqLen, hidden);
-        arr3.putRow(2, bigRow1);
+        arr.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(5), NDArrayIndex.all()}, bigRow2);
         Nd4j.getExecutioner().commit();
-        System.out.println("After arr3.putRow(2, bigRow1) + commit:");
-        System.out.println("  arr3 max: " + arr3.maxNumber());
-        System.out.println("  arr3 row 2: " + arr3.getRow(2));
-
-        // Test 4: Does putScalar work?
-        INDArray arr4 = Nd4j.zeros(DataType.FLOAT, batch, seqLen, hidden);
-        arr4.putScalar(new long[]{0, 2, 0}, 50.0f);
-        System.out.println("After arr4.putScalar([0,2,0], 50):");
-        System.out.println("  arr4 max: " + arr4.maxNumber());
-        System.out.println("  arr4[0,2,0]: " + arr4.getDouble(0, 2, 0));
-
-        // Test 5: Simple 1D test - does assign work at all?
-        INDArray simple = Nd4j.zeros(DataType.FLOAT, 10);
-        INDArray val = Nd4j.ones(DataType.FLOAT, 1).mul(99.0f);
-        simple.get(NDArrayIndex.point(3)).assign(val);
-        Nd4j.getExecutioner().commit();
-        System.out.println("Simple 1D test after assign point(3)=99:");
-        System.out.println("  simple max: " + simple.maxNumber());
-        System.out.println("  simple: " + simple);
-
-        // Test 6: Direct assign to the full array - sanity baseline
-        INDArray arr5 = Nd4j.zeros(DataType.FLOAT, batch, seqLen, hidden);
-        INDArray full = Nd4j.ones(DataType.FLOAT, batch, seqLen, hidden).mul(77.0f);
-        arr5.assign(full);
-        Nd4j.getExecutioner().commit();
-        System.out.println("Full assign test:");
-        System.out.println("  arr5 max: " + arr5.maxNumber());
-
-        // Test 7: 2D array (not 3D) with view assign
-        INDArray arr6 = Nd4j.zeros(DataType.FLOAT, seqLen, hidden);
-        INDArray view6 = arr6.get(NDArrayIndex.point(2), NDArrayIndex.all());
-        view6.assign(bigRow1);
-        Nd4j.getExecutioner().commit();
-        System.out.println("2D view assign test:");
-        System.out.println("  view6 shape: " + java.util.Arrays.toString(view6.shape()) + " offset: " + view6.offset());
-        System.out.println("  view6 max: " + view6.maxNumber());
-        System.out.println("  arr6 max: " + arr6.maxNumber());
-        System.out.println("  arr6[2,:] via get: " + arr6.get(NDArrayIndex.point(2), NDArrayIndex.all()));
-
-        // Test 8: Use addi instead of assign - does addi work?
-        INDArray arr7 = Nd4j.zeros(DataType.FLOAT, batch, seqLen, hidden);
-        INDArray view7 = arr7.get(NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all());
-        view7.addi(bigRow1);
-        Nd4j.getExecutioner().commit();
-        System.out.println("3D view addi test:");
-        System.out.println("  arr7 max: " + arr7.maxNumber());
-
-        // Test 9: Reshape to 2D, then view assign, then reshape back
-        INDArray arr8 = Nd4j.zeros(DataType.FLOAT, seqLen, hidden); // 2D
-        INDArray view8 = arr8.getRow(2);
-        view8.assign(bigRow1);
-        Nd4j.getExecutioner().commit();
-        INDArray arr8_3d = arr8.reshape(1, seqLen, hidden);
-        System.out.println("Reshape after view assign test:");
-        System.out.println("  arr8 (2D) max: " + arr8.maxNumber());
-        System.out.println("  arr8_3d max: " + arr8_3d.maxNumber());
-
-        // Test 10: Flatten then reduce
-        System.out.println("Flatten test:");
-        INDArray flatArr = arr.reshape(batch * seqLen * hidden);
-        System.out.println("  arr flat shape: " + java.util.Arrays.toString(flatArr.shape()));
-        System.out.println("  arr flat max: " + flatArr.maxNumber());
-        System.out.println("  arr flat[16]: " + flatArr.getDouble(16));
 
         // The real assertions
         double max = arr.maxNumber().doubleValue();

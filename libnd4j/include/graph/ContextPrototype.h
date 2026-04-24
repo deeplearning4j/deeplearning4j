@@ -27,7 +27,7 @@
 #include <execution/ExecutionMode.h>
 #include <graph/RandomGenerator.h>
 #include <ops/declarable/OpDescriptor.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 
 #include <string>
 #include <vector>
@@ -52,7 +52,7 @@ class SD_LIB_EXPORT ContextPrototype {
 #endif
   bool _isInplace;
 
-  bool _useMPS = Environment::getInstance().isUseMPS();
+  bool _useMPS = sd::env_isUseMPS();
 
   // opNum for legacy XYZ ops
   int _opNum = -1;
@@ -62,7 +62,7 @@ class SD_LIB_EXPORT ContextPrototype {
   std::vector<DataType> _dataTypes;
 
   ops::OpDescriptor* _opDescriptor;
-  bool _useONEDNN = Environment::getInstance().isUseONEDNN();
+  bool _useONEDNN = sd::env_isUseONEDNN();
 
   // target engine for execution
   samediff::Engine _engine = DEFAULT_ENGINE;

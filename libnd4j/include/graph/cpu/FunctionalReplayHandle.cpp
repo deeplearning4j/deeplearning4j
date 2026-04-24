@@ -52,8 +52,16 @@ bool FunctionalReplayHandle::finalize() {
   if (state_ != ReplayState::CAPTURED) {
     return false;
   }
-  // For CPU functional replay, finalization is trivial — the recorded
-  // op list is already ready. No instantiation step needed.
+  // Build the executable slot index list from recorded ops.
+  // This list contains only the slot indices that were actually executed
+  // (not frozen constants, not fused chain tails, not identity ops that
+  // were skipped). On replay, the segment executor can iterate this list
+  // directly instead of the full slot range.
+  executableSlotIndices_.clear();
+  executableSlotIndices_.reserve(recordedOps_.size());
+  for (const auto& entry : recordedOps_) {
+    executableSlotIndices_.push_back(entry.slotIndex);
+  }
   state_ = ReplayState::READY;
   return true;
 }

@@ -38,7 +38,7 @@ import java.util.Map;
  * Whisper special tokens and language/task tokens.
  * <p>
  * Implements the {@link Tokenizer} interface so it can be used directly with
- * {@link org.eclipse.deeplearning4j.llm.generation.StaticKvCacheDecodeLoop}.
+ * the native decode op via GenerationPipeline.
  * <p>
  * Special token layout:
  * <ul>

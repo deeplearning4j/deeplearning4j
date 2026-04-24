@@ -1240,15 +1240,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private DynamicShapePlan getOrCompileDynamicShapePlan(ForwardExecutionDAG dag,
                                                           List<String> requestedOutputs,
                                                           boolean allowCompile) {
-        // When DSP is explicitly disabled (allowCompile=false), skip ALL plan
-        // usage including cached plans. This ensures setDspAutoCompileEnabled(false)
-        // fully disables DSP execution even if a plan was compiled earlier.
-        if (!allowCompile) {
-            return null;
-        }
-
         Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
 
+        // Always check for an existing cached plan first, even when allowCompile=false.
+        // compileTritonModel() sets dspAutoCompileEnabled=false after explicit compilation,
+        // but the compiled plan must still be usable during subsequent output() calls.
+        // Without this, the decode loop falls through to executeOperations (standard path)
+        // which has different cleanup semantics and can close KV cache placeholder arrays.
         DynamicShapePlan plan = dynamicShapePlan;
         if (plan != null) {
             Set<String> existingOutputs = new LinkedHashSet<>(plan.getRequestedOutputs());
@@ -1263,21 +1261,31 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 dynamicShapePlan = plan;
                 return plan;
             }
-
-            log.debug("Compiling DynamicShapePlan for {} outputs", outputSet.size());
-            plan = DynamicShapePlanCompiler.compile(sameDiff, dag, outputSet);
-            if (plan == null) {
-                log.debug("DynamicShapePlan compilation returned null");
-                return null;
-            }
-            if (plan.isHasControlFlowOps()) {
-                log.debug("DynamicShapePlan has control flow ops - native CF execution enabled");
-            }
-
-            plan.assignDevices();
-            sameDiff.cacheDynamicShapePlan(outputSet, plan);
-            log.debug("DynamicShapePlan compiled: {}", plan.getSummary());
         }
+
+        if (plan != null) {
+            dynamicShapePlan = plan;
+            return plan;
+        }
+
+        // No cached plan — compile a new one only if allowed.
+        if (!allowCompile) {
+            return null;
+        }
+
+        log.debug("Compiling DynamicShapePlan for {} outputs", outputSet.size());
+        plan = DynamicShapePlanCompiler.compile(sameDiff, dag, outputSet);
+        if (plan == null) {
+            log.debug("DynamicShapePlan compilation returned null");
+            return null;
+        }
+        if (plan.isHasControlFlowOps()) {
+            log.debug("DynamicShapePlan has control flow ops - native CF execution enabled");
+        }
+
+        plan.assignDevices();
+        sameDiff.cacheDynamicShapePlan(outputSet, plan);
+        log.debug("DynamicShapePlan compiled: {}", plan.getSummary());
 
         dynamicShapePlan = plan;
         return plan;
@@ -1691,6 +1699,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
             }
+            // Also protect the ORIGINAL (pre-cast) placeholder DataBuffers.
+            // preprocessPlaceholders may cast a placeholder to a different dtype,
+            // so variableValues holds the cast copy with a different DataBuffer.
+            // externalPlaceholderBuffers holds the original DataBuffers as passed
+            // by the caller (e.g., static KV buffers in autoregressive decode).
+            protectedBuffers.putAll(externalPlaceholderBuffers);
 
             // Two-pass approach: HashMap iteration order is non-deterministic, so a
             // non-closeable view might be processed BEFORE its closeable parent. If we
@@ -1818,6 +1832,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         break;
                 }
             }
+            // Also protect original (pre-cast) placeholder DataBuffers — same as cache path.
+            protectedBuffers.putAll(externalPlaceholderBuffers);
 
             IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
             for (Map.Entry<String, SDValue> entry : variableValues.entrySet()) {
@@ -2084,6 +2100,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
         }
+        // Protect original placeholder DataBuffers (pre-cast).
+        protectedBuffers.putAll(externalPlaceholderBuffers);
 
         int closed = 0;
         for (Map.Entry<String, SDValue> entry : variableValues.entrySet()) {

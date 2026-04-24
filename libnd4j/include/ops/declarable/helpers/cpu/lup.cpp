@@ -23,6 +23,7 @@
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/top_k.h>
+#include <system/env_functions.h>
 #if NOT_EXCLUDED(OP_lup)
 namespace sd {
 namespace ops {

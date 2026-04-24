@@ -24,6 +24,7 @@
 #if NOT_EXCLUDED(OP_flatten2d)
 
 #include <ops/declarable/headers/shape.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
@@ -46,7 +47,7 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
                z->lengthOf());
 
   auto* zShapeVec = z->getShapeAsVector();
-  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
+  if (sd::env_isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
 
   auto xReshaped = x->reshape(z->ordering(), *zShapeVec);
   delete zShapeVec;

@@ -140,6 +140,17 @@ public class BenchmarkRunner {
 
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
+            // Enable DSP execution timing after compile (plan exists post-compile)
+            if (config.isDspExecutionTiming()) {
+                for (SameDiff model : models) {
+                    DynamicShapePlanExecutor executor = model.getOrCreateSession().getDynamicShapePlanExecutor();
+                    if (executor != null) {
+                        executor.setExecutionTimingEnabled(true);
+                        break;
+                    }
+                }
+            }
+
             // 4. Decode
             beginDecodeOpTiming(nativeOps);
             GenerationResult result;

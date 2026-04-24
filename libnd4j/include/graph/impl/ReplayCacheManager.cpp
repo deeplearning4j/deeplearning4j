@@ -1,6 +1,7 @@
 #include <graph/ReplayCacheManager.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspConstants.h>
+#include <system/env_functions.h>
 
 #include <fstream>
 #include <sstream>
@@ -102,7 +103,7 @@ bool ReplayCacheDeviceKey::isCompatibleWith(const ReplayCacheDeviceKey& other) c
 
 ReplayCacheManager::ReplayCacheManager() {
   // Read cache dir from Environment (centralized config — no direct getenv)
-  std::string cfgDir = Environment::getInstance().dsp().replayCacheDir();
+  std::string cfgDir = sd::env_dspReplayCacheDir();
   if (!cfgDir.empty()) {
     cacheDir_ = cfgDir;
   } else {
@@ -117,7 +118,7 @@ ReplayCacheManager::ReplayCacheManager() {
   }
 
   // Read enabled flag from Environment
-  enabled_ = Environment::getInstance().dsp().replayCacheEnabled();
+  enabled_ = sd::env_dspReplayCacheEnabled();
 }
 
 ReplayCacheManager& ReplayCacheManager::getInstance() {

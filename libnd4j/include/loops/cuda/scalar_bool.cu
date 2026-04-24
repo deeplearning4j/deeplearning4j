@@ -27,7 +27,7 @@
 #include "../legacy_ops.h"
 #include "../scalar_bool.h"
 #include <helpers/DebugHelper.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -318,7 +318,7 @@ __host__ void ScalarBoolTransform<X, Z>::executeCudaShaped(
    void const* vscalar,
    void const* vextraParams)
 {
- if (sd::Environment::getInstance().isDebugAndVerbose()) {
+ if (sd::env_isDebugAndVerbose()) {
    printf("H14 opNum:[%i]\n", opNum);
  }
 

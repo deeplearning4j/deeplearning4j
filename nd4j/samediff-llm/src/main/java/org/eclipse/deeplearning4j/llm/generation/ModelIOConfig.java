@@ -37,7 +37,7 @@ import java.util.List;
  * Configuration for decoder model input/output variable names.
  *
  * <p>Eliminates hardcoded variable name assumptions throughout the decode pipeline.
- * All components (StaticKvCacheDecodeLoop, DraftModelSpeculator, FrozenDecodeStep)
+ * All components (GenerationPipeline, DraftModelSpeculator, FrozenDecodeStep)
  * use this config instead of comparing against string literals like
  * "inputs_embeds", "attention_mask", etc.</p>
  *
@@ -46,7 +46,7 @@ import java.util.List;
  *
  * @see DraftModelSpeculator
  * @see FrozenDecodeStep
- * @see StaticKvCacheDecodeLoop
+ * @see GenerationPipeline
  */
 @Slf4j
 @Getter

@@ -1737,7 +1737,7 @@ LongType NDArray::ews()  {
 bool NDArray::nonNull()  {
   if (isEmpty()) return true;
 
-  if (!Environment::getInstance().isCPU())
+  if (!sd::env_isCPU())
     return getDataBuffer()->special() != nullptr && specialShapeInfo() != nullptr;
 
   return getDataBuffer()->primary() != nullptr && shapeInfo() != nullptr;

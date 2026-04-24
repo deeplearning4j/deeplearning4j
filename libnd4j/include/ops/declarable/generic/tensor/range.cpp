@@ -27,6 +27,7 @@
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/range.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
@@ -124,7 +125,7 @@ DECLARE_SHAPE_FN(range) {
   // Each branch below will set the correct dataType based on the input mode.
   // Track if D_ARG was used so we don't override it later
   const bool hasDArg = block.numD() > 0;
-  DataType dataType = hasDArg ? D_ARG(0) : (numInArrs > 0 ? INPUT_VARIABLE(0)->dataType() : Environment::getInstance().defaultFloatDataType());
+  DataType dataType = hasDArg ? D_ARG(0) : (numInArrs > 0 ? INPUT_VARIABLE(0)->dataType() : static_cast<sd::DataType>(sd::env_defaultFloatDataType()));
 
   if (numInArrs > 0) {
     auto isR = INPUT_VARIABLE(0)->isR();
@@ -295,7 +296,7 @@ DECLARE_SHAPE_FN(range) {
       // Return [0] to match TF
       std::vector<LongType> shape = {0};
       return SHAPELIST(
-          ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(Environment::getInstance().defaultFloatDataType(),shape));
+          ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(static_cast<sd::DataType>(sd::env_defaultFloatDataType()),shape));
     }
 
     REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
@@ -303,10 +304,10 @@ DECLARE_SHAPE_FN(range) {
     steps = static_cast<LongType>((limit - start) / delta);
 
     if (!hasDArg) {
-      if (Environment::getInstance().precisionBoostAllowed())
+      if (sd::env_precisionBoostAllowed())
         dataType = DOUBLE;
       else
-        dataType = Environment::getInstance().defaultFloatDataType();
+        dataType = static_cast<sd::DataType>(sd::env_defaultFloatDataType());
     }
 
     if(steps <= 0) {

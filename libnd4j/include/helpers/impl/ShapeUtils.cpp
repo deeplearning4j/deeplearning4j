@@ -736,7 +736,7 @@ const LongType* ShapeUtils::evalPermutedViewShapeInfo(const NDArray* input,
 
   // Build shape info buffer: [rank, shape..., strides..., 0, ews, order+flags]
   auto shapeInfoLen = shape::shapeInfoLength(rank);
-  LongType* shapeInfoBuf = new LongType[shapeInfoLen];
+  LongType* shapeInfoBuf = new LongType[shapeInfoLen + SD_SHAPE_ALLOC_PADDING];
   shapeInfoBuf[0] = rank;
   for (int i = 0; i < rank; i++) {
     shapeInfoBuf[1 + i] = permShape[i];

@@ -17,7 +17,7 @@
 
 #include <array/NDArray.h>
 #include <helpers/logger.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <cuda_runtime.h>
 
 #include <legacy/NativeOps.h>

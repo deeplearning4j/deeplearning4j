@@ -366,7 +366,7 @@ static size_t TRITON_CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
   return mb * 1024ULL * 1024ULL;
 }();
 
-// Default capture workspace size for Triton graph capture (128MB).
+// Default capture workspace size for Triton graph capture (512MB).
 // Configurable via ND4J_DSP_CAPTURE_WORKSPACE_MB env var.
 static size_t TRITON_CAPTURE_WORKSPACE_SIZE = []() -> size_t {
   size_t mb = static_cast<size_t>(Environment::getInstance().dsp().captureWorkspaceMb());
@@ -495,16 +495,24 @@ static Status reportOomError(GraphSegment& seg, const char* phase,
   dumpGpuContextState(deviceId, "OOM");
   size_t gpuFree = 0, gpuTotal = 0;
   cudaMemGetInfo(&gpuFree, &gpuTotal);
-  DSP_DIAG(MEMORY,
-           "OOM ERROR in seg[%d-%d] during '%s' on device %d: "
-           "requested=%zuMB gpuFree=%zuMB gpuTotal=%zuMB gpuUsed=%zuMB "
-           "executionCount=%d phase=%d",
-           seg.def.startSlot, seg.def.endSlot, phase, deviceId,
-           requestedBytes / (1024*1024), gpuFree / (1024*1024),
-           gpuTotal / (1024*1024), (gpuTotal - gpuFree) / (1024*1024),
-           seg.exec.executionCount, seg.exec.displayPhaseName());
+  // Build a detailed error message with actionable fix info — never silently fail.
+  char oomMsg[1024];
+  std::snprintf(oomMsg, sizeof(oomMsg),
+      "DSP OOM in seg[%d-%d] during '%s' on device %d: "
+      "requested=%zuMB gpuFree=%zuMB gpuTotal=%zuMB gpuUsed=%zuMB "
+      "captureWorkspace=%zuMB executionCount=%d. "
+      "FIX: increase -Dnd4j.dsp.captureWorkspaceMb (current=%zuMB)",
+      seg.def.startSlot, seg.def.endSlot, phase, deviceId,
+      requestedBytes / (1024*1024), gpuFree / (1024*1024),
+      gpuTotal / (1024*1024), (gpuTotal - gpuFree) / (1024*1024),
+      TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024),
+      seg.exec.executionCount,
+      TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024));
+  DSP_DIAG(MEMORY, "%s", oomMsg);
   SegmentLifecycle::markFailed(seg.exec, "oom");
-  return Status::KERNEL_FAILURE;
+  // Throw instead of silently returning KERNEL_FAILURE — OOM must produce a stack trace.
+  THROW_EXCEPTION(oomMsg);
+  return Status::KERNEL_FAILURE;  // unreachable, but satisfies return type
 }
 
 static Status reportCaptureError(GraphSegment& seg, const char* step,
@@ -512,18 +520,22 @@ static Status reportCaptureError(GraphSegment& seg, const char* step,
   dumpGpuContextState(deviceId, "CAPTURE");
   size_t gpuFree = 0, gpuTotal = 0;
   cudaMemGetInfo(&gpuFree, &gpuTotal);
-  DSP_DIAG(EXECUTE,
-           "CAPTURE ERROR in seg[%d-%d] at step '%s' on device %d: "
-           "cudaError=%d (%s) gpuFree=%zuMB gpuTotal=%zuMB "
-           "executionCount=%d numOps=%d compiledBy='%s'",
-           seg.def.startSlot, seg.def.endSlot, step, deviceId,
-           static_cast<int>(cudaErr), cudaGetErrorString(cudaErr),
-           gpuFree / (1024*1024), gpuTotal / (1024*1024),
-           seg.exec.executionCount, seg.def.endSlot - seg.def.startSlot + 1,
-           seg.exec.compiledByBackend.c_str());
+  char captureMsg[1024];
+  std::snprintf(captureMsg, sizeof(captureMsg),
+      "CAPTURE ERROR in seg[%d-%d] at step '%s' on device %d: "
+      "cudaError=%d (%s) gpuFree=%zuMB gpuTotal=%zuMB "
+      "executionCount=%d numOps=%d compiledBy='%s'",
+      seg.def.startSlot, seg.def.endSlot, step, deviceId,
+      static_cast<int>(cudaErr), cudaGetErrorString(cudaErr),
+      gpuFree / (1024*1024), gpuTotal / (1024*1024),
+      seg.exec.executionCount, seg.def.endSlot - seg.def.startSlot + 1,
+      seg.exec.compiledByBackend.c_str());
+  DSP_DIAG(EXECUTE, "%s", captureMsg);
   SegmentLifecycle::markFailed(seg.exec, step);
   cudaGetLastError(); // clear error state
-  return Status::KERNEL_FAILURE;
+  // Throw with full context — capture errors must never be silent.
+  THROW_EXCEPTION(captureMsg);
+  return Status::KERNEL_FAILURE;  // unreachable
 }
 
 static Status reportReplayError(GraphSegment& seg, const char* step,
@@ -531,18 +543,22 @@ static Status reportReplayError(GraphSegment& seg, const char* step,
   dumpGpuContextState(deviceId, "REPLAY");
   size_t gpuFree = 0, gpuTotal = 0;
   cudaMemGetInfo(&gpuFree, &gpuTotal);
-  DSP_DIAG(EXECUTE,
-           "REPLAY ERROR in seg[%d-%d] at step '%s' on device %d: "
-           "cudaError=%d (%s) gpuFree=%zuMB gpuTotal=%zuMB "
-           "executionCount=%d hasReplayHandle=%d",
-           seg.def.startSlot, seg.def.endSlot, step, deviceId,
-           static_cast<int>(cudaErr), cudaGetErrorString(cudaErr),
-           gpuFree / (1024*1024), gpuTotal / (1024*1024),
-           seg.exec.executionCount,
-           seg.exec.replayHandle != nullptr ? 1 : 0);
+  char replayMsg[1024];
+  std::snprintf(replayMsg, sizeof(replayMsg),
+      "REPLAY ERROR in seg[%d-%d] at step '%s' on device %d: "
+      "cudaError=%d (%s) gpuFree=%zuMB gpuTotal=%zuMB "
+      "executionCount=%d hasReplayHandle=%d",
+      seg.def.startSlot, seg.def.endSlot, step, deviceId,
+      static_cast<int>(cudaErr), cudaGetErrorString(cudaErr),
+      gpuFree / (1024*1024), gpuTotal / (1024*1024),
+      seg.exec.executionCount,
+      seg.exec.replayHandle != nullptr ? 1 : 0);
+  DSP_DIAG(EXECUTE, "%s", replayMsg);
   SegmentLifecycle::markFailed(seg.exec, step);
   cudaGetLastError(); // clear error state
-  return Status::KERNEL_FAILURE;
+  // Throw with full context — replay errors must never be silent.
+  THROW_EXCEPTION(replayMsg);
+  return Status::KERNEL_FAILURE;  // unreachable
 }
 
 #if HAVE_TRITON
@@ -642,6 +658,7 @@ static ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
  // NOT pure-CPU metadata ops (views, identity) or frozen constants.
  // Capture-safe gaps can be recorded into the preceding island's CUDA
  // graph during merged capture, eliminating gap dispatch overhead.
+ bool mergeViews = Environment::getInstance().triton().mergedCaptureThroughViews();
  for (auto& unit : schedule.units) {
    if (unit.kind != REPLAY_UNIT_GAP) continue;
    unit.isCaptureSafe = true;
@@ -649,8 +666,13 @@ static ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
      if (slots[s].flags.isViewCapableOp ||
          slots[s].flags.isIdentityOp ||
          slots[s].frozenConstantSlot()) {
-       unit.isCaptureSafe = false;
-       break;
+       if (!mergeViews) {
+         unit.isCaptureSafe = false;
+         break;
+       }
+       // When mergedCaptureThroughViews is enabled, view/identity/frozen-constant
+       // ops are allowed through — they are zero-copy metadata ops that don't
+       // issue CUDA kernels but also don't break graph capture.
      }
    }
    DSP_DIAG_SEG(SEGMENT, unit.startSlot,
@@ -1872,7 +1894,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // Segments execute sequentially (cudaGraphLaunch + cudaStreamSynchronize),
       // and workspace offset resets each capture, so sharing is safe.
       if (sharedCaptureWorkspace_ == nullptr) {
-        // First segment — allocate the shared workspace
+        // First segment — trim pool to reclaim freed async memory before allocating.
+        // cudaFreeAsync returns memory to the pool but it stays reserved until trimmed.
+        // Without this, the workspace cudaMalloc can fail even though the pool holds
+        // hundreds of MB of reclaimable memory from prior op execution.
+        memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+
+        // Allocate the shared workspace
         cudaError_t err = cudaMalloc(&sharedCaptureWorkspace_, TRITON_CAPTURE_WORKSPACE_SIZE);
         if (err != cudaSuccess) {
           cudaGetLastError();
@@ -3917,11 +3945,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                       static_cast<uint64_t>(compileStatus));
       return compileStatus;
     }
+    // NOTE: shapeKeyState.markCompiled(segShapeKey) is now called inside
+    // segDispatchCompile, only when compilation actually occurs. Previously
+    // it was unconditional here, which on exec2 with changed shapes (KV cache
+    // growth) overwrote compiledShapeKey with a value that had no compiled
+    // kernel in the Triton cache — causing KERNEL_FAILURE on lookup.
   }
-
-  // Record shape key as compiled — future executions with same key skip recompile.
-  seg.def.shapeKeyState.markCompiled(segShapeKey);
-  DSP_SEG_EVENT(seg, SHAPE_KEY_STORED, "compilation/execution complete");
 
   cudaStream_t cudaStr = (stream != nullptr)
                          ? *static_cast<cudaStream_t*>(stream) : nullptr;

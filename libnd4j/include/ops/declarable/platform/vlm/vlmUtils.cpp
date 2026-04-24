@@ -26,6 +26,7 @@
 
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
+#include <system/env_functions.h>
 #include <cmath>
 
 namespace sd {
@@ -183,7 +184,7 @@ void copyGgmlToNDArray(const struct ggml_tensor* tensor, NDArray* array) {
 void executeGgmlGraph(struct ggml_context* ctx, struct ggml_cgraph* graph, int numThreads) {
     if (numThreads <= 0) {
         // Use default thread count
-        numThreads = sd::Environment::getInstance().maxMasterThreads();
+        numThreads = sd::env_maxMasterThreads();
     }
 
     // Create a new compute plan

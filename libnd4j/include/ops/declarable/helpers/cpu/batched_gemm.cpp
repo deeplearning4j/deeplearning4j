@@ -22,6 +22,7 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <ops/declarable/helpers/batched_gemm.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/float16.h>
 #include <indexing/NDIndexUtils.h>
@@ -81,7 +82,7 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
   
   // Use batched BLAS only when: 1) batched GEMM is available AND 2) BLAS is enabled
   // Previously used || which incorrectly entered BLAS path when BLAS was disabled
-  if (BlasHelper::getInstance().hasBatchedGEMM<T>() && Environment::getInstance().isEnableBlas()) {
+  if (BlasHelper::getInstance().hasBatchedGEMM<T>() && sd::env_isEnableBlas()) {
     auto arr = vA.at(0);
     CBLAS_TRANSPOSE *tA, *tB;
     int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;

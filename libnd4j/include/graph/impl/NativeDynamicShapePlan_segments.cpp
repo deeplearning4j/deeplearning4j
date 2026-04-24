@@ -44,6 +44,10 @@
 #include <algorithm>
 #include <unordered_set>
 
+// GraphSegment static methods (moved from header to avoid Environment.h in NativeDynamicShapePlan.h)
+int GraphSegment::maxOomRetries() { return sd::Environment::getInstance().dspCaptureOomMaxRetries(); }
+int GraphSegment::retryInterval() { return sd::Environment::getInstance().dspCaptureOomRetryInterval(); }
+
 #ifdef SD_CUDA
 #include <cuda_runtime.h>
 #endif
@@ -404,7 +408,8 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithCpuGraph");
 
-  // If all backends have been exhausted for this segment, throw — do not silently fall back
+  // If all backends have been exhausted for this segment, return failure so
+  // the caller can fall back to slot-by-slot.
   if (seg.exec.compilationFailed) {
     DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                   "executeSegmentWithCpuGraph: seg[%d-%d] permanently failed — all backends exhausted. "
@@ -533,24 +538,36 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   if (seg.exec.executionCount == 1) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
-    bool allCompiled = true;
+    bool allCovered = true;
+    int compiledCount = 0, nativeHandledCount = 0, uncoveredCount = 0;
     for (const auto& entry : audit) {
-      if (!entry.wasCompiled) {
-        allCompiled = false;
+      if (entry.wasCompiled) {
+        compiledCount++;
+      } else if (entry.isNativeHandled) {
+        // Backend owns native execution for this op (e.g., mixed-segment interleaving).
+        // This is NOT an error — the backend guarantees correct execution.
+        nativeHandledCount++;
+        DSP_DIAG(COMPILE, "%s VALIDATION: slot %d (%s) natively handled by backend: %s",
+                  backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
+      } else {
+        allCovered = false;
+        uncoveredCount++;
         DSP_DIAG(COMPILE, "%s VALIDATION: slot %d (%s) was NOT compiled: %s",
                   backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       }
     }
-    if (!allCompiled) {
+    if (!allCovered) {
       seg.exec.compilationFailed = true;
       DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                    "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
-                    "Fix the backend to compile all ops — silent fallback is not permitted.",
-                    backendName, seg.def.startSlot, seg.def.endSlot);
+                    "%s VALIDATION FAILURE: segment [%d-%d] has %d ops not covered by backend. "
+                    "Fix the backend to compile or natively handle all ops — silent fallback is not permitted.",
+                    backendName, seg.def.startSlot, seg.def.endSlot, uncoveredCount);
     } else {
       DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
-                   "%s VALIDATION OK: seg[%d-%d] all %d ops compiled successfully",
-                   backendName, seg.def.startSlot, seg.def.endSlot, (int)audit.size());
+                   "%s VALIDATION OK: seg[%d-%d] all %d ops covered "
+                   "(compiled=%d nativeHandled=%d)",
+                   backendName, seg.def.startSlot, seg.def.endSlot, (int)audit.size(),
+                   compiledCount, nativeHandledCount);
     }
   }
 
@@ -561,8 +578,77 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   // paths (CPU backends, Triton warmup). Capture manages the flag internally.
   DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
            seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
+
+#if HAVE_ONEDNN
+  // For OneDNN mixed segments: install a NativeSlotExecutor so the backend can
+  // call back into the plan's slot-by-slot path for unmappable op ranges.
+  // The executor is thread-local (mirrors the Triton orderedRangeExecutor_ model)
+  // and must be cleared after executeSegment returns.
+  bool installedOneDnnNativeExecutor = false;
+  auto* onednnBackend = dynamic_cast<OneDnnGraphBackend*>(backend);
+  if (onednnBackend != nullptr) {
+    onednnBackend->setNativeSlotExecutor(
+        [this, &externalArrays, numExt, &stream](int nativeStart, int nativeEnd) -> Status {
+          // Build a temporary segment spanning [nativeStart, nativeEnd] and
+          // execute it slot-by-slot. We reuse the existing segment infrastructure
+          // so that shape caches, control flow, and all other slot logic work correctly.
+          // We construct a minimal GraphSegment on the stack to avoid heap allocation.
+          GraphSegment nativeSeg;
+          nativeSeg.def.startSlot = nativeStart;
+          nativeSeg.def.endSlot   = nativeEnd;
+          nativeSeg.def.isCapturable = false;
+          // Initialize exec state so executeSegmentSlotBySlot doesn't fail phase checks
+          nativeSeg.exec.executionCount = 1;  // Past warmup: skip warmup logic inside slotexec
+          DSP_DIAG(FALLBACK, "OneDNN NativeSlotExecutor: executing native range [%d-%d] via slot-by-slot",
+                   nativeStart, nativeEnd);
+          return executeSegmentSlotBySlot(nativeSeg, externalArrays, numExt, stream);
+        });
+    installedOneDnnNativeExecutor = true;
+    DSP_DIAG(EXECUTE, "OneDNN NativeSlotExecutor installed for seg[%d-%d]",
+             seg.def.startSlot, seg.def.endSlot);
+  }
+#endif
+
+#if HAVE_OPENVINO
+  bool installedOpenVinoNativeExecutor = false;
+  auto* openvinoBackend = dynamic_cast<OpenVinoGraphBackend*>(backend);
+  if (openvinoBackend != nullptr) {
+    openvinoBackend->setNativeSlotExecutor(
+        [this, &externalArrays, numExt, &stream](int nativeStart, int nativeEnd) -> Status {
+          GraphSegment nativeSeg;
+          nativeSeg.def.startSlot = nativeStart;
+          nativeSeg.def.endSlot   = nativeEnd;
+          nativeSeg.def.isCapturable = false;
+          nativeSeg.exec.executionCount = 1;
+          DSP_DIAG(FALLBACK, "OpenVINO NativeSlotExecutor: executing native range [%d-%d] via slot-by-slot",
+                   nativeStart, nativeEnd);
+          return executeSegmentSlotBySlot(nativeSeg, externalArrays, numExt, stream);
+        });
+    installedOpenVinoNativeExecutor = true;
+    DSP_DIAG(EXECUTE, "OpenVINO NativeSlotExecutor installed for seg[%d-%d]",
+             seg.def.startSlot, seg.def.endSlot);
+  }
+#endif
+
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
+
+#if HAVE_ONEDNN
+  if (installedOneDnnNativeExecutor && onednnBackend != nullptr) {
+    onednnBackend->clearNativeSlotExecutor();
+    DSP_DIAG(EXECUTE, "OneDNN NativeSlotExecutor cleared for seg[%d-%d]",
+             seg.def.startSlot, seg.def.endSlot);
+  }
+#endif
+
+#if HAVE_OPENVINO
+  if (installedOpenVinoNativeExecutor && openvinoBackend != nullptr) {
+    openvinoBackend->clearNativeSlotExecutor();
+    DSP_DIAG(EXECUTE, "OpenVINO NativeSlotExecutor cleared for seg[%d-%d]",
+             seg.def.startSlot, seg.def.endSlot);
+  }
+#endif
+
   DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
            seg.def.startSlot, seg.def.endSlot, backendName, (int)status);
 
@@ -700,6 +786,37 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
   int stepIdx = seg.def.startSlot;
   int loopIterations = 0;
+
+  // ── CPU Frozen Replay Fast Path ────────────────────────────────────────
+  // When shapes are frozen, past warmup, no control flow in this segment,
+  // and a FunctionalReplayHandle is ready with recorded executable slots,
+  // iterate ONLY the recorded slots instead of the full slot range.
+  // This skips: control flow dispatch, dead propagation, batched GEMM checks,
+  // diagnostic logging, and all non-executable slots (frozen constants,
+  // identity ops, fused chain tails) at the outer loop level.
+  if (shapesFrozen_ && executeCount_ >= 2 && !hasControlFlow_ &&
+      seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
+    auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+    if (funcHandle && funcHandle->hasExecutableSlotIndices()) {
+      const auto& execSlots = funcHandle->getExecutableSlotIndices();
+      DSP_DIAG(EXECUTE, "CPU_FROZEN_REPLAY: seg[%d-%d] iterating %d/%d executable slots",
+               seg.def.startSlot, seg.def.endSlot,
+               (int)execSlots.size(), seg.def.endSlot - seg.def.startSlot + 1);
+
+      for (int idx : execSlots) {
+        auto status = executeSlot(idx, externalArrays, numExt, stream);
+        if (status != Status::OK) {
+          DSP_DIAG(EXECUTE, "CPU_FROZEN_REPLAY: slot %d (%s) failed status=%d",
+                   idx, slots_[idx].ident.opName.c_str(), (int)status);
+          return status;
+        }
+      }
+
+      seg.exec.executionCount++;
+      funcHandle->replay(nullptr);  // statistics tracking
+      return Status::OK;
+    }
+  }
 
   while (stepIdx <= seg.def.endSlot) {
     NativeSlot& slot = slots_[stepIdx];
@@ -900,6 +1017,57 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 #endif
+
+    // ── Outer-level fast skips (frozen steady-state) ─────────────────
+    // When shapes are frozen and past warmup, skip trivially no-op slots
+    // at the loop level, avoiding executeSlot() function call overhead.
+    // This mirrors the GPU compositeReplay gap loop optimization.
+    if (shapesFrozen_ && executeCount_ >= 2) {
+      // Frozen constant: output never changes, skip entirely
+      if (slot.frozenConstantSlot()) {
+        bool allPopulated = true;
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          int si = slot.wiring.outputSlotIndices[o];
+          if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr) {
+            allPopulated = false;
+            break;
+          }
+        }
+        if (allPopulated) {
+          stepIdx++;
+          continue;
+        }
+      }
+
+      // Fused chain tail: head already executed the entire chain
+      if (slot.fusedChain.isFusedChainTail) {
+        stepIdx++;
+        continue;
+      }
+
+      // Identity op: just alias input → output
+      if (slot.flags.isIdentityOp && slot.wiring.numInputs == 1 && slot.wiring.numOutputs >= 1) {
+        int srcIdx = slot.wiring.inputSourceIndices[0];
+        NDArray* input = nullptr;
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+          input = outputSlots_[srcIdx];
+        } else if (srcIdx < 0) {
+          int extIdx = -(srcIdx + 1);
+          if (extIdx < numExt) input = externalArrays[extIdx];
+        }
+        if (input != nullptr) {
+          for (int o = 0; o < slot.wiring.numOutputs; o++) {
+            int si = slot.wiring.outputSlotIndices[o];
+            if (si >= 0 && si < totalOutputSlots_) {
+              writeOutputSlot(si, input, "outer-identity");
+            }
+          }
+          slot.bumpGeneration();
+          stepIdx++;
+          continue;
+        }
+      }
+    }
 
     // ── Normal op execution ──────────────────────────────────────────
     Status status;

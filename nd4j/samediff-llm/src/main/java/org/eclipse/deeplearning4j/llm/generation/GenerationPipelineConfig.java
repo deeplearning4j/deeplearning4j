@@ -36,13 +36,22 @@ import java.util.Set;
  * the decoder model, embedding model, tokenizer, sampling strategy, KV cache strategy,
  * and optional speculative decoding.</p>
  *
- * <p>Usage:</p>
+ * <p>Usage (VLM / two-model mode):</p>
  * <pre>{@code
  * GenerationPipelineConfig config = GenerationPipelineConfig.builder()
  *     .decoder(decoder)
  *     .embedTokens(embedTokens)
  *     .tokenizer(tokenizer)
  *     .samplingConfig(SamplingConfig.greedy())
+ *     .maxNewTokens(256)
+ *     .build();
+ * }</pre>
+ *
+ * <p>Usage (GGUF / single-model mode — embeddings extracted from decoder):</p>
+ * <pre>{@code
+ * GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+ *     .decoder(model)
+ *     .tokenizer(tokenizer)
  *     .maxNewTokens(256)
  *     .build();
  * }</pre>
@@ -54,7 +63,7 @@ public class GenerationPipelineConfig {
     /** The decoder SameDiff model. Required. */
     private final SameDiff decoder;
 
-    /** The token embedding SameDiff model. Required. */
+    /** The token embedding SameDiff model. Optional — if null, embeddings are extracted from the decoder (single-model mode). */
     private final SameDiff embedTokens;
 
     /** The tokenizer for encoding/decoding text. Required. */

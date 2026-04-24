@@ -25,6 +25,7 @@
 #include <math/platformmath.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/reductions.h>
+#include <system/env_functions.h>
 
 #include <cmath>
 #include <memory>
@@ -580,7 +581,7 @@ static void reductionCase1Scalar(const int& second_rank, const sd::LongType* inn
   using AggType = typename DeviationOp::aggregate_type;
   sd::LongType inner_total;
   sd::LongType inner_last = 0;
-  int maxThreads = sd::Environment::getInstance().maxMasterThreads();
+  int maxThreads = sd::env_maxMasterThreads();
   if (second_rank == 1) {
     inner_total = inner_bases[0];
     if (inner_total < threadingThreshold) {
@@ -1047,7 +1048,7 @@ static void reductionCaseNonScalar(const int& first_rank, const int& output_rank
                 func(0, 0, total, 1);
 #else
   //
-  uint32_t numThreads = sd::Environment::getInstance().maxMasterThreads();
+  uint32_t numThreads = sd::env_maxMasterThreads();
   sd::LongType inner_total = getLength<LastIndexFaster>(inner_bases, second_rank);
   if (total * inner_total <= threadingThreshold) {
     numThreads = 1;

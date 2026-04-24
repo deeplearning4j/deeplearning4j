@@ -18,6 +18,7 @@
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/broadcasting.h>
 #include <loops/broadcasting_bool.h>
+#include <system/env_functions.h>
 #include <types/types.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -72,7 +73,7 @@ void NativeOpExecutioner::execInverseBroadcast(
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (!sd::Environment::getInstance().isExperimentalBuild())
+  if (!sd::env_isExperimentalBuild())
     if ((yType != xType && yType != sd::DataType::BOOL) || xType != zType)
       THROW_EXCEPTION(sd::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType,
                                           yType).what());
@@ -147,7 +148,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (!sd::Environment::getInstance().isExperimentalBuild())
+  if (!sd::env_isExperimentalBuild())
     if (yType != xType || sd::DataType::BOOL != zType)
       THROW_EXCEPTION(sd::datatype_exception::build("NativeOps::execInverseBroadcastBool both operands must have same data type",
                                           xType, yType).what());

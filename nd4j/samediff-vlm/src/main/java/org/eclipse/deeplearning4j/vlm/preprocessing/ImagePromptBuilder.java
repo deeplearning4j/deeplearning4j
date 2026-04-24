@@ -24,15 +24,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 
 /**
- * Builds image prompt strings following Idefics3 processor logic.
+ * Builds image prompt strings for SmolDocling-style tiled vision inputs.
  * Uses row/col tokens and a global image token when split into tiles.
  */
 @Slf4j
 public class ImagePromptBuilder {
 
     /**
-     * Build the expanded image prompt string following Idefics3 processor logic.
-     * Uses row/col tokens and a global image token when split into tiles.
+     * Build the expanded image prompt string for tiled document pages.
+     *
+     * The prompt uses tiles-first, global-last ordering to match the HuggingFace
+     * Idefics3 preprocessing that the model was trained with. Tile descriptors are
+     * emitted in row-major order, with newlines between rows.
      *
      * @param imageRows number of tile rows (0 if no tiling)
      * @param imageCols number of tile columns (0 if no tiling)
@@ -54,21 +57,20 @@ public class ImagePromptBuilder {
             return sb.toString();
         }
 
-        // Match HuggingFace Idefics3Processor._prompt_split_image format exactly
+        // Tiles first in row-major order, then global last (matching HF Idefics3)
         StringBuilder sb = new StringBuilder();
         for (int r = 1; r <= imageRows; r++) {
             for (int c = 1; c <= imageCols; c++) {
-                sb.append(fake);
-                sb.append("<row_").append(r).append("_col_").append(c).append(">");
-                for (int i = 0; i < imageSeqLen; i++) {
+                sb.append(fake).append("<row_" + r + "_col_" + c + ">");
+                for (int j = 0; j < imageSeqLen; j++) {
                     sb.append(image);
                 }
             }
             sb.append("\n");
         }
-
-        sb.append("\n").append(fake).append(global);
-        for (int i = 0; i < imageSeqLen; i++) {
+        // Global image last
+        sb.append(fake).append(global);
+        for (int j = 0; j < imageSeqLen; j++) {
             sb.append(image);
         }
         sb.append(fake);

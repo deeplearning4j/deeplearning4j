@@ -441,82 +441,6 @@ void autoregressiveDecodeCuda(
             }
         }
 
-        // ── Diagnostic: dump ext input fingerprints before plan execution ──
-        // Always dump for first 2 steps (critical for debugging divergence at step 0/1)
-        if (step <= 1) {
-            NDArray* stepEmbed = extInputs[config->embeddingsExtIdx];
-            if (stepEmbed != nullptr) {
-                stepEmbed->syncToHost();
-                float e0 = stepEmbed->e<float>(0);
-                float e1 = stepEmbed->e<float>(1);
-                float e2 = stepEmbed->e<float>(2);
-                float e3 = stepEmbed->e<float>(3);
-                sd_printf("DECODE_LOOP_DIAG step=%d PRE-EXECUTE embed[0..3]=[%f, %f, %f, %f] "
-                         "embedShape=[%lld,%lld,%lld] embedPtr=%p\n",
-                         step, e0, e1, e2, e3,
-                         (long long)stepEmbed->sizeAt(0),
-                         (long long)stepEmbed->sizeAt(1),
-                         (long long)stepEmbed->sizeAt(2),
-                         stepEmbed->specialBuffer());
-            }
-            if (config->posIdsExtIdx >= 0) {
-                NDArray* posArr = extInputs[config->posIdsExtIdx];
-                if (posArr != nullptr) {
-                    posArr->syncToHost();
-                    sd_printf("DECODE_LOOP_DIAG step=%d PRE-EXECUTE positionIds=%lld\n",
-                             step, (long long)posArr->e<LongType>(0));
-                }
-            }
-            if (config->inputIdsExtIdx >= 0) {
-                NDArray* idsArr = extInputs[config->inputIdsExtIdx];
-                if (idsArr != nullptr) {
-                    idsArr->syncToHost();
-                    sd_printf("DECODE_LOOP_DIAG step=%d PRE-EXECUTE inputIds=%lld\n",
-                             step, (long long)idsArr->e<LongType>(0));
-                }
-            }
-            if (config->maskExtIdx >= 0) {
-                NDArray* maskArr = extInputs[config->maskExtIdx];
-                if (maskArr != nullptr) {
-                    maskArr->syncToHost();
-                    sd_printf("DECODE_LOOP_DIAG step=%d PRE-EXECUTE attentionMask "
-                             "shape=[%lld,%lld] first5=[",
-                             step, (long long)maskArr->sizeAt(0), (long long)maskArr->sizeAt(1));
-                    for (int mi = 0; mi < 5 && mi < maskArr->lengthOf(); mi++) {
-                        sd_printf("%lld ", (long long)maskArr->e<LongType>(mi));
-                    }
-                    sd_printf("]\n");
-                }
-            }
-            if (config->causalMaskExtIdx >= 0) {
-                NDArray* cmaskArr = extInputs[config->causalMaskExtIdx];
-                if (cmaskArr != nullptr) {
-                    cmaskArr->syncToHost();
-                    sd_printf("DECODE_LOOP_DIAG step=%d PRE-EXECUTE causalMask "
-                             "shape=[%lld,%lld,%lld,%lld] first5=[",
-                             step, (long long)cmaskArr->sizeAt(0), (long long)cmaskArr->sizeAt(1),
-                             (long long)cmaskArr->sizeAt(2), (long long)cmaskArr->sizeAt(3));
-                    for (int mi = 0; mi < 5 && mi < cmaskArr->lengthOf(); mi++) {
-                        sd_printf("%f ", cmaskArr->e<float>(mi));
-                    }
-                    sd_printf("]\n");
-                }
-            }
-            if (staticKvBuffers != nullptr && numKvPairs > 0) {
-                NDArray* kv0 = staticKvBuffers[0];
-                if (kv0 != nullptr) {
-                    sd_printf("DECODE_LOOP_DIAG step=%d PRE-EXECUTE kv0 shape=[%lld,%lld,%lld,%lld] "
-                             "ptr=%p\n",
-                             step, (long long)kv0->sizeAt(0), (long long)kv0->sizeAt(1),
-                             (long long)kv0->sizeAt(2), (long long)kv0->sizeAt(3),
-                             kv0->specialBuffer());
-                }
-            }
-            // Dump plan phase for debugging
-            sd_printf("DECODE_LOOP_DIAG step=%d PRE-EXECUTE planPhase=%d frozen=%d\n",
-                     step, (int)plan->getPlanPhase(),
-                     plan->isShapesFrozen() ? 1 : 0);
-        }
 
         // ── Step 2: Execute plan ──
         // Use executeSteadyState() for the hot path — it skips ~200ms of
@@ -537,9 +461,9 @@ void autoregressiveDecodeCuda(
                      numExtInputs, numPlanOutputs);
 
         // Validate output was populated — hard error, not silent break.
-        REQUIRE_TRUE(config->logitsOutputIdx < numPlanOutputs, 0,
-                     "autoregressive_decode: logitsOutputIdx=%d >= numPlanOutputs=%d at step %d. "
-                     "The plan has fewer outputs than expected.",
+        REQUIRE_TRUE(config->logitsOutputIdx >= 0 && config->logitsOutputIdx < numPlanOutputs, 0,
+                     "autoregressive_decode: logitsOutputIdx=%d out of range [0,%d) at step %d. "
+                     "The plan has fewer outputs than expected or logitsOutputIdx was not set.",
                      config->logitsOutputIdx, numPlanOutputs, step);
         REQUIRE_TRUE(planOutputs[config->logitsOutputIdx] != nullptr, 0,
                      "autoregressive_decode: logits output NDArray* is null at step %d (idx=%d). "
@@ -586,6 +510,10 @@ void autoregressiveDecodeCuda(
 
         if (temperature <= 0.0 || (topK <= 1 && topP <= 0.0)) {
             // Greedy: argmax over last-position logits
+            REQUIRE_TRUE(logitsVocab > 0, 0,
+                         "autoregressive_decode: logits vocab dimension is 0 at step %d. "
+                         "Cannot perform argmax on empty vocabulary.",
+                         step);
             // Compute offset to last position: (logitsSeqLen-1) * vocabSize
             LongType lastPosOffset = (logitsSeqLen - 1) * logitsVocab;
             const void* logitsPtr = static_cast<const char*>(logitsOutput->specialBuffer())
@@ -614,54 +542,6 @@ void autoregressiveDecodeCuda(
         cudaMemcpyAsync(&nextTokenId, sampledToken->specialBuffer(),
                         sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
         cudaStreamSynchronize(*stream);
-
-        // ── Diagnostic: dump logits fingerprint for determinism debugging ──
-        // Always dump for first 2 steps (critical for debugging divergence)
-        if (step <= 1) {
-            logitsOutput->syncToHost();
-            float l0 = logitsOutput->e<float>(0, logitsSeqLen-1, 0);
-            float l1 = logitsOutput->e<float>(0, logitsSeqLen-1, 1);
-            float l2 = logitsOutput->e<float>(0, logitsSeqLen-1, 2);
-            float l3 = logitsOutput->e<float>(0, logitsSeqLen-1, 3);
-            sd_printf("DECODE_LOOP_DIAG step=%d POST-EXECUTE token=%lld logits[0..3]=[%f, %f, %f, %f] "
-                     "vocabSize=%lld seqLen=%lld\n",
-                     step, (long long)nextTokenId, l0, l1, l2, l3,
-                     (long long)logitsVocab, (long long)logitsSeqLen);
-            // Dump top-5 logits with indices for deeper comparison
-            int topKDump = 5;
-            if (logitsVocab < topKDump) topKDump = (int)logitsVocab;
-            struct { float val; int idx; } top5[5];
-            for (int tk = 0; tk < topKDump; tk++) {
-                top5[tk].val = logitsOutput->e<float>(0, logitsSeqLen-1, tk);
-                top5[tk].idx = tk;
-            }
-            for (int vi = topKDump; vi < logitsVocab; vi++) {
-                float v = logitsOutput->e<float>(0, logitsSeqLen-1, vi);
-                int minIdx = 0;
-                for (int tk = 1; tk < topKDump; tk++) {
-                    if (top5[tk].val < top5[minIdx].val) minIdx = tk;
-                }
-                if (v > top5[minIdx].val) {
-                    top5[minIdx].val = v;
-                    top5[minIdx].idx = vi;
-                }
-            }
-            // Simple bubble sort for display
-            for (int i = 0; i < topKDump-1; i++) {
-                for (int j = i+1; j < topKDump; j++) {
-                    if (top5[j].val > top5[i].val) {
-                        auto tmp = top5[i];
-                        top5[i] = top5[j];
-                        top5[j] = tmp;
-                    }
-                }
-            }
-            sd_printf("DECODE_LOOP_DIAG step=%d POST-EXECUTE top5_logits=[", step);
-            for (int tk = 0; tk < topKDump; tk++) {
-                sd_printf("(idx=%d,val=%f) ", top5[tk].idx, top5[tk].val);
-            }
-            sd_printf("]\n");
-        }
 
         // Store in output
         generatedTokenIds->p(tokensGenerated, nextTokenId);
@@ -724,6 +604,10 @@ void autoregressiveDecodeCuda(
                 entries[kv].cachePos = currentPosition;
             }
 
+            REQUIRE_TRUE(staticKvBuffers[0] != nullptr, 0,
+                         "autoregressive_decode: staticKvBuffers[0] is null at step %d — "
+                         "cannot determine KV data type for scatter.",
+                         step);
             kvScatterBatched(entries.data(), 2 * numKvPairs,
                              staticKvBuffers[0]->dataType(), context);
 
@@ -739,13 +623,22 @@ void autoregressiveDecodeCuda(
         }
 
         // ── Step 6: Embedding lookup for next token ──
-        NDArray::prepareSpecialUse({decodeEmbedding}, {embeddingTable});
-        BUILD_SINGLE_SELECTOR(embeddingTable->dataType(), embedLookupLauncher,
-                              (stream, embeddingTable->specialBuffer(),
-                               decodeEmbedding->specialBuffer(),
-                               nextTokenId, hidden, embTableRowStride),
-                              SD_COMMON_TYPES);
-        NDArray::registerSpecialUse({decodeEmbedding}, {embeddingTable});
+        // Only perform embedding lookup if we have an embeddings ext input to update.
+        // In single-model mode (embeddingsExtIdx == -1), the model handles its own
+        // embedding lookup internally, so we skip this step.
+        if (config->embeddingsExtIdx >= 0) {
+            REQUIRE_TRUE(nextTokenId >= 0 && nextTokenId < vocabSize, 0,
+                         "autoregressive_decode: nextTokenId=%lld out of range [0,%lld) at step %d. "
+                         "Argmax/sampling returned an invalid token ID.",
+                         (long long)nextTokenId, (long long)vocabSize, step);
+            NDArray::prepareSpecialUse({decodeEmbedding}, {embeddingTable});
+            BUILD_SINGLE_SELECTOR(embeddingTable->dataType(), embedLookupLauncher,
+                                  (stream, embeddingTable->specialBuffer(),
+                                   decodeEmbedding->specialBuffer(),
+                                   nextTokenId, hidden, embTableRowStride),
+                                  SD_COMMON_TYPES);
+            NDArray::registerSpecialUse({decodeEmbedding}, {embeddingTable});
+        }
 
         // ── Advance position BEFORE updating mask/posIds for the next step ──
         // KV scatter (step 5) used currentPosition as the cache write position.

@@ -108,7 +108,7 @@ DECLARE_SHAPE_FN(kv_scatter) {
   auto rank = shape::rank(inShape);
   auto dtype = ArrayOptions::dataType(inShape);
 
-  auto newShapeInfo = new LongType[shape::shapeInfoLength(rank)];
+  auto newShapeInfo = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
   memcpy(newShapeInfo, inShape, shape::shapeInfoByteLength(rank));
   ArrayOptions::resetFlags(newShapeInfo);
   ArrayOptions::setDataType(newShapeInfo, dtype);

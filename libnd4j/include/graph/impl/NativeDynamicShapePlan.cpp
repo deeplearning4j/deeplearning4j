@@ -316,6 +316,20 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
     DSP_THROW(EXECUTE, "writeOutputSlot: index %d out of range [0, %d)", slotIdx, totalOutputSlots_);
   }
 
+  // Lifecycle check: catch stale/freed NDArray pointers BEFORE storing them
+  if (value != nullptr) {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(value);
+    if (addr < 0x10000) {
+      char msg[512];
+      snprintf(msg, sizeof(msg),
+               "DSP LIFECYCLE ERROR: writeOutputSlot(%d, tag=%s) — value pointer %p "
+               "is a stale/freed NDArray. This indicates a kernel or allocation "
+               "returned a corrupted pointer. execCount=%d planPhase=%d",
+               slotIdx, tag, (void*)value, executeCount_, static_cast<int>(planPhase_));
+      THROW_EXCEPTION(msg);
+    }
+  }
+
   NDArray* old = outputSlots_[slotIdx];
 
   // DIAGNOSTIC: trace writes to the configured trace slot (ND4J_DSP_TRACE_SLOT)
@@ -492,6 +506,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
         }
         if (!referencedElsewhere) {
           planOwnedArrays_.erase(old);
+          outputSlots_[slotIdx] = nullptr;  // Null slot BEFORE delete to prevent dangling pointer window
           delete old;
           old = nullptr;  // Prevent any further access to freed memory
           DSP_DIAG(MEMORY, "WRITE_SLOT_FREE: slot=%d freed old plan-owned array (db=%p)",
@@ -1569,6 +1584,27 @@ Status NativeDynamicShapePlan::execute(
       }
     }
 
+    // Reconcile slotOwnership_ with actual outputSlots_ before validation.
+    // Dynamic-shape slots and view ops replace output arrays via direct
+    // outputSlots_[] assignment (not writeOutputSlot), leaving stale
+    // DataBuffer pointers in slotOwnership_. Sync here so the validator
+    // sees consistent state.
+    if (slotOwnership_ != nullptr) {
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        auto& info = slotOwnership_[i];
+        if (info.ownership == BufferOwnership::UNSET) continue;
+        NDArray* arr = outputSlots_[i];
+        if (arr == nullptr) {
+          info.dataBuffer = nullptr;
+          continue;
+        }
+        DataBuffer* actualDb = arr->dataBuffer();
+        if (actualDb != info.dataBuffer) {
+          info.dataBuffer = actualDb;
+        }
+      }
+    }
+
     char errMsg[512] = {};
     bool lifecycleOk = validateLifecycleForPhase(
         static_cast<int>(planPhase_),
@@ -1847,7 +1883,30 @@ Status NativeDynamicShapePlan::execute(
     for (int i = 0; i < numRequestedOutputs_; i++) {
       int slotIdx = requestedOutputSlotIndices_[i];
       if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-        requestedOutputs[i] = outputSlots_[slotIdx];
+        NDArray* outArr = outputSlots_[slotIdx];
+        // Lifecycle validation: catch corrupted output slots before returning to Java
+        if (outArr != nullptr) {
+          uintptr_t addr = reinterpret_cast<uintptr_t>(outArr);
+          if (addr < 0x10000) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "DSP LIFECYCLE ERROR: requestedOutput[%d] from outputSlots_[%d] "
+                     "is a stale/freed pointer %p. execCount=%d planPhase=%d",
+                     i, slotIdx, (void*)outArr, executeCount_, static_cast<int>(planPhase_));
+            THROW_EXCEPTION(msg);
+          }
+          // Validate the array's shape info is not corrupted
+          if (!outArr->hasValidShapeInfo()) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "DSP LIFECYCLE ERROR: requestedOutput[%d] from outputSlots_[%d] "
+                     "has invalid shapeInfo (use-after-free or corruption). "
+                     "NDArray=%p execCount=%d planPhase=%d",
+                     i, slotIdx, (void*)outArr, executeCount_, static_cast<int>(planPhase_));
+            THROW_EXCEPTION(msg);
+          }
+        }
+        requestedOutputs[i] = outArr;
       } else {
         requestedOutputs[i] = nullptr;
       }
@@ -3235,7 +3294,31 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
     if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-      requestedOutputs[i] = outputSlots_[slotIdx];
+      NDArray* outArr = outputSlots_[slotIdx];
+      if (outArr != nullptr) {
+        uintptr_t addr = reinterpret_cast<uintptr_t>(outArr);
+        if (addr < 0x10000) {
+          char msg[512];
+          snprintf(msg, sizeof(msg),
+                   "DSP LIFECYCLE ERROR: phaseReplay requestedOutput[%d] from "
+                   "outputSlots_[%d] is a stale/freed pointer %p. "
+                   "execCount=%d planPhase=%d",
+                   i, slotIdx, (void*)outArr, executeCount_,
+                   static_cast<int>(planPhase_));
+          THROW_EXCEPTION(msg);
+        }
+        if (!outArr->hasValidShapeInfo()) {
+          char msg[512];
+          snprintf(msg, sizeof(msg),
+                   "DSP LIFECYCLE ERROR: phaseReplay requestedOutput[%d] from "
+                   "outputSlots_[%d] has invalid shapeInfo. NDArray=%p "
+                   "execCount=%d planPhase=%d",
+                   i, slotIdx, (void*)outArr, executeCount_,
+                   static_cast<int>(planPhase_));
+          THROW_EXCEPTION(msg);
+        }
+      }
+      requestedOutputs[i] = outArr;
     } else {
       requestedOutputs[i] = nullptr;
     }
@@ -3534,8 +3617,68 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
         }
       }
     }
+
+    // ── Pass 3: Null all remaining non-null outputSlots_ entries ──────────
+    // After passes 1 and 2, any remaining non-null entries are VIEW_OF_WEIGHT
+    // or UNSET-ownership arrays that reference external DataBuffers (model
+    // weights, constants). These NDArray wrappers are valid NOW but become
+    // dangling when the Java session destroys its weight arrays and the
+    // plan is reused from cache for a new session. Null them here so the
+    // next session starts with a clean slate — warmup will recreate all
+    // arrays from scratch via op execution.
+    // We do NOT delete these arrays: their DataBuffers are externally owned,
+    // and the NDArray destructor would decrement a refcount that may belong
+    // to a DataBuffer being freed concurrently by the Java session teardown.
+    // The NDArray wrapper leak is negligible (~200 bytes each).
+    {
+      int nulledRemaining = 0;
+      for (int i = 0; i < totalOutputSlots_; i++) {
+        if (outputSlots_[i] != nullptr) {
+          outputSlots_[i] = nullptr;
+          nulledRemaining++;
+          if (slotOwnership_) {
+            slotOwnership_[i].reset();
+          }
+        }
+      }
+      if (nulledRemaining > 0) {
+        DSP_DIAG(MEMORY, "releaseGpuIntermediates: pass 3 nulled %d remaining "
+                 "slots (VIEW_OF_WEIGHT / residual) to prevent dangling pointers "
+                 "on plan cache reuse", nulledRemaining);
+      }
+    }
+
+    // Clear planOwnedArrays_ — all plan-created arrays are either freed or
+    // orphaned (VIEW_OF_WEIGHT wrappers). Either way, the next session's
+    // warmup will populate fresh entries.
+    planOwnedArrays_.clear();
   }
   platformMigrateWeightsAndClearCaches();
+
+  // ── Step 4b: Clear context pool output pointers ─────────────────────────
+  // The context pool stores NDArray* in _fastpath_out that reference the
+  // outputSlots_ arrays freed above. Clear them so no re-use of this plan
+  // (from cache or otherwise) can dereference stale pointers via the
+  // frozen fast-path.
+  if (contextPool_ != nullptr) {
+    int clearedCtxOutputs = 0;
+    for (int si = 0; si < numSlots_; si++) {
+      if (contextPool_[si] != nullptr && !contextPool_[si]->fastpath_out().empty()) {
+        contextPool_[si]->fastpath_out().clear();
+        clearedCtxOutputs++;
+      }
+    }
+    if (clearedCtxOutputs > 0) {
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: cleared context pool outputs for %d/%d slots",
+               clearedCtxOutputs, numSlots_);
+    }
+  }
+
+  // ── Step 4c: Null stale non-owned pointer caches ────────────────────────
+  // These are raw pointers to caller-owned arrays that become dangling once
+  // the Java session resets. They are rebuilt on the next execute() call.
+  lastExternalInputs_ = nullptr;
+  lastNumExternalInputs_ = 0;
 
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;
@@ -3588,6 +3731,11 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // causes Triton recompilation to be skipped, and the plan tries to replay
   // CUDA graphs that were destroyed, leading to error 700.
   shapesFrozen_ = false;
+
+  // Clear protected weight buffers so they're rebuilt from the next session's
+  // external inputs. Stale DataBuffer pointers from the old session would cause
+  // incorrect ownership classification and lifecycle filtering on reuse.
+  protectedWeightBuffers_.clear();
 
   // Clear shape caches so shapes are re-inferred
   clearAllShapeCachesForce();
