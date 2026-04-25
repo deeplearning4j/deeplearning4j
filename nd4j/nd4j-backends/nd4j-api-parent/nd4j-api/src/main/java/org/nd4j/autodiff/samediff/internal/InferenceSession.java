@@ -931,14 +931,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // Lightweight type casting: cast mismatched placeholder dtypes without
                     // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
                     Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholderValues);
-                    long memBeforeDsp = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
                     Map<String, SDValue> dynamicPlanResults = executeDynamicShapePlanBased(
                             dag, dspPlaceholders, allRequired, variables);
-                    long memAfterDsp = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
-                    if (memBeforeDsp - memAfterDsp > 10) {
-                        log.info("[DSP_MEM_LEAK] executeDynamicShapePlanBased consumed {}MB (before={}MB after={}MB) dspStep={}",
-                                memBeforeDsp - memAfterDsp, memBeforeDsp, memAfterDsp, dspStepCount);
-                    }
                     if (dynamicPlanResults == null) {
                         // DSP not available — close any cast copies to prevent GPU memory leak.
                         // castPlaceholderTypes returns a NEW map with cast arrays when types mismatch.
@@ -1347,7 +1341,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // no amortization cost. A >1.0 growth factor creates a gap between logical length
         // and allocated bytes that nullify() (which zeros logical bytes only) cannot cover,
         // leaving stale tail data visible to any op that writes fewer bytes than allocated.
-        long memBeforeExec = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
         Map<String, INDArray> rawResults;
         try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.0)) {
             rawResults = executor.execute(plan, placeholderArrays);
@@ -1355,12 +1348,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("DSP execution failed", e);
-        }
-        long memAfterExec = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemoryDefault() / (1024 * 1024);
-        if (memBeforeExec - memAfterExec > 10) {
-            log.info("[DSP_MEM_INNER] executor.execute consumed {}MB (before={}MB after={}MB) frozen={}",
-                    memBeforeExec - memAfterExec, memBeforeExec, memAfterExec,
-                    executor.isShapesFrozen());
         }
 
         // Wrap results as SDValues

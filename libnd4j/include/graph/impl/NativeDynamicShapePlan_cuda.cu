@@ -363,9 +363,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         }
       }
 
-      auto tScatterDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-      if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
-      auto tSyncDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+      // No blocking cudaStreamSynchronize here — platformEndExecution provides
+      // event-based cross-stream ordering (record on dspStream, wait on default
+      // stream) which is non-blocking and sufficient for correctness.
 
       // ── REPLAY VERIFICATION (CUDA_GRAPHS path) ──────────────────────────
       if (Environment::getInstance().tritonVerifyKernels()) {
@@ -373,14 +373,14 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       }
 
       if (executionTimingEnabled_) {
+        auto tDone = Clock::now();
         auto copyUs = std::chrono::duration_cast<std::chrono::microseconds>(tCopyDone - t0).count();
         auto launchUs = std::chrono::duration_cast<std::chrono::microseconds>(tLaunchDone - tCopyDone).count();
-        auto scatterUs = std::chrono::duration_cast<std::chrono::microseconds>(tScatterDone - tLaunchDone).count();
-        auto syncUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncDone - tScatterDone).count();
-        auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncDone - t0).count();
-        DSP_DIAG(TIMING, "DSP timing: copy=%lldus launch=%lldus scatter=%lldus sync=%lldus total=%lldus "
+        auto scatterUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - tLaunchDone).count();
+        auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - t0).count();
+        DSP_DIAG(TIMING, "DSP timing: copy=%lldus launch=%lldus scatter=%lldus total=%lldus "
                  "(copied=%d skipped=%d)",
-                 copyUs, launchUs, scatterUs, syncUs, totalUs, syncedCount, 0);
+                 copyUs, launchUs, scatterUs, totalUs, syncedCount, 0);
       }
       return Status::OK;
     }
