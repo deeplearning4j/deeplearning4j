@@ -921,6 +921,67 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     }
   }
 
+  // Un-freeze any frozen constant whose output feeds (directly or transitively)
+  // a downstream op with outputShapeDependsOnInputValues (e.g., reshape_no_copy
+  // where input[1] is the shape tensor). When the plan is destroyed and recreated,
+  // the frozen slot's DataBuffer is freed but the CUDA host allocator may reuse
+  // its memory before the next plan's shape inference reads it — causing garbage
+  // shape values. We also transitively un-freeze any frozen upstream of an
+  // un-frozen slot, because an un-frozen slot's execution depends on its inputs
+  // being alive and up-to-date.
+  int valueDepUnfrozen = 0;
+  {
+    // Build a map: output-slot-index → op-slot index that produces it
+    std::unordered_map<int, int> outputSlotToOpSlot;
+    for (int s = 0; s < numSlots_; s++) {
+      for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+        int si = slots_[s].wiring.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) {
+          outputSlotToOpSlot[si] = s;
+        }
+      }
+    }
+    // Seed: any frozen slot whose output feeds a value-dependent op
+    std::unordered_set<int> toUnfreeze;
+    for (int s = 0; s < numSlots_; s++) {
+      auto& sl = slots_[s];
+      if (!sl.flags.outputShapeDependsOnInputValues) continue;
+      for (int i = 0; i < sl.wiring.numInputs; i++) {
+        int srcIdx = sl.wiring.inputSourceIndices[i];
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+          auto it = outputSlotToOpSlot.find(srcIdx);
+          if (it != outputSlotToOpSlot.end() && slots_[it->second].frozenConstantSlot()) {
+            toUnfreeze.insert(it->second);
+          }
+        }
+      }
+    }
+    // Transitively un-freeze: any frozen upstream of an already-to-unfreeze slot
+    std::vector<int> worklist(toUnfreeze.begin(), toUnfreeze.end());
+    for (size_t wi = 0; wi < worklist.size(); wi++) {
+      auto& sl = slots_[worklist[wi]];
+      for (int i = 0; i < sl.wiring.numInputs; i++) {
+        int srcIdx = sl.wiring.inputSourceIndices[i];
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+          auto it = outputSlotToOpSlot.find(srcIdx);
+          if (it != outputSlotToOpSlot.end() && slots_[it->second].frozenConstantSlot()
+              && toUnfreeze.find(it->second) == toUnfreeze.end()) {
+            toUnfreeze.insert(it->second);
+            worklist.push_back(it->second);
+          }
+        }
+      }
+    }
+    for (int s : toUnfreeze) {
+      slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
+      for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+        frozenOutputSlots.erase(slots_[s].wiring.outputSlotIndices[o]);
+      }
+      valueDepUnfrozen++;
+      frozenConstCount--;
+    }
+  }
+
   // Disable in-place fusion for any op that would overwrite a frozen output buffer.
   // In-place fusion writes the op's output directly into its input buffer.
   // If that input comes from a frozen constant slot, the frozen value gets corrupted.
@@ -950,9 +1011,9 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
 
   DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants "
             "(%d shape-only-trait, %d value-independent, %d in-place disabled, %d view-alias unfrozen, "
-            "%d java-managed output slots)",
+            "%d value-dep unfrozen, %d java-managed output slots)",
             frozenConstCount, numSlots_, shapeOnlyCount, valueIndepCount, disabledInPlace,
-            viewAliasUnfrozen, javaManagedCount);
+            viewAliasUnfrozen, valueDepUnfrozen, javaManagedCount);
 
   // Populate execution context with frozen constant stats so downstream
   // diagnostics (logExecutionSummary, dumpFlowLog on failure) show what happened.
@@ -1684,11 +1745,32 @@ Status NativeDynamicShapePlan::executeSlot(
       output = outputSlots_[lastOutputSlotIdx];
         if (output != nullptr) {
           if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo)) {
-            if (executeCount_ == 0) {
-              // Warmup: shape drift expected (prefill→decode transition)
+            // Check if this fused chain or its inputs has value-dependent shapes
+            bool hasDynamicUpstream = slot.flags.isDynamicShape
+                                   || slot.flags.outputShapeDependsOnInputValues;
+            if (!hasDynamicUpstream) {
+              auto& lastSlot = slots_[lastSlotIdx];
+              hasDynamicUpstream = lastSlot.flags.isDynamicShape
+                               || lastSlot.flags.outputShapeDependsOnInputValues;
+            }
+            if (!hasDynamicUpstream) {
+              for (int inp = 0; inp < slot.wiring.numInputs && !hasDynamicUpstream; inp++) {
+                int srcIdx = slot.wiring.inputSourceIndices[inp];
+                if (srcIdx >= 0 && srcIdx < numSlots_) {
+                  auto& srcSlot = slots_[srcIdx];
+                  if (srcSlot.flags.isDynamicShape ||
+                      srcSlot.flags.outputShapeDependsOnInputValues) {
+                    hasDynamicUpstream = true;
+                  }
+                }
+              }
+            }
+
+            if (executeCount_ == 0 || hasDynamicUpstream) {
+              // Warmup or dynamic upstream: shape drift expected
               DSP_DIAG_SLOT(SHAPE, lastSlotIdx,
-                  "fused-chain-warmup-reassign: slot %d shape changed during warmup — replacing",
-                  lastSlotIdx);
+                  "fused-chain-reassign: slot %d shape changed (execCount=%d dynamicUpstream=%d) — replacing",
+                  lastSlotIdx, executeCount_, hasDynamicUpstream ? 1 : 0);
               delete outputSlots_[lastOutputSlotIdx];
               outputSlots_[lastOutputSlotIdx] = nullptr;
               output = nullptr;
@@ -1703,7 +1785,7 @@ Status NativeDynamicShapePlan::executeSlot(
               // treated consistently throughout the chain.
               slot.flags.isDynamicShape = true;
               DSP_DIAG_SLOT(SHAPE, lastSlotIdx,
-                  "fused-chain-warmup-reassign: slot %d marked isDynamicShape=true (and head slot %d)",
+                  "fused-chain-reassign: slot %d marked isDynamicShape=true (and head slot %d)",
                   lastSlotIdx, stepIdx);
             } else {
               DSP_THROW(SHAPE,
@@ -3021,13 +3103,32 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
     if (cached != nullptr) {
-        // During warmup (executeCount_ == 0), shape drift is expected: the plan
-        // was compiled with prefill shapes but warmup re-executes with decode shapes.
-        // Reassign the slot with the correct shape and invalidate frozen state.
-        if (executeCount_ == 0) {
+        // Check if this slot or any of its inputs is marked isDynamicShape.
+        // Value-dependent ops (range, fill) produce different output shapes each
+        // step because their inputs carry different VALUES (not just shapes).
+        // Their downstream consumers (add, mul, etc.) also see shape changes as
+        // a result.  These slots must allow reassignment post-warmup.
+        bool hasDynamicUpstream = slot.flags.isDynamicShape
+                               || slot.flags.outputShapeDependsOnInputValues;
+        if (!hasDynamicUpstream) {
+          for (int inp = 0; inp < slot.wiring.numInputs && !hasDynamicUpstream; inp++) {
+            int srcIdx = slot.wiring.inputSourceIndices[inp];
+            if (srcIdx >= 0 && srcIdx < numSlots_) {
+              auto& srcSlot = slots_[srcIdx];
+              if (srcSlot.flags.isDynamicShape ||
+                  srcSlot.flags.outputShapeDependsOnInputValues) {
+                hasDynamicUpstream = true;
+              }
+            }
+          }
+        }
+
+        if (executeCount_ == 0 || hasDynamicUpstream) {
+          // During warmup OR for dynamic-shape slots: shape drift is expected.
+          // Reassign the slot with the correct shape and invalidate frozen state.
           DSP_DIAG_SLOT(SHAPE, slotIdx,
-              "step3-warmup-reassign: slot %d (%s) shape changed during warmup — replacing cached array",
-              slotIdx, slot.ident.opName.c_str());
+              "step3-warmup-reassign: slot %d (%s) shape changed (execCount=%d dynamicUpstream=%d) — replacing cached array",
+              slotIdx, slot.ident.opName.c_str(), executeCount_, hasDynamicUpstream ? 1 : 0);
           delete outputSlots_[slotIdx];
           outputSlots_[slotIdx] = nullptr;
           cached = nullptr;
