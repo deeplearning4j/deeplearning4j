@@ -651,6 +651,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   }
   delete[] effectiveExternals_;
   effectiveExternals_ = nullptr;
+  cachedVariableExtIndices_.clear();
 
   // Free view producer flags
   delete[] slotIsViewProducer_;

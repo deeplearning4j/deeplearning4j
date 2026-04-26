@@ -239,6 +239,12 @@ __global__ void kvScatterDynBatchedKernel(const KvScatterDynEntry* __restrict__ 
     }
 }
 
+// Pre-allocated device buffers for KV scatter — avoids cudaMallocAsync/cudaFreeAsync
+// per decode step. Grow-only: reallocated when numEntries exceeds cached capacity.
+static thread_local KvScatterDynEntry* tl_dEntries = nullptr;
+static thread_local int* tl_dOffsets = nullptr;
+static thread_local int tl_cachedCapacity = 0;
+
 template <typename T>
 static void kvScatterDynBatchedCudaLauncher(const cudaStream_t* stream,
                                              const KvScatterDynEntry* entries,
@@ -251,22 +257,23 @@ static void kvScatterDynBatchedCudaLauncher(const cudaStream_t* stream,
     }
     int totalSlices = offsets[numEntries];
 
-    // Allocate device memory for entries and offsets
-    KvScatterDynEntry* dEntries = nullptr;
-    int* dOffsets = nullptr;
-    cudaMallocAsync(&dEntries, numEntries * sizeof(KvScatterDynEntry), *stream);
-    cudaMallocAsync(&dOffsets, (numEntries + 1) * sizeof(int), *stream);
-    cudaMemcpyAsync(dEntries, entries, numEntries * sizeof(KvScatterDynEntry),
+    // Reuse pre-allocated device buffers (grow-only)
+    if (numEntries > tl_cachedCapacity) {
+        if (tl_dEntries != nullptr) cudaFree(tl_dEntries);
+        if (tl_dOffsets != nullptr) cudaFree(tl_dOffsets);
+        cudaMalloc(&tl_dEntries, numEntries * sizeof(KvScatterDynEntry));
+        cudaMalloc(&tl_dOffsets, (numEntries + 1) * sizeof(int));
+        tl_cachedCapacity = numEntries;
+    }
+
+    cudaMemcpyAsync(tl_dEntries, entries, numEntries * sizeof(KvScatterDynEntry),
                     cudaMemcpyHostToDevice, *stream);
-    cudaMemcpyAsync(dOffsets, offsets.data(), (numEntries + 1) * sizeof(int),
+    cudaMemcpyAsync(tl_dOffsets, offsets.data(), (numEntries + 1) * sizeof(int),
                     cudaMemcpyHostToDevice, *stream);
 
     dim3 launchDims = getLaunchDims("kv_scatter");
     kvScatterDynBatchedKernel<T><<<totalSlices, launchDims.y, launchDims.z, *stream>>>(
-        dEntries, dOffsets, numEntries, totalSlices);
-
-    cudaFreeAsync(dEntries, *stream);
-    cudaFreeAsync(dOffsets, *stream);
+        tl_dEntries, tl_dOffsets, numEntries, totalSlices);
 
     DebugHelper::checkGlobalErrorCode("kvScatterDynBatched kernel failed");
 }

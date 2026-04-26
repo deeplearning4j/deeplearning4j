@@ -1292,6 +1292,31 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     effectiveExternals_ = new NDArray*[numExt]();
   }
 
+  // Fast path: after first call, only iterate variable input indices
+  // instead of all 1000+ entries. Non-variable (weight) pointers are stable.
+  if (!cachedVariableExtIndices_.empty()) {
+    for (int i : cachedVariableExtIndices_) {
+      NDArray* ext = externalArrays[i];
+      effectiveExternals_[i] = externalArrays[i];  // default passthrough
+      if (ext == nullptr || ext->isEmpty()) continue;
+
+      NDArray* staging = placeholderStagingBuffers_[i];
+      if (staging == nullptr) continue;  // KV buffer or uninitialized
+
+      void* dstBuf = staging->specialBuffer();
+      void* srcBuf = ext->specialBuffer();
+      if (dstBuf != nullptr && srcBuf != nullptr) {
+        size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+        if (bytes > 0) {
+          cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+        }
+      }
+      staging->dataBuffer()->writeSpecial();
+      effectiveExternals_[i] = staging;
+    }
+    return effectiveExternals_;
+  }
+
   for (int i = 0; i < numExt; i++) {
     // Non-variable inputs (model weights) — pass through directly.
     // Their specialBuffer() is already stable (same DataBuffer for plan lifetime).
@@ -1330,6 +1355,9 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         continue;
       }
     }
+
+    // Record this as a variable index for the fast path on subsequent calls
+    cachedVariableExtIndices_.push_back(i);
 
     NDArray* staging = placeholderStagingBuffers_[i];
 

@@ -1675,6 +1675,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // staging pointers for variable inputs, original pointers for non-variable.
   NDArray** placeholderStagingBuffers_ = nullptr;
   NDArray** effectiveExternals_ = nullptr;
+  std::vector<int> cachedVariableExtIndices_;  // fast-path: only iterate variable inputs
 
   // Per-execution timing breakdown (enabled by setExecutionTimingEnabled)
   bool executionTimingEnabled_;
