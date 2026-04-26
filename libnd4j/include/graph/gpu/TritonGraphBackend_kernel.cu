@@ -1096,7 +1096,8 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   auto& refreshEnv = Environment::getInstance();
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
-                      std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
+                      std::hash<std::string>()(refreshEnv.tritonExcludeOps()),
+                      std::hash<std::string>()(refreshEnv.tritonIncludeTypes())};
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -1263,7 +1264,8 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
   auto& refreshEnv = Environment::getInstance();
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
-                      std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
+                      std::hash<std::string>()(refreshEnv.tritonExcludeOps()),
+                      std::hash<std::string>()(refreshEnv.tritonIncludeTypes())};
 
   CompiledSegment* compiledSeg = nullptr;
   {

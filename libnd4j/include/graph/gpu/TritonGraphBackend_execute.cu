@@ -301,7 +301,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   auto& execEnv = Environment::getInstance();
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice,
                       execEnv.tritonCompileAll(),
-                      std::hash<std::string>()(execEnv.tritonExcludeOps())};
+                      std::hash<std::string>()(execEnv.tritonExcludeOps()),
+                      std::hash<std::string>()(execEnv.tritonIncludeTypes())};
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -1479,7 +1480,8 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   auto& gapEnv = sd::Environment::getInstance();
   bool compileAll = gapEnv.tritonCompileAll();
   size_t excludeOpsHash = std::hash<std::string>()(gapEnv.tritonExcludeOps());
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, activeDevice, compileAll, excludeOpsHash};
+  size_t includeTypesHash = std::hash<std::string>()(gapEnv.tritonIncludeTypes());
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, activeDevice, compileAll, excludeOpsHash, includeTypesHash};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
   auto it = cache_.find(key);

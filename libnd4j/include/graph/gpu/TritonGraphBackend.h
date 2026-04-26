@@ -278,13 +278,15 @@ class TritonGraphBackend : public GraphBackend {
     int deviceId;
     bool compileAll;         // Whether tritonCompileAll was enabled at compile time
     size_t excludeOpsHash;   // Hash of tritonExcludeOps string (0 if empty)
+    size_t includeTypesHash; // Hash of tritonIncludeTypes string (0 if empty)
     bool operator==(const SegmentCacheKey& o) const {
       return startSlot == o.startSlot &&
              endSlot == o.endSlot &&
              shapeKey == o.shapeKey &&
              deviceId == o.deviceId &&
              compileAll == o.compileAll &&
-             excludeOpsHash == o.excludeOpsHash;
+             excludeOpsHash == o.excludeOpsHash &&
+             includeTypesHash == o.includeTypesHash;
     }
   };
   struct SegmentCacheHash {
@@ -295,6 +297,7 @@ class TritonGraphBackend : public GraphBackend {
       h ^= std::hash<int>()(k.deviceId) << 3;
       h ^= std::hash<bool>()(k.compileAll) << 4;
       h ^= std::hash<size_t>()(k.excludeOpsHash) << 5;
+      h ^= std::hash<size_t>()(k.includeTypesHash) << 6;
       return h;
     }
   };

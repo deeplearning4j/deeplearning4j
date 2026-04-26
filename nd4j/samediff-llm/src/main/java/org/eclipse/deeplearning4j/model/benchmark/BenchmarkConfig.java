@@ -124,6 +124,70 @@ public class BenchmarkConfig {
         return c;
     }
 
+    // ─── CPU benchmark factory methods ─────────────────────────────────────
+
+    /**
+     * CPU baseline: slot-by-slot execution (no graph fusion).
+     * All ops execute individually through platform helpers (OneDNN for matmul/conv/norm).
+     */
+    public static BenchmarkConfig cpuSlotBySlot() {
+        return create("CPU_SLOT_BY_SLOT")
+                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+                .maxTokens(cpuMaxTokens()).minDiversityPct(5);
+    }
+
+    /**
+     * CPU with OneDNN+OpenVINO cascade (AUTO mode on CPU).
+     * Each segment tries OneDNN first (matmul/conv/norm), then OpenVINO
+     * (gather/reshape/permute/concat/rms_norm/strided_slice), then slot-by-slot fallback.
+     */
+    public static BenchmarkConfig cpuCascade() {
+        return create("CPU_CASCADE")
+                .executionMode(GraphExecutionMode.AUTO)
+                .dspFreezeMergeSegments(true)
+                .maxTokens(cpuMaxTokens()).minDiversityPct(5);
+    }
+
+    /**
+     * CPU with OpenVINO-only graph backend.
+     * Forces all graph-compilable segments through OpenVINO runtime.
+     * Broader op coverage than OneDNN (~200 vs ~80 ops).
+     */
+    public static BenchmarkConfig cpuOpenVino() {
+        return create("CPU_OPENVINO")
+                .executionMode(GraphExecutionMode.OPENVINO)
+                .dspFreezeMergeSegments(true)
+                .maxTokens(cpuMaxTokens()).minDiversityPct(5);
+    }
+
+    /**
+     * CPU cascade with freeze-merge disabled.
+     * Tests whether segment merging helps or hurts on CPU.
+     */
+    public static BenchmarkConfig cpuCascadeNoMerge() {
+        return create("CPU_CASCADE_NO_MERGE")
+                .executionMode(GraphExecutionMode.AUTO)
+                .dspFreezeMergeSegments(false)
+                .maxTokens(cpuMaxTokens()).minDiversityPct(5);
+    }
+
+    /**
+     * CPU cascade with execution timing enabled for per-segment profiling.
+     */
+    public static BenchmarkConfig cpuCascadeTimed() {
+        return create("CPU_CASCADE_TIMED")
+                .executionMode(GraphExecutionMode.AUTO)
+                .dspFreezeMergeSegments(true)
+                .dspExecutionTiming(true)
+                .maxTokens(cpuMaxTokens()).minDiversityPct(5);
+    }
+
+    private static int cpuMaxTokens() {
+        return Integer.parseInt(System.getProperty("bench.max.tokens", "20"));
+    }
+
+    // ─── GPU benchmark factory methods ──────────────────────────────────────
+
     /**
      * Returns the best-known benchmark configuration for LLM decode.
      * This is the single source of truth for optimal inference settings.

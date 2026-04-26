@@ -111,7 +111,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     auto& cacheEnv = Environment::getInstance();
   bool cacheCompileAll = cacheEnv.tritonCompileAll();
   size_t cacheExcludeHash = std::hash<std::string>()(cacheEnv.tritonExcludeOps());
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash};
+  size_t cacheIncludeHash = std::hash<std::string>()(cacheEnv.tritonIncludeTypes());
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash, cacheIncludeHash};
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
