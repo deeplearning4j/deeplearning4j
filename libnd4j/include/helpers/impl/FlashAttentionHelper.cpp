@@ -688,8 +688,9 @@ void FlashAttentionHelper::forward4DDecode(
   // and there are no "future" positions to mask out.
   // Causal masking only applies during prefill (seqQ > 1).
   
-  // Softmax over last dimension (seqKV)
-  ops::helpers::softmax(context, scores, scores, 2);
+  // Fused softmax with warp-shuffle reductions — more efficient than generic softmax
+  // for decode shape [batch*numHeads, 1, seqKV]. isCausal=false since seqQ=1 has nothing to mask.
+  fusedCausalMaskSoftmaxCuda(scores, scores, nullptr, false, context);
   
   // attn @ V: [batch*heads, 1, seqKV] × [batch*heads, seqKV, dim] → [batch*heads, 1, dim]
   NDArray* outFlat = workspace->getBuffer("decode_out", qShape, query->dataType(), context);
