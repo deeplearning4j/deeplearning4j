@@ -3747,6 +3747,8 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
 #ifdef SD_CUDA
   gapPrezeroTargetsCached_ = false;
   cachedGapPrezeroCount_ = 0;
+  activeGapSlotsCached_ = false;
+  cachedActiveGapSlots_.clear();
 #endif
 
   // Clear protected weight buffers so they're rebuilt from the next session's

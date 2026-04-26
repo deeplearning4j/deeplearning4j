@@ -1998,8 +1998,35 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // consumer is a cudaMemsetAsync loop in NativeDynamicShapePlan_gpubackend.cpp
   // that runs outside capture (fill engines, no SM competition).
   std::vector<BatchZeroEntry> batchZeroEntries_;
+  bool gapPrezeroTargetsCached_ = false;  // True after first collectBatchZeroTargets in frozen replay
+  int cachedGapPrezeroCount_ = 0;         // Cached count for fast path (avoids recompute)
 
   void collectBatchZeroTargets(const std::unordered_set<int>& gapSlots);
+
+  // ── Active gap slot cache ───────────────────────────────────────────────
+  // In frozen steady state, ~97% of the 2743 gap slot iterations are skipped
+  // (frozen constants, identity ops, fused tails, view-buffer-unchanged).
+  // After the first full pass, cache the ~82 slots that actually need work.
+  // Each entry records the slot index and what kind of action it needs:
+  //   EXECUTE:       call executeSlot() — the default for non-trivial ops
+  //   BATCHED_GEMM:  call executeBatchedGemmGroup() — trigger slot for a batched group
+  //   IDENTITY_TICK: tick device actuality only (identity alias already installed)
+  //   VIEW_TICK:     tick device actuality (view buffer unchanged from input)
+  enum class ActiveSlotAction : uint8_t {
+    EXECUTE = 0,
+    BATCHED_GEMM = 1,
+    IDENTITY_TICK = 2,
+    VIEW_TICK = 3,
+    SKIP = 4,        // batched GEMM non-trigger slot (handled by trigger)
+  };
+  struct ActiveGapSlot {
+    int slotIdx;
+    ActiveSlotAction action;
+    int batchedGemmGroupIdx;    // only valid for BATCHED_GEMM action
+    int outputSlotIdx;          // first output slot for tick actions
+  };
+  std::vector<ActiveGapSlot> cachedActiveGapSlots_;
+  bool activeGapSlotsCached_ = false;
 
   // Shared capture workspace: all segments share one 128MB workspace
   // instead of each allocating their own. Since segments execute sequentially

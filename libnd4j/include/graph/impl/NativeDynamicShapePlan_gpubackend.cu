@@ -1008,21 +1008,44 @@ Status NativeDynamicShapePlan::compositeReplay(
   // handle. That duplicates zeroing work every step. For composite replay, rebuild
   // the current gap-slot target list from the schedule and zero only those outputs.
   {
-    std::unordered_set<int> gapSlots;
-    for (const auto& unit : sched.units) {
-      if (unit.kind != REPLAY_UNIT_GAP) continue;
-      for (int s = unit.startSlot; s <= unit.endSlot; s++) {
-        gapSlots.insert(s);
+    // Cache prezero targets after first compute — gap slot set and slot flags are
+    // static once shapes are frozen. Only device pointers need refreshing, and those
+    // are stable in replay mode (no reallocation after freeze).
+    if (!gapPrezeroTargetsCached_) {
+      std::unordered_set<int> gapSlots;
+      for (const auto& unit : sched.units) {
+        if (unit.kind != REPLAY_UNIT_GAP) continue;
+        for (int s = unit.startSlot; s <= unit.endSlot; s++) {
+          gapSlots.insert(s);
+        }
+      }
+
+      collectBatchZeroTargets(gapSlots);
+      cachedGapPrezeroCount_ = static_cast<int>(batchZeroEntries_.size());
+      if (shapesFrozen_) {
+        gapPrezeroTargetsCached_ = true;
+        DSP_DIAG(MEMORY, "compositeReplay: cached %d prezero targets (will skip recompute on subsequent steps)",
+                 cachedGapPrezeroCount_);
+      }
+    } else {
+      // Fast path: refresh device pointers from cached output slot indices.
+      // After freeze, outputSlots_ pointers are stable, so this is redundant but safe.
+      for (int i = 0; i < cachedGapPrezeroCount_; i++) {
+        int outIdx = batchZeroEntries_[i].outputSlotIndex;
+        NDArray* cached = outputSlots_[outIdx];
+        if (cached != nullptr) {
+          batchZeroEntries_[i].ptr = cached->specialBuffer();
+          batchZeroEntries_[i].bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
+        }
       }
     }
 
-    collectBatchZeroTargets(gapSlots);
-    int gapZeroCount = static_cast<int>(batchZeroEntries_.size());
+    int gapZeroCount = cachedGapPrezeroCount_;
     if (gapZeroCount > 0) {
       DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                   "compositeReplay invoking gap-only prezero seg=[%d-%d] stream=%p execCount=%d gapSlots=%d zeroTargets=%d",
+                   "compositeReplay prezero seg=[%d-%d] stream=%p execCount=%d zeroTargets=%d cached=%d",
                    seg.def.startSlot, seg.def.endSlot, (void*)cudaStr, seg.exec.executionCount,
-                   static_cast<int>(gapSlots.size()), gapZeroCount);
+                   gapZeroCount, (int)gapPrezeroTargetsCached_);
 
       if (gapZeroCount == 1) {
         auto& entry = batchZeroEntries_[0];
@@ -1037,13 +1060,13 @@ Status NativeDynamicShapePlan::compositeReplay(
           sizes[i] = static_cast<size_t>(batchZeroEntries_[i].bytes);
         }
         launchBatchMemset(cudaStr, dstPtrs.data(), sizes.data(), gapZeroCount);
-        DSP_DIAG(MEMORY, "compositeReplay gap-only prezero: batched %d buffers into 1 kernel launch",
+        DSP_DIAG(MEMORY, "compositeReplay gap-only prezero: batched %d buffers in 1 kernel launch",
                  gapZeroCount);
       }
     } else {
       DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                   "compositeReplay gap-only prezero skipped seg=[%d-%d] gapSlots=%d zeroTargets=0",
-                   seg.def.startSlot, seg.def.endSlot, static_cast<int>(gapSlots.size()));
+                   "compositeReplay gap-only prezero skipped seg=[%d-%d] zeroTargets=0",
+                   seg.def.startSlot, seg.def.endSlot);
     }
   }
 
@@ -1151,35 +1174,82 @@ Status NativeDynamicShapePlan::compositeReplay(
     // ── Unmerged units: original per-unit replay ──
     if (unit.kind == REPLAY_UNIT_GAP) {
       DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap [%d-%d]", unit.startSlot, unit.endSlot);
-      // Gap slots execute real ops (including matmul for logits) via executeSlot.
-      // With gap-stream unification (tl_dspGapStream), gap ops run on cudaStr —
-      // the same stream as island graph replay. FIFO ordering guarantees gap ops
-      // see island outputs without explicit sync.
-      //
-      // tl_dspReplayActive: suppress per-op cudaStreamSynchronize in cuDNN ops,
-      // PointersManager::synchronize(), etc. All work is on the unified DSP stream
-      // (tl_dspGapStream) — FIFO ordering makes per-op syncs redundant.
       bool prevReplayActive = tl_dspReplayActive;
       tl_dspReplayActive = true;
       bool gapOutputPointersChanged = false;
-      // When arg tables are stable AND pointers are stable, gap slots cannot
-      // change output buffer addresses — skip the per-slot snapshot/diff overhead.
       bool skipPtrTracking = seg.exec.argTableStable && pointersStable_;
+
+      // ── Active gap slot cache: skip 97% of slot iterations in steady state ──
+      // On the first frozen+steady pass, classify every slot and cache only those
+      // that need work. On subsequent steps, iterate over the compact cached list.
+      bool useCachedActiveSlots = activeGapSlotsCached_ && shapesFrozen_ && executeCount_ >= 3;
+
+      if (useCachedActiveSlots) {
+        // ── FAST PATH: iterate only over pre-classified active slots ──
+        for (const auto& active : cachedActiveGapSlots_) {
+          switch (active.action) {
+            case ActiveSlotAction::IDENTITY_TICK: {
+              int si = active.outputSlotIdx;
+              if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
+                outputSlots_[si]->tickWriteDevice();
+              }
+              break;
+            }
+            case ActiveSlotAction::VIEW_TICK: {
+              int si = active.outputSlotIdx;
+              if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
+                outputSlots_[si]->tickWriteDevice();
+                dirtySlotGenerations_[si] = currentDirtyGeneration_;
+              }
+              break;
+            }
+            case ActiveSlotAction::BATCHED_GEMM: {
+              cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+              Status batchStatus = executeBatchedGemmGroup(active.batchedGemmGroupIdx, effectiveExternals, numExt, execStream);
+              if (batchStatus != Status::OK) {
+                tl_dspReplayActive = prevReplayActive;
+                return batchStatus;
+              }
+              break;
+            }
+            case ActiveSlotAction::EXECUTE: {
+              auto slotStatus = executeSlot(active.slotIdx, effectiveExternals, numExt, stream);
+              if (slotStatus != Status::OK) {
+                tl_dspReplayActive = prevReplayActive;
+                DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap slot %d FAILED status=%d",
+                         active.slotIdx, static_cast<int>(slotStatus));
+                return slotStatus;
+              }
+              break;
+            }
+            case ActiveSlotAction::SKIP:
+              break;
+          }
+        }
+      } else {
+        // ── CLASSIFICATION PATH: run full logic, optionally build cache ──
+        bool buildingCache = shapesFrozen_ && executeCount_ >= 2 && !activeGapSlotsCached_;
+        if (buildingCache) {
+          cachedActiveGapSlots_.clear();
+          cachedActiveGapSlots_.reserve(128);  // ~82 expected
+        }
+
       for (int s = unit.startSlot; s <= unit.endSlot; s++) {
         // ── Frozen constant / identity / fused-tail early skip ────────────
-        // These slots never change their output buffers. Skipping before
-        // snapshotSlotOutputBuffers + executeSlot + slotOutputBuffersChanged
-        // eliminates ~1000 unnecessary per-slot function calls per step.
         if (shapesFrozen_ && executeCount_ >= 2) {
           auto& gapSlot = slots_[s];
-          if (gapSlot.frozenConstantSlot()) continue;
+          if (gapSlot.frozenConstantSlot()) {
+            // No cache entry needed — frozen constants never do anything
+            continue;
+          }
           if (gapSlot.flags.isIdentityOp) {
-            // Identity ops alias input→output. The alias is already installed;
-            // just tick device actuality so downstream reads see fresh data.
             if (gapSlot.wiring.numOutputs >= 1) {
               int si = gapSlot.wiring.outputSlotIndices[0];
               if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
                 outputSlots_[si]->tickWriteDevice();
+              }
+              if (buildingCache) {
+                cachedActiveGapSlots_.push_back({s, ActiveSlotAction::IDENTITY_TICK, -1, si});
               }
             }
             continue;
@@ -1210,14 +1280,18 @@ Status NativeDynamicShapePlan::compositeReplay(
                   gapOutputPointersChanged = true;
                 }
               }
+              if (buildingCache) {
+                cachedActiveGapSlots_.push_back({s, ActiveSlotAction::BATCHED_GEMM, bgIdx, -1});
+              }
               continue;
             } else {
+              // Non-trigger slot in a batched group — skip
               continue;
             }
           }
         }
 
-        // ── View-op fast path: skip executeSlot() when the backing buffer is unchanged ──
+        // ── View-op fast path ──
         if (!dsp_disable_view_fastpath() &&
             s < totalOutputSlots_ &&
             slots_[s].flags.isViewCapableOp &&
@@ -1244,12 +1318,15 @@ Status NativeDynamicShapePlan::compositeReplay(
                 currentOut->dataBuffer() == input0->dataBuffer()) {
               currentOut->tickWriteDevice();
               dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
+              if (buildingCache) {
+                cachedActiveGapSlots_.push_back({s, ActiveSlotAction::VIEW_TICK, -1, outSi});
+              }
               continue;
             }
           }
         }
 
-        // Snapshot output buffers BEFORE executeSlot (only when tracking changes).
+        // ── Full executeSlot path ──
         void* outputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
         if (!skipPtrTracking && !gapOutputPointersChanged) {
           snapshotSlotOutputBuffers(slots_[s], outputSlots_, totalOutputSlots_,
@@ -1268,7 +1345,21 @@ Status NativeDynamicShapePlan::compositeReplay(
                                      outputBufsBefore, NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT)) {
           gapOutputPointersChanged = true;
         }
+        if (buildingCache) {
+          cachedActiveGapSlots_.push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
+        }
       }
+
+        if (buildingCache) {
+          activeGapSlotsCached_ = true;
+          DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: cached %d active gap slots out of %d total (%.1f%% skip rate)",
+                   static_cast<int>(cachedActiveGapSlots_.size()),
+                   unit.endSlot - unit.startSlot + 1,
+                   100.0 * (1.0 - static_cast<double>(cachedActiveGapSlots_.size()) /
+                            std::max(1, unit.endSlot - unit.startSlot + 1)));
+        }
+      }  // end classification vs cached path
+
       tl_dspReplayActive = prevReplayActive;
       gapSlotsExecutedSinceArgCopy = gapOutputPointersChanged;
       DSP_DIAG(EXECUTE,
@@ -1323,13 +1414,9 @@ Status NativeDynamicShapePlan::compositeReplay(
         return Status::KERNEL_FAILURE;
       }
 
-      // Mark island output slots as dirty.
+      // Mark island output slots as dirty + tick actuality in one pass.
       for (int s = unit.startSlot; s <= unit.endSlot && s < totalOutputSlots_; s++) {
         dirtySlotGenerations_[s] = currentDirtyGeneration_;
-      }
-
-      // Per-island actuality tick
-      for (int s = unit.startSlot; s <= unit.endSlot && s < totalOutputSlots_; s++) {
         NDArray* arr = outputSlots_[s];
         if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
           arr->tickWriteDevice();
@@ -1350,21 +1437,6 @@ Status NativeDynamicShapePlan::compositeReplay(
   }
 
   auto tActTick = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-  // ── ACTUALITY TICK: mark device data as newer than host after replay ──
-  //
-  // Graph replay writes device memory directly without registerSpecialUse.
-  // Without ticking _writeSpecial here, syncToHost sees equal host/device
-  // counters and skips the D2H copy, returning stale host data.
-  //
-  // This is the canonical tick site — compositeReplay() is the convergence
-  // point for all replay units (islands + gaps). Any future replay backend
-  // (HIP, Metal, etc.) that bypasses registerSpecialUse must do the same.
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
-    NDArray* arr = outputSlots_[s];
-    if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
-      arr->tickWriteDevice();
-    }
-  }
 
   // Diagnostic: check final output after composite replay
   dumpSegFinalArgmax(seg, outputSlots_, totalOutputSlots_, numSlots_, slots_,
