@@ -1432,6 +1432,16 @@ Status NativeDynamicShapePlan::execute(
   lastExternalInputs_ = externalInputs;
   lastNumExternalInputs_ = numExternalInputs;
 
+  // Capture external input ranks on first call — used by FusionPass pass 5
+  // to distinguish 1D bias vectors from N-D residual operands.
+  if (externalInputRanks_.empty() && numExternalInputs > 0) {
+    externalInputRanks_.resize(numExternalInputs, -1);
+    for (int i = 0; i < numExternalInputs; i++) {
+      if (externalInputs[i] != nullptr)
+        externalInputRanks_[i] = externalInputs[i]->rankOf();
+    }
+  }
+
   // ── PlanExecutionContext: consolidates all per-execute() state ─────────
   // Created by platformBeginExecution (CUDA: stream guard + cross-stream sync,
   // CPU: minimal struct). Destroyed by platformEndExecution at end of execute().
@@ -3086,6 +3096,15 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
     return Status::OK;
   }
 
+  // Populate external input ranks before phaseFreeze() — needed by FusionPass pass 5
+  if (externalInputRanks_.empty() && numExternalInputs > 0) {
+    externalInputRanks_.resize(numExternalInputs, -1);
+    for (int i = 0; i < numExternalInputs; i++) {
+      if (externalInputs[i] != nullptr)
+        externalInputRanks_[i] = externalInputs[i]->rankOf();
+    }
+  }
+
   if (!shapesFrozen_) {
     DSP_DIAG(COMPILE, "precompilePlan: auto-freezing plan (phaseFreeze)");
     auto freezeStatus = phaseFreeze();
@@ -3692,6 +3711,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // the Java session resets. They are rebuilt on the next execute() call.
   lastExternalInputs_ = nullptr;
   lastNumExternalInputs_ = 0;
+  externalInputRanks_.clear();
 
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;
