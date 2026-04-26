@@ -417,8 +417,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         SegmentLifecycle::markReplaying(seg.exec);
       }
 
-      // compositeReplay already ticks all segment slots at its canonical end
-      // (gpubackend.cu:1340-1345). No need to double-tick here.
+      // compositeReplay ticks slots per-unit inside the replay loop.
+      // No need to double-tick here.
 
       if (executionTimingEnabled_) {
         auto tDone = Clock::now();
@@ -526,7 +526,7 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     tasks.push_back({si, segShapeKey, segTargetDevice});
   }
 
-  if (tasks.size() <= 1) return;
+  if (tasks.empty()) return;
 
   // Determine thread count for parallel precompilation.
   // Inner sub-segment parallelism is handled by compileSegment (DEFAULT_MAX_PARALLEL_COMPILATIONS).
@@ -534,6 +534,11 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   // - Each compilation creates its own MLIRContext (via getMlirContextMutex-protected factory)
   // - cuModuleLoadDataEx is serialized via loadModuleMtx
   // - LLVM init is done via std::once_flag
+  //
+  // NOTE: The previous `tasks.size() <= 1` guard skipped compilation entirely
+  // for single-segment plans (common at decode: one mega-segment after
+  // freeze-merge), causing Triton islands to only be compiled lazily during
+  // execution rather than eagerly at seal time.  Now we handle all task counts.
   int numThreads = std::min(8, static_cast<int>(tasks.size()));
   DSP_DIAG(COMPILE, "NativeDSP::execute: parallel precompilation of %d segments using %d threads "
            "(executeCount=%d)",

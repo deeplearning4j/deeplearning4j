@@ -551,7 +551,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         if (start == std::string::npos) continue;
         token = token.substr(start, end - start + 1);
         // Map type name to enum
-        if (token == "CONST_GEN" || token == "CONSTANT_GENERATION")
+        if (token == "ELEMENTWISE")
+          includedTypes.insert(KernelSectionType::ELEMENTWISE);
+        else if (token == "IDENTITY")
+          includedTypes.insert(KernelSectionType::IDENTITY);
+        else if (token == "CONST_GEN" || token == "CONSTANT_GENERATION")
           includedTypes.insert(KernelSectionType::CONSTANT_GENERATION);
         else if (token == "SHAPE_MANIP" || token == "SHAPE_MANIPULATION")
           includedTypes.insert(KernelSectionType::SHAPE_MANIPULATION);
