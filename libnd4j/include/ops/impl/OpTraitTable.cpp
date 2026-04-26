@@ -94,7 +94,10 @@ static constexpr uint32_t TILE = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
 // Must be zeroed before execution if downstream reads the whole buffer.
 static constexpr uint32_t SCATTER_PARTIAL = OP_TRAIT_DATA_MOVEMENT;
 static constexpr uint32_t SCATTER_ND = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND;
-static constexpr uint32_t SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE;
+// scatter_nd_update is a FULL writer: it does output->assign(input) first (copies
+// every element), THEN scatters updates at specific indices. The assign step fully
+// writes the output, so no prezero is needed. FULLY_WRITING reflects this.
+static constexpr uint32_t SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE | OP_TRAIT_FULLY_WRITING;
 // BP: modifier applied to backward / gradient ops. Combined with the primary trait so
 // that the category lookup still returns the correct TritonOpCategory while profiling
 // and diagnostic code can distinguish forward from backward via OP_TRAIT_BACKWARD.

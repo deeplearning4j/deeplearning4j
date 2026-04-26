@@ -1037,8 +1037,12 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     {
       bool aliasesInput  = slot.flags.isViewCapableOp || slot.flags.isIdentityOp;
       bool fullyWrites   = (opTraits & sd::ops::OP_TRAIT_FULLY_WRITING) != 0;
+      // scatter_nd is a true partial writer (zeroes output, then scatters at indices).
+      // scatter_nd_update has FULLY_WRITING because it does output->assign(input) first.
+      // Only suppress isFullyWriting for ops that are partial AND lack explicit FULLY_WRITING.
       bool partialWriter = (opTraits & (sd::ops::OP_TRAIT_SCATTER_ND |
-                                        sd::ops::OP_TRAIT_SCATTER_ND_UPDATE)) != 0;
+                                        sd::ops::OP_TRAIT_SCATTER_ND_UPDATE)) != 0
+                           && !fullyWrites;
       slot.flags.isFullyWriting = fullyWrites && !slot.flags.isDataDependent && !partialWriter;
       slot.flags.needsZeroedOutput = !aliasesInput && !slot.flags.isFullyWriting;
     }
@@ -2562,11 +2566,20 @@ void NativeDynamicShapePlan::advancePlanPhase() {
   if (planPhase_ >= PlanPhase::POINTERS_STABLE) {
     bool hasReplayEligibleSegment = false;
     bool allReplaying = true;
-    for (auto& seg : segments_) {
+    for (size_t si = 0; si < segments_.size(); si++) {
+      auto& seg = segments_[si];
       if (!segmentBlocksPlanPhase(seg)) continue;
       hasReplayEligibleSegment = true;
       if (!segmentIsFullyReplayingForPlanPhase(seg, slots_)) {
         allReplaying = false;
+        DSP_DIAG(EXECUTE, "[PHASE_BLOCK] seg[%d] (%d-%d) blocks REPLAYING: backend=%d lifecycle=%s "
+                 "execCount=%d handleReady=%d compositeReady=%d argStable=%d",
+                 (int)si, seg.def.startSlot, seg.def.endSlot,
+                 (int)seg.def.selectedBackend, seg.exec.displayPhaseName(),
+                 seg.exec.executionCount,
+                 (int)(seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady()),
+                 (int)segmentHasReadyCompositeHandles(seg),
+                 (int)seg.exec.argTableStable);
         break;
       }
     }
@@ -3731,6 +3744,10 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // causes Triton recompilation to be skipped, and the plan tries to replay
   // CUDA graphs that were destroyed, leading to error 700.
   shapesFrozen_ = false;
+#ifdef SD_CUDA
+  gapPrezeroTargetsCached_ = false;
+  cachedGapPrezeroCount_ = 0;
+#endif
 
   // Clear protected weight buffers so they're rebuilt from the next session's
   // external inputs. Stale DataBuffer pointers from the old session would cause

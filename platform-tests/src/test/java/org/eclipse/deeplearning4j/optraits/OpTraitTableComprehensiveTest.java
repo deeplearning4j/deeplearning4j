@@ -182,7 +182,8 @@ public class OpTraitTableComprehensiveTest {
         final int TILE              = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
         final int SCATTER_PARTIAL   = OP_TRAIT_DATA_MOVEMENT;
         final int SCATTER_ND        = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND;
-        final int SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE;
+        // scatter_nd_update does output->assign(input) → full writer, not partial
+        final int SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE | OP_TRAIT_FULLY_WRITING;
 
         return Stream.of(
                 // ── Unary elementwise math ─────────────────────────────
@@ -643,6 +644,13 @@ public class OpTraitTableComprehensiveTest {
         assertTrue(has(a, OP_TRAIT_DATA_MOVEMENT), "scatter_nd should have DATA_MOVEMENT");
         assertTrue(has(b, OP_TRAIT_SCATTER_ND_UPDATE), "scatter_nd_update should have SCATTER_ND_UPDATE");
         assertTrue(has(b, OP_TRAIT_DATA_MOVEMENT), "scatter_nd_update should have DATA_MOVEMENT");
+        // scatter_nd_update does output->assign(input) which fully writes the output
+        // before scattering updates. This makes prezero redundant.
+        assertTrue(has(b, OP_TRAIT_FULLY_WRITING),
+                "scatter_nd_update should have FULLY_WRITING (assign copies entire input to output)");
+        // scatter_nd zeroes output then scatters — it is a true partial writer, no FULLY_WRITING.
+        assertFalse(has(a, OP_TRAIT_FULLY_WRITING),
+                "scatter_nd should NOT have FULLY_WRITING (true partial writer)");
     }
 
     @Test

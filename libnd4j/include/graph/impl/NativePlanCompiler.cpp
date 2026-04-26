@@ -262,8 +262,11 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     // Output-zeroing classification (computed once, read at runtime).
     bool aliasesInput  = slot.flags.isViewCapableOp || slot.flags.isIdentityOp;
     bool fullyWrites   = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_FULLY_WRITING);
-    bool partialWriter = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND) ||
-                         hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND_UPDATE);
+    // scatter_nd is a true partial writer; scatter_nd_update has FULLY_WRITING
+    // because it does output->assign(input). Only suppress for partial without FULLY_WRITING.
+    bool partialWriter = (hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND) ||
+                          hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND_UPDATE))
+                         && !fullyWrites;
     slot.flags.isFullyWriting    = fullyWrites && !slot.flags.isDataDependent && !partialWriter;
     slot.flags.needsZeroedOutput = !aliasesInput && !slot.flags.isFullyWriting;
     slot.wiring.numInputs = numInputs;

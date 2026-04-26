@@ -110,7 +110,8 @@ public class OpTraitTableEnumerationTest {
     private static final int TILE              = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
     private static final int SCATTER_PARTIAL   = OP_TRAIT_DATA_MOVEMENT;
     private static final int SCATTER_ND        = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND;
-    private static final int SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE;
+    // scatter_nd_update does output->assign(input) → full writer, not partial
+    private static final int SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE | OP_TRAIT_FULLY_WRITING;
 
     /** Java-side mirror of the C++ TABLE map, in the exact order of the source. */
     private static Map<String, Integer> buildExpectedTraits() {

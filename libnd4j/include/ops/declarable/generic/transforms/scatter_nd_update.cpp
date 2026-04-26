@@ -94,7 +94,7 @@ DECLARE_TYPES(scatter_nd_update) {
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_SCATTER_ND_UPDATE);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_SCATTER_ND_UPDATE | OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops
