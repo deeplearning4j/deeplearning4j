@@ -88,6 +88,23 @@ bool CudaGraphReplayHandle::finalize() {
 bool CudaGraphReplayHandle::replay(void* stream) {
   if (!handle_) return false;
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+
+  // Fast path: call cudaGraphLaunch directly, bypassing launchAsync overhead
+  // (mutex, cudaGetDevice, chrono timestamps, cudaGetLastError, state transitions,
+  // timeline tracking). Safe because:
+  //   1. isReady() was already checked at the call site (compositeReplay)
+  //   2. Device doesn't change during composite replay (single-device steady state)
+  //   3. State transitions are cosmetic (INSTANTIATED/EXECUTING/COMPLETED all map to READY)
+  //   4. getGraphExec() is stable after instantiate — no concurrent mutation during replay
+  cudaGraphExec_t exec = handle_->getGraphExec();
+  if (exec != nullptr) {
+    cudaError_t err = cudaGraphLaunch(exec, cudaStr);
+    if (err == cudaSuccess) return true;
+    // Launch failed — fall through to full launchAsync for detailed diagnostics
+    cudaGetLastError();  // Clear the error before retrying via launchAsync
+  }
+
+  // Slow path: full launchAsync with diagnostics
   bool ok = handle_->launchAsync(cudaStr);
   if (!ok) {
     DSP_DIAG_DEV(FALLBACK, deviceId_,
