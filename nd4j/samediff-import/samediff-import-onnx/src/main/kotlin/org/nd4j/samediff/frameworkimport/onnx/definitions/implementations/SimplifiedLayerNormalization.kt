@@ -73,16 +73,15 @@ class SimplifiedLayerNormalization : PreImportHook {
         // Use fused rms_norm op — single kernel instead of decomposed pow/mean/sqrt/div/mul
         val result = sd.nn().rmsNorm(outputNames[0], input, scale, epsilon)
 
-        // Some implementations also output the inverse RMS for backward pass
+        // Output 1: inv_rms — only needed for training backward pass, not inference.
+        // Emit a zeros placeholder instead of the expensive decomposed chain
+        // (pow→mean→sqrt→reciprocal) which adds 4 ops per norm layer that execute
+        // every decode step even though no inference-path op consumes the result.
         if (outputNames.size > 1 && outputNames[1].isNotEmpty()) {
-            // Compute inv_rms for backward pass consumers: 1/sqrt(mean(x^2) + eps)
-            val squared = sd.math.pow(input, 2.0)
-            val meanSquared = sd.math.mean(squared, true, -1L)
-            val rms = sd.math.sqrt(sd.math.add(meanSquared, epsilon))
-            val invRms = sd.math.reciprocal(outputNames[1], rms)
+            val placeholder = sd.zerosLike(outputNames[1], input)
             return mapOf(
                 outputNames[0] to listOf(result),
-                outputNames[1] to listOf(invRms)
+                outputNames[1] to listOf(placeholder)
             )
         }
 

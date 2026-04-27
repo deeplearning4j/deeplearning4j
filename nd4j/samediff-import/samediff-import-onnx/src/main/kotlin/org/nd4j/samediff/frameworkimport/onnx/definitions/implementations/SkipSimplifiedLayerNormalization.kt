@@ -112,12 +112,12 @@ class SkipSimplifiedLayerNormalization : PreImportHook {
         }
 
         if (outputNames.size > 2 && outputNames[2].isNotEmpty()) {
-            // Inverse RMS for backward pass — compute decomposed since rms_norm doesn't output this
-            val squared = sd.math.pow(hiddenStates, 2.0)
-            val meanSquared = sd.math.mean(squared, true, -1L)
-            val rms = sd.math.sqrt(sd.math.add(meanSquared, epsilon))
-            val invRms = sd.math.reciprocal(outputNames[2], rms)
-            outputMap[outputNames[2]] = listOf(invRms)
+            // inv_rms — only needed for training backward pass, not inference.
+            // Emit a zeros placeholder instead of the expensive decomposed chain
+            // (pow→mean→sqrt→reciprocal) which adds 4 ops per norm layer that execute
+            // every decode step even though no inference-path op consumes the result.
+            val placeholder = sd.zerosLike(outputNames[2], hiddenStates)
+            outputMap[outputNames[2]] = listOf(placeholder)
         }
 
         if (outputNames.size > 3 && outputNames[3].isNotEmpty()) {
