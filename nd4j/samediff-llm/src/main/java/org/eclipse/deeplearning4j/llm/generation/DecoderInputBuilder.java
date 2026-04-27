@@ -434,7 +434,7 @@ public class DecoderInputBuilder {
      * @param maxKvLen total KV buffer size (prefillLen + maxNewTokens)
      * @return attention bias [1, 1, prefillLen, maxKvLen]
      */
-    public static INDArray buildInGraphCausalMask(long prefillLen, long maxKvLen) {
+    public static INDArray buildInGraphCausalMask(long prefillLen, long maxKvLen, DataType dtype) {
         int Q = (int) prefillLen;
         int K = (int) maxKvLen;
         float[] data = new float[Q * K];
@@ -447,7 +447,13 @@ public class DecoderInputBuilder {
             }
         }
 
-        return Nd4j.create(data, new long[]{1, 1, prefillLen, maxKvLen}, 'c');
+        INDArray mask = Nd4j.create(data, new long[]{1, 1, prefillLen, maxKvLen}, 'c');
+        if (dtype != DataType.FLOAT) {
+            INDArray cast = mask.castTo(dtype);
+            mask.close();
+            return cast;
+        }
+        return mask;
     }
 
     /**
@@ -460,7 +466,7 @@ public class DecoderInputBuilder {
      * @param maxKvLen total KV buffer size
      * @return attention bias [1, 1, 1, maxKvLen]
      */
-    public static INDArray buildInGraphDecodeMask(long cachePos, long maxKvLen) {
+    public static INDArray buildInGraphDecodeMask(long cachePos, long maxKvLen, DataType dtype) {
         int K = (int) maxKvLen;
         float[] data = new float[K];
 
@@ -470,6 +476,12 @@ public class DecoderInputBuilder {
             data[k] = -1e9f;
         }
 
-        return Nd4j.create(data, new long[]{1, 1, 1, maxKvLen}, 'c');
+        INDArray mask = Nd4j.create(data, new long[]{1, 1, 1, maxKvLen}, 'c');
+        if (dtype != DataType.FLOAT) {
+            INDArray cast = mask.castTo(dtype);
+            mask.close();
+            return cast;
+        }
+        return mask;
     }
 }

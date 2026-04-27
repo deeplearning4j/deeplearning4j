@@ -563,9 +563,11 @@ public class GenerationPipeline implements AutoCloseable {
         if (cachePosName != null && decoder.hasVariable(cachePosName)) {
             prefillInputMap.put(cachePosName, Nd4j.scalar(DataType.INT64, 0));
         }
+        DataType maskDtype = DataType.FLOAT;
         if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
+            maskDtype = decoder.getVariable(causalMaskName).dataType();
             prefillInputMap.put(causalMaskName,
-                    DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen));
+                    DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen, maskDtype));
         }
 
         // Empty KV cache inputs — signals attention op to skip in-place scatter
@@ -589,16 +591,30 @@ public class GenerationPipeline implements AutoCloseable {
             prefillOutputNames.add("v_heads_" + layerIdx);
         }
 
-        Map<String, INDArray> prefillOutputs = decoder.output(
-                prefillInputMap, prefillOutputNames.toArray(new String[0]));
+        Map<String, INDArray> prefillOutputs;
+        try {
+            prefillOutputs = decoder.output(
+                    prefillInputMap, prefillOutputNames.toArray(new String[0]));
+        } catch (Exception e) {
+            log.error("[GGUF-KV] Prefill decoder.output() failed", e);
+            throw e;
+        }
+
+        log.info("[GGUF-KV] Prefill returned {} outputs: {}", prefillOutputs.size(), prefillOutputs.keySet());
 
         // Sample first token from prefill logits
         INDArray prefillLogits = prefillOutputs.get(logitsName);
+        if (prefillLogits == null) {
+            throw new RuntimeException("[GGUF-KV] Prefill logits '" + logitsName + "' not found in outputs: " + prefillOutputs.keySet());
+        }
+        log.info("[GGUF-KV] Prefill logits shape: {}", java.util.Arrays.toString(prefillLogits.shape()));
         int firstTokenId = javaArgmax(prefillLogits, prefillLogits.shape()[1] - 1);
         prefillLogits.close();
         prefillInputIds.close();
 
         long firstTokenMs = System.currentTimeMillis() - startTime;
+
+        log.info("[GGUF-KV] First token: {} (eos={})", firstTokenId, stopTokenIds.contains(firstTokenId));
 
         if (stopTokenIds.contains(firstTokenId)) {
             closePrefillOutputs(prefillOutputs, logitsName);
@@ -611,6 +627,7 @@ public class GenerationPipeline implements AutoCloseable {
         // STEP 2: Initialize static KV buffers from prefill K/V outputs
         // Shape: [batch, maxKvLen, numKVHeads, headDim] (BSHD layout)
         // ══════════════════════════════════════════════════════════════════════
+        log.info("[GGUF-KV] STEP 2: numLayers={} keyNames.size={}", numLayers, kvInputNames.keyNames.size());
         Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
         DataType kvDtype = null;
         for (int i = 0; i < numLayers; i++) {
@@ -654,7 +671,7 @@ public class GenerationPipeline implements AutoCloseable {
 
         INDArray decodeCausalMask = null;
         if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
-            decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(prefillSeqLen, maxKvLen);
+            decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(prefillSeqLen, maxKvLen, maskDtype);
         }
         INDArray decodePositionOffset = null;
         if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
@@ -679,9 +696,19 @@ public class GenerationPipeline implements AutoCloseable {
         List<String> decodeOutputNames = new ArrayList<>();
         decodeOutputNames.add(logitsName);
 
-        Map<String, INDArray> decodeOutputs = decoder.output(
-                decodeInputMap, decodeOutputNames.toArray(new String[0]));
+        log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers, {} inputs",
+                staticKvBuffers.size(), decodeInputMap.size());
 
+        Map<String, INDArray> decodeOutputs;
+        try {
+            decodeOutputs = decoder.output(
+                    decodeInputMap, decodeOutputNames.toArray(new String[0]));
+        } catch (Exception e) {
+            log.error("[GGUF-KV] STEP 3 warmup decode failed", e);
+            throw e;
+        }
+
+        log.info("[GGUF-KV] STEP 3 complete, outputs: {}", decodeOutputs.keySet());
         INDArray decodeLogits = decodeOutputs.get(logitsName);
         int secondTokenId = javaArgmax(decodeLogits, 0);
         decodeLogits.close();
