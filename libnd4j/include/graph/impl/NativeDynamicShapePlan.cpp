@@ -2372,9 +2372,13 @@ Status NativeDynamicShapePlan::executeSteadyState(
 
   activeExecCtx_ = static_cast<void*>(execCtx);
 
-  // Clear stale CUDA errors (single cheap call)
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+  // Clear stale CUDA errors — only reset message when an error was actually set
+  // (avoids heap delete+new of std::string on every decode step)
+  auto* errRef = sd::LaunchContext::defaultContext()->errorReference();
+  if (errRef->errorCode() != 0) {
+    errRef->setErrorCode(0);
+    errRef->setErrorMessage("");
+  }
 
   // Use platformTryFrozenFastPath — this is the SAME fast path that execute()
   // uses in steady state. It handles ext input H2D sync, cross-stream ordering,
