@@ -2348,6 +2348,8 @@ Status NativeDynamicShapePlan::executeSteadyState(
     }
     cudaEventRecord(evt, nullptr);  // CUDA stream 0
     cudaStreamWaitEvent(execCtx->dspStream, evt, 0);
+    // Mark synced so platformTryFrozenFastPath and compositeReplay skip the duplicate
+    execCtx->crossStreamSynced = true;
   }
 #endif
 

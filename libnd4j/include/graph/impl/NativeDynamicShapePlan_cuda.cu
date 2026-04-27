@@ -292,22 +292,26 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
     // Cross-stream ordering: .assign() runs on the default stream while graph
     // replay launches on cudaStr. Ensure cudaStr waits on the default stream.
+    // Skip if executeSteadyState already performed this sync (crossStreamSynced flag).
     {
-      cudaStream_t defaultStream = nullptr;
-      auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-      if (defaultStreamPtr != nullptr) {
-        defaultStream = *defaultStreamPtr;
-      }
-      if (defaultStream != nullptr && defaultStream != cudaStr) {
-        auto* execCtxFast = static_cast<PlanExecutionContext*>(activeExecutionContext());
-        cudaEvent_t crossStreamEvt = (execCtxFast != nullptr) ? execCtxFast->crossStreamEvent : nullptr;
-        if (crossStreamEvt != nullptr) {
-          cudaEventRecord(crossStreamEvt, defaultStream);
-          cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
+      auto* execCtxFast = static_cast<PlanExecutionContext*>(activeExecutionContext());
+      if (execCtxFast == nullptr || !execCtxFast->crossStreamSynced) {
+        cudaStream_t defaultStream = nullptr;
+        auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+        if (defaultStreamPtr != nullptr) {
+          defaultStream = *defaultStreamPtr;
         }
-        DSP_DIAG(EXECUTE, "CROSS_STREAM_SYNC: frozen fast path replay stream %p waiting on "
-                 "default stream %p for seg[%d-%d]",
-                 (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
+        if (defaultStream != nullptr && defaultStream != cudaStr) {
+          cudaEvent_t crossStreamEvt = (execCtxFast != nullptr) ? execCtxFast->crossStreamEvent : nullptr;
+          if (crossStreamEvt != nullptr) {
+            cudaEventRecord(crossStreamEvt, defaultStream);
+            cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
+          }
+          DSP_DIAG(EXECUTE, "CROSS_STREAM_SYNC: frozen fast path replay stream %p waiting on "
+                   "default stream %p for seg[%d-%d]",
+                   (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
+        }
+        if (execCtxFast != nullptr) execCtxFast->crossStreamSynced = true;
       }
     }
 
