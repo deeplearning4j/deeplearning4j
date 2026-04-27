@@ -198,6 +198,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     private OpaqueNDArray[] cachedInputOpaques;
     private INDArray[] cachedInputArrays;
 
+    /** Reusable working copy of cachedInputArrays for the frozen fast path.
+     *  Avoids allocating a new INDArray[1332] array on every decode step. */
+    private INDArray[] frozenExtInputsWorkingCopy;
+
     /** Strong references to ALL OpaqueNDArrays currently registered in the C++ context.
      *  Prevents GC from collecting OpaqueNDArray wrappers (and thus deleting the C++ NDArray
      *  objects they wrap) while the C++ context holds raw NDArray* pointers to them.
@@ -1947,7 +1951,13 @@ public class DynamicShapePlanExecutor implements Closeable {
         // O(1) cache hit for matching shapes; swaps to a different plan when shapes drift.
         // This is what lets the plan cache's shape-keyed dispatch enforce slot immutability —
         // each shape-sig gets its own plan with its own bound slots.
-        redispatchForCurrentShapes(placeholderArrays);
+        //
+        // After shapes freeze, the plan handle is guaranteed stable (a swap would throw
+        // PLAN_CACHE_BUG). Skip the redispatch to avoid per-step BytePointer allocation
+        // of the full serialized plan + JNI call overhead.
+        if (!shapesFrozen || nativePlanHandle == null || nativePlanHandle.isNull()) {
+            redispatchForCurrentShapes(placeholderArrays);
+        }
 
         DspDiagnostics.record(DspDiagnostics.EXECUTE,
                 "Java: executeNative ENTER executionCount=" + executionCount +
@@ -1969,9 +1979,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             DspDiagnostics.record(DspDiagnostics.EXECUTE,
                     "Java: external inputs FAST PATH (frozen, " + extKeys.length + " cached)");
             // Fast path: reuse cached constant/variable arrays, only re-resolve placeholders.
-            // Use a separate array so we don't corrupt cachedInputArrays (needed for identity comparison).
-            extInputs = new INDArray[extKeys.length];
-            System.arraycopy(cachedInputArrays, 0, extInputs, 0, extKeys.length);
+            // Use a reusable working array so we don't corrupt cachedInputArrays (needed for identity comparison)
+            // but also don't allocate a new array on every decode step (1332+ entries × 250 tokens = GC pressure).
+            if (frozenExtInputsWorkingCopy == null || frozenExtInputsWorkingCopy.length != extKeys.length) {
+                frozenExtInputsWorkingCopy = new INDArray[extKeys.length];
+            }
+            System.arraycopy(cachedInputArrays, 0, frozenExtInputsWorkingCopy, 0, extKeys.length);
+            extInputs = frozenExtInputsWorkingCopy;
             // Re-resolve any inputs whose DataBuffer has been freed between steps.
             // This can happen when setCloseable(true)+close() is called on KV outputs
             // that share a DataBuffer with past_key_values inputs.
@@ -2127,13 +2141,17 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
 
         // GATHER DIAGNOSTIC: dump external inputs that are [1,1] INT64 (likely position_ids for gather slot 0)
-        for (int i = 0; i < Math.min(extInputs.length, 1333); i++) {
-            INDArray arr = extInputs[i];
-            if (arr != null && arr.rank() == 2 && arr.shape()[0] == 1 && arr.shape()[1] == 1
-                    && arr.dataType() == DataType.INT64) {
-                long val = arr.getInt(0);
-                log.info("GATHER_DIAG: extIdx={} name='{}' shape=[1,1] INT64 value={} executionCount={}",
-                        i, extKeys[i], val, executionCount);
+        // Gated behind isDebugEnabled — getInt(0) forces D2H sync, log.info() allocates strings.
+        // Running unconditionally on every decode step costs ~1-5ms/step from the D2H sync alone.
+        if (log.isDebugEnabled()) {
+            for (int i = 0; i < Math.min(extInputs.length, 1333); i++) {
+                INDArray arr = extInputs[i];
+                if (arr != null && arr.rank() == 2 && arr.shape()[0] == 1 && arr.shape()[1] == 1
+                        && arr.dataType() == DataType.INT64) {
+                    long val = arr.getInt(0);
+                    log.debug("GATHER_DIAG: extIdx={} name='{}' shape=[1,1] INT64 value={} executionCount={}",
+                            i, extKeys[i], val, executionCount);
+                }
             }
         }
 

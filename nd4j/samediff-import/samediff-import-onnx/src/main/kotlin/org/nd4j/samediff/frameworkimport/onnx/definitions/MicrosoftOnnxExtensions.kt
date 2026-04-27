@@ -49,6 +49,7 @@ object MicrosoftOnnxExtensions {
         "SkipLayerNormalization" to "com.microsoft",
         "LayerNormalization" to "com.microsoft",
         "SimplifiedLayerNormalization" to "com.microsoft",
+        "SkipSimplifiedLayerNormalization" to "com.microsoft",
         "PackedAttention" to "com.microsoft",
         "PackedMultiHeadAttention" to "com.microsoft",
         "RotaryEmbedding" to "com.microsoft",
@@ -147,6 +148,7 @@ object MicrosoftOnnxExtensions {
             "SkipLayerNormalization",
             "LayerNormalization",
             "SimplifiedLayerNormalization",
+            "SkipSimplifiedLayerNormalization",
             "RotaryEmbedding",
 
             // Activation Functions
