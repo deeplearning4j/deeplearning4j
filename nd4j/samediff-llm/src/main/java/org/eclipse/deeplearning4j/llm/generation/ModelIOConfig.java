@@ -106,6 +106,75 @@ public class ModelIOConfig {
     }
 
     /**
+     * Find KV cache INPUT names from a decoder model.
+     *
+     * <p>GGUF models with in-graph KV cache have inputs like:
+     * {@code past_key_values.0.key}, {@code past_key_values.0.value}, etc.
+     * These are static buffers that the attention op writes to in-place.</p>
+     *
+     * @param decoder the SameDiff decoder model
+     * @return KVCacheNames with input key/value names, or null if none found
+     */
+    public static KVCacheNames findKVCacheInputNames(SameDiff decoder) {
+        List<String> keyInputNames = new ArrayList<>();
+        List<String> valueInputNames = new ArrayList<>();
+
+        for (String inputName : decoder.inputs()) {
+            if (inputName.contains("past_key_values") && inputName.contains("key")) {
+                keyInputNames.add(inputName);
+            } else if (inputName.contains("past_key_values") && inputName.contains("value")) {
+                valueInputNames.add(inputName);
+            }
+        }
+
+        Collections.sort(keyInputNames);
+        Collections.sort(valueInputNames);
+
+        if (keyInputNames.isEmpty() && valueInputNames.isEmpty()) {
+            return null;
+        }
+        return new KVCacheNames(keyInputNames, valueInputNames);
+    }
+
+    /**
+     * Check whether a decoder uses in-graph KV cache (GGUF pattern).
+     *
+     * <p>In-graph KV cache means the model has KV cache INPUTS (past_key_values.*.key/value)
+     * but NO present KV outputs. The attention op updates the cache buffers in-place
+     * during execution. This differs from ONNX models which have present_* outputs
+     * that must be scattered back externally.</p>
+     *
+     * @param decoder the SameDiff decoder model
+     * @return true if the model uses in-graph KV cache
+     */
+    public static boolean isInGraphKvCache(SameDiff decoder) {
+        KVCacheNames inputKv = findKVCacheInputNames(decoder);
+        if (inputKv == null || inputKv.keyNames.isEmpty()) {
+            return false;
+        }
+        // In-graph KV cache: has KV cache inputs but no present outputs
+        KVCacheNames outputKv = findKVCacheOutputNames(decoder);
+        return outputKv.keyNames.isEmpty();
+    }
+
+    /**
+     * Check whether a decoder has any form of KV cache support.
+     *
+     * <p>Returns true for either:</p>
+     * <ul>
+     *   <li>ONNX models with present_* outputs (external KV scatter)</li>
+     *   <li>GGUF models with past_key_values.* inputs (in-graph KV cache)</li>
+     * </ul>
+     */
+    public static boolean hasKvCache(SameDiff decoder) {
+        KVCacheNames outputKv = findKVCacheOutputNames(decoder);
+        if (outputKv != null && !outputKv.keyNames.isEmpty()) {
+            return true;
+        }
+        return isInGraphKvCache(decoder);
+    }
+
+    /**
      * Build a causal attention mask for the decoder (FLOAT dtype).
      *
      * For prefill (currentSeqLen &gt; 1): upper-triangular mask filled with MASK_FILL
@@ -242,6 +311,14 @@ public class ModelIOConfig {
     @Builder.Default
     private final String positionIdsName = "position_ids";
 
+    /** Name of the position offset placeholder (e.g., "position_offset"). GGUF in-graph KV cache models only. */
+    @Builder.Default
+    private final String positionOffsetName = "position_offset";
+
+    /** Name of the cache position placeholder (e.g., "cache_position"). GGUF in-graph KV cache models only. */
+    @Builder.Default
+    private final String cachePositionName = "cache_position";
+
     /**
      * Prefix for KV cache input variables (e.g., "past_key_values.").
      * Used to identify which inputs are KV cache entries vs. regular inputs.
@@ -328,6 +405,20 @@ public class ModelIOConfig {
      */
     public boolean isPositionIds(String name) {
         return positionIdsName != null && positionIdsName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the position offset variable (GGUF in-graph KV).
+     */
+    public boolean isPositionOffset(String name) {
+        return positionOffsetName != null && positionOffsetName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the cache position variable (GGUF in-graph KV).
+     */
+    public boolean isCachePosition(String name) {
+        return cachePositionName != null && cachePositionName.equals(name);
     }
 
     /**
@@ -426,6 +517,8 @@ public class ModelIOConfig {
         String maskName = null;
         String causalName = null;
         String posName = null;
+        String posOffsetName = null;
+        String cachePosName = null;
         String kvPrefix = null;
         String attnReformat = null;
         String encoderHiddenName = null;
@@ -447,6 +540,10 @@ public class ModelIOConfig {
                 causalName = input;
             } else if (posName == null && input.contains("position_id")) {
                 posName = input;
+            } else if (posOffsetName == null && input.contains("position_offset")) {
+                posOffsetName = input;
+            } else if (cachePosName == null && input.contains("cache_position")) {
+                cachePosName = input;
             }
 
             // Detect KV cache prefix
@@ -498,12 +595,16 @@ public class ModelIOConfig {
 
         boolean isEncoderDecoder = encoderHiddenName != null;
 
+        boolean inGraphKv = isInGraphKvCache(model);
+
         ModelIOConfig config = ModelIOConfig.builder()
                 .inputEmbeddingsName(embedName != null ? embedName : "inputs_embeds")
                 .inputIdsName(idsName)
                 .attentionMaskName(maskName)
                 .causalMaskName(causalName)
                 .positionIdsName(posName)
+                .positionOffsetName(posOffsetName)
+                .cachePositionName(cachePosName)
                 .kvCachePrefix(kvPrefix != null ? kvPrefix : "past_key_values.")
                 .kvPresentToInputReplace(replacement)
                 .logitsOutputName(logitsName != null ? logitsName : "logits")
@@ -515,12 +616,13 @@ public class ModelIOConfig {
                 .build();
 
         log.info("ModelIOConfig.discover(): embeddings={}, inputIds={}, attentionMask={}, causalMask={}, " +
-                        "positionIds={}, kvPrefix={}, logits={}, kvLayers={}, attnReformat={}, " +
-                        "encoderDecoder={}, encoderHidden={}, encoderMask={}",
+                        "positionIds={}, positionOffset={}, cachePosition={}, kvPrefix={}, logits={}, " +
+                        "kvLayers={}, inGraphKv={}, attnReformat={}, encoderDecoder={}, encoderHidden={}, encoderMask={}",
                 config.inputEmbeddingsName, config.inputIdsName, config.attentionMaskName,
-                config.causalMaskName, config.positionIdsName, config.kvCachePrefix,
+                config.causalMaskName, config.positionIdsName, config.positionOffsetName,
+                config.cachePositionName, config.kvCachePrefix,
                 config.logitsOutputName, kvNames != null ? kvNames.keyNames.size() : 0,
-                config.attnMaskReformatOutput,
+                inGraphKv, config.attnMaskReformatOutput,
                 config.encoderDecoder, config.encoderHiddenStatesName, config.encoderAttentionMaskName);
 
         return config;

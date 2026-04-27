@@ -62,6 +62,12 @@ struct AutoregressiveDecodeConfig {
     int* kvInputExtIndices;     // ext input indices for past_key_values (2*numKvPairs)
     int* kvOutputIndices;       // plan output indices for present KVs (2*numKvPairs)
 
+    // In-graph KV cache (GGUF pattern): the attention op writes K/V in-place
+    // at cachePosition. These ext input indices point to the scalar position
+    // tensors updated per step. -1 means not used (ONNX/non-GGUF path).
+    int positionOffsetExtIdx = -1;  // position_offset scalar (RoPE position)
+    int cachePositionExtIdx = -1;   // cache_position scalar (KV write position)
+
     // KV scatter ownership: when true, the plan's native KV scatter
     // (configureKvScatter / executeKvScatterPostExec) handles KV cache
     // updates. The decode loop skips its own manual scatter to avoid

@@ -392,6 +392,63 @@ bool OpenVinoGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end)
   return canFuse;
 }
 
+// ─── computeIslandTopologyHash ──────────────────────────────────────────────
+// Produces a slot-index-agnostic hash from the op sequence + input shapes.
+// Segments from different transformer layers with the same topology will
+// hash identically, letting them share one CompiledModel.
+
+uint64_t OpenVinoGraphBackend::computeIslandTopologyHash(
+    NativeSlot* slots, int startSlot, int endSlot,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots) {
+
+  uint64_t h = 0xcbf29ce484222325ULL;  // FNV-1a offset basis
+  auto mix = [&](uint64_t v) {
+    h ^= v;
+    h *= 0x100000001b3ULL;  // FNV-1a prime
+  };
+
+  int numSlots = endSlot - startSlot + 1;
+  mix(static_cast<uint64_t>(numSlots));
+
+  for (int s = startSlot; s <= endSlot; s++) {
+    // Hash op name (not slot index — so identical layers match)
+    const std::string& opName = slots[s].ident.opName;
+    for (char c : opName) mix(static_cast<uint64_t>(c));
+    mix(0xFF);  // separator
+
+    // Hash number of inputs and outputs
+    mix(static_cast<uint64_t>(slots[s].wiring.numInputs));
+    mix(static_cast<uint64_t>(slots[s].wiring.numOutputs));
+
+    // Hash input shapes (rank + dims) — slot-index-agnostic
+    for (int i = 0; i < slots[s].wiring.numInputs; i++) {
+      int srcIdx = slots[s].wiring.inputSourceIndices[i];
+      NDArray* arr = nullptr;
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
+      } else if (srcIdx < totalOutputSlots) {
+        arr = outputSlots[srcIdx];
+      }
+      if (arr) {
+        mix(static_cast<uint64_t>(arr->rankOf()));
+        for (int d = 0; d < arr->rankOf(); d++) {
+          mix(static_cast<uint64_t>(arr->sizeAt(d)));
+        }
+        mix(static_cast<uint64_t>(arr->dataType()));
+      }
+    }
+
+    // Hash integer args (affect op behavior e.g. strided_slice masks)
+    for (int a = 0; a < slots[s].args.numIArgs; a++) {
+      mix(static_cast<uint64_t>(slots[s].args.iArgs[a]));
+    }
+  }
+
+  return h;
+}
+
 // ─── buildIsland ────────────────────────────────────────────────────────────
 // Builds an OV model from a contiguous range of OV-compilable slots.
 // segStartSlot/segEndSlot define the outer segment boundary for context.
@@ -1387,9 +1444,11 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
           int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
 
           // Parse masks from first 5 iArgs (if available)
+          // nd4j strided_slice iArgs order: [beginMask, ellipsisMask, endMask, newAxisMask, shrinkAxisMask]
+          // (see strided_slice.cpp: INT_ARG(0)=begin_mask, INT_ARG(1)=ellipsis_mask, INT_ARG(2)=end_mask)
           int64_t beginMaskBits = (slots[s].args.numIArgs > 0) ? slots[s].args.iArgs[0] : 0;
-          int64_t endMaskBits = (slots[s].args.numIArgs > 1) ? slots[s].args.iArgs[1] : 0;
-          int64_t ellipsisMaskBits = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 0;
+          int64_t ellipsisMaskBits = (slots[s].args.numIArgs > 1) ? slots[s].args.iArgs[1] : 0;
+          int64_t endMaskBits = (slots[s].args.numIArgs > 2) ? slots[s].args.iArgs[2] : 0;
           int64_t newAxisMaskBits = (slots[s].args.numIArgs > 3) ? slots[s].args.iArgs[3] : 0;
           int64_t shrinkAxisMaskBits = (slots[s].args.numIArgs > 4) ? slots[s].args.iArgs[4] : 0;
 
@@ -2207,17 +2266,40 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
     return result;
   }
 
-  // Build the model
+  // Build the model — check topology cache first to share CompiledModels
+  // across segments with identical op structure (e.g. transformer layers).
   try {
-    auto model = std::make_shared<ov::Model>(results, params, "dsp_segment");
-    auto compiledModel = core_.compile_model(model, "CPU");
-    result.compiled = std::make_shared<ov::CompiledModel>(compiledModel);
+    uint64_t topoHash = computeIslandTopologyHash(
+        slots, startSlot, endSlot, externalInputs, numExternalInputs,
+        outputSlots, totalOutputSlots);
+
+    std::shared_ptr<ov::CompiledModel> sharedCompiled;
+    {
+      std::lock_guard<std::mutex> lock(modelCacheMtx_);
+      auto it = modelCache_.find(topoHash);
+      if (it != modelCache_.end()) {
+        sharedCompiled = it->second;
+        DSP_DIAG(COMPILE, "OpenVINO: island [%d-%d] topology HIT (hash=0x%llx) — reusing compiled model",
+                 startSlot, endSlot, (unsigned long long)topoHash);
+      }
+    }
+
+    if (!sharedCompiled) {
+      auto model = std::make_shared<ov::Model>(results, params, "dsp_segment");
+      auto compiledModel = core_.compile_model(model, "CPU");
+      sharedCompiled = std::make_shared<ov::CompiledModel>(compiledModel);
+      {
+        std::lock_guard<std::mutex> lock(modelCacheMtx_);
+        modelCache_[topoHash] = sharedCompiled;
+      }
+      DSP_DIAG(COMPILE, "OpenVINO: compiled island [%d-%d] with %zu params, %zu results (hash=0x%llx)",
+               startSlot, endSlot, params.size(), results.size(), (unsigned long long)topoHash);
+    }
+
+    result.compiled = sharedCompiled;
     result.request = std::make_shared<ov::InferRequest>(result.compiled->create_infer_request());
     result.inputSlotMap = inputSourceMap;
     result.outputSlotMap = outputSourceMap;
-
-    DSP_DIAG(COMPILE, "OpenVINO: compiled island [%d-%d] with %zu params, %zu results",
-             startSlot, endSlot, params.size(), results.size());
   } catch (const std::exception& e) {
     // OpenVINO exceptions often have multiline messages with nested cause.
     // Log full message to stderr for visibility.
@@ -2247,11 +2329,19 @@ bool OpenVinoGraphBackend::compileSegment(
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
   auto it = cache_.find(cacheKey);
-  if (it != cache_.end() && it->second.valid) {
+  if (it != cache_.end() && it->second->second.valid) {
+    // Promote to MRU
+    cacheLru_.splice(cacheLru_.begin(), cacheLru_, it->second);
     DSP_DIAG(JIT, "OpenVinoGraphBackend::compileSegment [%d-%d]: cache HIT (shapeKey=0x%llx)",
              seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
-    lastCompilationAudit_ = it->second.compilationAudit;
+    lastCompilationAudit_ = it->second->second.compilationAudit;
     return true;
+  }
+
+  // Remove existing invalid entry if present (prevents orphaned LRU nodes)
+  if (it != cache_.end()) {
+    cacheLru_.erase(it->second);
+    cache_.erase(it);
   }
 
   DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: cache MISS, building islands (shapeKey=0x%llx)",
@@ -2350,7 +2440,12 @@ bool OpenVinoGraphBackend::compileSegment(
 
   DSP_DIAG(COMPILE, "OpenVinoGraphBackend::compileSegment [%d-%d]: SUCCESS islands=%d nativeRanges=%d",
            segStart, segEnd, (int)compiled.ovIslands.size(), (int)compiled.nativeRanges.size());
-  cache_[cacheKey] = std::move(compiled);
+
+  // Insert at MRU position and evict if over limit
+  cacheLru_.emplace_front(cacheKey, std::move(compiled));
+  cache_[cacheKey] = cacheLru_.begin();
+  evictCacheIfOverLimitLocked();
+
   seg.def.shapeKeyState.markCompiled(shapeKey);
   return true;
 }
@@ -2368,14 +2463,16 @@ Status OpenVinoGraphBackend::executeSegment(
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
   auto it = cache_.find(cacheKey);
-  if (it == cache_.end() || !it->second.valid) {
+  if (it == cache_.end() || !it->second->second.valid) {
     DSP_DIAG(EXECUTE, "OpenVINO: no compiled segment for [%d-%d] shapeKey=%lld cacheSize=%d found=%d",
              seg.def.startSlot, seg.def.endSlot, (long long)seg.def.shapeKeyState.compiledShapeKey,
              (int)cache_.size(), it != cache_.end() ? 1 : 0);
     return Status::KERNEL_FAILURE;
   }
 
-  auto& compiled = it->second;
+  // Promote to MRU
+  cacheLru_.splice(cacheLru_.begin(), cacheLru_, it->second);
+  auto& compiled = it->second->second;
 
   // Lambda to execute a single OV island — captures mapDataType via class scope
   auto runIsland = [&](OvIsland& island) -> Status {
@@ -2517,8 +2614,44 @@ Status OpenVinoGraphBackend::executeSegment(
 // ─── invalidateCache ────────────────────────────────────────────────────────
 
 void OpenVinoGraphBackend::invalidateCache() {
-  std::lock_guard<std::mutex> lock(cacheMtx_);
-  cache_.clear();
+  {
+    std::lock_guard<std::mutex> lock(cacheMtx_);
+    cache_.clear();
+    cacheLru_.clear();
+  }
+  {
+    std::lock_guard<std::mutex> lock(modelCacheMtx_);
+    modelCache_.clear();
+  }
+}
+
+void OpenVinoGraphBackend::evictCacheIfOverLimitLocked() {
+  while (static_cast<int>(cacheLru_.size()) > kMaxCacheEntries) {
+    // Evict from LRU end (oldest)
+    auto& victim = cacheLru_.back();
+    DSP_DIAG(COMPILE, "OpenVINO: evict LRU cache entry seg[%d-%d] shapeKey=0x%llx (cacheSize=%d > max=%d)",
+             victim.first.startSlot, victim.first.endSlot,
+             (long long)victim.first.shapeKey,
+             (int)cacheLru_.size(), kMaxCacheEntries);
+    cache_.erase(victim.first);
+    cacheLru_.pop_back();
+  }
+
+  // Sweep modelCache_ for CompiledModels that are only held by the topology cache
+  // (use_count==1 means no segment cache entry references them anymore).
+  // Each CompiledModel holds ~50-200 MB of internal OpenVINO working buffers.
+  {
+    std::lock_guard<std::mutex> lock(modelCacheMtx_);
+    for (auto it = modelCache_.begin(); it != modelCache_.end(); ) {
+      if (it->second.use_count() == 1) {
+        DSP_DIAG(COMPILE, "OpenVINO: evict unreferenced CompiledModel (topoHash=0x%llx)",
+                 (unsigned long long)it->first);
+        it = modelCache_.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
 }
 
 // ─── getLastCompilationAudit ────────────────────────────────────────────────

@@ -337,69 +337,87 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   auto& group = batchedGemmGroups_[groupIdx];
   int batchCount = static_cast<int>(group.slotIndices.size());
 
-  // 0. Pre-populate outputSlots_ for ALL members from slot cache.
-  //    This ensures downstream ops can find each member's output array.
+  // ── Pointer-stable fast path ───────────────────────────────────────────
+  // In steady state (shapes frozen, pointers stable), the device pointer
+  // arrays already contain the correct addresses from the previous step.
+  // Skip input resolution, syncToDevice, and H2D copies entirely.
+  bool canSkipPtrRefresh = group.ptrStable && pointersStable_ && shapesFrozen_ && executeCount_ >= 3;
 
-  // 1. Populate host pointer arrays from current slot inputs/outputs
-  for (int b = 0; b < batchCount; b++) {
-    int slotIdx = group.slotIndices[b];
-    NativeSlot& slot = slots_[slotIdx];
+  if (!canSkipPtrRefresh) {
+    // 1. Populate host pointer arrays from current slot inputs/outputs
+    bool anyPtrChanged = false;
+    for (int b = 0; b < batchCount; b++) {
+      int slotIdx = group.slotIndices[b];
+      NativeSlot& slot = slots_[slotIdx];
 
-    // Resolve input A
-    NDArray* inputA = nullptr;
-    {
-      int src = slot.wiring.inputSourceIndices[0];
-      if (src >= 0) {
-        inputA = outputSlots_[src];
-        if (inputA == nullptr && src < totalOutputSlots_) inputA = outputSlots_[src];
-      } else {
-        int extIdx = -(src + 1);
-        if (extIdx < numExt) inputA = externalArrays[extIdx];
+      // Resolve input A
+      NDArray* inputA = nullptr;
+      {
+        int src = slot.wiring.inputSourceIndices[0];
+        if (src >= 0) {
+          inputA = outputSlots_[src];
+          if (inputA == nullptr && src < totalOutputSlots_) inputA = outputSlots_[src];
+        } else {
+          int extIdx = -(src + 1);
+          if (extIdx < numExt) inputA = externalArrays[extIdx];
+        }
       }
-    }
 
-    // Resolve input B
-    NDArray* inputB = nullptr;
-    {
-      int src = slot.wiring.inputSourceIndices[1];
-      if (src >= 0) {
-        inputB = outputSlots_[src];
-        if (inputB == nullptr && src < totalOutputSlots_) inputB = outputSlots_[src];
-      } else {
-        int extIdx = -(src + 1);
-        if (extIdx < numExt) inputB = externalArrays[extIdx];
+      // Resolve input B
+      NDArray* inputB = nullptr;
+      {
+        int src = slot.wiring.inputSourceIndices[1];
+        if (src >= 0) {
+          inputB = outputSlots_[src];
+          if (inputB == nullptr && src < totalOutputSlots_) inputB = outputSlots_[src];
+        } else {
+          int extIdx = -(src + 1);
+          if (extIdx < numExt) inputB = externalArrays[extIdx];
+        }
       }
-    }
 
-    // Resolve output C
-    NDArray* outputC = nullptr;
-    if (slot.wiring.numOutputs >= 1) {
-      int outSlotIdx = slot.wiring.outputSlotIndices[0];
-      if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_) {
-        outputC = outputSlots_[outSlotIdx];
-        if (outputC == nullptr) outputC = outputSlots_[outSlotIdx];
+      // Resolve output C
+      NDArray* outputC = nullptr;
+      if (slot.wiring.numOutputs >= 1) {
+        int outSlotIdx = slot.wiring.outputSlotIndices[0];
+        if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_) {
+          outputC = outputSlots_[outSlotIdx];
+          if (outputC == nullptr) outputC = outputSlots_[outSlotIdx];
+        }
       }
+
+      if (inputA == nullptr || inputB == nullptr || outputC == nullptr) {
+        DSP_DIAG(EXECUTE, "batched GEMM group %d slot %d: null array (A=%p B=%p C=%p), falling back",
+                  groupIdx, slotIdx, inputA, inputB, outputC);
+        return Status::BAD_INPUT;
+      }
+
+      inputA->syncToDevice();
+      inputB->syncToDevice();
+
+      void* aPtr = inputA->specialBuffer();
+      void* bPtr = inputB->specialBuffer();
+      void* cPtr = outputC->specialBuffer();
+
+      if (group.h_A_ptrs[b] != aPtr || group.h_B_ptrs[b] != bPtr || group.h_C_ptrs[b] != cPtr) {
+        anyPtrChanged = true;
+      }
+      group.h_A_ptrs[b] = aPtr;
+      group.h_B_ptrs[b] = bPtr;
+      group.h_C_ptrs[b] = cPtr;
     }
 
-    if (inputA == nullptr || inputB == nullptr || outputC == nullptr) {
-      DSP_DIAG(EXECUTE, "batched GEMM group %d slot %d: null array (A=%p B=%p C=%p), falling back",
-                groupIdx, slotIdx, inputA, inputB, outputC);
-      return Status::BAD_INPUT;
+    // 2. Copy pointer arrays H2D only when pointers actually changed
+    if (anyPtrChanged || !group.ptrStable) {
+      size_t ptrBytes = batchCount * sizeof(void*);
+      cudaMemcpyAsync(group.d_A_ptrs, group.h_A_ptrs, ptrBytes, cudaMemcpyHostToDevice, stream);
+      cudaMemcpyAsync(group.d_B_ptrs, group.h_B_ptrs, ptrBytes, cudaMemcpyHostToDevice, stream);
+      cudaMemcpyAsync(group.d_C_ptrs, group.h_C_ptrs, ptrBytes, cudaMemcpyHostToDevice, stream);
+      group.ptrStable = !anyPtrChanged;
+    } else {
+      group.ptrStable = true;
     }
-
-    inputA->syncToDevice();
-    inputB->syncToDevice();
-
-    group.h_A_ptrs[b] = inputA->specialBuffer();
-    group.h_B_ptrs[b] = inputB->specialBuffer();
-    group.h_C_ptrs[b] = outputC->specialBuffer();
   }
-
-  // 2. Copy pointer arrays H2D
-  size_t ptrBytes = batchCount * sizeof(void*);
-  cudaMemcpyAsync(group.d_A_ptrs, group.h_A_ptrs, ptrBytes, cudaMemcpyHostToDevice, stream);
-  cudaMemcpyAsync(group.d_B_ptrs, group.h_B_ptrs, ptrBytes, cudaMemcpyHostToDevice, stream);
-  cudaMemcpyAsync(group.d_C_ptrs, group.h_C_ptrs, ptrBytes, cudaMemcpyHostToDevice, stream);
 
   // 3. Dispatch cublasGemmBatchedEx
   auto* context = LaunchContext::defaultContext();

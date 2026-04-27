@@ -913,4 +913,11 @@ dim3 digammaDims(int length);
 #define BLOCK_SIZE_MOE_SHARED_EXPERTS getEnvVariable("BLOCK_SIZE_MOE_SHARED_EXPERTS", 128)
 #define SHARED_MEM_SIZE_MOE_SHARED_EXPERTS getEnvVariable("SHARED_MEM_SIZE_MOE_SHARED_EXPERTS", 8192)
 
+// Fused RMSNorm + Linear: grid covers N output columns, block threads do K reduction + GEMV
+// Shared memory holds K normalized floats + warp reduction scratch.
+// Default 33792 = 8192 * 4 + 256 bytes: covers K up to 8192 (hidden_dim).
+#define GRID_SIZE_RMS_NORM_LINEAR getEnvVariable("GRID_SIZE_RMS_NORM_LINEAR", 256)
+#define BLOCK_SIZE_RMS_NORM_LINEAR getEnvVariable("BLOCK_SIZE_RMS_NORM_LINEAR", 256)
+#define SHARED_MEM_SIZE_RMS_NORM_LINEAR getEnvVariable("SHARED_MEM_SIZE_RMS_NORM_LINEAR", 33792)
+
 #endif //LIBND4J_LAUNCHCONTEXT_H

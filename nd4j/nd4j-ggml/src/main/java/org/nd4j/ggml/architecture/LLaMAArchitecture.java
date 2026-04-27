@@ -28,11 +28,13 @@ import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.autodiff.samediff.SDIndex;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +101,32 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Input placeholder: [batch, seq_len]
         SDVariable inputIds = sd.placeHolder("input_ids", DataType.INT64, -1, -1);
 
+        // KV cache placeholders for autoregressive decoding
+        // position_offset: scalar INT64 — current position for RoPE (enables DSP replay)
+        SDVariable positionOffset = sd.placeHolder("position_offset", DataType.INT64);
+        // cache_position: scalar INT64 — write position in KV cache buffers
+        SDVariable cachePosition = sd.placeHolder("cache_position", DataType.INT64);
+        // _causal_mask: [1, 1, Tq, maxKvLen] — attention bias masking padded cache positions
+        SDVariable causalMask = sd.placeHolder("_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
+
+        // Per-layer KV cache placeholders (only for cacheable attention layers, not GDN)
+        int headDim = config.getHeadDimension();
+        int numKVHeads = config.getNumKVHeads();
+        Map<Integer, SDVariable> keyCachePlaceholders = new HashMap<>();
+        Map<Integer, SDVariable> valueCachePlaceholders = new HashMap<>();
+        for (int layer = 0; layer < config.getNumLayers(); layer++) {
+            String layerType = getLayerType(config, layer);
+            if (!"linear_attention".equals(layerType)) {
+                // Cacheable layer: [batch, maxKvLen, numKVHeads, headDim]
+                SDVariable keyCache = sd.placeHolder("past_key_values." + layer + ".key",
+                        dtype, -1, -1, numKVHeads, headDim);
+                SDVariable valueCache = sd.placeHolder("past_key_values." + layer + ".value",
+                        dtype, -1, -1, numKVHeads, headDim);
+                keyCachePlaceholders.put(layer, keyCache);
+                valueCachePlaceholders.put(layer, valueCache);
+            }
+        }
+
         // Token embeddings: [vocab_size, hidden_size]
         INDArray tokenEmbedWeight = weights.get("token_embd.weight");
         if (tokenEmbedWeight == null) {
@@ -110,8 +138,19 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable hidden = sd.gather("embedded", tokenEmbed, inputIds, 0);
 
         // Build transformer layers
+        List<String> outputNames = new ArrayList<>();
         for (int layer = 0; layer < config.getNumLayers(); layer++) {
-            hidden = buildTransformerBlock(sd, hidden, layer, config, weights, dtype);
+            hidden = buildTransformerBlock(sd, hidden, layer, config, weights, dtype,
+                    positionOffset, cachePosition, causalMask,
+                    keyCachePlaceholders.get(layer),
+                    valueCachePlaceholders.get(layer));
+
+            // Register per-layer K/V outputs for prefill extraction
+            String layerType = getLayerType(config, layer);
+            if (!"linear_attention".equals(layerType)) {
+                outputNames.add("k_rope_" + layer);
+                outputNames.add("v_heads_" + layer);
+            }
         }
 
         // Final RMS normalization
@@ -127,12 +166,16 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // Logits: [batch, seq_len, vocab_size]
         SDVariable logits = sd.mmul("logits", hidden, lmHead.permute(1, 0));
+        outputNames.add("logits");
+        sd.setOutputs(outputNames);
 
         return sd;
     }
 
     private SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
-            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype) {
+            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
+            SDVariable positionOffset, SDVariable cachePosition, SDVariable causalMask,
+            SDVariable keyCache, SDVariable valueCache) {
 
         String prefix = "blk." + layerIdx;
 
@@ -151,15 +194,18 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable attnOut;
         switch (layerType) {
             case "linear_attention":
+                // GDN layers have no cacheable K/V — no KV cache params passed
                 attnOut = buildGDNAttention(sd, normed, layerIdx, config, weights, dtype);
                 break;
             case "full_attention":
                 // Full attention with QK norms and output gating (Qwen3.5)
-                attnOut = buildGatedAttention(sd, normed, layerIdx, config, weights, dtype);
+                attnOut = buildGatedAttention(sd, normed, layerIdx, config, weights, dtype,
+                        positionOffset, cachePosition, causalMask, keyCache, valueCache);
                 break;
             default:
                 // Default: standard separate Q/K/V attention (LLaMA, Mistral, etc.)
-                attnOut = buildSeparateQKVAttention(sd, normed, layerIdx, config, weights, dtype);
+                attnOut = buildSeparateQKVAttention(sd, normed, layerIdx, config, weights, dtype,
+                        positionOffset, cachePosition, causalMask, keyCache, valueCache);
                 break;
         }
 
@@ -273,7 +319,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * Standard separate Q/K/V attention (LLaMA, Mistral, etc.)
      */
     private SDVariable buildSeparateQKVAttention(SameDiff sd, SDVariable input, int layerIdx,
-            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype) {
+            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
+            SDVariable positionOffset, SDVariable cachePosition, SDVariable causalMask,
+            SDVariable keyCache, SDVariable valueCache) {
 
         String prefix = "blk." + layerIdx;
         int numHeads = config.getNumAttentionHeads();
@@ -336,22 +384,26 @@ public class LLaMAArchitecture implements ModelArchitecture {
         k = sd.reshape("k_heads_" + layerIdx, k, kvShapeVar);
         v = sd.reshape("v_heads_" + layerIdx, v, kvShapeVar);
 
-        // Apply RoPE
+        // Apply RoPE with dynamic position offset (enables DSP replay)
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
+            q = new FusedRoPE(sd, q, positionOffset,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
 
-            k = new FusedRoPE(sd, k, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
+            k = new FusedRoPE(sd, k, positionOffset,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
         }
 
-        SDVariable attnOut = sd.nn.dotProductAttentionV2(
-                "attn_out_" + layerIdx,
+        // Attention with built-in KV cache + attention bias for masking
+        // useCausalMask=false — the causalMask (attention bias) handles all masking
+        SDVariable attnOut = new DotProductAttentionV2(sd,
                 q, v, k, null, null,
-                0.0, 0.0, true, false
-        );
+                keyCache, valueCache, cachePosition, causalMask,
+                0.0, 0.0, false, false).outputVariable();
+        sd.updateVariableNameAndReference(attnOut, "attn_out_" + layerIdx);
 
         int attnOutDim = actualNumHeads * headDim;
         SDVariable outShapeVar = sd.stack("attn_out_shape_" + layerIdx, 0,
@@ -375,7 +427,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * </ol>
      */
     private SDVariable buildGatedAttention(SameDiff sd, SDVariable input, int layerIdx,
-            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype) {
+            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
+            SDVariable positionOffset, SDVariable cachePosition, SDVariable causalMask,
+            SDVariable keyCache, SDVariable valueCache) {
 
         String prefix = "blk." + layerIdx;
         int numHeads = config.getNumAttentionHeads();
@@ -456,23 +510,25 @@ public class LLaMAArchitecture implements ModelArchitecture {
             k = applyHeadNorm(sd, k, attnPrefix + "k_norm_" + layerIdx, kNormWeight, config.getLayerNormEpsilon());
         }
 
-        // Apply RoPE after QK norms
+        // Apply RoPE after QK norms with dynamic position offset (enables DSP replay)
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
+            q = new FusedRoPE(sd, q, positionOffset,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
 
-            k = new FusedRoPE(sd, k, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
+            k = new FusedRoPE(sd, k, positionOffset,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
         }
 
-        // Dot-product attention
-        SDVariable attnOut = sd.nn.dotProductAttentionV2(
-                "attn_out_" + layerIdx,
+        // Attention with built-in KV cache + attention bias for masking
+        SDVariable attnOut = new DotProductAttentionV2(sd,
                 q, v, k, null, null,
-                0.0, 0.0, true, false
-        );
+                keyCache, valueCache, cachePosition, causalMask,
+                0.0, 0.0, false, false).outputVariable();
+        sd.updateVariableNameAndReference(attnOut, "attn_out_" + layerIdx);
 
         // Reshape: [batch, seq, numHeads, headDim] -> [batch, seq, attnDim]
         SDVariable outShapeVar = sd.stack("attn_out_shape_" + layerIdx, 0,

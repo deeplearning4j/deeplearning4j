@@ -27,7 +27,9 @@
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
 #include <execution/cuda/LaunchDims.h>
+#include <helpers/MmulHelper.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/rms_norm.h>
 
@@ -229,6 +231,187 @@ void rmsNorm(
   }
 
   NDArray::registerSpecialUse({output}, {input, gamma});
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Fused RMSNorm + Linear kernel for M=1 (decode hot path)
+//
+// Single kernel computes output[j] = dot(x * invRMS * gamma, W[:, j])
+// for all j in [0, N). Eliminates the intermediate normalized tensor.
+//
+// Phase 1: cooperative warp-reduce sum-of-squares to get invRMS
+// Phase 2: write normalized x * gamma into shared memory
+// Phase 3: each block computes dot products for its assigned output columns
+///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+SD_KERNEL void rmsNormLinearFusedKernel(
+    const T* __restrict__ x,       // [K]
+    const T* __restrict__ gamma,   // [K] or nullptr
+    const T* __restrict__ W,       // [K, N] row-major
+    T* __restrict__ output,        // [N]
+    const LongType K,
+    const LongType N,
+    const float epsilon) {
+
+  extern __shared__ char smem[];
+  // Layout: [K floats for normalized x] [numWarps floats for reduction]
+  float* normX = reinterpret_cast<float*>(smem);
+  float* reduceSpace = normX + K;
+
+  // Phase 1: compute invRMS via block reduction
+  float threadSumSq = 0.0f;
+  for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
+    float val = static_cast<float>(x[i]);
+    threadSumSq += val * val;
+  }
+
+  float totalSumSq = rmsBlockReduceSum(threadSumSq, reduceSpace);
+
+  __shared__ float invRms;
+  if (threadIdx.x == 0) {
+    invRms = rsqrtf(totalSumSq / static_cast<float>(K) + epsilon);
+  }
+  __syncthreads();
+
+  // Phase 2: write normalized x * gamma to shared memory
+  if (gamma != nullptr) {
+    for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
+      normX[i] = static_cast<float>(x[i]) * invRms * static_cast<float>(gamma[i]);
+    }
+  } else {
+    for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
+      normX[i] = static_cast<float>(x[i]) * invRms;
+    }
+  }
+  __syncthreads();
+
+  // Phase 3: each thread computes dot products for its assigned output columns
+  // Grid-stride across output dimension N
+  LongType jStart = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType jStride = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType j = jStart; j < N; j += jStride) {
+    float acc = 0.0f;
+    for (LongType k = 0; k < K; ++k) {
+      acc += normX[k] * static_cast<float>(W[k * N + j]);
+    }
+    output[j] = static_cast<T>(acc);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Typed launcher for fused M=1 path
+///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+void rmsNormLinearFusedLauncher(
+    const cudaStream_t* stream,
+    const void* vX,
+    const void* vGamma,
+    const void* vW,
+    void* vOutput,
+    LongType K,
+    LongType N,
+    float epsilon) {
+
+  auto x = reinterpret_cast<const T*>(vX);
+  auto gamma = (vGamma != nullptr) ? reinterpret_cast<const T*>(vGamma) : nullptr;
+  auto W = reinterpret_cast<const T*>(vW);
+  auto output = reinterpret_cast<T*>(vOutput);
+
+  dim3 launchDims = getLaunchDims("rms_norm_linear");
+  // Shared memory: K floats for normX + warp reduction scratch
+  int numWarps = (launchDims.y + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
+  size_t requiredSmem = (K + numWarps) * sizeof(float);
+  // Use configured default or actual requirement, whichever is larger
+  size_t sharedMemSize = requiredSmem > launchDims.z ? requiredSmem : launchDims.z;
+
+  // Grid covers the N output columns
+  auto gridSize = static_cast<int>((N + launchDims.y - 1) / launchDims.y);
+  if (gridSize > static_cast<int>(launchDims.x))
+    gridSize = launchDims.x;
+  if (gridSize < 1) gridSize = 1;
+
+  rmsNormLinearFusedKernel<T><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
+      x, gamma, W, output, K, N, epsilon);
+
+  DebugHelper::checkGlobalErrorCode("rmsNormLinearFusedKernel failed");
+}
+
+BUILD_SINGLE_TEMPLATE(void rmsNormLinearFusedLauncher,
+                       (const cudaStream_t* stream,
+                        const void* vX, const void* vGamma,
+                        const void* vW, void* vOutput,
+                        LongType K, LongType N, float epsilon),
+                       SD_FLOAT_TYPES);
+
+///////////////////////////////////////////////////////////////////////////////
+// Typed launcher for general M>1 path: fused rmsNorm + MmulHelper
+///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+void rmsNormLinearGeneralLauncher(
+    LaunchContext* context,
+    NDArray* input,
+    NDArray* gamma,
+    NDArray* weight,
+    NDArray* output,
+    float epsilon) {
+
+  // Allocate temp for normalized input (same shape as input)
+  auto shapeVec = *input->getShapeAsVector();
+  NDArray normalized(input->ordering(), shapeVec, input->dataType(), context);
+
+  // Step 1: fused rmsNorm kernel (single kernel launch)
+  rmsNorm(context, input, gamma, &normalized, epsilon);
+
+  // Step 2: matmul normalized @ weight -> output (single cuBLAS call)
+  MmulHelper::mmul(&normalized, weight, output, 1.0, 0.0);
+}
+
+BUILD_SINGLE_TEMPLATE(void rmsNormLinearGeneralLauncher,
+                       (LaunchContext* context,
+                        NDArray* input, NDArray* gamma,
+                        NDArray* weight, NDArray* output,
+                        float epsilon),
+                       SD_FLOAT_TYPES);
+
+///////////////////////////////////////////////////////////////////////////////
+// Public interface — uses BUILD_SINGLE_SELECTOR for runtime dispatch
+///////////////////////////////////////////////////////////////////////////////
+void rmsNormLinear(
+    LaunchContext* context,
+    NDArray* input,
+    NDArray* gamma,
+    NDArray* weight,
+    NDArray* output,
+    float epsilon) {
+
+  const LongType M = input->sizeAt(0);
+  const LongType K = input->sizeAt(1);
+  const LongType N = weight->sizeAt(1);
+
+  // For M=1 (decode hot path): use fused single-kernel path
+  // Requires K fits in shared memory (48KB = 12288 floats)
+  if (M == 1 && K <= 8192) {
+    NDArray::prepareSpecialUse({output}, {input, gamma, weight});
+
+    auto stream = context->getCudaStream();
+
+    BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearFusedLauncher,
+                           (stream,
+                            input->specialBuffer(),
+                            gamma != nullptr ? gamma->specialBuffer() : nullptr,
+                            weight->specialBuffer(),
+                            output->specialBuffer(),
+                            K, N, epsilon),
+                           SD_FLOAT_TYPES);
+
+    NDArray::registerSpecialUse({output}, {input, gamma, weight});
+    return;
+  }
+
+  // General M>1 path: fused rmsNorm + cuBLAS GEMM (2 kernel launches)
+  BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearGeneralLauncher,
+                         (context, input, gamma, weight, output, epsilon),
+                         SD_FLOAT_TYPES);
 }
 
 }  // namespace helpers

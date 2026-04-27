@@ -462,6 +462,24 @@ void autoregressiveDecodeCpu(
         // Update input_ids
         inputIds->p(0, nextTokenId);
 
+        // ── Update in-graph KV cache scalars (GGUF pattern) ──
+        // position_offset and cache_position are scalar ext inputs that the
+        // attention op reads for RoPE position and KV write position.
+        if (config->positionOffsetExtIdx >= 0 && config->positionOffsetExtIdx < numExtInputs) {
+            NDArray* posOffset = extInputs[config->positionOffsetExtIdx];
+            if (posOffset != nullptr) {
+                posOffset->p(0, currentPosition);
+                posOffset->syncToDevice();
+            }
+        }
+        if (config->cachePositionExtIdx >= 0 && config->cachePositionExtIdx < numExtInputs) {
+            NDArray* cachePos = extInputs[config->cachePositionExtIdx];
+            if (cachePos != nullptr) {
+                cachePos->p(0, currentPosition);
+                cachePos->syncToDevice();
+            }
+        }
+
         // ── Sync mutable inputs to device ──────────────────────────────────
         // Steps 6-7 wrote to the CPU host buffers. On CUDA, the plan reads from
         // GPU device buffers. Without graph capture (e.g. TRITON_NO_GC), there is

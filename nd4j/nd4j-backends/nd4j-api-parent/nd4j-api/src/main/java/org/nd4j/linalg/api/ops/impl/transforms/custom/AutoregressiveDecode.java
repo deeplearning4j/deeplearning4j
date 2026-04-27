@@ -259,6 +259,138 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     }
 
     /**
+     * Constructor for in-graph KV cache mode (GGUF pattern).
+     *
+     * <p>The attention op writes K/V in-place at cachePosition. No present outputs,
+     * no external KV scatter. positionOffsetExtIdx and cachePositionExtIdx point to
+     * scalar ext inputs updated per step by the C++ decode loop.</p>
+     *
+     * @param positionOffsetExtIdx ext input index for position_offset scalar (-1 if unused)
+     * @param cachePositionExtIdx  ext input index for cache_position scalar (-1 if unused)
+     */
+    public AutoregressiveDecode(INDArray prefillEmbeddings,
+                                 INDArray embeddingTable,
+                                 INDArray inputIds,
+                                 INDArray attentionMask,
+                                 INDArray positionIds,
+                                 INDArray[] staticKvBuffers,
+                                 Pointer planHandle,
+                                 Pointer contextHandle,
+                                 int numPlanExternalInputs,
+                                 int numPlanOutputs,
+                                 int embeddingsExtIdx,
+                                 int maskExtIdx,
+                                 int causalMaskExtIdx,
+                                 int posIdsExtIdx,
+                                 int inputIdsExtIdx,
+                                 int logitsOutputIdx,
+                                 int attnMaskReformatExtIdx,
+                                 int positionOffsetExtIdx,
+                                 int cachePositionExtIdx,
+                                 int[] kvInputExtIndices,
+                                 int[] kvOutputIndices,
+                                 int maxNewTokens,
+                                 int eosTokenId,
+                                 int numKvPairs,
+                                 int prefillSeqLen,
+                                 double temperature,
+                                 int topK,
+                                 double topP,
+                                 Set<Integer> additionalStopIds) {
+        // Build input array
+        int optionalMask = 0;
+        List<INDArray> inputList = new ArrayList<>();
+        inputList.add(prefillEmbeddings);
+        inputList.add(embeddingTable);
+        inputList.add(inputIds);
+        if (attentionMask != null) {
+            inputList.add(attentionMask);
+            optionalMask |= 1;
+        }
+        if (positionIds != null) {
+            inputList.add(positionIds);
+            optionalMask |= 2;
+        }
+        if (staticKvBuffers != null) {
+            optionalMask |= 4;
+            for (INDArray kv : staticKvBuffers) {
+                if (kv != null) inputList.add(kv);
+            }
+        }
+        if (attnMaskReformatExtIdx >= 0) {
+            optionalMask |= 8;
+        }
+        // Bit 4: in-graph KV cache mode (GGUF pattern)
+        optionalMask |= 16;
+        this.optionalInputMask = optionalMask;
+
+        addInputArgument(inputList.toArray(new INDArray[0]));
+
+        this.maxNewTokens = maxNewTokens;
+        this.eosTokenId = eosTokenId;
+        this.numKvPairs = numKvPairs;
+        this.prefillSeqLen = prefillSeqLen;
+        this.temperature = temperature;
+        this.topK = topK;
+        this.topP = topP;
+
+        long planAddr = planHandle != null ? planHandle.address() : 0L;
+        long planLow = planAddr & 0xFFFFFFFFL;
+        long planHigh = (planAddr >>> 32) & 0xFFFFFFFFL;
+
+        long ctxAddr = contextHandle != null ? contextHandle.address() : 0L;
+        long ctxLow = ctxAddr & 0xFFFFFFFFL;
+        long ctxHigh = (ctxAddr >>> 32) & 0xFFFFFFFFL;
+
+        List<Long> iArgs = new ArrayList<>();
+        iArgs.add((long) maxNewTokens);          // 0
+        iArgs.add((long) eosTokenId);            // 1
+        iArgs.add((long) numKvPairs);            // 2
+        iArgs.add((long) prefillSeqLen);         // 3
+        iArgs.add((long) optionalMask);          // 4
+        iArgs.add(planLow);                      // 5
+        iArgs.add(planHigh);                     // 6
+        iArgs.add(ctxLow);                       // 7
+        iArgs.add(ctxHigh);                      // 8
+        iArgs.add((long) numPlanExternalInputs); // 9
+        iArgs.add((long) numPlanOutputs);        // 10
+        iArgs.add((long) embeddingsExtIdx);      // 11
+        iArgs.add((long) maskExtIdx);            // 12
+        iArgs.add((long) causalMaskExtIdx);      // 13
+        iArgs.add((long) posIdsExtIdx);          // 14
+        iArgs.add((long) inputIdsExtIdx);        // 15
+        iArgs.add((long) logitsOutputIdx);       // 16
+        if ((optionalMask & 8) != 0) {
+            iArgs.add((long) attnMaskReformatExtIdx); // 17 when present
+        }
+        // In-graph KV cache: positionOffsetExtIdx + cachePositionExtIdx
+        iArgs.add((long) positionOffsetExtIdx);
+        iArgs.add((long) cachePositionExtIdx);
+
+        // KV input ext indices
+        if (kvInputExtIndices != null) {
+            for (int idx : kvInputExtIndices) {
+                iArgs.add((long) idx);
+            }
+        }
+        // KV output indices (empty for in-graph KV — no present outputs)
+        if (kvOutputIndices != null) {
+            for (int idx : kvOutputIndices) {
+                iArgs.add((long) idx);
+            }
+        }
+        // Additional stop IDs
+        if (additionalStopIds != null) {
+            for (int stopId : additionalStopIds) {
+                iArgs.add((long) stopId);
+            }
+        }
+
+        addIArgument(iArgs.stream().mapToLong(Long::longValue).toArray());
+        addTArgument(temperature, topP, (double) topK);
+    }
+
+    /**
      * Simplified constructor without plan handle (legacy/testing).
      */
     public AutoregressiveDecode(INDArray prefillEmbeddings,

@@ -1095,29 +1095,22 @@ Status NativeDynamicShapePlan::compositeReplay(
   //   - Non-leader units (mergedGroupId>=0, isMergedLeader=false): skipped
   //   - Unmerged units (mergedGroupId<0): same as original per-island replay
   int mergedGroupCount = static_cast<int>(sched.mergedReplayHandles.size());
-  int unmergedGapCount = 0;
-  for (auto& u : sched.units) {
-    if (u.kind == REPLAY_UNIT_GAP && u.mergedGroupId < 0) unmergedGapCount++;
-  }
-
-  DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: seg[%d-%d] %d units, %d merged groups, %d unmerged gaps, execCount=%d",
+  DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: seg[%d-%d] %d units, %d merged groups, execCount=%d",
            seg.def.startSlot, seg.def.endSlot,
-           static_cast<int>(sched.units.size()), mergedGroupCount, unmergedGapCount,
+           static_cast<int>(sched.units.size()), mergedGroupCount,
            seg.exec.executionCount);
+
+  // ── Per-category timing accumulators (active when executionTimingEnabled_) ──
+  long long tMergedLaunchUs = 0, tMergedDirtyUs = 0, tGapExecUs = 0;
+  long long tIslandLaunchUs = 0, tIslandDirtyUs = 0, tArgRefreshUs = 0;
+  int nMergedLaunches = 0, nGapUnits = 0, nIslandLaunches = 0, nArgRefreshes = 0;
 
   bool gapSlotsExecutedSinceArgCopy = false;
   for (auto& unit : sched.units) {
-    // ── Merged group: non-leader units are skipped (already executed by leader's graph) ──
+    // ── Merged group: non-leader units skip entirely ──
+    // The leader does dirty-mark + tickWriteDevice for ALL slots in the group
+    // using pre-computed mergedGroupSlotRanges, so non-leaders are pure no-ops.
     if (unit.mergedGroupId >= 0 && !unit.isMergedLeader) {
-      DSP_DIAG(EXECUTE, "MERGED_REPLAY: skip unit [%d-%d] mergedGroup=%d (non-leader)",
-               unit.startSlot, unit.endSlot, unit.mergedGroupId);
-      // Still need to tick actuality for these slots — the merged graph wrote to them.
-      for (int s = unit.startSlot; s <= unit.endSlot && s < totalOutputSlots_; s++) {
-        NDArray* arr = outputSlots_[s];
-        if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
-          arr->tickWriteDevice();
-        }
-      }
       continue;
     }
 
@@ -1125,6 +1118,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     if (unit.mergedGroupId >= 0 && unit.isMergedLeader) {
       // Re-copy arg table if gap slots ran since last H2D copy (same fix as island path)
       if (gapSlotsExecutedSinceArgCopy) {
+        auto tAR0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
 #if HAVE_TRITON
         auto* tritonBackend2 = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
         if (tritonBackend2 != nullptr) {
@@ -1133,6 +1127,10 @@ Status NativeDynamicShapePlan::compositeReplay(
           tritonBackend2->copyConsolidatedArgTableToDevice(seg, stream);
         }
 #endif
+        if (executionTimingEnabled_) {
+          tArgRefreshUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tAR0).count();
+          nArgRefreshes++;
+        }
         gapSlotsExecutedSinceArgCopy = false;
       }
 
@@ -1145,34 +1143,44 @@ Status NativeDynamicShapePlan::compositeReplay(
 
       DSP_DIAG(EXECUTE, "MERGED_REPLAY: group %d leader [%d-%d] launching",
                mgId, unit.startSlot, unit.endSlot);
+      auto tML0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.mergedReplayHandles[mgId]->replay(stream);
+      if (executionTimingEnabled_) {
+        tMergedLaunchUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tML0).count();
+        nMergedLaunches++;
+      }
       if (!launchOk) {
         DSP_DIAG(EXECUTE, "MERGED_REPLAY: group %d launch FAILED", mgId);
         return Status::KERNEL_FAILURE;
       }
 
-      // Mark all slots in this merged group as dirty (the merged graph wrote to all of them).
-      for (auto& u : sched.units) {
-        if (u.mergedGroupId == mgId) {
-          for (int s = u.startSlot; s <= u.endSlot && s < totalOutputSlots_; s++) {
-            dirtySlotGenerations_[s] = currentDirtyGeneration_;
-          }
-        }
+      // Combined dirty-mark + tickWriteDevice using pre-computed group range.
+      // Single O(range) pass covers all units in this merged group.
+      auto tMD0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
+      int rangeMin, rangeMax;
+      if (mgId < static_cast<int>(sched.mergedGroupSlotRanges.size())) {
+        rangeMin = sched.mergedGroupSlotRanges[mgId].minSlot;
+        rangeMax = sched.mergedGroupSlotRanges[mgId].maxSlot;
+      } else {
+        rangeMin = unit.startSlot;
+        rangeMax = unit.endSlot;
       }
-
-      // Tick actuality for leader's slots
-      for (int s = unit.startSlot; s <= unit.endSlot && s < totalOutputSlots_; s++) {
-        if (pointersStable_ && dirtySlotGenerations_[s] != currentDirtyGeneration_) continue;
+      for (int s = rangeMin; s <= rangeMax && s < totalOutputSlots_; s++) {
+        dirtySlotGenerations_[s] = currentDirtyGeneration_;
         NDArray* arr = outputSlots_[s];
         if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
           arr->tickWriteDevice();
         }
+      }
+      if (executionTimingEnabled_) {
+        tMergedDirtyUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tMD0).count();
       }
       continue;
     }
 
     // ── Unmerged units: original per-unit replay ──
     if (unit.kind == REPLAY_UNIT_GAP) {
+      auto tGE0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap [%d-%d]", unit.startSlot, unit.endSlot);
       bool prevReplayActive = tl_dspReplayActive;
       tl_dspReplayActive = true;
@@ -1379,6 +1387,10 @@ Status NativeDynamicShapePlan::compositeReplay(
           cudaStreamWaitEvent(cudaStr, evt, 0);
         }
       }
+      if (executionTimingEnabled_) {
+        tGapExecUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tGE0).count();
+        nGapUnits++;
+      }
 
     } else {  // REPLAY_UNIT_TRITON_ISLAND (unmerged)
       // ── Re-copy consolidated arg table if gap slots ran since the last H2D copy ──
@@ -1387,6 +1399,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       // has stale pointers for gap slot outputs. Re-refresh + re-copy ensures the
       // island's Triton kernels read the updated pointers from the GPU arg table.
       if (gapSlotsExecutedSinceArgCopy) {
+        auto tAR0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
 #if HAVE_TRITON
         auto* tritonBackend2 = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
         if (tritonBackend2 != nullptr) {
@@ -1397,6 +1410,10 @@ Status NativeDynamicShapePlan::compositeReplay(
                    seg.def.startSlot, seg.def.endSlot);
         }
 #endif
+        if (executionTimingEnabled_) {
+          tArgRefreshUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tAR0).count();
+          nArgRefreshes++;
+        }
         gapSlotsExecutedSinceArgCopy = false;
       }
 
@@ -1408,19 +1425,28 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
 
       DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: island %d [%d-%d] launching", idx, unit.startSlot, unit.endSlot);
+      auto tIL0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.compositeReplayHandles[idx]->replay(stream);
+      if (executionTimingEnabled_) {
+        tIslandLaunchUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tIL0).count();
+        nIslandLaunches++;
+      }
       if (!launchOk) {
         DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: island %d launch FAILED", idx);
         return Status::KERNEL_FAILURE;
       }
 
       // Mark island output slots as dirty + tick actuality in one pass.
+      auto tID0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       for (int s = unit.startSlot; s <= unit.endSlot && s < totalOutputSlots_; s++) {
         dirtySlotGenerations_[s] = currentDirtyGeneration_;
         NDArray* arr = outputSlots_[s];
         if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
           arr->tickWriteDevice();
         }
+      }
+      if (executionTimingEnabled_) {
+        tIslandDirtyUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tID0).count();
       }
 
       // Cross-stream sync after island replay
@@ -1443,19 +1469,24 @@ Status NativeDynamicShapePlan::compositeReplay(
                      cudaStr, "POST_COMPOSITE_REPLAY_ARGMAX", seg.exec.executionCount);
 
   // ── CRITICAL-PATH TIMING (active when executionTimingEnabled_) ──────────────
+  // Uses sd_printf (not DSP_DIAG) so output appears without DSP diagnostic categories.
   if (executionTimingEnabled_) {
     auto tDone = Clock::now();
     auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - t0).count();
     auto prezeroUs = std::chrono::duration_cast<std::chrono::microseconds>(tPrezero - t0).count();
     auto actTickUs = std::chrono::duration_cast<std::chrono::microseconds>(tActTick - t0).count();
     auto unitsUs = actTickUs - prezeroUs;
-    DSP_DIAG(TIMING, "COMPOSITE_REPLAY_TIMING: total=%lldus prezero=%lldus units=%lldus actTick=%lldus "
-             "execCount=%d units=%d mergedGroups=%d unmergedGaps=%d islands=%d",
-             totalUs, prezeroUs, unitsUs, actTickUs, seg.exec.executionCount,
-             static_cast<int>(sched.units.size()),
-             static_cast<int>(sched.mergedReplayHandles.size()),
-             unmergedGapCount,
-             static_cast<int>(sched.compositeReplayHandles.size()));
+    sd_printf("COMPOSITE_REPLAY_TIMING: total=%lldus prezero=%lldus units=%lldus "
+              "execCount=%d mergedGroups=%d islands=%d "
+              "BREAKDOWN: mergedLaunch=%lldus(%d) mergedDirty=%lldus gapExec=%lldus(%d) "
+              "islandLaunch=%lldus(%d) islandDirty=%lldus argRefresh=%lldus(%d)\n",
+              totalUs, prezeroUs, unitsUs, seg.exec.executionCount,
+              static_cast<int>(sched.mergedReplayHandles.size()),
+              static_cast<int>(sched.compositeReplayHandles.size()),
+              tMergedLaunchUs, nMergedLaunches, tMergedDirtyUs,
+              tGapExecUs, nGapUnits,
+              tIslandLaunchUs, nIslandLaunches, tIslandDirtyUs,
+              tArgRefreshUs, nArgRefreshes);
   }
 
   // Update replay tracking
@@ -2885,6 +2916,22 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            // merged groups. Reconcile them with the final merge state so merged
            // slots aren't dispatched twice and unmerged slots aren't orphaned.
            reconcileSlotDispatchAfterMerge(sched);
+
+           // ── Pre-compute per-merged-group slot ranges ─────────────────
+           // Build [minSlot, maxSlot] for each merged group so the replay loop
+           // can dirty-mark + tickWriteDevice in a single O(range) pass per
+           // leader instead of scanning all units to find matching groups.
+           {
+             int numMergedGroups = static_cast<int>(sched.mergedReplayHandles.size());
+             sched.mergedGroupSlotRanges.resize(numMergedGroups, {INT_MAX, INT_MIN});
+             for (const auto& u : sched.units) {
+               if (u.mergedGroupId >= 0 && u.mergedGroupId < numMergedGroups) {
+                 auto& range = sched.mergedGroupSlotRanges[u.mergedGroupId];
+                 if (u.startSlot < range.minSlot) range.minSlot = u.startSlot;
+                 if (u.endSlot > range.maxSlot) range.maxSlot = u.endSlot;
+               }
+             }
+           }
 
            // ── Cleanup after successful merged capture ───────────────────
            // Captured host ptrs: merged graphs may contain H2D memcpy nodes whose

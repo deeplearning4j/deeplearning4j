@@ -66,12 +66,12 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Tests download small GGUF models (Qwen3.5-0.8B, Gemma3-1B, Phi-3-mini, etc.),
  * import them via GGMLModelImport, and benchmark generation throughput under
- * different execution modes: SLOT_BY_SLOT, CUDA_GRAPHS, and TRITON.</p>
+ * different execution modes: AUTO (optimal), CUDA_GRAPHS, and TRITON.</p>
  *
  * <h3>System properties for test control:</h3>
  * <pre>
  *   -Dbench.models=qwen,gemma        Select model families (comma-separated: qwen,gemma,phi,mistral)
- *   -Dbench.configs=SLOT_BY_SLOT     Select configs (comma-separated, wildcard with *)
+ *   -Dbench.configs=OPTIMAL          Select configs (comma-separated, wildcard with *)
  *   -Dbench.max.tokens=20            Max generation tokens (default: 20)
  *   -Dbench.prompt="Hello"           Custom test prompt
  *   -Dbench.quant=Q4_K_M             Quantization type (default: Q4_K_M)
@@ -86,7 +86,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *     -Dbackend.artifactId=nd4j-cuda-12.9 2>&1 | tee /tmp/llm-bench.log
  *
  *   # Single model, single config
- *   cd platform-tests && mvn test -Dtest=TestLLMBenchmarkSuite#testSlotBySlotBaseline \
+ *   cd platform-tests && mvn test -Dtest=TestLLMBenchmarkSuite#testOptimalBaseline \
  *     -Dbench.models=qwen -Dbench.max.tokens=10 2>&1 | tee /tmp/llm-bench.log
  *
  *   # Import benchmark only (no generation, no tokenizer needed)
@@ -94,7 +94,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *     2>&1 | tee /tmp/llm-import.log
  *
  *   # CPU backend
- *   cd platform-tests && mvn test -Dtest=TestLLMBenchmarkSuite#testSlotBySlotBaseline \
+ *   cd platform-tests && mvn test -Dtest=TestLLMBenchmarkSuite#testOptimalBaseline \
  *     -Dbackend.artifactId=nd4j-native -Dbench.models=qwen \
  *     2>&1 | tee /tmp/llm-cpu.log
  *
@@ -297,12 +297,11 @@ public class TestLLMBenchmarkSuite {
         int maxTokens = getMaxTokens();
         List<BenchmarkConfig> configs = new ArrayList<>();
 
-        configs.add(BenchmarkConfig.create("SLOT_BY_SLOT")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
-                .maxTokens(maxTokens));
-
-        configs.add(BenchmarkConfig.create("CUDA_GRAPHS")
-                .executionMode(GraphExecutionMode.CUDA_GRAPHS)
+        // AUTO engages the full DSP backend chain:
+        //   CUDA: Triton islands + cuBLAS gap ops + CUDA graph replay
+        //   CPU:  OpenVINO → oneDNN → native slot execution
+        configs.add(BenchmarkConfig.create("OPTIMAL")
+                .executionMode(GraphExecutionMode.AUTO)
                 .maxTokens(maxTokens));
 
         return configs;
@@ -533,12 +532,15 @@ public class TestLLMBenchmarkSuite {
     }
 
     /**
-     * Baseline generation benchmark using SLOT_BY_SLOT execution.
+     * Optimal baseline benchmark using AUTO execution mode.
+     * AUTO engages the full DSP backend chain:
+     *   CUDA: Triton islands + cuBLAS gap ops + CUDA graph replay
+     *   CPU:  OpenVINO → oneDNN → native slot execution
      * Works on both CPU and CUDA backends.
      */
     @Test
-    @DisplayName("Slot-by-Slot Baseline: generation throughput per model")
-    public void testSlotBySlotBaseline() {
+    @DisplayName("Optimal Baseline: generation throughput per model (AUTO mode)")
+    public void testOptimalBaseline() {
         Assumptions.assumeFalse(skipGeneration(), "Generation tests skipped via bench.skip.generation");
 
         List<ModelSpec> models = getSelectedModels();
@@ -546,12 +548,12 @@ public class TestLLMBenchmarkSuite {
         String prompt = getPrompt();
         List<BenchmarkResult> results = new ArrayList<>();
 
-        BenchmarkConfig config = BenchmarkConfig.create("SLOT_BY_SLOT")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+        BenchmarkConfig config = BenchmarkConfig.create("OPTIMAL")
+                .executionMode(GraphExecutionMode.AUTO)
                 .maxTokens(maxTokens);
 
         log.info("═══════════════════════════════════════════════════════");
-        log.info("  SLOT_BY_SLOT BASELINE ({} models, {} tokens)", models.size(), maxTokens);
+        log.info("  OPTIMAL BASELINE ({} models, {} tokens)", models.size(), maxTokens);
         log.info("═══════════════════════════════════════════════════════");
 
         for (ModelSpec spec : models) {
@@ -559,7 +561,7 @@ public class TestLLMBenchmarkSuite {
             results.add(result);
         }
 
-        printReport("SLOT_BY_SLOT BASELINE", results);
+        printReport("OPTIMAL BASELINE", results);
         long failures = results.stream().filter(r -> !r.passed).count();
         assertEquals(0, failures, failures + " baseline benchmark(s) failed");
     }
@@ -703,7 +705,7 @@ public class TestLLMBenchmarkSuite {
             // Without optimizer
             System.setProperty("nd4j.optimizer.enabled", "false");
             BenchmarkConfig noOpt = BenchmarkConfig.create("NO_OPTIMIZER")
-                    .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+                    .executionMode(GraphExecutionMode.AUTO)
                     .maxTokens(maxTokens);
             results.add(runBenchmark(spec, noOpt, prompt));
 
@@ -711,7 +713,7 @@ public class TestLLMBenchmarkSuite {
             System.setProperty("nd4j.optimizer.enabled", "true");
             System.setProperty("nd4j.optimizer.fp16", "true");
             BenchmarkConfig withOpt = BenchmarkConfig.create("WITH_OPTIMIZER_FP16")
-                    .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+                    .executionMode(GraphExecutionMode.AUTO)
                     .maxTokens(maxTokens);
             results.add(runBenchmark(spec, withOpt, prompt));
 
@@ -808,7 +810,7 @@ public class TestLLMBenchmarkSuite {
                 SameDiff model = loadModel(spec);
                 Tokenizer tokenizer = loadTokenizer(spec);
 
-                model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+                model.setGraphExecutionMode(GraphExecutionMode.AUTO);
                 model.setDspAutoCompileEnabled(true);
                 model.setDspNativeAutoCompileEnabled(true);
 
@@ -888,7 +890,7 @@ public class TestLLMBenchmarkSuite {
                 Tokenizer tokenizer = loadTokenizer(qwenSpec);
 
                 // Generate
-                model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+                model.setGraphExecutionMode(GraphExecutionMode.AUTO);
                 model.setDspAutoCompileEnabled(true);
                 model.setDspNativeAutoCompileEnabled(true);
 
@@ -942,8 +944,8 @@ public class TestLLMBenchmarkSuite {
         int maxTokens = Math.max(getMaxTokens(), 50); // need enough tokens for meaningful output
         List<BenchmarkResult> results = new ArrayList<>();
 
-        BenchmarkConfig config = BenchmarkConfig.create("SLOT_BY_SLOT")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+        BenchmarkConfig config = BenchmarkConfig.create("OPTIMAL")
+                .executionMode(GraphExecutionMode.AUTO)
                 .maxTokens(maxTokens);
 
         log.info("═══════════════════════════════════════════════════════");
@@ -963,7 +965,7 @@ public class TestLLMBenchmarkSuite {
 
                     BenchmarkConfigApplier.resetModelState(model);
                     BenchmarkConfigApplier.apply(config);
-                    model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+                    model.setGraphExecutionMode(GraphExecutionMode.AUTO);
                     model.setDspAutoCompileEnabled(true);
                     model.setDspNativeAutoCompileEnabled(true);
 

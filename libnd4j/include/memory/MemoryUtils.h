@@ -30,6 +30,15 @@ namespace memory {
 class SD_LIB_EXPORT MemoryUtils {
  public:
   static bool retrieveMemoryStatistics(MemoryReport& report);
+
+  /**
+   * Returns available (free) system RAM in bytes.
+   * Linux:   reads MemAvailable from /proc/meminfo
+   * macOS:   vm_statistics64 free+inactive pages
+   * Windows: GlobalMemoryStatusEx ullAvailPhys
+   * Returns 0 if the query fails or the platform is unsupported.
+   */
+  static size_t getSystemFreeMemoryBytes();
 };
 }  // namespace memory
 }  // namespace sd

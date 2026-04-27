@@ -52,7 +52,7 @@ using GemmFP32 = cutlass::gemm::device::Gemm<
     float,                           // ElementC
     cutlass::layout::RowMajor,       // LayoutC
     float,                           // ElementAccumulator
-    cutlass::arch::OpClassSimt,      // OperatorClass
+    cutlass::arch::OpClassSimt,      // OperatorClass (CUDA cores)
     cutlass::arch::Sm80              // ArchTag
 >;
 

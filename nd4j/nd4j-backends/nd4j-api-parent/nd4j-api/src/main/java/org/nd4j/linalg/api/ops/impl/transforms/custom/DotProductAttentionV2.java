@@ -106,45 +106,31 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
     }
 
     /**
-     * Full constructor for codegen compatibility.
-     * Supports all parameters including KV cache and flash attention settings.
+     * Master INDArray constructor used by codegen-generated NDNN methods.
+     * Parameter order matches Kotlin DSL allParameters() declaration order:
+     * Inputs: queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias
+     * Args: scaleFactor, dropoutProbability, useCausalMask, training
      */
     public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
                                  INDArray queryMask, INDArray valueMask,
                                  INDArray keyCache, INDArray valueCache,
+                                 INDArray cachePosition, INDArray attentionBias,
                                  double scaleFactor, double dropoutProbability,
-                                 boolean useCausalMask, boolean training,
-                                 boolean useFlashAttention, int kvCachePosition) {
-        super(wrapFilterNull(queries, values, keys, queryMask, valueMask, keyCache, valueCache), null);
+                                 boolean useCausalMask, boolean training) {
+        super(wrapFilterNull(queries, values, keys, queryMask, valueMask,
+            keyCache, valueCache, cachePosition, attentionBias), null);
         this.scaleFactor = scaleFactor;
         this.dropout = dropoutProbability;
         this.useCausalMask = useCausalMask;
         this.training = training;
-        this.useFlashAttention = useFlashAttention;
-        this.kvCachePosition = kvCachePosition;
         // T_ARG order: scale, dropout
         addTArgument(scaleFactor, dropoutProbability);
         // B_ARG order: useCausalMask, training, useFlashAttention
-        addBArgument(useCausalMask, training, useFlashAttention);
-        // I_ARG order: kvCachePosition
-        if (kvCachePosition > 0 || keyCache != null || valueCache != null) {
-            addIArgument(kvCachePosition);
-        }
+        addBArgument(useCausalMask, training, true);
     }
 
     /**
      * Create a dot product attention operation with KV cache support.
-     *
-     * @param queries Query tensor [batch, Tq, heads, dim]
-     * @param values Value tensor [batch, Tv, heads, dim]
-     * @param keys Key tensor [batch, Tv, heads, dim]
-     * @param queryMask Query mask or null
-     * @param valueMask Value mask or null
-     * @param keyCache Key cache [batch, maxSeq, heads, dim] for autoregressive decoding
-     * @param valueCache Value cache [batch, maxSeq, heads, dim] for autoregressive decoding
-     * @param kvCachePosition Current position in the KV cache
-     * @param scaleFactor Scale factor (0 = auto)
-     * @param useCausalMask Whether to apply causal mask
      */
     public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
                                  INDArray queryMask, INDArray valueMask,
@@ -165,186 +151,76 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
     }
 
     /**
-     * Create a dot product attention operation for SameDiff.
-     */
-    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
-                                 SDVariable queryMask, SDVariable valueMask,
-                                 double scaleFactor, double dropoutProbability,
-                                 boolean useCausalMask, boolean training) {
-        super(null, sd, inputs(sd, queries, values, keys, queryMask, valueMask), false);
-        this.scaleFactor = scaleFactor;
-        this.dropout = dropoutProbability;
-        this.useCausalMask = useCausalMask;
-        this.training = training;
-        this.queryMask = queryMask;
-        this.valueMask = valueMask;
-        // T_ARG order: scale, dropout
-        addTArgument(scaleFactor, dropoutProbability);
-        // B_ARG order: useCausalMask, training, useFlashAttention
-        addBArgument(useCausalMask, training, useFlashAttention);
-    }
-
-    /**
-     * Create a dot product attention operation for SameDiff with attention bias.
+     * Master SameDiff constructor used by codegen-generated SDNN methods.
+     * All codegen Signatures produce calls to this constructor with null for unused optional Inputs.
      *
-     * @param sd SameDiff instance
-     * @param queries Query tensor [batch, Tq, dim] or [batch, Tq, heads, dim] for flash attention
-     * @param values Value tensor [batch, Tv, dim] or [batch, Tv, heads, dim]
-     * @param keys Key tensor [batch, Tv, dim] or [batch, Tv, heads, dim], or null to use values
-     * @param queryMask Query mask [batch, Tq] or null
-     * @param valueMask Value mask [batch, Tv] or null
-     * @param attentionBias Attention bias [batch, heads, Tq, Tk] or broadcastable, added to scores before softmax
-     * @param scaleFactor Scale factor for attention scores (0 = auto: 1/sqrt(dim))
-     * @param dropoutProbability Dropout probability (0 = no dropout)
-     * @param useCausalMask Whether to apply causal (lower triangular) mask
-     * @param training Whether in training mode (affects dropout)
-     */
-    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
-                                 SDVariable queryMask, SDVariable valueMask, SDVariable attentionBias,
-                                 double scaleFactor, double dropoutProbability,
-                                 boolean useCausalMask, boolean training) {
-        super(null, sd, inputsWithBias(sd, queries, values, keys, queryMask, valueMask, attentionBias), false);
-        this.scaleFactor = scaleFactor;
-        this.dropout = dropoutProbability;
-        this.useCausalMask = useCausalMask;
-        this.training = training;
-        this.queryMask = queryMask;
-        this.valueMask = valueMask;
-        this.attentionBias = attentionBias;
-        // T_ARG order: scale, dropout
-        addTArgument(scaleFactor, dropoutProbability);
-        // B_ARG order: useCausalMask, training, useFlashAttention
-        addBArgument(useCausalMask, training, useFlashAttention);
-    }
-
-    /**
-     * Create a dot product attention operation for SameDiff with KV cache.
-     */
-    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
-                                 SDVariable queryMask, SDVariable valueMask,
-                                 SDVariable keyCache, SDVariable valueCache, int kvCachePosition,
-                                 double scaleFactor, boolean useCausalMask) {
-        super(null, sd, inputsWithCache(sd, queries, values, keys, queryMask, valueMask, keyCache, valueCache), false);
-        this.scaleFactor = scaleFactor;
-        this.dropout = 0.0;
-        this.useCausalMask = useCausalMask;
-        this.training = false;
-        this.queryMask = queryMask;
-        this.valueMask = valueMask;
-        this.keyCache = keyCache;
-        this.valueCache = valueCache;
-        this.kvCachePosition = kvCachePosition;
-        // T_ARG order: scale, dropout
-        addTArgument(scaleFactor, 0.0);
-        // B_ARG order: useCausalMask, training, useFlashAttention
-        addBArgument(useCausalMask, false, true);
-        // I_ARG order: kvCachePosition
-        addIArgument(kvCachePosition);
-    }
-
-    /**
-     * Full constructor for SameDiff (for codegen compatibility).
-     * Supports all parameters including KV cache and flash attention settings.
+     * Parameter order matches Kotlin DSL allParameters() declaration order:
+     * Inputs: queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias
+     * Args: scaleFactor, dropoutProbability, useCausalMask, training
      */
     public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
                                  SDVariable queryMask, SDVariable valueMask,
                                  SDVariable keyCache, SDVariable valueCache,
+                                 SDVariable cachePosition, SDVariable attentionBias,
                                  double scaleFactor, double dropoutProbability,
-                                 boolean useCausalMask, boolean training,
-                                 boolean useFlashAttention, int kvCachePosition) {
-        super(null, sd, inputsWithCache(sd, queries, values, keys, queryMask, valueMask, keyCache, valueCache), false);
+                                 boolean useCausalMask, boolean training) {
+        super(null, sd, buildInputs(sd, queries, values, keys,
+            queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias), false);
         this.scaleFactor = scaleFactor;
         this.dropout = dropoutProbability;
         this.useCausalMask = useCausalMask;
         this.training = training;
-        this.useFlashAttention = useFlashAttention;
         this.queryMask = queryMask;
         this.valueMask = valueMask;
         this.keyCache = keyCache;
         this.valueCache = valueCache;
-        this.kvCachePosition = kvCachePosition;
+        this.attentionBias = attentionBias;
         // T_ARG order: scale, dropout
         addTArgument(scaleFactor, dropoutProbability);
         // B_ARG order: useCausalMask, training, useFlashAttention
-        addBArgument(useCausalMask, training, useFlashAttention);
-        // I_ARG order: kvCachePosition
-        if (kvCachePosition > 0 || keyCache != null || valueCache != null) {
-            addIArgument(kvCachePosition);
-        }
-    }
-
-    private static SDVariable[] inputs(SameDiff sd,
-                                       SDVariable queries,
-                                       SDVariable values,
-                                       SDVariable keys,
-                                       SDVariable queryMask,
-                                       SDVariable valueMask) {
-        List<SDVariable> inputs = new ArrayList<>();
-        inputs.add(queries);
-        inputs.add(values);
-        inputs.add(keys == null ? values : keys);
-        inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
-        inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
-        return inputs.toArray(new SDVariable[inputs.size()]);
-    }
-
-    private static SDVariable[] inputsWithCache(SameDiff sd,
-                                                SDVariable queries,
-                                                SDVariable values,
-                                                SDVariable keys,
-                                                SDVariable queryMask,
-                                                SDVariable valueMask,
-                                                SDVariable keyCache,
-                                                SDVariable valueCache) {
-        return inputsWithCache(sd, queries, values, keys, queryMask, valueMask, keyCache, valueCache, null);
-    }
-
-    private static SDVariable[] inputsWithCache(SameDiff sd,
-                                                SDVariable queries,
-                                                SDVariable values,
-                                                SDVariable keys,
-                                                SDVariable queryMask,
-                                                SDVariable valueMask,
-                                                SDVariable keyCache,
-                                                SDVariable valueCache,
-                                                SDVariable cachePosition) {
-        List<SDVariable> inputs = new ArrayList<>();
-        inputs.add(queries);
-        inputs.add(values);
-        inputs.add(keys == null ? values : keys);
-        inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
-        inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
-        if (keyCache != null) {
-            inputs.add(keyCache);
-        }
-        if (valueCache != null) {
-            inputs.add(valueCache);
-        }
-        if (cachePosition != null) {
-            inputs.add(cachePosition);
-        }
-        return inputs.toArray(new SDVariable[inputs.size()]);
+        addBArgument(useCausalMask, training, true);
+        // NO I_ARG for kvCachePosition — it comes from input[7] tensor at runtime
     }
 
     /**
-     * Build input array with attention bias (placed at index 5 per C++ op spec).
-     * Input order: queries(0), values(1), keys(2), queryMask(3), valueMask(4), attentionBias(5)
+     * Build the input array for the C++ op.
+     * Handles all combinations: no cache, cache only, cache + bias.
+     *
+     * When KV cache is active (keyCache != null):
+     *   Input order: queries(0), values(1), keys(2), queryMask(3), valueMask(4),
+     *                keyCache(5), valueCache(6), cachePosition(7), attentionBias(8)
+     *
+     * When only attentionBias is provided (no KV cache):
+     *   Input order: queries(0), values(1), keys(2), queryMask(3), valueMask(4), attentionBias(5)
+     *
+     * When neither cache nor bias:
+     *   Input order: queries(0), values(1), keys(2), queryMask(3), valueMask(4)
      */
-    private static SDVariable[] inputsWithBias(SameDiff sd,
-                                               SDVariable queries,
-                                               SDVariable values,
-                                               SDVariable keys,
-                                               SDVariable queryMask,
-                                               SDVariable valueMask,
-                                               SDVariable attentionBias) {
+    private static SDVariable[] buildInputs(SameDiff sd,
+                                            SDVariable queries, SDVariable values, SDVariable keys,
+                                            SDVariable queryMask, SDVariable valueMask,
+                                            SDVariable keyCache, SDVariable valueCache,
+                                            SDVariable cachePosition, SDVariable attentionBias) {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.add(queries);
         inputs.add(values);
         inputs.add(keys == null ? values : keys);
         inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
         inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
-        inputs.add(attentionBias == null ? sd.constant(Nd4j.empty(queries.dataType())) : attentionBias);
-        return inputs.toArray(new SDVariable[inputs.size()]);
+
+        if (keyCache != null || valueCache != null) {
+            // KV cache path: inputs 5-7 are cache, input 8 is bias
+            inputs.add(keyCache != null ? keyCache : sd.constant(Nd4j.empty(queries.dataType())));
+            inputs.add(valueCache != null ? valueCache : sd.constant(Nd4j.empty(queries.dataType())));
+            inputs.add(cachePosition != null ? cachePosition : sd.constant(Nd4j.empty(DataType.INT64)));
+            inputs.add(attentionBias != null ? attentionBias : sd.constant(Nd4j.empty(queries.dataType())));
+        } else if (attentionBias != null) {
+            // Bias-only path: input 5 is bias (no cache)
+            inputs.add(attentionBias);
+        }
+        // else: no cache, no bias — just Q/V/K/masks
+
+        return inputs.toArray(new SDVariable[0]);
     }
 
     @Override

@@ -2515,6 +2515,14 @@ function(setup_openvino)
                 if(EXISTS "${_cfg_path}")
                     message(STATUS "OpenVINO restored from dependency cache")
                     setup_openvino()
+                    # Propagate results from the recursive call to OUR caller's scope.
+                    # The recursive call sets HAVE_OPENVINO in the cache (FORCE) and in
+                    # our local scope (PARENT_SCOPE from its perspective). We need to
+                    # forward it one more level to the scope that called US.
+                    set(HAVE_OPENVINO ${HAVE_OPENVINO} PARENT_SCOPE)
+                    if(DEFINED OPENVINO_LIB)
+                        set(OPENVINO_LIB ${OPENVINO_LIB} PARENT_SCOPE)
+                    endif()
                     return()
                 endif()
             endforeach()

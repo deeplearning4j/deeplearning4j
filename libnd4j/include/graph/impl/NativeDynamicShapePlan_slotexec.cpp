@@ -2152,6 +2152,7 @@ Status NativeDynamicShapePlan::executeSlot(
     if (needsSync) {
         NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
     } else {
+#if defined(SD_CUDA)
       // Assertion 4: Actuality flag consistency when sync is skipped.
       // When needsSync is false (frozen steady-state), we rely on the device
       // being the authoritative copy for ALL inputs. If any input has
@@ -2185,6 +2186,7 @@ Status NativeDynamicShapePlan::executeSlot(
                        "for slot %d (%s).", stepIdx, slot.ident.opName.c_str());
         }
       }
+#endif  // SD_CUDA
 
       if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
         // Existing SYNC_SKIP_ANOMALY_IN trace (pAct=1 AND sAct=0 is the interesting case

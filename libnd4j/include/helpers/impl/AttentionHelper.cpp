@@ -281,13 +281,8 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
   ops::matmul matmul;
 
   int softmaxDim = -1;
-  // Debug: verify attentionLogits is valid after matmul
-  sd_printf("applyAttentionScores: After matmul - attentionLogits buffer: %p, specialBuffer: %p\n",
-           attentionLogits->buffer(), attentionLogits->specialBuffer());
 
   if (scoresMask != nullptr && !scoresMask->isEmpty()) {
-    sd_printf("applyAttentionScores: Applying mask - scoresMask shape: [%lld, %lld, %lld]\n",
-             scoresMask->sizeAt(0), scoresMask->sizeAt(1), scoresMask->sizeAt(2));
 
     REQUIRE_TRUE(scoresMask->sizeAt(-2) == 1 || scoresMask->sizeAt(-2) == scores->sizeAt(-2),0,
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -2: was: %i scores size at -2 was: %i",scoresMask->sizeAt(-2),scores->sizeAt(-2));
@@ -328,29 +323,12 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
     attentionLogits->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &maskScaled, &tempResult, false);
 
     // Step 4: Copy result back to attentionLogits
-    sd_printf("applyAttentionScores: Before assign - attentionLogits buffer: %p, specialBuffer: %p\n",
-             attentionLogits->buffer(), attentionLogits->specialBuffer());
     attentionLogits->assign(&tempResult);
-    sd_printf("applyAttentionScores: After assign - attentionLogits buffer: %p, specialBuffer: %p\n",
-             attentionLogits->buffer(), attentionLogits->specialBuffer());
-
-    // Ensure device buffers are synchronized before proceeding
-    attentionLogits->syncToDevice();
-    sd_printf("applyAttentionScores: After syncToDevice - attentionLogits buffer: %p, specialBuffer: %p\n",
-             attentionLogits->buffer(), attentionLogits->specialBuffer());
 
     if(needsDeleteMask) {
       delete numericMask;
     }
   }
-
-  // Ensure attentionLogits is fully synced before softmax
-  attentionLogits->syncToDevice();
-
-  // Debug: verify attentionLogits buffer is valid before softmax
-  sd_printf("applyAttentionScores: Before softmax - attentionLogits shape: [%lld, %lld, %lld], buffer: %p, specialBuffer: %p\n",
-           attentionLogits->sizeAt(0), attentionLogits->sizeAt(1), attentionLogits->sizeAt(2),
-           attentionLogits->buffer(), attentionLogits->specialBuffer());
 
   softmax.execute({attentionLogits},{scores},{},{softmaxDim});
   auto weights = scores;

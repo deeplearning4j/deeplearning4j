@@ -408,8 +408,8 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithCpuGraph");
 
-  // If all backends have been exhausted for this segment, return failure so
-  // the caller can fall back to slot-by-slot.
+  // If all backends have been exhausted for this segment, hard fail.
+  // Falling back to slot-by-slot is BANNED — fix the compilation failure.
   if (seg.exec.compilationFailed) {
     DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                   "executeSegmentWithCpuGraph: seg[%d-%d] permanently failed — all backends exhausted. "
@@ -442,7 +442,11 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     }
   }
 
-  // Try each backend in priority order
+  // Try each backend in priority order.
+  // Track whether ANY backend attempted compilation (canFuseSegment=true)
+  // vs none could fuse it at all (segment has no fusible ops).
+  bool anyBackendAttemptedCompile = false;
+
   for (size_t i = 0; i < chain.size(); i++) {
     GraphBackend* backend = chain[i];
     const char* backendName = backend->name();
@@ -452,6 +456,8 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
                 backendName, seg.def.startSlot, seg.def.endSlot);
       continue;
     }
+
+    anyBackendAttemptedCompile = true;
 
     // Attempt compile + validate + execute with this backend
     auto status = executeSegmentWithSpecificBackend(seg, backend, externalArrays, numExt, stream);
@@ -469,11 +475,23 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     seg.exec.compilationFailed = false;
   }
 
-  // ALL backends exhausted — hard failure, do not silently fall back
+  if (!anyBackendAttemptedCompile) {
+    // No backend could fuse this segment — all returned canFuseSegment=false.
+    // This means the segment has no fusible ops (e.g., all permutes/reshapes/identity).
+    // This is NOT a compilation failure — the segment simply has no compute to fuse.
+    // Demote to slot-by-slot native execution (handled by the caller).
+    DSP_DIAG(BACKEND, "cascade: NO backend can fuse seg[%d-%d] (no fusible ops) — "
+              "demoting to slot-by-slot native execution",
+              seg.def.startSlot, seg.def.endSlot);
+    return Status::KERNEL_FAILURE;
+  }
+
+  // At least one backend tried to compile but ALL failed — this IS a real failure.
+  // Throw to prevent silent fallback: the backend SHOULD be able to compile these ops.
   seg.exec.compilationFailed = true;
   DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                "cascade: ALL %d backends failed for seg[%d-%d]. Fix the backend compilation — "
-                "silent fallback to slot-by-slot is not permitted.",
+                "cascade: ALL %d backends failed to compile seg[%d-%d] (backends attempted compilation "
+                "but all failed). Fix the backend compilation — silent fallback to slot-by-slot is not permitted.",
                 (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
 }
 

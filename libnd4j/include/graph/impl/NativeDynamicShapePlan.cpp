@@ -2292,8 +2292,18 @@ Status NativeDynamicShapePlan::executeSteadyState(
     return Status::BAD_ARGUMENTS;
   }
 
-  // Clear dirty bitmap.
-  std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
+  // Advance dirty generation instead of clearing the entire bitmap.
+  // The compositeReplay loop marks active slots with currentDirtyGeneration_,
+  // and tickWriteDevice skips slots where generation != current.
+  // This replaces O(totalOutputSlots_) memset with O(1) increment.
+  // Wrap around at UINT32_MAX-1 to avoid collision with the 0 sentinel;
+  // on wrap, do a full reset so stale generation values can't alias.
+  if (currentDirtyGeneration_ < UINT32_MAX - 1) {
+    currentDirtyGeneration_++;
+  } else {
+    currentDirtyGeneration_ = 1;
+    std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
+  }
 
   // Store reference to current external inputs
   lastExternalInputs_ = externalInputs;

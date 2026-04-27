@@ -154,6 +154,31 @@ public class FusedRoPE extends DynamicCustomOp {
         addIArgument(ropeType);
     }
 
+    /**
+     * Create a fused RoPE operation with dynamic position offset from a scalar SDVariable.
+     * The position offset comes from input[1] at runtime, enabling KV cache decode
+     * where position changes each step but the graph structure stays fixed.
+     *
+     * @param sd The SameDiff instance
+     * @param input Input tensor [batch, seq_len, num_heads, head_dim]
+     * @param positionOffset Scalar INT64 SDVariable with the starting position
+     * @param ropeType RoPE variant (0=standard, 1=neox, 2=gptj)
+     * @param freqBase Base frequency (default 10000.0)
+     * @param freqScale Frequency scale factor (default 1.0)
+     * @param rotaryDims Number of dimensions to rotate (0 = all head dims)
+     */
+    public FusedRoPE(SameDiff sd, SDVariable input, SDVariable positionOffset,
+                     int ropeType, double freqBase, double freqScale, int rotaryDims) {
+        super(null, sd, new SDVariable[]{input, positionOffset}, false);
+        this.ropeType = ropeType;
+        this.positionOffset = 0;  // dynamic — read from input[1] at runtime
+        this.freqBase = freqBase;
+        this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
+        addIArgument(ropeType, 0, rotaryDims);
+        addTArgument(freqBase, freqScale);
+    }
+
     public FusedRoPE(SameDiff sd, SDVariable input, SDVariable ropeCache, int startPosition) {
         super(null, sd, new SDVariable[]{input, ropeCache}, false);
         this.ropeType = ROPE_TYPE_STANDARD;
@@ -164,6 +189,47 @@ public class FusedRoPE extends DynamicCustomOp {
         addTArgument(freqBase, freqScale);
     }
 
+    /**
+     * Master SameDiff constructor used by codegen-generated SDNN methods.
+     * Parameter order matches Kotlin DSL allParameters() declaration order:
+     * Inputs: input, ropeCache, positionOffset
+     * Args: startPosition, ropeType, freqBase, freqScale, rotaryDims
+     *
+     * Dispatches to the appropriate path based on which optional inputs are non-null:
+     * - ropeCache != null: precomputed cache path (2-input: input + ropeCache)
+     * - positionOffset != null: dynamic position path (2-input: input + positionOffset)
+     * - both null: single-input path with iArg position
+     */
+    public FusedRoPE(SameDiff sd, SDVariable input, SDVariable ropeCache, SDVariable positionOffset,
+                     int startPosition, int ropeType, double freqBase, double freqScale, int rotaryDims) {
+        super(null, sd, buildRoPEInputs(input, ropeCache, positionOffset), false);
+        this.ropeType = ropeType;
+        this.freqBase = freqBase;
+        this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
+
+        if (positionOffset != null) {
+            // Dynamic position from input tensor — position read at runtime
+            this.positionOffset = 0;
+            addIArgument(ropeType, 0, rotaryDims);
+        } else {
+            // Static position from iArg
+            this.positionOffset = startPosition;
+            addIArgument(ropeType, startPosition, rotaryDims);
+        }
+        addTArgument(freqBase, freqScale);
+    }
+
+    private static SDVariable[] buildRoPEInputs(SDVariable input, SDVariable ropeCache, SDVariable positionOffset) {
+        if (ropeCache != null) {
+            return new SDVariable[]{input, ropeCache};
+        } else if (positionOffset != null) {
+            return new SDVariable[]{input, positionOffset};
+        } else {
+            return new SDVariable[]{input};
+        }
+    }
+
     public FusedRoPE(INDArray input, INDArray ropeCache, int startPosition) {
         super(new INDArray[]{input, ropeCache}, null);
         this.ropeType = ROPE_TYPE_STANDARD;
@@ -172,6 +238,38 @@ public class FusedRoPE extends DynamicCustomOp {
         this.freqScale = 1.0;
         addIArgument(ropeType, positionOffset);
         addTArgument(freqBase, freqScale);
+    }
+
+    /**
+     * Master INDArray constructor used by codegen-generated NDNN methods.
+     * Parameter order matches Kotlin DSL allParameters() declaration order.
+     */
+    public FusedRoPE(INDArray input, INDArray ropeCache, INDArray positionOffset,
+                     int startPosition, int ropeType, double freqBase, double freqScale, int rotaryDims) {
+        super(buildINDArrayInputs(input, ropeCache, positionOffset), null);
+        this.ropeType = ropeType;
+        this.freqBase = freqBase;
+        this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
+
+        if (positionOffset != null) {
+            this.positionOffset = 0;
+            addIArgument(ropeType, 0, rotaryDims);
+        } else {
+            this.positionOffset = startPosition;
+            addIArgument(ropeType, startPosition, rotaryDims);
+        }
+        addTArgument(freqBase, freqScale);
+    }
+
+    private static INDArray[] buildINDArrayInputs(INDArray input, INDArray ropeCache, INDArray positionOffset) {
+        if (ropeCache != null) {
+            return new INDArray[]{input, ropeCache};
+        } else if (positionOffset != null) {
+            return new INDArray[]{input, positionOffset};
+        } else {
+            return new INDArray[]{input};
+        }
     }
 
     @Override

@@ -1710,6 +1710,7 @@
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
                     <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>

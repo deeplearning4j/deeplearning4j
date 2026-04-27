@@ -375,6 +375,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         kSDVar,           // keys
                         emptyQueryMask,   // queryMask (empty)
                         valueMask,        // valueMask - use detected mask if available
+                        null, null, null, null,  // no KV cache, no attention bias
                         components.scaleFactor,  // scale factor
                         0.0,              // no dropout for inference
                         components.useCausalMask,  // use causal mask if detected
@@ -1633,6 +1634,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         kSDVar,           // keys
                         emptyQueryMask,   // queryMask (empty)
                         emptyValueMask,   // valueMask (empty)
+                        null, null, null, null,  // no KV cache, no attention bias
                         components.scaleFactor,
                         0.0,              // no dropout for inference
                         true,             // use causal mask
@@ -1964,6 +1966,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         kSDVar,           // keys
                         emptyQueryMask,   // queryMask (empty)
                         maskSDVar,        // valueMask - the additive mask
+                        null, null, null, null,  // no KV cache, no attention bias
                         components.scaleFactor,
                         0.0,              // no dropout for inference
                         false,            // not causal mask
@@ -2312,6 +2315,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         kSDVar,              // keys (after k_proj)
                         emptyQueryMask,      // queryMask (empty)
                         emptyValueMask,      // valueMask (empty)
+                        null, null, null, null,  // no KV cache, no attention bias
                         components.scaleFactor,  // scale factor (extracted from graph)
                         0.0,                 // no dropout
                         true,                // causal mask (LLaMA uses causal attention)

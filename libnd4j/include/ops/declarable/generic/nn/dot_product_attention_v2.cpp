@@ -120,6 +120,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   NDArray* attentionBias = nullptr;
   auto extraInput = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
   auto extraInput2 = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
+  // Rank guard: empty/rank-0 arrays may lose the EMPTY flag through DSP wiring
+  if (extraInput != nullptr && extraInput->rankOf() < 2) extraInput = nullptr;
+  if (extraInput2 != nullptr && extraInput2->rankOf() < 2) extraInput2 = nullptr;
   if (extraInput != nullptr && !extraInput->isEmpty() &&
       (extraInput2 == nullptr || extraInput2->isEmpty())) {
     auto tq = queries->sizeAt(1);
@@ -141,7 +144,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   // keyCache (input 5) and valueCache (input 6), write current K/V at that position
   // in the cache buffers and use the full buffers for attention.
   auto cachePosInput = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
-  if (cachePosInput != nullptr && cachePosInput->isEmpty()) cachePosInput = nullptr;
+  if (cachePosInput != nullptr && (cachePosInput->isEmpty() || cachePosInput->lengthOf() == 0)) cachePosInput = nullptr;
 
   bool useInPlaceKv = false;
   NDArray* keyCache = nullptr;
@@ -195,6 +198,14 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     // Use full cache buffers as K/V for attention
     keys = keyCache;
     values = valueCache;
+
+    // Check for attention bias at input[8] when KV cache is active.
+    // This is separate from the input[5] bias path (which is skipped when input[5] is keyCache).
+    auto kvCacheBias = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
+    if (kvCacheBias != nullptr && kvCacheBias->isEmpty()) kvCacheBias = nullptr;
+    if (kvCacheBias != nullptr) {
+      attentionBias = kvCacheBias;
+    }
   }
 
   // Get arguments - T_ARG order: scale, dropout
@@ -449,9 +460,13 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto dropout = block.numT() > 1 ? block.getTArguments()->at(1) : 0.0;
 
   // Check for in-place KV cache mode: when cache_position (input 7) is present
-  // with keyCache (input 5) and valueCache (input 6), Tv = cache seq dim
-  bool hasInPlaceKv = (block.width() > 7);
-  auto keyCacheShape = (block.width() > 5 && !INPUT_VARIABLE(5)->isEmpty()) ? INPUT_VARIABLE(5) : nullptr;
+  // with keyCache (input 5) and valueCache (input 6), Tv = cache seq dim.
+  // Guard with rankOf() >= 2: empty/rank-0 arrays may lose the EMPTY flag through
+  // DSP slot wiring, so isEmpty() alone is insufficient.
+  auto input5 = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+  bool input5Valid = (input5 != nullptr && !input5->isEmpty() && input5->rankOf() >= 2);
+  bool hasInPlaceKv = (block.width() > 7 && input5Valid);
+  auto keyCacheShape = input5Valid ? input5 : nullptr;
 
   // For rank 4: [batch, seq_len, numHeads, headDim] (BSHD)
   // For rank 3: [batch, seq_len, features]

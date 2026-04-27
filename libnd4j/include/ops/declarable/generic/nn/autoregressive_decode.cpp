@@ -206,6 +206,17 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       kvStart = 18;
     }
 
+    // optionalMask bit 4 indicates in-graph KV cache mode (GGUF pattern).
+    // Two additional iArgs at kvStart: positionOffsetExtIdx, cachePositionExtIdx.
+    // planOwnsKvScatter is set true since the attention op writes KV in-place.
+    bool hasInGraphKvCache = (optionalMask & 16) != 0;
+    if (hasInGraphKvCache && iArgCount > kvStart + 1) {
+      decodeConfig.positionOffsetExtIdx = INT_ARG(kvStart);
+      decodeConfig.cachePositionExtIdx = INT_ARG(kvStart + 1);
+      decodeConfig.planOwnsKvScatter = true;
+      kvStart += 2;
+    }
+
     // KV indices: kvStart..kvStart+2*numKvPairs-1 are kvInputExtIndices
     //             kvStart+2*numKvPairs..kvStart+4*numKvPairs-1 are kvOutputIndices
     if (numKvPairs > 0 && iArgCount > kvStart) {

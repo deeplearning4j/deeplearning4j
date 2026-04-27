@@ -42,6 +42,13 @@
 #include <cstring>
 #include <ops/declarable/OpRegistrator.h>
 
+#if HAVE_ONEDNN
+#include <graph/cpu/OneDnnGraphBackend.h>
+#endif
+#if HAVE_OPENVINO
+#include <graph/cpu/OpenVinoGraphBackend.h>
+#endif
+
 namespace sd {
 namespace graph {
 
@@ -88,9 +95,58 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // Direct backend replay — OneDNN compiled_partition / ACL NEFunction / MLIR JIT.
       // Shape key is already cached and locked. The backend's internal cache
       // lookup will find the compiled artifact immediately.
+
+      // For OneDNN/OpenVINO mixed segments: install a NativeSlotExecutor so the
+      // backend can call back into slot-by-slot for unmappable op ranges.
+      // This mirrors the install/clear pattern in executeSegmentWithSpecificBackend.
+#if HAVE_ONEDNN
+      bool installedOneDnnNativeExecutor = false;
+      auto* onednnBackend = dynamic_cast<OneDnnGraphBackend*>(seg.resolvedCpuBackend);
+      if (onednnBackend != nullptr) {
+        onednnBackend->setNativeSlotExecutor(
+            [this, &externalInputs, numExternalInputs, &stream](int nativeStart, int nativeEnd) -> Status {
+              GraphSegment nativeSeg;
+              nativeSeg.def.startSlot = nativeStart;
+              nativeSeg.def.endSlot   = nativeEnd;
+              nativeSeg.def.isCapturable = false;
+              nativeSeg.exec.executionCount = 1;
+              return executeSegmentSlotBySlot(nativeSeg, externalInputs, numExternalInputs, stream);
+            });
+        installedOneDnnNativeExecutor = true;
+      }
+#endif
+#if HAVE_OPENVINO
+      bool installedOpenVinoNativeExecutor = false;
+      auto* openvinoBackend = dynamic_cast<OpenVinoGraphBackend*>(seg.resolvedCpuBackend);
+      if (openvinoBackend != nullptr) {
+        openvinoBackend->setNativeSlotExecutor(
+            [this, &externalInputs, numExternalInputs, &stream](int nativeStart, int nativeEnd) -> Status {
+              GraphSegment nativeSeg;
+              nativeSeg.def.startSlot = nativeStart;
+              nativeSeg.def.endSlot   = nativeEnd;
+              nativeSeg.def.isCapturable = false;
+              nativeSeg.exec.executionCount = 1;
+              return executeSegmentSlotBySlot(nativeSeg, externalInputs, numExternalInputs, stream);
+            });
+        installedOpenVinoNativeExecutor = true;
+      }
+#endif
+
       status = seg.resolvedCpuBackend->executeSegment(
           seg, slots_, externalInputs, numExternalInputs,
           outputSlots_, totalOutputSlots_, stream);
+
+#if HAVE_ONEDNN
+      if (installedOneDnnNativeExecutor && onednnBackend != nullptr) {
+        onednnBackend->clearNativeSlotExecutor();
+      }
+#endif
+#if HAVE_OPENVINO
+      if (installedOpenVinoNativeExecutor && openvinoBackend != nullptr) {
+        openvinoBackend->clearNativeSlotExecutor();
+      }
+#endif
+
       if (status == Status::OK) {
         seg.exec.executionCount++;
         totalGraphReplays_++;

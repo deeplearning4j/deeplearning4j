@@ -324,11 +324,23 @@ public class GenerationPipeline implements AutoCloseable {
      * Simple autoregressive generation for single-model GGUF models.
      *
      * <p>The decoder graph handles embedding lookup internally (input_ids → gather → transformer → logits).
-     * Each step feeds input_ids and reads logits. No KV cache, no static padding — shapes grow each step.</p>
+     * Each step feeds input_ids and reads logits.</p>
+     *
+     * <p>Routes to the appropriate decode strategy:</p>
+     * <ol>
+     *   <li>In-graph KV cache (GGUF with dotProductAttentionV2 built-in scatter): fixed shapes, DSP replay</li>
+     *   <li>External KV cache (ONNX with present outputs): static padding, DSP replay</li>
+     *   <li>No KV cache: shapes grow each step, no replay</li>
+     * </ol>
      */
     private GenerationResult generateSimple(int[] promptTokenIds, int maxNewTokens) {
-        // Check if the model has KV cache outputs — if so, use static-KV decode
-        // for fixed shapes after prefill, enabling DSP plan reuse and replay.
+        // Check for in-graph KV cache (GGUF pattern: KV inputs, no present outputs)
+        if (ModelIOConfig.isInGraphKvCache(decoder)) {
+            ModelIOConfig.KVCacheNames kvInputNames = ModelIOConfig.findKVCacheInputNames(decoder);
+            return generateSimpleWithInGraphKvCache(promptTokenIds, maxNewTokens, kvInputNames);
+        }
+
+        // Check for external KV cache outputs (ONNX pattern: present_* outputs)
         ModelIOConfig.KVCacheNames kvNames = ioConfig.getKvCacheNames();
         if (kvNames == null) {
             kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
@@ -482,6 +494,399 @@ public class GenerationPipeline implements AutoCloseable {
         long steadyMs = endTime - steadyStart;
         double steadyTokPerSec = steadyMs > 0 ? (steadyTokens * 1000.0 / steadyMs) : 0;
         return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs, steadyTokPerSec);
+    }
+
+    /**
+     * In-graph KV cache autoregressive generation for GGUF models using the native
+     * {@code autoregressive_decode} C++ op.
+     *
+     * <p>The decoder's dotProductAttentionV2 ops write K/V into static cache buffers
+     * in-place at cachePosition (inputs 5-7). No present outputs, no external scatter.
+     * All decode-step tensor shapes are fixed after the first decode step, enabling DSP replay.</p>
+     *
+     * <p>Flow (mirrors {@link #generateNative}):</p>
+     * <ol>
+     *   <li>Prefill: full prompt, empty KV cache inputs, extract K/V from per-layer outputs</li>
+     *   <li>Initialize static KV buffers from prefill K/V</li>
+     *   <li>Warmup decode step: compile DSP plan for decode shapes</li>
+     *   <li>Get plan handle, freeze shapes, resolve ext input indices</li>
+     *   <li>AutoregressiveDecode native op: full decode loop in C++</li>
+     * </ol>
+     */
+    private GenerationResult generateSimpleWithInGraphKvCache(int[] promptTokenIds, int maxNewTokens,
+                                                                ModelIOConfig.KVCacheNames kvInputNames) {
+        long startTime = System.currentTimeMillis();
+
+        // Reset frozen DSP executor from previous generation (same as generateNative)
+        InferenceSession existSession = decoder.getOrCreateSession();
+        if (existSession != null) {
+            DynamicShapePlanExecutor existExecutor = existSession.getDynamicShapePlanExecutor();
+            if (existExecutor != null && existExecutor.isShapesFrozen()) {
+                log.info("[Lifecycle] Resetting frozen DSP executor for new GGUF generation");
+                decoder.clearDynamicShapePlanCache();
+                decoder.resetSession();
+            }
+        }
+
+        int eosTokenId = tokenizer.getEosTokenId();
+        Set<Integer> stopTokenIds = new HashSet<>();
+        stopTokenIds.add(eosTokenId);
+        if (config.getAdditionalStopTokenIds() != null) {
+            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
+        }
+
+        SamplingConfig sampling = config.getSamplingConfig() != null
+                ? config.getSamplingConfig() : SamplingConfig.greedy();
+
+        String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
+        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "logits";
+        String posOffsetName = ioConfig.getPositionOffsetName();
+        String cachePosName = ioConfig.getCachePositionName();
+        String causalMaskName = ioConfig.getCausalMaskName();
+
+        int prefillSeqLen = promptTokenIds.length;
+        long maxKvLen = prefillSeqLen + maxNewTokens;
+        int numLayers = kvInputNames.keyNames.size();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 1: PREFILL -- full prompt, empty KV cache, extract per-layer K/V
+        // ══════════════════════════════════════════════════════════════════════
+        INDArray prefillInputIds = Nd4j.createFromArray(promptTokenIds)
+                .reshape(1, prefillSeqLen).castTo(DataType.INT64);
+
+        Map<String, INDArray> prefillInputMap = new HashMap<>();
+        prefillInputMap.put(inputIdsName, prefillInputIds);
+
+        if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
+            prefillInputMap.put(posOffsetName, Nd4j.scalar(DataType.INT64, 0));
+        }
+        if (cachePosName != null && decoder.hasVariable(cachePosName)) {
+            prefillInputMap.put(cachePosName, Nd4j.scalar(DataType.INT64, 0));
+        }
+        if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
+            prefillInputMap.put(causalMaskName,
+                    DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen));
+        }
+
+        // Empty KV cache inputs — signals attention op to skip in-place scatter
+        for (String keyName : kvInputNames.keyNames) {
+            if (decoder.hasVariable(keyName)) {
+                prefillInputMap.put(keyName, Nd4j.empty(decoder.getVariable(keyName).dataType()));
+            }
+        }
+        for (String valName : kvInputNames.valueNames) {
+            if (decoder.hasVariable(valName)) {
+                prefillInputMap.put(valName, Nd4j.empty(decoder.getVariable(valName).dataType()));
+            }
+        }
+
+        // Request outputs: logits + per-layer k_rope_{L} and v_heads_{L}
+        List<String> prefillOutputNames = new ArrayList<>();
+        prefillOutputNames.add(logitsName);
+        for (int i = 0; i < numLayers; i++) {
+            int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
+            prefillOutputNames.add("k_rope_" + layerIdx);
+            prefillOutputNames.add("v_heads_" + layerIdx);
+        }
+
+        Map<String, INDArray> prefillOutputs = decoder.output(
+                prefillInputMap, prefillOutputNames.toArray(new String[0]));
+
+        // Sample first token from prefill logits
+        INDArray prefillLogits = prefillOutputs.get(logitsName);
+        int firstTokenId = javaArgmax(prefillLogits, prefillLogits.shape()[1] - 1);
+        prefillLogits.close();
+        prefillInputIds.close();
+
+        long firstTokenMs = System.currentTimeMillis() - startTime;
+
+        if (stopTokenIds.contains(firstTokenId)) {
+            closePrefillOutputs(prefillOutputs, logitsName);
+            List<Integer> tokens = new ArrayList<>();
+            tokens.add(firstTokenId);
+            return buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 2: Initialize static KV buffers from prefill K/V outputs
+        // Shape: [batch, maxKvLen, numKVHeads, headDim] (BSHD layout)
+        // ══════════════════════════════════════════════════════════════════════
+        Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
+        DataType kvDtype = null;
+        for (int i = 0; i < numLayers; i++) {
+            int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
+
+            INDArray kRoped = prefillOutputs.get("k_rope_" + layerIdx);
+            INDArray vHeads = prefillOutputs.get("v_heads_" + layerIdx);
+
+            if (kRoped == null || vHeads == null) {
+                log.warn("Missing prefill K/V for layer {}", layerIdx);
+                continue;
+            }
+
+            if (kvDtype == null) kvDtype = kRoped.dataType();
+
+            // kRoped/vHeads shape: [batch, prefillLen, numKVHeads, headDim]
+            long[] kvShape = kRoped.shape();
+            long batch = kvShape[0], numKVHeads = kvShape[2], headDim = kvShape[3];
+
+            // Create full-size zero buffer and write prefill data at positions 0..prefillLen-1
+            INDArray keyBuf = Nd4j.zeros(kvDtype, batch, maxKvLen, numKVHeads, headDim);
+            keyBuf.get(NDArrayIndex.all(), NDArrayIndex.interval(0, prefillSeqLen),
+                    NDArrayIndex.all(), NDArrayIndex.all()).assign(kRoped);
+            staticKvBuffers.put(kvInputNames.keyNames.get(i), keyBuf);
+
+            INDArray valBuf = Nd4j.zeros(kvDtype, batch, maxKvLen, numKVHeads, headDim);
+            valBuf.get(NDArrayIndex.all(), NDArrayIndex.interval(0, prefillSeqLen),
+                    NDArrayIndex.all(), NDArrayIndex.all()).assign(vHeads);
+            staticKvBuffers.put(kvInputNames.valueNames.get(i), valBuf);
+
+            kRoped.close();
+            vHeads.close();
+        }
+        Nd4j.getExecutioner().commit();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 3: Warmup decode step -- compile DSP plan for decode shapes
+        // ══════════════════════════════════════════════════════════════════════
+        INDArray decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
+                .reshape(1, 1).castTo(DataType.INT64);
+
+        INDArray decodeCausalMask = null;
+        if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
+            decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(prefillSeqLen, maxKvLen);
+        }
+        INDArray decodePositionOffset = null;
+        if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
+            decodePositionOffset = Nd4j.scalar(DataType.INT64, prefillSeqLen);
+        }
+        INDArray decodeCachePosition = null;
+        if (cachePosName != null && decoder.hasVariable(cachePosName)) {
+            decodeCachePosition = Nd4j.scalar(DataType.INT64, prefillSeqLen);
+        }
+
+        Map<String, INDArray> decodeInputMap = new HashMap<>();
+        decodeInputMap.put(inputIdsName, decodeInputIds);
+        if (decodeCausalMask != null) decodeInputMap.put(causalMaskName, decodeCausalMask);
+        if (decodePositionOffset != null) decodeInputMap.put(posOffsetName, decodePositionOffset);
+        if (decodeCachePosition != null) decodeInputMap.put(cachePosName, decodeCachePosition);
+        for (Map.Entry<String, INDArray> entry : staticKvBuffers.entrySet()) {
+            if (decoder.hasVariable(entry.getKey())) {
+                decodeInputMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        List<String> decodeOutputNames = new ArrayList<>();
+        decodeOutputNames.add(logitsName);
+
+        Map<String, INDArray> decodeOutputs = decoder.output(
+                decodeInputMap, decodeOutputNames.toArray(new String[0]));
+
+        INDArray decodeLogits = decodeOutputs.get(logitsName);
+        int secondTokenId = javaArgmax(decodeLogits, 0);
+        decodeLogits.close();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 4: Get native plan handle, freeze shapes, resolve ext indices
+        // ══════════════════════════════════════════════════════════════════════
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session != null ? session.getDynamicShapePlanExecutor() : null;
+        Pointer planHandle = executor != null ? executor.getNativePlanHandle() : null;
+
+        if (planHandle == null || planHandle.isNull()) {
+            log.warn("Native plan handle not available for GGUF -- returning partial result");
+            decodeInputIds.close();
+            if (decodeCausalMask != null) decodeCausalMask.close();
+            if (decodePositionOffset != null) decodePositionOffset.close();
+            if (decodeCachePosition != null) decodeCachePosition.close();
+            for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+            List<Integer> tokens = new ArrayList<>();
+            tokens.add(firstTokenId);
+            if (!stopTokenIds.contains(firstTokenId)) tokens.add(secondTokenId);
+            return buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+        }
+
+        if (executor.getCurrentPlan() != null) {
+            executor.setShapesFrozen(true);
+            log.info("[Perf] GGUF shapes frozen after warmup decode (planPhase={} pointersStable={})",
+                    executor.getPlanPhase(), executor.arePointersStable());
+        }
+
+        int inputIdsExtIdx = resolveExtInputIdx(executor, inputIdsName);
+        int causalMaskExtIdx = causalMaskName != null ? resolveExtInputIdx(executor, causalMaskName) : -1;
+        int posOffsetExtIdx = posOffsetName != null ? resolveExtInputIdx(executor, posOffsetName) : -1;
+        int cachePosExtIdx = cachePosName != null ? resolveExtInputIdx(executor, cachePosName) : -1;
+        int logitsOutputIdx = resolveOutputIdx(executor, logitsName);
+
+        int embeddingsExtIdx = -1;
+        int maskExtIdx = -1;
+        int posIdsExtIdx = -1;
+
+        int numKvPairs = numLayers;
+        int[] kvInputExtIndices = new int[2 * numKvPairs];
+        int[] kvOutputIndices = new int[0];
+        int ki = 0;
+        for (String keyName : kvInputNames.keyNames) {
+            kvInputExtIndices[ki++] = resolveExtInputIdx(executor, keyName);
+        }
+        for (String valName : kvInputNames.valueNames) {
+            kvInputExtIndices[ki++] = resolveExtInputIdx(executor, valName);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STEP 5: Execute native AutoregressiveDecode op
+        // ══════════════════════════════════════════════════════════════════════
+        int remainingTokens = maxNewTokens - 2;
+
+        decodeInputIds.putScalar(new long[]{0, 0}, secondTokenId);
+        if (decodeCausalMask != null) {
+            decodeCausalMask.putScalar(new long[]{0, 0, 0, prefillSeqLen}, 0.0f);
+        }
+        if (decodePositionOffset != null) {
+            decodePositionOffset.putScalar(new long[]{}, (long)(prefillSeqLen + 1));
+        }
+        if (decodeCachePosition != null) {
+            decodeCachePosition.putScalar(new long[]{}, (long)(prefillSeqLen + 1));
+        }
+
+        Nd4j.getExecutioner().commit();
+        decodeInputIds.syncToDevice();
+        if (decodeCausalMask != null) decodeCausalMask.syncToDevice();
+        if (decodePositionOffset != null) decodePositionOffset.syncToDevice();
+        if (decodeCachePosition != null) decodeCachePosition.syncToDevice();
+        for (INDArray kvBuf : staticKvBuffers.values()) kvBuf.syncToDevice();
+
+        INDArray[] staticKvArray = new INDArray[2 * numKvPairs];
+        int idx = 0;
+        for (String keyName : kvInputNames.keyNames) {
+            staticKvArray[idx++] = staticKvBuffers.get(keyName);
+        }
+        for (String valName : kvInputNames.valueNames) {
+            staticKvArray[idx++] = staticKvBuffers.get(valName);
+        }
+
+        Pointer contextHandle = executor.getCachedOpContext();
+        int numPlanExternalInputs = executor.getCurrentPlan() != null
+                ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
+        int numPlanOutputs = decodeOutputNames.size();
+
+        if (remainingTokens > 0) {
+            // GGUF models handle their own embedding lookup internally
+            INDArray dummyEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
+            INDArray dummyEmbTable = Nd4j.zeros(DataType.FLOAT, 1, 1);
+
+            AutoregressiveDecode op = new AutoregressiveDecode(
+                    dummyEmbeddings, dummyEmbTable, decodeInputIds,
+                    decodeCausalMask, null, staticKvArray,
+                    planHandle, contextHandle,
+                    numPlanExternalInputs, numPlanOutputs,
+                    embeddingsExtIdx, maskExtIdx, causalMaskExtIdx,
+                    posIdsExtIdx, inputIdsExtIdx, logitsOutputIdx,
+                    -1,                 // attnMaskReformatExtIdx
+                    posOffsetExtIdx,    // position_offset ext index
+                    cachePosExtIdx,     // cache_position ext index
+                    kvInputExtIndices, kvOutputIndices,
+                    remainingTokens, eosTokenId, numKvPairs,
+                    prefillSeqLen + 1,
+                    sampling.isGreedy() ? 0.0 : sampling.getTemperature(),
+                    sampling.isGreedy() ? 0 : sampling.getTopK(),
+                    sampling.isGreedy() ? 0.0 : sampling.getTopP(),
+                    stopTokenIds);
+
+            INDArray[] results = Nd4j.getExecutioner().exec(op);
+            INDArray nativeTokenIds = results[0];
+            INDArray nativeTokenCount = results[1];
+            INDArray nativeTimingInfo = results[2];
+            int nativeCount = nativeTokenCount.getInt(0);
+
+            List<Integer> allTokens = new ArrayList<>();
+            allTokens.add(firstTokenId);
+            if (!stopTokenIds.contains(firstTokenId)) {
+                allTokens.add(secondTokenId);
+                if (!stopTokenIds.contains(secondTokenId)) {
+                    for (int i = 0; i < nativeCount; i++) {
+                        int tok = (int) nativeTokenIds.getLong(i);
+                        allTokens.add(tok);
+                        if (stopTokenIds.contains(tok)) break;
+                    }
+                }
+            }
+
+            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
+            String text = tokenizer.decode(tokenIds, false);
+            long endTime = System.currentTimeMillis();
+            long timeMs = endTime - startTime;
+            float tokPerSec = nativeTimingInfo.getFloat(2);
+            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+
+            dummyEmbeddings.close();
+            dummyEmbTable.close();
+            decodeInputIds.close();
+            if (decodeCausalMask != null) decodeCausalMask.close();
+            if (decodePositionOffset != null) decodePositionOffset.close();
+            if (decodeCachePosition != null) decodeCachePosition.close();
+            for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+            return GenerationResult.builder()
+                    .text(text).tokenIds(tokenIds)
+                    .generatedTokenCount(tokenIds.length).promptTokenCount(prefillSeqLen)
+                    .totalTokenCount(prefillSeqLen + tokenIds.length)
+                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                    .generationTimeMs(timeMs)
+                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                    .steadyStateTokensPerSecond(tokPerSec)
+                    .build();
+        } else {
+            decodeInputIds.close();
+            if (decodeCausalMask != null) decodeCausalMask.close();
+            if (decodePositionOffset != null) decodePositionOffset.close();
+            if (decodeCachePosition != null) decodeCachePosition.close();
+
+            List<Integer> allTokens = new ArrayList<>();
+            if (maxNewTokens >= 1) allTokens.add(firstTokenId);
+            if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) allTokens.add(secondTokenId);
+
+            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
+            String text = tokenizer.decode(tokenIds, false);
+            long endTime = System.currentTimeMillis();
+            long timeMs = endTime - startTime;
+            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+
+            for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+            return GenerationResult.builder()
+                    .text(text).tokenIds(tokenIds)
+                    .generatedTokenCount(tokenIds.length).promptTokenCount(prefillSeqLen)
+                    .totalTokenCount(prefillSeqLen + tokenIds.length)
+                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                    .generationTimeMs(timeMs)
+                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                    .steadyStateTokensPerSecond(0)
+                    .build();
+        }
+    }
+
+    /** Extract layer index from a KV cache input name like "past_key_values.3.key" → 3. */
+    private static int extractLayerIndex(String kvInputName) {
+        // Pattern: past_key_values.{N}.key or past_key_values.{N}.value
+        String[] parts = kvInputName.split("\\.");
+        for (int i = 0; i < parts.length; i++) {
+            try {
+                return Integer.parseInt(parts[i]);
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        return 0;
+    }
+
+    /** Close non-logits prefill outputs. */
+    private static void closePrefillOutputs(Map<String, INDArray> outputs, String logitsName) {
+        for (Map.Entry<String, INDArray> entry : outputs.entrySet()) {
+            if (!entry.getKey().equals(logitsName) && entry.getValue() != null) {
+                entry.getValue().close();
+            }
+        }
     }
 
     /**

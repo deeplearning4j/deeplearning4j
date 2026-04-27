@@ -65,84 +65,93 @@ static void batchedGemmONEDNN(std::vector<NDArray*>& vA, std::vector<NDArray*>& 
   // BLAS uses column-major storage, where a MxK matrix has stride [1, lda]
   // OneDNN uses row-major by default
 
-  // Process each batch
+  // OneDNN memory dimensions (row-major interpretation)
+  dnnl::memory::dims aShape = {M, K};
+  dnnl::memory::dims bShape = {K, N};
+  dnnl::memory::dims cShape = {M, N};
+
+  // Create memory descriptors with proper strides
+  // The BLAS matrices are stored column-major, which means:
+  // - For non-transposed: element (i,j) is at offset i + j*lda
+  // - For transposed: we read as if it were transposed
+
+  dnnl::memory::dims aStrides, bStrides, cStrides;
+
+  if (transposeA) {
+    aStrides = {ldA, 1};
+  } else {
+    aStrides = {1, ldA};
+  }
+
+  if (transposeB) {
+    bStrides = {ldB, 1};
+  } else {
+    bStrides = {1, ldB};
+  }
+
+  cStrides = {1, ldC};
+
+  // Create memory descriptors once — reused for all batches
+  dnnl::memory::desc a_md(aShape, dtype, aStrides);
+  dnnl::memory::desc b_md(bShape, dtype, bStrides);
+  dnnl::memory::desc c_md(cShape, dtype, cStrides);
+
+  // Check if all batches share the same alpha/beta (common case)
+  float alpha0 = alphas->isScalar() ? alphas->e<float>(0) : alphas->e<float>(0);
+  float beta0 = betas->isScalar() ? betas->e<float>(0) : betas->e<float>(0);
+  bool uniformAlpha = alphas->isScalar();
+  bool uniformBeta = betas->isScalar();
+
+  // Create primitive attributes for alpha scaling and beta accumulation
+  dnnl::primitive_attr attr;
+  if (beta0 != 0.f) {
+    dnnl::post_ops po;
+    po.append_sum(beta0);
+    attr.set_post_ops(po);
+  }
+
+  // Create primitive descriptor ONCE outside the loop
+  dnnl::matmul::primitive_desc op_prim_desc(engine, a_md, b_md, c_md, attr);
+  dnnl::matmul matmul_prim(op_prim_desc);
+
+  // Pre-allocate args map
+  std::unordered_map<int, dnnl::memory> args;
+  dnnl::memory a_mem(a_md, engine, nullptr);
+  dnnl::memory b_mem(b_md, engine, nullptr);
+  dnnl::memory c_mem(c_md, engine, nullptr);
+  args[DNNL_ARG_SRC] = a_mem;
+  args[DNNL_ARG_WEIGHTS] = b_mem;
+  args[DNNL_ARG_DST] = c_mem;
+
+  // If alpha/beta vary per batch, we need per-batch primitives for different beta values
+  // For the common case (uniform alpha/beta), reuse the same primitive
   for (int batch = 0; batch < batchSize; ++batch) {
     auto A = vA[batch];
     auto B = vB[batch];
     auto C = vC[batch];
 
-    // Get alpha and beta for this batch
-    float alpha = alphas->isScalar() ? alphas->e<float>(0) : alphas->e<float>(batch);
-    float beta = betas->isScalar() ? betas->e<float>(0) : betas->e<float>(batch);
+    float alpha = uniformAlpha ? alpha0 : alphas->e<float>(batch);
+    float beta = uniformBeta ? beta0 : betas->e<float>(batch);
 
-    // OneDNN memory dimensions (row-major interpretation)
-    // For op(A) with shape [M, K], OneDNN needs source memory
-    // For op(B) with shape [K, N], OneDNN needs weights memory
-    // Result C has shape [M, N]
-    dnnl::memory::dims aShape = {M, K};
-    dnnl::memory::dims bShape = {K, N};
-    dnnl::memory::dims cShape = {M, N};
+    // Update memory object data handles (no reallocation)
+    a_mem.set_data_handle(A->buffer());
+    b_mem.set_data_handle(B->buffer());
+    c_mem.set_data_handle(C->buffer());
 
-    // Create memory descriptors with proper strides
-    // The BLAS matrices are stored column-major, which means:
-    // - For non-transposed: element (i,j) is at offset i + j*lda
-    // - For transposed: we read as if it were transposed
-
-    dnnl::memory::dims aStrides, bStrides, cStrides;
-
-    if (transposeA) {
-      // A is transposed: original storage is [K, M] column-major with stride [1, ldA]
-      // After transpose, logical shape is [M, K] with strides [ldA, 1]
-      aStrides = {ldA, 1};
+    if (!uniformBeta && beta != beta0) {
+      // Different beta — need a new primitive (rare path)
+      dnnl::primitive_attr batchAttr;
+      if (beta != 0.f) {
+        dnnl::post_ops po;
+        po.append_sum(beta);
+        batchAttr.set_post_ops(po);
+      }
+      dnnl::matmul::primitive_desc batchPd(engine, a_md, b_md, c_md, batchAttr);
+      dnnl::matmul(batchPd).execute(stream, args);
     } else {
-      // A is not transposed: [M, K] column-major with stride [1, ldA]
-      aStrides = {1, ldA};
+      matmul_prim.execute(stream, args);
     }
 
-    if (transposeB) {
-      // B is transposed: original storage is [N, K] column-major with stride [1, ldB]
-      // After transpose, logical shape is [K, N] with strides [ldB, 1]
-      bStrides = {ldB, 1};
-    } else {
-      // B is not transposed: [K, N] column-major with stride [1, ldB]
-      bStrides = {1, ldB};
-    }
-
-    // C is [M, N] column-major with stride [1, ldC]
-    cStrides = {1, ldC};
-
-    // Create memory descriptors
-    dnnl::memory::desc a_md(aShape, dtype, aStrides);
-    dnnl::memory::desc b_md(bShape, dtype, bStrides);
-    dnnl::memory::desc c_md(cShape, dtype, cStrides);
-
-    // Create primitive attributes for alpha scaling and beta accumulation
-    dnnl::primitive_attr attr;
-
-    // Handle beta (accumulation with existing C values)
-    if (beta != 0.f) {
-      dnnl::post_ops po;
-      po.append_sum(beta);
-      attr.set_post_ops(po);
-    }
-
-    // Create primitive descriptor (OneDNN 3.x API - no separate desc class)
-    dnnl::matmul::primitive_desc op_prim_desc(engine, a_md, b_md, c_md, attr);
-
-    // Create memory objects
-    dnnl::memory a_mem(a_md, engine, A->buffer());
-    dnnl::memory b_mem(b_md, engine, B->buffer());
-    dnnl::memory c_mem(c_md, engine, C->buffer());
-
-    // Execute
-    std::unordered_map<int, dnnl::memory> args;
-    args[DNNL_ARG_SRC] = a_mem;
-    args[DNNL_ARG_WEIGHTS] = b_mem;
-    args[DNNL_ARG_DST] = c_mem;
-
-    dnnl::matmul(op_prim_desc).execute(stream, args);
-
-    // Apply alpha scaling if needed (OneDNN 3.x matmul doesn't have built-in alpha)
     if (alpha != 1.f) {
       C->applyScalar(sd::scalar::Multiply, alpha, C);
     }
@@ -206,10 +215,30 @@ PLATFORM_IMPL(batched_gemm, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(batched_gemm, ENGINE_CPU) {
-  // DISABLED: OneDNN batched_gemm has significant primitive creation overhead per batch
-  // that makes it slower than OpenBLAS for typical workloads. The generic implementation
-  // uses optimized OpenBLAS GEMM calls which are faster.
-  return Requirements("ONEDNN BATCHED_GEMM OP - DISABLED");
+  int batchSize = (block.width() - 2) / 2;
+  if (batchSize <= 0) return Requirements("ONEDNN BATCHED_GEMM OP - EMPTY BATCH");
+
+  auto firstA = INPUT_VARIABLE(2);
+  auto firstB = INPUT_VARIABLE(2 + batchSize);
+  auto firstC = OUTPUT_VARIABLE(0);
+
+  auto xType = firstA->dataType();
+  auto wType = firstB->dataType();
+  auto zType = firstC->dataType();
+
+  bool isSupportedType = ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
+                          (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
+                           (zType == DataType::BFLOAT16 || zType == DataType::FLOAT32)) ||
+                          (xType == DataType::HALF && wType == DataType::HALF &&
+                           (zType == DataType::HALF || zType == DataType::FLOAT32)));
+
+  Requirements req("ONEDNN BATCHED_GEMM OP");
+  req.expectTrue(makeInfoVariable(isSupportedType, TYPE_MSG_INPUT),
+                 "Must be FLOAT32, BF16, or FP16") &&
+      req.expectEq(makeInfoVariable(firstA->rankOf(), RANK_MSG_INPUT0), 2) &&
+      req.expectEq(makeInfoVariable(firstB->rankOf(), RANK_MSG_INPUT1), 2);
+  req.logTheSuccess();
+  return req;
 }
 
 }  // namespace platforms

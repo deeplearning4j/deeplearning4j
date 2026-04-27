@@ -670,6 +670,13 @@ struct ReplaySchedule {
   // Zero when no merged captures exist (falls back to full reset to 0).
   size_t mergedCastHwmA = 0;
   size_t mergedCastHwmB = 0;
+
+  // Pre-computed per-merged-group slot ranges [minSlot, maxSlot].
+  // Indexed by mergedGroupId. Populated once during capture so the replay
+  // hot loop can dirty-mark + tickWriteDevice in a single O(range) pass
+  // instead of scanning all units per leader.
+  struct MergedGroupRange { int minSlot; int maxSlot; };
+  std::vector<MergedGroupRange> mergedGroupSlotRanges;
 };
 
 // Batch-zero entry used by NativeDynamicShapePlan::batchZeroEntries_.
@@ -1133,6 +1140,24 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Get the total number of output slots (intermediate + final).
    */
   int getTotalOutputSlots() const { return totalOutputSlots_; }
+
+  /**
+   * Estimate memory used by this plan's owned intermediate arrays.
+   * Sums NDArray::memoryFootprint() for every plan-owned array in outputSlots_.
+   * Returns 0 if slots have not been populated yet.
+   */
+  size_t estimatedOwnedBytes() const {
+    if (outputSlots_ == nullptr || totalOutputSlots_ <= 0) return 0;
+    size_t total = 0;
+    for (int i = 0; i < totalOutputSlots_; i++) {
+      NDArray* arr = outputSlots_[i];
+      if (arr == nullptr) continue;
+      if (planOwnedArrays_.count(arr) > 0) {
+        total += static_cast<size_t>(arr->memoryFootprint());
+      }
+    }
+    return total;
+  }
 
   /**
    * Get the output slots array (NDArray pointers for all slots).
@@ -2075,6 +2100,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     void** h_B_ptrs;
     void** h_C_ptrs;
     int maxBatchSize;   // allocated capacity
+    bool ptrStable = false;  // true when H2D pointer arrays match device-side
   };
   std::vector<BatchedGemmGroup> batchedGemmGroups_;
   // Maps slot index → index into batchedGemmGroups_ (-1 if not part of a group)

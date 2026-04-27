@@ -716,6 +716,30 @@ void autoregressiveDecodeCuda(
             nextTokenId);
         NDArray::registerSpecialUse({inputIds}, {});
 
+        // ── Update in-graph KV cache scalars (GGUF pattern) ──
+        // position_offset and cache_position are scalar ext inputs that the
+        // attention op reads for RoPE position and KV write position.
+        if (config->positionOffsetExtIdx >= 0 && config->positionOffsetExtIdx < numExtInputs) {
+            NDArray* posOffset = extInputs[config->positionOffsetExtIdx];
+            if (posOffset != nullptr) {
+                NDArray::prepareSpecialUse({posOffset}, {});
+                updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+                    posOffset->specialBuffer(),
+                    currentPosition);
+                NDArray::registerSpecialUse({posOffset}, {});
+            }
+        }
+        if (config->cachePositionExtIdx >= 0 && config->cachePositionExtIdx < numExtInputs) {
+            NDArray* cachePosArr = extInputs[config->cachePositionExtIdx];
+            if (cachePosArr != nullptr) {
+                NDArray::prepareSpecialUse({cachePosArr}, {});
+                updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+                    cachePosArr->specialBuffer(),
+                    currentPosition);
+                NDArray::registerSpecialUse({cachePosArr}, {});
+            }
+        }
+
         // Per-step timing breakdown (gated behind executionTimingEnabled)
         if (stepTimingEnabled && step >= 3 && (step % 50 == 0 || step == maxNewTokens - 1)) {
             auto tLoopEnd = std::chrono::high_resolution_clock::now();

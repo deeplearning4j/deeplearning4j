@@ -94,7 +94,8 @@ class SD_LIB_EXPORT DspConfig {
 
   // Shape-keyed plan cache (one NativeDynamicShapePlan per (outputSet, shapeSig))
   std::atomic<float> _planCacheBudgetFraction{0.05f};  // fraction of free device memory
-  std::atomic<int> _planCacheMaxPlans{64};             // hard cap on cached plan count
+  std::atomic<int> _planCacheMaxPlans{64};             // hard cap on cached plan count (GPU default)
+  std::atomic<int> _planCacheMaxPlansCpu{2};           // hard cap for CPU builds (LLM plans are multi-GB)
 
  public:
   DspConfig();
@@ -201,6 +202,8 @@ class SD_LIB_EXPORT DspConfig {
   void setPlanCacheBudgetFraction(float v) { _planCacheBudgetFraction.store(v); }
   int planCacheMaxPlans() { return _planCacheMaxPlans.load(); }
   void setPlanCacheMaxPlans(int v) { _planCacheMaxPlans.store(v); }
+  int planCacheMaxPlansCpu() { return _planCacheMaxPlansCpu.load(); }
+  void setPlanCacheMaxPlansCpu(int v) { _planCacheMaxPlansCpu.store(v); }
 
   /**
    * Initialize from environment variables.

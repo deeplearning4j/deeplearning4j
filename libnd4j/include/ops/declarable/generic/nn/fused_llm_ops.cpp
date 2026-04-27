@@ -153,7 +153,21 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
         helpers::fusedRoPECached(input, cosValues, sinValues, output, ropeType,
                                   block.launchContext());
     } else {
-        int positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+        // Dynamic position from scalar input tensor (2-input, rank-0 input[1])
+        // or static iArg (1-input path, or 2-input ropeCache path with rank > 0 input[1])
+        int positionOffset;
+        if (block.width() == 2) {
+            auto secondInput = INPUT_VARIABLE(1);
+            if (secondInput->rankOf() == 0 || secondInput->isScalar()) {
+                // Scalar position offset tensor (dynamic position for KV cache decode)
+                positionOffset = secondInput->e<int>(0);
+            } else {
+                // RoPE cache tensor (not a position) — fall back to iArg
+                positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+            }
+        } else {
+            positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+        }
         float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
         float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
         helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
@@ -169,7 +183,7 @@ DECLARE_SHAPE_FN(fused_rope) {
 }
 
 DECLARE_TYPES(fused_rope) {
-    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }

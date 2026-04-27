@@ -199,6 +199,10 @@ void DspConfig::initFromEnvironment() {
     int v = readIntEnv("ND4J_DSP_PLAN_CACHE_MAX_PLANS", -1);
     if (v > 0) setPlanCacheMaxPlans(v);
   }
+  {
+    int v = readIntEnv("ND4J_DSP_PLAN_CACHE_MAX_PLANS_CPU", -1);
+    if (v > 0) setPlanCacheMaxPlansCpu(v);
+  }
 }
 
 }  // namespace config

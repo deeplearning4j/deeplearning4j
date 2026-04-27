@@ -380,7 +380,7 @@ if $DISABLE_WS_SKIP; then
 fi
 
 if $DSP_TIMING; then
-    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.timing=1"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.executionTiming=true"
 fi
 
 if $DRAFT_MODEL; then
@@ -483,6 +483,9 @@ if [ "$BACKEND" = "cpu" ]; then
     TRITON_FLAG=""
     # CPU-specific: add OMP thread configuration
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.omp.numthreads=${OMP_NUM_THREADS:-$(nproc)}"
+    # CPU validation: testOutputAccuracy configs are CUDA/Triton-specific,
+    # only run testDecodeStepValidation for CPU backend
+    VALIDATION_METHOD="testDecodeStepValidation"
     # Skip CUDA-only flags
     NSYS_MODE=false
     DRAFT_MODEL=false

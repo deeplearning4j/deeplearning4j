@@ -421,6 +421,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         slotArrayCache = new INDArray[totalSlots];
         // Reset native executor state for new plan
         freeNativePlanHandle("PLAN_CHANGED");
+        shapesFrozen = false;
+        executionCount = 0;
         nativeExecutorFailed = false;
 
         // Cache device count once.

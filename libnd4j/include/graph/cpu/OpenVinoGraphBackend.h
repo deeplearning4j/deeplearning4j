@@ -31,6 +31,7 @@
 #include <openvino/op/ops.hpp>
 
 #include <functional>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -130,9 +131,33 @@ class OpenVinoGraphBackend : public GraphBackend {
     CompiledSegment() : shapeKey(0), valid(false) {}
   };
 
-  // Per-segment cache (SegmentCacheKey/Hash from GraphBackendCommon.h)
-  std::unordered_map<SegmentCacheKey, CompiledSegment, SegmentCacheHash> cache_;
+  // Per-segment cache with LRU eviction.
+  // Each shape-key change creates a new entry; old entries are evicted when the
+  // cache exceeds kMaxCacheEntries to prevent unbounded memory growth from
+  // ov::InferRequest internal working buffers (~50-200 MB each).
+  static constexpr int kMaxCacheEntries = 32;  // Keep low — each InferRequest holds ~50-200MB working buffers
+
+  // LRU list: front = MRU, back = LRU
+  using CacheEntry = std::pair<SegmentCacheKey, CompiledSegment>;
+  using CacheLruList = std::list<CacheEntry>;
+  CacheLruList cacheLru_;
+  std::unordered_map<SegmentCacheKey, CacheLruList::iterator, SegmentCacheHash> cache_;
   std::mutex cacheMtx_;
+
+  // Evict oldest cache entries until under the cap. Must hold cacheMtx_.
+  void evictCacheIfOverLimitLocked();
+
+  // Topology-based compiled model cache.
+  // Segments from different transformer layers with the same op sequence and shapes
+  // share one CompiledModel.  Each segment gets its own InferRequest (cheap, ~KB).
+  // Key: topology hash (op names + input shapes + output shapes), Value: compiled model.
+  std::unordered_map<uint64_t, std::shared_ptr<ov::CompiledModel>> modelCache_;
+  std::mutex modelCacheMtx_;
+
+  // Compute topology hash for an island (op names + parameter shapes, slot-index-agnostic)
+  uint64_t computeIslandTopologyHash(NativeSlot* slots, int startSlot, int endSlot,
+                                     NDArray** externalInputs, int numExternalInputs,
+                                     NDArray** outputSlots, int totalOutputSlots);
 
   // Most recent compilation audit
   std::vector<CompilationAuditEntry> lastCompilationAudit_;

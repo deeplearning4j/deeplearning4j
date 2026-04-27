@@ -1013,35 +1013,7 @@ CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
     REQUIRE_TRUE(x->rankOf() >= 2, 0, "rms_norm_linear: input must be rank >= 2, got %d", x->rankOf());
     REQUIRE_TRUE(w->rankOf() == 2, 0, "rms_norm_linear: weight must be rank 2, got %d", w->rankOf());
 
-    // Step 1: RMS normalization
-    // rms_norm(x) = x * rsqrt(mean(x^2) + eps) * gamma
-    auto K = x->sizeAt(-1);
-    std::vector<LongType> lastDim = {x->rankOf() - 1};
-
-    NDArray* xSquared = (*x) * (*x);
-    NDArray* meanSquared = xSquared->reduceAlongDimension(reduce::Mean, &lastDim, true);
-    delete xSquared;
-
-    // Add epsilon and compute rsqrt
-    NDArray* meanPlusEps = (*meanSquared) + epsilon;
-    delete meanSquared;
-    NDArray* sqrtVal = meanPlusEps->transform(transform::Sqrt);
-    delete meanPlusEps;
-    NDArray* rsqrtVal = sqrtVal->transform(transform::Reciprocal);
-    delete sqrtVal;
-
-    // Normalize: x * rsqrt * gamma
-    NDArray* normalized = (*x) * (*rsqrtVal);
-    delete rsqrtVal;
-    NDArray* scaled = (*normalized) * (*gamma);
-    delete normalized;
-
-    // Step 2: Linear projection
-    auto result = MmulHelper::mmul(scaled, w, nullptr, 1.0, 0.0);
-    delete scaled;
-
-    output->assign(result);
-    delete result;
+    helpers::rmsNormLinear(block.launchContext(), x, gamma, w, output, epsilon);
 
     return Status::OK;
 }

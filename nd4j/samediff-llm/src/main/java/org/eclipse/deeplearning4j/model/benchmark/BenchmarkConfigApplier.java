@@ -56,6 +56,13 @@ public class BenchmarkConfigApplier {
         model.clearOpInputs();
         model.clearDynamicShapePlanCache();
 
+        // Reset execution mode to AUTO so the next benchmark config starts clean.
+        // graphExecutionMode is a persistent field on the shared cached SameDiff model.
+        // Without this reset, a prior config's SLOT_BY_SLOT mode leaks into the next
+        // config's auto-compile path (resolveRequestedGraphExecutionMode reads sd.graphExecutionMode
+        // when requestedMode is null).
+        model.setGraphExecutionMode(GraphExecutionMode.AUTO);
+
         // NOTE: We do NOT call invalidateTritonCache() here because:
         // 1. Triton PTX kernels are cached to disk (~/.nd4j/triton_cache/)
         // 2. CUDA graphs are cached in-memory (CudaGraphScheduler._graphCache)

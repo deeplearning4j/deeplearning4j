@@ -519,6 +519,7 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
   const MKL_INT seqQ = query->sizeAt(1);
   const MKL_INT seqKV = key->sizeAt(1);
   const MKL_INT numHeads = query->sizeAt(2);
+  const MKL_INT numKVHeads = key->sizeAt(2);
   const MKL_INT headDim = query->sizeAt(3);
 
   float* qPtr = query->bufferAsT<float>();
@@ -543,6 +544,8 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
   const MKL_INT outHeadStride = output->strideAt(2);
 
   const MKL_INT scoreSize = seqQ * seqKV;
+  const bool isGqa = (numKVHeads != numHeads);
+  const MKL_INT headsPerGroup = isGqa ? (numHeads / numKVHeads) : 1;
 
   auto& scratch = MKLSDPABuffer::instance();
   float* allScores = scratch.ensureCapacity(numHeads * scoreSize);
@@ -553,24 +556,54 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
     float* V = vPtr + b * vBatchStride;
     float* O = outPtr + b * outBatchStride;
 
-    // Batch GEMM: Q @ K^T for all heads
-    cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasTrans,
-                               seqQ, seqKV, headDim, 1.0f,
-                               Q, qSeqStride, qHeadStride,
-                               K, kSeqStride, kHeadStride,
-                               0.0f, allScores, seqKV, scoreSize, numHeads);
+    if (!isGqa) {
+      // Standard MHA: single batched GEMM for all heads
+      cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasTrans,
+                                 seqQ, seqKV, headDim, 1.0f,
+                                 Q, qSeqStride, qHeadStride,
+                                 K, kSeqStride, kHeadStride,
+                                 0.0f, allScores, seqKV, scoreSize, numHeads);
+    } else {
+      // GQA: each KV head group shares one K head
+      // Process headsPerGroup Q heads against the same K head per group
+      for (MKL_INT g = 0; g < numKVHeads; g++) {
+        float* Qg = Q + g * headsPerGroup * qHeadStride;
+        float* Kg = K + g * kHeadStride;
+        float* Sg = allScores + g * headsPerGroup * scoreSize;
+        // Batched GEMM: headsPerGroup Q heads @ same K head (K stride=0)
+        cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasTrans,
+                                   seqQ, seqKV, headDim, 1.0f,
+                                   Qg, qSeqStride, qHeadStride,
+                                   Kg, kSeqStride, 0,  // stride_b=0: reuse same K head
+                                   0.0f, Sg, seqKV, scoreSize, headsPerGroup);
+      }
+    }
 
     // Softmax for all heads
     for (MKL_INT h = 0; h < numHeads; h++) {
       mklSoftmaxInPlace(allScores + h * scoreSize, seqQ, seqKV, scale);
     }
 
-    // Batch GEMM: scores @ V for all heads
-    cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                               seqQ, headDim, seqKV, 1.0f,
-                               allScores, seqKV, scoreSize,
-                               V, vSeqStride, vHeadStride,
-                               0.0f, O, outSeqStride, outHeadStride, numHeads);
+    if (!isGqa) {
+      // Standard MHA: single batched GEMM
+      cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                                 seqQ, headDim, seqKV, 1.0f,
+                                 allScores, seqKV, scoreSize,
+                                 V, vSeqStride, vHeadStride,
+                                 0.0f, O, outSeqStride, outHeadStride, numHeads);
+    } else {
+      // GQA: each KV head group shares one V head
+      for (MKL_INT g = 0; g < numKVHeads; g++) {
+        float* Sg = allScores + g * headsPerGroup * scoreSize;
+        float* Vg = V + g * vHeadStride;
+        float* Og = O + g * headsPerGroup * outHeadStride;
+        cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                                   seqQ, headDim, seqKV, 1.0f,
+                                   Sg, seqKV, scoreSize,
+                                   Vg, vSeqStride, 0,  // stride_b=0: reuse same V head
+                                   0.0f, Og, outSeqStride, outHeadStride, headsPerGroup);
+      }
+    }
   }
 }
 #endif
@@ -668,6 +701,43 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
   auto scale = block.numT() > 0 ? T_ARG(0) : 0.0;
   if (scale <= 0) {
     scale = 1.0 / std::sqrt(static_cast<double>(queries->sizeAt(-1)));
+  }
+
+  // KV cache scatter: write current K/V into cache, then use full cache as K/V
+  auto kvCacheK = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+  auto kvCacheV = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
+  auto cachePosInput = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
+  bool hasKvCache = (kvCacheK != nullptr && !kvCacheK->isEmpty()) &&
+                    (kvCacheV != nullptr && !kvCacheV->isEmpty());
+  bool useInPlaceKv = hasKvCache && (cachePosInput != nullptr);
+
+  if (useInPlaceKv) {
+    LongType cachePosVal = cachePosInput->e<LongType>(0);
+    if (isRank4) {
+      auto batch = keys->sizeAt(0);
+      auto numKvHeads = keys->sizeAt(2);
+      auto headDim = keys->sizeAt(3);
+      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, numKvHeads, 0, headDim};
+      auto* kSlice = (*kvCacheK)(writeIdx);
+      auto* vSlice = (*kvCacheV)(writeIdx);
+      kSlice->assign(keys);
+      vSlice->assign(values);
+      delete kSlice;
+      delete vSlice;
+    } else {
+      auto batch = keys->sizeAt(0);
+      auto features = keys->sizeAt(2);
+      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, features};
+      auto* kSlice = (*kvCacheK)(writeIdx);
+      auto* vSlice = (*kvCacheV)(writeIdx);
+      kSlice->assign(keys);
+      vSlice->assign(values);
+      delete kSlice;
+      delete vSlice;
+    }
+    // Use full cache as K/V for attention
+    keys = kvCacheK;
+    values = kvCacheV;
   }
 
   // Detect attention bias at input 5 (when input 6 is absent, input 5 is bias not KV cache)
@@ -805,6 +875,13 @@ PLATFORM_CHECK(dot_product_attention_v2, ENGINE_CPU) {
 
   const auto qType = query->dataType();
   const bool isSupportedType = (qType == DataType::FLOAT32 || qType == DataType::HALF || qType == DataType::BFLOAT16);
+
+  // GQA (mismatched Q/K head counts) only supported for FP32 via MKL batch GEMM path
+  auto keys = block.width() > 2 ? INPUT_VARIABLE(2) : value;
+  bool isGqa = (query->rankOf() == 4 && keys->rankOf() == 4 &&
+                query->sizeAt(2) != keys->sizeAt(2));
+  bool gqaUnsupported = isGqa && qType != DataType::FLOAT32;
+
   const auto rank = query->rankOf();
 
   Requirements req("ONEDNN GRAPH SDPA");
@@ -812,6 +889,7 @@ PLATFORM_CHECK(dot_product_attention_v2, ENGINE_CPU) {
       req.expectFalse(makeInfoVariable(value->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectTrue(makeInfoVariable(isSupportedType, TYPE_MSG_INPUT), "Must be FLOAT32, HALF, or BFLOAT16") &&
       req.expectFalse(makeInfoVariable(hasMasks, "HAS_MASKS"), "Custom masks not supported") &&
+      req.expectFalse(makeInfoVariable(gqaUnsupported, "IS_GQA_NON_FP32"), "GQA only supported for FP32 (MKL path)") &&
       req.expectEq(makeInfoVariable(dropout, "DROPOUT"), 0.0) &&
       req.expectGreaterEq(makeInfoVariable(rank, RANK_MSG_INPUT0), 2) &&
       req.expectLessEq(makeInfoVariable(rank, RANK_MSG_INPUT0), 4);

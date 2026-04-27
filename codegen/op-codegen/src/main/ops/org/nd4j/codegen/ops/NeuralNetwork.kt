@@ -470,6 +470,28 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("rmsNormLinear") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "RmsNormLinear"
+        val input = Input(NUMERIC, "input") { description = "Input variable [batch, ..., features]" }
+        val gamma = Input(NUMERIC, "gamma") { description = "RMSNorm scale weights [features]" }
+        val weights = Input(NUMERIC, "weights") { description = "Weight matrix [features, outFeatures]" }
+        val epsilon = Arg(FLOATING_POINT, "epsilon") { defaultValue = 1e-6; description = "Epsilon for numerical stability" }
+
+        Output(NUMERIC, "output") { description = "Result of rms_norm(input, gamma, eps) @ weights" }
+
+        Signature(input, gamma, weights, epsilon)
+        Signature(input, gamma, weights)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused RMSNorm + Linear (MatMul) operation:
+                Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+                normalized tensor. Common in transformer models where RMSNorm feeds directly into
+                Q/K/V projections or FFN layers.
+            """.trimIndent()
+        }
+    }
 
     Op("dotProductAttentionV2") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
@@ -478,7 +500,10 @@ fun NN() = Namespace("NN") {
         val k = Input(NUMERIC, "keys") { description = "Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim]" }
         val queryMask = Input(NUMERIC, "queryMask") { description = "Query mask tensor (optional). Shape: [batchSize, numQueries]"; defaultValue = null }
         val valueMask = Input(NUMERIC, "valueMask") { description = "Value mask tensor (optional). Shape: [batchSize, numValues]"; defaultValue = null }
-        val attentionBias = Input(NUMERIC, "attentionBias") { description = "Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax."; defaultValue = null }
+        val keyCache = Input(NUMERIC, "keyCache") { description = "Key cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding."; defaultValue = null }
+        val valueCache = Input(NUMERIC, "valueCache") { description = "Value cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding."; defaultValue = null }
+        val cachePosition = Input(NUMERIC, "cachePosition") { description = "Cache write position (optional). Scalar INT64 tensor indicating where to write current K/V in the cache. Enables DSP replay with fixed graph shapes."; defaultValue = null }
+        val attentionBias = Input(NUMERIC, "attentionBias") { description = "Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. When KV cache is active, placed at input[8] to mask zero-padded cache positions."; defaultValue = null }
 
         val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 0.0; description = "Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))" }
         val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "Dropout probability applied to attention weights" }
@@ -487,10 +512,12 @@ fun NN() = Namespace("NN") {
 
         Output(NUMERIC, "output") { description = "Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim]" }
 
-        // Standard signature without attention bias (backward compatible)
+        // Standard signature without attention bias or KV cache (backward compatible)
         Signature(q, v, k, queryMask, valueMask, s, dropout, useCausalMask, training)
-        // Full signature with attention bias
+        // Signature with attention bias only (no KV cache)
         Signature(q, v, k, queryMask, valueMask, attentionBias, s, dropout, useCausalMask, training)
+        // Full signature with KV cache + attention bias for autoregressive decoding
+        Signature(q, v, k, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, s, dropout, useCausalMask, training)
 
         Doc(Language.ANY, DocScope.ALL) {
             """
@@ -508,9 +535,10 @@ fun NN() = Namespace("NN") {
              - Supports attention bias (relative position bias, ALiBi, etc.)
 
              KV Cache support for autoregressive generation:
-             - Pass keyCache and valueCache tensors
-             - Set kvCachePosition to current generation position
-             - Cached keys/values are updated in-place
+             - Pass keyCache and valueCache tensors with cachePosition
+             - Current K/V are written at cachePosition in-place, then full cache used for attention
+             - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)
+             - All tensor shapes are fixed after first decode step, enabling DSP replay
 
              See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
              See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
@@ -1314,13 +1342,31 @@ fun NN() = Namespace("NN") {
     Op("fusedRoPE") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "FusedRoPE"
-        Input(NUMERIC, "input") { description = "Input tensor" }
-        Input(NUMERIC, "ropeCache") { description = "Precomputed RoPE cache (cos/sin)" }
-        Arg(INT, "startPosition") { description = "Start position for RoPE application" }
+        val ropeInput = Input(NUMERIC, "input") { description = "Input tensor [batch, seq_len, num_heads, head_dim]" }
+        val ropeCache = Input(NUMERIC, "ropeCache") { description = "Precomputed RoPE cache (cos/sin)"; defaultValue = null }
+        val positionOffset = Input(NUMERIC, "positionOffset") { description = "Scalar INT64 tensor with dynamic position offset for KV cache decode"; defaultValue = null }
+        val startPosition = Arg(INT, "startPosition") { description = "Start position for RoPE application"; defaultValue = 0 }
+        val ropeType = Arg(INT, "ropeType") { description = "RoPE variant: 0=standard (LLaMA), 1=NeoX, 2=GPT-J"; defaultValue = 0 }
+        val freqBase = Arg(FLOATING_POINT, "freqBase") { description = "Base frequency for RoPE computation"; defaultValue = 10000.0 }
+        val freqScale = Arg(FLOATING_POINT, "freqScale") { description = "Frequency scale factor"; defaultValue = 1.0 }
+        val rotaryDims = Arg(INT, "rotaryDims") { description = "Number of dimensions to rotate (0 = all head dims)"; defaultValue = 0 }
         Output(NUMERIC, "output") { description = "Input with RoPE applied" }
+
+        // Precomputed cache path (original): input + ropeCache + startPosition
+        Signature(ropeInput, ropeCache, startPosition)
+        // Dynamic position path: input + positionOffset + ropeType + freqBase + freqScale + rotaryDims
+        Signature(ropeInput, positionOffset, ropeType, freqBase, freqScale, rotaryDims)
+
         Doc(Language.ANY, DocScope.ALL) {
             """
-                Fused Rotary Position Embedding using precomputed cache.
+                Fused Rotary Position Embedding (RoPE).
+
+                Two modes:
+                1. Precomputed cache: provide ropeCache with cos/sin values and startPosition
+                2. Dynamic position: provide scalar positionOffset tensor for KV cache decode
+                   (enables DSP replay with fixed graph shapes)
+
+                Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.
             """.trimIndent()
         }
     }

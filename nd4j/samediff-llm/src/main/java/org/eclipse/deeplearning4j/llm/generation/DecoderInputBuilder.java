@@ -414,4 +414,62 @@ public class DecoderInputBuilder {
             posIds.putScalar(0, j, startPos + j);
         }
     }
+
+    // ========== In-Graph KV Cache Masks (GGUF models) ==========
+
+    /**
+     * Build the attention bias mask for prefill with in-graph KV cache.
+     *
+     * <p>Shape: [1, 1, prefillLen, maxKvLen]. Lower-triangular causal structure
+     * for positions 0..prefillLen-1, with -1e9 for padding beyond prefillLen.</p>
+     *
+     * <pre>
+     * Example (prefillLen=3, maxKvLen=6):
+     *   [[ 0.0,  -1e9, -1e9, -1e9, -1e9, -1e9],   // position 0 sees only position 0
+     *    [ 0.0,  0.0,  -1e9, -1e9, -1e9, -1e9],   // position 1 sees 0..1
+     *    [ 0.0,  0.0,  0.0,  -1e9, -1e9, -1e9]]   // position 2 sees 0..2
+     * </pre>
+     *
+     * @param prefillLen number of tokens in the prefill prompt
+     * @param maxKvLen total KV buffer size (prefillLen + maxNewTokens)
+     * @return attention bias [1, 1, prefillLen, maxKvLen]
+     */
+    public static INDArray buildInGraphCausalMask(long prefillLen, long maxKvLen) {
+        int Q = (int) prefillLen;
+        int K = (int) maxKvLen;
+        float[] data = new float[Q * K];
+
+        for (int q = 0; q < Q; q++) {
+            int rowOffset = q * K;
+            // Mask positions after the current query position AND all padding
+            for (int k = q + 1; k < K; k++) {
+                data[rowOffset + k] = -1e9f;
+            }
+        }
+
+        return Nd4j.create(data, new long[]{1, 1, prefillLen, maxKvLen}, 'c');
+    }
+
+    /**
+     * Build the attention bias mask for a single decode step with in-graph KV cache.
+     *
+     * <p>Shape: [1, 1, 1, maxKvLen]. Positions 0..cachePos are unmasked (0.0),
+     * positions cachePos+1..maxKvLen-1 are masked (-1e9).</p>
+     *
+     * @param cachePos current write position in KV buffer (also the query position)
+     * @param maxKvLen total KV buffer size
+     * @return attention bias [1, 1, 1, maxKvLen]
+     */
+    public static INDArray buildInGraphDecodeMask(long cachePos, long maxKvLen) {
+        int K = (int) maxKvLen;
+        float[] data = new float[K];
+
+        // Unmask positions 0..cachePos (the current token sees all filled positions)
+        // Mask positions cachePos+1..maxKvLen-1 (zero-padded cache slots)
+        for (int k = (int) cachePos + 1; k < K; k++) {
+            data[k] = -1e9f;
+        }
+
+        return Nd4j.create(data, new long[]{1, 1, 1, maxKvLen}, 'c');
+    }
 }

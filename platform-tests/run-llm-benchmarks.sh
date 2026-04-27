@@ -133,7 +133,7 @@ done
 
 declare -A TEST_MAP
 TEST_MAP[import]="testModelImportBenchmark"
-TEST_MAP[baseline]="testSlotBySlotBaseline"
+TEST_MAP[baseline]="testOptimalBaseline"
 TEST_MAP[cuda-graphs]="testCudaGraphsBenchmark"
 TEST_MAP[triton]="testTritonCompileBenchmark"
 TEST_MAP[fusion]="testKernelFusionImpact"

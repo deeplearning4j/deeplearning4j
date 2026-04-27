@@ -182,6 +182,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"squared_relu", {dim3(GRID_SIZE_SQUARED_RELU, BLOCK_SIZE_SQUARED_RELU, SHARED_MEM_SIZE_SQUARED_RELU)}},
     {"mamba2_ssm", {dim3(GRID_SIZE_MAMBA2_SSM, BLOCK_SIZE_MAMBA2_SSM, SHARED_MEM_SIZE_MAMBA2_SSM)}},
     {"moe_shared_experts", {dim3(GRID_SIZE_MOE_SHARED_EXPERTS, BLOCK_SIZE_MOE_SHARED_EXPERTS, SHARED_MEM_SIZE_MOE_SHARED_EXPERTS)}},
+    {"rms_norm_linear", {dim3(GRID_SIZE_RMS_NORM_LINEAR, BLOCK_SIZE_RMS_NORM_LINEAR, SHARED_MEM_SIZE_RMS_NORM_LINEAR)}},
 
 };
 
@@ -363,6 +364,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"squared_relu", {"GRID_SIZE_SQUARED_RELU", "BLOCK_SIZE_SQUARED_RELU", "SHARED_MEM_SIZE_SQUARED_RELU"}},
     {"mamba2_ssm", {"GRID_SIZE_MAMBA2_SSM", "BLOCK_SIZE_MAMBA2_SSM", "SHARED_MEM_SIZE_MAMBA2_SSM"}},
     {"moe_shared_experts", {"GRID_SIZE_MOE_SHARED_EXPERTS", "BLOCK_SIZE_MOE_SHARED_EXPERTS", "SHARED_MEM_SIZE_MOE_SHARED_EXPERTS"}},
+    {"rms_norm_linear", {"GRID_SIZE_RMS_NORM_LINEAR", "BLOCK_SIZE_RMS_NORM_LINEAR", "SHARED_MEM_SIZE_RMS_NORM_LINEAR"}},
 
 };
 

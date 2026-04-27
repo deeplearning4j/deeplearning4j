@@ -20,6 +20,7 @@
 #include <graph/NativePlanCache.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <memory/MemoryUtils.h>
 #include <system/Environment.h>
 
 #ifdef SD_CUDA
@@ -151,26 +152,30 @@ size_t NativePlanCache::pinnedCount() const {
 void NativePlanCache::evictIfOverBudgetLocked() {
   auto& dsp = sd::Environment::getInstance().dsp();
 
-  const int maxPlans   = dsp.planCacheMaxPlans();
+  // Select the correct hard cap based on build type
+#ifdef SD_CUDA
+  const int maxPlans = dsp.planCacheMaxPlans();
+#else
+  const int maxPlans = dsp.planCacheMaxPlansCpu();
+#endif
   const float fraction = dsp.planCacheBudgetFraction();
 
-  // ---- 1. Hard count cap ----
-  // Iterate from LRU (back) toward MRU (front), skipping pinned plans.
-  while (static_cast<int>(lru_.size()) > maxPlans) {
-    // Find the oldest unpinned plan.
-    auto victim = lru_.end();
+  // Helper lambda: find oldest unpinned plan (LRU end toward MRU front)
+  auto findVictim = [&]() -> LruList::iterator {
     for (auto it = std::prev(lru_.end()); ; ) {
       if (pinnedPlans_.count(it->second) == 0) {
-        victim = it;
-        break;
+        return it;
       }
       if (it == lru_.begin()) break;
       --it;
     }
-    if (victim == lru_.end()) {
-      // All plans are pinned — cannot evict further.
-      break;
-    }
+    return lru_.end();
+  };
+
+  // ---- 1. Hard count cap ----
+  while (static_cast<int>(lru_.size()) > maxPlans) {
+    auto victim = findVictim();
+    if (victim == lru_.end()) break;  // all pinned
     sd_printf("[NativePlanCache] evict LRU plan (count cap %d): outputSetHash=%llu phCount=%lld contentHash=0x%016llx\n",
               maxPlans,
               (unsigned long long)victim->first.outputSetHash,
@@ -188,37 +193,38 @@ void NativePlanCache::evictIfOverBudgetLocked() {
 #ifdef SD_CUDA
     size_t totalMem = 0;
     cudaError_t err = cudaMemGetInfo(&freeMem, &totalMem);
-    if (err != cudaSuccess) {
-      // If we can't query free memory, skip the soft cap silently.
-      freeMem = 0;
-    }
+    if (err != cudaSuccess) freeMem = 0;
+#else
+    freeMem = sd::memory::MemoryUtils::getSystemFreeMemoryBytes();
 #endif
 
     if (freeMem > 0) {
       const size_t budgetBytes = static_cast<size_t>(fraction * static_cast<float>(freeMem));
 
-      while (lru_.size() * kBytesPerPlanEstimate > budgetBytes && !lru_.empty()) {
-        // Find the oldest unpinned plan.
-        auto victim = lru_.end();
-        for (auto it = std::prev(lru_.end()); ; ) {
-          if (pinnedPlans_.count(it->second) == 0) {
-            victim = it;
-            break;
-          }
-          if (it == lru_.begin()) break;
-          --it;
-        }
-        if (victim == lru_.end()) {
-          // All remaining plans are pinned — cannot evict further.
-          break;
-        }
-        sd_printf("[NativePlanCache] evict LRU plan (memory budget %.1f%% of %zuMB free): "
-                  "outputSetHash=%llu phCount=%lld contentHash=0x%016llx\n",
+      // Compute actual cache footprint using per-plan estimates
+      size_t totalCacheBytes = 0;
+      for (auto& entry : lru_) {
+        size_t planBytes = entry.second->estimatedOwnedBytes();
+        totalCacheBytes += (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
+      }
+
+      while (totalCacheBytes > budgetBytes && !lru_.empty()) {
+        auto victim = findVictim();
+        if (victim == lru_.end()) break;  // all pinned
+
+        size_t victimBytes = victim->second->estimatedOwnedBytes();
+        size_t victimCost = (victimBytes > 0) ? victimBytes : kBytesPerPlanEstimate;
+
+        sd_printf("[NativePlanCache] evict LRU plan (memory budget %.1f%% of %zuMB free, cache=%zuMB): "
+                  "outputSetHash=%llu phCount=%lld contentHash=0x%016llx planBytes=%zuMB\n",
                   fraction * 100.0f,
                   freeMem / (1024 * 1024),
+                  totalCacheBytes / (1024 * 1024),
                   (unsigned long long)victim->first.outputSetHash,
                   (long long)victim->first.phCount,
-                  (unsigned long long)victim->first.phShapeContentHash);
+                  (unsigned long long)victim->first.phShapeContentHash,
+                  victimCost / (1024 * 1024));
+        totalCacheBytes -= victimCost;
         map_.erase(victim->first);
         delete victim->second;
         lru_.erase(victim);

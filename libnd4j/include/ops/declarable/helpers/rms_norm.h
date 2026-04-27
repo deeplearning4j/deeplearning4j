@@ -31,6 +31,28 @@ SD_LIB_HIDDEN void rmsNorm(
     NDArray* output,
     float epsilon);
 
+/**
+ * Fused RMSNorm + Linear: output = matmul(rmsNorm(input, gamma, eps), weight)
+ *
+ * Eliminates the intermediate normalized tensor from global memory.
+ * On CUDA with M=1 (decode), uses a single fused kernel that computes
+ * the normalization and matrix-vector product in one pass.
+ * For M>1, uses fused rmsNorm kernel + cuBLAS GEMM.
+ *
+ * @param input  [M, K] input tensor
+ * @param gamma  [K] RMS norm scale weights
+ * @param weight [K, N] linear projection weights
+ * @param output [M, N] output tensor (pre-allocated)
+ * @param epsilon RMS norm epsilon
+ */
+SD_LIB_HIDDEN void rmsNormLinear(
+    LaunchContext* context,
+    NDArray* input,
+    NDArray* gamma,
+    NDArray* weight,
+    NDArray* output,
+    float epsilon);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

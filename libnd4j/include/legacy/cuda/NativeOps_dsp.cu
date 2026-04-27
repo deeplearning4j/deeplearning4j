@@ -176,11 +176,21 @@ int executeDynamicShapePlan(
       }
     }
 
-    std::vector<NDArray*> outputPtrs(numOutputs);
-    for (int i = 0; i < numOutputs; i++) {
-      outputPtrs[i] = opContext->outputArray(i);
-      // Output arrays may be null — plan will allocate them
-    }
+    // Initialize outputPtrs to nullptr — NOT from opContext->outputArray(i).
+    //
+    // Rationale: the Java side places dummy Nd4j.empty(FLOAT) arrays (shape=[])
+    // into the opContext output slots before calling here.  If we pre-populate
+    // outputPtrs from those dummies and plan->execute() then writes nullptr for
+    // an output whose slotIdx==-1 (CONSTANT/VARIABLE/pruned-op-output), the
+    // post-execute loop sees nullptr and skips setOutputArray — leaving the dummy
+    // in _fastpath_out.  Java then reads shape [] from getOutputArrayNative and
+    // crashes downstream (e.g. "Illegal set of indices for array: []").
+    //
+    // By starting with nullptr, plan->execute() can only fill slots it actually
+    // produced.  Any slot that stays nullptr after execute is either a
+    // CONSTANT/VARIABLE (Java handles those before calling getOutputArrayNative)
+    // or a genuine plan bug (Java throws a clear RuntimeException at index i).
+    std::vector<NDArray*> outputPtrs(numOutputs, nullptr);
 
     // Validate external input GPU pointers before execution.
     // Detect corrupted/freed _specialBuffer pointers that would cause SIGSEGV

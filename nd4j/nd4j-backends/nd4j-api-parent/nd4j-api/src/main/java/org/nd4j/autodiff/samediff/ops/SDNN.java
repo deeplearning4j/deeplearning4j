@@ -847,9 +847,10 @@ public class SDNN extends SDOps {
    * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
    * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors<br>
-   * - Set kvCachePosition to current generation position<br>
-   * - Cached keys/values are updated in-place<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
    * <br>
    * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
    * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
@@ -873,7 +874,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
   /**
@@ -891,9 +892,10 @@ public class SDNN extends SDOps {
    * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
    * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors<br>
-   * - Set kvCachePosition to current generation position<br>
-   * - Cached keys/values are updated in-place<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
    * <br>
    * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
    * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
@@ -918,7 +920,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -937,9 +939,10 @@ public class SDNN extends SDOps {
    * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
    * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors<br>
-   * - Set kvCachePosition to current generation position<br>
-   * - Cached keys/values are updated in-place<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
    * <br>
    * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
    * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
@@ -949,7 +952,7 @@ public class SDNN extends SDOps {
    * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
    * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
    * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
-   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. When KV cache is active, placed at input[8] to mask zero-padded cache positions. (NUMERIC type)
    * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
    * @param dropoutProbability Dropout probability applied to attention weights
    * @param useCausalMask Whether to apply causal mask for autoregressive tasks
@@ -965,7 +968,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
   /**
@@ -983,9 +986,10 @@ public class SDNN extends SDOps {
    * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
    * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors<br>
-   * - Set kvCachePosition to current generation position<br>
-   * - Cached keys/values are updated in-place<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
    * <br>
    * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
    * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
@@ -996,7 +1000,7 @@ public class SDNN extends SDOps {
    * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
    * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
    * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
-   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. When KV cache is active, placed at input[8] to mask zero-padded cache positions. (NUMERIC type)
    * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
    * @param dropoutProbability Dropout probability applied to attention weights
    * @param useCausalMask Whether to apply causal mask for autoregressive tasks
@@ -1012,7 +1016,117 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param keyCache Key cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding. (NUMERIC type)
+   * @param valueCache Value cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding. (NUMERIC type)
+   * @param cachePosition Cache write position (optional). Scalar INT64 tensor indicating where to write current K/V in the cache. Enables DSP replay with fixed graph shapes. (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. When KV cache is active, placed at input[8] to mask zero-padded cache positions. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(SDVariable queries, SDVariable values, SDVariable keys,
+      SDVariable queryMask, SDVariable valueMask, SDVariable keyCache, SDVariable valueCache,
+      SDVariable cachePosition, SDVariable attentionBias, double scaleFactor,
+      double dropoutProbability, boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param keyCache Key cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding. (NUMERIC type)
+   * @param valueCache Value cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding. (NUMERIC type)
+   * @param cachePosition Cache write position (optional). Scalar INT64 tensor indicating where to write current K/V in the cache. Enables DSP replay with fixed graph shapes. (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. When KV cache is active, placed at input[8] to mask zero-padded cache positions. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(String name, SDVariable queries, SDVariable values,
+      SDVariable keys, SDVariable queryMask, SDVariable valueMask, SDVariable keyCache,
+      SDVariable valueCache, SDVariable cachePosition, SDVariable attentionBias, double scaleFactor,
+      double dropoutProbability, boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1717,9 +1831,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Rotary Position Embedding using precomputed cache.<br>
+   * Fused Rotary Position Embedding (RoPE).<br>
+   * <br>
+   * Two modes:<br>
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
+   *    (enables DSP replay with fixed graph shapes)<br>
+   * <br>
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
    *
-   * @param input Input tensor (NUMERIC type)
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
    * @param ropeCache Precomputed RoPE cache (cos/sin) (NUMERIC type)
    * @param startPosition Start position for RoPE application
    * @return output Input with RoPE applied (NUMERIC type)
@@ -1727,14 +1848,21 @@ public class SDNN extends SDOps {
   public SDVariable fusedRoPE(SDVariable input, SDVariable ropeCache, int startPosition) {
     SDValidation.validateNumerical("fusedRoPE", "input", input);
     SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, startPosition).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0).outputVariable();
   }
 
   /**
-   * Fused Rotary Position Embedding using precomputed cache.<br>
+   * Fused Rotary Position Embedding (RoPE).<br>
+   * <br>
+   * Two modes:<br>
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
+   *    (enables DSP replay with fixed graph shapes)<br>
+   * <br>
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input tensor (NUMERIC type)
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
    * @param ropeCache Precomputed RoPE cache (cos/sin) (NUMERIC type)
    * @param startPosition Start position for RoPE application
    * @return output Input with RoPE applied (NUMERIC type)
@@ -1743,7 +1871,59 @@ public class SDNN extends SDOps {
       int startPosition) {
     SDValidation.validateNumerical("fusedRoPE", "input", input);
     SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, startPosition).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused Rotary Position Embedding (RoPE).<br>
+   * <br>
+   * Two modes:<br>
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
+   *    (enables DSP replay with fixed graph shapes)<br>
+   * <br>
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param positionOffset Scalar INT64 tensor with dynamic position offset for KV cache decode (NUMERIC type)
+   * @param ropeType RoPE variant: 0=standard (LLaMA), 1=NeoX, 2=GPT-J
+   * @param freqBase Base frequency for RoPE computation
+   * @param freqScale Frequency scale factor
+   * @param rotaryDims Number of dimensions to rotate (0 = all head dims)
+   * @return output Input with RoPE applied (NUMERIC type)
+   */
+  public SDVariable fusedRoPE(SDVariable input, SDVariable positionOffset, int ropeType,
+      double freqBase, double freqScale, int rotaryDims) {
+    SDValidation.validateNumerical("fusedRoPE", "input", input);
+    SDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims).outputVariable();
+  }
+
+  /**
+   * Fused Rotary Position Embedding (RoPE).<br>
+   * <br>
+   * Two modes:<br>
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
+   *    (enables DSP replay with fixed graph shapes)<br>
+   * <br>
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param positionOffset Scalar INT64 tensor with dynamic position offset for KV cache decode (NUMERIC type)
+   * @param ropeType RoPE variant: 0=standard (LLaMA), 1=NeoX, 2=GPT-J
+   * @param freqBase Base frequency for RoPE computation
+   * @param freqScale Frequency scale factor
+   * @param rotaryDims Number of dimensions to rotate (0 = all head dims)
+   * @return output Input with RoPE applied (NUMERIC type)
+   */
+  public SDVariable fusedRoPE(String name, SDVariable input, SDVariable positionOffset,
+      int ropeType, double freqBase, double freqScale, int rotaryDims) {
+    SDValidation.validateNumerical("fusedRoPE", "input", input);
+    SDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4224,8 +4404,8 @@ public class SDNN extends SDOps {
 
   /**
    * Fused RMSNorm + Linear (MatMul) operation:<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
-   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
    * Q/K/V projections or FFN layers.<br>
    *
    * @param input Input variable [batch, ..., features] (NUMERIC type)
@@ -4234,17 +4414,18 @@ public class SDNN extends SDOps {
    * @param epsilon Epsilon for numerical stability
    * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
    */
-  public SDVariable rmsNormLinear(SDVariable input, SDVariable gamma, SDVariable weights, double epsilon) {
+  public SDVariable rmsNormLinear(SDVariable input, SDVariable gamma, SDVariable weights,
+      double epsilon) {
     SDValidation.validateNumerical("rmsNormLinear", "input", input);
     SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
     SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, epsilon).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd,input, gamma, weights, epsilon).outputVariable();
   }
 
   /**
    * Fused RMSNorm + Linear (MatMul) operation:<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
-   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
    * Q/K/V projections or FFN layers.<br>
    *
    * @param name name May be null. Name for the output variable
@@ -4254,47 +4435,51 @@ public class SDNN extends SDOps {
    * @param epsilon Epsilon for numerical stability
    * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
    */
-  public SDVariable rmsNormLinear(String name, SDVariable input, SDVariable gamma, SDVariable weights, double epsilon) {
+  public SDVariable rmsNormLinear(String name, SDVariable input, SDVariable gamma,
+      SDVariable weights, double epsilon) {
     SDValidation.validateNumerical("rmsNormLinear", "input", input);
     SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
     SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, epsilon).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd,input, gamma, weights, epsilon).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Fused RMSNorm + Linear (MatMul) operation with default epsilon (1e-6):<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
-   * normalized tensor.<br>
+   * Fused RMSNorm + Linear (MatMul) operation:<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
+   * Q/K/V projections or FFN layers.<br>
    *
    * @param input Input variable [batch, ..., features] (NUMERIC type)
    * @param gamma RMSNorm scale weights [features] (NUMERIC type)
    * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
-   * @return output Result of rms_norm(input, gamma) @ weights (NUMERIC type)
+   * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
    */
   public SDVariable rmsNormLinear(SDVariable input, SDVariable gamma, SDVariable weights) {
     SDValidation.validateNumerical("rmsNormLinear", "input", input);
     SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
     SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, 1.0E-6).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd,input, gamma, weights, 1.0E-6).outputVariable();
   }
 
   /**
-   * Fused RMSNorm + Linear (MatMul) operation with default epsilon (1e-6):<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
-   * normalized tensor.<br>
+   * Fused RMSNorm + Linear (MatMul) operation:<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
+   * Q/K/V projections or FFN layers.<br>
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable [batch, ..., features] (NUMERIC type)
    * @param gamma RMSNorm scale weights [features] (NUMERIC type)
    * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
-   * @return output Result of rms_norm(input, gamma) @ weights (NUMERIC type)
+   * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
    */
-  public SDVariable rmsNormLinear(String name, SDVariable input, SDVariable gamma, SDVariable weights) {
+  public SDVariable rmsNormLinear(String name, SDVariable input, SDVariable gamma,
+      SDVariable weights) {
     SDValidation.validateNumerical("rmsNormLinear", "input", input);
     SDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
     SDValidation.validateNumerical("rmsNormLinear", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd, input, gamma, weights, 1.0E-6).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(sd,input, gamma, weights, 1.0E-6).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
