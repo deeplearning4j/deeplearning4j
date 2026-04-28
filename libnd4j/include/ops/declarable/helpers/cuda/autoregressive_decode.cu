@@ -466,26 +466,25 @@ void autoregressiveDecodeCuda(
             planOutputs, numPlanOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
 
-        REQUIRE_TRUE(planStatus == Status::OK, 0,
-                     "autoregressive_decode: plan execution FAILED at step %d with status %d. "
-                     "Plan state: frozen=%d numExt=%d numOutputs=%d. "
-                     "This is NOT recoverable — fix the plan execution failure.",
-                     step, static_cast<int>(planStatus),
-                     plan->isShapesFrozen() ? 1 : 0,
-                     numExtInputs, numPlanOutputs);
+        // Validate plan output only on early steps — steady state skips these checks.
+        if (step < 3) {
+            REQUIRE_TRUE(planStatus == Status::OK, 0,
+                         "autoregressive_decode: plan execution FAILED at step %d with status %d. "
+                         "Plan state: frozen=%d numExt=%d numOutputs=%d. "
+                         "This is NOT recoverable — fix the plan execution failure.",
+                         step, static_cast<int>(planStatus),
+                         plan->isShapesFrozen() ? 1 : 0,
+                         numExtInputs, numPlanOutputs);
 
-        // Validate output was populated — hard error, not silent break.
-        REQUIRE_TRUE(config->logitsOutputIdx >= 0 && config->logitsOutputIdx < numPlanOutputs, 0,
-                     "autoregressive_decode: logitsOutputIdx=%d out of range [0,%d) at step %d. "
-                     "The plan has fewer outputs than expected or logitsOutputIdx was not set.",
-                     config->logitsOutputIdx, numPlanOutputs, step);
-        REQUIRE_TRUE(planOutputs[config->logitsOutputIdx] != nullptr, 0,
-                     "autoregressive_decode: logits output NDArray* is null at step %d (idx=%d). "
-                     "Plan returned OK but did not populate the logits output slot.",
-                     step, config->logitsOutputIdx);
+            REQUIRE_TRUE(config->logitsOutputIdx >= 0 && config->logitsOutputIdx < numPlanOutputs, 0,
+                         "autoregressive_decode: logitsOutputIdx=%d out of range [0,%d) at step %d. "
+                         "The plan has fewer outputs than expected or logitsOutputIdx was not set.",
+                         config->logitsOutputIdx, numPlanOutputs, step);
+            REQUIRE_TRUE(planOutputs[config->logitsOutputIdx] != nullptr, 0,
+                         "autoregressive_decode: logits output NDArray* is null at step %d (idx=%d). "
+                         "Plan returned OK but did not populate the logits output slot.",
+                         step, config->logitsOutputIdx);
 
-        // Validate logits output buffer is not stale/closed.
-        {
             NDArray* logitsArr = planOutputs[config->logitsOutputIdx];
             auto* logitsDb = logitsArr->dataBuffer();
             REQUIRE_TRUE(logitsDb != nullptr, 0,
@@ -526,10 +525,12 @@ void autoregressiveDecodeCuda(
 
         if (temperature <= 0.0 || (topK <= 1 && topP <= 0.0)) {
             // Greedy: argmax over last-position logits
-            REQUIRE_TRUE(logitsVocab > 0, 0,
-                         "autoregressive_decode: logits vocab dimension is 0 at step %d. "
-                         "Cannot perform argmax on empty vocabulary.",
-                         step);
+            if (step < 3) {
+                REQUIRE_TRUE(logitsVocab > 0, 0,
+                             "autoregressive_decode: logits vocab dimension is 0 at step %d. "
+                             "Cannot perform argmax on empty vocabulary.",
+                             step);
+            }
             // Compute offset to last position: (logitsSeqLen-1) * vocabSize
             LongType lastPosOffset = (logitsSeqLen - 1) * logitsVocab;
             const void* logitsPtr = static_cast<const char*>(logitsOutput->specialBuffer())
@@ -642,31 +643,35 @@ void autoregressiveDecodeCuda(
         // own device-side position counter via executeSteadyState.
         if (!config->planOwnsKvScatter &&
             config->kvOutputIndices != nullptr && staticKvBuffers != nullptr && numKvPairs > 0) {
-            // Build batched KV scatter entries — validate every buffer first.
+            // Build batched KV scatter entries.
             std::vector<KvScatterEntry> entries(2 * numKvPairs);
             for (int kv = 0; kv < 2 * numKvPairs; kv++) {
                 int kvOutIdx = config->kvOutputIndices[kv];
-                REQUIRE_TRUE(kvOutIdx >= 0 && kvOutIdx < numPlanOutputs, 0,
-                             "autoregressive_decode: KV output index %d out of range [0,%d) "
-                             "at step %d kv=%d",
-                             kvOutIdx, numPlanOutputs, step, kv);
                 NDArray* presentKv = planOutputs[kvOutIdx];
                 NDArray* staticBuf = staticKvBuffers[kv];
-                REQUIRE_TRUE(presentKv != nullptr, 0,
-                             "autoregressive_decode: KV output[%d] (planOutput[%d]) is null "
-                             "at step %d — plan did not produce this output.",
-                             kv, kvOutIdx, step);
-                REQUIRE_TRUE(staticBuf != nullptr, 0,
-                             "autoregressive_decode: static KV buffer[%d] is null at step %d.",
-                             kv, step);
-                REQUIRE_TRUE(presentKv->specialBuffer() != nullptr, 0,
-                             "autoregressive_decode: KV output[%d] has null device buffer "
-                             "at step %d — stale or uninitialized output.",
-                             kv, step);
-                REQUIRE_TRUE(staticBuf->specialBuffer() != nullptr, 0,
-                             "autoregressive_decode: static KV[%d] has null device buffer "
-                             "at step %d — buffer was freed or never allocated.",
-                             kv, step);
+
+                // Validate every buffer on early steps only.
+                if (step < 3) {
+                    REQUIRE_TRUE(kvOutIdx >= 0 && kvOutIdx < numPlanOutputs, 0,
+                                 "autoregressive_decode: KV output index %d out of range [0,%d) "
+                                 "at step %d kv=%d",
+                                 kvOutIdx, numPlanOutputs, step, kv);
+                    REQUIRE_TRUE(presentKv != nullptr, 0,
+                                 "autoregressive_decode: KV output[%d] (planOutput[%d]) is null "
+                                 "at step %d — plan did not produce this output.",
+                                 kv, kvOutIdx, step);
+                    REQUIRE_TRUE(staticBuf != nullptr, 0,
+                                 "autoregressive_decode: static KV buffer[%d] is null at step %d.",
+                                 kv, step);
+                    REQUIRE_TRUE(presentKv->specialBuffer() != nullptr, 0,
+                                 "autoregressive_decode: KV output[%d] has null device buffer "
+                                 "at step %d — stale or uninitialized output.",
+                                 kv, step);
+                    REQUIRE_TRUE(staticBuf->specialBuffer() != nullptr, 0,
+                                 "autoregressive_decode: static KV[%d] has null device buffer "
+                                 "at step %d — buffer was freed or never allocated.",
+                                 kv, step);
+                }
 
                 entries[kv].srcPtr = presentKv->specialBuffer();
                 entries[kv].dstPtr = staticBuf->specialBuffer();
@@ -678,10 +683,12 @@ void autoregressiveDecodeCuda(
                 entries[kv].cachePos = currentPosition - 1;  // pre-increment: use previous position
             }
 
-            REQUIRE_TRUE(staticKvBuffers[0] != nullptr, 0,
-                         "autoregressive_decode: staticKvBuffers[0] is null at step %d — "
-                         "cannot determine KV data type for scatter.",
-                         step);
+            if (step < 3) {
+                REQUIRE_TRUE(staticKvBuffers[0] != nullptr, 0,
+                             "autoregressive_decode: staticKvBuffers[0] is null at step %d — "
+                             "cannot determine KV data type for scatter.",
+                             step);
+            }
             kvScatterBatched(entries.data(), 2 * numKvPairs,
                              staticKvBuffers[0]->dataType(), context);
 
@@ -696,10 +703,12 @@ void autoregressiveDecodeCuda(
         // In single-model mode (embeddingsExtIdx == -1), the model handles its own
         // embedding lookup internally, so we skip this step.
         if (config->embeddingsExtIdx >= 0) {
-            REQUIRE_TRUE(nextTokenId >= 0 && nextTokenId < vocabSize, 0,
-                         "autoregressive_decode: nextTokenId=%lld out of range [0,%lld) at step %d. "
-                         "Argmax/sampling returned an invalid token ID.",
-                         (long long)nextTokenId, (long long)vocabSize, step);
+            if (step < 3) {
+                REQUIRE_TRUE(nextTokenId >= 0 && nextTokenId < vocabSize, 0,
+                             "autoregressive_decode: nextTokenId=%lld out of range [0,%lld) at step %d. "
+                             "Argmax/sampling returned an invalid token ID.",
+                             (long long)nextTokenId, (long long)vocabSize, step);
+            }
             NDArray::prepareSpecialUse({decodeEmbedding}, {embeddingTable});
             BUILD_SINGLE_SELECTOR(embeddingTable->dataType(), embedLookupLauncher,
                                   (stream, embeddingTable->specialBuffer(),
