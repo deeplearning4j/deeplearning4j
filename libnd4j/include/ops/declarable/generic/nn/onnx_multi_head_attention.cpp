@@ -27,9 +27,7 @@
 #if NOT_EXCLUDED(OP_onnx_multi_head_attention)
 
 #include <helpers/FlashAttentionHelper.h>
-#include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/headers/nn.h>
-#include <system/env_functions.h>
 #include <cmath>
 
 namespace sd {
@@ -279,64 +277,34 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   config.numHeads = numHeads;
   config.numKvHeads = numKvHeads;
   
-  // Output in BSHD format [batch, seqQ, numHeads, headDim]
-  // Use AttentionWorkspace to reuse the buffer across invocations instead of
-  // allocating a new GPU buffer every call (30 layers × every decode step).
-  std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
-  auto workspace = AttentionWorkspace::getInstance();
-  NDArray* attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
-  // Zero the workspace buffer to prevent stale data from a previous call leaking through.
-  // AttentionWorkspace reuses buffers across calls without clearing them.  While
-  // FlashAttention normally writes every output position, edge cases (maxKV==0, or
-  // future kernel changes) could leave positions unwritten.  The cost of one memset
-  // is negligible compared to the attention computation itself.
-  attnOut4d->nullify();
-
   // Cast attention bias to query dtype if needed
   std::unique_ptr<NDArray> attnBiasCastOwner;
   if (attnBias != nullptr && attnBias->dataType() != query->dataType()) {
     attnBiasCastOwner.reset(attnBias->cast(query->dataType()));
     attnBias = attnBiasCastOwner.get();
   }
-  
-  // Diagnostic: dump Q checksum at the divergent position before FlashAttention
-  if (sd::env_isDebugAndVerbose()) {
-    qReshaped->syncToHost();
-    kFinal->syncToHost();
-    // Q is [batch, seqQ, numHeads, headDim] = [1, 17, 9, 64]
-    // Dump head 2 at position 9 (where divergence occurs)
-    if (seqQ > 9 && numHeads > 2) {
-      sd_printf("MHA_DIAG: Q[0,9,2,0:4] = [%.6f, %.6f, %.6f, %.6f]\n",
-                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 0),
-                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 1),
-                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 2),
-                qReshaped->e<float>(0*seqQ*numHeads*headDim + 9*numHeads*headDim + 2*headDim + 3));
-      sd_printf("MHA_DIAG: K[0,9,0,0:4] = [%.6f, %.6f, %.6f, %.6f]\n",
-                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 0),
-                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 1),
-                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 2),
-                kFinal->e<float>(0*seqQ*numKvHeads*headDim + 9*numKvHeads*headDim + 0*headDim + 3));
-      // Compute a simple checksum of all Q values
-      double qSum = 0;
-      for (LongType i = 0; i < std::min((LongType)100, qReshaped->lengthOf()); i++) {
-        qSum += qReshaped->e<float>(i);
-      }
-      sd_printf("MHA_DIAG: Q checksum(first100) = %.8f, numHeads=%lld, numKvHeads=%lld, scale=%.8f\n",
-                qSum, numHeads, numKvHeads, scale);
-    }
-  }
+
+  // Reshape output [batch, seqQ, hidden] → [batch, seqQ, numHeads, headDim] for attention kernel.
+  // Output is plan-allocated C-contiguous, so reshape is a zero-copy view — the kernel
+  // writes directly into the output buffer, eliminating the workspace nullify + assign copy
+  // (60 CUDA ops removed from graph per step for 30-layer model).
+  std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
+  NDArray* attnOut4d = output->reshape('c', outShape4d, false);
+  bool directWrite = (attnOut4d->specialBuffer() == output->specialBuffer());
 
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
   FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, attnOut4d, config,
                                 nullptr, nullptr, nullptr,
                                 block.launchContext(), attnBias);
-  
-  // Reshape output back to [batch, seqQ, hidden]
-  // Use copyToNewBuff=false to create a view (no GPU allocation).
-  std::vector<LongType> outShape3d = {batch, seqQ, hidden};
-  NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
-  output->assign(attnOutFinal);
-  delete attnOutFinal;
+
+  if (!directWrite) {
+    // Reshape created a copy (non-contiguous output) — copy back.
+    std::vector<LongType> outShape3d = {batch, seqQ, hidden};
+    NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
+    output->assign(attnOutFinal);
+    delete attnOutFinal;
+  }
+  delete attnOut4d;
   
   // Output present key/value if requested (in BHSD format for ONNX compatibility)
   // Skip if we already wrote directly to output buffers (ownKVFinal == false && using output view)
