@@ -122,6 +122,7 @@ static void syncExternalInputs(NDArray** externalArrays, int numExt,
                                const std::vector<std::string>& externalInputNames,
                                bool shapesFrozen, bool tritonVerify,
                                const char* tag, int execCount,
+                               const std::vector<int>* cachedVariableIndices = nullptr,
                                int* outSynced = nullptr, int* outSkipped = nullptr) {
   int synced = 0, skipped = 0;
   bool useVariableFilter = shapesFrozen && !externalInputIsVariable.empty();
@@ -152,6 +153,26 @@ static void syncExternalInputs(NDArray** externalArrays, int numExt,
                (long long)externalArrays[ei]->lengthOf(),
                DSP_BUF(externalArrays[ei]));
     }
+  }
+
+  // Fast path: when cached variable indices are available and we're in steady
+  // state with variable filtering, iterate only the 2-3 variable inputs instead
+  // of all ~1333 external inputs. Weights are guaranteed stable after freeze.
+  if (useVariableFilter && cachedVariableIndices != nullptr &&
+      !cachedVariableIndices->empty() && !tritonVerify) {
+    for (int idx : *cachedVariableIndices) {
+      if (idx < 0 || idx >= numExt || externalArrays[idx] == nullptr) continue;
+      auto* db = externalArrays[idx]->dataBuffer();
+      if (db != nullptr && db->isPrimaryActual()) {
+        db->syncToSpecial(true);
+      }
+      synced++;
+    }
+    skipped = numExt - static_cast<int>(cachedVariableIndices->size());
+    if (skipped < 0) skipped = 0;
+    if (outSynced) *outSynced = synced;
+    if (outSkipped) *outSkipped = skipped;
+    return;
   }
 
   for (int ei = 0; ei < numExt; ei++) {
@@ -806,8 +827,11 @@ Status NativeDynamicShapePlan::compositeReplay(
   // only need to run once per step. The first segment does the work; subsequent
   // segments skip via the execCtx dedup flag.
   if (!execCtx->extInputsSynced) {
+    // Pass cached variable indices for O(2-3) iteration instead of O(1333) in steady state
+    const std::vector<int>* varIdxPtr = cachedVariableExtIndices_.empty() ? nullptr : &cachedVariableExtIndices_;
     syncExternalInputs(externalArrays, numExt, externalInputIsVariable_,
-                       externalInputNames_, shapesFrozen_, false, "replay", seg.exec.executionCount);
+                       externalInputNames_, shapesFrozen_, false, "replay", seg.exec.executionCount,
+                       varIdxPtr);
 
     // Fingerprint every variable external input at replay entry.
     if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
@@ -2165,7 +2189,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                            externalInputNames_, shapesFrozen_,
                            Environment::getInstance().tritonVerifyKernels(),
                            "capture", seg.exec.executionCount,
-                           &syncedCapture, &skippedCapture);
+                           nullptr, &syncedCapture, &skippedCapture);
         DSP_DIAG(MEMORY, "pre-capture EXT_SYNC directReference: %d synced, %d weights skipped (frozen=%d, varFilter=%d)",
                  syncedCapture, skippedCapture, (int)shapesFrozen_,
                  (int)(shapesFrozen_ && !externalInputIsVariable_.empty()));

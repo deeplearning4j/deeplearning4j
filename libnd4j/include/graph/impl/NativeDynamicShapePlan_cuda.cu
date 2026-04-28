@@ -208,6 +208,26 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       frozenFastPathInputStable && frozenFastPathSlotsStable &&
       !Environment::getInstance().tritonVerifyKernels()) {
     compositeFastPathApplicable = hasCompositeHandles(segments_[0]);
+    // Don't short-circuit via composite fast path while the segment is in the
+    // CUDA graph capture window and hasn't been captured yet. The capture
+    // decision lives in executeSegmentWithGpuGraph → segDispatchCaptureOrDirect,
+    // which is only reachable through the full phaseReplay path. If we return
+    // OK here, the capture window passes without capture being attempted.
+    if (compositeFastPathApplicable && Environment::getInstance().tritonGraphCapture()) {
+      auto& seg0 = segments_[0];
+      bool hasCapturedGraph = (seg0.exec.replayHandle != nullptr);
+      if (!hasCapturedGraph) {
+        int captureMinExec = Environment::getInstance().tritonCaptureMinExec();
+        bool inCaptureWindow = (seg0.exec.executionCount >= captureMinExec) &&
+                               (seg0.exec.executionCount <= (captureMinExec + 2));
+        if (inCaptureWindow) {
+          DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: composite ready but deferring to full path for "
+                   "CUDA graph capture (execCount=%d window=[%d,%d])",
+                   seg0.exec.executionCount, captureMinExec, captureMinExec + 2);
+          compositeFastPathApplicable = false;
+        }
+      }
+    }
   }
   DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: allow=%d frozen=%d execCount=%d segs=%d inputStable=%d slotStable=%d hasHandle=%d ready=%d compositeReady=%d -> %s",
            (int)allowFrozenGraphFastPath, (int)shapesFrozen_, (int)executeCount_, (int)segments_.size(),
@@ -223,9 +243,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
-  // Clear stale CUDA errors
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+  // Stale CUDA error clearing is handled by executeSteadyState (conditional)
+  // or execute() before this call. Only clear the sticky CUDA driver error.
   cudaGetLastError();
 
   GraphSegment& seg = segments_[0];
