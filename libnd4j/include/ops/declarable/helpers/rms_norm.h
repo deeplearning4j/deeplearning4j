@@ -53,6 +53,31 @@ SD_LIB_HIDDEN void rmsNormLinear(
     NDArray* output,
     float epsilon);
 
+/**
+ * Fused Skip (Residual Add) + RMS Normalization:
+ *   hidden = input + skip [+ bias]
+ *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma
+ *
+ * Eliminates the separate add kernel and intermediate global memory round-trip.
+ *
+ * @param input      [batch, ..., features]
+ * @param skip       [batch, ..., features] (residual)
+ * @param gamma      [features] RMS norm scale weights
+ * @param bias       [features] optional bias (may be nullptr)
+ * @param output     [batch, ..., features] normalized output
+ * @param hiddenOut  [batch, ..., features] optional pre-norm hidden states (may be nullptr)
+ * @param epsilon    RMS norm epsilon
+ */
+SD_LIB_HIDDEN void skipRmsNorm(
+    LaunchContext* context,
+    NDArray* input,
+    NDArray* skip,
+    NDArray* gamma,
+    NDArray* bias,
+    NDArray* output,
+    NDArray* hiddenOut,
+    float epsilon);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

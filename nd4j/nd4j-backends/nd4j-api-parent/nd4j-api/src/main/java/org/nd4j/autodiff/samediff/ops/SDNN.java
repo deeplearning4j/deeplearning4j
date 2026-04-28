@@ -4403,6 +4403,66 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Fused Skip (Residual Add) + RMS Normalization:<br>
+   * Combines residual add with RMS normalization in a single kernel:<br>
+   *   hidden = input + skip [+ bias]<br>
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param skip Skip/residual tensor (NUMERIC type)
+   * @param gamma Scale weights (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Normalized output (NUMERIC type)
+   */
+  public SDVariable skipRmsNorm(SDVariable input, SDVariable skip, SDVariable gamma,
+      double epsilon) {
+    SDValidation.validateNumerical("skipRmsNorm", "input", input);
+    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd, input, skip, gamma, epsilon).outputVariable();
+  }
+
+  /**
+   * Fused Skip (Residual Add) + RMS Normalization:<br>
+   * Combines residual add with RMS normalization in a single kernel.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param skip Skip/residual tensor (NUMERIC type)
+   * @param gamma Scale weights (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Normalized output (NUMERIC type)
+   */
+  public SDVariable skipRmsNorm(String name, SDVariable input, SDVariable skip, SDVariable gamma,
+      double epsilon) {
+    SDValidation.validateNumerical("skipRmsNorm", "input", input);
+    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd, input, skip, gamma, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused Skip (Residual Add) + RMS Normalization with optional bias:<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param skip Skip/residual tensor (NUMERIC type)
+   * @param gamma Scale weights (NUMERIC type)
+   * @param bias Optional bias (NUMERIC type, may be null)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Normalized output (NUMERIC type)
+   */
+  public SDVariable skipRmsNorm(String name, SDVariable input, SDVariable skip, SDVariable gamma,
+      SDVariable bias, double epsilon) {
+    SDValidation.validateNumerical("skipRmsNorm", "input", input);
+    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd, input, skip, gamma, bias, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Fused RMSNorm + Linear (MatMul) operation:<br>
    * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
    * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>

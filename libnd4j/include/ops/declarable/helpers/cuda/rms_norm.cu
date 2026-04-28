@@ -233,6 +233,166 @@ void rmsNorm(
   NDArray::registerSpecialUse({output}, {input, gamma});
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// Fused Skip (Residual Add) + RMS Norm Kernel
+// Combines: hidden = input + skip [+ bias], then RMS normalize hidden
+// Saves one kernel launch per transformer layer by eliminating separate add.
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void skipRmsNormKernel(
+    const T* __restrict__ input,     // [numRows, rowLen]
+    const T* __restrict__ skip,      // [numRows, rowLen]
+    const T* __restrict__ gamma,     // [rowLen]
+    const T* __restrict__ bias,      // [rowLen] or nullptr
+    T* __restrict__ output,          // [numRows, rowLen]
+    T* __restrict__ hiddenOut,       // [numRows, rowLen] or nullptr
+    const LongType numRows,
+    const LongType rowLen,
+    const float epsilon) {
+
+  const LongType row = blockIdx.x;
+  if (row >= numRows) return;
+
+  extern __shared__ char sharedMem[];
+  float* sdata = reinterpret_cast<float*>(sharedMem);
+
+  const T* inputRow = input + row * rowLen;
+  const T* skipRow = skip + row * rowLen;
+  T* outputRow = output + row * rowLen;
+  T* hiddenRow = hiddenOut != nullptr ? hiddenOut + row * rowLen : nullptr;
+
+  // Pass 1: compute hidden = input + skip [+ bias], accumulate sum of squares
+  float threadSumSq = 0.0f;
+
+  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+    float val = static_cast<float>(inputRow[i]) + static_cast<float>(skipRow[i]);
+    if (bias != nullptr) val += static_cast<float>(bias[i]);
+    if (hiddenRow != nullptr) hiddenRow[i] = static_cast<T>(val);
+    threadSumSq += val * val;
+  }
+
+  // Block-level reduction for sum of squares
+  float totalSumSq = rmsBlockReduceSum(threadSumSq, sdata);
+
+  // Compute inverse RMS
+  __shared__ float invRms;
+  if (threadIdx.x == 0) {
+    float meanSq = totalSumSq / static_cast<float>(rowLen);
+    invRms = rsqrtf(meanSq + epsilon);
+  }
+  __syncthreads();
+
+  // Pass 2: recompute hidden, normalize and scale
+  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+    float val = static_cast<float>(inputRow[i]) + static_cast<float>(skipRow[i]);
+    if (bias != nullptr) val += static_cast<float>(bias[i]);
+    float g = static_cast<float>(gamma[i]);
+    outputRow[i] = static_cast<T>(val * invRms * g);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Launcher for skip_rms_norm
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+void launchSkipRmsNormKernel(
+    const T* input,
+    const T* skip,
+    const T* gamma,
+    const T* bias,
+    T* output,
+    T* hiddenOut,
+    LongType numRows,
+    LongType rowLen,
+    float epsilon,
+    cudaStream_t stream) {
+
+  int threadsPerBlock = 256;
+  if (rowLen > 256) threadsPerBlock = 512;
+  if (rowLen > 512) threadsPerBlock = 1024;
+
+  if (rowLen < threadsPerBlock) {
+    threadsPerBlock = ((rowLen + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE) * RMS_WARP_SIZE;
+    if (threadsPerBlock < RMS_WARP_SIZE) threadsPerBlock = RMS_WARP_SIZE;
+  }
+
+  int numBlocks = numRows;
+  int numWarps = (threadsPerBlock + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
+  size_t sharedMemSize = numWarps * sizeof(float);
+
+  skipRmsNormKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
+      input, skip, gamma, bias, output, hiddenOut, numRows, rowLen, epsilon);
+
+  DebugHelper::checkGlobalErrorCode("skipRmsNormKernel failed");
+}
+
+template void launchSkipRmsNormKernel<float>(
+    const float*, const float*, const float*, const float*,
+    float*, float*, LongType, LongType, float, cudaStream_t);
+
+template void launchSkipRmsNormKernel<double>(
+    const double*, const double*, const double*, const double*,
+    double*, double*, LongType, LongType, float, cudaStream_t);
+
+template void launchSkipRmsNormKernel<float16>(
+    const float16*, const float16*, const float16*, const float16*,
+    float16*, float16*, LongType, LongType, float, cudaStream_t);
+
+//////////////////////////////////////////////////////////////////////////////
+// Public interface for skip_rms_norm
+//////////////////////////////////////////////////////////////////////////////
+void skipRmsNorm(
+    LaunchContext* context,
+    NDArray* input,
+    NDArray* skip,
+    NDArray* gamma,
+    NDArray* bias,
+    NDArray* output,
+    NDArray* hiddenOut,
+    float epsilon) {
+
+  const LongType numRows = input->lengthOf() / input->sizeAt(-1);
+  const LongType rowLen = input->sizeAt(-1);
+
+  NDArray::prepareSpecialUse({output, hiddenOut}, {input, skip, gamma, bias});
+
+  auto stream = context->getCudaStream();
+  auto dtype = input->dataType();
+
+  if (dtype == DataType::FLOAT32) {
+    launchSkipRmsNormKernel<float>(
+        reinterpret_cast<const float*>(input->specialBuffer()),
+        reinterpret_cast<const float*>(skip->specialBuffer()),
+        reinterpret_cast<const float*>(gamma->specialBuffer()),
+        bias != nullptr ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
+        reinterpret_cast<float*>(output->specialBuffer()),
+        hiddenOut != nullptr ? reinterpret_cast<float*>(hiddenOut->specialBuffer()) : nullptr,
+        numRows, rowLen, epsilon, *stream);
+  } else if (dtype == DataType::DOUBLE) {
+    launchSkipRmsNormKernel<double>(
+        reinterpret_cast<const double*>(input->specialBuffer()),
+        reinterpret_cast<const double*>(skip->specialBuffer()),
+        reinterpret_cast<const double*>(gamma->specialBuffer()),
+        bias != nullptr ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
+        reinterpret_cast<double*>(output->specialBuffer()),
+        hiddenOut != nullptr ? reinterpret_cast<double*>(hiddenOut->specialBuffer()) : nullptr,
+        numRows, rowLen, epsilon, *stream);
+  } else if (dtype == DataType::HALF) {
+    launchSkipRmsNormKernel<float16>(
+        reinterpret_cast<const float16*>(input->specialBuffer()),
+        reinterpret_cast<const float16*>(skip->specialBuffer()),
+        reinterpret_cast<const float16*>(gamma->specialBuffer()),
+        bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
+        reinterpret_cast<float16*>(output->specialBuffer()),
+        hiddenOut != nullptr ? reinterpret_cast<float16*>(hiddenOut->specialBuffer()) : nullptr,
+        numRows, rowLen, epsilon, *stream);
+  } else {
+    THROW_EXCEPTION("skipRmsNormCuda: Unsupported data type");
+  }
+
+  NDArray::registerSpecialUse({output, hiddenOut}, {input, skip, gamma, bias});
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Fused RMSNorm + Linear kernel for M=1 (decode hot path)
 //

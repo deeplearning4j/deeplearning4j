@@ -86,16 +86,11 @@ class SkipSimplifiedLayerNormalization : PreImportHook {
         // Get epsilon attribute
         val epsilon = (attributes.getOrDefault("epsilon", 1e-5) as Number).toDouble()
 
-        // Step 1: Add skip connection (residual)
-        var hiddenStates = sd.math.add(input, skip)
+        // Check if output 3 (pre-norm hidden states) is consumed by the graph
+        val needsHiddenOut = outputNames.size > 3 && outputNames[3].isNotEmpty()
 
-        // Add bias if present
-        if (bias != null) {
-            hiddenStates = sd.math.add(hiddenStates, bias)
-        }
-
-        // Step 2: Use fused rms_norm op — single kernel instead of decomposed pow/mean/sqrt/div/mul
-        val result = sd.nn().rmsNorm(outputNames[0], hiddenStates, gamma, epsilon)
+        // Use fused skip_rms_norm op — single kernel for add + rms_norm
+        val result = sd.nn().skipRmsNorm(outputNames[0], input, skip, gamma, bias, epsilon)
 
         val outputMap = mutableMapOf<String, List<SDVariable>>()
         outputMap[outputNames[0]] = listOf(result)
@@ -106,22 +101,24 @@ class SkipSimplifiedLayerNormalization : PreImportHook {
         // Output 3: input_skip_bias_sum (the sum before normalization)
 
         if (outputNames.size > 1 && outputNames[1].isNotEmpty()) {
-            // Mean is not computed in RMS norm, but some graphs expect this output
-            val placeholder = sd.zerosLike(outputNames[1], hiddenStates)
+            val placeholder = sd.zerosLike(outputNames[1], input)
             outputMap[outputNames[1]] = listOf(placeholder)
         }
 
         if (outputNames.size > 2 && outputNames[2].isNotEmpty()) {
-            // inv_rms — only needed for training backward pass, not inference.
-            // Emit a zeros placeholder instead of the expensive decomposed chain
-            // (pow→mean→sqrt→reciprocal) which adds 4 ops per norm layer that execute
-            // every decode step even though no inference-path op consumes the result.
-            val placeholder = sd.zerosLike(outputNames[2], hiddenStates)
+            val placeholder = sd.zerosLike(outputNames[2], input)
             outputMap[outputNames[2]] = listOf(placeholder)
         }
 
-        if (outputNames.size > 3 && outputNames[3].isNotEmpty()) {
-            // input + skip + bias sum (pre-normalization hidden states)
+        if (needsHiddenOut) {
+            // Pre-norm hidden states: input + skip [+ bias]
+            // For now, emit the add explicitly since the fused op's second output
+            // requires wiring through the graph. The add is still needed when
+            // downstream ops consume this intermediate.
+            var hiddenStates = sd.math.add(input, skip)
+            if (bias != null) {
+                hiddenStates = sd.math.add(hiddenStates, bias)
+            }
             hiddenStates.rename(outputNames[3])
             outputMap[outputNames[3]] = listOf(hiddenStates)
         }

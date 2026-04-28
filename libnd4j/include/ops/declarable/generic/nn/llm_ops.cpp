@@ -33,7 +33,7 @@
     NOT_EXCLUDED(OP_column_parallel_linear) || NOT_EXCLUDED(OP_row_parallel_linear) || \
     NOT_EXCLUDED(OP_kv_cache_quantize) || NOT_EXCLUDED(OP_kv_cache_dequantize) || \
     NOT_EXCLUDED(OP_ggml_dequantize) || NOT_EXCLUDED(OP_fused_gemm_swiglu) || \
-    NOT_EXCLUDED(OP_rms_norm_linear)
+    NOT_EXCLUDED(OP_rms_norm_linear) || NOT_EXCLUDED(OP_skip_rms_norm)
 
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
@@ -191,6 +191,44 @@ DECLARE_TYPES(rms_norm_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// skip_rms_norm - Fused Residual Add + RMS Normalization
+#if NOT_EXCLUDED(OP_skip_rms_norm)
+CUSTOM_OP_IMPL(skip_rms_norm, 3, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto skip = INPUT_VARIABLE(1);
+    auto gamma = INPUT_VARIABLE(2);
+    NDArray* bias = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
+
+    auto output = OUTPUT_VARIABLE(0);
+    NDArray* hiddenOut = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
+
+    float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
+
+    helpers::skipRmsNorm(block.launchContext(), input, skip, gamma, bias, output, hiddenOut, eps);
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(skip_rms_norm) {
+    auto inShape = inputShape->at(0);
+    auto outShapes = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+
+    // Second output (pre-norm hidden states) has same shape as input, only if graph requests it
+    if (block.outputWidth() > 1) {
+        outShapes->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    }
+
+    return outShapes;
+}
+
+DECLARE_TYPES(skip_rms_norm) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 

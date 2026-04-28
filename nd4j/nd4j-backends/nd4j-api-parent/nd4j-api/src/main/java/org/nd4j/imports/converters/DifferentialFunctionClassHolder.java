@@ -508,6 +508,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinearBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwigluBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits.class,

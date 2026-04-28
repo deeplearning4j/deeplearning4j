@@ -262,6 +262,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"batchnorm",      NORM},
         {"rms_norm",       NORM},
         {"rms_norm_linear", NORM},
+        {"skip_rms_norm",  NORM},
         {"normalize_moments", NORM},
         {"fused_rope",     NORM},
 

@@ -139,6 +139,62 @@ void rmsNormLinear(LaunchContext* context, NDArray* input, NDArray* gamma,
     NDArray::registerPrimaryUse({output}, {input, gamma, weight});
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Fused Skip (Residual Add) + RMS Normalization
+///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void skipRmsNorm_(NDArray* input, NDArray* skip, NDArray* gamma, NDArray* bias,
+                          NDArray* output, NDArray* hiddenOut, float epsilon) {
+    const LongType numRows = input->lengthOf() / input->sizeAt(-1);
+    const LongType rowLen = input->sizeAt(-1);
+
+    const T* x = input->bufferAsT<T>();
+    const T* s = skip->bufferAsT<T>();
+    const T* g = gamma->bufferAsT<T>();
+    const T* b = bias != nullptr ? bias->bufferAsT<T>() : nullptr;
+    T* z = output->bufferAsT<T>();
+    T* h = hiddenOut != nullptr ? hiddenOut->bufferAsT<T>() : nullptr;
+    const T eps = static_cast<T>(epsilon);
+
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto row = start; row < stop; ++row) {
+            const T* xRow = x + row * rowLen;
+            const T* sRow = s + row * rowLen;
+            T* zRow = z + row * rowLen;
+            T* hRow = h != nullptr ? h + row * rowLen : nullptr;
+
+            // Pass 1: compute hidden = input + skip [+ bias], accumulate sum of squares
+            T sumSq = static_cast<T>(0);
+            for (LongType i = 0; i < rowLen; ++i) {
+                T val = xRow[i] + sRow[i];
+                if (b != nullptr) val += b[i];
+                if (hRow != nullptr) hRow[i] = val;
+                sumSq += val * val;
+            }
+            const T invRms = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(sumSq / static_cast<T>(rowLen) + eps);
+
+            // Pass 2: normalize and scale
+            PRAGMA_OMP_SIMD
+            for (LongType i = 0; i < rowLen; ++i) {
+                T val = xRow[i] + sRow[i];
+                if (b != nullptr) val += b[i];
+                zRow[i] = val * invRms * g[i];
+            }
+        }
+    };
+    samediff::Threads::parallel_tad(func, 0, numRows);
+}
+
+void skipRmsNorm(LaunchContext* context, NDArray* input, NDArray* skip, NDArray* gamma,
+                  NDArray* bias, NDArray* output, NDArray* hiddenOut, float epsilon) {
+    NDArray::preparePrimaryUse({output, hiddenOut}, {input, skip, gamma, bias});
+
+    BUILD_SINGLE_SELECTOR(input->dataType(), skipRmsNorm_,
+                           (input, skip, gamma, bias, output, hiddenOut, epsilon), SD_FLOAT_TYPES);
+
+    NDArray::registerPrimaryUse({output, hiddenOut}, {input, skip, gamma, bias});
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

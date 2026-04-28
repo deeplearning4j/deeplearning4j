@@ -53,6 +53,34 @@ DECLARE_CUSTOM_OP(rms_norm_bp, 2, 1, false, 0, 0);
 #endif
 
 /**
+ * skip_rms_norm - Fused Residual Add + RMS Normalization
+ *
+ * Combines skip-connection add with RMS normalization in a single kernel:
+ *   hidden = input + skip [+ bias]
+ *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma
+ *
+ * This avoids a separate add kernel and the intermediate global memory
+ * round-trip, saving one kernel launch per transformer layer.
+ *
+ * Input:
+ *   0: input tensor [batch, ..., features]
+ *   1: skip tensor [batch, ..., features] (residual)
+ *   2: gamma weights [features]
+ *   3: bias [features] (optional)
+ *
+ * Output:
+ *   0: normalized tensor [batch, ..., features]
+ *   1: pre-norm hidden states (input + skip [+ bias]) — optional,
+ *      only materialized when the graph consumes this output
+ *
+ * Float arguments:
+ *   0: epsilon (default: 1e-5)
+ */
+#if NOT_EXCLUDED(OP_skip_rms_norm)
+DECLARE_CUSTOM_OP(skip_rms_norm, 3, 1, false, 0, 0);
+#endif
+
+/**
  * rms_norm_linear - Fused RMSNorm + Linear Projection
  *
  * Computes matmul(rms_norm(x, gamma, eps), W) in a single pass.
