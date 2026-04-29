@@ -949,14 +949,23 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   std::chrono::time_point<std::chrono::system_clock> timeEnter, timeStart, timeEnd;
   sd::LongType prepTime, outerTime;
 
-  // Op Timing Tracker setup
+  // Op Timing Tracker setup — only construct OpTimingRecord when timing is enabled.
+  // In frozen DSP steady-state, timing is off and we skip the ~200 bytes of memset
+  // per op (1761 ops/token × 200 bytes = ~350KB wasted memset per token).
   auto& timingTracker = graph::OpTimingTracker::getInstance();
   const bool doTiming = timingTracker.isEnabled();
   const bool doDetailedTiming = doTiming && timingTracker.isDetailedMode();
-  graph::OpTimingRecord timingRecord{};
+  // Use aligned storage to avoid default-constructor overhead when !doTiming.
+  // OpTimingRecord has a non-trivial ctor (memset + loop) that costs ~200 bytes zero-init.
+  // The 'timingRecord' reference is only valid when doTiming is true — all direct
+  // accesses are already inside if(doTiming) blocks, and OpPhaseTimer receives nullptr
+  // when !doDetailedTiming, so no UB occurs.
+  alignas(graph::OpTimingRecord) char timingRecordStorage_[sizeof(graph::OpTimingRecord)];
+  graph::OpTimingRecord& timingRecord = *reinterpret_cast<graph::OpTimingRecord*>(timingRecordStorage_);
   std::chrono::high_resolution_clock::time_point timingStart;
 
   if (doTiming) {
+    new (&timingRecord) graph::OpTimingRecord();
     timingRecord.hash = this->getOpHash();
     const std::string* opNamePtr = this->getOpName();
     if (opNamePtr != nullptr) {
@@ -1021,8 +1030,12 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // Wrap execution in try-catch to dump stack traces on exceptions
 #ifdef __cpp_exceptions
   try {
-    // platform helpers use might be forbidden for various reasons, so we'll check it out first
-    if (block->helpersAllowed() && sd::env_helpersAllowed()) {
+    // In frozen DSP steady-state (shapeFunctionOverride), skip the helper dispatch
+    // entirely. dispatchWithAutoTune() calls getAllHelpersForOp() which does a linear
+    // scan of ALL registered helpers + allocates a std::vector per call. At 1761 ops
+    // per token, this is 1761 heap alloc/free cycles for zero benefit — helper
+    // availability doesn't change between invocations.
+    if (!block->shapeFunctionOverride() && block->helpersAllowed() && sd::env_helpersAllowed()) {
       // Use the new multi-backend kernel selection infrastructure
       // This will auto-tune and select the best available backend helper
       {
@@ -1034,7 +1047,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
           // A helper was used successfully
           status = dispatchResult.second;
           hasHelper = true;
-          timingRecord.usedHelper = true;
+          if (doTiming) timingRecord.usedHelper = true;
           // Mark helper used for indirect tracking - parent ops will see this
           graph::getIndirectHelperTracker().markHelperUsed();
         }
@@ -1096,7 +1109,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   }
 #else
   // platform helpers use might be forbidden for various reasons, so we'll check it out first
-  if (block->helpersAllowed() && sd::env_helpersAllowed()) {
+  if (!block->shapeFunctionOverride() && block->helpersAllowed() && sd::env_helpersAllowed()) {
     // Use the new multi-backend kernel selection infrastructure
     // This will auto-tune and select the best available backend helper
     {
@@ -1108,7 +1121,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         // A helper was used successfully
         status = dispatchResult.second;
         hasHelper = true;
-        timingRecord.usedHelper = true;
+        if (doTiming) timingRecord.usedHelper = true;
         // Mark helper used for indirect tracking - parent ops will see this
         graph::getIndirectHelperTracker().markHelperUsed();
       }

@@ -703,19 +703,21 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     seg.exec.executionCount++;
     totalGraphReplays_++;
 
-    // ── Always-on segment boundary validation (backend path) ──────────────
-    char segErr[512] = {};
-    int segInvalid = validateSlotRange(
-        seg.def.startSlot, seg.def.endSlot,
-        outputSlots_, totalOutputSlots_,
-        executeCount_, static_cast<int>(planPhase_),
-        segErr, sizeof(segErr));
-    if (segInvalid > 0) {
-      DSP_THROW(MEMORY,
-               "SEGMENT_BOUNDARY_INVALID: %d invalid array(s) at end of seg[%d-%d] "
-               "(backend=%s, segExecCount=%d): %s",
-               segInvalid, seg.def.startSlot, seg.def.endSlot,
-               backendName, seg.exec.executionCount, segErr);
+    // ── Segment boundary validation (warmup only, backend path) ──────────
+    if (executeCount_ < 4) {
+      char segErr[512] = {};
+      int segInvalid = validateSlotRange(
+          seg.def.startSlot, seg.def.endSlot,
+          outputSlots_, totalOutputSlots_,
+          executeCount_, static_cast<int>(planPhase_),
+          segErr, sizeof(segErr));
+      if (segInvalid > 0) {
+        DSP_THROW(MEMORY,
+                 "SEGMENT_BOUNDARY_INVALID: %d invalid array(s) at end of seg[%d-%d] "
+                 "(backend=%s, segExecCount=%d): %s",
+                 segInvalid, seg.def.startSlot, seg.def.endSlot,
+                 backendName, seg.exec.executionCount, segErr);
+      }
     }
   }
 
@@ -1402,10 +1404,12 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
   seg.exec.executionCount++;
 
-  // ── Always-on segment boundary validation ─────────────────────────────
+  // ── Segment boundary validation (warmup only) ──────────────────────────
   // After a slot-by-slot segment completes, verify all outputs in the segment
   // range are valid before downstream segments read them as inputs.
-  {
+  // Gated to first 4 executions only — in frozen steady-state, shapes and
+  // buffers are stable and this O(totalSlots) scan is pure overhead.
+  if (executeCount_ < 4) {
     char segErr[512] = {};
     int segInvalid = validateSlotRange(
         seg.def.startSlot, seg.def.endSlot,
