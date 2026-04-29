@@ -405,7 +405,9 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                     break;
                 }
                 String n = opName(p);
-                if ("cast".equals(n) || "identity".equals(n) || "expand_dims".equals(n) || "squeeze".equals(n) || "reshape".equals(n)) {
+                // NEVER strip through reshape — it changes tensor shape, causing fused rms_norm
+                // to operate on wrong-shaped tensors (e.g., [B,L,512] instead of [B,L,2,256]).
+                if ("cast".equals(n) || "identity".equals(n)) {
                     current = p.getInputsToOp().get(0);
                 } else {
                     break;

@@ -544,8 +544,8 @@ void rmsNormLinear(
     NDArray* output,
     float epsilon) {
 
-  const LongType M = input->sizeAt(0);
-  const LongType K = input->sizeAt(1);
+  const LongType K = input->sizeAt(-1);
+  const LongType M = input->lengthOf() / K;
   const LongType N = weight->sizeAt(1);
 
   // For M=1 (decode hot path): use fused single-kernel path

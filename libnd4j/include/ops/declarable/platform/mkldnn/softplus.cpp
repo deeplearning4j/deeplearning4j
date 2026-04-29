@@ -32,16 +32,49 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN eltwise operations (runtime ISA detection)
+static bool isSupportedEltwiseType(DataType dt) {
+  if (dt == DataType::FLOAT32) return true;
+  if (dt == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (dt == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////
 static void softplusMKLDNN(NDArray* x, NDArray* z) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for eltwise operations
+  auto dataType = getOneDnnDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
   // z
-  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
+  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*z));
   onednnUtils::setBlockStrides(*z, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -98,8 +131,12 @@ PLATFORM_CHECK(softplus, ENGINE_CPU) {
   req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(z->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }

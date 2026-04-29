@@ -118,10 +118,11 @@ void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* outpu
 void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
                float freqBase, float freqScale, int ropeType, LaunchContext* context,
                int rotaryDims) {
+  auto rank = input->rankOf();
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
-  auto numHeads = input->sizeAt(2);
-  auto headDim = input->sizeAt(3);
+  auto numHeads = (rank >= 4) ? input->sizeAt(2) : static_cast<LongType>(1);
+  auto headDim = (rank >= 4) ? input->sizeAt(3) : input->sizeAt(2);
 
   // Effective rotation dimensions: 0 means rotate all
   LongType rotateDims = (rotaryDims > 0 && rotaryDims < headDim) ? rotaryDims : headDim;
@@ -171,10 +172,11 @@ void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
 void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
                        float freqBase, float freqScale, int ropeType, LaunchContext* context,
                        int rotaryDims) {
+  auto rank = gradOut->rankOf();
   auto batch = gradOut->sizeAt(0);
   auto seqLen = gradOut->sizeAt(1);
-  auto numHeads = gradOut->sizeAt(2);
-  auto headDim = gradOut->sizeAt(3);
+  auto numHeads = (rank >= 4) ? gradOut->sizeAt(2) : static_cast<LongType>(1);
+  auto headDim = (rank >= 4) ? gradOut->sizeAt(3) : gradOut->sizeAt(2);
 
   LongType rotateDims = (rotaryDims > 0 && rotaryDims < headDim) ? rotaryDims : headDim;
   LongType halfRotate = rotateDims / 2;
@@ -227,10 +229,11 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
 
 void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
                      NDArray* output, int ropeType, LaunchContext* context) {
+  auto rank = input->rankOf();
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
-  auto numHeads = input->sizeAt(2);
-  auto headDim = input->sizeAt(3);
+  auto numHeads = (rank >= 4) ? input->sizeAt(2) : static_cast<LongType>(1);
+  auto headDim = (rank >= 4) ? input->sizeAt(3) : input->sizeAt(2);
   auto halfDim = headDim / 2;
 
   output->assign(input);

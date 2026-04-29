@@ -295,6 +295,8 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"BatchNorm",         TritonOpCategory::NORMALIZATION},
     {"rms_norm",          TritonOpCategory::NORMALIZATION},
     {"RmsNorm",           TritonOpCategory::NORMALIZATION},
+    {"skip_rms_norm",     TritonOpCategory::NORMALIZATION},
+    {"SkipRmsNorm",       TritonOpCategory::NORMALIZATION},
     // Backward normalization ops — produce multiple outputs (dx, dgamma, dbeta).
     // Registered as NORMALIZATION so they share the same section handling path.
     // The dispatcher detects the _bp suffix and calls emitNormalizationBackwardOp instead.
@@ -467,6 +469,13 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"gru",               TritonOpCategory::UNSUPPORTED},
     {"simple_rnn",        TritonOpCategory::UNSUPPORTED},
     {"lstmCell",          TritonOpCategory::UNSUPPORTED},
+
+    // ── SSM/GDN ops — stateful recurrent, not elementwise. Fall back to native. ──
+    {"gated_delta_rule",      TritonOpCategory::UNSUPPORTED},
+    {"gated_delta_net_block", TritonOpCategory::UNSUPPORTED},
+    {"causal_conv1d",         TritonOpCategory::UNSUPPORTED},
+    {"selective_scan",        TritonOpCategory::UNSUPPORTED},
+    {"mamba2_ssm",            TritonOpCategory::UNSUPPORTED},
 
     // ── Image ops (data movement category) ──
     {"resize_bilinear",        TritonOpCategory::DATA_MOVEMENT},

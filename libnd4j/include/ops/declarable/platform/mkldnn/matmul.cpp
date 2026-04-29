@@ -27,6 +27,9 @@
 #include <numeric>
 
 #include "mkldnnUtils.h"
+#if HAVE_ONEDNN
+#include <dnnl.h>
+#endif
 
 namespace sd {
 namespace ops {
@@ -350,15 +353,32 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
   req.expectTrue(
       makeInfoVariable(
           [xType, yType, zType] {
-            return ((xType == DataType::FLOAT32 && yType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
-                    (xType == DataType::HALF && yType == DataType::HALF &&
-                     (zType == DataType::HALF || zType == DataType::FLOAT32)) ||
-                    (xType == DataType::BFLOAT16 && yType == DataType::BFLOAT16 &&
-                     (zType == DataType::BFLOAT16 || zType == DataType::FLOAT32)) ||
-                    ((xType == DataType::UINT8 || xType == DataType::INT8) &&
+            bool isFloat32 = (xType == DataType::FLOAT32 && yType == DataType::FLOAT32 && zType == DataType::FLOAT32);
+
+            bool isBFloat16 = false;
+            if (xType == DataType::BFLOAT16 && yType == DataType::BFLOAT16 &&
+                (zType == DataType::BFLOAT16 || zType == DataType::FLOAT32)) {
+#if HAVE_ONEDNN
+              dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+              isBFloat16 = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+#endif
+            }
+
+            bool isFloat16 = false;
+            if (xType == DataType::HALF && yType == DataType::HALF &&
+                (zType == DataType::HALF || zType == DataType::FLOAT32)) {
+#if HAVE_ONEDNN
+              dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+              isFloat16 = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+#endif
+            }
+
+            bool isQuantized = ((xType == DataType::UINT8 || xType == DataType::INT8) &&
                      (yType == DataType::UINT8 || yType == DataType::INT8) &&
                      (zType == DataType::UINT8 || zType == DataType::INT8 || zType == DataType::INT32 ||
-                      zType == DataType::FLOAT32)));
+                      zType == DataType::FLOAT32));
+
+            return isFloat32 || isBFloat16 || isFloat16 || isQuantized;
           },
           TYPECHECK_MSG),
       NO_MSG);

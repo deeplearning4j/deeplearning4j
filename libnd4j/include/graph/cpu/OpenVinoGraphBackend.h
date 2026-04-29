@@ -131,11 +131,14 @@ class OpenVinoGraphBackend : public GraphBackend {
     CompiledSegment() : shapeKey(0), valid(false) {}
   };
 
-  // Per-segment cache with LRU eviction.
-  // Each shape-key change creates a new entry; old entries are evicted when the
-  // cache exceeds kMaxCacheEntries to prevent unbounded memory growth from
-  // ov::InferRequest internal working buffers (~50-200 MB each).
-  static constexpr int kMaxCacheEntries = 32;  // Keep low — each InferRequest holds ~50-200MB working buffers
+  // Per-segment cache with optional LRU eviction.
+  // 0 = unlimited (no eviction). Memory is bounded by the topology model cache
+  // (modelCache_) which shares CompiledModels across segments with identical op
+  // structure (e.g., transformer layers). Each segment entry only holds a
+  // lightweight InferRequest (~KB). Previously 32, which caused KERNEL_FAILURE
+  // when frozen plans executed evicted segments (e.g. 772 evictions on
+  // 1913-slot Qwen model).
+  static constexpr int kMaxCacheEntries = 0;
 
   // LRU list: front = MRU, back = LRU
   using CacheEntry = std::pair<SegmentCacheKey, CompiledSegment>;

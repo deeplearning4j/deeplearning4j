@@ -504,7 +504,8 @@ public class TestSmolDoclingOptimizedPipeline {
             log.info("Override maxTokens={} for all {} configs", mt, configs.size());
         }
 
-        List<SameDiff> models = List.of(decoder, embedTokensSd);
+        // Use pipeline.getDecoder() — GraphOptimizer may have replaced the original decoder
+        List<SameDiff> models = List.of(pipeline.getDecoder(), embedTokensSd);
 
         // Capture for lambdas
         final INDArray finalInputsEmbeds = inputsEmbeds;

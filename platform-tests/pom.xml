@@ -117,7 +117,7 @@
             sudo sysctl vm.mmap_rnd_bits=28
             sudo sysctl -w kernel.randomize_va_space=0
         -->
-        <omp.num.threads>1</omp.num.threads>
+        <omp.num.threads>0</omp.num.threads>
         <preload></preload>
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
@@ -855,8 +855,8 @@
                 </property>
             </activation>
             <properties>
-                <test.heap.size>34g</test.heap.size>
-                <test.offheap.size>34g</test.offheap.size>
+                <test.heap.size>48g</test.heap.size>
+                <test.offheap.size>56g</test.offheap.size>
                 <surefire.forks>1</surefire.forks>
                 <surefire.threads>1</surefire.threads>
             </properties>

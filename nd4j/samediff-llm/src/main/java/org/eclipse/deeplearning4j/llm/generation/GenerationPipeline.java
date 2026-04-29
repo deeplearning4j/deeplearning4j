@@ -35,6 +35,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.bytedeco.javacpp.Pointer;
 
 import java.io.File;
@@ -221,6 +222,26 @@ public class GenerationPipeline implements AutoCloseable {
         }
         // embedTokens may be null here — single-model mode uses decoder for embeddings
 
+        // 1b. Run graph optimizer (sigmoid*x→swish/silu, SwiGLU fusion, etc.)
+        // Exclude QuantizationOptimizations — FP16 weight quantization must be opt-in
+        // since it changes numerical precision and can break models not designed for it.
+        boolean optimizerEnabled = Boolean.parseBoolean(
+                System.getProperty("nd4j.optimizer.enabled", "true"));
+        if (optimizerEnabled && decoder.getOps().size() >= 100) {
+            int opsBefore = decoder.getOps().size();
+            long optStart = System.currentTimeMillis();
+            List<String> outputs = decoder.outputs() != null
+                    ? new ArrayList<>(decoder.outputs()) : new ArrayList<>();
+            List<org.nd4j.autodiff.samediff.optimize.OptimizerSet> optimizations =
+                    GraphOptimizer.defaultOptimizations().stream()
+                            .filter(s -> !(s instanceof org.nd4j.autodiff.samediff.optimize.optimizations.QuantizationOptimizations))
+                            .collect(java.util.stream.Collectors.toList());
+            decoder = GraphOptimizer.optimize(decoder, outputs, optimizations);
+            long optMs = System.currentTimeMillis() - optStart;
+            log.info("GraphOptimizer: {} -> {} ops ({} removed) in {}ms",
+                    opsBefore, decoder.getOps().size(), opsBefore - decoder.getOps().size(), optMs);
+        }
+
         // 2. Auto-discover I/O names
         ModelIOConfig ioConfig = config.getIoConfig();
         if (ioConfig == null) {
@@ -369,7 +390,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
-        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "logits";
+        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "lm_logits";
         int prefillSeqLen = promptTokenIds.length;
         long maxKvLen = prefillSeqLen + maxNewTokens;
         boolean dspActive = decoder.isDspAutoCompileEnabled();
@@ -539,7 +560,7 @@ public class GenerationPipeline implements AutoCloseable {
                 ? config.getSamplingConfig() : SamplingConfig.greedy();
 
         String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
-        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "logits";
+        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "lm_logits";
         String posOffsetName = ioConfig.getPositionOffsetName();
         String cachePosName = ioConfig.getCachePositionName();
         String causalMaskName = ioConfig.getCausalMaskName();
@@ -547,6 +568,16 @@ public class GenerationPipeline implements AutoCloseable {
         int prefillSeqLen = promptTokenIds.length;
         long maxKvLen = prefillSeqLen + maxNewTokens;
         int numLayers = kvInputNames.keyNames.size();
+
+        // Find GDN state inputs (past_gdn_state.{L}) and conv state inputs (past_conv_state.{L})
+        List<String> gdnStateNames = new ArrayList<>();
+        List<String> convStateNames = new ArrayList<>();
+        for (String inputName : decoder.inputs()) {
+            if (inputName.startsWith("past_gdn_state.")) gdnStateNames.add(inputName);
+            else if (inputName.startsWith("past_conv_state.")) convStateNames.add(inputName);
+        }
+        log.info("[GGUF-KV] Found {} GDN state inputs and {} conv state inputs",
+                gdnStateNames.size(), convStateNames.size());
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 1: PREFILL -- full prompt, empty KV cache, extract per-layer K/V
@@ -582,6 +613,35 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
 
+        // Zero-filled GDN/conv state inputs for prefill (zeros = no prior history)
+        // Shapes derived from model weight constants in the graph
+        for (String name : gdnStateNames) {
+            if (decoder.hasVariable(name)) {
+                int layerIdx = extractLayerIndex(name);
+                DataType dt = decoder.getVariable(name).dataType();
+                // GDN state: [B, numGdnHeads, headDimKV, headDimKV]
+                // Derive from ssm_a weight (shape [H]) and qkv weight (shape [qkvDim, ...])
+                String ssmAName = "model.layers." + layerIdx + ".gdn.a";
+                String qkvName = "model.layers." + layerIdx + ".gdn.qkv.weight";
+                long numGdnHeads = decoder.getVariable(ssmAName).getArr().shape()[0];
+                long qkvDim = decoder.getVariable(qkvName).getArr().shape()[0];
+                long headDimKV = qkvDim / (3 * numGdnHeads);
+                prefillInputMap.put(name, Nd4j.zeros(dt, 1, numGdnHeads, headDimKV, headDimKV));
+            }
+        }
+        for (String name : convStateNames) {
+            if (decoder.hasVariable(name)) {
+                int layerIdx = extractLayerIndex(name);
+                DataType dt = decoder.getVariable(name).dataType();
+                // Conv state: [B, D, K-1] where D=qkvDim, K=conv kernel width
+                String convWeightName = "model.layers." + layerIdx + ".gdn.conv.weight";
+                long[] convShape = decoder.getVariable(convWeightName).getArr().shape();
+                long convDim = convShape[0];    // D (e.g. 6144)
+                long kernelSize = convShape[1]; // K (e.g. 4)
+                prefillInputMap.put(name, Nd4j.zeros(dt, 1, convDim, kernelSize - 1));
+            }
+        }
+
         // Request outputs: logits + per-layer k_rope_{L} and v_heads_{L}
         List<String> prefillOutputNames = new ArrayList<>();
         prefillOutputNames.add(logitsName);
@@ -589,6 +649,12 @@ public class GenerationPipeline implements AutoCloseable {
             int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
             prefillOutputNames.add("k_rope_" + layerIdx);
             prefillOutputNames.add("v_heads_" + layerIdx);
+        }
+        // Request GDN/conv state outputs from prefill
+        for (String gdnName : gdnStateNames) {
+            int layerIdx = extractLayerIndex(gdnName);
+            prefillOutputNames.add("gdn_state_out_" + layerIdx);
+            prefillOutputNames.add("conv_state_out_" + layerIdx);
         }
 
         Map<String, INDArray> prefillOutputs;
@@ -608,6 +674,16 @@ public class GenerationPipeline implements AutoCloseable {
             throw new RuntimeException("[GGUF-KV] Prefill logits '" + logitsName + "' not found in outputs: " + prefillOutputs.keySet());
         }
         log.info("[GGUF-KV] Prefill logits shape: {}", java.util.Arrays.toString(prefillLogits.shape()));
+        {
+            INDArray lastPosLogits = prefillLogits.get(
+                    NDArrayIndex.point(0),
+                    NDArrayIndex.point(prefillLogits.shape()[1] - 1),
+                    NDArrayIndex.all()).dup();
+            log.info("[GGUF-KV] Prefill last-pos logits: dtype={} min={} max={} mean={} hasNaN={}",
+                    lastPosLogits.dataType(), lastPosLogits.minNumber(), lastPosLogits.maxNumber(),
+                    lastPosLogits.meanNumber(), Double.isNaN(lastPosLogits.meanNumber().doubleValue()));
+            lastPosLogits.close();
+        }
         int firstTokenId = javaArgmax(prefillLogits, prefillLogits.shape()[1] - 1);
         prefillLogits.close();
         prefillInputIds.close();
@@ -643,9 +719,19 @@ public class GenerationPipeline implements AutoCloseable {
 
             if (kvDtype == null) kvDtype = kRoped.dataType();
 
-            // kRoped/vHeads shape: [batch, prefillLen, numKVHeads, headDim]
+            // kRoped/vHeads shape: [batch, prefillLen, numKVHeads, headDim] (4D) or [batch, prefillLen, dim] (3D)
             long[] kvShape = kRoped.shape();
-            long batch = kvShape[0], numKVHeads = kvShape[2], headDim = kvShape[3];
+            long batch, numKVHeads, headDim;
+            if (kvShape.length == 4) {
+                batch = kvShape[0]; numKVHeads = kvShape[2]; headDim = kvShape[3];
+            } else {
+                // 3D: infer head dimensions from KV cache placeholder shape
+                batch = kvShape[0];
+                long[] cacheShape = decoder.getVariable(kvInputNames.keyNames.get(i)).getShape();
+                numKVHeads = cacheShape[2]; headDim = cacheShape[3];
+                kRoped = kRoped.reshape(batch, prefillSeqLen, numKVHeads, headDim);
+                vHeads = vHeads.reshape(batch, prefillSeqLen, numKVHeads, headDim);
+            }
 
             // Create full-size zero buffer and write prefill data at positions 0..prefillLen-1
             INDArray keyBuf = Nd4j.zeros(kvDtype, batch, maxKvLen, numKVHeads, headDim);
@@ -658,9 +744,41 @@ public class GenerationPipeline implements AutoCloseable {
                     NDArrayIndex.all(), NDArrayIndex.all()).assign(vHeads);
             staticKvBuffers.put(kvInputNames.valueNames.get(i), valBuf);
 
+            log.info("[GGUF-KV] Layer {} KV: kRoped shape={} min={} max={}, keyBuf shape={} min={} max={}",
+                    layerIdx, java.util.Arrays.toString(kRoped.shape()), kRoped.minNumber(), kRoped.maxNumber(),
+                    java.util.Arrays.toString(keyBuf.shape()), keyBuf.minNumber(), keyBuf.maxNumber());
             kRoped.close();
             vHeads.close();
         }
+
+        // Create GDN state buffers from prefill outputs (fixed shape — just dup, no padding)
+        Map<String, INDArray> gdnStateBuffers = new LinkedHashMap<>();
+        for (String gdnName : gdnStateNames) {
+            int layerIdx = extractLayerIndex(gdnName);
+            INDArray gdnState = prefillOutputs.get("gdn_state_out_" + layerIdx);
+            if (gdnState != null) {
+                gdnStateBuffers.put(gdnName, gdnState.dup());
+                gdnState.close();
+                log.info("[GGUF-KV] GDN layer {} state shape={}", layerIdx,
+                        java.util.Arrays.toString(gdnStateBuffers.get(gdnName).shape()));
+            } else {
+                log.warn("[GGUF-KV] Missing GDN prefill output for layer {}", layerIdx);
+            }
+        }
+        Map<String, INDArray> convStateBuffers = new LinkedHashMap<>();
+        for (String convName : convStateNames) {
+            int layerIdx = extractLayerIndex(convName);
+            INDArray convState = prefillOutputs.get("conv_state_out_" + layerIdx);
+            if (convState != null) {
+                convStateBuffers.put(convName, convState.dup());
+                convState.close();
+                log.info("[GGUF-KV] Conv layer {} state shape={}", layerIdx,
+                        java.util.Arrays.toString(convStateBuffers.get(convName).shape()));
+            } else {
+                log.warn("[GGUF-KV] Missing conv prefill output for layer {}", layerIdx);
+            }
+        }
+
         Nd4j.getExecutioner().commit();
 
         // ══════════════════════════════════════════════════════════════════════
@@ -672,6 +790,10 @@ public class GenerationPipeline implements AutoCloseable {
         INDArray decodeCausalMask = null;
         if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
             decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(prefillSeqLen, maxKvLen, maskDtype);
+            log.info("[GGUF-KV] Decode mask shape={} dtype={} min={} max={} hasNaN={}",
+                    java.util.Arrays.toString(decodeCausalMask.shape()), decodeCausalMask.dataType(),
+                    decodeCausalMask.minNumber(), decodeCausalMask.maxNumber(),
+                    Double.isNaN(decodeCausalMask.meanNumber().doubleValue()));
         }
         INDArray decodePositionOffset = null;
         if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
@@ -692,12 +814,29 @@ public class GenerationPipeline implements AutoCloseable {
                 decodeInputMap.put(entry.getKey(), entry.getValue());
             }
         }
+        // Add GDN/conv state buffers to decode input map
+        for (Map.Entry<String, INDArray> entry : gdnStateBuffers.entrySet()) {
+            if (decoder.hasVariable(entry.getKey())) {
+                decodeInputMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+        for (Map.Entry<String, INDArray> entry : convStateBuffers.entrySet()) {
+            if (decoder.hasVariable(entry.getKey())) {
+                decodeInputMap.put(entry.getKey(), entry.getValue());
+            }
+        }
 
         List<String> decodeOutputNames = new ArrayList<>();
         decodeOutputNames.add(logitsName);
+        // Also request GDN/conv state outputs so we have the updated state after warmup
+        for (String gdnName : gdnStateNames) {
+            int layerIdx = extractLayerIndex(gdnName);
+            decodeOutputNames.add("gdn_state_out_" + layerIdx);
+            decodeOutputNames.add("conv_state_out_" + layerIdx);
+        }
 
-        log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers, {} inputs",
-                staticKvBuffers.size(), decodeInputMap.size());
+        log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers, {} GDN state buffers, {} inputs",
+                staticKvBuffers.size(), gdnStateBuffers.size(), decodeInputMap.size());
 
         Map<String, INDArray> decodeOutputs;
         try {
@@ -708,10 +847,30 @@ public class GenerationPipeline implements AutoCloseable {
             throw e;
         }
 
-        log.info("[GGUF-KV] STEP 3 complete, outputs: {}", decodeOutputs.keySet());
         INDArray decodeLogits = decodeOutputs.get(logitsName);
         int secondTokenId = javaArgmax(decodeLogits, 0);
+        log.info("[GGUF-KV] STEP 3 second token: {}", secondTokenId);
         decodeLogits.close();
+
+        // Update GDN/conv state buffers with outputs from warmup decode
+        for (String gdnName : gdnStateNames) {
+            int layerIdx = extractLayerIndex(gdnName);
+            INDArray updatedState = decodeOutputs.get("gdn_state_out_" + layerIdx);
+            if (updatedState != null) {
+                INDArray buf = gdnStateBuffers.get(gdnName);
+                if (buf != null) buf.assign(updatedState);
+                updatedState.close();
+            }
+        }
+        for (String convName : convStateNames) {
+            int layerIdx = extractLayerIndex(convName);
+            INDArray updatedConv = decodeOutputs.get("conv_state_out_" + layerIdx);
+            if (updatedConv != null) {
+                INDArray buf = convStateBuffers.get(convName);
+                if (buf != null) buf.assign(updatedConv);
+                updatedConv.close();
+            }
+        }
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 4: Get native plan handle, freeze shapes, resolve ext indices
@@ -727,6 +886,8 @@ public class GenerationPipeline implements AutoCloseable {
             if (decodePositionOffset != null) decodePositionOffset.close();
             if (decodeCachePosition != null) decodeCachePosition.close();
             for (INDArray kv : staticKvBuffers.values()) kv.close();
+            for (INDArray gdn : gdnStateBuffers.values()) gdn.close();
+            for (INDArray conv : convStateBuffers.values()) conv.close();
 
             List<Integer> tokens = new ArrayList<>();
             tokens.add(firstTokenId);
@@ -761,6 +922,28 @@ public class GenerationPipeline implements AutoCloseable {
             kvInputExtIndices[ki++] = resolveExtInputIdx(executor, valName);
         }
 
+        // Resolve GDN/conv state ext input indices
+        int[] gdnStateExtIndices = new int[gdnStateNames.size()];
+        for (int i = 0; i < gdnStateNames.size(); i++) {
+            gdnStateExtIndices[i] = resolveExtInputIdx(executor, gdnStateNames.get(i));
+        }
+        int[] convStateExtIndices = new int[convStateNames.size()];
+        for (int i = 0; i < convStateNames.size(); i++) {
+            convStateExtIndices[i] = resolveExtInputIdx(executor, convStateNames.get(i));
+        }
+
+        // Resolve GDN/conv state output indices
+        int[] gdnStateOutputIndices = new int[gdnStateNames.size()];
+        for (int i = 0; i < gdnStateNames.size(); i++) {
+            int layerIdx = extractLayerIndex(gdnStateNames.get(i));
+            gdnStateOutputIndices[i] = resolveOutputIdx(executor, "gdn_state_out_" + layerIdx);
+        }
+        int[] convStateOutputIndices = new int[convStateNames.size()];
+        for (int i = 0; i < convStateNames.size(); i++) {
+            int layerIdx = extractLayerIndex(convStateNames.get(i));
+            convStateOutputIndices[i] = resolveOutputIdx(executor, "conv_state_out_" + layerIdx);
+        }
+
         // ══════════════════════════════════════════════════════════════════════
         // STEP 5: Execute native AutoregressiveDecode op
         // ══════════════════════════════════════════════════════════════════════
@@ -783,6 +966,8 @@ public class GenerationPipeline implements AutoCloseable {
         if (decodePositionOffset != null) decodePositionOffset.syncToDevice();
         if (decodeCachePosition != null) decodeCachePosition.syncToDevice();
         for (INDArray kvBuf : staticKvBuffers.values()) kvBuf.syncToDevice();
+        for (INDArray gdnBuf : gdnStateBuffers.values()) gdnBuf.syncToDevice();
+        for (INDArray convBuf : convStateBuffers.values()) convBuf.syncToDevice();
 
         INDArray[] staticKvArray = new INDArray[2 * numKvPairs];
         int idx = 0;
@@ -814,6 +999,8 @@ public class GenerationPipeline implements AutoCloseable {
                     posOffsetExtIdx,    // position_offset ext index
                     cachePosExtIdx,     // cache_position ext index
                     kvInputExtIndices, kvOutputIndices,
+                    gdnStateExtIndices, gdnStateOutputIndices,
+                    convStateExtIndices, convStateOutputIndices,
                     remainingTokens, eosTokenId, numKvPairs,
                     prefillSeqLen + 1,
                     sampling.isGreedy() ? 0.0 : sampling.getTemperature(),
@@ -842,6 +1029,8 @@ public class GenerationPipeline implements AutoCloseable {
 
             int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
             String text = tokenizer.decode(tokenIds, false);
+            log.info("[GGUF-KV] STEP 5 complete: nativeCount={} allTokens={} text='{}'",
+                    nativeCount, allTokens, text.length() > 200 ? text.substring(0, 200) : text);
             long endTime = System.currentTimeMillis();
             long timeMs = endTime - startTime;
             float tokPerSec = nativeTimingInfo.getFloat(2);
@@ -854,6 +1043,8 @@ public class GenerationPipeline implements AutoCloseable {
             if (decodePositionOffset != null) decodePositionOffset.close();
             if (decodeCachePosition != null) decodeCachePosition.close();
             for (INDArray kv : staticKvBuffers.values()) kv.close();
+            for (INDArray gdn : gdnStateBuffers.values()) gdn.close();
+            for (INDArray conv : convStateBuffers.values()) conv.close();
 
             return GenerationResult.builder()
                     .text(text).tokenIds(tokenIds)
@@ -881,6 +1072,8 @@ public class GenerationPipeline implements AutoCloseable {
             boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
 
             for (INDArray kv : staticKvBuffers.values()) kv.close();
+            for (INDArray gdn : gdnStateBuffers.values()) gdn.close();
+            for (INDArray conv : convStateBuffers.values()) conv.close();
 
             return GenerationResult.builder()
                     .text(text).tokenIds(tokenIds)
@@ -930,7 +1123,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
-        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "logits";
+        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "lm_logits";
 
         int[] currentIds = promptTokenIds;
         List<Integer> generatedTokens = new ArrayList<>();
@@ -972,13 +1165,22 @@ public class GenerationPipeline implements AutoCloseable {
                 NDArrayIndex.all()).dup();
         float[] values = slice.data().asFloat();
         int best = 0;
-        float bestVal = values[0];
-        for (int j = 1; j < values.length; j++) {
+        float bestVal = Float.NEGATIVE_INFINITY;
+        int nanCount = 0, infCount = 0, zeroCount = 0;
+        float minVal = Float.MAX_VALUE, maxVal = -Float.MAX_VALUE;
+        for (int j = 0; j < values.length; j++) {
+            if (Float.isNaN(values[j])) { nanCount++; continue; }
+            if (Float.isInfinite(values[j])) { infCount++; }
+            if (values[j] == 0.0f) zeroCount++;
+            if (values[j] < minVal) minVal = values[j];
+            if (values[j] > maxVal) maxVal = values[j];
             if (values[j] > bestVal) {
                 bestVal = values[j];
                 best = j;
             }
         }
+        log.info("[javaArgmax] shape={} seqPos={} vocab={} best={} bestVal={} nanCount={} infCount={} zeroCount={} min={} max={}",
+                java.util.Arrays.toString(logits.shape()), seqPos, values.length, best, bestVal, nanCount, infCount, zeroCount, minVal, maxVal);
         slice.close();
         return best;
     }

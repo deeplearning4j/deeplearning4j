@@ -64,30 +64,31 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
             // output[t] = sum_{kk=0}^{K-1} weight[d, K-1-kk] * x[t-kk]
             // weight[K-1] multiplies x[t] (current), weight[0] multiplies x[t-K+1] (oldest)
             for (LongType t = 0; t < L; ++t) {
-                T sum = static_cast<T>(0);
+                // Accumulate convolution in float to avoid FP16 product overflow
+                float sum = 0.0f;
                 for (LongType kk = 0; kk < K; ++kk) {
                     LongType srcT = t - kk;
-                    T x_val;
+                    float x_val;
                     if (srcT >= 0) {
-                        x_val = xBuf[b * xS0 + srcT * xS1 + d * xS2];
+                        x_val = static_cast<float>(xBuf[b * xS0 + srcT * xS1 + d * xS2]);
                     } else if (sInBuf != nullptr) {
                         LongType stateIdx = (K - 1) + srcT;
-                        x_val = (stateIdx >= 0) ? sInBuf[b * siS0 + d * siS1 + stateIdx * siS2] : static_cast<T>(0);
+                        x_val = (stateIdx >= 0) ? static_cast<float>(sInBuf[b * siS0 + d * siS1 + stateIdx * siS2]) : 0.0f;
                     } else {
-                        x_val = static_cast<T>(0);
+                        x_val = 0.0f;
                     }
-                    sum += wBuf[d * wChanStride + (K - 1 - kk) * wDimStride] * x_val;
+                    sum += static_cast<float>(wBuf[d * wChanStride + (K - 1 - kk) * wDimStride]) * x_val;
                 }
 
-                if (bBuf != nullptr) sum += bBuf[d];
+                if (bBuf != nullptr) sum += static_cast<float>(bBuf[d]);
 
-                // SiLU activation: x * sigmoid(x)
+                // SiLU activation: x * sigmoid(x) — computed in float to avoid exp overflow
                 if (activation == 1) {
-                    T sig = static_cast<T>(1) / (static_cast<T>(1) + sd::math::sd_exp<T, T>(-sum));
+                    float sig = 1.0f / (1.0f + std::exp(-sum));
                     sum = sum * sig;
                 }
 
-                outBuf[b * oS0 + t * oS1 + d * oS2] = sum;
+                outBuf[b * oS0 + t * oS1 + d * oS2] = static_cast<T>(sum);
             }
 
             // Update conv state: last K-1 timesteps of input

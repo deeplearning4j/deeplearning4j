@@ -42,12 +42,12 @@ import java.util.List;
  * <p>
  * Inputs:
  * <ul>
- *   <li>0: input [M, K]</li>
+ *   <li>0: input [..., K] (rank >= 2)</li>
  *   <li>1: wGate [K, N] - gate projection weight</li>
  *   <li>2: wUp [K, N] - up projection weight</li>
  * </ul>
  * <p>
- * Output: [M, N]
+ * Output: [..., N] (leading dims preserved from input)
  *
  * Adam Gibson
  */

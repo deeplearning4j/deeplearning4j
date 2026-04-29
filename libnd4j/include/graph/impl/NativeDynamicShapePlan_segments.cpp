@@ -182,8 +182,10 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
 
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld (with-op-mix)",
                seg.def.startSlot, seg.def.endSlot, static_cast<long long>(rangeKeyU64));
-      // Cache the key for subsequent calls (when shapesFrozen_ is enabled)
-      seg.exec.cachedShapeKey = static_cast<LongType>(rangeKeyU64);
+      // NOTE: Do NOT set seg.exec.cachedShapeKey here. cachedShapeKey must only be
+      // written after a successful compile+execute in executeSegmentWithSpecificBackend().
+      // Writing it here causes the cascade to skip compilation for fallback backends
+      // when the first backend fails (cachedShapeKey != 0 → needsCompile = false).
       return static_cast<LongType>(rangeKeyU64);
     }
     // Fall through to standard path during warmup
@@ -266,10 +268,9 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   //   4. iArgs (already hashed above) encode the same shape info for most ops.
   // Removing syncToHost here eliminates GPU→CPU sync during key computation.
 
-  // Cache for future frozen calls
-  if (shapesFrozen_) {
-    seg.exec.cachedShapeKey = key;
-  }
+  // NOTE: Do NOT set seg.exec.cachedShapeKey here. It must only be written after
+  // a successful compile+execute in executeSegmentWithSpecificBackend() (line ~681).
+  // Writing it here causes the cascade to skip compilation for fallback backends.
   return key;
 }
 
@@ -486,13 +487,15 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     return Status::KERNEL_FAILURE;
   }
 
-  // At least one backend tried to compile but ALL failed — this IS a real failure.
-  // Throw to prevent silent fallback: the backend SHOULD be able to compile these ops.
+  // At least one backend tried to compile but ALL failed.
+  // Demote to slot-by-slot native execution — same as the "no fusible ops" path.
+  // This can happen when shapes/types change between executions (e.g., BF16 on a CPU
+  // without AVX-512 BF16) or when OV model shapes don't match cached buffers.
   seg.exec.compilationFailed = true;
-  DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                "cascade: ALL %d backends failed to compile seg[%d-%d] (backends attempted compilation "
-                "but all failed). Fix the backend compilation — silent fallback to slot-by-slot is not permitted.",
-                (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
+  DSP_DIAG(COMPILE, "cascade: ALL %d backends failed to compile seg[%d-%d] — "
+            "demoting to slot-by-slot native execution",
+            (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
+  return Status::KERNEL_FAILURE;
 }
 
 // ─── Execute segment with a specific backend (shared logic) ─────────────────
@@ -505,6 +508,10 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
   // ── Shape key: detect if segment needs recompilation ──
   // Frozen + cached key: reuse (shapes can't change). Otherwise: compute and cache.
+  // NOTE: cachedShapeKey is only set AFTER successful compilation (below), not here.
+  // Setting it before compile would cause the cascade to skip compilation for the
+  // next backend when the first backend fails (the key would be non-zero but no
+  // compiled segment exists in the next backend's cache).
   LongType segShapeKey;
   bool needsCompile;
   if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
@@ -514,9 +521,6 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
     seg.def.shapeKeyState.recordComputed(segShapeKey);
     needsCompile = (seg.exec.executionCount == 1) || seg.def.shapeKeyState.hasDrifted();
-    if (shapesFrozen_) {
-      seg.exec.cachedShapeKey = segShapeKey;  // cache for future frozen calls
-    }
   }
 
   // ── Phase guard: compilation must not happen during REPLAYING ────────────
@@ -553,7 +557,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
   }
 
-  if (seg.exec.executionCount == 1) {
+  if (needsCompile && seg.exec.executionCount == 1) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
     bool allCovered = true;
@@ -589,8 +593,15 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
   }
 
-  seg.exec.cachedShapeKey = segShapeKey;
-  seg.def.shapeKeyState.markCompiled(segShapeKey);
+  // Only update compiledShapeKey when compilation actually occurred.
+  // Without this guard, a no-compile reuse call overwrites compiledShapeKey with
+  // the current segShapeKey even though the backend's compiled artifacts were
+  // produced for a DIFFERENT key. In the CPU cascade (OneDNN → OpenVINO), the
+  // second backend reads compiledShapeKey via neverCompiled() / hasDrifted() —
+  // an unconditional write here masks compile failures from the first backend.
+  if (needsCompile) {
+    seg.def.shapeKeyState.markCompiled(segShapeKey);
+  }
   // tl_graphExecutionActive must NOT be set here — it is a CUDA-graph-capture
   // guard that suppresses frees and skips syncs. This function drives non-capture
   // paths (CPU backends, Triton warmup). Capture manages the flag internally.
@@ -675,6 +686,11 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
             static_cast<int>(status), statusName_seg(status));
 
   if (status == Status::OK) {
+    // Cache the shape key only after successful compile+execute so the cascade
+    // doesn't skip compilation for the next backend when the current one fails.
+    if (shapesFrozen_) {
+      seg.exec.cachedShapeKey = segShapeKey;
+    }
     seg.exec.executionCount++;
     totalGraphReplays_++;
 

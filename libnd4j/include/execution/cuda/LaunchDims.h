@@ -898,6 +898,8 @@ dim3 mirrorPadTad(int length,int rank);
 
 dim3 digammaDims(int length);
 
+dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int dtypeSize);
+
 // KV scatter: copies present KV entries into static cache buffers
 #define GRID_SIZE_KV_SCATTER getEnvVariable("GRID_SIZE_KV_SCATTER", 256)
 #define BLOCK_SIZE_KV_SCATTER getEnvVariable("BLOCK_SIZE_KV_SCATTER", 256)
@@ -919,5 +921,12 @@ dim3 digammaDims(int length);
 #define GRID_SIZE_RMS_NORM_LINEAR getEnvVariable("GRID_SIZE_RMS_NORM_LINEAR", 256)
 #define BLOCK_SIZE_RMS_NORM_LINEAR getEnvVariable("BLOCK_SIZE_RMS_NORM_LINEAR", 256)
 #define SHARED_MEM_SIZE_RMS_NORM_LINEAR getEnvVariable("SHARED_MEM_SIZE_RMS_NORM_LINEAR", 33792)
+
+// Fused GQA decode attention: one block per (batch, qHead) pair.
+// Block threads tile over KV positions. Shared memory holds scores tile + output accumulator.
+// Default shared = (64 + 64) * 4 + 256 = 768 bytes (tile + dim accum + warp scratch).
+#define GRID_SIZE_FUSED_GQA_DECODE getEnvVariable("GRID_SIZE_FUSED_GQA_DECODE", 256)
+#define BLOCK_SIZE_FUSED_GQA_DECODE getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", 256)
+#define SHARED_MEM_SIZE_FUSED_GQA_DECODE getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", 8192)
 
 #endif //LIBND4J_LAUNCHCONTEXT_H

@@ -28,6 +28,9 @@
 #include <system/platform_boilerplate.h>
 
 #include "mkldnnUtils.h"
+#if HAVE_ONEDNN
+#include <dnnl.h>
+#endif
 
 using namespace dnnl;
 
@@ -315,13 +318,25 @@ PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
                            bool isFloat32 = (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
                                              bType == DataType::FLOAT32 && zType == DataType::FLOAT32);
 
-                           // BFLOAT16 - supported by OneDNN on CPUs with AMX/AVX512_BF16
-                           bool isBFloat16 = (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
-                                              bType == DataType::BFLOAT16 && zType == DataType::BFLOAT16);
+                           // BFLOAT16 - requires AVX512_BF16 or AMX hardware
+                           bool isBFloat16 = false;
+                           if (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
+                               bType == DataType::BFLOAT16 && zType == DataType::BFLOAT16) {
+#if HAVE_ONEDNN
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             isBFloat16 = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+#endif
+                           }
 
-                           // FLOAT16 - limited support, but OneDNN can handle it
-                           bool isFloat16 = (xType == DataType::HALF && wType == DataType::HALF &&
-                                             bType == DataType::HALF && zType == DataType::HALF);
+                           // FLOAT16 - requires AMX_FP16 hardware
+                           bool isFloat16 = false;
+                           if (xType == DataType::HALF && wType == DataType::HALF &&
+                               bType == DataType::HALF && zType == DataType::HALF) {
+#if HAVE_ONEDNN
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             isFloat16 = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+#endif
+                           }
 
                            // INT8 quantized
                            bool isQuantized = (
@@ -412,17 +427,29 @@ PLATFORM_CHECK(xw_plus_b_bp, ENGINE_CPU) {
                                              dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&
                                              dLdwType == DataType::FLOAT32);
 
-                           // All types must match - BFLOAT16
-                           bool isBFloat16 = (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
-                                              bType == DataType::BFLOAT16 && dLdzType == DataType::BFLOAT16 &&
-                                              dLdbType == DataType::BFLOAT16 && dLdxType == DataType::BFLOAT16 &&
-                                              dLdwType == DataType::BFLOAT16);
+                           // All types must match - BFLOAT16 (requires AVX512_BF16 or AMX)
+                           bool isBFloat16 = false;
+                           if (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
+                               bType == DataType::BFLOAT16 && dLdzType == DataType::BFLOAT16 &&
+                               dLdbType == DataType::BFLOAT16 && dLdxType == DataType::BFLOAT16 &&
+                               dLdwType == DataType::BFLOAT16) {
+#if HAVE_ONEDNN
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             isBFloat16 = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+#endif
+                           }
 
-                           // All types must match - FLOAT16
-                           bool isFloat16 = (xType == DataType::HALF && wType == DataType::HALF &&
-                                             bType == DataType::HALF && dLdzType == DataType::HALF &&
-                                             dLdbType == DataType::HALF && dLdxType == DataType::HALF &&
-                                             dLdwType == DataType::HALF);
+                           // All types must match - FLOAT16 (requires AMX_FP16)
+                           bool isFloat16 = false;
+                           if (xType == DataType::HALF && wType == DataType::HALF &&
+                               bType == DataType::HALF && dLdzType == DataType::HALF &&
+                               dLdbType == DataType::HALF && dLdxType == DataType::HALF &&
+                               dLdwType == DataType::HALF) {
+#if HAVE_ONEDNN
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             isFloat16 = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+#endif
+                           }
 
                            return isFloat32 || isBFloat16 || isFloat16;
                          },

@@ -930,6 +930,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   // un-frozen slot, because an un-frozen slot's execution depends on its inputs
   // being alive and up-to-date.
   int valueDepUnfrozen = 0;
+  int valueDepStableKept = 0;
   {
     // Build a map: output-slot-index → op-slot index that produces it
     std::unordered_map<int, int> outputSlotToOpSlot;
@@ -941,11 +942,58 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
         }
       }
     }
-    // Seed: any frozen slot whose output feeds a value-dependent op
+    // Seed: any frozen slot whose output feeds a value-dependent op.
+    // OPTIMIZATION: If the value-dep op's ALL inputs come from frozen plan-internal
+    // slots (no external inputs), its shape-tensor values are stable and it does not
+    // need its upstream un-frozen. This keeps the entire shape-control ladder frozen
+    // during decode (shape_of → concat → reshape_no_copy chains where all shapes
+    // are constant). Only un-freeze when the value-dep op has external inputs whose
+    // values may change between steps.
     std::unordered_set<int> toUnfreeze;
     for (int s = 0; s < numSlots_; s++) {
       auto& sl = slots_[s];
       if (!sl.flags.outputShapeDependsOnInputValues) continue;
+
+      // Check if ALL inputs to this value-dep op come from frozen plan-internal slots.
+      // If so, the shape tensor values are stable — skip un-freezing upstream.
+      bool hasUnstableInput = false;
+      for (int i = 0; i < sl.wiring.numInputs; i++) {
+        int srcIdx = sl.wiring.inputSourceIndices[i];
+        if (srcIdx < 0) {
+          // External input — may change between steps, so upstream must be un-frozen
+          hasUnstableInput = true;
+          break;
+        }
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+          auto it = outputSlotToOpSlot.find(srcIdx);
+          if (it != outputSlotToOpSlot.end() && !slots_[it->second].frozenConstantSlot()) {
+            // Input comes from a non-frozen plan-internal slot — unstable
+            hasUnstableInput = true;
+            break;
+          }
+          // srcIdx might not map to any op (Java-managed slot) — treat as unstable
+          if (it == outputSlotToOpSlot.end() && !producedByPlanOp[srcIdx]) {
+            hasUnstableInput = true;
+            break;
+          }
+        }
+      }
+
+      if (!hasUnstableInput) {
+        // All inputs are frozen plan-internal — this value-dep op is stable.
+        // Mark it frozen too (its outputs are constant when shapes are frozen).
+        if (!sl.flags.isDataDependent && !sl.flags.isDynamicShape) {
+          sl.state_ = NativeSlot::SlotState::FROZEN_CONSTANT;
+          for (int o = 0; o < sl.wiring.numOutputs; o++) {
+            frozenOutputSlots.insert(sl.wiring.outputSlotIndices[o]);
+          }
+          frozenConstCount++;
+          valueDepStableKept++;
+        }
+        continue;
+      }
+
+      // Has unstable input — un-freeze frozen upstream as before
       for (int i = 0; i < sl.wiring.numInputs; i++) {
         int srcIdx = sl.wiring.inputSourceIndices[i];
         if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
@@ -1010,10 +1058,11 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   }
 
   DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants "
-            "(%d shape-only-trait, %d value-independent, %d in-place disabled, %d view-alias unfrozen, "
+            "(%d shape-only-trait, %d value-independent, %d value-dep-stable-kept, "
+            "%d in-place disabled, %d view-alias unfrozen, "
             "%d value-dep unfrozen, %d java-managed output slots)",
-            frozenConstCount, numSlots_, shapeOnlyCount, valueIndepCount, disabledInPlace,
-            viewAliasUnfrozen, valueDepUnfrozen, javaManagedCount);
+            frozenConstCount, numSlots_, shapeOnlyCount, valueIndepCount, valueDepStableKept,
+            disabledInPlace, viewAliasUnfrozen, valueDepUnfrozen, javaManagedCount);
 
   // Populate execution context with frozen constant stats so downstream
   // diagnostics (logExecutionSummary, dumpFlowLog on failure) show what happened.
@@ -2822,8 +2871,18 @@ Status NativeDynamicShapePlan::executeSlot(
               if (cached != nullptr && cached->hasValidShapeInfo() &&
                   shape::equalsSoft(cached->shapeInfo(), outputShapes[i]) &&
                   ArrayOptions::dataType(cached->shapeInfo()) == ArrayOptions::dataType(outputShapes[i])) {
-                outputs[i] = cached;
-                continue;
+                size_t requiredBytes = static_cast<size_t>(shape::length(outputShapes[i])) *
+                                       DataTypeUtils::sizeOf(ArrayOptions::dataType(outputShapes[i]));
+                auto* cachedDb = cached->dataBuffer();
+                size_t availableBytes = (cachedDb != nullptr) ? cachedDb->getLenInBytes() : 0;
+                if (requiredBytes <= availableBytes) {
+                  outputs[i] = cached;
+                  continue;
+                }
+                DSP_DIAG(MEMORY,
+                         "UNTRACKED_CACHE_SKIP: step %d output %d buffer too small "
+                         "(required=%zu available=%zu) — reallocating",
+                         stepIdx, i, requiredBytes, availableBytes);
               }
               delete cached;
               untrackedOutputCache_[cacheIdx] = nullptr;
@@ -3063,8 +3122,18 @@ Status NativeDynamicShapePlan::executeSlot(
             const LongType* cachedShape = cached->shapeInfo();
             if (shape::equalsSoft(cachedShape, outputShapes[i]) &&
                 ArrayOptions::dataType(cachedShape) == ArrayOptions::dataType(outputShapes[i])) {
-              outputs[i] = cached;
-              continue;
+              size_t requiredBytes = static_cast<size_t>(shape::length(outputShapes[i])) *
+                                     DataTypeUtils::sizeOf(ArrayOptions::dataType(outputShapes[i]));
+              auto* cachedDb = cached->dataBuffer();
+              size_t availableBytes = (cachedDb != nullptr) ? cachedDb->getLenInBytes() : 0;
+              if (requiredBytes <= availableBytes) {
+                outputs[i] = cached;
+                continue;
+              }
+              DSP_DIAG(MEMORY,
+                       "UNTRACKED_CACHE_SKIP: step %d output %d buffer too small "
+                       "(required=%zu available=%zu) — reallocating",
+                       stepIdx, i, requiredBytes, availableBytes);
             }
             delete cached;
             untrackedOutputCache_[cacheIdx] = nullptr;
@@ -3093,14 +3162,32 @@ Status NativeDynamicShapePlan::executeSlot(
         const LongType* cachedShape = cached->shapeInfo();
         if (shape::equalsSoft(cachedShape, shapeInfo) &&
             ArrayOptions::dataType(cachedShape) == dt) {
-          outputs[i] = cached;
-          writeOutputSlot(slotIdx, cached, "cached-reuse");
-          DSP_DIAG_SLOT_WRITE(slotIdx, slot.ident.opName.c_str(),
-                              cached->dataBuffer() != nullptr
-                                  ? cached->dataBuffer()->getLenInBytes()
-                                  : 0,
-                              stream, "cached-reuse");
-          continue;
+          // Buffer capacity guard: verify the cached DataBuffer is large enough
+          // to hold the current output shape before reusing it.  If the shape
+          // changed between prefill and decode (e.g. sequence-length growth),
+          // equalsSoft may still return true while the DataBuffer is too small,
+          // leading to a silent out-of-bounds write inside the op.
+          size_t requiredBytes = static_cast<size_t>(shape::length(shapeInfo)) *
+                                 DataTypeUtils::sizeOf(dt);
+          auto* cachedDb = cached->dataBuffer();
+          size_t availableBytes = (cachedDb != nullptr) ? cachedDb->getLenInBytes() : 0;
+          if (requiredBytes > availableBytes) {
+            // Buffer too small — release the under-sized cached array and fall
+            // through to fresh allocation below.
+            DSP_DIAG(MEMORY,
+                     "CACHED_REUSE_SKIP: slot %d (%s) buffer too small for current shape "
+                     "(required=%zu available=%zu) — allocating fresh array",
+                     slotIdx, slot.ident.opName.c_str(), requiredBytes, availableBytes);
+            discardCachedSlotArray(slotIdx, cached, "cached-reuse-too-small");
+            cached = nullptr;
+          } else {
+            outputs[i] = cached;
+            writeOutputSlot(slotIdx, cached, "cached-reuse");
+            DSP_DIAG_SLOT_WRITE(slotIdx, slot.ident.opName.c_str(),
+                                cachedDb != nullptr ? cachedDb->getLenInBytes() : 0,
+                                stream, "cached-reuse");
+            continue;
+          }
         }
       }
     }

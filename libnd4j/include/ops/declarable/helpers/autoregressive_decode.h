@@ -73,6 +73,20 @@ struct AutoregressiveDecodeConfig {
     // updates. The decode loop skips its own manual scatter to avoid
     // double-writing with independent position counters.
     bool planOwnsKvScatter = false;
+
+    // GDN (Gated Delta Net) recurrent state feedback.
+    // For hybrid architectures (e.g. Qwen3-0.6B with 18 GDN + 6 attention layers),
+    // the GDN layers have recurrent state that must be copied from outputs back to
+    // inputs between decode steps. Without this, GDN layers see frozen state from
+    // the warmup step and the model degenerates.
+    int* gdnStateExtIndices = nullptr;     // ext input indices for past_gdn_state.{layer}
+    int* gdnStateOutputIndices = nullptr;  // plan output indices for gdn_state_out_{layer}
+    int numGdnStatePairs = 0;
+
+    // Conv state feedback (1D conv state in GDN layers).
+    int* convStateExtIndices = nullptr;    // ext input indices for past_conv_state.{layer}
+    int* convStateOutputIndices = nullptr; // plan output indices for conv_state_out_{layer}
+    int numConvStatePairs = 0;
 };
 
 /**

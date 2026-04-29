@@ -2279,11 +2279,102 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       };
 
       mlir::Value scaleVal, biasVal, meanVal, varianceVal;
+      mlir::Value hiddenValue;  // pre-norm hidden for skip_rms_norm output[1]
       if (normKey == "batchnorm") {
         meanVal = getNormInput(1);
         varianceVal = getNormInput(2);
         scaleVal = getNormInput(3);
         biasVal = getNormInput(4);
+      } else if (normKey == "skiprmsnorm") {
+        // skip_rms_norm: input[0]=x, input[1]=skip, input[2]=gamma, input[3]=bias(optional)
+        // The skip tensor has the SAME shape as x (full row), so it must be loaded
+        // with row-wise addressing (paddedRowLen, makeRowOffsetRange), NOT via
+        // getNormInput which uses sideNumElements (suitable for gamma/bias vectors).
+        {
+          int skipSrc = slot.wiring.inputSourceIndices[1];
+          mlir::Value skipVal;
+          // First check SSA cache (skip may come from a previous op in this kernel)
+          auto skipSsaIt = ssaValues.find(skipSrc);
+          if (skipSsaIt != ssaValues.end()) {
+            skipVal = skipSsaIt->second;
+          } else if (skipSrc < 0) {
+            // External input — load with row-wise addressing like the primary input
+            int skipExtIdx = -(skipSrc + 1);
+            if (skipExtIdx < numExternalInputs && externalInputs && externalInputs[skipExtIdx]) {
+              auto skipArgIt = std::find_if(result.args.begin(), result.args.end(),
+                  [skipSrc](const TritonKernelArg& arg) {
+                      return arg.slotIndex == skipSrc && !arg.isOutput;
+                  });
+              if (skipArgIt != result.args.end()) {
+                int skipArgIdx = skipArgIt - result.args.begin();
+                auto skipBufArg = getBufferArg(skipArgIdx);
+                if (skipBufArg) {
+                  auto skipElemType = getMLIRType(builder, externalInputs[skipExtIdx]->dataType());
+                  auto skipPtrType = mlir::cast<mlir::triton::PointerType>(skipBufArg.getType());
+                  auto skipRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+                      mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+                  auto skipRowOffsets = makeRowOffsetRange(skipRange);
+                  auto skipPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, skipPtrType);
+                  auto skipSplatPtr = builder.create<mlir::triton::SplatOp>(loc, skipPtrTensorType, skipBufArg);
+                  auto skipPtrs = builder.create<mlir::triton::AddPtrOp>(loc, skipPtrTensorType, skipSplatPtr, skipRowOffsets);
+                  auto skipRowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+                  auto skipSplatRowLen = builder.create<mlir::triton::SplatOp>(loc,
+                      mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), skipRowLenConst);
+                  auto skipMask = builder.create<mlir::arith::CmpIOp>(loc,
+                      mlir::arith::CmpIPredicate::slt, skipRange, skipSplatRowLen);
+                  skipVal = builder.create<mlir::triton::LoadOp>(loc, skipPtrs.getResult(), skipMask,
+                      builder.create<mlir::triton::SplatOp>(loc,
+                          mlir::RankedTensorType::get({paddedRowLen}, skipElemType),
+                          builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(skipElemType, 0.0))).getResult(),
+                      mlir::triton::CacheModifier::NONE,
+                      mlir::triton::EvictionPolicy::NORMAL, false);
+                  ssaValues[skipSrc] = skipVal;
+                }
+              }
+            }
+          } else {
+            // Internal input from another section — load from its buffer arg
+            auto intArgIt = std::find_if(result.args.begin(), result.args.end(),
+                [skipSrc](const TritonKernelArg& arg) {
+                    return arg.slotIndex == skipSrc && !arg.isOutput;
+                });
+            if (intArgIt != result.args.end()) {
+              int intArgIdx = intArgIt - result.args.begin();
+              auto intBufArg = getBufferArg(intArgIdx);
+              if (intBufArg) {
+                auto skipElemType = getElementType(inputValue);
+                auto skipPtrType = mlir::cast<mlir::triton::PointerType>(intBufArg.getType());
+                auto skipRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+                    mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+                auto skipRowOffsets = makeRowOffsetRange(skipRange);
+                auto skipPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, skipPtrType);
+                auto skipSplatPtr = builder.create<mlir::triton::SplatOp>(loc, skipPtrTensorType, intBufArg);
+                auto skipPtrs = builder.create<mlir::triton::AddPtrOp>(loc, skipPtrTensorType, skipSplatPtr, skipRowOffsets);
+                auto skipRowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+                auto skipSplatRowLen = builder.create<mlir::triton::SplatOp>(loc,
+                    mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), skipRowLenConst);
+                auto skipMask = builder.create<mlir::arith::CmpIOp>(loc,
+                    mlir::arith::CmpIPredicate::slt, skipRange, skipSplatRowLen);
+                skipVal = builder.create<mlir::triton::LoadOp>(loc, skipPtrs.getResult(), skipMask,
+                    builder.create<mlir::triton::SplatOp>(loc,
+                        mlir::RankedTensorType::get({paddedRowLen}, skipElemType),
+                        builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(skipElemType, 0.0))).getResult(),
+                    mlir::triton::CacheModifier::NONE,
+                    mlir::triton::EvictionPolicy::NORMAL, false);
+                ssaValues[skipSrc] = skipVal;
+              }
+            }
+          }
+          if (skipVal) {
+            // Cast skip to match input type if needed
+            auto inputElemType = getElementType(inputValue);
+            skipVal = castTo(builder, loc, skipVal, inputElemType);
+            inputValue = builder.create<mlir::arith::AddFOp>(loc, inputValue, skipVal);
+          }
+        }
+        hiddenValue = inputValue;  // save pre-norm hidden for output[1]
+        scaleVal = getNormInput(2);
+        biasVal = getNormInput(3);
       } else {
         scaleVal = getNormInput(1);
         biasVal = getNormInput(2);
@@ -2311,6 +2402,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // when data rows are packed at logicalRowLen intervals (not paddedRowLen).
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           auto outSlot = slot.wiring.outputSlotIndices[o];
+          // skip_rms_norm: output[0]=normed, output[1]=hidden (pre-norm input+skip)
+          mlir::Value outVal = (o == 1 && hiddenValue) ? hiddenValue : opResult;
           // Find the output buffer arg
           auto outArgIt = std::find_if(result.args.begin(), result.args.end(),
               [outSlot](const TritonKernelArg& arg) {
@@ -2320,7 +2413,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             int outArgIdx = outArgIt - result.args.begin();
             auto outBufArg = getBufferArg(outArgIdx);
             if (outBufArg) {
-              auto elemType = getElementType(opResult);
+              auto elemType = getElementType(outVal);
               auto ptrType = mlir::triton::PointerType::get(elemType, 1);
               auto ptrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
 
@@ -2338,18 +2431,20 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               auto storeMask = builder.create<mlir::arith::CmpIOp>(loc,
                   mlir::arith::CmpIPredicate::slt, storeRange, storeMaskSplat);
 
-              builder.create<mlir::triton::StoreOp>(loc, outPtrs, opResult, storeMask,
+              builder.create<mlir::triton::StoreOp>(loc, outPtrs, outVal, storeMask,
                   mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
               normInlineStoredOutputs.insert(outSlot);
             }
           }
           // Still put in SSA for any downstream consumers in the same kernel
-          ssaValues[outSlot] = opResult;
+          ssaValues[outSlot] = outVal;
         }
       } else {
         // Single-row: use generic store loop at end of buildModule
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
-          ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+          // skip_rms_norm: output[0]=normed, output[1]=hidden (pre-norm input+skip)
+          mlir::Value outVal = (o == 1 && hiddenValue) ? hiddenValue : opResult;
+          ssaValues[slot.wiring.outputSlotIndices[o]] = outVal;
         }
       }
 
@@ -5351,11 +5446,25 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             };
 
             mlir::Value scaleVal, biasVal, meanVal, varianceVal;
+            mlir::Value hiddenValue;  // pre-norm hidden for skip_rms_norm output[1]
             if (normKey == "batchnorm") {
               meanVal = getNormInput(1);
               varianceVal = getNormInput(2);
               scaleVal = getNormInput(3);
               biasVal = getNormInput(4);
+            } else if (normKey == "skiprmsnorm") {
+              // skip_rms_norm: input[0]=x, input[1]=skip, input[2]=gamma, input[3]=bias(optional)
+              // Load skip with rowWise=true (same shape as input)
+              auto skipVal = loadNormInput(slot.wiring.inputSourceIndices[1], /*rowWise=*/true);
+              if (skipVal) {
+                inputValue = builder.create<mlir::arith::AddFOp>(loc, inputValue, skipVal);
+              }
+              hiddenValue = inputValue;  // save pre-norm hidden for output[1]
+              // gamma is input[2], bias is input[3]
+              scaleVal = loadNormInput(slot.wiring.inputSourceIndices[2], /*rowWise=*/false);
+              biasVal = (slot.wiring.numInputs > 3)
+                      ? loadNormInput(slot.wiring.inputSourceIndices[3], /*rowWise=*/false)
+                      : mlir::Value();
             } else {
               scaleVal = getNormInput(1);
               biasVal = getNormInput(2);
@@ -5370,29 +5479,34 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               opResult = builder.create<mlir::triton::SplatOp>(loc, splatTensorType, opResult);
             }
 
-            auto outArgIt = slotToArgIdx.find(outSlotIdx);
-            if (outArgIt != slotToArgIdx.end()) {
-              auto outFuncArg = getBufferArg(outArgIt->second);
-              auto outPtrType = mlir::cast<mlir::triton::PointerType>(outFuncArg.getType());
-              auto outElemType = outPtrType.getPointeeType();
-              auto outPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, outPtrType);
-              auto rowRange = builder.create<mlir::triton::MakeRangeOp>(loc, rowRangeType, 0, paddedRowLen);
-              auto rowBaseSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, rowBase);
-              auto rowOffsets = builder.create<mlir::arith::AddIOp>(loc, rowBaseSplat, rowRange);
-              auto rowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
-              auto rowLenSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, rowLenConst);
-              auto rowMask = builder.create<mlir::arith::CmpIOp>(
-                  loc, mlir::arith::CmpIPredicate::slt, rowRange, rowLenSplat);
-              auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outFuncArg);
-              auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, splatPtr, rowOffsets);
-              mlir::Value storeVal = castTo(builder, loc, opResult, outElemType);
-              builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, rowMask,
-                  mlir::triton::CacheModifier::NONE,
-                  mlir::triton::EvictionPolicy::NORMAL);
-              customStoredOutputs.insert(outSlotIdx);
+            // Store all outputs: output[0]=normed, output[1]=hidden for skip_rms_norm
+            for (int o = 0; o < slot.wiring.numOutputs; o++) {
+              auto curOutSlot = slot.wiring.outputSlotIndices[o];
+              // skip_rms_norm: output[1] is the pre-norm hidden (input+skip)
+              mlir::Value outVal = (o == 1 && hiddenValue) ? hiddenValue : opResult;
+              auto outArgIt = slotToArgIdx.find(curOutSlot);
+              if (outArgIt != slotToArgIdx.end()) {
+                auto outFuncArg = getBufferArg(outArgIt->second);
+                auto outPtrType = mlir::cast<mlir::triton::PointerType>(outFuncArg.getType());
+                auto outElemType = outPtrType.getPointeeType();
+                auto outPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, outPtrType);
+                auto rowRange = builder.create<mlir::triton::MakeRangeOp>(loc, rowRangeType, 0, paddedRowLen);
+                auto rowBaseSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, rowBase);
+                auto rowOffsets = builder.create<mlir::arith::AddIOp>(loc, rowBaseSplat, rowRange);
+                auto rowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+                auto rowLenSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, rowLenConst);
+                auto rowMask = builder.create<mlir::arith::CmpIOp>(
+                    loc, mlir::arith::CmpIPredicate::slt, rowRange, rowLenSplat);
+                auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outFuncArg);
+                auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, splatPtr, rowOffsets);
+                mlir::Value storeVal = castTo(builder, loc, outVal, outElemType);
+                builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, rowMask,
+                    mlir::triton::CacheModifier::NONE,
+                    mlir::triton::EvictionPolicy::NORMAL);
+                customStoredOutputs.insert(curOutSlot);
+              }
+              ssaValues[curOutSlot] = outVal;
             }
-
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
 
             // ── Normalization epilogue: emit absorbed elementwise ops ──
             // These ops (residual add, dropout, cast, etc.) operate on the

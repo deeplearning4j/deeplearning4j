@@ -1081,7 +1081,10 @@ SD_HOST_DEVICE SD_INLINE float16 sd_exp<float16, float16>(float16 val) {
   float fval = (float)val;
   if (fval > 88.0f) fval = 88.0f;
   if (fval < -88.0f) fval = -88.0f;
-  float16 result = (float16)p_exp<float>(fval);
+  float result_f32 = p_exp<float>(fval);
+  // Clamp to float16 max to prevent overflow on cast (exp(11.09) ≈ 65504 = float16 max)
+  if (result_f32 > 65504.0f) result_f32 = 65504.0f;
+  float16 result = (float16)result_f32;
   SD_PRINT_MATH_FUNC("sd_exp<float16>", val, result, float16);
   return result;
 }

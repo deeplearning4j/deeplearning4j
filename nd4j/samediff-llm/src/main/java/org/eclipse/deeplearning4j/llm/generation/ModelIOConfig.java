@@ -120,9 +120,11 @@ public class ModelIOConfig {
         List<String> valueInputNames = new ArrayList<>();
 
         for (String inputName : decoder.inputs()) {
-            if (inputName.contains("past_key_values") && inputName.contains("key")) {
+            if (!inputName.contains("past_key_values")) continue;
+            // Match suffix: ".key" or ".value" — not substring, since "past_key_values" itself contains "key"
+            if (inputName.endsWith(".key")) {
                 keyInputNames.add(inputName);
-            } else if (inputName.contains("past_key_values") && inputName.contains("value")) {
+            } else if (inputName.endsWith(".value")) {
                 valueInputNames.add(inputName);
             }
         }
@@ -336,9 +338,9 @@ public class ModelIOConfig {
 
     // ========== Output Names ==========
 
-    /** Name of the logits output variable (e.g., "logits"). */
+    /** Name of the logits output variable (e.g., "lm_logits"). */
     @Builder.Default
-    private final String logitsOutputName = "logits";
+    private final String logitsOutputName = "lm_logits";
 
     /**
      * KV cache output names (present key/value pairs).
@@ -607,7 +609,7 @@ public class ModelIOConfig {
                 .cachePositionName(cachePosName)
                 .kvCachePrefix(kvPrefix != null ? kvPrefix : "past_key_values.")
                 .kvPresentToInputReplace(replacement)
-                .logitsOutputName(logitsName != null ? logitsName : "logits")
+                .logitsOutputName(logitsName != null ? logitsName : "lm_logits")
                 .kvCacheNames(kvNames)
                 .encoderHiddenStatesName(encoderHiddenName != null ? encoderHiddenName : "encoder_hidden_states")
                 .encoderAttentionMaskName(encoderMaskName)

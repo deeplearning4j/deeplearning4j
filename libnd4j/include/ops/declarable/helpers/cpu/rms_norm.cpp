@@ -34,29 +34,29 @@ static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, float epsi
     const T* x = input->bufferAsT<T>();
     T* z = output->bufferAsT<T>();
     const T* g = gamma != nullptr ? gamma->bufferAsT<T>() : nullptr;
-    const T eps = static_cast<T>(epsilon);
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto row = start; row < stop; ++row) {
             const T* xRow = x + row * rowLen;
             T* zRow = z + row * rowLen;
 
-            T sumSq = static_cast<T>(0);
-            PRAGMA_OMP_SIMD_ARGS(reduction(+:sumSq))
+            // Accumulate in float to avoid FP16 overflow (1024-dim sum-of-squares exceeds 65504)
+            float sumSq = 0.0f;
             for (LongType i = 0; i < rowLen; ++i) {
-                sumSq += xRow[i] * xRow[i];
+                float val = static_cast<float>(xRow[i]);
+                sumSq += val * val;
             }
-            const T invRms = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(sumSq / static_cast<T>(rowLen) + eps);
+            const float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(rowLen) + epsilon);
 
             if (g != nullptr) {
                 PRAGMA_OMP_SIMD
                 for (LongType i = 0; i < rowLen; ++i) {
-                    zRow[i] = xRow[i] * invRms * g[i];
+                    zRow[i] = static_cast<T>(static_cast<float>(xRow[i]) * invRms * static_cast<float>(g[i]));
                 }
             } else {
                 PRAGMA_OMP_SIMD
                 for (LongType i = 0; i < rowLen; ++i) {
-                    zRow[i] = xRow[i] * invRms;
+                    zRow[i] = static_cast<T>(static_cast<float>(xRow[i]) * invRms);
                 }
             }
         }
@@ -75,58 +75,56 @@ void rmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* ou
 ///////////////////////////////////////////////////////////////////////////////
 // Fused RMSNorm + Linear: output = matmul(rmsNorm(input, gamma, eps), weight)
 //
-// Strategy: normalize rows in-place into a temp buffer using parallel_tad
-// with SIMD vectorization, then delegate matmul to MmulHelper::mmul which
-// dispatches to MKL/OneDNN/BLAS for optimal GEMM/GEMV performance.
+// Delegates normalization to the existing rmsNorm kernel and matmul to
+// MmulHelper::mmul.  Everything runs in FLOAT32 to avoid HALF matmul
+// producing zeros on CPUs without AMX-FP16 (e.g. AMD Ryzen).
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void rmsNormLinear_(NDArray* input, NDArray* gamma, NDArray* weight,
                             NDArray* output, float epsilon) {
-    const LongType M = input->sizeAt(0);
-    const LongType K = input->sizeAt(1);
-
-    const T* x = input->bufferAsT<T>();
-    const T* g = gamma != nullptr ? gamma->bufferAsT<T>() : nullptr;
-    const T eps = static_cast<T>(epsilon);
-
-    // Allocate temp buffer for normalized input [M, K]
+    // 1. Normalize into a FLOAT32 buffer via the existing rmsNorm kernel
     auto shapeVec = *input->getShapeAsVector();
-    NDArray normalized(input->ordering(), shapeVec, input->dataType());
-    T* normBuf = normalized.bufferAsT<T>();
+    NDArray normalized(input->ordering(), shapeVec, DataType::FLOAT32);
 
-    // Normalize rows with parallel_tad + SIMD
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto row = start; row < stop; ++row) {
-            const T* xRow = x + row * K;
-            T* nRow = normBuf + row * K;
+    // Cast input and gamma to FLOAT32 so rmsNorm_ runs the float path
+    NDArray* inputF32 = input;
+    NDArray* inputCasted = nullptr;
+    if (input->dataType() != DataType::FLOAT32) {
+        inputCasted = input->cast(DataType::FLOAT32);
+        inputF32 = inputCasted;
+    }
 
-            // Reduction: sum of squares with SIMD
-            T sumSq = static_cast<T>(0);
-            PRAGMA_OMP_SIMD_ARGS(reduction(+:sumSq))
-            for (LongType i = 0; i < K; ++i) {
-                sumSq += xRow[i] * xRow[i];
-            }
-            const T invRms = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(sumSq / static_cast<T>(K) + eps);
+    NDArray* gammaF32 = gamma;
+    NDArray* gammaCasted = nullptr;
+    if (gamma != nullptr && gamma->dataType() != DataType::FLOAT32) {
+        gammaCasted = gamma->cast(DataType::FLOAT32);
+        gammaF32 = gammaCasted;
+    }
 
-            // Normalize + scale with SIMD
-            if (g != nullptr) {
-                PRAGMA_OMP_SIMD
-                for (LongType i = 0; i < K; ++i) {
-                    nRow[i] = xRow[i] * invRms * g[i];
-                }
-            } else {
-                PRAGMA_OMP_SIMD
-                for (LongType i = 0; i < K; ++i) {
-                    nRow[i] = xRow[i] * invRms;
-                }
-            }
-        }
-    };
-    samediff::Threads::parallel_tad(func, 0, M);
+    rmsNorm_<float>(inputF32, gammaF32, &normalized, epsilon);
 
-    // Matmul: normalized [M, K] @ weight [K, N] -> output [M, N]
-    // Delegates to MKL/OneDNN/BLAS via MmulHelper
-    MmulHelper::mmul(&normalized, weight, output, 1.0, 0.0);
+    delete inputCasted;
+    delete gammaCasted;
+
+    // 2. Cast weight to FLOAT32 if needed
+    NDArray* wF32 = weight;
+    NDArray* wCasted = nullptr;
+    if (weight->dataType() != DataType::FLOAT32) {
+        wCasted = weight->cast(DataType::FLOAT32);
+        wF32 = wCasted;
+    }
+
+    // 3. Matmul in FP32: normalized [M, K] @ weight [K, N] -> output [M, N]
+    if (output->dataType() == DataType::FLOAT32) {
+        MmulHelper::mmul(&normalized, wF32, output, 1.0, 0.0);
+    } else {
+        auto outShape = *output->getShapeAsVector();
+        NDArray outF32(output->ordering(), outShape, DataType::FLOAT32);
+        MmulHelper::mmul(&normalized, wF32, &outF32, 1.0, 0.0);
+        output->assign(&outF32);
+    }
+
+    delete wCasted;
 }
 
 void rmsNormLinear(LaunchContext* context, NDArray* input, NDArray* gamma,
@@ -154,7 +152,6 @@ static void skipRmsNorm_(NDArray* input, NDArray* skip, NDArray* gamma, NDArray*
     const T* b = bias != nullptr ? bias->bufferAsT<T>() : nullptr;
     T* z = output->bufferAsT<T>();
     T* h = hiddenOut != nullptr ? hiddenOut->bufferAsT<T>() : nullptr;
-    const T eps = static_cast<T>(epsilon);
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto row = start; row < stop; ++row) {
@@ -163,22 +160,22 @@ static void skipRmsNorm_(NDArray* input, NDArray* skip, NDArray* gamma, NDArray*
             T* zRow = z + row * rowLen;
             T* hRow = h != nullptr ? h + row * rowLen : nullptr;
 
-            // Pass 1: compute hidden = input + skip [+ bias], accumulate sum of squares
-            T sumSq = static_cast<T>(0);
+            // Pass 1: compute hidden = input + skip [+ bias], accumulate sum of squares in float
+            float sumSq = 0.0f;
             for (LongType i = 0; i < rowLen; ++i) {
-                T val = xRow[i] + sRow[i];
-                if (b != nullptr) val += b[i];
-                if (hRow != nullptr) hRow[i] = val;
+                float val = static_cast<float>(xRow[i]) + static_cast<float>(sRow[i]);
+                if (b != nullptr) val += static_cast<float>(b[i]);
+                if (hRow != nullptr) hRow[i] = static_cast<T>(val);
                 sumSq += val * val;
             }
-            const T invRms = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(sumSq / static_cast<T>(rowLen) + eps);
+            const float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(rowLen) + epsilon);
 
             // Pass 2: normalize and scale
             PRAGMA_OMP_SIMD
             for (LongType i = 0; i < rowLen; ++i) {
-                T val = xRow[i] + sRow[i];
-                if (b != nullptr) val += b[i];
-                zRow[i] = val * invRms * g[i];
+                float val = static_cast<float>(xRow[i]) + static_cast<float>(sRow[i]);
+                if (b != nullptr) val += static_cast<float>(b[i]);
+                zRow[i] = static_cast<T>(val * invRms * static_cast<float>(g[i]));
             }
         }
     };

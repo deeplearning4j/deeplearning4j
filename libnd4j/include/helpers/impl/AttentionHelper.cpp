@@ -291,7 +291,7 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -1: was: %i scores size at -1 was: %i",scoresMask->sizeAt(-1),scores->sizeAt(-1));
 
     // Use appropriate large value for masking
-    float largeVal = (attentionLogits->dataType() == BFLOAT16) ? 65504.0f : 1.0e9f;
+    float largeVal = (attentionLogits->dataType() == BFLOAT16 || attentionLogits->dataType() == HALF) ? 65504.0f : 1.0e9f;
 
     // Cast mask to scores datatype if needed
     NDArray* numericMask = scoresMask;

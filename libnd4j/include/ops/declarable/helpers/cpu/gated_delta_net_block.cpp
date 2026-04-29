@@ -83,25 +83,29 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     };
     samediff::Threads::parallel_tad(splitFunc, 0, BL);
 
-    // Sigmoid on beta
+    // Sigmoid on beta (compute in float to avoid FP16 exp overflow)
     T* betaBuf = betaReshaped->template bufferAsT<T>();
     const LongType betaLen = betaReshaped->lengthOf();
     auto sigmoidFunc = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; ++i)
-            betaBuf[i] = static_cast<T>(1) / (static_cast<T>(1) + sd::math::sd_exp<T, T>(-betaBuf[i]));
+        for (auto i = start; i < stop; ++i) {
+            float val = static_cast<float>(betaBuf[i]);
+            betaBuf[i] = static_cast<T>(1.0f / (1.0f + std::exp(-val)));
+        }
     };
     samediff::Threads::parallel_for(sigmoidFunc, 0, betaLen);
 
-    // L2-normalize K per vector
+    // L2-normalize K per vector (accumulate in float to avoid FP16 overflow)
     auto normFunc = PRAGMA_THREADS_FOR {
         for (auto idx = start; idx < stop; ++idx) {
             const LongType base = idx * headDimK;
-            T normSq = static_cast<T>(0);
+            float normSq = 0.0f;
+            for (LongType dk = 0; dk < headDimK; ++dk) {
+                float val = static_cast<float>(kBuf[base + dk]);
+                normSq += val * val;
+            }
+            float invNorm = 1.0f / std::sqrt(normSq + 1e-12f);
             for (LongType dk = 0; dk < headDimK; ++dk)
-                normSq += kBuf[base + dk] * kBuf[base + dk];
-            T invNorm = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(normSq + static_cast<T>(1e-12));
-            for (LongType dk = 0; dk < headDimK; ++dk)
-                kBuf[base + dk] *= invNorm;
+                kBuf[base + dk] = static_cast<T>(static_cast<float>(kBuf[base + dk]) * invNorm);
         }
     };
     samediff::Threads::parallel_tad(normFunc, 0, BL * numHeads);
@@ -120,10 +124,15 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     auto rmsFunc = PRAGMA_THREADS_FOR {
         for (auto row = start; row < stop; ++row) {
             T* rowPtr = flatBuf + row * hdv;
-            T sumSq = static_cast<T>(0);
-            for (LongType j = 0; j < hdv; ++j) sumSq += rowPtr[j] * rowPtr[j];
-            T invRms = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(sumSq / static_cast<T>(hdv) + static_cast<T>(rmsEps));
-            for (LongType j = 0; j < hdv; ++j) rowPtr[j] *= invRms;
+            // Accumulate in float to avoid FP16 overflow (hdv can be 1024+)
+            float sumSq = 0.0f;
+            for (LongType j = 0; j < hdv; ++j) {
+                float val = static_cast<float>(rowPtr[j]);
+                sumSq += val * val;
+            }
+            float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(hdv) + static_cast<float>(rmsEps));
+            for (LongType j = 0; j < hdv; ++j)
+                rowPtr[j] = static_cast<T>(static_cast<float>(rowPtr[j]) * invRms);
         }
     };
     samediff::Threads::parallel_tad(rmsFunc, 0, BL);

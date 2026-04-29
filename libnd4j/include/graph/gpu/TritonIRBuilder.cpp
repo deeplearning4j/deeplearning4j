@@ -294,6 +294,8 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["LayerNormalization"]   = {"LayerNormalization",   TritonOpCategory::NORMALIZATION, "custom.layer_norm",   true};
   table["rms_norm"]             = {"rms_norm",             TritonOpCategory::NORMALIZATION, "custom.rms_norm",     true};
   table["RmsNorm"]              = {"RmsNorm",              TritonOpCategory::NORMALIZATION, "custom.rms_norm",     true};
+  table["skip_rms_norm"]        = {"skip_rms_norm",        TritonOpCategory::NORMALIZATION, "custom.skip_rms_norm", true};
+  table["SkipRmsNorm"]          = {"SkipRmsNorm",          TritonOpCategory::NORMALIZATION, "custom.skip_rms_norm", true};
   // rms_norm_linear: fused norm+matmul with single-pass Triton kernel
   table["rms_norm_linear"]      = {"rms_norm_linear",      TritonOpCategory::MATMUL,        "custom.rms_norm_linear", true};
   table["RmsNormLinear"]        = {"RmsNormLinear",        TritonOpCategory::MATMUL,        "custom.rms_norm_linear", true};

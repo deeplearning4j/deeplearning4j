@@ -113,7 +113,74 @@ public class GraphOptimizer {
         log.debug("Running {} optimizers over {} ops ({} with type filters)",
                 allOptimizers.size(), sd.getOps().size(), optimizerFilters.size());
 
-        int totalApplied = 0;
+        // Graph-level DCE: backward reachability sweep from required outputs.
+        // Removes ops (and their ARRAY output variables) that cannot reach any output.
+        // Placeholders, constants, and variables are never removed — only ARRAY vars
+        // produced by unreachable ops.
+        int dceRemoved = 0;
+        if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
+            Set<String> reachableOps = new HashSet<>();
+            Set<String> reachableVars = new HashSet<>();
+            Deque<String> varQueue = new ArrayDeque<>(requiredOutputs);
+
+            // Walk backward from outputs
+            while (!varQueue.isEmpty()) {
+                String varName = varQueue.poll();
+                if (!reachableVars.add(varName)) continue;
+
+                Variable v = sd.getVariables().get(varName);
+                if (v == null) continue;
+
+                String producerOp = v.getOutputOfOp();
+                if (producerOp == null) continue; // placeholder/constant/variable — leaf
+                if (!reachableOps.add(producerOp)) continue;
+
+                SameDiffOp op = sd.getOps().get(producerOp);
+                if (op == null) continue;
+
+                // Enqueue all inputs of this op
+                if (op.getInputsToOp() != null) {
+                    varQueue.addAll(op.getInputsToOp());
+                }
+                // Also follow control dependencies
+                if (op.getControlDeps() != null) {
+                    varQueue.addAll(op.getControlDeps());
+                }
+            }
+
+            // Collect unreachable ops
+            List<String> opsToRemove = new ArrayList<>();
+            for (String opName : sd.getOps().keySet()) {
+                if (!reachableOps.contains(opName)) {
+                    opsToRemove.add(opName);
+                }
+            }
+
+            // Remove unreachable ops and their ARRAY output variables
+            for (String opName : opsToRemove) {
+                SameDiffOp op = sd.getOps().get(opName);
+                if (op == null) continue;
+
+                // Remove output variables that are ARRAY type (produced by this op)
+                if (op.getOutputsOfOp() != null) {
+                    for (String outVar : op.getOutputsOfOp()) {
+                        Variable v = sd.getVariables().get(outVar);
+                        if (v != null && v.getVariable() != null
+                                && v.getVariable().getVariableType() == VariableType.ARRAY) {
+                            OptimizationUtils.removeVariable(sd, h, outVar);
+                        }
+                    }
+                }
+                OptimizationUtils.removeOp(sd, h, opName);
+                dceRemoved++;
+            }
+
+            if (dceRemoved > 0) {
+                log.info("DCE: removed {} unreachable ops (from {} total)", dceRemoved, dceRemoved + sd.getOps().size());
+            }
+        }
+
+        int totalApplied = dceRemoved;
         int totalSkipped = 0;
 
         // Run multiple iterations - some optimizations enable others
@@ -227,11 +294,32 @@ public class GraphOptimizer {
             return fallback;
         }
 
-        // Preserve outputs: use requiredOutputs if provided, otherwise restore original graph's outputs
+        // Preserve outputs: use requiredOutputs if provided, otherwise restore original graph's outputs.
+        // Filter to only variables that still exist — optimization passes may have removed some.
         if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
-            sd.setOutputs(new ArrayList<>(requiredOutputs));
+            List<String> surviving = new ArrayList<>();
+            for (String name : requiredOutputs) {
+                if (sd.hasVariable(name)) {
+                    surviving.add(name);
+                } else {
+                    log.debug("Output variable '{}' removed by optimization — dropping from output list", name);
+                }
+            }
+            if (!surviving.isEmpty()) {
+                sd.setOutputs(surviving);
+            }
         } else if (graph.outputs() != null && !graph.outputs().isEmpty()) {
-            sd.setOutputs(new ArrayList<>(graph.outputs()));
+            List<String> surviving = new ArrayList<>();
+            for (String name : graph.outputs()) {
+                if (sd.hasVariable(name)) {
+                    surviving.add(name);
+                } else {
+                    log.debug("Output variable '{}' removed by optimization — dropping from output list", name);
+                }
+            }
+            if (!surviving.isEmpty()) {
+                sd.setOutputs(surviving);
+            }
         }
 
         return sd;

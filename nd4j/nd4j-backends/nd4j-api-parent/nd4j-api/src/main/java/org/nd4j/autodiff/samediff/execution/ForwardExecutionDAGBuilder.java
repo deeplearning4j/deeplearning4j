@@ -122,7 +122,11 @@ public class ForwardExecutionDAGBuilder {
         Set<String> requiredVariables = new HashSet<>();
 
         Set<String> allPlaceholders = findAllPlaceholders();
-        requiredVariables.addAll(allPlaceholders);
+        // Seed with requested outputs only — the backward walk will discover which
+        // placeholders are actually needed. Adding ALL placeholders here would pull
+        // in every op reachable from any placeholder, even if it doesn't contribute
+        // to the requested outputs (e.g. GDN state placeholders when only logits
+        // are requested through a non-state path).
         requiredVariables.addAll(requestedOutputs);
 
         boolean foundNewNodes = true;
@@ -157,9 +161,19 @@ public class ForwardExecutionDAGBuilder {
         Set<String> constants = findConstants();
         Set<String> variables = findVariables();
 
+        // Only include placeholders that the backward walk determined are needed
+        // for the requested outputs. Unreachable placeholders (e.g. GDN state when
+        // only logits are requested) must not be registered as external inputs.
+        Set<String> neededPlaceholders = new HashSet<>();
+        for (String ph : allPlaceholders) {
+            if (requiredVariables.contains(ph)) {
+                neededPlaceholders.add(ph);
+            }
+        }
+
         ForwardExecutionDAG dag = new ForwardExecutionDAG(
                 executionOrder, operationNodes, variableProducers, variableConsumers,
-                allPlaceholders, constants, variables
+                neededPlaceholders, constants, variables
         );
 
         dag.validate();

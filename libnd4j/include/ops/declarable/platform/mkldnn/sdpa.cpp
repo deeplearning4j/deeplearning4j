@@ -33,6 +33,7 @@
 
 #include <oneapi/dnnl/dnnl_graph.hpp>
 #include <dnnl.hpp>
+#include <dnnl.h>
 
 #ifdef HAVE_MKL
 #include <mkl.h>
@@ -874,7 +875,18 @@ PLATFORM_CHECK(dot_product_attention_v2, ENGINE_CPU) {
   bool hasMasks = (qMask != nullptr && !qMask->isEmpty()) || (vMask != nullptr && !vMask->isEmpty());
 
   const auto qType = query->dataType();
-  const bool isSupportedType = (qType == DataType::FLOAT32 || qType == DataType::HALF || qType == DataType::BFLOAT16);
+  bool isSupportedType = (qType == DataType::FLOAT32);
+  if (qType == DataType::BFLOAT16) {
+#if HAVE_ONEDNN
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+#endif
+  } else if (qType == DataType::HALF) {
+#if HAVE_ONEDNN
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+#endif
+  }
 
   // GQA (mismatched Q/K head counts) only supported for FP32 via MKL batch GEMM path
   auto keys = block.width() > 2 ? INPUT_VARIABLE(2) : value;

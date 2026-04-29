@@ -1926,7 +1926,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     public void setOutputs(List<String> outputs) {
         if(outputs != null){
             for(String s : outputs){
-                Preconditions.checkArgument(variables.containsKey(s), "Cannot set variable \"%s\" as an output: SameDiff instance does not contain a variable with this name");
+                Preconditions.checkArgument(variables.containsKey(s), "Cannot set variable \"%s\" as an output: SameDiff instance does not contain a variable with this name", s);
             }
         }
         this.outputs = outputs;
@@ -3526,6 +3526,30 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
 
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
+        for (String output : outputs) {
+            if (!variables.containsKey(output)) {
+                // Collect graph outputs and all variable names for a helpful error message
+                List<String> graphOutputs = outputs();
+                List<String> candidates = new ArrayList<>();
+                for (String varName : variables.keySet()) {
+                    if (varName.toLowerCase().contains("logit") || varName.toLowerCase().contains("output")
+                            || varName.toLowerCase().contains("loss") || varName.toLowerCase().contains("pred")) {
+                        candidates.add(varName);
+                    }
+                }
+                StringBuilder msg = new StringBuilder();
+                msg.append("Requested output variable '").append(output)
+                        .append("' does not exist in the SameDiff graph.");
+                if (graphOutputs != null && !graphOutputs.isEmpty()) {
+                    msg.append(" Graph outputs: ").append(graphOutputs).append(".");
+                }
+                if (!candidates.isEmpty()) {
+                    msg.append(" Possible matches: ").append(candidates).append(".");
+                }
+                msg.append(" Total variables in graph: ").append(variables.size()).append(".");
+                throw new IllegalArgumentException(msg.toString());
+            }
+        }
         long threadId = Thread.currentThread().getId();
         if (!sessions.containsKey(threadId)) {
             log.info("Creating new InferenceSession for thread {}", threadId);

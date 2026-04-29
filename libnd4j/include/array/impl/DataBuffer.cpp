@@ -529,7 +529,10 @@ void DataBuffer::validateIntegrity() const {
         ss << "  Canary value at offset " << (i * sizeof(uint64_t)) << " is corrupted\n";
         ss << "  Expected: 0xDEADBEEFCAFEBABE\n";
         ss << "  Actual: 0x" << std::hex << canary[i] << "\n";
-        ss << "  Buffer size: " << _lenInBytes << " bytes\n";
+        ss << std::dec;
+        ss << "  Buffer size: " << _lenInBytes << " bytes (allocBytes=" << _primaryAllocBytes << ")\n";
+        ss << "  DataBuffer this=" << (void*)this << " primaryBuffer=" << _primaryBuffer << "\n";
+        ss << "  DataType=" << (int)_dataType << " isConstant=" << isConstant << " workspace=" << (void*)_workspace << "\n";
         ss << "  This indicates an operation wrote past the end of the buffer!\n";
         THROW_EXCEPTION(ss.str().c_str());
       }

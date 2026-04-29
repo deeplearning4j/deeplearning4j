@@ -72,32 +72,34 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
             for (auto bh = start; bh < stop; ++bh) {
                 const LongType b = bh / H;
                 const LongType h = bh % H;
-                const T exp_g = sd::math::sd_exp<T, T>(gateBuf[b * gS0 + t * gS1 + h * gS2]);
-                const T beta_val = betaBuf[b * bS0 + t * bS1 + h * bS2];
+                // Use float accumulators for dot products to prevent HALF overflow.
+                // D_k=128 terms accumulated in float16 can exceed 65504 (FP16 max).
+                const float exp_g_f = std::exp(static_cast<float>(gateBuf[b * gS0 + t * gS1 + h * gS2]));
+                const float beta_f = static_cast<float>(betaBuf[b * bS0 + t * bS1 + h * bS2]);
                 T* sPtr = stateBuf.data() + ((b * H + h) * D_k) * D_v;
 
                 for (LongType dv = 0; dv < D_v; ++dv) {
-                    // prediction = S^T * k
-                    T prediction = static_cast<T>(0);
+                    // prediction = S^T * k  (accumulated in float32)
+                    float prediction = 0.0f;
                     for (LongType dk = 0; dk < D_k; ++dk)
-                        prediction += sPtr[dk * D_v + dv] * kBuf[b * kS0 + t * kS1 + h * kS2 + dk * kS3];
+                        prediction += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(kBuf[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
 
                     // delta = v - exp(g) * prediction
-                    const T delta = vBuf[b * vS0 + t * vS1 + h * vS2 + dv * vS3] - exp_g * prediction;
+                    const float delta = static_cast<float>(vBuf[b * vS0 + t * vS1 + h * vS2 + dv * vS3]) - exp_g_f * prediction;
 
                     // S = exp(g) * S + beta * k * delta
                     for (LongType dk = 0; dk < D_k; ++dk) {
-                        const T k_val = kBuf[b * kS0 + t * kS1 + h * kS2 + dk * kS3];
-                        sPtr[dk * D_v + dv] = exp_g * sPtr[dk * D_v + dv] + beta_val * k_val * delta;
+                        const float k_val = static_cast<float>(kBuf[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
+                        sPtr[dk * D_v + dv] = static_cast<T>(exp_g_f * static_cast<float>(sPtr[dk * D_v + dv]) + beta_f * k_val * delta);
                     }
                 }
 
-                // output = S^T * q
+                // output = S^T * q  (accumulated in float32)
                 for (LongType dv = 0; dv < D_v; ++dv) {
-                    T out_val = static_cast<T>(0);
+                    float out_val = 0.0f;
                     for (LongType dk = 0; dk < D_k; ++dk)
-                        out_val += sPtr[dk * D_v + dv] * qBuf[b * qS0 + t * qS1 + h * qS2 + dk * qS3];
-                    outBuf[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = out_val;
+                        out_val += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(qBuf[b * qS0 + t * qS1 + h * qS2 + dk * qS3]);
+                    outBuf[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = static_cast<T>(out_val);
                 }
             }
         };

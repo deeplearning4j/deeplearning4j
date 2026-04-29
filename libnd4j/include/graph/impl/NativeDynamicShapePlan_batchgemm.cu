@@ -106,7 +106,7 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
 
     for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
       NativeSlot& slot = slots_[i];
-      if (!isMatmulOp(slot.ident.op) || slot.wiring.numInputs < 2 ||
+      if (!isMatmulOp(slot.ident.op) || slot.wiring.numInputs != 2 ||
           slot.cf.controlFlowType != CF_NONE || slot.frozenConstantSlot()) continue;
 
       totalMatmuls++;

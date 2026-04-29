@@ -58,26 +58,31 @@ SD_KERNEL void gatedDeltaRuleKernel(
     const T beta_val = betaArr[b * bS0 + t * bS1 + h * bS2];
     T* sPtr = state + (b * H + h) * D_k * D_v;
 
+    // Use float accumulators for dot products to prevent HALF overflow.
+    // D_k=128 terms accumulated in float16 can exceed 65504 (FP16 max).
+    const float exp_g_f = static_cast<float>(exp_g);
+    const float beta_f = static_cast<float>(beta_val);
+
     for (LongType dv = threadIdx.x; dv < D_v; dv += blockDim.x) {
-        // prediction = S^T * k
-        T prediction = static_cast<T>(0);
+        // prediction = S^T * k  (accumulated in float32)
+        float prediction = 0.0f;
         for (LongType dk = 0; dk < D_k; ++dk)
-            prediction += sPtr[dk * D_v + dv] * k[b * kS0 + t * kS1 + h * kS2 + dk * kS3];
+            prediction += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(k[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
 
         // delta = v - exp(g) * prediction
-        const T delta = v[b * vS0 + t * vS1 + h * vS2 + dv * vS3] - exp_g * prediction;
+        const float delta = static_cast<float>(v[b * vS0 + t * vS1 + h * vS2 + dv * vS3]) - exp_g_f * prediction;
 
         // S = exp(g) * S + beta * k * delta
         for (LongType dk = 0; dk < D_k; ++dk) {
-            const T k_val = k[b * kS0 + t * kS1 + h * kS2 + dk * kS3];
-            sPtr[dk * D_v + dv] = exp_g * sPtr[dk * D_v + dv] + beta_val * k_val * delta;
+            const float k_val = static_cast<float>(k[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
+            sPtr[dk * D_v + dv] = static_cast<T>(exp_g_f * static_cast<float>(sPtr[dk * D_v + dv]) + beta_f * k_val * delta);
         }
 
-        // output = S^T * q
-        T out_val = static_cast<T>(0);
+        // output = S^T * q  (accumulated in float32)
+        float out_val = 0.0f;
         for (LongType dk = 0; dk < D_k; ++dk)
-            out_val += sPtr[dk * D_v + dv] * q[b * qS0 + t * qS1 + h * qS2 + dk * qS3];
-        out[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = out_val;
+            out_val += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(q[b * qS0 + t * qS1 + h * qS2 + dk * qS3]);
+        out[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = static_cast<T>(out_val);
     }
 }
 

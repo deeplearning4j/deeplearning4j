@@ -23,6 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_gather)
 
+#include <graph/DspLifecycleContext.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/gather.h>
@@ -37,7 +38,10 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
   auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
   auto output = OUTPUT_VARIABLE(0);
 
-  const bool checkIndices = block.getBArguments()->empty() ? true : B_ARG(0);
+  // Skip index validation during DSP capture/replay — indices were validated during warmup
+  const bool checkIndices = graph::DspLifecycleContext::isOwned()
+      ? false
+      : (block.getBArguments()->empty() ? true : B_ARG(0));
 
   // Edge case: empty indices or empty input -> empty output
   bool indicesEmpty = indices != nullptr && (indices->isEmpty() || indices->lengthOf() == 0);

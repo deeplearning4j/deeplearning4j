@@ -421,7 +421,8 @@ public class DecoderInputBuilder {
      * Build the attention bias mask for prefill with in-graph KV cache.
      *
      * <p>Shape: [1, 1, prefillLen, maxKvLen]. Lower-triangular causal structure
-     * for positions 0..prefillLen-1, with -1e9 for padding beyond prefillLen.</p>
+     * for positions 0..prefillLen-1, with a large negative value for padding beyond prefillLen
+     * (dtype-safe: -65504 for FP16, -1e9 for FP32).</p>
      *
      * <pre>
      * Example (prefillLen=3, maxKvLen=6):
@@ -437,13 +438,16 @@ public class DecoderInputBuilder {
     public static INDArray buildInGraphCausalMask(long prefillLen, long maxKvLen, DataType dtype) {
         int Q = (int) prefillLen;
         int K = (int) maxKvLen;
+        // Use dtype-safe mask value: -1e9 overflows to -inf in FP16, which causes
+        // NaN via (-inf) - (-inf) in softmax max-subtraction. Use -65504 for HALF.
+        float maskVal = (dtype == DataType.HALF || dtype == DataType.FLOAT16) ? -65504.0f : -1e9f;
         float[] data = new float[Q * K];
 
         for (int q = 0; q < Q; q++) {
             int rowOffset = q * K;
             // Mask positions after the current query position AND all padding
             for (int k = q + 1; k < K; k++) {
-                data[rowOffset + k] = -1e9f;
+                data[rowOffset + k] = maskVal;
             }
         }
 
@@ -460,7 +464,7 @@ public class DecoderInputBuilder {
      * Build the attention bias mask for a single decode step with in-graph KV cache.
      *
      * <p>Shape: [1, 1, 1, maxKvLen]. Positions 0..cachePos are unmasked (0.0),
-     * positions cachePos+1..maxKvLen-1 are masked (-1e9).</p>
+     * positions cachePos+1..maxKvLen-1 are masked (dtype-safe: -65504 for FP16, -1e9 for FP32).</p>
      *
      * @param cachePos current write position in KV buffer (also the query position)
      * @param maxKvLen total KV buffer size
@@ -468,12 +472,15 @@ public class DecoderInputBuilder {
      */
     public static INDArray buildInGraphDecodeMask(long cachePos, long maxKvLen, DataType dtype) {
         int K = (int) maxKvLen;
+        // Use dtype-safe mask value: -1e9 overflows to -inf in FP16, which causes
+        // NaN via (-inf) - (-inf) in softmax max-subtraction. Use -65504 for HALF.
+        float maskVal = (dtype == DataType.HALF || dtype == DataType.FLOAT16) ? -65504.0f : -1e9f;
         float[] data = new float[K];
 
         // Unmask positions 0..cachePos (the current token sees all filled positions)
         // Mask positions cachePos+1..maxKvLen-1 (zero-padded cache slots)
         for (int k = (int) cachePos + 1; k < K; k++) {
-            data[k] = -1e9f;
+            data[k] = maskVal;
         }
 
         INDArray mask = Nd4j.create(data, new long[]{1, 1, 1, maxKvLen}, 'c');

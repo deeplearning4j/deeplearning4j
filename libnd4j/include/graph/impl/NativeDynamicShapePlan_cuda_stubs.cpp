@@ -161,6 +161,18 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
   }
 
+  // Populate requestedOutputs from outputSlots_ — mirrors the CUDA fast path
+  // (NativeDynamicShapePlan_cuda.cu lines 361-368). Without this, the caller
+  // receives all-nullptr outputs and Java sees all-zero arrays.
+  for (int i = 0; i < numRequestedOutputs; i++) {
+    int slotIdx = requestedOutputSlotIndices_[i];
+    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+      requestedOutputs[i] = outputSlots_[slotIdx];
+    } else {
+      requestedOutputs[i] = nullptr;
+    }
+  }
+
   executeCount_++;
   return Status::OK;
 }
@@ -370,6 +382,10 @@ Status NativeDynamicShapePlan::platformCheckPostSegment(GraphSegment& segment) {
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   seg.exec.replayHandle.reset();
+  // Also reset composite replay handles
+  seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
+  seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
+  seg.exec.compositeReplaySchedule.units.clear();
   seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
   seg.exec.addrKeyStableCount = 0;
   seg.exec.slotAddrStableCount = 0;
@@ -382,6 +398,10 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     seg.exec.replayHandle.reset();
+    // Also reset composite replay handles
+    seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
+    seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
+    seg.exec.compositeReplaySchedule.units.clear();
     seg.exec.argTableStable = false;  // Invalidate fast-replay on plan teardown
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
@@ -400,7 +420,10 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
 int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
   int count = 0;
   for (const auto& seg : segments_) {
-    if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) count++;
+    if ((seg.exec.replayHandle && seg.exec.replayHandle->isReady()) ||
+        hasCompositeHandles(seg)) {
+      count++;
+    }
   }
   return count;
 }
@@ -507,22 +530,14 @@ SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCaptu
 #endif
 }
 
-bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const {
-  // On CPU, break segments at ops with no traits registered in OpTraitTable.
-  // Ops with traits (elementwise, reduction, matmul, normalization, etc.) are
-  // compilable by OneDNN/OpenVINO. Ops without traits (custom/unknown ops) are
-  // isolated into 1-slot segments for slot-by-slot execution.
-  auto& registrator = sd::ops::OpRegistrator::getInstance();
-  auto hasTraits = [&](int idx) -> bool {
-    auto* op = registrator.getOperation(slots_[idx].ident.opName.c_str());
-    if (op == nullptr) return false;
-    auto* desc = op->getOpDescriptor();
-    if (desc == nullptr) return false;
-    return desc->getTraits() != 0;
-  };
-  bool currHasTraits = hasTraits(currIdx);
-  bool prevHasTraits = hasTraits(prevIdx);
-  return currHasTraits != prevHasTraits;
+bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int /*currIdx*/, int /*prevIdx*/) const {
+  // No trait-based segmentation on CPU. OpenVINO and OneDNN backends handle
+  // mixed segments via the NativeSlotExecutor callback — unmappable ops within
+  // a segment are executed natively while the backend handles the mappable ones.
+  // Breaking at every trait boundary produced ~187 tiny segments for Qwen 0.8B
+  // instead of ~20 larger ones, causing massive per-segment overhead (mutex,
+  // OV model dispatch, f16↔f32 copy per boundary). Same as GPU: return false.
+  return false;
 }
 
 void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {

@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <graph/Context.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspDiagnostics.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <helpers/logger.h>
@@ -313,6 +314,101 @@ void autoregressiveDecodeCpu(
                          "autoregressive_decode: logits host buffer is null at step %d. "
                          "Buffer exists but has no host allocation.",
                          step);
+        }
+
+        // ── Step 2b: GDN/conv recurrent state feedback ──
+        // Copy state outputs back to ext inputs for the next decode step.
+        // This is critical for hybrid architectures (e.g. Qwen with GDN layers).
+        // Without this, GDN layers see frozen state from warmup and degenerate.
+        //
+        // Safety: validate element count, dtype, and DataBuffer byte capacity before
+        // each assign() to prevent buffer overruns when plan output shape diverges
+        // from the external input shape.
+        if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
+            && config->gdnStateOutputIndices != nullptr) {
+            for (int s = 0; s < config->numGdnStatePairs; s++) {
+                int outIdx = config->gdnStateOutputIndices[s];
+                int extIdx = config->gdnStateExtIndices[s];
+                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
+                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
+                    NDArray* src = planOutputs[outIdx];
+                    NDArray* dst = extInputs[extIdx];
+                    // Validate element count
+                    if (src->lengthOf() != dst->lengthOf()) {
+                        DSP_DIAG(FALLBACK,
+                            "autoregressive_decode: GDN state feedback SKIPPED at step %d pair %d: "
+                            "plan output[%d] length=%lld != extInput[%d] length=%lld — shape mismatch",
+                            step, s, outIdx, (long long)src->lengthOf(),
+                            extIdx, (long long)dst->lengthOf());
+                        continue;
+                    }
+                    // Validate dtype
+                    if (src->dataType() != dst->dataType()) {
+                        DSP_DIAG(FALLBACK,
+                            "autoregressive_decode: GDN state feedback SKIPPED at step %d pair %d: "
+                            "plan output[%d] dtype=%d != extInput[%d] dtype=%d — type mismatch",
+                            step, s, outIdx, (int)src->dataType(),
+                            extIdx, (int)dst->dataType());
+                        continue;
+                    }
+                    // Validate DataBuffer byte capacity (guards against overrun)
+                    auto* srcDb = src->dataBuffer();
+                    auto* dstDb = dst->dataBuffer();
+                    if (srcDb != nullptr && dstDb != nullptr &&
+                        srcDb->getLenInBytes() > dstDb->getLenInBytes()) {
+                        DSP_DIAG(FALLBACK,
+                            "autoregressive_decode: GDN state feedback SKIPPED at step %d pair %d: "
+                            "plan output[%d] byte size=%zu exceeds extInput[%d] DataBuffer capacity=%zu — overrun prevented",
+                            step, s, outIdx, srcDb->getLenInBytes(),
+                            extIdx, dstDb->getLenInBytes());
+                        continue;
+                    }
+                    dst->assign(src);
+                }
+            }
+        }
+        if (config->numConvStatePairs > 0 && config->convStateExtIndices != nullptr
+            && config->convStateOutputIndices != nullptr) {
+            for (int s = 0; s < config->numConvStatePairs; s++) {
+                int outIdx = config->convStateOutputIndices[s];
+                int extIdx = config->convStateExtIndices[s];
+                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
+                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
+                    NDArray* src = planOutputs[outIdx];
+                    NDArray* dst = extInputs[extIdx];
+                    // Validate element count
+                    if (src->lengthOf() != dst->lengthOf()) {
+                        DSP_DIAG(FALLBACK,
+                            "autoregressive_decode: conv state feedback SKIPPED at step %d pair %d: "
+                            "plan output[%d] length=%lld != extInput[%d] length=%lld — shape mismatch",
+                            step, s, outIdx, (long long)src->lengthOf(),
+                            extIdx, (long long)dst->lengthOf());
+                        continue;
+                    }
+                    // Validate dtype
+                    if (src->dataType() != dst->dataType()) {
+                        DSP_DIAG(FALLBACK,
+                            "autoregressive_decode: conv state feedback SKIPPED at step %d pair %d: "
+                            "plan output[%d] dtype=%d != extInput[%d] dtype=%d — type mismatch",
+                            step, s, outIdx, (int)src->dataType(),
+                            extIdx, (int)dst->dataType());
+                        continue;
+                    }
+                    // Validate DataBuffer byte capacity (guards against overrun)
+                    auto* srcDb = src->dataBuffer();
+                    auto* dstDb = dst->dataBuffer();
+                    if (srcDb != nullptr && dstDb != nullptr &&
+                        srcDb->getLenInBytes() > dstDb->getLenInBytes()) {
+                        DSP_DIAG(FALLBACK,
+                            "autoregressive_decode: conv state feedback SKIPPED at step %d pair %d: "
+                            "plan output[%d] byte size=%zu exceeds extInput[%d] DataBuffer capacity=%zu — overrun prevented",
+                            step, s, outIdx, srcDb->getLenInBytes(),
+                            extIdx, dstDb->getLenInBytes());
+                        continue;
+                    }
+                    dst->assign(src);
+                }
+            }
         }
 
         // ── Step 3: Token sampling ──

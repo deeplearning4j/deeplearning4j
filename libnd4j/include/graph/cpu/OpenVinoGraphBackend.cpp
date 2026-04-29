@@ -26,13 +26,39 @@
 #include <array/ArrayOptions.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <thread>
 #include <unordered_set>
 #include <openvino/runtime/properties.hpp>
 #include <system/Environment.h>
 
+#if defined(__F16C__) || defined(__AVX2__)
+#include <immintrin.h>
+#endif
+
+#if HAVE_ONEDNN
+#include <dnnl.h>
+#endif
+
 namespace sd {
 namespace graph {
+
+// ─── ISA detection ─────────────────────────────────────────────────────────
+// Query OneDNN once at startup to determine if the CPU has native FP16 support
+// (AVX512-FP16 / AMX-FP16). If not, the OpenVINO backend must promote f16
+// parameters to f32 so ALL ops compute in f32. Without this, CPUs like AMD
+// Ryzen (no AVX512-FP16) silently produce zeros for f16 matmul/compute.
+static bool cpuHasNativeFp16() {
+#if HAVE_ONEDNN
+  dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+  return (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+#else
+  return false;  // conservative: assume no FP16 if we can't check
+#endif
+}
+
+static const bool kCpuHasNativeFp16 = cpuHasNativeFp16();
 
 // Thread-local native executor for mixed-segment interleaving
 thread_local OpenVinoGraphBackend::NativeSlotExecutor OpenVinoGraphBackend::nativeExecutor_ = nullptr;
@@ -53,19 +79,56 @@ OpenVinoGraphBackend& OpenVinoGraphBackend::getInstance() {
 }
 
 OpenVinoGraphBackend::OpenVinoGraphBackend() {
-  // Configure OpenVINO threading from Environment (controlled via -Domp.num.threads).
+  // Configure OpenVINO for low-latency single-request inference (autoregressive decode).
   try {
     int numThreads = sd::Environment::getInstance().maxMasterThreads();
     if (numThreads <= 0) numThreads = std::thread::hardware_concurrency();
     core_.set_property("CPU", ov::inference_num_threads(numThreads));
+
     // LATENCY mode = single stream, all threads for intra-op parallelism.
     // THROUGHPUT mode replicates model buffers per stream → OOM on large models.
     // For autoregressive decode (single request), LATENCY with many threads
     // gives maximum parallelism within each matmul/attention op.
     core_.set_property("CPU", ov::hint::performance_mode(ov::hint::PerformanceMode::LATENCY));
-    DSP_DIAG(COMPILE, "OpenVINO: configured CPU with %d threads, LATENCY mode", numThreads);
+
+    // Single outstanding infer request — no queuing overhead for sequential decode.
+    core_.set_property("CPU", ov::hint::num_requests(1));
+
+    // Disable hyper-threading: use physical cores only.
+    // HT siblings share execution units and memory bandwidth — using both
+    // halves effective per-thread bandwidth for memory-bound matmul/attention.
+    core_.set_property("CPU", ov::hint::enable_hyper_threading(false));
+
+    // Pin threads to physical cores to eliminate OS scheduler jitter between
+    // decode steps. On Linux this is the default with LATENCY hint, but
+    // setting explicitly ensures it's active regardless of platform.
+    core_.set_property("CPU", ov::hint::enable_cpu_pinning(true));
+
+    // On hybrid CPUs (Intel Alder Lake+), prefer P-cores only.
+    // E-cores have lower IPC and clock speed — mixing them in slows down
+    // the critical path for latency-sensitive decode.
+    core_.set_property("CPU", ov::hint::scheduling_core_type(ov::hint::SchedulingCoreType::PCORE_ONLY));
+
+    // Enable OpenVINO disk cache for compiled models.
+    // Content-based: identical model topologies share cached artifacts across
+    // process restarts, eliminating recompilation overhead on warm starts.
+    const char* home = std::getenv("HOME");
+    if (home) {
+      std::string cacheDir = std::string(home) + "/.nd4j/openvino_cache";
+      core_.set_property(ov::cache_dir(cacheDir));
+      DSP_DIAG(COMPILE, "OpenVINO: configured CPU with %d threads, LATENCY mode, "
+               "HT=off, pinning=on, P-core-only, disk cache=%s",
+               numThreads, cacheDir.c_str());
+    } else {
+      DSP_DIAG(COMPILE, "OpenVINO: configured CPU with %d threads, LATENCY mode, "
+               "HT=off, pinning=on, P-core-only (no disk cache — HOME not set)",
+               numThreads);
+    }
+    DSP_DIAG(COMPILE, "OpenVINO: CPU native FP16 ISA: %s (f16 params %s to f32)",
+             kCpuHasNativeFp16 ? "YES" : "NO",
+             kCpuHasNativeFp16 ? "kept as f16" : "promoted");
   } catch (const std::exception& e) {
-    DSP_DIAG(COMPILE, "OpenVINO: failed to set threading properties: %s", e.what());
+    DSP_DIAG(COMPILE, "OpenVINO: failed to set properties: %s", e.what());
   }
 }
 
@@ -557,13 +620,24 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
         }
         // rank == 0 → empty pshape (true scalar)
         // Use the dtype we already computed (may be from cachedOutputShapes when arr is null)
-        auto param = std::make_shared<ov::op::v0::Parameter>(dtype, pshape);
+        //
+        // ISA-based FP16 promotion: if the CPU lacks native FP16 support
+        // (AVX512-FP16 / AMX-FP16), promote f16 parameters to f32 so the
+        // entire graph computes in f32. The output boundary (Result nodes)
+        // already handles converting back to the expected NDArray type.
+        auto paramDtype = dtype;
+        if (!kCpuHasNativeFp16 && dtype == ov::element::f16) {
+          paramDtype = ov::element::f32;
+        }
+        auto param = std::make_shared<ov::op::v0::Parameter>(paramDtype, pshape);
         params.push_back(param);
         tensorMap[srcIdx] = param->output(0);
         inputSourceMap.push_back(srcIdx);
-        DSP_DIAG(COMPILE, "OpenVINO: buildIsland[%d-%d] param srcIdx=%d shape=%s dtype=%s allDynamic=%d hasArr=%d",
+        DSP_DIAG(COMPILE, "OpenVINO: buildIsland[%d-%d] param srcIdx=%d shape=%s dtype=%s%s allDynamic=%d hasArr=%d",
                  startSlot, endSlot, srcIdx, pshape.to_string().c_str(),
-                 dtype.get_type_name().c_str(), allDynamic, (arr != nullptr));
+                 paramDtype.get_type_name().c_str(),
+                 (paramDtype != dtype) ? " (promoted from f16 — no native FP16 ISA)" : "",
+                 allDynamic, (arr != nullptr));
       }
     }
   }
@@ -997,9 +1071,17 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
         }
       } else if (opName == "rms_norm" || opName == "RmsNorm") {
         // Compose: x / sqrt(mean(x^2) + eps) * scale
+        // Compute in FP32 to avoid HALF overflow on sum-of-squares.
         if (inputs.size() >= 1) {
           double eps = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1e-5;
-          int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
+          auto origType = inputs[0].get_element_type();
+
+          // Promote to FP32
+          auto xF32 = inputs[0];
+          if (origType != ov::element::f32)
+            xF32 = std::make_shared<ov::op::v0::Convert>(xF32, ov::element::f32)->output(0);
+
+          int rank = static_cast<int>(xF32.get_partial_shape().rank().get_length());
           std::vector<int64_t> axes;
           if (slots[s].args.numIArgs > 0) {
             for (int a = 0; a < slots[s].args.numIArgs; a++) axes.push_back(slots[s].args.iArgs[a]);
@@ -1007,43 +1089,72 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
             axes.push_back(rank - 1);
           }
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
-          auto x_sq = std::make_shared<ov::op::v1::Multiply>(inputs[0], inputs[0]);
+          auto x_sq = std::make_shared<ov::op::v1::Multiply>(xF32, xF32);
           auto mean_sq = std::make_shared<ov::op::v1::ReduceMean>(x_sq->output(0), axes_const, true);
           auto eps_const = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(eps)});
           auto mean_eps = std::make_shared<ov::op::v1::Add>(mean_sq->output(0), eps_const);
           auto rms = std::make_shared<ov::op::v0::Sqrt>(mean_eps->output(0));
-          auto normed = std::make_shared<ov::op::v1::Divide>(inputs[0], rms->output(0));
+          auto normed = std::make_shared<ov::op::v1::Divide>(xF32, rms->output(0));
+
+          std::shared_ptr<ov::Node> result;
           if (inputs.size() >= 2) {
-            node = std::make_shared<ov::op::v1::Multiply>(normed->output(0), inputs[1]);
+            auto gammaF32 = inputs[1];
+            if (gammaF32.get_element_type() != ov::element::f32)
+              gammaF32 = std::make_shared<ov::op::v0::Convert>(gammaF32, ov::element::f32)->output(0);
+            result = std::make_shared<ov::op::v1::Multiply>(normed->output(0), gammaF32);
           } else {
-            node = normed;
+            result = normed;
+          }
+
+          // Cast back to original dtype
+          if (origType != ov::element::f32) {
+            node = std::make_shared<ov::op::v0::Convert>(result->output(0), origType);
+          } else {
+            node = result;
           }
         }
       } else if (opName == "rms_norm_linear" || opName == "RmsNormLinear") {
         // Compose: matmul(rms_norm(x, gamma, eps), W)
-        // = matmul(x / sqrt(mean(x^2) + eps) * gamma, W)
+        // All computation in FP32 to avoid HALF overflow (sum-of-squares for
+        // 1024-dim exceeds 65504) and HALF matmul producing zeros on CPUs
+        // without AMX-FP16.
         // Input 0: x, Input 1: gamma, Input 2: W
         if (inputs.size() >= 3) {
           double eps = (slots[s].args.numTArgs > 0) ? slots[s].args.tArgs[0] : 1e-6;
-          int rank = static_cast<int>(inputs[0].get_partial_shape().rank().get_length());
+
+          // Promote inputs to FP32
+          auto xF32 = inputs[0];
+          if (xF32.get_element_type() != ov::element::f32)
+            xF32 = std::make_shared<ov::op::v0::Convert>(xF32, ov::element::f32)->output(0);
+          auto gammaF32 = inputs[1];
+          if (gammaF32.get_element_type() != ov::element::f32)
+            gammaF32 = std::make_shared<ov::op::v0::Convert>(gammaF32, ov::element::f32)->output(0);
+          auto wF32 = inputs[2];
+          if (wF32.get_element_type() != ov::element::f32)
+            wF32 = std::make_shared<ov::op::v0::Convert>(wF32, ov::element::f32)->output(0);
+
+          int rank = static_cast<int>(xF32.get_partial_shape().rank().get_length());
           std::vector<int64_t> axes = {rank - 1};
           auto axes_const = ov::op::v0::Constant::create(ov::element::i64, {axes.size()}, axes);
 
-          // RMSNorm: x / sqrt(mean(x^2) + eps) * gamma
-          auto x_sq = std::make_shared<ov::op::v1::Multiply>(inputs[0], inputs[0]);
+          // RMSNorm in FP32: x / sqrt(mean(x^2) + eps) * gamma
+          auto x_sq = std::make_shared<ov::op::v1::Multiply>(xF32, xF32);
           auto mean_sq = std::make_shared<ov::op::v1::ReduceMean>(x_sq->output(0), axes_const, true);
           auto eps_const = ov::op::v0::Constant::create(ov::element::f32, {}, {static_cast<float>(eps)});
           auto mean_eps = std::make_shared<ov::op::v1::Add>(mean_sq->output(0), eps_const);
           auto rms = std::make_shared<ov::op::v0::Sqrt>(mean_eps->output(0));
-          auto normed = std::make_shared<ov::op::v1::Divide>(inputs[0], rms->output(0));
-          auto scaled = std::make_shared<ov::op::v1::Multiply>(normed->output(0), inputs[1]);
+          auto normed = std::make_shared<ov::op::v1::Divide>(xF32, rms->output(0));
+          auto scaled = std::make_shared<ov::op::v1::Multiply>(normed->output(0), gammaF32);
 
-          // Linear: scaled @ W — cast W to match scaled's type (activation-dominant)
-          ov::Output<ov::Node> scaledOut = scaled->output(0);
-          if (inputs[2].get_element_type() != scaledOut.get_element_type()) {
-            inputs[2] = std::make_shared<ov::op::v0::Convert>(inputs[2], scaledOut.get_element_type())->output(0);
+          // Linear in FP32: scaled @ W
+          auto matmulOut = std::make_shared<ov::op::v0::MatMul>(scaled->output(0), wF32, false, false);
+
+          // Cast back to input dtype if needed
+          if (inputs[0].get_element_type() != ov::element::f32) {
+            node = std::make_shared<ov::op::v0::Convert>(matmulOut->output(0), inputs[0].get_element_type());
+          } else {
+            node = matmulOut;
           }
-          node = std::make_shared<ov::op::v0::MatMul>(scaledOut, inputs[2], false, false);
         }
       } else if (opName == "batchnorm" || opName == "BatchNorm" || opName == "batchnorm_inference" || opName == "batch_norm") {
         // BatchNormInference: input, gamma, beta, mean, variance
@@ -1728,6 +1839,11 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
             // Fallback: same type as input (identity cast)
             targetType = inputs[0].get_element_type();
           }
+          // ISA-based FP16 promotion: when CPU lacks native FP16, redirect
+          // casts to f16 → f32 so the entire graph stays in f32.
+          if (!kCpuHasNativeFp16 && targetType == ov::element::f16) {
+            targetType = ov::element::f32;
+          }
           node = std::make_shared<ov::op::v0::Convert>(inputs[0], targetType);
         }
       }
@@ -2164,24 +2280,28 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
           // Transpose convOut [B,D,L] → [B,L,D] for output 0
           auto output0 = std::make_shared<ov::op::v1::Transpose>(convOut, perm_blk)->output(0);
 
-          // State output: last K-1 timesteps of x_bdl [B,D,L] → [B,D,K-1]
-          // StridedSlice on axis 2: [B,D, L-(K-1) : L]
-          auto x_shape_node = std::make_shared<ov::op::v3::ShapeOf>(x_bdl);
-          auto L_val = std::make_shared<ov::op::v8::Gather>(x_shape_node,
+          // State output: last K-1 timesteps of the PADDED sequence → [B,D,K-1]
+          // x_padded is [B,D,L+K-1] (concat(stateIn,x) or zero-padded x).
+          // The native kernel builds state_out by reaching back into stateIn
+          // when L < K. Slicing from x_padded (not x_bdl) replicates this:
+          //   decode L=1, K=4: x_padded=[stateIn[0..2], x[0]], last 3 = [stateIn[1], stateIn[2], x[0]]
+          //   prefill L=7, K=4: x_padded=[pad/state, x[0..6]], last 3 = [x[4], x[5], x[6]]
+          auto xp_shape_node = std::make_shared<ov::op::v3::ShapeOf>(x_padded);
+          auto P_val = std::make_shared<ov::op::v8::Gather>(xp_shape_node,
               std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{1}, std::vector<int64_t>{2}),
               axis_0)->output(0);
-          auto start_state = std::make_shared<ov::op::v1::Subtract>(L_val, km1)->output(0);
-          // Pad start/stop/step to rank-3 [0,0,start] / [0,0,L] / [1,1,1]
+          auto start_state = std::make_shared<ov::op::v1::Subtract>(P_val, km1)->output(0);
+          // Pad start/stop/step to rank-3 [0,0,start] / [0,0,P] / [1,1,1]
           auto ss_begin = std::make_shared<ov::op::v0::Concat>(
               ov::OutputVector{zero_i, zero_i, start_state}, 0)->output(0);
           auto ss_end = std::make_shared<ov::op::v0::Concat>(
-              ov::OutputVector{zero_i, zero_i, L_val}, 0)->output(0);
+              ov::OutputVector{zero_i, zero_i, P_val}, 0)->output(0);
           auto ss_step = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{3},
               std::vector<int64_t>{1, 1, 1});
           // begin_mask/end_mask: mask dims 0,1 (batch, channel) so they pass through fully
           std::vector<int64_t> mask_01 = {1, 1, 0};
           auto output1 = std::make_shared<ov::op::v1::StridedSlice>(
-              x_bdl, ss_begin, ss_end, ss_step, mask_01, mask_01)->output(0);
+              x_padded, ss_begin, ss_end, ss_step, mask_01, mask_01)->output(0);
 
           // Wire both outputs into tensorMap directly
           if (slots[s].wiring.numOutputs >= 1) {
@@ -2250,9 +2370,26 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
     if (outArr != nullptr) {
       auto expectedType = mapDataType(outArr->dataType());
       if (graphType != expectedType) {
-        DSP_DIAG(COMPILE, "OpenVINO: output slot %d type mismatch: graph=%s expected=%s, inserting Convert",
-                 outIdx, graphType.get_type_name().c_str(), expectedType.get_type_name().c_str());
-        graphOutput = std::make_shared<ov::op::v0::Convert>(graphOutput, expectedType)->output(0);
+        // When the CPU lacks native FP16 ISA (kCpuHasNativeFp16==false), the entire
+        // island computes in f32 (ISA promotion). Inserting a Convert(f32→f16) here
+        // would re-introduce f16 at island output boundaries: transformer intermediate
+        // values (matmul products, attention scores) easily exceed f16 max (65504),
+        // causing inf→NaN cascades through 24+ layers until logits are all NaN.
+        //
+        // Instead: leave the Result as f32. The runtime output binding (executeSegment)
+        // detects the model-f32/NDArray-f16 mismatch and performs a saturating copy
+        // (clamping to [-65504, 65504]) to fill the f16 NDArray buffer safely.
+        bool skipConvert = (!kCpuHasNativeFp16
+                            && graphType == ov::element::f32
+                            && expectedType == ov::element::f16);
+        if (skipConvert) {
+          DSP_DIAG(COMPILE, "OpenVINO: output slot %d: skipping Convert(f32→f16) — no native FP16 ISA, "
+                   "runtime will saturate-copy f32→f16", outIdx);
+        } else {
+          DSP_DIAG(COMPILE, "OpenVINO: output slot %d type mismatch: graph=%s expected=%s, inserting Convert",
+                   outIdx, graphType.get_type_name().c_str(), expectedType.get_type_name().c_str());
+          graphOutput = std::make_shared<ov::op::v0::Convert>(graphOutput, expectedType)->output(0);
+        }
       }
     }
 
@@ -2460,14 +2597,33 @@ Status OpenVinoGraphBackend::executeSegment(
 
   SegmentCacheKey cacheKey{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
-  std::lock_guard<std::mutex> lock(cacheMtx_);
+  std::unique_lock<std::mutex> lock(cacheMtx_);
 
   auto it = cache_.find(cacheKey);
   if (it == cache_.end() || !it->second->second.valid) {
-    DSP_DIAG(EXECUTE, "OpenVINO: no compiled segment for [%d-%d] shapeKey=%lld cacheSize=%d found=%d",
+    // Cache miss — recompile transparently instead of hard failure.
+    // Recovers from LRU eviction or cache invalidation between compile and execute.
+    DSP_DIAG(EXECUTE, "OpenVINO: cache miss for seg[%d-%d] shapeKey=%lld cacheSize=%d — recompiling",
              seg.def.startSlot, seg.def.endSlot, (long long)seg.def.shapeKeyState.compiledShapeKey,
-             (int)cache_.size(), it != cache_.end() ? 1 : 0);
-    return Status::KERNEL_FAILURE;
+             (int)cache_.size());
+    lock.unlock();
+    bool recompiled = compileSegment(seg, slots, externalInputs, numExternalInputs,
+                                      outputSlots, totalOutputSlots,
+                                      seg.def.shapeKeyState.compiledShapeKey, 0);
+    lock.lock();
+    if (!recompiled) {
+      DSP_DIAG(EXECUTE, "OpenVINO: recompile FAILED for seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+      return Status::KERNEL_FAILURE;
+    }
+    it = cache_.find(cacheKey);
+    if (it == cache_.end() || !it->second->second.valid) {
+      DSP_DIAG(EXECUTE, "OpenVINO: cache still empty after recompile for seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+      return Status::KERNEL_FAILURE;
+    }
+    DSP_DIAG(EXECUTE, "OpenVINO: recompile OK for seg[%d-%d] — resuming execution",
+             seg.def.startSlot, seg.def.endSlot);
   }
 
   // Promote to MRU
@@ -2512,13 +2668,65 @@ Status OpenVinoGraphBackend::executeSegment(
       int rank = arr->rankOf();
       ov::Shape shape(rank);
       for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
-      request.set_input_tensor(static_cast<int>(i),
-          ov::Tensor(ovDtype(arr->dataType()), shape, arr->buffer()));
+
+      // ISA-based FP16 promotion: the compiled model expects f32 inputs when
+      // the CPU lacks native FP16 ISA, but the NDArray buffer holds f16 data.
+      // Let OpenVINO handle the conversion by declaring the tensor as f16
+      // (the actual data type) and relying on OV's automatic pre-processing.
+      // Alternatively, query the model's expected input type.
+      auto modelInputType = compiledModel.input(static_cast<int>(i)).get_element_type();
+      auto arrType = ovDtype(arr->dataType());
+      if (modelInputType != arrType) {
+        // Model expects a different type (e.g. f32 from ISA promotion).
+        // Create an OV tensor with the model's expected type — OV will allocate
+        // its own buffer. Then copy + convert the data.
+        ov::Tensor promoted(modelInputType, shape);
+        // Use OpenVINO's built-in conversion: create a source tensor wrapping
+        // the NDArray, then copy data element-wise via ov::Tensor::data<>().
+        // For f16→f32: iterate and widen.
+        if (arrType == ov::element::f16 && modelInputType == ov::element::f32) {
+          auto* src = static_cast<const ov::float16*>(arr->buffer());
+          auto* dst = promoted.data<float>();
+          size_t numElems = 1;
+          for (auto d : shape) numElems *= d;
+#if defined(__F16C__) || defined(__AVX2__)
+          // F16C: vectorized f16→f32 widening (8 elements per cycle via vcvtph2ps)
+          size_t e = 0;
+          for (; e + 8 <= numElems; e += 8) {
+            __m128i h8 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + e));
+            __m256 f8 = _mm256_cvtph_ps(h8);
+            _mm256_storeu_ps(dst + e, f8);
+          }
+          for (; e < numElems; e++) dst[e] = static_cast<float>(src[e]);
+#else
+          for (size_t e = 0; e < numElems; e++) dst[e] = static_cast<float>(src[e]);
+#endif
+        }
+        request.set_input_tensor(static_cast<int>(i), promoted);
+      } else {
+        request.set_input_tensor(static_cast<int>(i),
+            ov::Tensor(arrType, shape, arr->buffer()));
+      }
     }
 
-    // Set output tensors (zero-copy into NDArray host buffers).
-    // Use the model's actual output shape (not the NDArray shape) because graph ops
-    // like stack may produce a different rank than the NDArray (e.g. [4,1] vs [4]).
+    // Set output tensors.
+    // Normal path: zero-copy — wrap the NDArray host buffer directly in an OV tensor.
+    // ISA-promotion path: when the CPU lacks native FP16 and the NDArray is f16 but
+    //   the model output is f32 (because buildIsland skipped the Convert(f32→f16)
+    //   node), we must NOT wrap the f16 buffer as f32 — that would corrupt memory.
+    //   Instead, let OV allocate its own f32 buffer; after infer() we do a saturating
+    //   f32→f16 copy into the NDArray buffer (clamping to [-65504, 65504] to prevent
+    //   inf/NaN from transformer intermediate magnitudes exceeding f16 max).
+    //
+    // Shape selection: use the model output shape when it fits in the NDArray buffer
+    // (handles rank differences like [4,1] vs [4]). If the model shape requires MORE
+    // elements than the NDArray buffer holds, fall back to the NDArray's own shape
+    // to prevent buffer overruns (can happen during frozen execution when the NDArray
+    // was allocated for a different shape than the compiled model expects).
+    //
+    // needsSaturatingCopy[i] == true  ⟹  output i is ISA-promoted f32→f16 path.
+    std::vector<bool> needsSaturatingCopy(island.outputSlotMap.size(), false);
+
     for (size_t i = 0; i < island.outputSlotMap.size(); i++) {
       int outIdx = island.outputSlotMap[i];
       if (outIdx < 0 || outIdx >= totalOutputSlots || !outputSlots[outIdx]) {
@@ -2530,18 +2738,57 @@ Status OpenVinoGraphBackend::executeSegment(
         DSP_DIAG(EXECUTE, "OpenVINO: output slot %d has NULL buffer", outIdx);
         return Status::KERNEL_FAILURE;
       }
+
+      auto modelOutType = compiledModel.output(static_cast<int>(i)).get_element_type();
+      auto arrType = ovDtype(arr->dataType());
+
       ov::Shape shape;
       auto modelOutputShape = compiledModel.output(static_cast<int>(i)).get_partial_shape();
       if (modelOutputShape.is_static()) {
-        shape = modelOutputShape.get_shape();
+        auto modelShape = modelOutputShape.get_shape();
+        // Compute total elements the model shape requires
+        size_t modelElements = 1;
+        for (auto d : modelShape) modelElements *= d;
+        size_t arrElements = static_cast<size_t>(arr->lengthOf());
+        // Also check against actual buffer capacity for views
+        size_t bufBytes = arr->getDataBuffer()->getLenInBytes();
+        size_t elemSize = DataTypeUtils::sizeOf(arr->dataType());
+        size_t arrOffset = static_cast<size_t>(arr->offset());
+        size_t bufCapacityElements = elemSize > 0 ? (bufBytes / elemSize) - arrOffset : 0;
+        if (modelElements <= arrElements && modelElements <= bufCapacityElements) {
+          shape = modelShape;
+        } else {
+          // Model shape exceeds buffer — use NDArray shape to prevent overrun
+          DSP_DIAG(EXECUTE, "OpenVINO: output slot %d model shape exceeds buffer "
+                   "(modelElems=%zu arrElems=%zu bufCapElems=%zu) — using NDArray shape",
+                   outIdx, modelElements, arrElements, bufCapacityElements);
+          int rank = arr->rankOf();
+          shape.resize(rank);
+          for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
+        }
       } else {
         int rank = arr->rankOf();
         shape.resize(rank);
         for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
       }
+
       try {
-        request.set_output_tensor(static_cast<int>(i),
-            ov::Tensor(ovDtype(arr->dataType()), shape, arr->buffer()));
+        // ISA-promotion saturating-copy path: model outputs f32 but NDArray is f16.
+        // Allocate an OV-owned f32 tensor so OV writes f32 results into it; after
+        // infer() we saturate-clamp into the f16 NDArray buffer.
+        if (!kCpuHasNativeFp16
+            && modelOutType == ov::element::f32
+            && arrType == ov::element::f16) {
+          needsSaturatingCopy[i] = true;
+          DSP_DIAG(EXECUTE, "OpenVINO: output slot %d using OV-alloc f32 tensor for saturating f32→f16 copy",
+                   outIdx);
+          // Let OV allocate its own f32 buffer (no buffer arg → OV-owned)
+          request.set_output_tensor(static_cast<int>(i),
+              ov::Tensor(ov::element::f32, shape));
+        } else {
+          request.set_output_tensor(static_cast<int>(i),
+              ov::Tensor(arrType, shape, arr->buffer()));
+        }
       } catch (const std::exception& e) {
         DSP_DIAG(EXECUTE, "OpenVINO: set_output_tensor[%zu] FAILED for slot %d: %s "
                  "(modelShape=%s arrLen=%lld)",
@@ -2558,6 +2805,75 @@ Status OpenVinoGraphBackend::executeSegment(
     } catch (const std::exception& e) {
       DSP_DIAG(EXECUTE, "OpenVINO: infer() failed: %s", e.what());
       return Status::KERNEL_FAILURE;
+    }
+
+    // Post-inference output validation: OV may infer a dynamic output shape that differs
+    // from the PartialShape used at set_output_tensor time. Validate that the actual
+    // shape reported by each output tensor after infer() fits within the bound NDArray
+    // buffer. This catches overruns BEFORE corrupted data can propagate.
+    for (size_t i = 0; i < island.outputSlotMap.size(); i++) {
+      auto outTensor = request.get_output_tensor(static_cast<int>(i));
+      auto actualShape = outTensor.get_shape();
+      size_t actualElements = 1;
+      for (auto d : actualShape) actualElements *= d;
+      int outIdx = island.outputSlotMap[i];
+      NDArray* arr = outputSlots[outIdx];
+      size_t bufBytes = arr->getDataBuffer()->getLenInBytes();
+      size_t elemSize = DataTypeUtils::sizeOf(arr->dataType());
+      size_t bufCapacity = elemSize > 0 ? bufBytes / elemSize : 0;
+      if (actualElements > bufCapacity) {
+        DSP_DIAG(EXECUTE, "OpenVINO: POST-INFER output[%zu] slot %d actual shape exceeds buffer! "
+                 "actualElems=%zu bufCap=%zu",
+                 i, outIdx, actualElements, bufCapacity);
+        return Status::KERNEL_FAILURE;
+      }
+
+      // ISA-promotion saturating copy: f32 OV tensor → f16 NDArray buffer.
+      // Clamp each value to [-65504, 65504] (f16 finite range) and replace NaN
+      // with 0.0f before narrowing. This prevents inf/NaN from transformer
+      // intermediate magnitudes (matmul products >> 65504) overflowing f16.
+      if (needsSaturatingCopy[i]) {
+        auto* src = outTensor.data<float>();
+        auto* dst = static_cast<ov::float16*>(arr->buffer());
+#if defined(__F16C__) || defined(__AVX2__)
+        // Vectorized f32→f16 saturating copy (8 elements per cycle).
+        // Clamp to [-65504, 65504] and replace NaN with 0 before narrowing.
+        const __m256 vMax = _mm256_set1_ps(65504.0f);
+        const __m256 vMin = _mm256_set1_ps(-65504.0f);
+        const __m256 vZero = _mm256_setzero_ps();
+        size_t e = 0;
+        for (; e + 8 <= actualElements; e += 8) {
+          __m256 v = _mm256_loadu_ps(src + e);
+          // Replace NaN with 0: NaN != NaN, so cmpord mask is 0 for NaN lanes
+          __m256 nanMask = _mm256_cmp_ps(v, v, _CMP_ORD_Q);
+          v = _mm256_and_ps(v, nanMask);  // NaN lanes become 0
+          // Clamp to f16 finite range
+          v = _mm256_min_ps(v, vMax);
+          v = _mm256_max_ps(v, vMin);
+          // Convert f32→f16 (round to nearest)
+          __m128i h8 = _mm256_cvtps_ph(v, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+          _mm_storeu_si128(reinterpret_cast<__m128i*>(dst + e), h8);
+        }
+        // Scalar tail
+        for (; e < actualElements; e++) {
+          float val = src[e];
+          if (std::isnan(val)) val = 0.0f;
+          else if (val > 65504.0f) val = 65504.0f;
+          else if (val < -65504.0f) val = -65504.0f;
+          dst[e] = ov::float16(val);
+        }
+#else
+        for (size_t e = 0; e < actualElements; e++) {
+          float val = src[e];
+          if (std::isnan(val)) val = 0.0f;
+          else if (val > 65504.0f) val = 65504.0f;
+          else if (val < -65504.0f) val = -65504.0f;
+          dst[e] = ov::float16(val);
+        }
+#endif
+        DSP_DIAG(EXECUTE, "OpenVINO: output slot %d saturating f32→f16 copy done (%zu elems)",
+                 outIdx, actualElements);
+      }
     }
 
     // Mark output arrays as host-authoritative
@@ -2626,6 +2942,7 @@ void OpenVinoGraphBackend::invalidateCache() {
 }
 
 void OpenVinoGraphBackend::evictCacheIfOverLimitLocked() {
+  if (kMaxCacheEntries <= 0) return;  // 0 = unlimited — no eviction
   while (static_cast<int>(cacheLru_.size()) > kMaxCacheEntries) {
     // Evict from LRU end (oldest)
     auto& victim = cacheLru_.back();

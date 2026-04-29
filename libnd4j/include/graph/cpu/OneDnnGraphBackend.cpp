@@ -26,9 +26,11 @@
 #include <ops/OpTraitTable.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/platform/mkldnn/OnednnVersionProvider.h>
+#include <system/Environment.h>
 
 #include <algorithm>
 #include <climits>
+#include <cstdlib>
 #include <thread>
 
 namespace sd {
@@ -53,7 +55,18 @@ OneDnnGraphBackend& OneDnnGraphBackend::getInstance() {
 }
 
 OneDnnGraphBackend::OneDnnGraphBackend()
-    : engine_(dnnl::engine::kind::cpu, 0) {}
+    : engine_(dnnl::engine::kind::cpu, 0) {
+  // Sync OMP thread count with Environment (controlled via -Domp.num.threads).
+  // OneDNN with DNNL_CPU_RUNTIME=OMP uses omp_get_max_threads() at execution time.
+  // KMP_BLOCKTIME/KMP_AFFINITY/GOMP_SPINCOUNT are already configured globally
+  // by CoreConfig::initFromEnvironment() — no need to set them again here.
+  int numThreads = sd::Environment::getInstance().maxMasterThreads();
+  if (numThreads <= 0) numThreads = std::thread::hardware_concurrency();
+  omp_set_num_threads(numThreads);
+
+  DSP_DIAG(COMPILE, "OneDNN: configured %d OMP threads (blocktime/affinity set by CoreConfig)",
+           numThreads);
+}
 
 OneDnnGraphBackend::~OneDnnGraphBackend() = default;
 
@@ -272,13 +285,25 @@ bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   int mappableOps = 0;
   int anchorOps = 0;
   int totalOps = end - start + 1;
+  bool hasCast = false;
 
   for (int i = start; i <= end; i++) {
-    auto kind = mapOpKind(slots[i].ident.opName);
+    const auto& opName = slots[i].ident.opName;
+    auto kind = mapOpKind(opName);
     if (kind != dg::op::kind::LastSymbol) {
       mappableOps++;
       if (isAnchorOp(kind)) anchorOps++;
     }
+    // OneDNN Graph's add_op fails on TypeCast ops — skip segments containing
+    // cast to avoid wasted compile attempts that always cascade to OpenVINO.
+    if (kind == dg::op::kind::TypeCast) hasCast = true;
+  }
+
+  if (hasCast) {
+    DSP_DIAG(SEGMENT, "OneDnnGraphBackend::canFuseSegment [%d-%d]: contains cast ops "
+             "— skipping (oneDNN add_op fails on TypeCast)",
+             start, end);
+    return false;
   }
 
   // Require at least one anchor op. A segment of pure elementwise ops
@@ -398,7 +423,19 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
     // Check output data types
     for (int i = 0; i < slots[s].wiring.numOutputs; i++) {
       int outIdx = slots[s].wiring.outputSlotIndices[i];
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx] != nullptr) {
+      if (outIdx >= 0 && outIdx < totalOutputSlots) {
+        if (outputSlots[outIdx] == nullptr) {
+          // Output array is null (e.g. in-place-fused VIEW_OF_SLOT at compile time).
+          // For cast ops this is fatal: buildGraph() would create a logical_tensor
+          // with unknown shape and oneDNN's add_op() would throw.  Route to native.
+          if (kind == dg::op::kind::TypeCast) {
+            DSP_DIAG(COMPILE, "OneDnnGraphBackend: slot %d op '%s' output %d is nullptr "
+                     "— routing cast to native (cannot build logical_tensor without shape)",
+                     s, slots[s].ident.opName.c_str(), i);
+            return false;
+          }
+          continue;
+        }
         if (mapDataType(outputSlots[outIdx]->dataType()) == dg::logical_tensor::data_type::undef) {
           DSP_DIAG(COMPILE, "OneDnnGraphBackend: slot %d op '%s' output %d has unsupported dtype %d",
                    s, slots[s].ident.opName.c_str(), i, static_cast<int>(outputSlots[outIdx]->dataType()));

@@ -39,9 +39,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto queriesOrig = INPUT_VARIABLE(0);
   auto valuesOrig = INPUT_VARIABLE(1);
 
-  REQUIRE_TRUE(queriesOrig->rankOf() == valuesOrig->rankOf(), 0,
-               "dot_product_attention_v2: Queries and values must have same rank, got %i vs %i",
-               queriesOrig->rankOf(), valuesOrig->rankOf());
   REQUIRE_TRUE(queriesOrig->rankOf() >= 2 && queriesOrig->rankOf() <= 4, 0,
                "dot_product_attention_v2: Input rank must be 2, 3, or 4, got %i", queriesOrig->rankOf());
   REQUIRE_TRUE(queriesOrig->isR(), 0,
@@ -58,6 +55,27 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   NDArray* qMask = nullptr;
   NDArray* vMask = nullptr;
   bool reshapedQ = false;
+  bool promotedV = false;
+  // promotedKPtr captures the allocated reshape result so cleanup can free it
+  // even after `keys` is overwritten by `keys = keyCache` in the KV-cache path.
+  NDArray* promotedKPtr = nullptr;
+
+  // Auto-promote V from 3D to 4D when Q is 4D (GGUF models may pass flat V before head split)
+  if (queriesOrig->rankOf() == 4 && valuesOrig->rankOf() == 3) {
+    auto headDim = queriesOrig->sizeAt(3);
+    auto vDim = valuesOrig->sizeAt(2);
+    REQUIRE_TRUE(vDim % headDim == 0, 0,
+                 "dot_product_attention_v2: V dim %lld must be divisible by Q headDim %lld for auto-reshape",
+                 (long long)vDim, (long long)headDim);
+    auto numKvHeads = vDim / headDim;
+    std::vector<sd::LongType> vShape4d = {valuesOrig->sizeAt(0), valuesOrig->sizeAt(1), numKvHeads, headDim};
+    valuesOrig = valuesOrig->reshape('c', vShape4d);
+    promotedV = true;
+  }
+
+  REQUIRE_TRUE(queriesOrig->rankOf() == valuesOrig->rankOf(), 0,
+               "dot_product_attention_v2: Queries and values must have same rank, got %i vs %i",
+               queriesOrig->rankOf(), valuesOrig->rankOf());
 
   bool isRank4 = (queriesOrig->rankOf() == 4);
 
@@ -83,6 +101,24 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   } else {
     keys = keysOrig;
   }
+
+  // Auto-promote K from 3D to 4D when Q is 4D (symmetric with V promotion)
+  bool promotedK = false;
+  if (isRank4 && keys->rankOf() == 3) {
+    auto headDim = queriesOrig->sizeAt(3);
+    auto kDim = keys->sizeAt(2);
+    if (kDim % headDim == 0) {
+      auto numKvHeads = kDim / headDim;
+      std::vector<sd::LongType> kShape4d = {keys->sizeAt(0), keys->sizeAt(1), numKvHeads, headDim};
+      keys = keys->reshape('c', kShape4d);
+      promotedK = true;
+      // Save the reshape allocation immediately. `keys` may be overwritten later
+      // (e.g. by `keys = keyCache` in the in-place KV-cache path). Cleanup MUST
+      // free this pointer, not whatever `keys` holds at cleanup time.
+      promotedKPtr = keys;
+    }
+  }
+
   REQUIRE_TRUE(keys->isR(), 0,
                "dot_product_attention_v2: keys must be floating-point/real type, got %i",
                static_cast<int>(keys->dataType()));
@@ -433,6 +469,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     attentionLogits->reshapei('c', {attentionLogits->sizeAt(1), attentionLogits->sizeAt(2)});
     attentionScores->reshapei('c', {attentionScores->sizeAt(1), attentionScores->sizeAt(2)});
   }
+
+  // Cleanup auto-promoted V/K arrays.
+  // IMPORTANT: Use promotedKPtr, NOT `keys`. The `keys` pointer may have been
+  // overwritten by `keys = keyCache` in the in-place KV-cache path, which would
+  // cause us to delete a live INPUT_VARIABLE and corrupt subsequent executions.
+  if (promotedV) delete valuesOrig;
+  if (promotedK) delete promotedKPtr;
 
   return sd::Status::OK;
 }

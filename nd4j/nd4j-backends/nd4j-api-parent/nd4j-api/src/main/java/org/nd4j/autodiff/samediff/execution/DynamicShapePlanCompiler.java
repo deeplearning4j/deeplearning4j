@@ -966,11 +966,40 @@ public class DynamicShapePlanCompiler {
         // LinkedHashMap preserves insertion order (= requestedOutputs iteration order)
         // so serialize() writes indices in the same order as getRequestedOutputs().
         Map<String, Integer> outputNameToSlotIndex = new java.util.LinkedHashMap<>();
+        int missingOutputCount = 0;
         for (String outputName : requestedOutputs) {
             Integer slot = varToOutputSlot.get(outputName);
             if (slot != null) {
                 outputNameToSlotIndex.put(outputName, slot);
+                // Log first 5 output mappings and any k_rope/v_heads for diagnosis
+                if (outputNameToSlotIndex.size() <= 5 || outputName.startsWith("k_rope") || outputName.startsWith("v_heads")) {
+                    // Find which op produces this variable and trace its inputs
+                    String producerInfo = "unknown";
+                    String inputInfo = "";
+                    for (int pi = 0; pi < opNodes.size(); pi++) {
+                        for (String ov : opNodes.get(pi).getOutputVariables()) {
+                            if (ov.equals(outputName)) {
+                                producerInfo = opNodes.get(pi).getOperationName() + " (step " + pi + ")";
+                                // Also log input variables and their slots
+                                StringBuilder sb = new StringBuilder();
+                                for (String iv : opNodes.get(pi).getInputVariables()) {
+                                    Integer ivSlot = varToOutputSlot.get(iv);
+                                    sb.append(iv).append("->slot").append(ivSlot != null ? ivSlot : "EXT").append(" ");
+                                }
+                                inputInfo = sb.toString();
+                                break;
+                            }
+                        }
+                    }
+                    log.info("DSP compile: output '{}' -> slot {} (producer: {} inputs: [{}])", outputName, slot, producerInfo, inputInfo);
+                }
+            } else {
+                missingOutputCount++;
+                log.warn("DSP compile: requested output '{}' NOT FOUND in varToOutputSlot (will be slot -1)", outputName);
             }
+        }
+        if (missingOutputCount > 0) {
+            log.warn("DSP compile: {} of {} requested outputs have no slot (will return zeros)", missingOutputCount, requestedOutputs.size());
         }
 
         log.debug("DynamicShapePlan compiled: {} ops, {} output slots, {} external inputs, {} final outputs, {} root slots",

@@ -1531,6 +1531,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Segment cleanup — public so SegmentLifecycle::invalidateForRebuild can call it.
   void cleanupSegmentForRebuild(GraphSegment& seg, const char* reason);
 
+  // Public so NativeOps_dsp.cpp diagnostics can query composite state.
+  bool hasCompositeHandles(const GraphSegment& seg) const;
+
   friend class NativePlanCompiler;
 
  private:
@@ -1941,7 +1944,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status compositeReplay(GraphSegment& seg, ReplaySchedule& sched,
                          NDArray** externalArrays, int numExt, void* stream);
 #endif
-  bool hasCompositeHandles(const GraphSegment& seg) const;
 
   // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)
   GraphBackend* cpuGraphBackend_;

@@ -457,6 +457,13 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
             // Case 1: Identity cast (input dtype == output dtype)
             if (inputDtype != null && inputDtype == outputDtype) {
+                // Don't remove identity casts whose output is a registered graph output —
+                // the variable name must survive for DSP plan output mapping and output collection.
+                List<String> graphOutputs = sd.outputs();
+                if (graphOutputs != null && graphOutputs.contains(outputVar)) {
+                    log.debug("Skipping identity cast removal for {} — output is a graph output", outputVar);
+                    return false;
+                }
                 OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, inputVar);
                 OptimizationUtils.removeOp(sd, helper, op.getName());
                 OptimizationUtils.removeVariable(sd, helper, outputVar);

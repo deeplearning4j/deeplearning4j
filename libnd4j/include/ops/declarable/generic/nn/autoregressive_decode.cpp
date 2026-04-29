@@ -64,8 +64,14 @@ namespace ops {
  *  15: inputIdsExtIdx
  *  16: logitsOutputIdx
  *  17..17+2*numKvPairs-1: kvInputExtIndices
- *  17+2*numKvPairs..end: kvOutputIndices
- *  after kv indices: additional stop token IDs
+ *  17+2*numKvPairs..17+4*numKvPairs-1: kvOutputIndices
+ *  [if bit 5 set in optionalMask: GDN/conv recurrent state]
+ *  next: numGdnStatePairs, numConvStatePairs
+ *  next+2..next+2+numGdnStatePairs-1: gdnStateExtIndices
+ *  ..next+2+2*numGdnStatePairs-1: gdnStateOutputIndices
+ *  ..+numConvStatePairs: convStateExtIndices
+ *  ..+numConvStatePairs: convStateOutputIndices
+ *  after state indices: additional stop token IDs
  *
  * tArgs:
  *   0: temperature
@@ -165,6 +171,10 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
 
   std::vector<int> kvInputExtIndicesVec;
   std::vector<int> kvOutputIndicesVec;
+  std::vector<int> gdnStateExtIndicesVec;
+  std::vector<int> gdnStateOutputIndicesVec;
+  std::vector<int> convStateExtIndicesVec;
+  std::vector<int> convStateOutputIndicesVec;
 
   int stopTokenStartIdx = 5;  // default: additional stop IDs start at iArg[5]
 
@@ -231,7 +241,55 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       decodeConfig.kvOutputIndices = kvOutputIndicesVec.data();
     }
 
-    stopTokenStartIdx = kvStart + 4 * numKvPairs;
+    int nextIdx = kvStart + 4 * numKvPairs;
+
+    // GDN/conv state indices (optionalMask bit 5).
+    // Layout: numGdnStatePairs, numConvStatePairs,
+    //         gdnStateExtIndices[numGdnStatePairs],
+    //         gdnStateOutputIndices[numGdnStatePairs],
+    //         convStateExtIndices[numConvStatePairs],
+    //         convStateOutputIndices[numConvStatePairs]
+    bool hasRecurrentState = (optionalMask & 32) != 0;
+    if (hasRecurrentState && nextIdx + 1 < iArgCount) {
+      decodeConfig.numGdnStatePairs = INT_ARG(nextIdx);
+      decodeConfig.numConvStatePairs = INT_ARG(nextIdx + 1);
+      nextIdx += 2;
+
+      int numGdn = decodeConfig.numGdnStatePairs;
+      int numConv = decodeConfig.numConvStatePairs;
+
+      if (numGdn > 0 && nextIdx + 2 * numGdn <= iArgCount) {
+        gdnStateExtIndicesVec.resize(numGdn);
+        gdnStateOutputIndicesVec.resize(numGdn);
+        for (int i = 0; i < numGdn; i++) {
+          gdnStateExtIndicesVec[i] = INT_ARG(nextIdx + i);
+        }
+        nextIdx += numGdn;
+        for (int i = 0; i < numGdn; i++) {
+          gdnStateOutputIndicesVec[i] = INT_ARG(nextIdx + i);
+        }
+        nextIdx += numGdn;
+        decodeConfig.gdnStateExtIndices = gdnStateExtIndicesVec.data();
+        decodeConfig.gdnStateOutputIndices = gdnStateOutputIndicesVec.data();
+      }
+
+      if (numConv > 0 && nextIdx + 2 * numConv <= iArgCount) {
+        convStateExtIndicesVec.resize(numConv);
+        convStateOutputIndicesVec.resize(numConv);
+        for (int i = 0; i < numConv; i++) {
+          convStateExtIndicesVec[i] = INT_ARG(nextIdx + i);
+        }
+        nextIdx += numConv;
+        for (int i = 0; i < numConv; i++) {
+          convStateOutputIndicesVec[i] = INT_ARG(nextIdx + i);
+        }
+        nextIdx += numConv;
+        decodeConfig.convStateExtIndices = convStateExtIndicesVec.data();
+        decodeConfig.convStateOutputIndices = convStateOutputIndicesVec.data();
+      }
+    }
+
+    stopTokenStartIdx = nextIdx;
 
     // Plan external inputs are read from the extInputContext (OpaqueContext).
     // Plan outputs are allocated locally in the decode helper.

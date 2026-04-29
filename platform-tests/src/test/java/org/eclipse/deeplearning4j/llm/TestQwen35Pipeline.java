@@ -30,9 +30,10 @@ import org.eclipse.deeplearning4j.llm.eval.GenerationQualityValidator.QualityRep
 import org.eclipse.deeplearning4j.llm.eval.GenerationQualityValidator.ValidationConfig;
 import org.eclipse.deeplearning4j.llm.eval.PerplexityEvaluator;
 import org.eclipse.deeplearning4j.llm.eval.PerplexityEvaluator.PerplexityResult;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
-import org.eclipse.deeplearning4j.llm.generation.TextGenerator;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
@@ -57,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Qwen3.5 LLM pipeline test with benchmarking and accuracy validation.
  *
- * Loads GGUF models via GGMLModelImport, runs text generation with TextGenerator,
+ * Loads GGUF models via GGMLModelImport, runs text generation with GenerationPipeline,
  * benchmarks tok/s, and validates output quality (perplexity, diversity, coherence).
  *
  * Modeled after TestSmolDoclingOptimizedPipeline: loads models once, then sweeps
@@ -294,12 +295,16 @@ public class TestQwen35Pipeline {
     private void applyConfig(PipelineContext ctx, QwenTestConfig config) {
         SameDiff model = ctx.model;
 
-        // Reset model state
+        // Reset model state — clear sessions AND native plan cache to avoid cross-config contamination
+        // (backend singletons like OneDNN Graph have negative caches that persist across sessions)
         model.getSessions().clear();
+        model.clearDynamicShapePlanCache();
 
-        // Apply execution mode
+        // Apply execution mode — always set explicitly to avoid stale mode from prior config
         if (config.executionMode != null) {
             model.setGraphExecutionMode(config.executionMode);
+        } else {
+            model.setGraphExecutionMode(GraphExecutionMode.AUTO);
         }
 
         // DSP settings
@@ -345,13 +350,19 @@ public class TestQwen35Pipeline {
                     .build();
         }
 
-        TextGenerator generator = TextGenerator.builder()
-                .model(ctx.model)
-                .tokenizer(ctx.tokenizer)
-                .config(samplingConfig)
-                .build();
+        try {
+            GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
+                    .decoder(ctx.model)
+                    .tokenizer(ctx.tokenizer)
+                    .samplingConfig(samplingConfig)
+                    .maxNewTokens(config.maxTokens)
+                    .build();
 
-        return generator.generateWithMetrics(prompt, config.maxTokens);
+            GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig);
+            return pipeline.generate(prompt, config.maxTokens);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to create GenerationPipeline", e);
+        }
     }
 
     // ─── Main Test ──────────────────────────────────────────────────────
@@ -563,13 +574,15 @@ public class TestQwen35Pipeline {
                 model.setDspAutoCompileEnabled(true);
                 model.setDspNativeAutoCompileEnabled(true);
 
-                TextGenerator generator = TextGenerator.builder()
-                        .model(model)
+                GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
+                        .decoder(model)
                         .tokenizer(tokenizer)
-                        .config(SamplingConfig.greedy())
+                        .samplingConfig(SamplingConfig.greedy())
+                        .maxNewTokens(maxTokens)
                         .build();
 
-                GenerationResult genResult = generator.generateWithMetrics(prompt, maxTokens);
+                GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig);
+                GenerationResult genResult = pipeline.generate(prompt, maxTokens);
                 QualityReport quality = GenerationQualityValidator.validate(genResult);
 
                 String summary = String.format("%s: %d tokens, %.2f tok/s, diversity=%.2f, coherence=%.2f, size=%s | %s",
@@ -618,13 +631,20 @@ public class TestQwen35Pipeline {
 
             log.info("Prompt: {}", prompt);
 
-            TextGenerator generator = TextGenerator.builder()
-                    .model(ctx.model)
+            GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
+                    .decoder(ctx.model)
                     .tokenizer(ctx.tokenizer)
-                    .config(SamplingConfig.greedy())
+                    .samplingConfig(SamplingConfig.greedy())
+                    .maxNewTokens(maxTokens)
                     .build();
 
-            GenerationResult genResult = generator.generateWithMetrics(prompt, maxTokens);
+            GenerationPipeline pipeline;
+            try {
+                pipeline = GenerationPipeline.create(pipelineConfig);
+            } catch (java.io.IOException e) {
+                throw new RuntimeException("Failed to create GenerationPipeline", e);
+            }
+            GenerationResult genResult = pipeline.generate(prompt, maxTokens);
             log.info("  Output ({} tokens, {:.2f} tok/s): {}",
                     genResult.getGeneratedTokenCount(), genResult.getTokensPerSecond(), genResult.getText());
 

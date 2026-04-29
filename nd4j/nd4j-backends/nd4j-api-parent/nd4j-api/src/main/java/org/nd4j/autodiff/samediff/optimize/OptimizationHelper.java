@@ -48,6 +48,8 @@ public class OptimizationHelper {
     // Fast lookup caches to avoid PatriciaTrie overhead during optimization
     private Map<String, Variable> variablesCache;
     private Map<String, SameDiffOp> opsCache;
+    // Live SameDiff reference for fallback when cache misses (newly created ops/vars)
+    private SameDiff liveSd;
 
     public OptimizationHelper(SameDiff originalGraph, Properties properties){
         this.originalGraph = originalGraph;
@@ -62,20 +64,49 @@ public class OptimizationHelper {
         // Create HashMap snapshot of variables for O(1) lookup instead of PatriciaTrie O(k)
         this.variablesCache = new HashMap<>(sd.getVariables());
         this.opsCache = new HashMap<>(sd.getOps());
+        this.liveSd = sd;
     }
 
     /**
-     * Fast O(1) variable lookup. Use this instead of sd.getVariables().get() in optimizers.
+     * Fast O(1) variable lookup with fallback to live SameDiff graph.
+     * Falls back to sd.getVariables() when the cache misses, since optimizers
+     * create new variables that aren't in the initial snapshot.
      */
     public Variable getVariable(String name) {
-        return variablesCache != null ? variablesCache.get(name) : null;
+        if (variablesCache != null) {
+            Variable v = variablesCache.get(name);
+            if (v != null) return v;
+        }
+        // Fallback to live graph for newly created variables
+        if (liveSd != null) {
+            Variable v = liveSd.getVariables().get(name);
+            if (v != null && variablesCache != null) {
+                variablesCache.put(name, v);  // backfill cache
+            }
+            return v;
+        }
+        return null;
     }
 
     /**
-     * Fast O(1) op lookup. Use this instead of sd.getOps().get() in optimizers.
+     * Fast O(1) op lookup with fallback to live SameDiff graph.
+     * Falls back to sd.getOps() when the cache misses, since optimizers
+     * create new ops that aren't in the initial snapshot.
      */
     public SameDiffOp getOp(String name) {
-        return opsCache != null ? opsCache.get(name) : null;
+        if (opsCache != null) {
+            SameDiffOp op = opsCache.get(name);
+            if (op != null) return op;
+        }
+        // Fallback to live graph for newly created ops
+        if (liveSd != null) {
+            SameDiffOp op = liveSd.getOps().get(name);
+            if (op != null && opsCache != null) {
+                opsCache.put(name, op);  // backfill cache
+            }
+            return op;
+        }
+        return null;
     }
 
     /**

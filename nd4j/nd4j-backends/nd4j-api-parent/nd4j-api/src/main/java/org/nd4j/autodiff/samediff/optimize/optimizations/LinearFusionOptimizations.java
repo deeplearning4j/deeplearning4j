@@ -154,6 +154,15 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
+            // xw_plus_b relies on oneDNN inner_product which requires hardware BF16/FP16
+            // support. Skip fusion for non-FP32 types — the unfused matmul+add path works
+            // for all types via generic C++ MmulHelper.
+            org.nd4j.linalg.api.buffer.DataType xDtype = xSDVar.dataType();
+            if (xDtype != null && xDtype != org.nd4j.linalg.api.buffer.DataType.FLOAT
+                    && xDtype != org.nd4j.linalg.api.buffer.DataType.DOUBLE) {
+                return false;
+            }
+
             try {
                 // Extract transpose flags from the original Mmul
                 Mmul mmul = (Mmul) matmulOp.getOp();

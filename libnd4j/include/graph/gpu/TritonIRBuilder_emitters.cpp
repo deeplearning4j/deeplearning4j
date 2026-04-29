@@ -837,7 +837,10 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     auto logSumSplat = builder.create<mlir::triton::SplatOp>(loc, tensorTy, logSum);
     result = builder.create<mlir::arith::SubFOp>(loc, shifted, logSumSplat);
 
-  } else if (opKey == "rmsnorm") {
+  } else if (opKey == "rmsnorm" || opKey == "skiprmsnorm") {
+    // skip_rms_norm: the residual add (input + skip) is handled in the module
+    // dispatch before calling this emitter, so `input` already contains `hidden`.
+    // The RMS norm computation is identical to rms_norm.
     auto squared = builder.create<mlir::arith::MulFOp>(loc, input, input);
     auto sumSquared = makeReduce(squared, axis, addCombiner);
     auto countVal = builder.create<mlir::arith::ConstantOp>(

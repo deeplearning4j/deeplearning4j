@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.samediff.optimize.optimizations;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@Slf4j
 public class OptimizationUtils {
 
     private OptimizationUtils(){ }
@@ -131,6 +133,13 @@ public class OptimizationUtils {
      * Remove a variable from the graph using helper to update caches.
      */
     public static void removeVariable(@NonNull SameDiff sd, OptimizationHelper helper, @NonNull String varToRemove){
+        // Never remove a variable that is a registered graph output — the native plan,
+        // output collection, and downstream consumers all rely on the name existing.
+        List<String> outputs = sd.outputs();
+        if (outputs != null && outputs.contains(varToRemove)) {
+            log.warn("Refusing to remove variable '{}' — it is a registered graph output", varToRemove);
+            return;
+        }
         sd.getVariables().remove(varToRemove);
         if (helper != null) {
             helper.updateVariable(varToRemove, null);

@@ -640,6 +640,12 @@ int getPlanSegmentReplayState(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return -1;
   auto& seg = segs[segmentIdx];
+  // Composite capture uses merged/composite replay handles instead of the
+  // monolithic replayHandle (which is an EMPTY sentinel for workspace only).
+  // Report READY when any composite handle is ready.
+  if (plan->hasCompositeHandles(seg)) {
+    return static_cast<int>(sd::graph::ReplayState::READY);
+  }
   if (!seg.exec.replayHandle) return -1;
   return static_cast<int>(seg.exec.replayHandle->getState());
 }
@@ -650,6 +656,23 @@ int getPlanSegmentReplayCount(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
   auto& seg = segs[segmentIdx];
+  // Aggregate replay counts from composite handles (merged + per-island).
+  // Composite capture stores graphs in mergedReplayHandles/compositeReplayHandles,
+  // NOT in the monolithic replayHandle (which is an EMPTY sentinel).
+  auto& sched = seg.exec.compositeReplaySchedule;
+  int compositeReplays = 0;
+  for (auto& h : sched.mergedReplayHandles) {
+    if (h != nullptr && h->isReady()) {
+      compositeReplays += h->getStatistics().replayCount;
+    }
+  }
+  for (auto& h : sched.compositeReplayHandles) {
+    if (h != nullptr && h->isReady()) {
+      compositeReplays += h->getStatistics().replayCount;
+    }
+  }
+  if (compositeReplays > 0) return compositeReplays;
+  // Fallback to monolithic handle
   if (!seg.exec.replayHandle) return 0;
   return seg.exec.replayHandle->getStatistics().replayCount;
 }
@@ -660,6 +683,8 @@ const char* getPlanSegmentBackendName(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return "";
   auto& seg = segs[segmentIdx];
+  // Use compiledByBackend first — it's set for both composite and monolithic paths
+  if (!seg.exec.compiledByBackend.empty()) return seg.exec.compiledByBackend.c_str();
   if (!seg.exec.replayHandle) return "";
   return seg.exec.replayHandle->backendName();
 }
@@ -672,17 +697,39 @@ const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx)
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { buf[0] = '\0'; return buf; }
   auto& seg = segs[segmentIdx];
   int numOps = seg.def.endSlot - seg.def.startSlot + 1;
-  const char* backend = (seg.exec.replayHandle) ? seg.exec.replayHandle->backendName() : "";
-  int replayCount = (seg.exec.replayHandle) ? seg.exec.replayHandle->getStatistics().replayCount : 0;
-  int replayState = (seg.exec.replayHandle) ? static_cast<int>(seg.exec.replayHandle->getState()) : -1;
+  // Composite-aware: prefer compiledByBackend, aggregate composite replay counts
+  const char* backend = !seg.exec.compiledByBackend.empty()
+      ? seg.exec.compiledByBackend.c_str()
+      : (seg.exec.replayHandle ? seg.exec.replayHandle->backendName() : "");
+  int replayCount = 0;
+  int replayState = -1;
+  int mergedGroups = static_cast<int>(seg.exec.compositeReplaySchedule.mergedReplayHandles.size());
+  int compositeIslands = 0;
+  // Check composite handles first
+  bool hasComposite = plan->hasCompositeHandles(seg);
+  auto& sched = seg.exec.compositeReplaySchedule;
+  if (hasComposite) {
+    replayState = static_cast<int>(sd::graph::ReplayState::READY);
+    for (auto& h : sched.mergedReplayHandles) {
+      if (h && h->isReady()) replayCount += h->getStatistics().replayCount;
+    }
+    for (auto& h : sched.compositeReplayHandles) {
+      if (h && h->isReady()) { replayCount += h->getStatistics().replayCount; compositeIslands++; }
+    }
+  } else if (seg.exec.replayHandle) {
+    replayCount = seg.exec.replayHandle->getStatistics().replayCount;
+    replayState = static_cast<int>(seg.exec.replayHandle->getState());
+  }
   snprintf(buf, sizeof(buf),
            "{\"numOperations\":%d,\"replayCount\":%d,\"replayState\":%d,"
            "\"backendName\":\"%s\",\"executionCount\":%d,"
-           "\"capturable\":%s,\"compilationFailed\":%s,\"compiledByBackend\":\"%s\"}",
+           "\"capturable\":%s,\"compilationFailed\":%s,\"compiledByBackend\":\"%s\","
+           "\"mergedGroups\":%d,\"compositeIslands\":%d}",
            numOps, replayCount, replayState, backend, seg.exec.executionCount,
            seg.def.isCapturable ? "true" : "false",
            seg.exec.compilationFailed ? "true" : "false",
-           seg.exec.compiledByBackend.c_str());
+           seg.exec.compiledByBackend.c_str(),
+           mergedGroups, compositeIslands);
   return buf;
 }
 
@@ -843,6 +890,15 @@ int getPlanSegmentNumHostPointers(sd::Pointer planHandle, int segmentIdx) {
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
   auto& seg = segs[segmentIdx];
+  // Aggregate from composite handles first
+  int total = 0;
+  for (auto& h : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
+    if (h) total += static_cast<int>(h->getCapturedHostPtrs().size());
+  }
+  for (auto& h : seg.exec.compositeReplaySchedule.compositeReplayHandles) {
+    if (h) total += static_cast<int>(h->getCapturedHostPtrs().size());
+  }
+  if (total > 0) return total;
   if (!seg.exec.replayHandle) return 0;
   return static_cast<int>(seg.exec.replayHandle->getCapturedHostPtrs().size());
 }

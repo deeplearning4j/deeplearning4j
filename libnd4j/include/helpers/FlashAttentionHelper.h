@@ -407,6 +407,15 @@ extern void applyCausalMaskCuda(NDArray* scores, LaunchContext* context);
 // Fused causal mask + softmax - replaces mask kernel + softmax kernel with single kernel
 extern void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray* logitsOut,
                                         bool isCausal, LaunchContext* context);
+
+// Fused GQA decode attention - single kernel for Q@K^T + softmax + attn@V with GQA head mapping.
+// Takes 4D BSHD inputs directly, no permute/tile needed.
+// Q: [batch, 1, numQHeads, headDim], K/V: [batch, seqKV, numKvHeads, headDim]
+// Output: [batch, 1, numQHeads, headDim]
+extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
+                                NDArray* output, float scale,
+                                LaunchContext* context,
+                                NDArray* attentionBias = nullptr);
 #endif
 
 }  // namespace sd

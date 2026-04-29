@@ -27,6 +27,9 @@
 #include <system/platform_boilerplate.h>
 
 #include "mkldnnUtils.h"
+#if HAVE_ONEDNN
+#include <dnnl.h>
+#endif
 
 namespace sd {
 namespace ops {
@@ -226,11 +229,24 @@ PLATFORM_CHECK(batched_gemm, ENGINE_CPU) {
   auto wType = firstB->dataType();
   auto zType = firstC->dataType();
 
-  bool isSupportedType = ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
-                          (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
-                           (zType == DataType::BFLOAT16 || zType == DataType::FLOAT32)) ||
-                          (xType == DataType::HALF && wType == DataType::HALF &&
-                           (zType == DataType::HALF || zType == DataType::FLOAT32)));
+  bool isFloat32 = (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && zType == DataType::FLOAT32);
+  bool isBFloat16 = false;
+  if (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
+      (zType == DataType::BFLOAT16 || zType == DataType::FLOAT32)) {
+#if HAVE_ONEDNN
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isBFloat16 = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+#endif
+  }
+  bool isFloat16 = false;
+  if (xType == DataType::HALF && wType == DataType::HALF &&
+      (zType == DataType::HALF || zType == DataType::FLOAT32)) {
+#if HAVE_ONEDNN
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isFloat16 = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+#endif
+  }
+  bool isSupportedType = isFloat32 || isBFloat16 || isFloat16;
 
   Requirements req("ONEDNN BATCHED_GEMM OP");
   req.expectTrue(makeInfoVariable(isSupportedType, TYPE_MSG_INPUT),

@@ -799,18 +799,15 @@ void fusedAttentionCuda(
    biasPtr = attentionBias->specialBuffer();
 
    if (biasRank == 3) {
-     // [batch, seqQ, seqKV] - use actual array strides (NOT shape-derived)
-     // Shape-derived strides assume C-contiguous layout which breaks for views
-     // from DSP where the bias may have non-contiguous strides.
-     biasStride0 = attentionBias->strideAt(0);  // batch stride
-     biasStride1 = attentionBias->strideAt(1);  // seqQ stride
-     biasStride2 = attentionBias->strideAt(2);  // seqKV stride
+     // [batch, seqQ, seqKV] - use broadcast-safe strides (0 for size-1 dims)
+     biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+     biasStride1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+     biasStride2 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
    } else if (biasRank == 4) {
-     // [batch, 1, seqQ, seqKV] or [batch, numHeads, seqQ, seqKV]
-     // For 3D attention (single head), we use head index 0
-     biasStride0 = attentionBias->strideAt(0);  // batch stride
-     biasStride1 = attentionBias->strideAt(2);  // seqQ stride (skip heads dim)
-     biasStride2 = attentionBias->strideAt(3);  // seqKV stride
+     // [batch, numHeads, seqQ, seqKV] — for 3D attention, skip heads dim
+     biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+     biasStride1 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
+     biasStride2 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
    }
    NDArray::prepareSpecialUse({output}, {query, key, value, attentionBias});
  } else {
@@ -848,6 +845,289 @@ void fusedAttentionCuda(
  } else {
    THROW_EXCEPTION("fusedAttentionCuda: Unsupported data type");
  }
+
+ if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+   NDArray::registerSpecialUse({output}, {query, key, value, attentionBias});
+ } else {
+   NDArray::registerSpecialUse({output}, {query, key, value});
+ }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Fused GQA decode attention kernel — 4D BSHD inputs, tiled online softmax.
+// Each block handles one (batch, qHead) pair.
+// K/V indexed via kvHead = qHead / headsPerKvHead for GQA head mapping.
+// Tiles over KV positions with online softmax + rescaling (same pattern as
+// fusedAttention3DKernel). NO atomicAdd — each thread owns output dimensions.
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void fusedGQADecodeKernel(
+   const T* __restrict__ query,      // [batch, 1, numQHeads, headDim] BSHD
+   const T* __restrict__ key,        // [batch, seqKV, numKvHeads, headDim] BSHD
+   const T* __restrict__ value,      // [batch, seqKV, numKvHeads, headDim] BSHD
+   const T* __restrict__ attnBias,   // [batch, numQHeads, 1, seqKV] or nullptr
+   T* __restrict__ output,           // [batch, 1, numQHeads, headDim] BSHD
+   const LongType batch,
+   const LongType seqKV,
+   const LongType numQHeads,
+   const LongType numKvHeads,
+   const LongType headDim,
+   const LongType headsPerKvHead,
+   const float scale,
+   const LongType biasStride0,
+   const LongType biasStride1,
+   const LongType biasStride2,
+   const LongType biasStride3) {
+
+ const LongType qHead = blockIdx.x;
+ const LongType batchIdx = blockIdx.y;
+ if (batchIdx >= batch || qHead >= numQHeads) return;
+
+ const LongType kvHead = qHead / headsPerKvHead;
+
+ // Shared memory layout: scores tile [TILE_SIZE_KV] + output accumulator [headDim]
+ extern __shared__ char sharedMem[];
+ T* sharedScores = reinterpret_cast<T*>(sharedMem);
+ T* sharedOutput = sharedScores + TILE_SIZE_KV;
+
+ // Q pointer: query[batchIdx, 0, qHead, :] — BSHD contiguous
+ const T* Q = query + batchIdx * numQHeads * headDim + qHead * headDim;
+
+ // K/V pointers: key[batchIdx, :, kvHead, :] — stride between KV positions
+ const LongType kvStride = numKvHeads * headDim;
+ const T* K = key + batchIdx * seqKV * kvStride + kvHead * headDim;
+ const T* V = value + batchIdx * seqKV * kvStride + kvHead * headDim;
+
+ // Output: output[batchIdx, 0, qHead, :]
+ T* O = output + batchIdx * numQHeads * headDim + qHead * headDim;
+
+ // Bias row: attnBias[batchIdx, qHead, 0, :]
+ const T* biasRow = nullptr;
+ if (attnBias != nullptr) {
+   biasRow = attnBias + batchIdx * biasStride0 + qHead * biasStride1;
+ }
+
+ // Online softmax state (block-wide via shared memory)
+ __shared__ float globalMax;
+ __shared__ float globalSum;
+ if (threadIdx.x == 0) {
+   globalMax = -INFINITY;
+   globalSum = 0.0f;
+ }
+
+ // Initialize output accumulator
+ for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+   sharedOutput[d] = static_cast<T>(0);
+ }
+ __syncthreads();
+
+ if (headDim <= 0 || seqKV <= 0) return;
+
+ // Tile over KV positions — same structure as fusedAttention3DKernel
+ for (LongType kvStart = 0; kvStart < seqKV; kvStart += TILE_SIZE_KV) {
+   const LongType kvEnd = min(kvStart + TILE_SIZE_KV, seqKV);
+   const int tileSize = static_cast<int>(kvEnd - kvStart);
+   if (tileSize <= 0) continue;
+
+   // Step 1: Compute Q @ K^T scores for this tile + add bias
+   for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+     const LongType kvIdx = kvStart + k;
+     const T* Krow = K + kvIdx * kvStride;
+
+     float score = 0.0f;
+     for (LongType d = 0; d < headDim; d++) {
+       score += static_cast<float>(Q[d]) * static_cast<float>(Krow[d]);
+     }
+     score *= scale;
+
+     if (biasRow != nullptr) {
+       score += static_cast<float>(biasRow[kvIdx * biasStride3]);
+     }
+
+     sharedScores[k] = static_cast<T>(score);
+   }
+   __syncthreads();
+
+   // Step 2: Find max in this tile
+   float tileMax = -INFINITY;
+   for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+     tileMax = fmaxf(tileMax, static_cast<float>(sharedScores[k]));
+   }
+
+   // Warp reduce max
+   for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+     tileMax = fmaxf(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+   }
+
+   __shared__ float warpMaxes[32];
+   if (threadIdx.x % WARP_SIZE == 0) {
+     warpMaxes[threadIdx.x / WARP_SIZE] = tileMax;
+   }
+   __syncthreads();
+
+   if (threadIdx.x < blockDim.x / WARP_SIZE) {
+     tileMax = warpMaxes[threadIdx.x];
+   } else {
+     tileMax = -INFINITY;
+   }
+   for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+     tileMax = fmaxf(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+   }
+
+   __shared__ float newMax;
+   if (threadIdx.x == 0) {
+     newMax = fmaxf(globalMax, tileMax);
+   }
+   __syncthreads();
+
+   // Step 3: Rescale previous output accumulator if max changed
+   if (newMax > globalMax) {
+     float rescale = expf(globalMax - newMax);
+     for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+       sharedOutput[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) * rescale);
+     }
+     if (threadIdx.x == 0) {
+       globalSum *= rescale;
+       globalMax = newMax;
+     }
+   }
+   __syncthreads();
+
+   // Step 4: Compute exp(score - max) and accumulate sum
+   float tileSum = 0.0f;
+   for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+     float score = static_cast<float>(sharedScores[k]);
+     float expScore = expf(score - globalMax);
+     sharedScores[k] = static_cast<T>(expScore);
+     tileSum += expScore;
+   }
+
+   // Reduce sum across threads
+   for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+     tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
+   }
+
+   __shared__ float warpSums[32];
+   if (threadIdx.x % WARP_SIZE == 0) {
+     warpSums[threadIdx.x / WARP_SIZE] = tileSum;
+   }
+   __syncthreads();
+
+   if (threadIdx.x < blockDim.x / WARP_SIZE) {
+     tileSum = warpSums[threadIdx.x];
+   } else {
+     tileSum = 0.0f;
+   }
+   for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+     tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
+   }
+
+   if (threadIdx.x == 0) {
+     globalSum += tileSum;
+   }
+   __syncthreads();
+
+   // Step 5: Accumulate weighted V — each thread owns a subset of output dims
+   for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+     float acc = 0.0f;
+     for (int k = 0; k < tileSize; k++) {
+       const LongType kvIdx = kvStart + k;
+       acc += static_cast<float>(sharedScores[k]) * static_cast<float>(V[kvIdx * kvStride + d]);
+     }
+     sharedOutput[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) + acc);
+   }
+   __syncthreads();
+ }
+
+ // Step 6: Normalize by sum and write output
+ for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+   O[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) / globalSum);
+ }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Launcher for fused GQA decode — uses void* params + BUILD_SINGLE_SELECTOR
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void fusedGQADecodeLauncher(
+   const int blocksPerGrid, const int threadsPerBlock,
+   const int sharedMem, const cudaStream_t* stream,
+   const void* vQuery, const void* vKey, const void* vValue, const void* vAttnBias,
+   void* vOutput,
+   LongType batch, LongType seqKV, LongType numQHeads, LongType numKvHeads,
+   LongType headDim, LongType headsPerKvHead, float scale,
+   LongType biasStride0, LongType biasStride1,
+   LongType biasStride2, LongType biasStride3) {
+
+ auto query = reinterpret_cast<const T*>(vQuery);
+ auto key = reinterpret_cast<const T*>(vKey);
+ auto value = reinterpret_cast<const T*>(vValue);
+ auto attnBias = vAttnBias != nullptr ? reinterpret_cast<const T*>(vAttnBias) : nullptr;
+ auto output = reinterpret_cast<T*>(vOutput);
+
+ // Grid: one block per (qHead, batch) pair
+ dim3 grid(numQHeads, batch);
+ dim3 block(threadsPerBlock);
+
+ // Shared memory: scores tile + output accumulator + warp reduction arrays
+ size_t smem = (TILE_SIZE_KV + headDim) * sizeof(T) + 64 * sizeof(float);
+
+ fusedGQADecodeKernel<T><<<grid, block, smem, *stream>>>(
+     query, key, value, attnBias, output,
+     batch, seqKV, numQHeads, numKvHeads, headDim, headsPerKvHead, scale,
+     biasStride0, biasStride1, biasStride2, biasStride3);
+ DebugHelper::checkGlobalErrorCode("fusedGQADecode failed");
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Public interface for fused GQA decode attention
+//////////////////////////////////////////////////////////////////////////////
+void fusedGQADecodeCuda(
+   NDArray* query, NDArray* key, NDArray* value,
+   NDArray* output, float scale,
+   LaunchContext* context, NDArray* attentionBias) {
+
+ auto stream = context->getCudaStream();
+
+ // Input layout: BSHD — [batch, seq, heads, dim]
+ const auto batch = query->sizeAt(0);
+ const auto numQHeads = query->sizeAt(2);
+ const auto headDim = query->sizeAt(3);
+ const auto seqKV = key->sizeAt(1);
+ const auto numKvHeads = key->sizeAt(2);
+ const auto headsPerKvHead = numQHeads / numKvHeads;
+
+ LongType biasStride0 = 0, biasStride1 = 0, biasStride2 = 0, biasStride3 = 0;
+ const void* biasPtr = nullptr;
+
+ if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+   biasPtr = attentionBias->specialBuffer();
+   // Use broadcast-safe strides: zero out stride for dimensions of size 1
+   // so the kernel reuses the same data (broadcast semantics).
+   // E.g., bias [1,1,1,27] has strides [27,27,27,1] in C order, but
+   // dimensions 0-2 have size 1, so their strides must be 0 for broadcast.
+   biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+   biasStride1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+   biasStride2 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
+   biasStride3 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
+   NDArray::prepareSpecialUse({output}, {query, key, value, attentionBias});
+ } else {
+   NDArray::prepareSpecialUse({output}, {query, key, value});
+ }
+
+ // Centralized launch dimensions computation
+ int dtypeSize = query->sizeOfT();
+ dim3 launchDims = getFusedGQADecodeDims(numQHeads, batch, seqKV, headDim, dtypeSize);
+
+ BUILD_SINGLE_SELECTOR(query->dataType(), fusedGQADecodeLauncher,
+                       (launchDims.x, launchDims.y, launchDims.z, stream,
+                        query->specialBuffer(), key->specialBuffer(),
+                        value->specialBuffer(), biasPtr,
+                        output->specialBuffer(),
+                        batch, seqKV, numQHeads, numKvHeads,
+                        headDim, headsPerKvHead, scale,
+                        biasStride0, biasStride1, biasStride2, biasStride3),
+                       SD_FLOAT_TYPES);
 
  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
    NDArray::registerSpecialUse({output}, {query, key, value, attentionBias});

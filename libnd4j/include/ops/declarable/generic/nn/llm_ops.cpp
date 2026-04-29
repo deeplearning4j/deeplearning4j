@@ -86,7 +86,18 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
             outputToUse = contiguousOutput;
         }
 
-        helpers::rmsNorm(block.launchContext(), const_cast<NDArray*>(inputToUse), gamma, outputToUse, eps);
+        // The kernel template dispatches on input dtype (bufferAsT<T>()).
+        // If gamma has a different dtype (e.g. FLOAT32 gamma with HALF input),
+        // bufferAsT<T>() reinterprets the wrong memory layout → NaN.
+        // Cast gamma to match input dtype before calling the kernel.
+        NDArray* gammaToUse = gamma;
+        NDArray* gammaCast = nullptr;
+        if (gamma != nullptr && gamma->dataType() != input->dataType()) {
+            gammaCast = gamma->cast(input->dataType());
+            gammaToUse = gammaCast;
+        }
+
+        helpers::rmsNorm(block.launchContext(), const_cast<NDArray*>(inputToUse), gammaToUse, outputToUse, eps);
 
         if (contiguousOutput != nullptr) {
             output->assign(contiguousOutput);
@@ -94,6 +105,9 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
         }
         if (contiguousInput != nullptr) {
             delete contiguousInput;
+        }
+        if (gammaCast != nullptr) {
+            delete gammaCast;
         }
         return Status::OK;
     }
@@ -208,7 +222,19 @@ CUSTOM_OP_IMPL(skip_rms_norm, 3, 1, false, 0, 0) {
 
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
-    helpers::skipRmsNorm(block.launchContext(), input, skip, gamma, bias, output, hiddenOut, eps);
+    // Cast gamma to match input dtype to avoid bufferAsT<T>() type mismatch
+    NDArray* gammaToUse = gamma;
+    NDArray* gammaCast = nullptr;
+    if (gamma->dataType() != input->dataType()) {
+        gammaCast = gamma->cast(input->dataType());
+        gammaToUse = gammaCast;
+    }
+
+    helpers::skipRmsNorm(block.launchContext(), input, skip, gammaToUse, bias, output, hiddenOut, eps);
+
+    if (gammaCast != nullptr) {
+        delete gammaCast;
+    }
 
     return Status::OK;
 }
@@ -901,33 +927,60 @@ DECLARE_TYPES(swish_mul_bp) {
 // (concatenated GEMM) will be added as a platform-specific op.
 #if NOT_EXCLUDED(OP_fused_gemm_swiglu)
 CUSTOM_OP_IMPL(fused_gemm_swiglu, 3, 1, false, 0, 0) {
-    auto x = INPUT_VARIABLE(0);       // [M, K] input activations
+    auto x = INPUT_VARIABLE(0);       // [..., K] input activations (rank >= 2)
     auto wGate = INPUT_VARIABLE(1);   // [K, N] gate weight matrix
     auto wUp = INPUT_VARIABLE(2);     // [K, N] up weight matrix
-    auto output = OUTPUT_VARIABLE(0); // [M, N]
+    auto output = OUTPUT_VARIABLE(0); // [..., N]
 
     REQUIRE_TRUE(x->rankOf() >= 2, 0, "fused_gemm_swiglu: input must be rank >= 2, got %d", x->rankOf());
     REQUIRE_TRUE(wGate->rankOf() == 2, 0, "fused_gemm_swiglu: wGate must be rank 2, got %d", wGate->rankOf());
     REQUIRE_TRUE(wUp->rankOf() == 2, 0, "fused_gemm_swiglu: wUp must be rank 2, got %d", wUp->rankOf());
 
-    // gate = X @ W_gate
-    auto gate = MmulHelper::mmul(x, wGate, nullptr, 1.0, 0.0);
+    auto K = x->sizeAt(-1);
+    auto N = wGate->sizeAt(1);
 
-    // up = X @ W_up
-    auto up = MmulHelper::mmul(x, wUp, nullptr, 1.0, 0.0);
+    // For rank > 2, flatten leading dims into M so we can do rank-2 matmul
+    NDArray* xFlat = nullptr;
+    sd::LongType M = 1;
+    bool needReshape = x->rankOf() > 2;
+    if (needReshape) {
+        for (int d = 0; d < x->rankOf() - 1; d++)
+            M *= x->sizeAt(d);
+        std::vector<sd::LongType> flatShape = {M, K};
+        auto xReshaped = x->reshape('c', flatShape, false);
+        xFlat = xReshaped;
+    } else {
+        xFlat = x;
+        M = x->sizeAt(0);
+    }
 
-    // out = silu(gate) * up = gate * sigmoid(gate) * up
-    NDArray* sigmoid = gate->transform(transform::Sigmoid);
-    NDArray* silu = (*gate) * (*sigmoid);
-    delete sigmoid;
-    delete gate;
+    // Allocate C-order temporaries matching flat shape [M, N]
+    std::vector<sd::LongType> outFlatShape = {M, N};
+    auto gate = NDArrayFactory::create_('c', outFlatShape, output->dataType(), block.launchContext());
+    auto up   = NDArrayFactory::create_('c', outFlatShape, output->dataType(), block.launchContext());
 
-    NDArray* result = (*silu) * (*up);
-    delete silu;
+    // gate = X @ W_gate, up = X @ W_up (write into pre-allocated C-order buffers)
+    MmulHelper::mmul(xFlat, wGate, gate, 1.0, 0.0);
+    MmulHelper::mmul(xFlat, wUp,   up,   1.0, 0.0);
+
+    if (needReshape)
+        delete xFlat;
+
+    // Compute silu(gate) * up into gate buffer (reusing gate as accumulator)
+    // Step 1: sigmoidBuf = sigmoid(gate)
+    auto sigmoidBuf = NDArrayFactory::create_('c', outFlatShape, output->dataType(), block.launchContext());
+    gate->applyTransform(transform::Sigmoid, sigmoidBuf);
+    // Step 2: gate *= sigmoid → gate = silu(gate)
+    gate->applyPairwiseTransform(pairwise::Multiply, sigmoidBuf, gate);
+    delete sigmoidBuf;
+    // Step 3: gate *= up → gate = silu(gate) * up (final result in gate)
+    gate->applyPairwiseTransform(pairwise::Multiply, up, gate);
     delete up;
 
-    output->assign(result);
-    delete result;
+    // Copy C-order flat result [M,N] to output [...,N].
+    // Both are C-order with the same total elements, so assign handles it.
+    output->assign(gate);
+    delete gate;
 
     return Status::OK;
 }
@@ -935,12 +988,17 @@ CUSTOM_OP_IMPL(fused_gemm_swiglu, 3, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(fused_gemm_swiglu) {
     auto xShape = inputShape->at(0);
     auto wGateShape = inputShape->at(1);
-
-    auto M = shape::shapeOf(xShape)[0];
+    auto xRank = shape::rank(xShape);
     auto N = shape::shapeOf(wGateShape)[1];
     auto dtype = ArrayOptions::dataType(xShape);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {M, N}));
+    // Output shape: leading dims from x + N from weight
+    std::vector<sd::LongType> outShape;
+    for (int d = 0; d < xRank - 1; d++)
+        outShape.push_back(shape::shapeOf(xShape)[d]);
+    outShape.push_back(N);
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', outShape));
 }
 
 DECLARE_TYPES(fused_gemm_swiglu) {
@@ -950,24 +1008,45 @@ DECLARE_TYPES(fused_gemm_swiglu) {
 }
 
 CUSTOM_OP_IMPL(fused_gemm_swiglu_bp, 4, 3, false, 0, 0) {
-    auto x = INPUT_VARIABLE(0);       // [M, K]
+    auto x = INPUT_VARIABLE(0);       // [..., K]
     auto wGate = INPUT_VARIABLE(1);   // [K, N]
     auto wUp = INPUT_VARIABLE(2);     // [K, N]
-    auto gradOut = INPUT_VARIABLE(3); // [M, N]
-    auto dX = OUTPUT_VARIABLE(0);     // [M, K]
+    auto gradOut = INPUT_VARIABLE(3); // [..., N]
+    auto dX = OUTPUT_VARIABLE(0);     // [..., K]
     auto dWGate = OUTPUT_VARIABLE(1); // [K, N]
     auto dWUp = OUTPUT_VARIABLE(2);   // [K, N]
 
+    auto K = x->sizeAt(-1);
+    auto N = wGate->sizeAt(1);
+
+    // Flatten leading dims for rank > 2
+    NDArray* xFlat = nullptr;
+    NDArray* gradFlat = nullptr;
+    sd::LongType M = 1;
+    bool needReshape = x->rankOf() > 2;
+    if (needReshape) {
+        for (int d = 0; d < x->rankOf() - 1; d++)
+            M *= x->sizeAt(d);
+        std::vector<sd::LongType> flatX = {M, K};
+        std::vector<sd::LongType> flatG = {M, N};
+        xFlat = new NDArray(x->reshape('c', flatX));
+        gradFlat = new NDArray(gradOut->reshape('c', flatG));
+    } else {
+        xFlat = x;
+        gradFlat = gradOut;
+        M = x->sizeAt(0);
+    }
+
     // Recompute forward intermediates
-    auto gate = MmulHelper::mmul(x, wGate, nullptr, 1.0, 0.0);    // [M, N]
-    auto up = MmulHelper::mmul(x, wUp, nullptr, 1.0, 0.0);        // [M, N]
+    auto gate = MmulHelper::mmul(xFlat, wGate, nullptr, 1.0, 0.0);    // [M, N]
+    auto up = MmulHelper::mmul(xFlat, wUp, nullptr, 1.0, 0.0);        // [M, N]
 
     // silu(gate) = gate * sigmoid(gate)
     NDArray* sigmoid = gate->transform(transform::Sigmoid);
     NDArray* siluGate = (*gate) * (*sigmoid);
 
     // d_up = gradOut * silu(gate)
-    NDArray* dUpVal = (*gradOut) * (*siluGate);
+    NDArray* dUpVal = (*gradFlat) * (*siluGate);
 
     // silu'(gate) = sigmoid(gate) + gate * sigmoid(gate) * (1 - sigmoid(gate))
     NDArray* gateSig = (*gate) * (*sigmoid);          // gate * sigmoid
@@ -980,33 +1059,47 @@ CUSTOM_OP_IMPL(fused_gemm_swiglu_bp, 4, 3, false, 0, 0) {
     delete gsOms;
 
     // d_gate = gradOut * up * silu'(gate)
-    NDArray* gradTimesUp = (*gradOut) * (*up);
+    NDArray* gradTimesUp = (*gradFlat) * (*up);
     NDArray* dGateVal = (*gradTimesUp) * (*siluDeriv);
     delete gradTimesUp;
     delete siluDeriv;
     delete sigmoid;
     delete siluGate;
 
-    // d_W_gate = x^T @ d_gate
-    MmulHelper::matmul(x, dGateVal, dWGate, true, false, 1.0, 0.0);
+    // d_W_gate = xFlat^T @ d_gate
+    MmulHelper::matmul(xFlat, dGateVal, dWGate, true, false, 1.0, 0.0);
 
-    // d_W_up = x^T @ d_up
-    MmulHelper::matmul(x, dUpVal, dWUp, true, false, 1.0, 0.0);
+    // d_W_up = xFlat^T @ d_up
+    MmulHelper::matmul(xFlat, dUpVal, dWUp, true, false, 1.0, 0.0);
 
-    // d_x = d_gate @ W_gate^T + d_up @ W_up^T
-    auto dXGate = new NDArray(dX->shapeInfo(), false, x->getContext());
-    MmulHelper::matmul(dGateVal, const_cast<NDArray*>(wGate), dXGate, false, true, 1.0, 0.0);
-    auto dXUp = new NDArray(dX->shapeInfo(), false, x->getContext());
+    // d_x = d_gate @ W_gate^T + d_up @ W_up^T, then reshape back
+    std::vector<sd::LongType> flatDxShape = {M, K};
+    auto dXFlat = new NDArray('c', flatDxShape, x->dataType(), x->getContext());
+    MmulHelper::matmul(dGateVal, const_cast<NDArray*>(wGate), dXFlat, false, true, 1.0, 0.0);
+    auto dXUp = new NDArray('c', flatDxShape, x->dataType(), x->getContext());
     MmulHelper::matmul(dUpVal, const_cast<NDArray*>(wUp), dXUp, false, true, 1.0, 0.0);
-    *dXGate += *dXUp;
-    dX->assign(dXGate);
-    delete dXGate;
+    *dXFlat += *dXUp;
+
+    if (needReshape) {
+        auto dxShapePtr = dX->getShapeAsVector();
+        auto reshaped = dXFlat->reshape('c', *dxShapePtr);
+        dX->assign(reshaped);
+        delete dxShapePtr;
+    } else {
+        dX->assign(dXFlat);
+    }
+    delete dXFlat;
     delete dXUp;
 
     delete dGateVal;
     delete dUpVal;
     delete gate;
     delete up;
+
+    if (needReshape) {
+        delete xFlat;
+        delete gradFlat;
+    }
 
     return Status::OK;
 }
@@ -1041,17 +1134,34 @@ DECLARE_TYPES(fused_gemm_swiglu_bp) {
 // Σx² and Σx·W accumulation will be added as a platform-specific op.
 #if NOT_EXCLUDED(OP_rms_norm_linear)
 CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
-    auto x = INPUT_VARIABLE(0);       // [M, K] input
+    auto x = INPUT_VARIABLE(0);       // [..., K] input (rank >= 2)
     auto gamma = INPUT_VARIABLE(1);   // [K] scale
     auto w = INPUT_VARIABLE(2);       // [K, N] weight matrix
-    auto output = OUTPUT_VARIABLE(0); // [M, N]
+    auto output = OUTPUT_VARIABLE(0); // [..., N]
 
     float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-6f;
 
     REQUIRE_TRUE(x->rankOf() >= 2, 0, "rms_norm_linear: input must be rank >= 2, got %d", x->rankOf());
     REQUIRE_TRUE(w->rankOf() == 2, 0, "rms_norm_linear: weight must be rank 2, got %d", w->rankOf());
 
-    helpers::rmsNormLinear(block.launchContext(), x, gamma, w, output, epsilon);
+    // The helper internally promotes everything to FLOAT32 for the normalization
+    // and matmul, so no op-level dtype casts are needed.
+
+    // For rank-3+ inputs, flatten leading dims to rank-2 for the helper
+    if (x->rankOf() > 2) {
+        auto K = x->sizeAt(-1);
+        auto M = x->lengthOf() / K;
+        auto N = w->sizeAt(1);
+        std::vector<sd::LongType> xShape2d = {M, K};
+        std::vector<sd::LongType> outShape2d = {M, N};
+        auto x2d = x->reshape('c', xShape2d);
+        auto out2d = output->reshape('c', outShape2d);
+        helpers::rmsNormLinear(block.launchContext(), x2d, gamma, w, out2d, epsilon);
+        delete x2d;
+        delete out2d;
+    } else {
+        helpers::rmsNormLinear(block.launchContext(), x, gamma, w, output, epsilon);
+    }
 
     return Status::OK;
 }
@@ -1060,11 +1170,20 @@ DECLARE_SHAPE_FN(rms_norm_linear) {
     auto xShape = inputShape->at(0);
     auto wShape = inputShape->at(2);
 
-    auto M = shape::shapeOf(xShape)[0];
+    auto xRank = shape::rank(xShape);
     auto N = shape::shapeOf(wShape)[1];
     auto dtype = ArrayOptions::dataType(xShape);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {M, N}));
+    // Preserve all leading dims, replace last dim with N
+    // e.g. [B, S, K] @ [K, N] -> [B, S, N]
+    //      [M, K] @ [K, N] -> [M, N]
+    std::vector<sd::LongType> outShape;
+    for (int i = 0; i < xRank - 1; i++) {
+        outShape.push_back(shape::shapeOf(xShape)[i]);
+    }
+    outShape.push_back(N);
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', outShape));
 }
 
 DECLARE_TYPES(rms_norm_linear) {

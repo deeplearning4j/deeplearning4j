@@ -289,6 +289,10 @@ public class AutoregressiveDecode extends DynamicCustomOp {
                                  int cachePositionExtIdx,
                                  int[] kvInputExtIndices,
                                  int[] kvOutputIndices,
+                                 int[] gdnStateExtIndices,
+                                 int[] gdnStateOutputIndices,
+                                 int[] convStateExtIndices,
+                                 int[] convStateOutputIndices,
                                  int maxNewTokens,
                                  int eosTokenId,
                                  int numKvPairs,
@@ -322,6 +326,12 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         }
         // Bit 4: in-graph KV cache mode (GGUF pattern)
         optionalMask |= 16;
+        // Bit 5: GDN/conv recurrent state feedback
+        boolean hasRecurrentState = (gdnStateExtIndices != null && gdnStateExtIndices.length > 0)
+                || (convStateExtIndices != null && convStateExtIndices.length > 0);
+        if (hasRecurrentState) {
+            optionalMask |= 32;
+        }
         this.optionalInputMask = optionalMask;
 
         addInputArgument(inputList.toArray(new INDArray[0]));
@@ -377,6 +387,25 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         if (kvOutputIndices != null) {
             for (int idx : kvOutputIndices) {
                 iArgs.add((long) idx);
+            }
+        }
+        // GDN/conv recurrent state indices (bit 5)
+        if (hasRecurrentState) {
+            int numGdn = gdnStateExtIndices != null ? gdnStateExtIndices.length : 0;
+            int numConv = convStateExtIndices != null ? convStateExtIndices.length : 0;
+            iArgs.add((long) numGdn);
+            iArgs.add((long) numConv);
+            if (gdnStateExtIndices != null) {
+                for (int idx : gdnStateExtIndices) iArgs.add((long) idx);
+            }
+            if (gdnStateOutputIndices != null) {
+                for (int idx : gdnStateOutputIndices) iArgs.add((long) idx);
+            }
+            if (convStateExtIndices != null) {
+                for (int idx : convStateExtIndices) iArgs.add((long) idx);
+            }
+            if (convStateOutputIndices != null) {
+                for (int idx : convStateOutputIndices) iArgs.add((long) idx);
             }
         }
         // Additional stop IDs

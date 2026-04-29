@@ -114,6 +114,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         int numKVHeads = config.getNumKVHeads();
         Map<Integer, SDVariable> keyCachePlaceholders = new HashMap<>();
         Map<Integer, SDVariable> valueCachePlaceholders = new HashMap<>();
+        // GDN recurrent state placeholders (only for linear_attention layers)
+        Map<Integer, SDVariable> gdnStatePlaceholders = new HashMap<>();
+        Map<Integer, SDVariable> convStatePlaceholders = new HashMap<>();
         for (int layer = 0; layer < config.getNumLayers(); layer++) {
             String layerType = getLayerType(config, layer);
             if (!"linear_attention".equals(layerType)) {
@@ -124,6 +127,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
                         dtype, -1, -1, numKVHeads, headDim);
                 keyCachePlaceholders.put(layer, keyCache);
                 valueCachePlaceholders.put(layer, valueCache);
+            } else {
+                // GDN recurrent state: [batch, numGdnHeads, headDimKV, headDimKV]
+                SDVariable gdnStateIn = sd.placeHolder("past_gdn_state." + layer, dtype, -1, -1, -1, -1);
+                gdnStatePlaceholders.put(layer, gdnStateIn);
+                // CausalConv1d state: [batch, convDim, kernelSize-1]
+                SDVariable convStateIn = sd.placeHolder("past_conv_state." + layer, dtype, -1, -1, -1);
+                convStatePlaceholders.put(layer, convStateIn);
             }
         }
 
@@ -140,16 +150,22 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Build transformer layers
         List<String> outputNames = new ArrayList<>();
         for (int layer = 0; layer < config.getNumLayers(); layer++) {
+            SDVariable gdnState = gdnStatePlaceholders.get(layer);
+            SDVariable convState = convStatePlaceholders.get(layer);
             hidden = buildTransformerBlock(sd, hidden, layer, config, weights, dtype,
                     positionOffset, cachePosition, causalMask,
                     keyCachePlaceholders.get(layer),
-                    valueCachePlaceholders.get(layer));
+                    valueCachePlaceholders.get(layer),
+                    gdnState, convState);
 
             // Register per-layer K/V outputs for prefill extraction
             String layerType = getLayerType(config, layer);
             if (!"linear_attention".equals(layerType)) {
                 outputNames.add("k_rope_" + layer);
                 outputNames.add("v_heads_" + layer);
+            } else {
+                outputNames.add("gdn_state_out_" + layer);
+                outputNames.add("conv_state_out_" + layer);
             }
         }
 
@@ -165,8 +181,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
 
         // Logits: [batch, seq_len, vocab_size]
-        SDVariable logits = sd.mmul("logits", hidden, lmHead.permute(1, 0));
-        outputNames.add("logits");
+        // Upcast to FP32: hidden=1024 dot products easily overflow FP16 (±65504) at vocab scale.
+        SDVariable logits = fp32Mmul(sd, "lm_logits", hidden, lmHead.permute(1, 0), dtype);
+        outputNames.add("lm_logits");
         sd.setOutputs(outputNames);
 
         return sd;
@@ -175,7 +192,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
     private SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
             SDVariable positionOffset, SDVariable cachePosition, SDVariable causalMask,
-            SDVariable keyCache, SDVariable valueCache) {
+            SDVariable keyCache, SDVariable valueCache,
+            SDVariable gdnStateIn, SDVariable convStateIn) {
 
         String prefix = "blk." + layerIdx;
 
@@ -194,8 +212,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable attnOut;
         switch (layerType) {
             case "linear_attention":
-                // GDN layers have no cacheable K/V — no KV cache params passed
-                attnOut = buildGDNAttention(sd, normed, layerIdx, config, weights, dtype);
+                // GDN layers have no cacheable K/V — GDN recurrent state passed instead
+                attnOut = buildGDNAttention(sd, normed, layerIdx, config, weights, dtype,
+                        gdnStateIn, convStateIn);
                 break;
             case "full_attention":
                 // Full attention with QK norms and output gating (Qwen3.5)
@@ -267,6 +286,37 @@ public class LLaMAArchitecture implements ModelArchitecture {
     }
 
     // ========================================================================
+    // FP32 matmul helper
+    // ========================================================================
+
+    /**
+     * Perform a matrix multiply in FP32, then cast the result back to the input dtype.
+     *
+     * <p>When {@code dtype == DataType.HALF}, FP16 dot products over large feature dimensions
+     * (e.g. hidden=1024) frequently overflow to ±65504 — the FP16 maximum. This helper
+     * upcasts both operands to FP32 before the multiply and casts the result back, matching
+     * the standard "compute in FP32, store in FP16" pattern used by PyTorch, HuggingFace, etc.</p>
+     *
+     * <p>When {@code dtype} is already FP32 or higher no extra casts are inserted.</p>
+     *
+     * @param sd       the SameDiff graph
+     * @param name     unique node name for the mmul result
+     * @param a        left operand  [... , M, K]
+     * @param b        right operand [... , K, N] (already permuted by the caller if needed)
+     * @param dtype    the model's working dtype
+     * @return         result in {@code dtype}, shape [... , M, N]
+     */
+    private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
+        if (dtype == DataType.HALF || dtype == DataType.BFLOAT16) {
+            SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
+            SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
+            SDVariable result = sd.mmul(name + "_f32", aF32, bF32);
+            return result.castTo(name, dtype);
+        }
+        return sd.mmul(name, a, b);
+    }
+
+    // ========================================================================
     // RMS Normalization
     // ========================================================================
 
@@ -287,12 +337,16 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
         // RMS normalization: x * rsqrt(mean(x^2) + eps) * gamma
-        SDVariable squared = input.mul(input);
+        // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared)
+        SDVariable inputF32 = input.castTo(outputName + "_f32", DataType.FLOAT);
+        SDVariable squared = inputF32.mul(inputF32);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(config.getLayerNormEpsilon()));
-        SDVariable normalized = input.div(rms);
+        SDVariable normalized = inputF32.div(rms);
+        // Cast back to original dtype and apply weight
+        SDVariable normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
 
-        return normalized.mul(outputName, gamma);
+        return normalizedOrig.mul(outputName, gamma);
     }
 
     /**
@@ -304,11 +358,15 @@ public class LLaMAArchitecture implements ModelArchitecture {
             INDArray normWeight, float eps) {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
         // Normalize along the last (headDim) dimension
-        SDVariable squared = input.mul(input);
+        // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared)
+        SDVariable inputF32 = input.castTo(outputName + "_f32", DataType.FLOAT);
+        SDVariable squared = inputF32.mul(inputF32);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(eps));
-        SDVariable normalized = input.div(rms);
-        return normalized.mul(outputName, gamma);
+        SDVariable normalized = inputF32.div(rms);
+        // Cast back to original dtype and apply weight
+        SDVariable normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
+        return normalizedOrig.mul(outputName, gamma);
     }
 
     // ========================================================================
@@ -356,9 +414,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // Project to Q, K, V: [batch, seq, hidden] -> [batch, seq, proj_dim]
-        SDVariable q = sd.mmul("q_" + layerIdx, input, wq.permute(1, 0));
-        SDVariable k = sd.mmul("k_" + layerIdx, input, wk.permute(1, 0));
-        SDVariable v = sd.mmul("v_" + layerIdx, input, wv.permute(1, 0));
+        // Upcast to FP32 inside fp32Mmul to prevent FP16 overflow (hidden=1024 dot products
+        // easily exceed ±65504 in FP16). Result is cast back to dtype after the multiply.
+        SDVariable q = fp32Mmul(sd, "q_" + layerIdx, input, wq.permute(1, 0), dtype);
+        SDVariable k = fp32Mmul(sd, "k_" + layerIdx, input, wk.permute(1, 0), dtype);
+        SDVariable v = fp32Mmul(sd, "v_" + layerIdx, input, wv.permute(1, 0), dtype);
 
         // Add biases if present
         INDArray qBias = weights.get(prefix + ".attn_q.bias");
@@ -411,7 +471,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return fp32Mmul(sd, "attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
     }
 
     /**
@@ -465,9 +525,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // Project Q (includes gate), K, V
-        SDVariable qFull = sd.mmul("q_full_" + layerIdx, input, wq.permute(1, 0));
-        SDVariable k = sd.mmul("k_" + layerIdx, input, wk.permute(1, 0));
-        SDVariable v = sd.mmul("v_" + layerIdx, input, wv.permute(1, 0));
+        // Upcast to FP32 inside fp32Mmul to prevent FP16 overflow (hidden=1024 dot products
+        // easily exceed ±65504 in FP16). Result is cast back to dtype after the multiply.
+        SDVariable qFull = fp32Mmul(sd, "q_full_" + layerIdx, input, wq.permute(1, 0), dtype);
+        SDVariable k = fp32Mmul(sd, "k_" + layerIdx, input, wk.permute(1, 0), dtype);
+        SDVariable v = fp32Mmul(sd, "v_" + layerIdx, input, wv.permute(1, 0), dtype);
 
         SDVariable batchDim = sd.sizeAt(input, 0);
         SDVariable seqDim = sd.sizeAt(input, 1);
@@ -493,14 +555,28 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable gate = sd.reshape("attn_gate_" + layerIdx, gatePerHead, gateShapeVar);
 
         // Reshape K, V to [batch, seq, kv_heads, headDim]
-        SDVariable kvShapeVar = sd.stack("kv_shape_" + layerIdx, 0,
+        // Derive actual KV head count from weight shapes — in gated attention layers,
+        // the V/K weight first dimension may differ from config.numKVHeads * headDim
+        int kOutDim = (int) kWeight.shape()[0];
+        int vOutDim = (int) vWeight.shape()[0];
+        int actualKHeads = kOutDim / headDim;
+        int actualVHeads = vOutDim / headDim;
+        log.info("Layer {} V reshape: vWeight.shape={}, vOutDim={}, actualVHeads={}, headDim={}, target=[B,seq,{},{}]",
+                layerIdx, java.util.Arrays.toString(vWeight.shape()), vOutDim, actualVHeads, headDim, actualVHeads, headDim);
+
+        SDVariable kShapeVar = sd.stack("k_shape_" + layerIdx, 0,
                 batchDim, seqDim,
-                sd.constant(Nd4j.scalar((long) numKVHeads)),
+                sd.constant(Nd4j.scalar((long) actualKHeads)),
+                sd.constant(Nd4j.scalar((long) headDim)));
+        SDVariable vShapeVar = sd.stack("v_shape_" + layerIdx, 0,
+                batchDim, seqDim,
+                sd.constant(Nd4j.scalar((long) actualVHeads)),
                 sd.constant(Nd4j.scalar((long) headDim)));
 
         // Q is already [B, L, numHeads, headDim] from the split above
-        k = sd.reshape("k_heads_" + layerIdx, k, kvShapeVar);
-        v = sd.reshape("v_heads_" + layerIdx, v, kvShapeVar);
+        k = sd.reshape("k_heads_" + layerIdx, k, kShapeVar);
+        v = sd.reshape("v_heads_" + layerIdx, v, vShapeVar);
+        log.info("Layer {} v_heads shape info: varName={}", layerIdx, v.name());
 
         // Apply QK norms (per-head RMS normalization)
         if (qNormWeight != null) {
@@ -542,7 +618,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable gatedOut = attnFlat.mul("gated_attn_" + layerIdx, gateActivated);
 
         // Output projection
-        return sd.mmul("attn_proj_" + layerIdx, gatedOut, wo.permute(1, 0));
+        return fp32Mmul(sd, "attn_proj_" + layerIdx, gatedOut, wo.permute(1, 0), dtype);
     }
 
     /**
@@ -561,7 +637,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * </ol>
      */
     private SDVariable buildGDNAttention(SameDiff sd, SDVariable input, int layerIdx,
-            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype) {
+            ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
+            SDVariable gdnStateIn, SDVariable convStateIn) {
 
         String prefix = "blk." + layerIdx;
         String attnPrefix = "model.layers." + layerIdx + ".gdn.";
@@ -594,15 +671,18 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
 
         // 1. QKV projection: [B, L, hidden] -> [B, L, qkvDim]
+        // Upcast to FP32 to prevent FP16 overflow (hidden=1024 dot products saturate in FP16).
         SDVariable wqkv = sd.var(attnPrefix + "qkv.weight", qkvWeight);
-        SDVariable qkv = sd.mmul("gdn_qkv_" + layerIdx, input, wqkv.permute(1, 0));
+        SDVariable qkv = fp32Mmul(sd, "gdn_qkv_" + layerIdx, input, wqkv.permute(1, 0), dtype);
 
         // 2. Causal conv1d with SiLU activation
         if (convWeight != null) {
             SDVariable wConv = sd.var(attnPrefix + "conv.weight", convWeight);
-            SDVariable[] convResult = new CausalConv1d(sd, qkv, wConv, null, null, 1).outputVariables();
+            SDVariable[] convResult = new CausalConv1d(sd, qkv, wConv, null, convStateIn, 1).outputVariables();
             qkv = convResult[0];
             sd.updateVariableNameAndReference(qkv, "gdn_conv_" + layerIdx);
+            SDVariable convStateOut = convResult[1];
+            sd.updateVariableNameAndReference(convStateOut, "conv_state_out_" + layerIdx);
         }
 
         // 3. Split QKV into Q, K, V: each [B, L, perComponentDim]
@@ -626,10 +706,15 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable v = sd.reshape("gdn_v_reshaped_" + layerIdx, vProj, gdnHeadShape);
 
         // 5. L2-normalize Q and K (per head vector, matching use_qk_l2norm_in_kernel=True)
-        SDVariable qNormSq = q.mul(q).sum("gdn_q_normsq_" + layerIdx, true, -1);
-        q = q.div("gdn_q_l2norm_" + layerIdx, sd.math.sqrt(qNormSq.add(1e-12)));
-        SDVariable kNormSq = k.mul(k).sum("gdn_k_normsq_" + layerIdx, true, -1);
-        k = k.div("gdn_k_l2norm_" + layerIdx, sd.math.sqrt(kNormSq.add(1e-12)));
+        // Upcast to FLOAT32 for squaring to prevent HALF overflow
+        SDVariable qF32 = q.castTo("gdn_q_f32_" + layerIdx, DataType.FLOAT);
+        SDVariable qNormSq = qF32.mul(qF32).sum("gdn_q_normsq_" + layerIdx, true, -1);
+        SDVariable qNorm = sd.math.sqrt(qNormSq.add(1e-12));
+        q = q.div("gdn_q_l2norm_" + layerIdx, qNorm.castTo("gdn_q_norm_cast_" + layerIdx, q.dataType()));
+        SDVariable kF32 = k.castTo("gdn_k_f32_" + layerIdx, DataType.FLOAT);
+        SDVariable kNormSq = kF32.mul(kF32).sum("gdn_k_normsq_" + layerIdx, true, -1);
+        SDVariable kNorm = sd.math.sqrt(kNormSq.add(1e-12));
+        k = k.div("gdn_k_l2norm_" + layerIdx, kNorm.castTo("gdn_k_norm_cast_" + layerIdx, k.dataType()));
 
         // 5b. Scale Q by 1/sqrt(head_dim) — standard attention scaling
         // Reference: scale = 1 / (query.shape[-1] ** 0.5); query = query * scale
@@ -641,7 +726,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable beta;
         if (betaWeight != null) {
             SDVariable wBeta = sd.var(attnPrefix + "beta.weight", betaWeight);
-            beta = sd.mmul("gdn_beta_proj_" + layerIdx, input, wBeta.permute(1, 0));
+            beta = fp32Mmul(sd, "gdn_beta_proj_" + layerIdx, input, wBeta.permute(1, 0), dtype);
             beta = sd.nn.sigmoid("gdn_beta_" + layerIdx, beta);
         } else {
             beta = q.mean("gdn_beta_" + layerIdx, false, -1);
@@ -657,7 +742,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
             SDVariable aLog = sd.var(attnPrefix + "a", ssmA);           // A_log: [H]
             SDVariable expALog = sd.math.exp(aLog);                      // exp(A_log): [H]
             SDVariable wAlpha = sd.var(attnPrefix + "alpha.weight", alphaWeight);
-            SDVariable aProj = sd.mmul("gdn_alpha_proj_" + layerIdx, input, wAlpha.permute(1, 0)); // [B,L,H]
+            SDVariable aProj = fp32Mmul(sd, "gdn_alpha_proj_" + layerIdx, input, wAlpha.permute(1, 0), dtype); // [B,L,H]
             if (dtBias != null) {
                 aProj = aProj.add("gdn_a_plus_bias_" + layerIdx, sd.var(attnPrefix + "dt.bias", dtBias));
             }
@@ -678,9 +763,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
 
         // 8. Gated delta rule: [B, L, H, D] -> [B, L, H, D]
-        SDVariable[] gdrResult = new GatedDeltaRule(sd, q, k, v, beta, gateDecay).outputVariables();
+        SDVariable[] gdrResult = new GatedDeltaRule(sd, q, k, v, beta, gateDecay, gdnStateIn).outputVariables();
         SDVariable gdnOut = gdrResult[0];
         sd.updateVariableNameAndReference(gdnOut, "gdn_out_" + layerIdx);
+        SDVariable gdnStateOut = gdrResult[1];
+        sd.updateVariableNameAndReference(gdnStateOut, "gdn_state_out_" + layerIdx);
 
         // 9. Gated RMSNorm per-head: output = RMSNorm(gdnOut) * weight * SiLU(z)
         // Reference: Qwen3_5RMSNormGated — RMSNorm FIRST, then gate with SiLU(z)
@@ -692,7 +779,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
         if (gateWeight != null) {
             SDVariable wGate = sd.var(attnPrefix + "gate.weight", gateWeight);
-            SDVariable z = sd.mmul("gdn_gate_proj_" + layerIdx, input, wGate.permute(1, 0)); // [B,L,value_dim]
+            SDVariable z = fp32Mmul(sd, "gdn_gate_proj_" + layerIdx, input, wGate.permute(1, 0), dtype); // [B,L,value_dim]
             SDVariable zReshaped = sd.reshape("gdn_z_reshaped_" + layerIdx, z, gdnHeadShape); // [B,L,H,D]
             SDVariable gateAct = sd.nn.swish("gdn_gate_act_" + layerIdx, zReshaped);
             gdnOut = gdnOut.mul("gdn_gated_" + layerIdx, gateAct);
@@ -706,7 +793,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // 11. Output projection: [B, L, perComponentDim] -> [B, L, hidden]
         SDVariable wOut = sd.var(attnPrefix + "out.weight", outWeight);
-        return sd.mmul("gdn_proj_" + layerIdx, gdnOut, wOut.permute(1, 0));
+        return fp32Mmul(sd, "gdn_proj_" + layerIdx, gdnOut, wOut.permute(1, 0), dtype);
     }
 
     /**
@@ -743,7 +830,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wqkv = sd.var(attnPrefix + "qkv_proj.weight", qkvWeight);
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
-        SDVariable qkv = sd.mmul("qkv_" + layerIdx, input, wqkv.permute(1, 0));
+        // Upcast to FP32 to prevent FP16 overflow in large fused QKV projections.
+        SDVariable qkv = fp32Mmul(sd, "qkv_" + layerIdx, input, wqkv.permute(1, 0), dtype);
 
         INDArray qkvBias = weights.get(prefix + ".attn_qkv.bias");
         if (qkvBias != null) {
@@ -795,7 +883,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return fp32Mmul(sd, "attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
     }
 
     // ========================================================================
@@ -821,13 +909,14 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = sd.mmul("gate_" + layerIdx, input, wGate.permute(1, 0));
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        // Upcast to FP32 to prevent FP16 overflow in large intermediate projections.
+        SDVariable gate = fp32Mmul(sd, "gate_" + layerIdx, input, wGate.permute(1, 0), dtype);
+        SDVariable up = fp32Mmul(sd, "up_" + layerIdx, input, wUp.permute(1, 0), dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable hidden = silu.mul("swiglu_" + layerIdx, up);
 
-        return sd.mmul("down_" + layerIdx, hidden, wDown.permute(1, 0));
+        return fp32Mmul(sd, "down_" + layerIdx, hidden, wDown.permute(1, 0), dtype);
     }
 
     private SDVariable buildGELUFFN(SameDiff sd, SDVariable input, int layerIdx,
@@ -847,9 +936,10 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        // Upcast to FP32 to prevent FP16 overflow in large intermediate projections.
+        SDVariable up = fp32Mmul(sd, "up_" + layerIdx, input, wUp.permute(1, 0), dtype);
         SDVariable activated = sd.nn.gelu("gelu_" + layerIdx, up);
-        return sd.mmul("down_" + layerIdx, activated, wDown.permute(1, 0));
+        return fp32Mmul(sd, "down_" + layerIdx, activated, wDown.permute(1, 0), dtype);
     }
 
     /**
@@ -863,7 +953,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         String mlpPrefix = "model.layers." + layerIdx + ".mlp.";
 
         SDVariable gate = sd.var(mlpPrefix + "gate.weight", routerGateWeight);
-        SDVariable routerLogits = sd.mmul("router_logits_" + layerIdx, input, gate.permute(1, 0));
+        // Router logits: small dimension (num_experts), FP32 cast still avoids NaN in softmax
+        SDVariable routerLogits = fp32Mmul(sd, "router_logits_" + layerIdx, input, gate.permute(1, 0), dtype);
         SDVariable routerWeights = sd.nn.softmax("router_weights_" + layerIdx, routerLogits, -1);
 
         int numExperts = 0;
@@ -919,13 +1010,14 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upW);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downW);
 
-        SDVariable g = sd.mmul("gate" + nameSuffix, input, wGate.permute(1, 0));
-        SDVariable u = sd.mmul("up" + nameSuffix, input, wUp.permute(1, 0));
+        // Upcast to FP32 to prevent FP16 overflow in large expert projections.
+        SDVariable g = fp32Mmul(sd, "gate" + nameSuffix, input, wGate.permute(1, 0), dtype);
+        SDVariable u = fp32Mmul(sd, "up" + nameSuffix, input, wUp.permute(1, 0), dtype);
 
         SDVariable silu = sd.nn.swish(g);
         SDVariable h = silu.mul("swiglu" + nameSuffix, u);
 
-        return sd.mmul("down" + nameSuffix, h, wDown.permute(1, 0));
+        return fp32Mmul(sd, "down" + nameSuffix, h, wDown.permute(1, 0), dtype);
     }
 
     // ========================================================================

@@ -112,6 +112,40 @@ void CoreConfig::initFromEnvironment() {
     _maxMasterThreads.store(_maxThreads.load());
   }
 
+  // ── OMP inference tuning ─────────────────────────────────────────────────
+  // These settings apply to ALL OpenMP-threaded code (libnd4j ops, OneDNN,
+  // OpenBLAS if OMP-built, etc.). Tuned for inference (low-latency,
+  // single-request, sequential execution).
+#ifdef _OPENMP
+  // Set thread count to match our configured value.
+  omp_set_num_threads(_maxThreads.load());
+
+  // KMP_BLOCKTIME: Intel OpenMP spin-wait time (ms) after parallel region.
+  // Default is 200ms — threads burn CPU waiting for work between ops.
+  // For inference, each op is a brief burst followed by host-side work;
+  // sleeping immediately (blocktime=0) frees cores for the host thread
+  // and reduces power/heat on high-core-count systems.
+  // Only set if user hasn't explicitly configured it.
+  if (!std::getenv("KMP_BLOCKTIME")) {
+    setenv("KMP_BLOCKTIME", "0", 0);
+  }
+
+  // KMP_AFFINITY: Thread-to-core binding (Intel OpenMP).
+  // compact,1,0,granularity=fine: pack threads onto physical cores first
+  // before using HT siblings. Maximizes per-thread memory bandwidth for
+  // memory-bound matmul/attention ops.
+  // Only set if user hasn't explicitly configured it.
+  if (!std::getenv("KMP_AFFINITY")) {
+    setenv("KMP_AFFINITY", "compact,1,0,granularity=fine", 0);
+  }
+
+  // GOMP_SPINCOUNT: GCC OpenMP spin-wait count (equivalent to KMP_BLOCKTIME).
+  // 0 = sleep immediately after parallel region.
+  if (!std::getenv("GOMP_SPINCOUNT")) {
+    setenv("GOMP_SPINCOUNT", "0", 0);
+  }
+#endif
+
   if (std::getenv("SD_FORBID_HELPERS") != nullptr) {
     _allowHelpers.store(false);
   }

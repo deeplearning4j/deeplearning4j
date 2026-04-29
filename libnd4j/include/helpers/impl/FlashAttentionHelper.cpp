@@ -284,6 +284,16 @@ void FlashAttentionHelper::forward4D(
   bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
 
+  // GQA decode fast path: fused kernel handles Q@K^T + softmax + attn@V with GQA head
+  // mapping in a single kernel launch — eliminates permute, tile, and 8+ cuBLAS calls.
+  bool isDecode = (seqLenQ == 1);
+  if (supportedType && !noGQA && isDecode && !needScores && !needLogits) {
+    fusedGQADecodeCuda(query, key, value, output, scale, context,
+                       hasAttentionBias ? attentionBias : nullptr);
+    if (softmaxLse != nullptr) softmaxLse->nullify();
+    return;
+  }
+
   // Use fused kernel when no scores needed - cuBLAS is only faster when we need intermediate results
   // The fused kernel now handles attention bias internally for maximum performance
   if (supportedType && noGQA && !needScores && !needLogits) {
@@ -291,7 +301,7 @@ void FlashAttentionHelper::forward4D(
     // For M=1 decode, Q@K^T and attn@V are GEMVs, not GEMMs. cuBLAS GEMV with FP16 inputs
     // achieves ~2x throughput vs the fused kernel's manual FP32 dot product loops.
     bool isDecode = (seqLenQ == 1);
-    
+
     if (isDecode) {
       // Decode-optimized path using cuBLAS batched GEMV
       forward4DDecode(query, key, value, output, scale, config.isCausal, context,
@@ -299,7 +309,6 @@ void FlashAttentionHelper::forward4D(
       if (softmaxLse != nullptr) softmaxLse->nullify();
       return;
     }
-    
     // Use workspace for permuted arrays -  this eliminates malloc/free per call
     std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
     std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};
@@ -512,23 +521,42 @@ void FlashAttentionHelper::forward4D(
 #if defined(SD_CUDA)
   fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
 #else
+  // FP16 softmax overflow prevention: cast scores to FLOAT32 before softmax.
+  // In HALF, exp(x) overflows for x > ~11.09. With headDim=128 and scale ~0.088,
+  // a raw Q·K dot product of ~126 (common in FP16 models) overflows after scaling,
+  // producing NaN via inf/inf in softmax. FP32 has range up to ~88.7 for exp().
+  // GPU paths (cuBLAS, OneDNN) accumulate in FP32 internally; CPU must do it explicitly.
+  bool needsFp32Softmax = (workBuffer->dataType() == DataType::HALF || workBuffer->dataType() == DataType::BFLOAT16);
+  NDArray* softmaxBuffer = workBuffer;
+  NDArray* fp32Buffer = nullptr;
+  if (needsFp32Softmax) {
+    fp32Buffer = workspace->getBuffer("forward4d_fp32_scores", scoresShape, DataType::FLOAT32, context);
+    fp32Buffer->assign(workBuffer);
+    softmaxBuffer = fp32Buffer;
+  }
+
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray causalMask('c', maskShape, query->dataType(), context);
+    NDArray causalMask('c', maskShape, softmaxBuffer->dataType(), context);
     causalMask.nullify();
     LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask.fillAsTriangular,
+    BUILD_SINGLE_SELECTOR(softmaxBuffer->dataType(), causalMask.fillAsTriangular,
                           (-1.0e9f, 1, causalOffset, causalMask, 'u', false), SD_COMMON_TYPES);
-    workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &causalMask, workBuffer, false);
+    softmaxBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &causalMask, softmaxBuffer, false);
   }
   if (logitsBuffer != nullptr) {
-    logitsBuffer->assign(workBuffer);
+    logitsBuffer->assign(softmaxBuffer);
   }
   // IMPORTANT: Must use explicit positive dimension for softmax.
   // The TAD helper treats -1 as sentinel meaning "all dimensions",
   // NOT as "last dimension".
-  int softmaxDim4D = workBuffer->rankOf() - 1;
-  ops::helpers::softmax(context, workBuffer, workBuffer, softmaxDim4D);
+  int softmaxDim4D = softmaxBuffer->rankOf() - 1;
+  ops::helpers::softmax(context, softmaxBuffer, softmaxBuffer, softmaxDim4D);
+
+  // Cast back to original dtype for the output matmul
+  if (needsFp32Softmax) {
+    workBuffer->assign(softmaxBuffer);
+  }
 #endif
 
   // Output buffer
