@@ -84,6 +84,14 @@ class GroupQueryAttention : PreImportHook {
         val hasPastValue = !pastValueInput.isNullOrEmpty()
         val pastValue = if (hasPastValue) sd.getVariable(pastValueInput) else null
 
+        // seqlens_k (input 5): maps to cache_position for in-place KV write mode.
+        // Currently passed as null — the ONNX decode loop doesn't yet wire per-step
+        // updates for this ext input. The C++ op has the in-place KV implementation
+        // ready (gated on cachePosInput != nullptr) and can be activated once the
+        // AutoregressiveDecode constructor + GenerationPipeline wire cachePositionExtIdx.
+        // TODO: wire seqlens_k through AutoregressiveDecode for in-place KV write
+        val seqlensK: SDVariable? = null
+
         // Get attributes
         val numHeads = (attributes.getOrDefault("num_heads", 1) as Number).toInt()
         val scaleAttr = attributes["scale"]
@@ -102,9 +110,12 @@ class GroupQueryAttention : PreImportHook {
         // Q is [batch, seq, numHeads * headDim], K/V are [batch, seq, kvNumHeads * headDim].
         // The C++ op derives numKvHeads = kvHidden / headDim and dispatches to
         // fusedGQADecodeCuda for GQA decode (seqQ=1), eliminating repeat_kv expansion.
+        // When seqlens_k is present, pass it as cachePosition to enable in-place KV write
+        // (eliminates 4 assign kernels per layer — 120 kernels/step for 30-layer models).
         val outputs = OnnxMultiHeadAttention(
             sd, query, key, value,
             null, pastKey, pastValue,
+            seqlensK,
             numHeads, scale, false, requestedOutputs
         ).outputVariables()
 

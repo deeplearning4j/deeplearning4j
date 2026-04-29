@@ -157,6 +157,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   NDArray* kFinal = nullptr;
   NDArray* vFinal = nullptr;
   bool ownKVFinal = false;  // Whether we own kFinal/vFinal memory
+  bool skipPresentOutput = false;  // True when present output was written in-place
   LongType totalSeqKV = seqKV;
   
   // Skip past_key concat when the upstream graph already handled it.
@@ -166,7 +167,56 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   auto pastKvHeadCount = (pastKey != nullptr) ? pastKey->sizeAt(1) : numKvHeads;
   bool pastAlreadyConcat = (pastKey != nullptr && pastKvHeadCount != numKvHeads);
 
-  if (pastKey != nullptr && pastValue != nullptr && !pastAlreadyConcat) {
+  if (useInPlaceKv) {
+    // In-place KV write mode: write only the new token at cache_position,
+    // skip the bulk past→present copy. In CUDA graph replay, the present
+    // output buffer retains data from previous steps (same physical buffer
+    // address each replay), so positions 0..cache_position-1 are already valid.
+    // This eliminates 4 assign kernels per layer (120 kernels/step for 30 layers).
+    LongType cachePos = cachePosInput->e<LongType>(0);
+    auto presentKeyOut = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
+    auto presentValueOut = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
+
+    // totalSeqKV for attention = valid positions in KV cache
+    auto maxSeq = presentKeyOut != nullptr ? presentKeyOut->sizeAt(2) : cachePos + seqKV;
+    totalSeqKV = cachePos + seqKV;
+
+    if (presentKeyOut != nullptr && presentValueOut != nullptr) {
+      // Permute full output buffer from BHSD to BSHD for writing
+      std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
+      NDArray* kFullBSHD = presentKeyOut->permute(permBHSDtoBSHD, false, false);
+      NDArray* vFullBSHD = presentValueOut->permute(permBHSDtoBSHD, false, false);
+
+      // Write ONLY the current 1-token K/V at cache_position — skip past copy
+      std::vector<LongType> curSliceIdx = {0, batch, cachePos, cachePos + seqKV, 0, numKvHeads, 0, headDim};
+      NDArray* kCurSlice = (*kFullBSHD)(curSliceIdx);
+      NDArray* vCurSlice = (*vFullBSHD)(curSliceIdx);
+
+      if (kCurSlice->lengthOf() > 0 && kReshaped->lengthOf() > 0) {
+        kCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), kReshaped, kCurSlice, false);
+        vCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), vReshaped, vCurSlice, false);
+      }
+
+      delete kCurSlice;
+      delete vCurSlice;
+
+      // Slice to valid range [0:totalSeqKV] for attention — positions beyond are stale/empty
+      std::vector<LongType> validSliceIdx = {0, batch, 0, totalSeqKV, 0, numKvHeads, 0, headDim};
+      kFinal = (*kFullBSHD)(validSliceIdx);
+      vFinal = (*vFullBSHD)(validSliceIdx);
+      ownKVFinal = true;  // We own the sliced views
+      skipPresentOutput = true;  // Present buffer already has the data in BHSD
+
+      delete kFullBSHD;
+      delete vFullBSHD;
+    } else {
+      // No output buffers — fall back to standard concat
+      totalSeqKV = seqKV;
+      kFinal = kReshaped;
+      vFinal = vReshaped;
+      ownKVFinal = false;
+    }
+  } else if (pastKey != nullptr && pastValue != nullptr && !pastAlreadyConcat) {
     // Standard concat mode: concatenate past + current KV
     // Past is [batch, numKvHeads, pastSeq, headDim] (BHSD format from ONNX)
     // Need to permute to [batch, pastSeq, numKvHeads, headDim] (BSHD) for concat
@@ -303,8 +353,8 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   delete attnOut4d;
   
   // Output present key/value if requested (in BHSD format for ONNX compatibility)
-  // Skip if we already wrote directly to output buffers (ownKVFinal == false && using output view)
-  if (block.outputWidth() > 1 && ownKVFinal) {
+  // Skip if we already wrote directly to output buffers (in-place KV or direct write mode)
+  if (block.outputWidth() > 1 && ownKVFinal && !skipPresentOutput) {
     auto presentKey = OUTPUT_VARIABLE(1);
     // kFinal is BSHD [batch, totalSeqKV, numKvHeads, headDim], permute to BHSD
     std::vector<LongType> permBSHDtoBHSD = {0, 2, 1, 3};
@@ -312,7 +362,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     presentKey->assign(kBHSD);
     delete kBHSD;
   }
-  if (block.outputWidth() > 2 && ownKVFinal) {
+  if (block.outputWidth() > 2 && ownKVFinal && !skipPresentOutput) {
     auto presentValue = OUTPUT_VARIABLE(2);
     std::vector<LongType> permBSHDtoBHSD2 = {0, 2, 1, 3};
     NDArray* vBHSD = vFinal->permute(permBSHDtoBHSD2, false, false);

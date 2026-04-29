@@ -977,21 +977,28 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   if (sd::env_isProfiling()) timeEnter = std::chrono::system_clock::now();
 
   // Phase: VALIDATION
-  {
-    graph::OpPhaseTimer validationTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::VALIDATION);
-    // basic validation: ensure inputs are set
-    REQUIRE_OK(this->validateNonEmptyInput(*block));
-    // ensure number of IArgs, TArgs match our expectations
-    REQUIRE_OK(this->validateArguments(*block));
-    // validating data types for inputs and (optionally) outputs
-    REQUIRE_OK(this->validateDataTypes(*block));
-  }
-
-  // Phase: MEMORY_ALLOC - allocate output NDArrays
+  // When shapeFunctionOverride is set, the caller has pre-validated inputs
+  // and pre-allocated outputs (frozen DSP steady-state). Skip validation +
+  // shape inference to eliminate ~50ms per-op overhead on CPU decode.
   int numOutputs;
-  {
-    graph::OpPhaseTimer allocTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::MEMORY_ALLOC);
-    numOutputs = this->prepareOutputs(*block);
+  if (block->shapeFunctionOverride()) {
+    numOutputs = static_cast<int>(block->fastpath_out().size());
+  } else {
+    {
+      graph::OpPhaseTimer validationTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::VALIDATION);
+      // basic validation: ensure inputs are set
+      REQUIRE_OK(this->validateNonEmptyInput(*block));
+      // ensure number of IArgs, TArgs match our expectations
+      REQUIRE_OK(this->validateArguments(*block));
+      // validating data types for inputs and (optionally) outputs
+      REQUIRE_OK(this->validateDataTypes(*block));
+    }
+
+    // Phase: MEMORY_ALLOC - allocate output NDArrays
+    {
+      graph::OpPhaseTimer allocTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::MEMORY_ALLOC);
+      numOutputs = this->prepareOutputs(*block);
+    }
   }
 
   if (sd::env_isProfiling()) {
