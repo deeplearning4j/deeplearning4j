@@ -1828,11 +1828,32 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return The cloned SameDiff instance
      */
     public SameDiff dup() {
-        ByteBuffer bb = asFlatBuffers(true);
+        // Use SDNB serializer which shards large arrays to avoid the FlatBuffers 2GB limit.
+        // Raw asFlatBuffers() embeds all weight arrays inline into a single ByteBuffer,
+        // which exceeds Integer.MAX_VALUE for models with >2GB of parameters (e.g. LLMs in FP32).
+        File tempFile = null;
         try {
-            return fromFlatBuffers(bb);
-        } catch (IOException e){
-            throw new RuntimeException(e);
+            tempFile = File.createTempFile("samediff_dup_", ".sdnb");
+            SameDiffSerializer.save(this, tempFile, true, java.util.Collections.emptyMap());
+            return SameDiffSerializer.load(tempFile, true);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to clone SameDiff via SDNB round-trip", e);
+        } finally {
+            if (tempFile != null) {
+                // Clean up the base file and any shard files
+                File parentDir = tempFile.getParentFile();
+                String baseName = tempFile.getName();
+                int dotIdx = baseName.lastIndexOf('.');
+                if (dotIdx > 0) baseName = baseName.substring(0, dotIdx);
+                String prefix = baseName + ".shard";
+                File[] shardFiles = parentDir.listFiles((dir, name) -> name.startsWith(prefix) && name.endsWith(".sdnb"));
+                if (shardFiles != null) {
+                    for (File shard : shardFiles) {
+                        shard.delete();
+                    }
+                }
+                tempFile.delete();
+            }
         }
     }
 

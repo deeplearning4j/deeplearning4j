@@ -74,88 +74,15 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     return Status::MAYBE;
   }
 
-  // Verify all segments have a resolved CPU backend — if any don't, fall through
-  for (auto& seg : segments_) {
-    if (seg.resolvedCpuBackend == nullptr &&
-        seg.def.selectedBackend != SelectedBackend::SLOT_BY_SLOT) {
-      return Status::MAYBE;
-    }
-  }
-
   DSP_DIAG(EXECUTE, "CPU_FROZEN_FAST_PATH: segments=%d executeCount=%d",
            (int)segments_.size(), executeCount_);
 
-  // Execute each segment directly, bypassing executeSegmentWithSpecificBackend's
-  // shape key computation, phase guards, audit checks, and validation overhead.
-  // For OneDNN/ACL segments, this calls compiled_partition.execute() or
-  // NEFunction::run() directly via the GraphBackend interface.
+  // Execute all segments via slot-by-slot on CPU frozen decode.
+  // Graph backends (OpenVINO/OneDNN) add f16↔f32 conversion overhead per segment.
+  // Slot-by-slot with shapeFunctionOverride eliminates per-op shape inference
+  // and validation overhead in frozen steady-state.
   for (auto& seg : segments_) {
-    Status status;
-    if (seg.resolvedCpuBackend != nullptr) {
-      // Direct backend replay — OneDNN compiled_partition / ACL NEFunction / MLIR JIT.
-      // Shape key is already cached and locked. The backend's internal cache
-      // lookup will find the compiled artifact immediately.
-
-      // For OneDNN/OpenVINO mixed segments: install a NativeSlotExecutor so the
-      // backend can call back into slot-by-slot for unmappable op ranges.
-      // This mirrors the install/clear pattern in executeSegmentWithSpecificBackend.
-#if HAVE_ONEDNN
-      bool installedOneDnnNativeExecutor = false;
-      auto* onednnBackend = dynamic_cast<OneDnnGraphBackend*>(seg.resolvedCpuBackend);
-      if (onednnBackend != nullptr) {
-        onednnBackend->setNativeSlotExecutor(
-            [this, &externalInputs, numExternalInputs, &stream](int nativeStart, int nativeEnd) -> Status {
-              GraphSegment nativeSeg;
-              nativeSeg.def.startSlot = nativeStart;
-              nativeSeg.def.endSlot   = nativeEnd;
-              nativeSeg.def.isCapturable = false;
-              nativeSeg.exec.executionCount = 1;
-              return executeSegmentSlotBySlot(nativeSeg, externalInputs, numExternalInputs, stream);
-            });
-        installedOneDnnNativeExecutor = true;
-      }
-#endif
-#if HAVE_OPENVINO
-      bool installedOpenVinoNativeExecutor = false;
-      auto* openvinoBackend = dynamic_cast<OpenVinoGraphBackend*>(seg.resolvedCpuBackend);
-      if (openvinoBackend != nullptr) {
-        openvinoBackend->setNativeSlotExecutor(
-            [this, &externalInputs, numExternalInputs, &stream](int nativeStart, int nativeEnd) -> Status {
-              GraphSegment nativeSeg;
-              nativeSeg.def.startSlot = nativeStart;
-              nativeSeg.def.endSlot   = nativeEnd;
-              nativeSeg.def.isCapturable = false;
-              nativeSeg.exec.executionCount = 1;
-              return executeSegmentSlotBySlot(nativeSeg, externalInputs, numExternalInputs, stream);
-            });
-        installedOpenVinoNativeExecutor = true;
-      }
-#endif
-
-      status = seg.resolvedCpuBackend->executeSegment(
-          seg, slots_, externalInputs, numExternalInputs,
-          outputSlots_, totalOutputSlots_, stream);
-
-#if HAVE_ONEDNN
-      if (installedOneDnnNativeExecutor && onednnBackend != nullptr) {
-        onednnBackend->clearNativeSlotExecutor();
-      }
-#endif
-#if HAVE_OPENVINO
-      if (installedOpenVinoNativeExecutor && openvinoBackend != nullptr) {
-        openvinoBackend->clearNativeSlotExecutor();
-      }
-#endif
-
-      if (status == Status::OK) {
-        seg.exec.executionCount++;
-        totalGraphReplays_++;
-      }
-    } else {
-      // SLOT_BY_SLOT segment — run via slot loop (FunctionalReplayHandle
-      // fast path kicks in inside executeSegmentSlotBySlot when ready)
-      status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
-    }
+    Status status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
     if (status != Status::OK) {
       return status;
     }
@@ -301,28 +228,13 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 
   switch (segment.def.selectedBackend) {
     case SelectedBackend::CPU_GRAPH: {
-      // Use cascading backend selection — executeSegmentWithCpuGraph iterates the
-      // backend chain and caches the resolved backend per-segment.
-      auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
-      if (status == Status::OK) {
-        usedGraph = true;
-        if (segment.resolvedCpuBackend) {
-          segment.exec.compiledByBackend = segment.resolvedCpuBackend->name();
-        } else {
-          segment.exec.compiledByBackend = "CPU";
-        }
-        if (segment.exec.executionCount <= 1) {
-          DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILING, "cpu_graph_first_exec");
-        } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-          DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "cpu_graph_replay_ready");
-        } else {
-          DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "cpu_graph_compiled_no_replay");
-        }
-        return Status::OK;
-      }
-      // All backends in the cascade failed — demote to slot-by-slot for this segment
-      DSP_DIAG(BACKEND, "NativeDSP::execute: CPU_GRAPH cascade exhausted for seg[%d-%d], "
-               "demoting to slot-by-slot", segment.def.startSlot, segment.def.endSlot);
+      // Demote CPU_GRAPH to slot-by-slot. With FP32 model dtype on CPU,
+      // graph backends add no value (no fused f16 kernels to leverage) and
+      // their per-segment dispatch overhead exceeds the compute cost for
+      // batch-1 decode. Slot-by-slot with frozen-path shapeFunctionOverride
+      // is the fastest CPU path.
+      DSP_DIAG(BACKEND, "NativeDSP::execute: CPU_GRAPH seg[%d-%d] demoted to slot-by-slot",
+               segment.def.startSlot, segment.def.endSlot);
       segment.def.selectedBackend = SelectedBackend::SLOT_BY_SLOT;
       [[fallthrough]];
     }

@@ -337,14 +337,26 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
         // RMS normalization: x * rsqrt(mean(x^2) + eps) * gamma
-        // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared)
-        SDVariable inputF32 = input.castTo(outputName + "_f32", DataType.FLOAT);
-        SDVariable squared = inputF32.mul(inputF32);
+        // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared).
+        // Skip the upcast/downcast when the input is already FP32 — this avoids creating
+        // redundant cast ops that add per-step overhead on CPU.
+        SDVariable computeInput;
+        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        if (needsCast) {
+            computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
+        } else {
+            computeInput = input;
+        }
+        SDVariable squared = computeInput.mul(computeInput);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(config.getLayerNormEpsilon()));
-        SDVariable normalized = inputF32.div(rms);
-        // Cast back to original dtype and apply weight
-        SDVariable normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
+        SDVariable normalized = computeInput.div(rms);
+        SDVariable normalizedOrig;
+        if (needsCast) {
+            normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
+        } else {
+            normalizedOrig = normalized;
+        }
 
         return normalizedOrig.mul(outputName, gamma);
     }
@@ -358,14 +370,25 @@ public class LLaMAArchitecture implements ModelArchitecture {
             INDArray normWeight, float eps) {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
         // Normalize along the last (headDim) dimension
-        // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared)
-        SDVariable inputF32 = input.castTo(outputName + "_f32", DataType.FLOAT);
-        SDVariable squared = inputF32.mul(inputF32);
+        // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared).
+        // Skip cast when input is already FP32.
+        SDVariable computeInput;
+        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        if (needsCast) {
+            computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
+        } else {
+            computeInput = input;
+        }
+        SDVariable squared = computeInput.mul(computeInput);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(eps));
-        SDVariable normalized = inputF32.div(rms);
-        // Cast back to original dtype and apply weight
-        SDVariable normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
+        SDVariable normalized = computeInput.div(rms);
+        SDVariable normalizedOrig;
+        if (needsCast) {
+            normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
+        } else {
+            normalizedOrig = normalized;
+        }
         return normalizedOrig.mul(outputName, gamma);
     }
 

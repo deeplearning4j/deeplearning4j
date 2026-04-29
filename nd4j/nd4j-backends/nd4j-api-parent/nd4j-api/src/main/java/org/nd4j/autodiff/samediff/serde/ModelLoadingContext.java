@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.DeviceRoutingConfiguration;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.TransferMetrics;
 import org.nd4j.linalg.factory.Nd4j;
@@ -155,12 +156,18 @@ public class ModelLoadingContext implements AutoCloseable {
         this.parallelTransfers = builder.parallelTransfers;
         this.useBatchedNativeTransfer = builder.useBatchedNativeTransfer;
 
-        // Determine target device
+        // Determine target device — must match the active backend
+        DeviceType activeBackendType = Nd4j.getBackendDeviceType();
         if (builder.targetDevice != null) {
             this.targetDevice = builder.targetDevice;
         } else {
             // Use DeviceMemoryManager to select best device for the model size
-            this.targetDevice = memoryManager.selectDeviceForAllocation(sizeInfo.getTotalBytes());
+            DeviceDescriptor selected = memoryManager.selectDeviceForAllocation(sizeInfo.getTotalBytes());
+            // Validate: don't select a GPU device when running on CPU backend
+            if (selected.getDeviceType() != activeBackendType && activeBackendType == DeviceType.CPU) {
+                selected = DeviceDescriptor.cpu();
+            }
+            this.targetDevice = selected;
         }
 
         // Create thread pool if async is enabled

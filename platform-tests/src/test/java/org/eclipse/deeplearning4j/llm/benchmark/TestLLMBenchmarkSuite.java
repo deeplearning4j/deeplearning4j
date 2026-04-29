@@ -51,6 +51,7 @@ import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -118,14 +119,21 @@ public class TestLLMBenchmarkSuite {
         final String tokenizerUrl;
         final String tokenizerCacheFile;
         final String familyKey;
+        final boolean requiresAuth;
 
         ModelSpec(LLMModel llmModel, QuantType quantType,
                   String tokenizerUrl, String tokenizerCacheFile, String familyKey) {
+            this(llmModel, quantType, tokenizerUrl, tokenizerCacheFile, familyKey, false);
+        }
+
+        ModelSpec(LLMModel llmModel, QuantType quantType,
+                  String tokenizerUrl, String tokenizerCacheFile, String familyKey, boolean requiresAuth) {
             this.llmModel = llmModel;
             this.quantType = quantType;
             this.tokenizerUrl = tokenizerUrl;
             this.tokenizerCacheFile = tokenizerCacheFile;
             this.familyKey = familyKey;
+            this.requiresAuth = requiresAuth;
         }
 
         String displayName() {
@@ -139,6 +147,7 @@ public class TestLLMBenchmarkSuite {
         final String modelName;
         final String configName;
         boolean passed;
+        boolean skipped;
         String failureMessage;
         // Timing
         long importMs;
@@ -163,6 +172,7 @@ public class TestLLMBenchmarkSuite {
         }
 
         String summary() {
+            if (skipped) return String.format("  [SKIP] %-20s %-25s %s", modelName, configName, failureMessage);
             if (!passed) return String.format("  [FAIL] %-20s %-25s %s", modelName, configName, failureMessage);
             if (tokenCount > 0) {
                 return String.format("  [PASS] %-20s %-25s %4d tokens %8.2f tok/s  firstToken=%4dms  diversity=%.2f  coherence=%.2f",
@@ -185,12 +195,12 @@ public class TestLLMBenchmarkSuite {
                 "qwen35-0.8B-tokenizer.json",
                 "qwen"));
 
-        // Gemma3-1B: Google gated model, tokenizer may need auth
+        // Gemma3-1B: Google gated model, tokenizer needs HF_TOKEN auth
         MODEL_REGISTRY.put("gemma", new ModelSpec(
                 LLMModel.GEMMA3_1B, QuantType.Q4_K_M,
                 "https://huggingface.co/google/gemma-3-1b-it/resolve/main/tokenizer.json",
                 "gemma3-1b-tokenizer.json",
-                "gemma"));
+                "gemma", true));
 
         // Phi-3-mini: Microsoft, public tokenizer
         MODEL_REGISTRY.put("phi", new ModelSpec(
@@ -401,7 +411,7 @@ public class TestLLMBenchmarkSuite {
         log.info("Importing model: {}", key);
         t0 = System.currentTimeMillis();
         SameDiff model = GGMLModelImport.importModel(download.getModelFile().getAbsolutePath(),
-                ConversionOptions.fp16());
+                ConversionOptions.forInference());
         long importMs = System.currentTimeMillis() - t0;
         importTimings.put(key, importMs);
         log.info("  Import: {}ms, {} ops", importMs, model.ops().length);
@@ -413,6 +423,17 @@ public class TestLLMBenchmarkSuite {
     private Tokenizer loadTokenizer(ModelSpec spec) throws Exception {
         String key = spec.displayName();
         if (loadedTokenizers.containsKey(key)) return loadedTokenizers.get(key);
+
+        // Skip gated models when no HF token is configured
+        if (spec.requiresAuth) {
+            String hfToken = System.getenv("HF_TOKEN");
+            if (hfToken == null || hfToken.isEmpty()) {
+                hfToken = System.getProperty("hf.token");
+            }
+            if (hfToken == null || hfToken.isEmpty()) {
+                throw new IOException("Skipping " + spec.displayName() + ": gated model requires HF_TOKEN env var or -Dhf.token");
+            }
+        }
 
         log.info("Downloading tokenizer for: {}", key);
         File tokenizerFile = LLMModelDownloader.downloadCustom(spec.tokenizerUrl, spec.tokenizerCacheFile);
@@ -481,9 +502,17 @@ public class TestLLMBenchmarkSuite {
             result.passed = true;
 
         } catch (Exception | AssertionError e) {
-            result.passed = false;
-            result.failureMessage = e.getClass().getSimpleName() + ": " + truncate(e.getMessage(), 120);
-            log.error("[{}] {} FAILED: {}", config.getName(), modelName, e.getMessage(), e);
+            // Auth-skipped gated models are not failures
+            if (e.getMessage() != null && e.getMessage().contains("gated model requires HF_TOKEN")) {
+                result.skipped = true;
+                result.passed = false;
+                result.failureMessage = "Skipped: no HF_TOKEN for gated model";
+                log.info("[{}] {} SKIPPED: {}", config.getName(), modelName, e.getMessage());
+            } else {
+                result.passed = false;
+                result.failureMessage = e.getClass().getSimpleName() + ": " + truncate(e.getMessage(), 120);
+                log.error("[{}] {} FAILED: {}", config.getName(), modelName, e.getMessage(), e);
+            }
         }
         return result;
     }
@@ -527,7 +556,7 @@ public class TestLLMBenchmarkSuite {
         }
 
         printReport("MODEL IMPORT BENCHMARK", results);
-        long failures = results.stream().filter(r -> !r.passed).count();
+        long failures = results.stream().filter(r -> !r.passed && !r.skipped).count();
         assertEquals(0, failures, failures + " model import(s) failed");
     }
 
@@ -562,7 +591,7 @@ public class TestLLMBenchmarkSuite {
         }
 
         printReport("OPTIMAL BASELINE", results);
-        long failures = results.stream().filter(r -> !r.passed).count();
+        long failures = results.stream().filter(r -> !r.passed && !r.skipped).count();
         assertEquals(0, failures, failures + " baseline benchmark(s) failed");
     }
 
@@ -595,7 +624,7 @@ public class TestLLMBenchmarkSuite {
         }
 
         printReport("CUDA GRAPHS BENCHMARK", results);
-        long failures = results.stream().filter(r -> !r.passed).count();
+        long failures = results.stream().filter(r -> !r.passed && !r.skipped).count();
         assertEquals(0, failures, failures + " CUDA graphs benchmark(s) failed");
     }
 
@@ -630,7 +659,7 @@ public class TestLLMBenchmarkSuite {
         }
 
         printReport("TRITON COMPILE BENCHMARK", results);
-        long failures = results.stream().filter(r -> !r.passed).count();
+        long failures = results.stream().filter(r -> !r.passed && !r.skipped).count();
         assertEquals(0, failures, failures + " Triton benchmark(s) failed");
     }
 
@@ -777,7 +806,7 @@ public class TestLLMBenchmarkSuite {
             }
         }
 
-        long failures = results.stream().filter(r -> !r.passed).count();
+        long failures = results.stream().filter(r -> !r.passed && !r.skipped).count();
         assertEquals(0, failures, failures + " config(s) failed. See log for details.");
     }
 
@@ -831,9 +860,15 @@ public class TestLLMBenchmarkSuite {
                 assertTrue(ppl.getPerplexity() < 10000, "Perplexity should be reasonable");
 
             } catch (Exception e) {
-                result.passed = false;
-                result.failureMessage = e.getClass().getSimpleName() + ": " + truncate(e.getMessage(), 120);
-                log.error("  {} → FAILED: {}", spec.displayName(), e.getMessage());
+                if (e.getMessage() != null && e.getMessage().contains("gated model requires HF_TOKEN")) {
+                    result.skipped = true;
+                    result.failureMessage = "Skipped: no HF_TOKEN for gated model";
+                    log.info("  {} → SKIPPED: {}", spec.displayName(), e.getMessage());
+                } else {
+                    result.passed = false;
+                    result.failureMessage = e.getClass().getSimpleName() + ": " + truncate(e.getMessage(), 120);
+                    log.error("  {} → FAILED: {}", spec.displayName(), e.getMessage());
+                }
             }
             results.add(result);
         }
@@ -882,7 +917,7 @@ public class TestLLMBenchmarkSuite {
                 // Import
                 t0 = System.currentTimeMillis();
                 SameDiff model = GGMLModelImport.importModel(download.getModelFile().getAbsolutePath(),
-                        ConversionOptions.fp16());
+                        ConversionOptions.forInference());
                 result.importMs = System.currentTimeMillis() - t0;
                 result.opCount = model.ops().length;
 
@@ -921,9 +956,15 @@ public class TestLLMBenchmarkSuite {
                 }
 
             } catch (Exception e) {
-                result.passed = false;
-                result.failureMessage = e.getClass().getSimpleName() + ": " + truncate(e.getMessage(), 120);
-                log.error("  {} → FAILED: {}", quant, e.getMessage());
+                if (e.getMessage() != null && e.getMessage().contains("gated model requires HF_TOKEN")) {
+                    result.skipped = true;
+                    result.failureMessage = "Skipped: no HF_TOKEN for gated model";
+                    log.info("  {} → SKIPPED: {}", quant, e.getMessage());
+                } else {
+                    result.passed = false;
+                    result.failureMessage = e.getClass().getSimpleName() + ": " + truncate(e.getMessage(), 120);
+                    log.error("  {} → FAILED: {}", quant, e.getMessage());
+                }
             }
             results.add(result);
         }

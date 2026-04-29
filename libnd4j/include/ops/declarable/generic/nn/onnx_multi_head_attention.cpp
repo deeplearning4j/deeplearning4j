@@ -27,6 +27,7 @@
 #if NOT_EXCLUDED(OP_onnx_multi_head_attention)
 
 #include <helpers/FlashAttentionHelper.h>
+#include <ops/declarable/helpers/kv_scatter.h>
 #include <ops/declarable/headers/nn.h>
 #include <cmath>
 
@@ -168,54 +169,47 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   bool pastAlreadyConcat = (pastKey != nullptr && pastKvHeadCount != numKvHeads);
 
   if (useInPlaceKv) {
-    // In-place KV write mode: write only the new token at cache_position,
-    // skip the bulk past→present copy. In CUDA graph replay, the present
-    // output buffer retains data from previous steps (same physical buffer
-    // address each replay), so positions 0..cache_position-1 are already valid.
-    // This eliminates 4 assign kernels per layer (120 kernels/step for 30 layers).
-    LongType cachePos = cachePosInput->e<LongType>(0);
-    auto presentKeyOut = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
-    auto presentValueOut = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
+    // In-place KV write mode: write new K/V token(s) at cache_position directly
+    // into the persistent pastKey/pastValue buffers. This eliminates the bulk
+    // past→present copy (4 assign kernels per layer, 120 kernels/step for 30 layers).
+    //
+    // CUDA graph compatible: kvInPlaceWrite reads cache_position from a device-side
+    // pointer. The pointer ADDRESS is baked into the graph at capture time; only
+    // the VALUE changes between replays (updated via cudaMemcpyAsync before replay).
+    // The old code used cachePosInput->e<LongType>(0) which bakes the HOST VALUE
+    // into the graph — broken on replay.
+    //
+    // We write to pastKey/pastValue (ext inputs = persistent static KV buffers)
+    // rather than presentKey/presentValue (plan outputs) because:
+    // (a) past buffers have stable addresses across CUDA graph replays
+    // (b) the next step reads from past, not present
+    // (c) present outputs may be prezeroed on some plan paths
 
-    // totalSeqKV for attention = valid positions in KV cache
-    auto maxSeq = presentKeyOut != nullptr ? presentKeyOut->sizeAt(2) : cachePos + seqKV;
-    totalSeqKV = cachePos + seqKV;
+    // pastKey is BHSD [batch, numKvHeads, maxSeqLen, headDim]
+    // kReshaped is BSHD [batch, seqKV, numKvHeads, headDim]
+    // cachePosPtr: device pointer (CUDA) / host pointer (CPU) to int64 position
 
-    if (presentKeyOut != nullptr && presentValueOut != nullptr) {
-      // Permute full output buffer from BHSD to BSHD for writing
-      std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
-      NDArray* kFullBSHD = presentKeyOut->permute(permBHSDtoBSHD, false, false);
-      NDArray* vFullBSHD = presentValueOut->permute(permBHSDtoBSHD, false, false);
+    // Use specialBuffer on CUDA (device pointer), buffer on CPU (host pointer)
+#if defined(SD_CUDA)
+    const void* cachePosPtr = cachePosInput->specialBuffer();
+#else
+    const void* cachePosPtr = cachePosInput->buffer();
+#endif
 
-      // Write ONLY the current 1-token K/V at cache_position — skip past copy
-      std::vector<LongType> curSliceIdx = {0, batch, cachePos, cachePos + seqKV, 0, numKvHeads, 0, headDim};
-      NDArray* kCurSlice = (*kFullBSHD)(curSliceIdx);
-      NDArray* vCurSlice = (*vFullBSHD)(curSliceIdx);
+    helpers::kvInPlaceWrite(pastKey, kReshaped, cachePosPtr, block.launchContext());
+    helpers::kvInPlaceWrite(pastValue, vReshaped, cachePosPtr, block.launchContext());
 
-      if (kCurSlice->lengthOf() > 0 && kReshaped->lengthOf() > 0) {
-        kCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), kReshaped, kCurSlice, false);
-        vCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), vReshaped, vCurSlice, false);
-      }
+    // Use pastKey/pastValue for attention (permute BHSD→BSHD)
+    // totalSeqKV = maxSeqLen: the causal mask handles token visibility,
+    // so we pass the full buffer. Positions beyond cachePos+seqKV contain
+    // zeros or stale data but are masked out by the attention mask.
+    totalSeqKV = pastKey->sizeAt(2);  // maxSeqLen
 
-      delete kCurSlice;
-      delete vCurSlice;
-
-      // Slice to valid range [0:totalSeqKV] for attention — positions beyond are stale/empty
-      std::vector<LongType> validSliceIdx = {0, batch, 0, totalSeqKV, 0, numKvHeads, 0, headDim};
-      kFinal = (*kFullBSHD)(validSliceIdx);
-      vFinal = (*vFullBSHD)(validSliceIdx);
-      ownKVFinal = true;  // We own the sliced views
-      skipPresentOutput = true;  // Present buffer already has the data in BHSD
-
-      delete kFullBSHD;
-      delete vFullBSHD;
-    } else {
-      // No output buffers — fall back to standard concat
-      totalSeqKV = seqKV;
-      kFinal = kReshaped;
-      vFinal = vReshaped;
-      ownKVFinal = false;
-    }
+    std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
+    kFinal = pastKey->permute(permBHSDtoBSHD, false, false);
+    vFinal = pastValue->permute(permBHSDtoBSHD, false, false);
+    ownKVFinal = true;   // We own the permuted views (need delete)
+    skipPresentOutput = true;  // No present output copy needed — past IS the cache
   } else if (pastKey != nullptr && pastValue != nullptr && !pastAlreadyConcat) {
     // Standard concat mode: concatenate past + current KV
     // Past is [batch, numKvHeads, pastSeq, headDim] (BHSD format from ONNX)

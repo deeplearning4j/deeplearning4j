@@ -800,7 +800,12 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                seg.exec.executionCount, seg.def.isCapturable ? 1 : 0, seg.exec.compilationFailed ? 1 : 0);
 
-  prezeroSegmentOutputs(seg, stream);
+  // Skip prezero in frozen steady-state: output buffers are reused and ops
+  // fully overwrite them. prezero iterates ALL slots in the segment doing
+  // memset on each qualifying output — pure overhead for decode.
+  if (!(shapesFrozen_ && executeCount_ >= 2)) {
+    prezeroSegmentOutputs(seg, stream);
+  }
 
   // Reset per-segment allocation counters
   tl_dspAllocBytes = 0; tl_dspFreeBytes = 0;
@@ -855,20 +860,24 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   while (stepIdx <= seg.def.endSlot) {
     NativeSlot& slot = slots_[stepIdx];
 
-    DSP_DIAG_SLOT(EXECUTE, stepIdx,
-                  "STEP_ENTER step=%d op=%s cf=%d numIn=%d numOut=%d outSlots=[%d%s%s] "
-                  "identity=%d fusedHead=%d fusedTail=%d fusedLen=%d frozenConst=%d",
-                  stepIdx, slot.ident.opName.c_str(),
-                  (int)slot.cf.controlFlowType,
-                  slot.wiring.numInputs, slot.wiring.numOutputs,
-                  slot.wiring.numOutputs > 0 ? slot.wiring.outputSlotIndices[0] : -1,
-                  slot.wiring.numOutputs > 1 ? "," : "",
-                  slot.wiring.numOutputs > 1 ? std::to_string(slot.wiring.outputSlotIndices[1]).c_str() : "",
-                  slot.flags.isIdentityOp ? 1 : 0,
-                  slot.fusedChain.isFusedChainHead ? 1 : 0,
-                  slot.fusedChain.isFusedChainTail ? 1 : 0,
-                  slot.fusedChain.fusedChainLength,
-                  slot.frozenConstantSlot() ? 1 : 0);
+    // STEP_ENTER trace: only during warmup to avoid per-slot string formatting
+    // overhead (std::to_string heap alloc) in frozen steady-state decode.
+    if (executeCount_ < 2) {
+      DSP_DIAG_SLOT(EXECUTE, stepIdx,
+                    "STEP_ENTER step=%d op=%s cf=%d numIn=%d numOut=%d outSlots=[%d%s%s] "
+                    "identity=%d fusedHead=%d fusedTail=%d fusedLen=%d frozenConst=%d",
+                    stepIdx, slot.ident.opName.c_str(),
+                    (int)slot.cf.controlFlowType,
+                    slot.wiring.numInputs, slot.wiring.numOutputs,
+                    slot.wiring.numOutputs > 0 ? slot.wiring.outputSlotIndices[0] : -1,
+                    slot.wiring.numOutputs > 1 ? "," : "",
+                    slot.wiring.numOutputs > 1 ? std::to_string(slot.wiring.outputSlotIndices[1]).c_str() : "",
+                    slot.flags.isIdentityOp ? 1 : 0,
+                    slot.fusedChain.isFusedChainHead ? 1 : 0,
+                    slot.fusedChain.isFusedChainTail ? 1 : 0,
+                    slot.fusedChain.fusedChainLength,
+                    slot.frozenConstantSlot() ? 1 : 0);
+    }
 
     // ── Control flow dispatch ────────────────────────────────────────
     if (slot.cf.controlFlowType != CF_NONE) {
@@ -1148,11 +1157,14 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     } while (shouldRetry);
 
-    // ── Always-on post-slot output validation ─────────────────────────────
+    // ── Post-slot output validation ─────────────────────────────────────
     // After each slot executes, verify its outputs are valid before the next
     // slot reads them as inputs. Catches the exact slot that produces an
     // invalid array, rather than discovering it N slots later.
-    if (status == Status::OK) {
+    // Skip in frozen steady-state (executeCount >= 3): all slot outputs have
+    // been validated on prior executions. This eliminates ~1883 validateSlotOutputs
+    // calls per decode step.
+    if (status == Status::OK && executeCount_ < 3) {
       auto& doneSlot = slots_[stepIdx];
       char postSlotErr[512] = {};
       int badOutputs = validateSlotOutputs(
@@ -1327,7 +1339,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     }
 
     // Classify ownership for all outputs produced by this slot.
-    if (slotOwnership_ != nullptr) {
+    // Skip in frozen steady-state: ownership is stable after warmup.
+    if (slotOwnership_ != nullptr && executeCount_ < 2) {
       for (int o = 0; o < slot.wiring.numOutputs; o++) {
         int si = slot.wiring.outputSlotIndices[o];
         if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
@@ -1340,10 +1353,19 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 
-    // Record op for FunctionalReplayHandle capture
+    // Record op for FunctionalReplayHandle capture — skip slots that will be
+    // handled by outer-level fast skips in frozen steady-state (executeCount >= 2).
+    // Frozen constants, identity ops, and fused chain tails never need kernel
+    // execution after warmup, so excluding them from executableSlotIndices lets
+    // the CPU_FROZEN_REPLAY path iterate a smaller set.
     if (seg.exec.replayHandle && seg.exec.replayHandle->getState() == ReplayState::CAPTURING) {
-      auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
-      if (funcHandle) funcHandle->recordOp(slot.ident.op, stepIdx);
+      bool skipRecord = slot.frozenConstantSlot()
+                     || slot.fusedChain.isFusedChainTail
+                     || (slot.flags.isIdentityOp && slot.wiring.numInputs == 1);
+      if (!skipRecord) {
+        auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+        if (funcHandle) funcHandle->recordOp(slot.ident.op, stepIdx);
+      }
     }
 
     // Release schedule removed: arrays persist (one array per slot, never nullified).

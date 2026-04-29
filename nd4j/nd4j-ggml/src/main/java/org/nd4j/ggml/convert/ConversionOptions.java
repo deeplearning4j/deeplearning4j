@@ -23,6 +23,8 @@ package org.nd4j.ggml.convert;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceType;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
 
@@ -116,9 +118,20 @@ public class ConversionOptions {
     }
 
     /**
-     * Create default options for inference
+     * Create default options for inference.
+     * Uses FP16 on GPU (native fp16 compute), FP32 on CPU (no fp16 hardware on
+     * most x86 CPUs — Zen 3/4, pre-Sapphire Rapids Intel). Running in FP32 on CPU
+     * eliminates hundreds of f16↔f32 cast ops that otherwise dominate decode time.
      */
     public static ConversionOptions forInference() {
+        boolean isCpu = Nd4j.getBackendDeviceType() == DeviceType.CPU;
+        if (isCpu) {
+            return ConversionOptions.builder()
+                    .forTraining(false)
+                    .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT32)
+                    .targetDataType(DataType.FLOAT)
+                    .build();
+        }
         return ConversionOptions.builder()
                 .forTraining(false)
                 .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT16)

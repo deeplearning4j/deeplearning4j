@@ -138,6 +138,15 @@ public class ModelDownloader {
         connection.setReadTimeout(60000);
         connection.setRequestProperty("User-Agent", "DL4J-ModelDownloader/1.0");
 
+        // Authenticate with HuggingFace for gated models (e.g. google/gemma)
+        String hfToken = System.getenv("HF_TOKEN");
+        if (hfToken == null || hfToken.isEmpty()) {
+            hfToken = System.getProperty("hf.token");
+        }
+        if (hfToken != null && !hfToken.isEmpty()) {
+            connection.setRequestProperty("Authorization", "Bearer " + hfToken);
+        }
+
         int responseCode = connection.getResponseCode();
         if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
                 responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
