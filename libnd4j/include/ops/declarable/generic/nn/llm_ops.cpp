@@ -86,18 +86,10 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
             outputToUse = contiguousOutput;
         }
 
-        // The kernel template dispatches on input dtype (bufferAsT<T>()).
-        // If gamma has a different dtype (e.g. FLOAT32 gamma with HALF input),
-        // bufferAsT<T>() reinterprets the wrong memory layout → NaN.
-        // Cast gamma to match input dtype before calling the kernel.
-        NDArray* gammaToUse = gamma;
-        NDArray* gammaCast = nullptr;
-        if (gamma != nullptr && gamma->dataType() != input->dataType()) {
-            gammaCast = gamma->cast(input->dataType());
-            gammaToUse = gammaCast;
-        }
-
-        helpers::rmsNorm(block.launchContext(), const_cast<NDArray*>(inputToUse), gammaToUse, outputToUse, eps);
+        // The CUDA kernel now accepts gamma in its native dtype via dual-type
+        // template instantiations (e.g., <float16, float> for F16 input + F32 gamma).
+        // No gamma cast needed — eliminates one transformAnySimpleCached kernel per call.
+        helpers::rmsNorm(block.launchContext(), const_cast<NDArray*>(inputToUse), gamma, outputToUse, eps);
 
         if (contiguousOutput != nullptr) {
             output->assign(contiguousOutput);
@@ -105,9 +97,6 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
         }
         if (contiguousInput != nullptr) {
             delete contiguousInput;
-        }
-        if (gammaCast != nullptr) {
-            delete gammaCast;
         }
         return Status::OK;
     }
@@ -222,19 +211,10 @@ CUSTOM_OP_IMPL(skip_rms_norm, 3, 1, false, 0, 0) {
 
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
-    // Cast gamma to match input dtype to avoid bufferAsT<T>() type mismatch
-    NDArray* gammaToUse = gamma;
-    NDArray* gammaCast = nullptr;
-    if (gamma->dataType() != input->dataType()) {
-        gammaCast = gamma->cast(input->dataType());
-        gammaToUse = gammaCast;
-    }
-
-    helpers::skipRmsNorm(block.launchContext(), input, skip, gammaToUse, bias, output, hiddenOut, eps);
-
-    if (gammaCast != nullptr) {
-        delete gammaCast;
-    }
+    // The CUDA kernel now accepts gamma in its native dtype via dual-type
+    // template instantiations (e.g., <float16, float> for F16 input + F32 gamma).
+    // No gamma cast needed — eliminates one transformAnySimpleCached kernel per call.
+    helpers::skipRmsNorm(block.launchContext(), input, skip, gamma, bias, output, hiddenOut, eps);
 
     return Status::OK;
 }

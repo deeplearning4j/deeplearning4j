@@ -67,7 +67,18 @@ static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, float epsi
 void rmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* output, float epsilon) {
     NDArray::preparePrimaryUse({output}, {input, gamma});
 
-    BUILD_SINGLE_SELECTOR(input->dataType(), rmsNorm_, (input, gamma, output, epsilon), SD_FLOAT_TYPES);
+    // Handle mixed-type gamma: cast gamma to match input dtype on CPU
+    // (CUDA uses dual-type kernel templates instead)
+    NDArray* gammaToUse = gamma;
+    NDArray* gammaCast = nullptr;
+    if (gamma != nullptr && gamma->dataType() != input->dataType()) {
+        gammaCast = gamma->cast(input->dataType());
+        gammaToUse = gammaCast;
+    }
+
+    BUILD_SINGLE_SELECTOR(input->dataType(), rmsNorm_, (input, gammaToUse, output, epsilon), SD_FLOAT_TYPES);
+
+    if (gammaCast != nullptr) delete gammaCast;
 
     NDArray::registerPrimaryUse({output}, {input, gamma});
 }
@@ -186,8 +197,19 @@ void skipRmsNorm(LaunchContext* context, NDArray* input, NDArray* skip, NDArray*
                   NDArray* bias, NDArray* output, NDArray* hiddenOut, float epsilon) {
     NDArray::preparePrimaryUse({output, hiddenOut}, {input, skip, gamma, bias});
 
+    // Handle mixed-type gamma: cast gamma to match input dtype on CPU
+    // (CUDA uses dual-type kernel templates instead)
+    NDArray* gammaToUse = gamma;
+    NDArray* gammaCast = nullptr;
+    if (gamma != nullptr && gamma->dataType() != input->dataType()) {
+        gammaCast = gamma->cast(input->dataType());
+        gammaToUse = gammaCast;
+    }
+
     BUILD_SINGLE_SELECTOR(input->dataType(), skipRmsNorm_,
-                           (input, skip, gamma, bias, output, hiddenOut, epsilon), SD_FLOAT_TYPES);
+                           (input, skip, gammaToUse, bias, output, hiddenOut, epsilon), SD_FLOAT_TYPES);
+
+    if (gammaCast != nullptr) delete gammaCast;
 
     NDArray::registerPrimaryUse({output, hiddenOut}, {input, skip, gamma, bias});
 }

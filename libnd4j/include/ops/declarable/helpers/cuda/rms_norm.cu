@@ -87,10 +87,10 @@ __device__ T rmsBlockReduceSum(T val, T* sharedMem) {
 //
 // Only ONE reduction pass needed (sum of squares), vs TWO for layer norm.
 //////////////////////////////////////////////////////////////////////////////
-template <typename T>
+template <typename T, typename G>
 __global__ void rmsNormKernel(
     const T* __restrict__ input,    // [numRows, rowLen]
-    const T* __restrict__ gamma,    // [rowLen] or nullptr
+    const G* __restrict__ gamma,    // [rowLen] or nullptr (may differ from T)
     T* __restrict__ output,         // [numRows, rowLen]
     const LongType numRows,
     const LongType rowLen,
@@ -144,10 +144,10 @@ __global__ void rmsNormKernel(
 //////////////////////////////////////////////////////////////////////////////
 // Launcher function
 //////////////////////////////////////////////////////////////////////////////
-template <typename T>
+template <typename T, typename G>
 void launchRmsNormKernel(
     const T* input,
-    const T* gamma,
+    const G* gamma,
     T* output,
     LongType numRows,
     LongType rowLen,
@@ -171,23 +171,28 @@ void launchRmsNormKernel(
   int numWarps = (threadsPerBlock + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
   size_t sharedMemSize = numWarps * sizeof(float);
 
-  rmsNormKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
+  rmsNormKernel<T, G><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
       input, gamma, output, numRows, rowLen, epsilon);
 
   DebugHelper::checkGlobalErrorCode("rmsNormKernel failed");
 }
 
-// Explicit instantiations
-template void launchRmsNormKernel<float>(
+// Explicit instantiations — same-type gamma
+template void launchRmsNormKernel<float, float>(
     const float*, const float*, float*,
     LongType, LongType, float, cudaStream_t);
 
-template void launchRmsNormKernel<double>(
+template void launchRmsNormKernel<double, double>(
     const double*, const double*, double*,
     LongType, LongType, float, cudaStream_t);
 
-template void launchRmsNormKernel<float16>(
+template void launchRmsNormKernel<float16, float16>(
     const float16*, const float16*, float16*,
+    LongType, LongType, float, cudaStream_t);
+
+// Mixed-type gamma — F16 input with F32 gamma (common in transformer decode)
+template void launchRmsNormKernel<float16, float>(
+    const float16*, const float*, float16*,
     LongType, LongType, float, cudaStream_t);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -207,25 +212,35 @@ void rmsNorm(
 
   auto stream = context->getCudaStream();
   auto dtype = input->dataType();
+  auto gammaDtype = gamma != nullptr ? gamma->dataType() : dtype;
 
   if (dtype == DataType::FLOAT32) {
-    launchRmsNormKernel<float>(
+    launchRmsNormKernel<float, float>(
         reinterpret_cast<const float*>(input->specialBuffer()),
         gamma != nullptr ? reinterpret_cast<const float*>(gamma->specialBuffer()) : nullptr,
         reinterpret_cast<float*>(output->specialBuffer()),
         numRows, rowLen, epsilon, *stream);
   } else if (dtype == DataType::DOUBLE) {
-    launchRmsNormKernel<double>(
+    launchRmsNormKernel<double, double>(
         reinterpret_cast<const double*>(input->specialBuffer()),
         gamma != nullptr ? reinterpret_cast<const double*>(gamma->specialBuffer()) : nullptr,
         reinterpret_cast<double*>(output->specialBuffer()),
         numRows, rowLen, epsilon, *stream);
   } else if (dtype == DataType::HALF) {
-    launchRmsNormKernel<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        gamma != nullptr ? reinterpret_cast<const float16*>(gamma->specialBuffer()) : nullptr,
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
+    if (gamma != nullptr && gammaDtype == DataType::FLOAT32) {
+      // Mixed-type: F16 input, F32 gamma — pass gamma directly without casting
+      launchRmsNormKernel<float16, float>(
+          reinterpret_cast<const float16*>(input->specialBuffer()),
+          reinterpret_cast<const float*>(gamma->specialBuffer()),
+          reinterpret_cast<float16*>(output->specialBuffer()),
+          numRows, rowLen, epsilon, *stream);
+    } else {
+      launchRmsNormKernel<float16, float16>(
+          reinterpret_cast<const float16*>(input->specialBuffer()),
+          gamma != nullptr ? reinterpret_cast<const float16*>(gamma->specialBuffer()) : nullptr,
+          reinterpret_cast<float16*>(output->specialBuffer()),
+          numRows, rowLen, epsilon, *stream);
+    }
   } else {
     THROW_EXCEPTION("rmsNormCuda: Unsupported data type");
   }
@@ -238,11 +253,11 @@ void rmsNorm(
 // Combines: hidden = input + skip [+ bias], then RMS normalize hidden
 // Saves one kernel launch per transformer layer by eliminating separate add.
 //////////////////////////////////////////////////////////////////////////////
-template <typename T>
+template <typename T, typename G>
 __global__ void skipRmsNormKernel(
     const T* __restrict__ input,     // [numRows, rowLen]
     const T* __restrict__ skip,      // [numRows, rowLen]
-    const T* __restrict__ gamma,     // [rowLen]
+    const G* __restrict__ gamma,     // [rowLen] (may differ from T)
     const T* __restrict__ bias,      // [rowLen] or nullptr
     T* __restrict__ output,          // [numRows, rowLen]
     T* __restrict__ hiddenOut,       // [numRows, rowLen] or nullptr
@@ -294,11 +309,11 @@ __global__ void skipRmsNormKernel(
 //////////////////////////////////////////////////////////////////////////////
 // Launcher for skip_rms_norm
 //////////////////////////////////////////////////////////////////////////////
-template <typename T>
+template <typename T, typename G>
 void launchSkipRmsNormKernel(
     const T* input,
     const T* skip,
-    const T* gamma,
+    const G* gamma,
     const T* bias,
     T* output,
     T* hiddenOut,
@@ -320,22 +335,28 @@ void launchSkipRmsNormKernel(
   int numWarps = (threadsPerBlock + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
   size_t sharedMemSize = numWarps * sizeof(float);
 
-  skipRmsNormKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
+  skipRmsNormKernel<T, G><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
       input, skip, gamma, bias, output, hiddenOut, numRows, rowLen, epsilon);
 
   DebugHelper::checkGlobalErrorCode("skipRmsNormKernel failed");
 }
 
-template void launchSkipRmsNormKernel<float>(
+// Same-type gamma instantiations
+template void launchSkipRmsNormKernel<float, float>(
     const float*, const float*, const float*, const float*,
     float*, float*, LongType, LongType, float, cudaStream_t);
 
-template void launchSkipRmsNormKernel<double>(
+template void launchSkipRmsNormKernel<double, double>(
     const double*, const double*, const double*, const double*,
     double*, double*, LongType, LongType, float, cudaStream_t);
 
-template void launchSkipRmsNormKernel<float16>(
+template void launchSkipRmsNormKernel<float16, float16>(
     const float16*, const float16*, const float16*, const float16*,
+    float16*, float16*, LongType, LongType, float, cudaStream_t);
+
+// Mixed-type gamma — F16 input with F32 gamma (common in transformer decode)
+template void launchSkipRmsNormKernel<float16, float>(
+    const float16*, const float16*, const float*, const float16*,
     float16*, float16*, LongType, LongType, float, cudaStream_t);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -358,9 +379,10 @@ void skipRmsNorm(
 
   auto stream = context->getCudaStream();
   auto dtype = input->dataType();
+  auto gammaDtype = gamma->dataType();
 
   if (dtype == DataType::FLOAT32) {
-    launchSkipRmsNormKernel<float>(
+    launchSkipRmsNormKernel<float, float>(
         reinterpret_cast<const float*>(input->specialBuffer()),
         reinterpret_cast<const float*>(skip->specialBuffer()),
         reinterpret_cast<const float*>(gamma->specialBuffer()),
@@ -369,7 +391,7 @@ void skipRmsNorm(
         hiddenOut != nullptr ? reinterpret_cast<float*>(hiddenOut->specialBuffer()) : nullptr,
         numRows, rowLen, epsilon, *stream);
   } else if (dtype == DataType::DOUBLE) {
-    launchSkipRmsNormKernel<double>(
+    launchSkipRmsNormKernel<double, double>(
         reinterpret_cast<const double*>(input->specialBuffer()),
         reinterpret_cast<const double*>(skip->specialBuffer()),
         reinterpret_cast<const double*>(gamma->specialBuffer()),
@@ -378,14 +400,26 @@ void skipRmsNorm(
         hiddenOut != nullptr ? reinterpret_cast<double*>(hiddenOut->specialBuffer()) : nullptr,
         numRows, rowLen, epsilon, *stream);
   } else if (dtype == DataType::HALF) {
-    launchSkipRmsNormKernel<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(skip->specialBuffer()),
-        reinterpret_cast<const float16*>(gamma->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        hiddenOut != nullptr ? reinterpret_cast<float16*>(hiddenOut->specialBuffer()) : nullptr,
-        numRows, rowLen, epsilon, *stream);
+    if (gammaDtype == DataType::FLOAT32) {
+      // Mixed-type: F16 input, F32 gamma — pass gamma directly without casting
+      launchSkipRmsNormKernel<float16, float>(
+          reinterpret_cast<const float16*>(input->specialBuffer()),
+          reinterpret_cast<const float16*>(skip->specialBuffer()),
+          reinterpret_cast<const float*>(gamma->specialBuffer()),
+          bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
+          reinterpret_cast<float16*>(output->specialBuffer()),
+          hiddenOut != nullptr ? reinterpret_cast<float16*>(hiddenOut->specialBuffer()) : nullptr,
+          numRows, rowLen, epsilon, *stream);
+    } else {
+      launchSkipRmsNormKernel<float16, float16>(
+          reinterpret_cast<const float16*>(input->specialBuffer()),
+          reinterpret_cast<const float16*>(skip->specialBuffer()),
+          reinterpret_cast<const float16*>(gamma->specialBuffer()),
+          bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
+          reinterpret_cast<float16*>(output->specialBuffer()),
+          hiddenOut != nullptr ? reinterpret_cast<float16*>(hiddenOut->specialBuffer()) : nullptr,
+          numRows, rowLen, epsilon, *stream);
+    }
   } else {
     THROW_EXCEPTION("skipRmsNormCuda: Unsupported data type");
   }

@@ -874,6 +874,15 @@ __global__ void fusedGQADecodeKernel(
    const LongType headDim,
    const LongType headsPerKvHead,
    const float scale,
+   // Strides for Q [batch, 1, numQHeads, headDim]
+   const LongType qStride0, const LongType qStride2, const LongType qStride3,
+   // Strides for K [batch, seqKV, numKvHeads, headDim]
+   const LongType kStride0, const LongType kStride1, const LongType kStride2, const LongType kStride3,
+   // Strides for V [batch, seqKV, numKvHeads, headDim]
+   const LongType vStride0, const LongType vStride1, const LongType vStride2, const LongType vStride3,
+   // Strides for output [batch, 1, numQHeads, headDim]
+   const LongType oStride0, const LongType oStride2, const LongType oStride3,
+   // Strides for bias
    const LongType biasStride0,
    const LongType biasStride1,
    const LongType biasStride2,
@@ -890,16 +899,15 @@ __global__ void fusedGQADecodeKernel(
  T* sharedScores = reinterpret_cast<T*>(sharedMem);
  T* sharedOutput = sharedScores + TILE_SIZE_KV;
 
- // Q pointer: query[batchIdx, 0, qHead, :] — BSHD contiguous
- const T* Q = query + batchIdx * numQHeads * headDim + qHead * headDim;
+ // Q pointer: query[batchIdx, 0, qHead, :] — stride-based indexing
+ const T* Q = query + batchIdx * qStride0 + qHead * qStride2;
 
- // K/V pointers: key[batchIdx, :, kvHead, :] — stride between KV positions
- const LongType kvStride = numKvHeads * headDim;
- const T* K = key + batchIdx * seqKV * kvStride + kvHead * headDim;
- const T* V = value + batchIdx * seqKV * kvStride + kvHead * headDim;
+ // K/V base: key[batchIdx, :, kvHead, :] — stride-based indexing
+ const T* Kbase = key + batchIdx * kStride0 + kvHead * kStride2;
+ const T* Vbase = value + batchIdx * vStride0 + kvHead * vStride2;
 
  // Output: output[batchIdx, 0, qHead, :]
- T* O = output + batchIdx * numQHeads * headDim + qHead * headDim;
+ T* O = output + batchIdx * oStride0 + qHead * oStride2;
 
  // Bias row: attnBias[batchIdx, qHead, 0, :]
  const T* biasRow = nullptr;
@@ -932,11 +940,12 @@ __global__ void fusedGQADecodeKernel(
    // Step 1: Compute Q @ K^T scores for this tile + add bias
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
      const LongType kvIdx = kvStart + k;
-     const T* Krow = K + kvIdx * kvStride;
+     // K[batchIdx, kvIdx, kvHead, d] — use stride-based offset
+     const T* Krow = Kbase + kvIdx * kStride1;
 
      float score = 0.0f;
      for (LongType d = 0; d < headDim; d++) {
-       score += static_cast<float>(Q[d]) * static_cast<float>(Krow[d]);
+       score += static_cast<float>(Q[d * qStride3]) * static_cast<float>(Krow[d * kStride3]);
      }
      score *= scale;
 
@@ -1032,7 +1041,8 @@ __global__ void fusedGQADecodeKernel(
      float acc = 0.0f;
      for (int k = 0; k < tileSize; k++) {
        const LongType kvIdx = kvStart + k;
-       acc += static_cast<float>(sharedScores[k]) * static_cast<float>(V[kvIdx * kvStride + d]);
+       // V[batchIdx, kvIdx, kvHead, d] — use stride-based offset
+       acc += static_cast<float>(sharedScores[k]) * static_cast<float>(Vbase[kvIdx * vStride1 + d * vStride3]);
      }
      sharedOutput[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) + acc);
    }
@@ -1041,7 +1051,7 @@ __global__ void fusedGQADecodeKernel(
 
  // Step 6: Normalize by sum and write output
  for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-   O[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) / globalSum);
+   O[d * oStride3] = static_cast<T>(static_cast<float>(sharedOutput[d]) / globalSum);
  }
 }
 
@@ -1056,6 +1066,10 @@ static void fusedGQADecodeLauncher(
    void* vOutput,
    LongType batch, LongType seqKV, LongType numQHeads, LongType numKvHeads,
    LongType headDim, LongType headsPerKvHead, float scale,
+   LongType qStride0, LongType qStride2, LongType qStride3,
+   LongType kStride0, LongType kStride1, LongType kStride2, LongType kStride3,
+   LongType vStride0, LongType vStride1, LongType vStride2, LongType vStride3,
+   LongType oStride0, LongType oStride2, LongType oStride3,
    LongType biasStride0, LongType biasStride1,
    LongType biasStride2, LongType biasStride3) {
 
@@ -1075,6 +1089,10 @@ static void fusedGQADecodeLauncher(
  fusedGQADecodeKernel<T><<<grid, block, smem, *stream>>>(
      query, key, value, attnBias, output,
      batch, seqKV, numQHeads, numKvHeads, headDim, headsPerKvHead, scale,
+     qStride0, qStride2, qStride3,
+     kStride0, kStride1, kStride2, kStride3,
+     vStride0, vStride1, vStride2, vStride3,
+     oStride0, oStride2, oStride3,
      biasStride0, biasStride1, biasStride2, biasStride3);
  DebugHelper::checkGlobalErrorCode("fusedGQADecode failed");
 }
@@ -1097,6 +1115,27 @@ void fusedGQADecodeCuda(
  const auto numKvHeads = key->sizeAt(2);
  const auto headsPerKvHead = numQHeads / numKvHeads;
 
+ // Extract actual strides — kernel uses stride-based indexing so it works
+ // correctly with non-contiguous views (e.g. BHSD→BSHD permuted arrays
+ // from DSP pre-allocation or KV concat in onnx_mha.cpp).
+ const LongType qStride0 = query->strideAt(0);
+ const LongType qStride2 = query->strideAt(2);
+ const LongType qStride3 = query->strideAt(3);
+
+ const LongType kStride0 = key->strideAt(0);
+ const LongType kStride1 = key->strideAt(1);
+ const LongType kStride2 = key->strideAt(2);
+ const LongType kStride3 = key->strideAt(3);
+
+ const LongType vStride0 = value->strideAt(0);
+ const LongType vStride1 = value->strideAt(1);
+ const LongType vStride2 = value->strideAt(2);
+ const LongType vStride3 = value->strideAt(3);
+
+ const LongType oStride0 = output->strideAt(0);
+ const LongType oStride2 = output->strideAt(2);
+ const LongType oStride3 = output->strideAt(3);
+
  LongType biasStride0 = 0, biasStride1 = 0, biasStride2 = 0, biasStride3 = 0;
  const void* biasPtr = nullptr;
 
@@ -1104,8 +1143,6 @@ void fusedGQADecodeCuda(
    biasPtr = attentionBias->specialBuffer();
    // Use broadcast-safe strides: zero out stride for dimensions of size 1
    // so the kernel reuses the same data (broadcast semantics).
-   // E.g., bias [1,1,1,27] has strides [27,27,27,1] in C order, but
-   // dimensions 0-2 have size 1, so their strides must be 0 for broadcast.
    biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
    biasStride1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
    biasStride2 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
@@ -1126,6 +1163,10 @@ void fusedGQADecodeCuda(
                         output->specialBuffer(),
                         batch, seqKV, numQHeads, numKvHeads,
                         headDim, headsPerKvHead, scale,
+                        qStride0, qStride2, qStride3,
+                        kStride0, kStride1, kStride2, kStride3,
+                        vStride0, vStride1, vStride2, vStride3,
+                        oStride0, oStride2, oStride3,
                         biasStride0, biasStride1, biasStride2, biasStride3),
                        SD_FLOAT_TYPES);
 

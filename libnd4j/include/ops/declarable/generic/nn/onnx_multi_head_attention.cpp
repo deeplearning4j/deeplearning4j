@@ -194,8 +194,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
       kPastSlice->assign(pastKeyBSHD);
       vPastSlice->assign(pastValueBSHD);
-      kPastSlice->syncToDevice();
-      vPastSlice->syncToDevice();
       delete kPastSlice;
       delete vPastSlice;
       delete pastKeyBSHD;
@@ -209,8 +207,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       if (kCurSlice->lengthOf() > 0 && kReshaped->lengthOf() > 0) {
         kCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), kReshaped, kCurSlice, false);
         vCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), vReshaped, vCurSlice, false);
-        kCurSlice->syncToDevice();
-        vCurSlice->syncToDevice();
       }
 
       delete kCurSlice;
