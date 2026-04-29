@@ -77,12 +77,39 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   DSP_DIAG(EXECUTE, "CPU_FROZEN_FAST_PATH: segments=%d executeCount=%d",
            (int)segments_.size(), executeCount_);
 
-  // Execute all segments via slot-by-slot on CPU frozen decode.
-  // Graph backends (OpenVINO/OneDNN) add f16↔f32 conversion overhead per segment.
-  // Slot-by-slot with shapeFunctionOverride eliminates per-op shape inference
-  // and validation overhead in frozen steady-state.
+  // Execute all segments using their resolved backends (OneDNN/OpenVINO)
+  // when available, falling back to slot-by-slot for unresolved segments.
+  // Graph backends fuse multiple ops into optimized subgraphs, dramatically
+  // reducing per-op dispatch overhead (1761 individual calls → ~dozens of fused calls).
   for (auto& seg : segments_) {
-    Status status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
+    Status status;
+    if (seg.resolvedCpuBackend != nullptr) {
+      // Fast path: backend already compiled — execute via executeSegmentWithSpecificBackend
+      // which installs the NativeSlotExecutor for native-deferred ops (rope, attention).
+      // Calling backend->executeSegment() directly would skip NativeSlotExecutor setup
+      // and cause native-deferred ops to fail with KERNEL_FAILURE.
+      status = executeSegmentWithSpecificBackend(
+          seg, seg.resolvedCpuBackend, externalInputs, numExternalInputs, stream);
+      if (status != Status::OK) {
+        DSP_DIAG(EXECUTE, "CPU_FROZEN: backend failed seg[%d-%d], falling back to slot-by-slot",
+                 seg.def.startSlot, seg.def.endSlot);
+        status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
+      }
+    } else if (seg.def.selectedBackend == SelectedBackend::CPU_GRAPH &&
+               !seg.exec.compilationFailed) {
+      // Lazy compile path: backend not yet resolved. Call the full cascade
+      // (warmup → compile → execute) which populates resolvedCpuBackend.
+      // This happens when platformPrecompileSegments skips segments with
+      // executionCount==0 after resegmentForFreeze() rebuilds them.
+      status = executeSegmentWithCpuGraph(seg, externalInputs, numExternalInputs, stream);
+      if (status != Status::OK) {
+        DSP_DIAG(EXECUTE, "CPU_FROZEN: cascade failed seg[%d-%d], falling back to slot-by-slot",
+                 seg.def.startSlot, seg.def.endSlot);
+        status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
+      }
+    } else {
+      status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
+    }
     if (status != Status::OK) {
       return status;
     }
@@ -228,14 +255,25 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 
   switch (segment.def.selectedBackend) {
     case SelectedBackend::CPU_GRAPH: {
-      // Demote CPU_GRAPH to slot-by-slot. With FP32 model dtype on CPU,
-      // graph backends add no value (no fused f16 kernels to leverage) and
-      // their per-segment dispatch overhead exceeds the compute cost for
-      // batch-1 decode. Slot-by-slot with frozen-path shapeFunctionOverride
-      // is the fastest CPU path.
-      DSP_DIAG(BACKEND, "NativeDSP::execute: CPU_GRAPH seg[%d-%d] demoted to slot-by-slot",
-               segment.def.startSlot, segment.def.endSlot);
-      segment.def.selectedBackend = SelectedBackend::SLOT_BY_SLOT;
+      // Use the full CPU graph backend cascade: warmup → compile → execute.
+      // executeSegmentWithCpuGraph() handles the complete lifecycle:
+      //   - First call: runs slot-by-slot warmup to establish output shapes
+      //   - Second call: tries each backend (OneDNN, OpenVINO, ...) in priority order
+      //   - Subsequent calls: reuses the resolved backend directly
+      // This is the ONLY correct way to dispatch CPU_GRAPH — never bypass it
+      // with direct resolvedCpuBackend calls (the backend may not be compiled yet).
+      if (!segment.exec.compilationFailed) {
+        Status st = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
+        if (st == Status::OK) {
+          usedGraph = (segment.resolvedCpuBackend != nullptr);
+          return Status::OK;
+        }
+        // Cascade returned KERNEL_FAILURE = no backend could fuse this segment.
+        // Fall through to slot-by-slot for this invocation.
+        DSP_DIAG(BACKEND, "NativeDSP::execute: CPU_GRAPH cascade failed seg[%d-%d], "
+                 "falling back to slot-by-slot",
+                 segment.def.startSlot, segment.def.endSlot);
+      }
       [[fallthrough]];
     }
 

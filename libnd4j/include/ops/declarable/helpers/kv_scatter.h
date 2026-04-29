@@ -104,6 +104,27 @@ struct KvScatterDynEntry {
 SD_LIB_HIDDEN void kvScatterDynBatched(const KvScatterDynEntry* entries, int numEntries,
                                         DataType dtype, LaunchContext* context);
 
+/**
+ * Write new K/V data at cache_position into the past KV buffer in-place.
+ *
+ * Cache position is read from a device-side pointer (CUDA) or host pointer (CPU),
+ * making this CUDA graph compatible: the pointer address is baked in at capture
+ * time; the value changes between replays.
+ *
+ * Layout: pastKv is BHSD [batch, numKvHeads, maxSeqLen, headDim].
+ *         newKv is BSHD [batch, seqKV, numKvHeads, headDim] after reshape.
+ *         Typically seqKV=1 during decode.
+ *
+ * The kernel writes newKv[b, s, h, d] → pastKv[b, h, cachePos+s, d].
+ *
+ * @param pastKv      [batch, numKvHeads, maxSeqLen, headDim] BHSD — modified in-place
+ * @param newKv       [batch, seqKV, numKvHeads, headDim] BSHD — source data
+ * @param cachePosPtr pointer to int64 cache position (device on CUDA, host on CPU)
+ * @param context     launch context
+ */
+SD_LIB_HIDDEN void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
+                                   const void* cachePosPtr, LaunchContext* context);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

@@ -67,6 +67,7 @@ public class TestAutoregressiveDecodeIArgs {
                 5,
                 6,
                 attnMaskReformatExtIdx,
+                -1,  // cachePositionExtIdx — disabled for this test
                 new int[]{101, 102},
                 new int[]{201, 202},
                 7,

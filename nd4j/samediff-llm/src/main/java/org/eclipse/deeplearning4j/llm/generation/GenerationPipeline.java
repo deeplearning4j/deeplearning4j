@@ -1604,6 +1604,13 @@ public class GenerationPipeline implements AutoCloseable {
         int attnMaskReformatExtIdx = (attnReformatNode != null && decoder.hasVariable(attnReformatNode))
                 ? resolveExtInputIdx(executor, attnReformatNode) : -1;
 
+        // Resolve cache_position / seqlens_k ext input index for in-place KV write.
+        // When present, the onnx_mha op writes K/V at this position into pastKey/pastValue
+        // directly, eliminating 120 KV copy kernels/step for 30-layer models.
+        String cachePosName = ioConfig.getCachePositionName();
+        int cachePosExtIdx = (cachePosName != null && decoder.hasVariable(cachePosName))
+                ? resolveExtInputIdx(executor, cachePosName) : -1;
+
         // Resolve logits output index
         int logitsOutputIdx = resolveOutputIdx(executor, ioConfig.getLogitsOutputName());
 
@@ -1714,6 +1721,7 @@ public class GenerationPipeline implements AutoCloseable {
                     inputIdsExtIdx,
                     logitsOutputIdx,
                     attnMaskReformatExtIdx,
+                    cachePosExtIdx,
                     kvInputExtIndices,
                     kvOutputIndices,
                     remainingTokens,

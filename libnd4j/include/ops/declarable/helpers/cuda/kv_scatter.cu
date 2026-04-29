@@ -291,6 +291,108 @@ void kvScatterDynBatched(const KvScatterDynEntry* entries, int numEntries,
                           SD_FLOAT_TYPES);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// In-place KV write: write newKv at device-side cache_position into pastKv
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * CUDA kernel: writes newKv[b, s, h, d] -> pastKv[b, h, cachePos+s, d]
+ *
+ * newKv layout:  BSHD [batch, seqKV, numKvHeads, headDim]
+ * pastKv layout: BHSD [batch, numKvHeads, maxSeqLen, headDim]
+ * cachePosPtr:   device pointer to int64 scalar (current cache position)
+ *
+ * Grid: one block per (batch, seqKV, head) triple
+ * Block: 256 threads, grid-stride over headDim
+ *
+ * Because cachePosPtr is dereferenced at kernel runtime (not baked as a
+ * literal), this kernel is CUDA graph compatible: the pointer ADDRESS is
+ * captured, and the VALUE at that address can change between replays.
+ */
+template <typename T>
+SD_KERNEL void kvInPlaceWriteKernel(const T* __restrict__ newKv,
+                                     T* __restrict__ pastKv,
+                                     const LongType* __restrict__ cachePosPtr,
+                                     LongType batch,
+                                     LongType seqKV,
+                                     LongType numKvHeads,
+                                     LongType headDim,
+                                     LongType pastMaxSeqLen) {
+    // Read cache position from device memory (updated between graph replays)
+    LongType cachePos = *cachePosPtr;
+
+    // Each block handles one (b, s, h) triple
+    LongType slice = blockIdx.x;
+    LongType bsh = slice;
+    LongType h = bsh % numKvHeads;
+    bsh /= numKvHeads;
+    LongType s = bsh % seqKV;
+    LongType b = bsh / seqKV;
+
+    // newKv is BSHD: offset = b * seqKV * numKvHeads * headDim + s * numKvHeads * headDim + h * headDim
+    LongType srcOffset = b * seqKV * numKvHeads * headDim
+                       + s * numKvHeads * headDim
+                       + h * headDim;
+
+    // pastKv is BHSD: offset = b * numKvHeads * pastMaxSeqLen * headDim + h * pastMaxSeqLen * headDim + (cachePos+s) * headDim
+    LongType dstOffset = b * numKvHeads * pastMaxSeqLen * headDim
+                       + h * pastMaxSeqLen * headDim
+                       + (cachePos + s) * headDim;
+
+    // Grid-stride loop over headDim
+    for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
+        pastKv[dstOffset + d] = newKv[srcOffset + d];
+    }
+}
+
+template <typename T>
+static void kvInPlaceWriteCudaLauncher(const cudaStream_t* stream,
+                                        const void* vNewKv, void* vPastKv,
+                                        const void* cachePosPtr,
+                                        LongType batch, LongType seqKV,
+                                        LongType numKvHeads, LongType headDim,
+                                        LongType pastMaxSeqLen) {
+    auto newKv = reinterpret_cast<const T*>(vNewKv);
+    auto pastKv = reinterpret_cast<T*>(vPastKv);
+    auto posPtr = reinterpret_cast<const LongType*>(cachePosPtr);
+
+    auto numSlices = batch * seqKV * numKvHeads;
+    dim3 launchDims = getLaunchDims("kv_scatter");
+
+    kvInPlaceWriteKernel<T><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
+        newKv, pastKv, posPtr, batch, seqKV, numKvHeads, headDim, pastMaxSeqLen);
+    DebugHelper::checkGlobalErrorCode("kvInPlaceWrite kernel failed");
+}
+
+BUILD_SINGLE_TEMPLATE(void kvInPlaceWriteCudaLauncher,
+    (const cudaStream_t* stream, const void* vNewKv, void* vPastKv,
+     const void* cachePosPtr, LongType batch, LongType seqKV,
+     LongType numKvHeads, LongType headDim, LongType pastMaxSeqLen),
+    SD_FLOAT_TYPES);
+
+void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
+                     const void* cachePosPtr, LaunchContext* context) {
+    auto stream = context->getCudaStream();
+
+    // newKv is BSHD [batch, seqKV, numKvHeads, headDim]
+    auto batch = newKv->sizeAt(0);
+    auto seqKV = newKv->sizeAt(1);
+    auto numKvHeads = newKv->sizeAt(2);
+    auto headDim = newKv->sizeAt(3);
+
+    // pastKv is BHSD [batch, numKvHeads, maxSeqLen, headDim]
+    auto pastMaxSeqLen = pastKv->sizeAt(2);
+
+    NDArray::prepareSpecialUse({pastKv}, {newKv});
+
+    BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteCudaLauncher,
+                          (stream, newKv->specialBuffer(), pastKv->specialBuffer(),
+                           cachePosPtr, batch, seqKV, numKvHeads, headDim, pastMaxSeqLen),
+                          SD_FLOAT_TYPES);
+
+    NDArray::registerSpecialUse({pastKv}, {newKv});
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

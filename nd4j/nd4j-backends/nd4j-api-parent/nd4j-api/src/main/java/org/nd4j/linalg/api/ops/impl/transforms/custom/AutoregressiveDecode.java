@@ -115,6 +115,11 @@ public class AutoregressiveDecode extends DynamicCustomOp {
      * @param inputIdsExtIdx     index of input_ids in plan ext inputs
      * @param logitsOutputIdx    which plan output is the logits tensor
      * @param attnMaskReformatExtIdx index of attn_mask_reformat (-1 if unused)
+     * @param cachePositionExtIdx ext input index for cache_position / seqlens_k (-1 if unused).
+     *                            When >= 0, enables in-place KV write: the onnx_mha op writes
+     *                            new K/V at this position into pastKey/pastValue, skipping the
+     *                            bulk past→present copy. The decode loop updates the device-side
+     *                            value each step. Sets planOwnsKvScatter to skip external KV scatter.
      * @param kvInputExtIndices  ext input indices for past_key_values (2*numKvPairs)
      * @param kvOutputIndices    plan output indices for present KVs (2*numKvPairs)
      * @param maxNewTokens       maximum decode steps
@@ -143,6 +148,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
                                  int inputIdsExtIdx,
                                  int logitsOutputIdx,
                                  int attnMaskReformatExtIdx,
+                                 int cachePositionExtIdx,
                                  int[] kvInputExtIndices,
                                  int[] kvOutputIndices,
                                  int maxNewTokens,
@@ -176,6 +182,13 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         // optionalMask bit 3 signals attnMaskReformatExtIdx is present in iArgs.
         if (attnMaskReformatExtIdx >= 0) {
             optionalMask |= 8;
+        }
+        // optionalMask bit 4: in-place KV write mode.
+        // When cachePositionExtIdx >= 0, the onnx_mha op writes K/V directly into
+        // pastKey/pastValue at cache_position, eliminating the bulk copy.
+        // planOwnsKvScatter is set in C++ so the decode loop skips external KV scatter.
+        if (cachePositionExtIdx >= 0) {
+            optionalMask |= 16;
         }
         // Plan ext inputs read from the persistent OpaqueContext in C++.
         this.optionalInputMask = optionalMask;
@@ -231,6 +244,11 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         iArgs.add((long) logitsOutputIdx);       // 16
         if ((optionalMask & 8) != 0) {
             iArgs.add((long) attnMaskReformatExtIdx); // 17 when present
+        }
+        // In-place KV: positionOffsetExtIdx (-1 for ONNX, unused) + cachePositionExtIdx
+        if ((optionalMask & 16) != 0) {
+            iArgs.add(-1L);  // positionOffsetExtIdx — not used by ONNX models
+            iArgs.add((long) cachePositionExtIdx);
         }
 
         // KV input ext indices

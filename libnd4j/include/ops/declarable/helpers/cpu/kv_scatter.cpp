@@ -173,6 +173,68 @@ void kvScatterDynBatched(const KvScatterDynEntry* entries, int numEntries,
   BUILD_SINGLE_SELECTOR(dtype, kvScatterDynBatched_, (entries, numEntries), SD_FLOAT_TYPES);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// In-place KV write (CPU): write newKv at cache_position into pastKv
+// ═══════════════════════════════════════════════════════════════════════════════
+
+template <typename T>
+static void kvInPlaceWrite_(NDArray* pastKv, NDArray* newKv,
+                             const void* cachePosPtr, LaunchContext* context) {
+    // newKv is BSHD [batch, seqKV, numKvHeads, headDim]
+    auto batch = newKv->sizeAt(0);
+    auto seqKV = newKv->sizeAt(1);
+    auto numKvHeads = newKv->sizeAt(2);
+    auto headDim = newKv->sizeAt(3);
+
+    // pastKv is BHSD [batch, numKvHeads, maxSeqLen, headDim]
+    auto pastMaxSeqLen = pastKv->sizeAt(2);
+
+    // Read cache position from host pointer
+    LongType cachePos = *reinterpret_cast<const LongType*>(cachePosPtr);
+
+    const T* __restrict srcBuf = newKv->bufferAsT<T>();
+    T* __restrict dstBuf = pastKv->bufferAsT<T>();
+
+    // Total number of (batch, seqKV, head) slices to process
+    auto numSlices = batch * seqKV * numKvHeads;
+
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto slice = start; slice < stop; slice++) {
+            auto bsh = slice;
+            auto h = bsh % numKvHeads;
+            bsh /= numKvHeads;
+            auto s = bsh % seqKV;
+            auto b = bsh / seqKV;
+
+            // newKv BSHD offset
+            auto srcOffset = b * seqKV * numKvHeads * headDim
+                           + s * numKvHeads * headDim
+                           + h * headDim;
+
+            // pastKv BHSD offset
+            auto dstOffset = b * numKvHeads * pastMaxSeqLen * headDim
+                           + h * pastMaxSeqLen * headDim
+                           + (cachePos + s) * headDim;
+
+            const T* __restrict src = srcBuf + srcOffset;
+            T* __restrict dst = dstBuf + dstOffset;
+
+            PRAGMA_OMP_SIMD
+            for (LongType d = 0; d < headDim; d++) {
+                dst[d] = src[d];
+            }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, numSlices);
+}
+
+void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
+                     const void* cachePosPtr, LaunchContext* context) {
+    BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWrite_,
+                          (pastKv, newKv, cachePosPtr, context), SD_FLOAT_TYPES);
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

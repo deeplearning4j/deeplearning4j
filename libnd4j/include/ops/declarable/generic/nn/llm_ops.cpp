@@ -363,11 +363,10 @@ CONFIGURABLE_OP_IMPL(silu, 1, 1, true, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     // silu(x) = x * sigmoid(x)
-    NDArray* sigmoid = input->transform(transform::Sigmoid);
-    NDArray* result = (*input) * (*sigmoid);
-    output->assign(result);
-    delete sigmoid;
-    delete result;
+    // Write sigmoid directly into output, then multiply in-place with input.
+    // Eliminates 2 temporary allocations + 1 Assign copy kernel per call.
+    input->applyTransform(transform::Sigmoid, output);
+    output->applyPairwiseTransform(pairwise::Multiply, input, output);
 
     return Status::OK;
 }
@@ -825,15 +824,11 @@ CONFIGURABLE_OP_IMPL(swish_mul, 2, 1, true, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     // swish_mul(x, y) = silu(x) * y = x * sigmoid(x) * y
-    NDArray* sigmoid = x->transform(transform::Sigmoid);
-    NDArray* swish = (*x) * (*sigmoid);
-    delete sigmoid;
-
-    NDArray* result = (*swish) * (*y);
-    delete swish;
-
-    output->assign(result);
-    delete result;
+    // Write sigmoid(x) into output, multiply x in-place, multiply y in-place.
+    // Eliminates 3 temporary allocations + 1 Assign copy kernel per call.
+    x->applyTransform(transform::Sigmoid, output);
+    output->applyPairwiseTransform(pairwise::Multiply, x, output);
+    output->applyPairwiseTransform(pairwise::Multiply, y, output);
 
     return Status::OK;
 }

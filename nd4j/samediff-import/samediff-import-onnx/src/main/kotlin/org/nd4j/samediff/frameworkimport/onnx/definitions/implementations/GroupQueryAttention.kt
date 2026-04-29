@@ -85,12 +85,13 @@ class GroupQueryAttention : PreImportHook {
         val pastValue = if (hasPastValue) sd.getVariable(pastValueInput) else null
 
         // seqlens_k (input 5): maps to cache_position for in-place KV write mode.
-        // Currently passed as null — the ONNX decode loop doesn't yet wire per-step
-        // updates for this ext input. The C++ op has the in-place KV implementation
-        // ready (gated on cachePosInput != nullptr) and can be activated once the
-        // AutoregressiveDecode constructor + GenerationPipeline wire cachePositionExtIdx.
-        // TODO: wire seqlens_k through AutoregressiveDecode for in-place KV write
-        val seqlensK: SDVariable? = null
+        // When present, enables kvInPlaceWrite in the C++ op: writes only the new
+        // K/V token at cache_position into pastKey/pastValue, eliminating the bulk
+        // past→present copy (120 assign kernels/step for 30-layer models).
+        // The decode loop updates this ext input's device-side value each step.
+        val seqlensKInput = op.inputsToOp.getOrNull(5)
+        val hasSeqlensK = !seqlensKInput.isNullOrEmpty()
+        val seqlensK = if (hasSeqlensK) sd.getVariable(seqlensKInput) else null
 
         // Get attributes
         val numHeads = (attributes.getOrDefault("num_heads", 1) as Number).toInt()

@@ -544,7 +544,7 @@ public class ModelIOConfig {
                 posName = input;
             } else if (posOffsetName == null && input.contains("position_offset")) {
                 posOffsetName = input;
-            } else if (cachePosName == null && input.contains("cache_position")) {
+            } else if (cachePosName == null && (input.contains("cache_position") || input.contains("seqlens_k"))) {
                 cachePosName = input;
             }
 

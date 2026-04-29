@@ -336,21 +336,29 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
   }
 #endif
 
-#if HAVE_ONEDNN
-  if (autoLikeMode) {
-    auto& onednn = OneDnnGraphBackend::getInstance();
-    if (onednn.isAvailable()) {
-      cpuGraphBackendChain_.push_back(&onednn);
-    }
-  }
-#endif
-
 #if HAVE_OPENVINO
+  // OpenVINO has the broadest op coverage (~200 ops, including rms_norm, reshape,
+  // permute, silu, cast, gather, etc.) and supports native-deferred execution for
+  // complex ops (rope, attention). For transformer models like Qwen, it can fuse
+  // nearly the entire decoder layer. Try it BEFORE OneDNN which has narrower
+  // coverage (~40 ops, no rms_norm/reshape/permute/silu).
   if (mode == GraphExecutionMode::GEM_OPENVINO || autoLikeMode) {
     auto& ov = OpenVinoGraphBackend::getInstance();
     if (ov.isAvailable()) {
       cpuGraphBackendChain_.push_back(&ov);
       if (forcedMode) return cpuGraphBackendChain_;
+    }
+  }
+#endif
+
+#if HAVE_ONEDNN
+  // OneDNN as fallback: narrower op coverage but handles mixed segments well.
+  // Segments that OpenVINO rejects (due to ALL-or-nothing op requirement)
+  // may still be partially fused by OneDNN's island-based approach.
+  if (autoLikeMode) {
+    auto& onednn = OneDnnGraphBackend::getInstance();
+    if (onednn.isAvailable()) {
+      cpuGraphBackendChain_.push_back(&onednn);
     }
   }
 #endif
@@ -479,8 +487,9 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   if (!anyBackendAttemptedCompile) {
     // No backend could fuse this segment — all returned canFuseSegment=false.
     // This means the segment has no fusible ops (e.g., all permutes/reshapes/identity).
-    // This is NOT a compilation failure — the segment simply has no compute to fuse.
-    // Demote to slot-by-slot native execution (handled by the caller).
+    // Mark compilationFailed so the frozen fast path doesn't re-attempt the cascade
+    // every step for this permanently-unfusible segment.
+    seg.exec.compilationFailed = true;
     DSP_DIAG(BACKEND, "cascade: NO backend can fuse seg[%d-%d] (no fusible ops) — "
               "demoting to slot-by-slot native execution",
               seg.def.startSlot, seg.def.endSlot);
