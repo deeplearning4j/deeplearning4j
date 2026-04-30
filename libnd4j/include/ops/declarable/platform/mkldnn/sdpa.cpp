@@ -73,13 +73,14 @@ static dnnl::stream& getThreadStream(dnnl::engine& eng) {
 struct SDPACache {
   struct Key {
     int64_t batch, seqQ, seqKV, numHeads, headDim;
-    int dtype;  // 0=f32, 1=f16, 2=bf16
-    bool is4D;  // true for 4D [batch, seq, heads, dim], false for 3D [batch, seq, dim]
+    int dtype;   // 0=f32, 1=f16, 2=bf16
+    bool is4D;   // true for 4D [batch, seq, heads, dim], false for 3D [batch, seq, dim]
+    bool hasBias; // true when an additive attention bias is fused into the graph
 
     bool operator==(const Key& o) const {
       return batch == o.batch && seqQ == o.seqQ && seqKV == o.seqKV &&
              numHeads == o.numHeads && headDim == o.headDim &&
-             dtype == o.dtype && is4D == o.is4D;
+             dtype == o.dtype && is4D == o.is4D && hasBias == o.hasBias;
     }
   };
 
@@ -92,6 +93,7 @@ struct SDPACache {
       h ^= std::hash<int64_t>()(k.headDim) << 4;
       h ^= std::hash<int>()(k.dtype) << 5;
       h ^= std::hash<bool>()(k.is4D) << 6;
+      h ^= std::hash<bool>()(k.hasBias) << 7;
       return h;
     }
   };
@@ -264,11 +266,92 @@ static SDPACache::Entry buildSDPAGraph4D(int64_t batch, int64_t seqQ, int64_t se
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Build and compile 4D SDPA graph with fused additive bias (attention mask).
+// Graph: Q @ K^T -> scale -> Add(bias) -> softmax -> @ V
+// bias shape [1, 1, seqQ, seqKV] is broadcastable to [batch, numHeads, seqQ, seqKV].
+// Using f32 for bias regardless of Q/K/V dtype (mask values are always float).
+static SDPACache::Entry buildSDPAGraph4D_WithBias(int64_t batch, int64_t seqQ, int64_t seqKV,
+                                                   int64_t numHeads, int64_t headDim,
+                                                   dg::logical_tensor::data_type dtype,
+                                                   dnnl::engine& eng) {
+  SDPACache::Entry entry;
+  size_t id = 0;
+
+  std::vector<int64_t> q_shape     = {batch, numHeads, seqQ, headDim};
+  std::vector<int64_t> k_shape     = {batch, numHeads, seqKV, headDim};
+  std::vector<int64_t> v_shape     = {batch, numHeads, seqKV, headDim};
+  std::vector<int64_t> score_shape = {batch, numHeads, seqQ, seqKV};
+  std::vector<int64_t> bias_shape  = {1, 1, seqQ, seqKV};   // broadcast over batch/heads
+  std::vector<int64_t> out_shape   = {batch, numHeads, seqQ, headDim};
+
+  auto query_lt   = dg::logical_tensor(id++, dtype,                                q_shape,     dg::logical_tensor::layout_type::strided);
+  auto key_lt     = dg::logical_tensor(id++, dtype,                                k_shape,     dg::logical_tensor::layout_type::strided);
+  auto value_lt   = dg::logical_tensor(id++, dtype,                                v_shape,     dg::logical_tensor::layout_type::strided);
+  auto score_lt   = dg::logical_tensor(id++, dg::logical_tensor::data_type::f32,  score_shape, dg::logical_tensor::layout_type::strided);
+  auto scale_lt   = dg::logical_tensor(id++, dg::logical_tensor::data_type::f32,  {1},         dg::logical_tensor::layout_type::strided);
+  auto scaled_lt  = dg::logical_tensor(id++, dg::logical_tensor::data_type::f32,  score_shape, dg::logical_tensor::layout_type::strided);
+  auto bias_lt    = dg::logical_tensor(id++, dg::logical_tensor::data_type::f32,  bias_shape,  dg::logical_tensor::layout_type::strided);
+  auto biased_lt  = dg::logical_tensor(id++, dg::logical_tensor::data_type::f32,  score_shape, dg::logical_tensor::layout_type::strided);
+  auto probs_lt   = dg::logical_tensor(id++, dtype,                                score_shape, dg::logical_tensor::layout_type::strided);
+  auto output_lt  = dg::logical_tensor(id++, dtype,                                out_shape,   dg::logical_tensor::layout_type::strided);
+
+  dg::op bmm1(id++, dg::op::kind::MatMul, "bmm1");
+  bmm1.set_attr<bool>(dg::op::attr::transpose_b, true);
+  bmm1.add_inputs({query_lt, key_lt});
+  bmm1.add_outputs({score_lt});
+
+  dg::op scale_op(id++, dg::op::kind::Multiply, "scale");
+  scale_op.add_inputs({score_lt, scale_lt});
+  scale_op.add_outputs({scaled_lt});
+
+  dg::op bias_add(id++, dg::op::kind::Add, "bias_add");
+  bias_add.add_inputs({scaled_lt, bias_lt});
+  bias_add.add_outputs({biased_lt});
+
+  dg::op softmax_op(id++, dg::op::kind::SoftMax, "softmax");
+  softmax_op.set_attr<int64_t>(dg::op::attr::axis, -1);
+  softmax_op.add_inputs({biased_lt});
+  softmax_op.add_outputs({probs_lt});
+
+  dg::op bmm2(id++, dg::op::kind::MatMul, "bmm2");
+  bmm2.add_inputs({probs_lt, value_lt});
+  bmm2.add_outputs({output_lt});
+
+  dg::graph g(dnnl::engine::kind::cpu);
+  g.add_op(bmm1);
+  g.add_op(scale_op);
+  g.add_op(bias_add);
+  g.add_op(softmax_op);
+  g.add_op(bmm2);
+  g.finalize();
+
+  auto partitions = g.get_partitions();
+  if (partitions.empty()) {
+    entry.valid = false;
+    return entry;
+  }
+
+  // inputs=[Q, K, scale, bias, V], outputs=[out]
+  std::vector<dg::logical_tensor> inputs = {query_lt, key_lt, scale_lt, bias_lt, value_lt};
+  std::vector<dg::logical_tensor> outputs = {output_lt};
+
+  try {
+    entry.cp = partitions[0].compile(inputs, outputs, eng);
+    entry.valid = true;
+  } catch (...) {
+    entry.valid = false;
+  }
+
+  return entry;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Get or create compiled SDPA partition
 static SDPACache::Entry& getSDPA(int64_t batch, int64_t seqQ, int64_t seqKV,
-                                  int64_t numHeads, int64_t headDim, int dtype, bool is4D) {
+                                  int64_t numHeads, int64_t headDim, int dtype,
+                                  bool is4D, bool hasBias = false) {
   auto& cache = SDPACache::instance();
-  SDPACache::Key key{batch, seqQ, seqKV, numHeads, headDim, dtype, is4D};
+  SDPACache::Key key{batch, seqQ, seqKV, numHeads, headDim, dtype, is4D, hasBias};
 
   std::lock_guard<std::mutex> lock(cache.mtx);
 
@@ -283,7 +366,11 @@ static SDPACache::Entry& getSDPA(int64_t batch, int64_t seqQ, int64_t seqKV,
   else if (dtype == 2) dt = dg::logical_tensor::data_type::bf16;
 
   if (is4D) {
-    cache.cache[key] = buildSDPAGraph4D(batch, seqQ, seqKV, numHeads, headDim, dt, cache.eng);
+    if (hasBias) {
+      cache.cache[key] = buildSDPAGraph4D_WithBias(batch, seqQ, seqKV, numHeads, headDim, dt, cache.eng);
+    } else {
+      cache.cache[key] = buildSDPAGraph4D(batch, seqQ, seqKV, numHeads, headDim, dt, cache.eng);
+    }
   } else {
     // For 3D, headDim is the full dimension, numHeads=1
     cache.cache[key] = buildSDPAGraph3D(batch, seqQ, seqKV, headDim, dt, cache.eng);
@@ -513,9 +600,17 @@ static void mklSoftmaxInPlace(float* data, MKL_INT rows, MKL_INT cols, float sca
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Execute 4D SDPA using MKL strided batch GEMM
+// Execute 4D SDPA using MKL strided batch GEMM (prefill) or GEMV (decode).
+//
+// Input layout: [batch, seq, heads, headDim] (BSHD).
+// For seqQ=1 (decode), uses cblas_sgemv per head — avoids GEMM dispatch overhead
+// and uses the dedicated dot-product path in OpenBLAS/MKL for M=1.
+// For seqQ>1 (prefill), uses cblas_sgemm_batch_strided over all heads at once.
+//
+// GQA: handled via stride_b=0 trick — no K/V tiling needed.
 static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
-                               float scale, LaunchContext* context) {
+                               float scale, LaunchContext* context,
+                               NDArray* attentionBias = nullptr) {
   const MKL_INT batch = query->sizeAt(0);
   const MKL_INT seqQ = query->sizeAt(1);
   const MKL_INT seqKV = key->sizeAt(1);
@@ -528,94 +623,352 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
   float* vPtr = value->bufferAsT<float>();
   float* outPtr = output->bufferAsT<float>();
 
-  const MKL_INT qBatchStride = query->strideAt(0);
-  const MKL_INT qSeqStride = query->strideAt(1);
-  const MKL_INT qHeadStride = query->strideAt(2);
+  // Input: [B, S, H, D] — strides index as [0,1,2,3]
+  const MKL_INT qBatchStride = query->strideAt(0);  // S*H*D
+  const MKL_INT qSeqStride   = query->strideAt(1);  // H*D  (= leading dim for GEMM rows)
+  const MKL_INT qHeadStride  = query->strideAt(2);  // D    (batch stride between Q heads)
 
   const MKL_INT kBatchStride = key->strideAt(0);
-  const MKL_INT kSeqStride = key->strideAt(1);
-  const MKL_INT kHeadStride = key->strideAt(2);
+  const MKL_INT kSeqStride   = key->strideAt(1);    // leading dim of K rows
+  const MKL_INT kHeadStride  = key->strideAt(2);    // batch stride between KV heads
 
   const MKL_INT vBatchStride = value->strideAt(0);
-  const MKL_INT vSeqStride = value->strideAt(1);
-  const MKL_INT vHeadStride = value->strideAt(2);
+  const MKL_INT vSeqStride   = value->strideAt(1);
+  const MKL_INT vHeadStride  = value->strideAt(2);
 
   const MKL_INT outBatchStride = output->strideAt(0);
-  const MKL_INT outSeqStride = output->strideAt(1);
-  const MKL_INT outHeadStride = output->strideAt(2);
+  const MKL_INT outSeqStride   = output->strideAt(1);
+  const MKL_INT outHeadStride  = output->strideAt(2);
 
   const MKL_INT scoreSize = seqQ * seqKV;
   const bool isGqa = (numKVHeads != numHeads);
   const MKL_INT headsPerGroup = isGqa ? (numHeads / numKVHeads) : 1;
 
-  auto& scratch = MKLSDPABuffer::instance();
-  float* allScores = scratch.ensureCapacity(numHeads * scoreSize);
+  // Attention bias: extract contiguous FP32 pointer if present.
+  // Bias shape is [1,1,1,seqKV] or [1,1,seqQ,seqKV] — one vector of length seqKV,
+  // broadcast across batch and heads. We only need the raw float* row.
+  float* biasPtr = nullptr;
+  NDArray* biasF32 = nullptr;
+  bool ownsBiasLocal = false;
+  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+    if (attentionBias->dataType() != DataType::FLOAT32) {
+      biasF32 = attentionBias->cast(DataType::FLOAT32);
+      ownsBiasLocal = true;
+    } else {
+      biasF32 = attentionBias;
+    }
+    biasPtr = biasF32->bufferAsT<float>();
+  }
 
+  auto& scratch = MKLSDPABuffer::instance();
+  float* allScores = scratch.ensureCapacity(numHeads * seqQ * seqKV);
+
+  // -------------------------------------------------------------------------
+  // Decode path: seqQ == 1
+  // Use cblas_sgemv per head instead of cblas_sgemm_batch_strided.
+  // For M=1, sgemv is faster: no GEMM packing overhead, direct dot-product path.
+  // K layout for sgemv: K is [seqKV, headDim] with leading dim kSeqStride.
+  //   sgemv(CblasNoTrans) computes y = K * x where x=[headDim] (the query vector),
+  //   giving y[j] = sum_d K[j,d]*q[d] for j in [0,seqKV].
+  //   This equals q @ K^T element-wise, which is what we want for scores.
+  // V layout for sgemv: V is [seqKV, headDim] with leading dim vSeqStride.
+  //   sgemv(CblasTrans) computes out = V^T * attn where attn=[seqKV],
+  //   giving out[d] = sum_j V[j,d]*attn[j] — correct attention-weighted sum.
+  // -------------------------------------------------------------------------
+  if (seqQ == 1) {
+    for (MKL_INT b = 0; b < batch; b++) {
+      float* Q = qPtr  + b * qBatchStride;
+      float* K = kPtr  + b * kBatchStride;
+      float* V = vPtr  + b * vBatchStride;
+      float* O = outPtr + b * outBatchStride;
+
+      for (MKL_INT h = 0; h < numHeads; h++) {
+        // GQA: map query head h to KV head g = h / headsPerGroup
+        const MKL_INT g = isGqa ? (h / headsPerGroup) : h;
+
+        float* qHead = Q + h * qHeadStride;  // [headDim] — the query vector for this head
+        float* kHead = K + g * kHeadStride;  // [seqKV, headDim] — keys for this KV head
+        float* vHead = V + g * vHeadStride;  // [seqKV, headDim] — values for this KV head
+        float* sHead = allScores + h * seqKV; // [seqKV] — score scratch for this head
+        float* oHead = O + h * outHeadStride; // [headDim] — output for this head
+
+        // scores[j] = scale * sum_d K[j,d] * q[d]  for j in [0, seqKV)
+        // K is row-major [seqKV, headDim]: CblasNoTrans with lda=kSeqStride
+        cblas_sgemv(CblasRowMajor, CblasNoTrans,
+                    seqKV, headDim,
+                    scale,
+                    kHead, kSeqStride,
+                    qHead, 1,
+                    0.0f, sHead, 1);
+
+        // Add attention bias before softmax: scores[j] += bias[j]
+        // Bias is [1,1,1,seqKV] — same values for every batch/head (broadcast).
+        if (biasPtr != nullptr) {
+          cblas_saxpy(seqKV, 1.0f, biasPtr, 1, sHead, 1);
+        }
+
+        // softmax(sHead) in-place — mklSoftmaxInPlace handles scale internally
+        // but we already applied scale in sgemv above, so pass scale=1.0f here.
+        mklSoftmaxInPlace(sHead, 1, seqKV, 1.0f);
+
+        // out[d] = sum_j attn[j] * V[j,d]  for d in [0, headDim)
+        // V is row-major [seqKV, headDim]: CblasTrans gives V^T * attn
+        cblas_sgemv(CblasRowMajor, CblasTrans,
+                    seqKV, headDim,
+                    1.0f,
+                    vHead, vSeqStride,
+                    sHead, 1,
+                    0.0f, oHead, 1);
+      }
+    }
+    if (ownsBiasLocal) delete biasF32;
+    return;
+  }
+
+  if (ownsBiasLocal) delete biasF32;
+
+  // -------------------------------------------------------------------------
+  // Prefill path: seqQ > 1
+  // Per-head cblas_sgemm: the [B, S, H, D] layout interleaves heads within
+  // each sequence position, so stride between heads (D) is smaller than the
+  // per-head matrix size (seqQ * H*D). cblas_sgemm_batch_strided requires
+  // stride >= M * lda which can't hold here. Loop over heads explicitly.
+  // -------------------------------------------------------------------------
   for (MKL_INT b = 0; b < batch; b++) {
     float* Q = qPtr + b * qBatchStride;
     float* K = kPtr + b * kBatchStride;
     float* V = vPtr + b * vBatchStride;
     float* O = outPtr + b * outBatchStride;
 
-    if (!isGqa) {
-      // Standard MHA: single batched GEMM for all heads
-      cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasTrans,
-                                 seqQ, seqKV, headDim, 1.0f,
-                                 Q, qSeqStride, qHeadStride,
-                                 K, kSeqStride, kHeadStride,
-                                 0.0f, allScores, seqKV, scoreSize, numHeads);
-    } else {
-      // GQA: each KV head group shares one K head
-      // Process headsPerGroup Q heads against the same K head per group
-      for (MKL_INT g = 0; g < numKVHeads; g++) {
-        float* Qg = Q + g * headsPerGroup * qHeadStride;
-        float* Kg = K + g * kHeadStride;
-        float* Sg = allScores + g * headsPerGroup * scoreSize;
-        // Batched GEMM: headsPerGroup Q heads @ same K head (K stride=0)
-        cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasTrans,
-                                   seqQ, seqKV, headDim, 1.0f,
-                                   Qg, qSeqStride, qHeadStride,
-                                   Kg, kSeqStride, 0,  // stride_b=0: reuse same K head
-                                   0.0f, Sg, seqKV, scoreSize, headsPerGroup);
-      }
+    // Step 1: Q @ K^T -> scores  per head
+    for (MKL_INT h = 0; h < numHeads; h++) {
+      const MKL_INT g = isGqa ? (h / headsPerGroup) : h;
+      float* qHead = Q + h * qHeadStride;    // [seqQ, headDim] with lda=qSeqStride
+      float* kHead = K + g * kHeadStride;    // [seqKV, headDim] with lda=kSeqStride
+      float* sHead = allScores + h * scoreSize; // [seqQ, seqKV] contiguous
+
+      // scores = Q @ K^T: [seqQ, headDim] x [headDim, seqKV] -> [seqQ, seqKV]
+      cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                  seqQ, seqKV, headDim, 1.0f,
+                  qHead, qSeqStride,
+                  kHead, kSeqStride,
+                  0.0f, sHead, seqKV);
     }
 
-    // Softmax for all heads
+    // Step 2: softmax with scale
     for (MKL_INT h = 0; h < numHeads; h++) {
       mklSoftmaxInPlace(allScores + h * scoreSize, seqQ, seqKV, scale);
     }
 
-    if (!isGqa) {
-      // Standard MHA: single batched GEMM
-      cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                                 seqQ, headDim, seqKV, 1.0f,
-                                 allScores, seqKV, scoreSize,
-                                 V, vSeqStride, vHeadStride,
-                                 0.0f, O, outSeqStride, outHeadStride, numHeads);
-    } else {
-      // GQA: each KV head group shares one V head
-      for (MKL_INT g = 0; g < numKVHeads; g++) {
-        float* Sg = allScores + g * headsPerGroup * scoreSize;
-        float* Vg = V + g * vHeadStride;
-        float* Og = O + g * headsPerGroup * outHeadStride;
-        cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                                   seqQ, headDim, seqKV, 1.0f,
-                                   Sg, seqKV, scoreSize,
-                                   Vg, vSeqStride, 0,  // stride_b=0: reuse same V head
-                                   0.0f, Og, outSeqStride, outHeadStride, headsPerGroup);
-      }
+    // Step 3: scores @ V -> output  per head
+    for (MKL_INT h = 0; h < numHeads; h++) {
+      const MKL_INT g = isGqa ? (h / headsPerGroup) : h;
+      float* sHead = allScores + h * scoreSize; // [seqQ, seqKV] contiguous
+      float* vHead = V + g * vHeadStride;    // [seqKV, headDim] with lda=vSeqStride
+      float* oHead = O + h * outHeadStride;  // [seqQ, headDim] with lda=outSeqStride
+
+      // output = scores @ V: [seqQ, seqKV] x [seqKV, headDim] -> [seqQ, headDim]
+      cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                  seqQ, headDim, seqKV, 1.0f,
+                  sHead, seqKV,
+                  vHead, vSeqStride,
+                  0.0f, oHead, outSeqStride);
     }
   }
 }
 #endif
 
 //////////////////////////////////////////////////////////////////////////
+// Execute 4D SDPA with fused additive attention bias.
+// Used for the padded-KV decode path: seqQ=1, seqKV=maxKvLen (constant).
+// The bias [1, 1, 1, seqKV] masks out unfilled KV cache slots so that the
+// OneDNN JIT-compiled partition is reused for every decode step without
+// recompilation (seqKV is fixed at maxKvLen throughout the generation loop).
+//
+// input layout:  query  [batch, 1, numHeads, headDim]   (BSHD)
+//                key    [batch, maxKvLen, numHeads, headDim]
+//                value  [batch, maxKvLen, numHeads, headDim]
+//                bias   [1, 1, 1, maxKvLen] — additive mask, f32
+// output layout: output [batch, 1, numHeads, headDim]
+static void executeSDPA4D_WithBias(NDArray* query, NDArray* key, NDArray* value,
+                                   NDArray* output, NDArray* bias,
+                                   float scale, LaunchContext* context) {
+  const auto batch    = query->sizeAt(0);
+  const auto seqQ     = query->sizeAt(1);
+  const auto seqKV    = key->sizeAt(1);
+  const auto numHeads = query->sizeAt(2);
+  const auto headDim  = query->sizeAt(3);
+
+  // Bias must be f32 — cast if the model passed it in a different type.
+  NDArray* biasF32 = nullptr;
+  bool ownsBias = false;
+  if (bias->dataType() != DataType::FLOAT32) {
+    biasF32 = bias->cast(DataType::FLOAT32);
+    ownsBias = true;
+  } else {
+    biasF32 = bias;
+  }
+
+  int dtype = 0;
+  if (query->dataType() == DataType::HALF) dtype = 1;
+  else if (query->dataType() == DataType::BFLOAT16) dtype = 2;
+
+  auto& entry = getSDPA(batch, seqQ, seqKV, numHeads, headDim, dtype, /*is4D=*/true, /*hasBias=*/true);
+  if (!entry.valid) {
+    // OneDNN Graph failed to compile this configuration — fall back to FlashAttentionHelper.
+    // This should not normally happen on a supported ISA; log and fall back gracefully.
+    // Pass the original (possibly non-f32) bias — FlashAttentionHelper casts internally.
+    if (ownsBias) { delete biasF32; biasF32 = nullptr; ownsBias = false; }
+    FlashAttentionHelper::Config cfg;
+    cfg.scale      = scale;
+    cfg.isCausal   = false;
+    cfg.dropout    = 0.0f;
+    cfg.numHeads   = static_cast<int>(numHeads);
+    cfg.numKvHeads = static_cast<int>(key->sizeAt(2));
+    FlashAttentionHelper::forward(query, key, value, output, cfg,
+                                  nullptr, nullptr, nullptr, context, bias);
+    return;
+  }
+
+  auto& cache = SDPACache::instance();
+  auto& strm  = getThreadStream(cache.eng);
+
+  dg::logical_tensor::data_type dt = dg::logical_tensor::data_type::f32;
+  if (dtype == 1) dt = dg::logical_tensor::data_type::f16;
+  else if (dtype == 2) dt = dg::logical_tensor::data_type::bf16;
+
+  // True 4D shapes: [batch, heads, seq, headDim] — same transposed-stride trick as non-bias path
+  std::vector<int64_t> q_shape   = {batch, numHeads, seqQ,  headDim};
+  std::vector<int64_t> k_shape   = {batch, numHeads, seqKV, headDim};
+  std::vector<int64_t> v_shape   = {batch, numHeads, seqKV, headDim};
+  std::vector<int64_t> bias_shape = {1, 1, seqQ, seqKV};
+  std::vector<int64_t> out_shape  = {batch, numHeads, seqQ, headDim};
+
+  // Strides for [B,H,S,D] view of [B,S,H,D] data (permutation [0,2,1,3])
+  std::vector<int64_t> q_strides = {
+    query->strideAt(0), query->strideAt(2), query->strideAt(1), query->strideAt(3)
+  };
+  std::vector<int64_t> k_strides = {
+    key->strideAt(0), key->strideAt(2), key->strideAt(1), key->strideAt(3)
+  };
+  std::vector<int64_t> v_strides = {
+    value->strideAt(0), value->strideAt(2), value->strideAt(1), value->strideAt(3)
+  };
+  std::vector<int64_t> out_strides = {
+    output->strideAt(0), output->strideAt(2), output->strideAt(1), output->strideAt(3)
+  };
+  // bias strides from the actual array (handles contiguous and view cases)
+  std::vector<int64_t> bias_strides = {
+    biasF32->strideAt(0), biasF32->strideAt(1), biasF32->strideAt(2), biasF32->strideAt(3)
+  };
+
+  auto query_lt  = dg::logical_tensor(0, dt,                               q_shape,    q_strides);
+  auto key_lt    = dg::logical_tensor(1, dt,                               k_shape,    k_strides);
+  auto scale_lt  = dg::logical_tensor(2, dg::logical_tensor::data_type::f32, {1},     {1});
+  auto bias_lt   = dg::logical_tensor(3, dg::logical_tensor::data_type::f32, bias_shape, bias_strides);
+  auto value_lt  = dg::logical_tensor(4, dt,                               v_shape,    v_strides);
+  auto output_lt = dg::logical_tensor(5, dt,                               out_shape,  out_strides);
+
+  dg::tensor t_query (query_lt,  cache.eng, query->buffer());
+  dg::tensor t_key   (key_lt,    cache.eng, key->buffer());
+  dg::tensor t_scale (scale_lt,  cache.eng, &scale);
+  dg::tensor t_bias  (bias_lt,   cache.eng, biasF32->buffer());
+  dg::tensor t_value (value_lt,  cache.eng, value->buffer());
+  dg::tensor t_output(output_lt, cache.eng, output->buffer());
+
+  entry.cp.execute(strm, {t_query, t_key, t_scale, t_bias, t_value}, {t_output});
+  strm.wait();
+
+  if (ownsBias) delete biasF32;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Execute 4D SDPA with [batch, seq, heads, dim] layout
 static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
-                          float scale, LaunchContext* context) {
+                          float scale, LaunchContext* context,
+                          NDArray* attentionBias = nullptr) {
+  // Decode path (seqQ=1): route directly to MKL strided-batch GEMV path for FP32,
+  // or promote to FP32 and use MKL for FP16/BF16.
+  // Do NOT delegate to FlashAttentionHelper here — it copies and tiles K/V for GQA
+  // (O(headsPerKvHead * seqKV * headDim) wasted copies per layer per token) and
+  // does not use cblas_sgemv for the M=1 GEMV case.
+  // The MKL path (executeSDPA4D_MKL) uses cblas_sgemm_batch_strided with stride_b=0
+  // for GQA — no K/V tiling at all — and handles all heads in a single BLAS call.
+  // The OneDNN graph JIT recompile concern does NOT apply to executeSDPA4D_MKL since
+  // it uses cblas_sgemm_batch_strided directly, not OneDNN graph partitions.
+  if (query->sizeAt(1) == 1) {
+#ifdef HAVE_MKL
+    if (query->dataType() == DataType::FLOAT32) {
+      executeSDPA4D_MKL(query, key, value, output, scale, context, attentionBias);
+      return;
+    }
+#endif
+    // FP16/BF16 decode: promote to FP32 and use MKL path.
+    // FlashAttentionHelper has unacceptable overhead for decode (see comment above).
+    if (query->dataType() == DataType::HALF || query->dataType() == DataType::BFLOAT16) {
+      auto q32 = query->cast(DataType::FLOAT32);
+      auto k32 = key->cast(DataType::FLOAT32);
+      auto v32 = value->cast(DataType::FLOAT32);
+      auto outShapePtr = output->getShapeAsVector();
+      NDArray out32(query->ordering(), *outShapePtr, DataType::FLOAT32, context);
+      delete outShapePtr;
+      executeSDPA4D(q32, k32, v32, &out32, scale, context, attentionBias);
+      output->assign(&out32);
+      delete q32;
+      delete k32;
+      delete v32;
+      return;
+    }
+    // Fallback for non-MKL CPU or unsupported types: use FlashAttentionHelper.
+    FlashAttentionHelper::Config cfg;
+    cfg.scale    = scale;
+    cfg.isCausal = false;
+    cfg.dropout  = 0.0f;
+    cfg.numHeads   = static_cast<int>(query->sizeAt(2));
+    cfg.numKvHeads = static_cast<int>(key->sizeAt(2));
+    FlashAttentionHelper::forward(query, key, value, output, cfg,
+                                  nullptr, nullptr, nullptr, context, attentionBias);
+    return;
+  }
+
+  // For FP16/BF16 on CPUs without native ISA support, promote to FP32 so we can
+  // use the MKL or OneDNN FP32 path instead of failing.  The decode path (above)
+  // already handles all types via FlashAttentionHelper/MmulHelper.
+  bool needsPromotion = false;
+#if HAVE_ONEDNN
+  if (query->dataType() == DataType::HALF || query->dataType() == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    bool hasNativeHalf = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+    bool hasNativeBf16 = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+    if ((query->dataType() == DataType::HALF && !hasNativeHalf) ||
+        (query->dataType() == DataType::BFLOAT16 && !hasNativeBf16)) {
+      needsPromotion = true;
+    }
+  }
+#else
+  if (query->dataType() != DataType::FLOAT32) {
+    needsPromotion = true;
+  }
+#endif
+
+  if (needsPromotion) {
+    auto q32 = query->cast(DataType::FLOAT32);
+    auto k32 = key->cast(DataType::FLOAT32);
+    auto v32 = value->cast(DataType::FLOAT32);
+    auto outShapePtr = output->getShapeAsVector();
+    NDArray out32(q32->ordering(), *outShapePtr, DataType::FLOAT32, context);
+    delete outShapePtr;
+    executeSDPA4D(q32, k32, v32, &out32, scale, context, attentionBias);
+    output->assign(&out32);
+    delete q32;
+    delete k32;
+    delete v32;
+    return;
+  }
+
 #ifdef HAVE_MKL
   if (query->dataType() == DataType::FLOAT32) {
-    executeSDPA4D_MKL(query, key, value, output, scale, context);
+    executeSDPA4D_MKL(query, key, value, output, scale, context, attentionBias);
     return;
   }
 #endif
@@ -763,9 +1116,18 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
 
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
 
-  // When attention bias is present, delegate to FlashAttentionHelper which handles it
+  // 4D path: route to executeSDPA4D which handles bias, GQA, and all dtypes via MKL GEMV.
+  // This avoids FlashAttentionHelper's O(headsPerKvHead * seqKV * headDim) K/V tiling.
+  if (rank == 4) {
+    executeSDPA4D(queries, keys, values, output, static_cast<float>(scale),
+                  block.launchContext(), hasAttentionBias ? attentionBias : nullptr);
+    if (!attentionScores->isEmpty()) attentionScores->nullify();
+    if (!attentionLogits->isEmpty())  attentionLogits->nullify();
+    return sd::Status::OK;
+  }
+
+  // Rank 2/3 with bias: delegate to FlashAttentionHelper.
   if (hasAttentionBias) {
-    // Handle rank 2 by reshaping to 3D
     NDArray* q = queries;
     NDArray* k = keys;
     NDArray* v = values;
@@ -788,30 +1150,25 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
       out = output->reshape('c', outShape);
     }
 
-    // Cast attention bias to query dtype if needed
-    std::unique_ptr<NDArray> biasCastOwner;
+    NDArray* biasCast = nullptr;
     NDArray* biasForHelper = attentionBias;
     if (attentionBias->dataType() != q->dataType()) {
-      biasCastOwner.reset(attentionBias->cast(q->dataType()));
-      biasForHelper = biasCastOwner.get();
+      biasCast = attentionBias->cast(q->dataType());
+      biasForHelper = biasCast;
     }
 
     FlashAttentionHelper::Config config;
     config.scale = static_cast<float>(scale);
     config.isCausal = block.numB() > 0 ? B_ARG(0) : false;
     config.dropout = 0.0f;
-    if (isRank4) {
-      config.numHeads = q->sizeAt(2);
-      config.numKvHeads = k->sizeAt(2);
-    } else {
-      config.numHeads = 1;
-      config.numKvHeads = 1;
-    }
+    config.numHeads = 1;
+    config.numKvHeads = 1;
 
     FlashAttentionHelper::forward(q, k, v, out, config,
                                   nullptr, attentionScores, attentionLogits,
                                   block.launchContext(), biasForHelper);
 
+    if (biasCast != nullptr) delete biasCast;
     if (reshapedQ) {
       delete q;
       delete v;
@@ -822,12 +1179,8 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
     return sd::Status::OK;
   }
 
-  // No bias: use fast fused OneDNN graph path
-  if (rank == 4) {
-    // 4D path: [batch, seq, heads, dim]
-    executeSDPA4D(queries, keys, values, output, static_cast<float>(scale), block.launchContext());
-  } else {
-    // 2D or 3D path
+  // No bias, rank 2/3: use OneDNN 3D graph path
+  {
     NDArray *q3d = nullptr, *k3d = nullptr, *v3d = nullptr, *out3d = nullptr;
     bool needReshape = (rank == 2);
 
@@ -869,24 +1222,20 @@ PLATFORM_CHECK(dot_product_attention_v2, ENGINE_CPU) {
 
   auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
 
-  // Check masks
+  // Check masks — scalars (rank 0) and 1D arrays are scale constants, not masks.
+  // Only rank >= 2 tensors count as actual attention masks.
   auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
   auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
-  bool hasMasks = (qMask != nullptr && !qMask->isEmpty()) || (vMask != nullptr && !vMask->isEmpty());
+  bool hasMasks = (qMask != nullptr && !qMask->isEmpty() && qMask->rankOf() >= 2) ||
+                  (vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() >= 2);
 
   const auto qType = query->dataType();
-  bool isSupportedType = (qType == DataType::FLOAT32);
-  if (qType == DataType::BFLOAT16) {
-#if HAVE_ONEDNN
-    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
-    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_bf16);
-#endif
-  } else if (qType == DataType::HALF) {
-#if HAVE_ONEDNN
-    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
-    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
-#endif
-  }
+  // Accept FP32, FP16, and BF16 unconditionally.  The decode path (seqQ=1) uses
+  // FlashAttentionHelper → MmulHelper which handles all float types via MKL.
+  // The prefill path (seqQ>1) uses OneDNN Graph which JIT-compiles for the type,
+  // and executeSDPA4D auto-casts to FP32 if the ISA doesn't support the type natively.
+  bool isSupportedType = (qType == DataType::FLOAT32 || qType == DataType::HALF
+                          || qType == DataType::BFLOAT16);
 
   // GQA (mismatched Q/K head counts) only supported for FP32 via MKL batch GEMM path
   auto keys = block.width() > 2 ? INPUT_VARIABLE(2) : value;
