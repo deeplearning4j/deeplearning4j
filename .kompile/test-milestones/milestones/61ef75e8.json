@@ -1,0 +1,17 @@
+{
+  "id" : "61ef75e8",
+  "branch" : "HEAD",
+  "commit" : "020d93aa26e566ef2044a08e0c8035f1d102bc75",
+  "commitShort" : "020d93a",
+  "commitMessage" : "perf: replace generic softmax with fused warp-shuffle kernel in attention decode path",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-dsp",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Latest substantiated working memory: /home/agibsonccc/.claude/projects/-home-agibsonccc-Documents-GitHub-deeplearning4j/memory/triton-perf-benchmarks.md modified 2026-04-27 08:41:49 +0900 says Current (04-27): ~50 tok/s with OPTIMAL config (composite replay + Triton islands + live gap ops), Accuracy: CORRECT — coherent doctag + mythic heroes text. Timestamp maps to latest prior git commit 020d93aa26e566ef2044a08e0c8035f1d102bc75 (2026-04-27 06:31:09 +0900).",
+  "tags" : "reconstructed,memory,cuda,dsp,vlm,performance,current-best",
+  "timestamp" : "2026-05-01T04:22:46.864577Z"
+}

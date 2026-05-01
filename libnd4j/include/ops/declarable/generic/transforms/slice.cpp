@@ -133,7 +133,7 @@ DECLARE_SHAPE_FN(slice) {
     auto e = INPUT_VARIABLE(2);
 
     // Check if begin/end are empty - this can happen during graph construction
-    if (b->isEmpty() || e->isEmpty()) {
+    if (shape::isEmpty(inputShape->at(1)) || shape::isEmpty(inputShape->at(2))) {
       // For slicing a 1D shape tensor to extract a single element, return scalar
       if (x_rank == 1) {
         auto scalarShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));

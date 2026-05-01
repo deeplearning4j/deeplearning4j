@@ -100,6 +100,35 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     return sd::Status::OK;
   }
 
+  // Mixed-type auto-cast: cast all inputs to query's dtype.
+  // Query dtype is authoritative (matches DECLARE_SHAPE_FN output dtype).
+  // IMPORTANT: save original pastKey/pastValue pointers BEFORE casting.
+  // kvInPlaceWrite must target the real persistent KV cache buffers,
+  // not cast temporaries that get deleted at end of op.
+  DataType targetType = query->dataType();
+  NDArray* keyCast = nullptr;
+  NDArray* valueCast = nullptr;
+  NDArray* pastKeyCast = nullptr;
+  NDArray* pastValueCast = nullptr;
+  NDArray* origPastKey = pastKey;
+  NDArray* origPastValue = pastValue;
+  if (key->dataType() != targetType) {
+    keyCast = key->cast(targetType);
+    key = keyCast;
+  }
+  if (value->dataType() != targetType) {
+    valueCast = value->cast(targetType);
+    value = valueCast;
+  }
+  if (pastKey && pastKey->dataType() != targetType) {
+    pastKeyCast = pastKey->cast(targetType);
+    pastKey = pastKeyCast;
+  }
+  if (pastValue && pastValue->dataType() != targetType) {
+    pastValueCast = pastValue->cast(targetType);
+    pastValue = pastValueCast;
+  }
+
   auto batch = query->sizeAt(0);
   auto seqQ = query->sizeAt(1);
   auto hidden = query->sizeAt(2);
@@ -196,18 +225,20 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     const void* cachePosPtr = cachePosInput->buffer();
 #endif
 
-    helpers::kvInPlaceWrite(pastKey, kReshaped, cachePosPtr, block.launchContext());
-    helpers::kvInPlaceWrite(pastValue, vReshaped, cachePosPtr, block.launchContext());
+    // Write into the ORIGINAL persistent KV cache buffers, not cast temporaries.
+    // If pastKey was cast to a different dtype, origPastKey points to the real cache.
+    helpers::kvInPlaceWrite(origPastKey, kReshaped, cachePosPtr, block.launchContext());
+    helpers::kvInPlaceWrite(origPastValue, vReshaped, cachePosPtr, block.launchContext());
 
-    // Use pastKey/pastValue for attention (permute BHSD→BSHD)
+    // Use the ORIGINAL pastKey/pastValue for attention (permute BHSD→BSHD).
     // totalSeqKV = maxSeqLen: the causal mask handles token visibility,
     // so we pass the full buffer. Positions beyond cachePos+seqKV contain
     // zeros or stale data but are masked out by the attention mask.
-    totalSeqKV = pastKey->sizeAt(2);  // maxSeqLen
+    totalSeqKV = origPastKey->sizeAt(2);  // maxSeqLen
 
     std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
-    kFinal = pastKey->permute(permBHSDtoBSHD, false, false);
-    vFinal = pastValue->permute(permBHSDtoBSHD, false, false);
+    kFinal = origPastKey->permute(permBHSDtoBSHD, false, false);
+    vFinal = origPastValue->permute(permBHSDtoBSHD, false, false);
     ownKVFinal = true;   // We own the permuted views (need delete)
     skipPresentOutput = true;  // No present output copy needed — past IS the cache
   } else if (pastKey != nullptr && pastValue != nullptr && !pastAlreadyConcat) {
@@ -373,6 +404,11 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   delete kReshaped;
   delete vReshaped;
   // qContig/kContig/vContig are just aliases, not owned copies
+
+  delete keyCast;
+  delete valueCast;
+  delete pastKeyCast;
+  delete pastValueCast;
 
   return sd::Status::OK;
 }

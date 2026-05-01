@@ -1,0 +1,17 @@
+{
+  "id" : "31f44643",
+  "branch" : "HEAD",
+  "commit" : "533d3fa47812accc0af952168d26361ce68dbe30",
+  "commitShort" : "533d3fa",
+  "commitMessage" : "fix: populate externalInputRanks_ to unblock FusionPass matmul+bias detection",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-dsp",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Latest substantiated working memory: /home/agibsonccc/.claude/projects/-home-agibsonccc-Documents-GitHub-deeplearning4j/memory/triton-perf-benchmarks.md modified 2026-04-27 08:41:49 +0900 says Current (04-27): ~50 tok/s with OPTIMAL config (composite replay + Triton islands + live gap ops), Accuracy: CORRECT — coherent doctag + mythic heroes text. With current git history, timestamp maps to latest prior commit 533d3fa47812accc0af952168d26361ce68dbe30 (2026-04-27 06:50:37 +0900).",
+  "tags" : "reconstructed,memory,cuda,dsp,vlm,performance,current-best",
+  "timestamp" : "2026-05-01T04:24:33.249925Z"
+}

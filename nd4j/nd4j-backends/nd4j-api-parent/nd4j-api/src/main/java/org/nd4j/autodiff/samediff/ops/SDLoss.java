@@ -602,7 +602,9 @@ public class SDLoss extends SDOps {
       LossReduce lossReduce, double epsilon) {
     SDValidation.validateNumerical("logLoss", "label", label);
     SDValidation.validateNumerical("logLoss", "predictions", predictions);
-    SDValidation.validateNumerical("logLoss", "weights", weights);
+    if (weights != null) {
+      SDValidation.validateNumerical("logLoss", "weights", weights);
+    }
     SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.LogLoss(sd,label, predictions, weights, lossReduce, epsilon).outputVariable();
     out.markAsLoss();
     return out;
@@ -624,7 +626,9 @@ public class SDLoss extends SDOps {
       SDVariable weights, LossReduce lossReduce, double epsilon) {
     SDValidation.validateNumerical("logLoss", "label", label);
     SDValidation.validateNumerical("logLoss", "predictions", predictions);
-    SDValidation.validateNumerical("logLoss", "weights", weights);
+    if (weights != null) {
+      SDValidation.validateNumerical("logLoss", "weights", weights);
+    }
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.LogLoss(sd,label, predictions, weights, lossReduce, epsilon).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);

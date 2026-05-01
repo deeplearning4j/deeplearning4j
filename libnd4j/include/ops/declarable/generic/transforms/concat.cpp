@@ -159,13 +159,22 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
                "CONCAT op: input axis must be in range [0, %i], but got %i after normalization!",
                rank - 1, axis);
 
-  // ******** input validation ******** //
+  // ******** input validation / mixed-type auto-cast ******** //
+  // When FP16 quantization converts some constants to HALF while activations remain
+  // FLOAT, inputs will have mixed types. Cast all inputs to the output type so that
+  // the concat produces the correct result without type mismatch errors.
+  DataType outType = OUTPUT_VARIABLE(0)->dataType();
   if (!allOfSameType) {
-    for (auto arr : arrsToDelete) delete arr;
-    REQUIRE_TRUE(false, 0, "CONCAT op: all of input arrays must have same type !");
+    for (size_t i = 0; i < nonEmptyArrs.size(); i++) {
+      if (nonEmptyArrs[i]->dataType() != outType) {
+        auto* casted = nonEmptyArrs[i]->cast(outType);
+        arrsToDelete.push_back(casted);
+        nonEmptyArrs[i] = casted;
+      }
+    }
   }
-  
-  if (nonEmptyArrs[0]->dataType() != OUTPUT_VARIABLE(0)->dataType()) {
+
+  if (nonEmptyArrs[0]->dataType() != outType) {
     for (auto arr : arrsToDelete) delete arr;
     REQUIRE_TRUE(false, 0, "CONCAT op: output array should have the same type as inputs arrays !");
   }
@@ -282,7 +291,7 @@ DECLARE_SHAPE_FN(concat) {
   ShapeList arrShapes;
   std::vector<LongType> shapesToDelete;
   LongType numOfNonEmptyArrs = 0;
-  const LongType rawRank = shape::rank(INPUT_VARIABLE(0)->shapeInfo());
+  const LongType rawRank = shape::rank(inputShape->at(0));
   // Scalars (rank 0) are treated as 1D vectors of length 1 for concat purposes
   const LongType rank = (rawRank == 0) ? 1 : rawRank;
   LongType newDim = 0;
@@ -324,7 +333,7 @@ DECLARE_SHAPE_FN(concat) {
       if (isEmpty) {
         arrShapes.push_back(const_cast<sd::LongType*>(currentShapeInfo));
       } else {
-        arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(len, INPUT_VARIABLE(0)->dataType()));
+        arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(len, ArrayOptions::dataType(inputShape->at(0))));
         if (firstNonEmptyShapeIdx < 0)
           firstNonEmptyShapeIdx = i;
         numOfNonEmptyArrs++;
@@ -362,7 +371,7 @@ DECLARE_SHAPE_FN(concat) {
     }
 
     // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
-    auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(INPUT_VARIABLE(0)->dataType(), shapeVec);
+    auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inputShape->at(0)), shapeVec);
     delete[] outShapeInfo;
 
     // Clean up allocated vectors
@@ -379,7 +388,7 @@ DECLARE_SHAPE_FN(concat) {
 
   if (shape::isScalar(arrShapes.at(firstNonEmptyShapeIdx))) {
     //concat of scalar should be  a 1d vector
-    auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(newDim, INPUT_VARIABLE(0)->dataType());
+    auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(newDim, ArrayOptions::dataType(inputShape->at(0)));
     return SHAPELIST(CONSTANT(newShape));
   } else {
     LongType* outShapeInfo(nullptr);

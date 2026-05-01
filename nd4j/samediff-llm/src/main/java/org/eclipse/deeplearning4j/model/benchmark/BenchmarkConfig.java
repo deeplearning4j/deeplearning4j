@@ -97,7 +97,7 @@ public class BenchmarkConfig {
     boolean dspBatchZero;
     boolean dspBatchZeroKernel;
     boolean dspBatchedGemm;
-    boolean dspFreezeMergeSegments;
+    boolean dspFreezeMergeSegments = true;
     boolean dspFreezeRecompile;
     boolean dspExecutionTiming;  // enable DSP per-step timing instrumentation in native code
 

@@ -42,6 +42,17 @@ template <typename T1, typename T2, typename T3>
 static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
                       const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
                       const double beta) {
+  // Validate type sizes match template types to prevent buffer overrun from type-punned pointer arithmetic.
+  // usualGemm reinterprets buffer memory as T1/T2/T3 pointers; if the actual element size differs,
+  // pointer arithmetic advances by sizeof(T) bytes but elements are sizeof(actual) bytes apart,
+  // producing out-of-bounds accesses (SEGV_ACCERR on guard page).
+  if (sizeof(T1) != DataTypeUtils::sizeOf(vA->dataType()))
+    THROW_EXCEPTION("usualGemm: type size mismatch for A — pointer arithmetic would overrun buffer");
+  if (sizeof(T2) != DataTypeUtils::sizeOf(vB->dataType()))
+    THROW_EXCEPTION("usualGemm: type size mismatch for B — pointer arithmetic would overrun buffer");
+  if (sizeof(T3) != DataTypeUtils::sizeOf(vC->dataType()))
+    THROW_EXCEPTION("usualGemm: type size mismatch for C — pointer arithmetic would overrun buffer");
+
   T1* A = vA->bufferAsT<T1>();
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
@@ -367,6 +378,50 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     delete aF32;
     delete bF32;
     return C;
+  }
+
+  // Mixed-type safe path: when A is FP32/FP64 but types don't all match (ABC=false),
+  // usualGemm would reinterpret B and C buffers using float pointer arithmetic — this
+  // produces wrong element offsets for non-FP32 B (e.g., FLOAT16: 2 bytes/element but
+  // accessed as 4 bytes/element → buffer overrun → SEGV_ACCERR on guard page).
+  // Fix: cast all inputs to A's type, use a tight-packed temp C, then assign back.
+  if (!ABC && sd::env_isEnableBlas()) {
+    if (aType == DataType::FLOAT32 && BlasHelper::getInstance().hasGEMM(DataType::FLOAT32)) {
+      // Cast A and B to contiguous FP32; use a tight FP32 temp for C.
+      NDArray* aF32 = (aType == DataType::FLOAT32 && A->strideAt(1) == 1 && A->strideAt(0) == K)
+                          ? nullptr : A->cast(DataType::FLOAT32);
+      NDArray* bF32 = (bType == DataType::FLOAT32 && B->strideAt(1) == 1 && B->strideAt(0) == N)
+                          ? nullptr : B->cast(DataType::FLOAT32);
+      NDArray* aEff = (aF32 != nullptr) ? aF32 : const_cast<NDArray*>(A);
+      NDArray* bEff = (bF32 != nullptr) ? bF32 : const_cast<NDArray*>(B);
+      std::vector<LongType> cShape = {M, N};
+      NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
+      auto blasLock3 = BlasHelper::getInstance().lockBlas();
+      BlasHelper::getInstance().sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                         aEff->bufferAsT<float>(), K, bEff->bufferAsT<float>(), N, (float)beta,
+                         cF32.bufferAsT<float>(), N);
+      C->assign(&cF32);
+      delete aF32;
+      delete bF32;
+      return C;
+    } else if (aType == DataType::DOUBLE && BlasHelper::getInstance().hasGEMM(DataType::DOUBLE)) {
+      NDArray* aF64 = (aType == DataType::DOUBLE && A->strideAt(1) == 1 && A->strideAt(0) == K)
+                          ? nullptr : A->cast(DataType::DOUBLE);
+      NDArray* bF64 = (bType == DataType::DOUBLE && B->strideAt(1) == 1 && B->strideAt(0) == N)
+                          ? nullptr : B->cast(DataType::DOUBLE);
+      NDArray* aEff = (aF64 != nullptr) ? aF64 : const_cast<NDArray*>(A);
+      NDArray* bEff = (bF64 != nullptr) ? bF64 : const_cast<NDArray*>(B);
+      std::vector<LongType> cShape = {M, N};
+      NDArray cF64('c', cShape, DataType::DOUBLE, A->getContext());
+      auto blasLock4 = BlasHelper::getInstance().lockBlas();
+      BlasHelper::getInstance().dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, alpha,
+                         aEff->bufferAsT<double>(), K, bEff->bufferAsT<double>(), N, beta,
+                         cF64.bufferAsT<double>(), N);
+      C->assign(&cF64);
+      delete aF64;
+      delete bF64;
+      return C;
+    }
   }
 
   if ((!typeFloat && !typeDouble) || !sd::env_isEnableBlas()) {

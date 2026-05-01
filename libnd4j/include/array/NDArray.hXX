@@ -924,7 +924,8 @@ NDArray::NDArray(DataBuffer *buffer,
   }
 
   // Validate buffer integrity before accessing - catches use-after-free
-  if(buffer != nullptr) {
+  // Gated on isDebug() — canary scanning is O(8K) per NDArray construction
+  if(buffer != nullptr && sd::Environment::getInstance().isDebug()) {
     buffer->validateIntegrity();
   }
 

@@ -323,19 +323,29 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
     DSP_DIAG(VERIFY, "=== END PLAN STRUCTURE ===");
   }
 
-  // Pre-warmup promotion: view-capable slots enter FROZEN state BEFORE
-  // warmup execution when shapes are already frozen.
+  // Demote FROZEN slots to WARMUP before warmup execution.  After
+  // invalidateForRebuild or restoreSlotStates, slots may be FROZEN with stale
+  // cachedOutputShapes (e.g. FLOAT32 from a prior matmul dtype promotion).
+  // If we execute with FROZEN state, the frozen context path fires and uses
+  // stale cached shapes — potentially "correcting" a correct HALF output to
+  // FLOAT32.  Demoting to WARMUP forces the normal execution path which runs
+  // fresh calculateOutputShape with current input dtypes.
+  //
+  // NOTE: the old code PROMOTED view-capable slots to FROZEN here, which made
+  // the problem worse — those slots would take the frozen context path with
+  // stale dtypes.  Warmup must always use the normal path to re-derive shapes.
   if (shapesFrozen_) {
-    int promoted = 0;
+    int demoted = 0;
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       auto& sl = slots_[s];
-      if (!sl.flags.isViewCapableOp || sl.state_ >= NativeSlot::SlotState::FROZEN) continue;
-      sl.state_ = NativeSlot::SlotState::FROZEN;
-      promoted++;
+      if (sl.state_ > NativeSlot::SlotState::WARMUP) {
+        sl.state_ = NativeSlot::SlotState::WARMUP;
+        demoted++;
+      }
     }
-    if (promoted > 0) {
-      DSP_DIAG(EXECUTE, "pre-warmup view promotion: %d view-capable slots promoted to FROZEN for seg[%d-%d]",
-               promoted, seg.def.startSlot, seg.def.endSlot);
+    if (demoted > 0) {
+      DSP_DIAG(EXECUTE, "pre-warmup demotion: %d slots demoted to WARMUP for seg[%d-%d]",
+               demoted, seg.def.startSlot, seg.def.endSlot);
     }
   }
 

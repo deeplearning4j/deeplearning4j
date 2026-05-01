@@ -1,0 +1,37 @@
+{
+  "project" : "deeplearning4j",
+  "created" : "2026-05-01T04:21:25.965968Z",
+  "buildCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j && /home/agibsonccc/dev-apps/mvn/bin/mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 -Dlibnd4j.log=libnd4j-build.log -pl libnd4j,:nd4j-cuda-12.9 install -DskipTests 2>&1 | tee /tmp/cuda-dsp-build.log",
+  "testCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && ./run-benchmark.sh --tokens 250 --no-clear-decoder 2>&1 | tee /tmp/cuda-dsp-benchmark.log",
+  "targets" : {
+    "minPassRate" : 1.0,
+    "maxFailures" : 0
+  },
+  "modules" : {
+    "cuda-dsp" : {
+      "path" : "platform-tests",
+      "buildCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j && /home/agibsonccc/dev-apps/mvn/bin/mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 -Dlibnd4j.log=libnd4j-build.log -pl libnd4j,:nd4j-cuda-12.9 install -DskipTests 2>&1 | tee /tmp/cuda-dsp-build.log",
+      "testCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && ./run-benchmark.sh --tokens 250 --no-clear-decoder 2>&1 | tee /tmp/cuda-dsp-benchmark.log",
+      "added" : "2026-05-01T04:21:36.819636Z",
+      "targets" : {
+        "minPassRate" : 1.0,
+        "maxFailures" : 0
+      }
+    },
+    "cpu-dsp-qwen" : {
+      "path" : "platform-tests",
+      "buildCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j && /home/agibsonccc/dev-apps/mvn/bin/mvn -Pcpu -Dlibnd4j.triton=ON -Dlibnd4j.buildthreads=12 -Dlibnd4j.log=libnd4j-build.log -pl libnd4j,:nd4j-cpu-backend-common,:nd4j-native clean install -DskipTests 2>&1 | tee cpu-dsp-triton-build-output.log",
+      "testCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && ./run-llm-benchmarks.sh --backend cpu --test baseline --models qwen --tokens 20 2>&1 | tee /tmp/qwen-cpu-dsp-qwen-baseline.log",
+      "added" : "2026-05-01T04:39:26.917621Z"
+    }
+  },
+  "knownRegressions" : [ {
+    "id" : "bf3272a6",
+    "test" : "TestDspValidation#testDecodeStepValidation",
+    "module" : "cuda-dsp",
+    "sinceCommit" : "eac54da587",
+    "notes" : "slot 420 (rms_norm) slot reassignment on shape drift is forbidden. Every commit from eac54da587 through 9bb2680e2b fails with this error. Plan cache not keying on shape-info pointers — prefill-to-decode shape transition reuses same plan instead of dispatching a new one. Bug may predate eac54da587.",
+    "added" : "2026-05-01T04:44:48.782210Z"
+  } ],
+  "trackedTests" : [ ]
+}

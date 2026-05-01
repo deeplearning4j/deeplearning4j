@@ -1,0 +1,17 @@
+{
+  "id" : "3819f1b0",
+  "branch" : "HEAD",
+  "commit" : "7ff51ae45c81f704073b9379f57e54c5b0806f75",
+  "commitShort" : "7ff51ae",
+  "commitMessage" : "fix: DSP execution correctness — permute view strides, diagnostic infrastructure, decode robustness",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-dsp",
+  "totalTests" : 78,
+  "passed" : 78,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Reconstructed from .kompile/task-results/qwen-20260412-200528.md (mtime/task timestamp 2026-04-12 20:05 +0900): StaticKvDecodeRegressionTest 9/9, DecodeFeatureInteractionRegressionTest 11/11, DecodeLoopStateTransitionTest 18/18, TestDSPExecutionCorrectness 40/40; total 78/78 all green. Mapped to commit 7ff51ae45c because it contains the DSP execution correctness/permute-stride fixes produced by that task.",
+  "tags" : "reconstructed,memory,cuda,dsp,decode,tests",
+  "timestamp" : "2026-05-01T04:22:08.225803Z"
+}

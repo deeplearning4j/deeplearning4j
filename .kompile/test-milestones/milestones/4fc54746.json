@@ -1,0 +1,17 @@
+{
+  "id" : "4fc54746",
+  "branch" : "HEAD",
+  "commit" : "f8e83ff4c9537a98df275f2824100b1cb397888b",
+  "commitShort" : "f8e83ff",
+  "commitMessage" : "fix: Triton accuracy + CUDA graph replay correctness — mythic heroes output restored",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-dsp",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Reconstructed from git commit subject plus memory around 2026-04-15: commit f8e83ff4c9537a98df275f2824100b1cb397888b is 'fix: Triton accuracy + CUDA graph replay correctness — mythic heroes output restored'. Later memory slot-by-slot-vlm-degenerate.md (mtime 2026-04-15 05:05 +0900) says TRITON_NO_GC produced coherent SmolDocling layout output and SLOT_BY_SLOT was the degenerate path, confirming the VLM accuracy baseline had moved back to coherent output.",
+  "tags" : "reconstructed,memory,cuda,dsp,vlm,accuracy,mythic",
+  "timestamp" : "2026-05-01T04:22:37.124130Z"
+}

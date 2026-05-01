@@ -48,6 +48,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -696,11 +697,20 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                         OptimizationUtils.removeVariable(sd, helper, rmsNormOutVar);
                     }
 
-                    // Remove matmul output variable
+                    // Remove matmul output variable, then rename fused to match the
+                    // original name (preserves downstream name lookups like "lm_logits").
+                    // Must temporarily remove from outputs since removeVariable guards against
+                    // deleting registered graph outputs.
+                    List<String> graphOutputs = sd.outputs();
+                    boolean wasOutput = graphOutputs != null && graphOutputs.remove(matmulOutputVar);
                     OptimizationUtils.removeVariable(sd, helper, matmulOutputVar);
+                    sd.renameVariable(fused.name(), matmulOutputVar);
+                    if (wasOutput) {
+                        graphOutputs.add(matmulOutputVar);
+                    }
 
-                    log.info("Fused RMSNorm+Linear pattern: x={}, gamma={}, W={}, eps={}",
-                            xVar, gammaVar, weightVar, epsilon);
+                    log.info("Fused RMSNorm+Linear pattern: x={}, gamma={}, W={}, eps={}, output={}",
+                            xVar, gammaVar, weightVar, epsilon, matmulOutputVar);
                     return true;
                 } catch (Exception e) {
                     log.debug("Failed to fuse RMSNorm+Linear pattern at op {}: {}", op.getName(), e.getMessage());

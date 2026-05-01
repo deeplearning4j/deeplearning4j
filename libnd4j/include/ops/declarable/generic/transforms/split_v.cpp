@@ -107,7 +107,7 @@ DECLARE_SHAPE_FN(split_v) {
   // this op assumes we have sizes defined
   auto sizes = INPUT_VARIABLE(1);
 
-  auto length = sizes->lengthOf();
+  auto length = shape::length(inputShape->at(1));
   int pos = 0;
   for (sd::LongType e = 0; e < length; e++) {
     int c_size = sizes->e<int>(e);

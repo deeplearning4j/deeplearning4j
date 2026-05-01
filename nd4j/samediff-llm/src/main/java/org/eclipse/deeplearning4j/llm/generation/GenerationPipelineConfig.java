@@ -120,6 +120,12 @@ public class GenerationPipelineConfig {
     /** Pre-loaded draft decoder model for speculative decoding. */
     private final SameDiff draftDecoder;
 
+    /** Whether the GraphOptimizer runs during pipeline construction (fuses rms_norm, swish_mul, xw_plus_b, etc.).
+     *  Defaults to true. OnnxModelCache also runs the optimizer during import, but the
+     *  pipeline-level pass handles models loaded from paths or SDZ directly. */
+    @Builder.Default
+    private final boolean graphOptimizerEnabled = true;
+
     /** Whether DSP (DynamicShapePlan) is enabled for this pipeline. */
     @Builder.Default
     private final boolean dspEnabled = true;

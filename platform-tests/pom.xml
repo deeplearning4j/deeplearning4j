@@ -117,7 +117,7 @@
             sudo sysctl vm.mmap_rnd_bits=28
             sudo sysctl -w kernel.randomize_va_space=0
         -->
-        <omp.num.threads>0</omp.num.threads>
+        <omp.num.threads>32</omp.num.threads>
         <preload></preload>
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
@@ -1635,6 +1635,8 @@
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>${omp.num.threads}</OMP_NUM_THREADS>
                         <OPENBLAS_NUM_THREADS>${omp.num.threads}</OPENBLAS_NUM_THREADS>
+                        <MKL_NUM_THREADS>${omp.num.threads}</MKL_NUM_THREADS>
+                        <SD_OPENBLAS_THREADS>${omp.num.threads}</SD_OPENBLAS_THREADS>
                         <ND4J_OPENBLAS_THREADS>${omp.num.threads}</ND4J_OPENBLAS_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
@@ -1692,9 +1694,12 @@
                         <vlm.model.cache.disable>${vlm.model.cache.disable}</vlm.model.cache.disable>
                         <nd4j.optimizer.enabled>${nd4j.optimizer.enabled}</nd4j.optimizer.enabled>
                         <nd4j.optimizer.fp16>${nd4j.optimizer.fp16}</nd4j.optimizer.fp16>
+                        <nd4j.optimizer.skip>${nd4j.optimizer.skip}</nd4j.optimizer.skip>
                         <!-- DSP debug properties -->
                         <nd4j.dsp.native.dumpOutputs>${nd4j.dsp.native.dumpOutputs}</nd4j.dsp.native.dumpOutputs>
                         <nd4j.dsp.java.dumpOutputs>${nd4j.dsp.java.dumpOutputs}</nd4j.dsp.java.dumpOutputs>
+                        <!-- DSP shape-only dry-run mode: skips op kernel execution, measures dispatch overhead -->
+                        <nd4j.dsp.shape.only>${nd4j.dsp.shape.only}</nd4j.dsp.shape.only>
                         <!-- VLM speculative decoding -->
                         <vlm.speculative.tokens>${vlm.speculative.tokens}</vlm.speculative.tokens>
                         <vlm.speculative.draft>${vlm.speculative.draft}</vlm.speculative.draft>

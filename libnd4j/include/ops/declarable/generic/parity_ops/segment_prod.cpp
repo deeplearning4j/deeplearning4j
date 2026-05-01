@@ -57,7 +57,7 @@ DECLARE_SHAPE_FN(segment_prod) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in);
   LongType* outputShape = nullptr;
-  int val = (*idxVector).e<int>(idxVector->lengthOf() - 1);
+  int val = (*idxVector).e<int>(shape::length(inputShape->at(1)) - 1);
 
   int numOfClasses = val + 1;
 

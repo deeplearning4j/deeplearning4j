@@ -128,9 +128,15 @@ public class NDRNN {
   public INDArray[] lstmLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength,
       LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
     NDValidation.validateNumerical("lstmLayer", "x", x);
-    NDValidation.validateNumerical("lstmLayer", "cLast", cLast);
-    NDValidation.validateNumerical("lstmLayer", "yLast", yLast);
-    NDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
+    if (cLast != null) {
+      NDValidation.validateNumerical("lstmLayer", "cLast", cLast);
+    }
+    if (yLast != null) {
+      NDValidation.validateNumerical("lstmLayer", "yLast", yLast);
+    }
+    if (maxTSLength != null) {
+      NDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
+    }
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(x, cLast, yLast, maxTSLength, LSTMLayerWeights, LSTMLayerConfig));
   }
 
@@ -177,10 +183,16 @@ public class NDRNN {
    */
   public INDArray lstmblock(INDArray maxTSLength, INDArray x, INDArray cLast, INDArray yLast,
       LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
-    NDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
+    if (maxTSLength != null) {
+      NDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
+    }
     NDValidation.validateNumerical("lstmblock", "x", x);
-    NDValidation.validateNumerical("lstmblock", "cLast", cLast);
-    NDValidation.validateNumerical("lstmblock", "yLast", yLast);
+    if (cLast != null) {
+      NDValidation.validateNumerical("lstmblock", "cLast", cLast);
+    }
+    if (yLast != null) {
+      NDValidation.validateNumerical("lstmblock", "yLast", yLast);
+    }
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration));
     try {
       return __tmp[0];
@@ -232,7 +244,9 @@ public class NDRNN {
   public INDArray sru(INDArray x, INDArray initialC, INDArray mask, SRUWeights SRUWeights) {
     NDValidation.validateNumerical("sru", "x", x);
     NDValidation.validateNumerical("sru", "initialC", initialC);
-    NDValidation.validateNumerical("sru", "mask", mask);
+    if (mask != null) {
+      NDValidation.validateNumerical("sru", "mask", mask);
+    }
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(x, initialC, mask, SRUWeights));
     try {
       return __tmp[0];

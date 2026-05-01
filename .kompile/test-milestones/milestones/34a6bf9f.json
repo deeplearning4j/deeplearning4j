@@ -1,0 +1,17 @@
+{
+  "id" : "34a6bf9f",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "9bb2680e2b7ec4f6d5fc2de21af6a5d6b7a4ac1b",
+  "commitShort" : "9bb2680",
+  "commitMessage" : "fix: MKL SDPA prefill heap overrun + invalid batched GEMM strides",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cpu-dsp-qwen",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Reconstructed last-good CPU DSP Qwen run from /tmp/qwen-cpu-flash-fix.log. Log finished 2026-05-01T06:16:10+09:00 while reflog shows HEAD remained at 9bb2680e2b on ag_new_release_updates_2. TestLLMBenchmarkSuite#testOptimalBaseline ran Qwen3.5-0.8B Q4_K_M on nd4j-native; DynamicShapePlan native executor compiled 1761 slots with 487 external inputs, resolved AUTO with tritonAvailable=true; generated 20 tokens; Quality check PASSED (diversity=1.00, repetition=0.00, coherence=1.00); Maven Tests run 1 Failures 0 Errors 0 and BUILD SUCCESS.",
+  "tags" : "reconstructed,cpu,dsp,qwen,llm,optimal,quality",
+  "timestamp" : "2026-05-01T04:39:43.113162Z"
+}

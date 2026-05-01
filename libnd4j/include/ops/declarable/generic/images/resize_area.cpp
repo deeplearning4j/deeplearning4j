@@ -99,8 +99,8 @@ DECLARE_SHAPE_FN(resize_area) {
   int height;
   if (block.width() == 2) {
     auto newImageSize = INPUT_VARIABLE(1);
-    REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_area: Resize params is a pair of values, not %i.",
-                 newImageSize->lengthOf());
+    REQUIRE_TRUE(shape::length(inputShape->at(1)) == 2, 0, "resize_area: Resize params is a pair of values, not %i.",
+                 shape::length(inputShape->at(1)));
     REQUIRE_TRUE(block.numI() <= 1, 0,
                  "resize_area: Resize params already given by the second param. Int params are expensive.");
     width = newImageSize->e<int>(1);

@@ -70,9 +70,10 @@ CUSTOM_OP_IMPL(reduce_variance, -1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(reduce_variance) {
   bool keepDims = false;  // block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   auto dimensions = *block.getIArguments();
+  auto in0 = inputShape->at(0);
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(in0), axesVector, dimensions);
     // TF semantics: empty axis input means no reduction (return input shape unchanged)
     if (dimensions.empty()) {
       return SHAPELIST(CONSTANT(inputShape->at(0)));
@@ -86,7 +87,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= static_cast<size_t>(INPUT_VARIABLE(0)->rankOf()), 0,
+      dimensions.size() <= static_cast<size_t>(shape::rank(in0)), 0,
       "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 

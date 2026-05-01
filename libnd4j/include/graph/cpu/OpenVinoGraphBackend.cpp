@@ -2597,44 +2597,61 @@ Status OpenVinoGraphBackend::executeSegment(
 
   SegmentCacheKey cacheKey{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
-  std::unique_lock<std::mutex> lock(cacheMtx_);
+  // Short-lived lock for cache lookup only — released before inference.
+  CompiledSegment* compiledPtr = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(cacheMtx_);
+    auto it = cache_.find(cacheKey);
+    if (it != cache_.end() && it->second->second.valid) {
+      compiledPtr = &it->second->second;
+    }
+  }
 
-  auto it = cache_.find(cacheKey);
-  if (it == cache_.end() || !it->second->second.valid) {
-    // Cache miss — recompile transparently instead of hard failure.
-    // Recovers from LRU eviction or cache invalidation between compile and execute.
+  if (!compiledPtr) {
+    // Cache miss — recompile transparently.
     DSP_DIAG(EXECUTE, "OpenVINO: cache miss for seg[%d-%d] shapeKey=%lld cacheSize=%d — recompiling",
              seg.def.startSlot, seg.def.endSlot, (long long)seg.def.shapeKeyState.compiledShapeKey,
              (int)cache_.size());
-    lock.unlock();
     bool recompiled = compileSegment(seg, slots, externalInputs, numExternalInputs,
                                       outputSlots, totalOutputSlots,
                                       seg.def.shapeKeyState.compiledShapeKey, 0);
-    lock.lock();
     if (!recompiled) {
       DSP_DIAG(EXECUTE, "OpenVINO: recompile FAILED for seg[%d-%d]",
                seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
-    it = cache_.find(cacheKey);
+    std::lock_guard<std::mutex> lock(cacheMtx_);
+    auto it = cache_.find(cacheKey);
     if (it == cache_.end() || !it->second->second.valid) {
       DSP_DIAG(EXECUTE, "OpenVINO: cache still empty after recompile for seg[%d-%d]",
                seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
+    compiledPtr = &it->second->second;
     DSP_DIAG(EXECUTE, "OpenVINO: recompile OK for seg[%d-%d] — resuming execution",
              seg.def.startSlot, seg.def.endSlot);
   }
 
-  // Promote to MRU
-  cacheLru_.splice(cacheLru_.begin(), cacheLru_, it->second);
-  auto& compiled = it->second->second;
+  auto& compiled = *compiledPtr;
 
   // Lambda to execute a single OV island — captures mapDataType via class scope
   auto runIsland = [&](OvIsland& island) -> Status {
     auto ovDtype = [](DataType dt) { return mapDataType(dt); };
     auto& request = *island.request;
     auto& compiledModel = *island.compiled;
+
+    // Initialize caches on first execution
+    if (!island.promotionInitialized) {
+      island.cachedPromotedInputs.resize(island.inputSlotMap.size());
+      island.cachedPromotedOutputs.resize(island.outputSlotMap.size());
+      island.promotionInitialized = true;
+    }
+    if (!island.steadyStateCachesInitialized) {
+      island.cachedInputShapes.resize(island.inputSlotMap.size());
+      island.cachedOutputShapes.resize(island.outputSlotMap.size());
+      island.cachedNeedsSaturatingCopy.resize(island.outputSlotMap.size(), false);
+      island.steadyStateCachesInitialized = true;
+    }
 
     // Set input tensors (zero-copy from NDArray host buffers)
     for (size_t i = 0; i < island.inputSlotMap.size(); i++) {
@@ -2654,8 +2671,9 @@ Status OpenVinoGraphBackend::executeSegment(
         if (arr->isEmpty() || arr->lengthOf() == 0) {
           // Empty array — provide a dummy non-null pointer for OV
           static int8_t dummyBuf[8] = {0};
+          auto& shape = island.cachedInputShapes[i];
           int rank = arr->rankOf();
-          ov::Shape shape(rank);
+          shape.resize(rank);
           for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
           request.set_input_tensor(static_cast<int>(i),
               ov::Tensor(ovDtype(arr->dataType()), shape, dummyBuf));
@@ -2665,44 +2683,53 @@ Status OpenVinoGraphBackend::executeSegment(
                  srcIdx, (long long)arr->lengthOf());
         return Status::KERNEL_FAILURE;
       }
+      auto& shape = island.cachedInputShapes[i];
       int rank = arr->rankOf();
-      ov::Shape shape(rank);
+      shape.resize(rank);
       for (int d = 0; d < rank; d++) shape[d] = static_cast<size_t>(arr->sizeAt(d));
 
-      // ISA-based FP16 promotion: the compiled model expects f32 inputs when
-      // the CPU lacks native FP16 ISA, but the NDArray buffer holds f16 data.
-      // Let OpenVINO handle the conversion by declaring the tensor as f16
-      // (the actual data type) and relying on OV's automatic pre-processing.
-      // Alternatively, query the model's expected input type.
       auto modelInputType = compiledModel.input(static_cast<int>(i)).get_element_type();
       auto arrType = ovDtype(arr->dataType());
       if (modelInputType != arrType) {
-        // Model expects a different type (e.g. f32 from ISA promotion).
-        // Create an OV tensor with the model's expected type — OV will allocate
-        // its own buffer. Then copy + convert the data.
-        ov::Tensor promoted(modelInputType, shape);
-        // Use OpenVINO's built-in conversion: create a source tensor wrapping
-        // the NDArray, then copy data element-wise via ov::Tensor::data<>().
-        // For f16→f32: iterate and widen.
-        if (arrType == ov::element::f16 && modelInputType == ov::element::f32) {
-          auto* src = static_cast<const ov::float16*>(arr->buffer());
-          auto* dst = promoted.data<float>();
-          size_t numElems = 1;
-          for (auto d : shape) numElems *= d;
-#if defined(__F16C__) || defined(__AVX2__)
-          // F16C: vectorized f16→f32 widening (8 elements per cycle via vcvtph2ps)
-          size_t e = 0;
-          for (; e + 8 <= numElems; e += 8) {
-            __m128i h8 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + e));
-            __m256 f8 = _mm256_cvtph_ps(h8);
-            _mm256_storeu_ps(dst + e, f8);
+        // ISA-promotion path: model expects f32, NDArray holds f16.
+        // Use cached promoted tensor to avoid per-infer() malloc.
+        auto& cached = island.cachedPromotedInputs[i];
+        size_t numElems = 1;
+        for (auto d : shape) numElems *= d;
+
+        // Skip conversion only for constant external inputs (srcIdx < 0 = weight).
+        // Internal output slots (srcIdx >= 0) change every step — their buffer
+        // pointer stays the same but data is rewritten by upstream ops. Caching
+        // the promoted tensor for those causes stale f32 data on subsequent infer()
+        // calls, producing garbage LLM output.
+        bool isConstantInput = (srcIdx < 0);
+        if (isConstantInput && cached.lastSourceBuffer == arr->buffer() && cached.lastNumElems == numElems) {
+          request.set_input_tensor(static_cast<int>(i), cached.tensor);
+        } else {
+          // Allocate or reuse promoted tensor
+          if (cached.lastNumElems != numElems) {
+            cached.tensor = ov::Tensor(modelInputType, shape);
+            cached.lastNumElems = numElems;
           }
-          for (; e < numElems; e++) dst[e] = static_cast<float>(src[e]);
+          // Convert f16→f32
+          if (arrType == ov::element::f16 && modelInputType == ov::element::f32) {
+            auto* src = static_cast<const ov::float16*>(arr->buffer());
+            auto* dst = cached.tensor.data<float>();
+#if defined(__F16C__) || defined(__AVX2__)
+            size_t e = 0;
+            for (; e + 8 <= numElems; e += 8) {
+              __m128i h8 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + e));
+              __m256 f8 = _mm256_cvtph_ps(h8);
+              _mm256_storeu_ps(dst + e, f8);
+            }
+            for (; e < numElems; e++) dst[e] = static_cast<float>(src[e]);
 #else
-          for (size_t e = 0; e < numElems; e++) dst[e] = static_cast<float>(src[e]);
+            for (size_t e = 0; e < numElems; e++) dst[e] = static_cast<float>(src[e]);
 #endif
+          }
+          cached.lastSourceBuffer = arr->buffer();
+          request.set_input_tensor(static_cast<int>(i), cached.tensor);
         }
-        request.set_input_tensor(static_cast<int>(i), promoted);
       } else {
         request.set_input_tensor(static_cast<int>(i),
             ov::Tensor(arrType, shape, arr->buffer()));
@@ -2725,7 +2752,8 @@ Status OpenVinoGraphBackend::executeSegment(
     // was allocated for a different shape than the compiled model expects).
     //
     // needsSaturatingCopy[i] == true  ⟹  output i is ISA-promoted f32→f16 path.
-    std::vector<bool> needsSaturatingCopy(island.outputSlotMap.size(), false);
+    auto& needsSaturatingCopy = island.cachedNeedsSaturatingCopy;
+    std::fill(needsSaturatingCopy.begin(), needsSaturatingCopy.end(), false);
 
     for (size_t i = 0; i < island.outputSlotMap.size(); i++) {
       int outIdx = island.outputSlotMap[i];
@@ -2742,7 +2770,7 @@ Status OpenVinoGraphBackend::executeSegment(
       auto modelOutType = compiledModel.output(static_cast<int>(i)).get_element_type();
       auto arrType = ovDtype(arr->dataType());
 
-      ov::Shape shape;
+      auto& shape = island.cachedOutputShapes[i];
       auto modelOutputShape = compiledModel.output(static_cast<int>(i)).get_partial_shape();
       if (modelOutputShape.is_static()) {
         auto modelShape = modelOutputShape.get_shape();
@@ -2774,17 +2802,19 @@ Status OpenVinoGraphBackend::executeSegment(
 
       try {
         // ISA-promotion saturating-copy path: model outputs f32 but NDArray is f16.
-        // Allocate an OV-owned f32 tensor so OV writes f32 results into it; after
-        // infer() we saturate-clamp into the f16 NDArray buffer.
+        // Reuse cached promoted tensor to avoid per-infer() malloc.
         if (!kCpuHasNativeFp16
             && modelOutType == ov::element::f32
             && arrType == ov::element::f16) {
           needsSaturatingCopy[i] = true;
-          DSP_DIAG(EXECUTE, "OpenVINO: output slot %d using OV-alloc f32 tensor for saturating f32→f16 copy",
-                   outIdx);
-          // Let OV allocate its own f32 buffer (no buffer arg → OV-owned)
-          request.set_output_tensor(static_cast<int>(i),
-              ov::Tensor(ov::element::f32, shape));
+          auto& cached = island.cachedPromotedOutputs[i];
+          size_t numElems = 1;
+          for (auto d : shape) numElems *= d;
+          if (cached.lastNumElems != numElems) {
+            cached.tensor = ov::Tensor(ov::element::f32, shape);
+            cached.lastNumElems = numElems;
+          }
+          request.set_output_tensor(static_cast<int>(i), cached.tensor);
         } else {
           request.set_output_tensor(static_cast<int>(i),
               ov::Tensor(arrType, shape, arr->buffer()));

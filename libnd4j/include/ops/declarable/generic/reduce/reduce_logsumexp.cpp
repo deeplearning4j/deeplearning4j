@@ -98,12 +98,11 @@ DECLARE_TYPES(reduce_logsumexp) {
 }
 DECLARE_SHAPE_FN(reduce_logsumexp) {
   const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-  auto input = INPUT_VARIABLE(0);
 
   std::vector<sd::LongType> axes;  // = *block.getIArguments();
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(input->rankOf(), axisVector, axes);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axisVector, axes);
     // TF semantics: empty axis input means no reduction (return input shape unchanged)
     if (axes.empty()) {
       return SHAPELIST(CONSTANT(inputShape->at(0)));

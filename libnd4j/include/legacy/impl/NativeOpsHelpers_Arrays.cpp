@@ -184,8 +184,8 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was not empty but buffer was null!");
   }
 
-  // Validate buffer integrity before using - catches use-after-free issues early
-  if(buffer != nullptr && buffer->getDataBuffer() != nullptr) {
+  // Validate buffer integrity before using (debug only — canary scan is O(8K))
+  if(buffer != nullptr && buffer->getDataBuffer() != nullptr && sd::Environment::getInstance().isDebug()) {
     buffer->getDataBuffer()->validateIntegrity();
   }
 

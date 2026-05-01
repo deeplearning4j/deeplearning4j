@@ -26,6 +26,8 @@ import org.nd4j.jita.constant.ProtectedCachedShapeInfoProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,27 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
 
     public CachedShapeInfoProvider() {
 
+    }
+
+    /**
+     * Override to strip ARRAY_EMPTY for rank-0 scalars before delegating to the provider.
+     * BaseShapeInfoProvider.createShapeInformation(long[] shapeInfo) wraps the raw bytes without
+     * stripping the EMPTY flag, which causes rank-0 scalars with valid data to be treated as empty.
+     * ProtectedCachedShapeInfoProvider correctly strips the flag for rank-0, so we replicate that
+     * logic here and then route through the same provider that handles the cached path.
+     */
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shapeInfo) {
+        long[] shape = Shape.shape(shapeInfo);
+        long[] stride = Shape.stride(shapeInfo);
+        long ews = Shape.elementWiseStride(shapeInfo);
+        char order = Shape.order(shapeInfo);
+        long extras = Shape.extras(shapeInfo);
+        if (shape.length == 0) {
+            // Rank-0 scalar: strip ARRAY_EMPTY — a scalar always has exactly 1 element
+            extras = extras & ~ArrayOptionsHelper.ATYPE_EMPTY_BIT;
+        }
+        return provider.createShapeInformation(shape, stride, ews, order, extras);
     }
 
     @Override

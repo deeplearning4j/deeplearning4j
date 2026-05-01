@@ -110,8 +110,8 @@ DECLARE_SHAPE_FN(resize_bicubic) {
   int width;
   int height;
   auto newImageSize = INPUT_VARIABLE(1);
-  REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bicubic: Resize params is a pair of values, not %i.",
-               newImageSize->lengthOf());
+  REQUIRE_TRUE(shape::length(inputShape->at(1)) == 2, 0, "resize_bicubic: Resize params is a pair of values, not %i.",
+               shape::length(inputShape->at(1)));
   REQUIRE_TRUE(block.numI() <= 1, 0,
                "resize_bicubic: Resize params already given by the second param. Int params are expensive.");
   width = newImageSize->e<int>(0);

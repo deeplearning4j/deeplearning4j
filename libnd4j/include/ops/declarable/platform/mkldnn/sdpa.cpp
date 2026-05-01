@@ -1061,8 +1061,8 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
   auto kvCacheK = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
   auto kvCacheV = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
   auto cachePosInput = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
-  bool hasKvCache = (kvCacheK != nullptr && !kvCacheK->isEmpty()) &&
-                    (kvCacheV != nullptr && !kvCacheV->isEmpty());
+  bool hasKvCache = (kvCacheK != nullptr && !kvCacheK->isEmpty() && kvCacheK->rankOf() >= 2) &&
+                    (kvCacheV != nullptr && !kvCacheV->isEmpty() && kvCacheV->rankOf() >= 2);
   bool useInPlaceKv = hasKvCache && (cachePosInput != nullptr);
 
   if (useInPlaceKv) {

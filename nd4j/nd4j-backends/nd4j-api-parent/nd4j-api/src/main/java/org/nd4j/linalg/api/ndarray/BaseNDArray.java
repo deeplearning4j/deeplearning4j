@@ -6330,24 +6330,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isEmpty() {
-        // If data buffer is null, the array is functionally empty - we can't operate on it
-        if (data() == null) {
-            return true;
-        }
-
-        // Check if shape info indicates empty array
-        boolean shapeEmpty = Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
-
-        // For rank-0 (scalar) arrays, Shape.isEmpty might incorrectly return true
-        // due to shape info corruption. Scalars with valid data should never be empty.
-        if (shapeEmpty && jvmShapeInfo.rank == 0 && data() != null) {
-            log.warn("WARNING: Rank-0 array (scalar) has ARRAY_EMPTY flag set but has valid data. " +
-                    "This may indicate shape info corruption. Array id: {}, dataType: {}",
-                    this.getId(), this.dataType());
-            return false;
-        }
-
-        return shapeEmpty;
+        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
 
     @Override

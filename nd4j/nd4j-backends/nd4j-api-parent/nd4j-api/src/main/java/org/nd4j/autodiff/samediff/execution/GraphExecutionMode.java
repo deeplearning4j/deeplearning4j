@@ -177,7 +177,27 @@ public enum GraphExecutionMode {
      *
      * <p>Works on both CPU and CUDA builds — no GPU graph APIs required.</p>
      */
-    EMULATED_REPLAY(17);
+    EMULATED_REPLAY(17),
+
+    /**
+     * Shape inference only mode. Propagates shapes through the graph without
+     * executing any operations. Each op's {@code calculateOutputShape()} is called
+     * to determine output shapes, and output arrays are allocated with the correct
+     * shapes, but no compute kernels are launched.
+     *
+     * <p>Use this mode to:</p>
+     * <ul>
+     *   <li>Pre-compute output shapes for memory planning without running ops</li>
+     *   <li>Validate shape compatibility across the graph</li>
+     *   <li>Determine buffer sizes before committing to full execution</li>
+     * </ul>
+     *
+     * <p>Shape-dependent ops (where output shape depends on input <em>values</em>,
+     * not just input shapes) will use whatever data is present in their inputs,
+     * which may be uninitialized. For graphs with such ops, run at least one
+     * full execution first to populate value-dependent shapes.</p>
+     */
+    SHAPE_INFERENCE_ONLY(18);
 
     private final int nativeCode;
 

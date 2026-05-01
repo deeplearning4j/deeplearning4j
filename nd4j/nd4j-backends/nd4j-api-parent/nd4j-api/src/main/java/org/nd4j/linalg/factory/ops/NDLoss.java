@@ -432,7 +432,9 @@ public class NDLoss {
       LossReduce lossReduce, double epsilon) {
     NDValidation.validateNumerical("logLoss", "label", label);
     NDValidation.validateNumerical("logLoss", "predictions", predictions);
-    NDValidation.validateNumerical("logLoss", "weights", weights);
+    if (weights != null) {
+      NDValidation.validateNumerical("logLoss", "weights", weights);
+    }
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, weights, lossReduce, epsilon));
     try {
       return __tmp[0];

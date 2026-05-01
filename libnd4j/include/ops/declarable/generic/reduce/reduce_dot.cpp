@@ -118,7 +118,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
 
     if (block.width() > 3) {
       auto axesVector = INPUT_VARIABLE(3);
-      helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+      helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
     }
 
 
