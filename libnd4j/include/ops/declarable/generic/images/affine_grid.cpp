@@ -60,7 +60,6 @@ DECLARE_SHAPE_FN(affine_grid) {
     auto thetaShape = inputShape->at(0);
     auto sizeShape = inputShape->at(1);
 
-    auto theta = INPUT_VARIABLE(0);
     auto size = INPUT_VARIABLE(1);
 
     sd::LongType batchSize = shape::sizeAt(thetaShape, static_cast<sd::LongType>(0));

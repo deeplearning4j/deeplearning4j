@@ -1,0 +1,20 @@
+3-Type Combination Patterns
+===========================
+
+Common Patterns Found:
+
+1. Identity Patterns (14 instances)
+   Example: (T, T, T) for same type operations
+
+2. Mixed Precision Patterns (2 instances)
+   Examples: (HALF, HALF, FLOAT32), (BFLOAT16, BFLOAT16, FLOAT32)
+
+3. Quantization Patterns (12 instances)
+   Examples: (INT8, FLOAT32, FLOAT32), (FLOAT32, UINT8, FLOAT32)
+
+4. Accumulation Patterns (2 instances)
+   Examples: (INT8, INT8, INT32), (UINT8, UINT8, INT32)
+
+5. Comparison Patterns (179 instances)
+   Output type is BOOL for comparisons
+

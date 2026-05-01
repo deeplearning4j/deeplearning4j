@@ -356,11 +356,18 @@ public class Nd4jNamespaceGenerator {
                         else
                             c.addParameter(INDArray[].class, inputName).varargs(isLast);
                     }
-                    // Check for parameter types
+                    // Check for parameter types — skip validation for optional inputs (defaultValue = null)
                     final DataType paramType = i.getType();
                     String validationName = validationMapping.get(paramType);
                     if(validationName != null) {
-                        c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
+                        boolean isOptional = i.hasDefaultValue() && i.defaultValue() == null;
+                        if (isOptional) {
+                            c.beginControlFlow("if ($L != null)", inputName);
+                            c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
+                            c.endControlFlow();
+                        } else {
+                            c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
+                        }
                     }
                     checkParameterCount(c, count, inputName);
                 } else if(p instanceof Arg){

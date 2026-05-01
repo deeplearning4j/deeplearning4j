@@ -77,37 +77,36 @@ DECLARE_TYPES(gru) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOut
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(gru) {
-  auto x = INPUT_VARIABLE(0);   // input [time, bS, nIn]
-  auto hI = INPUT_VARIABLE(1);  // initial cell output (at time step = 0) [bS, nOut]
+  auto xSI = inputShape->at(0);   // input [time, bS, nIn]
+  auto hISI = inputShape->at(1);  // initial cell output (at time step = 0) [bS, nOut]
+  auto WxSI = inputShape->at(2);  // input-to-hidden  weights, [nIn, 3*nOut]
+  auto WhSI = inputShape->at(3);  // hidden-to-hidden weights, [nOut, 3*nOut]
+  auto bSI = inputShape->at(4);   // biases, [3*nOut]
 
-  auto Wx = INPUT_VARIABLE(2);  // input-to-hidden  weights, [nIn, 3*nOut]
-  auto Wh = INPUT_VARIABLE(3);  // hidden-to-hidden weights, [nOut, 3*nOut]
-  auto b = INPUT_VARIABLE(4);   // biases, [3*nOut]
-
-  const int time = x->sizeAt(0);
-  const int bS = x->sizeAt(1);
-  const int nIn = x->sizeAt(2);
-  const int nOut = hI->sizeAt(1);
+  const int time = shape::sizeAt(xSI, static_cast<LongType>(0));
+  const int bS = shape::sizeAt(xSI, static_cast<LongType>(1));
+  const int nIn = shape::sizeAt(xSI, static_cast<LongType>(2));
+  const int nOut = shape::sizeAt(hISI, static_cast<LongType>(1));
   const std::vector<LongType> h0CorrectShape = {bS, nOut};
   const std::vector<LongType> wxCorrectShape = {nIn, 3 * nOut};
   const std::vector<LongType> whCorrectShape = {nOut, 3 * nOut};
   const std::vector<LongType> bCorrectShape = {3 * nOut};
- 
-  REQUIRE_TRUE(hI->isSameShape(h0CorrectShape), 0,
+
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(hISI, h0CorrectShape), 0,
                "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hI).c_str());
-  REQUIRE_TRUE(Wx->isSameShape(wxCorrectShape), 0,
+               ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hISI).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(WxSI, wxCorrectShape), 0,
                "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
-  REQUIRE_TRUE(Wh->isSameShape(whCorrectShape), 0,
+               ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(WxSI).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhSI, whCorrectShape), 0,
                "GRU operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
-  REQUIRE_TRUE(b->isSameShape(bCorrectShape), 0,
+               ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(WhSI).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(bSI, bCorrectShape), 0,
                "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
+               ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(bSI).c_str());
 
   auto hShapeInfo =
-      ConstantShapeHelper::getInstance().createShapeInfo(hI->dataType(), hI->ordering(), {time, bS, nOut});
+      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(hISI), shape::order(hISI), {time, bS, nOut});
 
   return SHAPELIST(hShapeInfo);
 }
@@ -168,19 +167,17 @@ DECLARE_TYPES(gru_bp) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(gru_bp) {
-  auto x = INPUT_VARIABLE(0);   // input [time, bS, nIn]
-  auto hI = INPUT_VARIABLE(1);  // initial cell output (at time step = 0) [bS, nOut]
+  auto xSI = inputShape->at(0);     // input [time, bS, nIn]
+  auto hISI = inputShape->at(1);    // initial cell output (at time step = 0) [bS, nOut]
+  auto WxSI = inputShape->at(2);    // input-to-hidden  weights, [nIn, 3*nOut]
+  auto WhSI = inputShape->at(3);    // hidden-to-hidden weights, [nOut, 3*nOut]
+  auto bSI = inputShape->at(4);     // biases, [3*nOut]
+  auto dLdhSI = inputShape->at(5);  // gradient vs. ff output, [time, bS, nOut]
 
-  auto Wx = INPUT_VARIABLE(2);  // input-to-hidden  weights, [nIn, 3*nOut]
-  auto Wh = INPUT_VARIABLE(3);  // hidden-to-hidden weights, [nOut, 3*nOut]
-  auto b = INPUT_VARIABLE(4);   // biases, [3*nOut]
-
-  auto dLdh = INPUT_VARIABLE(5);  // gradient vs. ff output, [time, bS, nOut]
-
-  const int time = x->sizeAt(0);
-  const int bS = x->sizeAt(1);
-  const int nIn = x->sizeAt(2);
-  const int nOut = hI->sizeAt(1);
+  const int time = shape::sizeAt(xSI, static_cast<LongType>(0));
+  const int bS = shape::sizeAt(xSI, static_cast<LongType>(1));
+  const int nIn = shape::sizeAt(xSI, static_cast<LongType>(2));
+  const int nOut = shape::sizeAt(hISI, static_cast<LongType>(1));
 
   const std::vector<LongType> h0CorrectShape = {bS, nOut};
   const std::vector<LongType> wxCorrectShape = {nIn, 3 * nOut};
@@ -188,27 +185,28 @@ DECLARE_SHAPE_FN(gru_bp) {
   const std::vector<LongType> bCorrectShape = {3 * nOut};
   const std::vector<LongType> hCorrectShape = {time, bS, nOut};
 
-  REQUIRE_TRUE(hI->isSameShape(h0CorrectShape), 0,
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(hISI, h0CorrectShape), 0,
                "GRU_BP operation: wrong shape of previous cell output array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hI).c_str());
-  REQUIRE_TRUE(Wx->isSameShape(wxCorrectShape), 0,
+               ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hISI).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(WxSI, wxCorrectShape), 0,
                "GRU_BP operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
-  REQUIRE_TRUE(Wh->isSameShape(whCorrectShape), 0,
+               ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(WxSI).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhSI, whCorrectShape), 0,
                "GRU_BP operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
-  REQUIRE_TRUE(b->isSameShape(bCorrectShape), 0,
+               ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(WhSI).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(bSI, bCorrectShape), 0,
                "GRU_BP operation: wrong shape of biases array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
-  REQUIRE_TRUE(dLdh->isSameShape(hCorrectShape), 0,
+               ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(bSI).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(dLdhSI, hCorrectShape), 0,
                "GRU_BP operation: wrong shape of gradient vs. ff output, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(hCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdh).c_str());
+               ShapeUtils::shapeAsString(hCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdhSI).c_str());
 
-  auto dLdxShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), x->shapeInfo());
-  auto dLdhIShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), hI->shapeInfo());
-  auto dLdWxShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), Wx->shapeInfo());
-  auto dLdWhShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), Wh->shapeInfo());
-  auto dLdbShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), b->shapeInfo());
+  const DataType dLdhDataType = ArrayOptions::dataType(dLdhSI);
+  auto dLdxShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdhDataType, xSI);
+  auto dLdhIShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdhDataType, hISI);
+  auto dLdWxShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdhDataType, WxSI);
+  auto dLdWhShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdhDataType, WhSI);
+  auto dLdbShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdhDataType, bSI);
 
   return SHAPELIST(dLdxShapeInfo, dLdhIShapeInfo, dLdWxShapeInfo, dLdWhShapeInfo, dLdbShapeInfo);
 }

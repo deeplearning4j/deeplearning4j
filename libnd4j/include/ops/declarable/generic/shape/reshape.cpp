@@ -397,27 +397,32 @@ DECLARE_SHAPE_FN(reshape) {
   }
 
   auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
+  auto xShapeInfo = inputShape->at(0);
   // Check if input has any zero dimensions (which makes it empty)
   bool xHasZeroDim = false;
-  for (int i = 0; i < x->rankOf(); i++) {
-    if (x->sizeAt(i) == 0) {
+  auto xRank = shape::rank(xShapeInfo);
+  for (int i = 0; i < xRank; i++) {
+    if (shape::sizeAt(xShapeInfo, static_cast<sd::LongType>(i)) == 0) {
       xHasZeroDim = true;
       break;
     }
   }
-  if(!x->isScalar() && !xHasZeroDim) {
-    REQUIRE_TRUE(x->lengthOf() == len, 0,
+  bool xIsScalar = shape::isScalar(xShapeInfo);
+  LongType xLen = shape::length(xShapeInfo);
+  if(!xIsScalar && !xHasZeroDim) {
+    REQUIRE_TRUE(xLen == len, 0,
                  "Reshape: lengths before and after reshape should match, but "
                  "got %lld vs %lld",
-                 (long long)x->lengthOf(), (long long)len);
+                 (long long)xLen, (long long)len);
   }
 
+  auto xDtype = ArrayOptions::dataType(xShapeInfo);
   // If result should be empty, use emptyShapeInfoWithShape
   if (len == 0 || xHasZeroDim) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), shapeNew));
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(xDtype, shapeNew));
   }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(xDtype, orderNew, shapeNew));
 }
 
 }  // namespace ops

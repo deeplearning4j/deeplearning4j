@@ -1,0 +1,264 @@
+================================================================================
+                    TEMPLATE TYPE USAGE ANALYSIS REPORT                         
+================================================================================
+Generated: 2026-05-01 10:25:11
+Profile: STANDARD_ALL_TYPES
+
+SUMMARY
+================================================================================
+Templates using 1 type:  3
+Templates using 2 types: 7
+Templates using 3 types: 3
+Total instantiations:    3017
+
+TEMPLATE DETAILS
+================================================================================
+
+Template: random
+Type Parameters: 1
+Instantiated Types:
+  - BOOL
+  - INT8
+  - UINT8
+  - INT16
+  - UINT16
+  - INT32
+  - UINT32
+  - INT64
+  - UINT64
+  - HALF
+  - BFLOAT16
+  - FLOAT32
+  - DOUBLE
+  - UTF8
+CUDA Methods:
+  - executeCudaSingle
+  - executeCudaDouble
+  - executeCudaTriple
+--------------------------------------------------------------------------------
+
+Template: reduce_same
+Type Parameters: 1
+Instantiated Types:
+  - BOOL
+  - INT8
+  - UINT8
+  - INT16
+  - UINT16
+  - INT32
+  - UINT32
+  - INT64
+  - UINT64
+  - HALF
+  - BFLOAT16
+  - FLOAT32
+  - DOUBLE
+  - UTF8
+CUDA Methods:
+  - execReduce
+  - execReduceScalar
+--------------------------------------------------------------------------------
+
+Template: specials_single
+Type Parameters: 1
+Instantiated Types:
+  - BOOL
+  - INT8
+  - UINT8
+  - INT16
+  - UINT16
+  - INT32
+  - UINT32
+  - INT64
+  - UINT64
+  - HALF
+  - BFLOAT16
+  - FLOAT32
+  - DOUBLE
+  - UTF8
+CPU Methods:
+  - SpecialMethods<T>
+  - concatCpuGeneric
+  - sortGeneric
+  - sortTadGeneric
+--------------------------------------------------------------------------------
+
+Template: reduce3
+Type Parameters: 2
+Instantiated Type Pairs:
+  (BOOL,BOOL)
+  (BOOL,INT8)
+  (BOOL,UINT8)
+  (BOOL,INT16)
+  (BOOL,UINT16)
+  (BOOL,INT32)
+  (BOOL,UINT32)
+  (BOOL,INT64)
+  (BOOL,UINT64)
+  (BOOL,HALF)
+  (BOOL,BFLOAT16)
+  ... (showing first 10 of 158 combinations)
+--------------------------------------------------------------------------------
+
+Template: reduce_float
+Type Parameters: 2
+Instantiated Type Pairs:
+  (BOOL,BOOL)
+  (BOOL,INT8)
+  (BOOL,UINT8)
+  (BOOL,INT16)
+  (BOOL,UINT16)
+  (BOOL,INT32)
+  (BOOL,UINT32)
+  (BOOL,INT64)
+  (BOOL,UINT64)
+  (BOOL,HALF)
+  (BOOL,BFLOAT16)
+  ... (showing first 10 of 158 combinations)
+--------------------------------------------------------------------------------
+
+Template: indexreduce
+Type Parameters: 2
+Instantiated Type Pairs:
+  (BOOL,BOOL)
+  (BOOL,INT8)
+  (BOOL,UINT8)
+  (BOOL,INT16)
+  (BOOL,UINT16)
+  (BOOL,INT32)
+  (BOOL,UINT32)
+  (BOOL,INT64)
+  (BOOL,UINT64)
+  (BOOL,HALF)
+  (BOOL,BFLOAT16)
+  ... (showing first 10 of 158 combinations)
+--------------------------------------------------------------------------------
+
+Template: reduce_bool
+Type Parameters: 2
+Instantiated Type Pairs:
+  (BOOL,BOOL)
+  (BOOL,INT8)
+  (BOOL,UINT8)
+  (BOOL,INT16)
+  (BOOL,UINT16)
+  (BOOL,INT32)
+  (BOOL,UINT32)
+  (BOOL,INT64)
+  (BOOL,UINT64)
+  (BOOL,HALF)
+  (BOOL,BFLOAT16)
+  ... (showing first 10 of 158 combinations)
+--------------------------------------------------------------------------------
+
+Template: reduce_long
+Type Parameters: 2
+Instantiated Type Pairs:
+  (BOOL,BOOL)
+  (BOOL,INT8)
+  (BOOL,UINT8)
+  (BOOL,INT16)
+  (BOOL,UINT16)
+  (BOOL,INT32)
+  (BOOL,UINT32)
+  (BOOL,INT64)
+  (BOOL,UINT64)
+  (BOOL,HALF)
+  (BOOL,BFLOAT16)
+  ... (showing first 10 of 158 combinations)
+--------------------------------------------------------------------------------
+
+Template: specials_double
+Type Parameters: 2
+Instantiated Type Pairs:
+  (BOOL,BOOL)
+  (BOOL,INT8)
+  (BOOL,UINT8)
+  (BOOL,INT16)
+  (BOOL,UINT16)
+  (BOOL,INT32)
+  (BOOL,UINT32)
+  (BOOL,INT64)
+  (BOOL,UINT64)
+  (BOOL,HALF)
+  (BOOL,BFLOAT16)
+  ... (showing first 10 of 158 combinations)
+--------------------------------------------------------------------------------
+
+Template: indexreduction
+Type Parameters: 2
+Instantiated Type Pairs:
+  (BOOL,BOOL)
+  (BOOL,INT8)
+  (BOOL,UINT8)
+  (BOOL,INT16)
+  (BOOL,UINT16)
+  (BOOL,INT32)
+  (BOOL,UINT32)
+  (BOOL,INT64)
+  (BOOL,UINT64)
+  (BOOL,HALF)
+  (BOOL,BFLOAT16)
+  ... (showing first 10 of 158 combinations)
+--------------------------------------------------------------------------------
+
+Template: pairwise
+Type Parameters: 3
+Instantiated Type Triples:
+  (BOOL,BOOL,BOOL)
+  (BOOL,INT8,BOOL)
+  (BOOL,INT8,INT8)
+  (BOOL,UINT8,BOOL)
+  (BOOL,UINT8,UINT8)
+  (BOOL,INT16,BOOL)
+  (BOOL,INT16,INT16)
+  (BOOL,UINT16,BOOL)
+  (BOOL,UINT16,UINT16)
+  (BOOL,INT32,BOOL)
+  (BOOL,INT32,INT32)
+  ... (showing first 10 of 623 combinations)
+--------------------------------------------------------------------------------
+
+Template: scalar
+Type Parameters: 3
+Instantiated Type Triples:
+  (BOOL,BOOL,BOOL)
+  (BOOL,INT8,BOOL)
+  (BOOL,INT8,INT8)
+  (BOOL,UINT8,BOOL)
+  (BOOL,UINT8,UINT8)
+  (BOOL,INT16,BOOL)
+  (BOOL,INT16,INT16)
+  (BOOL,UINT16,BOOL)
+  (BOOL,UINT16,UINT16)
+  (BOOL,INT32,BOOL)
+  (BOOL,INT32,INT32)
+  ... (showing first 10 of 623 combinations)
+--------------------------------------------------------------------------------
+
+Template: broadcast
+Type Parameters: 3
+Instantiated Type Triples:
+  (BOOL,BOOL,BOOL)
+  (BOOL,INT8,BOOL)
+  (BOOL,INT8,INT8)
+  (BOOL,UINT8,BOOL)
+  (BOOL,UINT8,UINT8)
+  (BOOL,INT16,BOOL)
+  (BOOL,INT16,INT16)
+  (BOOL,UINT16,BOOL)
+  (BOOL,UINT16,UINT16)
+  (BOOL,INT32,BOOL)
+  (BOOL,INT32,INT32)
+  ... (showing first 10 of 623 combinations)
+--------------------------------------------------------------------------------
+
+POTENTIAL MISSING INSTANTIATIONS
+================================================================================
+Based on linker errors, check these specific instantiations:
+
+SpecialMethods missing:
+  - concatCpuGeneric for: bool, bfloat16, float, double, float16, int, long long, signed char, unsigned char
+  - sortGeneric and sortTadGeneric for: float, unsigned char, int, long long, double
+
+To fix: Ensure these types are in UNIFIED_COMBINATIONS_1 or derived from UNIFIED_COMBINATIONS_2

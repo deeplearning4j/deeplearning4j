@@ -1,0 +1,11 @@
+2-Type Combination Analysis
+===========================
+
+Total Valid: 158
+
+Breakdown by Category:
+  Same type pairs: 14
+  Bool pairs: 24
+  Float pairs: 12
+  Integer pairs: 44
+  Mixed/Other: 64

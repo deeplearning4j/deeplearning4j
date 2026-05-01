@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "timestamp": "20260501_102511",
+    "profile": "STANDARD_ALL_TYPES",
+    "build_dir": "/home/agibsonccc/Documents/GitHub/deeplearning4j/.claude/worktrees/agent-af786ba1/libnd4j/blasbuild/cuda",
+    "semantic_filtering": ON,
+    "aggressive_filtering": ON
+  },
+  "statistics": {
+    "type_count": 14,
+    "combinations": {
+      "single": { "actual": 14, "theoretical": 14 },
+      "pair": { "actual": 158, "theoretical": 196, "reduction": 19 },
+      "triple": { "actual": 623, "theoretical": 2744, "reduction": 77 }
+    }
+  },
+  "active_types": [
+    "BOOL",
+    "INT8",
+    "UINT8",
+    "INT16",
+    "UINT16",
+    "INT32",
+    "UINT32",
+    "INT64",
+    "UINT64",
+    "HALF",
+    "BFLOAT16",
+    "FLOAT32",
+    "DOUBLE",
+    "UTF8"
+  ]
+}

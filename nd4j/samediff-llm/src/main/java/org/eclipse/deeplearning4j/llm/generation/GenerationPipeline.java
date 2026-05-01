@@ -223,11 +223,10 @@ public class GenerationPipeline implements AutoCloseable {
         // embedTokens may be null here — single-model mode uses decoder for embeddings
 
         // 1b. Run graph optimizer (sigmoid*x→swish/silu, SwiGLU fusion, etc.)
-        // Exclude QuantizationOptimizations — FP16 weight quantization must be opt-in
-        // since it changes numerical precision and can break models not designed for it.
-        boolean optimizerEnabled = Boolean.parseBoolean(
-                System.getProperty("nd4j.optimizer.enabled", "true"));
-        if (optimizerEnabled && decoder.getOps().size() >= 100) {
+        // Controlled via GenerationPipelineConfig.graphOptimizerEnabled (default: false).
+        // Default is false because OnnxModelCache already runs the full optimizer during import.
+        // Excludes QuantizationOptimizations (FP16 weight quantization handled separately).
+        if (config.isGraphOptimizerEnabled()) {
             int opsBefore = decoder.getOps().size();
             long optStart = System.currentTimeMillis();
             List<String> outputs = decoder.outputs() != null
@@ -896,6 +895,9 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         if (executor.getCurrentPlan() != null) {
+            executor.setMaxKvCacheLength((int) maxKvLen);
+            executor.configureMaxAllocationForKvCache(decodeOutputs);
+            log.info("[Perf] GGUF configured KV cache max-allocation: maxKvLen={}", maxKvLen);
             executor.setShapesFrozen(true);
             log.info("[Perf] GGUF shapes frozen after warmup decode (planPhase={} pointersStable={})",
                     executor.getPlanPhase(), executor.arePointersStable());
@@ -1580,6 +1582,18 @@ public class GenerationPipeline implements AutoCloseable {
                     .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
                     .steadyStateTokensPerSecond(0)
                     .build();
+        }
+
+        // Configure max-allocation for KV cache output slots BEFORE freezing.
+        // This pre-allocates oversized buffers at max capacity so shapes never
+        // change within the frozen plan (buffer addresses stay stable for CUDA
+        // graph replay). maxKvLen = prefillSeqLen + maxNewTokens.
+        if (executor != null && executor.getCurrentPlan() != null) {
+            executor.setMaxKvCacheLength((int) maxKvLen);
+            List<String> kvOutputNamesForMaxAllocation = new ArrayList<>(kvNames.keyNames);
+            kvOutputNamesForMaxAllocation.addAll(kvNames.valueNames);
+            executor.configureMaxAllocationForKvCache(decodeOutputs, kvOutputNamesForMaxAllocation);
+            log.info("[Perf] Configured KV cache max-allocation: maxKvLen={}", maxKvLen);
         }
 
         // Freeze shapes explicitly after warmup decode, matching the old

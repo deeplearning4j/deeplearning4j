@@ -1871,6 +1871,17 @@ SD_LIB_EXPORT void setPlanMaxCaptureSegmentSize(sd::Pointer planHandle, int maxS
 SD_LIB_EXPORT void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen);
 
 /**
+ * Enable/disable shape-only dry-run mode for a compiled plan.
+ * When enabled, executeSlot() runs all dispatch infrastructure (shape caching,
+ * frozen detection, output allocation, segment dispatch) but SKIPS op->execute().
+ * Use to measure pure dispatch/infrastructure overhead separately from compute.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled     true to enable shape-only mode, false to disable
+ */
+SD_LIB_EXPORT void setPlanShapeOnlyMode(sd::Pointer planHandle, bool enabled);
+
+/**
  * Enable/disable execution timing breakdown logging for a compiled plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()

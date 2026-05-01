@@ -578,6 +578,12 @@ void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen) {
   }
 }
 
+void setPlanShapeOnlyMode(sd::Pointer planHandle, bool enabled) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setShapeOnlyMode(enabled);
+  }
+}
+
 void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled) {
   if (planHandle != nullptr) {
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setExecutionTimingEnabled(enabled);

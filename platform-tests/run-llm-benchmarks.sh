@@ -7,6 +7,7 @@
 # │             kernel fusion, graph optimizer, perplexity, quants     │
 # │                                                                     │
 # │ Default models: qwen (0.8B), gemma (1B)                            │
+# │ Also available: phi, mistral, lfm2-extract (350M)                  │
 # │ Default backend: CUDA                                              │
 # │ Default tokens: 20                                                  │
 # └─────────────────────────────────────────────────────────────────────┘
@@ -21,7 +22,7 @@
 #
 # Model selection:
 #   --models MODELS       Comma-separated model keys (default: qwen,gemma)
-#                         Valid: qwen, gemma, phi, mistral, all
+#                         Valid: qwen, gemma, phi, mistral, lfm2-extract, all
 #
 # Configuration:
 #   --tokens N            Max decode tokens (default: 20)
@@ -45,6 +46,7 @@
 #   ./run-llm-benchmarks.sh --test triton --tokens 50      # Triton with 50 tokens
 #   ./run-llm-benchmarks.sh --backend cpu --test baseline  # CPU-only baseline
 #   ./run-llm-benchmarks.sh --test matrix --models qwen,phi --tokens 30  # Full matrix
+#   ./run-llm-benchmarks.sh --test prompts --models lfm2-extract        # LFM2 extraction accuracy
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

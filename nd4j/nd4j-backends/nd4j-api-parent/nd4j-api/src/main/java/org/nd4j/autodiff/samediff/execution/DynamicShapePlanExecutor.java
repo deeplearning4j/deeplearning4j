@@ -1009,6 +1009,31 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Enable/disable shape-only dry-run mode on the native plan.
+     *
+     * When enabled, executeSlot() runs the full DSP dispatch machinery — slot
+     * iteration, shape caching, frozen-constant checks, identity/fusion detection,
+     * segment dispatch, output allocation — but SKIPS the actual op kernel execution.
+     * Outputs retain their values from the previous real execution (uninitialized
+     * on the very first pass).
+     *
+     * Purpose: measure pure dispatch/infrastructure overhead independently from
+     * compute.  With 1683 ops per CPU decode step and 185 ms of kernel time versus
+     * 367 ms of dispatch overhead, this mode lets dispatch optimizations be
+     * profiled and iterated ~100x faster.
+     *
+     * Can also be activated via system property {@code nd4j.dsp.shape.only=true}.
+     *
+     * @param enabled true to enable shape-only mode, false to disable
+     */
+    public void setShapeOnlyMode(boolean enabled) {
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps.setPlanShapeOnlyMode(nativePlanHandle, enabled);
+        }
+    }
+
+    /**
      * Set the maximum KV cache length for pre-allocation.
      * When set > 0 and CUDA graphs are enabled, output slots for KV cache
      * are pre-allocated at max size [batch, numHeads, maxLen, headDim] to keep
@@ -1034,6 +1059,30 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     public DynamicShapePlan getCurrentPlan() {
         return currentPlan;
+    }
+
+    /**
+     * Configure max-allocation for KV cache output slots from an already-run
+     * decode step. This is used by native decode loops that warm up once, then
+     * replay the same native plan directly.
+     */
+    public boolean configureMaxAllocationForKvCache(Map<String, INDArray> firstStepResults) {
+        return configureMaxAllocationForKvCache(firstStepResults, (Collection<String>) null);
+    }
+
+    /**
+     * Configure max-allocation for explicitly known KV cache output names.
+     */
+    public boolean configureMaxAllocationForKvCache(Map<String, INDArray> firstStepResults,
+                                                    Collection<String> kvOutputNames) {
+        if (currentPlan == null) return false;
+        Set<String> explicitKvOutputs = kvOutputNames == null
+                ? null : new LinkedHashSet<>(kvOutputNames);
+        boolean configured = configureMaxAllocationForKvCache(firstStepResults, currentPlan, explicitKvOutputs);
+        if (configured) {
+            maxAllocationConfigured = true;
+        }
+        return configured;
     }
 
     /**
@@ -1412,9 +1461,14 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Finds present_key/present_value outputs and configures C++ to pre-allocate
      * them at maximum sequence length so buffer addresses stay stable for CUDA graphs.
      */
-    private void configureMaxAllocationForKvCache(Map<String, INDArray> firstStepResults, DynamicShapePlan plan) {
-        if (nativePlanHandle == null || nativePlanHandle.isNull() || maxKvCacheLength <= 0) return;
-        if (firstStepResults == null || firstStepResults.isEmpty()) return;
+    private boolean configureMaxAllocationForKvCache(Map<String, INDArray> firstStepResults, DynamicShapePlan plan) {
+        return configureMaxAllocationForKvCache(firstStepResults, plan, null);
+    }
+
+    private boolean configureMaxAllocationForKvCache(Map<String, INDArray> firstStepResults, DynamicShapePlan plan,
+                                                     Set<String> explicitKvOutputNames) {
+        if (nativePlanHandle == null || nativePlanHandle.isNull() || maxKvCacheLength <= 0) return false;
+        if (firstStepResults == null || firstStepResults.isEmpty()) return false;
 
         Map<String, Integer> outputNameToSlot = plan.getOutputNameToSlotIndex();
 
@@ -1425,10 +1479,15 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Match logic mirrors DecoderUtils.findKVCacheOutputNames: present+key or present+value.
         for (Map.Entry<String, INDArray> entry : firstStepResults.entrySet()) {
             String outputName = entry.getKey();
+            boolean isExplicitKv = explicitKvOutputNames != null && explicitKvOutputNames.contains(outputName);
             boolean isKvKey   = outputName.contains("present") && outputName.contains("key");
             boolean isKvValue = outputName.contains("present") && outputName.contains("value");
-            if (isKvKey || isKvValue) {
+            if (isExplicitKv || isKvKey || isKvValue) {
                 Integer slotIdx = outputNameToSlot.get(outputName);
+                if (slotIdx == null || slotIdx < 0) {
+                    int resolvedSlot = findOutputSlotIndex(plan, outputName);
+                    slotIdx = resolvedSlot >= 0 ? resolvedSlot : null;
+                }
                 if (slotIdx != null && slotIdx >= 0) {
                     INDArray arr = entry.getValue();
                     if (arr != null && arr.rank() == 4) {
@@ -1436,7 +1495,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                         long batchSize = arr.size(0);
                         long numHeads  = arr.size(1);
                         long headDim   = arr.size(3);
-                        long maxSize   = batchSize * numHeads * maxKvCacheLength * headDim;
+                        long configuredMaxSize = batchSize * numHeads * maxKvCacheLength * headDim;
+                        long currentSize = arr.length();
+                        long maxSize = Math.max(configuredMaxSize, currentSize);
 
                         kvSlotIndices.add(slotIdx);
                         kvMaxSizes.add(maxSize);
@@ -1455,7 +1516,18 @@ public class DynamicShapePlanExecutor implements Closeable {
             nativeOps.setPlanOutputSlotMaxSizes(nativePlanHandle, indices.length, indices, sizes);
             log.info("Configured max-allocation for {} KV cache slots with maxSeqLen={}",
                     kvSlotIndices.size(), maxKvCacheLength);
+            return true;
         }
+
+        String message = "KV cache max-allocation requested (maxSeqLen=" + maxKvCacheLength
+                + ") but no KV output slots were matched. outputs=" + firstStepResults.keySet()
+                + " explicitKvOutputs=" + explicitKvOutputNames;
+        if (explicitKvOutputNames != null) {
+            log.warn(message);
+        } else {
+            log.debug(message);
+        }
+        return false;
     }
 
     /**
@@ -3112,13 +3184,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                 log.info("Native executor: exec={}ms copy={}ms ({} outputs)", execMs, copyMs, numOutputs);
             }
 
-            // NOTE: Max-allocation for KV cache output slots is disabled. Giving ops a
-            // wrong-shaped pre-allocated buffer (e.g. [1,H,2048,D] when the op produces
-            // [1,H,2,D]) causes the CUDA kernel to use the wrong shape → OOB reads →
-            // cudaErrorIllegalAddress → Status::KERNEL_FAILURE (50). The correct approach
-            // requires ops to accept a fixed-size buffer AND a "valid length" parameter
-            // (static KV cache pattern), which is a larger architectural change.
-            // configureMaxAllocationForKvCache is kept here for future use.
+            // Configure max-allocation for KV cache output slots after the first execution.
+            // This pre-allocates oversized DataBuffers at max capacity so that subsequent
+            // steps can reuse the same buffer with a new shape wrapper. The C++ plan
+            // creates NDArrays with the actual output shape (not the max shape) — only the
+            // underlying buffer is oversized. This keeps buffer addresses stable for CUDA
+            // graph replay while giving op kernels the correct shape info.
+            if (!maxAllocationConfigured && maxKvCacheLength > 0) {
+                maxAllocationConfigured = configureMaxAllocationForKvCache(results, plan);
+            }
 
             // Diagnostic: dump first few values of each output to compare with Java executor
             if (Boolean.getBoolean(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS)) {

@@ -78,10 +78,99 @@ int GraphSegment::retryInterval() { return sd::Environment::getInstance().dspCap
 namespace sd {
 namespace graph {
 
+static void scanAllSlotsForCorruption(
+    NDArray** outputSlots, int totalOutputSlots,
+    const char* checkpoint, int execCount) {
+  for (int i = 0; i < totalOutputSlots; i++) {
+    if (outputSlots[i] == nullptr) continue;
+    auto* sib = outputSlots[i]->shapeInfoConstBuffer();
+    if (sib == nullptr) continue;
+    uintptr_t sibAddr = reinterpret_cast<uintptr_t>(sib);
+    if (sibAddr % alignof(ConstantShapeBuffer) != 0) {
+      sd_printf("CORRUPTION_SCAN_HIT: checkpoint=%s slot=%d arr=%p "
+                "_shapeInfoBuffer=%p alignOffset=%zu execCount=%d\n",
+                checkpoint, i, (void*)outputSlots[i], (void*)sib,
+                static_cast<size_t>(sibAddr % alignof(ConstantShapeBuffer)),
+                execCount);
+      fflush(stdout);
+      return;
+    }
+  }
+}
+
 namespace {
 // Status enum string helper — delegates to shared dsp::dspStatusName in DspPhaseUtils.h.
 const char* statusName_seg(Status status) {
   return dsp::dspStatusName(status);
+}
+
+static void appendSlotInputExceptionContext(std::string& msg,
+                                            const NativeSlot& slot,
+                                            const NativeSlot* slots,
+                                            int numSlots,
+                                            NDArray** outputSlots,
+                                            int totalOutputSlots,
+                                            NDArray** externalArrays,
+                                            int numExt) {
+  msg += " | inputContext=[";
+  for (int i = 0; i < slot.wiring.numInputs; i++) {
+    if (i > 0) msg += "; ";
+    int srcIdx = slot.wiring.inputSourceIndices[i];
+    NDArray* input = nullptr;
+    const char* sourceKind = "unknown";
+    int resolvedIdx = -1;
+    int producerStep = -1;
+    const char* producerOp = "?";
+
+    if (srcIdx >= 0) {
+      sourceKind = "slot";
+      resolvedIdx = srcIdx;
+      if (srcIdx < totalOutputSlots && outputSlots != nullptr) {
+        input = outputSlots[srcIdx];
+      }
+      if (slots != nullptr) {
+        for (int p = 0; p < numSlots; p++) {
+          const auto& producer = slots[p];
+          for (int o = 0; o < producer.wiring.numOutputs; o++) {
+            if (producer.wiring.outputSlotIndices[o] == srcIdx) {
+              producerStep = p;
+              producerOp = producer.ident.opName.c_str();
+              break;
+            }
+          }
+          if (producerStep >= 0) break;
+        }
+      }
+    } else {
+      sourceKind = "ext";
+      resolvedIdx = -(srcIdx + 1);
+      if (resolvedIdx >= 0 && resolvedIdx < numExt && externalArrays != nullptr) {
+        input = externalArrays[resolvedIdx];
+      }
+    }
+
+    char buf[512];
+    auto* shapeBuffer = input != nullptr ? input->shapeInfoConstBuffer() : nullptr;
+    uintptr_t shapeBufferAddr = reinterpret_cast<uintptr_t>(shapeBuffer);
+    size_t shapeBufferAlign = shapeBuffer != nullptr
+        ? static_cast<size_t>(shapeBufferAddr % alignof(ConstantShapeBuffer))
+        : 0;
+    DataBuffer* db = nullptr;
+    if (input != nullptr) {
+      try {
+        db = input->dataBuffer();
+      } catch (...) {
+        db = nullptr;
+      }
+    }
+    snprintf(buf, sizeof(buf),
+             "input[%d] src=%s[%d] producerStep=%d producerOp=%s arr=%p "
+             "shapeBuf=%p shapeBufAlignOff=%zu db=%p",
+             i, sourceKind, resolvedIdx, producerStep, producerOp,
+             (void*)input, (void*)shapeBuffer, shapeBufferAlign, (void*)db);
+    msg += buf;
+  }
+  msg += "]";
 }
 
 }  // namespace
@@ -617,52 +706,66 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
            seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
 
+  // NativeSlotExecutor callback — shared by OneDNN and OpenVINO backends.
+  // Uses persistent GraphSegments per native range so FunctionalReplayHandle
+  // accumulates and CPU_FROZEN_REPLAY fires after the first call.
+  auto nativeSlotCallback = [this, &externalArrays, numExt, &stream, &backendName]
+      (int nativeStart, int nativeEnd) -> Status {
+    auto key = nativeRangeKey(nativeStart, nativeEnd);
+    auto& nativeSeg = nativeRangeSegments_[key];
+    if (nativeSeg.exec.executionCount == 0) {
+      nativeSeg.def.startSlot = nativeStart;
+      nativeSeg.def.endSlot   = nativeEnd;
+      nativeSeg.def.isCapturable = true;
+      nativeSeg.exec.executionCount = 1;
+    }
+    if (!nativeSeg.exec.replayHandle && nativeSeg.def.isCapturable) {
+      nativeSeg.exec.replayHandle = GraphReplayFactory::create(0);
+      nativeSeg.exec.replayHandle->beginCapture(nullptr);
+      DSP_DIAG(EXECUTE, "%s NativeSlotExecutor: began capture for range [%d-%d]",
+               backendName, nativeStart, nativeEnd);
+    }
+    auto status = executeSegmentSlotBySlot(nativeSeg, externalArrays, numExt, stream);
+    if (nativeSeg.exec.replayHandle &&
+        nativeSeg.exec.replayHandle->getState() == ReplayState::CAPTURING &&
+        status == Status::OK) {
+      nativeSeg.exec.replayHandle->endCapture(nullptr);
+      nativeSeg.exec.replayHandle->finalize();
+      DSP_DIAG(EXECUTE, "%s NativeSlotExecutor: capture finalized for range [%d-%d]",
+               backendName, nativeStart, nativeEnd);
+    }
+    nativeSeg.exec.executionCount++;
+    return status;
+  };
+
+  // Detect backend type once and cache it on the segment to avoid
+  // dynamic_cast on every token in the frozen path.
+  if (seg.resolvedCpuBackendType == GraphSegment::CpuBackendType::UNKNOWN) {
+#if HAVE_OPENVINO
+    if (dynamic_cast<OpenVinoGraphBackend*>(backend) != nullptr)
+      seg.resolvedCpuBackendType = GraphSegment::CpuBackendType::OPENVINO;
+#endif
 #if HAVE_ONEDNN
-  // For OneDNN mixed segments: install a NativeSlotExecutor so the backend can
-  // call back into the plan's slot-by-slot path for unmappable op ranges.
-  // The executor is thread-local (mirrors the Triton orderedRangeExecutor_ model)
-  // and must be cleared after executeSegment returns.
-  bool installedOneDnnNativeExecutor = false;
-  auto* onednnBackend = dynamic_cast<OneDnnGraphBackend*>(backend);
-  if (onednnBackend != nullptr) {
-    onednnBackend->setNativeSlotExecutor(
-        [this, &externalArrays, numExt, &stream](int nativeStart, int nativeEnd) -> Status {
-          // Build a temporary segment spanning [nativeStart, nativeEnd] and
-          // execute it slot-by-slot. We reuse the existing segment infrastructure
-          // so that shape caches, control flow, and all other slot logic work correctly.
-          // We construct a minimal GraphSegment on the stack to avoid heap allocation.
-          GraphSegment nativeSeg;
-          nativeSeg.def.startSlot = nativeStart;
-          nativeSeg.def.endSlot   = nativeEnd;
-          nativeSeg.def.isCapturable = false;
-          // Initialize exec state so executeSegmentSlotBySlot doesn't fail phase checks
-          nativeSeg.exec.executionCount = 1;  // Past warmup: skip warmup logic inside slotexec
-          DSP_DIAG(FALLBACK, "OneDNN NativeSlotExecutor: executing native range [%d-%d] via slot-by-slot",
-                   nativeStart, nativeEnd);
-          return executeSegmentSlotBySlot(nativeSeg, externalArrays, numExt, stream);
-        });
-    installedOneDnnNativeExecutor = true;
+    if (seg.resolvedCpuBackendType == GraphSegment::CpuBackendType::UNKNOWN &&
+        dynamic_cast<OneDnnGraphBackend*>(backend) != nullptr)
+      seg.resolvedCpuBackendType = GraphSegment::CpuBackendType::ONEDNN;
+#endif
+  }
+
+  // Install NativeSlotExecutor using the cached backend type (no dynamic_cast).
+  bool installedNativeExecutor = false;
+#if HAVE_ONEDNN
+  if (seg.resolvedCpuBackendType == GraphSegment::CpuBackendType::ONEDNN) {
+    static_cast<OneDnnGraphBackend*>(backend)->setNativeSlotExecutor(nativeSlotCallback);
+    installedNativeExecutor = true;
     DSP_DIAG(EXECUTE, "OneDNN NativeSlotExecutor installed for seg[%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
   }
 #endif
-
 #if HAVE_OPENVINO
-  bool installedOpenVinoNativeExecutor = false;
-  auto* openvinoBackend = dynamic_cast<OpenVinoGraphBackend*>(backend);
-  if (openvinoBackend != nullptr) {
-    openvinoBackend->setNativeSlotExecutor(
-        [this, &externalArrays, numExt, &stream](int nativeStart, int nativeEnd) -> Status {
-          GraphSegment nativeSeg;
-          nativeSeg.def.startSlot = nativeStart;
-          nativeSeg.def.endSlot   = nativeEnd;
-          nativeSeg.def.isCapturable = false;
-          nativeSeg.exec.executionCount = 1;
-          DSP_DIAG(FALLBACK, "OpenVINO NativeSlotExecutor: executing native range [%d-%d] via slot-by-slot",
-                   nativeStart, nativeEnd);
-          return executeSegmentSlotBySlot(nativeSeg, externalArrays, numExt, stream);
-        });
-    installedOpenVinoNativeExecutor = true;
+  if (seg.resolvedCpuBackendType == GraphSegment::CpuBackendType::OPENVINO) {
+    static_cast<OpenVinoGraphBackend*>(backend)->setNativeSlotExecutor(nativeSlotCallback);
+    installedNativeExecutor = true;
     DSP_DIAG(EXECUTE, "OpenVINO NativeSlotExecutor installed for seg[%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
   }
@@ -671,21 +774,22 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
 
+  if (installedNativeExecutor) {
 #if HAVE_ONEDNN
-  if (installedOneDnnNativeExecutor && onednnBackend != nullptr) {
-    onednnBackend->clearNativeSlotExecutor();
-    DSP_DIAG(EXECUTE, "OneDNN NativeSlotExecutor cleared for seg[%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-  }
+    if (seg.resolvedCpuBackendType == GraphSegment::CpuBackendType::ONEDNN) {
+      static_cast<OneDnnGraphBackend*>(backend)->clearNativeSlotExecutor();
+      DSP_DIAG(EXECUTE, "OneDNN NativeSlotExecutor cleared for seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+    }
 #endif
-
 #if HAVE_OPENVINO
-  if (installedOpenVinoNativeExecutor && openvinoBackend != nullptr) {
-    openvinoBackend->clearNativeSlotExecutor();
-    DSP_DIAG(EXECUTE, "OpenVINO NativeSlotExecutor cleared for seg[%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-  }
+    if (seg.resolvedCpuBackendType == GraphSegment::CpuBackendType::OPENVINO) {
+      static_cast<OpenVinoGraphBackend*>(backend)->clearNativeSlotExecutor();
+      DSP_DIAG(EXECUTE, "OpenVINO NativeSlotExecutor cleared for seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+    }
 #endif
+  }
 
   DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
            seg.def.startSlot, seg.def.endSlot, backendName, (int)status);
@@ -811,12 +915,19 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                seg.exec.executionCount, seg.def.isCapturable ? 1 : 0, seg.exec.compilationFailed ? 1 : 0);
 
-  // Skip prezero in frozen steady-state: output buffers are reused and ops
-  // fully overwrite them. prezero iterates ALL slots in the segment doing
-  // memset on each qualifying output — pure overhead for decode.
-  if (!(shapesFrozen_ && executeCount_ >= 2)) {
-    prezeroSegmentOutputs(seg, stream);
+  // Corruption scan at segment entry — detect pre-existing corruption from
+  // prior segment, writeOutputSlot, or refreshStaleViewWrappers.
+  if (sd::Environment::getInstance().isDebug()) {
+    char segLabel[256];
+    snprintf(segLabel, sizeof(segLabel),
+             "SEGMENT_ENTRY_seg%d-%d", seg.def.startSlot, seg.def.endSlot);
+    scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
+        segLabel, executeCount_);
   }
+
+  // Always prezero segment outputs: some ops may partially write their output
+  // buffers, and stale data from the previous step must not persist.
+  prezeroSegmentOutputs(seg, stream);
 
   // Reset per-segment allocation counters
   tl_dspAllocBytes = 0; tl_dspFreeBytes = 0;
@@ -846,7 +957,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // identity ops, fused chain tails) at the outer loop level.
   if (shapesFrozen_ && executeCount_ >= 2 && !hasControlFlow_ &&
       seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
-    auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+    // On CPU, GraphReplayFactory::create() always returns a FunctionalReplayHandle.
+    // static_cast avoids RTTI overhead of dynamic_cast in the hot decode loop.
+    // The null check on the line below preserves safety.
+    auto* funcHandle = static_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
     if (funcHandle && funcHandle->hasExecutableSlotIndices()) {
       const auto& execSlots = funcHandle->getExecutableSlotIndices();
       DSP_DIAG(EXECUTE, "CPU_FROZEN_REPLAY: seg[%d-%d] iterating %d/%d executable slots",
@@ -1160,8 +1274,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           continue;  // retry the slot execution after trimming
         }
 #endif
+        std::string detail = e.what();
+        appendSlotInputExceptionContext(detail, slots_[stepIdx],
+                                        slots_, numSlots_,
+                                        outputSlots_, totalOutputSlots_,
+                                        externalArrays, numExt);
         DSP_THROW(EXECUTE, "slot %d (%s) threw exception: %s",
-                  stepIdx, slots_[stepIdx].ident.opName.c_str(), e.what());
+                  stepIdx, slots_[stepIdx].ident.opName.c_str(), detail.c_str());
       } catch (...) {
         DSP_THROW(EXECUTE, "slot %d (%s) threw unknown exception",
                   stepIdx, slots_[stepIdx].ident.opName.c_str());
@@ -1374,7 +1493,9 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                      || slot.fusedChain.isFusedChainTail
                      || (slot.flags.isIdentityOp && slot.wiring.numInputs == 1);
       if (!skipRecord) {
-        auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+        // On CPU, GraphReplayFactory::create() always returns FunctionalReplayHandle.
+        // static_cast avoids RTTI overhead; null guard below is preserved.
+        auto* funcHandle = static_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
         if (funcHandle) funcHandle->recordOp(slot.ident.op, stepIdx);
       }
     }

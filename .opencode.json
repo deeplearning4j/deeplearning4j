@@ -1,0 +1,6 @@
+{
+  "tools" : {
+    "ls" : true,
+    "grep" : true
+  }
+}

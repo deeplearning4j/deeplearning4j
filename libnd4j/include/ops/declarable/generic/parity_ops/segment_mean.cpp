@@ -57,7 +57,7 @@ DECLARE_SHAPE_FN(segment_mean) {
   auto in = inputShape->at(0);
   LongType outRank = shape::rank(in);
   LongType* outputShape = nullptr;
-  LongType val = (*idxVector).e<LongType>(idxVector->lengthOf() - 1);
+  LongType val = (*idxVector).e<LongType>(shape::length(inputShape->at(1)) - 1);
 
   LongType numOfClasses = val + 1;
 

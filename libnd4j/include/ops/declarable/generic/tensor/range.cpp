@@ -125,12 +125,12 @@ DECLARE_SHAPE_FN(range) {
   // Each branch below will set the correct dataType based on the input mode.
   // Track if D_ARG was used so we don't override it later
   const bool hasDArg = block.numD() > 0;
-  DataType dataType = hasDArg ? D_ARG(0) : (numInArrs > 0 ? INPUT_VARIABLE(0)->dataType() : static_cast<sd::DataType>(sd::env_defaultFloatDataType()));
+  DataType dataType = hasDArg ? D_ARG(0) : (numInArrs > 0 ? ArrayOptions::dataType(inputShape->at(0)) : static_cast<sd::DataType>(sd::env_defaultFloatDataType()));
 
   if (numInArrs > 0) {
-    auto isR = INPUT_VARIABLE(0)->isR();
-    auto isZ = INPUT_VARIABLE(0)->isZ();
-    auto dtype = INPUT_VARIABLE(0)->dataType();
+    auto dtype = ArrayOptions::dataType(inputShape->at(0));
+    auto isR = DataTypeUtils::isR(dtype);
+    auto isZ = DataTypeUtils::isZ(dtype);
 
     if (isR) {
       double start(0), limit, delta(1);
@@ -156,7 +156,7 @@ DECLARE_SHAPE_FN(range) {
 
       steps = static_cast<LongType>((limit - start) / delta);
 
-      if (!hasDArg) dataType = INPUT_VARIABLE(0)->dataType();
+      if (!hasDArg) dataType = dtype;
 
       if(steps <= 0) {
         std::string errorMessage;
@@ -211,7 +211,7 @@ DECLARE_SHAPE_FN(range) {
 
       steps = static_cast<LongType>((limit - start) / delta);
 
-      if (!hasDArg) dataType = INPUT_VARIABLE(0)->dataType();
+      if (!hasDArg) dataType = dtype;
 
       if (math::sd_abs<double,double>(start + steps * delta) < math::sd_abs<double,double>(limit)) ++steps;
 

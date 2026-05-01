@@ -1,0 +1,12 @@
+3-Type Combination Analysis
+===========================
+
+Total Valid: 623
+
+Pattern Breakdown:
+  Identity (same type): 14
+  Mixed precision: 2
+  Quantization: 12
+  Accumulation: 2
+  Comparison: 179
+  Other: 414

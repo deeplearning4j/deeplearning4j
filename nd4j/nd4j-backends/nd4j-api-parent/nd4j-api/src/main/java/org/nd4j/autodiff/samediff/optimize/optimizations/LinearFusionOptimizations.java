@@ -178,6 +178,18 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 // Replace all uses of the add output with the fused output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, addOutputVar, fusedOutput.name());
 
+                // If the add output was a registered graph output, update the output list
+                // to point to the fused output variable. Otherwise outputSingle() returns
+                // null because the orphaned variable has no producing op.
+                List<String> graphOutputs = sd.outputs();
+                if (graphOutputs != null) {
+                    for (int idx = 0; idx < graphOutputs.size(); idx++) {
+                        if (graphOutputs.get(idx).equals(addOutputVar)) {
+                            graphOutputs.set(idx, fusedOutput.name());
+                        }
+                    }
+                }
+
                 // Remove the old add and matmul operations
                 OptimizationUtils.removeOp(sd, helper, op.getName());
                 OptimizationUtils.removeOp(sd, helper, matmulOp.getName());
@@ -299,6 +311,16 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
 
                 // Replace all uses of the add output with the fused output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, addOutputVar, fusedOutput.name());
+
+                // If the add output was a registered graph output, update the output list
+                List<String> graphOutputs = sd.outputs();
+                if (graphOutputs != null) {
+                    for (int idx = 0; idx < graphOutputs.size(); idx++) {
+                        if (graphOutputs.get(idx).equals(addOutputVar)) {
+                            graphOutputs.set(idx, fusedOutput.name());
+                        }
+                    }
+                }
 
                 // Remove the old add and tensormmul operations
                 OptimizationUtils.removeOp(sd, helper, op.getName());

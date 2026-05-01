@@ -59,7 +59,9 @@ public class GatedDeltaRule extends DynamicCustomOp {
     }
 
     public GatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate, INDArray stateIn) {
-        super(new INDArray[]{q, k, v, beta, gate, stateIn}, null);
+        super(stateIn != null
+                ? new INDArray[]{q, k, v, beta, gate, stateIn}
+                : new INDArray[]{q, k, v, beta, gate}, null);
     }
 
     public GatedDeltaRule(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,

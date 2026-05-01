@@ -226,6 +226,53 @@ public class GenerationQualityValidator {
             score *= 0.5;
         }
 
+        // Script mixing detection: count distinct Unicode scripts and transitions.
+        // Mixed-script gibberish (e.g. Latin+CJK+Arabic+Cyrillic all in one output)
+        // is a strong signal of garbage/random output.
+        Set<Character.UnicodeScript> distinctScripts = new LinkedHashSet<>();
+        int scriptTransitions = 0;
+        Character.UnicodeScript prevScript = null;
+
+        // Approximate token count as whitespace-separated words for threshold scaling.
+        String[] words = text.trim().split("\\s+");
+        int tokenCount = words.length;
+
+        int[] codePoints = text.codePoints().toArray();
+        for (int cp : codePoints) {
+            Character.UnicodeScript script = Character.UnicodeScript.of(cp);
+            // Skip COMMON (punctuation, digits, symbols) and INHERITED (combining marks).
+            if (script == Character.UnicodeScript.COMMON || script == Character.UnicodeScript.INHERITED) {
+                continue;
+            }
+            distinctScripts.add(script);
+            if (prevScript != null && script != prevScript) {
+                scriptTransitions++;
+            }
+            prevScript = script;
+        }
+
+        int numDistinctScripts = distinctScripts.size();
+
+        // More than 3 distinct scripts in ~20 tokens is a garbage signal.
+        // Scale the threshold linearly with token count (floor at 20 tokens).
+        int effectiveTokens = Math.max(tokenCount, 1);
+        double scriptThreshold = 3.0 + (effectiveTokens - 20) * (1.0 / 20.0);
+        // Always allow at least 3 scripts; cap the leniency at 5 for very long text.
+        scriptThreshold = Math.max(3.0, Math.min(scriptThreshold, 5.0));
+
+        if (numDistinctScripts > scriptThreshold) {
+            score *= 0.2;
+        }
+
+        // Word-boundary chaos: high transition rate relative to token count = garbage.
+        // More than 5 script transitions per 20 tokens (i.e. > 0.3 * tokenCount) is suspicious.
+        // Use 0.3 * tokenCount so that 9 transitions / 17 tokens (ratio ~0.53) clearly exceeds it.
+        double transitionRateThreshold = Math.max(5.0, effectiveTokens * 0.3);
+        if (scriptTransitions > transitionRateThreshold) {
+            // Use 0.25 so that even with no other penalties, score drops to 0.25 < minCoherenceScore=0.3
+            score *= 0.25;
+        }
+
         return Math.max(0.0, Math.min(1.0, score));
     }
 

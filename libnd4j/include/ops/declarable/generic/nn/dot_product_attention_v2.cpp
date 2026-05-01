@@ -59,6 +59,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   // promotedKPtr captures the allocated reshape result so cleanup can free it
   // even after `keys` is overwritten by `keys = keyCache` in the KV-cache path.
   NDArray* promotedKPtr = nullptr;
+  // Sliced attention bias (allocated when prefill bias is wider than K seq dim)
+  NDArray* slicedBiasOwner = nullptr;
 
   // Auto-promote V from 3D to 4D when Q is 4D (GGUF models may pass flat V before head split)
   if (queriesOrig->rankOf() == 4 && valuesOrig->rankOf() == 3) {
@@ -186,8 +188,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   NDArray* keyCache = nullptr;
   NDArray* valueCache = nullptr;
 
-  if (extraInput != nullptr && !extraInput->isEmpty() &&
-      extraInput2 != nullptr && !extraInput2->isEmpty()) {
+  if (extraInput != nullptr && !extraInput->isEmpty() && extraInput->rankOf() >= 2 &&
+      extraInput2 != nullptr && !extraInput2->isEmpty() && extraInput2->rankOf() >= 2) {
     keyCache = extraInput;
     valueCache = extraInput2;
     useInPlaceKv = (cachePosInput != nullptr);
@@ -241,6 +243,40 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     if (kvCacheBias != nullptr && kvCacheBias->isEmpty()) kvCacheBias = nullptr;
     if (kvCacheBias != nullptr) {
       attentionBias = kvCacheBias;
+    }
+  }
+
+  // Fallback: when KV caches are empty (prefill) but attention bias is at input[8],
+  // it was never read above because the useInPlaceKv block was skipped.
+  // This happens during GGUF prefill: empty KV cache placeholders at input[5,6],
+  // cache_position at input[7], and causal mask at input[8].
+  if (attentionBias == nullptr && block.width() > 8) {
+    auto prefillBias = INPUT_VARIABLE(8);
+    if (prefillBias != nullptr && !prefillBias->isEmpty() && prefillBias->rankOf() >= 2) {
+      // The bias at input[8] is sized for the full KV cache (maxKvLen), but during
+      // prefill the raw K has only seqLen positions (no cache). Check if the bias
+      // last dim matches K's seq dim — if not, slice it or fall back to built-in causal.
+      auto biasLastDim = prefillBias->sizeAt(prefillBias->rankOf() - 1);
+      auto kSeqDim = keys->sizeAt(isRank4 ? 1 : 1);
+      if (biasLastDim == kSeqDim) {
+        attentionBias = prefillBias;
+      } else if (biasLastDim > kSeqDim) {
+        // Bias is wider than K (designed for full cache) — slice to [.., Tq, kSeqDim]
+        // Use subarray to take only the first kSeqDim columns
+        std::vector<LongType> sliceIdx;
+        for (int d = 0; d < prefillBias->rankOf() - 1; d++) {
+          sliceIdx.push_back(0);
+          sliceIdx.push_back(prefillBias->sizeAt(d));
+        }
+        sliceIdx.push_back(0);
+        sliceIdx.push_back(kSeqDim);
+        auto* slicedBias = (*prefillBias)(sliceIdx);
+        // Must dup so the contiguous copy survives beyond this scope
+        slicedBiasOwner = new NDArray(slicedBias->dup());
+        attentionBias = slicedBiasOwner;
+        delete slicedBias;
+      }
+      // else biasLastDim < kSeqDim: unexpected, skip bias
     }
   }
 
@@ -476,6 +512,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   // cause us to delete a live INPUT_VARIABLE and corrupt subsequent executions.
   if (promotedV) delete valuesOrig;
   if (promotedK) delete promotedKPtr;
+  if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
 
   return sd::Status::OK;
 }
@@ -495,10 +532,10 @@ DECLARE_TYPES(dot_product_attention_v2) {
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2) {
-  auto firstInputType = INPUT_VARIABLE(0)->dataType();
-  auto queries = INPUT_VARIABLE(0);
-  auto values = INPUT_VARIABLE(1);
-  auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
+  auto firstInputType = ArrayOptions::dataType(inputShape->at(0));
+  auto queriesShape = inputShape->at(0);
+  auto valuesShape = inputShape->at(1);
+  auto keysShape = block.width() > 2 ? inputShape->at(2) : valuesShape;
 
   auto dropout = block.numT() > 1 ? block.getTArguments()->at(1) : 0.0;
 
@@ -506,10 +543,10 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   // with keyCache (input 5) and valueCache (input 6), Tv = cache seq dim.
   // Guard with rankOf() >= 2: empty/rank-0 arrays may lose the EMPTY flag through
   // DSP slot wiring, so isEmpty() alone is insufficient.
-  auto input5 = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
-  bool input5Valid = (input5 != nullptr && !input5->isEmpty() && input5->rankOf() >= 2);
+  auto input5Shape = block.width() > 5 ? inputShape->at(5) : nullptr;
+  bool input5Valid = (input5Shape != nullptr && !shape::isEmpty(input5Shape) && shape::rank(input5Shape) >= 2);
   bool hasInPlaceKv = (block.width() > 7 && input5Valid);
-  auto keyCacheShape = input5Valid ? input5 : nullptr;
+  auto keyCacheShapePtr = input5Valid ? input5Shape : nullptr;
 
   // For rank 4: [batch, seq_len, numHeads, headDim] (BSHD)
   // For rank 3: [batch, seq_len, features]
@@ -517,33 +554,36 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   std::vector<sd::LongType> outShape;
   std::vector<sd::LongType> scoresShape;
 
-  if(queries->rankOf() == 4) {
+  if(shape::rank(queriesShape) == 4) {
     // Rank 4: [batch, Tq, numHeads, headDim] (BSHD format)
-    sd::LongType batchSize = queries->sizeAt(0);
-    sd::LongType tq = queries->sizeAt(1);
-    sd::LongType numHeads = queries->sizeAt(2);
-    sd::LongType headDim = queries->sizeAt(3);
-    sd::LongType tv = (hasInPlaceKv && keyCacheShape != nullptr)
-                       ? keyCacheShape->sizeAt(1) : values->sizeAt(1);
+    sd::LongType batchSize = shape::sizeAt(queriesShape, static_cast<sd::LongType>(0));
+    sd::LongType tq = shape::sizeAt(queriesShape, static_cast<sd::LongType>(1));
+    sd::LongType numHeads = shape::sizeAt(queriesShape, static_cast<sd::LongType>(2));
+    sd::LongType headDim = shape::sizeAt(queriesShape, static_cast<sd::LongType>(3));
+    sd::LongType tv = (hasInPlaceKv && keyCacheShapePtr != nullptr)
+                       ? shape::sizeAt(keyCacheShapePtr, static_cast<sd::LongType>(1))
+                       : shape::sizeAt(valuesShape, static_cast<sd::LongType>(1));
 
     // Output shape: [batch, Tq, numHeads, headDim] (same as query)
     outShape = {batchSize, tq, numHeads, headDim};
     // Attention scores shape: [batch, numHeads, Tq, Tv] (per-head scores)
     scoresShape = {batchSize, numHeads, tq, tv};
-  } else if(queries->rankOf() == 3) {
-    sd::LongType batchSize = queries->sizeAt(0);
-    sd::LongType tq = queries->sizeAt(1);
-    sd::LongType tv = (hasInPlaceKv && keyCacheShape != nullptr)
-                       ? keyCacheShape->sizeAt(1) : values->sizeAt(1);
-    sd::LongType dim = values->sizeAt(2);
+  } else if(shape::rank(queriesShape) == 3) {
+    sd::LongType batchSize = shape::sizeAt(queriesShape, static_cast<sd::LongType>(0));
+    sd::LongType tq = shape::sizeAt(queriesShape, static_cast<sd::LongType>(1));
+    sd::LongType tv = (hasInPlaceKv && keyCacheShapePtr != nullptr)
+                       ? shape::sizeAt(keyCacheShapePtr, static_cast<sd::LongType>(1))
+                       : shape::sizeAt(valuesShape, static_cast<sd::LongType>(1));
+    sd::LongType dim = shape::sizeAt(valuesShape, static_cast<sd::LongType>(2));
 
     outShape = {batchSize, tq, dim};
     scoresShape = {batchSize, tq, tv};
   } else {
-    sd::LongType tq = queries->sizeAt(0);
-    sd::LongType tv = (hasInPlaceKv && keyCacheShape != nullptr)
-                       ? keyCacheShape->sizeAt(0) : values->sizeAt(0);
-    sd::LongType dim = values->sizeAt(1);
+    sd::LongType tq = shape::sizeAt(queriesShape, static_cast<sd::LongType>(0));
+    sd::LongType tv = (hasInPlaceKv && keyCacheShapePtr != nullptr)
+                       ? shape::sizeAt(keyCacheShapePtr, static_cast<sd::LongType>(0))
+                       : shape::sizeAt(valuesShape, static_cast<sd::LongType>(0));
+    sd::LongType dim = shape::sizeAt(valuesShape, static_cast<sd::LongType>(1));
 
     outShape = {tq, dim};
     scoresShape = {tq, tv};

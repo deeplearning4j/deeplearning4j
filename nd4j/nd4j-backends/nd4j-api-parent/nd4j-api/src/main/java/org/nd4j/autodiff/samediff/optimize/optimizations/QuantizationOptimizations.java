@@ -54,8 +54,9 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
      * Optimizer that quantizes FP32 constant and variable arrays to FP16 or BF16.
      * This provides ~2x memory reduction for model weights with minimal accuracy loss.
      *
-     * FP16 quantization is ON by default. Disable with:
-     * - {@code -Dnd4j.optimizer.fp16=false}
+     * FP16 quantization is OFF by default (mixed-type execution not yet correct for all ops).
+     * Enable with:
+     * - {@code -Dnd4j.optimizer.fp16=true}
      *
      * BF16 is opt-in (requires hardware support):
      * - {@code -Dnd4j.optimizer.bf16=true}
@@ -84,18 +85,6 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             applied = true;
             DataType targetType = bf16Enabled ? DataType.BFLOAT16 : DataType.HALF;
             String modeName = targetType == DataType.BFLOAT16 ? "BF16" : "FP16";
-
-            // Only apply low-precision weight casting to large models (decoder) — small models like
-            // vision encoder and embed_tokens need FP32 precision.
-            String minOpsKey = targetType == DataType.BFLOAT16
-                    ? "nd4j.optimizer.bf16.minOps"
-                    : "nd4j.optimizer.fp16.minOps";
-            int minOps = Integer.parseInt(System.getProperty(minOpsKey, "1000"));
-            if (sd.getOps().size() < minOps) {
-                log.info("{} quantization skipped: model has {} ops (threshold {})",
-                        modeName, sd.getOps().size(), minOps);
-                return false;
-            }
 
             int count = quantizeAllToType(sd, targetType);
             if (count > 0) {
@@ -157,6 +146,10 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                     if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION) {
                         fp32Bytes += arr.length() * 4;
                         INDArray quantizedArr = arr.castTo(targetType);
+                        // Remove first in case the holder is an OptimizedGraphArrayHolder
+                        // with a function-backed entry (set by a prior optimizer pass).
+                        // removeArray clears the function entry so setArray can proceed.
+                        constantArrays.removeArray(name);
                         constantArrays.setArray(name, quantizedArr);
                         quantizedBytes += arr.length() * targetType.width();
                         quantizedCount++;
@@ -173,6 +166,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                     if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION) {
                         fp32Bytes += arr.length() * 4;
                         INDArray quantizedArr = arr.castTo(targetType);
+                        variableArrays.removeArray(name);
                         variableArrays.setArray(name, quantizedArr);
                         quantizedBytes += arr.length() * targetType.width();
                         quantizedCount++;
