@@ -153,6 +153,56 @@ get_hash_file() {
     echo \"\${HASH_CACHE_DIR}/\${path_hash}__\${VARIANT_SUFFIX}\"
 }
 
+# ==============================================================================
+# Extract the -o output path so we can find the .d dependency file
+# ==============================================================================
+OUTPUT_FILE=\"\"
+PREV_WAS_O=0
+for arg in \"\$@\"; do
+    if [[ \$PREV_WAS_O -eq 1 ]]; then
+        OUTPUT_FILE=\"\$arg\"
+        PREV_WAS_O=0
+        break
+    fi
+    if [[ \"\$arg\" == \"-o\" ]]; then
+        PREV_WAS_O=1
+    elif [[ \"\$arg\" =~ ^-o(.+) ]]; then
+        OUTPUT_FILE=\"\${BASH_REMATCH[1]}\"
+        break
+    fi
+done
+
+# ==============================================================================
+# Hash project headers from .d dependency file for this .o
+# Skips system headers (/usr/, /opt/) — only hashes project-local includes.
+# Returns combined hash of all project headers, or empty if no .d file.
+# ==============================================================================
+hash_deps_from_d_file() {
+    local d_file=\"\$1\"
+    [[ -f \"\$d_file\" ]] || return
+
+    local dep_hash_input=\"\"
+    # Parse .d file: skip first token (target:), process remaining paths
+    # .d files use \\ for line continuations
+    local deps
+    deps=\"\$(sed 's/\\\\$//; s/^[^:]*://' \"\$d_file\" | tr ' ' '\\n' | sort -u)\"
+
+    while IFS= read -r dep; do
+        [[ -z \"\$dep\" ]] && continue
+        # Skip system headers — only track project-local files
+        case \"\$dep\" in
+            /usr/*|/opt/*|/home/linuxbrew/*) continue ;;
+        esac
+        [[ -f \"\$dep\" ]] || continue
+        local h=\"\$(cksum \"\$dep\" 2>/dev/null | cut -d' ' -f1,2)\"
+        dep_hash_input=\"\${dep_hash_input}\${h} \${dep}\\n\"
+    done <<< \"\$deps\"
+
+    if [[ -n \"\$dep_hash_input\" ]]; then
+        echo -e \"\$dep_hash_input\" | cksum | cut -d' ' -f1,2
+    fi
+}
+
 if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     IS_GENERATED=0
     case \"\$SOURCE_FILE\" in
@@ -167,6 +217,7 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
         fi
     else
         HASH_FILE=\"\$(get_hash_file \"\$SOURCE_FILE\")\"
+        DEP_HASH_FILE=\"\${HASH_FILE}__deps\"
         CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
 
         if [[ -f \"\$HASH_FILE\" ]]; then
@@ -178,8 +229,25 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
                 export CCACHE_RECACHE=1
                 echo \"\$CURRENT_HASH\" > \"\$HASH_FILE\" 2>/dev/null
             else
-                if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                    echo \"[SMART_CCACHE] Unchanged, cache hit expected: \$SOURCE_FILE\" >&2
+                # Source unchanged — check if any included headers changed
+                if [[ -n \"\$OUTPUT_FILE\" && -f \"\${OUTPUT_FILE}.d\" && -f \"\$DEP_HASH_FILE\" ]]; then
+                    STORED_DEP_HASH=\"\$(cat \"\$DEP_HASH_FILE\" 2>/dev/null)\"
+                    CURRENT_DEP_HASH=\"\$(hash_deps_from_d_file \"\${OUTPUT_FILE}.d\")\"
+                    if [[ -n \"\$CURRENT_DEP_HASH\" && \"\$CURRENT_DEP_HASH\" != \"\$STORED_DEP_HASH\" ]]; then
+                        if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                            echo \"[SMART_CCACHE] Header deps changed, forcing recompile: \$SOURCE_FILE\" >&2
+                        fi
+                        export CCACHE_RECACHE=1
+                        echo \"\$CURRENT_DEP_HASH\" > \"\$DEP_HASH_FILE\" 2>/dev/null
+                    else
+                        if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                            echo \"[SMART_CCACHE] Source+deps unchanged, cache hit expected: \$SOURCE_FILE\" >&2
+                        fi
+                    fi
+                else
+                    if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                        echo \"[SMART_CCACHE] Unchanged, cache hit expected: \$SOURCE_FILE\" >&2
+                    fi
                 fi
             fi
         else
@@ -190,6 +258,12 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
             if [[ -n \"\$CURRENT_HASH\" ]]; then
                 echo \"\$CURRENT_HASH\" > \"\$HASH_FILE\" 2>/dev/null
             fi
+        fi
+
+        # Set vars for post-compile dep hash update (done after ccache call below)
+        if [[ -n \"\$OUTPUT_FILE\" ]]; then
+            _UPDATE_DEP_HASH_FILE=\"\$DEP_HASH_FILE\"
+            _UPDATE_DEP_D_FILE=\"\${OUTPUT_FILE}.d\"
         fi
     fi
 fi
@@ -249,7 +323,18 @@ ensure_output_parent_dirs() {
 
 ensure_output_parent_dirs \"\${EXPANDED_ARGS[@]}\"
 
-exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
+\"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
+_CCACHE_EXIT=\$?
+
+# Update dep hash after compile (exec would skip this)
+if [[ -n \"\$_UPDATE_DEP_D_FILE\" && -f \"\$_UPDATE_DEP_D_FILE\" ]]; then
+    _NEW_DEP_HASH=\"\$(hash_deps_from_d_file \"\$_UPDATE_DEP_D_FILE\")\"
+    if [[ -n \"\$_NEW_DEP_HASH\" ]]; then
+        echo \"\$_NEW_DEP_HASH\" > \"\$_UPDATE_DEP_HASH_FILE\" 2>/dev/null
+    fi
+fi
+
+exit \$_CCACHE_EXIT
 ")
 
         # Make executable (file(CHMOD) requires CMake 3.19+, use chmod for older versions)
