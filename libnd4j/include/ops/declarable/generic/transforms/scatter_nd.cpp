@@ -101,9 +101,9 @@ DECLARE_SHAPE_FN(scatter_nd) {
   auto updShapeInfo = inputShape->at(1);
 
   LongType *outShapeInfo;
-  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(shape::length(inputShape->at(2))), sd::LongType);
+  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(shape->lengthOf()), sd::LongType);
 
-  outShapeInfo[0] = shape::length(inputShape->at(2));
+  outShapeInfo[0] = shape->lengthOf();
   for (int i = 0; i < outShapeInfo[0]; ++i) outShapeInfo[i + 1] = shape->e<LongType>(i);
 
   ShapeUtils::updateStridesAndType(outShapeInfo, updShapeInfo, shape::order(updShapeInfo));

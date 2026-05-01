@@ -110,8 +110,8 @@ DECLARE_SHAPE_FN(resize_images) {
   int height;
   if (block.width() > 1) {
     auto size = INPUT_VARIABLE(1);
-    REQUIRE_TRUE(shape::length(inputShape->at(1)) == 2, 0, "resize_images: Resize params is a pair of values, not %lld.",
-                 shape::length(inputShape->at(1)));
+    REQUIRE_TRUE(size->lengthOf() == 2, 0, "resize_images: Resize params is a pair of values, not %lld.",
+                 size->lengthOf());
     width = size->e<int>(1);
     height = size->e<int>(0);
   } else {

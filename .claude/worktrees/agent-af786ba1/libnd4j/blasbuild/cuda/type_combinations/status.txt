@@ -1,5 +1,0 @@
-Diagnostics generated: 20260501_102511
-Profile: STANDARD_ALL_TYPES
-Types: 14
-2-type combinations: 158/196
-3-type combinations: 623/2744

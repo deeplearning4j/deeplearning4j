@@ -425,9 +425,7 @@ public class SDCNN extends SDOps {
       Conv1DConfig Conv1DConfig) {
     SDValidation.validateNumerical("conv1d", "input", input);
     SDValidation.validateNumerical("conv1d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("conv1d", "bias", bias);
-    }
+    SDValidation.validateNumerical("conv1d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(sd,input, weights, bias, Conv1DConfig).outputVariable();
   }
 
@@ -445,9 +443,7 @@ public class SDCNN extends SDOps {
       Conv1DConfig Conv1DConfig) {
     SDValidation.validateNumerical("conv1d", "input", input);
     SDValidation.validateNumerical("conv1d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("conv1d", "bias", bias);
-    }
+    SDValidation.validateNumerical("conv1d", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(sd,input, weights, bias, Conv1DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -496,9 +492,7 @@ public class SDCNN extends SDOps {
       Conv2DConfig Conv2DConfig) {
     SDValidation.validateNumerical("conv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("conv2d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("conv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("conv2d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(sd,layerInput, weights, bias, Conv2DConfig).outputVariable();
   }
 
@@ -516,9 +510,7 @@ public class SDCNN extends SDOps {
       Conv2DConfig Conv2DConfig) {
     SDValidation.validateNumerical("conv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("conv2d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("conv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("conv2d", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(sd,layerInput, weights, bias, Conv2DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -567,9 +559,7 @@ public class SDCNN extends SDOps {
       Conv3DConfig Conv3DConfig) {
     SDValidation.validateNumerical("conv3d", "input", input);
     SDValidation.validateNumerical("conv3d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("conv3d", "bias", bias);
-    }
+    SDValidation.validateNumerical("conv3d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(sd,input, weights, bias, Conv3DConfig).outputVariable();
   }
 
@@ -587,9 +577,7 @@ public class SDCNN extends SDOps {
       Conv3DConfig Conv3DConfig) {
     SDValidation.validateNumerical("conv3d", "input", input);
     SDValidation.validateNumerical("conv3d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("conv3d", "bias", bias);
-    }
+    SDValidation.validateNumerical("conv3d", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(sd,input, weights, bias, Conv3DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -638,9 +626,7 @@ public class SDCNN extends SDOps {
       DeConv2DConfig DeConv2DConfig) {
     SDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("deconv2d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("deconv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("deconv2d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(sd,layerInput, weights, bias, DeConv2DConfig).outputVariable();
   }
 
@@ -658,9 +644,7 @@ public class SDCNN extends SDOps {
       SDVariable bias, DeConv2DConfig DeConv2DConfig) {
     SDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("deconv2d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("deconv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("deconv2d", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(sd,layerInput, weights, bias, DeConv2DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -710,9 +694,7 @@ public class SDCNN extends SDOps {
       DeConv3DConfig DeConv3DConfig) {
     SDValidation.validateNumerical("deconv3d", "input", input);
     SDValidation.validateNumerical("deconv3d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("deconv3d", "bias", bias);
-    }
+    SDValidation.validateNumerical("deconv3d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(sd,input, weights, bias, DeConv3DConfig).outputVariable();
   }
 
@@ -730,9 +712,7 @@ public class SDCNN extends SDOps {
       DeConv3DConfig DeConv3DConfig) {
     SDValidation.validateNumerical("deconv3d", "input", input);
     SDValidation.validateNumerical("deconv3d", "weights", weights);
-    if (bias != null) {
-      SDValidation.validateNumerical("deconv3d", "bias", bias);
-    }
+    SDValidation.validateNumerical("deconv3d", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(sd,input, weights, bias, DeConv3DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -794,12 +774,8 @@ public class SDCNN extends SDOps {
     SDValidation.validateNumerical("deformableConv2d", "input", input);
     SDValidation.validateNumerical("deformableConv2d", "weights", weights);
     SDValidation.validateNumerical("deformableConv2d", "offset", offset);
-    if (bias != null) {
-      SDValidation.validateNumerical("deformableConv2d", "bias", bias);
-    }
-    if (mask != null) {
-      SDValidation.validateNumerical("deformableConv2d", "mask", mask);
-    }
+    SDValidation.validateNumerical("deformableConv2d", "bias", bias);
+    SDValidation.validateNumerical("deformableConv2d", "mask", mask);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, DeformableConv2DConfig).outputVariable();
   }
 
@@ -831,12 +807,8 @@ public class SDCNN extends SDOps {
     SDValidation.validateNumerical("deformableConv2d", "input", input);
     SDValidation.validateNumerical("deformableConv2d", "weights", weights);
     SDValidation.validateNumerical("deformableConv2d", "offset", offset);
-    if (bias != null) {
-      SDValidation.validateNumerical("deformableConv2d", "bias", bias);
-    }
-    if (mask != null) {
-      SDValidation.validateNumerical("deformableConv2d", "mask", mask);
-    }
+    SDValidation.validateNumerical("deformableConv2d", "bias", bias);
+    SDValidation.validateNumerical("deformableConv2d", "mask", mask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, DeformableConv2DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -944,9 +916,7 @@ public class SDCNN extends SDOps {
       Conv2DConfig Conv2DConfig) {
     SDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
-    if (bias != null) {
-      SDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(sd,layerInput, depthWeights, bias, Conv2DConfig).outputVariable();
   }
 
@@ -964,9 +934,7 @@ public class SDCNN extends SDOps {
       SDVariable bias, Conv2DConfig Conv2DConfig) {
     SDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
-    if (bias != null) {
-      SDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(sd,layerInput, depthWeights, bias, Conv2DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1231,9 +1199,7 @@ public class SDCNN extends SDOps {
     SDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     SDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
-    if (bias != null) {
-      SDValidation.validateNumerical("separableConv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("separableConv2d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(sd,layerInput, depthWeights, pointWeights, bias, Conv2DConfig).outputVariable();
   }
 
@@ -1253,9 +1219,7 @@ public class SDCNN extends SDOps {
     SDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
     SDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     SDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
-    if (bias != null) {
-      SDValidation.validateNumerical("separableConv2d", "bias", bias);
-    }
+    SDValidation.validateNumerical("separableConv2d", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(sd,layerInput, depthWeights, pointWeights, bias, Conv2DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

@@ -1734,18 +1734,6 @@ public interface NativeOps {
  }
 
   /**
-   * Enable/disable shape-only dry-run mode for a compiled plan.
-   * When enabled, executeSlot() runs all dispatch infrastructure (shape caching,
-   * frozen detection, output allocation, segment dispatch) but skips op kernel execution.
-   * Use to measure pure dispatch/infrastructure overhead separately from compute.
-   * @param planHandle handle from compileDynamicShapePlan()
-   * @param enabled true to enable shape-only mode, false to disable
-   */
-  default void setPlanShapeOnlyMode(Pointer planHandle, boolean enabled) {
-      // No-op by default
-  }
-
-  /**
    * Enable/disable execution timing breakdown logging for a compiled plan.
    * @param planHandle handle from compileDynamicShapePlan()
    * @param enabled true to enable timing, false to disable

@@ -493,29 +493,6 @@ fun NN() = Namespace("NN") {
         }
     }
 
-    Op("skipRmsNorm") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        javaOpClass = "SkipRmsNorm"
-        val input = Input(NUMERIC, "input") { description = "Input variable [batch, ..., features]" }
-        val skip = Input(NUMERIC, "skip") { description = "Residual/skip connection variable [batch, ..., features]" }
-        val gamma = Input(NUMERIC, "gamma") { description = "Scale/gain vector [features]" }
-        val bias = Input(NUMERIC, "bias") { description = "Bias vector [features]"; defaultValue = null }
-        val epsilon = Arg(FLOATING_POINT, "epsilon") { defaultValue = 1e-5; description = "Epsilon for numerical stability" }
-
-        Output(NUMERIC, "output") { description = "Fused skip + RMS normalized output" }
-
-        Signature(input, skip, gamma, bias, epsilon)
-        Signature(input, skip, gamma, epsilon)
-
-        Doc(Language.ANY, DocScope.ALL) {
-            """
-                Fused Skip (Residual Add) + RMS Normalization:
-                  hidden = input + skip [+ bias]
-                  output = hidden * rsqrt(mean(hidden^2) + eps) * gamma
-            """.trimIndent()
-        }
-    }
-
     Op("dotProductAttentionV2") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         val q = Input(NUMERIC, "queries") { description = "Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention" }

@@ -98,18 +98,6 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
         // Replace all uses of the output with the input
         OptimizationUtils.replaceOpInputsWith(sd, helper, oldOutput, newInput);
 
-        // If the old output was a registered graph output, update the output list
-        // to point to the replacement. Otherwise outputSingle() returns null because
-        // the orphaned variable has no producing op.
-        List<String> graphOutputs = sd.outputs();
-        if (graphOutputs != null) {
-            for (int i = 0; i < graphOutputs.size(); i++) {
-                if (graphOutputs.get(i).equals(oldOutput)) {
-                    graphOutputs.set(i, newInput);
-                }
-            }
-        }
-
         // Remove the op
         OptimizationUtils.removeOp(sd, helper, op.getName());
 

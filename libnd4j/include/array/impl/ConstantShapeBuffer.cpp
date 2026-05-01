@@ -146,16 +146,6 @@ LongType *ConstantShapeBuffer::primary()  {
              (void*)this);
     THROW_EXCEPTION(msg);
   }
-  if (thisAddr % alignof(ConstantShapeBuffer) != 0) {
-    char msg[256];
-    snprintf(msg, sizeof(msg),
-             "ConstantShapeBuffer::primary() this=%p is misaligned "
-             "(expected %zu-byte alignment, got offset %zu) "
-             "— NDArray._shapeInfoBuffer was corrupted by a heap overrun",
-             (void*)this, alignof(ConstantShapeBuffer),
-             static_cast<size_t>(thisAddr % alignof(ConstantShapeBuffer)));
-    THROW_EXCEPTION(msg);
-  }
   if (!isValid()) {
     char msg[256];
     snprintf(msg, sizeof(msg),

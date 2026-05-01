@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
@@ -158,7 +158,7 @@ DECLARE_SHAPE_FN(reduce_norm1_bp) {
   auto dimensions = *block.getIArguments();
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
   }
 
   REQUIRE_TRUE(

@@ -24,14 +24,12 @@ import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
@@ -74,66 +72,19 @@ public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
             //(b) set weight format to OHWI (OYXI)
 
             //Step 1 - replace activations
-            // Insert permute ops to convert NCHW→NHWC before conv and NHWC→NCHW after.
-            // Must create permute ops first, then rewire only the conv op's inputs —
-            // NOT a global replaceOpInputsWith, which would rewire the permute's own
-            // input and create a DAG cycle.
             if(!activationsCorrect) {
                 String inArgName = inputs.get(0);
                 SDVariable in = sd.getVariable(inArgName);
+                //Replace [in -> Conv2d(NCHW) -> out] with [in -> permute -> Conv2d(NHWC) -> permute -> out]
+                String newName = in.name() + "_cudnn_nchw_to_nhwc";
+                OptimizationUtils.replaceOpInputsWith(sd, in.name(), newName);
+                SDVariable nhwc = in.permute(0, 2, 3, 1).rename(newName);              //NCHW to NHWC
 
-                // Create pre-conv permute: NCHW→NHWC
-                String nhwcName = in.name() + "_cudnn_nchw_to_nhwc";
-                SDVariable nhwc = in.permute(0, 2, 3, 1).rename(nhwcName);
+                SDVariable outNhwc = sd.getVariable(op.getOutputsOfOp().get(0));
+                String newName2 = outNhwc.name() + "_cudnn_nhwc_to_nchw";
+                SDVariable outNchw = outNhwc.permute(0, 3, 1, 2).rename(newName2); //NHWC to NCHW
 
-                // Rewire only the conv op's input[0] from the original to the permuted variable
-                op.getInputsToOp().set(0, nhwcName);
-                // Update variable tracking: conv is now a consumer of nhwc, not of in
-                Variable nhwcVar = sd.getVariables().get(nhwcName);
-                if (nhwcVar != null) {
-                    if (nhwcVar.getInputsForOp() == null) nhwcVar.setInputsForOp(new ArrayList<>());
-                    if (!nhwcVar.getInputsForOp().contains(op.getName())) nhwcVar.getInputsForOp().add(op.getName());
-                }
-                Variable inVar = sd.getVariables().get(inArgName);
-                if (inVar != null && inVar.getInputsForOp() != null) {
-                    inVar.getInputsForOp().remove(op.getName());
-                }
-
-                // Create post-conv permute: NHWC→NCHW
-                String convOutName = op.getOutputsOfOp().get(0);
-                SDVariable outNhwc = sd.getVariable(convOutName);
-                String nchwName = convOutName + "_cudnn_nhwc_to_nchw";
-                SDVariable outNchw = outNhwc.permute(0, 3, 1, 2).rename(nchwName);
-
-                // Rewire downstream consumers of the conv output to use the post-permute output.
-                // Snapshot the consumer list first so we don't modify while iterating.
-                Variable convOutVar = sd.getVariables().get(convOutName);
-                if (convOutVar != null && convOutVar.getInputsForOp() != null) {
-                    // Find the permute op we just created so we can exclude it
-                    Variable nchwVar = sd.getVariables().get(nchwName);
-                    String postPermuteOpName = nchwVar != null ? nchwVar.getOutputOfOp() : null;
-
-                    List<String> consumers = new ArrayList<>(convOutVar.getInputsForOp());
-                    for (String consumerOp : consumers) {
-                        // Skip the post-permute op itself — it must keep convOut as input
-                        if (consumerOp.equals(postPermuteOpName)) continue;
-                        SameDiffOp consOp = sd.getOps().get(consumerOp);
-                        if (consOp != null && consOp.getInputsToOp() != null) {
-                            List<String> consInputs = consOp.getInputsToOp();
-                            for (int i = 0; i < consInputs.size(); i++) {
-                                if (consInputs.get(i).equals(convOutName)) {
-                                    consInputs.set(i, nchwName);
-                                }
-                            }
-                            // Update variable tracking
-                            convOutVar.getInputsForOp().remove(consumerOp);
-                            if (nchwVar != null) {
-                                if (nchwVar.getInputsForOp() == null) nchwVar.setInputsForOp(new ArrayList<>());
-                                if (!nchwVar.getInputsForOp().contains(consumerOp)) nchwVar.getInputsForOp().add(consumerOp);
-                            }
-                        }
-                    }
-                }
+                OptimizationUtils.replaceOpInputsWith(sd, outNhwc.name(), outNchw.name());
 
                 c2d.getConfig().isNHWC(true);
             }
@@ -142,32 +93,14 @@ public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
             if(!weightsCorrect) {
                 SDVariable w = sd.getVariable(wArgName);
                 String newWname = w.name() + "_cudnn_to_oyxi";
+                OptimizationUtils.replaceOpInputsWith(sd, w.name(), newWname);
 
-                // Create the permute op first
-                SDVariable permutedW;
                 if (wf == WeightsFormat.YXIO) {
-                    permutedW = w.permute(3, 0, 1, 2).rename(newWname);
+                    // YXIO [kH, kW, iC, oC] -> OYXI [oC, kH, kW, iC]: permute(3, 0, 1, 2)
+                    w.permute(3, 0, 1, 2).rename(newWname);
                 } else if (wf == WeightsFormat.OIYX) {
-                    permutedW = w.permute(0, 2, 3, 1).rename(newWname);
-                } else {
-                    permutedW = null;
-                }
-
-                if (permutedW != null) {
-                    // Rewire only the conv op's weight input
-                    int wIdx = op.getInputsToOp().indexOf(wArgName);
-                    if (wIdx >= 0) {
-                        op.getInputsToOp().set(wIdx, newWname);
-                        Variable newWVar = sd.getVariables().get(newWname);
-                        if (newWVar != null) {
-                            if (newWVar.getInputsForOp() == null) newWVar.setInputsForOp(new ArrayList<>());
-                            if (!newWVar.getInputsForOp().contains(op.getName())) newWVar.getInputsForOp().add(op.getName());
-                        }
-                        Variable wVar = sd.getVariables().get(wArgName);
-                        if (wVar != null && wVar.getInputsForOp() != null) {
-                            wVar.getInputsForOp().remove(op.getName());
-                        }
-                    }
+                    // OIYX [oC, iC, kH, kW] -> OYXI [oC, kH, kW, iC]: permute(0, 2, 3, 1)
+                    w.permute(0, 2, 3, 1).rename(newWname);
                 }
 
                 c2d.getConfig().setWeightsFormat(WeightsFormat.OYXI);

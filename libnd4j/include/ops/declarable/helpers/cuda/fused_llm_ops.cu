@@ -730,11 +730,10 @@ void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* outpu
 void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
                float freqBase, float freqScale, int ropeType, LaunchContext* context,
                int rotaryDims) {
-  const int rank = input->rankOf();
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
-  auto numHeads = (rank >= 4) ? input->sizeAt(2) : static_cast<LongType>(1);
-  auto headDim = (rank >= 4) ? input->sizeAt(3) : input->sizeAt(2);
+  auto numHeads = input->sizeAt(2);
+  auto headDim = input->sizeAt(3);
 
   NDArray::prepareSpecialUse({output}, {input});
   auto stream = context->getCudaStream();
@@ -767,11 +766,10 @@ void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
 
 void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
                      NDArray* output, int ropeType, LaunchContext* context) {
-  const int rank = input->rankOf();
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
-  auto numHeads = (rank >= 4) ? input->sizeAt(2) : static_cast<LongType>(1);
-  auto headDim = (rank >= 4) ? input->sizeAt(3) : input->sizeAt(2);
+  auto numHeads = input->sizeAt(2);
+  auto headDim = input->sizeAt(3);
 
   // cos/sin can be 2D [S, halfDim], 3D [B, S, halfDim], or 4D [B, S, 1, halfDim]
   // Compute strides for the batch, seq, and halfDim dimensions
@@ -845,11 +843,10 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
 void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
                        float freqBase, float freqScale, int ropeType, LaunchContext* context,
                        int rotaryDims) {
-  const int rank = gradOut->rankOf();
   auto batch = gradOut->sizeAt(0);
   auto seqLen = gradOut->sizeAt(1);
-  auto numHeads = (rank >= 4) ? gradOut->sizeAt(2) : static_cast<LongType>(1);
-  auto headDim = (rank >= 4) ? gradOut->sizeAt(3) : gradOut->sizeAt(2);
+  auto numHeads = gradOut->sizeAt(2);
+  auto headDim = gradOut->sizeAt(3);
 
   NDArray::prepareSpecialUse({gradIn}, {gradOut});
   auto stream = context->getCudaStream();

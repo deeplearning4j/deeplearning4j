@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm) {
 
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
   }
 
   if (block.getBArguments()->size())
@@ -170,7 +170,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
       auto axesVector = INPUT_VARIABLE(2);
-      helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+      helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(

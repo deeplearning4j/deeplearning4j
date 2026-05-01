@@ -101,8 +101,7 @@ enum class GraphExecutionMode : int {
   GEM_HEXAGON = 14,     // Hexagon-MLIR NPU compilation + command list replay
   GEM_OPENVINO = 15,    // Force OpenVINO CPU graph backend (Intel x86, broad op coverage)
   GEM_TVM = 16,         // Deprecated: TVM removed, use triton-cpu instead
-  GEM_EMULATED_REPLAY = 17,  // Emulated graph replay: slot-by-slot with replay lifecycle diagnostics
-  GEM_SHAPE_INFERENCE_ONLY = 18  // Shape inference only: calculates output shapes without executing ops
+  GEM_EMULATED_REPLAY = 17  // Emulated graph replay: slot-by-slot with replay lifecycle diagnostics
 };
 
 /**
@@ -859,10 +858,6 @@ struct GraphSegment {
   // Subsequent executions reuse this without re-cascading.
   GraphBackend* resolvedCpuBackend = nullptr;
 
-  // Cached backend type to avoid dynamic_cast per token in frozen path.
-  // Set once when resolvedCpuBackend is assigned.
-  enum class CpuBackendType { UNKNOWN, ONEDNN, OPENVINO } resolvedCpuBackendType = CpuBackendType::UNKNOWN;
-
   // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
   // to update the slot cache when pre-allocating output arrays.
   NDArray** slotArrayCache = nullptr;
@@ -1062,21 +1057,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   Status phaseSlotBySlot(NDArray** externalInputs, int numExternalInputs, void* stream,
                          PhaseExecutionStats* stats = nullptr);
-
-  /**
-   * PHASE: Shape inference only — propagates shapes without executing ops.
-   *
-   * Iterates all slots in order, gathering inputs, calling calculateOutputShape()
-   * to determine output shapes, and allocating output arrays with the correct
-   * shapes. No op kernels are executed, no host/device sync is performed, and
-   * no phase advancement or frozen detection occurs.
-   *
-   * Use this for pre-computing output shapes, memory planning, or validating
-   * shape compatibility across the graph without paying compute cost.
-   *
-   * @return Status::OK on success, KERNEL_FAILURE if shape inference fails.
-   */
-  Status phaseShapeInferenceOnly(NDArray** externalInputs, int numExternalInputs, void* stream);
 
   /**
    * Advance plan phase based on observed stability.
@@ -1300,26 +1280,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   void setShapesFrozen(bool frozen);
   bool isShapesFrozen() const { return shapesFrozen_; }
-
-  /**
-   * Enable/disable shape-only dry-run mode.
-   *
-   * When enabled, executeSlot() runs the full DSP dispatch machinery —
-   * slot iteration, shape caching, frozen-constant checks, identity/fusion
-   * detection, segment dispatch, output allocation — but SKIPS the actual
-   * op->execute() call.  The outputs retain whatever values they held from
-   * the previous real execution (or are uninitialized on the first pass).
-   *
-   * Purpose: measure pure dispatch/infrastructure overhead independently
-   * from compute.  With 1683 ops per CPU decode step and 185 ms of kernel
-   * time versus 367 ms of dispatch overhead, this mode lets dispatch
-   * optimizations be profiled and iterated ~100x faster.
-   *
-   * Safe to toggle between executions; does NOT affect shape inference,
-   * context-pool state, or frozen-constant detection.
-   */
-  SD_INLINE void setShapeOnlyMode(bool enabled) { shapeOnlyMode_ = enabled; }
-  SD_INLINE bool isShapeOnlyMode() const { return shapeOnlyMode_; }
 
   /**
    * Get the current plan-level phase.
@@ -1571,25 +1531,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Segment cleanup — public so SegmentLifecycle::invalidateForRebuild can call it.
   void cleanupSegmentForRebuild(GraphSegment& seg, const char* reason);
 
-  // Reset plan-level execute count — public so invalidateForRebuild can
-  // re-enable warmup gates (input validation, shape reassignment, DSP diagnostics).
-  void resetExecuteCount() { executeCount_ = 0; }
-
-  // Reset frozenConstantDetectionDone_ so detectFrozenConstants() re-runs
-  // after the next warmup.  Without this, stale frozen classifications
-  // persist through invalidation cycles.
-  void resetFrozenConstantDetection() { frozenConstantDetectionDone_ = false; }
-
-  // Reset slot states within a segment range back to WARMUP so frozen
-  // contexts with stale dtypes are not reused after invalidation.
-  // Keeps cached shapes intact — they're needed by the normal warmup
-  // path for output allocation.  Only clears the frozen-context gate.
-  void resetSlotStatesForSegment(int startSlot, int endSlot) {
-    for (int i = startSlot; i <= endSlot && i < numSlots_; i++) {
-      slots_[i].state_ = NativeSlot::SlotState::WARMUP;
-    }
-  }
-
   // Public so NativeOps_dsp.cpp diagnostics can query composite state.
   bool hasCompositeHandles(const GraphSegment& seg) const;
 
@@ -1663,14 +1604,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Graph segments for CUDA Graphs
   std::vector<GraphSegment> segments_;
 
-  // Persistent native-range segments for OneDNN/OpenVINO NativeSlotExecutor callbacks.
-  // Keyed by (startSlot << 32 | endSlot). Enables CPU_FROZEN_REPLAY for native range
-  // sub-segments that would otherwise be ephemeral stack-allocated GraphSegments.
-  std::unordered_map<uint64_t, GraphSegment> nativeRangeSegments_;
-  static uint64_t nativeRangeKey(int start, int end) {
-    return (static_cast<uint64_t>(start) << 32) | static_cast<uint64_t>(end);
-  }
-
   // pendingClose_ and deferredClose_ REMOVED: arrays persist (one array per slot).
   // View wrappers deleted inline in slotexec when replaced. No batched close needed.
 
@@ -1705,11 +1638,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // shape key computation, and unnecessary output zeroing between executions.
   // Use when all external input shapes are guaranteed constant across steps.
   bool shapesFrozen_;
-  bool shapeOnlyMode_ = false;  // When true, executeSlot skips op->execute(); all dispatch
-                                 // infrastructure runs normally (shape, alloc, frozen detection).
-                                 // Use to measure pure dispatch overhead without kernel cost.
-  bool shapePrePassDone_ = false;  // True after phaseShapeInferenceOnly has been run automatically
-                                    // during the first execute() call. Prevents redundant re-runs.
   bool inShapeChangeWarmup_ = false;  // True during segDispatchCompile's shape-change warmup pass.
                                        // Allows slot shape reassignment in step3_allocateOutputs.
   int executeCount_;  // Tracks executions since shapes were frozen

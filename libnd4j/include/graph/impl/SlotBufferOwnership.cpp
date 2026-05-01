@@ -1051,21 +1051,7 @@ ArrayInvalidReason validateArrayForExecution(const NDArray* arr) {
   // shapeInfo() throws when _shapeInfo is nullptr (destructed/stale NDArray),
   // and isEmpty() calls shapeInfo() internally — both must be avoided
   // until we know the shape info is valid.
-  bool validShapeInfo = false;
-  try {
-    validShapeInfo = a->hasValidShapeInfo();
-  } catch (const std::exception& e) {
-    DSP_DIAG(MEMORY,
-             "ARRAY_INVALID_SHAPE_CHECK_EXCEPTION: arr=%p exception=%s",
-             (void*)arr, e.what());
-    return ArrayInvalidReason::NULL_SHAPE_INFO;
-  } catch (...) {
-    DSP_DIAG(MEMORY,
-             "ARRAY_INVALID_SHAPE_CHECK_EXCEPTION: arr=%p unknown exception",
-             (void*)arr);
-    return ArrayInvalidReason::NULL_SHAPE_INFO;
-  }
-  if (!validShapeInfo)
+  if (!a->hasValidShapeInfo())
     return ArrayInvalidReason::NULL_SHAPE_INFO;
 
   // Empty arrays (scalar-empty, rank-0-empty, etc.) have no DataBuffer by design.

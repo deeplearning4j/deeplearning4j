@@ -169,95 +169,98 @@ DECLARE_TYPES(dynamic_bidirectional_rnn) {
 }
 
 DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {
-  auto xSI = inputShape->at(0);     // input [time x bS x inSize] or [bS x time x inSize], shape depends on timeMajor
-  auto WxFWSI = inputShape->at(1);  // input-to-hidden  weights for forward  RNN, [inSize  x numUnitsFW]
-  auto WhFWSI = inputShape->at(2);  // hidden-to-hidden weights for forward  RNN, [numUnitsFW x numUnitsFW]
-  auto bFWSI = inputShape->at(3);   // biases for forward  RNN, [2*numUnitsFW]
-  auto WxBWSI = inputShape->at(4);  // input-to-hidden  weights for backward RNN, [inSize  x numUnitsBW]
-  auto WhBWSI = inputShape->at(5);  // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]
-  auto bBWSI = inputShape->at(6);   // biases for backward RNN, [2*numUnitsBW]
+  auto x =
+      INPUT_VARIABLE(0);  // input [time x bS x inSize] or [bS x time x inSize], shape depends on timeMajor parameter
+  auto WxFW = INPUT_VARIABLE(1);  // input-to-hidden  weights for forward  RNN, [inSize  x numUnitsFW]
+  auto WhFW = INPUT_VARIABLE(2);  // hidden-to-hidden weights for forward  RNN, [numUnitsFW x numUnitsFW]
+  auto bFW = INPUT_VARIABLE(3);   // biases for forward  RNN, [2*numUnitsFW]
+  auto WxBW = INPUT_VARIABLE(4);  // input-to-hidden  weights for backward RNN, [inSize  x numUnitsBW]
+  auto WhBW = INPUT_VARIABLE(5);  // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]
+  auto bBW = INPUT_VARIABLE(6);   // biases for backward RNN, [2*numUnitsBW]
 
-  LongType* h0FWSI = nullptr;    // initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
-  LongType* h0BWSI = nullptr;    // initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
-  LongType* maxTimeStepSI = nullptr;  // vector [bS] of max time steps per batch entry
+  NDArray* h0FW = nullptr;  // initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
+  NDArray* h0BW = nullptr;  // initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
+  NDArray* maxTimeStep =
+      nullptr;  // vector [bS] containing integer values within [0,time), each element of this vector set max time step
+                // per each input in batch, this means there are no calculations for time >= maxTimeStep
 
   const int timeMajor =
       block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;  // if true then [time, bS, ...], else [bS, time, ...]
 
   switch (block.width()) {
     case 8:
-      maxTimeStepSI = inputShape->at(7);
+      maxTimeStep = INPUT_VARIABLE(7);
       break;
     case 9:
-      h0FWSI = inputShape->at(7);
-      h0BWSI = inputShape->at(8);
+      h0FW = INPUT_VARIABLE(7);
+      h0BW = INPUT_VARIABLE(8);
       break;
     case 10:
-      h0FWSI = inputShape->at(7);
-      h0BWSI = inputShape->at(8);
-      maxTimeStepSI = inputShape->at(9);
+      h0FW = INPUT_VARIABLE(7);
+      h0BW = INPUT_VARIABLE(8);
+      maxTimeStep = INPUT_VARIABLE(9);
       break;
   }
 
-  REQUIRE_TRUE(shape::rank(xSI) == 3, 0,
+  REQUIRE_TRUE(x->rankOf() == 3, 0,
                "DYNAMIC_BIDIRECTIONAL_RNN custom operation: input array must have rank = 3, but got %i instead !",
-               shape::rank(xSI));
-  REQUIRE_TRUE(shape::rank(WxFWSI) == 2, 0,
+               x->rankOf());
+  REQUIRE_TRUE(WxFW->rankOf() == 2, 0,
                "DYNAMIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for forward  RNN) must have "
                "rank = 2, but got %i instead !",
-               shape::rank(WxFWSI));
-  REQUIRE_TRUE(shape::rank(WxBWSI) == 2, 0,
+               WxFW->rankOf());
+  REQUIRE_TRUE(WxBW->rankOf() == 2, 0,
                "DYNAMIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for backward RNN) must have "
                "rank = 2, but got %i instead !",
-               shape::rank(WxBWSI));
+               WxBW->rankOf());
 
-  const int inRank = shape::rank(xSI);
-  const int time = timeMajor ? shape::sizeAt(xSI, static_cast<LongType>(0)) : shape::sizeAt(xSI, static_cast<LongType>(1));
-  const int bS = timeMajor ? shape::sizeAt(xSI, static_cast<LongType>(1)) : shape::sizeAt(xSI, static_cast<LongType>(0));
-  const int numUnitsFW = shape::sizeAt(WxFWSI, static_cast<LongType>(1));
-  const int numUnitsBW = shape::sizeAt(WxBWSI, static_cast<LongType>(1));
+  const int inRank = x->rankOf();
+  const int time = timeMajor ? x->sizeAt(0) : x->sizeAt(1);
+  const int bS = timeMajor ? x->sizeAt(1) : x->sizeAt(0);
+  const int numUnitsFW = WxFW->sizeAt(1);
+  const int numUnitsBW = WxBW->sizeAt(1);
 
   std::vector<LongType> expectedWhFWshape = {numUnitsFW, numUnitsFW};
   std::vector<LongType> expectedWhBWshape = {numUnitsBW, numUnitsBW};
   std::vector<LongType> expectedbFWshape = {2 * numUnitsFW};
   std::vector<LongType> expectedbBWshape = {2 * numUnitsBW};
 
-  REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhFWSI, expectedWhFWshape), 0,
+  REQUIRE_TRUE(WhFW->isSameShape(expectedWhFWshape), 0,
                "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for forward "
                " RNN), expected is %s but got %s instead !",
-               ShapeUtils::shapeAsString(expectedWhFWshape).c_str(), ShapeUtils::shapeAsString(WhFWSI).c_str());
-  REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhBWSI, expectedWhBWshape), 0,
+               ShapeUtils::shapeAsString(expectedWhFWshape).c_str(), ShapeUtils::shapeAsString(WhFW).c_str());
+  REQUIRE_TRUE(WhBW->isSameShape(expectedWhBWshape), 0,
                "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for "
                "backward RNN), expected is %s but got %s instead !",
-               ShapeUtils::shapeAsString(expectedWhBWshape).c_str(), ShapeUtils::shapeAsString(WhBWSI).c_str());
-  REQUIRE_TRUE(ShapeUtils::areShapesEqual(bFWSI, expectedbFWshape), 0,
+               ShapeUtils::shapeAsString(expectedWhBWshape).c_str(), ShapeUtils::shapeAsString(WhBW).c_str());
+  REQUIRE_TRUE(bFW->isSameShape(expectedbFWshape), 0,
                "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of biases array (for forward  RNN), expected "
                "is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(expectedbFWshape).c_str(), ShapeUtils::shapeAsString(bFWSI).c_str());
-  REQUIRE_TRUE(ShapeUtils::areShapesEqual(bBWSI, expectedbBWshape), 0,
+               ShapeUtils::shapeAsString(expectedbFWshape).c_str(), ShapeUtils::shapeAsString(bFW).c_str());
+  REQUIRE_TRUE(bBW->isSameShape(expectedbBWshape), 0,
                "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of biases array (for backward RNN), expected "
                "is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(expectedbBWshape).c_str(), ShapeUtils::shapeAsString(bBWSI).c_str());
-  if (h0FWSI) {
+               ShapeUtils::shapeAsString(expectedbBWshape).c_str(), ShapeUtils::shapeAsString(bBW).c_str());
+  if (h0FW) {
     std::vector<LongType> expectedh0FWshape = {bS, numUnitsFW};
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(h0FWSI, expectedh0FWshape), 0,
+    REQUIRE_TRUE(h0FW->isSameShape(expectedh0FWshape), 0,
                  "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for forward  "
                  "RNN), expected is %s but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedh0FWshape).c_str(), ShapeUtils::shapeAsString(h0FWSI).c_str());
+                 ShapeUtils::shapeAsString(expectedh0FWshape).c_str(), ShapeUtils::shapeAsString(h0FW).c_str());
   }
-  if (h0BWSI) {
+  if (h0BW) {
     std::vector<LongType> expectedh0BWshape = {bS, numUnitsBW};
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(h0BWSI, expectedh0BWshape), 0,
+    REQUIRE_TRUE(h0BW->isSameShape(expectedh0BWshape), 0,
                  "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for backward "
                  "RNN), expected is %s but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedh0BWshape).c_str(), ShapeUtils::shapeAsString(h0BWSI).c_str());
+                 ShapeUtils::shapeAsString(expectedh0BWshape).c_str(), ShapeUtils::shapeAsString(h0BW).c_str());
   }
-  if (maxTimeStepSI) {
+  if (maxTimeStep) {
     std::vector<LongType> expectedmaxTimeStepshape = {bS};
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(maxTimeStepSI, expectedmaxTimeStepshape), 0,
+    REQUIRE_TRUE(maxTimeStep->isSameShape(expectedmaxTimeStepshape), 0,
                  "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
                  "got %s instead !",
-                 bS, ShapeUtils::shapeAsString(maxTimeStepSI).c_str());
+                 bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
   }
 
   // evaluate output shapeInfos
@@ -278,10 +281,10 @@ DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {
   hFWFinalPrevShapeInfo[2] = numUnitsFW;
   hBWFinalPrevShapeInfo[2] = numUnitsBW;
 
-  ShapeUtils::updateStridesAndType(hFWShapeInfo, xSI, shape::order(xSI));
-  ShapeUtils::updateStridesAndType(hBWShapeInfo, xSI, shape::order(xSI));
-  ShapeUtils::updateStridesAndType(hFWFinalPrevShapeInfo, xSI, shape::order(xSI));
-  ShapeUtils::updateStridesAndType(hBWFinalPrevShapeInfo, xSI, shape::order(xSI));
+  ShapeUtils::updateStridesAndType(hFWShapeInfo, x->shapeInfo(), x->ordering());
+  ShapeUtils::updateStridesAndType(hBWShapeInfo, x->shapeInfo(), x->ordering());
+  ShapeUtils::updateStridesAndType(hFWFinalPrevShapeInfo, x->shapeInfo(), x->ordering());
+  ShapeUtils::updateStridesAndType(hBWFinalPrevShapeInfo, x->shapeInfo(), x->ordering());
 
   return SHAPELIST(CONSTANT(hFWShapeInfo), CONSTANT(hBWShapeInfo), CONSTANT(hFWFinalPrevShapeInfo),
                    CONSTANT(hBWFinalPrevShapeInfo));

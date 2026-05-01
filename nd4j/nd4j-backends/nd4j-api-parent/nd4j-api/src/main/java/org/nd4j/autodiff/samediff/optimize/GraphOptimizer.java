@@ -52,24 +52,8 @@ public class GraphOptimizer {
      */
     private static final boolean LOG_APPLIED_OPTS = Boolean.getBoolean("nd4j.optimizer.logApplied");
 
-    /**
-     * Comma-separated list of optimizer class simple names to skip.
-     * E.g. -Dnd4j.optimizer.skip=NormalizationFusionOptimizations,QuantizationOptimizations
-     */
-    private static final Set<String> SKIP_OPTIMIZERS;
-    static {
-        String skipProp = System.getProperty("nd4j.optimizer.skip", "");
-        Set<String> s = new HashSet<>();
-        if (!skipProp.isEmpty()) {
-            for (String name : skipProp.split(",")) {
-                s.add(name.trim());
-            }
-        }
-        SKIP_OPTIMIZERS = s;
-    }
-
     public static List<OptimizerSet> defaultOptimizations() {
-        List<OptimizerSet> all = Arrays.<OptimizerSet>asList(
+        return Arrays.<OptimizerSet>asList(
                 new UnusedFunctionOptimizations(),
                 new ConstantFunctionOptimizations(),
                 new AlgebraicOptimizations(),        // x+0->x, x*1->x, x*0->0, etc.
@@ -84,18 +68,6 @@ public class GraphOptimizer {
                 new UnusedFunctionOptimizations(),
                 new CuDNNFunctionOptimizations()
         );
-        if (SKIP_OPTIMIZERS.isEmpty()) {
-            return all;
-        }
-        List<OptimizerSet> filtered = new ArrayList<>();
-        for (OptimizerSet opt : all) {
-            if (SKIP_OPTIMIZERS.contains(opt.getClass().getSimpleName())) {
-                log.info("Skipping optimizer: {}", opt.getClass().getSimpleName());
-            } else {
-                filtered.add(opt);
-            }
-        }
-        return filtered;
     }
 
     public static SameDiff optimize(SameDiff graph, String... requiredOutputs){
@@ -115,20 +87,6 @@ public class GraphOptimizer {
 
         // Use full dup() - shallowClone shares DifferentialFunction objects which corrupts the original
         SameDiff sd = graph.dup();
-
-        // dup() via SDNB round-trip may not preserve graph-level outputs.
-        // Restore them so fusion optimizers can detect which variables are outputs.
-        if ((sd.outputs() == null || sd.outputs().isEmpty()) && graph.outputs() != null && !graph.outputs().isEmpty()) {
-            List<String> validOutputs = new ArrayList<>();
-            for (String out : graph.outputs()) {
-                if (sd.hasVariable(out)) {
-                    validOutputs.add(out);
-                }
-            }
-            if (!validOutputs.isEmpty()) {
-                sd.setOutputs(validOutputs);
-            }
-        }
 
         ArrayHolder cArr = sd.getConstantArrays();
         ArrayHolder vArr = sd.getVariablesArrays();
@@ -336,24 +294,9 @@ public class GraphOptimizer {
             return fallback;
         }
 
-        // Preserve outputs: fusion optimizers may have redirected output names
-        // (e.g. lm_logits -> rms_norm_linear). Prefer sd.outputs() which reflects
-        // those redirections, then validate against surviving variables.
-        List<String> currentOutputs = sd.outputs();
-        if (currentOutputs != null && !currentOutputs.isEmpty()) {
-            // sd.outputs() was set during optimization — trust redirections from fusion ops
-            List<String> surviving = new ArrayList<>();
-            for (String name : currentOutputs) {
-                if (sd.hasVariable(name)) {
-                    surviving.add(name);
-                } else {
-                    log.debug("Output variable '{}' removed by optimization — dropping from output list", name);
-                }
-            }
-            if (!surviving.isEmpty()) {
-                sd.setOutputs(surviving);
-            }
-        } else if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
+        // Preserve outputs: use requiredOutputs if provided, otherwise restore original graph's outputs.
+        // Filter to only variables that still exist — optimization passes may have removed some.
+        if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
             List<String> surviving = new ArrayList<>();
             for (String name : requiredOutputs) {
                 if (sd.hasVariable(name)) {

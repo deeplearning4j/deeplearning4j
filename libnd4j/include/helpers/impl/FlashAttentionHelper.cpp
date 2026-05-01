@@ -355,7 +355,7 @@ void FlashAttentionHelper::forward4D(
 
       // Cast bias to query dtype if mismatched (LONG->FLOAT32 is common for ONNX masks)
       if (attentionBias->dataType() != query->dataType()) {
-        biasCastOwner.reset(attentionBias->cast(query->dataType()));
+        biasCastOwner.reset(new NDArray(attentionBias->cast(query->dataType())));
         biasToUse = biasCastOwner.get();
       }
 

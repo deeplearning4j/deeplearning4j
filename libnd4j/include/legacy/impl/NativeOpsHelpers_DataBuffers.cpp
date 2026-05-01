@@ -418,10 +418,9 @@ bool dbSetConstant(OpaqueDataBuffer *dataBuffer, bool isConstant) {
   // Also propagate to the underlying DataBuffer if it exists
   auto db = dataBuffer->dataBuffer();
   if (db != nullptr) {
-    // Validate DataBuffer integrity before marking constant (debug only)
-    if (sd::Environment::getInstance().isDebug()) {
-      db->validateIntegrity();
-    }
+    // Validate DataBuffer integrity before marking constant
+    // This catches heap corruption early before it causes SIGABRT
+    db->validateIntegrity();
     db->markConstant(isConstant);
   }
 

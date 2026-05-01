@@ -39,7 +39,6 @@
 #include <helpers/MmulHelper.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <ops/declarable/helpers/rms_norm.h>
-#include <ops/declarable/helpers/fused_llm_ops.h>
 #include <helpers/ShapeUtils.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/kv_cache_quantize.h>
@@ -246,16 +245,43 @@ CUSTOM_OP_IMPL(rope, 1, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);  // [batch, seq_len, num_heads, head_dim]
     auto output = OUTPUT_VARIABLE(0);
 
-    // rope arg order matches RoPE.java: INT_ARG(0)=mode/ropeType, INT_ARG(1)=nPast/positionOffset, INT_ARG(2)=nDims/rotaryDims
-    int ropeType = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-    int positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
-    int rotaryDims = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
+    int mode = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
+    int nPast = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+    int nDims = block.getIArguments()->size() > 2 ? INT_ARG(2) : static_cast<int>(input->sizeAt(-1));
     float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
     float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
-    // Delegate to the platform-correct helper (works on both CPU and CUDA)
-    helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
-                       block.launchContext(), rotaryDims);
+    auto batch = input->sizeAt(0);
+    auto seqLen = input->sizeAt(1);
+    auto numHeads = input->sizeAt(2);
+    auto headDim = input->sizeAt(3);
+
+    output->assign(input);
+    auto outputBuf = output->bufferAsT<float>();
+
+    // Apply rotary embeddings
+    for (LongType b = 0; b < batch; ++b) {
+        for (LongType s = 0; s < seqLen; ++s) {
+            LongType pos = nPast + s;
+            for (LongType h = 0; h < numHeads; ++h) {
+                for (int i = 0; i < nDims / 2; ++i) {
+                    float theta = static_cast<float>(pos) * freqScale /
+                                  std::pow(freqBase, (2.0f * i) / nDims);
+                    float cosTheta = std::cos(theta);
+                    float sinTheta = std::sin(theta);
+
+                    LongType idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
+                    LongType idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + nDims / 2;
+
+                    float x1 = outputBuf[idx1];
+                    float x2 = outputBuf[idx2];
+
+                    outputBuf[idx1] = x1 * cosTheta - x2 * sinTheta;
+                    outputBuf[idx2] = x1 * sinTheta + x2 * cosTheta;
+                }
+            }
+        }
+    }
 
     return Status::OK;
 }
@@ -272,19 +298,47 @@ DECLARE_TYPES(rope) {
 }
 
 CUSTOM_OP_IMPL(rope_bp, 2, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
     auto gradOut = INPUT_VARIABLE(1);
     auto gradIn = OUTPUT_VARIABLE(0);
 
-    // rope_bp arg order matches rope: INT_ARG(0)=mode/ropeType, INT_ARG(1)=nPast/positionOffset, INT_ARG(2)=nDims/rotaryDims
-    int ropeType = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-    int positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
-    int rotaryDims = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
+    int nPast = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+    int nDims = block.getIArguments()->size() > 2 ? INT_ARG(2) : static_cast<int>(input->sizeAt(-1));
     float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
     float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
-    // Delegate to the platform-correct backward helper
-    helpers::fusedRoPEBackward(gradOut, gradIn, positionOffset, freqBase, freqScale, ropeType,
-                               block.launchContext(), rotaryDims);
+    auto batch = input->sizeAt(0);
+    auto seqLen = input->sizeAt(1);
+    auto numHeads = input->sizeAt(2);
+    auto headDim = input->sizeAt(3);
+
+    gradIn->assign(gradOut);
+    auto gradBuf = gradIn->bufferAsT<float>();
+
+    // Backward pass: apply inverse rotation
+    for (LongType b = 0; b < batch; ++b) {
+        for (LongType s = 0; s < seqLen; ++s) {
+            LongType pos = nPast + s;
+            for (LongType h = 0; h < numHeads; ++h) {
+                for (int i = 0; i < nDims / 2; ++i) {
+                    float theta = static_cast<float>(pos) * freqScale /
+                                  std::pow(freqBase, (2.0f * i) / nDims);
+                    float cosTheta = std::cos(theta);
+                    float sinTheta = std::sin(theta);
+
+                    LongType idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
+                    LongType idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + nDims / 2;
+
+                    float g1 = gradBuf[idx1];
+                    float g2 = gradBuf[idx2];
+
+                    // Inverse rotation
+                    gradBuf[idx1] = g1 * cosTheta + g2 * sinTheta;
+                    gradBuf[idx2] = -g1 * sinTheta + g2 * cosTheta;
+                }
+            }
+        }
+    }
 
     return Status::OK;
 }
@@ -309,18 +363,10 @@ CONFIGURABLE_OP_IMPL(silu, 1, 1, true, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     // silu(x) = x * sigmoid(x)
-    if (output->buffer() == input->buffer()) {
-        // In-place: output IS input — sigmoid(x) would destroy x before multiply.
-        // Use temp allocation for correctness.
-        NDArray* sigmoid = input->transform(transform::Sigmoid);
-        output->applyPairwiseTransform(pairwise::Multiply, sigmoid, output);
-        delete sigmoid;
-    } else {
-        // Out-of-place: write sigmoid into output, then multiply by input.
-        // Eliminates 2 temporary allocations + 1 Assign copy kernel.
-        input->applyTransform(transform::Sigmoid, output);
-        output->applyPairwiseTransform(pairwise::Multiply, input, output);
-    }
+    // Write sigmoid directly into output, then multiply in-place with input.
+    // Eliminates 2 temporary allocations + 1 Assign copy kernel per call.
+    input->applyTransform(transform::Sigmoid, output);
+    output->applyPairwiseTransform(pairwise::Multiply, input, output);
 
     return Status::OK;
 }
@@ -777,39 +823,12 @@ CONFIGURABLE_OP_IMPL(swish_mul, 2, 1, true, 0, 0) {
     auto y = INPUT_VARIABLE(1);  // Gate tensor
     auto output = OUTPUT_VARIABLE(0);
 
-    REQUIRE_TRUE(x->dataType() == output->dataType(), 0,
-        "swish_mul: input x dtype (%s) != output dtype (%s). "
-        "x shape=%s y dtype=%s y shape=%s output shape=%s",
-        DataTypeUtils::asString(x->dataType()).c_str(),
-        DataTypeUtils::asString(output->dataType()).c_str(),
-        ShapeUtils::shapeAsString(x).c_str(),
-        DataTypeUtils::asString(y->dataType()).c_str(),
-        ShapeUtils::shapeAsString(y).c_str(),
-        ShapeUtils::shapeAsString(output).c_str());
-
     // swish_mul(x, y) = silu(x) * y = x * sigmoid(x) * y
-    if (output->buffer() == x->buffer()) {
-        // In-place on x: sigmoid(x) would destroy original x.
-        // Compute sigmoid into temp, multiply x by sigmoid in-place, then multiply by y.
-        NDArray* sigmoid = x->transform(transform::Sigmoid);
-        output->applyPairwiseTransform(pairwise::Multiply, sigmoid, output); // output = x * sigmoid(x)
-        output->applyPairwiseTransform(pairwise::Multiply, y, output);      // output *= y
-        delete sigmoid;
-    } else if (output->buffer() == y->buffer()) {
-        // In-place on y: write sigmoid(x) into a temp, compute silu(x) into temp,
-        // then multiply by y (which is output, still has original value).
-        NDArray* sigmoid = x->transform(transform::Sigmoid);
-        NDArray* silu = (*x) * (*sigmoid);
-        delete sigmoid;
-        output->applyPairwiseTransform(pairwise::Multiply, silu, output); // output = y * silu(x)
-        delete silu;
-    } else {
-        // Out-of-place: write sigmoid(x) into output, multiply x, multiply y.
-        // Eliminates 3 temporary allocations + 1 Assign copy kernel.
-        x->applyTransform(transform::Sigmoid, output);
-        output->applyPairwiseTransform(pairwise::Multiply, x, output);
-        output->applyPairwiseTransform(pairwise::Multiply, y, output);
-    }
+    // Write sigmoid(x) into output, multiply x in-place, multiply y in-place.
+    // Eliminates 3 temporary allocations + 1 Assign copy kernel per call.
+    x->applyTransform(transform::Sigmoid, output);
+    output->applyPairwiseTransform(pairwise::Multiply, x, output);
+    output->applyPairwiseTransform(pairwise::Multiply, y, output);
 
     return Status::OK;
 }

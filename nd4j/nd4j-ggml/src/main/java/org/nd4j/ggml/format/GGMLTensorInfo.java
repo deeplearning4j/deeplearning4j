@@ -62,8 +62,7 @@ public class GGMLTensorInfo {
      */
     public long getNumElements() {
         if (shape == null || shape.length == 0) {
-            // Rank-0 scalars have exactly 1 element
-            return 1;
+            return 0;
         }
         long total = 1;
         for (long dim : shape) {

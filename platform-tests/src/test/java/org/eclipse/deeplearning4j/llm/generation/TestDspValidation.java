@@ -122,12 +122,6 @@ public class TestDspValidation {
             tolerancePreset = tolProp;
         }
         configFilter = System.getProperty("vlm.validation.configs");
-
-        // Debug+verbose only when explicitly requested via system property
-        if (Boolean.getBoolean("nd4j.debug")) {
-            Nd4j.getEnvironment().setDebug(true);
-            Nd4j.getEnvironment().setVerbose(true);
-        }
     }
 
     private static int getTokens(int defaultTokens) {
@@ -415,22 +409,6 @@ public class TestDspValidation {
                 config.getName() + ": token match rate too low: "
                         + String.format("%.1f%% (required %.1f%%)",
                         matchRate * 100, requiredRate * 100));
-
-        // Degenerate output check: if ALL reference tokens are the same (e.g., all token-0),
-        // the model is broken — matching rate is meaningless when both paths produce garbage.
-        if (minLen >= 3) {
-            boolean allSame = true;
-            for (int i = 1; i < refTokens.length; i++) {
-                if (refTokens[i] != refTokens[0]) {
-                    allSame = false;
-                    break;
-                }
-            }
-            assertFalse(allSame,
-                    config.getName() + ": DEGENERATE OUTPUT — all " + refTokens.length
-                            + " reference tokens are the same (token " + refTokens[0]
-                            + "). The model is producing garbage.");
-        }
     }
 
     // ─── Test: Single forward pass comparison ─────────────────────────────

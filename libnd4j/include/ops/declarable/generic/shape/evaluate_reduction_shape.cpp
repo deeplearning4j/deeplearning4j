@@ -57,12 +57,13 @@ DECLARE_TYPES(evaluate_reduction_shape) {
 }
 
 DECLARE_SHAPE_FN(evaluate_reduction_shape) {
+  auto input = INPUT_VARIABLE(0);
   auto axis = INPUT_VARIABLE(1)->asVectorT<int>();
 
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto oldFormat = block.numB() > 1 ? B_ARG(1) : false;
 
-  LongType length = shape::length(inputShape->at(0));
+  LongType length = input->lengthOf();
 
   if (keepDims) {
     if (oldFormat) {

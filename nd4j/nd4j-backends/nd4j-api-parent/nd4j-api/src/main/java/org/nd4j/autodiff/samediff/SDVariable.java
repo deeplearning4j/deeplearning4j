@@ -267,21 +267,13 @@ public class SDVariable implements Serializable {
     }
 
     public DataType dataType() {
-        // For VARIABLE/CONSTANT types, always prefer the actual array's dtype.
-        // Mirrors getShape() which also defers to getArr().shape() for these types.
-        // Without this, optimizer passes that replace arrays in the ArrayHolder
-        // (e.g. quantization, constant folding) leave a stale cached dtype, causing
-        // serialization manifest mismatches during dup().
-        if (variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
-            INDArray arr = getArr();
-            if (arr != null) {
-                this.dataType = arr.dataType();
-                return this.dataType;
-            }
-        }
-
         if(this.dataType == null) {
-            this.dataType = DataType.UNKNOWN;
+            //Try to infer datatype instead of returning null
+            if(variableType != VariableType.ARRAY && getArr() != null) {
+                this.dataType = getArr().dataType();
+            }  else {
+                this.dataType = DataType.UNKNOWN;
+            }
         }
 
         return this.dataType;

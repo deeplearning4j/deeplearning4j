@@ -1030,7 +1030,12 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // Wrap execution in try-catch to dump stack traces on exceptions
 #ifdef __cpp_exceptions
   try {
-    if (block->helpersAllowed() && sd::env_helpersAllowed()) {
+    // In frozen DSP steady-state (shapeFunctionOverride), skip the helper dispatch
+    // entirely. dispatchWithAutoTune() calls getAllHelpersForOp() which does a linear
+    // scan of ALL registered helpers + allocates a std::vector per call. At 1761 ops
+    // per token, this is 1761 heap alloc/free cycles for zero benefit — helper
+    // availability doesn't change between invocations.
+    if (!block->shapeFunctionOverride() && block->helpersAllowed() && sd::env_helpersAllowed()) {
       // Use the new multi-backend kernel selection infrastructure
       // This will auto-tune and select the best available backend helper
       {
@@ -1104,7 +1109,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   }
 #else
   // platform helpers use might be forbidden for various reasons, so we'll check it out first
-  if (block->helpersAllowed() && sd::env_helpersAllowed()) {
+  if (!block->shapeFunctionOverride() && block->helpersAllowed() && sd::env_helpersAllowed()) {
     // Use the new multi-backend kernel selection infrastructure
     // This will auto-tune and select the best available backend helper
     {

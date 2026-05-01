@@ -296,6 +296,9 @@ class SD_LIB_EXPORT InteropDataBuffer {
     isConstant.store(reallyConstant, std::memory_order_release);
     DataBuffer* db = dataBuffer();
     if (db != nullptr) {
+      // Validate DataBuffer integrity before marking constant
+      // This catches heap corruption that would cause SIGABRT in validateIntegrity
+      db->validateIntegrity();
       db->markConstant(reallyConstant);
     }
   }

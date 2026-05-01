@@ -86,7 +86,7 @@ DECLARE_SHAPE_FN(randomuniform) {
 
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
   if (block.width() > 1)
-  REQUIRE_TRUE(dtype == ArrayOptions::dataType(inputShape->at(1)), 0,
+  REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0,
                "RandomUniform: data type of output and min/max args should be the same");
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);

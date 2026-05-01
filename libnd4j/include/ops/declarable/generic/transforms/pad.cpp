@@ -97,7 +97,6 @@ DECLARE_TYPES(pad) {
 DECLARE_SHAPE_FN(pad) {
   // check shape of paddings
   auto inputShapeInfo = inputShape->at(0);
-  auto paddingsShapeInfo = inputShape->at(1);
   auto paddings = INPUT_VARIABLE(1);
   const int rank = inputShapeInfo[0];
   if(rank < 0 || rank > SD_MAX_RANK) {
@@ -105,12 +104,13 @@ DECLARE_SHAPE_FN(pad) {
   }
   // paddings validation
   const std::vector<sd::LongType> expectedPaddingsShape = {rank, 2};
-  const std::vector<sd::LongType> currentPaddingsShape = ShapeUtils::shapeAsVector(paddingsShapeInfo);
-  REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0,
+  const std::vector<sd::LongType> *currentPaddingsShape = paddings->getShapeAsVector();
+  REQUIRE_TRUE(expectedPaddingsShape == *currentPaddingsShape, 0,
                "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedPaddingsShape).c_str(),
-               ShapeUtils::shapeAsString(currentPaddingsShape).c_str());
+               ShapeUtils::shapeAsString(*currentPaddingsShape).c_str());
 
+  delete currentPaddingsShape;
   sd::LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;

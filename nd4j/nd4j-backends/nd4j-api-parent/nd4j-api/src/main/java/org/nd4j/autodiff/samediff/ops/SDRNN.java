@@ -176,15 +176,9 @@ public class SDRNN extends SDOps {
   public SDVariable[] lstmLayer(SDVariable x, SDVariable cLast, SDVariable yLast,
       SDVariable maxTSLength, LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
     SDValidation.validateNumerical("lstmLayer", "x", x);
-    if (cLast != null) {
-      SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
-    }
-    if (yLast != null) {
-      SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
-    }
-    if (maxTSLength != null) {
-      SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
-    }
+    SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
+    SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
+    SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
     return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,x, cLast, yLast, maxTSLength, LSTMLayerWeights, LSTMLayerConfig).outputVariables();
   }
 
@@ -219,15 +213,9 @@ public class SDRNN extends SDOps {
   public SDVariable[] lstmLayer(String[] names, SDVariable x, SDVariable cLast, SDVariable yLast,
       SDVariable maxTSLength, LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
     SDValidation.validateNumerical("lstmLayer", "x", x);
-    if (cLast != null) {
-      SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
-    }
-    if (yLast != null) {
-      SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
-    }
-    if (maxTSLength != null) {
-      SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
-    }
+    SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
+    SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
+    SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,x, cLast, yLast, maxTSLength, LSTMLayerWeights, LSTMLayerConfig).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -307,16 +295,10 @@ public class SDRNN extends SDOps {
    */
   public SDVariable lstmblock(SDVariable maxTSLength, SDVariable x, SDVariable cLast,
       SDVariable yLast, LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
-    if (maxTSLength != null) {
-      SDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
-    }
+    SDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
     SDValidation.validateNumerical("lstmblock", "x", x);
-    if (cLast != null) {
-      SDValidation.validateNumerical("lstmblock", "cLast", cLast);
-    }
-    if (yLast != null) {
-      SDValidation.validateNumerical("lstmblock", "yLast", yLast);
-    }
+    SDValidation.validateNumerical("lstmblock", "cLast", cLast);
+    SDValidation.validateNumerical("lstmblock", "yLast", yLast);
     return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(sd,maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariable();
   }
 
@@ -334,16 +316,10 @@ public class SDRNN extends SDOps {
    */
   public SDVariable lstmblock(String name, SDVariable maxTSLength, SDVariable x, SDVariable cLast,
       SDVariable yLast, LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
-    if (maxTSLength != null) {
-      SDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
-    }
+    SDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
     SDValidation.validateNumerical("lstmblock", "x", x);
-    if (cLast != null) {
-      SDValidation.validateNumerical("lstmblock", "cLast", cLast);
-    }
-    if (yLast != null) {
-      SDValidation.validateNumerical("lstmblock", "yLast", yLast);
-    }
+    SDValidation.validateNumerical("lstmblock", "cLast", cLast);
+    SDValidation.validateNumerical("lstmblock", "yLast", yLast);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(sd,maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -390,9 +366,7 @@ public class SDRNN extends SDOps {
   public SDVariable sru(SDVariable x, SDVariable initialC, SDVariable mask, SRUWeights SRUWeights) {
     SDValidation.validateNumerical("sru", "x", x);
     SDValidation.validateNumerical("sru", "initialC", initialC);
-    if (mask != null) {
-      SDValidation.validateNumerical("sru", "mask", mask);
-    }
+    SDValidation.validateNumerical("sru", "mask", mask);
     return new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(sd,x, initialC, mask, SRUWeights).outputVariable();
   }
 
@@ -410,9 +384,7 @@ public class SDRNN extends SDOps {
       SRUWeights SRUWeights) {
     SDValidation.validateNumerical("sru", "x", x);
     SDValidation.validateNumerical("sru", "initialC", initialC);
-    if (mask != null) {
-      SDValidation.validateNumerical("sru", "mask", mask);
-    }
+    SDValidation.validateNumerical("sru", "mask", mask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(sd,x, initialC, mask, SRUWeights).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

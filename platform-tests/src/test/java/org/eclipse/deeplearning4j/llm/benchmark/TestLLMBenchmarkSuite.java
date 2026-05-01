@@ -51,9 +51,7 @@ import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -217,13 +215,6 @@ public class TestLLMBenchmarkSuite {
                 "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3/resolve/main/tokenizer.json",
                 "mistral-7b-tokenizer.json",
                 "mistral"));
-
-        // LFM2-350M-Extract: LiquidAI structured extraction model, F16, public tokenizer
-        MODEL_REGISTRY.put("lfm2-extract", new ModelSpec(
-                LLMModel.LFM2_350M_EXTRACT, QuantType.F16,
-                "https://huggingface.co/LiquidAI/LFM2-350M/resolve/main/tokenizer.json",
-                "lfm2-350m-tokenizer.json",
-                "lfm2-extract"));
     }
 
     // ─── Loaded State Cache ─────────────────────────────────────────────
@@ -242,23 +233,6 @@ public class TestLLMBenchmarkSuite {
         BENCHMARK_PROMPTS.put("What is the capital of France?", new String[]{"Paris"});
         BENCHMARK_PROMPTS.put("Explain photosynthesis in one sentence.", new String[]{"sun", "light", "plant"});
         BENCHMARK_PROMPTS.put("Count from 1 to 10.", new String[]{"1", "2", "3", "4", "5"});
-    }
-
-    /**
-     * Extraction prompts for LFM2-350M-Extract: structured data extraction from unstructured text.
-     * These use the model's ChatML-style template with a JSON schema system prompt.
-     */
-    private static final Map<String, String[]> EXTRACTION_PROMPTS = new LinkedHashMap<>();
-    static {
-        EXTRACTION_PROMPTS.put(
-                "Caenorhabditis elegans is a free-living transparent nematode about 1 mm in length that lives in temperate soil environments.",
-                new String[]{"elegans", "nematode"});
-        EXTRACTION_PROMPTS.put(
-                "The Eiffel Tower is a wrought-iron lattice tower in Paris, France. It was constructed from 1887 to 1889 as the centerpiece of the 1889 World's Fair.",
-                new String[]{"Eiffel", "Paris", "1889"});
-        EXTRACTION_PROMPTS.put(
-                "Tesla Inc. reported revenue of $25.5 billion in Q3 2024, a 7.8% increase from the previous year.",
-                new String[]{"Tesla", "25.5", "revenue"});
     }
 
     // ─── Configuration ──────────────────────────────────────────────────
@@ -284,7 +258,9 @@ public class TestLLMBenchmarkSuite {
 
     @BeforeAll
     public void setup() {
-        // no-op — optimizer always runs via GenerationPipeline
+        if (System.getProperty("nd4j.optimizer.enabled") == null) {
+            System.setProperty("nd4j.optimizer.enabled", "true");
+        }
     }
 
     @AfterAll
@@ -334,7 +310,7 @@ public class TestLLMBenchmarkSuite {
         // AUTO engages the full DSP backend chain:
         //   CUDA: Triton islands + cuBLAS gap ops + CUDA graph replay
         //   CPU:  OpenVINO → oneDNN → native slot execution
-        configs.add(BenchmarkConfig.optimal()
+        configs.add(BenchmarkConfig.create("OPTIMAL")
                 .executionMode(GraphExecutionMode.AUTO)
                 .maxTokens(maxTokens));
 
@@ -495,13 +471,11 @@ public class TestLLMBenchmarkSuite {
 
             // Generate via GenerationPipeline (single-model mode: decoder only, no embedTokens)
             int maxTokens = config.getMaxTokens() > 0 ? config.getMaxTokens() : getMaxTokens();
-            boolean optimizerEnabled = !"true".equals(System.getProperty("bench.no.optimizer"));
             try (GenerationPipeline pipeline = GenerationPipeline.create(
                     GenerationPipelineConfig.builder()
                             .decoder(model)
                             .tokenizer(tokenizer)
                             .samplingConfig(SamplingConfig.greedy())
-                            .graphOptimizerEnabled(optimizerEnabled)
                             .maxNewTokens(maxTokens)
                             .build())) {
                 t0 = System.currentTimeMillis();
@@ -603,7 +577,7 @@ public class TestLLMBenchmarkSuite {
         String prompt = getPrompt();
         List<BenchmarkResult> results = new ArrayList<>();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal()
+        BenchmarkConfig config = BenchmarkConfig.create("OPTIMAL")
                 .executionMode(GraphExecutionMode.AUTO)
                 .maxTokens(maxTokens);
 
@@ -619,174 +593,6 @@ public class TestLLMBenchmarkSuite {
         printReport("OPTIMAL BASELINE", results);
         long failures = results.stream().filter(r -> !r.passed && !r.skipped).count();
         assertEquals(0, failures, failures + " baseline benchmark(s) failed");
-    }
-
-    /**
-     * Graph dump diagnostic — loads Qwen, runs GraphOptimizer, dumps full summary.
-     * Shows pre- and post-optimization op histograms, attention ops, and shapes.
-     *
-     * Usage:
-     *   cd platform-tests && mvn test -Dtest=TestLLMBenchmarkSuite#testGraphDump \
-     *     -Dbackend.artifactId=nd4j-native -Dnd4j.optimizer.enabled=true \
-     *     2>&1 | tee /tmp/graph-dump.log
-     */
-    @Test
-    @DisplayName("Graph Dump: optimizer + op histogram diagnostic")
-    public void testGraphDump() throws Exception {
-        ModelSpec spec = MODEL_REGISTRY.get("qwen");
-        assertNotNull(spec, "Qwen model not in registry");
-
-        SameDiff raw = loadModel(spec);
-        int rawOpCount = raw.ops().length;
-
-        // Pre-optimization op histogram
-        Map<String, Integer> rawHist = new java.util.TreeMap<>();
-        for (org.nd4j.autodiff.functions.DifferentialFunction op : raw.ops()) {
-            rawHist.merge(op.opName(), 1, Integer::sum);
-        }
-
-        log.info("═══════════════════════════════════════════════════════");
-        log.info("  GRAPH DUMP DIAGNOSTIC — Qwen3.5-0.8B");
-        log.info("═══════════════════════════════════════════════════════");
-        log.info("");
-        log.info("--- RAW GRAPH (pre-optimization) ---");
-        log.info("  Total ops: {}", rawOpCount);
-        log.info("  Total variables: {}", raw.variables().size());
-        log.info("  Inputs: {}", raw.inputs());
-        log.info("  Outputs: {}", raw.outputs());
-        log.info("");
-        log.info("  Op histogram (raw):");
-        for (Map.Entry<String, Integer> e : rawHist.entrySet()) {
-            log.info("    {}: {}", e.getKey(), e.getValue());
-        }
-
-        // Count attention ops specifically
-        long rawAttentionOps = rawHist.getOrDefault("dot_product_attention_v2", 0);
-        log.info("");
-        log.info("  Attention ops (dot_product_attention_v2): {}", rawAttentionOps);
-
-        // Run GraphOptimizer (same as GenerationPipeline.create())
-        List<String> outputs = raw.outputs() != null
-                ? new ArrayList<>(raw.outputs()) : new ArrayList<>();
-        List<org.nd4j.autodiff.samediff.optimize.OptimizerSet> optimizations =
-                org.nd4j.autodiff.samediff.optimize.GraphOptimizer.defaultOptimizations().stream()
-                        .filter(s -> !(s instanceof org.nd4j.autodiff.samediff.optimize.optimizations.QuantizationOptimizations))
-                        .collect(Collectors.toList());
-
-        long optStart = System.currentTimeMillis();
-        SameDiff optimized = org.nd4j.autodiff.samediff.optimize.GraphOptimizer.optimize(
-                raw, outputs, optimizations);
-        long optMs = System.currentTimeMillis() - optStart;
-
-        int optOpCount = optimized.ops().length;
-        Map<String, Integer> optHist = new java.util.TreeMap<>();
-        for (org.nd4j.autodiff.functions.DifferentialFunction op : optimized.ops()) {
-            optHist.merge(op.opName(), 1, Integer::sum);
-        }
-
-        log.info("");
-        log.info("--- OPTIMIZED GRAPH (post-GraphOptimizer) ---");
-        log.info("  GraphOptimizer: {} -> {} ops ({} removed) in {}ms",
-                rawOpCount, optOpCount, rawOpCount - optOpCount, optMs);
-        log.info("  Inputs: {}", optimized.inputs());
-        log.info("  Outputs: {}", optimized.outputs());
-        log.info("");
-        log.info("  Op histogram (optimized):");
-        for (Map.Entry<String, Integer> e : optHist.entrySet()) {
-            log.info("    {}: {}", e.getKey(), e.getValue());
-        }
-
-        // Delta: what changed
-        log.info("");
-        log.info("  Op changes (raw -> optimized):");
-        java.util.TreeSet<String> allOps = new java.util.TreeSet<>(rawHist.keySet());
-        allOps.addAll(optHist.keySet());
-        for (String opName : allOps) {
-            int before = rawHist.getOrDefault(opName, 0);
-            int after = optHist.getOrDefault(opName, 0);
-            if (before != after) {
-                log.info("    {}: {} -> {} ({}{})", opName, before, after,
-                        after > before ? "+" : "", after - before);
-            }
-        }
-
-        // Attention ops detail
-        long optAttentionOps = optHist.getOrDefault("dot_product_attention_v2", 0);
-        log.info("");
-        log.info("  Attention ops (dot_product_attention_v2): {}", optAttentionOps);
-
-        // Dump variable types summary
-        int constants = 0, variables = 0, placeholders = 0, arrayType = 0;
-        int fp16Weights = 0, fp32Weights = 0, otherDtype = 0;
-        for (org.nd4j.autodiff.samediff.SDVariable var : optimized.variables()) {
-            switch (var.getVariableType()) {
-                case CONSTANT: constants++; break;
-                case VARIABLE: variables++; break;
-                case PLACEHOLDER: placeholders++; break;
-                case ARRAY: arrayType++; break;
-            }
-            org.nd4j.linalg.api.ndarray.INDArray arr = var.getArr();
-            if (arr != null && (var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.CONSTANT
-                    || var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.VARIABLE)) {
-                if (arr.dataType() == org.nd4j.linalg.api.buffer.DataType.HALF) fp16Weights++;
-                else if (arr.dataType() == org.nd4j.linalg.api.buffer.DataType.FLOAT) fp32Weights++;
-                else otherDtype++;
-            }
-        }
-        log.info("");
-        log.info("  Variable breakdown:");
-        log.info("    CONSTANT: {}  VARIABLE: {}  PLACEHOLDER: {}  ARRAY: {}",
-                constants, variables, placeholders, arrayType);
-        log.info("    Weight dtypes: FP16={} FP32={} other={}", fp16Weights, fp32Weights, otherDtype);
-
-        // Dump attention op details (inputs, shapes)
-        log.info("");
-        log.info("--- ATTENTION OP DETAILS ---");
-        int attnIdx = 0;
-        for (org.nd4j.autodiff.functions.DifferentialFunction op : optimized.ops()) {
-            if ("dot_product_attention_v2".equals(op.opName())) {
-                String[] inputNames = optimized.getInputsForOp(op);
-                log.info("  Attention[{}]: name={}", attnIdx, op.getOwnName());
-                if (inputNames != null) {
-                    for (int i = 0; i < inputNames.length; i++) {
-                        org.nd4j.autodiff.samediff.SDVariable v = optimized.getVariable(inputNames[i]);
-                        String shape = "unknown";
-                        if (v != null) {
-                            org.nd4j.linalg.api.ndarray.INDArray a = v.getArr();
-                            if (a != null) shape = Arrays.toString(a.shape()) + " " + a.dataType();
-                            else if (v.isPlaceHolder() && v.placeholderShape() != null) shape = Arrays.toString(v.placeholderShape()) + " (placeholder)";
-                            else shape = v.getVariableType() + " (no array yet)";
-                        }
-                        log.info("    input[{}]: {} -> {}", i, inputNames[i], shape);
-                    }
-                }
-                // Check integer args (iArgs) for mask/dropout config
-                attnIdx++;
-            }
-        }
-
-        // Also dump RMSNorm and SwiGLU fusion ops if present
-        long rmsNormCount = optHist.getOrDefault("rms_norm", 0);
-        long swishMulCount = optHist.getOrDefault("swish_mul", 0);
-        long xwPlusBCount = optHist.getOrDefault("xw_plus_b", 0);
-        log.info("");
-        log.info("--- FUSION OP SUMMARY ---");
-        log.info("  rms_norm:   {} (fused from reduce_mean+sqrt+divide+multiply)", rmsNormCount);
-        log.info("  swish_mul:  {} (fused from swish+multiply = SwiGLU)", swishMulCount);
-        log.info("  xw_plus_b:  {} (fused matmul+bias)", xwPlusBCount);
-
-        // Write full summary to file for easy inspection
-        String summaryFile = "/tmp/qwen-graph-dump.txt";
-        try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(summaryFile))) {
-            pw.println("=== OPTIMIZED GRAPH SUMMARY ===");
-            pw.println("Ops: " + optOpCount);
-            pw.println("Variables: " + optimized.variables().size());
-            pw.println();
-            pw.println(optimized.summary());
-        }
-        log.info("");
-        log.info("Full graph summary written to: {}", summaryFile);
-        log.info("═══════════════════════════════════════════════════════");
     }
 
     /**
@@ -1169,7 +975,6 @@ public class TestLLMBenchmarkSuite {
     /**
      * Reference prompt accuracy: runs standard prompts and validates expected output.
      * Measures both correctness and generation speed across models.
-     * For extraction models (lfm2-extract), uses EXTRACTION_PROMPTS with a JSON schema system prompt.
      */
     @Test
     @DisplayName("Reference Prompt Accuracy: correctness across models + prompts")
@@ -1180,33 +985,21 @@ public class TestLLMBenchmarkSuite {
         int maxTokens = Math.max(getMaxTokens(), 50); // need enough tokens for meaningful output
         List<BenchmarkResult> results = new ArrayList<>();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal()
+        BenchmarkConfig config = BenchmarkConfig.create("OPTIMAL")
                 .executionMode(GraphExecutionMode.AUTO)
                 .maxTokens(maxTokens);
 
-        // Select prompts per model: extraction models use EXTRACTION_PROMPTS, others use BENCHMARK_PROMPTS
-        int totalPrompts = 0;
-        for (ModelSpec spec : models) {
-            totalPrompts += getPromptsForModel(spec).size();
-        }
-
         log.info("═══════════════════════════════════════════════════════");
-        log.info("  REFERENCE PROMPT ACCURACY ({} models, {} total prompts)", models.size(), totalPrompts);
+        log.info("  REFERENCE PROMPT ACCURACY ({} models × {} prompts)", models.size(), BENCHMARK_PROMPTS.size());
         log.info("═══════════════════════════════════════════════════════");
 
         for (ModelSpec spec : models) {
-            Map<String, String[]> prompts = getPromptsForModel(spec);
-            boolean isExtraction = isExtractionModel(spec);
-
-            for (Map.Entry<String, String[]> entry : prompts.entrySet()) {
-                String promptText = entry.getKey();
+            for (Map.Entry<String, String[]> entry : BENCHMARK_PROMPTS.entrySet()) {
+                String prompt = entry.getKey();
                 String[] expected = entry.getValue();
 
-                // For extraction models, wrap in ChatML-style template with JSON schema
-                String prompt = isExtraction ? formatExtractionPrompt(promptText) : promptText;
-
                 BenchmarkResult result = new BenchmarkResult(spec.llmModel.getName(),
-                        "PROMPT:" + truncate(promptText, 30));
+                        "PROMPT:" + truncate(prompt, 30));
                 try {
                     SameDiff model = loadModel(spec);
                     Tokenizer tokenizer = loadTokenizer(spec);
@@ -1245,42 +1038,20 @@ public class TestLLMBenchmarkSuite {
 
                         log.info("  [{}] {} → {} | {} tokens, {:.2f} tok/s: {}",
                                 result.passed ? "PASS" : "FAIL", spec.llmModel.getName(),
-                                truncate(promptText, 40), result.tokenCount, result.tokPerSec,
+                                truncate(prompt, 40), result.tokenCount, result.tokPerSec,
                                 truncate(genResult.getText(), 80));
                     }
 
                 } catch (Exception e) {
                     result.passed = false;
                     result.failureMessage = e.getClass().getSimpleName() + ": " + truncate(e.getMessage(), 120);
-                    log.error("  {} → FAILED on '{}': {}", spec.llmModel.getName(), truncate(promptText, 30), e.getMessage());
+                    log.error("  {} → FAILED on '{}': {}", spec.llmModel.getName(), truncate(prompt, 30), e.getMessage());
                 }
                 results.add(result);
             }
         }
 
         printReport("REFERENCE PROMPT ACCURACY", results);
-    }
-
-    private boolean isExtractionModel(ModelSpec spec) {
-        return spec.familyKey.equals("lfm2-extract");
-    }
-
-    private Map<String, String[]> getPromptsForModel(ModelSpec spec) {
-        return isExtractionModel(spec) ? EXTRACTION_PROMPTS : BENCHMARK_PROMPTS;
-    }
-
-    /**
-     * Formats an extraction prompt using the LFM2-Extract ChatML template.
-     * Uses a generic JSON extraction system prompt that works across input types.
-     */
-    private String formatExtractionPrompt(String inputText) {
-        return "<|im_start|>system\n" +
-                "Return data as a JSON object. Extract all key entities, attributes, and values from the input text.\n" +
-                "<|im_end|>\n" +
-                "<|im_start|>user\n" +
-                inputText + "\n" +
-                "<|im_end|>\n" +
-                "<|im_start|>assistant\n";
     }
 
     /**

@@ -161,10 +161,10 @@ DECLARE_SHAPE_FN(lstmLayerCell) {
   const auto hasBiases = B_ARG(0);  // indicates whether biases array is provided
 
   LongType count = hasBiases ? 4 : 3;
-  auto hISI = inputShape->at(count++);  // initial output
-  auto cISI = inputShape->at(count);    // initial cell state
+  const auto hI = INPUT_VARIABLE(count++);  // initial output
+  const auto cI = INPUT_VARIABLE(count);    // initial cell state
 
-  return new ShapeList({hISI, cISI});
+  return new ShapeList({hI->shapeInfo(), cI->shapeInfo()});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -336,22 +336,22 @@ DECLARE_SHAPE_FN(lstmLayerCellBp) {
   const auto hasPH = B_ARG(1);      // indicates whether peephole connections are present
 
   LongType count = 3;
-  auto xSI = inputShape->at(0);                                            // input
-  auto WxSI = inputShape->at(1);                                           // input weights
-  auto WrSI = inputShape->at(2);                                           // recurrent weights
-  LongType* const bSI = hasBiases ? inputShape->at(count++) : nullptr;     // biases
-  auto hISI = inputShape->at(count++);                                     // initial output
-  auto cISI = inputShape->at(count++);                                     // initial cell state
-  LongType* const WpSI = hasPH ? inputShape->at(count) : nullptr;          // peephole weights
+  const auto x = INPUT_VARIABLE(0);                              // input
+  const auto Wx = INPUT_VARIABLE(1);                             // input weights
+  const auto Wr = INPUT_VARIABLE(2);                             // recurrent weights
+  const auto b = hasBiases ? INPUT_VARIABLE(count++) : nullptr;  // biases
+  const auto hI = INPUT_VARIABLE(count++);                       // initial output
+  const auto cI = INPUT_VARIABLE(count++);                       // initial cell state
+  const auto Wp = hasPH ? INPUT_VARIABLE(count) : nullptr;       // peephole weights
 
-  auto shapes = SHAPELIST(xSI, WxSI, WrSI);
+  auto shapes = SHAPELIST(x->shapeInfo(), Wx->shapeInfo(), Wr->shapeInfo());
 
-  if (bSI != nullptr) shapes->push_back(bSI);
+  if (b != nullptr) shapes->push_back(b->shapeInfo());
 
-  shapes->push_back(hISI);
-  shapes->push_back(cISI);
+  shapes->push_back(hI->shapeInfo());
+  shapes->push_back(cI->shapeInfo());
 
-  if (WpSI != nullptr) shapes->push_back(WpSI);
+  if (Wp != nullptr) shapes->push_back(Wp->shapeInfo());
 
   return shapes;
 }

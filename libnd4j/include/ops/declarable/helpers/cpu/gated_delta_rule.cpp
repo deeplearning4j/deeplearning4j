@@ -20,9 +20,6 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/gated_delta_rule.h>
 
-#include <cstring>
-#include <vector>
-
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -53,20 +50,10 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
     const auto oS0 = output->strideAt(0), oS1 = output->strideAt(1), oS2 = output->strideAt(2), oS3 = output->strideAt(3);
     const auto sS0 = stateOut->strideAt(0), sS1 = stateOut->strideAt(1), sS2 = stateOut->strideAt(2), sS3 = stateOut->strideAt(3);
 
-    // Working state in TRANSPOSED layout: [B, H, D_v, D_k] instead of [B, H, D_k, D_v].
-    // This makes the inner dk loops access contiguous memory (stride 1 instead of D_v),
-    // enabling vectorization and eliminating cache thrashing.
-    // Always float for accumulation — avoids FP16 overflow in D_k=128 sums.
-    //
-    // Thread-local buffer avoids per-call heap allocation (was 524KB+ × 18 layers/token).
-    const LongType stateSize = B * H * D_v * D_k;
-    static thread_local std::vector<float> tlStateBuf;
-    if (static_cast<LongType>(tlStateBuf.size()) < stateSize) {
-        tlStateBuf.resize(stateSize);
-    }
-    float* stateBuf = tlStateBuf.data();
+    // Working copy of recurrent state [B, H, D_k, D_v] stored contiguously
+    const LongType stateSize = B * H * D_k * D_v;
+    std::vector<T> stateBuf(stateSize, static_cast<T>(0));
 
-    // Initialize from stateIn — transpose [B,H,D_k,D_v] → [B,H,D_v,D_k]
     if (stateIn != nullptr) {
         const T* sInBuf = stateIn->bufferAsT<T>();
         const auto siS0 = stateIn->strideAt(0), siS1 = stateIn->strideAt(1);
@@ -75,10 +62,8 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
             for (LongType h = 0; h < H; ++h)
                 for (LongType dk = 0; dk < D_k; ++dk)
                     for (LongType dv = 0; dv < D_v; ++dv)
-                        stateBuf[((b * H + h) * D_v + dv) * D_k + dk] =
-                            static_cast<float>(sInBuf[b * siS0 + h * siS1 + dk * siS2 + dv * siS3]);
-    } else {
-        std::memset(stateBuf, 0, stateSize * sizeof(float));
+                        stateBuf[((b * H + h) * D_k + dk) * D_v + dv] =
+                            sInBuf[b * siS0 + h * siS1 + dk * siS2 + dv * siS3];
     }
 
     // Sequential over timesteps, parallel over batch*heads
@@ -87,48 +72,33 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
             for (auto bh = start; bh < stop; ++bh) {
                 const LongType b = bh / H;
                 const LongType h = bh % H;
+                // Use float accumulators for dot products to prevent HALF overflow.
+                // D_k=128 terms accumulated in float16 can exceed 65504 (FP16 max).
                 const float exp_g_f = std::exp(static_cast<float>(gateBuf[b * gS0 + t * gS1 + h * gS2]));
                 const float beta_f = static_cast<float>(betaBuf[b * bS0 + t * bS1 + h * bS2]);
-                float* sBase = stateBuf + (b * H + h) * D_v * D_k;
-
-                // Pre-load k vector into contiguous float buffer on the stack.
-                // Eliminates repeated strided kBuf access in the inner loops.
-                // D_k is typically 64-128; 512 covers all known models.
-                float kLocal[512];
-                const LongType kBase = b * kS0 + t * kS1 + h * kS2;
-                for (LongType dk = 0; dk < D_k; ++dk)
-                    kLocal[dk] = static_cast<float>(kBuf[kBase + dk * kS3]);
+                T* sPtr = stateBuf.data() + ((b * H + h) * D_k) * D_v;
 
                 for (LongType dv = 0; dv < D_v; ++dv) {
-                    float* sRow = sBase + dv * D_k;  // contiguous D_k row
-
-                    // prediction = dot(state[dv,:], k[:]) — both arrays contiguous
+                    // prediction = S^T * k  (accumulated in float32)
                     float prediction = 0.0f;
                     for (LongType dk = 0; dk < D_k; ++dk)
-                        prediction += sRow[dk] * kLocal[dk];
+                        prediction += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(kBuf[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
 
                     // delta = v - exp(g) * prediction
-                    const float vVal = static_cast<float>(vBuf[b * vS0 + t * vS1 + h * vS2 + dv * vS3]);
-                    const float delta = vVal - exp_g_f * prediction;
+                    const float delta = static_cast<float>(vBuf[b * vS0 + t * vS1 + h * vS2 + dv * vS3]) - exp_g_f * prediction;
 
-                    // S = exp(g) * S + beta * k * delta — contiguous update
-                    const float beta_delta = beta_f * delta;
-                    for (LongType dk = 0; dk < D_k; ++dk)
-                        sRow[dk] = exp_g_f * sRow[dk] + beta_delta * kLocal[dk];
+                    // S = exp(g) * S + beta * k * delta
+                    for (LongType dk = 0; dk < D_k; ++dk) {
+                        const float k_val = static_cast<float>(kBuf[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
+                        sPtr[dk * D_v + dv] = static_cast<T>(exp_g_f * static_cast<float>(sPtr[dk * D_v + dv]) + beta_f * k_val * delta);
+                    }
                 }
 
-                // Pre-load q vector for output dot products
-                float qLocal[512];
-                const LongType qBase = b * qS0 + t * qS1 + h * qS2;
-                for (LongType dk = 0; dk < D_k; ++dk)
-                    qLocal[dk] = static_cast<float>(qBuf[qBase + dk * qS3]);
-
-                // output = dot(state[dv,:], q[:]) — both arrays contiguous
+                // output = S^T * q  (accumulated in float32)
                 for (LongType dv = 0; dv < D_v; ++dv) {
-                    float* sRow = sBase + dv * D_k;
                     float out_val = 0.0f;
                     for (LongType dk = 0; dk < D_k; ++dk)
-                        out_val += sRow[dk] * qLocal[dk];
+                        out_val += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(qBuf[b * qS0 + t * qS1 + h * qS2 + dk * qS3]);
                     outBuf[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = static_cast<T>(out_val);
                 }
             }
@@ -136,13 +106,13 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
         samediff::Threads::parallel_tad(func, 0, B * H);
     }
 
-    // Write back: transpose [B,H,D_v,D_k] → [B,H,D_k,D_v] into stateOut
+    // Copy final state out
     for (LongType b = 0; b < B; ++b)
         for (LongType h = 0; h < H; ++h)
-            for (LongType dv = 0; dv < D_v; ++dv)
-                for (LongType dk = 0; dk < D_k; ++dk)
+            for (LongType dk = 0; dk < D_k; ++dk)
+                for (LongType dv = 0; dv < D_v; ++dv)
                     stateOutBuf[b * sS0 + h * sS1 + dk * sS2 + dv * sS3] =
-                        static_cast<T>(stateBuf[((b * H + h) * D_v + dv) * D_k + dk]);
+                        stateBuf[((b * H + h) * D_k + dk) * D_v + dv];
 }
 
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,

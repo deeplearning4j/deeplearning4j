@@ -163,18 +163,6 @@ static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegme
   exec.executionCount = 0;
   exec.lastReplayExecCount = 0;
   exec.lifecycleState = SLS::NEEDS_WARMUP;
-  // Reset plan-level executeCount so isFirstFrozenWarmup evaluates to true
-  // on the next execute().  Without this, executeCount_ stays high after
-  // invalidation, isFirstFrozenWarmup = (shapesFrozen && executeCount==0)
-  // is false, and the plan skips phaseWarmup — going straight to
-  // phaseReplay/phaseSlotBySlot with stale frozen slot outputs (wrong dtypes).
-  // phaseWarmup resets all slot states and re-derives shapes from live inputs.
-  plan->resetExecuteCount();
-  // Reset frozen constant detection so detectFrozenConstants() re-runs
-  // after the post-invalidation warmup.  Without this, stale frozen
-  // classifications persist — slots marked FROZEN_CONSTANT keep their old
-  // output arrays (potentially wrong dtype) and are skipped during execution.
-  plan->resetFrozenConstantDetection();
 }
 
 }  // namespace SegmentLifecycle

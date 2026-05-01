@@ -213,6 +213,14 @@ public class OnnxModelCache {
         }
 
         int opsBefore = sd.getOps().size();
+        // Skip optimization for small models (embed_tokens, etc.)
+        // Also skip the vision encoder (< 3000 ops) which has a LONG constant
+        // endianness issue during dup(). The decoder (4441+ ops) is the target.
+        if (opsBefore < 3000) {
+            log.info("Skipping optimization for model {} ({} ops, threshold=3000)", onnxFile.getName(), opsBefore);
+            return sd;
+        }
+
         log.info("Running GraphOptimizer on {} ({} ops)...", onnxFile.getName(), opsBefore);
         long optStart = System.currentTimeMillis();
 

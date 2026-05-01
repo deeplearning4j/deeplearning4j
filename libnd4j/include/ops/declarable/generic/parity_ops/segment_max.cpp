@@ -56,7 +56,7 @@ DECLARE_SHAPE_FN(segment_max) {
   int outRank = shape::rank(in);
   LongType* outputShape = nullptr;
   idxVector->syncToHost();
-  int val = (*idxVector).e<LongType>(shape::length(inputShape->at(1)) - 1);
+  int val = (*idxVector).e<LongType>(idxVector->lengthOf() - 1);
 
   int numOfClasses = val + 1;
 

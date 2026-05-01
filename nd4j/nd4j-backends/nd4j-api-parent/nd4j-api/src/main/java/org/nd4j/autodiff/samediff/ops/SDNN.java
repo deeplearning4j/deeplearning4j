@@ -226,12 +226,8 @@ public class SDNN extends SDOps {
       SDVariable convStateIn, int activation, int wFormat) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, wFormat).outputVariables();
   }
 
@@ -255,12 +251,8 @@ public class SDNN extends SDOps {
       SDVariable convStateIn, int activation, int wFormat) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, wFormat).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -316,9 +308,7 @@ public class SDNN extends SDOps {
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0, 0).outputVariables();
   }
 
@@ -339,9 +329,7 @@ public class SDNN extends SDOps {
       SDVariable bias) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -363,12 +351,8 @@ public class SDNN extends SDOps {
       SDVariable convStateIn) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0, 0).outputVariables();
   }
 
@@ -390,12 +374,8 @@ public class SDNN extends SDOps {
       SDVariable convStateIn) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -418,12 +398,8 @@ public class SDNN extends SDOps {
       SDVariable convStateIn, int activation) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, 0).outputVariables();
   }
 
@@ -446,12 +422,8 @@ public class SDNN extends SDOps {
       SDVariable convStateIn, int activation) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -654,9 +626,7 @@ public class SDNN extends SDOps {
   public SDVariable[] ctcGreedyDecoder(SDVariable logits, SDVariable sequenceLength,
       boolean mergeRepeated, int blankIndex) {
     SDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
-    if (sequenceLength != null) {
-      SDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
-    }
+    SDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(sd,logits, sequenceLength, mergeRepeated, blankIndex).outputVariables();
   }
 
@@ -689,9 +659,7 @@ public class SDNN extends SDOps {
   public SDVariable[] ctcGreedyDecoder(String[] names, SDVariable logits, SDVariable sequenceLength,
       boolean mergeRepeated, int blankIndex) {
     SDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
-    if (sequenceLength != null) {
-      SDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
-    }
+    SDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(sd,logits, sequenceLength, mergeRepeated, blankIndex).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -904,12 +872,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
@@ -954,12 +918,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1005,15 +965,9 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
-    if (attentionBias != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    }
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
@@ -1059,15 +1013,9 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
-    if (attentionBias != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    }
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1117,24 +1065,12 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
-    if (keyCache != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
-    }
-    if (valueCache != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
-    }
-    if (cachePosition != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
-    }
-    if (attentionBias != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    }
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
@@ -1184,24 +1120,12 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
-    if (keyCache != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
-    }
-    if (valueCache != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
-    }
-    if (cachePosition != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
-    }
-    if (attentionBias != null) {
-      SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    }
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
+    SDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1923,9 +1847,7 @@ public class SDNN extends SDOps {
    */
   public SDVariable fusedRoPE(SDVariable input, SDVariable ropeCache, int startPosition) {
     SDValidation.validateNumerical("fusedRoPE", "input", input);
-    if (ropeCache != null) {
-      SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
-    }
+    SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0).outputVariable();
   }
 
@@ -1948,9 +1870,7 @@ public class SDNN extends SDOps {
   public SDVariable fusedRoPE(String name, SDVariable input, SDVariable ropeCache,
       int startPosition) {
     SDValidation.validateNumerical("fusedRoPE", "input", input);
-    if (ropeCache != null) {
-      SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
-    }
+    SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1976,9 +1896,7 @@ public class SDNN extends SDOps {
   public SDVariable fusedRoPE(SDVariable input, SDVariable positionOffset, int ropeType,
       double freqBase, double freqScale, int rotaryDims) {
     SDValidation.validateNumerical("fusedRoPE", "input", input);
-    if (positionOffset != null) {
-      SDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
-    }
+    SDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims).outputVariable();
   }
 
@@ -2004,9 +1922,7 @@ public class SDNN extends SDOps {
   public SDVariable fusedRoPE(String name, SDVariable input, SDVariable positionOffset,
       int ropeType, double freqBase, double freqScale, int rotaryDims) {
     SDValidation.validateNumerical("fusedRoPE", "input", input);
-    if (positionOffset != null) {
-      SDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
-    }
+    SDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -2048,9 +1964,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
     SDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
     SDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
-    if (recurrentStateIn != null) {
-      SDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
-    }
+    SDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(sd,x, wqkv, wbeta, wgate, wout, convWeight, convBias, recurrentStateIn, numHeads, headDimK, headDimV, rmsNormEpsilon).outputVariables();
   }
 
@@ -2092,9 +2006,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
     SDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
     SDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
-    if (recurrentStateIn != null) {
-      SDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
-    }
+    SDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(sd,x, wqkv, wbeta, wgate, wout, convWeight, convBias, recurrentStateIn, numHeads, headDimK, headDimV, rmsNormEpsilon).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -2199,9 +2111,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("gatedDeltaRule", "v", v);
     SDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
     SDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
-    if (stateIn != null) {
-      SDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
-    }
+    SDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, stateIn).outputVariables();
   }
 
@@ -2230,9 +2140,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("gatedDeltaRule", "v", v);
     SDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
     SDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
-    if (stateIn != null) {
-      SDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
-    }
+    SDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, stateIn).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -2769,9 +2677,7 @@ public class SDNN extends SDOps {
       boolean channelsFirst, long... dimensions) {
     SDValidation.validateNumerical("layerNorm", "input", input);
     SDValidation.validateNumerical("layerNorm", "gain", gain);
-    if (bias != null) {
-      SDValidation.validateNumerical("layerNorm", "bias", bias);
-    }
+    SDValidation.validateNumerical("layerNorm", "bias", bias);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(sd,input, gain, bias, channelsFirst, dimensions).outputVariable();
   }
@@ -2793,9 +2699,7 @@ public class SDNN extends SDOps {
       boolean channelsFirst, long... dimensions) {
     SDValidation.validateNumerical("layerNorm", "input", input);
     SDValidation.validateNumerical("layerNorm", "gain", gain);
-    if (bias != null) {
-      SDValidation.validateNumerical("layerNorm", "bias", bias);
-    }
+    SDValidation.validateNumerical("layerNorm", "bias", bias);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(sd,input, gain, bias, channelsFirst, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -3432,9 +3336,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("mixtureOfExperts", "input", input);
     SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    if (expertBias != null) {
-      SDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
-    }
+    SDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor).outputVariables();
   }
 
@@ -3478,9 +3380,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("mixtureOfExperts", "input", input);
     SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    if (expertBias != null) {
-      SDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
-    }
+    SDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -3670,9 +3570,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    if (routedExpertBias != null) {
-      SDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
-    }
+    SDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor).outputVariables();
   }
 
@@ -3715,9 +3613,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    if (routedExpertBias != null) {
-      SDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
-    }
+    SDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -4206,9 +4102,7 @@ public class SDNN extends SDOps {
   public SDVariable relativePositionBias(SDVariable biasTable, SDVariable relativePositionIndex,
       int numHeads, int windowSize) {
     SDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
-    if (relativePositionIndex != null) {
-      SDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
-    }
+    SDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(sd,biasTable, relativePositionIndex, numHeads, windowSize, false).outputVariable();
   }
 
@@ -4243,9 +4137,7 @@ public class SDNN extends SDOps {
   public SDVariable relativePositionBias(String name, SDVariable biasTable,
       SDVariable relativePositionIndex, int numHeads, int windowSize) {
     SDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
-    if (relativePositionIndex != null) {
-      SDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
-    }
+    SDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(sd,biasTable, relativePositionIndex, numHeads, windowSize, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4384,9 +4276,7 @@ public class SDNN extends SDOps {
    */
   public SDVariable rmsNorm(SDVariable input, SDVariable gamma, double epsilon) {
     SDValidation.validateNumerical("rmsNorm", "input", input);
-    if (gamma != null) {
-      SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
-    }
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, epsilon).outputVariable();
   }
 
@@ -4405,9 +4295,7 @@ public class SDNN extends SDOps {
    */
   public SDVariable rmsNorm(String name, SDVariable input, SDVariable gamma, double epsilon) {
     SDValidation.validateNumerical("rmsNorm", "input", input);
-    if (gamma != null) {
-      SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
-    }
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, epsilon).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4425,9 +4313,7 @@ public class SDNN extends SDOps {
    */
   public SDVariable rmsNorm(SDVariable input, SDVariable gamma) {
     SDValidation.validateNumerical("rmsNorm", "input", input);
-    if (gamma != null) {
-      SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
-    }
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, 1.0E-5).outputVariable();
   }
 
@@ -4445,9 +4331,7 @@ public class SDNN extends SDOps {
    */
   public SDVariable rmsNorm(String name, SDVariable input, SDVariable gamma) {
     SDValidation.validateNumerical("rmsNorm", "input", input);
-    if (gamma != null) {
-      SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
-    }
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, 1.0E-5).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4515,6 +4399,66 @@ public class SDNN extends SDOps {
   public SDVariable rmsNorm(String name, SDVariable input) {
     SDValidation.validateNumerical("rmsNorm", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, 1.0E-5).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused Skip (Residual Add) + RMS Normalization:<br>
+   * Combines residual add with RMS normalization in a single kernel:<br>
+   *   hidden = input + skip [+ bias]<br>
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param skip Skip/residual tensor (NUMERIC type)
+   * @param gamma Scale weights (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Normalized output (NUMERIC type)
+   */
+  public SDVariable skipRmsNorm(SDVariable input, SDVariable skip, SDVariable gamma,
+      double epsilon) {
+    SDValidation.validateNumerical("skipRmsNorm", "input", input);
+    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd, input, skip, gamma, epsilon).outputVariable();
+  }
+
+  /**
+   * Fused Skip (Residual Add) + RMS Normalization:<br>
+   * Combines residual add with RMS normalization in a single kernel.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param skip Skip/residual tensor (NUMERIC type)
+   * @param gamma Scale weights (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Normalized output (NUMERIC type)
+   */
+  public SDVariable skipRmsNorm(String name, SDVariable input, SDVariable skip, SDVariable gamma,
+      double epsilon) {
+    SDValidation.validateNumerical("skipRmsNorm", "input", input);
+    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd, input, skip, gamma, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused Skip (Residual Add) + RMS Normalization with optional bias:<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param skip Skip/residual tensor (NUMERIC type)
+   * @param gamma Scale weights (NUMERIC type)
+   * @param bias Optional bias (NUMERIC type, may be null)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Normalized output (NUMERIC type)
+   */
+  public SDVariable skipRmsNorm(String name, SDVariable input, SDVariable skip, SDVariable gamma,
+      SDVariable bias, double epsilon) {
+    SDValidation.validateNumerical("skipRmsNorm", "input", input);
+    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd, input, skip, gamma, bias, epsilon).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4757,9 +4701,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("sharedKvAttention", "query", query);
     SDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     SDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(sd,query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, scale).outputVariable();
   }
 
@@ -4792,9 +4734,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("sharedKvAttention", "query", query);
     SDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     SDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(sd,query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, scale).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4877,9 +4817,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("sharedKvAttention", "query", query);
     SDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     SDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(sd,query, sharedKey, sharedValue, mask, numHeads, numKvHeads, 1, 0, 0.0).outputVariable();
   }
 
@@ -4908,9 +4846,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("sharedKvAttention", "query", query);
     SDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     SDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(sd,query, sharedKey, sharedValue, mask, numHeads, numKvHeads, 1, 0, 0.0).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4942,9 +4878,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("sharedKvAttention", "query", query);
     SDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     SDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(sd,query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, 0.0).outputVariable();
   }
 
@@ -4976,9 +4910,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("sharedKvAttention", "query", query);
     SDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     SDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    SDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(sd,query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, 0.0).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -5058,94 +4990,6 @@ public class SDNN extends SDOps {
   public SDVariable silu(String name, SDVariable input) {
     SDValidation.validateNumerical("silu", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU(sd,input).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
-   *
-   * @param input Input variable [batch, ..., features] (NUMERIC type)
-   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
-   * @param gamma Scale/gain vector [features] (NUMERIC type)
-   * @param bias Bias vector [features] (NUMERIC type)
-   * @param epsilon Epsilon for numerical stability
-   * @return output Fused skip + RMS normalized output (NUMERIC type)
-   */
-  public SDVariable skipRmsNorm(SDVariable input, SDVariable skip, SDVariable gamma,
-      SDVariable bias, double epsilon) {
-    SDValidation.validateNumerical("skipRmsNorm", "input", input);
-    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
-    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
-    if (bias != null) {
-      SDValidation.validateNumerical("skipRmsNorm", "bias", bias);
-    }
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd,input, skip, gamma, bias, epsilon).outputVariable();
-  }
-
-  /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param input Input variable [batch, ..., features] (NUMERIC type)
-   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
-   * @param gamma Scale/gain vector [features] (NUMERIC type)
-   * @param bias Bias vector [features] (NUMERIC type)
-   * @param epsilon Epsilon for numerical stability
-   * @return output Fused skip + RMS normalized output (NUMERIC type)
-   */
-  public SDVariable skipRmsNorm(String name, SDVariable input, SDVariable skip, SDVariable gamma,
-      SDVariable bias, double epsilon) {
-    SDValidation.validateNumerical("skipRmsNorm", "input", input);
-    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
-    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
-    if (bias != null) {
-      SDValidation.validateNumerical("skipRmsNorm", "bias", bias);
-    }
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd,input, skip, gamma, bias, epsilon).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
-   *
-   * @param input Input variable [batch, ..., features] (NUMERIC type)
-   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
-   * @param gamma Scale/gain vector [features] (NUMERIC type)
-   * @param epsilon Epsilon for numerical stability
-   * @return output Fused skip + RMS normalized output (NUMERIC type)
-   */
-  public SDVariable skipRmsNorm(SDVariable input, SDVariable skip, SDVariable gamma,
-      double epsilon) {
-    SDValidation.validateNumerical("skipRmsNorm", "input", input);
-    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
-    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd,input, skip, gamma, null, epsilon).outputVariable();
-  }
-
-  /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param input Input variable [batch, ..., features] (NUMERIC type)
-   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
-   * @param gamma Scale/gain vector [features] (NUMERIC type)
-   * @param epsilon Epsilon for numerical stability
-   * @return output Fused skip + RMS normalized output (NUMERIC type)
-   */
-  public SDVariable skipRmsNorm(String name, SDVariable input, SDVariable skip, SDVariable gamma,
-      double epsilon) {
-    SDValidation.validateNumerical("skipRmsNorm", "input", input);
-    SDValidation.validateNumerical("skipRmsNorm", "skip", skip);
-    SDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(sd,input, skip, gamma, null, epsilon).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5958,12 +5802,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("windowedAttention", "query", query);
     SDValidation.validateNumerical("windowedAttention", "key", key);
     SDValidation.validateNumerical("windowedAttention", "value", value);
-    if (relativePositionBias != null) {
-      SDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
-    }
-    if (attentionMask != null) {
-      SDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
-    }
+    SDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
+    SDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(sd,query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights).outputVariable();
   }
 
@@ -6004,12 +5844,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("windowedAttention", "query", query);
     SDValidation.validateNumerical("windowedAttention", "key", key);
     SDValidation.validateNumerical("windowedAttention", "value", value);
-    if (relativePositionBias != null) {
-      SDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
-    }
-    if (attentionMask != null) {
-      SDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
-    }
+    SDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
+    SDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(sd,query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

@@ -74,7 +74,8 @@ DECLARE_SHAPE_FN(expand_dims) {
 
   }
 
-  if(shape::isEmpty(inShape) && shape::rank(inShape) < 1) {
+  auto input = INPUT_VARIABLE(0);
+  if(input->isEmpty() && input->rankOf() < 1) {
     auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape));
     return SHAPELIST(newShape);
   }
@@ -86,8 +87,8 @@ DECLARE_SHAPE_FN(expand_dims) {
   LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<LongType>(0);
   if (axis < 0) axis += x_rank + 1;
 
-  REQUIRE_TRUE(axis >= 0 && axis <= x_rank, 0,
-               "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", x_rank + 1,
+  REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf(), 0,
+               "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1,
                axis);
 
   std::vector<LongType> shape;
@@ -95,8 +96,8 @@ DECLARE_SHAPE_FN(expand_dims) {
 
   shape.insert(shape.begin() + axis, 1);
 
-  auto newShape = shape::isEmpty(inShape) ? ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), shape) :
-                                           ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), order, shape);
+  auto newShape = input->isEmpty() ? ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), shape) :
+                                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), order, shape);
   return SHAPELIST(newShape);
 }
 }  // namespace ops

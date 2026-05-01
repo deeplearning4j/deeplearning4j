@@ -52,7 +52,6 @@ public class LLMModelDownloader {
         Q6_K("Q6_K"),
         Q8_0("Q8_0"),
         BF16("BF16"),
-        F16("F16"),
         UD_Q2_K("UD-Q2_K"),
         UD_Q4_K_M("UD-Q4_K_M"),
         UD_Q6_K("UD-Q6_K"),
@@ -138,9 +137,6 @@ public class LLMModelDownloader {
                 "LFM2 1.2B - Liquid Foundation Model with gated short convolutions"),
         LFM2_2_6B("LFM2-2.6B", "2.6B", false, ModelFamily.LFM2,
                 "LFM2 2.6B - Liquid Foundation Model with gated short convolutions"),
-        LFM2_350M_EXTRACT("LFM2-350M-Extract", "350M", false, ModelFamily.LFM2,
-                "LFM2 350M Extract - Structured extraction (JSON/XML/YAML) from unstructured text",
-                "https://huggingface.co/LiquidAI/"),
 
         // OLMo models (Allen AI)
         OLMO2_7B("OLMo-2-1124-7B-Instruct", "7B", false, ModelFamily.OLMO,
@@ -171,19 +167,13 @@ public class LLMModelDownloader {
         private final boolean moe;
         private final ModelFamily family;
         private final String description;
-        private final String urlBase;
 
         LLMModel(String name, String sizeLabel, boolean moe, ModelFamily family, String description) {
-            this(name, sizeLabel, moe, family, description, null);
-        }
-
-        LLMModel(String name, String sizeLabel, boolean moe, ModelFamily family, String description, String urlBase) {
             this.name = name;
             this.sizeLabel = sizeLabel;
             this.moe = moe;
             this.family = family;
             this.description = description;
-            this.urlBase = urlBase;
         }
 
         public String getName() { return name; }
@@ -193,8 +183,8 @@ public class LLMModelDownloader {
         public String getDescription() { return description; }
 
         public String getUrl(QuantType quant) {
-            String base = urlBase != null ? urlBase : UNSLOTH_BASE;
-            return base + name + "-GGUF/resolve/main/" + name + "-" + quant.getSuffix() + ".gguf";
+            // Unsloth repos: unsloth/<name>-GGUF/resolve/main/<name>-<quant>.gguf
+            return UNSLOTH_BASE + name + "-GGUF/resolve/main/" + name + "-" + quant.getSuffix() + ".gguf";
         }
 
         public String getFileName(QuantType quant) {
@@ -206,7 +196,7 @@ public class LLMModelDownloader {
                 if (m.sizeLabel.equalsIgnoreCase(label)) return m;
             }
             throw new IllegalArgumentException("Unknown model size: " + label +
-                    ". Valid sizes: 350M, 0.8B, 1B, 1.2B, 2B, 2.6B, 3.8B, 4B, 7B, 8x7B, 9B, 12B, 14B, 20B, 27B, 30B-A3B, 35B-A3B, 122B-A10B, 397B-A17B, E2B, E4B");
+                    ". Valid sizes: 0.8B, 1B, 1.2B, 2B, 2.6B, 3.8B, 4B, 7B, 8x7B, 9B, 12B, 14B, 20B, 27B, 30B-A3B, 35B-A3B, 122B-A10B, 397B-A17B, E2B, E4B");
         }
 
         public static LLMModel fromFamilyAndSize(ModelFamily family, String sizeLabel) {

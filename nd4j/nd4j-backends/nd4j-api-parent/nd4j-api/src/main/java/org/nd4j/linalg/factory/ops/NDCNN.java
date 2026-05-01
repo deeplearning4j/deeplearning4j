@@ -338,9 +338,7 @@ public class NDCNN {
       Conv1DConfig Conv1DConfig) {
     NDValidation.validateNumerical("conv1d", "input", input);
     NDValidation.validateNumerical("conv1d", "weights", weights);
-    if (bias != null) {
-      NDValidation.validateNumerical("conv1d", "bias", bias);
-    }
+    NDValidation.validateNumerical("conv1d", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(input, weights, bias, Conv1DConfig));
     try {
       return __tmp[0];
@@ -393,9 +391,7 @@ public class NDCNN {
       Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("conv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("conv2d", "weights", weights);
-    if (bias != null) {
-      NDValidation.validateNumerical("conv2d", "bias", bias);
-    }
+    NDValidation.validateNumerical("conv2d", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, bias, Conv2DConfig));
     try {
       return __tmp[0];
@@ -448,9 +444,7 @@ public class NDCNN {
       Conv3DConfig Conv3DConfig) {
     NDValidation.validateNumerical("conv3d", "input", input);
     NDValidation.validateNumerical("conv3d", "weights", weights);
-    if (bias != null) {
-      NDValidation.validateNumerical("conv3d", "bias", bias);
-    }
+    NDValidation.validateNumerical("conv3d", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(input, weights, bias, Conv3DConfig));
     try {
       return __tmp[0];
@@ -503,9 +497,7 @@ public class NDCNN {
       DeConv2DConfig DeConv2DConfig) {
     NDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("deconv2d", "weights", weights);
-    if (bias != null) {
-      NDValidation.validateNumerical("deconv2d", "bias", bias);
-    }
+    NDValidation.validateNumerical("deconv2d", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(layerInput, weights, bias, DeConv2DConfig));
     try {
       return __tmp[0];
@@ -558,9 +550,7 @@ public class NDCNN {
       DeConv3DConfig DeConv3DConfig) {
     NDValidation.validateNumerical("deconv3d", "input", input);
     NDValidation.validateNumerical("deconv3d", "weights", weights);
-    if (bias != null) {
-      NDValidation.validateNumerical("deconv3d", "bias", bias);
-    }
+    NDValidation.validateNumerical("deconv3d", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(input, weights, bias, DeConv3DConfig));
     try {
       return __tmp[0];
@@ -626,12 +616,8 @@ public class NDCNN {
     NDValidation.validateNumerical("deformableConv2d", "input", input);
     NDValidation.validateNumerical("deformableConv2d", "weights", weights);
     NDValidation.validateNumerical("deformableConv2d", "offset", offset);
-    if (bias != null) {
-      NDValidation.validateNumerical("deformableConv2d", "bias", bias);
-    }
-    if (mask != null) {
-      NDValidation.validateNumerical("deformableConv2d", "mask", mask);
-    }
+    NDValidation.validateNumerical("deformableConv2d", "bias", bias);
+    NDValidation.validateNumerical("deformableConv2d", "mask", mask);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, bias, mask, DeformableConv2DConfig));
     try {
       return __tmp[0];
@@ -724,9 +710,7 @@ public class NDCNN {
       Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
-    if (bias != null) {
-      NDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
-    }
+    NDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(layerInput, depthWeights, bias, Conv2DConfig));
     try {
       return __tmp[0];
@@ -947,9 +931,7 @@ public class NDCNN {
     NDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     NDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
-    if (bias != null) {
-      NDValidation.validateNumerical("separableConv2d", "bias", bias);
-    }
+    NDValidation.validateNumerical("separableConv2d", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, bias, Conv2DConfig));
     try {
       return __tmp[0];

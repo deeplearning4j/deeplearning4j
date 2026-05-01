@@ -227,7 +227,6 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"column_parallel_linear", MATMUL},
         {"row_parallel_linear",    MATMUL},
         {"multi_lora_matmul",      MATMUL},
-        {"xw_plus_b",              MATMUL},
         {"fused_gemm_swiglu",      MATMUL},
         {"fused_two_layer_mlp",    MATMUL},
 
@@ -251,8 +250,8 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"norm1",          REDUCE},
         {"norm2",          REDUCE},
         {"normmax",        REDUCE},
-        {"argmax",         REDUCE | DATADEP},  // shape fn reads axes from INPUT_VARIABLE(1) when 2-input form
-        {"argmin",         REDUCE | DATADEP},  // shape fn reads axes from INPUT_VARIABLE(1) when 2-input form
+        {"argmax",         REDUCE},
+        {"argmin",         REDUCE},
 
         // ── Normalization ops ──────────────────────────────────────────────
         {"softmax",        NORM},
@@ -262,7 +261,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"batch_norm",     NORM},
         {"batchnorm",      NORM},
         {"rms_norm",       NORM},
-        {"rms_norm_linear", MATMUL},
+        {"rms_norm_linear", NORM},
         {"skip_rms_norm",  NORM},
         {"normalize_moments", NORM},
         {"fused_rope",     NORM},
@@ -282,10 +281,10 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         //   reshape/reshape_no_copy take a shape tensor; strided_slice reads begin/end/stride tensors.
         // VIEW_SHAPE_DEP: shape fn uses only input shapes + iArgs — no data read.
         //   expand_dims/squeeze/flatten/flatten_2d/permute all fall in this class.
-        {"reshape",        VIEW | DATADEP},     // shape fn calls INPUT_VARIABLE(1)->asVectorT() for shape tensor
-        {"reshape_no_copy", VIEW | DATADEP},   // same as reshape
+        {"reshape",        VIEW},
+        {"reshape_no_copy", VIEW},
         {"strided_slice",  VIEW | OP_TRAIT_SLICE},
-        {"expand_dims",    VIEW_SHAPE_DEP | DATADEP},  // shape fn reads INPUT_VARIABLE(1)->e<>() when no INT_ARG
+        {"expand_dims",    VIEW_SHAPE_DEP},
         {"squeeze",        VIEW_SHAPE_DEP},
         {"flatten",        VIEW_SHAPE_DEP},
         {"flatten_2d",     VIEW_SHAPE_DEP},
@@ -296,9 +295,9 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         // the flag being accurate. A false positive causes the value-dep shape-match
         // branch to report "value-dependent output shape changed" when in fact the input
         // shape changed (e.g., gather indices went [1,512] → [18,512]).
-        {"gather",         GATHER | DATADEP},   // shape fn reads INPUT_VARIABLE(2)->e<>() for axis when 3-input form
+        {"gather",         GATHER},
         {"gather_nd",      GATHER_ND},
-        {"concat",         CONCAT | DATADEP},   // shape fn reads INPUT_VARIABLE(last)->e<>() for axis when isAxisInLastArr
+        {"concat",         CONCAT},
         {"stack",          STACK},
         {"split",          SPLIT},
         {"split_v",        SPLIT_V},
@@ -308,45 +307,21 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"slice",          SLICE},           // dual-mode: iArg or tensor begin/size; conservative VALDEP
         {"tile",           TILE},            // dual-mode: iArg or tensor multiples; conservative VALDEP
         {"pad",            DATA_MOVE_VALDEP},
-        {"fill",           DATA_MOVE_VALDEP | DATADEP},  // shape fn reads shape array elements from INPUT_VARIABLE(0)
+        {"fill",           DATA_MOVE_VALDEP},
         {"broadcast_to",   DATA_MOVE_VALDEP},
         {"scatter_nd",     SCATTER_ND},
         {"scatter_nd_update", SCATTER_ND_UPDATE},
-        {"range",          CONST_GEN_VALDEP | DATADEP},    // shape fn reads start/limit/delta element values
-        {"linspace",       CONST_GEN_VALDEP | DATADEP},   // shape fn reads steps value from INPUT_VARIABLE(2)
+        {"range",          CONST_GEN_VALDEP},
+        {"linspace",       CONST_GEN_VALDEP},
         // create/ConstantOfShape materializes a real output buffer. Some instances feed
         // shape-control ladders, but that must be inferred from runtime tensor semantics,
         // not baked into the op as globally shape-only.
         {"create",         CONST_GEN_VALDEP},
 
-        // ── Data-dependent ops (variable-length output or shape reads tensor data) ──
-        {"unique",                      DATADEP},
-        {"non_max_suppression",         DATADEP},
-        {"non_max_suppression_v3",      DATADEP},
-        {"non_max_suppression_overlaps", DATADEP},  // shape fn runs full NMS to determine output length
-        // Space/batch transforms: shape fn reads block shape, crop, and pad tensor values
-        {"batch_to_space",    DATA_MOVE | DATADEP},
-        {"space_to_batch",    DATA_MOVE | DATADEP},
-        {"batch_to_space_nd", DATA_MOVE | DATADEP},
-        {"space_to_batch_nd", DATA_MOVE | DATADEP},
-        // Generator ops whose shape depends on tensor data values
-        {"randomuniform",          CONST_GEN_VALDEP | DATADEP},  // shape fn reads shape tensor via asVectorT()
-        {"lin_space",              CONST_GEN_VALDEP | DATADEP},  // shape fn reads steps from INPUT_VARIABLE(2)
-        {"evaluate_reduction_shape", SHAPE_ONLY | CONST_GEN | DATADEP},  // reads axes from INPUT_VARIABLE(1)->asVectorT()
-        // Ops whose output shape depends on k/depth/class-count tensor values
-        {"top_k",       OP_TRAIT_FULLY_WRITING | DATADEP},  // shape fn reads k from INPUT_VARIABLE(1)
-        {"onehot",      CONST_GEN_VALDEP | DATADEP},        // shape fn reads depth from INPUT_VARIABLE(1)
-        {"bincount",    REDUCE | DATADEP},                  // shape fn calls argMax() + reads min/max element values
-        // Unsorted segment ops: shape fn reads numOfClasses from INPUT_VARIABLE(2)
-        {"unsorted_segment_max",    REDUCE | DATADEP},
-        {"unsorted_segment_mean",   REDUCE | DATADEP},
-        {"unsorted_segment_min",    REDUCE | DATADEP},
-        {"unsorted_segment_prod",   REDUCE | DATADEP},
-        {"unsorted_segment_sqrt_n", REDUCE | DATADEP},
-        {"unsorted_segment_sum",    REDUCE | DATADEP},
-        // Conv backward ops whose output shape is read from an input tensor
-        {"conv2d_input_bp", OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | DATADEP},  // reads gradIShape from INPUT_VARIABLE(0)
-        {"deconv2d_tf",     OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | DATADEP},  // reads gradIShape from INPUT_VARIABLE(0)
+        // ── Data-dependent ops (variable-length output) ────────────────────
+        {"unique",                 DATADEP},
+        {"non_max_suppression",    DATADEP},
+        {"non_max_suppression_v3", DATADEP},
 
         // ── Shape-only output (output depends only on input shapes) ────────
         {"shape_of",       SHAPE_ONLY | CONST_GEN},

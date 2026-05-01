@@ -2104,6 +2104,12 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
   // in cases where _shapeInfo was invalidated (e.g., constructor set it to nullptr).
   ConstantShapeBuffer* buffer = _shapeInfoBuffer;
   if (buffer != nullptr) {
+    // NOTE: We intentionally DO NOT call buffer->isValid() here anymore.
+    // The isValid() check was added in session #1055 to detect use-after-free,
+    // but it CANNOT safely detect garbage pointers - calling ANY method on a
+    // garbage pointer (including isValid()) causes SIGSEGV before we can detect it.
+    // The isValid() check only works for freed-but-zeroed memory, not random garbage.
+    // Session #1056: Removed isValid() check to prevent crash IN the validation itself.
     LongType* refreshed = buffer->primary();
     if (refreshed == nullptr) {
       const char* msg = "NDArray::shapeInfo() - _shapeInfoBuffer->primary() returned nullptr";

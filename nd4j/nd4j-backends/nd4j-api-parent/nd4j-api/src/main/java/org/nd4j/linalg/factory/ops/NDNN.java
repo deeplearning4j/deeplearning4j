@@ -189,12 +189,8 @@ public class NDNN {
       int activation, int wFormat) {
     NDValidation.validateNumerical("causalConv1d", "x", x);
     NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      NDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, wFormat));
   }
 
@@ -230,9 +226,7 @@ public class NDNN {
   public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias) {
     NDValidation.validateNumerical("causalConv1d", "x", x);
     NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      NDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, null, 0, 0));
   }
 
@@ -252,12 +246,8 @@ public class NDNN {
   public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn) {
     NDValidation.validateNumerical("causalConv1d", "x", x);
     NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      NDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, 0, 0));
   }
 
@@ -279,12 +269,8 @@ public class NDNN {
       int activation) {
     NDValidation.validateNumerical("causalConv1d", "x", x);
     NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    if (bias != null) {
-      NDValidation.validateNumerical("causalConv1d", "bias", bias);
-    }
-    if (convStateIn != null) {
-      NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    }
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, 0));
   }
 
@@ -429,9 +415,7 @@ public class NDNN {
   public INDArray[] ctcGreedyDecoder(INDArray logits, INDArray sequenceLength,
       boolean mergeRepeated, int blankIndex) {
     NDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
-    if (sequenceLength != null) {
-      NDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
-    }
+    NDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, sequenceLength, mergeRepeated, blankIndex));
   }
 
@@ -589,12 +573,8 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
+    NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training));
     try {
       return __tmp[0];
@@ -650,15 +630,9 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
-    if (attentionBias != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    }
+    NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
     try {
       return __tmp[0];
@@ -718,24 +692,12 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    if (queryMask != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    }
-    if (valueMask != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    }
-    if (keyCache != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
-    }
-    if (valueCache != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
-    }
-    if (cachePosition != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
-    }
-    if (attentionBias != null) {
-      NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
-    }
+    NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
+    NDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
+    NDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
+    NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
     try {
       return __tmp[0];
@@ -1292,9 +1254,7 @@ public class NDNN {
    */
   public INDArray fusedRoPE(INDArray input, INDArray ropeCache, int startPosition) {
     NDValidation.validateNumerical("fusedRoPE", "input", input);
-    if (ropeCache != null) {
-      NDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
-    }
+    NDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0));
     try {
       return __tmp[0];
@@ -1330,9 +1290,7 @@ public class NDNN {
   public INDArray fusedRoPE(INDArray input, INDArray positionOffset, int ropeType, double freqBase,
       double freqScale, int rotaryDims) {
     NDValidation.validateNumerical("fusedRoPE", "input", input);
-    if (positionOffset != null) {
-      NDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
-    }
+    NDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims));
     try {
       return __tmp[0];
@@ -1383,9 +1341,7 @@ public class NDNN {
     NDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
     NDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
     NDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
-    if (recurrentStateIn != null) {
-      NDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
-    }
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, recurrentStateIn, numHeads, headDimK, headDimV, rmsNormEpsilon));
   }
 
@@ -1450,9 +1406,7 @@ public class NDNN {
     NDValidation.validateNumerical("gatedDeltaRule", "v", v);
     NDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
     NDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
-    if (stateIn != null) {
-      NDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
-    }
+    NDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(q, k, v, beta, gate, stateIn));
   }
 
@@ -1792,9 +1746,7 @@ public class NDNN {
       long... dimensions) {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
-    if (bias != null) {
-      NDValidation.validateNumerical("layerNorm", "bias", bias);
-    }
+    NDValidation.validateNumerical("layerNorm", "bias", bias);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, bias, channelsFirst, dimensions));
     try {
@@ -2238,9 +2190,7 @@ public class NDNN {
     NDValidation.validateNumerical("mixtureOfExperts", "input", input);
     NDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     NDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    if (expertBias != null) {
-      NDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
-    }
+    NDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor));
   }
 
@@ -2373,9 +2323,7 @@ public class NDNN {
     NDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     NDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     NDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    if (routedExpertBias != null) {
-      NDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
-    }
+    NDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor));
   }
 
@@ -2722,9 +2670,7 @@ public class NDNN {
   public INDArray relativePositionBias(INDArray biasTable, INDArray relativePositionIndex,
       int numHeads, int windowSize) {
     NDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
-    if (relativePositionIndex != null) {
-      NDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
-    }
+    NDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(biasTable, relativePositionIndex, numHeads, windowSize, false));
     try {
       return __tmp[0];
@@ -2831,9 +2777,7 @@ public class NDNN {
    */
   public INDArray rmsNorm(INDArray input, INDArray gamma, double epsilon) {
     NDValidation.validateNumerical("rmsNorm", "input", input);
-    if (gamma != null) {
-      NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
-    }
+    NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, epsilon));
     try {
       return __tmp[0];
@@ -2861,9 +2805,7 @@ public class NDNN {
    */
   public INDArray rmsNorm(INDArray input, INDArray gamma) {
     NDValidation.validateNumerical("rmsNorm", "input", input);
-    if (gamma != null) {
-      NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
-    }
+    NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, 1.0E-5));
     try {
       return __tmp[0];
@@ -3112,9 +3054,7 @@ public class NDNN {
     NDValidation.validateNumerical("sharedKvAttention", "query", query);
     NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, scale));
     try {
       return __tmp[0];
@@ -3190,9 +3130,7 @@ public class NDNN {
     NDValidation.validateNumerical("sharedKvAttention", "query", query);
     NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, 1, 0, 0.0));
     try {
       return __tmp[0];
@@ -3233,9 +3171,7 @@ public class NDNN {
     NDValidation.validateNumerical("sharedKvAttention", "query", query);
     NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    if (mask != null) {
-      NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
-    }
+    NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, 0.0));
     try {
       return __tmp[0];
@@ -3295,69 +3231,6 @@ public class NDNN {
   public INDArray silu(INDArray input) {
     NDValidation.validateNumerical("silu", "input", input);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU(input));
-    try {
-      return __tmp[0];
-    } finally {
-      if(__tmp != null) {
-        for(int __i = 1; __i < __tmp.length; __i++) {
-          if(__tmp[__i] != null) {
-            __tmp[__i].close();
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
-   *
-   * @param input Input variable [batch, ..., features] (NUMERIC type)
-   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
-   * @param gamma Scale/gain vector [features] (NUMERIC type)
-   * @param bias Bias vector [features] (NUMERIC type)
-   * @param epsilon Epsilon for numerical stability
-   * @return output Fused skip + RMS normalized output (NUMERIC type)
-   */
-  public INDArray skipRmsNorm(INDArray input, INDArray skip, INDArray gamma, INDArray bias,
-      double epsilon) {
-    NDValidation.validateNumerical("skipRmsNorm", "input", input);
-    NDValidation.validateNumerical("skipRmsNorm", "skip", skip);
-    NDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
-    if (bias != null) {
-      NDValidation.validateNumerical("skipRmsNorm", "bias", bias);
-    }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(input, skip, gamma, bias, epsilon));
-    try {
-      return __tmp[0];
-    } finally {
-      if(__tmp != null) {
-        for(int __i = 1; __i < __tmp.length; __i++) {
-          if(__tmp[__i] != null) {
-            __tmp[__i].close();
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
-   *
-   * @param input Input variable [batch, ..., features] (NUMERIC type)
-   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
-   * @param gamma Scale/gain vector [features] (NUMERIC type)
-   * @param epsilon Epsilon for numerical stability
-   * @return output Fused skip + RMS normalized output (NUMERIC type)
-   */
-  public INDArray skipRmsNorm(INDArray input, INDArray skip, INDArray gamma, double epsilon) {
-    NDValidation.validateNumerical("skipRmsNorm", "input", input);
-    NDValidation.validateNumerical("skipRmsNorm", "skip", skip);
-    NDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(input, skip, gamma, null, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -3895,12 +3768,8 @@ public class NDNN {
     NDValidation.validateNumerical("windowedAttention", "query", query);
     NDValidation.validateNumerical("windowedAttention", "key", key);
     NDValidation.validateNumerical("windowedAttention", "value", value);
-    if (relativePositionBias != null) {
-      NDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
-    }
-    if (attentionMask != null) {
-      NDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
-    }
+    NDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
+    NDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights));
     try {
       return __tmp[0];

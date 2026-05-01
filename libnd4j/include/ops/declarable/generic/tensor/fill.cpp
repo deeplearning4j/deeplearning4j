@@ -84,10 +84,10 @@ DECLARE_TYPES(fill) {
 DECLARE_SHAPE_FN(fill) {
   auto shapeArray = INPUT_VARIABLE(0);
 
-  const LongType len = shape::length(inputShape->at(0));
-  if (shape::isEmpty(inputShape->at(0))) {
+  const LongType len = shapeArray->lengthOf();
+  if (shapeArray->isEmpty()) {
     std::vector<LongType> shape = {0};
-    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(shapeArray->dataType()));
   }
   LongType *newShape = nullptr;
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), sd::LongType);
@@ -95,7 +95,7 @@ DECLARE_SHAPE_FN(fill) {
   newShape[0] = len;
   bool hasZeros = false;
   LongType totalLen = 1;
-  for (int e = 0; e < (int)len; e++) {
+  for (int e = 0; e < shapeArray->lengthOf(); e++) {
     newShape[e + 1] = shapeArray->e<LongType>(e);
     if(newShape[e + 1] == 0)
       hasZeros = true;
@@ -107,7 +107,7 @@ DECLARE_SHAPE_FN(fill) {
     // Explicit dtype provided via DArgument - use it
     dataType = D_ARG(0);
   } else if (block.width() > 1) {
-    dataType = ArrayOptions::dataType(inputShape->at(1));
+    dataType = INPUT_VARIABLE(1)->dataType();
   } else if (block.numT() > 0) {
     dataType = static_cast<sd::DataType>(sd::env_defaultFloatDataType());
   } else if (block.numI() > 0) {

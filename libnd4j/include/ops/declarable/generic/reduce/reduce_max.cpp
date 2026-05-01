@@ -85,7 +85,7 @@ DECLARE_SHAPE_FN(reduce_max) {
   auto dimensions = *block.getIArguments();
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     // TF semantics: empty axis input means no reduction (return input shape unchanged)
     if (dimensions.empty()) {
       return SHAPELIST(CONSTANT(inputShape->at(0)));
@@ -165,7 +165,7 @@ DECLARE_SHAPE_FN(reduce_max_bp) {
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
   }
 
   REQUIRE_TRUE(

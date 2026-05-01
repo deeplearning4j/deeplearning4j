@@ -86,8 +86,8 @@ DECLARE_TYPES(broadcast_dynamic_shape) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(broadcast_dynamic_shape) {
-  const int xRank = shape::length(inputShape->at(0));
-  const int yRank = shape::length(inputShape->at(1));
+  const int xRank = INPUT_VARIABLE(0)->lengthOf();
+  const int yRank = INPUT_VARIABLE(1)->lengthOf();
 
   const int maxRank = xRank > yRank ? xRank : yRank;
 

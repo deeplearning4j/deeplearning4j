@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
   } else if (block.width() > 1) {
     auto reps_vector = INPUT_VARIABLE(1);
     REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0,
-                 "TILE op: repeats vector length should be equal to input rank, but got %lld and %i correspondingly !",
+                 "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
                  reps_vector->lengthOf(), inRank);
 
     reps = reps_vector->template asVectorT<sd::LongType>();
@@ -77,9 +77,9 @@ DECLARE_SHAPE_FN(tile) {
     reps = ArrayUtils::toLongVector(*(block.getIArguments()));
   } else if (block.width() > 1) {
     auto reps_vector = INPUT_VARIABLE(1);
-    REQUIRE_TRUE(shape::length(inputShape->at(1)) == inRank, 0,
-                 "TILE op: repeats vector length should be equal to input rank, but got %lld and %i correspondingly !",
-                 shape::length(inputShape->at(1)), inRank);
+    REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0,
+                 "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
+                 reps_vector->lengthOf(), inRank);
 
     reps = reps_vector->template asVectorT<sd::LongType>();
   } else {
@@ -158,9 +158,9 @@ DECLARE_SHAPE_FN(tile_bp) {
     reps = ArrayUtils::toLongVector(*(block.getIArguments()));
   } else if (block.width() > 2) {
     auto reps_vector = INPUT_VARIABLE(1);
-    REQUIRE_TRUE(shape::length(inputShape->at(1)) == inRank, 0,
+    REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0,
                  "TILE_BP op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
-                 shape::length(inputShape->at(1)), inRank);
+                 reps_vector->lengthOf(), inRank);
     reps = reps_vector->template asVectorT<sd::LongType>();
     gradOShape = inputShape->at(2);
   } else {
