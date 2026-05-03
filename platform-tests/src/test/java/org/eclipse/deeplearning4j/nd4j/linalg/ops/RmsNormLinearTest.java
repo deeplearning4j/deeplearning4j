@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear;
@@ -30,6 +32,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -150,5 +154,93 @@ public class RmsNormLinearTest extends BaseNd4jTestWithBackends {
 
         double maxDiff = expected.sub(output).amaxNumber().doubleValue();
         assertTrue(maxDiff < 1e-3, "Gamma=ones max diff: " + maxDiff);
+    }
+
+    @Test
+    public void testNonContiguousProjectionWeight() {
+        float eps = 1e-6f;
+        int M = 7, K = 64, N = 128;
+
+        INDArray x = Nd4j.randn(DataType.FLOAT, M, K);
+        INDArray gamma = Nd4j.rand(DataType.FLOAT, K).addi(0.5);
+        INDArray weightRaw = Nd4j.randn(DataType.FLOAT, N, K).muli(0.02);
+        INDArray weightTransposed = weightRaw.transpose();
+
+        INDArray invRms = computeInvRms(x, eps);
+        INDArray expected = x.mul(invRms).mul(gamma).mmul(weightTransposed);
+
+        INDArray output = Nd4j.create(DataType.FLOAT, M, N);
+        Nd4j.exec(new RmsNormLinear(x, gamma, weightTransposed, output, eps));
+
+        double maxDiff = expected.sub(output).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-3, "Non-contiguous projection weight max diff: " + maxDiff);
+    }
+
+    @Test
+    public void testRank3InputWithNonContiguousProjectionWeight() {
+        float eps = 1e-6f;
+        int batch = 1, seqLen = 7, K = 64, N = 128;
+
+        INDArray x = Nd4j.randn(DataType.FLOAT, batch, seqLen, K);
+        INDArray gamma = Nd4j.rand(DataType.FLOAT, K).addi(0.5);
+        INDArray weightRaw = Nd4j.randn(DataType.FLOAT, N, K).muli(0.02);
+        INDArray weightTransposed = weightRaw.transpose();
+
+        INDArray x2d = x.reshape('c', batch * seqLen, K);
+        INDArray invRms = computeInvRms(x2d, eps);
+        INDArray expected = x2d.mul(invRms).mul(gamma)
+                .mmul(weightTransposed)
+                .reshape('c', batch, seqLen, N);
+
+        INDArray output = Nd4j.create(DataType.FLOAT, batch, seqLen, N);
+        Nd4j.exec(new RmsNormLinear(x, gamma, weightTransposed, output, eps));
+
+        double maxDiff = expected.sub(output).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-3,
+                "Rank-3 non-contiguous projection weight max diff: " + maxDiff);
+    }
+
+    @Test
+    public void testSameDiffRank3InputWithPermuteProjectionWeight() {
+        assertSameDiffRank3InputWithPermuteProjectionWeight(true);
+    }
+
+    @Test
+    public void testSameDiffRank3InputWithPermuteProjectionWeightDspDisabled() {
+        assertSameDiffRank3InputWithPermuteProjectionWeight(false);
+    }
+
+    private static void assertSameDiffRank3InputWithPermuteProjectionWeight(boolean dspEnabled) {
+        float eps = 1e-6f;
+        int batch = 1, seqLen = 7, K = 64, N = 128;
+
+        INDArray x = Nd4j.randn(DataType.FLOAT, batch, seqLen, K);
+        INDArray gamma = Nd4j.rand(DataType.FLOAT, K).addi(0.5);
+        INDArray weightRaw = Nd4j.randn(DataType.FLOAT, N, K).muli(0.02);
+        INDArray weightTransposed = weightRaw.transpose();
+
+        INDArray x2d = x.reshape('c', batch * seqLen, K);
+        INDArray invRms = computeInvRms(x2d, eps);
+        INDArray expected = x2d.mul(invRms).mul(gamma)
+                .mmul(weightTransposed)
+                .reshape('c', batch, seqLen, N);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable xVar = sd.placeHolder("x", DataType.FLOAT, batch, seqLen, K);
+        SDVariable gammaVar = sd.var("gamma", gamma);
+        SDVariable weightRawVar = sd.var("lm_head", weightRaw);
+        SDVariable weightTransposedVar = sd.permute("lm_head_t", weightRawVar, 1, 0);
+        sd.nn().rmsNormLinear("lm_logits", xVar, gammaVar, weightTransposedVar, eps);
+        sd.setOutputs("lm_logits");
+        sd.setDspAutoCompileEnabled(dspEnabled);
+        sd.setDspNativeAutoCompileEnabled(dspEnabled);
+        sd.resetSession();
+
+        Map<String, INDArray> ph = Collections.singletonMap("x", x);
+        INDArray actual = sd.outputSingle(ph, "lm_logits");
+
+        double maxDiff = expected.sub(actual).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-3,
+                "SameDiff rank-3 permuted projection weight max diff: " + maxDiff);
     }
 }

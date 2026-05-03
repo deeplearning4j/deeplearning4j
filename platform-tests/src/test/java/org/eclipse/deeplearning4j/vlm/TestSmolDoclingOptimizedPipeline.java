@@ -253,6 +253,12 @@ public class TestSmolDoclingOptimizedPipeline {
 
     @BeforeAll
     public static void setup() {
+        // Enable debug + verbose for native op tracing when system property is set
+        if ("true".equals(System.getProperty("nd4j.env.debug"))) {
+            Nd4j.getEnvironment().setDebug(true);
+            Nd4j.getEnvironment().setVerbose(true);
+        }
+
         String optEnabled = System.getProperty("nd4j.optimizer.enabled");
         if (optEnabled == null || optEnabled.isEmpty()) {
             System.setProperty("nd4j.optimizer.enabled", "true");

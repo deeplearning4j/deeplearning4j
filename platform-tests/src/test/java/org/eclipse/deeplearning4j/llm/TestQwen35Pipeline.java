@@ -356,6 +356,10 @@ public class TestQwen35Pipeline {
                     .tokenizer(ctx.tokenizer)
                     .samplingConfig(samplingConfig)
                     .maxNewTokens(config.maxTokens)
+                    .graphOptimizerEnabled(Boolean.parseBoolean(
+                            System.getProperty("qwen.graph.optimizer", "true")))
+                    .dspEnabled(Boolean.parseBoolean(
+                            System.getProperty("qwen.dsp", "true")))
                     .build();
 
             GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig);
@@ -437,8 +441,8 @@ public class TestQwen35Pipeline {
                 cr.firstTokenMs = genResult.getFirstTokenLatencyMs();
                 cr.finishReason = genResult.getFinishReason();
 
-                log.info("Generated {} tokens at {:.2f} tok/s: {}",
-                        cr.tokenCount, cr.tokPerSec, genResult.getText());
+                log.info("Generated {} tokens at {} tok/s: {}",
+                        cr.tokenCount, String.format("%.2f", cr.tokPerSec), genResult.getText());
 
                 // Validate quality
                 t0 = System.currentTimeMillis();
@@ -453,6 +457,7 @@ public class TestQwen35Pipeline {
                 assertTrue(cr.diversityRatio * 100 >= config.minDiversityPct,
                         String.format("Diversity %.1f%% below minimum %.1f%%",
                                 cr.diversityRatio * 100, config.minDiversityPct));
+                assertTrue(quality.isPassed(), "Generation quality failed: " + quality.summary());
 
                 cr.passed = true;
             } catch (Exception | AssertionError e) {
@@ -489,7 +494,7 @@ public class TestQwen35Pipeline {
             }
         }
         if (maxTokPerSec > 0) {
-            log.info("Fastest: {} at {:.2f} tok/s", fastestConfig, maxTokPerSec);
+            log.info("Fastest: {} at {} tok/s", fastestConfig, String.format("%.2f", maxTokPerSec));
         }
 
         assertEquals(0, failures, failures + " configuration(s) failed. See log for details.");
@@ -522,8 +527,8 @@ public class TestQwen35Pipeline {
                 ctx.model, ctx.tokenizer, referenceText, contextLength, stride);
 
         log.info("Perplexity evaluation:");
-        log.info("  Perplexity: {:.4f}", result.getPerplexity());
-        log.info("  Bits/byte: {:.4f}", result.getBitsPerByte());
+        log.info("  Perplexity: {}", String.format("%.4f", result.getPerplexity()));
+        log.info("  Bits/byte: {}", String.format("%.4f", result.getBitsPerByte()));
         log.info("  Tokens evaluated: {}", result.getNumTokens());
         log.info("  Time: {}ms", result.getEvaluationTimeMs());
 
@@ -579,6 +584,10 @@ public class TestQwen35Pipeline {
                         .tokenizer(tokenizer)
                         .samplingConfig(SamplingConfig.greedy())
                         .maxNewTokens(maxTokens)
+                        .graphOptimizerEnabled(Boolean.parseBoolean(
+                                System.getProperty("qwen.graph.optimizer", "true")))
+                        .dspEnabled(Boolean.parseBoolean(
+                                System.getProperty("qwen.dsp", "true")))
                         .build();
 
                 GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig);
@@ -636,6 +645,10 @@ public class TestQwen35Pipeline {
                     .tokenizer(ctx.tokenizer)
                     .samplingConfig(SamplingConfig.greedy())
                     .maxNewTokens(maxTokens)
+                    .graphOptimizerEnabled(Boolean.parseBoolean(
+                            System.getProperty("qwen.graph.optimizer", "true")))
+                    .dspEnabled(Boolean.parseBoolean(
+                            System.getProperty("qwen.dsp", "true")))
                     .build();
 
             GenerationPipeline pipeline;
@@ -645,8 +658,9 @@ public class TestQwen35Pipeline {
                 throw new RuntimeException("Failed to create GenerationPipeline", e);
             }
             GenerationResult genResult = pipeline.generate(prompt, maxTokens);
-            log.info("  Output ({} tokens, {:.2f} tok/s): {}",
-                    genResult.getGeneratedTokenCount(), genResult.getTokensPerSecond(), genResult.getText());
+            log.info("  Output ({} tokens, {} tok/s): {}",
+                    genResult.getGeneratedTokenCount(), String.format("%.2f", genResult.getTokensPerSecond()),
+                    genResult.getText());
 
             QualityReport quality;
             if (expectedSubstrings.length > 0) {
@@ -664,6 +678,7 @@ public class TestQwen35Pipeline {
         }
 
         log.info("Reference prompt results: {}/{} passed", passed, total);
+        assertEquals(total, passed, "All reference prompts should pass");
     }
 
     // ─── Download-Only Test ────────────────────────────────────────────

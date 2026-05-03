@@ -24,7 +24,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
+import org.nd4j.autodiff.samediff.optimize.OptimizerSet;
 import org.nd4j.autodiff.samediff.optimize.optimizations.AlgebraicOptimizations;
 import org.nd4j.autodiff.samediff.optimize.optimizations.LinearFusionOptimizations;
 import org.nd4j.autodiff.samediff.optimize.optimizations.NormalizationFusionOptimizations;
@@ -36,6 +38,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +61,25 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
     @Override
     public long getTimeoutMilliseconds() {
         return 1_000_000_000L;
+    }
+
+    private static void assertClose(String message, INDArray expected, INDArray actual, double eps) {
+        assertArrayEquals(message + " shape", expected.shape(), actual.shape());
+        assertEquals(message + " length", expected.length(), actual.length());
+        for (long i = 0; i < expected.length(); i++) {
+            assertEquals(message + " value[" + i + "]",
+                    expected.getDouble(i), actual.getDouble(i), eps);
+        }
+    }
+
+    private static List<OptimizerSet> optimizationsWithoutQuantization() {
+        List<OptimizerSet> optimizations = new ArrayList<>();
+        for (OptimizerSet set : GraphOptimizer.defaultOptimizations()) {
+            if (!(set instanceof QuantizationOptimizations)) {
+                optimizations.add(set);
+            }
+        }
+        return optimizations;
     }
 
     /**
@@ -194,15 +216,57 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
         INDArray actual = optimized.outputSingle(ph, "lm_logits");
         assertNotNull("outputSingle('lm_logits') must return non-null after NormFusion", actual);
 
-        // Numeric values must match within FP32 tolerance
-        float[] expVals = expected.toFloatVector();
-        float[] actVals = actual.toFloatVector();
-        assertEquals("rms_norm_linear fused output length must equal original",
-                expVals.length, actVals.length);
-        for (int i = 0; i < expVals.length; i++) {
-            assertEquals("rms_norm_linear output[" + i + "] must match original",
-                    expVals[i], actVals[i], 1e-3f);
-        }
+        // Numeric values must match within FP32 tolerance.
+        assertClose("rms_norm_linear", expected, actual, 1e-3);
+    }
+
+    /**
+     * Qwen logits use rms_norm(x, gamma) -> matmul(normed, permute(lm_head)).
+     * The optimizer must preserve this rank-3 path when DSP is disabled and the
+     * transposed projection is produced by a view op rather than a direct variable.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNormFusionWithTransposedProjectionWeightDspDisabled(Nd4jBackend nd4jBackend) {
+        SameDiff sd = SameDiff.create();
+
+        int batchSize = 1;
+        int seqLen = 7;
+        int hiddenDim = 16;
+        int vocabDim = 64;
+
+        INDArray xArr = Nd4j.rand(DataType.FLOAT, batchSize, seqLen, hiddenDim);
+        INDArray gammaArr = Nd4j.rand(DataType.FLOAT, hiddenDim).addi(0.5);
+        INDArray wRawArr = Nd4j.rand(DataType.FLOAT, vocabDim, hiddenDim);
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, batchSize, seqLen, hiddenDim);
+        SDVariable gamma = sd.var("gamma", gammaArr);
+        SDVariable wRaw = sd.var("lm_head", wRawArr);
+        SDVariable wTransposed = sd.permute("lm_head_t", wRaw, 1, 0);
+
+        SDVariable normed = sd.nn().rmsNorm(x, gamma, 1e-6);
+        sd.mmul("lm_logits", normed, wTransposed);
+        sd.setOutputs("lm_logits");
+
+        Map<String, INDArray> ph = Collections.singletonMap("x", xArr);
+        INDArray x2d = xArr.reshape('c', batchSize * seqLen, hiddenDim);
+        INDArray invRms = org.nd4j.linalg.ops.transforms.Transforms
+                .sqrt(x2d.mul(x2d).mean(true, -1).add(1e-6))
+                .rdiv(1.0);
+        INDArray expected = x2d.mul(invRms).mul(gammaArr)
+                .mmul(wRawArr.transpose())
+                .reshape('c', batchSize, seqLen, vocabDim);
+
+        SameDiff optimized = GraphOptimizer.optimize(sd,
+                Collections.singletonList("lm_logits"),
+                optimizationsWithoutQuantization());
+        optimized.setDspAutoCompileEnabled(false);
+        optimized.setDspNativeAutoCompileEnabled(false);
+        optimized.resetSession();
+
+        INDArray actual = optimized.outputSingle(ph, "lm_logits");
+        assertNotNull("outputSingle('lm_logits') must return non-null after NormFusion", actual);
+        assertClose("rms_norm_linear transposed projection", expected, actual, 1e-3);
     }
 
     /**
@@ -235,6 +299,33 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
         String survivingOutput = optimizedOutputs.get(0);
         assertTrue("Surviving output '" + survivingOutput + "' must be a variable in the optimized graph",
                 optimized.hasVariable(survivingOutput));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGraphOptimizerPreservesDspExecutionControls(Nd4jBackend nd4jBackend) {
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 4);
+        SDVariable zero = sd.constant("zero", Nd4j.zeros(DataType.FLOAT, 1));
+        x.add("result", zero);
+        sd.setOutputs("result");
+
+        sd.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+        sd.setDspAutoCompileEnabled(false);
+        sd.setDspNativeAutoCompileEnabled(false);
+        sd.setDspFallbackToAutoIfTritonUnavailable(false);
+
+        SameDiff optimized = GraphOptimizer.optimize(sd, "result");
+
+        assertEquals("GraphOptimizer must preserve SameDiff DSP execution mode",
+                GraphExecutionMode.SLOT_BY_SLOT, optimized.getGraphExecutionMode());
+        assertFalse("GraphOptimizer must preserve dspAutoCompileEnabled",
+                optimized.isDspAutoCompileEnabled());
+        assertFalse("GraphOptimizer must preserve dspNativeAutoCompileEnabled",
+                optimized.isDspNativeAutoCompileEnabled());
+        assertFalse("GraphOptimizer must preserve dspFallbackToAutoIfTritonUnavailable",
+                optimized.isDspFallbackToAutoIfTritonUnavailable());
     }
 
     /**

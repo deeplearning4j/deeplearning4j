@@ -24,20 +24,35 @@ import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.DownloadResult;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.LLMModel;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.QuantType;
+import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
+import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
+import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.Operation;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
+import org.nd4j.autodiff.samediff.optimize.OptimizerSet;
+import org.nd4j.autodiff.samediff.optimize.optimizations.QuantizationOptimizations;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -699,10 +714,236 @@ public class TestQwenLayerDiagnostics {
         return top;
     }
 
+    /** Alias for topK — returns indices of the top-k values in a float array. */
+    private int[] topKIndices(float[] arr, int k) {
+        return topK(arr, k);
+    }
+
     /** Format bytes for display. */
     private static String formatBytes(long bytes) {
         if (bytes < 1024L * 1024) return String.format("%.1f KB", bytes / 1024.0);
         if (bytes < 1024L * 1024 * 1024) return String.format("%.1f MB", bytes / (1024.0 * 1024));
         return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+    }
+
+    // =========================================================================
+    // Pipeline-matching diagnostic: France prompt, maxKvLen=57, verbose per-op
+    // =========================================================================
+
+    /**
+     * Run with EXACTLY the same inputs as GenerationPipeline.ggufPrefill for
+     * "What is the capital of France?" to isolate CUDA divergence.
+     *
+     * <p>Controls via system properties:</p>
+     * <ul>
+     *   <li>{@code -Ddiag.optimizer=true} — run GraphOptimizer (default: false)</li>
+     *   <li>{@code -Ddiag.maxKvLen=57}   — override maxKvLen (default: 57)</li>
+     *   <li>{@code -Ddiag.verbose=true}  — print per-op output stats (default: true)</li>
+     * </ul>
+     *
+     * <p>Run:</p>
+     * <pre>
+     *   cd platform-tests && mvn test \
+     *     -Dtest=TestQwenLayerDiagnostics#testFrancePromptVerbose \
+     *     -Ddiag.optimizer=false \
+     *     2>&1 | tee /tmp/qwen-france-verbose.log
+     * </pre>
+     */
+    @Test
+    @DisplayName("France prompt verbose per-op diagnostic")
+    public void testFrancePromptVerbose() throws Exception {
+        boolean useOptimizer = Boolean.parseBoolean(System.getProperty("diag.optimizer", "false"));
+        boolean verbose = Boolean.parseBoolean(System.getProperty("diag.verbose", "true"));
+
+        // Load the REAL tokenizer and encode the prompt — no hardcoded approximations
+        String sizeLabel = "0.8B";
+        String tokenizerUrl = "https://huggingface.co/Qwen/Qwen3.5-" + sizeLabel + "/resolve/main/tokenizer.json";
+        File tokenizerFile = LLMModelDownloader.downloadCustom(tokenizerUrl, "qwen35-" + sizeLabel + "-tokenizer.json");
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.getAbsolutePath());
+        String prompt = "What is the capital of France?";
+        Encoding encoding = tokenizer.encode(prompt, true);
+        int[] franceTokens = encoding.getIds();
+        // maxKvLen = seqLen + 50 (matches pipeline: prefillSeqLen + maxNewTokens)
+        // Use explicit override if provided, otherwise compute from token count
+        final int maxKvLen = System.getProperty("diag.maxKvLen") != null
+                ? Integer.parseInt(System.getProperty("diag.maxKvLen"))
+                : franceTokens.length + 50;
+
+        System.out.println();
+        System.out.println("╔══════════════════════════════════════════════════════════════╗");
+        System.out.println("║   FRANCE PROMPT VERBOSE DIAGNOSTIC                           ║");
+        System.out.println("╚══════════════════════════════════════════════════════════════╝");
+        System.out.println("  optimizer=" + useOptimizer + " maxKvLen=" + maxKvLen + " verbose=" + verbose);
+        System.out.println("  tokens=" + Arrays.toString(franceTokens) + " (seqLen=" + franceTokens.length + ")");
+        System.out.println();
+
+        // Load model
+        DownloadResult download = LLMModelDownloader.download(LLMModel.QWEN35_0_8B, QuantType.Q4_K_M);
+        SameDiff model = GGMLModelImport.importModel(
+                download.getModelFile().getAbsolutePath(),
+                ConversionOptions.forInference());
+        model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+        System.out.println("  Model loaded: " + model.ops().length + " ops");
+
+        // Optionally run graph optimizer (same as GenerationPipeline)
+        if (useOptimizer) {
+            int opsBefore = model.getOps().size();
+            List<String> outputs = model.outputs() != null
+                    ? new ArrayList<>(model.outputs()) : new ArrayList<>();
+            List<OptimizerSet> optimizations = GraphOptimizer.defaultOptimizations().stream()
+                    .filter(s -> !(s instanceof QuantizationOptimizations))
+                    .collect(Collectors.toList());
+            model = GraphOptimizer.optimize(model, outputs, optimizations);
+            System.out.println("  GraphOptimizer: " + opsBefore + " -> " + model.getOps().size() + " ops");
+        }
+
+        final SameDiff finalModel = model;
+        int numLayers = discoverNumLayers(finalModel);
+        int seqLen = franceTokens.length;
+
+        // Build inputs matching pipeline EXACTLY
+        Map<String, INDArray> inputs = new HashMap<>();
+        int[][] tokenIds2D = new int[1][seqLen];
+        for (int i = 0; i < seqLen; i++) tokenIds2D[0][i] = franceTokens[i];
+        inputs.put("input_ids", Nd4j.createFromArray(tokenIds2D).castTo(DataType.INT64));
+
+        if (finalModel.hasVariable("position_offset"))
+            inputs.put("position_offset", Nd4j.scalar(DataType.INT64, 0L));
+        if (finalModel.hasVariable("cache_position"))
+            inputs.put("cache_position", Nd4j.scalar(DataType.INT64, 0L));
+
+        // Causal mask: [1,1,seqLen,maxKvLen] — THIS is the pipeline shape
+        if (finalModel.hasVariable("_causal_mask")) {
+            DataType maskDtype = finalModel.getVariable("_causal_mask").dataType();
+            INDArray causalMask = buildCausalMask(seqLen, maxKvLen, maskDtype);
+            inputs.put("_causal_mask", causalMask);
+            System.out.println("  _causal_mask shape=" + Arrays.toString(causalMask.shape())
+                    + " dtype=" + maskDtype);
+        }
+
+        // KV + GDN/conv state inputs
+        for (int layer = 0; layer < numLayers; layer++) {
+            if (isFullAttentionLayer(layer)) {
+                String keyName = "past_key_values." + layer + ".key";
+                String valName = "past_key_values." + layer + ".value";
+                if (finalModel.hasVariable(keyName))
+                    inputs.put(keyName, Nd4j.empty(finalModel.getVariable(keyName).dataType()));
+                if (finalModel.hasVariable(valName))
+                    inputs.put(valName, Nd4j.empty(finalModel.getVariable(valName).dataType()));
+            } else {
+                String gdnName = "past_gdn_state." + layer;
+                String convName = "past_conv_state." + layer;
+                if (finalModel.hasVariable(gdnName)) {
+                    long[] gdnShape = computeGdnStateShape(finalModel, layer);
+                    inputs.put(gdnName, Nd4j.zeros(finalModel.getVariable(gdnName).dataType(), gdnShape));
+                }
+                if (finalModel.hasVariable(convName)) {
+                    long[] convShape = computeConvStateShape(finalModel, layer);
+                    inputs.put(convName, Nd4j.zeros(finalModel.getVariable(convName).dataType(), convShape));
+                }
+            }
+        }
+
+        System.out.println("  Built " + inputs.size() + " inputs");
+        System.out.println();
+
+        // Debug/verbose mode is set above — native execution prints per-op info
+
+        // Request checkpoints + logits — GDN internals for layer 0 to isolate divergence
+        List<String> outputNames = new ArrayList<>();
+        outputNames.add("lm_logits");
+        outputNames.add("embedded");
+        // GDN block internals for layer 0: rms_norm -> qkv -> conv -> gated_delta -> proj
+        String[] gdnInternals = {
+            "model.layers.0.input_layernorm",  // rms_norm output
+            "gdn_qkv_0",                       // QKV projection
+            "gdn_conv_0",                      // causal_conv1d output
+            "gdn_out_0",                       // gated_delta_rule output
+            "gdn_proj_0",                      // output projection matmul
+            "post_attn_0"                      // residual add (embedded + gdn_proj_0)
+        };
+        for (String name : gdnInternals) {
+            if (finalModel.hasVariable(name)) outputNames.add(name);
+        }
+        for (int layer = 0; layer < numLayers; layer++) {
+            String layerOut = "layer_out_" + layer;
+            if (finalModel.hasVariable(layerOut)) outputNames.add(layerOut);
+        }
+        // Filter to existing variables
+        outputNames.removeIf(name -> !finalModel.hasVariable(name));
+
+        System.out.println("=== RUNNING FORWARD PASS (SLOT_BY_SLOT) ===");
+        System.out.println("  Requesting outputs: " + outputNames);
+        System.out.println();
+
+        long t0 = System.currentTimeMillis();
+        Map<String, INDArray> results = finalModel.output(inputs, outputNames.toArray(new String[0]));
+        long elapsed = System.currentTimeMillis() - t0;
+        System.out.println();
+        System.out.println("=== FORWARD PASS COMPLETE (" + elapsed + "ms) ===");
+        System.out.println();
+
+        // Analyze logits
+        INDArray logits = results.get("lm_logits");
+        if (logits != null) {
+            System.out.println("=== LOGITS ANALYSIS ===");
+            System.out.println("  shape=" + Arrays.toString(logits.shape()) + " dtype=" + logits.dataType());
+            // Get last position logits (the next-token prediction)
+            int lastPos = seqLen - 1;
+            INDArray lastLogits = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(lastPos), NDArrayIndex.all());
+            System.out.println("  Last position (" + lastPos + ") logits:");
+            System.out.println("    min=" + lastLogits.minNumber() + " max=" + lastLogits.maxNumber()
+                    + " mean=" + lastLogits.meanNumber());
+
+            // Top-5 tokens
+            float[] logitArr = lastLogits.dup().data().asFloat();
+            int[] topK = topKIndices(logitArr, 10);
+            System.out.println("  Top-10 token predictions:");
+            for (int i = 0; i < topK.length && i < 10; i++) {
+                System.out.println("    rank " + i + ": token=" + topK[i]
+                        + " logit=" + logitArr[topK[i]]);
+            }
+            // Check for France token (271 = "Paris" in Qwen tokenizer common mapping)
+            System.out.println();
+            System.out.println("  Token 271 logit = " + (271 < logitArr.length ? logitArr[271] : "N/A"));
+            System.out.println("  Predicted token = " + topK[0] + " (expected 271 for 'Paris')");
+            if (topK[0] == 271) {
+                System.out.println("  ✓ CORRECT — model predicts 'Paris'");
+            } else {
+                System.out.println("  ✗ WRONG — expected 271, got " + topK[0]);
+            }
+        }
+
+        // Print layer-by-layer checkpoint stats with first5 values at last position
+        System.out.println();
+        System.out.println("=== LAYER CHECKPOINT STATS ===");
+        for (String name : outputNames) {
+            if ("lm_logits".equals(name)) continue;
+            INDArray arr = results.get(name);
+            if (arr != null) {
+                System.out.println("  " + name + ": shape=" + Arrays.toString(arr.shape())
+                        + " min=" + arr.minNumber() + " max=" + arr.maxNumber()
+                        + " mean=" + arr.meanNumber());
+                // Print first 5 values at last sequence position for comparison
+                long[] shape = arr.shape();
+                if (shape.length == 3 && shape[1] > 0) {
+                    int lastSeqPos = (int)(shape[1] - 1);
+                    INDArray lastPosVec = arr.get(NDArrayIndex.point(0), NDArrayIndex.point(lastSeqPos), NDArrayIndex.all());
+                    float[] vals = lastPosVec.dup().data().asFloat();
+                    StringBuilder sb = new StringBuilder("    lastPos first5=[");
+                    for (int i = 0; i < Math.min(5, vals.length); i++) {
+                        if (i > 0) sb.append(",");
+                        sb.append(String.format("%.6f", vals[i]));
+                    }
+                    sb.append("] last5=[");
+                    for (int i = Math.max(0, vals.length - 5); i < vals.length; i++) {
+                        if (i > Math.max(0, vals.length - 5)) sb.append(",");
+                        sb.append(String.format("%.6f", vals[i]));
+                    }
+                    sb.append("]");
+                    System.out.println(sb.toString());
+                }
+            }
+        }
     }
 }

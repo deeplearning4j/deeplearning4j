@@ -44,6 +44,7 @@ import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -128,6 +129,8 @@ public class TestDspValidation {
             Nd4j.getEnvironment().setDebug(true);
             Nd4j.getEnvironment().setVerbose(true);
         }
+
+        // NaN panic disabled — was used for one-time diagnosis, not needed in steady state
     }
 
     private static int getTokens(int defaultTokens) {
