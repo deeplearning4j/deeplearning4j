@@ -91,7 +91,11 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       status = executeSegmentWithSpecificBackend(
           seg, seg.resolvedCpuBackend, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        DSP_DIAG(EXECUTE, "CPU_FROZEN: backend failed seg[%d-%d], falling back to slot-by-slot",
+        // Backend that was working now failed — this is a real bug.
+        // Mark it failed so we fall to slot-by-slot on subsequent calls.
+        seg.exec.compilationFailed = true;
+        DSP_DIAG(EXECUTE, "CPU_FROZEN: backend failed seg[%d-%d], marking compilationFailed, "
+                 "falling back to slot-by-slot",
                  seg.def.startSlot, seg.def.endSlot);
         status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
       }
@@ -103,7 +107,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // executionCount==0 after resegmentForFreeze() rebuilds them.
       status = executeSegmentWithCpuGraph(seg, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        DSP_DIAG(EXECUTE, "CPU_FROZEN: cascade failed seg[%d-%d], falling back to slot-by-slot",
+        seg.exec.compilationFailed = true;
+        DSP_DIAG(EXECUTE, "CPU_FROZEN: cascade failed seg[%d-%d], marking compilationFailed, "
+                 "falling back to slot-by-slot",
                  seg.def.startSlot, seg.def.endSlot);
         status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
       }
@@ -269,9 +275,10 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           return Status::OK;
         }
         // Cascade returned KERNEL_FAILURE = no backend could fuse this segment.
-        // Fall through to slot-by-slot for this invocation.
+        // Mark compilationFailed so we don't retry the cascade on every call.
+        segment.exec.compilationFailed = true;
         DSP_DIAG(BACKEND, "NativeDSP::execute: CPU_GRAPH cascade failed seg[%d-%d], "
-                 "falling back to slot-by-slot",
+                 "marking compilationFailed, falling back to slot-by-slot",
                  segment.def.startSlot, segment.def.endSlot);
       }
       [[fallthrough]];

@@ -1491,8 +1491,10 @@ void NativeDynamicShapePlan::platformClearCastCache() {
 }
 
 void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int execCount) {
+  int activeDevice = 0;
+  cudaGetDevice(&activeDevice);
   size_t poolUsedPostSegs = 0, poolReservedPostSegs = 0;
-  sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedPostSegs, poolReservedPostSegs);
+  sd::memory::CudaMemoryPool::getInstance().getStats(activeDevice, poolUsedPostSegs, poolReservedPostSegs);
   DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB",
            poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024));
 
@@ -1558,7 +1560,9 @@ void NativeDynamicShapePlan::platformDetectAndPrepareBatchedGemm(NDArray** ext, 
 }
 
 void NativeDynamicShapePlan::platformPreReplayPoolStats(size_t& poolUsedOut, size_t& poolReservedOut) {
-  sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedOut, poolReservedOut);
+  int activeDevice = 0;
+  cudaGetDevice(&activeDevice);
+  sd::memory::CudaMemoryPool::getInstance().getStats(activeDevice, poolUsedOut, poolReservedOut);
   DSP_DIAG(MEMORY, "pre-segments: pool used=%zuMB reserved=%zuMB",
            poolUsedOut / (1024*1024), poolReservedOut / (1024*1024));
 
@@ -1570,8 +1574,10 @@ void NativeDynamicShapePlan::platformPreReplayPoolStats(size_t& poolUsedOut, siz
 }
 
 void NativeDynamicShapePlan::platformPostReplayPoolManagement(size_t poolUsedPre, bool frozen, int execCount) {
+  int activeDevice = 0;
+  cudaGetDevice(&activeDevice);
   size_t poolUsedPostSegs = 0, poolReservedPostSegs = 0;
-  sd::memory::CudaMemoryPool::getInstance().getStats(0, poolUsedPostSegs, poolReservedPostSegs);
+  sd::memory::CudaMemoryPool::getInstance().getStats(activeDevice, poolUsedPostSegs, poolReservedPostSegs);
   long long deltaMB = static_cast<long long>(poolUsedPostSegs - poolUsedPre) / (1024LL*1024);
   DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB (delta=%lldMB from pre-segs)",
            poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024), deltaMB);

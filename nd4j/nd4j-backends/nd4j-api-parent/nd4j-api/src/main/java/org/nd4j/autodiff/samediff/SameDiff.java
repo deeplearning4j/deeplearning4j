@@ -4295,7 +4295,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
 
 
-        System.out.println(summary(true));
         List<SDVariable> convertToConstant = new ArrayList<>();
         for(SDVariable variable : variablesToConvert) {
             if(!variableHasGradient(variable.name())) {
@@ -5598,7 +5597,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             return;
         }
         if(!variables.containsKey(from)) {
-            System.out.println(String.format("Failed to rename variable %s to %s, no variable found",from,to));
+            log.debug("Failed to rename variable {} to {}, no variable found", from, to);
             return;
         }
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
@@ -7002,7 +7001,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 //Differentiate:
                 List<SDVariable> currFnGrads = df.diff(grads);
                 differentiatedOps.add(df.getOwnName());
-                System.out.println("Added differentiated op " + df.getOwnName());
                 //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                 for (String s : inputsToOp) {
                     Variable v = sameDiff.variables.get(s);

@@ -27,6 +27,7 @@
 #if NOT_EXCLUDED(OP_onnx_multi_head_attention)
 
 #include <helpers/FlashAttentionHelper.h>
+#include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <ops/declarable/headers/nn.h>
 #include <cmath>
@@ -167,16 +168,10 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
 
   // Reshape [batch, seq, hidden] -> [batch, seq, heads, headDim] (BSHD format for FlashAttentionHelper)
   // Q uses numHeads, K/V use numKvHeads (may differ for GQA)
-  // Force contiguous copy before reshape: DSP pre-allocated arrays may have non-standard
-  // strides from view ops or max-allocation. reshape('c', ..., false) creates views that
-  // map coordinates using the source's strides — if strides differ between DSP and standard
-  // execution, the same reshape produces different data layouts, causing wrong attention output.
+  // reshape('c', ..., false) attempts a zero-copy view but falls back to copy if the source
+  // has non-contiguous strides (checked internally via reshapeNoAlloc).
   std::vector<LongType> qShape4d = {batch, seqQ, numHeads, headDim};
   std::vector<LongType> kvShape4d = {batch, seqKV, numKvHeads, headDim};
-
-  NDArray* qContig = query;
-  NDArray* kContig = key;
-  NDArray* vContig = value;
 
   NDArray* qReshaped = query->reshape('c', qShape4d, false);
   NDArray* kReshaped = key->reshape('c', kvShape4d, false);
@@ -269,6 +264,10 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
       kPastSlice->assign(pastKeyBSHD);
       vPastSlice->assign(pastValueBSHD);
+      // Ensure device-resident before FlashAttention reads — permuted views from
+      // ext inputs may have host-actual data that assign() doesn't always flush.
+      kPastSlice->syncToDevice();
+      vPastSlice->syncToDevice();
       delete kPastSlice;
       delete vPastSlice;
       delete pastKeyBSHD;
@@ -283,6 +282,8 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
         kCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), kReshaped, kCurSlice, false);
         vCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), vReshaped, vCurSlice, false);
       }
+      kCurSlice->syncToDevice();
+      vCurSlice->syncToDevice();
 
       delete kCurSlice;
       delete vCurSlice;
@@ -304,6 +305,8 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
       kPastSlice->assign(pastKeyBSHD);
       vPastSlice->assign(pastValueBSHD);
+      kPastSlice->syncToDevice();
+      vPastSlice->syncToDevice();
       delete kPastSlice;
       delete vPastSlice;
 
@@ -311,6 +314,8 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       NDArray* vCurSlice = (*vFinal)(curSliceIdx);
       kCurSlice->assign(kReshaped);
       vCurSlice->assign(vReshaped);
+      kCurSlice->syncToDevice();
+      vCurSlice->syncToDevice();
       delete kCurSlice;
       delete vCurSlice;
 
@@ -355,27 +360,26 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     attnBias = attnBiasCastOwner.get();
   }
 
-  // Reshape output [batch, seqQ, hidden] → [batch, seqQ, numHeads, headDim] for attention kernel.
-  // Output is plan-allocated C-contiguous, so reshape is a zero-copy view — the kernel
-  // writes directly into the output buffer, eliminating the workspace nullify + assign copy
-  // (60 CUDA ops removed from graph per step for 30-layer model).
+  // Output in BSHD format [batch, seqQ, numHeads, headDim]
+  // Use AttentionWorkspace to reuse the buffer across invocations instead of
+  // allocating a new GPU buffer every call (30 layers × every decode step).
+  // The workspace buffer is zeroed before use to prevent stale data leaking through
+  // if FlashAttention doesn't write all positions (e.g., masked positions with attn bias).
   std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
-  NDArray* attnOut4d = output->reshape('c', outShape4d, false);
-  bool directWrite = (attnOut4d->specialBuffer() == output->specialBuffer());
+  auto workspace = AttentionWorkspace::getInstance();
+  NDArray* attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
+  attnOut4d->nullify();
 
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
   FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, attnOut4d, config,
                                 nullptr, nullptr, nullptr,
                                 block.launchContext(), attnBias);
 
-  if (!directWrite) {
-    // Reshape created a copy (non-contiguous output) — copy back.
-    std::vector<LongType> outShape3d = {batch, seqQ, hidden};
-    NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
-    output->assign(attnOutFinal);
-    delete attnOutFinal;
-  }
-  delete attnOut4d;
+  // Reshape output back to [batch, seqQ, hidden] and copy to output
+  std::vector<LongType> outShape3d = {batch, seqQ, hidden};
+  NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
+  output->assign(attnOutFinal);
+  delete attnOutFinal;
   
   // Output present key/value if requested (in BHSD format for ONNX compatibility)
   // Skip if we already wrote directly to output buffers (in-place KV or direct write mode)
@@ -403,7 +407,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   delete qReshaped;
   delete kReshaped;
   delete vReshaped;
-  // qContig/kContig/vContig are just aliases, not owned copies
 
   delete keyCast;
   delete valueCast;

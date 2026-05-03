@@ -253,7 +253,12 @@ static bool hasTransitiveDynamicUpstream(
       }
       continue;
     }
-    if (srcIdx < numSlots && !isVisited(srcIdx) && qTail < kMaxBfs) {
+    if (srcIdx < numSlots && !isVisited(srcIdx)) {
+      if (qTail >= kMaxBfs) {
+        // BFS queue overflow — conservatively assume dynamic to avoid
+        // incorrectly classifying as non-dynamic (which causes stale reuse).
+        return true;
+      }
       markVisited(srcIdx);
       queue[qTail++] = srcIdx;
     }
@@ -275,7 +280,11 @@ static bool hasTransitiveDynamicUpstream(
         }
         continue;
       }
-      if (srcIdx < numSlots && !isVisited(srcIdx) && qTail < kMaxBfs) {
+      if (srcIdx < numSlots && !isVisited(srcIdx)) {
+        if (qTail >= kMaxBfs) {
+          // BFS queue overflow — conservatively assume dynamic.
+          return true;
+        }
         markVisited(srcIdx);
         queue[qTail++] = srcIdx;
       }
@@ -1219,6 +1228,19 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
           }
           frozenConstCount++;
           valueDepStableKept++;
+          continue;
+        }
+        // isDataDependent=true (e.g. reshape_no_copy): this op WILL execute every step
+        // because it can't be frozen, but its frozen upstream inputs must also execute
+        // to keep producing valid data. Un-freeze them.
+        for (int i = 0; i < sl.wiring.numInputs; i++) {
+          int srcIdx = sl.wiring.inputSourceIndices[i];
+          if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+            auto it = outputSlotToOpSlot.find(srcIdx);
+            if (it != outputSlotToOpSlot.end() && slots_[it->second].frozenConstantSlot()) {
+              toUnfreeze.insert(it->second);
+            }
+          }
         }
         continue;
       }
@@ -1260,20 +1282,55 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     }
   }
 
-  // Disable in-place fusion for any op that would overwrite a frozen output buffer.
-  // In-place fusion writes the op's output directly into its input buffer.
-  // If that input comes from a frozen constant slot, the frozen value gets corrupted.
-  // Note: in-place fusion disabling for frozen slots is now done earlier in
-  // rebuildSegmentsForFrozenShapes() (before the warmup), so the warmup doesn't
-  // corrupt cached frozen values. The code here is a safety net for any case
-  // where rebuildSegments wasn't called before frozen detection.
+  // Disable in-place fusion for any op that would overwrite a protected output buffer.
+  // In-place fusion writes the op's output directly into its input buffer — if another
+  // slot later reads that buffer for shape inference (outputShapeDependsOnInputValues)
+  // or another downstream consumer, it gets garbage.
+  //
+  // Protected output slots:
+  // 1. Frozen constant slots (must remain stable for frozen skip)
+  // 2. Slots that serve as inputs to value-dependent ops (shape data must remain valid
+  //    until the value-dep op executes — e.g., concat→reshape_no_copy chain)
+  // 3. Slots consumed by multiple downstream ops (in-place overwrites corrupt the buffer
+  //    for all other consumers that haven't read it yet)
+  std::unordered_set<int> protectedSlots(frozenOutputSlots.begin(), frozenOutputSlots.end());
+
+  // Count consumers per output slot to identify multi-consumer slots
+  std::vector<int> slotConsumerCount(totalOutputSlots_, 0);
+  for (int s = 0; s < numSlots_; s++) {
+    for (int i = 0; i < slots_[s].wiring.numInputs; i++) {
+      int srcIdx = slots_[s].wiring.inputSourceIndices[i];
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+        slotConsumerCount[srcIdx]++;
+      }
+    }
+  }
+
+  for (int s = 0; s < numSlots_; s++) {
+    // Protect inputs to value-dependent ops
+    if (slots_[s].flags.outputShapeDependsOnInputValues) {
+      for (int i = 0; i < slots_[s].wiring.numInputs; i++) {
+        int srcIdx = slots_[s].wiring.inputSourceIndices[i];
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+          protectedSlots.insert(srcIdx);
+        }
+      }
+    }
+  }
+  // Protect multi-consumer slots
+  for (int si = 0; si < totalOutputSlots_; si++) {
+    if (slotConsumerCount[si] > 1) {
+      protectedSlots.insert(si);
+    }
+  }
+
   int disabledInPlace = 0;
   for (int s = 0; s < numSlots_; s++) {
     auto& sl = slots_[s];
     if (sl.flags.inPlaceFused && sl.flags.inPlaceFusedInputIdx >= 0 &&
         sl.flags.inPlaceFusedInputIdx < sl.wiring.numInputs) {
       int srcSlot = sl.wiring.inputSourceIndices[sl.flags.inPlaceFusedInputIdx];
-      if (srcSlot >= 0 && frozenOutputSlots.count(srcSlot)) {
+      if (srcSlot >= 0 && protectedSlots.count(srcSlot)) {
         sl.flags.inPlaceFused = false;
         sl.flags.inPlaceFusedInputIdx = -1;
         disabledInPlace++;
@@ -2059,7 +2116,7 @@ Status NativeDynamicShapePlan::executeSlot(
   // outputSlots_ is populated from outputSlots_ (line 921-922).  When
   // shapesFrozen_=false, outputSlots_ is zeroed — skipping a slot would
   // leave a NULL entry and downstream slots would get NULL inputs.
-  if (slot.frozenConstantSlot() && shapesFrozen_ && executeCount_ > 0) {
+  if (slot.frozenConstantSlot() && shapesFrozen_ && executeCount_ >= 2) {
     // Verify all outputs are populated before skipping. If outputSlots_[si]
     // is null (first execution), fall through to execute the slot so
     // downstream consumers get a valid array.
@@ -3220,6 +3277,7 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
+
     ShapeList* shapeList = nullptr;
     try {
       shapeList = slot.ident.op->calculateOutputShape(&inputShapes, ctx);
@@ -3232,6 +3290,30 @@ Status NativeDynamicShapePlan::executeSlot(
         if (ii > 0) inputShapeStr += ", ";
         inputShapeStr += inputs[ii] ? ShapeUtils::shapeAsString(inputs[ii]) : "null";
       }
+      // Build a short srcIdx summary FIRST (won't be truncated)
+      std::string srcIdxSummary;
+      for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
+        if (ii > 0) srcIdxSummary += ",";
+        int srcIdx = slot.wiring.inputSourceIndices[ii];
+        srcIdxSummary += "i" + std::to_string(ii) + "=";
+        if (srcIdx < 0) {
+          int extIdx = -(srcIdx + 1);
+          srcIdxSummary += "ext" + std::to_string(extIdx);
+        } else {
+          int producerStep = findProducingStepForOutputSlot(slots_, numSlots_, srcIdx);
+          if (producerStep >= 0) {
+            srcIdxSummary += "s" + std::to_string(producerStep);
+            srcIdxSummary += "(";
+            srcIdxSummary += slots_[producerStep].ident.opName;
+            srcIdxSummary += slots_[producerStep].frozenConstantSlot() ? ",FR" : "";
+            srcIdxSummary += slots_[producerStep].flags.isDynamicShape ? ",DYN" : "";
+            srcIdxSummary += ")";
+          } else {
+            srcIdxSummary += "slot" + std::to_string(srcIdx);
+          }
+        }
+      }
+
       std::string smallInputValueStr;
       for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
         if (inputs[ii] == nullptr) continue;
@@ -3257,12 +3339,15 @@ Status NativeDynamicShapePlan::executeSlot(
                                    externalArrays, numExt, externalInputNames_,
                                    seenSlotSteps);
       }
-      char errBuf[1024];
-      snprintf(errBuf, sizeof(errBuf), "slot %d (%s) shape inference failed: %s | inputs=[%s] iArgs=%d",
-               stepIdx, slot.ident.opName.c_str(), e.what(), inputShapeStr.c_str(), slot.args.numIArgs);
+      char errBuf[2048];
+      snprintf(errBuf, sizeof(errBuf),
+               "slot %d (%s) shape inference failed: %s | inputs=[%s] iArgs=%d frozenConst=%d state=%d execCount=%d src=[%s]",
+               stepIdx, slot.ident.opName.c_str(), e.what(), inputShapeStr.c_str(), slot.args.numIArgs,
+               slot.frozenConstantSlot() ? 1 : 0, static_cast<int>(slot.state_), executeCount_,
+               srcIdxSummary.c_str());
       std::string errMsg = errBuf;
       if (!smallInputValueStr.empty()) {
-        errMsg += " smallInputs=[";
+        errMsg += " vals=[";
         errMsg += smallInputValueStr;
         errMsg += "]";
       }

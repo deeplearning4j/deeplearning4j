@@ -672,17 +672,22 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                         intermediateOps.iterator().next(); // first intermediate op consumes rms_norm output
                 // If there are intermediates, rms_norm output should feed the first intermediate
                 // If no intermediates, rms_norm output should feed the matmul directly
-                if (intermediateOps.isEmpty()) {
-                    if (!hasOnlyConsumer(sd, helper, rmsNormOutVar, op.getName())) {
-                        continue;
-                    }
-                } else {
-                    // rms_norm output feeds the deepest intermediate (last one stripped)
-                    // We need to check that rms_norm output has only 1 consumer
-                    Variable rmsOutVariable = helper != null ? helper.getVariable(rmsNormOutVar) : sd.getVariables().get(rmsNormOutVar);
+                // Verify the rms_norm output has EXACTLY 1 consumer (this matmul's chain).
+                // Always check the LIVE graph, not the helper cache — prior optimizations
+                // in this pass may have altered consumer lists. In models like Qwen where
+                // Q/K/V projections share a normalization, rms_norm_N feeds multiple matmuls
+                // and MUST NOT be fused+removed.
+                {
+                    Variable rmsOutVariable = sd.getVariables().get(rmsNormOutVar);
                     if (rmsOutVariable == null) continue;
                     List<String> rmsOutUsers = rmsOutVariable.getInputsForOp();
                     if (rmsOutUsers == null || rmsOutUsers.size() != 1) {
+                        continue;
+                    }
+                    // Also verify the single consumer is the expected op in our chain
+                    String expectedConsumerForRms = intermediateOps.isEmpty() ? op.getName()
+                            : intermediateOps.iterator().next();
+                    if (!expectedConsumerForRms.equals(rmsOutUsers.get(0))) {
                         continue;
                     }
                 }
@@ -724,10 +729,19 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                         OptimizationUtils.removeVariable(sd, helper, intermediateVar);
                     }
 
-                    // Remove the rms_norm op and its output variable (if not used elsewhere)
+                    // Remove the rms_norm op and its output variable ONLY if no other ops
+                    // still reference it. The hasOnlyConsumer check above may have used stale
+                    // cache data from a prior optimization pass. Re-check the live graph.
                     OptimizationUtils.removeOp(sd, helper, rmsNormOp.getName());
                     if (!rmsNormOutVar.equals(xVar) && !rmsNormOutVar.equals(gammaVar)) {
-                        OptimizationUtils.removeVariable(sd, helper, rmsNormOutVar);
+                        Variable rmsVar = sd.getVariables().get(rmsNormOutVar);
+                        List<String> remainingUsers = rmsVar != null ? rmsVar.getInputsForOp() : null;
+                        if (remainingUsers == null || remainingUsers.isEmpty()) {
+                            OptimizationUtils.removeVariable(sd, helper, rmsNormOutVar);
+                        } else {
+                            log.debug("FuseRMSNormLinear: keeping rms_norm output '{}' — still consumed by {} op(s)",
+                                    rmsNormOutVar, remainingUsers.size());
+                        }
                     }
 
                     // Remove matmul output variable, then rename fused to match the

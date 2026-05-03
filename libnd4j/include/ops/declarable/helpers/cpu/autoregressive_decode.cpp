@@ -306,6 +306,26 @@ void autoregressiveDecodeCpu(
         }
 
 
+        // ── Step 1b: Pre-unmask the CURRENT position in causal mask ──
+        // The attention op writes KV at cache_position = currentPosition, then attends
+        // to the full buffer including that position. If the causal mask masks the current
+        // position, the token can't attend to its own KV entry → wrong attention output.
+        if (causalMask != nullptr && currentPosition >= 0 && currentPosition < causalMaskLen) {
+            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskCpu,
+                                  (causalMask->buffer(), currentPosition, causalMaskLen),
+                                  SD_FLOAT_TYPES);
+        }
+        if (attnMaskReformat != nullptr && currentPosition >= 0 && currentPosition < attnMaskReformatLen) {
+            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskCpu,
+                                  (attnMaskReformat->buffer(), currentPosition, attnMaskReformatLen),
+                                  SD_FLOAT_TYPES);
+        }
+        if (currentPosition >= 0 && currentPosition < maxKvLen) {
+            BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskCpu,
+                                  (attentionMask->buffer(), currentPosition, maxKvLen),
+                                  SD_COMMON_TYPES);
+        }
+
         // ── Step 2: Execute plan ──
         // On CPU, use execute() instead of executeSteadyState() (which is CUDA-only).
         Status planStatus = plan->execute(

@@ -1143,13 +1143,42 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  const auto xType = X->dataType();
  const auto yType = Y->dataType();
 
- // NOTE: FP16 GEMV autocast for FP32 inputs REMOVED.
- // Same correctness issue as mmulMxM: casting FP32 inputs to HALF loses precision,
- // producing incorrect results for FP32 model weights.
+ // NOTE: FP16 GEMV autocast for BOTH-FP32 inputs REMOVED (don't force FP32→HALF).
+ // However, mixed-type handling is REQUIRED: when GraphOptimizer pre-casts weights
+ // to HALF but activation is still FLOAT32 (or vice versa), we must cast the
+ // mismatched operand so both have the same type before dispatch. Without this,
+ // usualGemv interprets HALF memory as FLOAT32 bytes → garbage output.
  NDArray* castA = nullptr;
  NDArray* castX = nullptr;
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effX = const_cast<NDArray*>(X);
+
+ // Mixed-type cast: align operands when one is HALF/BF16 and other is FLOAT32.
+ // Cast the FLOAT32 operand down to HALF/BF16 so both match → routes to
+ // typeHalfFloat path (cublasGemmEx HALF×HALF→FLOAT32 with FP32 accumulation).
+ // The activation vector is small (model_dim elements), so cast overhead is minimal.
+ // This is REQUIRED for correctness: without it, usualGemv interprets HALF weight
+ // memory as FLOAT32 bytes → complete garbage output (root cause of VLM EOS bug).
+ if (A->dataType() != X->dataType() && yType == FLOAT32 && major >= 6) {
+   if (A->dataType() == HALF && X->dataType() == FLOAT32) {
+     // Weight is HALF (pre-cast by GraphOptimizer), activation is FLOAT32 → cast X to HALF
+     castX = X->cast(HALF);
+     effX = castX;
+   } else if (A->dataType() == FLOAT32 && X->dataType() == HALF) {
+     // Weight is FLOAT32, activation is HALF → cast X (small vector) up to FLOAT32
+     // This avoids casting the large weight matrix; uses cublasSgemv (pure FP32).
+     castX = X->cast(FLOAT32);
+     effX = castX;
+   } else if (A->dataType() == BFLOAT16 && X->dataType() == FLOAT32) {
+     // Cast X (small vector) down to BF16 to match weight
+     castX = X->cast(BFLOAT16);
+     effX = castX;
+   } else if (A->dataType() == FLOAT32 && X->dataType() == BFLOAT16) {
+     // Cast X (small vector) up to FLOAT32 to match weight
+     castX = X->cast(FLOAT32);
+     effX = castX;
+   }
+ }
 
  const auto effAType = effA->dataType();
  const auto effXType = effX->dataType();

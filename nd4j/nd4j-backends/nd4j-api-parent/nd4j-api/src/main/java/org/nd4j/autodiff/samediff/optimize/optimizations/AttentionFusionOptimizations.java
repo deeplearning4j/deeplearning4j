@@ -269,11 +269,11 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 if (vRank == -1 && qRank > 0) vRank = qRank;
                 if (vRank == -1 && kRank > 0) vRank = kRank;
 
-                log.info("[ATTN-DIAG] Rank check (after inference): Q={}, K={}, V={}", qRank, kRank, vRank);
+                log.debug("[ATTN-DIAG] Rank check (after inference): Q={}, K={}, V={}", qRank, kRank, vRank);
 
                 // Reject unknown ranks (-1) and rank 5+.
                 if (qRank < 2 || kRank < 2 || vRank < 2 || qRank > 4 || kRank > 4 || vRank > 4) {
-                    log.info("[ATTN-DIAG] Skipping: ranks not supported (Q={}, K={}, V={})", qRank, kRank, vRank);
+                    log.debug("[ATTN-DIAG] Skipping: ranks not supported (Q={}, K={}, V={})", qRank, kRank, vRank);
                     return false;
                 }
 
@@ -352,7 +352,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 if (components.hasAdditiveMask && components.maskVar != null && !components.useCausalMask) {
                     // Non-causal additive mask: rank 4 not supported by AttentionHelper fallback
                     if (qRank == 4 || kRank == 4 || vRank == 4) {
-                        log.info("[ATTN-DIAG] Skipping rank-4 fusion: non-causal additive mask not supported in flash path");
+                        log.debug("[ATTN-DIAG] Skipping rank-4 fusion: non-causal additive mask not supported in flash path");
                         return false;
                     }
                     valueMask = sd.getVariable(components.maskVar);

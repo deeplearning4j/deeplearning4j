@@ -495,6 +495,11 @@ public class GenerationPipeline implements AutoCloseable {
             presentKv.close();
         }
 
+        // Reset DSP session between prefill and decode: shapes change (seqLen goes from
+        // prefillLen to 1), so the prefill plan is not valid for decode. The plan cache
+        // will serve a decode-specific plan on the first decode output() call.
+        decoder.resetSession();
+
         // ══════════════════════════════════════════════════════════════════════
         // DECODE LOOP: seqLen=1 per step with static KV buffers
         // ══════════════════════════════════════════════════════════════════════
@@ -508,9 +513,15 @@ public class GenerationPipeline implements AutoCloseable {
             INDArray decodeInputIds = Nd4j.createFromArray(new int[]{currentToken})
                     .reshape(1, 1).castTo(DataType.INT64);
 
+            // VLM models require inputs_embeds on every decode step.
+            // dup() is MANDATORY: getRow().reshape() returns a VIEW into embeddingTable.
+            INDArray decodeEmbeddings = embeddingTable != null
+                    ? embeddingTable.getRow(currentToken).reshape(1, 1, hiddenSize).dup()
+                    : null;
+
             Map<String, INDArray> decodeInputMap = DecoderInputBuilder.buildDecoderInputMap(
                     ioConfig, decoderInputNames, decoder,
-                    null, decodeInputIds,
+                    decodeEmbeddings, decodeInputIds,
                     cachePos, 1,
                     staticKvBuffers, maxKvLen, cachePos,
                     true, hiddenSize,
@@ -523,6 +534,160 @@ public class GenerationPipeline implements AutoCloseable {
             INDArray decodeLogits = decodeOutputs.get(logitsName);
             int nextToken = javaArgmax(decodeLogits, 0);
             decodeLogits.close();
+            if (decodeEmbeddings != null) decodeEmbeddings.close();
+            decodeInputIds.close();
+
+            // Scatter decode KV into static buffers
+            for (String keyName : kvNames.keyNames) {
+                INDArray presentKv = decodeOutputs.get(keyName);
+                INDArray staticBuf = staticKvBuffers.get(ioConfig.presentToInputName(keyName));
+                if (presentKv != null && staticBuf != null) {
+                    scatterKvToStatic(presentKv, staticBuf, cachePos);
+                    presentKv.close();
+                }
+            }
+            for (String valName : kvNames.valueNames) {
+                INDArray presentKv = decodeOutputs.get(valName);
+                INDArray staticBuf = staticKvBuffers.get(ioConfig.presentToInputName(valName));
+                if (presentKv != null && staticBuf != null) {
+                    scatterKvToStatic(presentKv, staticBuf, cachePos);
+                    presentKv.close();
+                }
+            }
+
+            generatedTokens.add(nextToken);
+            steadyTokens++;
+            currentToken = nextToken;
+            if (stopTokenIds.contains(nextToken)) break;
+        }
+
+        // Cleanup
+        for (INDArray kv : staticKvBuffers.values()) kv.close();
+
+        long endTime = System.currentTimeMillis();
+        long steadyMs = endTime - steadyStart;
+        double steadyTokPerSec = steadyMs > 0 ? (steadyTokens * 1000.0 / steadyMs) : 0;
+        return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs, steadyTokPerSec);
+    }
+
+    /**
+     * VLM KV-cached generation using pre-built embeddings for prefill.
+     *
+     * <p>Same decode loop as {@link #generateSimpleWithKvCache} but accepts pre-built
+     * embeddings (from vision encoder + text merge) instead of using input_ids for prefill.
+     * After prefill, decode proceeds identically: pad KV, seqLen=1 per step, scatter KV.</p>
+     */
+    private GenerationResult generateSimpleWithKvCacheVlm(INDArray prefillEmbeddings, int[] promptTokenIds,
+                                                           int maxNewTokens, ModelIOConfig.KVCacheNames kvNames) {
+        long startTime = System.currentTimeMillis();
+
+        int eosTokenId = tokenizer.getEosTokenId();
+        Set<Integer> stopTokenIds = buildStopTokenIds();
+
+        String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "lm_logits";
+        int prefillSeqLen = promptTokenIds.length;
+        long maxKvLen = prefillSeqLen + maxNewTokens;
+        boolean dspActive = decoder.isDspAutoCompileEnabled();
+        List<String> decoderInputNames = decoder.inputs();
+        Map<String, INDArray> reusableInputs = new HashMap<>();
+
+        // Build all output names: logits + present KV
+        List<String> allOutputNames = new ArrayList<>();
+        allOutputNames.add(logitsName);
+        allOutputNames.addAll(kvNames.keyNames);
+        allOutputNames.addAll(kvNames.valueNames);
+
+        // ══════════════════════════════════════════════════════════════════════
+        // PREFILL: run decoder with pre-built embeddings to get logits + KV
+        // ══════════════════════════════════════════════════════════════════════
+        INDArray prefillInputIds = Nd4j.createFromArray(promptTokenIds)
+                .reshape(1, prefillSeqLen).castTo(DataType.INT64);
+
+        Map<String, INDArray> prefillInputMap = DecoderInputBuilder.buildDecoderInputMap(
+                ioConfig, decoderInputNames, decoder,
+                prefillEmbeddings, prefillInputIds,
+                0, prefillSeqLen,
+                null, maxKvLen, 0,
+                false, hiddenSize,
+                reusableInputs, dspActive);
+
+        Map<String, INDArray> prefillOutputs = decoder.output(
+                prefillInputMap, allOutputNames.toArray(new String[0]));
+
+        // Sample first token from prefill logits
+        INDArray prefillLogits = prefillOutputs.get(logitsName);
+        int firstToken = javaArgmax(prefillLogits, prefillLogits.shape()[1] - 1);
+        prefillLogits.close();
+        prefillInputIds.close();
+
+        List<Integer> generatedTokens = new ArrayList<>();
+        generatedTokens.add(firstToken);
+        long firstTokenMs = System.currentTimeMillis() - startTime;
+
+        if (stopTokenIds.contains(firstToken)) {
+            closeKvOutputs(prefillOutputs, kvNames, logitsName);
+            return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // PAD KV caches to static size for fixed-shape decode
+        // ══════════════════════════════════════════════════════════════════════
+        Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
+        for (String keyName : kvNames.keyNames) {
+            INDArray presentKv = prefillOutputs.get(keyName);
+            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            String inputName = ioConfig.presentToInputName(keyName);
+            staticKvBuffers.put(inputName, padded);
+            presentKv.close();
+        }
+        for (String valName : kvNames.valueNames) {
+            INDArray presentKv = prefillOutputs.get(valName);
+            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            String inputName = ioConfig.presentToInputName(valName);
+            staticKvBuffers.put(inputName, padded);
+            presentKv.close();
+        }
+
+        // Reset DSP session between prefill and decode: shapes change (seqLen goes from
+        // prefillLen to 1), so the prefill plan is not valid for decode. The plan cache
+        // will serve a decode-specific plan on the first decode output() call.
+        decoder.resetSession();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // DECODE LOOP: seqLen=1 per step with static KV buffers
+        // ══════════════════════════════════════════════════════════════════════
+        int currentToken = firstToken;
+        long steadyStart = System.currentTimeMillis();
+        int steadyTokens = 0;
+
+        for (int step = 1; step < maxNewTokens; step++) {
+            long cachePos = prefillSeqLen + step - 1;
+
+            INDArray decodeInputIds = Nd4j.createFromArray(new int[]{currentToken})
+                    .reshape(1, 1).castTo(DataType.INT64);
+
+            // VLM models require inputs_embeds on every decode step.
+            // dup() is MANDATORY: getRow().reshape() returns a VIEW into embeddingTable.
+            INDArray decodeEmbeddings = embeddingTable != null
+                    ? embeddingTable.getRow(currentToken).reshape(1, 1, hiddenSize).dup()
+                    : null;
+
+            Map<String, INDArray> decodeInputMap = DecoderInputBuilder.buildDecoderInputMap(
+                    ioConfig, decoderInputNames, decoder,
+                    decodeEmbeddings, decodeInputIds,
+                    cachePos, 1,
+                    staticKvBuffers, maxKvLen, cachePos,
+                    true, hiddenSize,
+                    reusableInputs, dspActive);
+
+            Map<String, INDArray> decodeOutputs = decoder.output(
+                    decodeInputMap, allOutputNames.toArray(new String[0]));
+
+            // Sample next token
+            INDArray decodeLogits = decodeOutputs.get(logitsName);
+            int nextToken = javaArgmax(decodeLogits, 0);
+            decodeLogits.close();
+            if (decodeEmbeddings != null) decodeEmbeddings.close();
             decodeInputIds.close();
 
             // Scatter decode KV into static buffers
@@ -1321,6 +1486,11 @@ public class GenerationPipeline implements AutoCloseable {
      */
     public GenerationResult generate(INDArray prefillEmbeddings, int[] promptTokenIds,
                                      int maxNewTokens, DecodeOptions options) {
+        // Use the native AutoregressiveDecode C++ op for maximum performance.
+        // The native path does: prefill → warmup → freeze → C++ decode loop with
+        // zero JNI round-trips. Bugs that previously caused EOS-on-step-2 have been
+        // fixed: causal mask pre-unmask, segment splitting for value-key ops,
+        // mixed-type GEMV handling.
         return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens);
     }
 
@@ -1498,15 +1668,15 @@ public class GenerationPipeline implements AutoCloseable {
         // Causal mask: [1, 1, 1, totalSeqLen] FLOAT — MASK_FILL for unfilled positions, 0.0 for filled.
         // Uses PADDED layout (query at totalSeqLen-1), matching DecoderInputBuilder with dspActive=true.
         //   1. Fill everything with MASK_FILL = masked
-        //   2. Unmask [0..prefillSeqLen-1] with 0.0f (filled KV positions from prefill)
-        // Position prefillSeqLen is NOT unmasked yet — it hasn't been written by decode step 1.
-        // The C++ kernel updates this per step: unmask position currentPosition with 0.0f.
+        //   2. Unmask [0..prefillSeqLen] with 0.0f (prefill KV + the first decode position)
+        // Position prefillSeqLen IS the first decode token's write slot — the query must
+        // attend to its own KV entry. The C++ kernel updates subsequent positions per step.
         //
         // Constructed entirely on host to avoid CUDA host/device mismatch issues.
         float[] causalData = new float[(int) totalSeqLen];
         float maskFill = ModelIOConfig.MASK_FILL;
         for (int i = 0; i < (int) totalSeqLen; i++) {
-            causalData[i] = (i < prefillSeqLen) ? 0.0f : maskFill;
+            causalData[i] = (i <= prefillSeqLen) ? 0.0f : maskFill;
         }
         INDArray decodeCausalMask = Nd4j.createFromArray(causalData).reshape(1, 1, 1, totalSeqLen);
 
@@ -1596,9 +1766,7 @@ public class GenerationPipeline implements AutoCloseable {
                 secondTokenId = j;
             }
         }
-        if (log.isDebugEnabled()) {
-            log.debug("[DIAG] Warmup decode secondTokenId={} maxVal={}", secondTokenId, secondMaxVal);
-        }
+
 
         secondLogitsSlice.close();
         decodeLogits.close();
@@ -1726,9 +1894,11 @@ public class GenerationPipeline implements AutoCloseable {
         decodeAttentionMask.putScalar(new long[]{0, prefillSeqLen}, 1);
         // Position IDs: advance to prefillSeqLen + 1
         decodePosIds.putScalar(new long[]{0, 0}, prefillSeqLen + 1);
-        // Causal mask: unmask the KV position written by the warmup step.
+        // Causal mask: unmask position written by the warmup step (redundant with initial mask
+        // setup but explicit for clarity). The C++ native loop pre-unmasks currentPosition
+        // before each execution, so we don't need to pre-unmask prefillSeqLen + 1 here.
         decodeCausalMask.putScalar(new long[]{0, 0, 0, prefillSeqLen}, 0.0f);
-        // attn_mask_reformat: unmask the KV position written by the warmup step
+        // attn_mask_reformat: same
         if (decodeAttnMaskReformat != null) {
             decodeAttnMaskReformat.putScalar(new long[]{0, 0, 0, prefillSeqLen}, 0.0f);
         }
