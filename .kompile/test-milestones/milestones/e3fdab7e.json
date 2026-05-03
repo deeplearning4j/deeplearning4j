@@ -1,0 +1,13 @@
+{
+  "id" : "e3fdab7e",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "a26ab20ba915c30ad3622a916b83100ce7202447",
+  "commitShort" : "a26ab20",
+  "commitMessage" : "BROKEN: restored working tree snapshot for investigation",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-vlm",
+  "notes" : "CUDA VLM: fusedGQADecodeKernel bypass written in FlashAttentionHelper.cpp but NOT YET BUILT. Warmup decode produces token 49229 (EOS) instead of 49204 (picture). Primary fix: disable fused GQA kernel, fall through to generic tiled path. Build in progress.",
+  "tags" : "cuda,vlm,correctness,in-progress",
+  "timestamp" : "2026-05-02T11:56:46.703757Z"
+}

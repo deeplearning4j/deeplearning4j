@@ -1,6 +1,68 @@
 # Kompile Memory Index
 
-- [build-config-cuda-native](build_config_cuda_native.md) — [project] CUDA native build command with Triton, libnd4j, CUDA bindings, build log, and tee output
-- [build-config-cpu-native](build_config_cpu_native.md) — [project] CPU native build command without Triton for standard CPU backend builds
-- [build-config-cpu-native-dsp-triton](build_config_cpu_native_dsp_triton.md) — [project] CPU native build command with Triton enabled for CPU DSP work
-- [cpu-dsp-qwen-history](cpu_dsp_qwen_history.md) — [project] Reconstructed CPU DSP Qwen/TextGenerator last-good timeline and related commits
+## ACTIVE: DSP Accuracy — Root Causes Found, Rebuilding (May 2 2026)
+
+- [Session status](dsp_accuracy_session_may2_status.md) — TWO ROOT CAUSES FOUND: CPU causal mask + CUDA staging sync. Fixes applied, builds in progress
+- [Test results](test_results_may2_all_failed.md) — last run: CPU=token 314, CUDA=all-zero. Rebuilding with fixes
+- [Reconciliation / next if fixes fail](dsp_accuracy_next_attempts_may2_reconcile.md) — items 1-4 resolved, items 6-10 remain if needed
+
+### Root Cause Details
+- [CPU: MKL SDPA causal mask](cpu_sdpa_causal_mask_root_cause.md) — input[8] never read by PLATFORM_IMPL, all prefill attention non-causal
+- [CUDA: frozen fast-path staging](cuda_frozen_fastpath_staging_root_cause.md) — graph replay reads stale capture-time data, produces zeros
+
+## Prior Fix History (all still in code, all correct)
+
+- [Fix plan (18 fixes)](dsp_accuracy_fix_plan.md) — 7 shared, 4 CPU, 6 CUDA, 2 not-a-bug confirmations
+- [Positive fixes — do NOT revert](dsp_accuracy_positive_fixes.md) — silu aliasing, MKL heap overrun, FP16 accumulators
+- [causal_conv1d kernel flip](causal_conv1d_kernel_flip_bug.md) — K-1-kk → kk for PyTorch cross-correlation
+
+## Detailed File Analysis (reference)
+
+- [llm_ops.cpp](dsp_regression_llm_ops_changes.md) — silu, swish_mul, rope, rms_norm_linear
+- [DSP infrastructure](dsp_regression_infrastructure_changes.md) — phaseShapeInference, BFS, validation
+- [Attention & SDPA](dsp_regression_attention_sdpa_changes.md) — MKL prefill bias, FlashAttention
+- [Segment execution](dsp_regression_segment_execution_changes.md) — prezero, backend chain, CPU replay
+- [GraphOptimizer & fusion](dsp_regression_graph_optimizer_changes.md) — DCE, NormFusion, AttentionFusion
+- [autoregressive_decode.cu](dsp_regression_autoregressive_decode_changes.md) — markExternalInputVariable, printf gating
+- [OpTraitTable & Java](dsp_regression_optrait_and_java_changes.md) — DATADEP traits, SameDiff, GGML
+- [Helper impls](dsp_regression_helper_impl_changes.md) — rmsNorm, fusedRoPE, FlashAttention
+- [Commit timeline](dsp_regression_commit_timeline.md) — Apr 29 - May 2 risk classification
+
+## Prior Investigation Trail (historical, resolved)
+
+- [VLM decode bug](vlm_decode_correctness_bug.md) — all zeros after step 2 → RESOLVED by staging fix
+- [VLM zeros investigation](vlm_decode_zeros_regression_investigation.md) — root cause found
+- [CPU DSP Qwen history](cpu_dsp_qwen_history.md) — prior attempts before root cause found
+
+## Build Config
+
+- [CUDA build](build_config_cuda_native.md) — mvn -Pcuda with Triton
+- [CPU build](build_config_cpu_native.md) — mvn -Pcpu standard
+- [CPU + Triton](build_config_cpu_native_dsp_triton.md) — CPU with DSP Triton
+
+## Feedback & Rules
+
+- [test-targets-immutable](test_targets_immutable.md) — CPU=Qwen3.5, CUDA=SmolDocling VLM. NEVER change these.
+- [dsp-accuracy-may2-post-rootcause-extra-leads](dsp_accuracy_may2_post_rootcause_extra_leads.md) — [project] May 2 post-root-cause memory search addendum: what is obsolete, what remains worth trying if CPU/CUDA fixes fail veri...
+- [cpu-causal-mask-fix-verified](cpu_causal_mask_fix_verified.md) — [project] CPU causal mask fix CONFIRMED working — output changed from garbage to coherent echo. GDN layers not contributing, mo...
+- [gdn-l2norm-eps-bug](gdn_l2norm_eps_bug.md) — [project] CRITICAL: GDN L2-norm eps=1e-12 vs reference eps=1e-6 — causes near-zero vector amplification corrupting GDN state
+- [onednn-softplus-alpha-zero-bug](onednn_softplus_alpha_zero_bug.md) — [project] CRITICAL ROOT CAUSE: OneDNN softplus alpha=0 causes division by zero → all inf output, kills ALL GDN gate decay
+- [cuda-staging-fix-not-sufficient](cuda_staging_fix_not_sufficient.md) — [project] CUDA frozen fast-path staging fix applied but NOT sufficient — still all-zero tokens [216, 49229, 0, 0, ...]
+- [dsp-accuracy-cpu-fix-status](dsp_accuracy_cpu_fix_status.md) — [project] CPU Qwen3.5 accuracy fix status — softplus alpha=0 root cause found, build in progress May 2 2026
+- [dsp-accuracy-cuda-fix-status](dsp_accuracy_cuda_fix_status.md) — [project] CUDA VLM accuracy fix status — staging fix not sufficient, still all-zero tokens, needs further investigation May 2 2026
+- [cpu-softplus-root-cause-found](cpu_softplus_root_cause_found.md) — [project] CPU ROOT CAUSE: OneDNN softplus alpha=0 → all inf, kills GDN gate decay. Fix: alpha=1.0. Build in progress.
+- [cpu-softplus-fix-partial-success](cpu_softplus_fix_partial_success.md) — [project] CPU softplus alpha=1 fix: tokens now real words but wrong ('ofof.' not France) — partial success May 2 2026
+- [cpu-sdpa-causal-mask-verified-correct](cpu_sdpa_causal_mask_verified_correct.md) — [project] CPU SDPA causal mask flow verified correct — NOT the cause of 'ofof.' output
+- [cpu-iargs-stop-token-parsing-fix](cpu_iargs_stop_token_parsing_fix.md) — [project] CPU iArgs parsing bug: stopTokenCount=62 instead of 2 — kvOutputIndices count mismatch between Java (0 for GGUF) and ...
+- [cuda-frozen-fastpath-composite-replay-fix](cuda_frozen_fastpath_composite_replay_fix.md) — [project] CUDA VLM zeros fix: frozen fast-path in executeSlot skips re-execution during composite replay gap ops
+- [cpu-qwen-iargs-parsing-fix](cpu_qwen_iargs_parsing_fix.md) — [project] CPU Qwen fix: iArgs parsing skips kvOutputIndices when hasInGraphKvCache=true (GGUF models)
+- [dsp-accuracy-may2-latest-followup](dsp_accuracy_may2_latest_followup.md) — [project] May 2 latest follow-up: CPU iArgs fixed early stop but quality still wrong; causal_conv1d flip likely backwards; CUDA...
+- [causal-conv1d-weight-flip-fix-may2](causal_conv1d_weight_flip_fix_may2.md) — [project] Fixed causal_conv1d weight indexing: weight[K-1-kk] for PyTorch left-padded conv semantics, affects all 18 GDN layers
+- [cuda-zeros-still-broken-may2-v2](cuda_zeros_still_broken_may2_v2.md) — [project] CUDA SmolDocling still zeros after frozen fast-path fix — graph replay itself produces stale outputs, not just execut...
+- [cuda-stale-gap-slot-cache-fix](cuda_stale_gap_slot_cache_fix.md) — [project] CUDA VLM zeros root cause: markExternalInputVariable invalidates captures but leaves stale activeGapSlotsCached_, com...
+- [cpu-qwen-france-success](cpu_qwen_france_success.md) — [project] CPU Qwen3.5 outputs 'The capital of France is Paris' — causal_conv1d weight flip fix confirmed
+- [cuda-softmax-inplace-corruption](cuda_softmax_inplace_corruption.md) — [project] Root cause of CUDA VLM all-zero tokens: fusedCausalMaskSoftmaxKernel in-place corruption
+- [vlm-eos-burndown-may3](vlm_eos_burndown_may3.md) — [project] VLM EOS-on-step-2 burndown: eliminated hypotheses, remaining candidates, current state May 3 2026
+- [vlm-token-parsing-fix-may3](vlm_token_parsing_fix_may3.md) — [project] Fixed VLM native token output parsing: tid==0 zero-padding hack removed, buildStopTokenIds eosId<100 guard removed
+- [cuda-qwen-gdn-state-fix-may3](cuda_qwen_gdn_state_fix_may3.md) — [project] CUDA Qwen root cause: missing GDN/conv state feedback in autoregressive_decode.cu — fix applied, build in progress
+- [CUDA Qwen correctness achieved May 3 2026](cuda_qwen_correctness_achieved_may_3_2026.md) — [project] CUDA Qwen outputs France (token 271) — CUTLASS stride fix + FP16 autocast removal confirmed working

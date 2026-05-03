@@ -1,0 +1,13 @@
+{
+  "id" : "31fe97c5",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "a26ab20ba915c30ad3622a916b83100ce7202447",
+  "commitShort" : "a26ab20",
+  "commitMessage" : "BROKEN: restored working tree snapshot for investigation",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "cuda-vlm",
+  "notes" : "CUDA VLM: All configs (OPTIMAL, DIAG_TIMING, SLOT_BY_SLOT) produce [216, 49229, 0, 0, 0...] - EOS on step 2, zeros after. DSP diagnostics confirmed FROZEN_FAST_PATH only caches 2 variable ext inputs (vision plan). markExternalInputVariable calls in autoregressive_decode.cu properly invalidate cache but decoder plan behavior needs testing with rebuilt binary. Last perf: 6.99 tok/s OPTIMAL. Target: 100+ tok/s with correct output.",
+  "tags" : "cuda,vlm,correctness,building",
+  "timestamp" : "2026-05-03T00:58:46.814624Z"
+}

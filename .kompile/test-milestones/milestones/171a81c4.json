@@ -1,0 +1,13 @@
+{
+  "id" : "171a81c4",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "a26ab20ba915c30ad3622a916b83100ce7202447",
+  "commitShort" : "a26ab20",
+  "commitMessage" : "BROKEN: restored working tree snapshot for investigation",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "cuda-qwen",
+  "notes" : "CUDA Qwen: GDN/conv state feedback fix written in autoregressive_decode.cu but CUDA binary not yet rebuilt. Build in progress at 49%. Previous binary produced garbage output (KולהAdvice...) due to missing GDN state feedback. Fix adds D2D memcpy of GDN/conv state outputs back to ext inputs each decode step. Will test after build completes.",
+  "tags" : "cuda,qwen,correctness,building",
+  "timestamp" : "2026-05-03T00:58:41.710517Z"
+}

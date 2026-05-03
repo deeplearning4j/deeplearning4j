@@ -1,0 +1,13 @@
+{
+  "id" : "76f949cb",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "a26ab20ba915c30ad3622a916b83100ce7202447",
+  "commitShort" : "a26ab20",
+  "commitMessage" : "BROKEN: restored working tree snapshot for investigation",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "cuda-qwen",
+  "notes" : "FP32 accumulation fix (cublasHgemm→cublasGemmEx) confirmed in binary but Qwen STILL produces garbage: 'Tvs | of\\\"lt,yorgL.ERT R. -?'. CUDA prefill best=220 val=15.4 vs CPU best=248068 val=21.0. All individual CUDA kernels verified to compute in float32 (rms_norm, softplus, gated_delta_rule, causal_conv1d, fused_rope, flash_attention). Graph has 668 cast ops — likely the matmuls already run in FLOAT32 mode via explicit casts, making our fix irrelevant for this model. Root cause is NOT cuBLAS precision — something else in the CUDA forward pass produces wrong results. Need layer-by-layer diagnostic comparison.",
+  "tags" : "correctness,cuda,qwen,investigating",
+  "timestamp" : "2026-05-03T06:31:14.029827Z"
+}

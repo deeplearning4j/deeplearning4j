@@ -1,0 +1,13 @@
+{
+  "id" : "6cdeb672",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "a26ab20ba915c30ad3622a916b83100ce7202447",
+  "commitShort" : "a26ab20",
+  "commitMessage" : "BROKEN: restored working tree snapshot for investigation",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-qwen",
+  "notes" : "CUDA Qwen: CPU Qwen confirmed outputting France. CUDA Qwen not yet tested - waiting on CUDA build to complete. Need to run TestQwen35Pipeline with CUDA backend.",
+  "tags" : "cuda,qwen,correctness,pending",
+  "timestamp" : "2026-05-02T11:56:48.414278Z"
+}

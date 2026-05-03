@@ -1,0 +1,13 @@
+{
+  "id" : "f917da7d",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "a26ab20ba915c30ad3622a916b83100ce7202447",
+  "commitShort" : "a26ab20",
+  "commitMessage" : "BROKEN: restored working tree snapshot for investigation",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-qwen",
+  "notes" : "Fixed ALL cublasHgemm FP16 accumulation paths in MmulHelper.cu: (1) general matmul path - cublasGemmEx with CUBLAS_COMPUTE_32F, (2) row-vector decode path (M=1) - same, (3) cublasHgemmStridedBatched for MHA - cublasGemmStridedBatchedEx with FP32 accum. This is the TRUE root cause of CUDA Qwen garbage - every HALF matmul accumulated K=1024 dot products in FP16 precision. Combined with prior fixes: gated_delta_rule float32 working state, sigmoid/l2norm float32 computation. Build in progress.",
+  "tags" : "correctness,cuda,cublasHgemm,fp32-accumulation,building",
+  "timestamp" : "2026-05-03T05:56:48.288659Z"
+}
