@@ -21,6 +21,7 @@
 #include <helpers/DebugHelper.h>
 #include <execution/cuda/LaunchDims.h>
 #include <cuda_runtime.h>
+#include <string>
 
 namespace sd {
 namespace ops {
@@ -141,6 +142,12 @@ __global__ void kvScatterBatchedKernel(const KvScatterEntry* __restrict__ entrie
     }
 }
 
+// Pre-allocated device buffers for static-position KV scatter — avoids
+// cudaMallocAsync/cudaFreeAsync per decode step. Grow-only pattern.
+static thread_local KvScatterEntry* tl_staticEntries = nullptr;
+static thread_local int* tl_staticOffsets = nullptr;
+static thread_local int tl_staticCachedCapacity = 0;
+
 template <typename T>
 static void kvScatterBatchedCudaLauncher(const cudaStream_t* stream,
                                           const KvScatterEntry* entries, int numEntries) {
@@ -152,22 +159,23 @@ static void kvScatterBatchedCudaLauncher(const cudaStream_t* stream,
     }
     int totalSlices = offsets[numEntries];
 
-    // Allocate device memory for entries and offsets
-    KvScatterEntry* dEntries = nullptr;
-    int* dOffsets = nullptr;
-    cudaMallocAsync(&dEntries, numEntries * sizeof(KvScatterEntry), *stream);
-    cudaMallocAsync(&dOffsets, (numEntries + 1) * sizeof(int), *stream);
-    cudaMemcpyAsync(dEntries, entries, numEntries * sizeof(KvScatterEntry),
+    // Reuse pre-allocated device buffers (grow-only)
+    if (numEntries > tl_staticCachedCapacity) {
+        if (tl_staticEntries != nullptr) cudaFree(tl_staticEntries);
+        if (tl_staticOffsets != nullptr) cudaFree(tl_staticOffsets);
+        cudaMalloc(&tl_staticEntries, numEntries * sizeof(KvScatterEntry));
+        cudaMalloc(&tl_staticOffsets, (numEntries + 1) * sizeof(int));
+        tl_staticCachedCapacity = numEntries;
+    }
+
+    cudaMemcpyAsync(tl_staticEntries, entries, numEntries * sizeof(KvScatterEntry),
                     cudaMemcpyHostToDevice, *stream);
-    cudaMemcpyAsync(dOffsets, offsets.data(), (numEntries + 1) * sizeof(int),
+    cudaMemcpyAsync(tl_staticOffsets, offsets.data(), (numEntries + 1) * sizeof(int),
                     cudaMemcpyHostToDevice, *stream);
 
     dim3 launchDims = getLaunchDims("kv_scatter");
     kvScatterBatchedKernel<T><<<totalSlices, launchDims.y, launchDims.z, *stream>>>(
-        dEntries, dOffsets, numEntries, totalSlices);
-
-    cudaFreeAsync(dEntries, *stream);
-    cudaFreeAsync(dOffsets, *stream);
+        tl_staticEntries, tl_staticOffsets, numEntries, totalSlices);
 
     DebugHelper::checkGlobalErrorCode("kvScatterBatched kernel failed");
 }
@@ -382,6 +390,12 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
 
     // pastKv is BHSD [batch, numKvHeads, maxSeqLen, headDim]
     auto pastMaxSeqLen = pastKv->sizeAt(2);
+
+    if (pastKv->dataType() != newKv->dataType()) {
+        std::string msg = "kvInPlaceWrite: pastKv dtype " + std::to_string((int)pastKv->dataType()) +
+                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
+        THROW_EXCEPTION(msg.c_str());
+    }
 
     NDArray::prepareSpecialUse({pastKv}, {newKv});
 

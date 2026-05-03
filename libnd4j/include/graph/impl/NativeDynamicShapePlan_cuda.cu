@@ -306,6 +306,24 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   DSP_DIAG(EXECUTE, "NativeDSP::frozenFastPath: synced=%d skipped=%d external inputs",
            syncedCount, skippedCount);
 
+  // D2D-copy variable external inputs into plan-owned staging buffers.
+  // The CUDA graph was captured using staging buffer device addresses, not the
+  // raw Java-side NDArray addresses (which are unstable across steps).
+  // Without this, graph replay reads stale data from the capture step.
+  {
+    auto* execCtxStaging = static_cast<PlanExecutionContext*>(activeExecutionContext());
+    if (execCtxStaging == nullptr || !execCtxStaging->stagingBuffersSynced) {
+      NDArray** staged = ensureAndSyncStagingBuffers(externalInputs, numExternalInputs, stream);
+      if (staged != nullptr) {
+        // Use staged externals for arg table refresh below
+        externalInputs = staged;
+      }
+      if (execCtxStaging != nullptr) execCtxStaging->stagingBuffersSynced = true;
+      DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: staging buffers synced for %d ext inputs",
+               numExternalInputs);
+    }
+  }
+
   if (ok) {
     auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
@@ -541,10 +559,12 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     if (!tryCapture) continue;
     if (!gpuBackend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) continue;
     LongType segShapeKey = computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
-    int segTargetDevice = 0;
+    int currentDev = 0;
+    cudaGetDevice(&currentDev);
+    int segTargetDevice = currentDev;
     if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
       segTargetDevice = slots_[seg.def.startSlot].targetDeviceId;
-      if (segTargetDevice < 0) segTargetDevice = 0;
+      if (segTargetDevice < 0) segTargetDevice = currentDev;
     }
     tasks.push_back({si, segShapeKey, segTargetDevice});
   }
@@ -742,7 +762,12 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
       if (sourceDevice >= 0) break;
     }
 
-    if (sourceDevice < 0) sourceDevice = 0;  // External or auto — assume device 0
+    if (sourceDevice < 0) {
+      // External or auto — use the current active device, not hardcoded 0
+      int activeDev = 0;
+      cudaGetDevice(&activeDev);
+      sourceDevice = activeDev;
+    }
     if (sourceDevice == targetDevice) continue;  // Same device, no migration needed
 
     // Migrate: sync to host on source device, create copy on target device

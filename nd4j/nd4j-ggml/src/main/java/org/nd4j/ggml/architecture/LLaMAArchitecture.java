@@ -691,6 +691,15 @@ public class LLaMAArchitecture implements ModelArchitecture {
         if (layerIdx == 0) {
             log.info("Layer {} GDN: gdnHeads={}, headDimKV={}, qkvDim={}, gateDim={}",
                     layerIdx, numGdnHeads, headDimKV, qkvDim, gateWeight != null ? gateWeight.shape()[0] : 0);
+            log.info("Layer {} GDN weights: ssmA={} alpha={} beta={} dtBias={} ssmNorm={} gate={} out={}",
+                    layerIdx,
+                    ssmA != null ? java.util.Arrays.toString(ssmA.shape()) + " vals=" + ssmA : "null",
+                    alphaWeight != null ? java.util.Arrays.toString(alphaWeight.shape()) : "null",
+                    betaWeight != null ? java.util.Arrays.toString(betaWeight.shape()) : "null",
+                    dtBias != null ? java.util.Arrays.toString(dtBias.shape()) + " vals=" + dtBias : "null",
+                    ssmNormWeight != null ? java.util.Arrays.toString(ssmNormWeight.shape()) : "null",
+                    gateWeight != null ? java.util.Arrays.toString(gateWeight.shape()) : "null",
+                    outWeight != null ? java.util.Arrays.toString(outWeight.shape()) : "null");
         }
 
         // 1. QKV projection: [B, L, hidden] -> [B, L, qkvDim]
@@ -732,11 +741,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Upcast to FLOAT32 for squaring to prevent HALF overflow
         SDVariable qF32 = q.castTo("gdn_q_f32_" + layerIdx, DataType.FLOAT);
         SDVariable qNormSq = qF32.mul(qF32).sum("gdn_q_normsq_" + layerIdx, true, -1);
-        SDVariable qNorm = sd.math.sqrt(qNormSq.add(1e-12));
+        SDVariable qNorm = sd.math.sqrt(qNormSq.add(1e-6));
         q = q.div("gdn_q_l2norm_" + layerIdx, qNorm.castTo("gdn_q_norm_cast_" + layerIdx, q.dataType()));
         SDVariable kF32 = k.castTo("gdn_k_f32_" + layerIdx, DataType.FLOAT);
         SDVariable kNormSq = kF32.mul(kF32).sum("gdn_k_normsq_" + layerIdx, true, -1);
-        SDVariable kNorm = sd.math.sqrt(kNormSq.add(1e-12));
+        SDVariable kNorm = sd.math.sqrt(kNormSq.add(1e-6));
         k = k.div("gdn_k_l2norm_" + layerIdx, kNorm.castTo("gdn_k_norm_cast_" + layerIdx, k.dataType()));
 
         // 5b. Scale Q by 1/sqrt(head_dim) — standard attention scaling
@@ -760,10 +769,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // 7. Compute gate (decay) in log-domain: g = -exp(A_log) * softplus(a_proj + dt_bias)
         // Reference: g = -self.A_log.float().exp() * F.softplus(a.float() + self.dt_bias)
         // The GatedDeltaRule op applies exp(g) internally, so g must be negative for decay < 1
+        // NOTE: GGUF stores ssm_a as -A_log (negative values). The reference formula uses
+        // exp(A_log) with positive A_log. Since ssmA = -A_log, we compute exp(-ssmA) = exp(A_log).
         SDVariable gateDecay;
         if (ssmA != null && alphaWeight != null) {
-            SDVariable aLog = sd.var(attnPrefix + "a", ssmA);           // A_log: [H]
-            SDVariable expALog = sd.math.exp(aLog);                      // exp(A_log): [H]
+            SDVariable aLog = sd.var(attnPrefix + "a", ssmA);           // ssmA = -A_log (NEGATIVE in GGUF)
+            SDVariable expALog = sd.math.exp(aLog.neg());                // exp(-ssmA) = exp(A_log): [H]
             SDVariable wAlpha = sd.var(attnPrefix + "alpha.weight", alphaWeight);
             SDVariable aProj = fp32Mmul(sd, "gdn_alpha_proj_" + layerIdx, input, wAlpha.permute(1, 0), dtype); // [B,L,H]
             if (dtBias != null) {

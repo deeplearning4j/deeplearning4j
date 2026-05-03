@@ -1169,6 +1169,25 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto array = block->isFastPath() ?  block->fastpath_in()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
       sd_printf("Checking input %d  block fast path %d op name %s\n",e,block->isFastPath(),this->getOpName()->c_str());
+      if (array == nullptr) {
+        std::string msg = "DeclarableOp::execute: input array at index " + std::to_string(e) +
+                          " is nullptr for op " + *this->getOpName();
+        THROW_EXCEPTION(msg.c_str());
+      }
+
+      // Validate buffer before reading values — corrupt/freed buffers crash in strlen
+      auto shapeInfo = array->shapeInfo();
+      if (shapeInfo == nullptr) {
+        sd_printf("node_%i:%i input  shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), e);
+        continue;
+      }
+      auto dataBuffer = array->dataBuffer();
+      if (dataBuffer == nullptr || (dataBuffer->primary() == nullptr && dataBuffer->special() == nullptr)) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_printf("node_%i:%i input  shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), e, shape.c_str());
+        continue;
+      }
+
       auto shape = ShapeUtils::shapeAsString(array);
       //limit size preview for string arrays due to allocation size when debugging
       int sizePreview = array->isS() ? 2 : 32;
@@ -1199,18 +1218,28 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
       if(array == nullptr) {
-        THROW_EXCEPTION("DeclarableOp::execute: array is nullptr");
+        THROW_EXCEPTION("DeclarableOp::execute: output array is nullptr");
+      }
+
+      // Validate buffer before reading values
+      auto shapeInfo = array->shapeInfo();
+      if (shapeInfo == nullptr) {
+        sd_printf("node_%i:%i result shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), (int)e);
+        continue;
+      }
+      auto dataBuffer = array->dataBuffer();
+      if (dataBuffer == nullptr || (dataBuffer->primary() == nullptr && dataBuffer->special() == nullptr)) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_printf("node_%i:%i result shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), (int)e, shape.c_str());
+        continue;
       }
 
       auto shape = ShapeUtils::shapeAsString(array);
-      bool isEmpty = array->isEmpty();
-      bool isScalar = array->isScalar();
-      int lengthOf = array->lengthOf();
       sd::LongType len = sd::math::sd_min(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
       auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 
-      sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
+      sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), (int)e, shape.c_str(),
                 type.c_str(), first->c_str());
       delete first;
     }

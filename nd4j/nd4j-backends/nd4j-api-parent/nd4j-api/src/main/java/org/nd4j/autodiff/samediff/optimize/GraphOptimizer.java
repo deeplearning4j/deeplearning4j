@@ -163,7 +163,12 @@ public class GraphOptimizer {
         if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
             Set<String> reachableOps = new HashSet<>();
             Set<String> reachableVars = new HashSet<>();
-            Deque<String> varQueue = new ArrayDeque<>(requiredOutputs);
+            // Seed BFS with union of requiredOutputs and sd.outputs() so that
+            // KV cache outputs declared via sd.outputs() are never pruned even
+            // when they are not explicitly listed in requiredOutputs.
+            Set<String> allSeeds = new LinkedHashSet<>(requiredOutputs);
+            if (sd.outputs() != null) allSeeds.addAll(sd.outputs());
+            Deque<String> varQueue = new ArrayDeque<>(allSeeds);
 
             // Walk backward from outputs
             while (!varQueue.isEmpty()) {
@@ -184,9 +189,13 @@ public class GraphOptimizer {
                 if (op.getInputsToOp() != null) {
                     varQueue.addAll(op.getInputsToOp());
                 }
-                // Also follow control dependencies
+                // Also follow op-level control dependencies
                 if (op.getControlDeps() != null) {
                     varQueue.addAll(op.getControlDeps());
+                }
+                // Also follow variable-level control dependencies
+                if (op.getVarControlDeps() != null) {
+                    varQueue.addAll(op.getVarControlDeps());
                 }
             }
 
@@ -322,18 +331,12 @@ public class GraphOptimizer {
         // Validate the optimized graph: every op's inputs must reference existing variables
         List<String> validationErrors = validateGraph(sd);
         if (!validationErrors.isEmpty()) {
-            log.warn("Graph optimization produced {} validation errors — returning original unoptimized graph", validationErrors.size());
+            StringBuilder sb = new StringBuilder("Graph optimization produced " + validationErrors.size() + " validation errors:\n");
             for (String err : validationErrors) {
-                log.warn("  Validation error: {}", err);
+                log.error("  Validation error: {}", err);
+                sb.append("  ").append(err).append("\n");
             }
-            // Return a dup of the original graph instead of the corrupted optimized one
-            SameDiff fallback = graph.dup();
-            if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
-                fallback.setOutputs(new ArrayList<>(requiredOutputs));
-            } else if (graph.outputs() != null && !graph.outputs().isEmpty()) {
-                fallback.setOutputs(new ArrayList<>(graph.outputs()));
-            }
-            return fallback;
+            throw new IllegalStateException(sb.toString());
         }
 
         // Preserve outputs: fusion optimizers may have redirected output names

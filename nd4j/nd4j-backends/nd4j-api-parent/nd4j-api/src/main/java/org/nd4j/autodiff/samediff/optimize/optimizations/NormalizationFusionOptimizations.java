@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Square;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm;
@@ -602,10 +603,15 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 String rmsNormCandidateVar = matmulInputs.get(i);
                 String weightVar = matmulInputs.get(1 - i);
 
-                // Strip through cast/identity ops between rms_norm and matmul
+                // Strip through cast/identity ops between rms_norm and matmul.
+                // IMPORTANT: Do NOT strip precision-widening casts (e.g., HALF→FLOAT32).
+                // These casts exist for numerical accuracy — the rms_norm_linear fused op
+                // would operate in the narrower type, losing significant precision in the
+                // vocabulary projection (248K-wide matmul amplifies half-precision errors).
                 String strippedVar = rmsNormCandidateVar;
                 Set<String> intermediateOps = new LinkedHashSet<>();
                 Set<String> intermediateVars = new LinkedHashSet<>();
+                boolean precisionWideningDetected = false;
                 for (int depth = 0; depth < 4; depth++) {
                     SameDiffOp producer = producerOp(sd, helper, strippedVar);
                     if (producer == null || producer.getOp() == null) break;
@@ -615,6 +621,30 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                     if ("cast".equals(producerOpName) || "identity".equals(producerOpName)) {
                         List<String> pInputs = producer.getInputsToOp();
                         if (pInputs == null || pInputs.isEmpty()) break;
+                        // Reject precision-widening casts: if the cast output has more bits
+                        // than its input, it exists for numerical precision — do not strip.
+                        if ("cast".equals(producerOpName)) {
+                            // Get the target type from the cast op's output variable dtype.
+                            // The output variable of the cast is strippedVar (current variable).
+                            SDVariable castOutputVar = sd.getVariable(strippedVar);
+                            SDVariable castInputVar = sd.getVariable(pInputs.get(0));
+                            if (castOutputVar != null && castInputVar != null) {
+                                DataType inputDt = castInputVar.dataType();
+                                DataType targetDt = castOutputVar.dataType();
+                                if (inputDt != null && targetDt != null && targetDt != inputDt
+                                        && inputDt.isFPType() && targetDt.isFPType()) {
+                                    int inputBits = inputDt.width() * 8;
+                                    int targetBits = targetDt.width() * 8;
+                                    if (targetBits > inputBits) {
+                                        // This is a precision-widening cast (e.g., HALF→FLOAT32).
+                                        // Abort fusion to preserve numerical accuracy.
+                                        log.debug("FuseRMSNormLinear: skipping fusion — precision-widening cast {} → {} detected", inputDt, targetDt);
+                                        precisionWideningDetected = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                         // Only strip if this intermediate has exactly 1 consumer
                         if (!hasOnlyConsumer(sd, helper, strippedVar, depth == 0 ? op.getName() : getConsumerOpName(intermediateOps))) {
                             break;
@@ -625,6 +655,9 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                     } else {
                         break;
                     }
+                }
+                if (precisionWideningDetected) {
+                    continue;
                 }
 
                 // Check if the (possibly stripped) variable is produced by an RmsNorm op

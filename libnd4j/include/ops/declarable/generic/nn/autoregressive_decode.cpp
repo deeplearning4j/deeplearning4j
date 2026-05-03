@@ -228,20 +228,27 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     }
 
     // KV indices: kvStart..kvStart+2*numKvPairs-1 are kvInputExtIndices
-    //             kvStart+2*numKvPairs..kvStart+4*numKvPairs-1 are kvOutputIndices
+    //             For non-GGUF: kvStart+2*numKvPairs..kvStart+4*numKvPairs-1 are kvOutputIndices
+    //             For in-graph KV (GGUF): no kvOutputIndices sent (attention writes KV in-place)
     if (numKvPairs > 0 && iArgCount > kvStart) {
       for (int i = 0; i < 2 * numKvPairs && (kvStart + i) < iArgCount; i++) {
         kvInputExtIndicesVec.push_back(INT_ARG(kvStart + i));
       }
-      int kvOutStart = kvStart + 2 * numKvPairs;
-      for (int i = 0; i < 2 * numKvPairs && (kvOutStart + i) < iArgCount; i++) {
-        kvOutputIndicesVec.push_back(INT_ARG(kvOutStart + i));
-      }
       decodeConfig.kvInputExtIndices = kvInputExtIndicesVec.data();
-      decodeConfig.kvOutputIndices = kvOutputIndicesVec.data();
+
+      if (!hasInGraphKvCache) {
+        // Non-GGUF path: kvOutputIndices follow kvInputExtIndices
+        int kvOutStart = kvStart + 2 * numKvPairs;
+        for (int i = 0; i < 2 * numKvPairs && (kvOutStart + i) < iArgCount; i++) {
+          kvOutputIndicesVec.push_back(INT_ARG(kvOutStart + i));
+        }
+        decodeConfig.kvOutputIndices = kvOutputIndicesVec.data();
+      }
     }
 
-    int nextIdx = kvStart + 4 * numKvPairs;
+    // In-graph KV: only kvInput indices present (2*numKvPairs)
+    // Non-GGUF: both kvInput and kvOutput present (4*numKvPairs)
+    int nextIdx = kvStart + 2 * numKvPairs + (hasInGraphKvCache ? 0 : 2 * numKvPairs);
 
     // GDN/conv state indices (optionalMask bit 5).
     // Layout: numGdnStatePairs, numConvStatePairs,

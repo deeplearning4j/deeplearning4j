@@ -461,11 +461,16 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   }
 
   if (opLower == "softplus") {
-    // softplus(x) = log(1 + exp(x))
-    auto expX = builder.create<mlir::math::ExpOp>(loc, input);
+    // softplus(x) = max(0, x) + log(1 + exp(-|x|))  [overflow-safe]
+    auto zero = splatConstantF32(builder, loc, tensorType, 0.0f);
     auto one = splatConstantF32(builder, loc, tensorType, 1.0f);
-    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expX);
-    return builder.create<mlir::math::LogOp>(loc, onePlusExp);
+    auto absX = builder.create<mlir::math::AbsFOp>(loc, input);
+    auto negAbsX = builder.create<mlir::arith::NegFOp>(loc, absX);
+    auto maxPart = builder.create<mlir::arith::MaximumFOp>(loc, input, zero);
+    auto expNegAbs = builder.create<mlir::math::ExpOp>(loc, negAbsX);
+    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegAbs);
+    auto logPart = builder.create<mlir::math::LogOp>(loc, onePlusExp);
+    return builder.create<mlir::arith::AddFOp>(loc, maxPart, logPart);
   }
 
   if (opLower == "softsign") {

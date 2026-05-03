@@ -1099,6 +1099,94 @@ void fusedLayerNormBackward(NDArray* input, NDArray* gain, NDArray* gradOut,
   THROW_EXCEPTION("fusedLayerNormBackward: Full kernel not yet implemented");
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// Fused bias-add kernel (applied after cuBLAS mmul)
+//////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+static SD_KERNEL void biasAddKernel(
+    T* __restrict__ output,
+    const T* __restrict__ bias,
+    const LongType totalRows,
+    const LongType outDim) {
+
+  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx >= totalRows * outDim) return;
+
+  const LongType col = idx % outDim;
+  output[idx] = static_cast<T>(
+      static_cast<float>(output[idx]) + static_cast<float>(bias[col]));
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Fused attention output projection
+// output = reshape(attentionOutput, [B*S, hidden_dim]) @ Wo  [+ bias]
+//////////////////////////////////////////////////////////////////////////////
+
+void fusedAttentionProjection(NDArray* attentionOutput, NDArray* Wo, NDArray* bias,
+                               NDArray* output, LaunchContext* context) {
+  const int rank        = attentionOutput->rankOf();
+  const LongType batch  = attentionOutput->sizeAt(0);
+  const LongType seqLen = attentionOutput->sizeAt(1);
+
+  LongType hiddenDim;
+  if (rank == 4) {
+    hiddenDim = attentionOutput->sizeAt(2) * attentionOutput->sizeAt(3);
+  } else {
+    hiddenDim = attentionOutput->sizeAt(rank - 1);
+  }
+  const LongType outDim = Wo->sizeAt(1);
+
+  NDArray::prepareSpecialUse({output}, {attentionOutput, Wo, bias});
+
+  // Step 1: reshape attention output to 2D [B*S, hidden_dim]
+  std::vector<LongType> flatShape = {batch * seqLen, hiddenDim};
+  NDArray* attnFlat = attentionOutput->reshape('c', flatShape);
+
+  // Step 2: reshape output to 2D [B*S, out_dim]
+  std::vector<LongType> outFlat2D = {batch * seqLen, outDim};
+  NDArray* outFlat = output->reshape('c', outFlat2D);
+
+  // Step 3: cuBLAS-backed matmul
+  MmulHelper::mmul(attnFlat, Wo, outFlat, 1.0, 0.0);
+
+  delete attnFlat;
+  delete outFlat;
+
+  // Step 4: fused bias add if bias is provided
+  if (bias != nullptr) {
+    auto stream = context->getCudaStream();
+    auto dtype  = output->dataType();
+    const LongType totalRows = batch * seqLen;
+
+    dim3 block(256);
+    dim3 grid(static_cast<unsigned int>(
+        (totalRows * outDim + block.x - 1) / block.x));
+
+    if (dtype == DataType::FLOAT32) {
+      biasAddKernel<float><<<grid, block, 0, *stream>>>(
+          reinterpret_cast<float*>(output->specialBuffer()),
+          reinterpret_cast<const float*>(bias->specialBuffer()),
+          totalRows, outDim);
+    } else if (dtype == DataType::DOUBLE) {
+      biasAddKernel<double><<<grid, block, 0, *stream>>>(
+          reinterpret_cast<double*>(output->specialBuffer()),
+          reinterpret_cast<const double*>(bias->specialBuffer()),
+          totalRows, outDim);
+    } else if (dtype == DataType::HALF) {
+      biasAddKernel<float16><<<grid, block, 0, *stream>>>(
+          reinterpret_cast<float16*>(output->specialBuffer()),
+          reinterpret_cast<const float16*>(bias->specialBuffer()),
+          totalRows, outDim);
+    } else {
+      THROW_EXCEPTION("fusedAttentionProjection: Unsupported data type for bias add");
+    }
+    DebugHelper::checkGlobalErrorCode("biasAddKernel failed");
+  }
+
+  NDArray::registerSpecialUse({output}, {attentionOutput, Wo, bias});
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

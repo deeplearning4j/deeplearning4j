@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include <system/op_boilerplate.h>
+#include <system/env_functions.h>
 #include <helpers/logger.h>
 #include <ops/declarable/helpers/autoregressive_decode.h>
 #include <ops/declarable/helpers/token_sample.h>
@@ -284,6 +285,16 @@ void autoregressiveDecodeCuda(
 
     auto plan = config->planHandle;
 
+    if (env_isVerbose()) {
+        sd_printf("AUTOREGRESSIVE_DECODE_CUDA: ENTERED plan=%p maxNewTokens=%d prefillSeqLen=%d "
+                  "embExtIdx=%d maskExtIdx=%d posExtIdx=%d idsExtIdx=%d causalExtIdx=%d "
+                  "attnReformatExtIdx=%d numKvPairs=%d logitsOutIdx=%d\n",
+                  plan, maxNewTokens, prefillSeqLen,
+                  config->embeddingsExtIdx, config->maskExtIdx, config->posIdsExtIdx,
+                  config->inputIdsExtIdx, config->causalMaskExtIdx,
+                  config->attnMaskReformatExtIdx, numKvPairs, config->logitsOutputIdx);
+    }
+
     // ── Timing ──
     std::vector<double> stepTimesMs;
     stepTimesMs.reserve(maxNewTokens);
@@ -412,6 +423,58 @@ void autoregressiveDecodeCuda(
     }
     LongType stackTokenId = 0;  // fallback if pinned alloc fails
 
+    // ── Mark decode-loop-modified ext inputs as VARIABLE ────────────────────
+    if (env_isVerbose()) {
+        sd_printf("AUTOREGRESSIVE_DECODE_CUDA: about to call markExternalInputVariable "
+                  "plan=%p numExternalInputs=%d\n", plan, numExtInputs);
+    }
+    // The native decode loop writes fresh data to these ext inputs every step
+    // (embed lookup, mask update, position update, input_ids update). The plan's
+    // default classification marks them as non-variable (SOURCE_VARIABLE = model
+    // weight), which means:
+    //   1. No staging buffers allocated for them
+    //   2. ensureAndSyncStagingBuffers skips D2D refresh
+    //   3. Merged CUDA graphs that captured gap ops reading from the Java-side
+    //      warmup addresses will read stale data if the OpaqueContext provides
+    //      different NDArray pointers.
+    //
+    // markExternalInputVariable fixes this by:
+    //   - Allocating plan-owned staging buffers for these inputs
+    //   - D2D-refreshing them each step in ensureAndSyncStagingBuffers
+    //   - Invalidating arg tables so they point to the stable staging addresses
+    //
+    // This MUST happen before the decode loop so the first execution allocates
+    // staging buffers and subsequent executions refresh them.
+    if (config->embeddingsExtIdx >= 0) plan->markExternalInputVariable(config->embeddingsExtIdx);
+    if (config->maskExtIdx >= 0) plan->markExternalInputVariable(config->maskExtIdx);
+    if (config->posIdsExtIdx >= 0) plan->markExternalInputVariable(config->posIdsExtIdx);
+    if (config->inputIdsExtIdx >= 0) plan->markExternalInputVariable(config->inputIdsExtIdx);
+    if (config->causalMaskExtIdx >= 0) plan->markExternalInputVariable(config->causalMaskExtIdx);
+    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputVariable(config->attnMaskReformatExtIdx);
+    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputVariable(config->positionOffsetExtIdx);
+    if (config->cachePositionExtIdx >= 0) plan->markExternalInputVariable(config->cachePositionExtIdx);
+    // Mark GDN/conv state ext inputs as variable — they change every step
+    if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr) {
+        for (int s = 0; s < config->numGdnStatePairs; s++) {
+            int extIdx = config->gdnStateExtIndices[s];
+            if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
+        }
+    }
+    if (config->numConvStatePairs > 0 && config->convStateExtIndices != nullptr) {
+        for (int s = 0; s < config->numConvStatePairs; s++) {
+            int extIdx = config->convStateExtIndices[s];
+            if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
+        }
+    }
+    // Mark KV cache ext inputs as variable — attention ops write KV every step,
+    // so the frozen fast-path must refresh these staging buffers each decode step.
+    if (config->kvInputExtIndices != nullptr) {
+        for (int kv = 0; kv < 2 * numKvPairs; kv++) {
+            int kvIdx = config->kvInputExtIndices[kv];
+            if (kvIdx >= 0) plan->markExternalInputVariable(kvIdx);
+        }
+    }
+
     for (int step = 0; step < maxNewTokens; step++) {
         auto stepStart = std::chrono::high_resolution_clock::now();
 
@@ -457,6 +520,25 @@ void autoregressiveDecodeCuda(
         auto tWireEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
 
         // ── Step 2: Execute plan ──
+        if (step < 5 && env_isVerbose()) {
+            // Trace ext input states before plan execution
+            auto* embDb = decodeEmbedding->dataBuffer();
+            auto* maskDb = attentionMask->dataBuffer();
+            auto* posDb = positionIds->dataBuffer();
+            sd_printf("DECODE_STEP[%d]: PRE_EXEC embPrimAct=%d embSpecAct=%d "
+                      "maskPrimAct=%d maskSpecAct=%d posPrimAct=%d posSpecAct=%d "
+                      "embSpecBuf=%p maskSpecBuf=%p posSpecBuf=%p\n",
+                      step,
+                      embDb ? embDb->isPrimaryActual() : -1,
+                      embDb ? embDb->isSpecialActual() : -1,
+                      maskDb ? maskDb->isPrimaryActual() : -1,
+                      maskDb ? maskDb->isSpecialActual() : -1,
+                      posDb ? posDb->isPrimaryActual() : -1,
+                      posDb ? posDb->isSpecialActual() : -1,
+                      decodeEmbedding->specialBuffer(),
+                      attentionMask->specialBuffer(),
+                      positionIds->specialBuffer());
+        }
         // Use executeSteadyState() for the hot path — it skips ~200ms of
         // per-step CPU overhead (lifecycle validation, buffer scanning,
         // fingerprinting, diagnostics). Falls back to full execute()
@@ -510,6 +592,47 @@ void autoregressiveDecodeCuda(
 
         auto tPlanEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
 
+        // ── Step 2b: GDN/conv recurrent state feedback ──
+        // Copy state outputs back to ext inputs for the next decode step.
+        // Critical for hybrid architectures (e.g. Qwen with GDN layers).
+        // Without this, GDN layers see frozen state from warmup and degenerate.
+        if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
+            && config->gdnStateOutputIndices != nullptr) {
+            for (int s = 0; s < config->numGdnStatePairs; s++) {
+                int outIdx = config->gdnStateOutputIndices[s];
+                int extIdx = config->gdnStateExtIndices[s];
+                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
+                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
+                    NDArray* src = planOutputs[outIdx];
+                    NDArray* dst = extInputs[extIdx];
+                    if (src->lengthOf() == dst->lengthOf() && src->dataType() == dst->dataType()) {
+                        size_t bytes = src->lengthOf() * src->sizeOfT();
+                        cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
+                                        bytes, cudaMemcpyDeviceToDevice, *stream);
+                        dst->tickWriteDevice();
+                    }
+                }
+            }
+        }
+        if (config->numConvStatePairs > 0 && config->convStateExtIndices != nullptr
+            && config->convStateOutputIndices != nullptr) {
+            for (int s = 0; s < config->numConvStatePairs; s++) {
+                int outIdx = config->convStateOutputIndices[s];
+                int extIdx = config->convStateExtIndices[s];
+                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
+                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
+                    NDArray* src = planOutputs[outIdx];
+                    NDArray* dst = extInputs[extIdx];
+                    if (src->lengthOf() == dst->lengthOf() && src->dataType() == dst->dataType()) {
+                        size_t bytes = src->lengthOf() * src->sizeOfT();
+                        cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
+                                        bytes, cudaMemcpyDeviceToDevice, *stream);
+                        dst->tickWriteDevice();
+                    }
+                }
+            }
+        }
+
         // ── Step 3: Token sampling ──
         // Get logits from plan output at config->logitsOutputIdx
         NDArray* logitsOutput = planOutputs[config->logitsOutputIdx];
@@ -522,6 +645,24 @@ void autoregressiveDecodeCuda(
 
         // Get pointer to last-position logits (already on device)
         NDArray::prepareSpecialUse({sampledToken}, {logitsOutput});
+
+        // ── Trace: dump logits fingerprint for debugging ──
+        if (step < 10 && env_isVerbose()) {
+            cudaStreamSynchronize(*stream);
+            float logitsFingerprint[4] = {0};
+            LongType lastPosOff = (logitsSeqLen - 1) * logitsVocab;
+            const void* logitsDbg = static_cast<const char*>(logitsOutput->specialBuffer())
+                                    + lastPosOff * logitsOutput->sizeOfT();
+            if (logitsOutput->dataType() == DataType::FLOAT32) {
+                cudaMemcpy(logitsFingerprint, logitsDbg, sizeof(float) * 4, cudaMemcpyDeviceToHost);
+            }
+            sd_printf("DECODE_STEP[%d]: logitsShape=[%lld,%lld,%lld] vocab=%lld "
+                      "logits[0..3]=[%.4f,%.4f,%.4f,%.4f] specialBuf=%p\n",
+                      step, logitsOutput->sizeAt(0), logitsOutput->sizeAt(1), logitsOutput->sizeAt(2),
+                      logitsVocab, logitsFingerprint[0], logitsFingerprint[1],
+                      logitsFingerprint[2], logitsFingerprint[3],
+                      logitsOutput->specialBuffer());
+        }
 
         if (temperature <= 0.0 || (topK <= 1 && topP <= 0.0)) {
             // Greedy: argmax over last-position logits
@@ -581,11 +722,11 @@ void autoregressiveDecodeCuda(
             NDArray::registerSpecialUse({attentionMask}, {});
         }
 
-        // Update causal mask: unmask the new position (set to 0.0f)
-        if (causalMask != nullptr && currentPosition < causalMaskLen) {
+        // Update causal mask: unmask the KV position that was JUST written (set to 0.0f)
+        if (causalMask != nullptr && kvJustWritten >= 0 && kvJustWritten < causalMaskLen) {
             NDArray::prepareSpecialUse({causalMask}, {});
             BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
-                                  (stream, causalMask->specialBuffer(), currentPosition, causalMaskLen),
+                                  (stream, causalMask->specialBuffer(), kvJustWritten, causalMaskLen),
                                   SD_FLOAT_TYPES);
             NDArray::registerSpecialUse({causalMask}, {});
         }
@@ -619,6 +760,11 @@ void autoregressiveDecodeCuda(
         cudaStreamSynchronize(*stream);
         auto tSyncEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
         LongType nextTokenId = *tokenDst;
+
+        if (step < 5 && env_isVerbose()) {
+            sd_printf("DECODE_STEP[%d]: nextTokenId=%lld currentPosition=%lld\n",
+                      step, (long long)nextTokenId, (long long)currentPosition);
+        }
 
         // ── Step 4: Check stop condition ──
         bool shouldStop = false;
@@ -749,8 +895,9 @@ void autoregressiveDecodeCuda(
             }
         }
 
-        // Per-step timing breakdown (gated behind executionTimingEnabled)
-        if (stepTimingEnabled && step >= 3 && (step % 50 == 0 || step == maxNewTokens - 1)) {
+        // Per-step timing breakdown (gated behind executionTimingEnabled and isVerbose)
+        if (stepTimingEnabled && env_isVerbose() &&
+            step >= 3 && (step % 50 == 0 || step == maxNewTokens - 1)) {
             auto tLoopEnd = std::chrono::high_resolution_clock::now();
             auto wireUs = std::chrono::duration_cast<std::chrono::microseconds>(tWireEnd - stepStart).count();
             auto planUs = std::chrono::duration_cast<std::chrono::microseconds>(tPlanEnd - tWireEnd).count();

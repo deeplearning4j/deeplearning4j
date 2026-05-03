@@ -206,6 +206,12 @@ bool CutlassGemmHelper::gemm(NDArray* A, NDArray* B, NDArray* C,
   if (A == nullptr || B == nullptr || C == nullptr) return false;
   if (A->rankOf() != 2 || B->rankOf() != 2 || C->rankOf() != 2) return false;
 
+  // CUTLASS RowMajor kernels require contiguous row-major layout: strideAt(1)==1.
+  // Permuted views (e.g. weight.permute(1,0)) have strideAt(0)==1 (column-major).
+  // Dispatching such views to a RowMajor kernel reads elements at wrong offsets,
+  // producing incorrect results (e.g., 7x attenuated matmul output).
+  if (A->strideAt(1) != 1 || B->strideAt(1) != 1 || C->strideAt(1) != 1) return false;
+
   // Ensure data is on device
   NDArray::prepareSpecialUse({C}, {A, B});
 

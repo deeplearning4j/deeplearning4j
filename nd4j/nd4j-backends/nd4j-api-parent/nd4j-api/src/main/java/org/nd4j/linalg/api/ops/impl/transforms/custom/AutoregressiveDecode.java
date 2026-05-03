@@ -257,8 +257,11 @@ public class AutoregressiveDecode extends DynamicCustomOp {
                 iArgs.add((long) idx);
             }
         }
-        // KV output indices
-        if (kvOutputIndices != null) {
+        // KV output indices — only for non-in-graph KV mode.
+        // When bit 4 is set (planOwnsKvScatter), attention writes KV in-place;
+        // the decode loop skips external KV scatter and doesn't need output indices.
+        // Matching the GGUF constructor which sends 0 kvOutputIndices.
+        if ((optionalMask & 16) == 0 && kvOutputIndices != null) {
             for (int idx : kvOutputIndices) {
                 iArgs.add((long) idx);
             }

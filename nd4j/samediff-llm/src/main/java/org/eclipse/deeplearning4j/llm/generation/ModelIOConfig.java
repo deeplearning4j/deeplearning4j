@@ -53,8 +53,10 @@ import java.util.List;
 @Builder
 public class ModelIOConfig {
 
-    /** Mask fill value matching torch.finfo(torch.float32).min */
-    public static final float MASK_FILL = -3.4028235e+38f;
+    /** Mask fill value — use -65504 (torch.finfo(torch.float16).min) to avoid
+     *  float16 overflow in SDPA kernels. The old value (-3.4e38, float32 min) overflowed
+     *  to -inf in float16 and caused numerical instability with large padded sequences. */
+    public static final float MASK_FILL = -65504.0f;
 
     /**
      * Holds lists of present key and value output names from a decoder model.

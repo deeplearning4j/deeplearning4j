@@ -1302,6 +1302,33 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool isShapesFrozen() const { return shapesFrozen_; }
 
   /**
+   * Mark an external input as variable (changes between decode steps).
+   *
+   * Called by the native autoregressive_decode op before entering the decode
+   * loop.  Inputs_embeds, attention_mask, position_ids, input_ids, and
+   * causal_mask change every step — the decode kernels write fresh data to
+   * their device buffers between plan executions.
+   *
+   * Marking them variable ensures:
+   *   1. Plan-owned staging buffers are allocated for these inputs.
+   *   2. ensureAndSyncStagingBuffers() D2D-copies fresh data into the staging
+   *      buffers each step.
+   *   3. Merged CUDA graphs (which bake in staging buffer addresses at capture
+   *      time) see up-to-date data on every replay.
+   *
+   * Without this, the merged graph's gap ops read from the original ext input
+   * address that was present at capture time.  If the native decode loop uses
+   * different NDArray pointers than the Java warmup (via OpaqueContext), the
+   * captured address becomes stale and replay produces degenerate output.
+   *
+   * MUST be called BEFORE the first executeSteadyState() in the decode loop
+   * and AFTER shapes are frozen (so staging buffers are allocated at the
+   * correct size).  Invalidates cached variable indices so the next execution
+   * rebuilds the fast-path index.
+   */
+  void markExternalInputVariable(int extIdx);
+
+  /**
    * Enable/disable shape-only dry-run mode.
    *
    * When enabled, executeSlot() runs the full DSP dispatch machinery —
@@ -1570,6 +1597,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Segment cleanup — public so SegmentLifecycle::invalidateForRebuild can call it.
   void cleanupSegmentForRebuild(GraphSegment& seg, const char* reason);
+
+  // Clear all nativeRangeSegments_ entries whose slot range overlaps [startSlot, endSlot].
+  // Called from invalidateForRebuild so that CPU replay handles captured by the
+  // NativeSlotExecutor lambda are not replayed with stale slot arrays after
+  // the outer segment is invalidated.
+  void clearNativeRangeSegmentsForSlotRange(int startSlot, int endSlot);
 
   // Reset plan-level execute count — public so invalidateForRebuild can
   // re-enable warmup gates (input validation, shape reassignment, DSP diagnostics).

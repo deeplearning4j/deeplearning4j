@@ -172,7 +172,11 @@ __global__ void fusedCausalMaskSoftmaxKernel(
  __syncthreads();
  rowMax = sharedMax;
 
- // Pass 2: Compute exp(x - max) and sum
+ // Pass 2: Compute sum of exp(x - max) — NO output writes.
+ // This kernel is called with input == output (in-place). Writing exp values
+ // to output here would clobber the original logits that later iterations
+ // of the same loop (or other threads) still need to read. Instead, we only
+ // accumulate the sum and defer all output writes to Pass 3.
  float threadSum = 0.0f;
  for (LongType j = threadIdx.x; j < seqKV; j += blockDim.x) {
    float val;
@@ -183,9 +187,7 @@ __global__ void fusedCausalMaskSoftmaxKernel(
    } else {
      val = static_cast<float>(input[rowStart + j]);
    }
-   float expVal = expf(val - rowMax);
-   output[rowStart + j] = static_cast<T>(expVal);
-   threadSum += expVal;
+   threadSum += expf(val - rowMax);
  }
 
  // Warp reduce sum
@@ -206,9 +208,21 @@ __global__ void fusedCausalMaskSoftmaxKernel(
  __syncthreads();
  float invSum = 1.0f / sharedSum;
 
- // Pass 3: Normalize
+ // Pass 3: Compute exp and normalize in one pass, write to output.
+ // Safe for in-place (input == output): each thread reads input[j] then writes
+ // output[j] at the same index. Threads handle non-overlapping j values
+ // (stride = blockDim.x), so no thread reads a location another thread has
+ // already written in this pass.
  for (LongType j = threadIdx.x; j < seqKV; j += blockDim.x) {
-   float expVal = static_cast<float>(output[rowStart + j]);
+   float val;
+   if (logitsOut != nullptr) {
+     val = static_cast<float>(logitsOut[rowStart + j]);
+   } else if (isCausal && j > queryPos) {
+     val = -1.0e9f;
+   } else {
+     val = static_cast<float>(input[rowStart + j]);
+   }
+   float expVal = expf(val - rowMax);
    output[rowStart + j] = static_cast<T>(expVal * invSum);
  }
 }

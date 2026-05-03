@@ -21,7 +21,9 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -178,8 +180,14 @@ public class DecoderInputBuilder {
                     }
                 }
             } else if (inputName.equals(ioConfig.getAttnMaskReformatOutput())) {
-                buildAttnMaskReformatOverride(ioConfig, decoderInputMap, inputName, canReuse, usePadded,
-                        reusableInputs, maxKvLen, currentSeqLen, cachePos);
+                // Only override for multi-token decode (speculative, seqLen>1).
+                // For single-token decode (seqLen==1), the model's internal subgraph
+                // computes the causal bias correctly. Injecting an external override
+                // corrupts attention weights and produces wrong tokens (loc_0 vs loc_1).
+                if (currentSeqLen > 1) {
+                    buildAttnMaskReformatOverride(ioConfig, decoderInputMap, inputName, canReuse, usePadded,
+                            reusableInputs, maxKvLen, currentSeqLen, cachePos);
+                }
             }
         }
 
@@ -211,7 +219,13 @@ public class DecoderInputBuilder {
             }
             INDArray arr = decoderInputMap.get(inputName);
             if (arr != null && !externalInputNames.contains(inputName)) {
-                decoder.associateArrayWithVariable(arr, inputName);
+                // Only associate with VARIABLE or CONSTANT type SDVariables.
+                // ARRAY-type variables are computed intermediates — calling
+                // associateArrayWithVariable on them throws UnsupportedOperationException.
+                SDVariable sdVar = decoder.getVariable(inputName);
+                if (sdVar != null && sdVar.getVariableType() != VariableType.ARRAY) {
+                    decoder.associateArrayWithVariable(arr, inputName);
+                }
             }
         }
     }
@@ -390,6 +404,7 @@ public class DecoderInputBuilder {
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getPositionIdsName());
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getEncoderHiddenStatesName());
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getEncoderAttentionMaskName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getAttnMaskReformatOutput());
 
         return materializedInputNames;
     }

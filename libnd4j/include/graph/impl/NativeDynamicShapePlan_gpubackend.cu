@@ -4199,9 +4199,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // CUDA graph capture is BLOCKED when tritonSkipKernels=true. Without Triton
   // kernels, capture bakes syncToSpecial() H2D memcpy nodes into the graph.
   // On replay these overwrite freshly-synced device data with stale values.
+  // Debug mode disables graph capture: debug tracing adds syncToHost calls
+  // that cannot be captured and cause capture workspace OOM.
   bool allowTritonCudaGraphReplay = Environment::getInstance().tritonGraphCapture() &&
                                     shapesFrozen_ &&
-                                    !Environment::getInstance().tritonSkipKernels();
+                                    !Environment::getInstance().tritonSkipKernels() &&
+                                    !Environment::getInstance().isDebug();
 
   int captureMinExec = Environment::getInstance().tritonCaptureMinExec();
   bool forceRecaptureEnabled = Environment::getInstance().tritonForceRecapture();

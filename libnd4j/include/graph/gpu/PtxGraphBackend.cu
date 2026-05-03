@@ -283,16 +283,23 @@ static std::string emitPtxUnaryOp(std::ostringstream& out, PtxRegAlloc& ra,
     out << "    lg2.approx.f32 " << lg << ", " << sum << ";\n";
     out << "    mul.f32 " << result << ", " << lg << ", 0f3F317218;\n";
   } else if (opName == "softplus" || opName == "Softplus") {
-    // softplus(x) = log(1 + exp(x))
-    std::string xScaled = ra.allocFloat();
-    std::string expX = ra.allocFloat();
+    // softplus(x) = max(0, x) + log(1 + exp(-|x|))  [overflow-safe]
+    std::string absX = ra.allocFloat();
+    std::string negAbsX = ra.allocFloat();
+    std::string maxPart = ra.allocFloat();
+    std::string negScaled = ra.allocFloat();
+    std::string expNeg = ra.allocFloat();
     std::string sp = ra.allocFloat();
     std::string spLog = ra.allocFloat();
-    out << "    mul.f32 " << xScaled << ", " << inReg << ", 0f3FB8AA3B;\n";
-    out << "    ex2.approx.f32 " << expX << ", " << xScaled << ";\n";
-    out << "    add.f32 " << sp << ", " << expX << ", 0f3F800000;\n";
+    out << "    abs.f32 " << absX << ", " << inReg << ";\n";
+    out << "    neg.f32 " << negAbsX << ", " << absX << ";\n";
+    out << "    max.f32 " << maxPart << ", " << inReg << ", 0f00000000;\n";  // max(0, x)
+    out << "    mul.f32 " << negScaled << ", " << negAbsX << ", 0f3FB8AA3B;\n";  // -|x| * log2(e)
+    out << "    ex2.approx.f32 " << expNeg << ", " << negScaled << ";\n";  // exp(-|x|)
+    out << "    add.f32 " << sp << ", " << expNeg << ", 0f3F800000;\n";  // 1 + exp(-|x|)
     out << "    lg2.approx.f32 " << spLog << ", " << sp << ";\n";
-    out << "    mul.f32 " << result << ", " << spLog << ", 0f3F317218;\n";
+    out << "    mul.f32 " << spLog << ", " << spLog << ", 0f3F317218;\n";  // log(1 + exp(-|x|))
+    out << "    add.f32 " << result << ", " << maxPart << ", " << spLog << ";\n";  // max(0,x) + log(1+exp(-|x|))
   } else if (opName == "softsign" || opName == "Softsign") {
     // softsign(x) = x / (1 + |x|)
     std::string absX = ra.allocFloat();

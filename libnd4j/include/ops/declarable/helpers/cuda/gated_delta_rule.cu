@@ -29,6 +29,8 @@ namespace helpers {
 
 // One block per (batch, head). Threads cover D_v dimension.
 // Sequential over timesteps (recurrent dependency).
+// Working state is ALWAYS float32 regardless of T to prevent FP16 quantization
+// error from compounding across timesteps (matches CPU behavior).
 template <typename T>
 SD_KERNEL void gatedDeltaRuleKernel(
     const T* __restrict__ q,
@@ -36,7 +38,7 @@ SD_KERNEL void gatedDeltaRuleKernel(
     const T* __restrict__ v,
     const T* __restrict__ betaArr,
     const T* __restrict__ gateArr,
-    T* __restrict__ state,
+    float* __restrict__ state,
     T* __restrict__ out,
     const LongType B, const LongType L, const LongType H,
     const LongType D_k, const LongType D_v,
@@ -54,35 +56,54 @@ SD_KERNEL void gatedDeltaRuleKernel(
     const LongType b = bh / H;
     const LongType h = bh % H;
 
-    const T exp_g = sd::math::sd_exp<T, T>(gateArr[b * gS0 + t * gS1 + h * gS2]);
-    const T beta_val = betaArr[b * bS0 + t * bS1 + h * bS2];
-    T* sPtr = state + (b * H + h) * D_k * D_v;
-
-    // Use float accumulators for dot products to prevent HALF overflow.
-    // D_k=128 terms accumulated in float16 can exceed 65504 (FP16 max).
-    const float exp_g_f = static_cast<float>(exp_g);
-    const float beta_f = static_cast<float>(beta_val);
+    const float exp_g_f = sd::math::sd_exp<float, float>(static_cast<float>(gateArr[b * gS0 + t * gS1 + h * gS2]));
+    const float beta_f = static_cast<float>(betaArr[b * bS0 + t * bS1 + h * bS2]);
+    float* sPtr = state + (b * H + h) * D_k * D_v;
 
     for (LongType dv = threadIdx.x; dv < D_v; dv += blockDim.x) {
-        // prediction = S^T * k  (accumulated in float32)
+        // prediction = S^T * k  (state already float32, no cast needed)
         float prediction = 0.0f;
         for (LongType dk = 0; dk < D_k; ++dk)
-            prediction += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(k[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
+            prediction += sPtr[dk * D_v + dv] * static_cast<float>(k[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
 
         // delta = v - exp(g) * prediction
         const float delta = static_cast<float>(v[b * vS0 + t * vS1 + h * vS2 + dv * vS3]) - exp_g_f * prediction;
 
-        // S = exp(g) * S + beta * k * delta
+        // S = exp(g) * S + beta * k * delta  (stays in float32)
         for (LongType dk = 0; dk < D_k; ++dk) {
             const float k_val = static_cast<float>(k[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
-            sPtr[dk * D_v + dv] = static_cast<T>(exp_g_f * static_cast<float>(sPtr[dk * D_v + dv]) + beta_f * k_val * delta);
+            sPtr[dk * D_v + dv] = exp_g_f * sPtr[dk * D_v + dv] + beta_f * k_val * delta;
         }
 
         // output = S^T * q  (accumulated in float32)
         float out_val = 0.0f;
         for (LongType dk = 0; dk < D_k; ++dk)
-            out_val += static_cast<float>(sPtr[dk * D_v + dv]) * static_cast<float>(q[b * qS0 + t * qS1 + h * qS2 + dk * qS3]);
+            out_val += sPtr[dk * D_v + dv] * static_cast<float>(q[b * qS0 + t * qS1 + h * qS2 + dk * qS3]);
         out[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = static_cast<T>(out_val);
+    }
+}
+
+// Kernel to initialize float32 working state from T-typed stateIn
+template <typename T>
+SD_KERNEL void stateInToFloat32Kernel(
+    const T* __restrict__ src,
+    float* __restrict__ dst,
+    const LongType total) {
+    const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < total) {
+        dst[idx] = static_cast<float>(src[idx]);
+    }
+}
+
+// Kernel to write back float32 working state to T-typed stateOut
+template <typename T>
+SD_KERNEL void float32ToStateOutKernel(
+    const float* __restrict__ src,
+    T* __restrict__ dst,
+    const LongType total) {
+    const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < total) {
+        dst[idx] = static_cast<T>(src[idx]);
     }
 }
 
@@ -90,7 +111,7 @@ template <typename T>
 static void launchGatedDeltaRule(
     const T* q, const T* k, const T* v,
     const T* betaArr, const T* gateArr,
-    T* state, T* out,
+    float* workingState, T* out,
     LongType B, LongType L, LongType H, LongType D_k, LongType D_v,
     LongType qS0, LongType qS1, LongType qS2, LongType qS3,
     LongType kS0, LongType kS1, LongType kS2, LongType kS3,
@@ -109,7 +130,7 @@ static void launchGatedDeltaRule(
 
     for (LongType t = 0; t < L; ++t) {
         gatedDeltaRuleKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
-            q, k, v, betaArr, gateArr, state, out,
+            q, k, v, betaArr, gateArr, workingState, out,
             B, L, H, D_k, D_v, t,
             qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
             vS0, vS1, vS2, vS3, bS0, bS1, bS2,
@@ -117,8 +138,6 @@ static void launchGatedDeltaRule(
     }
     DebugHelper::checkGlobalErrorCode("gatedDeltaRuleKernel failed");
 }
-
-// No explicit instantiation needed — launchGatedDeltaRule is file-local and called via BUILD_SINGLE_SELECTOR below.
 
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
@@ -133,11 +152,36 @@ void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
     if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
 
     auto stream = context->getCudaStream();
+    const LongType stateElems = B * H * D_k * D_v;
 
-    stateOut->nullify();
-    if (stateIn != nullptr) stateOut->assign(stateIn);
+    // Stream-ordered float32 working state buffer on device.
+    // This prevents FP16 quantization error from compounding across timesteps.
+    // Uses cudaMallocAsync/cudaFreeAsync for CUDA graph capture/replay compatibility.
+    float* workingState = nullptr;
+    cudaMallocAsync(&workingState, stateElems * sizeof(float), *stream);
 
     auto dtype = Q->dataType();
+
+    if (stateIn != nullptr) {
+        // Convert stateIn (type T) to float32 working buffer
+        int initBlocks = (stateElems + 255) / 256;
+        if (dtype == DataType::FLOAT32) {
+            // stateIn is already float32, just memcpy
+            cudaMemcpyAsync(workingState, stateIn->specialBuffer(),
+                           stateElems * sizeof(float), cudaMemcpyDeviceToDevice, *stream);
+        } else if (dtype == DataType::HALF) {
+            stateInToFloat32Kernel<float16><<<initBlocks, 256, 0, *stream>>>(
+                reinterpret_cast<const float16*>(stateIn->specialBuffer()),
+                workingState, stateElems);
+        } else if (dtype == DataType::DOUBLE) {
+            stateInToFloat32Kernel<double><<<initBlocks, 256, 0, *stream>>>(
+                reinterpret_cast<const double*>(stateIn->specialBuffer()),
+                workingState, stateElems);
+        }
+    } else {
+        cudaMemsetAsync(workingState, 0, stateElems * sizeof(float), *stream);
+    }
+
     if (dtype == DataType::FLOAT32) {
         launchGatedDeltaRule<float>(
             reinterpret_cast<const float*>(Q->specialBuffer()),
@@ -145,7 +189,7 @@ void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
             reinterpret_cast<const float*>(V->specialBuffer()),
             reinterpret_cast<const float*>(beta->specialBuffer()),
             reinterpret_cast<const float*>(gate->specialBuffer()),
-            reinterpret_cast<float*>(stateOut->specialBuffer()),
+            workingState,
             reinterpret_cast<float*>(output->specialBuffer()),
             B, L, H, D_k, D_v,
             Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
@@ -162,7 +206,7 @@ void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
             reinterpret_cast<const double*>(V->specialBuffer()),
             reinterpret_cast<const double*>(beta->specialBuffer()),
             reinterpret_cast<const double*>(gate->specialBuffer()),
-            reinterpret_cast<double*>(stateOut->specialBuffer()),
+            workingState,
             reinterpret_cast<double*>(output->specialBuffer()),
             B, L, H, D_k, D_v,
             Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
@@ -179,7 +223,7 @@ void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
             reinterpret_cast<const float16*>(V->specialBuffer()),
             reinterpret_cast<const float16*>(beta->specialBuffer()),
             reinterpret_cast<const float16*>(gate->specialBuffer()),
-            reinterpret_cast<float16*>(stateOut->specialBuffer()),
+            workingState,
             reinterpret_cast<float16*>(output->specialBuffer()),
             B, L, H, D_k, D_v,
             Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
@@ -192,6 +236,22 @@ void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
     } else {
         THROW_EXCEPTION("gatedDeltaRule: Unsupported data type");
     }
+
+    // Write back float32 working state to stateOut (type T)
+    int copyBlocks = (stateElems + 255) / 256;
+    if (dtype == DataType::FLOAT32) {
+        cudaMemcpyAsync(stateOut->specialBuffer(), workingState,
+                       stateElems * sizeof(float), cudaMemcpyDeviceToDevice, *stream);
+    } else if (dtype == DataType::HALF) {
+        float32ToStateOutKernel<float16><<<copyBlocks, 256, 0, *stream>>>(
+            workingState, reinterpret_cast<float16*>(stateOut->specialBuffer()), stateElems);
+    } else if (dtype == DataType::DOUBLE) {
+        float32ToStateOutKernel<double><<<copyBlocks, 256, 0, *stream>>>(
+            workingState, reinterpret_cast<double*>(stateOut->specialBuffer()), stateElems);
+    }
+
+    // Stream-ordered free — no host sync needed, graph-capture compatible
+    cudaFreeAsync(workingState, *stream);
 
     NDArray::registerSpecialUse({output, stateOut}, {Q, K, V, beta, gate});
     if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});

@@ -143,6 +143,35 @@ static inline void markOomDeferred(GraphSegmentExec& exec, int retryAfterExec) {
   exec.lifecycleState = SLS::OOM_DEFERRED;
 }
 
+// any -> NEEDS_WARMUP (segment-only invalidation — no plan-level resetExecuteCount)
+// Use when segment captures (CUDA graphs) are stale but plan shapes haven't changed.
+// This avoids resetting executeCount_ which would trigger destructive phaseWarmup.
+static inline void invalidateSegmentCaptures(NativeDynamicShapePlan* plan, GraphSegment& seg,
+                                              const char* reason) {
+  auto& exec = seg.exec;
+  DSP_SEG_EVENT(seg, INVALIDATE, "capturesOnly reason=%s", reason);
+  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "NEEDS_WARMUP",
+                     "(invalidateCaptures: %s)", reason);
+  plan->cleanupSegmentForRebuild(seg, reason);
+  plan->clearNativeRangeSegmentsForSlotRange(seg.def.startSlot, seg.def.endSlot);
+  exec.cachedShapeKey = 0;
+  exec.capturedInputAddrKey = 0;
+  exec.capturedCreateValueKey = 0;
+  exec.capturedSlotAddrHash = 0;
+  exec.compilationFailed = false;
+  exec.argTableStable = false;
+  exec.addrKeyStableCount = 0;
+  exec.slotAddrStableCount = 0;
+  exec.compiledByBackend.clear();
+  exec.executionCount = 0;
+  exec.lastReplayExecCount = 0;
+  exec.lifecycleState = SLS::NEEDS_WARMUP;
+  // NOTE: intentionally do NOT call plan->resetExecuteCount() here.
+  // The plan shapes are unchanged — only segment CUDA graph captures are stale.
+  // Resetting executeCount would cause isFirstFrozenWarmup=true → phaseWarmup
+  // fires destructively, destroying all CUDA graphs and producing zeros.
+}
+
 // any -> NEEDS_WARMUP (full invalidation)
 static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegment& seg,
                                         const char* reason) {
@@ -151,6 +180,11 @@ static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegme
   DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "NEEDS_WARMUP",
                      "(invalidate: %s)", reason);
   plan->cleanupSegmentForRebuild(seg, reason);
+  // Clear any nativeRangeSegments_ entries within this segment's slot range.
+  // These hold FunctionalReplayHandle captures that reference the OLD slot array
+  // state. If they persist, the NativeSlotExecutor lambda replays stale data on
+  // the next token instead of re-capturing against the rebuilt slot state.
+  plan->clearNativeRangeSegmentsForSlotRange(seg.def.startSlot, seg.def.endSlot);
   exec.cachedShapeKey = 0;
   exec.capturedInputAddrKey = 0;
   exec.capturedCreateValueKey = 0;

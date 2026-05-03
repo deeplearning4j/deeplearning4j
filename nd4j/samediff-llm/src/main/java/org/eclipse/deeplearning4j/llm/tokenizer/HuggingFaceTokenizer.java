@@ -520,6 +520,8 @@ public class HuggingFaceTokenizer implements Tokenizer {
         }
 
         private int resolveSpecialToken(String tokenStr) {
+            // Strategy 1: encode without special token processing — native tokenizer
+            // resolves added_tokens (like <|im_end|>) to their single IDs directly.
             try {
                 Encoding enc = encode(tokenStr, false);
                 int[] ids = enc.getIds();
@@ -527,7 +529,18 @@ public class HuggingFaceTokenizer implements Tokenizer {
                     return ids[0];
                 }
             } catch (Exception e) {
-                // Token not in vocabulary - keep default
+                // Token not in vocabulary - try fallback
+            }
+            // Strategy 2: encode WITH special tokens enabled — some tokenizer configs
+            // only resolve added_tokens when addSpecialTokens=true.
+            try {
+                Encoding enc = encode(tokenStr, true);
+                int[] ids = enc.getIds();
+                if (ids != null && ids.length == 1) {
+                    return ids[0];
+                }
+            } catch (Exception e) {
+                // Token not in vocabulary
             }
             return -1;
         }

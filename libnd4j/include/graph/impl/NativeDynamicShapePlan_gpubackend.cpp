@@ -437,6 +437,11 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                  seg.def.startSlot, seg.def.endSlot, static_cast<int>(warmupStatus));
         return warmupStatus;
       }
+      // Transition NEEDS_WARMUP -> NEEDS_COMPILE after successful warmup.
+      // invalidateForRebuild set state to NEEDS_WARMUP; the slot-by-slot
+      // execution above completed the warmup, so advance the state machine
+      // before calling markCompiled (which asserts NEEDS_COMPILE).
+      SegmentLifecycle::markWarmupDone(seg.exec);
       segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
       DSP_DIAG(COMPILE, "segDispatchCompile: shape-change warmup OK for seg[%d-%d], "
                         "recomputed shapeKey=%lld", seg.def.startSlot, seg.def.endSlot, segShapeKey);

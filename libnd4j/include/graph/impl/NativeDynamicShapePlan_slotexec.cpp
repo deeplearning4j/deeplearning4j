@@ -56,10 +56,6 @@ namespace graph {
  * these shapes, so we backfill from the live output arrays after execution.
  */
 static void backfillCachedOutputShapes(NativeSlot& slot, NDArray** outputSlots, int totalOutputSlots) {
-  // Fast exit: once a slot reaches SHAPE_CACHED, its output shapes are finalized
-  // and never change. Avoids the ConstantShapeHelper singleton + mutex lookup
-  // that createFromExisting() entails on every call in frozen steady-state.
-  if (slot.state_ >= NativeSlot::SlotState::SHAPE_CACHED) return;
   if (!slot.shapeCache.cachedOutputShapes.empty()) return;  // already populated
   if (slot.wiring.numOutputs <= 0) return;
 
@@ -212,8 +208,8 @@ static void scanAllSlotsForCorruption(
  * to heap corruption (+1 byte _shapeInfoBuffer corruption).
  *
  * Uses iterative BFS with a fixed-size visited bitset (stack-allocated) to
- * avoid heap allocation on the hot path. Caps traversal at 256 slots to
- * bound the cost; plans with deeper chains are exceedingly rare.
+ * avoid heap allocation on the hot path. Queue sized at 4096 to support
+ * large VLM models where upstream chains can span 400+ slots.
  */
 static bool hasTransitiveDynamicUpstream(
     const NativeSlot* slots, int numSlots, int startSlotIdx) {
@@ -225,8 +221,12 @@ static bool hasTransitiveDynamicUpstream(
     return true;
   }
 
-  // BFS queue — stack-allocated, max 256 entries
-  constexpr int kMaxBfs = 256;
+  // BFS queue — stack-allocated. Must be large enough to hold all reachable
+  // upstream slots. 256 was too small for VLM models with 420+ slots where
+  // the upstream chain from a late slot (e.g. rms_norm at slot 420) back to
+  // the SOURCE_PLACEHOLDER inputs exceeds 256 hops, causing the BFS to
+  // silently truncate and return false when it should return true.
+  constexpr int kMaxBfs = 4096;
   int queue[kMaxBfs];
   int qHead = 0, qTail = 0;
 
@@ -1557,13 +1557,50 @@ Status NativeDynamicShapePlan::executeSlot(
   // re-creation via tryCreateViewForSlot (avoids the heavy frozen context path).
   // Only falls through to the heavy path when view creation is not possible.
   do {
-    if (!(shapesFrozen_ && executeCount_ >= 2 &&
+    // Gate frozen fast-path at executeCount_ >= 4 to give 4 full execution
+    // passes (prefill + 3 decode) before freezing. The BFS classifies
+    // external non-placeholder inputs as NOT dynamic, so slots whose shapes
+    // change only during prefill-to-decode aren't marked isDynamicShape.
+    // With >= 2 the fast-path activates on the first step after warmup
+    // closes, reusing cached outputs that may be prezero zeros. >= 4
+    // matches executeSteadyState conservatism.
+    //
+    // CRITICAL: Skip frozen fast-path during composite replay gap execution.
+    // Gap ops in compositeReplay are called via executeSlot, but their inputs
+    // (embeddings, masks, positions) change every decode step. The frozen
+    // fast-path reuses cached outputs from the previous execution — wrong for
+    // variable inputs. tl_dspReplayActive is set by compositeReplay for gap units.
+    // Triton islands handle this correctly via re-executed compiled kernels.
+    if (!(shapesFrozen_ && executeCount_ >= 4 &&
+#ifdef SD_CUDA
+        !tl_dspReplayActive &&
+#endif
         contextPool_[stepIdx] != nullptr && slot.frozenContextReady() &&
         !slot.flags.isIdentityOp &&
         !slot.frozenConstantSlot() &&
         !slot.fusedChain.isFusedChainHead &&
         !slot.fusedChain.isFusedChainTail &&
         !slot.flags.isDynamicShape)) break;
+
+    // Skip frozen fast-path for slots that read directly from variable ext inputs.
+    // Variable ext inputs (KV caches, embeddings, masks) change every decode step,
+    // so the cached frozen output from the previous step is stale.
+    {
+      bool hasVariableExtInput = false;
+      if (!externalInputIsVariable_.empty()) {
+        for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
+          int srcIdx = slot.wiring.inputSourceIndices[ii];
+          if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            if (extIdx < (int)externalInputIsVariable_.size() && externalInputIsVariable_[extIdx]) {
+              hasVariableExtInput = true;
+              break;
+            }
+          }
+        }
+      }
+      if (hasVariableExtInput) break;
+    }
 
     // View-capable ops: verify the installed view still shares a buffer with
     // the current input. If the upstream gap op replaced the input array with

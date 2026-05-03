@@ -121,10 +121,12 @@ public class GenerationPipelineConfig {
     private final SameDiff draftDecoder;
 
     /** Whether the GraphOptimizer runs during pipeline construction (fuses rms_norm, swish_mul, xw_plus_b, etc.).
-     *  Defaults to true. OnnxModelCache also runs the optimizer during import, but the
-     *  pipeline-level pass handles models loaded from paths or SDZ directly. */
+     *  Defaults to false. OnnxModelCache already runs the optimizer during import and
+     *  caches as .opt.sdz — running again in the pipeline double-optimizes and can
+     *  produce numerically different results with no benefit. Only enable for models
+     *  loaded directly from paths that bypass OnnxModelCache. */
     @Builder.Default
-    private final boolean graphOptimizerEnabled = true;
+    private final boolean graphOptimizerEnabled = false;
 
     /** Whether DSP (DynamicShapePlan) is enabled for this pipeline. */
     @Builder.Default

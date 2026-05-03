@@ -28,7 +28,7 @@
 
 #if NOT_EXCLUDED(OP_fused_gelu) || NOT_EXCLUDED(OP_fused_layer_norm) || \
     NOT_EXCLUDED(OP_fused_rope) || NOT_EXCLUDED(OP_fused_bias_dropout_residual) || \
-    NOT_EXCLUDED(OP_fused_rms_norm_swiglu)
+    NOT_EXCLUDED(OP_fused_rms_norm_swiglu) || NOT_EXCLUDED(OP_fused_attention_projection)
 
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/fused_llm_ops.h>
@@ -325,6 +325,42 @@ DECLARE_TYPES(fused_rms_norm_swiglu_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// fused_attention_projection - Attention output x O-projection matmul + bias
+//////////////////////////////////////////////////////////////////////////
+#if NOT_EXCLUDED(OP_fused_attention_projection)
+CUSTOM_OP_IMPL(fused_attention_projection, 2, 1, false, 0, 0) {
+    auto attentionOutput = INPUT_VARIABLE(0);
+    auto Wo              = INPUT_VARIABLE(1);
+    NDArray* bias        = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
+    auto output          = OUTPUT_VARIABLE(0);
+
+    helpers::fusedAttentionProjection(attentionOutput, Wo, bias, output, block.launchContext());
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(fused_attention_projection) {
+    auto attnShape = inputShape->at(0);   // [B, S, H, D]  or  [B, S, hidden]
+    auto woShape   = inputShape->at(1);   // [hidden_dim, out_dim]
+    auto dtype     = ArrayOptions::dataType(attnShape);
+
+    const LongType batch  = shape::sizeAt(attnShape, static_cast<LongType>(0));
+    const LongType seqLen = shape::sizeAt(attnShape, static_cast<LongType>(1));
+    // Wo is always 2D: [hidden_dim, out_dim]
+    const LongType outDim = shape::sizeAt(woShape, static_cast<LongType>(1));
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
+        dtype, 'c', {batch, seqLen, outDim}));
+}
+
+DECLARE_TYPES(fused_attention_projection) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 #endif
 

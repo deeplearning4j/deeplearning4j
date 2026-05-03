@@ -306,7 +306,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_sinh(T val);
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val) {
- Z result = sd_log<T, Z>((Z)1.0f + sd_exp<T, Z>(val));
+ // Numerically stable softplus: max(0,x) + log(1 + exp(-|x|))
+ // Avoids exp(x) overflow for large positive x.
+ Z x = static_cast<Z>(val);
+ Z absX = x < static_cast<Z>(0) ? -x : x;
+ Z maxVal = x > static_cast<Z>(0) ? x : static_cast<Z>(0);
+ Z result = maxVal + sd_log<Z, Z>(static_cast<Z>(1) + sd_exp<Z, Z>(-absX));
  SD_PRINT_MATH_FUNC("sd_softplus", val, result,Z);
  return result;
 }

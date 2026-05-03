@@ -53,6 +53,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -1101,16 +1102,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                 log.debug("[ATTN-EXTRACT] K traced through Transpose to: " + kVar);
                             }
                         }
-                        // Also check for Permute
-                        else if (kProducerOp.getOp() instanceof Permute) {
-                            // K comes from permute - get the original K
-                            List<String> permuteInputs = kProducerOp.getInputsToOp();
-                            if (permuteInputs != null && !permuteInputs.isEmpty()) {
-                                kVar = permuteInputs.get(0);
-                                kTransposed = true; // Permute often serves as transpose for attention
-                                log.debug("[ATTN-EXTRACT] K traced through Permute to: " + kVar);
-                            }
-                        }
                     }
                 }
             }
@@ -1435,15 +1426,13 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
      * Fuses attention output with a subsequent linear projection.
      * Pattern: attention_output -> matmul(_, W) -> add(bias) => attention with fused output projection
      *
-     * Note: This is a placeholder for future optimization. The current implementation
-     * focuses on detecting and fusing the core attention pattern.
+     * Disabled: No fused_attention_with_projection C++ op exists yet.
+     * When the C++ op is implemented, re-enable by adding DotProductAttentionV2.class
+     * to APPLICABLE_OPS and implementing the graph rewrite in checkAndApply.
      */
     public static class FuseAttentionWithProjection implements Optimizer {
 
-        private static final Set<Class<? extends DifferentialFunction>> APPLICABLE_OPS = new HashSet<>();
-        static {
-            APPLICABLE_OPS.add(DotProductAttentionV2.class);
-        }
+        private static final Set<Class<? extends DifferentialFunction>> APPLICABLE_OPS = Collections.emptySet();
 
         @Override
         public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
@@ -1453,34 +1442,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
         @Override
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
-            // Check if this is a DotProductAttentionV2 op
-            if (!(op.getOp() instanceof DotProductAttentionV2)) {
-                return false;
-            }
-
-            // Get attention output
-            List<String> attentionOutputs = op.getOutputsOfOp();
-            if (attentionOutputs == null || attentionOutputs.isEmpty()) {
-                return false;
-            }
-
-            String attentionOutput = attentionOutputs.get(0);
-            Variable attOutVar = helper.getVariable(attentionOutput);
-            if (attOutVar == null) return false;
-
-            // Check if output goes to a matmul (linear projection)
-            List<String> users = attOutVar.getInputsForOp();
-            if (users == null || users.size() != 1) {
-                // Multiple users or no users - can't fuse
-                return false;
-            }
-
-            // For now, just log that we found a potential fusion opportunity
-            // Full implementation would fuse the projection into the attention op
-            // or create a combined attention+projection op
-            log.debug("[ATTN-DEBUG] Found potential attention+projection fusion opportunity at " + op.getName());
-
-            // Return false for now - this is a placeholder for future optimization
             return false;
         }
     }
@@ -1852,14 +1813,14 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             String qVar = mmInputs.get(0);
             String kVar = mmInputs.get(1);
 
-            // Check for explicit transpose or permute on K
+            // Check for explicit transpose on K
             Variable kVariable = helper.getVariable(kVar);
             if (kVariable != null) {
                 String kProducerName = kVariable.getOutputOfOp();
                 if (kProducerName != null) {
                     SameDiffOp kProducerOp = sd.getOps().get(kProducerName);
                     if (kProducerOp != null &&
-                        (kProducerOp.getOp() instanceof Transpose || kProducerOp.getOp() instanceof Permute)) {
+                        kProducerOp.getOp() instanceof Transpose) {
                         List<String> transposeInputs = kProducerOp.getInputsToOp();
                         if (transposeInputs != null && !transposeInputs.isEmpty()) {
                             kVar = transposeInputs.get(0);
@@ -2270,7 +2231,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 if (kProducerName != null) {
                     SameDiffOp kProducerOp = sd.getOps().get(kProducerName);
                     if (kProducerOp != null &&
-                        (kProducerOp.getOp() instanceof Transpose || kProducerOp.getOp() instanceof Permute)) {
+                        kProducerOp.getOp() instanceof Transpose) {
                         List<String> transposeInputs = kProducerOp.getInputsToOp();
                         if (transposeInputs != null && !transposeInputs.isEmpty()) {
                             kVar = transposeInputs.get(0);
@@ -2761,14 +2722,14 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             String qVar = mmInputs.get(0);
             String kVar = mmInputs.get(1);
 
-            // Check if K goes through transpose or permute (K^T)
+            // Check if K goes through transpose (K^T)
             Variable kVariable = helper.getVariable(kVar);
             if (kVariable != null) {
                 String kProducerName = kVariable.getOutputOfOp();
                 if (kProducerName != null) {
                     SameDiffOp kProducerOp = sd.getOps().get(kProducerName);
                     if (kProducerOp != null &&
-                        (kProducerOp.getOp() instanceof Transpose || kProducerOp.getOp() instanceof Permute)) {
+                        kProducerOp.getOp() instanceof Transpose) {
                         List<String> transposeInputs = kProducerOp.getInputsToOp();
                         if (transposeInputs != null && !transposeInputs.isEmpty()) {
                             kVar = transposeInputs.get(0);

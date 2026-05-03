@@ -161,7 +161,7 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
     return "(" + val + " >= 0.0f ? 1.0507009873554805f * " + val
            + " : 1.0507009873554805f * 1.6732632423543772f * (expf(" + val + ") - 1.0f))";
   if (opName == "softplus" || opName == "Softplus")
-    return "logf(1.0f + expf(" + val + "))";
+    return "(fmaxf(0.0f, " + val + ") + logf(1.0f + expf(-fabsf(" + val + "))))";
   if (opName == "softsign" || opName == "Softsign")
     return "(" + val + " / (1.0f + fabsf(" + val + ")))";
   if (opName == "hard_sigmoid" || opName == "HardSigmoid")

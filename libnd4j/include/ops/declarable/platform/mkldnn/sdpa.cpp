@@ -725,8 +725,6 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
     return;
   }
 
-  if (ownsBiasLocal) delete biasF32;
-
   // -------------------------------------------------------------------------
   // Prefill path: seqQ > 1
   // Per-head cblas_sgemm: the [B, S, H, D] layout interleaves heads within
@@ -755,6 +753,21 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
                   0.0f, sHead, seqKV);
     }
 
+    // Step 1.5: Apply causal bias between Q@K^T and softmax
+    // Bias shape is [1,1,seqQ,seqKV] OR [1,1,1,seqKV] (broadcast single row).
+    // Determine actual bias rows from the shape to avoid buffer overread.
+    if (biasPtr != nullptr) {
+      const sd::LongType biasSeqQ = biasF32->sizeAt(-2);  // penultimate dim: 1 or seqQ
+      for (MKL_INT h = 0; h < numHeads; h++) {
+        float* sHead = allScores + h * scoreSize;  // [seqQ, seqKV] contiguous
+        for (MKL_INT q = 0; q < seqQ; q++) {
+          // If bias has 1 row, broadcast it to every query position; else use row q
+          const float* biasRow = biasPtr + (biasSeqQ == 1 ? 0 : q) * seqKV;
+          cblas_saxpy(seqKV, 1.0f, biasRow, 1, sHead + q * seqKV, 1);
+        }
+      }
+    }
+
     // Step 2: softmax with scale
     for (MKL_INT h = 0; h < numHeads; h++) {
       mklSoftmaxInPlace(allScores + h * scoreSize, seqQ, seqKV, scale);
@@ -775,6 +788,7 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
                   0.0f, oHead, outSeqStride);
     }
   }
+  if (ownsBiasLocal) delete biasF32;
 }
 #endif
 
@@ -1094,23 +1108,76 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
     values = kvCacheV;
   }
 
-  // Detect attention bias at input 5 (when input 6 is absent, input 5 is bias not KV cache)
+  // Detect attention bias.
+  // Input layout with KV cache: [Q, V, K, qMask, vMask, keyCache, valueCache, cachePos, bias]
+  // Input layout without KV cache: [Q, V, K, qMask, vMask, bias]
   NDArray* attentionBias = nullptr;
-  auto extraInput = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
-  auto extraInput2 = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
-  if (extraInput != nullptr && !extraInput->isEmpty() &&
-      (extraInput2 == nullptr || extraInput2->isEmpty())) {
-    // Use working queries for shape (handle rank 2 by using original queries shape)
-    auto tq = (rank == 2) ? queries->sizeAt(0) : queries->sizeAt(1);
-    auto tv = (rank == 2) ? values->sizeAt(0) : values->sizeAt(1);
-    bool looksLikeBias = false;
-    if (extraInput->rankOf() >= 2) {
-      auto d0 = extraInput->sizeAt(extraInput->rankOf() - 2);
-      auto d1 = extraInput->sizeAt(extraInput->rankOf() - 1);
-      looksLikeBias = (d0 == tq && d1 == tv) || (d0 == tv && d1 == tq);
+  NDArray* slicedBiasOwner = nullptr;
+
+  if (useInPlaceKv) {
+    // KV cache active: bias is at input[8] (inputs 5/6 are keyCache/valueCache)
+    auto kvCacheBias = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
+    if (kvCacheBias != nullptr && kvCacheBias->isEmpty()) kvCacheBias = nullptr;
+    if (kvCacheBias != nullptr && kvCacheBias->rankOf() >= 2) {
+      // Bias may be wider than K's seq dim (sized for maxKvLen).
+      // Slice to match K's actual sequence length.
+      auto biasLastDim = kvCacheBias->sizeAt(kvCacheBias->rankOf() - 1);
+      auto kSeqDim = isRank4 ? keys->sizeAt(1) : keys->sizeAt(0);
+      if (biasLastDim == kSeqDim) {
+        attentionBias = kvCacheBias;
+      } else if (biasLastDim > kSeqDim) {
+        std::vector<LongType> sliceIdx;
+        for (int d = 0; d < kvCacheBias->rankOf() - 1; d++) {
+          sliceIdx.push_back(0);
+          sliceIdx.push_back(kvCacheBias->sizeAt(d));
+        }
+        sliceIdx.push_back(0);
+        sliceIdx.push_back(kSeqDim);
+        auto* slicedView = (*kvCacheBias)(sliceIdx);
+        slicedBiasOwner = new NDArray(slicedView->dup());
+        attentionBias = slicedBiasOwner;
+        delete slicedView;
+      }
     }
-    if (looksLikeBias) {
-      attentionBias = extraInput;
+  } else if (!hasKvCache && block.width() > 8) {
+    // Prefill: KV cache placeholders are empty, but bias at input[8] has the causal mask
+    auto prefillBias = INPUT_VARIABLE(8);
+    if (prefillBias != nullptr && !prefillBias->isEmpty() && prefillBias->rankOf() >= 2) {
+      auto biasLastDim = prefillBias->sizeAt(prefillBias->rankOf() - 1);
+      auto kSeqDim = isRank4 ? keys->sizeAt(1) : keys->sizeAt(0);
+      if (biasLastDim == kSeqDim) {
+        attentionBias = prefillBias;
+      } else if (biasLastDim > kSeqDim) {
+        std::vector<LongType> sliceIdx;
+        for (int d = 0; d < prefillBias->rankOf() - 1; d++) {
+          sliceIdx.push_back(0);
+          sliceIdx.push_back(prefillBias->sizeAt(d));
+        }
+        sliceIdx.push_back(0);
+        sliceIdx.push_back(kSeqDim);
+        auto* slicedView = (*prefillBias)(sliceIdx);
+        slicedBiasOwner = new NDArray(slicedView->dup());
+        attentionBias = slicedBiasOwner;
+        delete slicedView;
+      }
+    }
+  } else {
+    // No KV cache: check input[5] as bias (legacy path)
+    auto extraInput = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+    auto extraInput2 = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
+    if (extraInput != nullptr && !extraInput->isEmpty() &&
+        (extraInput2 == nullptr || extraInput2->isEmpty())) {
+      auto tq = (rank == 2) ? queries->sizeAt(0) : queries->sizeAt(1);
+      auto tv = (rank == 2) ? values->sizeAt(0) : values->sizeAt(1);
+      bool looksLikeBias = false;
+      if (extraInput->rankOf() >= 2) {
+        auto d0 = extraInput->sizeAt(extraInput->rankOf() - 2);
+        auto d1 = extraInput->sizeAt(extraInput->rankOf() - 1);
+        looksLikeBias = (d0 == tq && d1 == tv) || (d0 == tv && d1 == tq);
+      }
+      if (looksLikeBias) {
+        attentionBias = extraInput;
+      }
     }
   }
 
@@ -1123,6 +1190,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
                   block.launchContext(), hasAttentionBias ? attentionBias : nullptr);
     if (!attentionScores->isEmpty()) attentionScores->nullify();
     if (!attentionLogits->isEmpty())  attentionLogits->nullify();
+    if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
     return sd::Status::OK;
   }
 
@@ -1176,6 +1244,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
       delete out;
     }
 
+    if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
     return sd::Status::OK;
   }
 
@@ -1212,6 +1281,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
     }
   }
 
+  if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
   return sd::Status::OK;
 }
 

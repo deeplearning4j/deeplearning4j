@@ -456,13 +456,17 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
                                  &beta, (float**)group.d_C_ptrs, ldc,
                                  batchCount);
   } else if (group.dtype == HALF) {
-    __half alpha = __float2half(1.0f), beta = __float2half(0.0f);
-    status = cublasHgemmBatched(*handle, transAblas, transBblas,
-                                 group.N, group.M, group.K,
-                                 &alpha, (const __half**)group.d_B_ptrs, lda,
-                                 (const __half**)group.d_A_ptrs, ldb,
-                                 &beta, (__half**)group.d_C_ptrs, ldc,
-                                 batchCount);
+    // Use GemmBatchedEx with FP32 accumulation — cublasHgemmBatched accumulates in FP16.
+    float alpha = 1.0f, beta = 0.0f;
+    status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
+                                  group.N, group.M, group.K,
+                                  &alpha,
+                                  (const void**)group.d_B_ptrs, CUDA_R_16F, lda,
+                                  (const void**)group.d_A_ptrs, CUDA_R_16F, ldb,
+                                  &beta,
+                                  (void**)group.d_C_ptrs, CUDA_R_16F, ldc,
+                                  batchCount,
+                                  CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
   } else if (group.dtype == BFLOAT16) {
     float alpha = 1.0f, beta = 0.0f;
     status = cublasGemmBatchedEx(*handle, transAblas, transBblas,

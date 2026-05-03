@@ -247,6 +247,23 @@ SD_LIB_HIDDEN void fusedLayerNormBackward(
     float epsilon,
     LaunchContext* context);
 
+/**
+ * Fused attention output projection
+ * Computes: output = reshape(attentionOutput, [B*S, H*D]) @ Wo + bias
+ *
+ * @param attentionOutput [batch, seq_len, num_heads, head_dim] or [batch, seq_len, hidden_dim]
+ * @param Wo              Output projection weight [hidden_dim, out_dim]
+ * @param bias            Optional bias [out_dim], may be nullptr
+ * @param output          [batch, seq_len, out_dim]
+ * @param context         Launch context
+ */
+SD_LIB_HIDDEN void fusedAttentionProjection(
+    NDArray* attentionOutput,
+    NDArray* Wo,
+    NDArray* bias,
+    NDArray* output,
+    LaunchContext* context);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

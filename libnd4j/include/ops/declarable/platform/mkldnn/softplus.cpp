@@ -84,8 +84,11 @@ static void softplusMKLDNN(NDArray* x, NDArray* z) {
 
   // operation primitive description - soft_relu is softplus: log(1 + exp(x))
   // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  // OneDNN soft_relu: log(1 + exp(alpha * x)) / alpha
+  // alpha=1.0 gives standard softplus: log(1 + exp(x))
+  // alpha=0.0 causes division by zero → +inf output
   dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
-                                                      algorithm::eltwise_soft_relu, x_mkl_md, z_mkl_md, 0.f, 0.f);
+                                                      algorithm::eltwise_soft_relu, x_mkl_md, z_mkl_md, 1.f, 0.f);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -168,12 +171,13 @@ static void softplusBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
 
   // operation primitive description
   // OneDNN 3.x API for forward hint: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  // alpha=1.0 for standard softplus: log(1 + exp(x))
   dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
-                                                         algorithm::eltwise_soft_relu, x_mkl_md, x_mkl_md, 0.f, 0.f);
+                                                         algorithm::eltwise_soft_relu, x_mkl_md, x_mkl_md, 1.f, 0.f);
 
   // OneDNN 3.x API for backward: primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, data_md, alpha, beta, hint_fwd_pd)
   dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, algorithm::eltwise_soft_relu,
-                                                       dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, 0.f, 0.f, op_ff_prim_desc);
+                                                       dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, 1.f, 0.f, op_ff_prim_desc);
 
   // provide memory buffers and check whether reorder is required for forward
   // input

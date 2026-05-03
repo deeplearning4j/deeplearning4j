@@ -119,22 +119,17 @@ public class ConversionOptions {
 
     /**
      * Create default options for inference.
-     * Uses FP16 on GPU (native fp16 compute), FP32 on CPU (no fp16 hardware on
-     * most x86 CPUs — Zen 3/4, pre-Sapphire Rapids Intel). Running in FP32 on CPU
-     * eliminates hundreds of f16↔f32 cast ops that otherwise dominate decode time.
+     * Uses FP32 on all backends. FP16 weights with explicit cast ops cause
+     * cumulative precision loss over many transformer layers (669 HALF↔FLOAT32
+     * round-trips on a 24-layer model produce wrong logits). cuBLAS and
+     * rms_norm already use FP32 accumulation internally, so FP32 weights
+     * avoid unnecessary casts while maintaining the same compute precision.
      */
     public static ConversionOptions forInference() {
-        boolean isCpu = Nd4j.getBackendDeviceType() == DeviceType.CPU;
-        if (isCpu) {
-            return ConversionOptions.builder()
-                    .forTraining(false)
-                    .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT32)
-                    .targetDataType(DataType.FLOAT)
-                    .build();
-        }
         return ConversionOptions.builder()
                 .forTraining(false)
-                .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT16)
+                .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT32)
+                .targetDataType(DataType.FLOAT)
                 .build();
     }
 

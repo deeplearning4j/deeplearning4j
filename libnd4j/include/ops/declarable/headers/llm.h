@@ -1237,6 +1237,31 @@ DECLARE_CUSTOM_OP(kl_divergence_per_layer, 2, 1, false, 1, 0);
 DECLARE_CUSTOM_OP(autoregressive_decode, 3, 3, false, 3, 5);
 #endif
 
+/**
+ * fused_attention_projection - Fused attention output projection
+ *
+ * Fuses the attention output with its subsequent linear (O-projection) matmul:
+ *   output = attention_output @ Wo + bias  (bias optional)
+ *
+ * The "fusion" value is at the graph level: the optimizer can eliminate the
+ * intermediate variable between attention and projection, reducing memory peak.
+ * On CUDA, MmulHelper routes to cuBLAS for the matmul, so no custom GEMM kernel
+ * is needed.
+ *
+ * Input:
+ *   0: attention_output — [batch, seq_len, num_heads, head_dim] or
+ *                          [batch, seq_len, hidden_dim]
+ *   1: Wo (output projection weight) — [hidden_dim, out_dim] or
+ *                                       [num_heads * head_dim, out_dim]
+ *   2: bias (optional) — [out_dim]
+ *
+ * Output:
+ *   0: projected — [batch, seq_len, out_dim]
+ */
+#if NOT_EXCLUDED(OP_fused_attention_projection)
+DECLARE_CUSTOM_OP(fused_attention_projection, 2, 1, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

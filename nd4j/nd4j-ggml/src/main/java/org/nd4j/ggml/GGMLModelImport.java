@@ -97,7 +97,7 @@ public class GGMLModelImport {
      * @throws GGMLImportException if import fails
      */
     public static SameDiff importModel(File file) throws GGMLImportException {
-        return importModel(file, ConversionOptions.builder().build());
+        return importModel(file, ConversionOptions.forInference());
     }
 
     /**
@@ -121,7 +121,7 @@ public class GGMLModelImport {
      * @throws GGMLImportException if import fails
      */
     public static SameDiff importModel(InputStream inputStream) throws GGMLImportException {
-        return importModel(inputStream, ConversionOptions.builder().build());
+        return importModel(inputStream, ConversionOptions.forInference());
     }
 
     /**

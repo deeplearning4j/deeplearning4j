@@ -828,6 +828,41 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   return status;
 }
 
+// ─── Native range segment invalidation ───────────────────────────────────────
+//
+// When an outer segment is invalidated via invalidateForRebuild, any
+// nativeRangeSegments_ entries whose slot range falls within that segment must
+// also be cleared.  Otherwise the FunctionalReplayHandle captured by the
+// NativeSlotExecutor lambda holds executable slot indices recorded against the
+// OLD slot array state and will be replayed with stale data on the next token.
+//
+// This function is called from DspSegmentLifecycle::invalidateForRebuild.
+
+void NativeDynamicShapePlan::clearNativeRangeSegmentsForSlotRange(int startSlot, int endSlot) {
+  if (nativeRangeSegments_.empty()) return;
+  // Collect keys to erase (can't modify map while iterating it).
+  std::vector<uint64_t> toErase;
+  for (auto& kv : nativeRangeSegments_) {
+    int nStart = static_cast<int>(kv.first >> 32);
+    int nEnd   = static_cast<int>(kv.first & 0xFFFFFFFFu);
+    // Overlap: native range is inside or spans the outer segment range.
+    if (nStart <= endSlot && nEnd >= startSlot) {
+      // Release the replay handle before erasing so resources are freed.
+      platformCleanupSegmentForRebuild(kv.second);
+      toErase.push_back(kv.first);
+    }
+  }
+  for (auto key : toErase) {
+    nativeRangeSegments_.erase(key);
+  }
+  if (!toErase.empty()) {
+    DSP_DIAG(EXECUTE,
+             "clearNativeRangeSegmentsForSlotRange: cleared %d native range entry(s) "
+             "for seg[%d-%d]",
+             static_cast<int>(toErase.size()), startSlot, endSlot);
+  }
+}
+
 // ─── Segment execution: slot-by-slot ─────────────────────────────────────────
 
 // ─── Control flow helpers ────────────────────────────────────────────────────
@@ -925,8 +960,11 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         segLabel, executeCount_);
   }
 
-  // Always prezero segment outputs: some ops may partially write their output
-  // buffers, and stale data from the previous step must not persist.
+  // Unconditional prezero: ops with DATADEP trait (gather, concat, argmax)
+  // have needsZeroedOutput=true and don't fully overwrite their outputs.
+  // The internal filtering in prezeroSegmentOutputs already skips frozen
+  // constants, fully-writing ops, views, identity ops, etc. — no outer
+  // guard needed. Matches the GPU backend path which also calls unconditionally.
   prezeroSegmentOutputs(seg, stream);
 
   // Reset per-segment allocation counters
@@ -957,10 +995,9 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // identity ops, fused chain tails) at the outer loop level.
   if (shapesFrozen_ && executeCount_ >= 2 && !hasControlFlow_ &&
       seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
-    // On CPU, GraphReplayFactory::create() always returns a FunctionalReplayHandle.
-    // static_cast avoids RTTI overhead of dynamic_cast in the hot decode loop.
-    // The null check on the line below preserves safety.
-    auto* funcHandle = static_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+    // dynamic_cast required: on CUDA builds, GraphReplayFactory::create(0) returns
+    // CudaGraphReplayHandle, not FunctionalReplayHandle. static_cast would be UB.
+    auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
     if (funcHandle && funcHandle->hasExecutableSlotIndices()) {
       const auto& execSlots = funcHandle->getExecutableSlotIndices();
       DSP_DIAG(EXECUTE, "CPU_FROZEN_REPLAY: seg[%d-%d] iterating %d/%d executable slots",
@@ -1493,9 +1530,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                      || slot.fusedChain.isFusedChainTail
                      || (slot.flags.isIdentityOp && slot.wiring.numInputs == 1);
       if (!skipRecord) {
-        // On CPU, GraphReplayFactory::create() always returns FunctionalReplayHandle.
-        // static_cast avoids RTTI overhead; null guard below is preserved.
-        auto* funcHandle = static_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+        // dynamic_cast required: on CUDA builds, handle may be CudaGraphReplayHandle.
+        auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
         if (funcHandle) funcHandle->recordOp(slot.ident.op, stepIdx);
       }
     }

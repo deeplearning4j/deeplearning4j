@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <execution/Threads.h>
+#include <string>
 
 namespace sd {
 namespace ops {
@@ -231,6 +232,11 @@ static void kvInPlaceWrite_(NDArray* pastKv, NDArray* newKv,
 
 void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                      const void* cachePosPtr, LaunchContext* context) {
+    if (pastKv->dataType() != newKv->dataType()) {
+        std::string msg = "kvInPlaceWrite: pastKv dtype " + std::to_string((int)pastKv->dataType()) +
+                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
+        THROW_EXCEPTION(msg.c_str());
+    }
     BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWrite_,
                           (pastKv, newKv, cachePosPtr, context), SD_FLOAT_TYPES);
 }

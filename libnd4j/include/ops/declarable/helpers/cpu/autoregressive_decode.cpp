@@ -25,6 +25,7 @@
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <helpers/logger.h>
+#include <system/env_functions.h>
 
 #include <algorithm>
 #include <chrono>
@@ -240,6 +241,37 @@ void autoregressiveDecodeCpu(
                  "Either extInputContext (OpaqueContext*) or planExternalInputs (NDArray**) "
                  "must be non-null. Both are null — cannot wire plan inputs.");
 
+    // Mark variable ext inputs BEFORE the decode loop so DSP frozen fast-path
+    // knows which staging buffers to refresh each step.
+    if (config->embeddingsExtIdx >= 0) plan->markExternalInputVariable(config->embeddingsExtIdx);
+    if (config->maskExtIdx >= 0) plan->markExternalInputVariable(config->maskExtIdx);
+    if (config->posIdsExtIdx >= 0) plan->markExternalInputVariable(config->posIdsExtIdx);
+    if (config->inputIdsExtIdx >= 0) plan->markExternalInputVariable(config->inputIdsExtIdx);
+    if (config->causalMaskExtIdx >= 0) plan->markExternalInputVariable(config->causalMaskExtIdx);
+    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputVariable(config->attnMaskReformatExtIdx);
+    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputVariable(config->positionOffsetExtIdx);
+    if (config->cachePositionExtIdx >= 0) plan->markExternalInputVariable(config->cachePositionExtIdx);
+    // GDN/conv state ext inputs
+    if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr) {
+        for (int s = 0; s < config->numGdnStatePairs; s++) {
+            int extIdx = config->gdnStateExtIndices[s];
+            if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
+        }
+    }
+    if (config->numConvStatePairs > 0 && config->convStateExtIndices != nullptr) {
+        for (int s = 0; s < config->numConvStatePairs; s++) {
+            int extIdx = config->convStateExtIndices[s];
+            if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
+        }
+    }
+    // KV cache ext inputs — attention ops write KV every step
+    if (config->kvInputExtIndices != nullptr) {
+        for (int kv = 0; kv < 2 * numKvPairs; kv++) {
+            int kvIdx = config->kvInputExtIndices[kv];
+            if (kvIdx >= 0) plan->markExternalInputVariable(kvIdx);
+        }
+    }
+
     for (int step = 0; step < maxNewTokens; step++) {
         auto stepStart = std::chrono::high_resolution_clock::now();
 
@@ -441,11 +473,21 @@ void autoregressiveDecodeCpu(
         generatedTokenIds->p(tokensGenerated, nextTokenId);
         tokensGenerated++;
 
+        if (env_isVerbose()) {
+          sd_printf("CPU_DECODE_STEP[%d/%d]: nextTokenId=%lld currentPosition=%lld stopTokenCount=%d\n",
+                    step, maxNewTokens, (long long)nextTokenId, (long long)currentPosition,
+                    (int)stopTokenIds.size());
+        }
+
         // ── Step 4: Check stop condition ──
         bool shouldStop = false;
         for (int s : stopTokenIds) {
             if (nextTokenId == static_cast<LongType>(s)) {
                 shouldStop = true;
+                if (env_isVerbose()) {
+                  sd_printf("CPU_DECODE_STEP[%d]: STOP matched token %lld == stopId %d\n",
+                            step, (long long)nextTokenId, s);
+                }
                 break;
             }
         }
@@ -540,9 +582,9 @@ void autoregressiveDecodeCpu(
                                   SD_COMMON_TYPES);
         }
 
-        if (causalMask != nullptr && currentPosition < causalMaskLen) {
+        if (causalMask != nullptr && kvJustWritten >= 0 && kvJustWritten < causalMaskLen) {
             BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskCpu,
-                                  (causalMask->buffer(), currentPosition, causalMaskLen),
+                                  (causalMask->buffer(), kvJustWritten, causalMaskLen),
                                   SD_FLOAT_TYPES);
         }
 

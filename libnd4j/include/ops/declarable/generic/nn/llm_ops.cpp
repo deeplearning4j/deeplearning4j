@@ -42,9 +42,12 @@
 #include <ops/declarable/helpers/fused_llm_ops.h>
 #include <helpers/ShapeUtils.h>
 #include <math/templatemath.h>
+#include <execution/Threads.h>
+#include <array/DataTypeUtils.h>
 #include <ops/declarable/helpers/kv_cache_quantize.h>
 #include <ops/declarable/helpers/ggml_dequantize.h>
 #include <cmath>
+#include <cstring>
 
 namespace sd {
 namespace ops {
@@ -635,32 +638,32 @@ CUSTOM_OP_IMPL(kv_cache_update, 4, 2, false, 0, 0) {
     outputKeyCache->assign(keyCache);
     outputValueCache->assign(valueCache);
 
-    // Update with new keys/values at position using raw buffer copy
+    // Update with new keys/values at position using typed buffer copy
     auto newSeqLen = newKeys->sizeAt(1);
     auto batch = newKeys->sizeAt(0);
     auto numHeads = newKeys->rankOf() > 2 ? newKeys->sizeAt(2) : 1;
     auto headDim = newKeys->rankOf() > 3 ? newKeys->sizeAt(3) : newKeys->sizeAt(-1);
     auto cacheSeqLen = keyCache->sizeAt(1);
 
-    auto newKeyBuf = newKeys->bufferAsT<float>();
-    auto newValueBuf = newValues->bufferAsT<float>();
-    auto outKeyBuf = outputKeyCache->bufferAsT<float>();
-    auto outValueBuf = outputValueCache->bufferAsT<float>();
-
-    // Copy new keys/values into cache at the specified position
-    for (LongType b = 0; b < batch; ++b) {
-        for (LongType i = 0; i < newSeqLen; ++i) {
-            for (LongType h = 0; h < numHeads; ++h) {
-                LongType srcBase = ((b * newSeqLen + i) * numHeads + h) * headDim;
-                LongType dstBase = ((b * cacheSeqLen + startPos + i) * numHeads + h) * headDim;
-                PRAGMA_OMP_SIMD
-                for (LongType d = 0; d < headDim; ++d) {
-                    outKeyBuf[dstBase + d] = newKeyBuf[srcBase + d];
-                    outValueBuf[dstBase + d] = newValueBuf[srcBase + d];
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto b = start; b < stop; ++b) {
+            for (LongType i = 0; i < newSeqLen; ++i) {
+                for (LongType h = 0; h < numHeads; ++h) {
+                    LongType srcBase = ((b * newSeqLen + i) * numHeads + h) * headDim;
+                    LongType dstBase = ((b * cacheSeqLen + startPos + i) * numHeads + h) * headDim;
+                    std::memcpy(
+                        outputKeyCache->bufferWithOffset(dstBase),
+                        newKeys->bufferWithOffset(srcBase),
+                        headDim * DataTypeUtils::sizeOfElement(newKeys->dataType()));
+                    std::memcpy(
+                        outputValueCache->bufferWithOffset(dstBase),
+                        newValues->bufferWithOffset(srcBase),
+                        headDim * DataTypeUtils::sizeOfElement(newValues->dataType()));
                 }
             }
         }
-    }
+    };
+    samediff::Threads::parallel_for(func, 0, batch, 1);
 
     return Status::OK;
 }
@@ -696,8 +699,6 @@ CUSTOM_OP_IMPL(apply_alibi, 1, 1, false, 0, 0) {
     auto seqLen = scores->sizeAt(2);
     auto kvLen = scores->sizeAt(3);
 
-    auto outputBuf = output->bufferAsT<float>();
-
     // Compute ALiBi slopes
     std::vector<float> slopes(numHeads);
     float base = std::pow(2.0f, -8.0f / numHeads);
@@ -705,19 +706,27 @@ CUSTOM_OP_IMPL(apply_alibi, 1, 1, false, 0, 0) {
         slopes[h] = std::pow(base, h + 1);
     }
 
-    // Apply ALiBi bias
-    for (LongType b = 0; b < batch; ++b) {
-        for (int h = 0; h < numHeads; ++h) {
-            for (LongType sq = 0; sq < seqLen; ++sq) {
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    LongType idx = ((b * numHeads + h) * seqLen + sq) * kvLen + sk;
-                    // ALiBi: subtract slope * |query_pos - key_pos|
-                    float bias = -slopes[h] * std::abs(static_cast<float>(sq) - static_cast<float>(sk));
-                    outputBuf[idx] += bias;
+    // Apply ALiBi bias — uses e<>/p<> for type-safe FP16/BF16 handling
+    // This is a one-time prefill op (not per-token), so accessor overhead is acceptable
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto b = start; b < stop; ++b) {
+            for (int h = 0; h < numHeads; ++h) {
+                float slope = slopes[h];
+                for (LongType sq = 0; sq < seqLen; ++sq) {
+                    LongType rowBase = ((b * numHeads + h) * seqLen + sq) * kvLen;
+                    PRAGMA_OMP_SIMD
+                    for (LongType sk = 0; sk < kvLen; ++sk) {
+                        float bias = -slope * std::abs(static_cast<float>(sq) - static_cast<float>(sk));
+                        // Read, add bias, write back via NDArray (type-safe)
+                        LongType flatIdx = rowBase + sk;
+                        float val = output->e<float>(flatIdx);
+                        output->p<float>(flatIdx, val + bias);
+                    }
                 }
             }
         }
-    }
+    };
+    samediff::Threads::parallel_for(func, 0, batch, 1);
 
     return Status::OK;
 }
@@ -1110,9 +1119,17 @@ CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
         auto N = w->sizeAt(1);
         std::vector<sd::LongType> xShape2d = {M, K};
         std::vector<sd::LongType> outShape2d = {M, N};
-        auto x2d = x->reshape('c', xShape2d);
-        auto out2d = output->reshape('c', outShape2d);
+        auto x2d = x->reshape('c', xShape2d, false);
+        auto out2d = output->reshape('c', outShape2d, false);
+        const bool directWrite = out2d->dataBuffer() == output->dataBuffer();
         helpers::rmsNormLinear(block.launchContext(), x2d, gamma, w, out2d, epsilon);
+        if (!directWrite) {
+            auto outShape = output->getShapeAsVector();
+            auto reshaped = out2d->reshape(output->ordering(), *outShape, false);
+            output->assign(reshaped);
+            delete reshaped;
+            delete outShape;
+        }
         delete x2d;
         delete out2d;
     } else {

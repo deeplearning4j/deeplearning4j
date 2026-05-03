@@ -333,9 +333,16 @@ mlir::Value CpuIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir::L
   }
   if (lower == "softplus") {
 #ifdef SD_CPUIR_HAS_MATH
-    auto expX = builder.create<mlir::math::ExpOp>(loc, input);
-    auto sum = builder.create<mlir::arith::AddFOp>(loc, constF(1.0), expX);
-    return builder.create<mlir::math::LogOp>(loc, sum);
+    // softplus(x) = max(0, x) + log(1 + exp(-|x|))  [overflow-safe]
+    auto zero = constF(0.0);
+    auto one = constF(1.0);
+    auto absX = builder.create<mlir::math::AbsFOp>(loc, input);
+    auto negAbsX = builder.create<mlir::arith::NegFOp>(loc, absX);
+    auto maxPart = builder.create<mlir::arith::MaximumFOp>(loc, input, zero);
+    auto expNegAbs = builder.create<mlir::math::ExpOp>(loc, negAbsX);
+    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegAbs);
+    auto logPart = builder.create<mlir::math::LogOp>(loc, onePlusExp);
+    return builder.create<mlir::arith::AddFOp>(loc, maxPart, logPart);
 #else
     return input;
 #endif

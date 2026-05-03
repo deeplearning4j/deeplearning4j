@@ -189,10 +189,14 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const float**)aBuffers, lda,
                                 (const float**)bBuffers, ldb, &beta, (float**)cBuffers, ldc, bS);
   } else if (ABC && aType == HALF) {
-    __half alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
-    __half beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
-    status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const __half**)aBuffers, lda,
-                                (const __half**)bBuffers, ldb, &beta, (__half**)cBuffers, ldc, bS);
+    // Use GemmBatchedEx with FP32 accumulation — cublasHgemmBatched accumulates in FP16.
+    float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
+    float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
+    status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha,
+                                 (const void**)aBuffers, CUDA_R_16F, lda,
+                                 (const void**)bBuffers, CUDA_R_16F, ldb,
+                                 &beta, (void**)cBuffers, CUDA_R_16F, ldc, bS,
+                                 CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
   } else if (AB && aType == INT8 && cType == FLOAT32) {
     float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
     float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;

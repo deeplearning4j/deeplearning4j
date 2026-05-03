@@ -50,32 +50,34 @@ SD_KERNEL void causalConv1dKernel(
     const LongType t = (idx / D) % L;
     const LongType b = idx / (L * D);
 
-    // Causal correlation (cross-correlation convention):
+    // Causal convolution matching PyTorch F.conv1d with left-padding:
+    //   F.conv1d(x, w.unsqueeze(1), padding=K-1)[:, :, :L]
     // weight[K-1] multiplies x[t] (current), weight[0] multiplies x[t-K+1] (oldest)
-    T sum = static_cast<T>(0);
+    // Accumulate in float for numerical stability (avoids FP16 overflow)
+    float sum = 0.0f;
     for (LongType kk = 0; kk < K; ++kk) {
         LongType srcT = t - kk;
-        T x_val;
+        float x_val;
         if (srcT >= 0) {
-            x_val = x[b * xS0 + srcT * xS1 + d * xS2];
+            x_val = static_cast<float>(x[b * xS0 + srcT * xS1 + d * xS2]);
         } else if (stateIn != nullptr) {
             LongType stateIdx = (K - 1) + srcT;
-            x_val = (stateIdx >= 0) ? stateIn[b * siS0 + d * siS1 + stateIdx * siS2] : static_cast<T>(0);
+            x_val = (stateIdx >= 0) ? static_cast<float>(stateIn[b * siS0 + d * siS1 + stateIdx * siS2]) : 0.0f;
         } else {
-            x_val = static_cast<T>(0);
+            x_val = 0.0f;
         }
-        sum += weight[d * wChanStride + (K - 1 - kk) * wDimStride] * x_val;
+        sum += static_cast<float>(weight[d * wChanStride + (K - 1 - kk) * wDimStride]) * x_val;
     }
 
-    if (bias != nullptr) sum += bias[d];
+    if (bias != nullptr) sum += static_cast<float>(bias[d]);
 
     // SiLU activation
     if (activation == 1) {
-        T sig = static_cast<T>(1) / (static_cast<T>(1) + sd::math::sd_exp<T, T>(-sum));
+        float sig = 1.0f / (1.0f + sd::math::sd_exp<float, float>(-sum));
         sum = sum * sig;
     }
 
-    out[b * oS0 + t * oS1 + d * oS2] = sum;
+    out[b * oS0 + t * oS1 + d * oS2] = static_cast<T>(sum);
 }
 
 // Update conv state: store last K-1 timesteps per channel

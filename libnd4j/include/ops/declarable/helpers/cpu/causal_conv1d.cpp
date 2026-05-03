@@ -60,9 +60,12 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
             const LongType b = bd / D;
             const LongType d = bd % D;
 
-            // Causal correlation (PyTorch F.conv1d convention):
-            // output[t] = sum_{kk=0}^{K-1} weight[d, K-1-kk] * x[t-kk]
-            // weight[K-1] multiplies x[t] (current), weight[0] multiplies x[t-K+1] (oldest)
+            // Causal convolution matching PyTorch F.conv1d with left-padding:
+            //   F.conv1d(x, w.unsqueeze(1), padding=K-1)[:, :, :L]
+            // With left-padding + truncation, weight[K-1] multiplies x[t] (current),
+            // weight[0] multiplies x[t-K+1] (oldest). We iterate lag kk from 0..K-1
+            // where srcT = t - kk, so kk=0 is current timestep. Map to weight index
+            // K-1-kk so weight[K-1] hits current input.
             for (LongType t = 0; t < L; ++t) {
                 // Accumulate convolution in float to avoid FP16 product overflow
                 float sum = 0.0f;

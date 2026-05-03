@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspSegmentLifecycle.h>
 #include <graph/DspExecutionTrace.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/NativePlanCompiler.h>
@@ -1523,7 +1524,8 @@ Status NativeDynamicShapePlan::execute(
       Environment::getInstance().tritonGraphCapture(),
       Environment::getInstance().tritonVerifyKernels(),
       !externalInputIsVariable_.empty(),
-      executionTimingEnabled_);
+      executionTimingEnabled_,
+      Environment::getInstance().isDebug());
   execCtx->segmentsTotal = static_cast<int>(segments_.size());
   execCtx->recordFlow(PlanExecutionContext::FlowEventType::EXECUTE_ENTRY,
                        executeCount_, shapesFrozen_ ? 1 : 0);
@@ -2312,7 +2314,8 @@ Status NativeDynamicShapePlan::execute(
         Environment::getInstance().tritonGraphCapture(),
         Environment::getInstance().tritonVerifyKernels(),
         !externalInputIsVariable_.empty(),
-        executionTimingEnabled_);
+        executionTimingEnabled_,
+        Environment::getInstance().isDebug());
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::DERIVED_STATE_REFRESH,
                          executeCount_, shapesFrozen_ ? 1 : 0);
   }
@@ -2405,7 +2408,7 @@ Status NativeDynamicShapePlan::executeSteadyState(
     void* stream) {
 
   // Precondition check: fall back to full execute() if not in steady state
-  if (!shapesFrozen_ || executeCount_ < 3 ||
+  if (!shapesFrozen_ || executeCount_ < 4 ||
       planPhase_ < PlanPhase::REPLAYING ||
       Environment::getInstance().tritonVerifyKernels()) {
     DSP_DIAG(EXECUTE, "[DSP_GATE] FALLBACK execute() — shapesFrozen=%d executeCount=%d planPhase=%d verifyKernels=%d",
@@ -2504,7 +2507,8 @@ Status NativeDynamicShapePlan::executeSteadyState(
   execCtx->needsFullSync = false;
   execCtx->forcedSlotBySlot = false;
   execCtx->graphExecutionMode = static_cast<int>(graphExecutionMode_);
-  execCtx->allowGraphCaptureReplay = Environment::getInstance().tritonGraphCapture();
+  execCtx->allowGraphCaptureReplay = Environment::getInstance().tritonGraphCapture()
+      && !Environment::getInstance().isDebug();
   execCtx->useVariableFilter = !externalInputIsVariable_.empty();
   execCtx->tritonVerifyEnabled = false;
   execCtx->diagAnyEnabled = false;
@@ -2627,6 +2631,89 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // ─── Memory management ─────────────────────────────────────────────────────
 
 // View wrappers deleted inline in slotexec. No batched/deferred close needed.
+
+void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
+  if (sd::Environment::getInstance().isVerbose()) {
+    sd_printf("markExternalInputVariable: CALLED extIdx=%d numExt=%d\n", extIdx, numExternalInputs_);
+  }
+  if (extIdx < 0 || extIdx >= numExternalInputs_) return;
+
+  // Resize if needed (covers plans loaded from binary that didn't populate this vector).
+  if (externalInputIsVariable_.empty()) {
+    externalInputIsVariable_.resize(numExternalInputs_, false);
+  }
+  if (extIdx >= static_cast<int>(externalInputIsVariable_.size())) {
+    externalInputIsVariable_.resize(numExternalInputs_, false);
+  }
+
+  if (externalInputIsVariable_[extIdx]) {
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("markExternalInputVariable: ext[%d] ALREADY variable — skip\n", extIdx);
+    }
+    return;  // already variable
+  }
+
+  if (sd::Environment::getInstance().isVerbose()) {
+    sd_printf("markExternalInputVariable: ext[%d] marking as variable NOW\n", extIdx);
+  }
+  externalInputIsVariable_[extIdx] = true;
+
+  // Determine if this is the first newly-variable input (triggers full invalidation)
+  // vs a subsequent one (only needs flag update since invalidation already done).
+  bool needsFullInvalidation = (effectiveExternals_ != nullptr ||
+                                placeholderStagingBuffers_ != nullptr ||
+                                !cachedVariableExtIndices_.empty() ||
+                                variableIndicesCached_);
+
+  // Invalidate cached variable indices so they're rebuilt on the next
+  // compositeReplay / platformTryFrozenFastPath call.
+  cachedVariableExtIndices_.clear();
+  variableExternalInputIndices_.clear();
+  variableIndicesCached_ = false;
+
+  if (needsFullInvalidation) {
+    // Force staging buffers to be re-created with the new variable set.
+    if (effectiveExternals_ != nullptr) {
+      delete[] effectiveExternals_;
+      effectiveExternals_ = nullptr;
+    }
+    if (placeholderStagingBuffers_ != nullptr) {
+      delete[] placeholderStagingBuffers_;
+      placeholderStagingBuffers_ = nullptr;
+    }
+
+    // Invalidate segment captures: the merged CUDA graphs have baked-in device
+    // addresses from the Java-side warmup capture. With newly-variable inputs
+    // getting staging buffers, the captured gap ops inside merged graphs would
+    // still read from the old addresses. Force segment re-capture so it bakes in
+    // the staging buffer addresses.
+    // NOTE: use invalidateSegmentCaptures (NOT invalidateForRebuild) because
+    // the plan shapes haven't changed — only segment CUDA graph addresses are
+    // stale. invalidateForRebuild would call resetExecuteCount() which triggers
+    // isFirstFrozenWarmup=true → phaseWarmup destroys all CUDA graphs → zeros.
+    for (auto& seg : segments_) {
+      SegmentLifecycle::invalidateSegmentCaptures(this, seg, "markExternalInputVariable");
+    }
+
+    // Clear the cached active gap slot list. invalidateSegmentCaptures resets
+    // per-segment state but does NOT clear the plan-level gap slot cache.
+    // If left stale, compositeReplay will iterate gap slots from the
+    // pre-invalidation execution context, producing wrong outputs.
+#ifdef SD_CUDA
+    activeGapSlotsCached_ = false;
+    cachedActiveGapSlots_.clear();
+#endif
+
+    // Global pointer stability is lost — force full re-evaluation.
+    pointersStable_ = false;
+  }
+
+  const char* name = (extIdx < static_cast<int>(externalInputNames_.size()))
+                     ? externalInputNames_[extIdx].c_str() : "?";
+  DSP_DIAG(EXECUTE, "markExternalInputVariable: ext[%d] name='%s' now variable. "
+           "fullInvalidation=%d",
+           extIdx, name, needsFullInvalidation ? 1 : 0);
+}
 
 void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
   // ── Lifecycle enforcement: phases are LINEAR and IMMUTABLE ───────────────

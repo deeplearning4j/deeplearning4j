@@ -1264,12 +1264,14 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
   // Grid: one block per (qHead, batch) pair — grid.x = numQHeads, grid.y = batch
   int blocksPerGrid = numQHeads * batch;
 
-  // Block size: adaptive based on sequence length.
-  // Threads tile over KV positions for score computation, and over headDim for V accumulation.
-  // Larger seqKV needs more threads for the score tiling loop.
-  int threadsPerBlock = BLOCK_SIZE_FUSED_GQA_DECODE;
-  if (seqKV > 256) threadsPerBlock = 512;
-  if (seqKV > 512) threadsPerBlock = 1024;
+  // Block size: capped at 256 to avoid register pressure.
+  // The stride-aware kernel uses 25+ LongType parameters (50+ registers just for strides),
+  // plus local variables for tiling/reduction. At 1024 threads the per-SM register file
+  // overflows (cudaErrorLaunchOutOfResources). 256 threads is sufficient: the kernel tiles
+  // over KV positions with TILE_SIZE_KV=64, so each thread handles 1 score and headDim/256
+  // output dimensions per tile — good occupancy without register pressure.
+  int threadsPerBlock = 256;
+  if (headDim > 128) threadsPerBlock = 256;  // Keep at 256 even for large headDim
   if (seqKV < 64 && headDim < 128) threadsPerBlock = 128;
 
   // Shared memory: scores tile (TILE_SIZE=64 elements) + output accumulator (headDim elements)

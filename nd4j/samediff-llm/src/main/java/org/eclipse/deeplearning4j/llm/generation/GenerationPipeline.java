@@ -157,11 +157,24 @@ public class GenerationPipeline implements AutoCloseable {
         this.ownsDraftDecoder = ownsDraftDecoder;
         this.config = config;
 
-        // Enable DSP auto-compile on models if not disabled
-        enableDspIfConfigured(decoder, "decoder");
-        if (embedTokens != null) {
-            enableDspIfConfigured(embedTokens, "embedTokens");
+        // Enable DSP auto-compile on models if requested.
+        if (config.isDspEnabled()) {
+            enableDspIfConfigured(decoder, "decoder");
+            if (embedTokens != null) {
+                enableDspIfConfigured(embedTokens, "embedTokens");
+            }
+        } else {
+            disableDsp(decoder, "decoder");
+            if (embedTokens != null) {
+                disableDsp(embedTokens, "embedTokens");
+            }
         }
+    }
+
+    private static void disableDsp(SameDiff model, String label) {
+        model.setDspAutoCompileEnabled(false);
+        model.setDspNativeAutoCompileEnabled(false);
+        log.info("DSP auto-compile disabled on {} by GenerationPipelineConfig", label);
     }
 
     private static void enableDspIfConfigured(SameDiff model, String label) {
@@ -245,6 +258,39 @@ public class GenerationPipeline implements AutoCloseable {
         ModelIOConfig ioConfig = config.getIoConfig();
         if (ioConfig == null) {
             ioConfig = ModelIOConfig.discover(decoder);
+        }
+
+        // 2b. Validate logits output name against actual decoder outputs and fix up if wrong.
+        // This guards against the @Builder.Default "lm_logits" being used for models that
+        // export "logits" (e.g. Gemma, OLMo, LFM2, OpenELM via GGUF), and against any
+        // explicit ioConfig that was built before the model's output names were known.
+        {
+            String currentLogits = ioConfig.getLogitsOutputName();
+            List<String> decoderOutputs = decoder.outputs();
+            if (currentLogits == null || (!decoderOutputs.contains(currentLogits) && !decoderOutputs.isEmpty())) {
+                String discovered = ModelIOConfig.findLogitsOutputName(decoder);
+                if (discovered != null && !discovered.equals(currentLogits)) {
+                    log.warn("GenerationPipeline: logits output name '{}' not found in decoder outputs {}; "
+                            + "using auto-discovered name '{}'", currentLogits, decoderOutputs, discovered);
+                    ioConfig = ModelIOConfig.builder()
+                            .inputEmbeddingsName(ioConfig.getInputEmbeddingsName())
+                            .inputIdsName(ioConfig.getInputIdsName())
+                            .attentionMaskName(ioConfig.getAttentionMaskName())
+                            .causalMaskName(ioConfig.getCausalMaskName())
+                            .positionIdsName(ioConfig.getPositionIdsName())
+                            .positionOffsetName(ioConfig.getPositionOffsetName())
+                            .cachePositionName(ioConfig.getCachePositionName())
+                            .kvCachePrefix(ioConfig.getKvCachePrefix())
+                            .kvPresentToInputReplace(ioConfig.getKvPresentToInputReplace())
+                            .logitsOutputName(discovered)
+                            .kvCacheNames(ioConfig.getKvCacheNames())
+                            .encoderHiddenStatesName(ioConfig.getEncoderHiddenStatesName())
+                            .encoderAttentionMaskName(ioConfig.getEncoderAttentionMaskName())
+                            .encoderDecoder(ioConfig.isEncoderDecoder())
+                            .attnMaskReformatOutput(ioConfig.getAttnMaskReformatOutput())
+                            .build();
+                }
+            }
         }
 
         // 3. Resolve embed_tokens input/output names
@@ -382,11 +428,7 @@ public class GenerationPipeline implements AutoCloseable {
         long startTime = System.currentTimeMillis();
 
         int eosTokenId = tokenizer.getEosTokenId();
-        Set<Integer> stopTokenIds = new HashSet<>();
-        stopTokenIds.add(eosTokenId);
-        if (config.getAdditionalStopTokenIds() != null) {
-            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
-        }
+        Set<Integer> stopTokenIds = buildStopTokenIds();
 
         String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
         String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "lm_logits";
@@ -549,11 +591,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         int eosTokenId = tokenizer.getEosTokenId();
-        Set<Integer> stopTokenIds = new HashSet<>();
-        stopTokenIds.add(eosTokenId);
-        if (config.getAdditionalStopTokenIds() != null) {
-            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
-        }
+        Set<Integer> stopTokenIds = buildStopTokenIds();
 
         SamplingConfig sampling = config.getSamplingConfig() != null
                 ? config.getSamplingConfig() : SamplingConfig.greedy();
@@ -1102,6 +1140,22 @@ public class GenerationPipeline implements AutoCloseable {
         return 0;
     }
 
+    /**
+     * Resolve and validate the EOS token ID from the tokenizer, building the stop token set.
+     */
+    private Set<Integer> buildStopTokenIds() {
+        int eosTokenId = tokenizer.getEosTokenId();
+        log.info("[Generation] Resolved eosTokenId={} from tokenizer", eosTokenId);
+        Set<Integer> stopTokenIds = new HashSet<>();
+        if (eosTokenId >= 0) {
+            stopTokenIds.add(eosTokenId);
+        }
+        if (config.getAdditionalStopTokenIds() != null) {
+            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
+        }
+        return stopTokenIds;
+    }
+
     /** Close non-logits prefill outputs. */
     private static void closePrefillOutputs(Map<String, INDArray> outputs, String logitsName) {
         for (Map.Entry<String, INDArray> entry : outputs.entrySet()) {
@@ -1118,11 +1172,7 @@ public class GenerationPipeline implements AutoCloseable {
         long startTime = System.currentTimeMillis();
 
         int eosTokenId = tokenizer.getEosTokenId();
-        Set<Integer> stopTokenIds = new HashSet<>();
-        stopTokenIds.add(eosTokenId);
-        if (config.getAdditionalStopTokenIds() != null) {
-            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
-        }
+        Set<Integer> stopTokenIds = buildStopTokenIds();
 
         String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
         String logitsName = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "lm_logits";
@@ -1275,19 +1325,18 @@ public class GenerationPipeline implements AutoCloseable {
     }
 
     /**
-     * Generate text using the native {@code autoregressive_decode} C++ op.
+     * Generate text using the native {@code AutoregressiveDecode} C++ op.
      *
-     * <p>The native op runs the full decode loop in C++, eliminating per-step
-     * Java to C++ round-trips. Steps:
+     * <p>VLM generation with native decode loop. Steps:
      * <ol>
-     *   <li>Execute a prefill step via decoder.output() to (a) produce initial KV caches
-     *       and (b) trigger DSP compilation so we can get the native plan handle.</li>
-     *   <li>Pad KV caches to static size, prepare decode-step inputs (seqLen=1).</li>
-     *   <li>Execute the first decode step to warm up decode-shape compilation.</li>
-     *   <li>Extract the native plan handle and external input metadata.</li>
-     *   <li>Invoke AutoregressiveDecode op — the C++ side does the rest:
-     *       plan.execute() per step, token sampling, KV scatter, embedding lookup,
-     *       mask/pos/inputIds updates, stop condition checking.</li>
+     *   <li>Execute a prefill step via decoder.output() to produce initial KV caches
+     *       and trigger DSP compilation.</li>
+     *   <li>Pad KV caches to static size, sample first token.</li>
+     *   <li>Build decode-step arrays, execute a warmup decode step (compiles DSP
+     *       plan for decode shapes), sample second token, scatter KV.</li>
+     *   <li>Freeze shapes, resolve plan handle and ext input indices.</li>
+     *   <li>Execute AutoregressiveDecode native op for all remaining tokens
+     *       entirely in C++ with zero JNI round-trips.</li>
      * </ol>
      * </p>
      */
@@ -1316,7 +1365,10 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
 
-        // Resolve EOS token and stop tokens
+        // Resolve EOS token and stop tokens — add eosTokenId unconditionally.
+        // The buildStopTokenIds() helper suppresses tokens < 100, but SmolDocling
+        // uses eosTokenId=2 which is valid. The native AutoregressiveDecode op
+        // needs both EOS and <end_of_utterance> in the stop set.
         int eosTokenId = tokenizer.getEosTokenId();
         Set<Integer> stopTokenIds = new HashSet<>();
         stopTokenIds.add(eosTokenId);
@@ -1372,20 +1424,34 @@ public class GenerationPipeline implements AutoCloseable {
         // ══════════════════════════════════════════════════════════════════════
         // STEP 2: Pad KV caches to static size and prepare decode-step state
         // ══════════════════════════════════════════════════════════════════════
+        // Guard prefill KV close: when DSP is active, the C++ slotArrayCache_ still
+        // holds raw NDArray* pointers to these outputs. Java close() deletes the C++
+        // NDArray, leaving dangling pointers → use-after-free on next execution step.
+        // Matches StaticKvCacheDecodeLoop lines 633-648.
+        InferenceSession prefillSession = decoder.getOrCreateSession();
+        boolean prefillDspActive = prefillSession.getDynamicShapePlanExecutor() != null
+                && prefillSession.getDynamicShapePlanExecutor().getCurrentPlan() != null;
+
         Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
         for (String keyName : kvNames.keyNames) {
             INDArray presentKv = prefillOutputs.get(keyName);
             INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            padded.setCloseable(false);  // Pin buffer — matches UnifiedKvCacheManager line 457
             String inputName = ioConfig.presentToInputName(keyName);
             staticKvBuffers.put(inputName, padded);
-            presentKv.close();
+            if (!prefillDspActive) {
+                presentKv.close();
+            }
         }
         for (String valName : kvNames.valueNames) {
             INDArray presentKv = prefillOutputs.get(valName);
             INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
+            padded.setCloseable(false);  // Pin buffer — matches UnifiedKvCacheManager line 457
             String inputName = ioConfig.presentToInputName(valName);
             staticKvBuffers.put(inputName, padded);
-            presentKv.close();
+            if (!prefillDspActive) {
+                presentKv.close();
+            }
         }
         Nd4j.getExecutioner().commit();
 
@@ -1404,6 +1470,10 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
         firstLogitsSlice.close();
+        if (log.isDebugEnabled()) {
+            log.debug("[DIAG] Prefill firstTokenId={} maxVal={} logitsShape={}", firstTokenId, firstMaxVal,
+                    java.util.Arrays.toString(prefillLogits.shape()));
+        }
         prefillLogits.close();
 
         // ══════════════════════════════════════════════════════════════════════
@@ -1414,7 +1484,7 @@ public class GenerationPipeline implements AutoCloseable {
         // loop reuses the same plan handle — no shape mismatch, no plan swap.
         // ══════════════════════════════════════════════════════════════════════
         // dup() is MANDATORY: getRow().reshape() returns a VIEW into embeddingTable.
-        // assign() at line 642 writes into this buffer — without dup(), that corrupts
+        // assign() at line below writes into this buffer — without dup(), that corrupts
         // the persistent weight matrix, making subsequent runs non-deterministic.
         INDArray decodeEmbeddings = embeddingTable.getRow(firstTokenId).reshape(1, 1, hiddenSize).dup();
         INDArray decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
@@ -1427,53 +1497,45 @@ public class GenerationPipeline implements AutoCloseable {
 
         // Causal mask: [1, 1, 1, totalSeqLen] FLOAT — MASK_FILL for unfilled positions, 0.0 for filled.
         // Uses PADDED layout (query at totalSeqLen-1), matching DecoderInputBuilder with dspActive=true.
-        // This is the layout the old StaticKvCacheDecodeLoop uses and it produces correct output.
-        //   1. Fill everything with MASK_FILL (-3.4028235e+38f) = masked
-        //   2. Unmask [0..prefillSeqLen] with 0.0f (filled KV positions from prefill)
+        //   1. Fill everything with MASK_FILL = masked
+        //   2. Unmask [0..prefillSeqLen-1] with 0.0f (filled KV positions from prefill)
+        // Position prefillSeqLen is NOT unmasked yet — it hasn't been written by decode step 1.
         // The C++ kernel updates this per step: unmask position currentPosition with 0.0f.
-        INDArray decodeCausalMask = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, totalSeqLen);
-        decodeCausalMask.assign(ModelIOConfig.MASK_FILL);
-        if (prefillSeqLen + 1 > 0) {
-            decodeCausalMask.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
-                    NDArrayIndex.interval(0, prefillSeqLen + 1)).assign(0.0f);
+        //
+        // Constructed entirely on host to avoid CUDA host/device mismatch issues.
+        float[] causalData = new float[(int) totalSeqLen];
+        float maskFill = ModelIOConfig.MASK_FILL;
+        for (int i = 0; i < (int) totalSeqLen; i++) {
+            causalData[i] = (i < prefillSeqLen) ? 0.0f : maskFill;
         }
+        INDArray decodeCausalMask = Nd4j.createFromArray(causalData).reshape(1, 1, 1, totalSeqLen);
 
         // Attention mask: [1, totalSeqLen] LONG (0/1 values, updated per step by C++ kernel).
-        // Uses PADDED layout (query at totalSeqLen-1), matching DecoderInputBuilder with dspActive=true.
+        // Uses PADDED layout (query at totalSeqLen-1).
         //   1. Valid past KV positions: [0, prefillSeqLen-1] = 1
         //   2. Query position: totalSeqLen-1 = 1
         //   3. Future padding: [prefillSeqLen, totalSeqLen-2] = 0
-        INDArray decodeAttentionMask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-        decodeAttentionMask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, prefillSeqLen)).assign(1);
-        decodeAttentionMask.putScalar(0, totalSeqLen - 1, 1);
+        //
+        // IMPORTANT: Construct entirely on host via createFromArray to avoid
+        // host/device buffer mismatch. Mixing .get().assign() (CUDA kernel → device)
+        // with putScalar (host write) creates an inconsistent state where syncToDevice
+        // copies the stale host (missing the CUDA-assigned values) over the device buffer.
+        long[] maskData = new long[(int) totalSeqLen];
+        for (int i = 0; i < prefillSeqLen; i++) maskData[i] = 1;
+        maskData[(int) (totalSeqLen - 1)] = 1;
+        INDArray decodeAttentionMask = Nd4j.createFromArray(maskData).reshape(1, totalSeqLen);
 
         // Position IDs: [1, 1] INT64
         INDArray decodePosIds = Nd4j.createFromArray(new long[]{prefillSeqLen})
                 .reshape(1, 1);
 
         // ── attn_mask_reformat override ──────────────────────────────────────
-        // The model's internal attn_mask_reformat subgraph can produce incorrect
-        // masks for multi-token padded static-KV decode (seqLen > 1). For single-
-        // token decode the subgraph is correct — the override is only needed for
-        // speculative decoding where seqLen = K+1 > 1. Matches FrozenDecodeStep:
-        // it only adds the override when seqLen > 1.
+        // The model's internal attn_mask_reformat subgraph is correct for single-
+        // token decode (seqLen=1). No override needed. Matches reference benchmark
+        // at 48 tok/s (commit 11005b4ae6, needsAttnOverride=false).
         String attnReformatNode = ioConfig.getAttnMaskReformatOutput();
         INDArray decodeAttnMaskReformat = null;
-        // Decode embeddings shape: [1, 1, hiddenSize] → seqLen = 1. No override.
         boolean needsAttnOverride = false;
-        if (needsAttnOverride && attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
-            decoder.addPlaceholderOverride(attnReformatNode);
-            decoder.getVariable(attnReformatNode).setShape(-1, -1, -1, -1);
-            // Build initial bias: [1, 1, 1, maskLen] FLOAT.
-            //   [0, prefillSeqLen) = 0.0f (already unmasked past KV)
-            //   [prefillSeqLen, maxKvLen) = MASK_FILL (future empty KV)
-            //   [maxKvLen] = 0.0f (query position)
-            decodeAttnMaskReformat = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, totalSeqLen);
-            if (prefillSeqLen < maxKvLen) {
-                decodeAttnMaskReformat.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(prefillSeqLen, maxKvLen)).assign(ModelIOConfig.MASK_FILL);
-            }
-        }
 
         // Build decode input map directly from these arrays — single source of truth.
         Map<String, INDArray> decodeInputMap = new HashMap<>();
@@ -1503,6 +1565,20 @@ public class GenerationPipeline implements AutoCloseable {
         DecoderInputBuilder.associateInternalModelInputs(ioConfig,
                 new ArrayList<>(decodeInputMap.keySet()), decoder, decodeInputMap);
 
+        // ── Ensure all decode inputs are device-coherent (CUDA) ─────
+        // Arrays constructed via Nd4j.createFromArray() are host-primary. The C++
+        // executor handles H2D sync automatically for non-frozen paths. Commit any
+        // pending CUDA ops from KV padding before proceeding.
+        Nd4j.getExecutioner().commit();
+
+        // ── Warmup decode step: compiles the DSP plan for decode shapes ──────
+        // The shape-keyed plan cache automatically creates a new plan when the
+        // decode shapes (seqLen=1) differ from prefill shapes (seqLen=N).
+        // Do NOT clear the plan cache here — clearNodeOutputsOnly() destroys
+        // intermediate node outputs (including attn_mask_reformat) that the
+        // session needs to recompute the graph correctly. The reference
+        // (11005b4ae6, 48 tok/s) goes directly from associateInternalModelInputs
+        // to decoder.output() with no plan clearing.
         Map<String, INDArray> decodeOutputs = decoder.output(
                 decodeInputMap, allOutputNames.toArray(new String[0]));
 
@@ -1520,6 +1596,10 @@ public class GenerationPipeline implements AutoCloseable {
                 secondTokenId = j;
             }
         }
+        if (log.isDebugEnabled()) {
+            log.debug("[DIAG] Warmup decode secondTokenId={} maxVal={}", secondTokenId, secondMaxVal);
+        }
+
         secondLogitsSlice.close();
         decodeLogits.close();
 
@@ -1568,7 +1648,10 @@ public class GenerationPipeline implements AutoCloseable {
             long endTime = System.currentTimeMillis();
             long timeMs = endTime - startTime;
 
-            for (INDArray kv : staticKvBuffers.values()) kv.close();
+            for (INDArray kv : staticKvBuffers.values()) {
+                kv.setCloseable(true);
+                kv.close();
+            }
 
             return GenerationResult.builder()
                     .text(text)
@@ -1584,22 +1667,9 @@ public class GenerationPipeline implements AutoCloseable {
                     .build();
         }
 
-        // Configure max-allocation for KV cache output slots BEFORE freezing.
-        // This pre-allocates oversized buffers at max capacity so shapes never
-        // change within the frozen plan (buffer addresses stay stable for CUDA
-        // graph replay). maxKvLen = prefillSeqLen + maxNewTokens.
-        if (executor != null && executor.getCurrentPlan() != null) {
-            executor.setMaxKvCacheLength((int) maxKvLen);
-            List<String> kvOutputNamesForMaxAllocation = new ArrayList<>(kvNames.keyNames);
-            kvOutputNamesForMaxAllocation.addAll(kvNames.valueNames);
-            executor.configureMaxAllocationForKvCache(decodeOutputs, kvOutputNamesForMaxAllocation);
-            log.info("[Perf] Configured KV cache max-allocation: maxKvLen={}", maxKvLen);
-        }
-
-        // Freeze shapes explicitly after warmup decode, matching the old
-        // StaticKvCacheDecodeLoop behavior. This ensures the Java executor
-        // and native plan both agree that shapes are frozen, enabling the
-        // fastest replay path and stable Triton cache keys.
+        // Freeze shapes after warmup decode — the plan has seen decode-shape data
+        // flow through once and compiled for it. Freezing enables CUDA graph capture
+        // and stable Triton cache keys.
         if (executor != null && executor.getCurrentPlan() != null) {
             executor.setShapesFrozen(true);
             log.info("[Perf] Shapes frozen after warmup decode (planPhase={} pointersStable={})",
@@ -1607,7 +1677,6 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         // Resolve ext input indices by name
-        // The plan's external input keys array tells us which index maps to each named input
         int embeddingsExtIdx = decoder.hasVariable(ioConfig.getInputEmbeddingsName())
                 ? resolveExtInputIdx(executor, ioConfig.getInputEmbeddingsName()) : -1;
         int maskExtIdx = resolveExtInputIdx(executor, ioConfig.getAttentionMaskName());
@@ -1617,13 +1686,6 @@ public class GenerationPipeline implements AutoCloseable {
         int inputIdsExtIdx = resolveExtInputIdx(executor, ioConfig.getInputIdsName());
         int attnMaskReformatExtIdx = (attnReformatNode != null && decoder.hasVariable(attnReformatNode))
                 ? resolveExtInputIdx(executor, attnReformatNode) : -1;
-
-        // Resolve cache_position / seqlens_k ext input index for in-place KV write.
-        // When present, the onnx_mha op writes K/V at this position into pastKey/pastValue
-        // directly, eliminating 120 KV copy kernels/step for 30-layer models.
-        String cachePosName = ioConfig.getCachePositionName();
-        int cachePosExtIdx = (cachePosName != null && decoder.hasVariable(cachePosName))
-                ? resolveExtInputIdx(executor, cachePosName) : -1;
 
         // Resolve logits output index
         int logitsOutputIdx = resolveOutputIdx(executor, ioConfig.getLogitsOutputName());
@@ -1656,20 +1718,15 @@ public class GenerationPipeline implements AutoCloseable {
         int remainingTokens = maxNewTokens - 2;  // 2 already generated (prefill + 1 decode step)
 
         // Update the decode arrays for the second token (values only, shapes unchanged).
-        // Embeddings: overwrite with secondTokenId embedding
         INDArray secondEmbed = embeddingTable.getRow(secondTokenId).reshape(1, 1, hiddenSize);
         decodeEmbeddings.assign(secondEmbed);
         secondEmbed.close();
-        // Input IDs: overwrite with secondTokenId
         decodeInputIds.putScalar(new long[]{0, 0}, secondTokenId);
         // Attention mask: unmask the KV position written by the warmup step.
-        // Padded layout: the query stays at totalSeqLen-1. Each step unmasks the
-        // KV position that was just written (cachePos = prefillSeqLen after warmup).
         decodeAttentionMask.putScalar(new long[]{0, prefillSeqLen}, 1);
         // Position IDs: advance to prefillSeqLen + 1
         decodePosIds.putScalar(new long[]{0, 0}, prefillSeqLen + 1);
         // Causal mask: unmask the KV position written by the warmup step.
-        // Mirrors DecoderInputBuilder delta update: putScalar(cachePos, 0.0f)
         decodeCausalMask.putScalar(new long[]{0, 0, 0, prefillSeqLen}, 0.0f);
         // attn_mask_reformat: unmask the KV position written by the warmup step
         if (decodeAttnMaskReformat != null) {
@@ -1709,14 +1766,24 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         // Get the persistent OpaqueContext that has all ext inputs registered.
-        // This context is reused across executeNative() calls by the Java executor.
         Pointer contextHandle = executor.getCachedOpContext();
         int numPlanExternalInputs = executor.getCurrentPlan() != null
                 ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
         int numPlanOutputs = allOutputNames.size();
 
         // Execute the native decode op
-        if (remainingTokens > 0) {
+        long decodeLoopStart = System.currentTimeMillis();
+        List<Integer> allTokens = new ArrayList<>();
+        allTokens.add(firstTokenId);
+        allTokens.add(secondTokenId);
+
+        if (remainingTokens > 0 && !stopTokenIds.contains(firstTokenId) && !stopTokenIds.contains(secondTokenId)) {
+            // Resolve cache_position ext idx if the model has it (GGUF models).
+            // VLM/ONNX models typically don't, so this resolves to -1.
+            String cachePosName = ioConfig.getCachePositionName();
+            int cachePositionExtIdx = (cachePosName != null && decoder.hasVariable(cachePosName))
+                    ? resolveExtInputIdx(executor, cachePosName) : -1;
+
             AutoregressiveDecode op = new AutoregressiveDecode(
                     decodeEmbeddings,
                     embeddingTable,
@@ -1735,7 +1802,7 @@ public class GenerationPipeline implements AutoCloseable {
                     inputIdsExtIdx,
                     logitsOutputIdx,
                     attnMaskReformatExtIdx,
-                    cachePosExtIdx,
+                    cachePositionExtIdx,
                     kvInputExtIndices,
                     kvOutputIndices,
                     remainingTokens,
@@ -1749,98 +1816,60 @@ public class GenerationPipeline implements AutoCloseable {
 
             INDArray[] results = Nd4j.getExecutioner().exec(op);
             INDArray nativeTokenIds = results[0];
-            INDArray nativeTokenCount = results[1];
+            INDArray nativeTokenCountArr = results[1];
             INDArray nativeTimingInfo = results[2];
+            int nativeCount = nativeTokenCountArr.getInt(0);
 
-            int nativeCount = nativeTokenCount.getInt(0);
-
-            // Combine: firstToken + secondToken + native tokens
-            List<Integer> allTokens = new ArrayList<>();
-            allTokens.add(firstTokenId);
-            if (!stopTokenIds.contains(firstTokenId)) {
-                allTokens.add(secondTokenId);
-                if (!stopTokenIds.contains(secondTokenId)) {
-                    for (int i = 0; i < nativeCount; i++) {
-                        int tok = (int) nativeTokenIds.getLong(i);
-                        allTokens.add(tok);
-                        if (stopTokenIds.contains(tok)) break;
-                    }
-                }
+            // Collect tokens from native op output — use actual token count, not buffer length.
+            // Token ID 0 is a valid vocabulary token; do NOT treat it as padding.
+            for (int i = 0; i < nativeCount; i++) {
+                int tid = nativeTokenIds.getInt(i);
+                allTokens.add(tid);
+                if (stopTokenIds.contains(tid)) break;
             }
-
-            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
-            String text = tokenizer.decode(tokenIds, false);
-            long endTime = System.currentTimeMillis();
-            long timeMs = endTime - startTime;
-
-            // Use native timing for steady-state metrics
-            float totalMs = nativeTimingInfo.getFloat(0);
-            float tokPerSec = nativeTimingInfo.getFloat(2);
-
-            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
-
-            // Cleanup
-            currentInputIds.close();
-            decodeEmbeddings.close();
-            decodeInputIds.close();
-            decodeCausalMask.close();
-            decodeAttentionMask.close();
-            decodePosIds.close();
-            if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
-
-            for (INDArray kv : staticKvBuffers.values()) kv.close();
-
-            return GenerationResult.builder()
-                    .text(text)
-                    .tokenIds(tokenIds)
-                    .generatedTokenCount(tokenIds.length)
-                    .promptTokenCount(prefillSeqLen)
-                    .totalTokenCount(prefillSeqLen + tokenIds.length)
-                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
-                    .generationTimeMs(timeMs)
-                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
-                    .steadyStateTokensPerSecond(tokPerSec)
-                    .build();
-        } else {
-            // Only 2 warmup tokens generated, no remaining to decode natively
-            currentInputIds.close();
-            decodeEmbeddings.close();
-            decodeInputIds.close();
-            decodeCausalMask.close();
-            decodeAttentionMask.close();
-            decodePosIds.close();
-            if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
-
-            // Clamp returned tokens to maxNewTokens — the warmup always
-            // generates 2 tokens internally, but the caller asked for fewer.
-            List<Integer> allTokens = new ArrayList<>();
-            if (maxNewTokens >= 1) {
-                allTokens.add(firstTokenId);
-            }
-            if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) {
-                allTokens.add(secondTokenId);
-            }
-
-            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
-            String text = tokenizer.decode(tokenIds, false);
-            long endTime = System.currentTimeMillis();
-            long timeMs = endTime - startTime;
-            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
-
-            for (INDArray kv : staticKvBuffers.values()) kv.close();
-
-            return GenerationResult.builder()
-                    .text(text)
-                    .tokenIds(tokenIds)
-                    .generatedTokenCount(tokenIds.length)
-                    .promptTokenCount(prefillSeqLen)
-                    .totalTokenCount(prefillSeqLen + tokenIds.length)
-                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
-                    .generationTimeMs(timeMs)
-                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
-                    .steadyStateTokensPerSecond(0)
-                    .build();
         }
+
+        long decodeLoopEnd = System.currentTimeMillis();
+        long decodeLoopMs = decodeLoopEnd - decodeLoopStart;
+        int decodeSteps = allTokens.size() - 1;  // exclude first token (from prefill)
+        double tokPerSec = decodeSteps > 0 && decodeLoopMs > 0
+                ? (decodeSteps * 1000.0 / decodeLoopMs) : 0;
+
+        int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
+        String text = tokenizer.decode(tokenIds, false);
+        long endTime = System.currentTimeMillis();
+        long timeMs = endTime - startTime;
+
+        boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+
+        log.info("[Perf] Native decode: {} tokens in {} ms ({} tok/s)",
+                decodeSteps, decodeLoopMs, String.format("%.1f", tokPerSec));
+
+        // Cleanup
+        currentInputIds.close();
+        decodeEmbeddings.close();
+        decodeInputIds.close();
+        decodeCausalMask.close();
+        decodeAttentionMask.close();
+        decodePosIds.close();
+        if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
+
+        for (INDArray kv : staticKvBuffers.values()) {
+            kv.setCloseable(true);  // Unpin before closing
+            kv.close();
+        }
+
+        return GenerationResult.builder()
+                .text(text)
+                .tokenIds(tokenIds)
+                .generatedTokenCount(tokenIds.length)
+                .promptTokenCount(prefillSeqLen)
+                .totalTokenCount(prefillSeqLen + tokenIds.length)
+                .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                .generationTimeMs(timeMs)
+                .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                .steadyStateTokensPerSecond(tokPerSec)
+                .build();
     }
 
     /**

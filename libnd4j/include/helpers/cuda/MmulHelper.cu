@@ -867,42 +867,14 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  // and indices are reset per step via resetCastCacheIndices().
  bool useCastCache = tl_graphExecutionActive || tl_dspReplayActive;
 
- // FP16 compute: auto-cast both-FP32 matmul inputs to HALF for TensorCore throughput.
- // cublasSgemmEx handles HALF×HALF→FLOAT32 with FP32 accumulation (~2x throughput on sm_60+).
- // Always enabled for FP32 inputs on compute capability 6.0+ (Pascal and newer).
- if (aType == FLOAT32 && bType == FLOAT32 && cType == FLOAT32 && major >= 6) {
-   // Shape-check cached arrays: the thread-local cast cache is shared across all
-   // models on the same thread. If a different model (e.g., draft model with seqLen=1)
-   // populated the cache, shapes will differ from the current model (e.g., target with
-   // seqLen=6). Clear and rebuild when shapes don't match.
-   bool cacheShapeMatch = useCastCache && tl_castIdxA < tl_castCacheA.size()
-       && tl_castIdxB < tl_castCacheB.size()
-       && tl_castCacheA[tl_castIdxA]->isSameShape(effA)
-       && tl_castCacheB[tl_castIdxB]->isSameShape(effB);
-   if (cacheShapeMatch) {
-     NDArray* cachedA = tl_castCacheA[tl_castIdxA++];
-     cachedA->assign(effA);
-     effA = cachedA;
-     NDArray* cachedB = tl_castCacheB[tl_castIdxB++];
-     cachedB->assign(effB);
-     effB = cachedB;
-   } else {
-     if (useCastCache && tl_castIdxA < tl_castCacheA.size()) {
-       // Shape mismatch during graph execution — cache is stale from another model.
-       // Clear and let the warmup path rebuild it on next non-capture execution.
-       MmulHelper::clearCastCache();
-     }
-     castA = effA->cast(HALF);
-     effA = castA;
-     castB = effB->cast(HALF);
-     effB = castB;
-     // NOTE: Do NOT push to tl_castCache during non-capture execution.
-     // The cache is only for graph capture persistence. During normal execution,
-     // push_back grows the cache unboundedly (~250 MB/step for 211 matmuls),
-     // because resetCastCacheIndices() only resets the index, not the cache.
-     // The temporary castA/castB arrays are freed at function scope exit.
-   }
- }
+ // NOTE: FP16 autocast for FP32×FP32 matmul REMOVED.
+ // Casting FP32 inputs to HALF loses precision on the input data itself,
+ // causing incorrect results for models that require FP32 fidelity (e.g.,
+ // gdn_qkv output was 7x attenuated vs CPU reference). FP32 accumulation
+ // only helps during the dot product — it cannot recover precision lost
+ // at the cast step. Use cublasSgemm (pure FP32) for FP32 model weights.
+ // For models stored natively in FP16, the mixed-precision path below handles
+ // them correctly without any autocast.
 
  if (aType != bType && cType == FLOAT32 && major >= 6) {
    if (aType == FLOAT32 && bType == HALF) {
@@ -974,7 +946,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
    NDArray::prepareSpecialUse({C}, {effA, effB});
    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
-                                (dims.y, dims.x, dims.z, stream, effA->specialBuffer(),
+                                (dims.x, dims.y, dims.z, stream, effA->specialBuffer(),
                                  effA->specialShapeInfo(), effB->specialBuffer(), effB->specialShapeInfo(), C->specialBuffer(),
                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                 SD_NUMERIC_TYPES)
@@ -1067,13 +1039,16 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                             (float*)pA->specialBuffer(), ldbFast,
                             &getCublasScalars()->betaF, (float*)pC->specialBuffer(), ldcFast);
      } else if (typeHalf) {
-       float16 alphaH(alpha), betaH(beta);
-       getCublasScalars()->alphaH = alphaH.data;
-       getCublasScalars()->betaH  = betaH.data;
-       status = cublasHgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaH,
-                            (__half*)pB->specialBuffer(), ldaFast,
-                            (__half*)pA->specialBuffer(), ldbFast,
-                            &getCublasScalars()->betaH, (__half*)pC->specialBuffer(), ldcFast);
+       // Use GemmEx with FP32 accumulation for row-vector path (decode phase).
+       // cublasHgemm accumulates in FP16 — catastrophic for K=1024 transformer matmuls.
+       getCublasScalars()->alphaF = static_cast<float>(alpha);
+       getCublasScalars()->betaF  = static_cast<float>(beta);
+       status = cublasGemmEx(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaF,
+                             pB->specialBuffer(), CUDA_R_16F, ldaFast,
+                             pA->specialBuffer(), CUDA_R_16F, ldbFast,
+                             &getCublasScalars()->betaF,
+                             pC->specialBuffer(), CUDA_R_16F, ldcFast,
+                             CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
      } else {
        getCublasScalars()->alphaF = static_cast<float>(alpha);
        getCublasScalars()->betaF  = static_cast<float>(beta);
@@ -1096,11 +1071,17 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      status = cublasSgemm(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF, (float*)pA->specialBuffer(), lda,
                           (float*)pB->specialBuffer(), ldb, &getCublasScalars()->betaF, (float*)pC->specialBuffer(), ldc);
    } else if (typeHalf) {
-     float16 alphaH(alpha), betaH(beta);
-     getCublasScalars()->alphaH = alphaH.data;
-     getCublasScalars()->betaH  = betaH.data;
-     status = cublasHgemm(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaH, (__half*)pA->specialBuffer(), lda,
-                          (__half*)pB->specialBuffer(), ldb, &getCublasScalars()->betaH, (__half*)pC->specialBuffer(), ldc);
+     // Use GemmEx with FP32 accumulation instead of cublasHgemm (FP16 accumulation).
+     // cublasHgemm accumulates dot products in FP16, causing catastrophic precision loss
+     // for large K (e.g., K=1024 in transformer matmuls). FP32 accumulation matches CPU.
+     getCublasScalars()->alphaF = static_cast<float>(alpha);
+     getCublasScalars()->betaF  = static_cast<float>(beta);
+     status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF,
+                           pA->specialBuffer(), CUDA_R_16F, lda,
+                           pB->specialBuffer(), CUDA_R_16F, ldb,
+                           &getCublasScalars()->betaF,
+                           pC->specialBuffer(), CUDA_R_16F, ldc,
+                           CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
    } else if (typeIntFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
@@ -1162,40 +1143,13 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  const auto xType = X->dataType();
  const auto yType = Y->dataType();
 
- // FP16 GEMV: auto-cast FP32 matrix-vector multiply inputs to HALF for bandwidth reduction.
- // For M=1 GEMVs (decode-phase matmuls), memory bandwidth is the bottleneck — HALF halves traffic.
- // We use cublasGemmEx treating the vector X as a [N,1] matrix, dispatching HALF×HALF→FP32.
+ // NOTE: FP16 GEMV autocast for FP32 inputs REMOVED.
+ // Same correctness issue as mmulMxM: casting FP32 inputs to HALF loses precision,
+ // producing incorrect results for FP32 model weights.
  NDArray* castA = nullptr;
  NDArray* castX = nullptr;
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effX = const_cast<NDArray*>(X);
-
- // FP16 GEMV: auto-cast FP32 matrix-vector multiply inputs to HALF for bandwidth reduction.
- // For M=1 GEMVs (decode-phase matmuls), memory bandwidth is the bottleneck — HALF halves traffic.
- // Always enabled for FP32 inputs on compute capability 6.0+ (Pascal and newer).
- if (aType == FLOAT32 && xType == FLOAT32 && yType == FLOAT32 && major >= 6) {
-   bool cacheShapeMatch = tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
-       && tl_castIdxB < tl_castCacheB.size()
-       && tl_castCacheA[tl_castIdxA]->isSameShape(effA)
-       && tl_castCacheB[tl_castIdxB]->isSameShape(effX);
-   if (cacheShapeMatch) {
-     // During graph capture: reuse persistent HALF buffers
-     NDArray* cachedA = tl_castCacheA[tl_castIdxA++];
-     cachedA->assign(effA);
-     effA = cachedA;
-     NDArray* cachedX = tl_castCacheB[tl_castIdxB++];
-     cachedX->assign(effX);
-     effX = cachedX;
-   } else {
-     if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
-       MmulHelper::clearCastCache();
-     }
-     castA = effA->cast(HALF);
-     effA = castA;
-     castX = effX->cast(HALF);
-     effX = castX;
-   }
- }
 
  const auto effAType = effA->dataType();
  const auto effXType = effX->dataType();
@@ -1690,18 +1644,21 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
         reinterpret_cast<float*>(C->specialBuffer()), N, strideC,
         batchSize);
   } else if (xType == DataType::HALF) {
-    getCublasScalars()->alphaH = __float2half(static_cast<float>(alpha));
-    getCublasScalars()->betaH  = __float2half(static_cast<float>(beta));
-    status = cublasHgemmStridedBatched(
+    // Use GemmStridedBatchedEx with FP32 accumulation instead of cublasHgemmStridedBatched.
+    // FP16 accumulation is catastrophic for K=64-1024 in multi-head attention matmuls.
+    getCublasScalars()->alphaF = static_cast<float>(alpha);
+    getCublasScalars()->betaF  = static_cast<float>(beta);
+    status = cublasGemmStridedBatchedEx(
         *handle,
         CUBLAS_OP_N, CUBLAS_OP_N,
-        N, M, K,  // Swapped M,N for row-major
-        &getCublasScalars()->alphaH,
-        reinterpret_cast<const __half*>(B->specialBuffer()), N, strideB,
-        reinterpret_cast<const __half*>(A->specialBuffer()), K, strideA,
-        &getCublasScalars()->betaH,
-        reinterpret_cast<__half*>(C->specialBuffer()), N, strideC,
-        batchSize);
+        N, M, K,
+        &getCublasScalars()->alphaF,
+        B->specialBuffer(), CUDA_R_16F, N, strideB,
+        A->specialBuffer(), CUDA_R_16F, K, strideA,
+        &getCublasScalars()->betaF,
+        C->specialBuffer(), CUDA_R_16F, N, strideC,
+        batchSize,
+        CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
   } else {
     NDArray::registerSpecialUse({C}, {A, B});
     return false;

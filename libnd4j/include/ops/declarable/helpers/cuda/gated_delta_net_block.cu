@@ -34,7 +34,9 @@ template <typename T>
 SD_KERNEL void sigmoidKernel(T* __restrict__ data, const LongType len) {
     const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= len) return;
-    data[idx] = static_cast<T>(1) / (static_cast<T>(1) + sd::math::sd_exp<T, T>(-data[idx]));
+    // Compute in float32 to prevent FP16 overflow in exp
+    float val = static_cast<float>(data[idx]);
+    data[idx] = static_cast<T>(1.0f / (1.0f + sd::math::sd_exp<float, float>(-val)));
 }
 
 template <typename T>
@@ -43,12 +45,15 @@ SD_KERNEL void l2NormalizeKernel(T* __restrict__ k, const LongType totalVecs, co
     if (idx >= totalVecs) return;
 
     T* base = k + idx * headDimK;
-    T normSq = static_cast<T>(0);
+    // Accumulate in float32 to prevent FP16 overflow for large headDimK
+    float normSq = 0.0f;
+    for (LongType dk = 0; dk < headDimK; ++dk) {
+        float val = static_cast<float>(base[dk]);
+        normSq += val * val;
+    }
+    float invNorm = rsqrtf(normSq + 1e-12f);
     for (LongType dk = 0; dk < headDimK; ++dk)
-        normSq += base[dk] * base[dk];
-    T invNorm = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(normSq + static_cast<T>(1e-12));
-    for (LongType dk = 0; dk < headDimK; ++dk)
-        base[dk] *= invNorm;
+        base[dk] = static_cast<T>(static_cast<float>(base[dk]) * invNorm);
 }
 
 template <typename T>

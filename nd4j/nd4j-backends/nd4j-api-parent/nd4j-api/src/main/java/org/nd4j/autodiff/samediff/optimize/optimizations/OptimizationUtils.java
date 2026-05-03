@@ -96,8 +96,31 @@ public class OptimizationUtils {
 
     /**
      * Remove an op from the graph using fast O(1) lookups via helper.
+     *
+     * <p>Refuses to remove any op whose output variables are registered graph outputs
+     * (e.g. KV cache outputs like {@code k_rope_0}, {@code v_heads_0}, or ONNX
+     * {@code present_*} outputs). Removing such an op would orphan the output variable
+     * — its producing op would be gone but the variable would still exist in the graph,
+     * causing silent wrong results at runtime.</p>
      */
     public static void removeOp(@NonNull SameDiff sd, OptimizationHelper helper, @NonNull String opToRemove){
+        // Guard: never remove an op that produces a registered graph output.
+        // KV cache outputs (k_rope_N, v_heads_N, present_*) are registered in sd.outputs()
+        // and must remain reachable. Removing their producing op orphans the variable.
+        SameDiffOp opCheck = sd.getOps().get(opToRemove);
+        if (opCheck != null && opCheck.getOutputsOfOp() != null) {
+            List<String> graphOutputs = sd.outputs();
+            if (graphOutputs != null && !graphOutputs.isEmpty()) {
+                for (String outVar : opCheck.getOutputsOfOp()) {
+                    if (graphOutputs.contains(outVar)) {
+                        log.warn("Refusing to remove op '{}' — its output '{}' is a registered graph output",
+                                opToRemove, outVar);
+                        return;
+                    }
+                }
+            }
+        }
+
         SameDiffOp op = sd.getOps().remove(opToRemove);
         if (op == null) {
             return; // Op already removed or doesn't exist

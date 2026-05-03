@@ -557,6 +557,7 @@ void rmsNormLinearGeneralLauncher(
   rmsNorm(context, input, gamma, &normalized, epsilon);
 
   // Step 2: matmul normalized @ weight -> output (single cuBLAS call)
+  // Type mismatch is handled by the public rmsNormLinear() before calling this launcher.
   MmulHelper::mmul(&normalized, weight, output, 1.0, 0.0);
 }
 
@@ -582,10 +583,20 @@ void rmsNormLinear(
   const LongType M = input->lengthOf() / K;
   const LongType N = weight->sizeAt(1);
 
+  // Handle type mismatch: graph optimizer may strip casts between rms_norm and matmul,
+  // leaving weight in a different dtype (e.g., FLOAT32 weight with HALF input).
+  // Cast weight to match input so all paths get uniform types.
+  NDArray* effWeight = const_cast<NDArray*>(weight);
+  NDArray* castWeight = nullptr;
+  if (weight->dataType() != input->dataType()) {
+    castWeight = weight->cast(input->dataType());
+    effWeight = castWeight;
+  }
+
   // For M=1 (decode hot path): use fused single-kernel path
   // Requires K fits in shared memory (48KB = 12288 floats)
   if (M == 1 && K <= 8192) {
-    NDArray::prepareSpecialUse({output}, {input, gamma, weight});
+    NDArray::prepareSpecialUse({output}, {input, gamma, effWeight});
 
     auto stream = context->getCudaStream();
 
@@ -593,19 +604,21 @@ void rmsNormLinear(
                            (stream,
                             input->specialBuffer(),
                             gamma != nullptr ? gamma->specialBuffer() : nullptr,
-                            weight->specialBuffer(),
+                            effWeight->specialBuffer(),
                             output->specialBuffer(),
                             K, N, epsilon),
                            SD_FLOAT_TYPES);
 
-    NDArray::registerSpecialUse({output}, {input, gamma, weight});
+    NDArray::registerSpecialUse({output}, {input, gamma, effWeight});
+    delete castWeight;
     return;
   }
 
   // General M>1 path: fused rmsNorm + cuBLAS GEMM (2 kernel launches)
   BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearGeneralLauncher,
-                         (context, input, gamma, weight, output, epsilon),
+                         (context, input, gamma, effWeight, output, epsilon),
                          SD_FLOAT_TYPES);
+  delete castWeight;
 }
 
 }  // namespace helpers

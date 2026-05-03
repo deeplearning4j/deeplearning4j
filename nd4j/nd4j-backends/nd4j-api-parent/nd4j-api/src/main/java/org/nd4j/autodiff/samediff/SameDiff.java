@@ -1835,7 +1835,15 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         try {
             tempFile = File.createTempFile("samediff_dup_", ".sdnb");
             SameDiffSerializer.save(this, tempFile, true, java.util.Collections.emptyMap());
-            return SameDiffSerializer.load(tempFile, true);
+            SameDiff copy = SameDiffSerializer.load(tempFile, true);
+            copy.setGraphExecutionMode(this.getGraphExecutionMode());
+            copy.setDspAutoCompileEnabled(this.isDspAutoCompileEnabled());
+            copy.setDspNativeAutoCompileEnabled(this.isDspNativeAutoCompileEnabled());
+            copy.setDspFallbackToAutoIfTritonUnavailable(this.isDspFallbackToAutoIfTritonUnavailable());
+            copy.setPlacementStrategy(this.getPlacementStrategy());
+            copy.setCustomDevicePlacement(this.getCustomDevicePlacement() == null
+                    ? null : new LinkedHashMap<>(this.getCustomDevicePlacement()));
+            return copy;
         } catch (IOException e) {
             throw new RuntimeException("Failed to clone SameDiff via SDNB round-trip", e);
         } finally {
