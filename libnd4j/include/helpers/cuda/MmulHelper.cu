@@ -78,8 +78,11 @@ void MmulHelper::clearLtEpilogue() {
 }
 
 // Re-apply cuBLAS workspace after cublasSetStream whenever DSP configured one.
+// Skip during CUDA graph capture: workspace was pre-set by setCublasWorkspaceForCapture
+// before cudaStreamBeginCapture.  Calling cublasSetWorkspace on a capturing stream may
+// inject an internal host-callback node into the graph, serialising every replay on CPU.
 static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
-  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+  if (!tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
     cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
   }
 }
@@ -938,9 +941,16 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
  auto stream = A->getContext()->getCudaStream();
 
- auto status = cublasSetStream_v2(*handle, *stream);
- if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
- reapplyCublasWorkspace(*handle);
+  // Skip cublasSetStream_v2 during CUDA graph capture: calling it on a capturing stream causes cuBLAS
+  // to inject an internal cudaLaunchHostFunc (host-callback) node into the graph, serializing every
+  // replay on the CPU.  The stream was already bound to the capture stream by setCublasWorkspaceForCapture
+  // before cudaStreamBeginCapture was called, so the call is redundant inside capture.
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+  if (!tl_graphExecutionActive) {
+    status = cublasSetStream_v2(*handle, *stream);
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+  }
+  reapplyCublasWorkspace(*handle);
 
  if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
@@ -1194,9 +1204,13 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
  auto stream = A->getContext()->getCudaStream();
 
- auto status = cublasSetStream_v2(*handle, *stream);
- if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
- reapplyCublasWorkspace(*handle);
+  // Skip cublasSetStream_v2 during CUDA graph capture (see mmulMxM comment above).
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+  if (!tl_graphExecutionActive) {
+    status = cublasSetStream_v2(*handle, *stream);
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
+  }
+  reapplyCublasWorkspace(*handle);
 
  if (!typeDouble && !typeFloat && !typeHalfFloat) {
    dim3 dims = getGemVDims(M);
@@ -1634,7 +1648,10 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   // Get cuBLAS handle
   auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
   auto stream = A->getContext()->getCudaStream();
-  cublasSetStream(*handle, *stream);
+  // Skip cublasSetStream during CUDA graph capture (see mmulMxM comment above).
+  if (!tl_graphExecutionActive) {
+    cublasSetStream(*handle, *stream);
+  }
   reapplyCublasWorkspace(*handle);
 
   NDArray::prepareSpecialUse({C}, {A, B});

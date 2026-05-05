@@ -156,6 +156,12 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
 
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
+      Environment::getInstance().tritonSkipKernels()) {
+    DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: disabled for slot-by-slot/skip-kernels mode");
+    return Status::MAYBE;
+  }
+
   // Ensure VERIFY diagnostics are enabled and at FULL level when tritonVerifyKernels is on.
   // This mirrors the same logic in executeSegmentWithGpuGraph (gpubackend.cpp) but is needed
   // here because the CUDA_GRAPHS mode uses this path directly (no GPU graph backend).
@@ -397,7 +403,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
       // Tick actuality: CUDA graph replay writes device memory directly without
       // registerSpecialUse. Without this tick, syncToHost sees stale host data.
+      // Skip frozen constant slots — they were excluded from graph capture and
+      // their device buffers are already authoritative from warmup execution.
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
+        if (s < numSlots_ && slots_[s].frozenConstantSlot()) continue;
         NDArray* arr = outputSlots_[s];
         if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
           arr->tickWriteDevice();
@@ -534,7 +543,9 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   // Guard: require at least one warmup execution (executeCount_ >= 1) so that
   // slot shape caches are populated before Triton IR build tries to read them.
   // Without this, cross-segment inputs have empty shapes → all IR builds fail.
-  if (compilationDone_ || executeCount_ < 1 || graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+  if (compilationDone_ || executeCount_ < 1 ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
+      Environment::getInstance().tritonSkipKernels()) {
     DSP_DIAG(COMPILE, "platformPrecompileSegments: skipped (compilationDone=%d execCount=%d mode=%d)",
              compilationDone_ ? 1 : 0, executeCount_, static_cast<int>(graphExecutionMode_));
     return;
@@ -555,6 +566,13 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
     auto& seg = segments_[si];
     if (seg.exec.compilationFailed) continue;
+    // Skip data-dependent segments — they require host sync during execution
+    // which is incompatible with CUDA graph capture.
+    bool hasDataDep = false;
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      if (slots_[s].flags.isDataDependent) { hasDataDep = true; break; }
+    }
+    if (hasDataDep) continue;
     bool tryCapture = seg.def.isCapturable || (shapesFrozen_ && executeCount_ > 0);
     if (!tryCapture) continue;
     if (!gpuBackend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) continue;
@@ -664,6 +682,10 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
                          "NativeDSP::precompile: cudaSetDevice(%d) failed before preloadAllModules",
                          d);
         }
+        // Trim the memory pool before loading Triton modules to reclaim cached
+        // buffers. Module loading allocates GPU memory for cubin modules, and on
+        // memory-constrained GPUs this can fail if the pool holds reclaimable memory.
+        memory::CudaMemoryPool::getInstance().trimPool(d);
         Status preloadStatus = tritonBackend->preloadAllModules(d);
         if (preloadStatus != Status::OK) {
           cudaSetDevice(prevDev);
@@ -701,6 +723,11 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segment) {
+  // Clear any sticky CUDA error from the prior segment's execution.
+  // Non-capturable segments (e.g., Where with cudaStreamSynchronize) can surface
+  // async errors from prior CUDA graph replays. Without clearing here, the sticky
+  // error poisons cuBLAS calls in subsequent segments (EXECUTION_FAILED / error 13).
+  cudaGetLastError();
   return bindSegmentCudaDevice(segment, slots_, numSlots_, "segmentExec");
 }
 
@@ -858,6 +885,19 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   // compound the leak. Slot-by-slot execution properly frees all temporaries.
   if (!shapesFrozen_) return false;
 
+  // Data-dependent ops (Where/1-input, unique, nms) require host sync during
+  // execution to determine variable-length output size. Host sync invalidates
+  // CUDA graph capture (error 901). Never attempt capture for these segments,
+  // even when frozen — data-dependence is a fundamental capture incompatibility.
+  for (int s = segment.def.startSlot; s <= segment.def.endSlot; s++) {
+    if (slots_[s].flags.isDataDependent) {
+      DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
+                   "platformShouldUseGraph: false — slot %d (%s) is data-dependent",
+                   s, slots_[s].ident.opName.c_str());
+      return false;
+    }
+  }
+
   bool tryCapture = (segment.def.isCapturable || (shapesFrozen_ && executeCount_ > 0))
                     && !segment.exec.compilationFailed;
   // Use selectedBackend to determine if graph capture is possible — no cascade check needed.
@@ -885,6 +925,12 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     GraphSegment& segment, NDArray** externalInputs, int numExternalInputs,
     void* stream, bool& usedGraph) {
   usedGraph = false;
+
+  // Clear any sticky CUDA error from a prior segment's execution.
+  // Non-capturable segments (e.g., Where with cudaStreamSynchronize) can surface
+  // async errors from prior CUDA graph replays. These sticky errors poison subsequent
+  // cuBLAS calls (cublasSetStream returns EXECUTION_FAILED). Clear unconditionally.
+  cudaGetLastError();
 
   DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d phase=%s",
            segment.def.startSlot, segment.def.endSlot,
@@ -976,8 +1022,9 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         return Status::OK;
       }
 
-      // GPU backend execution failed. Mark as failed and throw immediately.
-      // Silent fallback to slot-by-slot masks the real bug.
+      // GPU backend execution failed — propagate the error. Do NOT fall back to
+      // slot-by-slot; fix the root cause (e.g., ensure model is closed+reloaded
+      // between configs to free GPU memory before capture).
       segment.exec.compilationFailed = true;
       DSP_THROW_SEG(COMPILE, segment.def.startSlot,
                     "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d. "
@@ -989,10 +1036,12 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     case SelectedBackend::CUDA_GRAPHS: {
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
+        // Graph capture failed — propagate the error. Do NOT fall back to
+        // slot-by-slot; fix the root cause (memory management during capture).
         segment.exec.compilationFailed = true;
         DSP_THROW_SEG(COMPILE, segment.def.startSlot,
-                      "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d. "
-                      "Graph capture failed — fix the root cause.",
+                      "NativeDSP::execute: CUDA graph capture failed for seg[%d-%d] status=%d. "
+                      "Fix capture memory management — do NOT fall back to slot-by-slot.",
                       segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
       }
       usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.compilationFailed);
@@ -1638,6 +1687,50 @@ bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int currI
   return false;  // No trait-based segmentation on GPU
 }
 
+size_t NativeDynamicShapePlan::platformEstimateCaptureBudget() const {
+  // Query actual GPU free memory and compute how much is available for
+  // a single segment's intermediate buffers during CUDA graph capture.
+  //
+  // The budget accounts for:
+  //   - capture workspace (512MB default, from DspConfig::captureWorkspaceMb)
+  //   - cuBLAS workspace (from DspConfig::cublasWorkspaceMb)
+  //   - graph metadata overhead (~20% of buffer footprint)
+  //   - pinned host workspace for H2D nodes
+  //   - safety margin for CUDA runtime allocations
+  //
+  // This adapts automatically to any GPU size (24GB, 48GB, 80GB) and any
+  // model size (how much memory weights + KV cache consume).
+
+  size_t gpuFree = 0, gpuTotal = 0;
+  cudaMemGetInfo(&gpuFree, &gpuTotal);
+
+  // Subtract fixed overhead that capture always needs
+  size_t captureWsMb = static_cast<size_t>(sd::Environment::getInstance().dsp().captureWorkspaceMb());
+  size_t cublasWsMb  = static_cast<size_t>(sd::Environment::getInstance().dsp().cublasWorkspaceMb());
+  size_t fixedOverhead = (captureWsMb + cublasWsMb) * 1024ULL * 1024ULL;
+
+  // Reserve 20% of remaining free memory as safety margin for graph metadata,
+  // CUDA runtime internal allocations, and fragmentation.
+  size_t safetyMargin = gpuFree / 5;
+
+  size_t totalOverhead = fixedOverhead + safetyMargin;
+  if (gpuFree <= totalOverhead) {
+    // Almost no memory left — allow at most a small segment.
+    // Return 64MB floor so we don't end up with 1-op segments.
+    return 64ULL * 1024 * 1024;
+  }
+
+  size_t budget = gpuFree - totalOverhead;
+
+  DSP_DIAG(MEMORY, "platformEstimateCaptureBudget: gpuFree=%zuMB gpuTotal=%zuMB "
+           "fixedOverhead=%zuMB safetyMargin=%zuMB budget=%zuMB",
+           gpuFree / (1024*1024), gpuTotal / (1024*1024),
+           fixedOverhead / (1024*1024), safetyMargin / (1024*1024),
+           budget / (1024*1024));
+
+  return budget;
+}
+
 void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
   logGpuMemState("STEP-0-ENTRY");
   for (auto& seg : segments_) {
@@ -1766,7 +1859,7 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
       }
 
       void* oldPtr = db->special();
-      cudaFreeAsync(oldPtr, nullptr);
+      pool.free(oldPtr, deviceId);
       db->replaceSpecialBuffer(directPtr, true);
       pool.registerDirectAllocation(directPtr, bufSize);
 

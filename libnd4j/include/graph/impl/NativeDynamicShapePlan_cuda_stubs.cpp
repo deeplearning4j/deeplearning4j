@@ -39,6 +39,7 @@
 #include <graph/DspPhaseUtils.h>
 #include <config.h>
 
+#include <cstdint>
 #include <cstring>
 #include <ops/declarable/OpRegistrator.h>
 
@@ -100,7 +101,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
       }
     } else if (seg.def.selectedBackend == SelectedBackend::CPU_GRAPH &&
-               !seg.exec.compilationFailed) {
+               !seg.exec.compilationFailed && !seg.exec.noFusibleOps) {
       // Lazy compile path: backend not yet resolved. Call the full cascade
       // (warmup → compile → execute) which populates resolvedCpuBackend.
       // This happens when platformPrecompileSegments skips segments with
@@ -268,7 +269,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       //   - Subsequent calls: reuses the resolved backend directly
       // This is the ONLY correct way to dispatch CPU_GRAPH — never bypass it
       // with direct resolvedCpuBackend calls (the backend may not be compiled yet).
-      if (!segment.exec.compilationFailed) {
+      if (!segment.exec.compilationFailed && !segment.exec.noFusibleOps) {
         Status st = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
         if (st == Status::OK) {
           usedGraph = (segment.resolvedCpuBackend != nullptr);
@@ -485,6 +486,12 @@ SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCaptu
   // NEVER fall back to bare SLOT_BY_SLOT from AUTO.
   return SelectedBackend::EMULATED_REPLAY;
 #endif
+}
+
+size_t NativeDynamicShapePlan::platformEstimateCaptureBudget() const {
+  // CPU: no GPU memory constraint — return max so segment splitting is never
+  // triggered by memory budget (only by op-count limits or other criteria).
+  return SIZE_MAX;
 }
 
 bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int /*currIdx*/, int /*prevIdx*/) const {
