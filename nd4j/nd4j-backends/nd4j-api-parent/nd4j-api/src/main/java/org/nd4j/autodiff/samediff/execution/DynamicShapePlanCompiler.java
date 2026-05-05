@@ -660,6 +660,33 @@ public class DynamicShapePlanCompiler {
                 shapeDependsOnValues = hasIntLongInputs;
             }
 
+            // Per-instance refinement: Some ops are marked DATA_DEPENDENT in the
+            // trait table because their shape function MAY read input values in certain
+            // configurations, but when a specific instance uses INT_ARG instead, no
+            // data read occurs and the op can be classified as value-independent.
+            if (shapeDependsOnValues) {
+                if ("concat".equals(opName)) {
+                    // DATA_DEPENDENT only when isAxisInLastArr (bArgs[0]==true): axis
+                    // read from last input array. Otherwise axis comes from INT_ARG.
+                    boolean isAxisInLastArr = bArgs.length > 0 && bArgs[0];
+                    if (!isAxisInLastArr) {
+                        shapeDependsOnValues = false;
+                    }
+                } else if ("reshape".equals(opName) || "reshape_no_copy".equals(opName)) {
+                    // DATA_DEPENDENT only when width > 1: shape read from INPUT(1).
+                    // Single-input reshape reads target shape from iArgs.
+                    if (numInputs <= 1) {
+                        shapeDependsOnValues = false;
+                    }
+                } else if ("expand_dims".equals(opName)) {
+                    // DATA_DEPENDENT only when axis comes from INPUT(1) (no INT_ARG).
+                    // When iArgs is non-empty, axis is in iArgs[0].
+                    if (iArgs.length > 0) {
+                        shapeDependsOnValues = false;
+                    }
+                }
+            }
+
             DifferentialFunction slotOp = op;
 
             // Pre-compute opName hash for shape key computation (avoids String.hashCode per step)

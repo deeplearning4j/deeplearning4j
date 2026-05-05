@@ -1,6 +1,9 @@
 {
-  "mcpServers" : {
+  "$schema" : "https://opencode.ai/config.json",
+  "mcp" : {
     "kompile" : {
+      "enabled" : true,
+      "type" : "local",
       "command" : "/home/agibsonccc/Documents/GitHub/kompile/kompile-cli/target/kompile-cli",
       "args" : [ "mcp-stdio", "--work-dir", "/home/agibsonccc/Documents/GitHub/deeplearning4j" ]
     }

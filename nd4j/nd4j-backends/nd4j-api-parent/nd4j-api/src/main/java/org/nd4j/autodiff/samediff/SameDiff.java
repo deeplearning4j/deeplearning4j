@@ -4762,6 +4762,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             if (execProtected != null) {
                 protectedBuffers.putAll(execProtected);
             }
+            // Release GPU intermediates (CUDA graphs, replay workspaces, plan-owned
+            // output slot arrays) BEFORE the session buffer cleanup below. Without
+            // this, gigabytes of intermediate GPU buffers survive destroySession()
+            // and leak until the native plan cache is cleared or GC finalizes them.
+            // This is the authoritative cleanup path — releaseGpuIntermediates()
+            // re-classifies buffer ownership and frees only SLOT_OWNED intermediates
+            // while protecting weights and requested outputs.
+            try {
+                executor.releaseGpuIntermediates();
+            } catch (Exception e) {
+                log.warn("destroySession: releaseGpuIntermediates failed — GPU memory may leak: {}", e.getMessage(), e);
+            }
         }
 
         IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
@@ -5254,6 +5266,39 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             nativePlanCache = null;
         }
         trimSessionMemory();
+
+        // Explicitly close CONSTANT and VARIABLE data buffers. These are marked
+        // constant=true during model loading, which causes DeallocatorService to
+        // skip them (DeallocatableReference.deallocate checks isConstant). Without
+        // explicit cleanup, model weight GPU memory is permanently leaked after close().
+        // Must un-poison (setConstant(false)) before close() since closeable() rejects constants.
+        int closedConstants = 0;
+        for (SDVariable v : variables()) {
+            if (v.getVariableType() == VariableType.CONSTANT || v.getVariableType() == VariableType.VARIABLE) {
+                INDArray arr = v.getArr();
+                if (arr != null && !arr.wasClosed()) {
+                    DataBuffer data = arr.data();
+                    if (data != null) {
+                        try {
+                            data.setConstant(false);
+                            data.close();
+                            closedConstants++;
+                        } catch (Exception e) {
+                            log.debug("SameDiff.close(): failed to close buffer: {}", e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+        if (closedConstants > 0) {
+            log.debug("SameDiff.close(): freed {} constant/variable data buffers", closedConstants);
+            // Trim pool AFTER closing constants so freed weight memory is returned to the driver.
+            // cudaFreeAsync (used by BaseCudaDataBuffer.close()) only returns memory to the pool's
+            // reserved bucket — it does NOT release it to the driver. Without this second trim,
+            // ~3 GB of model weights per config accumulate as pool-reserved-but-idle memory,
+            // causing OOM when running multiple configs sequentially.
+            trimSessionMemory();
+        }
     }
 
     /**

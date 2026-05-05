@@ -709,6 +709,11 @@ struct GraphSegmentExec {
   // NOT set for OOM failures — those use the retry mechanism below.
   bool compilationFailed = false;
 
+  // If true, no backend could fuse this segment (all permutes/reshapes/identity).
+  // The segment executes slot-by-slot every step without re-attempting the cascade.
+  // Unlike compilationFailed, this is expected behavior — not an error.
+  bool noFusibleOps = false;
+
   // OOM retry mechanism
   int captureOomRetries = 0;
   int captureRetryAfterExec = 0;
@@ -1327,6 +1332,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * rebuilds the fast-path index.
    */
   void markExternalInputVariable(int extIdx);
+  void markExternalInputPlaceholder(int extIdx);
 
   /**
    * Enable/disable shape-only dry-run mode.
@@ -1656,6 +1662,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int lastNumExternalInputs_ = 0;               // size of lastExternalInputs_
   std::vector<std::string> externalInputNames_;  // name for each external input index
   std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
+  std::vector<bool> externalInputIsPlaceholder_; // true if host-written placeholder (force H2D); false if device-written (respect actuality)
   std::vector<int> variableExternalInputIndices_;  // cached indices where externalInputIsVariable_[i]=true (replay optimization)
   bool variableIndicesCached_ = false;             // true once variableExternalInputIndices_ is populated
 
@@ -1986,6 +1993,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformTraceSlotValues(const GraphSegment& seg, void* stream, int execCount);
   SelectedBackend platformResolveBackend(bool isGraphCapture) const;
   bool platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const;
+  size_t platformEstimateCaptureBudget() const;
   void platformReleaseSegmentGpuResources();
   void platformMigrateWeightsAndClearCaches();
 
@@ -2191,15 +2199,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
 #ifdef SD_CUDA
   // ── Batched GEMM optimization ──────────────────────────────────────────
-  // Groups consecutive matmul slots with identical (M,N,K,transA,transB,dtype)
-  // into single cublasGemmBatchedEx calls, reducing CUDA graph node count.
+  // Groups matmul slots with identical dimensions, transpose flags, and
+  // A/B/C dtypes into single cublasGemmBatchedEx calls, reducing CUDA graph node count.
   // For SmolDocling (24 layers × 9 matmuls), reduces ~211 → ~120 matmul nodes.
   struct BatchedGemmGroup {
     std::vector<int> slotIndices;  // matmul slot indices in this group (non-consecutive OK)
-    int triggerSlot;    // last slot in group — execution happens here
+    int triggerSlot;    // first slot in group — execution happens here
     int M, N, K;        // shared dimensions
     int transA, transB;
-    sd::DataType dtype;
+    sd::DataType aType;
+    sd::DataType bType;
+    sd::DataType cType;
     void** d_A_ptrs;    // device pointer array
     void** d_B_ptrs;
     void** d_C_ptrs;

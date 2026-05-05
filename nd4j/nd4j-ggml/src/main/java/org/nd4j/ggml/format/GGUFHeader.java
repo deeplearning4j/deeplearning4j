@@ -101,6 +101,7 @@ public class GGUFHeader {
     public static final String KEY_TOKENIZER_BOS_ID = "tokenizer.ggml.bos_token_id";
     public static final String KEY_TOKENIZER_EOS_ID = "tokenizer.ggml.eos_token_id";
     public static final String KEY_TOKENIZER_PAD_ID = "tokenizer.ggml.padding_token_id";
+    public static final String KEY_TOKENIZER_CHAT_TEMPLATE = "tokenizer.chat_template";
 
     /**
      * Get the model architecture name (e.g., "llama", "bert", "gpt2")
@@ -229,6 +230,14 @@ public class GGUFHeader {
      */
     public int getEosTokenId() {
         return getMetadataInt(KEY_TOKENIZER_EOS_ID, 2);
+    }
+
+    /**
+     * Get the chat template (Jinja2 format) from GGUF metadata.
+     * Returns null if not present.
+     */
+    public String getChatTemplate() {
+        return getMetadataString(KEY_TOKENIZER_CHAT_TEMPLATE);
     }
 
     /**

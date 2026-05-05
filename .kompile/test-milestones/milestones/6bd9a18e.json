@@ -1,0 +1,16 @@
+{
+  "id" : "6bd9a18e",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "0e221dd2c8332e0d671f8c3cec2b378c7e7ba7a4",
+  "commitShort" : "0e221dd",
+  "commitMessage" : "fix: multi-consumer in-place protection + VLM decode correctness",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 1,
+  "passed" : 0,
+  "failed" : 1,
+  "notes" : "After frozen segment warmup sync patch, TRITON_compileAll_safe with nd4j.triton.includeTypes=GATHER still fails coherency: tokens [271,248068,3114,...], no Paris. Log: /tmp/qwen35-gather-after-frozen-warmup-sync.log",
+  "tags" : "qwen,cuda,dsp,triton,gather",
+  "timestamp" : "2026-05-05T00:00:32.964343Z"
+}

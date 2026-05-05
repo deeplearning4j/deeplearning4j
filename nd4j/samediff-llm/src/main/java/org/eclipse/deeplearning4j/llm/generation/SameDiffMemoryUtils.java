@@ -23,13 +23,17 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Memory management utilities for SameDiff models.
@@ -59,15 +63,7 @@ public final class SameDiffMemoryUtils {
         if (arr == null) {
             return;
         }
-        try {
-            if (arr.wasClosed()) {
-                return;
-            }
-            arr.setCloseable(true);
-            arr.close();
-        } catch (Exception e) {
-            log.debug("Exception during safeClose: {}", e.getMessage());
-        }
+        closeArray(arr, Collections.newSetFromMap(new IdentityHashMap<>()));
     }
 
     /**
@@ -86,49 +82,100 @@ public final class SameDiffMemoryUtils {
             return 0;
         }
 
-        int freedCount = 0;
+        List<INDArray> arrays = new ArrayList<>();
 
         // Free constant arrays
-        freedCount += freeArrayHolder(model.getConstantArrays(), "constant");
+        removeArrayHolder(model.getConstantArrays(), arrays);
 
         // Free variable arrays
-        freedCount += freeArrayHolder(model.getVariablesArrays(), "variable");
+        removeArrayHolder(model.getVariablesArrays(), arrays);
 
-        log.info("Freed {} model arrays", freedCount);
-        return freedCount;
+        Set<DataBuffer> closedBuffers = Collections.newSetFromMap(new IdentityHashMap<>());
+        int closedArrayCount = 0;
+        for (INDArray arr : arrays) {
+            if (closeArray(arr, closedBuffers)) {
+                closedArrayCount++;
+            }
+        }
+
+        log.info("Freed {} model arrays ({} unique data buffers)", closedArrayCount, closedBuffers.size());
+        return closedArrayCount;
     }
 
-    private static int freeArrayHolder(ArrayHolder holder, String holderType) {
+    private static void removeArrayHolder(ArrayHolder holder, List<INDArray> arrays) {
         if (holder == null) {
-            return 0;
+            return;
         }
 
         Collection<String> names = holder.arrayNames();
         if (names == null || names.isEmpty()) {
-            return 0;
+            return;
         }
 
         // Copy names to avoid ConcurrentModificationException
         List<String> nameList = new ArrayList<>(names);
-        int freedCount = 0;
 
         for (String name : nameList) {
             try {
                 INDArray arr = holder.removeArray(name);
-                if (arr != null && !arr.wasClosed()) {
-                    if (arr.data() != null) {
-                        arr.data().setConstant(false);
-                    }
-                    arr.setCloseable(true);
-                    arr.close();
-                    freedCount++;
+                if (arr != null) {
+                    arrays.add(arr);
                 }
             } catch (Exception e) {
-                log.debug("Exception freeing {} array '{}': {}", holderType, name, e.getMessage());
+                log.debug("Exception removing model array '{}': {}", name, e.getMessage());
+            }
+        }
+    }
+
+    private static boolean closeArray(INDArray arr, Set<DataBuffer> closedBuffers) {
+        if (arr == null) {
+            return false;
+        }
+
+        DataBuffer data = null;
+        try {
+            data = arr.data();
+        } catch (Exception e) {
+            log.debug("Exception reading array data buffer during close: {}", e.getMessage());
+        }
+
+        if (arr.wasClosed() || (data != null && data.wasClosed())) {
+            return false;
+        }
+
+        try {
+            arr.clearOpaqueNDArray();
+        } catch (Exception e) {
+            log.debug("Exception clearing OpaqueNDArray during close: {}", e.getMessage());
+        }
+
+        try {
+            if (data != null && !data.wasClosed()) {
+                data.setConstant(false);
+            }
+            arr.setCloseable(true);
+            if (arr.closeable()) {
+                arr.close();
+                return arr.wasClosed();
+            }
+        } catch (Exception e) {
+            log.debug("Exception during array close, falling back to data buffer close: {}", e.getMessage());
+        }
+
+        // Model constants can be stored as views or shape-adjusted wrappers whose
+        // INDArray.close() is intentionally conservative. The model owns these
+        // buffers, so close each unique data buffer directly when array close skips.
+        if (data != null && !data.wasClosed() && closedBuffers.add(data)) {
+            try {
+                data.setConstant(false);
+                data.close();
+                return data.wasClosed();
+            } catch (Exception e) {
+                log.debug("Exception closing model data buffer directly: {}", e.getMessage());
             }
         }
 
-        return freedCount;
+        return arr.wasClosed() || (data != null && data.wasClosed());
     }
 
     /**

@@ -27,6 +27,7 @@
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/ggml_dequantize.h>
 #include <types/float16.h>
 #include <types/bfloat16.h>
@@ -302,7 +303,9 @@ void ggmlDequantize(
     bool needsConvert = (outputDtype != DataType::FLOAT32);
 
     if (needsConvert) {
-        cudaMalloc(&f32Buf, numElements * sizeof(float));
+        int deviceId = sd::AffinityManager::currentDeviceId();
+        f32Buf = reinterpret_cast<float*>(
+            memory::CudaMemoryPool::getInstance().allocate(numElements * sizeof(float), deviceId, *stream));
     } else {
         f32Buf = reinterpret_cast<float*>(output->specialBuffer());
     }
@@ -399,7 +402,8 @@ void ggmlDequantize(
         }
 
         DebugHelper::checkGlobalErrorCode("ggml_dequantize type conversion failed");
-        cudaFree(f32Buf);
+        int deviceId = sd::AffinityManager::currentDeviceId();
+        memory::CudaMemoryPool::getInstance().free(f32Buf, deviceId, *stream);
     }
 
     NDArray::registerSpecialUse({output}, {input});

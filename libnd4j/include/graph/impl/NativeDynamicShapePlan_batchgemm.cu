@@ -17,9 +17,9 @@
 
 // Batched GEMM optimization for CUDA graph node reduction.
 //
-// Groups matmul slots with identical (M,N,K,transA,transB,dtype) into single
-// cublasGemmBatchedEx calls. Uses dependency analysis to ensure only truly
-// independent matmuls are batched together.
+// Groups matmul slots with identical dimensions, transpose flags, and A/B/C
+// dtypes into single cublasGemmBatchedEx calls. Uses dependency analysis to
+// ensure only truly independent matmuls are batched together.
 //
 // Execution strategy: the FIRST member in each group is the trigger.
 // When the trigger slot is reached, the entire batch executes and outputs
@@ -35,6 +35,7 @@
 #include <helpers/DebugHelper.h>
 #include <helpers/shape.h>
 #include <array/ArrayOptions.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <system/Environment.h>
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
@@ -52,7 +53,75 @@ extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 namespace sd {
 namespace graph {
 
-using namespace op_detection;  // isMatmulOp, extractMatmulDims, MatmulSig, MatmulSigHash, hasTransitiveDependency, allInputsAvailableBefore
+using namespace op_detection;  // isMatmulOp, extractMatmulDims, hasTransitiveDependency, allInputsAvailableBefore
+
+namespace {
+
+struct BatchedMatmulSig {
+  int M, N, K, transA, transB;
+  DataType aType, bType, cType;
+
+  bool operator==(const BatchedMatmulSig& o) const {
+    return M == o.M && N == o.N && K == o.K &&
+           transA == o.transA && transB == o.transB &&
+           aType == o.aType && bType == o.bType && cType == o.cType;
+  }
+};
+
+struct BatchedMatmulSigHash {
+  size_t operator()(const BatchedMatmulSig& s) const {
+    size_t h = std::hash<int>()(s.M);
+    h ^= std::hash<int>()(s.N) << 1;
+    h ^= std::hash<int>()(s.K) << 2;
+    h ^= std::hash<int>()(s.transA) << 3;
+    h ^= std::hash<int>()(s.transB) << 4;
+    h ^= std::hash<int>()(static_cast<int>(s.aType)) << 5;
+    h ^= std::hash<int>()(static_cast<int>(s.bType)) << 6;
+    h ^= std::hash<int>()(static_cast<int>(s.cType)) << 7;
+    return h;
+  }
+};
+
+static bool cudaTypeFor(DataType dt, cudaDataType& out) {
+  switch (dt) {
+    case FLOAT32:
+      out = CUDA_R_32F;
+      return true;
+    case HALF:
+      out = CUDA_R_16F;
+      return true;
+    case BFLOAT16:
+      out = CUDA_R_16BF;
+      return true;
+    case DOUBLE:
+      out = CUDA_R_64F;
+      return true;
+    default:
+      return false;
+  }
+}
+
+static bool supportedBatchedGemmTypes(DataType aType, DataType bType, DataType cType) {
+  cudaDataType ignored;
+  if (!cudaTypeFor(aType, ignored) || !cudaTypeFor(bType, ignored) || !cudaTypeFor(cType, ignored)) {
+    return false;
+  }
+  const bool anyDouble = aType == DOUBLE || bType == DOUBLE || cType == DOUBLE;
+  const bool allDouble = aType == DOUBLE && bType == DOUBLE && cType == DOUBLE;
+  if (anyDouble && !allDouble) return false;
+
+  if (!allDouble && cType != FLOAT32 && cType != HALF && cType != BFLOAT16) return false;
+  return true;
+}
+
+static bool singleMatrixRowMajor(NDArray* arr, int rows, int cols) {
+  if (arr == nullptr || arr->rankOf() < 2 || arr->rankOf() > 3) return false;
+  if (arr->rankOf() == 3 && arr->sizeAt(0) != 1) return false;
+  if (arr->sizeAt(-2) != rows || arr->sizeAt(-1) != cols) return false;
+  return arr->strideAt(-1) == 1 && (rows == 1 || arr->strideAt(-2) == cols);
+}
+
+}  // namespace
 
 // Resolve shape info for a matmul input given its source index.
 // Priority: NDArray* (outputSlots_ / outputSlots_ / external) -> cachedOutputShapes on source slot.
@@ -100,9 +169,21 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
   int totalMatmuls = 0, resolvedMatmuls = 0, dimFailMatmuls = 0;
   int fromArray = 0, fromCache = 0;
   int depRejected = 0, inputRejected = 0;
+  int typeRejected = 0, layoutRejected = 0;
 
   for (auto& seg : segments_) {
-    std::unordered_map<MatmulSig, std::vector<int>, MatmulSigHash> sigBuckets;
+    std::unordered_map<BatchedMatmulSig, std::vector<int>, BatchedMatmulSigHash> sigBuckets;
+
+    auto resolveArray = [&](int srcIdx) -> NDArray* {
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+        return outputSlots_[srcIdx];
+      }
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx >= 0 && extIdx < numExt) return externalArrays[extIdx];
+      }
+      return nullptr;
+    };
 
     for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
       NativeSlot& slot = slots_[i];
@@ -129,8 +210,8 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
       }
 
       int M, N, K, transA, transB;
-      DataType dtype;
-      if (!extractMatmulDims(slot, shapeA, shapeB, M, N, K, transA, transB, dtype)) {
+      DataType shapeDtype;
+      if (!extractMatmulDims(slot, shapeA, shapeB, M, N, K, transA, transB, shapeDtype)) {
         dimFailMatmuls++;
         if (dimFailMatmuls <= 10) {
           int rA = shapeA ? (int)shape::rank(shapeA) : -1;
@@ -140,9 +221,39 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
         }
         continue;
       }
+      (void)shapeDtype;
 
       resolvedMatmuls++;
-      MatmulSig sig{M, N, K, transA, transB, dtype};
+
+      NDArray* arrA = resolveArray(srcA);
+      NDArray* arrB = resolveArray(srcB);
+      NDArray* arrC = nullptr;
+      if (slot.wiring.numOutputs >= 1) {
+        int outSlotIdx = slot.wiring.outputSlotIndices[0];
+        if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_) arrC = outputSlots_[outSlotIdx];
+      }
+      if (arrA == nullptr || arrB == nullptr || arrC == nullptr) {
+        layoutRejected++;
+        continue;
+      }
+
+      const DataType aType = arrA->dataType();
+      const DataType bType = arrB->dataType();
+      const DataType cType = arrC->dataType();
+      if (!supportedBatchedGemmTypes(aType, bType, cType)) {
+        typeRejected++;
+        continue;
+      }
+
+      const bool rowMajorA = singleMatrixRowMajor(arrA, transA ? K : M, transA ? M : K);
+      const bool rowMajorB = singleMatrixRowMajor(arrB, transB ? N : K, transB ? K : N);
+      const bool rowMajorC = singleMatrixRowMajor(arrC, M, N);
+      if (!rowMajorA || !rowMajorB || !rowMajorC) {
+        layoutRejected++;
+        continue;
+      }
+
+      BatchedMatmulSig sig{M, N, K, transA, transB, aType, bType, cType};
       sigBuckets[sig].push_back(i);
     }
 
@@ -209,7 +320,9 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
           group.K = sig.K;
           group.transA = sig.transA;
           group.transB = sig.transB;
-          group.dtype = sig.dtype;
+          group.aType = sig.aType;
+          group.bType = sig.bType;
+          group.cType = sig.cType;
           group.d_A_ptrs = nullptr;
           group.d_B_ptrs = nullptr;
           group.d_C_ptrs = nullptr;
@@ -223,9 +336,10 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
             slotToBatchedGemmGroup_[sg[s]] = groupIdx;
           }
 
-          DSP_DIAG(EXECUTE, "batched GEMM group %d: %d matmuls, slots [%d..%d] M=%d N=%d K=%d transA=%d transB=%d dtype=%d trigger=%d",
+          DSP_DIAG(EXECUTE, "batched GEMM group %d: %d matmuls, slots [%d..%d] M=%d N=%d K=%d transA=%d transB=%d aType=%d bType=%d cType=%d trigger=%d",
                     groupIdx, (int)(end - start), (int)sg[start], (int)sg[end - 1],
-                    sig.M, sig.N, sig.K, sig.transA, sig.transB, (int)sig.dtype,
+                    sig.M, sig.N, sig.K, sig.transA, sig.transB,
+                    (int)sig.aType, (int)sig.bType, (int)sig.cType,
                     (int)sg[start]);
         }
       }
@@ -234,10 +348,10 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
 
   DSP_DIAG(EXECUTE, "detectBatchedGemmGroups: found %d groups from %d segments "
             "(totalMatmuls=%d resolved=%d dimFail=%d depRejected=%d inputRejected=%d "
-            "fromArray=%d fromCache=%d)",
+            "typeRejected=%d layoutRejected=%d fromArray=%d fromCache=%d)",
             (int)batchedGemmGroups_.size(), (int)segments_.size(),
             totalMatmuls, resolvedMatmuls, dimFailMatmuls, depRejected, inputRejected,
-            fromArray, fromCache);
+            typeRejected, layoutRejected, fromArray, fromCache);
 }
 
 // ── Post-merge slot dispatch reconciliation ──────────────────────────────────
@@ -311,9 +425,10 @@ void NativeDynamicShapePlan::prepareBatchedGemmDevice(cudaStream_t stream) {
     int bs = group.maxBatchSize;
     size_t ptrArrayBytes = bs * sizeof(void*);
 
-    cudaMalloc(&group.d_A_ptrs, ptrArrayBytes);
-    cudaMalloc(&group.d_B_ptrs, ptrArrayBytes);
-    cudaMalloc(&group.d_C_ptrs, ptrArrayBytes);
+    int deviceId = sd::AffinityManager::currentDeviceId();
+    group.d_A_ptrs = reinterpret_cast<void**>(memory::CudaMemoryPool::getInstance().allocate(ptrArrayBytes, deviceId, stream));
+    group.d_B_ptrs = reinterpret_cast<void**>(memory::CudaMemoryPool::getInstance().allocate(ptrArrayBytes, deviceId, stream));
+    group.d_C_ptrs = reinterpret_cast<void**>(memory::CudaMemoryPool::getInstance().allocate(ptrArrayBytes, deviceId, stream));
     cudaMallocHost(&group.h_A_ptrs, ptrArrayBytes);
     cudaMallocHost(&group.h_B_ptrs, ptrArrayBytes);
     cudaMallocHost(&group.h_C_ptrs, ptrArrayBytes);
@@ -326,7 +441,10 @@ void NativeDynamicShapePlan::prepareBatchedGemmDevice(cudaStream_t stream) {
 // ── Execute a single batched GEMM group ──────────────────────────────────────
 
 static inline void reapplyCublasWorkspaceBG(cublasHandle_t handle) {
-  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+  // Skip during CUDA graph capture: workspace was pre-set by setCublasWorkspaceForCapture
+  // before cudaStreamBeginCapture; calling cublasSetWorkspace on a capturing stream may
+  // inject a host-callback node into the graph.
+  if (!tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
     cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
   }
 }
@@ -343,38 +461,38 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   // Skip input resolution, syncToDevice, and H2D copies entirely.
   bool canSkipPtrRefresh = group.ptrStable && pointersStable_ && shapesFrozen_ && executeCount_ >= 3;
 
+  std::vector<NDArray*> inputAs;
+  std::vector<NDArray*> inputBs;
+  std::vector<NDArray*> outputs;
+  std::vector<NDArray*> readList;
+  std::vector<NDArray*> writeList;
+
   if (!canSkipPtrRefresh) {
-    // 1. Populate host pointer arrays from current slot inputs/outputs
+    inputAs.reserve(batchCount);
+    inputBs.reserve(batchCount);
+    outputs.reserve(batchCount);
+    readList.reserve(batchCount * 2);
+    writeList.reserve(batchCount);
+
+    auto resolveArray = [&](int srcIdx) -> NDArray* {
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+        return outputSlots_[srcIdx];
+      }
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx >= 0 && extIdx < numExt) return externalArrays[extIdx];
+      }
+      return nullptr;
+    };
+
+    // 1. Resolve and validate current arrays before preparing device buffers.
     bool anyPtrChanged = false;
     for (int b = 0; b < batchCount; b++) {
       int slotIdx = group.slotIndices[b];
       NativeSlot& slot = slots_[slotIdx];
 
-      // Resolve input A
-      NDArray* inputA = nullptr;
-      {
-        int src = slot.wiring.inputSourceIndices[0];
-        if (src >= 0) {
-          inputA = outputSlots_[src];
-          if (inputA == nullptr && src < totalOutputSlots_) inputA = outputSlots_[src];
-        } else {
-          int extIdx = -(src + 1);
-          if (extIdx < numExt) inputA = externalArrays[extIdx];
-        }
-      }
-
-      // Resolve input B
-      NDArray* inputB = nullptr;
-      {
-        int src = slot.wiring.inputSourceIndices[1];
-        if (src >= 0) {
-          inputB = outputSlots_[src];
-          if (inputB == nullptr && src < totalOutputSlots_) inputB = outputSlots_[src];
-        } else {
-          int extIdx = -(src + 1);
-          if (extIdx < numExt) inputB = externalArrays[extIdx];
-        }
-      }
+      NDArray* inputA = resolveArray(slot.wiring.inputSourceIndices[0]);
+      NDArray* inputB = resolveArray(slot.wiring.inputSourceIndices[1]);
 
       // Resolve output C
       NDArray* outputC = nullptr;
@@ -387,17 +505,55 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       }
 
       if (inputA == nullptr || inputB == nullptr || outputC == nullptr) {
-        DSP_DIAG(EXECUTE, "batched GEMM group %d slot %d: null array (A=%p B=%p C=%p), falling back",
+        DSP_DIAG(EXECUTE, "batched GEMM group %d slot %d: null array (A=%p B=%p C=%p)",
                   groupIdx, slotIdx, inputA, inputB, outputC);
         return Status::BAD_INPUT;
       }
 
-      inputA->syncToDevice();
-      inputB->syncToDevice();
+      if (inputA->dataType() != group.aType || inputB->dataType() != group.bType ||
+          outputC->dataType() != group.cType) {
+        DSP_DIAG(EXECUTE,
+                 "batched GEMM group %d slot %d: dtype drift A=%d/%d B=%d/%d C=%d/%d",
+                 groupIdx, slotIdx,
+                 (int)inputA->dataType(), (int)group.aType,
+                 (int)inputB->dataType(), (int)group.bType,
+                 (int)outputC->dataType(), (int)group.cType);
+        return Status::BAD_ARGUMENTS;
+      }
 
-      void* aPtr = inputA->specialBuffer();
-      void* bPtr = inputB->specialBuffer();
-      void* cPtr = outputC->specialBuffer();
+      const bool rowMajorA = singleMatrixRowMajor(inputA, group.transA ? group.K : group.M,
+                                                  group.transA ? group.M : group.K);
+      const bool rowMajorB = singleMatrixRowMajor(inputB, group.transB ? group.N : group.K,
+                                                  group.transB ? group.K : group.N);
+      const bool rowMajorC = singleMatrixRowMajor(outputC, group.M, group.N);
+      if (!rowMajorA || !rowMajorB || !rowMajorC) {
+        DSP_DIAG(EXECUTE,
+                 "batched GEMM group %d slot %d: layout drift rowMajorA=%d rowMajorB=%d rowMajorC=%d",
+                 groupIdx, slotIdx, (int)rowMajorA, (int)rowMajorB, (int)rowMajorC);
+        return Status::BAD_ARGUMENTS;
+      }
+
+      inputAs.push_back(inputA);
+      inputBs.push_back(inputB);
+      outputs.push_back(outputC);
+      readList.push_back(inputA);
+      readList.push_back(inputB);
+      writeList.push_back(outputC);
+    }
+
+    NDArray::prepareSpecialUse(writeList, readList);
+
+    // 2. Populate host pointer arrays from prepared device buffers.
+    for (int b = 0; b < batchCount; b++) {
+      void* aPtr = inputAs[b]->specialBuffer();
+      void* bPtr = inputBs[b]->specialBuffer();
+      void* cPtr = outputs[b]->specialBuffer();
+
+      if (aPtr == nullptr || bPtr == nullptr || cPtr == nullptr) {
+        DSP_DIAG(EXECUTE, "batched GEMM group %d: null device pointer at batch %d (A=%p B=%p C=%p)",
+                 groupIdx, b, aPtr, bPtr, cPtr);
+        return Status::BAD_INPUT;
+      }
 
       if (group.h_A_ptrs[b] != aPtr || group.h_B_ptrs[b] != bPtr || group.h_C_ptrs[b] != cPtr) {
         anyPtrChanged = true;
@@ -407,7 +563,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       group.h_C_ptrs[b] = cPtr;
     }
 
-    // 2. Copy pointer arrays H2D only when pointers actually changed
+    // 3. Copy pointer arrays H2D only when pointers actually changed
     if (anyPtrChanged || !group.ptrStable) {
       size_t ptrBytes = batchCount * sizeof(void*);
       cudaMemcpyAsync(group.d_A_ptrs, group.h_A_ptrs, ptrBytes, cudaMemcpyHostToDevice, stream);
@@ -419,11 +575,14 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
     }
   }
 
-  // 3. Dispatch cublasGemmBatchedEx
+  // 4. Dispatch cublasGemmBatchedEx
   auto* context = LaunchContext::defaultContext();
   std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
   auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
-  cublasSetStream_v2(*handle, stream);
+  // Skip cublasSetStream_v2 during CUDA graph capture (see MmulHelper mmulMxM comment).
+  if (!tl_graphExecutionActive) {
+    cublasSetStream_v2(*handle, stream);
+  }
   reapplyCublasWorkspaceBG(*handle);
 
   // cuBLAS uses column-major. For row-major C = op(A) * op(B), we swap:
@@ -439,7 +598,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 
   cublasStatus_t status;
 
-  if (group.dtype == DOUBLE) {
+  if (group.aType == DOUBLE && group.bType == DOUBLE && group.cType == DOUBLE) {
     double alpha = 1.0, beta = 0.0;
     status = cublasDgemmBatched(*handle, transAblas, transBblas,
                                  group.N, group.M, group.K,
@@ -447,7 +606,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
                                  (const double**)group.d_A_ptrs, ldb,
                                  &beta, (double**)group.d_C_ptrs, ldc,
                                  batchCount);
-  } else if (group.dtype == FLOAT32) {
+  } else if (group.aType == FLOAT32 && group.bType == FLOAT32 && group.cType == FLOAT32) {
     float alpha = 1.0f, beta = 0.0f;
     status = cublasSgemmBatched(*handle, transAblas, transBblas,
                                  group.N, group.M, group.K,
@@ -455,31 +614,33 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
                                  (const float**)group.d_A_ptrs, ldb,
                                  &beta, (float**)group.d_C_ptrs, ldc,
                                  batchCount);
-  } else if (group.dtype == HALF) {
-    // Use GemmBatchedEx with FP32 accumulation — cublasHgemmBatched accumulates in FP16.
+  } else if (supportedBatchedGemmTypes(group.aType, group.bType, group.cType)) {
+    cudaDataType aCuda, bCuda, cCuda;
+    if (!cudaTypeFor(group.aType, aCuda) ||
+        !cudaTypeFor(group.bType, bCuda) ||
+        !cudaTypeFor(group.cType, cCuda)) {
+      DSP_DIAG(EXECUTE, "batched GEMM group %d: unsupported dtype combination A=%d B=%d C=%d",
+               groupIdx, (int)group.aType, (int)group.bType, (int)group.cType);
+      return Status::BAD_ARGUMENTS;
+    }
+
+    // Use FP32 accumulation for half/bfloat/mixed paths. This matches the
+    // regular MmulHelper transformer path and avoids FP16 dot-product loss.
     float alpha = 1.0f, beta = 0.0f;
+    const bool usesBfloat = group.aType == BFLOAT16 || group.bType == BFLOAT16 || group.cType == BFLOAT16;
+    cublasGemmAlgo_t algo = usesBfloat ? CUBLAS_GEMM_DEFAULT : CUBLAS_GEMM_DEFAULT_TENSOR_OP;
     status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
                                   group.N, group.M, group.K,
                                   &alpha,
-                                  (const void**)group.d_B_ptrs, CUDA_R_16F, lda,
-                                  (const void**)group.d_A_ptrs, CUDA_R_16F, ldb,
+                                  (const void**)group.d_B_ptrs, bCuda, lda,
+                                  (const void**)group.d_A_ptrs, aCuda, ldb,
                                   &beta,
-                                  (void**)group.d_C_ptrs, CUDA_R_16F, ldc,
+                                  (void**)group.d_C_ptrs, cCuda, ldc,
                                   batchCount,
-                                  CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
-  } else if (group.dtype == BFLOAT16) {
-    float alpha = 1.0f, beta = 0.0f;
-    status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
-                                  group.N, group.M, group.K,
-                                  &alpha,
-                                  (const void**)group.d_B_ptrs, CUDA_R_16BF, lda,
-                                  (const void**)group.d_A_ptrs, CUDA_R_16BF, ldb,
-                                  &beta,
-                                  (void**)group.d_C_ptrs, CUDA_R_16BF, ldc,
-                                  batchCount,
-                                  CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT);
+                                  CUBLAS_COMPUTE_32F, algo);
   } else {
-    DSP_DIAG(EXECUTE, "batched GEMM group %d: unsupported dtype %d", groupIdx, (int)group.dtype);
+    DSP_DIAG(EXECUTE, "batched GEMM group %d: unsupported dtype combination A=%d B=%d C=%d",
+             groupIdx, (int)group.aType, (int)group.bType, (int)group.cType);
     return Status::BAD_ARGUMENTS;
   }
 
@@ -489,14 +650,19 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
     return Status::KERNEL_FAILURE;
   }
 
-  // 4. Mark outputs as device-authoritative
-  for (int b = 0; b < batchCount; b++) {
-    int slotIdx = group.slotIndices[b];
-    NativeSlot& slot = slots_[slotIdx];
-    if (slot.wiring.numOutputs >= 1) {
-      int outSlotIdx = slot.wiring.outputSlotIndices[0];
-      if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_ && outputSlots_[outSlotIdx] != nullptr) {
-        outputSlots_[outSlotIdx]->tickWriteDevice();
+  // 5. Mark outputs as device-authoritative. Pointer-stable executions skipped
+  // prepare/register above, so tick their output buffers directly.
+  if (!writeList.empty()) {
+    NDArray::registerSpecialUse(writeList, readList);
+  } else {
+    for (int b = 0; b < batchCount; b++) {
+      int slotIdx = group.slotIndices[b];
+      NativeSlot& slot = slots_[slotIdx];
+      if (slot.wiring.numOutputs >= 1) {
+        int outSlotIdx = slot.wiring.outputSlotIndices[0];
+        if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_ && outputSlots_[outSlotIdx] != nullptr) {
+          outputSlots_[outSlotIdx]->tickWriteDevice();
+        }
       }
     }
   }
@@ -507,10 +673,11 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 // ── Cleanup ──────────────────────────────────────────────────────────────────
 
 void NativeDynamicShapePlan::freeBatchedGemmResources() {
+  int deviceId = sd::AffinityManager::currentDeviceId();
   for (auto& group : batchedGemmGroups_) {
-    if (group.d_A_ptrs) { cudaFree(group.d_A_ptrs); group.d_A_ptrs = nullptr; }
-    if (group.d_B_ptrs) { cudaFree(group.d_B_ptrs); group.d_B_ptrs = nullptr; }
-    if (group.d_C_ptrs) { cudaFree(group.d_C_ptrs); group.d_C_ptrs = nullptr; }
+    if (group.d_A_ptrs) { memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(group.d_A_ptrs), deviceId); group.d_A_ptrs = nullptr; }
+    if (group.d_B_ptrs) { memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(group.d_B_ptrs), deviceId); group.d_B_ptrs = nullptr; }
+    if (group.d_C_ptrs) { memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(group.d_C_ptrs), deviceId); group.d_C_ptrs = nullptr; }
     if (group.h_A_ptrs) { cudaFreeHost(group.h_A_ptrs); group.h_A_ptrs = nullptr; }
     if (group.h_B_ptrs) { cudaFreeHost(group.h_B_ptrs); group.h_B_ptrs = nullptr; }
     if (group.h_C_ptrs) { cudaFreeHost(group.h_C_ptrs); group.h_C_ptrs = nullptr; }

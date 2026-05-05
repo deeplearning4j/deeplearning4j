@@ -395,6 +395,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         }
       }
 
+      // D2D-copy variable inputs into plan-owned staging buffers. The graph was
+      // captured with staging buffer device addresses (stable), not raw Java-side
+      // addresses. syncToDevice() above put the new token data into the Java-side
+      // device buffer; now D2D-copy it into the staging buffer the graph reads from.
+      if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
+        ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
+      }
+
       // prezeroSegmentOutputs is NOT called on the replay hot path — output zeroing
       // is captured into the CUDA graph during the slot-by-slot capture phase and
       // replays automatically. Per-step cudaMemsetAsync here would be redundant work.
@@ -539,16 +547,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
 
-    size_t requiredFree = estimatedCaptureBytes * 2;
+    // CUDA graph capture does NOT duplicate output buffers — it records kernel
+    // launches with their existing device pointers. The capture overhead is only
+    // the graph structure itself (typically a few MB) plus any temporary allocations
+    // that kernels make internally during the capture pass. A 20% safety margin
+    // over the working set covers runtime overhead without over-estimating.
+    size_t captureOverhead = estimatedCaptureBytes / 5;  // 20% margin
+    size_t requiredFree = captureOverhead;
     if (requiredFree > gpuFree) {
-      DSP_THROW_SEG(MEMORY, seg.def.startSlot,
-                    "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
-                    "estimated %zuMB (2x %zuMB) > free %zuMB (total %zuMB)",
+      DSP_DIAG_SEG(MEMORY, 0, "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
+                    "estimated overhead %zuMB (20%% of %zuMB working set) > free %zuMB (total %zuMB) "
+                    "— returning KERNEL_FAILURE (memory-budget segmentation should prevent this)",
                     seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                     requiredFree / (1024 * 1024),
                     estimatedCaptureBytes / (1024 * 1024),
                     gpuFree / (1024 * 1024),
                     gpuTotal / (1024 * 1024));
+      return Status::KERNEL_FAILURE;
     }
   }
 
@@ -579,7 +594,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   std::vector<NativeSlot::SlotState> savedFrozenContextReady(seg.def.endSlot - seg.def.startSlot + 1);
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     savedFrozenContextReady[s - seg.def.startSlot] = slots_[s].state_;
-    if (slots_[s].state_ >= NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
+    if (slots_[s].state_ == NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
   }
 
   if (cudaStr != nullptr) {
@@ -594,8 +609,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  // Allocate capture workspace
-  static size_t CAPTURE_WORKSPACE_SIZE = []() -> size_t {
+  // Allocate capture workspace — adaptive to available GPU memory.
+  // The configured size (default 512MB) is the MAXIMUM. On memory-constrained
+  // GPUs (e.g. 24GB with a 14GB model), we scale down to fit. Before allocating,
+  // trim the memory pool to reclaim cached-but-unused buffers.
+  static size_t MAX_CAPTURE_WORKSPACE = []() -> size_t {
     size_t mb = static_cast<size_t>(sd::env_dspCaptureWorkspaceMb());
     return mb * 1024ULL * 1024ULL;
   }();
@@ -604,11 +622,42 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   if (seg.exec.replayHandle->getWorkspacePtr() == nullptr) {
     int deviceId = 0;
     cudaGetDevice(&deviceId);
-    if (!seg.exec.replayHandle->allocateWorkspace(CAPTURE_WORKSPACE_SIZE, deviceId, nullptr, seg.def.startSlot)) {
+
+    // Trim pool first to reclaim cached memory before workspace allocation.
+    // The pool reports reserved memory as "used" to cudaMemGetInfo, but trim
+    // releases it back to the driver, making it available for cudaMalloc.
+    memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+
+    // Query actual free memory and scale workspace to fit.
+    // Reserve at least 256MB headroom for kernel temporaries + cuBLAS workspace.
+    size_t gpuFree = 0, gpuTotal = 0;
+    cudaMemGetInfo(&gpuFree, &gpuTotal);
+    size_t headroom = 256ULL * 1024 * 1024;
+    size_t workspaceSize = MAX_CAPTURE_WORKSPACE;
+    if (gpuFree > headroom) {
+      size_t availableForWs = gpuFree - headroom;
+      if (availableForWs < workspaceSize) {
+        workspaceSize = availableForWs;
+        DSP_DIAG_SEG(MEMORY, segIdx,
+                     "capture workspace scaled down: gpuFree=%zuMB headroom=%zuMB → workspace=%zuMB (max=%zuMB)",
+                     gpuFree / (1024*1024), headroom / (1024*1024),
+                     workspaceSize / (1024*1024), MAX_CAPTURE_WORKSPACE / (1024*1024));
+      }
+    } else {
+      // Barely any free memory — use minimum viable workspace (32MB)
+      workspaceSize = 32ULL * 1024 * 1024;
+      DSP_DIAG_SEG(MEMORY, segIdx,
+                   "capture workspace minimal: gpuFree=%zuMB < headroom=%zuMB → workspace=32MB",
+                   gpuFree / (1024*1024), headroom / (1024*1024));
+    }
+
+    if (!seg.exec.replayHandle->allocateWorkspace(workspaceSize, deviceId, nullptr, seg.def.startSlot)) {
       DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                    "capture workspace allocation failed for seg[%d-%d]: graph would contain "
-                    "cudaMallocAsync nodes which cannot be replayed safely",
-                    seg.def.startSlot, seg.def.endSlot);
+                    "capture workspace allocation failed for seg[%d-%d]: gpuFree=%zuMB, "
+                    "requested=%zuMB. Graph would contain cudaMallocAsync nodes which "
+                    "cannot be replayed safely",
+                    seg.def.startSlot, seg.def.endSlot,
+                    gpuFree / (1024*1024), workspaceSize / (1024*1024));
     }
   }
 
@@ -636,6 +685,31 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (captureHostWs != nullptr) {
     captureGuard.trackHostPtr(captureHostWs);
+  }
+
+  // Ensure stable plan-owned staging buffers for variable (placeholder) inputs
+  // BEFORE capture begins. The graph will bake in the staging buffer device pointers,
+  // which remain stable for the plan's lifetime. On replay, platformTryFrozenFastPath
+  // D2D-copies new token data into these same staging buffers before replay.
+  // Without this, capture bakes in Java-side NDArray addresses that may change between
+  // decode steps, causing replay to read stale/zero data → "!!!!!" output.
+  NDArray** captureExternals = externalArrays;
+  if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
+    // Sync variable inputs H2D first (they need device data for the capture step)
+    for (int ei = 0; ei < numExt; ei++) {
+      if (ei >= static_cast<int>(externalInputIsVariable_.size()) ||
+          !externalInputIsVariable_[ei]) continue;
+      if (externalArrays[ei] == nullptr) continue;
+      externalArrays[ei]->syncToDevice();
+    }
+    NDArray** staged = ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
+    if (staged != nullptr) {
+      captureExternals = staged;
+      DSP_DIAG_SEG(COMPILE, segIdx, "capture using staging buffers for variable inputs "
+                   "— graph will bake in stable device pointers");
+    }
+    // Sync stream so D2D copies into staging are complete before capture begins
+    if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
   }
 
   DSP_DIAG_SEG(MEMORY, segIdx, "tl_captureWorkspace=%p size=%zu for capture",
@@ -684,7 +758,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
       size_t nodesBefore = handle->getNumNodesDuringCapture(cudaStr);
 
-      auto status = executeSlot(stepIdx, externalArrays, numExt, stream);
+      auto status = executeSlot(stepIdx, captureExternals, numExt, stream);
       if (status != Status::OK) {
         DSP_DIAG_SLOT(COMPILE, stepIdx, "op execution during capture failed at slot %d", stepIdx);
         captureOk = false;
@@ -803,11 +877,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     invalidateSegmentShapeState(seg);
 
-    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                  "CUDA graph capture failed for seg[%d-%d] (oom=%s, retries=%d)",
-                  seg.def.startSlot, seg.def.endSlot,
-                  captureOomFailure ? "true" : "false",
-                  seg.exec.captureOomRetries);
+    // Return KERNEL_FAILURE — the caller in _cuda.cu propagates this via
+    // DSP_THROW_SEG so the error surfaces to the user. With memory-budget
+    // segment splitting, this should not happen for well-sized segments.
+    DSP_DIAG_SEG(COMPILE, 0, "CUDA graph capture failed for seg[%d-%d] (oom=%s, retries=%d) "
+                 "— returning KERNEL_FAILURE to caller",
+                 seg.def.startSlot, seg.def.endSlot,
+                 captureOomFailure ? "true" : "false",
+                 seg.exec.captureOomRetries);
+    return Status::KERNEL_FAILURE;
   }
 
   // Helper lambda to restore slot state on capture failure.
@@ -827,9 +905,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     platformCleanupSegmentForRebuild(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
-    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                  "CUDA graph endCapture failed for seg[%d-%d]",
+    DSP_DIAG_SEG(COMPILE, 0, "CUDA graph endCapture failed for seg[%d-%d] "
+                  "— returning KERNEL_FAILURE to caller",
                   seg.def.startSlot, seg.def.endSlot);
+    return Status::KERNEL_FAILURE;
   }
 
   if (!handle->instantiate()) {
@@ -935,11 +1014,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     platformCleanupSegmentForRebuild(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
-    DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                  "CUDA graph instantiate failed for seg[%d-%d] (oom=%s, retries=%d, evicted=%d)",
+    DSP_DIAG_SEG(COMPILE, 0, "CUDA graph instantiate failed for seg[%d-%d] (oom=%s, retries=%d, evicted=%d) "
+                  "— returning KERNEL_FAILURE to caller",
                   seg.def.startSlot, seg.def.endSlot,
                   handle->wasLastInstantiateOom() ? "true" : "false",
                   seg.exec.captureOomRetries, numEvicted);
+    return Status::KERNEL_FAILURE;
   }
 
   cudaGetLastError();
@@ -1003,11 +1083,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   // replayHandle is already set (created before capture began)
   seg.exec.cachedShapeKey = segShapeKey;
-  seg.exec.capturedInputAddrKey = computeSegmentInputAddrKey(seg, externalArrays, numExt);
-  seg.exec.capturedCreateValueKey = computeCreateOpValueKey(seg, externalArrays, numExt);
+  // Use captureExternals for addr key + snapshot: the graph was captured against
+  // staging buffer addresses for variable inputs, and raw addresses for weights.
+  // computeSegmentInputAddrKey skips variable inputs, so using captureExternals
+  // gives the same result as externalArrays for the weight-only hash.
+  seg.exec.capturedInputAddrKey = computeSegmentInputAddrKey(seg, captureExternals, numExt);
+  seg.exec.capturedCreateValueKey = computeCreateOpValueKey(seg, captureExternals, numExt);
   seg.exec.capturedSlotAddrHash = computeSlotAddrHash(
       outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
-  snapshotExternalAddrs(seg, externalArrays, numExt);
+  snapshotExternalAddrs(seg, captureExternals, numExt);
   seg.exec.executionCount++;
   totalGraphReplays_++;
 
@@ -1160,7 +1244,7 @@ void NativeDynamicShapePlan::performReplayVerify(
   std::vector<NativeSlot::SlotState> savedFrozenCtx(seg.def.endSlot - seg.def.startSlot + 1);
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     savedFrozenCtx[s - seg.def.startSlot] = slots_[s].state_;
-    if (slots_[s].state_ >= NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
+    if (slots_[s].state_ == NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
   }
   // Set executeCount_ to 0 so shape inference runs fresh
   int savedExecCountGlobal = executeCount_;

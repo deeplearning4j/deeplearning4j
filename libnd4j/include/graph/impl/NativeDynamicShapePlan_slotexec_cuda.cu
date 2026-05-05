@@ -106,7 +106,18 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
 
   // Dispatch: single buffer → direct memset, multiple → batched kernel
   if (targetCount == 1) {
-    cudaMemsetAsync(targets[0].buf, 0, targets[0].bytes, cudaStr);
+    auto res = cudaMemsetAsync(targets[0].buf, 0, targets[0].bytes, cudaStr);
+    if (res == 901 || res == 906) {
+      // cudaErrorStreamCaptureImplicit / cudaErrorStreamCaptureInvalidated
+      // Pool-allocated memory retains capture-era associations from a prior
+      // Triton CUDA graph capture. Fall back to synchronous memset to bypass
+      // the pool ordering check. This is slot-by-slot execution only.
+      cudaGetLastError();
+      res = cudaMemset(targets[0].buf, 0, targets[0].bytes);
+    }
+    if (res != cudaSuccess) {
+      DSP_THROW_CUDA(MEMORY, res, "prezeroSegmentOutputs: cudaMemsetAsync failed for slot %d (bytes=%zu)", targets[0].slotIdx, targets[0].bytes);
+    }
   } else if (targetCount > 1) {
     std::vector<void*> dstPtrs(targetCount);
     std::vector<size_t> sizes(targetCount);

@@ -508,11 +508,19 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   // If all backends have been exhausted for this segment, hard fail.
   // Falling back to slot-by-slot is BANNED — fix the compilation failure.
-  if (seg.exec.compilationFailed) {
+  // Exception: segments with no fusible ops (noFusibleOps flag) are expected to
+  // execute slot-by-slot — they have no compilation to fix.
+  if (seg.exec.compilationFailed && !seg.exec.noFusibleOps) {
     DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                   "executeSegmentWithCpuGraph: seg[%d-%d] permanently failed — all backends exhausted. "
                   "Fix the compilation failure instead of falling back to slot-by-slot.",
                   seg.def.startSlot, seg.def.endSlot);
+  }
+
+  // If this segment has no fusible ops, skip cascade and return KERNEL_FAILURE
+  // to let the caller demote to slot-by-slot. This is expected behavior — not an error.
+  if (seg.exec.noFusibleOps) {
+    return Status::KERNEL_FAILURE;
   }
 
   // If we already resolved a backend for this segment, use it directly
@@ -576,9 +584,10 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   if (!anyBackendAttemptedCompile) {
     // No backend could fuse this segment — all returned canFuseSegment=false.
     // This means the segment has no fusible ops (e.g., all permutes/reshapes/identity).
-    // Mark compilationFailed so the frozen fast path doesn't re-attempt the cascade
-    // every step for this permanently-unfusible segment.
-    seg.exec.compilationFailed = true;
+    // Mark noFusibleOps so the frozen fast path doesn't re-attempt the cascade
+    // every step, but also doesn't hard-throw — these segments execute slot-by-slot
+    // gracefully because there's nothing to compile.
+    seg.exec.noFusibleOps = true;
     DSP_DIAG(BACKEND, "cascade: NO backend can fuse seg[%d-%d] (no fusible ops) — "
               "demoting to slot-by-slot native execution",
               seg.def.startSlot, seg.def.endSlot);
@@ -960,12 +969,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         segLabel, executeCount_);
   }
 
-  // Unconditional prezero: ops with DATADEP trait (gather, concat, argmax)
-  // have needsZeroedOutput=true and don't fully overwrite their outputs.
-  // The internal filtering in prezeroSegmentOutputs already skips frozen
-  // constants, fully-writing ops, views, identity ops, etc. — no outer
-  // guard needed. Matches the GPU backend path which also calls unconditionally.
-  prezeroSegmentOutputs(seg, stream);
+  // Slot-by-slot execution zeros each slot immediately before that slot runs.
+  // Segment-wide prezero is unsafe after freeze-time segment merging: a merged
+  // segment can contain hundreds of ops, and zeroing every future output at
+  // segment entry can clobber buffers still visible through earlier views.
 
   // Reset per-segment allocation counters
   tl_dspAllocBytes = 0; tl_dspFreeBytes = 0;

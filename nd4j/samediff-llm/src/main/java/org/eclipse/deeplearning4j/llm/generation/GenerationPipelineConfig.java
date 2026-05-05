@@ -140,4 +140,12 @@ public class GenerationPipelineConfig {
 
     /** Optional path to preprocessor_config.json for auto-loading. */
     private final String preprocessorConfigPath;
+
+    /**
+     * Chat template string (Jinja2 format from tokenizer_config.json or GGUF metadata).
+     * When set, plain text prompts are wrapped with this template before tokenization.
+     * Supports ChatML ({@code <|im_start|>}), Llama ([INST]), and other common formats.
+     * If null, prompts are tokenized as-is (raw completion mode).
+     */
+    private final String chatTemplate;
 }

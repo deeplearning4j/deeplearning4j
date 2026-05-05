@@ -26,6 +26,7 @@
 #include <array/NDArray.h>
 #include <helpers/Loops.h>
 #include <helpers/MmulHelper.h>
+#include <helpers/shape.h>
 #include <execution/Threads.h>
 #include <system/type_boilerplate.h>
 #include <cmath>
@@ -45,9 +46,13 @@ static void fusedGELU_(NDArray* input, NDArray* output) {
   const T* xBuf = input->bufferAsT<T>();
   T*       zBuf = output->bufferAsT<T>();
 
-  // Read real strides — input/output may be views.
-  const LongType xStride = (input->rankOf() == 1)  ? input->strideAt(0)  : 1;
-  const LongType zStride = (output->rankOf() == 1) ? output->strideAt(0) : 1;
+  // Check contiguity — use EWS-free stride check for all ranks.
+  // For C-contiguous arrays (the common case), last-dim stride == 1 and we can
+  // use the flat buffer directly. For non-contiguous views, fall back to strided access.
+  const bool xContig = shape::strideDescendingCAscendingF(input->shapeInfo());
+  const bool zContig = shape::strideDescendingCAscendingF(output->shapeInfo());
+  const LongType xStride = xContig ? 1 : input->strideAt(input->rankOf() - 1);
+  const LongType zStride = zContig ? 1 : output->strideAt(output->rankOf() - 1);
 
   if (xStride == 1 && zStride == 1) {
     // Contiguous fast path
@@ -85,9 +90,12 @@ static void fusedGELUBackward_(NDArray* input, NDArray* gradOut, NDArray* gradIn
   const T* doBuf = gradOut->bufferAsT<T>();
   T*       diBuf = gradIn->bufferAsT<T>();
 
-  const LongType xStride  = (input->rankOf()   == 1) ? input->strideAt(0)   : 1;
-  const LongType doStride = (gradOut->rankOf()  == 1) ? gradOut->strideAt(0) : 1;
-  const LongType diStride = (gradIn->rankOf()   == 1) ? gradIn->strideAt(0)  : 1;
+  const bool xContig  = shape::strideDescendingCAscendingF(input->shapeInfo());
+  const bool doContig = shape::strideDescendingCAscendingF(gradOut->shapeInfo());
+  const bool diContig = shape::strideDescendingCAscendingF(gradIn->shapeInfo());
+  const LongType xStride  = xContig  ? 1 : input->strideAt(input->rankOf() - 1);
+  const LongType doStride = doContig ? 1 : gradOut->strideAt(gradOut->rankOf() - 1);
+  const LongType diStride = diContig ? 1 : gradIn->strideAt(gradIn->rankOf() - 1);
 
   if (xStride == 1 && doStride == 1 && diStride == 1) {
     auto func = PRAGMA_THREADS_FOR {
@@ -667,11 +675,15 @@ static void fusedBiasDropoutResidual_(NDArray* input, NDArray* bias, NDArray* re
   const T* bBuf   = (bias     != nullptr) ? bias->bufferAsT<T>()     : nullptr;
   const T* rBuf   = (residual != nullptr) ? residual->bufferAsT<T>() : nullptr;
 
-  // Innermost stride (1 for contiguous, else real stride)
-  const LongType xS = (input->rankOf()    == 1) ? input->strideAt(0)    : 1;
-  const LongType zS = (output->rankOf()   == 1) ? output->strideAt(0)   : 1;
-  const LongType bS = (bias != nullptr && bias->rankOf() == 1) ? bias->strideAt(0) : 1;
-  const LongType rS = (residual != nullptr && residual->rankOf() == 1) ? residual->strideAt(0) : 1;
+  // Check contiguity using stride-based check (not EWS which is unreliable for views)
+  const bool xContig = shape::strideDescendingCAscendingF(input->shapeInfo());
+  const bool zContig = shape::strideDescendingCAscendingF(output->shapeInfo());
+  const bool bContig = (bias != nullptr) ? shape::strideDescendingCAscendingF(bias->shapeInfo()) : true;
+  const bool rContig = (residual != nullptr) ? shape::strideDescendingCAscendingF(residual->shapeInfo()) : true;
+  const LongType xS = xContig ? 1 : input->strideAt(input->rankOf() - 1);
+  const LongType zS = zContig ? 1 : output->strideAt(output->rankOf() - 1);
+  const LongType bS = (bias != nullptr && !bContig) ? bias->strideAt(bias->rankOf() - 1) : 1;
+  const LongType rS = (residual != nullptr && !rContig) ? residual->strideAt(residual->rankOf() - 1) : 1;
 
   auto func = PRAGMA_THREADS_FOR {
     std::mt19937_64 localRng(static_cast<uint64_t>(seed) + static_cast<uint64_t>(start));
@@ -850,8 +862,9 @@ static void fusedLayerNormBackward_(NDArray* input, NDArray* gain, NDArray* grad
   const LongType rowLen  = input->sizeAt(-1);
 
   // Zero out gradient accumulators
-  gradGain->assign(0.0);
-  if (gradBias != nullptr) gradBias->assign(0.0);
+  double zero = 0.0;
+  gradGain->assign(zero);
+  if (gradBias != nullptr) gradBias->assign(zero);
 
   const T* xBuf  = input->bufferAsT<T>();
   const T* gBuf  = gain->bufferAsT<T>();

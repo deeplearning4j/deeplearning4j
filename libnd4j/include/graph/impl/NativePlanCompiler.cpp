@@ -475,6 +475,34 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
 
     slot.targetDeviceId = node->device();
+
+    // Per-instance refinement of outputShapeDependsOnInputValues.
+    // Some ops are marked VALUE_DEPENDENT_SHAPE in the trait table because they
+    // CAN read shape from input tensors, but specific instances may use iArgs
+    // instead. Refine after args are built so numInputs/iArgs/bArgs are available.
+    if (slot.flags.outputShapeDependsOnInputValues) {
+      const std::string& name = slot.ident.opName;
+      if (name == "concat") {
+        // DATA_DEPENDENT only when isAxisInLastArr (bArgs[0]==true): axis read
+        // from last input array. Otherwise axis comes from iArgs — no value dep.
+        bool isAxisInLastArr = slot.args.numBArgs > 0 && slot.args.bArgs[0];
+        if (!isAxisInLastArr) {
+          slot.flags.outputShapeDependsOnInputValues = false;
+        }
+      } else if (name == "reshape" || name == "reshape_no_copy") {
+        // DATA_DEPENDENT only when numInputs > 1: shape read from input[1].
+        // Single-input reshape reads target shape from iArgs — no value dep.
+        if (numInputs <= 1) {
+          slot.flags.outputShapeDependsOnInputValues = false;
+        }
+      } else if (name == "expand_dims") {
+        // DATA_DEPENDENT only when axis comes from input[1] (no iArgs).
+        // When iArgs is non-empty, axis is in iArgs[0] — no value dep.
+        if (slot.args.numIArgs > 0) {
+          slot.flags.outputShapeDependsOnInputValues = false;
+        }
+      }
+    }
   }
 
   // ── Step 6: Build release schedule ────────────────────────────────────────

@@ -20,6 +20,7 @@
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
 #include <math/templatemath.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/gated_delta_rule.h>
 
@@ -154,11 +155,11 @@ void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
     auto stream = context->getCudaStream();
     const LongType stateElems = B * H * D_k * D_v;
 
-    // Stream-ordered float32 working state buffer on device.
+    // Float32 working state buffer on device.
     // This prevents FP16 quantization error from compounding across timesteps.
-    // Uses cudaMallocAsync/cudaFreeAsync for CUDA graph capture/replay compatibility.
-    float* workingState = nullptr;
-    cudaMallocAsync(&workingState, stateElems * sizeof(float), *stream);
+    int deviceId = sd::AffinityManager::currentDeviceId();
+    float* workingState = reinterpret_cast<float*>(
+        sd::memory::CudaMemoryPool::getInstance().allocate(stateElems * sizeof(float), deviceId, *stream));
 
     auto dtype = Q->dataType();
 
@@ -250,8 +251,8 @@ void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
             workingState, reinterpret_cast<double*>(stateOut->specialBuffer()), stateElems);
     }
 
-    // Stream-ordered free — no host sync needed, graph-capture compatible
-    cudaFreeAsync(workingState, *stream);
+    // Free working state via pool
+    sd::memory::CudaMemoryPool::getInstance().free(workingState, deviceId, *stream);
 
     NDArray::registerSpecialUse({output, stateOut}, {Q, K, V, beta, gate});
     if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});

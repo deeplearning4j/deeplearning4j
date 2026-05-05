@@ -18,6 +18,7 @@
 
 #include <helpers/CutlassGemmHelper.h>
 #include <helpers/CutlassHelper.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <helpers/DebugHelper.h>
 #include <config.h>
 
@@ -132,37 +133,20 @@ bool runCutlassGemm(NDArray* A, NDArray* B, NDArray* C,
   // Get the CUDA stream from the NDArray context
   auto stream = A->getContext()->getCudaStream();
 
+  int deviceId = sd::AffinityManager::currentDeviceId();
   if (workspace_size > 0) {
-    // During CUDA graph capture, cudaMalloc/cudaFree are illegal synchronous
-    // calls. Use stream-ordered allocation which records as graph nodes.
-    if (tl_graphExecutionActive) {
-      cudaMallocAsync(&workspace, workspace_size, *stream);
-    } else {
-      cudaMalloc(&workspace, workspace_size);
-    }
+    workspace = sd::memory::CudaMemoryPool::getInstance().allocate(workspace_size, deviceId, *stream);
   }
 
   status = gemm_op.initialize(args, workspace, *stream);
   if (status != cutlass::Status::kSuccess) {
-    if (workspace) {
-      if (tl_graphExecutionActive) {
-        cudaFreeAsync(workspace, *stream);
-      } else {
-        cudaFree(workspace);
-      }
-    }
+    if (workspace) sd::memory::CudaMemoryPool::getInstance().free(workspace, deviceId, *stream);
     return false;
   }
 
   status = gemm_op(*stream);
 
-  if (workspace) {
-    if (tl_graphExecutionActive) {
-      cudaFreeAsync(workspace, *stream);
-    } else {
-      cudaFree(workspace);
-    }
-  }
+  if (workspace) sd::memory::CudaMemoryPool::getInstance().free(workspace, deviceId, *stream);
 
   return status == cutlass::Status::kSuccess;
 }

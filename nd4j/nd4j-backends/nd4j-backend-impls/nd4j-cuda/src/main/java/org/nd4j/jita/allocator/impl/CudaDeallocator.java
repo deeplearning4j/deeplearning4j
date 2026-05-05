@@ -20,6 +20,7 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
@@ -40,12 +41,16 @@ public class CudaDeallocator implements Deallocator {
     private volatile boolean isConstant;
     private volatile boolean deallocated = false;
     private final int targetDevice;
+    private final long allocationBytes;
     private final Object lock = new Object();
 
     public CudaDeallocator(@NonNull BaseCudaDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
         isConstant = buffer.isConstant();
         targetDevice = buffer.targetDevice();
+        long pointBytes = buffer.getAllocationPoint() != null ? buffer.getAllocationPoint().getNumberOfBytes() : 0L;
+        long bufferBytes = buffer.length() * (long) buffer.getElementSize();
+        allocationBytes = Math.max(pointBytes, bufferBytes);
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
                     .attached(buffer.isAttached())
@@ -102,6 +107,9 @@ public class CudaDeallocator implements Deallocator {
             Nd4j.getExecutioner().commit();
             NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(opaqueDataBuffer);
             opaqueDataBuffer.setNull();
+            if (allocationBytes > 0) {
+                DeviceMemoryManager.getInstance().recordDeallocation(DeviceDescriptor.cuda(targetDevice), allocationBytes);
+            }
         } finally {
             if (switchedDevice) {
                 DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaDeallocator.deallocate", "restore-device");

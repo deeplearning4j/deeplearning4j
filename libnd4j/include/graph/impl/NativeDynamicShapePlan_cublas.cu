@@ -53,7 +53,7 @@ void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
   if (err != cudaSuccess) {
     DSP_DIAG(MEMORY, "failed to allocate cuBLAS workspace (%zu bytes): %s",
              minBytes, cudaGetErrorString(err));
-    cudaGetLastError();  // Clear sticky error
+    cudaGetLastError();
     return;
   }
   cublasWorkspaceSize_ = minBytes;

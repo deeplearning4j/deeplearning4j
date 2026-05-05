@@ -22,11 +22,14 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -35,7 +38,9 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.bytedeco.javacpp.Pointer;
 
 import java.io.File;
@@ -248,7 +253,21 @@ public class GenerationPipeline implements AutoCloseable {
                     GraphOptimizer.defaultOptimizations().stream()
                             .filter(s -> !(s instanceof org.nd4j.autodiff.samediff.optimize.optimizations.QuantizationOptimizations))
                             .collect(java.util.stream.Collectors.toList());
-            decoder = GraphOptimizer.optimize(decoder, outputs, optimizations);
+            SameDiff originalDecoder = decoder;
+            boolean ownsOriginalDecoder = ownsDecoder;
+            SameDiff optimizedDecoder = GraphOptimizer.optimize(decoder, outputs, optimizations);
+            if (optimizedDecoder != originalDecoder) {
+                if (ownsOriginalDecoder) {
+                    try {
+                        SameDiffMemoryUtils.freeModelArrays(originalDecoder);
+                        originalDecoder.close();
+                    } catch (Exception e) {
+                        log.warn("Error closing pre-optimization decoder: {}", e.getMessage());
+                    }
+                }
+                ownsDecoder = true;
+            }
+            decoder = optimizedDecoder;
             long optMs = System.currentTimeMillis() - optStart;
             log.info("GraphOptimizer: {} -> {} ops ({} removed) in {}ms",
                     opsBefore, decoder.getOps().size(), opsBefore - decoder.getOps().size(), optMs);
@@ -365,8 +384,37 @@ public class GenerationPipeline implements AutoCloseable {
      * @return generation result with text, token IDs, timing, and throughput metrics
      */
     public GenerationResult generate(String prompt, int maxNewTokens) {
+        int restoreDevice = switchToDecoderDevice("text-generation");
+        // Suppress cross-device routing for the entire generation. Model weights,
+        // prompt tensors, and KV caches must stay on the decoder's execution device.
+        // The CUDA async memory pool reports pool-reserved memory as "used" to
+        // cudaMemGetInfo, causing false OOM detection and unnecessary cross-device
+        // routing. The pool handles actual OOM via trim+retry.
+        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
+        try {
+            return generateInternal(prompt, maxNewTokens);
+        } finally {
+            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
+            restoreDevice(restoreDevice, "text-generation");
+        }
+    }
+
+    private GenerationResult generateInternal(String prompt, int maxNewTokens) {
+        // Apply chat template if configured and prompt doesn't already contain template markers
+        String effectivePrompt = prompt;
+        boolean addSpecialTokens = true;
+        if (config.getChatTemplate() != null && !config.getChatTemplate().isEmpty()
+                && !prompt.contains("<|im_start|>") && !prompt.contains("[INST]")) {
+            List<ChatTemplate.Message> messages = new ArrayList<>();
+            messages.add(ChatTemplate.Message.user(prompt));
+            ChatTemplate chatTemplate = new ChatTemplate(config.getChatTemplate(), "", "");
+            effectivePrompt = chatTemplate.apply(messages, true);
+            addSpecialTokens = false;
+            log.debug("Applied chat template, prompt length: {} -> {}", prompt.length(), effectivePrompt.length());
+        }
+
         // Tokenize
-        int[] promptTokenIds = tokenizer.encode(prompt, true).getIds();
+        int[] promptTokenIds = tokenizer.encode(effectivePrompt, addSpecialTokens).getIds();
         if (promptTokenIds == null || promptTokenIds.length == 0) {
             throw new IllegalArgumentException("Prompt encoding produced no tokens");
         }
@@ -1101,9 +1149,21 @@ public class GenerationPipeline implements AutoCloseable {
             executor.setMaxKvCacheLength((int) maxKvLen);
             executor.configureMaxAllocationForKvCache(decodeOutputs);
             log.info("[Perf] GGUF configured KV cache max-allocation: maxKvLen={}", maxKvLen);
-            executor.setShapesFrozen(true);
-            log.info("[Perf] GGUF shapes frozen after warmup decode (planPhase={} pointersStable={})",
-                    executor.getPlanPhase(), executor.arePointersStable());
+            boolean forcedSlotBySlot = decoder.getGraphExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
+                    || Nd4j.getEnvironment().tritonSkipKernels();
+            if (forcedSlotBySlot) {
+                log.info("[Perf] GGUF keeping slot-by-slot plan unfrozen (mode={} tritonSkipKernels={} planPhase={} pointersStable={})",
+                        decoder.getGraphExecutionMode(), Nd4j.getEnvironment().tritonSkipKernels(),
+                        executor.getPlanPhase(), executor.arePointersStable());
+            } else {
+                executor.setShapesFrozen(true);
+                log.info("[Perf] GGUF shapes frozen after warmup decode (planPhase={} pointersStable={})",
+                        executor.getPlanPhase(), executor.arePointersStable());
+                if ("true".equalsIgnoreCase(System.getProperty("vlm.benchmark.opTiming", "false"))) {
+                    executor.setExecutionTimingEnabled(true);
+                    log.info("[Perf] GGUF decoder execution timing enabled");
+                }
+            }
         }
 
         int inputIdsExtIdx = resolveExtInputIdx(executor, inputIdsName);
@@ -1486,12 +1546,72 @@ public class GenerationPipeline implements AutoCloseable {
      */
     public GenerationResult generate(INDArray prefillEmbeddings, int[] promptTokenIds,
                                      int maxNewTokens, DecodeOptions options) {
-        // Use the native AutoregressiveDecode C++ op for maximum performance.
-        // The native path does: prefill → warmup → freeze → C++ decode loop with
-        // zero JNI round-trips. Bugs that previously caused EOS-on-step-2 have been
-        // fixed: causal mask pre-unmask, segment splitting for value-key ops,
-        // mixed-type GEMV handling.
-        return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens);
+        int restoreDevice = switchToDecoderDevice("embedding-generation");
+        // Suppress cross-device routing for the entire generation (same rationale
+        // as generate(String, int): pool-reserved memory causes false OOM routing).
+        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
+        try {
+            // Use the native AutoregressiveDecode C++ op for maximum performance.
+            // The native path does: prefill → warmup → freeze → C++ decode loop with
+            // zero JNI round-trips. Bugs that previously caused EOS-on-step-2 have been
+            // fixed: causal mask pre-unmask, segment splitting for value-key ops,
+            // mixed-type GEMV handling.
+            return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens);
+        } finally {
+            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
+            restoreDevice(restoreDevice, "embedding-generation");
+        }
+    }
+
+    private int switchToDecoderDevice(String reason) {
+        int decoderDevice = resolveDecoderDeviceId();
+        if (decoderDevice < 0) {
+            return -1;
+        }
+
+        DeviceMemoryManager deviceMgr = DeviceMemoryManager.getInstance();
+        int currentDevice = deviceMgr.getCurrentDeviceId();
+        if (currentDevice != decoderDevice) {
+            deviceMgr.switchDevice(decoderDevice, "GenerationPipeline", reason);
+            return currentDevice;
+        }
+        return -1;
+    }
+
+    private void restoreDevice(int restoreDevice, String reason) {
+        if (restoreDevice >= 0) {
+            DeviceMemoryManager.getInstance().switchDevice(
+                    restoreDevice, "GenerationPipeline", reason + "-restore");
+        }
+    }
+
+    private int resolveDecoderDeviceId() {
+        int device = firstArrayDevice(decoder.getVariablesArrays());
+        if (device >= 0) {
+            return device;
+        }
+        return firstArrayDevice(decoder.getConstantArrays());
+    }
+
+    private static int firstArrayDevice(ArrayHolder holder) {
+        if (holder == null || holder.arrayNames() == null) {
+            return -1;
+        }
+
+        for (String name : holder.arrayNames()) {
+            try {
+                INDArray array = holder.getArray(name);
+                if (array != null && !array.wasClosed() && array.hasDeviceBuffer()) {
+                    int device = array.getNativeDeviceId();
+                    if (device >= 0) {
+                        return device;
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Unable to resolve array device for '{}': {}", name, e.getMessage());
+            }
+        }
+        return -1;
     }
 
     /**
@@ -1842,6 +1962,10 @@ public class GenerationPipeline implements AutoCloseable {
             executor.setShapesFrozen(true);
             log.info("[Perf] Shapes frozen after warmup decode (planPhase={} pointersStable={})",
                     executor.getPlanPhase(), executor.arePointersStable());
+            if ("true".equalsIgnoreCase(System.getProperty("vlm.benchmark.opTiming", "false"))) {
+                executor.setExecutionTimingEnabled(true);
+                log.info("[Perf] Decoder execution timing enabled");
+            }
         }
 
         // Resolve ext input indices by name

@@ -24,6 +24,7 @@
 #include <array/NDArray.h>
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <system/op_boilerplate.h>
 
 #include <ops/declarable/helpers/triangular_solve.h>
@@ -190,15 +191,11 @@ static void lowerTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
     auto rightBuf = reinterpret_cast<T const*>(rightInput->specialBuffer());
     auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
 
-    // For unbatched case, allocate single offset = 0 on device
-    // During CUDA graph capture, synchronous calls are illegal.
+    // For unbatched case, allocate single offset = 0 on device via pool
+    int deviceId = sd::AffinityManager::currentDeviceId();
     LongType zeroOffset = 0;
-    LongType* dOffset;
-    if (tl_graphExecutionActive) {
-      cudaMallocAsync(&dOffset, sizeof(LongType), *stream);
-    } else {
-      cudaMalloc(&dOffset, sizeof(LongType));
-    }
+    LongType* dOffset = reinterpret_cast<LongType*>(
+        sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), deviceId, *stream));
     cudaMemcpyAsync(dOffset, &zeroOffset, sizeof(LongType), cudaMemcpyHostToDevice, *stream);
 
     dim3 launchDims = getLaunchDims("triangular_solve");
@@ -212,12 +209,7 @@ static void lowerTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
         1, rows, cols, unitsOnDiag);
     sd::DebugHelper::checkErrorCode(stream, "lowerTriangularSolveKernel failed");
 
-    // During CUDA graph capture, synchronous calls are illegal.
-    if (tl_graphExecutionActive) {
-      cudaFreeAsync(dOffset, *stream);
-    } else {
-      cudaFree(dOffset);
-    }
+    sd::memory::CudaMemoryPool::getInstance().free(dOffset, deviceId, *stream);
   } else {
     // Batched case: use TADs
     std::vector<LongType> dims = {-2, -1};
@@ -261,14 +253,10 @@ static void upperTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
     auto rightBuf = reinterpret_cast<T const*>(rightInput->specialBuffer());
     auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
 
-    // During CUDA graph capture, synchronous calls are illegal.
+    int deviceId = sd::AffinityManager::currentDeviceId();
     LongType zeroOffset = 0;
-    LongType* dOffset;
-    if (tl_graphExecutionActive) {
-      cudaMallocAsync(&dOffset, sizeof(LongType), *stream);
-    } else {
-      cudaMalloc(&dOffset, sizeof(LongType));
-    }
+    LongType* dOffset = reinterpret_cast<LongType*>(
+        sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), deviceId, *stream));
     cudaMemcpyAsync(dOffset, &zeroOffset, sizeof(LongType), cudaMemcpyHostToDevice, *stream);
 
     dim3 launchDims = getLaunchDims("triangular_solve");
@@ -282,12 +270,7 @@ static void upperTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
         1, rows, cols, unitsOnDiag);
     sd::DebugHelper::checkErrorCode(stream, "upperTriangularSolveKernel failed");
 
-    // During CUDA graph capture, synchronous calls are illegal.
-    if (tl_graphExecutionActive) {
-      cudaFreeAsync(dOffset, *stream);
-    } else {
-      cudaFree(dOffset);
-    }
+    sd::memory::CudaMemoryPool::getInstance().free(dOffset, deviceId, *stream);
   } else {
     std::vector<LongType> dims = {-2, -1};
     auto leftTads = ConstantTadHelper::getInstance().tadForDimensions(leftInput->shapeInfo(), &dims);

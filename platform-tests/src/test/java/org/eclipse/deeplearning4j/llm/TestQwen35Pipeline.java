@@ -34,9 +34,11 @@ import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,12 +46,14 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -294,11 +298,13 @@ public class TestQwen35Pipeline {
 
     private void applyConfig(PipelineContext ctx, QwenTestConfig config) {
         SameDiff model = ctx.model;
+        Environment env = Nd4j.getEnvironment();
 
         // Reset model state — clear sessions AND native plan cache to avoid cross-config contamination
         // (backend singletons like OneDNN Graph have negative caches that persist across sessions)
         model.getSessions().clear();
         model.clearDynamicShapePlanCache();
+        resetTritonEnvironment(env);
 
         // Apply execution mode — always set explicitly to avoid stale mode from prior config
         if (config.executionMode != null) {
@@ -313,18 +319,24 @@ public class TestQwen35Pipeline {
 
         // Triton settings
         if (config.isTriton()) {
-            System.setProperty("nd4j.dsp.triton.includeTypes", config.tritonIncludeTypes);
-            System.setProperty("nd4j.dsp.triton.sectionFusion", String.valueOf(config.tritonSectionFusion));
-            System.setProperty("nd4j.dsp.triton.graphCapture", String.valueOf(config.tritonGraphCapture));
-            System.setProperty("nd4j.dsp.triton.compileAll", String.valueOf(config.tritonCompileAll));
-            System.setProperty("nd4j.dsp.triton.consolidatedArgTable", String.valueOf(config.tritonConsolidatedArgTable));
-            System.setProperty("nd4j.dsp.triton.argDirtyTracking", String.valueOf(config.tritonArgDirtyTracking));
-            System.setProperty("nd4j.dsp.triton.allowFallbackCapture", String.valueOf(config.tritonAllowFallbackCapture));
-            System.setProperty("nd4j.dsp.triton.profile", config.tritonProfile);
+            BenchmarkConfigApplier.applyTritonProfile(config.tritonProfile);
+            env.setTritonIncludeTypes(System.getProperty("nd4j.triton.includeTypes", config.tritonIncludeTypes));
+            env.setTritonSectionFusion(config.tritonSectionFusion);
+            env.setTritonGraphCapture(booleanProperty("nd4j.triton.graphCapture", config.tritonGraphCapture));
+            env.setTritonCompileAll(booleanProperty("nd4j.triton.compileAll", config.tritonCompileAll));
+            env.setTritonConsolidatedArgTable(config.tritonConsolidatedArgTable);
+            env.setTritonArgDirtyTracking(config.tritonArgDirtyTracking);
+            env.setTritonAllowFallbackCapture(config.tritonAllowFallbackCapture);
+            env.setTritonSkipKernels(booleanProperty("nd4j.triton.skipKernels", false));
+            env.setTritonVerifyKernels(booleanProperty("nd4j.triton.verifyKernels", false));
+            log.info("Applied Triton config: types={} fusion={} graphCapture={} compileAll={} skipKernels={} verifyKernels={}",
+                    env.tritonIncludeTypes(), env.tritonSectionFusion(), env.tritonGraphCapture(),
+                    env.tritonCompileAll(), env.tritonSkipKernels(), env.tritonVerifyKernels());
         }
     }
 
     private void clearTritonProperties() {
+        resetTritonEnvironment(Nd4j.getEnvironment());
         String[] props = {
                 "nd4j.dsp.triton.includeTypes", "nd4j.dsp.triton.sectionFusion",
                 "nd4j.dsp.triton.graphCapture", "nd4j.dsp.triton.compileAll",
@@ -334,6 +346,22 @@ public class TestQwen35Pipeline {
         for (String prop : props) {
             System.clearProperty(prop);
         }
+    }
+
+    private void resetTritonEnvironment(Environment env) {
+        env.setTritonIncludeTypes("");
+        env.setTritonSectionFusion(false);
+        env.setTritonGraphCapture(false);
+        env.setTritonCompileAll(false);
+        env.setTritonConsolidatedArgTable(false);
+        env.setTritonArgDirtyTracking(false);
+        env.setTritonAllowFallbackCapture(false);
+        env.setTritonSkipKernels(false);
+        env.setTritonVerifyKernels(false);
+    }
+
+    private boolean booleanProperty(String name, boolean defaultValue) {
+        return Boolean.parseBoolean(System.getProperty(name, Boolean.toString(defaultValue)));
     }
 
     // ─── Generation ─────────────────────────────────────────────────────
@@ -362,8 +390,9 @@ public class TestQwen35Pipeline {
                             System.getProperty("qwen.dsp", "true")))
                     .build();
 
-            GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig);
-            return pipeline.generate(prompt, config.maxTokens);
+            try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig)) {
+                return pipeline.generate(prompt, config.maxTokens);
+            }
         } catch (java.io.IOException e) {
             throw new RuntimeException("Failed to create GenerationPipeline", e);
         }
@@ -374,6 +403,13 @@ public class TestQwen35Pipeline {
     @Test
     @DisplayName("Qwen3.5 Pipeline: Configuration matrix sweep")
     public void testQwen35Pipeline() throws Exception {
+        // Enable debug/verbose if requested via -Dnd4j.debug=true
+        if (Boolean.getBoolean("nd4j.debug")) {
+            Nd4j.getEnvironment().setDebug(true);
+            Nd4j.getEnvironment().setVerbose(true);
+            log.info("DEBUG+VERBOSE mode ENABLED — will print per-op execution details");
+        }
+
         PipelineContext ctx = loadModel();
 
         assertNotNull(ctx.model, "Model must be loaded");
@@ -458,6 +494,10 @@ public class TestQwen35Pipeline {
                         String.format("Diversity %.1f%% below minimum %.1f%%",
                                 cr.diversityRatio * 100, config.minDiversityPct));
                 assertTrue(quality.isPassed(), "Generation quality failed: " + quality.summary());
+                if (DEFAULT_PROMPT.equals(prompt)) {
+                    assertTrue(genResult.getText().toLowerCase(Locale.ROOT).contains("paris"),
+                            "Default France prompt should answer with Paris; got: " + genResult.getText());
+                }
 
                 cr.passed = true;
             } catch (Exception | AssertionError e) {
@@ -468,6 +508,47 @@ public class TestQwen35Pipeline {
             }
             results.add(cr);
             log.info("  {}", cr.summary());
+
+            // Full lifecycle cleanup: close the model entirely and reload it fresh.
+            // Each config (SLOT_BY_SLOT, CUDA_GRAPHS, TRITON) compiles a fundamentally
+            // different native plan with different GPU memory requirements. Rather than
+            // trying to partially clean up (which leaves model weights, pool reservations,
+            // and DeallocatorService queues in indeterminate states), close everything
+            // and give the next config a clean GPU with full memory available.
+            // The model file is already cached on disk, so reimport is fast (~2-3s).
+            var nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            var deviceMgr = org.nd4j.linalg.api.device.DeviceMemoryManager.getInstance();
+            int numDevices = deviceMgr.getContextProvider().getDeviceCount();
+            log.info("  GPU memory BEFORE close: {}", deviceMgr.getMemorySummary());
+
+            SameDiffMemoryUtils.freeModelArrays(ctx.model);
+            ctx.model.close();
+            log.info("  GPU memory AFTER model.close(): {}", deviceMgr.getMemorySummary());
+
+            ctx.tokenizer.close();
+
+            // Aggressive GPU memory cleanup between configs.
+            // model.close() synchronously destroys native plans (CUDA graphs, capture
+            // workspaces, plan-owned intermediate arrays) and closes constant/variable
+            // buffers. DeallocatorService may still have pending async frees. GC twice
+            // with trim to reclaim everything.
+            for (int round = 1; round <= 2; round++) {
+                System.gc();
+                System.runFinalization();
+                try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+                Nd4j.getExecutioner().commit();
+                if (round == 1) Nd4j.getMemoryManager().purgeCaches();
+                for (int d = 0; d < numDevices; d++) {
+                    nativeOps.trimMemoryPool(d);
+                }
+                log.info("  GPU memory AFTER gc+trim round {}: {}", round, deviceMgr.getMemorySummary());
+            }
+
+            if (i + 1 < configs.size()) {
+                // Switch back to device 0 for next config's model load
+                deviceMgr.switchDevice(0, "TestQwen35Pipeline", "inter-config cleanup");
+                ctx = loadModel();
+            }
         }
 
         // Print full report
@@ -575,7 +656,6 @@ public class TestQwen35Pipeline {
                 File tokenizerFile = LLMModelDownloader.downloadCustom(tokenizerUrl, "qwen35-" + sizeLabel + "-tokenizer.json");
                 Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.getAbsolutePath());
 
-                model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
                 model.setDspAutoCompileEnabled(true);
                 model.setDspNativeAutoCompileEnabled(true);
 
@@ -625,7 +705,6 @@ public class TestQwen35Pipeline {
     public void testQwen35ReferencePrompts() throws Exception {
         PipelineContext ctx = loadModel();
 
-        ctx.model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
         ctx.model.setDspAutoCompileEnabled(true);
         ctx.model.setDspNativeAutoCompileEnabled(true);
 

@@ -1,0 +1,13 @@
+{
+  "id" : "179ea36a",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "41a3b05be4852c3c9028c6e90bf31219b90cb454",
+  "commitShort" : "41a3b05",
+  "commitMessage" : "chore: record Qwen CUDA correctness milestone and memory",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-vlm",
+  "notes" : "VLM fix written: routed generate(prefillEmbeddings,...) through generateSimpleWithKvCacheVlm (Java-side decode loop matching reference commit 11005b4ae6). Removed buffer overrun workaround in autoregressive_decode.cu. CUDA build in progress. Also: MmulHelper mixed-type GEMV fix, onnx_mha workspace+syncToDevice, pre-unmask causal mask fix. Java module (samediff-llm) built successfully.",
+  "tags" : "cuda,vlm,correctness,building",
+  "timestamp" : "2026-05-03T13:45:56.020917Z"
+}

@@ -29,6 +29,8 @@
 #ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <execution/AffinityManager.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #endif
 
 namespace sd {
@@ -51,7 +53,8 @@ ExtraArguments::ExtraArguments() {
 ExtraArguments::~ExtraArguments() {
   for (auto p : _pointers) {
 #ifdef SD_CUDA
-    cudaFree(p);
+    int deviceId = sd::AffinityManager::currentDeviceId();
+    sd::memory::CudaMemoryPool::getInstance().free(p, deviceId);
 #else  // CPU branch
     delete[] reinterpret_cast<int8_t *>(p);
 #endif
@@ -86,9 +89,9 @@ BUILD_SINGLE_TEMPLATE(void ExtraArguments::convertAndCopy,
 
 void *ExtraArguments::allocate(size_t length, size_t elementSize) {
 #ifdef SD_CUDA
-  Pointer ptr;
-  auto res = cudaMalloc(reinterpret_cast<void **>(&ptr), length * elementSize);
-  if (res != 0) THROW_EXCEPTION("Can't allocate CUDA memory");
+  int deviceId = sd::AffinityManager::currentDeviceId();
+  auto ptr = sd::memory::CudaMemoryPool::getInstance().allocate(length * elementSize, deviceId);
+  if (!ptr) THROW_EXCEPTION("Can't allocate CUDA memory");
 #else  // CPU branch
   auto ptr = new int8_t[length * elementSize];
   if (!ptr) THROW_EXCEPTION("Can't allocate memory");

@@ -284,10 +284,14 @@ void FlashAttentionHelper::forward4D(
   bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
 
-  // GQA decode fast path: fused kernel handles Q@K^T + softmax + attn@V with GQA head
-  // mapping in a single kernel launch — eliminates permute, tile, and 8+ cuBLAS calls.
+  // Decode fast path: fused kernel handles Q@K^T + softmax + attn@V in a single kernel
+  // launch — eliminates 6 extra graph nodes per layer (permute copies, 2 cuBLAS calls,
+  // softmax kernel). Works for both GQA (headsPerKvHead>1) and non-GQA (headsPerKvHead=1)
+  // cases via kvHead = qHead / headsPerKvHead indexing.
+  // For FLOAT32: kernel's FP32 dot products match cuBLAS SGEMV (no TensorCore benefit).
+  // For HALF: single kernel avoids permute D2D copies that dominate decode latency.
   bool isDecode = (seqLenQ == 1);
-  if (supportedType && !noGQA && isDecode && !needScores && !needLogits) {
+  if (supportedType && isDecode && !needScores && !needLogits) {
     fusedGQADecodeCuda(query, key, value, output, scale, context,
                        hasAttentionBias ? attentionBias : nullptr);
     if (softmaxLse != nullptr) softmaxLse->nullify();
@@ -297,18 +301,6 @@ void FlashAttentionHelper::forward4D(
   // Use fused kernel when no scores needed - cuBLAS is only faster when we need intermediate results
   // The fused kernel now handles attention bias internally for maximum performance
   if (supportedType && noGQA && !needScores && !needLogits) {
-    // OPTIMIZATION: Decode phase (seqQ=1) - use cuBLAS batched GEMV for TensorCore utilization.
-    // For M=1 decode, Q@K^T and attn@V are GEMVs, not GEMMs. cuBLAS GEMV with FP16 inputs
-    // achieves ~2x throughput vs the fused kernel's manual FP32 dot product loops.
-    bool isDecode = (seqLenQ == 1);
-
-    if (isDecode) {
-      // Decode-optimized path using cuBLAS batched GEMV
-      forward4DDecode(query, key, value, output, scale, config.isCausal, context,
-                      hasAttentionBias ? attentionBias : nullptr, softmaxLse);
-      if (softmaxLse != nullptr) softmaxLse->nullify();
-      return;
-    }
     // Use workspace for permuted arrays -  this eliminates malloc/free per call
     std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
     std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};

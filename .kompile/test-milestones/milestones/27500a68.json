@@ -1,0 +1,13 @@
+{
+  "id" : "27500a68",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "0e221dd2c8332e0d671f8c3cec2b378c7e7ba7a4",
+  "commitShort" : "0e221dd",
+  "commitMessage" : "fix: multi-consumer in-place protection + VLM decode correctness",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "qwen-cuda",
+  "notes" : "Qwen CUDA: First token 271 (France) correct, but warmup decode (STEP 3, Java-side execution) produces garbage token 76828. Issue occurs in ALL configs including SLOT_BY_SLOT. Root cause is in CUDA gated_delta_rule kernel or state feedback during Java-side SameDiff execution, not the native autoregressive_decode loop.",
+  "tags" : "cuda,correctness,partial",
+  "timestamp" : "2026-05-03T22:41:32.079351Z"
+}

@@ -20,6 +20,7 @@
 #include <array/NDArray.h>
 #include <helpers/DebugHelper.h>
 #include <execution/cuda/LaunchDims.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <cuda_runtime.h>
 #include <string>
 
@@ -161,10 +162,13 @@ static void kvScatterBatchedCudaLauncher(const cudaStream_t* stream,
 
     // Reuse pre-allocated device buffers (grow-only)
     if (numEntries > tl_staticCachedCapacity) {
-        if (tl_staticEntries != nullptr) cudaFree(tl_staticEntries);
-        if (tl_staticOffsets != nullptr) cudaFree(tl_staticOffsets);
-        cudaMalloc(&tl_staticEntries, numEntries * sizeof(KvScatterEntry));
-        cudaMalloc(&tl_staticOffsets, (numEntries + 1) * sizeof(int));
+        int deviceId = sd::AffinityManager::currentDeviceId();
+        if (tl_staticEntries != nullptr) sd::memory::CudaMemoryPool::getInstance().free(tl_staticEntries, deviceId, *stream);
+        if (tl_staticOffsets != nullptr) sd::memory::CudaMemoryPool::getInstance().free(tl_staticOffsets, deviceId, *stream);
+        tl_staticEntries = reinterpret_cast<KvScatterEntry*>(
+            sd::memory::CudaMemoryPool::getInstance().allocate(numEntries * sizeof(KvScatterEntry), deviceId, *stream));
+        tl_staticOffsets = reinterpret_cast<int*>(
+            sd::memory::CudaMemoryPool::getInstance().allocate((numEntries + 1) * sizeof(int), deviceId, *stream));
         tl_staticCachedCapacity = numEntries;
     }
 
@@ -267,10 +271,13 @@ static void kvScatterDynBatchedCudaLauncher(const cudaStream_t* stream,
 
     // Reuse pre-allocated device buffers (grow-only)
     if (numEntries > tl_cachedCapacity) {
-        if (tl_dEntries != nullptr) cudaFree(tl_dEntries);
-        if (tl_dOffsets != nullptr) cudaFree(tl_dOffsets);
-        cudaMalloc(&tl_dEntries, numEntries * sizeof(KvScatterDynEntry));
-        cudaMalloc(&tl_dOffsets, (numEntries + 1) * sizeof(int));
+        int deviceId = sd::AffinityManager::currentDeviceId();
+        if (tl_dEntries != nullptr) sd::memory::CudaMemoryPool::getInstance().free(tl_dEntries, deviceId, *stream);
+        if (tl_dOffsets != nullptr) sd::memory::CudaMemoryPool::getInstance().free(tl_dOffsets, deviceId, *stream);
+        tl_dEntries = reinterpret_cast<KvScatterDynEntry*>(
+            sd::memory::CudaMemoryPool::getInstance().allocate(numEntries * sizeof(KvScatterDynEntry), deviceId, *stream));
+        tl_dOffsets = reinterpret_cast<int*>(
+            sd::memory::CudaMemoryPool::getInstance().allocate((numEntries + 1) * sizeof(int), deviceId, *stream));
         tl_cachedCapacity = numEntries;
     }
 

@@ -264,10 +264,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
       kPastSlice->assign(pastKeyBSHD);
       vPastSlice->assign(pastValueBSHD);
-      // Ensure device-resident before FlashAttention reads — permuted views from
-      // ext inputs may have host-actual data that assign() doesn't always flush.
-      kPastSlice->syncToDevice();
-      vPastSlice->syncToDevice();
       delete kPastSlice;
       delete vPastSlice;
       delete pastKeyBSHD;
@@ -282,8 +278,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
         kCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), kReshaped, kCurSlice, false);
         vCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), vReshaped, vCurSlice, false);
       }
-      kCurSlice->syncToDevice();
-      vCurSlice->syncToDevice();
 
       delete kCurSlice;
       delete vCurSlice;
@@ -305,8 +299,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
       kPastSlice->assign(pastKeyBSHD);
       vPastSlice->assign(pastValueBSHD);
-      kPastSlice->syncToDevice();
-      vPastSlice->syncToDevice();
       delete kPastSlice;
       delete vPastSlice;
 
@@ -314,8 +306,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       NDArray* vCurSlice = (*vFinal)(curSliceIdx);
       kCurSlice->assign(kReshaped);
       vCurSlice->assign(vReshaped);
-      kCurSlice->syncToDevice();
-      vCurSlice->syncToDevice();
       delete kCurSlice;
       delete vCurSlice;
 
@@ -361,25 +351,39 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   }
 
   // Output in BSHD format [batch, seqQ, numHeads, headDim]
-  // Use AttentionWorkspace to reuse the buffer across invocations instead of
-  // allocating a new GPU buffer every call (30 layers × every decode step).
-  // The workspace buffer is zeroed before use to prevent stale data leaking through
-  // if FlashAttention doesn't write all positions (e.g., masked positions with attn bias).
+  // When no attnBias: write directly into the output buffer (zero-copy reshape).
+  // FlashAttention writes ALL positions when no additive bias mask is present.
+  // When attnBias is present: use workspace+nullify because FlashAttention may
+  // skip masked positions, leaving stale data in the output buffer.
   std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
-  auto workspace = AttentionWorkspace::getInstance();
-  NDArray* attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
-  attnOut4d->nullify();
+  NDArray* attnOut4d = nullptr;
+  bool attnOut4dOwned = false;
+  if (attnBias == nullptr) {
+    // Direct write: reshape output to 4D view (zero-copy if C-contiguous)
+    attnOut4d = output->reshape('c', outShape4d, false);
+    attnOut4dOwned = true;
+  } else {
+    // Workspace path: zero buffer to prevent stale data in masked positions
+    auto workspace = AttentionWorkspace::getInstance();
+    attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
+    attnOut4d->nullify();
+  }
 
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
   FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, attnOut4d, config,
                                 nullptr, nullptr, nullptr,
                                 block.launchContext(), attnBias);
 
-  // Reshape output back to [batch, seqQ, hidden] and copy to output
-  std::vector<LongType> outShape3d = {batch, seqQ, hidden};
-  NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
-  output->assign(attnOutFinal);
-  delete attnOutFinal;
+  // Copy to output only when using workspace (attnBias path)
+  if (attnBias != nullptr) {
+    std::vector<LongType> outShape3d = {batch, seqQ, hidden};
+    NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
+    output->assign(attnOutFinal);
+    delete attnOutFinal;
+  }
+  if (attnOut4dOwned) {
+    delete attnOut4d;
+  }
   
   // Output present key/value if requested (in BHSD format for ONNX compatibility)
   // Skip if we already wrote directly to output buffers (in-place KV or direct write mode)

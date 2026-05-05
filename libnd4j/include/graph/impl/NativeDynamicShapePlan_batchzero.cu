@@ -27,6 +27,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <helpers/DebugHelper.h>
 
 namespace sd {
@@ -249,9 +250,13 @@ void NativeDynamicShapePlan::prepareBatchD2DDevice(int count, cudaStream_t strea
     }
   };
 
-  check(cudaMalloc(&batchD2DDeviceSrcPtrs_, count * sizeof(void*)),    "device src");
-  check(cudaMalloc(&batchD2DDeviceDstPtrs_, count * sizeof(void*)),    "device dst");
-  check(cudaMalloc(&batchD2DDeviceSizes_,   count * sizeof(size_t)),   "device sizes");
+  int deviceId = sd::AffinityManager::currentDeviceId();
+  batchD2DDeviceSrcPtrs_ = sd::memory::CudaMemoryPool::getInstance().allocate(count * sizeof(void*), deviceId, stream);
+  batchD2DDeviceDstPtrs_ = sd::memory::CudaMemoryPool::getInstance().allocate(count * sizeof(void*), deviceId, stream);
+  batchD2DDeviceSizes_   = sd::memory::CudaMemoryPool::getInstance().allocate(count * sizeof(size_t), deviceId, stream);
+  if (!batchD2DDeviceSrcPtrs_) sd_printf("prepareBatchD2DDevice device src failed\n");
+  if (!batchD2DDeviceDstPtrs_) sd_printf("prepareBatchD2DDevice device dst failed\n");
+  if (!batchD2DDeviceSizes_)   sd_printf("prepareBatchD2DDevice device sizes failed\n");
   check(cudaMallocHost(&batchD2DHostSrcPtrs_, count * sizeof(void*)),  "pinned src");
   check(cudaMallocHost(&batchD2DHostDstPtrs_, count * sizeof(void*)),  "pinned dst");
   check(cudaMallocHost(&batchD2DHostSizes_,   count * sizeof(size_t)), "pinned sizes");
@@ -314,9 +319,10 @@ void NativeDynamicShapePlan::launchBatchMemset(cudaStream_t stream,
 }
 
 void NativeDynamicShapePlan::freeBatchD2DResources() {
-  if (batchD2DDeviceSrcPtrs_) { cudaFree(batchD2DDeviceSrcPtrs_); batchD2DDeviceSrcPtrs_ = nullptr; }
-  if (batchD2DDeviceDstPtrs_) { cudaFree(batchD2DDeviceDstPtrs_); batchD2DDeviceDstPtrs_ = nullptr; }
-  if (batchD2DDeviceSizes_) { cudaFree(batchD2DDeviceSizes_); batchD2DDeviceSizes_ = nullptr; }
+  int deviceId = sd::AffinityManager::currentDeviceId();
+  if (batchD2DDeviceSrcPtrs_) { sd::memory::CudaMemoryPool::getInstance().free(batchD2DDeviceSrcPtrs_, deviceId); batchD2DDeviceSrcPtrs_ = nullptr; }
+  if (batchD2DDeviceDstPtrs_) { sd::memory::CudaMemoryPool::getInstance().free(batchD2DDeviceDstPtrs_, deviceId); batchD2DDeviceDstPtrs_ = nullptr; }
+  if (batchD2DDeviceSizes_) { sd::memory::CudaMemoryPool::getInstance().free(batchD2DDeviceSizes_, deviceId); batchD2DDeviceSizes_ = nullptr; }
   if (batchD2DHostSrcPtrs_) { cudaFreeHost(batchD2DHostSrcPtrs_); batchD2DHostSrcPtrs_ = nullptr; }
   if (batchD2DHostDstPtrs_) { cudaFreeHost(batchD2DHostDstPtrs_); batchD2DHostDstPtrs_ = nullptr; }
   if (batchD2DHostSizes_) { cudaFreeHost(batchD2DHostSizes_); batchD2DHostSizes_ = nullptr; }

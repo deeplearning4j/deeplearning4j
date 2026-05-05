@@ -340,6 +340,8 @@ public class GGMLMetadata {
         private int eosTokenId;
         private int padTokenId;
         private int unkTokenId;
+        /** Jinja2 chat template from GGUF metadata (null if not present) */
+        private String chatTemplate;
 
         public static TokenizerInfo fromGGUFHeader(GGUFHeader header) {
             return TokenizerInfo.builder()
@@ -347,6 +349,7 @@ public class GGMLMetadata {
                     .tokens(header.getTokens())
                     .bosTokenId(header.getBosTokenId())
                     .eosTokenId(header.getEosTokenId())
+                    .chatTemplate(header.getChatTemplate())
                     .build();
         }
     }

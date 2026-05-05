@@ -102,10 +102,24 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 for (String opName : match.opsToRemove) {
                     OptimizationUtils.removeOp(sd, helper, opName);
                 }
+
+                // Temporarily remove finalOutputVar from graph outputs so removeVariable
+                // won't refuse to delete it (mirrors FuseRMSNormLinearPattern logic)
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(finalOutputVar);
+
                 for (String varName : match.varsToRemove) {
                     if (!match.xVar.equals(varName) && !match.gammaVar.equals(varName)) {
                         OptimizationUtils.removeVariable(sd, helper, varName);
                     }
+                }
+
+                // Rename fused variable back to the original name so that downstream
+                // name-based lookups (DSP plan compilation, decode loop state resolution,
+                // external output requests) continue to work correctly.
+                sd.renameVariable(fused.name(), finalOutputVar);
+                if (wasOutput) {
+                    graphOutputs.add(finalOutputVar);
                 }
 
                 log.info("Fused RMSNorm pattern: x={}, gamma={}, eps={}", match.xVar, match.gammaVar, match.epsilon);
@@ -729,10 +743,35 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                         OptimizationUtils.removeVariable(sd, helper, intermediateVar);
                     }
 
-                    // Remove the rms_norm op and its output variable ONLY if no other ops
-                    // still reference it. The hasOnlyConsumer check above may have used stale
-                    // cache data from a prior optimization pass. Re-check the live graph.
+                    // Remove the rms_norm op first. Its output variable cleanup is
+                    // deferred until AFTER the matmul is removed (see below).
                     OptimizationUtils.removeOp(sd, helper, rmsNormOp.getName());
+
+                    // Remove matmul output variable, then rename fused to match the
+                    // original name (preserves downstream name lookups like "lm_logits").
+                    // Must temporarily remove from outputs since removeVariable/removeOp
+                    // guard against deleting registered graph outputs.
+                    List<String> graphOutputs = sd.outputs();
+                    boolean wasOutput = graphOutputs != null && graphOutputs.remove(matmulOutputVar);
+
+                    // Re-attempt removing the matmul op now that its output is no longer
+                    // a registered graph output. The first removeOp call (line 736) may
+                    // have been refused because matmulOutputVar was still in outputs().
+                    // Without this, the dangling matmul op persists in the graph alongside
+                    // the fused rms_norm_linear, causing incorrect execution.
+                    OptimizationUtils.removeOp(sd, helper, op.getName());
+
+                    OptimizationUtils.removeVariable(sd, helper, matmulOutputVar);
+                    sd.renameVariable(fused.name(), matmulOutputVar);
+                    if (wasOutput) {
+                        graphOutputs.add(matmulOutputVar);
+                    }
+
+                    // NOW clean up rmsNormOutVar — deferred to here because the matmul
+                    // (which was rmsNormOutVar's only consumer) had to be removed first.
+                    // Before matmul removal, rmsNormOutVar's consumer list was non-empty
+                    // (containing matmul_186), preventing removal and leaving an orphaned
+                    // variable in the graph that corrupts the DSP plan on CUDA.
                     if (!rmsNormOutVar.equals(xVar) && !rmsNormOutVar.equals(gammaVar)) {
                         Variable rmsVar = sd.getVariables().get(rmsNormOutVar);
                         List<String> remainingUsers = rmsVar != null ? rmsVar.getInputsForOp() : null;
@@ -742,18 +781,6 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                             log.debug("FuseRMSNormLinear: keeping rms_norm output '{}' — still consumed by {} op(s)",
                                     rmsNormOutVar, remainingUsers.size());
                         }
-                    }
-
-                    // Remove matmul output variable, then rename fused to match the
-                    // original name (preserves downstream name lookups like "lm_logits").
-                    // Must temporarily remove from outputs since removeVariable guards against
-                    // deleting registered graph outputs.
-                    List<String> graphOutputs = sd.outputs();
-                    boolean wasOutput = graphOutputs != null && graphOutputs.remove(matmulOutputVar);
-                    OptimizationUtils.removeVariable(sd, helper, matmulOutputVar);
-                    sd.renameVariable(fused.name(), matmulOutputVar);
-                    if (wasOutput) {
-                        graphOutputs.add(matmulOutputVar);
                     }
 
                     log.info("Fused RMSNorm+Linear pattern: x={}, gamma={}, W={}, eps={}, output={}",

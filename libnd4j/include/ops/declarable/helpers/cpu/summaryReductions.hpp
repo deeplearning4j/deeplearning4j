@@ -703,12 +703,7 @@ static void reductionCase1Scalar(const int& second_rank, const sd::LongType* inn
       }
     }
   };
-#if 0
-                int Count = 0;
-                func(0, 0, inner_total, 1);
-#else
   int Count = samediff::Threads::parallel_tad(func, 0, inner_total, 1, maxThreads);
-#endif
   auto current = ptrAggs[0];
   for (int i = 1; i < Count; i++) {
     current = DeviationOp::mergeAggregates(current, ptrAggs[i]);
@@ -1044,10 +1039,6 @@ static void reductionCaseNonScalar(const int& first_rank, const int& output_rank
                                                          bufferX, outputZ, biasCorrected);
     }
   };
-#if 0
-                func(0, 0, total, 1);
-#else
-  //
   uint32_t numThreads = sd::env_maxMasterThreads();
   sd::LongType inner_total = getLength<LastIndexFaster>(inner_bases, second_rank);
   if (total * inner_total <= threadingThreshold) {
@@ -1059,7 +1050,6 @@ static void reductionCaseNonScalar(const int& first_rank, const int& output_rank
     }
   }
   samediff::Threads::parallel_tad(func, 0, total, 1, numThreads);
-#endif
 }
 
 template <typename X, typename Z, typename DeviationOp>

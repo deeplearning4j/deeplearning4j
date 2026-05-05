@@ -119,6 +119,7 @@ static void syncCrossStream(cudaStream_t dspStream, cudaEvent_t syncEvent,
 // ── External input sync helper ────────────────────────────────────────────
 static void syncExternalInputs(NDArray** externalArrays, int numExt,
                                const std::vector<bool>& externalInputIsVariable,
+                               const std::vector<bool>& externalInputIsPlaceholder,
                                const std::vector<std::string>& externalInputNames,
                                bool shapesFrozen, bool tritonVerify,
                                const char* tag, int execCount,
@@ -163,8 +164,24 @@ static void syncExternalInputs(NDArray** externalArrays, int numExt,
     for (int idx : *cachedVariableIndices) {
       if (idx < 0 || idx >= numExt || externalArrays[idx] == nullptr) continue;
       auto* db = externalArrays[idx]->dataBuffer();
-      if (db != nullptr && db->isPrimaryActual()) {
-        db->syncToSpecial(true);
+      if (db != nullptr) {
+        // All variable inputs (including placeholders) use isPrimaryActual() guard.
+        // Cross-stream sync (run BEFORE this function) ensures writes from other
+        // streams (Java's default stream) are visible on the DSP stream. The
+        // actuality check then correctly determines whether host has newer data.
+        //
+        // CRITICAL: Do NOT use syncToSpecial(true) (forced H2D) for placeholders.
+        // In the native decode loop, CUDA kernels write directly to the device
+        // buffer (updateInputIdsKernel, embedLookupLauncher, etc.) without
+        // updating the host buffer. Forcing H2D would copy STALE host data over
+        // the fresh device data written by those kernels.
+        //
+        // isPrimaryActual() returns true ONLY when host was written more recently
+        // than device — which is the Java-writes-host case. When device kernels
+        // wrote last (the native decode loop case), it returns false → skip H2D.
+        if (db->isPrimaryActual()) {
+          db->syncToSpecial(true);
+        }
       }
       synced++;
     }
@@ -201,14 +218,16 @@ static void syncExternalInputs(NDArray** externalArrays, int numExt,
       continue;
     }
     if (isVariable) {
-      // Force H2D only when host is authoritative (isPrimaryActual). When device
-      // is authoritative (isSpecialActual=true, isPrimaryActual=false), forcing
-      // H2D would overwrite valid device data with stale host data.
       auto* db = externalArrays[ei]->dataBuffer();
-      if (db != nullptr && db->isPrimaryActual()) {
-        db->syncToSpecial(true);  // Force H2D: host has newer data than device
+      if (db != nullptr) {
+        // All variable inputs use isPrimaryActual() guard (same as CUDA_GRAPHS).
+        // Cross-stream sync ensures visibility; isPrimaryActual() catches host-newer.
+        // NEVER force H2D — native decode kernels write device directly without
+        // updating host; forcing H2D would clobber fresh device data with stale host.
+        if (db->isPrimaryActual()) {
+          db->syncToSpecial(true);
+        }
       }
-      // else: device is authoritative (after KvScatter or initial model load) — no H2D
     } else {
       externalArrays[ei]->syncToDevice();
     }
@@ -275,6 +294,19 @@ static void cleanupCaptureTlsState(bool freeHostPtrs, cudaStream_t prevCaptureSt
   tl_captureReplicateCache.clear();
   tl_graphCaptureStream = prevCaptureStream;
 }
+
+// ── RAII guard: ensures tl_graphExecutionActive is ALWAYS cleared ───────────
+// when the enclosing capture scope exits (normal return, exception, break, etc.)
+// activate() is explicit so the guard can live at outer scope for merged capture
+// while waiting for the capture to actually begin.
+struct CaptureLifecycleGuard {
+  bool active_ = false;
+  void activate()   { tl_graphExecutionActive = true; active_ = true; }
+  void deactivate() {
+    if (active_) { tl_graphExecutionActive = false; tl_graphCaptureStream = nullptr; active_ = false; }
+  }
+  ~CaptureLifecycleGuard() { deactivate(); }
+};
 
 // Full abort: cleanup TLS + pop context + restore cuBLAS + restore slot state + destroy handle.
 // This is the pattern repeated at every early-return from capture.
@@ -413,6 +445,22 @@ static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& 
 // Thread-local vectors for snapshot storage to avoid repeated allocation.
 static thread_local std::vector<void*> tl_snapshotOutputAddrs;
 static thread_local std::vector<void*> tl_snapshotExtAddrs;
+
+// ── Merged capture context flag ──────────────────────────────────────────
+// When true, the tritonOrderedRangeGuard should NOT skip gap ops during
+// capture. Merged capture records both islands AND their intervening gaps
+// into a single CUDA graph. Gap ops within an island that are called via
+// orderedRangeExecutor during merged capture MUST execute on the capture
+// stream so their kernels are recorded. Without this flag, the guard
+// unconditionally skips gaps when streamIsCapturing=true, which is only
+// correct for per-island capture (where gaps are replayed fresh each step).
+static thread_local bool tl_mergedCaptureActive = false;
+// During merged capture, gap ops in the orderedRangeExecutor must use staging
+// buffer externals (plan-owned stable addresses) instead of the original Java-
+// side external arrays. This pointer is set before capture begins and cleared
+// after. When non-null, the orderedRangeExecutor uses this instead of the
+// captured externalArrays.
+static thread_local NDArray** tl_mergedCaptureExternals = nullptr;
 
 static void snapshotAddrs(NDArray** outputSlots, int totalOutputSlots,
                           NDArray** externalArrays, int numExt,
@@ -830,6 +878,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     // Pass cached variable indices for O(2-3) iteration instead of O(1333) in steady state
     const std::vector<int>* varIdxPtr = cachedVariableExtIndices_.empty() ? nullptr : &cachedVariableExtIndices_;
     syncExternalInputs(externalArrays, numExt, externalInputIsVariable_,
+                       externalInputIsPlaceholder_,
                        externalInputNames_, shapesFrozen_, false, "replay", seg.exec.executionCount,
                        varIdxPtr);
 
@@ -1190,6 +1239,8 @@ Status NativeDynamicShapePlan::compositeReplay(
         rangeMax = unit.endSlot;
       }
       for (int s = rangeMin; s <= rangeMax && s < totalOutputSlots_; s++) {
+        // Skip frozen constants — excluded from captured graph, device data is stable
+        if (s < numSlots_ && slots_[s].frozenConstantSlot()) continue;
         dirtySlotGenerations_[s] = currentDirtyGeneration_;
         NDArray* arr = outputSlots_[s];
         if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
@@ -1891,11 +1942,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            streamDiagDone = true;
          }
 
-         if (streamIsCapturing) {
-           // ── CAPTURE PATH: SKIP gap ops entirely ──
+         if (streamIsCapturing && !tl_mergedCaptureActive) {
+           // ── PER-ISLAND CAPTURE PATH: SKIP gap ops ──
            //
-           // During CUDA graph capture, Triton kernels are recorded into the graph.
-           // Gap ops (matmul, attention, etc.) must NOT execute because:
+           // During per-island CUDA graph capture, Triton kernels are recorded
+           // into the graph. Gap ops (matmul, attention, etc.) must NOT execute:
            //
            //  1. Executing on the capturing stream bakes stale addresses into the
            //     graph — on replay, gap ops read/write wrong buffers, producing
@@ -1907,17 +1958,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            //     (error 900/224: "operation would make the legacy stream depend
            //     on a capturing blocking stream").
            //
-           // Solution: SKIP gap ops during capture. Warmup already executed them
-           // and populated outputSlots_ at the correct addresses. The Triton arg
-           // table snapshot will reference these warmup addresses. On replay, the
-           // composite replay schedule executes gaps FRESH before graph replay.
+           // Solution: SKIP gap ops during per-island capture. Warmup already
+           // executed them and populated outputSlots_ at the correct addresses.
+           // On replay, the composite replay schedule executes gaps FRESH before
+           // each island's graph replay.
            //
-           // This is correct because:
-           //  - Shapes are frozen (gap output shapes don't change)
-           //  - Output buffer addresses are stable (same outputSlots_ from warmup)
-           //  - Triton kernels reference buffer addresses via arg tables, which
-           //    are refreshed from outputSlots_ before each replay
-           //  - The captured graph contains ONLY Triton kernels
+           // NOTE: This skip does NOT apply to merged capture
+           // (tl_mergedCaptureActive=true). In merged capture, gap ops MUST
+           // execute on the capture stream so their kernels are recorded into
+           // the merged CUDA graph. Without this, gaps become non-leader units
+           // in the merged group and are never re-executed during replay —
+           // causing stale outputs (e.g., gather reading frozen input_ids →
+           // repeating tokens).
 
            DSP_DIAG(EXECUTE, "GAP_SKIP_DURING_CAPTURE: gap[%d-%d] SKIPPED (warmup outputs "
                     "already at stable addresses) for seg[%d-%d]",
@@ -1925,6 +1977,27 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
            // gapOpsCapturedInGraph stays false — gaps are NOT in the graph
            return Status::OK;
+         }
+
+         if (streamIsCapturing && tl_mergedCaptureActive) {
+           // ── MERGED CAPTURE PATH: EXECUTE gap ops on capture stream ──
+           // Gap ops must execute so their CUDA kernels are recorded into the
+           // merged graph. tl_dspGapStream is already set to the capture stream
+           // by the caller, so cuBLAS/native ops record on the correct stream.
+           // CRITICAL: Do NOT cudaStreamSynchronize (illegal during capture).
+           // Do NOT clear tl_graphExecutionActive (needed for workspace routing).
+           // Use staging externals if available (plan-owned stable addresses).
+           // forceSync_ ensures prepareSpecialUse/registerSpecialUse run for
+           // correct device coherency during capture.
+           DSP_DIAG(EXECUTE, "MERGED_CAPTURE_GAP_EXEC: gap[%d-%d] executing on capture stream "
+                    "for seg[%d-%d]",
+                    startSlot, endSlot, seg.def.startSlot, seg.def.endSlot);
+
+           NDArray** effectiveExt = tl_mergedCaptureExternals ? tl_mergedCaptureExternals : externalArrays;
+           forceSync_ = true;
+           auto gapStatus = executeSegmentSlotBySlot(gapSeg, effectiveExt, numExt, stream);
+           forceSync_ = false;
+           return gapStatus;
          }
 
          // ── NON-CAPTURE PATH: normal gap execution with stream sync ──
@@ -2132,9 +2205,19 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         tl_capturedHostPtrs.push_back(captureHostWs);
       }
 
-      // Set capture stream so captureSafeStreamOrDefault() routes ops to the correct stream
+      // Set capture stream so captureSafeStreamOrDefault() routes ops to the correct stream.
+      // Resolve null ctx.cudaStr to LaunchContext default to match the actual capture stream
+      // (beginCapture passes ctx.cudaStr to cudaStreamBeginCapture; if null, CUDA uses the
+      // default stream which is what LaunchContext::defaultContext()->getCudaStream() returns).
       cudaStream_t prevCaptureStream = tl_graphCaptureStream;
-      tl_graphCaptureStream = ctx.cudaStr;
+      {
+        cudaStream_t resolvedCaptureStream = ctx.cudaStr;
+        if (resolvedCaptureStream == nullptr) {
+          auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+          if (defaultStreamPtr != nullptr) resolvedCaptureStream = *defaultStreamPtr;
+        }
+        tl_graphCaptureStream = resolvedCaptureStream;
+      }
       // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
       // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
       // graph capture on a named stream, this cross-stream allocation breaks capture,
@@ -2186,6 +2269,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       {
         int syncedCapture = 0, skippedCapture = 0;
         syncExternalInputs(externalArrays, numExt, externalInputIsVariable_,
+                           externalInputIsPlaceholder_,
                            externalInputNames_, shapesFrozen_,
                            Environment::getInstance().tritonVerifyKernels(),
                            "capture", seg.exec.executionCount,
@@ -2595,8 +2679,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          // bump allocator ensures no buffer overlap. tl_dspGapStream
          // directs cuBLAS to the capture stream.
 
-         bool captureActive = false;
-         std::unique_ptr<GraphReplayHandle> mergedHandle;
+          bool captureActive = false;
+          CaptureLifecycleGuard mergedCapGuard;
+          std::unique_ptr<GraphReplayHandle> mergedHandle;
          sd::cuda::CudaGraphHandle* mergedNativeHandle = nullptr;
          int mergedGroupId = -1;          // Current merged group index
          int mergedLeaderUnitIdx = -1;    // Unit index of the group leader
@@ -2606,14 +2691,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          for (size_t unitIdx = 0; unitIdx < sched.units.size() && allIslandsOk; unitIdx++) {
            auto& unit = sched.units[unitIdx];
 
-           if (unit.kind == REPLAY_UNIT_GAP) {
-             if (captureActive && unit.isCaptureSafe) {
-               // ── MERGED CAPTURE: gap ops recorded on capture stream ──────
-               // tl_graphExecutionActive is already true from the preceding island.
-               // tl_dspGapStream = ctx.cudaStr makes cuBLAS et al. use capture stream.
-               // forceSync_ = true for prepareSpecialUse correctness at exec=2.
-               DSP_DIAG(EXECUTE, "MERGED_CAPTURE: gap [%d-%d] mergedGroup=%d — recording on capture stream",
-                        unit.startSlot, unit.endSlot, mergedGroupId);
+            if (unit.kind == REPLAY_UNIT_GAP) {
+              if (captureActive && unit.isCaptureSafe) {
+                // ── MERGED CAPTURE: gap ops recorded on capture stream ──────
+                // tl_graphExecutionActive is already true from the preceding island.
+                // tl_dspGapStream = ctx.cudaStr makes cuBLAS et al. use capture stream.
+                // forceSync_ = true for prepareSpecialUse correctness at exec=2.
+                 DSP_DIAG(EXECUTE, "MERGED_CAPTURE: gap [%d-%d] mergedGroup=%d — recording on capture stream",
+                         unit.startSlot, unit.endSlot, mergedGroupId);
 
                // Direct gap-stream to capture stream so cuBLAS records here
                cudaStream_t prevGapStream = tl_dspGapStream;
@@ -2622,24 +2707,67 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
                bool gapOk = true;
                for (int s = unit.startSlot; s <= unit.endSlot; s++) {
-                 // Use effectiveExternalsForCapture (staging buffers) so the CUDA graph
-                 // bakes in stable plan-owned device addresses, not Java-side pointers
-                 // that may be reallocated between steps.
-                 auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
-                 if (gapStatus != Status::OK) {
-                   DSP_DIAG(EXECUTE, "MERGED_CAPTURE: gap slot %d FAILED status=%d",
-                            s, static_cast<int>(gapStatus));
-                   gapOk = false;
-                   break;
+                 // Skip frozen constant slots — their outputs are populated from
+                 // warmup and excluding them reduces the captured graph node count.
+                 if (slots_[s].frozenConstantSlot()) {
+                   bool allPop = true;
+                   for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+                     int si = slots_[s].wiring.outputSlotIndices[o];
+                     if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr) {
+                       allPop = false;
+                       break;
+                     }
+                   }
+                   if (allPop) continue;
                  }
-               }
+                   // Use effectiveExternalsForCapture (staging buffers) so the CUDA graph
+                   // bakes in stable plan-owned device addresses, not Java-side pointers
+                   // that may be reallocated between steps.
+                   // DSP_PROBE: check capture status BEFORE executing each gap slot
+                   {
+                     cudaStreamCaptureStatus probeStat = cudaStreamCaptureStatusNone;
+                     cudaError_t probeErr = cudaStreamGetCaptureInfo_v2(ctx.cudaStr, &probeStat, nullptr, nullptr, nullptr, nullptr);
+                     if (probeErr != cudaSuccess || probeStat == cudaStreamCaptureStatusInvalidated) {
+                       const char* probeOpName = slots_[s].ident.opName.c_str();
+                       printf("DSP_PROBE: MERGED_GAP slot %d op=%s stream already INVALIDATED before executeSlot (probeErr=%d probeStat=%d)\n",
+                              s, probeOpName, (int)probeErr, (int)probeStat);
+                       fflush(stdout);
+                       cudaGetLastError();
+                       gapOk = false;
+                       break;
+                     }
+                   }
+                   auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
+                   // DSP_PROBE: check if executeSlot caused invalidation
+                   {
+                     cudaStreamCaptureStatus probeStatPost = cudaStreamCaptureStatusNone;
+                     cudaError_t probeErrPost = cudaStreamGetCaptureInfo_v2(ctx.cudaStr, &probeStatPost, nullptr, nullptr, nullptr, nullptr);
+                     if (probeErrPost != cudaSuccess || probeStatPost == cudaStreamCaptureStatusInvalidated) {
+                       const char* probeOpNamePost = slots_[s].ident.opName.c_str();
+                       printf("DSP_PROBE: MERGED_GAP slot %d op=%s INVALIDATED capture after executeSlot (gapStatus=%d probeErrPost=%d probeStatPost=%d)\n",
+                              s, probeOpNamePost, (int)gapStatus, (int)probeErrPost, (int)probeStatPost);
+                       fflush(stdout);
+                       cudaGetLastError();
+                       gapOk = false;
+                       break;
+                     }
+                   }
+                  if (gapStatus != Status::OK) {
+                    DSP_DIAG(EXECUTE, "MERGED_CAPTURE: gap slot %d FAILED status=%d",
+                             s, static_cast<int>(gapStatus));
+                    gapOk = false;
+                    break;
+                  }
+                }
 
                forceSync_ = false;
                tl_dspGapStream = prevGapStream;
 
-               if (!gapOk) {
-                 // Gap op failed during capture — abort merged capture
-                 tl_graphExecutionActive = false;
+                if (!gapOk) {
+                  // Gap op failed during capture — abort merged capture
+                  mergedCapGuard.deactivate();
+                  tl_mergedCaptureActive = false;
+                 tl_mergedCaptureExternals = nullptr;
                  tl_islandSlotMin = INT_MAX;
                  tl_islandSlotMax = INT_MIN;
                  if (mergedNativeHandle->isCapturing()) {
@@ -2659,11 +2787,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                continue;  // Stay in capture — check next unit
              }
 
-             // Gap is NOT capture-safe or no capture active — run natively.
-             // If capture was active, finalize the merged capture first.
-             if (captureActive) {
-               // End the merged capture
-               tl_graphExecutionActive = false;
+               // Gap is NOT capture-safe or no capture active — run natively.
+               // If capture was active, finalize the merged capture first.
+                 if (captureActive) {
+                  // End the merged capture
+                 mergedCapGuard.deactivate();
+                 tl_mergedCaptureActive = false;
+               tl_mergedCaptureExternals = nullptr;
                tl_islandSlotMin = INT_MAX;
                tl_islandSlotMax = INT_MIN;
 
@@ -2689,11 +2819,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (!allIslandsOk) break;
              }
 
-             // Execute gap slots natively (not captured — non-capture-safe gap).
-             // Use effectiveExternalsForCapture for consistency with the captured path:
-             // all gap ops (captured or native) read from the same stable staging buffers.
-             DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE: gap unit [%d-%d] — executing slots natively",
-                      unit.startSlot, unit.endSlot);
+              // Execute gap slots natively (not captured — non-capture-safe gap).
+              // Use effectiveExternalsForCapture for consistency with the captured path:
+              // all gap ops (captured or native) read from the same stable staging buffers.
+              DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE: gap unit [%d-%d] — executing slots natively",
+                       unit.startSlot, unit.endSlot);
              forceSync_ = true;
              for (int s = unit.startSlot; s <= unit.endSlot; s++) {
                auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
@@ -2766,9 +2896,25 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  allIslandsOk = false;
                  break;
                }
-               tl_graphExecutionActive = true;
-               captureActive = true;
-             } else {
+                 tl_mergedCaptureActive = true;
+                 tl_mergedCaptureExternals = effectiveExternalsForCapture;
+                 captureActive = true;
+                 mergedCapGuard.activate();
+                 // Set capture stream TLS immediately after every activate() call.
+                 // CaptureLifecycleGuard::deactivate() (called at end of each merged group)
+                 // nulls tl_graphCaptureStream. When a subsequent island leader calls
+                 // activate() again, tl_graphCaptureStream is still null — causing
+                 // captureSafeStreamOrDefault() to return the default stream (which IS
+                 // actively capturing after beginCapture above), triggering CUDA error 901.
+                 {
+                   cudaStream_t resolvedMergedCaptureStream = ctx.cudaStr;
+                   if (resolvedMergedCaptureStream == nullptr) {
+                     auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+                     if (defaultStreamPtr != nullptr) resolvedMergedCaptureStream = *defaultStreamPtr;
+                   }
+                   tl_graphCaptureStream = resolvedMergedCaptureStream;
+                 }
+              } else {
                // ── Extend existing merged capture to this island ──────────────
                DSP_DIAG(EXECUTE, "MERGED_CAPTURE: extending to island %d [%d-%d] mergedGroup=%d",
                         islandIdx, unit.startSlot, unit.endSlot, mergedGroupId);
@@ -2788,8 +2934,21 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              tl_islandSlotMin = unit.startSlot;
              tl_islandSlotMax = unit.endSlot;
 
-             auto captureStatus = ctx.backend->executeSegment(seg, slots_, effectiveExternalsForCapture, numExt,
-                                                          outputSlots_, totalOutputSlots_, stream);
+              auto captureStatus = ctx.backend->executeSegment(seg, slots_, effectiveExternalsForCapture, numExt,
+                                                           outputSlots_, totalOutputSlots_, stream);
+
+               // DSP_PROBE: check capture status after Triton island execution
+               {
+                 cudaStreamCaptureStatus probeIslandStat = cudaStreamCaptureStatusNone;
+                 cudaError_t probeIslandErr = cudaStreamGetCaptureInfo_v2(ctx.cudaStr, &probeIslandStat, nullptr, nullptr, nullptr, nullptr);
+                 if (probeIslandErr != cudaSuccess || probeIslandStat == cudaStreamCaptureStatusInvalidated) {
+                   printf("DSP_PROBE: TRITON_ISLAND %d [%d-%d] INVALIDATED capture after executeSegment (captureStatus=%d probeIslandErr=%d probeIslandStat=%d)\n",
+                          islandIdx, unit.startSlot, unit.endSlot, (int)captureStatus, (int)probeIslandErr, (int)probeIslandStat);
+                   fflush(stdout);
+                   cudaGetLastError();
+                   captureStatus = Status::KERNEL_FAILURE;
+                 }
+               }
 
              // Check if next unit is a capture-safe gap — if so, keep capture active
              bool keepCaptureOpen = false;
@@ -2813,8 +2972,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                continue;
              }
 
-             // Either capture failed or this is the last unit / next gap is unsafe → end capture
-             tl_graphExecutionActive = false;
+              // Either capture failed or this is the last unit / next gap is unsafe → end capture
+              mergedCapGuard.deactivate();
+              tl_mergedCaptureActive = false;
+             tl_mergedCaptureExternals = nullptr;
              tl_islandSlotMin = INT_MAX;
              tl_islandSlotMax = INT_MIN;
 
@@ -2849,14 +3010,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              }
 
              captureActive = false;
+             tl_mergedCaptureActive = false;
+             tl_mergedCaptureExternals = nullptr;
              mergedHandle.reset();
              mergedNativeHandle = nullptr;
            }
          }  // end for each unit
 
          // If capture still active at end of schedule, finalize it
-         if (captureActive) {
-           tl_graphExecutionActive = false;
+          if (captureActive) {
+            mergedCapGuard.deactivate();
+            tl_mergedCaptureActive = false;
+           tl_mergedCaptureExternals = nullptr;
            tl_islandSlotMin = INT_MAX;
            tl_islandSlotMax = INT_MIN;
 
@@ -3049,7 +3214,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       if (captureOk) {
         DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "Triton graph capture started for seg[%d-%d] execCount=%d",
                      seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
-        tl_graphExecutionActive = true;
+        CaptureLifecycleGuard capGuard;
+        capGuard.activate();
+        tl_graphCaptureStream = ctx.cudaStr;
 
         // External inputs are already synced to device (syncToDevice before capture).
         // After syncToSpecial(), readSpecial() makes isSpecialActual()=true via
@@ -3109,7 +3276,29 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
           captureStatus = Status::OK;
           int slotsExecuted = 0;
+          int frozenSkipped = 0;
           for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+            // Skip frozen constant slots during capture — their outputs are
+            // already populated from warmup and never change. Excluding them
+            // from the CUDA graph avoids replaying thousands of constant-producing
+            // kernels per decode step (e.g. 2622 of 2742 ops in VLM models).
+            // demoteFrozenSlotStates only demotes FROZEN→SHAPE_CACHED, preserving
+            // FROZEN_CONSTANT, so this check is valid during capture.
+            if (slots_[s].frozenConstantSlot()) {
+              bool allOutputsPopulated = true;
+              for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+                int si = slots_[s].wiring.outputSlotIndices[o];
+                if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr) {
+                  allOutputsPopulated = false;
+                  break;
+                }
+              }
+              if (allOutputsPopulated) {
+                frozenSkipped++;
+                continue;
+              }
+              // Output not populated — fall through to execute during capture
+            }
             auto slotStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
             slotsExecuted++;
             if (slotStatus != Status::OK) {
@@ -3118,10 +3307,38 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               captureStatus = slotStatus;
               break;
             }
+            // ── INVALIDATION PROBE ─────────────────────────────────────────────
+            // Check capture status after every slot.  cudaMalloc / cudaMemcpy /
+            // cudaStreamSynchronize on a non-capture stream silently invalidates
+            // the capture stream (status=2) while still returning cudaSuccess to
+            // the caller, so slotStatus==OK above is not sufficient.
+            // This probe identifies the FIRST slot that causes the invalidation.
+            {
+              cudaStreamCaptureStatus probeStatus = cudaStreamCaptureStatusNone;
+              unsigned long long probeId = 0;
+              auto probeErr = cudaStreamGetCaptureInfo_v2(
+                  ctx.cudaStr, &probeStatus, &probeId, nullptr, nullptr, nullptr);
+              if (probeStatus == cudaStreamCaptureStatusInvalidated) {
+                printf("DSP_PROBE: capture INVALIDATED after slot %d op=%s err=%d capStatus=%d slotsExecuted=%d\n",
+                       s, slots_[s].ident.opName.c_str(),
+                       static_cast<int>(probeErr), static_cast<int>(probeStatus),
+                       slotsExecuted);
+                fflush(stdout);
+                // Clear CUDA error state so subsequent API calls are not poisoned
+                cudaGetLastError();
+                captureStatus = Status::KERNEL_FAILURE;
+                break;
+              }
+            }
           }
 
           forceSync_ = false;
           tl_dspGapStream = prevGapStream;
+
+          if (frozenSkipped > 0) {
+            DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: skipped %d frozen constant slots (of %d total)",
+                     frozenSkipped, seg.def.endSlot - seg.def.startSlot + 1);
+          }
 
           // Check how many nodes are in the graph now
           size_t nativeNodes = 0;
@@ -3138,8 +3355,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: seg[%d-%d] done — %d slots executed, %zu graph nodes, status=%d",
                    seg.def.startSlot, seg.def.endSlot, slotsExecuted, nativeNodes, static_cast<int>(captureStatus));
         }
-
-        tl_graphExecutionActive = false;
 
         // Snapshot addresses AFTER capture execution to detect pointer changes during capture
         {
@@ -3346,13 +3561,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               tritonOrderedRangeGuard.active = false;
               TritonGraphBackend::clearOrderedRangeExecutor();
 #endif
-              DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+              DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
                             "NativeDSP: graph instantiation OOM for seg[%d-%d] on device %d "
                             "(retry %d/%d, retryAfterExec=%d). Evicted LRU graphs. "
-                            "Fix memory pressure — do NOT fall back to slot-by-slot.",
+                            "Returning KERNEL_FAILURE to caller — memory-budget segmentation "
+                            "should prevent this.",
                             seg.def.startSlot, seg.def.endSlot, deviceId,
                             seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                             seg.exec.captureRetryAfterExec);
+              return Status::KERNEL_FAILURE;
             }
           }
 
@@ -3670,6 +3887,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
     // Sync external inputs to device before Triton segment execution.
     // Variable inputs use forceSync=true to bypass stale actuality flags.
     syncExternalInputs(externalArrays, numExt, externalInputIsVariable_,
+                       externalInputIsPlaceholder_,
                        externalInputNames_, shapesFrozen_,
                        Environment::getInstance().tritonVerifyKernels(),
                        "direct", seg.exec.executionCount);

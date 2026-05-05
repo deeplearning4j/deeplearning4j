@@ -1037,10 +1037,11 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   }
 
   // Mark all Java-managed (non-op-produced) output slots as external-dependent.
-  // Constants with SOURCE_CONSTANT are truly immutable — but we still mark them
-  // as external-dependent for safety. The cost is minimal: a few extra slots
-  // won't be frozen, but correctness is guaranteed. Shape-only ops that read
-  // these slots will still be frozen (they don't propagate dependency).
+  // Constants with SOURCE_CONSTANT are truly immutable, but output slot indices
+  // are not external input indices: recurrent state buffers such as KV/GDN/conv
+  // state can be wired as positive SOURCE_VARIABLE slot references that no plan
+  // op writes. If these slots are treated as constants, downstream update ops are
+  // frozen and generation reuses stale state after the freeze transition.
   for (int si = 0; si < totalOutputSlots_; si++) {
     if (!producedByPlanOp[si]) {
       dependsOnExternal[si] = true;
@@ -1067,8 +1068,21 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     for (int i = 0; i < sl.wiring.numInputs; i++) {
       int srcIdx = sl.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
-        anyInputDependsOnExternal = true;
-        break;
+        // External input: only propagate dependency if it's a VARIABLE external
+        // input (changes per step). Constants are immutable — reading from a
+        // constant does NOT make this op's output externally-dependent.
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < (int)externalInputIsVariable_.size() && externalInputIsVariable_[extIdx]) {
+          anyInputDependsOnExternal = true;
+          break;
+        }
+        // If externalInputIsVariable_ is not yet populated (first execute before
+        // markExternalInputVariable calls), fall back to conservative behavior.
+        if (externalInputIsVariable_.empty()) {
+          anyInputDependsOnExternal = true;
+          break;
+        }
+        continue;
       }
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_ && dependsOnExternal[srcIdx]) {
         anyInputDependsOnExternal = true;
@@ -1097,7 +1111,48 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
         break;
       }
     }
-    if (allOutputsConstant && !sl.flags.isDataDependent && !sl.flags.isDynamicShape) {
+    // Freeze if ALL outputs are constant AND the op won't produce different results.
+    //
+    // Data-dependent ops (concat with axis-in-last-arr, etc.) read input VALUES
+    // to determine their output. They cannot be frozen if their inputs come from
+    // external/variable sources. BUT if ALL of their inputs are themselves frozen
+    // constants (no external dependency), then the values they read are the same
+    // every step — so the op IS safe to freeze.
+    //
+    // This handles the SmolDocling case: 552 concat ops build shape vectors like
+    // [batch,1,heads,dim] from frozen scalar constants. The concat is DATADEP
+    // (conservatively, for axis-in-last-arr mode) but all inputs are frozen.
+    bool effectivelyDataDependent = sl.flags.isDataDependent;
+    if (effectivelyDataDependent && allOutputsConstant) {
+      // Check if ALL inputs are from frozen-constant slots or frozen externals.
+      // If so, the data the op depends on is itself frozen → safe to freeze.
+      bool allInputsFrozen = true;
+      for (int inp = 0; inp < sl.wiring.numInputs; inp++) {
+        int srcIdx = sl.wiring.inputSourceIndices[inp];
+        if (srcIdx < 0) {
+          // External input — check if it's a non-variable (weight/constant).
+          int extIdx = -(srcIdx + 1);
+          if (extIdx >= 0 && extIdx < static_cast<int>(externalInputIsVariable_.size()) &&
+              externalInputIsVariable_[extIdx]) {
+            allInputsFrozen = false;
+            break;
+          }
+          // Non-variable external (weight) → frozen by definition
+        } else if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+          // Internal slot output — check if producing slot is frozen
+          if (dependsOnExternal[srcIdx]) {
+            allInputsFrozen = false;
+            break;
+          }
+        }
+      }
+      if (allInputsFrozen) {
+        effectivelyDataDependent = false;
+        DSP_DIAG_SLOT(SHAPE, s, "DATADEP op '%s' has all-frozen inputs → safe to freeze as constant",
+                       sl.ident.opName.c_str());
+      }
+    }
+    if (allOutputsConstant && !effectivelyDataDependent && !sl.flags.isDynamicShape) {
       sl.state_ = NativeSlot::SlotState::FROZEN_CONSTANT;
       frozenConstCount++;
       if (isValueIndependentSlot[s]) valueIndepCount++;
@@ -1317,12 +1372,11 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
       }
     }
   }
-  // Protect multi-consumer slots
-  for (int si = 0; si < totalOutputSlots_; si++) {
-    if (slotConsumerCount[si] > 1) {
-      protectedSlots.insert(si);
-    }
-  }
+  // Multi-consumer in-place protection: conservatively disable in-place for ANY
+  // multi-consumer slot. When frozen-constant skip is active (executeCount_ >= 2),
+  // allowing in-place writes to shared buffers corrupts data that frozen ops reuse
+  // on subsequent iterations. The "last consumer" optimization is unsafe because
+  // frozen ops don't re-execute — they rely on stable buffer contents from prior runs.
 
   int disabledInPlace = 0;
   for (int s = 0; s < numSlots_; s++) {
@@ -1330,7 +1384,19 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     if (sl.flags.inPlaceFused && sl.flags.inPlaceFusedInputIdx >= 0 &&
         sl.flags.inPlaceFusedInputIdx < sl.wiring.numInputs) {
       int srcSlot = sl.wiring.inputSourceIndices[sl.flags.inPlaceFusedInputIdx];
-      if (srcSlot >= 0 && protectedSlots.count(srcSlot)) {
+      if (srcSlot < 0) continue;
+
+      // Always protect frozen constant slots and value-dep op inputs
+      if (protectedSlots.count(srcSlot)) {
+        sl.flags.inPlaceFused = false;
+        sl.flags.inPlaceFusedInputIdx = -1;
+        disabledInPlace++;
+        continue;
+      }
+
+      // Protect ALL multi-consumer slots — in-place overwrites corrupt the buffer
+      // for any other consumer, and frozen-skip relies on stable buffer contents
+      if (slotConsumerCount[srcSlot] > 1) {
         sl.flags.inPlaceFused = false;
         sl.flags.inPlaceFusedInputIdx = -1;
         disabledInPlace++;
@@ -1516,6 +1582,24 @@ static void dspPropagateSlotError(int stepIdx, const NativeSlot& slot,
 Status NativeDynamicShapePlan::executeSlot(
     int stepIdx, NDArray** externalArrays, int numExt, void* stream) {
   NativeSlot& slot = slots_[stepIdx];
+  auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
+  const bool frozenSlotBySlot =
+      shapesFrozen_ && execCtx != nullptr &&
+      execCtx->graphExecutionMode == static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT);
+  auto prezeroThisSlot = [&]() {
+    if (slot.frozenConstantSlot()) return;
+    if (!slot.flags.needsZeroedOutput) return;
+    if (slot.flags.isViewCapableOp) return;
+    if (slot.flags.isIdentityOp) return;
+    if (slot.flags.inPlaceFused) return;
+    if (slot.fusedChain.isFusedChainTail) return;
+    if (slot.state_ >= NativeSlot::SlotState::FROZEN && slot.flags.isFullyWriting) return;
+
+    GraphSegment zeroSeg;
+    zeroSeg.def.startSlot = stepIdx;
+    zeroSeg.def.endSlot = stepIdx;
+    prezeroSegmentOutputs(zeroSeg, stream);
+  };
 
   // Trace slot entry during warmup only (steady-state uses the frozen fast path).
   if (executeCount_ < 2 && DSP_DIAG_ENABLED(SHAPE)) {
@@ -1628,7 +1712,7 @@ Status NativeDynamicShapePlan::executeSlot(
     // fast-path reuses cached outputs from the previous execution — wrong for
     // variable inputs. tl_dspReplayActive is set by compositeReplay for gap units.
     // Triton islands handle this correctly via re-executed compiled kernels.
-    if (!(shapesFrozen_ && executeCount_ >= 4 &&
+    if (!(shapesFrozen_ && !frozenSlotBySlot && executeCount_ >= 4 &&
 #ifdef SD_CUDA
         !tl_dspReplayActive &&
 #endif
@@ -1985,7 +2069,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
     // Clear the live slot before deleting to avoid a dangling pointer when
     // a shape transition forces inline replacement.
-    if (outputSlots_ == outputSlots_ &&
+    if (outputSlots_ != nullptr &&
         slotIdx >= 0 && slotIdx < totalOutputSlots_ &&
         outputSlots_[slotIdx] == cached) {
       outputSlots_[slotIdx] = nullptr;
@@ -2112,10 +2196,10 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Frozen constant optimization ──────────────────────────────────────────
-  // Only skip when shapesFrozen_ && executeCount_ > 0, because that's when
-  // outputSlots_ is populated from outputSlots_ (line 921-922).  When
-  // shapesFrozen_=false, outputSlots_ is zeroed — skipping a slot would
-  // leave a NULL entry and downstream slots would get NULL inputs.
+  // Skip frozen constant slots from executeCount_ >= 2 onward. This ensures
+  // detectFrozenConstants() (which runs at executeCount_ == 1) has completed
+  // and all frozen slot outputs are populated from prior executions. The
+  // allOutputsPopulated check below provides an additional safety gate.
   if (slot.frozenConstantSlot() && shapesFrozen_ && executeCount_ >= 2) {
     // Verify all outputs are populated before skipping. If outputSlots_[si]
     // is null (first execution), fall through to execute the slot so
@@ -2410,7 +2494,7 @@ Status NativeDynamicShapePlan::executeSlot(
   // Dynamic-shape slots always bypass this path: their output shape changes each
   // step, so the frozen context's cached shapes/buffers are stale. They must
   // fall through to the normal execution path below.
-  if (slot.frozenContextReady() && !slot.flags.isDynamicShape) {
+  if (!frozenSlotBySlot && slot.frozenContextReady() && !slot.flags.isDynamicShape) {
 
     // ── View-capable fast path (reshape/expand_dims/squeeze/strided_slice) ──
     if (slot.flags.isViewCapableOp && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {

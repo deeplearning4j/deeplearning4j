@@ -21,6 +21,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <helpers/MmulHelper.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/qr.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -167,16 +168,11 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
 
   auto stream = context->getCudaStream();
 
-  // Allocate C-contiguous work buffer on device
-  // During CUDA graph capture, synchronous calls are illegal.
-  T* work = nullptr;
-  cudaError_t err;
-  if (tl_graphExecutionActive) {
-    err = cudaMallocAsync(&work, M * N * sizeof(T), *stream);
-  } else {
-    err = cudaMalloc(&work, M * N * sizeof(T));
-  }
-  if (err != cudaSuccess) {
+  // Allocate C-contiguous work buffer on device via pool
+  int deviceId = sd::AffinityManager::currentDeviceId();
+  T* work = reinterpret_cast<T*>(
+      sd::memory::CudaMemoryPool::getInstance().allocate(M * N * sizeof(T), deviceId, *stream));
+  if (work == nullptr) {
     THROW_EXCEPTION("qr: Failed to allocate work buffer on device");
   }
   // Power-of-2 block size for shared memory reductions
@@ -191,12 +187,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
 
   sd::DebugHelper::checkErrorCode(stream, "qrModifiedGramSchmidtKernel failed");
 
-  // During CUDA graph capture, synchronous calls are illegal.
-  if (tl_graphExecutionActive) {
-    cudaFreeAsync(work, *stream);
-  } else {
-    cudaFree(work);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(work, deviceId, *stream);
 
   NDArray::registerSpecialUse({Q, R}, {matrix});
 }

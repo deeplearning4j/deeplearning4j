@@ -241,17 +241,16 @@ void autoregressiveDecodeCpu(
                  "Either extInputContext (OpaqueContext*) or planExternalInputs (NDArray**) "
                  "must be non-null. Both are null — cannot wire plan inputs.");
 
-    // Mark variable ext inputs BEFORE the decode loop so DSP frozen fast-path
-    // knows which staging buffers to refresh each step.
-    if (config->embeddingsExtIdx >= 0) plan->markExternalInputVariable(config->embeddingsExtIdx);
-    if (config->maskExtIdx >= 0) plan->markExternalInputVariable(config->maskExtIdx);
-    if (config->posIdsExtIdx >= 0) plan->markExternalInputVariable(config->posIdsExtIdx);
-    if (config->inputIdsExtIdx >= 0) plan->markExternalInputVariable(config->inputIdsExtIdx);
-    if (config->causalMaskExtIdx >= 0) plan->markExternalInputVariable(config->causalMaskExtIdx);
-    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputVariable(config->attnMaskReformatExtIdx);
-    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputVariable(config->positionOffsetExtIdx);
-    if (config->cachePositionExtIdx >= 0) plan->markExternalInputVariable(config->cachePositionExtIdx);
-    // GDN/conv state ext inputs
+    // Placeholder inputs: host-written by Java each step → force H2D on DSP stream
+    if (config->embeddingsExtIdx >= 0) plan->markExternalInputPlaceholder(config->embeddingsExtIdx);
+    if (config->maskExtIdx >= 0) plan->markExternalInputPlaceholder(config->maskExtIdx);
+    if (config->posIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->posIdsExtIdx);
+    if (config->inputIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->inputIdsExtIdx);
+    if (config->causalMaskExtIdx >= 0) plan->markExternalInputPlaceholder(config->causalMaskExtIdx);
+    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputPlaceholder(config->attnMaskReformatExtIdx);
+    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputPlaceholder(config->positionOffsetExtIdx);
+    if (config->cachePositionExtIdx >= 0) plan->markExternalInputPlaceholder(config->cachePositionExtIdx);
+    // GDN/conv state: device-written via D2D copy on DSP stream — NOT placeholder
     if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr) {
         for (int s = 0; s < config->numGdnStatePairs; s++) {
             int extIdx = config->gdnStateExtIndices[s];
@@ -264,7 +263,7 @@ void autoregressiveDecodeCpu(
             if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
         }
     }
-    // KV cache ext inputs — attention ops write KV every step
+    // KV cache: device-written by attention kernels — NOT placeholder
     if (config->kvInputExtIndices != nullptr) {
         for (int kv = 0; kv < 2 * numKvPairs; kv++) {
             int kvIdx = config->kvInputExtIndices[kv];
@@ -493,7 +492,7 @@ void autoregressiveDecodeCpu(
         generatedTokenIds->p(tokensGenerated, nextTokenId);
         tokensGenerated++;
 
-        if (env_isVerbose()) {
+        if (step < 10 && env_isVerbose()) {
           sd_printf("CPU_DECODE_STEP[%d/%d]: nextTokenId=%lld currentPosition=%lld stopTokenCount=%d\n",
                     step, maxNewTokens, (long long)nextTokenId, (long long)currentPosition,
                     (int)stopTokenIds.size());

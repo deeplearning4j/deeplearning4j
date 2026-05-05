@@ -826,6 +826,8 @@ public class OpaqueDataBuffer extends Pointer {
                 if (Nd4j.getEnvironment().isFuncTracePrintDeallocate()) {
                     System.out.println("Java side deallocation current trace: \n " + currentTrace());
                 }
+                long allocationBytes = deallocator != null ? deallocator.getAllocationBytes() : 0L;
+                DeviceDescriptor allocationDevice = allocationBytes > 0 ? resolveAllocationDevice(this) : null;
                 // Second shutdown check: if shutdown started after the initial check,
                 // use GPU-only free to avoid host free() discovering corrupted metadata.
                 if (DeallocatorService.getShutdownInProgress().get()) {
@@ -838,6 +840,9 @@ public class OpaqueDataBuffer extends Pointer {
 
                 if (deallocator != null) {
                     deallocator.markDeallocated();
+                }
+                if (allocationBytes > 0 && allocationDevice != null) {
+                    DeviceMemoryManager.getInstance().recordDeallocation(allocationDevice, allocationBytes);
                 }
             } catch (Exception e) {
                 log.error("Error in closeBuffer dbClose", e);
@@ -1012,47 +1017,19 @@ public class OpaqueDataBuffer extends Pointer {
     }
 
     private static DeviceDescriptor selectDeviceForAllocation(long bytes, DeviceMemoryManager memoryManager) {
-        // Prefer the current device — only route elsewhere if it can't fit the allocation
-        // plus a safety headroom. This avoids unnecessary CUDA context switches during
-        // DSP execution, CUDA graph capture, and other operations that depend on a stable
-        // device context. The headroom ensures ContextBuffers workspace (16MB) and other
-        // runtime overhead can still be allocated on the device.
+        // Always allocate on the current device. The C++ CudaMemoryPool handles OOM
+        // correctly: trim pool (releases reserved-but-unused memory back to driver) →
+        // retry on same device → failover to other devices only as last resort.
+        //
+        // Java-level routing based on cudaMemGetInfo is WRONG because it doesn't
+        // account for pool-reserved memory that is reclaimable by trim. cudaMemGetInfo
+        // reports pool-reserved as "used" even though it's instantly reclaimable,
+        // causing false OOM detection and unnecessary cross-device routing that then
+        // fails with "invalid argument" on non-peer transfers.
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-        // During CUDA graph capture/replay, never route to a different device.
-        // Cross-device pointers invalidate the captured graph.
-        if (tl_suppressCrossDeviceRouting.get() || globalSuppressCrossDeviceRouting) {
-            DeviceDescriptor currentDevice = memoryManager.getRegisteredDevice(currentDeviceId);
-            return currentDevice != null ? currentDevice :
-                memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
-        }
-
-        // Look up the already-registered device descriptor for the current device.
-        // Devices are registered at startup by the backend (JCublasBackend) with real
-        // memory values. We must use that descriptor, NOT create a new one.
         DeviceDescriptor currentDevice = memoryManager.getRegisteredDevice(currentDeviceId);
-        if (currentDevice != null) {
-            long freeMem = memoryManager.getActualFreeMemory(currentDevice);
-            // Only require full headroom for large allocations (>1MB).
-            // Small allocations (dup targets, scalars, etc.) should stay on the
-            // current device to avoid cross-device kernel issues. The C++ failover
-            // handles actual OOM at the native layer.
-            long headroom = bytes > 1024 * 1024 ? MIN_DEVICE_HEADROOM : Math.min(bytes * 2, MIN_DEVICE_HEADROOM);
-            if (freeMem >= bytes + headroom) {
-                return currentDevice;
-            }
-            // Current device can't fit — route to device with most free memory
-            DeviceDescriptor alt = memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
-            if (alt != null && alt.getDeviceIndex() != currentDeviceId) {
-                log.info("Multi-GPU routing: device {} has {}MB free, need {}MB + 128MB headroom. Routing to device {} ({}MB free)",
-                        currentDeviceId, freeMem / (1024 * 1024), bytes / (1024 * 1024),
-                        alt.getDeviceIndex(), memoryManager.getActualFreeMemory(alt) / (1024 * 1024));
-            }
-            return alt;
-        }
-
-        // Current device not registered — fall back to device with most free memory.
-        return memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
+        return currentDevice != null ? currentDevice :
+            memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
     }
 
     /**

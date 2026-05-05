@@ -102,6 +102,10 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
         return innerDeallocator.getBuffer();
     }
 
+    public long getAllocationBytes() {
+        return innerDeallocator.getAllocationBytes();
+    }
+
     /**
      * Marks this deallocator as having completed deallocation.
      * Called by OpaqueDataBuffer.closeBuffer() after it performs dbClose directly.
@@ -238,6 +242,10 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
 
         OpaqueDataBuffer getBuffer() {
             return buffer;
+        }
+
+        long getAllocationBytes() {
+            return allocationBytes;
         }
 
         void markDeallocated() {

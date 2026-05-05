@@ -102,8 +102,14 @@ static void sconv2dDepthwiseCUDNN(const LaunchContext* context, NDArray* input, 
   cudnnConvolutionFwdAlgo_t algo;
   cudnnConvolutionFwdAlgoPerf_t algoPerf;
   int count = 0;
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
-                          cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  // During CUDA graph capture, use heuristic _v7 (no GPU benchmarks) to avoid capture invalidation.
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardAlgorithm_v7),
+                            cudnnGetConvolutionForwardAlgorithm_v7(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
+                            cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  }
   if (count == 0)
     throw cuda_exception::build("sconv2dDepthwiseCUDNN: cudnnFindConvolutionForwardAlgorithm failed", 0);
   algo = algoPerf.algo;
@@ -197,8 +203,14 @@ static void sconv2dPointwiseCUDNN(const LaunchContext* context, NDArray* input, 
   cudnnConvolutionFwdAlgo_t algo;
   cudnnConvolutionFwdAlgoPerf_t algoPerf;
   int count = 0;
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
-                          cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  // During CUDA graph capture, use heuristic _v7 (no GPU benchmarks) to avoid capture invalidation.
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardAlgorithm_v7),
+                            cudnnGetConvolutionForwardAlgorithm_v7(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
+                            cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  }
   if (count == 0)
     throw cuda_exception::build("sconv2dPointwiseCUDNN: cudnnFindConvolutionForwardAlgorithm failed", 0);
   algo = algoPerf.algo;

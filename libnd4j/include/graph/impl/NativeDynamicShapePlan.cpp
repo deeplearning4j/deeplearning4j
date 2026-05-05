@@ -106,6 +106,11 @@
 // GPU graph backends are included only in the files that use them
 // (_gpubackend.cpp, platform dispatch files). This file is platform-neutral.
 
+#ifdef SD_CUDA
+// DSP gap stream — defined in LaunchContext.cu, shared across translation units
+extern thread_local cudaStream_t tl_dspGapStream;
+#endif
+
 namespace sd {
 namespace graph {
 
@@ -1464,6 +1469,53 @@ Status NativeDynamicShapePlan::execute(
            numSlots_, numExternalInputs, numExternalInputs_,
            executeCount_, shapesFrozen_ ? 1 : 0);
 
+#ifdef SD_CUDA
+  // Clear any sticky CUDA error that accumulated from a previous plan execution
+  // (e.g., Triton compilation capture errors, ContextBuffers init errors, or
+  // cross-plan errors from a shared thread). Without this, error 906/901 from
+  // a previous capture attempt causes all cudaMemsetAsync / kernel launches in
+  // THIS execution to fail with 901, even though this plan is NOT capturing.
+  cudaGetLastError();
+
+  // Additionally verify the default LaunchContext stream and the execution stream
+  // aren't stuck in capture mode. During Triton compilation, beginCapture may capture
+  // on the plan's execution stream; if capture is aborted but endCapture wasn't called,
+  // all subsequent kernel launches on that stream fail with 901.
+  auto checkAndEndStaleCapture = [](cudaStream_t s, const char* label) {
+    if (s == nullptr) return;
+    cudaStreamCaptureStatus capStatus;
+    auto capErr = cudaStreamGetCaptureInfo(s, &capStatus, nullptr);
+    if (capErr == cudaSuccess && capStatus != cudaStreamCaptureStatusNone) {
+      sd_printf("WARNING: NativeDSP::execute: %s stream %p still in capture mode "
+                "(status=%d)! Ending stale capture.\n",
+                label, (void*)s, static_cast<int>(capStatus));
+      cudaGraph_t staleGraph;
+      cudaStreamEndCapture(s, &staleGraph);
+      if (staleGraph != nullptr) cudaGraphDestroy(staleGraph);
+      cudaGetLastError();
+    }
+  };
+  {
+    auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    if (defaultStreamPtr != nullptr && *defaultStreamPtr != nullptr) {
+      checkAndEndStaleCapture(*defaultStreamPtr, "default");
+    }
+  }
+  if (stream != nullptr) {
+    checkAndEndStaleCapture(*static_cast<cudaStream_t*>(stream), "execution");
+  }
+  checkAndEndStaleCapture(tl_graphCaptureStream, "tl_graphCaptureStream");
+  // Clear graph execution TLS state so that downstream slot-by-slot operations
+  // do not mistakenly use the capture stream. The stale capture has already been
+  // ended above, but the TLS flag persists and causes DataBuffer::setToZeroBuffers
+  // to issue cudaMemsetAsync on pool-allocated memory with the capture stream,
+  // producing error 901.
+  if (tl_graphExecutionActive) {
+    tl_graphExecutionActive = false;
+    tl_graphCaptureStream = nullptr;
+  }
+#endif
+
   if (numExternalInputs != numExternalInputs_) {
     DSP_DIAG(EXECUTE, "NativeDynamicShapePlan::execute: expected %d external inputs, got %d",
               numExternalInputs_, numExternalInputs);
@@ -1953,16 +2005,21 @@ Status NativeDynamicShapePlan::execute(
   }
 
   // Phase dispatch — resolved once by populateDerivedState(), read here.
+  const bool explicitSlotBySlot = execCtx->forcedSlotBySlot ||
+      execCtx->graphExecutionMode == static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT);
+  const char* dispatchModeName = explicitSlotBySlot ? "SLOT_BY_SLOT" : execCtx->dispatchModeName();
   Status phaseStatus = Status::OK;
   execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_DISPATCH,
                        execCtx->graphExecutionMode);
   DSP_DIAG(EXECUTE, "PHASE_DISPATCH: %s (frozen=%d execCount=%d mode=%d)",
-           execCtx->dispatchModeName(), static_cast<int>(shapesFrozen_),
+           dispatchModeName, static_cast<int>(shapesFrozen_),
            executeCount_, execCtx->graphExecutionMode);
 
-  if (execCtx->isFirstFrozenWarmup) {
+  if (explicitSlotBySlot) {
+    phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
+  } else if (execCtx->isFirstFrozenWarmup) {
     phaseStatus = phaseWarmup(externalInputs, numExternalInputs, stream, &phaseStats);
-  } else if (!execCtx->isReplay) {  // GEM_SLOT_BY_SLOT or forced-slot-by-slot
+  } else if (!execCtx->isReplay) {
     phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
   } else {
     phaseStatus = phaseReplay(externalInputs, numExternalInputs, requestedOutputs,
@@ -2293,8 +2350,7 @@ Status NativeDynamicShapePlan::execute(
   // line 1476), phaseCompile defers (requires executeCount_>=1), and
   // platformShouldUseGraph returns false — forcing every segment to run slot-by-slot
   // for the life of the plan.
-  if (!compilationDone_ && !shapesFrozen_ &&
-      graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT &&
+  if (!compilationDone_ && !shapesFrozen_ && !explicitSlotBySlot &&
       planPhase_ == PlanPhase::SLOT_BY_SLOT) {
     int oldExecCount = executeCount_;
     int oldSegCount = static_cast<int>(segments_.size());
@@ -2345,10 +2401,47 @@ Status NativeDynamicShapePlan::execute(
   // are populated in outputSlots_. Compile all Triton modules now so the 2nd
   // execute() goes straight to replay instead of blocking on compilation.
   // compilationDone_ gate ensures this only happens once per plan lifecycle.
-  if (!compilationDone_ && shapesFrozen_ && executeCount_ == 1) {
+  if (!compilationDone_ && shapesFrozen_ && executeCount_ == 1 && !explicitSlotBySlot) {
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_COMPILE,
                          static_cast<int>(segments_.size()));
     phaseCompile(externalInputs, numExternalInputs);
+
+    // Triton compilation internally captures CUDA graphs on DSP-managed
+    // streams (tl_dspExecutionStream, tl_dspGapStream). If the capture was
+    // aborted or endCapture was not called, the stream remains in capture
+    // mode. Subsequent operations on OTHER streams that access pool-allocated
+    // memory from the capturing stream's pool will fail with
+    // cudaErrorStreamCaptureImplicit (901). Check ALL DSP streams and end
+    // any stale capture before entering the replay phase.
+#ifdef SD_CUDA
+    {
+      auto endStaleCapture = [](cudaStream_t s, const char* label) {
+        if (s == nullptr) return;
+        cudaStreamCaptureStatus capStatus;
+        auto capErr = cudaStreamGetCaptureInfo(s, &capStatus, nullptr);
+        if (capErr == cudaSuccess && capStatus != cudaStreamCaptureStatusNone) {
+          sd_printf("WARNING: NativeDSP::afterPhaseCompile: %s stream %p still "
+                    "in capture mode (status=%d)! Ending stale capture.\n",
+                    label, (void*)s, static_cast<int>(capStatus));
+          cudaGraph_t staleGraph;
+          cudaStreamEndCapture(s, &staleGraph);
+          if (staleGraph != nullptr) cudaGraphDestroy(staleGraph);
+          cudaGetLastError();
+        }
+      };
+      // Check execution stream (passed by Java)
+      if (stream != nullptr) endStaleCapture(*static_cast<cudaStream_t*>(stream), "execution");
+      // Check default LaunchContext stream
+      {
+        auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+        if (defaultStreamPtr != nullptr) endStaleCapture(*defaultStreamPtr, "default");
+      }
+      // Check DSP-managed streams (Triton compilation targets)
+      endStaleCapture(tl_dspExecutionStream, "tl_dspExecutionStream");
+      endStaleCapture(tl_dspGapStream, "tl_dspGapStream");
+      endStaleCapture(tl_graphCaptureStream, "tl_graphCaptureStream");
+    }
+#endif
   }
 
   platformDetectAndPrepareBatchedGemm(externalInputs, numExternalInputs, stream);
@@ -2417,6 +2510,13 @@ Status NativeDynamicShapePlan::executeSteadyState(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** requestedOutputs, int numRequestedOutputs,
     void* stream) {
+
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
+      Environment::getInstance().tritonSkipKernels()) {
+    DSP_DIAG(EXECUTE, "[DSP_GATE] executeSteadyState delegates to execute() for slot-by-slot mode");
+    return execute(externalInputs, numExternalInputs,
+                   requestedOutputs, numRequestedOutputs, stream);
+  }
 
   // Precondition check: fall back to full execute() if not in steady state
   if (!shapesFrozen_ || executeCount_ < 4 ||
@@ -2724,6 +2824,16 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
   DSP_DIAG(EXECUTE, "markExternalInputVariable: ext[%d] name='%s' now variable. "
            "fullInvalidation=%d",
            extIdx, name, needsFullInvalidation ? 1 : 0);
+}
+
+void NativeDynamicShapePlan::markExternalInputPlaceholder(int extIdx) {
+  if (extIdx < 0 || extIdx >= numExternalInputs_) return;
+  if (externalInputIsPlaceholder_.empty()) {
+    externalInputIsPlaceholder_.resize(numExternalInputs_, false);
+  }
+  externalInputIsPlaceholder_[extIdx] = true;
+  // Also mark as variable (placeholders are a subset of variables)
+  markExternalInputVariable(extIdx);
 }
 
 void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
@@ -3248,25 +3358,34 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     }
   }
 
-  // Ensure all DataBuffers have both primary and special allocations BEFORE
-  // freezing. Once frozen, allocatePrimary/allocateSpecial will throw.
-  // On CUDA, warmup may leave some buffers with only one side allocated:
-  //   - weight buffers that are device-authoritative may have special but no primary
-  //   - output slot buffers that only wrote to host may have primary but no special
-  // All allocations MUST complete before addFrozenRef().
+  // Ensure DataBuffers have the allocations they need BEFORE freezing.
+  // Once frozen, allocatePrimary/allocateSpecial will throw.
+  //
+  // Weight buffers: need both primary+special (host-side access patterns).
+  // Requested output slots: need both (Java reads primary via syncToPrimary).
+  // Intermediate output slots: ONLY need special (device) — they are never
+  //   read on host during graph replay. Skipping primary allocation for these
+  //   saves ~50% of warmup GPU memory overhead (host mirrors waste address space
+  //   and prevent the pool from reclaiming device memory).
 #if defined(SD_CUDA)
   {
     auto ensureFullAllocation = [](DataBuffer* db) {
       if (db == nullptr || !db->isValid()) return;
-      // If special (device) buffer exists but primary (host) doesn't, allocate primary.
       if (db->special() != nullptr && db->primary() == nullptr) {
         db->allocatePrimary();
       }
-      // If primary (host) exists but special (device) doesn't, sync to device.
-      // syncToSpecial allocates the device buffer and copies from host.
       if (db->primary() != nullptr && db->special() == nullptr) {
         db->syncToSpecial();
       }
+    };
+
+    // Device-only: ensure special exists but do NOT allocate primary.
+    auto ensureDeviceOnly = [](DataBuffer* db) {
+      if (db == nullptr || !db->isValid()) return;
+      if (db->primary() != nullptr && db->special() == nullptr) {
+        db->syncToSpecial();
+      }
+      // If neither exists, nothing to do — slot wasn't used in warmup.
     };
 
     int weightEnsuredCount = 0;
@@ -3275,19 +3394,38 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
       if (db != nullptr) weightEnsuredCount++;
     }
 
-    int outputEnsuredCount = 0;
+    // Build set of requested output slot indices for O(1) lookup.
+    std::unordered_set<int> requestedOutputSet;
+    if (requestedOutputSlotIndices_ != nullptr) {
+      for (int i = 0; i < numRequestedOutputs_; i++) {
+        int si = requestedOutputSlotIndices_[i];
+        if (si >= 0 && si < totalOutputSlots_) {
+          requestedOutputSet.insert(si);
+        }
+      }
+    }
+
+    int outputEnsuredFull = 0;
+    int outputEnsuredDeviceOnly = 0;
     if (outputSlots_ != nullptr) {
       for (int i = 0; i < totalOutputSlots_; i++) {
         if (outputSlots_[i] != nullptr && outputSlots_[i]->dataBuffer() != nullptr) {
-          ensureFullAllocation(outputSlots_[i]->dataBuffer());
-          outputEnsuredCount++;
+          if (requestedOutputSet.count(i) > 0) {
+            // Requested output — Java will syncToPrimary, need both allocations.
+            ensureFullAllocation(outputSlots_[i]->dataBuffer());
+            outputEnsuredFull++;
+          } else {
+            // Intermediate — only device buffer needed for graph replay.
+            ensureDeviceOnly(outputSlots_[i]->dataBuffer());
+            outputEnsuredDeviceOnly++;
+          }
         }
       }
     }
     DSP_DIAG(MEMORY,
-        "phaseWarmup: ensured full primary+special allocation before freeze — "
-        "weights=%d outputSlots=%d",
-        weightEnsuredCount, outputEnsuredCount);
+        "phaseWarmup: ensured allocations before freeze — "
+        "weights=%d outputSlots(full)=%d outputSlots(deviceOnly)=%d",
+        weightEnsuredCount, outputEnsuredFull, outputEnsuredDeviceOnly);
   }
 #endif
 
@@ -3421,8 +3559,20 @@ Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int num
   int slotBySlotSlots = 0;
   using Clock = std::chrono::high_resolution_clock;
 
+  auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
+  const bool frozenSlotBySlot =
+      shapesFrozen_ && execCtx != nullptr &&
+      execCtx->graphExecutionMode == static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT);
+  const bool previousForceSync = forceSync_;
+  if (frozenSlotBySlot) {
+    forceSync_ = true;
+    DSP_DIAG(EXECUTE,
+             "phaseSlotBySlot: forcing prepare/register sync for frozen slot-by-slot execution");
+  }
+
   for (auto& segment : segments_) {
     if (!platformBindSegmentDevice(segment)) {
+      forceSync_ = previousForceSync;
       return Status::KERNEL_FAILURE;
     }
     platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
@@ -3433,7 +3583,10 @@ Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int num
 
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-    if (status != Status::OK) return status;
+    if (status != Status::OK) {
+      forceSync_ = previousForceSync;
+      return status;
+    }
 
     // Post-segment corruption scan — catch corruption introduced by segment execution
     if (sd::Environment::getInstance().isDebug()) {
@@ -3453,7 +3606,10 @@ Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int num
 
     platformCleanupMigratedInputs();
     auto postStatus = platformCheckPostSegment(segment);
-    if (postStatus != Status::OK) return postStatus;
+    if (postStatus != Status::OK) {
+      forceSync_ = previousForceSync;
+      return postStatus;
+    }
   }
 
   if (stats != nullptr) {
@@ -3462,6 +3618,7 @@ Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int num
     stats->slotBySlotSlots = slotBySlotSlots;
   }
 
+  forceSync_ = previousForceSync;
   return Status::OK;
 }
 
@@ -4292,6 +4449,32 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   lastNumExternalInputs_ = 0;
   externalInputRanks_.clear();
 
+  // ── Step 4d: Free placeholder staging buffers ──────────────────────────
+  // These are plan-owned stable device buffers for variable external inputs,
+  // allocated by ensureAndSyncStagingBuffers(). They survive across decode
+  // steps but must be freed on session reset to reclaim GPU memory. They are
+  // re-allocated lazily on the next executeSteadyState() / execute() call.
+  if (placeholderStagingBuffers_ != nullptr) {
+    int freedStaging = 0;
+    for (int i = 0; i < numExternalInputs_; i++) {
+      if (placeholderStagingBuffers_[i] != nullptr) {
+        delete placeholderStagingBuffers_[i];
+        placeholderStagingBuffers_[i] = nullptr;
+        freedStaging++;
+      }
+    }
+    delete[] placeholderStagingBuffers_;
+    placeholderStagingBuffers_ = nullptr;
+    DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed %d placeholder staging buffers", freedStaging);
+  }
+  if (effectiveExternals_ != nullptr) {
+    delete[] effectiveExternals_;
+    effectiveExternals_ = nullptr;
+  }
+  cachedVariableExtIndices_.clear();
+  variableExternalInputIndices_.clear();
+  variableIndicesCached_ = false;
+
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;
   frozenConstantDetectionDone_ = false;
@@ -4651,16 +4834,22 @@ void NativeDynamicShapePlan::buildSegments() {
   //      Segments containing these ops have hasValueDepOps=true, which forces shape
   //      key recomputation even when shapes are frozen.
 
-  // ALL ops are capturable. The shapeKey system handles dynamic shapes:
+  // Most ops are capturable. The shapeKey system handles dynamic shapes:
   // - computeSegmentShapeKey hashes input values for small arrays
   // - hasValueDepOps forces recomputation even when frozen
   // - cache miss triggers recompilation with correct shapes
-  // The old isDataDependent exclusion was for CUDA graph capture which
-  // required fixed output shapes. CPU backends (OneDNN/OpenVINO) and
-  // the shapeKey system handle recompilation transparently.
+  // EXCEPTION: Data-dependent ops (Where/1-input, unique, nms) require host
+  // sync during execution to count/find variable-length elements. This host
+  // sync invalidates CUDA graph capture (error 901). These ops must be in
+  // their own non-capturable segment, executed slot-by-slot.
   const bool frozen = shapesFrozen_;
   auto isSlotCapturable = [frozen](const NativeSlot& slot, int) -> bool {
     if (slot.cf.controlFlowType != CF_NONE) return false;
+    // Data-dependent ops (Where/1-input, unique, nms) have variable-length output
+    // that depends on input DATA content. They require host sync during execution
+    // to determine output size, which invalidates CUDA graph capture. These must
+    // ALWAYS be in their own non-capturable segment regardless of freeze state.
+    if (slot.flags.isDataDependent) return false;
     // Legacy reduce/broadcast ops wrap NativeOpExecutioner C-APIs that Triton
     // cannot emit IR for. During initial build (pre-freeze), route them to
     // SLOT_BY_SLOT so they execute via the native kernel path.
@@ -4674,9 +4863,9 @@ void NativeDynamicShapePlan::buildSegments() {
   // This isolates element-wise chains for Triton fusion while matmuls run via cuBLAS.
   const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
 
-  // Adaptive segment size: frozen shapes can use unlimited segments (the entire
-  // decode step becomes one CUDA graph capture). Static shapes get a higher limit.
-  // Dynamic shapes keep the conservative limit to bound recompilation scope.
+  // Adaptive segment size based on freeze state and shape stability.
+  // Non-frozen paths use conservative limits; frozen paths defer to
+  // memory-budget splitting (below) for CUDA_GRAPHS monolithic capture.
   auto allSlotsStaticShape = [this]() -> bool {
     for (int i = 0; i < numSlots_; i++) {
       if (!slots_[i].shapeCache.shapeStatic) return false;
@@ -4685,6 +4874,49 @@ void NativeDynamicShapePlan::buildSegments() {
   };
   const int MAX_SEGMENT_SIZE = shapesFrozen_ ? 100000 :
                                allSlotsStaticShape() ? 500 : 200;
+
+  // ── Memory-budget-aware segment splitting for CUDA_GRAPHS ──────────────
+  //
+  // CUDA_GRAPHS mode captures the ENTIRE segment into a single CUDA graph.
+  // All intermediate buffers must exist simultaneously during capture. For
+  // large models (Qwen3.5 1.7B: 28 layers × ~50 ops = ~1400 slots), the
+  // combined buffer footprint can exceed GPU free memory.
+  //
+  // Instead of a hard op-count limit, query actual GPU free memory and
+  // track cumulative output buffer sizes per segment. Split when the
+  // cumulative size exceeds the available budget. This adapts to:
+  //   - Different GPU sizes (24GB, 48GB, 80GB)
+  //   - Different model sizes (more/fewer weights → more/less free memory)
+  //   - Runtime memory pressure (other processes consuming GPU memory)
+  //
+  // For TRITON/AUTO modes, composite capture handles islands internally
+  // and doesn't require all buffers simultaneously, so memory-budget
+  // splitting is not needed — the 100,000 op-count cap suffices.
+  const bool useMemoryBudget =
+      shapesFrozen_ &&
+      graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS;
+
+  const size_t captureBudget = useMemoryBudget
+      ? platformEstimateCaptureBudget()
+      : SIZE_MAX;
+
+  // Helper: estimate the output buffer footprint of a single slot.
+  // Uses the current outputSlots_ which are populated after warmup.
+  auto estimateSlotOutputBytes = [this](int slotIdx) -> size_t {
+    size_t bytes = 0;
+    const NativeSlot& slot = slots_[slotIdx];
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      int outIdx = slot.wiring.outputSlotIndices[o];
+      if (outIdx >= 0 && outIdx < totalOutputSlots_ && outputSlots_[outIdx] != nullptr) {
+        bytes += static_cast<size_t>(outputSlots_[outIdx]->lengthOf()) *
+                 outputSlots_[outIdx]->sizeOfT();
+      }
+    }
+    return bytes;
+  };
+
+  // Running accumulator for the current segment's estimated buffer footprint.
+  size_t currentSegmentBytes = 0;
 
   auto isMatmulOrAttention = [this](int idx) -> bool {
     auto* op = slots_[idx].ident.op;
@@ -4696,12 +4928,30 @@ void NativeDynamicShapePlan::buildSegments() {
   GraphSegment current;
   current.def.startSlot = 0;
   current.def.isCapturable = isSlotCapturable(slots_[0], 0);
+  currentSegmentBytes = estimateSlotOutputBytes(0);
 
   for (int i = 1; i < numSlots_; i++) {
     bool thisCapturable = isSlotCapturable(slots_[i], i);
     bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
     int currentSize = i - current.def.startSlot;
     bool sizeLimit = (current.def.isCapturable && currentSize >= MAX_SEGMENT_SIZE);
+
+    // Memory-budget check: would adding this slot push the segment over budget?
+    size_t slotBytes = estimateSlotOutputBytes(i);
+    bool memoryBudgetExceeded = false;
+    if (useMemoryBudget && current.def.isCapturable && currentSize >= 2) {
+      // Only split if we already have at least 2 ops in the segment
+      // (avoid degenerate 1-op segments) and the budget would be exceeded.
+      if (currentSegmentBytes + slotBytes > captureBudget) {
+        memoryBudgetExceeded = true;
+        DSP_DIAG_SEG(SEGMENT, current.def.startSlot,
+                     "memoryBudget SPLIT at slot %d: segment[%d-%d] accumBytes=%zuMB + nextSlot=%zuKB > budget=%zuMB",
+                     i, current.def.startSlot, i - 1,
+                     currentSegmentBytes / (1024*1024),
+                     slotBytes / 1024,
+                     captureBudget / (1024*1024));
+      }
+    }
 
     // Break at matmul/attention boundaries for Triton fusion
     bool matmulBreak = false;
@@ -4755,15 +5005,20 @@ void NativeDynamicShapePlan::buildSegments() {
 
     bool cpuTraitBreak = platformShouldBreakSegmentAtTraitBoundary(i, i - 1);
 
-    if (thisCapturable != current.def.isCapturable || deviceChange || sizeLimit || matmulBreak || cpuTraitBreak) {
+    if (thisCapturable != current.def.isCapturable || deviceChange || sizeLimit
+        || matmulBreak || cpuTraitBreak || memoryBudgetExceeded) {
       // End current segment
       current.def.endSlot = i - 1;
       segments_.push_back(std::move(current));
 
-      // Start new segment
+      // Start new segment with this slot's bytes
       current = GraphSegment();
       current.def.startSlot = i;
       current.def.isCapturable = thisCapturable;
+      currentSegmentBytes = slotBytes;
+    } else {
+      // Accumulate this slot's output bytes into the current segment
+      currentSegmentBytes += slotBytes;
     }
   }
 

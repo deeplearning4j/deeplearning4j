@@ -85,8 +85,15 @@ static void conv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
   cudnnConvolutionFwdAlgoPerf_t algoPerf;
   int count = 0;
 
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
-                          cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  // During CUDA graph capture, cudnnFindConvolutionForwardAlgorithm runs GPU benchmarks on internal
+  // cuDNN streams that escape from the capture graph, invalidating it. Use heuristic _v7 instead.
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardAlgorithm_v7),
+                            cudnnGetConvolutionForwardAlgorithm_v7(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
+                            cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  }
   if (count == 0)
     throw cuda_exception::build("conv3dCUDNN: cudnnGetConvolutionForwardAlgorithm failed as the count is 0", 0);
   algo = algoPerf.algo;
@@ -184,9 +191,15 @@ static void conv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
   cudnnConvolutionBwdFilterAlgo_t algoGradW;
   cudnnConvolutionBwdFilterAlgoPerf_t algoGradWPerf;
   int count = 0;
-  CHECK_CUDNN_FAILURE_MSG(
-      STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
-      cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnGetConvolutionBackwardFilterAlgorithm_v7),
+        cudnnGetConvolutionBackwardFilterAlgorithm_v7(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
+        cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  }
   if (count == 0)
     throw cuda_exception::build(
         "conv3dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0", 0);
@@ -195,12 +208,15 @@ static void conv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
   // gradI algorithm description
   cudnnConvolutionBwdDataAlgo_t algoGradI;
   cudnnConvolutionBwdDataAlgoPerf_t algoGradIPerf;
-  // CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardDataAlgorithm),
-  // cudnnGetConvolutionBackwardDataAlgorithm( *handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0,
-  // &algoGradI));
-  CHECK_CUDNN_FAILURE_MSG(
-      STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
-      cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnGetConvolutionBackwardDataAlgorithm_v7),
+        cudnnGetConvolutionBackwardDataAlgorithm_v7(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
+        cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  }
   if (count == 0)
     throw cuda_exception::build("conv3dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed  as the count is 0",
                                     0);

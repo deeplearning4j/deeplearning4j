@@ -1,5 +1,10 @@
 # Kompile Memory Index
 
+## ACTIVE: TRITON Merged Capture Gap Fix (May 5 2026)
+
+- [TRITON merged capture gap fix](triton_merged_capture_gap_fix.md) — tl_mergedCaptureActive flag allows gap ops to execute during merged CUDA graph capture
+- [VLM ContextBuffers capture bug](vlm_contextbuffers_capture_bug.md) — lazy ContextBuffers init on stream 0 during capture → error 906/901
+
 ## ACTIVE: DSP Accuracy — Root Causes Found, Rebuilding (May 2 2026)
 
 - [Session status](dsp_accuracy_session_may2_status.md) — TWO ROOT CAUSES FOUND: CPU causal mask + CUDA staging sync. Fixes applied, builds in progress
@@ -30,7 +35,6 @@
 
 ## Prior Investigation Trail (historical, resolved)
 
-- [VLM decode bug](vlm_decode_correctness_bug.md) — all zeros after step 2 → RESOLVED by staging fix
 - [VLM zeros investigation](vlm_decode_zeros_regression_investigation.md) — root cause found
 - [CPU DSP Qwen history](cpu_dsp_qwen_history.md) — prior attempts before root cause found
 
@@ -66,3 +70,22 @@
 - [vlm-token-parsing-fix-may3](vlm_token_parsing_fix_may3.md) — [project] Fixed VLM native token output parsing: tid==0 zero-padding hack removed, buildStopTokenIds eosId<100 guard removed
 - [cuda-qwen-gdn-state-fix-may3](cuda_qwen_gdn_state_fix_may3.md) — [project] CUDA Qwen root cause: missing GDN/conv state feedback in autoregressive_decode.cu — fix applied, build in progress
 - [CUDA Qwen correctness achieved May 3 2026](cuda_qwen_correctness_achieved_may_3_2026.md) — [project] CUDA Qwen outputs France (token 271) — CUTLASS stride fix + FP16 autocast removal confirmed working
+- [VLM EOS root cause: mmulMxV mixed-type GEMV bug](vlm_eos_root_cause_mmulmxv_mixed_type_gemv_bug.md) — [project] mmulMxV has no mixed-type cast — HALF weight × FLOAT32 activation dispatches to usualGemv which interprets HALF as FL...
+- [ConversionOptions forInference FP32 is NOT a workaround](conversionoptions_forinference_fp32_is_not_a_workaround.md) — [project] forInference() using FLOAT32 for GGML/Qwen is a legitimate precision choice, not a workaround for the FP16 autocast bug
+- [VLM decode regression root cause May 3](vlm_decode_regression_root_cause_may_3.md) — [project] onnx_multi_head_attention.cpp workspace buffer removal + syncToDevice removal caused VLM EOS on step 1
+- [Qwen autoregressive decode NOT working May 3](qwen_autoregressive_decode_not_working_may_3.md) — [project] Qwen prefill works (token 271) but full autoregressive decode produces garbage — same MHA regression as VLM
+- [vlm-decode-native-path-restored](vlm_decode_native_path_restored.md) — [project] VLM decode routed through generateNative (C++ loop) after fixing causal mask, segment splitting, GEMV bugs
+- [rms-norm-linear-fusion-multi-consumer-bug](rms_norm_linear_fusion_multi_consumer_bug.md) — [project] FuseRMSNormLinear removes rms_norm var when multiple matmuls consume it (Qwen Q/K/V shared norm)
+- [slot-482-crash-root-cause-analysis](slot_482_crash_root_cause_analysis.md) — [project] VLM slot 482 (reshape_no_copy) crash: in-place fusion + multi-consumer buffer corruption in decode DSP plan
+- [vlm-decode-status-may4](vlm_decode_status_may4.md) — [project] Current VLM decode status May 4: slot 482 crash with multi-consumer fix pending rebuild
+- [VLM CUDA graph node count analysis](vlm_cuda_graph_node_count_analysis.md) — [project] Root cause of 60 tok/s: 2742 CUDA graph nodes cause ~5.5-11ms driver scheduling overhead per replay
+- [Qwen CUDA decode garbage status](qwen_cuda_decode_garbage_status.md) — [project] Qwen first token correct (France/271) but second token produces garbage (76828) with GraphOptimizer enabled
+- [Current goals and status May 4](current_goals_and_status_may_4.md) — [project] Two goals: VLM 100+ tok/s with mythic heroes output AND Qwen outputting France on CUDA
+- [CUDA graph capture and replay code paths](cuda_graph_capture_and_replay_code_paths.md) — [reference] Key file locations for monolithic/composite CUDA graph capture, replay, and optimization
+- [VLM op timing data OPTIMAL config](vlm_op_timing_data_optimal_config.md) — [project] Per-op timing from OPTIMAL.csv showing 250-token decode costs for performance analysis
+- [VLM 552 concat ops root cause](vlm_552_concat_ops_root_cause.md) — [project] 552 concats are shape-assembly + KV cache from ONNX Attention import, ~18 per layer × 28 layers
+- [VLM reshape_no_copy graph node root cause](vlm_reshape_no_copy_graph_node_root_cause.md) — [project] 604 reshape_no_copy: ~half produce graph nodes due to permute→reshape non-contiguous pattern, ARRAY_NEEDS_COPY flag
+- [Triton perf benchmarks](triton_perf_benchmarks.md) — [project] VLM decode performance — current 60 tok/s monolithic CUDA graph, target 100+, key findings May 4
+- [qwen-cuda-decode-root-cause-rms-norm-linear-stride](qwen_cuda_decode_root_cause_rms_norm_linear_stride.md) — [project] [project] ROOT CAUSE FOUND: CUDA Qwen second token garbage — rmsNormLinearFusedKernel assumes C-contiguous weight but...
+- [Fixes applied May 4 batch](fixes_applied_may_4_batch.md) — [project] 6 fixes applied: optimizer orphan var, attention perf (nullify+syncToDevice), diagnostic, test workarounds
+- [CUDA Qwen stream ordering fix](cuda_qwen_stream_ordering_fix_may4.md) — [project] GDN state feedback assign() uses wrong stream; fixed with explicit cudaMemcpyAsync on decode loop stream

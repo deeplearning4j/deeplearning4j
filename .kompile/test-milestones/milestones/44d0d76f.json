@@ -1,0 +1,16 @@
+{
+  "id" : "44d0d76f",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "0e221dd2c8332e0d671f8c3cec2b378c7e7ba7a4",
+  "commitShort" : "0e221dd",
+  "commitMessage" : "fix: multi-consumer in-place protection + VLM decode correctness",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 6,
+  "passed" : 1,
+  "failed" : 5,
+  "notes" : "TestQwen35Pipeline full CUDA matrix failed: SLOT_BY_SLOT generated incoherent text but quality validator passed; CUDA_GRAPHS failed high repetition after first config; Triton configs hit CUDA OOM/memset failures after model.close left ~12GB allocated and routing spilled to device1/pinned host. Log: /tmp/qwen35-full-matrix.log",
+  "tags" : "qwen,cuda,dsp,coherency,oom",
+  "timestamp" : "2026-05-04T19:55:11.589113Z"
+}

@@ -445,15 +445,18 @@ void autoregressiveDecodeCuda(
     //
     // This MUST happen before the decode loop so the first execution allocates
     // staging buffers and subsequent executions refresh them.
-    if (config->embeddingsExtIdx >= 0) plan->markExternalInputVariable(config->embeddingsExtIdx);
-    if (config->maskExtIdx >= 0) plan->markExternalInputVariable(config->maskExtIdx);
-    if (config->posIdsExtIdx >= 0) plan->markExternalInputVariable(config->posIdsExtIdx);
-    if (config->inputIdsExtIdx >= 0) plan->markExternalInputVariable(config->inputIdsExtIdx);
-    if (config->causalMaskExtIdx >= 0) plan->markExternalInputVariable(config->causalMaskExtIdx);
-    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputVariable(config->attnMaskReformatExtIdx);
-    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputVariable(config->positionOffsetExtIdx);
-    if (config->cachePositionExtIdx >= 0) plan->markExternalInputVariable(config->cachePositionExtIdx);
-    // Mark GDN/conv state ext inputs as variable — they change every step
+    // Placeholder inputs: host-written by Java each step → force H2D on DSP stream
+    if (config->embeddingsExtIdx >= 0) plan->markExternalInputPlaceholder(config->embeddingsExtIdx);
+    if (config->maskExtIdx >= 0) plan->markExternalInputPlaceholder(config->maskExtIdx);
+    if (config->posIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->posIdsExtIdx);
+    if (config->inputIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->inputIdsExtIdx);
+    if (config->causalMaskExtIdx >= 0) plan->markExternalInputPlaceholder(config->causalMaskExtIdx);
+    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputPlaceholder(config->attnMaskReformatExtIdx);
+    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputPlaceholder(config->positionOffsetExtIdx);
+    if (config->cachePositionExtIdx >= 0) plan->markExternalInputPlaceholder(config->cachePositionExtIdx);
+    // GDN/conv state: device-written via D2D copy on DSP stream each step.
+    // Mark as variable (participates in dependency tracking) but NOT placeholder
+    // (must NOT H2D — device buffer is authoritative, host buffer is stale).
     if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr) {
         for (int s = 0; s < config->numGdnStatePairs; s++) {
             int extIdx = config->gdnStateExtIndices[s];
@@ -466,8 +469,8 @@ void autoregressiveDecodeCuda(
             if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
         }
     }
-    // Mark KV cache ext inputs as variable — attention ops write KV every step,
-    // so the frozen fast-path must refresh these staging buffers each decode step.
+    // KV cache: device-written by attention kernels in-place each step.
+    // Mark as variable but NOT placeholder — staging buffer D2D handles sync.
     if (config->kvInputExtIndices != nullptr) {
         for (int kv = 0; kv < 2 * numKvPairs; kv++) {
             int kvIdx = config->kvInputExtIndices[kv];
@@ -548,29 +551,17 @@ void autoregressiveDecodeCuda(
         auto tWireEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
 
         // ── Step 2: Execute plan ──
-        if (step < 5 && env_isVerbose()) {
-            // Trace ext input states before plan execution
-            auto* embDb = decodeEmbedding->dataBuffer();
-            auto* maskDb = attentionMask->dataBuffer();
-            auto* posDb = positionIds->dataBuffer();
-            sd_printf("DECODE_STEP[%d]: PRE_EXEC embPrimAct=%d embSpecAct=%d "
-                      "maskPrimAct=%d maskSpecAct=%d posPrimAct=%d posSpecAct=%d "
-                      "embSpecBuf=%p maskSpecBuf=%p posSpecBuf=%p\n",
-                      step,
-                      embDb ? embDb->isPrimaryActual() : -1,
-                      embDb ? embDb->isSpecialActual() : -1,
-                      maskDb ? maskDb->isPrimaryActual() : -1,
-                      maskDb ? maskDb->isSpecialActual() : -1,
-                      posDb ? posDb->isPrimaryActual() : -1,
-                      posDb ? posDb->isSpecialActual() : -1,
-                      decodeEmbedding->specialBuffer(),
-                      attentionMask->specialBuffer(),
-                      positionIds->specialBuffer());
-        }
-        // Use executeSteadyState() for the hot path — it skips ~200ms of
-        // per-step CPU overhead (lifecycle validation, buffer scanning,
-        // fingerprinting, diagnostics). Falls back to full execute()
-        // automatically if the plan hasn't reached steady state yet.
+        // Use executeSteadyState() for the hot decode path. For step >= 4 in
+        // REPLAYING phase, this eliminates ~200ms/step of CPU overhead (slot
+        // scans, lifecycle checks, shape validation). For earlier steps or
+        // pre-REPLAYING phase, it automatically falls back to full execute().
+        //
+        // GDN/conv state ext inputs are marked variable (NOT placeholder) via
+        // markExternalInputVariable(). Placeholder inputs (input_ids etc.) are
+        // marked via markExternalInputPlaceholder(). syncExternalInputs() only
+        // forces H2D for placeholders; device-written variables (GDN/conv state)
+        // use isPrimaryActual() — the D2D copy above left device authoritative,
+        // so H2D is correctly skipped (would clobber with stale host data).
         Status planStatus = plan->executeSteadyState(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
@@ -613,9 +604,10 @@ void autoregressiveDecodeCuda(
         }
 
         // NOTE: Do NOT call plan->setShapesFrozen(true) here.
-        // The plan auto-seals during its first execute() call, which sets
-        // shapesFrozen=true and triggers Triton compilation. Calling
-        // setShapesFrozen after execute violates the plan lifecycle
+        // The plan auto-seals during its first executeSteadyState() call
+        // (which falls back to execute() for the warmup steps), setting
+        // shapesFrozen=true and triggering Triton compilation. Calling
+        // setShapesFrozen manually after execution violates the plan lifecycle
         // (executeCount > 0) and would skip the warmup/capture phase.
         // Auto-seal handles the transition correctly.
 
@@ -625,6 +617,17 @@ void autoregressiveDecodeCuda(
         // Copy state outputs back to ext inputs for the next decode step.
         // Critical for hybrid architectures (e.g. Qwen with GDN layers).
         // Without this, GDN layers see frozen state from warmup and degenerate.
+        //
+        // CRITICAL: Use explicit cudaMemcpyAsync on the DECODE LOOP's stream,
+        // NOT assign(). assign() uses the array's LaunchContext stream which may
+        // differ from the plan execution stream (ctx->dspStream vs LC default).
+        // This caused a stream ordering race: assign's memcpy ran on the LC
+        // default stream while the next plan->execute() read ext inputs on the
+        // DSP stream, with no event synchronization between them.
+        //
+        // Both plan outputs and ext inputs are always C-contiguous [B,H,D_k,D_v]
+        // with same type/length (guaranteed by gated_delta_rule op shape function),
+        // so raw memcpy is safe and avoids the stream mismatch entirely.
         if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
             && config->gdnStateOutputIndices != nullptr) {
             for (int s = 0; s < config->numGdnStatePairs; s++) {
@@ -672,26 +675,46 @@ void autoregressiveDecodeCuda(
         LongType logitsSeqLen = logitsOutput->sizeAt(1);
         LongType logitsVocab = logitsOutput->sizeAt(2);
 
+        // Diagnostic: print logits pointer, buffer identity, and first few values
+        if (step < 10 && env_isVerbose()) {
+            cudaStreamSynchronize(*stream);  // ensure plan outputs are ready
+            float topVals[4] = {0};
+            LongType lastPosOff = (logitsSeqLen - 1) * logitsVocab;
+            const void* logitsSrc = static_cast<const char*>(logitsOutput->specialBuffer())
+                                    + lastPosOff * logitsOutput->sizeOfT();
+            if (logitsOutput->dataType() == sd::DataType::FLOAT32) {
+                cudaMemcpy(topVals, logitsSrc, 4 * sizeof(float), cudaMemcpyDeviceToHost);
+            } else if (logitsOutput->dataType() == sd::DataType::HALF) {
+                half hvals[4];
+                cudaMemcpy(hvals, logitsSrc, 4 * sizeof(half), cudaMemcpyDeviceToHost);
+                for (int i = 0; i < 4; i++) topVals[i] = __half2float(hvals[i]);
+            }
+            // Also get the argmax on host for comparison
+            float maxVal = -1e30f;
+            LongType maxIdx = -1;
+            if (logitsVocab <= 262144) {  // only for reasonable vocab sizes
+                std::vector<float> hostLogits(logitsVocab);
+                if (logitsOutput->dataType() == sd::DataType::FLOAT32) {
+                    cudaMemcpy(hostLogits.data(), logitsSrc, logitsVocab * sizeof(float), cudaMemcpyDeviceToHost);
+                } else if (logitsOutput->dataType() == sd::DataType::HALF) {
+                    std::vector<half> hLogits(logitsVocab);
+                    cudaMemcpy(hLogits.data(), logitsSrc, logitsVocab * sizeof(half), cudaMemcpyDeviceToHost);
+                    for (LongType i = 0; i < logitsVocab; i++) hostLogits[i] = __half2float(hLogits[i]);
+                }
+                for (LongType i = 0; i < logitsVocab; i++) {
+                    if (hostLogits[i] > maxVal) { maxVal = hostLogits[i]; maxIdx = i; }
+                }
+            }
+            sd_printf("CUDA_LOGITS_DIAG[step=%d]: logitsOutput=%p specialBuf=%p dataType=%d seqLen=%lld vocab=%lld\n",
+                      step, logitsOutput, logitsOutput->specialBuffer(),
+                      (int)logitsOutput->dataType(), (long long)logitsSeqLen, (long long)logitsVocab);
+            sd_printf("CUDA_LOGITS_DIAG[step=%d]: firstVals=[%.4f, %.4f, %.4f, %.4f] hostArgmax=%lld (val=%.4f)\n",
+                      step, topVals[0], topVals[1], topVals[2], topVals[3],
+                      (long long)maxIdx, maxVal);
+        }
+
         // Get pointer to last-position logits (already on device)
         NDArray::prepareSpecialUse({sampledToken}, {logitsOutput});
-
-        // ── Trace: dump logits fingerprint for debugging ──
-        if (step < 10 && env_isVerbose()) {
-            cudaStreamSynchronize(*stream);
-            float logitsFingerprint[4] = {0};
-            LongType lastPosOff = (logitsSeqLen - 1) * logitsVocab;
-            const void* logitsDbg = static_cast<const char*>(logitsOutput->specialBuffer())
-                                    + lastPosOff * logitsOutput->sizeOfT();
-            if (logitsOutput->dataType() == DataType::FLOAT32) {
-                cudaMemcpy(logitsFingerprint, logitsDbg, sizeof(float) * 4, cudaMemcpyDeviceToHost);
-            }
-            sd_printf("DECODE_STEP[%d]: logitsShape=[%lld,%lld,%lld] vocab=%lld "
-                      "logits[0..3]=[%.4f,%.4f,%.4f,%.4f] specialBuf=%p\n",
-                      step, logitsOutput->sizeAt(0), logitsOutput->sizeAt(1), logitsOutput->sizeAt(2),
-                      logitsVocab, logitsFingerprint[0], logitsFingerprint[1],
-                      logitsFingerprint[2], logitsFingerprint[3],
-                      logitsOutput->specialBuffer());
-        }
 
         if (temperature <= 0.0 || (topK <= 1 && topP <= 0.0)) {
             // Greedy: argmax over last-position logits
@@ -715,6 +738,15 @@ void autoregressiveDecodeCuda(
         }
 
         NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
+
+        // Diagnostic: verify GPU argmax result matches host argmax
+        if (step < 10 && env_isVerbose()) {
+            cudaStreamSynchronize(*stream);
+            LongType gpuArgmax = 0;
+            cudaMemcpy(&gpuArgmax, sampledToken->specialBuffer(), sizeof(LongType), cudaMemcpyDeviceToHost);
+            sd_printf("CUDA_ARGMAX_DIAG[step=%d]: gpuArgmax=%lld sampledTokenBuf=%p\n",
+                      step, (long long)gpuArgmax, sampledToken->specialBuffer());
+        }
 
         // ── Tier 1a: Store token via D2D copy (avoids p() hidden H2D + stream 0 sync) ──
         // generatedTokenIds->p() does host write → syncToDevice() → cudaMemcpyAsync
@@ -788,7 +820,7 @@ void autoregressiveDecodeCuda(
         auto tSyncEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
         LongType nextTokenId = *tokenDst;
 
-        if (step < 5 && env_isVerbose()) {
+        if (step < 10 && env_isVerbose()) {
             sd_printf("DECODE_STEP[%d]: nextTokenId=%lld currentPosition=%lld\n",
                       step, (long long)nextTokenId, (long long)currentPosition);
         }
@@ -915,9 +947,8 @@ void autoregressiveDecodeCuda(
             }
         }
 
-        // Per-step timing breakdown (gated behind executionTimingEnabled and isVerbose)
-        if (stepTimingEnabled && env_isVerbose() &&
-            step >= 3 && (step % 50 == 0 || step == maxNewTokens - 1)) {
+        // Per-step timing breakdown (gated behind executionTimingEnabled only — print every step)
+        if (stepTimingEnabled) {
             auto tLoopEnd = std::chrono::high_resolution_clock::now();
             auto wireUs = std::chrono::duration_cast<std::chrono::microseconds>(tWireEnd - stepStart).count();
             auto planUs = std::chrono::duration_cast<std::chrono::microseconds>(tPlanEnd - tWireEnd).count();

@@ -441,10 +441,12 @@ template <typename T>
 SD_KERNEL void rmsNormLinearFusedKernel(
     const T* __restrict__ x,       // [K]
     const T* __restrict__ gamma,   // [K] or nullptr
-    const T* __restrict__ W,       // [K, N] row-major
+    const T* __restrict__ W,       // [K, N] with arbitrary strides
     T* __restrict__ output,        // [N]
     const LongType K,
     const LongType N,
+    const LongType wStride0,       // stride along K dimension (row stride)
+    const LongType wStride1,       // stride along N dimension (col stride)
     const float epsilon) {
 
   extern __shared__ char smem[];
@@ -481,12 +483,14 @@ SD_KERNEL void rmsNormLinearFusedKernel(
 
   // Phase 3: each thread computes dot products for its assigned output columns
   // Grid-stride across output dimension N
+  // Uses stride-based indexing so both C-contiguous [K,N] (strides [N,1]) and
+  // transposed views (strides [1,K]) work without a per-step dup('c') copy.
   LongType jStart = blockIdx.x * blockDim.x + threadIdx.x;
   LongType jStride = static_cast<LongType>(gridDim.x) * blockDim.x;
   for (LongType j = jStart; j < N; j += jStride) {
     float acc = 0.0f;
     for (LongType k = 0; k < K; ++k) {
-      acc += normX[k] * static_cast<float>(W[k * N + j]);
+      acc += normX[k] * static_cast<float>(W[k * wStride0 + j * wStride1]);
     }
     output[j] = static_cast<T>(acc);
   }
@@ -504,6 +508,8 @@ void rmsNormLinearFusedLauncher(
     void* vOutput,
     LongType K,
     LongType N,
+    LongType wStride0,
+    LongType wStride1,
     float epsilon) {
 
   auto x = reinterpret_cast<const T*>(vX);
@@ -525,7 +531,7 @@ void rmsNormLinearFusedLauncher(
   if (gridSize < 1) gridSize = 1;
 
   rmsNormLinearFusedKernel<T><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
-      x, gamma, W, output, K, N, epsilon);
+      x, gamma, W, output, K, N, wStride0, wStride1, epsilon);
 
   DebugHelper::checkGlobalErrorCode("rmsNormLinearFusedKernel failed");
 }
@@ -534,7 +540,9 @@ BUILD_SINGLE_TEMPLATE(void rmsNormLinearFusedLauncher,
                        (const cudaStream_t* stream,
                         const void* vX, const void* vGamma,
                         const void* vW, void* vOutput,
-                        LongType K, LongType N, float epsilon),
+                        LongType K, LongType N,
+                        LongType wStride0, LongType wStride1,
+                        float epsilon),
                        SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -595,10 +603,15 @@ void rmsNormLinear(
 
   // For M=1 (decode hot path): use fused single-kernel path
   // Requires K fits in shared memory (48KB = 12288 floats)
+  // The fused kernel uses stride-based weight indexing, so it handles both
+  // C-contiguous [K,N] (strides [N,1]) and transposed views (strides [1,K])
+  // without needing a per-step dup('c') copy.
   if (M == 1 && K <= 8192) {
     NDArray::prepareSpecialUse({output}, {input, gamma, effWeight});
 
     auto stream = context->getCudaStream();
+    LongType wStride0 = effWeight->strideAt(0);  // stride along K dimension
+    LongType wStride1 = effWeight->strideAt(1);  // stride along N dimension
 
     BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearFusedLauncher,
                            (stream,
@@ -606,7 +619,7 @@ void rmsNormLinear(
                             gamma != nullptr ? gamma->specialBuffer() : nullptr,
                             effWeight->specialBuffer(),
                             output->specialBuffer(),
-                            K, N, epsilon),
+                            K, N, wStride0, wStride1, epsilon),
                            SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({output}, {input, gamma, effWeight});

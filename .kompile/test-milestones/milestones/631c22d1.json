@@ -1,0 +1,13 @@
+{
+  "id" : "631c22d1",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "41a3b05be4852c3c9028c6e90bf31219b90cb454",
+  "commitShort" : "41a3b05",
+  "commitMessage" : "chore: record Qwen CUDA correctness milestone and memory",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-vlm",
+  "notes" : "Code review complete: 7 files modified with proper root-cause fixes (no workarounds). Segment splitting for value-key ops, phase check relaxation, mixed-type GEMV, causal mask pre-unmask, MHA syncToDevice. Binary is STALE - fixes not yet compiled. VLM crashes with reshape_no_copy reading garbage INT64 because old binary has no segment splitting. Need build to verify.",
+  "tags" : "cuda,vlm,decode,segment-splitting",
+  "timestamp" : "2026-05-03T16:19:47.736825Z"
+}

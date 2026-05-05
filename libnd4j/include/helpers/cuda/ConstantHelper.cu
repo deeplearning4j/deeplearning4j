@@ -240,6 +240,17 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
       // is gone). Copy src into the capture host workspace (persistent pinned memory) first,
       // matching the pattern in DataBuffer::syncToSpecial().
       cudaStream_t capturedStream = captureSafeStreamOrDefault();
+
+      // Check if the capture has been invalidated before attempting memcpy.
+      // A prior op (e.g., data-dependent Where) may have invalidated the capture
+      // via host sync. Detect this early and skip — the capture loop will handle it.
+      cudaStreamCaptureStatus capStat;
+      auto capChk = cudaStreamGetCaptureInfo(capturedStream, &capStat, nullptr);
+      if (capChk != cudaSuccess || capStat == cudaStreamCaptureStatusInvalidated) {
+        // Capture already invalidated — skip memcpy, let capture loop detect and abort
+        return reinterpret_cast<int8_t*>(ptr) + constantOffset;
+      }
+
       void* h2dSource = src;
       if (tl_captureHostWorkspace != nullptr) {
         size_t aligned = (numBytes + 255) & ~255ULL;

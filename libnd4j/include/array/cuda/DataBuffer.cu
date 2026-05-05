@@ -1526,6 +1526,26 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
   }
   auto res = cudaMemsetAsync(special(), 0, getLenInBytes(), stream);
 
+  if (res == 901 || res == 906) {
+    // cudaErrorStreamCaptureImplicit / cudaErrorStreamCaptureInvalidated
+    // Captures diagnostics: stream state, capture flags, buffer details
+    cudaStreamCaptureStatus capStatus = cudaStreamCaptureStatusNone;
+    unsigned long long capId = 0;
+    cudaStreamGetCaptureInfo(stream, &capStatus, &capId);
+    cudaGetLastError();
+    char msg[512];
+    snprintf(msg, sizeof(msg),
+             "setToZeroBuffers: pool-level capture error — "
+             "err=%d stream=%p capStatus=%d capGraphId=%llu "
+             "graphExecActive=%d graphCaptureStream=%p "
+             "buf=%p bytes=%lld switchDev=%d dstDev=%d srcDev=%d",
+             (int)res, (void*)stream, (int)capStatus, capId,
+             (int)tl_graphExecutionActive, (void*)tl_graphCaptureStream,
+             special(), (long long)getLenInBytes(),
+             (int)switchedDevice, currentDeviceId, bufferDeviceId);
+    THROW_EXCEPTION(msg);
+  }
+
   if (res != cudaSuccess) {
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);

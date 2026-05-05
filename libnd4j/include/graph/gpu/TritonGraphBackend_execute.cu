@@ -564,6 +564,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
   int captureFilteredCount = 0, captureLaunchedCount = 0, captureSkippedCount = 0;
   int nextSlotToRun = seg.def.startSlot;
+
   for (int i = 0; i < (int)compiledSeg->subKernels.size(); i++) {
     auto& subKernel = compiledSeg->subKernels[i];
 
@@ -580,6 +581,19 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       captureFilteredCount++;
       nextSlotToRun = subKernel.endSlot_ + 1;
       continue;
+    }
+
+    // When island filter is active, any filtered sub-kernels that precede the island
+    // set nextSlotToRun past their end slot (into the pre-island gap). Those gap slots
+    // were already executed by the outer composite loop BEFORE capture was started,
+    // so re-executing them here — while tl_graphExecutionActive=true — would run
+    // non-capture-safe ops on the active capture stream and invalidate it (err=901).
+    // Clamp nextSlotToRun to tl_islandSlotMin so the gap-check below only fires for
+    // gaps that are genuinely INSIDE the island, not for pre-island gaps.
+    if (islandFilterActive && nextSlotToRun < tl_islandSlotMin) {
+      DSP_DIAG(EXECUTE, "ISLAND_GAP_CLAMP: nextSlotToRun %d clamped to tl_islandSlotMin %d (pre-island gap already executed by outer loop)",
+               nextSlotToRun, tl_islandSlotMin);
+      nextSlotToRun = tl_islandSlotMin;
     }
 
     if (nextSlotToRun < subKernel.startSlot_) {

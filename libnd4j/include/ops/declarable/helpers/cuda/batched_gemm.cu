@@ -43,7 +43,10 @@ namespace ops {
 namespace helpers {
 
 static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
-  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+  // Skip during CUDA graph capture: workspace was pre-set by setCublasWorkspaceForCapture
+  // before cudaStreamBeginCapture; calling cublasSetWorkspace on a capturing stream may
+  // inject a host-callback node into the graph.
+  if (!tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
     cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
   }
 }
@@ -169,9 +172,12 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
   auto stream = context->getCudaStream();
 
-  auto status = cublasSetStream_v2(*handle, *stream);
-
-  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
+  // Skip cublasSetStream_v2 during CUDA graph capture (see MmulHelper mmulMxM comment).
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+  if (!tl_graphExecutionActive) {
+    status = cublasSetStream_v2(*handle, *stream);
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
+  }
   reapplyCublasWorkspace(*handle);
 
   const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
