@@ -2072,6 +2072,14 @@ void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
   // If primary buffer is null but the DataBuffer exists, we need to allocate and sync
   if (ptr == nullptr) {
 #ifdef SD_CUDA
+    // During CUDA graph capture, do NOT allocate primary or sync D2H.
+    // syncToPrimary() issues a synchronous cudaMemcpy(D2H) that invalidates
+    // the capture stream. Callers (e.g. NativeOpExecutioner::execTransformBool)
+    // receive the host pointer as hX/hZ but only use device pointers dX/dZ for
+    // the actual kernel launch — the host pointer is vestigial on CUDA.
+    if (tl_graphExecutionActive) {
+      return nullptr;
+    }
     // On CUDA, arrays may only have GPU memory allocated initially.
     // If someone calls buffer() (which accesses host memory), we need to
     // allocate the primary buffer and sync data from device to host.
