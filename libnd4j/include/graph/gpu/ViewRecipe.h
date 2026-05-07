@@ -23,8 +23,8 @@
 //
 // Contract:
 //   SHAPES_FROZEN:  Recipe is captured and validated (source shape matches).
-//   POINTERS_STABLE: Source buffer address is verified stable.
-//   REPLAYING:      View is installed before consumer replay — no gap execution.
+//   REPLAYING:      Source buffer address verified stable; view installed before
+//                   consumer replay — no gap execution.
 //
 // If any view op would materialize instead of remaining a view, hard error.
 //
@@ -86,7 +86,7 @@ struct ViewRecipe {
   int sliceRank;  // Rank of the slice parameters
 
   // Validation state
-  bool validated;              // True after POINTERS_STABLE address check
+  bool validated;              // True after REPLAYING address check
   void* capturedSourceAddr;    // Source buffer address at capture time
   LongType capturedSourceBytes;// Source buffer size at capture time
 

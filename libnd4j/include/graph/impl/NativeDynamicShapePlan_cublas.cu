@@ -27,13 +27,17 @@
 #include <cublas_v2.h>
 #include <helpers/cublasHelper.h>
 
+namespace sd {
+
 // Thread-local cuBLAS workspace for MmulHelper to re-apply after cublasSetStream.
 // cublasSetStream resets the user-provided workspace (per cuBLAS docs), so
 // MmulHelper::reapplyCublasWorkspace() reads these to restore it.
+// All defined in DataBuffer.cu inside namespace sd.
 extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+extern SD_TLS_EXPORT thread_local bool   tl_cublasLtDisabled;
+extern SD_TLS_EXPORT thread_local bool   tl_graphExecutionActive;
 
-namespace sd {
 namespace graph {
 
 void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
@@ -65,15 +69,48 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   // Get the cuBLAS handle for the current device.
   // CublasHelper::handle() returns void* which is cublasHandle_t* (pointer to the handle).
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-  if (handlePtr == nullptr) return;
+  if (handlePtr == nullptr) {
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: cuBLAS handle is NULL — cannot configure");
+    return;
+  }
+
+  cudaStream_t resolvedStream = stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: setting cuBLAS stream=%p (from void*=%p) "
+           "tl_graphExecutionActive=%d tl_cublasLtDisabled=%d",
+           (void*)resolvedStream, stream, (int)tl_graphExecutionActive, (int)tl_cublasLtDisabled);
 
   // Set the cuBLAS handle to use the capture stream so GEMM ops are recorded
   // into the graph on the correct stream.
-  cublasSetStream_v2(*handlePtr, stream != nullptr
-      ? *static_cast<cudaStream_t*>(stream) : nullptr);
+  cublasSetStream_v2(*handlePtr, resolvedStream);
+
+  // ── Deterministic capture (CUDA_GRAPHS mode) ──────────────────────────────
+  // When tl_cublasLtDisabled is set (CUDA_GRAPHS and SLOT_BY_SLOT modes), we
+  // must NOT provide a workspace to cuBLAS. With workspace available, cuBLAS may
+  // select workspace-using algorithms (split-K variants) whose internal reduction
+  // order differs between graph capture and graph replay. This produces tiny FP
+  // differences that compound through GDN recurrent state until token divergence.
+  //
+  // Without workspace, cuBLAS is forced to select algorithms that DON'T use
+  // workspace scratch — matching exactly what SLOT_BY_SLOT does during live
+  // execution. For M=1 decode GEMV (the entire decode hot path), cuBLAS does NOT
+  // need workspace for the basic non-split-K algorithm.
+  //
+  // We explicitly call cublasSetWorkspace(handle, nullptr, 0) to clear any
+  // previously-set workspace on the handle, ensuring the captured kernels are
+  // identical to what live execution would produce.
+  if (tl_cublasLtDisabled) {
+    cublasSetWorkspace(*handlePtr, nullptr, 0);
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: workspace CLEARED (deterministic mode, "
+             "tl_cublasLtDisabled=true) — forces non-split-K algorithms matching SLOT_BY_SLOT");
+    return;
+  }
 
   // Explicit workspace prevents cuBLAS from creating per-GEMM MemAlloc/MemFree
   // graph nodes during capture, which cause OOM on graph launch.
+  // This path is only used by TRITON composite mode (which manages its own
+  // capture segments around matmul gaps).
   bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
 
   if (useCublasWorkspace) {
@@ -81,15 +118,34 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
     cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
     tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
     tl_cublasWorkspaceSize = cublasWorkspaceSize_;
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: workspace SET buffer=%p size=%zuMB",
+             cublasWorkspaceBuffer_, cublasWorkspaceSize_ / (1024*1024));
   } else {
     // Clear any previously set workspace so cuBLAS uses its own internal allocator
+    cublasSetWorkspace(*handlePtr, nullptr, 0);
     tl_cublasWorkspacePtr = nullptr;
     tl_cublasWorkspaceSize = 0;
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: workspace DISABLED (cublasCaptureWorkspace=false)");
   }
 }
 
 void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
-  // Same workspace as capture so cuBLAS selects identical algorithms.
+  // In deterministic mode (tl_cublasLtDisabled = CUDA_GRAPHS or SLOT_BY_SLOT),
+  // warmup must see the same cuBLAS state as capture: no workspace. This ensures
+  // cuBLAS selects the same non-split-K algorithm during warmup, capture, and
+  // replay, producing bit-identical results.
+  if (tl_cublasLtDisabled) {
+    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+    if (handlePtr != nullptr) {
+      cublasSetWorkspace(*handlePtr, nullptr, 0);
+    }
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+    return;
+  }
+
+  // Non-deterministic mode (TRITON): same workspace as capture so cuBLAS
+  // selects identical algorithms during warmup and capture.
   if (!sd::Environment::getInstance().cublasCaptureWorkspace()) return;
 
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
@@ -105,7 +161,15 @@ void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
 void NativeDynamicShapePlan::restoreCublasWorkspaceAfterCapture(void* stream) {
   // Reset cuBLAS to use its own internal workspace allocation again.
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-  if (handlePtr == nullptr) return;
+  if (handlePtr == nullptr) {
+    DSP_DIAG(EXECUTE, "restoreCublasWorkspaceAfterCapture: cuBLAS handle is NULL — cannot restore");
+    return;
+  }
+
+  DSP_DIAG(EXECUTE, "restoreCublasWorkspaceAfterCapture: clearing cuBLAS workspace "
+           "(was ptr=%p size=%zu) tl_graphExecutionActive=%d",
+           (void*)tl_cublasWorkspacePtr, tl_cublasWorkspaceSize,
+           (int)tl_graphExecutionActive);
 
   cublasSetWorkspace(*handlePtr, nullptr, 0);
 

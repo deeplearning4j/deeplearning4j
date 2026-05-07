@@ -219,7 +219,7 @@ __global__ void fusedRoPEKernel(
     const LongType seqLen,
     const LongType numHeads,
     const LongType headDim,
-    const int positionOffset,
+    const LongType* __restrict__ positionOffsetPtr,
     const float freqBase,
     const float freqScale,
     const int ropeType,
@@ -239,8 +239,10 @@ __global__ void fusedRoPEKernel(
   const LongType s = rem % seqLen;
   const LongType b = rem / seqLen;
 
-  // Compute position
-  const LongType pos = positionOffset + s;
+  // Read position offset from device pointer at kernel runtime (NOT baked as constant).
+  // This makes the kernel CUDA graph compatible: the pointer address is captured,
+  // but the value can change between graph replays via D2D staging.
+  const LongType pos = static_cast<LongType>(*positionOffsetPtr) + s;
 
   // Compute theta using rotateDims for frequency spacing
   float theta = static_cast<float>(pos) * freqScale /
@@ -494,7 +496,7 @@ void launchFusedRoPE(
     LongType seqLen,
     LongType numHeads,
     LongType headDim,
-    int positionOffset,
+    const LongType* positionOffsetPtr,
     float freqBase,
     float freqScale,
     int ropeType,
@@ -523,7 +525,7 @@ void launchFusedRoPE(
 
   fusedRoPEKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
       input, output, batch, seqLen, numHeads, headDim,
-      positionOffset, freqBase, freqScale, ropeType, rotateDims);
+      positionOffsetPtr, freqBase, freqScale, ropeType, rotateDims);
   DebugHelper::checkGlobalErrorCode("fusedRoPEKernel failed");
 }
 
@@ -606,11 +608,11 @@ template void launchFusedLayerNorm<float16>(const float16*, const float16*, cons
     LongType, LongType, float, cudaStream_t);
 
 template void launchFusedRoPE<float>(const float*, float*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t, int);
+    const LongType*, float, float, int, cudaStream_t, int);
 template void launchFusedRoPE<double>(const double*, double*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t, int);
+    const LongType*, float, float, int, cudaStream_t, int);
 template void launchFusedRoPE<float16>(const float16*, float16*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t, int);
+    const LongType*, float, float, int, cudaStream_t, int);
 
 template void launchFusedRoPEBackward<float>(const float*, float*, LongType, LongType, LongType, LongType,
     int, float, float, int, cudaStream_t, int);
@@ -727,7 +729,7 @@ void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* outpu
   NDArray::registerSpecialUse({output}, {input, gain, bias});
 }
 
-void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
+void fusedRoPE(NDArray* input, NDArray* output, const void* positionOffsetPtr,
                float freqBase, float freqScale, int ropeType, LaunchContext* context,
                int rotaryDims) {
   const int rank = input->rankOf();
@@ -740,24 +742,29 @@ void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
   auto stream = context->getCudaStream();
   auto dtype = input->dataType();
 
+  // positionOffsetPtr is a device-accessible int64 pointer on CUDA.
+  // The kernel reads *positionOffsetPtr at runtime, NOT as a baked constant.
+  // position_offset is INT64 (LongType) — must match the placeholder dtype.
+  const LongType* posPtr = reinterpret_cast<const LongType*>(positionOffsetPtr);
+
   if (dtype == DataType::FLOAT32) {
     launchFusedRoPE<float>(
         reinterpret_cast<const float*>(input->specialBuffer()),
         reinterpret_cast<float*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
+        posPtr, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else if (dtype == DataType::DOUBLE) {
     launchFusedRoPE<double>(
         reinterpret_cast<const double*>(input->specialBuffer()),
         reinterpret_cast<double*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
+        posPtr, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else if (dtype == DataType::HALF) {
     launchFusedRoPE<float16>(
         reinterpret_cast<const float16*>(input->specialBuffer()),
         reinterpret_cast<float16*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
+        posPtr, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else {
     THROW_EXCEPTION("fusedRoPE: Unsupported data type");
   }

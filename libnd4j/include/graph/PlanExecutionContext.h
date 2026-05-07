@@ -47,6 +47,7 @@
 #define LIBND4J_PLAN_EXECUTION_CONTEXT_H
 
 #include <system/common.h>
+#include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
 
 #include <chrono>
@@ -198,13 +199,6 @@ struct PlanExecutionContext {
    * Avoids reading the mutable plan field mid-execution.
    */
   int graphExecutionMode = 0;  // GraphExecutionMode value
-
-  // ══════════════════════════════════════════════════════════════════════
-  // Phase dispatch coordination
-  // Set by phase methods, read by execute() to determine post-phase work.
-  // ══════════════════════════════════════════════════════════════════════
-  bool phaseHandledPostSegments = false;
-  bool phaseHandledOutputs = false;
 
   // ══════════════════════════════════════════════════════════════════════
   // Sync tracking
@@ -474,8 +468,9 @@ struct PlanExecutionContext {
     needsFullSync = !shapesFrozen || executeCount <= 1;
 
     // tritonSkipKernels override
-    forcedSlotBySlot = tritonSkipKernels && gemMode != 1;  // 1 = GEM_SLOT_BY_SLOT
-    graphExecutionMode = forcedSlotBySlot ? 1 : gemMode;
+    forcedSlotBySlot = tritonSkipKernels && !ModeContract::forMode(gemMode).isSlotBySlot;
+    graphExecutionMode = forcedSlotBySlot
+        ? static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT) : gemMode;
 
     // Graph capture/replay gate
     // Debug mode disables graph capture: debug tracing adds syncToHost calls
@@ -500,7 +495,12 @@ struct PlanExecutionContext {
     // Dispatch booleans — replaces ExecutionDispatchMode enum
     // isFirstFrozenWarmup already set above.
     // forcedSlotBySlot already set above.
-    isReplay = !isFirstFrozenWarmup && graphExecutionMode != 1;  // not warmup, not GEM_SLOT_BY_SLOT
+    // isReplay requires shapesFrozen: pre-freeze executions MUST use phaseSlotBySlot
+    // to build shape caches and let AUTO_SEAL trigger. Without this gate, CUDA_GRAPHS
+    // and TRITON modes enter phaseReplay on their first execution (shapesFrozen=false)
+    // and hit platformShouldUseGraph() returning false → silent slot-by-slot fallback.
+    isReplay = shapesFrozen && !isFirstFrozenWarmup &&
+        !ModeContract::forMode(graphExecutionMode).isSlotBySlot;
   }
 
   /**
@@ -509,7 +509,7 @@ struct PlanExecutionContext {
    */
   SD_INLINE const char* dispatchModeName() const {
     return isFirstFrozenWarmup ? "WARMUP"
-         : (graphExecutionMode == 1) ? "SLOT_BY_SLOT"
+         : !isReplay ? "SLOT_BY_SLOT"
          : "REPLAY";
   }
 

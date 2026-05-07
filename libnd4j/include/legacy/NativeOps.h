@@ -1682,10 +1682,10 @@ SD_LIB_EXPORT int getPlanReplayUnitCount(sd::Pointer planHandle, int segIdx);
 
 /**
  * Get the current plan execution phase (0=SLOT_BY_SLOT, 1=SHAPES_FROZEN,
- * 2=POINTERS_STABLE, 3=REPLAYING).
+ * 2=REPLAYING).
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @return Current plan phase (0-3), or -1 on error
+ * @return Current plan phase (0-2), or -1 on error
  */
 SD_LIB_EXPORT int getPlanPhase(sd::Pointer planHandle);
 
@@ -2085,7 +2085,7 @@ SD_LIB_EXPORT int getPlanSegmentExecutionPhase(sd::Pointer planHandle, int segme
 
 /**
  * Get the plan-level phase.
- * Returns PlanPhase as int: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=POINTERS_STABLE, 3=REPLAYING
+ * Returns PlanPhase as int: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=REPLAYING
  */
 SD_LIB_EXPORT int getPlanPhase(sd::Pointer planHandle);
 

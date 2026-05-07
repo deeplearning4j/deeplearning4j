@@ -38,7 +38,7 @@ import java.util.List;
  * <p>Intended use in platform-tests:</p>
  * <pre>
  *   sd.output(placeholders, "out");           // run once to compile
- *   DspPlanAssertions.assertPhaseReached(sd, PlanPhase.POINTERS_STABLE);
+ *   DspPlanAssertions.assertPhaseReached(sd, PlanPhase.REPLAYING);
  *
  *   for (int i = 0; i &lt; 5; i++) sd.output(placeholders, "out");
  *   DspPlanAssertions.assertFullyReplaying(sd);
@@ -119,6 +119,41 @@ public final class DspPlanAssertions {
                     stuck.size() + " capturable segment(s) are not REPLAYING: " + stuck,
                     report);
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Unified GraphNodePhase assertions
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Assert the plan's unified lifecycle phase matches.
+     * Prefer this over assertPhaseExact(PlanPhase) for new code.
+     */
+    public static void assertGraphNodePhase(SameDiff sd, GraphNodePhase expected) {
+        assertGraphNodePhase(sd, expected, null);
+    }
+
+    public static void assertGraphNodePhase(SameDiff sd, GraphNodePhase expected, String context) {
+        DspDebugger.PlanReport report = DspDebugger.attach(sd).analyzePlan();
+        requirePlanAvailable(report, context);
+        if (report.graphNodePhase != expected) {
+            fail("assertGraphNodePhase", context,
+                    "expected unified phase " + expected + " but was " + report.graphNodePhase
+                            + " (planPhase=" + report.planPhase + ")",
+                    report);
+        }
+    }
+
+    /**
+     * Assert the plan is SEALED (steady-state replay).
+     * Equivalent to assertPhaseExact(PlanPhase.REPLAYING) but uses unified terminology.
+     */
+    public static void assertSealed(SameDiff sd) {
+        assertGraphNodePhase(sd, GraphNodePhase.SEALED);
+    }
+
+    public static void assertSealed(SameDiff sd, String context) {
+        assertGraphNodePhase(sd, GraphNodePhase.SEALED, context);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

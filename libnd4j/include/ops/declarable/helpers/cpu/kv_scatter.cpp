@@ -241,6 +241,61 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                           (pastKv, newKv, cachePosPtr, context), SD_FLOAT_TYPES);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// BSHD→BSHD in-place KV write (for dot_product_attention_v2)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+template <typename T>
+static void kvInPlaceWriteBSHD_(NDArray* cache, NDArray* newKv,
+                                 const void* cachePosPtr, LaunchContext* context) {
+    auto batch = newKv->sizeAt(0);
+    auto seqKV = newKv->sizeAt(1);
+    // innerSize = everything after seq dim (heads*dim for rank4, features for rank3)
+    LongType innerSize = 1;
+    for (int d = 2; d < newKv->rankOf(); d++) {
+        innerSize *= newKv->sizeAt(d);
+    }
+    auto cacheMaxSeqLen = cache->sizeAt(1);
+
+    LongType cachePos = *reinterpret_cast<const LongType*>(cachePosPtr);
+
+    const T* __restrict srcBuf = newKv->bufferAsT<T>();
+    T* __restrict dstBuf = cache->bufferAsT<T>();
+
+    auto numSlices = batch * seqKV;
+
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto slice = start; slice < stop; slice++) {
+            auto s = slice % seqKV;
+            auto b = slice / seqKV;
+
+            auto srcOffset = b * seqKV * innerSize + s * innerSize;
+            auto dstOffset = b * cacheMaxSeqLen * innerSize + (cachePos + s) * innerSize;
+
+            const T* __restrict src = srcBuf + srcOffset;
+            T* __restrict dst = dstBuf + dstOffset;
+
+            PRAGMA_OMP_SIMD
+            for (LongType i = 0; i < innerSize; i++) {
+                dst[i] = src[i];
+            }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, numSlices);
+}
+
+void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
+                         const void* cachePosPtr, LaunchContext* context) {
+    if (cache->dataType() != newKv->dataType()) {
+        std::string msg = "kvInPlaceWriteBSHD: cache dtype " + std::to_string((int)cache->dataType()) +
+                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
+        THROW_EXCEPTION(msg.c_str());
+    }
+    BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteBSHD_,
+                          (cache, newKv, cachePosPtr, context), SD_FLOAT_TYPES);
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

@@ -1262,6 +1262,56 @@ DECLARE_CUSTOM_OP(autoregressive_decode, 3, 3, false, 3, 5);
 DECLARE_CUSTOM_OP(fused_attention_projection, 2, 1, false, 0, 0);
 #endif
 
+/**
+ * lightning_attention - O(N) linear attention using cumulative sum recurrence.
+ *
+ * Instead of the full N×N attention matrix, uses a running state:
+ *   S_i = sum_{j<=i} (K_j^T * V_j)
+ *   O_i = scale * Q_i @ S_i
+ *
+ * Complexity: O(N * d²) vs O(N² * d) for standard attention.
+ *
+ * Input:
+ *   0: query  [batch, heads, seqLen, headDim]
+ *   1: key    [batch, heads, seqLen, headDim]
+ *   2: value  [batch, heads, seqLen, headDim]
+ *
+ * Float args:
+ *   0: scale (default: 1/sqrt(headDim))
+ *
+ * Output:
+ *   0: attention output [batch, heads, seqLen, headDim]
+ */
+#if NOT_EXCLUDED(OP_lightning_attention)
+DECLARE_CUSTOM_OP(lightning_attention, 3, 1, false, 0, 0);
+#endif
+
+/**
+ * cascade_attention - Chunked attention for long-context KV cache.
+ *
+ * Splits the KV cache into chunks, computes attention per chunk,
+ * then merges results using log-sum-exp for numerical stability.
+ * Enables attending over very long sequences without materializing
+ * the full attention matrix at once.
+ *
+ * Input:
+ *   0: query  [batch, heads, queryLen, headDim]
+ *   1: key    [batch, heads, kvLen, headDim]
+ *   2: value  [batch, heads, kvLen, headDim]
+ *
+ * Int args:
+ *   0: chunkSize — KV chunk size (default: 512)
+ *
+ * Float args:
+ *   0: scale (default: 1/sqrt(headDim))
+ *
+ * Output:
+ *   0: attention output [batch, heads, queryLen, headDim]
+ */
+#if NOT_EXCLUDED(OP_cascade_attention)
+DECLARE_CUSTOM_OP(cascade_attention, 3, 1, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

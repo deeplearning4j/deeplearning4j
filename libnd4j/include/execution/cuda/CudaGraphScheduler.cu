@@ -466,6 +466,11 @@ void CudaGraphScheduler::clearCache() {
     _cacheAccessOrder.clear();
 }
 
+// Free function callable from NativeDynamicShapePlan_cuda.cu without pulling in full header
+void clearCudaGraphSchedulerCache() {
+    CudaGraphScheduler::getInstance().clearCache();
+}
+
 size_t CudaGraphScheduler::getCacheSize() const {
     std::lock_guard<std::mutex> lock(_cacheMutex);
     return _graphCache.size();

@@ -34,6 +34,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
+#include <graph/DspSegmentLifecycle.h>
 #include <ops/OpTraitTable.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <helpers/ConstantShapeHelper.h>
@@ -46,6 +47,7 @@
 #include <graph/gpu/TritonGraphBackend.h>
 #endif
 
+#include <system/Environment.h>
 #include <system/env_functions.h>
 #include <algorithm>
 #include <cstdlib>
@@ -54,17 +56,16 @@
 #include <unordered_set>
 
 namespace sd {
+
+// Thread-local cuBLAS deterministic mode flag — gates workspace usage during capture.
+// Defined in DataBuffer.cu inside namespace sd.
+extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
+
 namespace graph {
 
-// Pre-allocated cross-stream sync event, reused to avoid cudaEventCreate/Destroy per replay.
-static thread_local cudaEvent_t tl_crossStreamEvent = nullptr;
-
-static inline cudaEvent_t getCrossStreamEvent() {
-  if (tl_crossStreamEvent == nullptr) {
-    cudaEventCreateWithFlags(&tl_crossStreamEvent, cudaEventDisableTiming);
-  }
-  return tl_crossStreamEvent;
-}
+// Cross-stream sync is now handled by performPreReplaySync() using
+// PlanExecutionContext::crossStreamEvent. The TLS event that was here
+// was a divergent copy that bypassed the PlanExecutionContext dedup flags.
 
 // Default capture host workspace size (32MB, configurable via ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB)
 static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
@@ -92,14 +93,14 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
 
   // Use a flat bitvector instead of unordered_set for O(1) lookup.
   // Thread-local to avoid per-call allocation in the hot replay path.
+  // IMPORTANT: Must clear the ENTIRE vector — not just the current segment range —
+  // because this TLS vector persists across plan instances. A prior plan's segment
+  // may have set entries in different ranges that contaminate the address key hash.
   static thread_local std::vector<bool> isSegOutput;
   if (static_cast<int>(isSegOutput.size()) < totalOutputSlots_) {
     isSegOutput.resize(totalOutputSlots_, false);
   }
-  // Clear only the segment range (much cheaper than clearing the whole vector).
-  int clearStart = std::max(0, seg.def.startSlot);
-  int clearEnd = std::min(totalOutputSlots_, seg.def.endSlot + 1);
-  for (int i = clearStart; i < clearEnd; i++) isSegOutput[i] = false;
+  std::fill(isSegOutput.begin(), isSegOutput.end(), false);
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numOutputs; i++) {
@@ -256,11 +257,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Frozen + cached key: reuse (shapes can't change). Otherwise: compute once and cache.
   // computeSegmentShapeKey is expensive (per-element D2H sync) so only call when needed.
   LongType segShapeKey;
-  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
+  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0) {
     segShapeKey = seg.exec.cachedShapeKey;
   } else {
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    if (shapesFrozen_) {
+    if (!planLifecycle_.isSlotBySlot()) {
       seg.exec.cachedShapeKey = segShapeKey;
     }
   }
@@ -277,7 +278,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   auto invalidateSegmentShapeState = [&](GraphSegment& segRef) {
     for (int stepIdx = segRef.def.startSlot; stepIdx <= segRef.def.endSlot; stepIdx++) {
       auto& slot = slots_[stepIdx];
-      slot.state_ = NativeSlot::SlotState::WARMUP;
+      slot.slotPhase.reset();  // PRIMARY
+      slot.state_ = NativeSlot::SlotState::WARMUP;  // legacy sync
       slot.shapeCache.cachedShapeKey = 0;
       slot.shapeCache.cachedOutputShapes.clear();
     }
@@ -306,81 +308,29 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
 
     if (replayInputsStable) {
-      // directReference optimization: skip syncing non-variable (weight) external inputs.
-      // Weight buffers are loaded once at model load time, are device-authoritative, and
-      // never change between decode steps. Their syncToDevice() is a no-op (isSpecialActual()
-      // returns early), but iterating over ~1333 external inputs to check them wastes CPU time.
-      // When shapes are frozen and externalInputIsVariable_ is populated, only sync variable
-      // inputs (input_ids, position_ids, attention_mask, inputs_embeds) — same as Triton path.
-      // Mirrors the frozen-replay optimization in NativeDynamicShapePlan_gpubackend.cpp.
-      int synced = 0, skipped = 0;
-      if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
-        // Frozen replay: only sync variable inputs; skip constant weights
-        for (int ei = 0; ei < numExt; ei++) {
-          if (externalArrays[ei] == nullptr) continue;
-          if (ei < static_cast<int>(externalInputIsVariable_.size()) &&
-              !externalInputIsVariable_[ei]) {
-            skipped++;
-            continue;  // weight directReference: skip sync for non-variable inputs
-          }
-          externalArrays[ei]->syncToDevice();
-          synced++;
-        }
-        DSP_DIAG(EXECUTE, "CUDAGRAPH_EXT_SYNC directReference: %d variable synced, %d weights skipped "
-                  "for seg[%d-%d] execCount=%d",
-                  synced, skipped, seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
-      } else {
-        // Non-frozen or no variable info: sync all
-        for (int ei = 0; ei < numExt; ei++) {
-          if (externalArrays[ei] != nullptr) {
-            externalArrays[ei]->syncToDevice();
-            synced++;
-          }
-        }
-        DSP_DIAG(EXECUTE, "CUDAGRAPH_EXT_SYNC full: %d inputs for seg[%d-%d] execCount=%d",
-                  synced, seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
-      }
-
-      // Cross-stream ordering: .assign() on reusable buffers runs on the default
-      // stream while graph replay launches on cudaStr. Make cudaStr wait on the
-      // default stream so replay sees the updated data.
-      {
-        cudaStream_t defaultStream = nullptr;
-        auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-        if (defaultStreamPtr != nullptr) {
-          defaultStream = *defaultStreamPtr;
-        }
-        if (defaultStream != nullptr && defaultStream != cudaStr) {
-          cudaEvent_t crossStreamEvt = getCrossStreamEvent();
-          cudaEventRecord(crossStreamEvt, defaultStream);
-          cudaStreamWaitEvent(cudaStr, crossStreamEvt, 0);
-          DSP_DIAG(EXECUTE, "CROSS_STREAM_SYNC: replay stream %p waiting on default stream %p "
-                   "for seg[%d-%d]",
-                   (void*)cudaStr, (void*)defaultStream, seg.def.startSlot, seg.def.endSlot);
-        }
-      }
+      // Unified pre-replay sync: cross-stream + H2D + staging D2D.
+      // Replaces three separate inline blocks. Idempotent via PlanExecutionContext.
+      externalArrays = performPreReplaySync(externalArrays, numExt, stream, "cudagraph_replay");
 
 #if HAVE_TRITON
-      // Match compositeReplay: gate arg table refresh on !argTableStable
-      if (!seg.exec.argTableStable) {
+      // Gate arg table refresh on generation counter (replaces argTableStable boolean)
+      if (seg.exec.needsArgRefresh()) {
         auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
         if (tritonBackend != nullptr) {
           tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
                                                    outputSlots_, totalOutputSlots_,
                                                    stream);
-          // Copy consolidated arg table to device after refresh (matches compositeReplay)
           tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
         }
+        seg.exec.markArgsCurrent();
       } else {
-        DSP_DIAG(EXECUTE, "CUDAGRAPH_REPLAY: argTableStable — skip refresh seg[%d-%d]",
+        DSP_DIAG(EXECUTE, "CUDAGRAPH_REPLAY: args current — skip refresh seg[%d-%d]",
                  seg.def.startSlot, seg.def.endSlot);
       }
 #endif
 
-      // Output buffers are now captured directly. If any slot address changes,
-      // the graph has stale baked-in pointers and must be rebuilt.
-      // Always check — non-Triton segments don't have arg tables, so argTableStable
-      // may be stale. Address drift must always be detected for correctness.
+      // Slot address drift check: graph bakes slot output device pointers.
+      // If any slot was reallocated, the graph has stale addresses and must rebuild.
       if (seg.exec.capturedSlotAddrHash != 0) {
         LongType currentAddrHash = computeSlotAddrHash(
             outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
@@ -395,17 +345,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         }
       }
 
-      // D2D-copy variable inputs into plan-owned staging buffers. The graph was
-      // captured with staging buffer device addresses (stable), not raw Java-side
-      // addresses. syncToDevice() above put the new token data into the Java-side
-      // device buffer; now D2D-copy it into the staging buffer the graph reads from.
-      if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
-        ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
-      }
+      // Zero slot outputs that require it before each graph replay (see
+      // platformTryFrozenFastPath comment for the full rationale).
+      prezeroSegmentOutputs(seg, stream);
 
-      // prezeroSegmentOutputs is NOT called on the replay hot path — output zeroing
-      // is captured into the CUDA graph during the slot-by-slot capture phase and
-      // replays automatically. Per-step cudaMemsetAsync here would be redundant work.
+      // Zero cuBLAS workspace before graph replay to match live cuBLAS behavior.
+      if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
+        cudaMemsetAsync(cublasWorkspaceBuffer_, 0, cublasWorkspaceSize_, cudaStr);
+      }
 
       if (replayInputsStable && seg.exec.replayHandle->replay(stream)) {
         seg.exec.lastReplayExecCount = executeCount_;
@@ -431,9 +378,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   // ── WARM-UP ──
+  // Capture contract: require captureMinWarmups (2) slot-by-slot executions before
+  // CUDA graph capture is allowed. This ensures:
+  //   1. All output NDArrays are allocated and shape-cached
+  //   2. All intermediate device buffers have valid content
+  //   3. cuBLAS algorithm selection is stable (same algo warmup→capture→replay)
+  //   4. No pre-capture hacks needed (hasValueDependentShapeOps save/restore eliminated)
+  //
+  // This matches the TRITON path which uses Environment::tritonCaptureMinExec() = 2.
+  // Using the same threshold for ALL capture modes eliminates mode-specific special cases.
+  static constexpr int CAPTURE_MIN_WARMUPS = 2;
+
   bool shapeChanged = (seg.exec.cachedShapeKey != segShapeKey);
 
-  if (seg.exec.executionCount == 0 || (shapeChanged && !seg.exec.compilationFailed)) {
+  if (seg.exec.executionCount < CAPTURE_MIN_WARMUPS || (shapeChanged && !seg.exec.compilationFailed)) {
     if (shapeChanged && seg.exec.replayHandle) {
       platformCleanupSegmentForRebuild(seg);
     }
@@ -441,33 +399,62 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     if (shapeChanged) inShapeChangeWarmup_ = true;
     auto warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
     if (shapeChanged) inShapeChangeWarmup_ = false;
+    if (warmupResult == Status::OK) {
+      seg.exec.executionCount++;
+    }
     return warmupResult;
   }
 
+  // Lifecycle: warmup complete → advance segPhase to CAPTURING.
+  // CUDA_GRAPHS mode skips the compile step (no JIT), so we go directly
+  // from WARMUP → CAPTURING via skipCompileToCapturing(). The post-capture
+  // markWarmupDone→markCompiled→markCaptured sequence (below, ~line 1166)
+  // handles the legacy lifecycleState field transitions via SegmentLifecycle functions.
+  if (seg.exec.segPhase.needsWarmup()) {
+    seg.exec.segPhase.skipCompileToCapturing();
+  }
+
   // ── CAPTURE ──
+  // PRE-CAPTURE LIFECYCLE ASSERTION: segment must be in BUILDING:CAPTURING sub-phase.
+  // If it's not, something skipped a lifecycle step — fail loudly instead of silently
+  // capturing with incorrect state.
+  if (seg.exec.segPhase.isSealed()) {
+    DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
+                  "LIFECYCLE VIOLATION: attempting CUDA graph capture on SEALED segment "
+                  "seg[%d-%d]. Sealed segments must only REPLAY, not re-capture. "
+                  "Call invalidateSegmentCaptures() before re-capture.",
+                  seg.def.startSlot, seg.def.endSlot);
+  }
+  if (seg.exec.segPhase.isFailed()) {
+    DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
+                  "LIFECYCLE VIOLATION: attempting CUDA graph capture on FAILED segment "
+                  "seg[%d-%d]. Failed segments must slot-by-slot only.",
+                  seg.def.startSlot, seg.def.endSlot);
+  }
+
   // Phase enforcement: CUDA graph capture during REPLAYING means a phase management bug.
   // The plan should have been demoted before re-capture is needed.
-  if (planPhase_ >= PlanPhase::REPLAYING) {
+  if (planLifecycle_.isReplaying()) {
     DSP_DIAG(COMPILE,
              "ERROR: CUDA graph capture triggered during REPLAYING phase for seg[%d-%d] "
-             "(executionCount=%d, planPhase=%d). Capture must only happen during "
+             "(executionCount=%d, phase=%s). Capture must only happen during "
              "warmup/compile/capture phases. Demoting plan phase.",
              seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
-             static_cast<int>(planPhase_));
+             planLifecycle_.displayName());
     REQUIRE_TRUE(false, 0,
                  "DSP phase contract violation: CUDA graph capture during REPLAYING phase "
                  "for seg[%d-%d]. Fix the phase management bug.",
                  seg.def.startSlot, seg.def.endSlot);
-    demotePlanPhase(PlanPhase::POINTERS_STABLE,
+    demotePlanPhase(PlanPhase::SHAPES_FROZEN,
                     "CUDA graph capture triggered during REPLAYING phase");
   }
   // Phase enforcement: log if graph capture starts before pointers are stable.
   // This is informational — capture may still succeed on first try, but unstable
   // pointers mean the captured graph may need re-capture on the next execution.
-  if (planPhase_ < PlanPhase::POINTERS_STABLE) {
-    DSP_DIAG(SEGMENT, "PHASE_INFO: graph capture starting for seg[%d-%d] at planPhase=%d "
-              "(before POINTERS_STABLE). External/input addresses may still drift.",
-              seg.def.startSlot, seg.def.endSlot, static_cast<int>(planPhase_));
+  if (!planLifecycle_.isReplaying()) {
+    DSP_DIAG(SEGMENT, "PHASE_INFO: graph capture starting for seg[%d-%d] at planPhase=%s "
+              "(before SEALED). External/input addresses may still drift.",
+              seg.def.startSlot, seg.def.endSlot, planLifecycle_.displayName());
   }
 
   if (seg.exec.replayHandle && seg.exec.cachedShapeKey != segShapeKey) {
@@ -475,41 +462,26 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   if (seg.exec.captureOomRetries > 0 && seg.exec.executionCount < seg.exec.captureRetryAfterExec) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    // HARD ERROR: OOM during capture is a bug — fix memory management.
+    // Silent fallback to slot-by-slot violates the execution mode contract.
+    DSP_THROW_SEG(MEMORY, seg.def.startSlot,
+                  "CUDA graph capture OOM for seg[%d-%d] (retry %d/%d, retryAfterExec=%d, "
+                  "currentExecCount=%d). Fix memory management — do NOT fall back to slot-by-slot.",
+                  seg.def.startSlot, seg.def.endSlot,
+                  seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                  seg.exec.captureRetryAfterExec, seg.exec.executionCount);
   }
 
-  bool hasValueDependentShapeOps = false;
-  for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
-    if (slots_[stepIdx].flags.outputShapeDependsOnInputValues) {
-      hasValueDependentShapeOps = true;
-      break;
-    }
-  }
-  if (hasValueDependentShapeOps) {
-    std::vector<NDArray*> preWarmupOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
-
-    // Force needsSync=true in executeSlot during this pre-capture warmup.
-    // At exec=2, executeCount_=2 → needsSync=false → prepareSpecialUse/
-    // registerSpecialUse skipped → ops read stale device memory.
-    forceSync_ = true;
-    inShapeChangeWarmup_ = true;
-    auto warmStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    inShapeChangeWarmup_ = false;
-    forceSync_ = false;
-    if (warmStatus != Status::OK) {
-      seg.exec.compilationFailed = true;
-      return warmStatus;
-    }
-
-    std::memcpy(outputSlots_, preWarmupOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-
-    if (seg.exec.executionCount > 0) {
-      seg.exec.executionCount--;
-    }
-
-    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    seg.exec.cachedShapeKey = segShapeKey;
-  }
+  // NOTE: The hasValueDependentShapeOps pre-capture warmup hack was REMOVED.
+  // It existed to work around capturing after only 1 warmup step — it ran the model
+  // a second time, saved/restored outputSlots_, decremented executionCount. This
+  // created subtle state corruption: device memory contained the extra warmup's
+  // results while pointers were restored to pre-warmup state.
+  //
+  // With CAPTURE_MIN_WARMUPS=2 (above), the segment naturally executes slot-by-slot
+  // twice before capture, achieving the same goal without save/restore tricks.
+  // The 2nd warmup naturally populates all output buffers with valid content that
+  // the capture step can then correctly overwrite.
 
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
@@ -581,8 +553,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  const size_t CUBLAS_WORKSPACE_SIZE = sd::env_dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
-  ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
+  // In deterministic mode (tl_cublasLtDisabled), setCublasWorkspaceForCapture
+  // will clear the workspace, so skip the allocation entirely to save GPU memory.
+  if (!tl_cublasLtDisabled) {
+    const size_t CUBLAS_WORKSPACE_SIZE = sd::env_dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
+    ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
+  }
   setCublasWorkspaceForCapture(stream);
 
   MmulHelper::resetCastCacheIndices();
@@ -591,10 +567,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   std::vector<std::pair<int, NDArray*>> savedOutputSlots;
   std::vector<NDArray*> preCapOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
 
+  std::vector<SlotPhase> savedSlotPhases(seg.def.endSlot - seg.def.startSlot + 1);
   std::vector<NativeSlot::SlotState> savedFrozenContextReady(seg.def.endSlot - seg.def.startSlot + 1);
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    savedSlotPhases[s - seg.def.startSlot] = slots_[s].slotPhase;
     savedFrozenContextReady[s - seg.def.startSlot] = slots_[s].state_;
-    if (slots_[s].state_ == NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
+    if (slots_[s].slotPhase.isSealed() && !slots_[s].slotPhase.isConstant) {
+      slots_[s].slotPhase.unseal(); slots_[s].slotPhase.shapeCacheValid = true;  // PRIMARY: demote for capture
+      slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;  // legacy sync
+    }
   }
 
   if (cudaStr != nullptr) {
@@ -694,7 +675,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Without this, capture bakes in Java-side NDArray addresses that may change between
   // decode steps, causing replay to read stale/zero data → "!!!!!" output.
   NDArray** captureExternals = externalArrays;
-  if (shapesFrozen_ && !externalInputIsVariable_.empty()) {
+  if (!planLifecycle_.isSlotBySlot() && !externalInputIsVariable_.empty()) {
     // Sync variable inputs H2D first (they need device data for the capture step)
     for (int ei = 0; ei < numExt; ei++) {
       if (ei >= static_cast<int>(externalInputIsVariable_.size()) ||
@@ -728,7 +709,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     invalidateSegmentShapeState(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+      slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];  // legacy sync
     }
     DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                   "CUDA graph capture beginCapture failed for seg[%d-%d]",
@@ -805,7 +787,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+      slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];  // legacy sync
     }
     platformCleanupSegmentForRebuild(seg);
     throw;  // rethrow — guard destructor frees host ptrs + restores remaining TLS
@@ -822,7 +805,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+      slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];  // legacy sync
     }
     platformCleanupSegmentForRebuild(seg);
     THROW_EXCEPTION("Unknown exception during CUDA graph capture");
@@ -873,7 +857,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+      slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];  // legacy sync
     }
     invalidateSegmentShapeState(seg);
 
@@ -889,10 +874,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   // Helper lambda to restore slot state on capture failure.
-  auto cleanupCaptureBuffersOnFailure = [&seg, &savedFrozenContextReady, this]() {
+  auto cleanupCaptureBuffersOnFailure = [&seg, &savedSlotPhases, &savedFrozenContextReady, this]() {
     // Arrays persist across capture failures — only slot state needs restoring.
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+      slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
+      slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];  // legacy sync
     }
   };
 
@@ -1112,6 +1098,29 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     seg.exec.compilationFailed = false;
   }
 
+  // ── LIFECYCLE STATE TRANSITION ──
+  // The CUDA graph path goes NEEDS_WARMUP → captured+replaying in one shot
+  // (there's no separate compile step — capture IS compilation for CUDA graphs).
+  // Transition through all required states so segmentIsFullyReplayingForPlanPhase()
+  // recognizes this segment as SEALED (was REPLAYING).
+  if (seg.exec.segPhase.needsWarmup()) {
+    SegmentLifecycle::markWarmupDone(seg.exec);
+    SegmentLifecycle::markCompiled(seg.exec, "CUDA", segShapeKey);
+    SegmentLifecycle::markCaptured(seg.exec, seg.exec.capturedInputAddrKey,
+                                   seg.exec.capturedCreateValueKey,
+                                   seg.exec.capturedSlotAddrHash, "CUDA");
+  } else if (seg.exec.segPhase.needsCapture()) {
+    // Re-capture after invalidation — already compiled, just needs capture transition
+    SegmentLifecycle::markCaptured(seg.exec, seg.exec.capturedInputAddrKey,
+                                   seg.exec.capturedCreateValueKey,
+                                   seg.exec.capturedSlotAddrHash, "CUDA");
+  } else if (seg.exec.segPhase.needsCompile()) {
+    SegmentLifecycle::markCompiled(seg.exec, "CUDA", segShapeKey);
+    SegmentLifecycle::markCaptured(seg.exec, seg.exec.capturedInputAddrKey,
+                                   seg.exec.capturedCreateValueKey,
+                                   seg.exec.capturedSlotAddrHash, "CUDA");
+  }
+
 
   if (seg.exec.captureOomRetries > 0) {
     DSP_DIAG_SEG(MEMORY, segIdx, "graph capture SUCCEEDED on OOM retry %d for seg[%d-%d]",
@@ -1121,7 +1130,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];
+    slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
+    slots_[s].state_ = savedFrozenContextReady[s - seg.def.startSlot];  // legacy sync
   }
 
   if (executionTimingEnabled_) {
@@ -1241,10 +1251,16 @@ void NativeDynamicShapePlan::performReplayVerify(
   // The frozen path only refreshes external/view-producer inputs — it does NOT
   // refresh regular slot-to-slot inputs, so downstream ops would read stale
   // warmup-era data instead of freshly computed outputs.
+  std::vector<SlotPhase> savedVerifySlotPhases(seg.def.endSlot - seg.def.startSlot + 1);
   std::vector<NativeSlot::SlotState> savedFrozenCtx(seg.def.endSlot - seg.def.startSlot + 1);
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    savedVerifySlotPhases[s - seg.def.startSlot] = slots_[s].slotPhase;
     savedFrozenCtx[s - seg.def.startSlot] = slots_[s].state_;
-    if (slots_[s].state_ == NativeSlot::SlotState::FROZEN) slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;
+    if (slots_[s].slotPhase.isSealed() && !slots_[s].slotPhase.isConstant) {
+      slots_[s].slotPhase.unseal();
+      slots_[s].slotPhase.shapeCacheValid = true;
+      slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;  // legacy sync
+    }
   }
   // Set executeCount_ to 0 so shape inference runs fresh
   int savedExecCountGlobal = executeCount_;
@@ -1263,7 +1279,8 @@ void NativeDynamicShapePlan::performReplayVerify(
   delete[] zeroedCounts;
   delete[] dummyRelease;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    slots_[s].state_ = savedFrozenCtx[s - seg.def.startSlot];
+    slots_[s].slotPhase = savedVerifySlotPhases[s - seg.def.startSlot];  // PRIMARY restore
+    slots_[s].state_ = savedFrozenCtx[s - seg.def.startSlot];  // legacy sync
   }
   executeCount_ = savedExecCountGlobal;
   seg.exec.executionCount = savedSegExecCount;
@@ -1363,7 +1380,7 @@ void NativeDynamicShapePlan::performReplayVerify(
 // ═══════════════════════════════════════════════════════════════════════════
 NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     NDArray** externalArrays, int numExt, void* stream) {
-  if (!shapesFrozen_ || externalInputIsVariable_.empty() || numExt <= 0) {
+  if (planLifecycle_.isSlotBySlot() || externalInputIsVariable_.empty() || numExt <= 0) {
     return externalArrays;
   }
 
@@ -1395,6 +1412,59 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
           cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
         }
       }
+
+      // Diagnostic: dump first few values of staging buffer after D2D copy
+      // for variable inputs around the divergence point.
+      // Gate behind isDebug() to avoid perf impact in production.
+      if (Environment::getInstance().isDebug() && executeCount_ >= 10 && executeCount_ <= 20) {
+        // Sync to ensure D2D is complete before reading
+        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
+        int numDump = std::min(16, static_cast<int>(ext->lengthOf()));
+        if (ext->dataType() == DataType::FLOAT32 && numDump > 0) {
+          std::vector<float> vals(numDump);
+          cudaMemcpy(vals.data(), dstBuf, numDump * sizeof(float), cudaMemcpyDeviceToHost);
+          std::string name = (i < static_cast<int>(externalInputNames_.size()))
+                             ? externalInputNames_[i] : "?";
+          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' staging first %d vals:",
+                    executeCount_, i, name.c_str(), numDump);
+          for (int v = 0; v < numDump; v++) {
+            sd_printf(" %.4f", vals[v]);
+          }
+          sd_printf("\n");
+          // Also dump source buffer for comparison
+          cudaMemcpy(vals.data(), srcBuf, numDump * sizeof(float), cudaMemcpyDeviceToHost);
+          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' source  first %d vals:",
+                    executeCount_, i, name.c_str(), numDump);
+          for (int v = 0; v < numDump; v++) {
+            sd_printf(" %.4f", vals[v]);
+          }
+          sd_printf("\n");
+        } else if (ext->dataType() == DataType::INT64 && numDump > 0) {
+          std::vector<LongType> vals(numDump);
+          cudaMemcpy(vals.data(), dstBuf, numDump * sizeof(LongType), cudaMemcpyDeviceToHost);
+          std::string name = (i < static_cast<int>(externalInputNames_.size()))
+                             ? externalInputNames_[i] : "?";
+          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' staging first %d vals:",
+                    executeCount_, i, name.c_str(), numDump);
+          for (int v = 0; v < numDump; v++) {
+            sd_printf(" %lld", (long long)vals[v]);
+          }
+          sd_printf("\n");
+        } else if (ext->dataType() == DataType::HALF && numDump > 0) {
+          // Read as raw bytes, convert from fp16
+          std::vector<uint16_t> raw(numDump);
+          cudaMemcpy(raw.data(), dstBuf, numDump * sizeof(uint16_t), cudaMemcpyDeviceToHost);
+          std::string name = (i < static_cast<int>(externalInputNames_.size()))
+                             ? externalInputNames_[i] : "?";
+          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' staging(fp16) first %d raw:",
+                    executeCount_, i, name.c_str(), numDump);
+          for (int v = 0; v < numDump; v++) {
+            sd_printf(" 0x%04x", raw[v]);
+          }
+          sd_printf("\n");
+        }
+      }
+
       staging->dataBuffer()->writeSpecial();
       effectiveExternals_[i] = staging;
     }

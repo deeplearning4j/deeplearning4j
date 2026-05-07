@@ -85,7 +85,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       continue;
     }
 
-    if (slot.state_ >= NativeSlot::SlotState::FROZEN && slot.flags.isFullyWriting) {
+    if (slot.slotPhase.isSealed() && slot.flags.isFullyWriting) {
       skippedFullyWriting++;
       DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=fully-writing",
                    s, slot.ident.opName.c_str());

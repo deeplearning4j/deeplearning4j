@@ -46,10 +46,9 @@ namespace dsp {
 // ─── PlanPhase string helpers ─────────────────────────────────────────────
 
 SD_INLINE const char* planPhaseName(PlanPhase phase) {
-  static const char* names[] = {"SLOT_BY_SLOT", "SHAPES_FROZEN",
-                                "POINTERS_STABLE", "REPLAYING"};
+  static const char* names[] = {"SLOT_BY_SLOT", "SHAPES_FROZEN", "REPLAYING"};
   int idx = static_cast<int>(phase);
-  return (idx >= 0 && idx < 4) ? names[idx] : "UNKNOWN";
+  return (idx >= 0 && idx < 3) ? names[idx] : "UNKNOWN";
 }
 
 // executionPhaseName REMOVED — use GraphSegmentExec::displayPhaseName() or
@@ -100,42 +99,45 @@ SD_INLINE const char* dspStatusName(Status status) {
 //   DSP_REQUIRE_PLAN_PHASE_EXACT(PlanPhase::SLOT_BY_SLOT, "phaseFreeze");
 //   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SHAPES_FROZEN, "someMethod");
 //
-// planPhase_ must be in scope (member of NativeDynamicShapePlan).
+// getPlanPhase() must be in scope (member of NativeDynamicShapePlan).
 
 #ifndef __CUDA_ARCH__
 
 #define DSP_REQUIRE_PLAN_PHASE_AT_MOST(maxPhase, methodName)                   \
   do {                                                                          \
-    if (planPhase_ > (maxPhase)) {                                             \
+    const auto _curPhase = getPlanPhase();                                      \
+    if (_curPhase > (maxPhase)) {                                              \
       DSP_DIAG(FALLBACK, "PHASE_VIOLATION: %s called in phase %s, requires <= %s", \
-               (methodName), dsp::planPhaseName(planPhase_),                   \
+               (methodName), dsp::planPhaseName(_curPhase),                    \
                dsp::planPhaseName(maxPhase));                                  \
       sd_printf("DSP PHASE VIOLATION: %s called in phase %d, requires <= %d\n", \
-                (methodName), (int)planPhase_, (int)(maxPhase));               \
+                (methodName), (int)_curPhase, (int)(maxPhase));                \
       assert(false && "DSP phase violation");                                   \
     }                                                                           \
   } while (0)
 
 #define DSP_REQUIRE_PLAN_PHASE_EXACT(requiredPhase, methodName)                \
   do {                                                                          \
-    if (planPhase_ != (requiredPhase)) {                                       \
+    const auto _curPhase = getPlanPhase();                                      \
+    if (_curPhase != (requiredPhase)) {                                        \
       DSP_DIAG(FALLBACK, "PHASE_VIOLATION: %s called in phase %s, requires %s", \
-               (methodName), dsp::planPhaseName(planPhase_),                   \
+               (methodName), dsp::planPhaseName(_curPhase),                    \
                dsp::planPhaseName(requiredPhase));                             \
       sd_printf("DSP PHASE VIOLATION: %s called in phase %d, requires %d\n",  \
-                (methodName), (int)planPhase_, (int)(requiredPhase));           \
+                (methodName), (int)_curPhase, (int)(requiredPhase));            \
       assert(false && "DSP phase violation");                                   \
     }                                                                           \
   } while (0)
 
 #define DSP_REQUIRE_PLAN_PHASE_AT_LEAST(minPhase, methodName)                  \
   do {                                                                          \
-    if (planPhase_ < (minPhase)) {                                             \
+    const auto _curPhase = getPlanPhase();                                      \
+    if (_curPhase < (minPhase)) {                                              \
       DSP_DIAG(FALLBACK, "PHASE_VIOLATION: %s called in phase %s, requires >= %s", \
-               (methodName), dsp::planPhaseName(planPhase_),                   \
+               (methodName), dsp::planPhaseName(_curPhase),                    \
                dsp::planPhaseName(minPhase));                                  \
       sd_printf("DSP PHASE VIOLATION: %s called in phase %d, requires >= %d\n", \
-                (methodName), (int)planPhase_, (int)(minPhase));               \
+                (methodName), (int)_curPhase, (int)(minPhase));                \
       assert(false && "DSP phase violation");                                   \
     }                                                                           \
   } while (0)

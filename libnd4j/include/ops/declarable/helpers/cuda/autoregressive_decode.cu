@@ -923,6 +923,18 @@ void autoregressiveDecodeCuda(
             nextTokenId);
         NDArray::registerSpecialUse({inputIds}, {});
 
+        // Diagnostic: verify input_ids buffer address consistency
+        if (step < 5 && env_isVerbose()) {
+            void* extBuf = (config->inputIdsExtIdx >= 0 && config->inputIdsExtIdx < numExtInputs)
+                           ? extInputs[config->inputIdsExtIdx]->specialBuffer() : nullptr;
+            sd_printf("INPUT_IDS_ADDR[step=%d]: inputIds->specialBuffer()=%p "
+                      "extInputs[%d]->specialBuffer()=%p MATCH=%d nextToken=%lld\n",
+                      step, inputIds->specialBuffer(),
+                      config->inputIdsExtIdx, extBuf,
+                      (int)(inputIds->specialBuffer() == extBuf),
+                      (long long)nextTokenId);
+        }
+
         // ── Update in-graph KV cache scalars (GGUF pattern) ──
         // position_offset and cache_position are scalar ext inputs that the
         // attention op reads for RoPE position and KV write position.

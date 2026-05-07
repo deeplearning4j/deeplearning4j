@@ -66,7 +66,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     if (slot.flags.inPlaceFused) continue;
     if (slot.fusedChain.isFusedChainTail) continue;
 
-    if (slot.state_ >= NativeSlot::SlotState::FROZEN && slot.flags.isFullyWriting) continue;
+    if (slot.slotPhase.isSealed() && slot.flags.isFullyWriting) continue;
 
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];

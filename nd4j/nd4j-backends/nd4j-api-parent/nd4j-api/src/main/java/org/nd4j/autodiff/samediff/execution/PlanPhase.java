@@ -25,17 +25,15 @@ package org.nd4j.autodiff.samediff.execution;
  *
  * <p>Enforces a strict progression that makes assumptions easier at each level:</p>
  * <pre>
- *   SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING
+ *   SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING
  * </pre>
  *
  * <p>Each phase guarantees everything from prior phases plus additional invariants:</p>
  * <ul>
  *   <li><b>SLOT_BY_SLOT</b>: No assumptions. Shapes may change, pointers may move.</li>
  *   <li><b>SHAPES_FROZEN</b>: All output shapes are constant. Shape inference skipped.</li>
- *   <li><b>POINTERS_STABLE</b>: Shapes frozen + all buffer pointers stable across steps.
- *       Graph capture is safe.</li>
  *   <li><b>REPLAYING</b>: Shapes frozen + pointers stable + graph replay active.
- *       Only D2D copies + graph launch needed.</li>
+ *       Per-segment generation counters gate capture readiness.</li>
  * </ul>
  *
  * <p>Phase is automatically advanced by the C++ execute() based on observed stability.
@@ -48,10 +46,15 @@ public enum PlanPhase {
     SLOT_BY_SLOT(0),
     /** Shapes are constant across executions */
     SHAPES_FROZEN(1),
-    /** Shapes frozen + buffer pointers stable */
-    POINTERS_STABLE(2),
-    /** Steady state — graph replay active */
-    REPLAYING(3);
+    /** Steady state — shapes frozen + pointers stable + graph replay active */
+    REPLAYING(2),
+
+    /**
+     * @deprecated Removed — pointer stability is now tracked per-segment via generation counters.
+     * Kept for backward compatibility with code that references this value.
+     */
+    @Deprecated
+    POINTERS_STABLE(2);
 
     private final int nativeCode;
 

@@ -783,10 +783,10 @@ public class DynamicShapePlanExecutor implements Closeable {
      * The first execution after enabling will still do full shape inference to populate
      * the cache; subsequent executions skip shape work entirely.
      * <p>
-     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
-     * REPLAYING. Calling this method with {@code frozen=false} is illegal — backward
-     * transitions are architectural errors. If shapes change, call {@link #resetForNextPage()}
-     * to destroy the current plan and let the cache compile a fresh entry.
+     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING.
+     * Calling this method with {@code frozen=false} is illegal — backward transitions are
+     * architectural errors. If shapes change, call {@link #resetForNextPage()} to destroy the
+     * current plan and let the cache compile a fresh entry.
      *
      * @param frozen true to freeze shapes; false throws IllegalArgumentException
      * @throws IllegalArgumentException if frozen is false
@@ -795,7 +795,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (!frozen) {
             throw new IllegalArgumentException(
                 "LIFECYCLE VIOLATION: setShapesFrozen(false) is illegal. " +
-                "Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING). " +
+                "Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING). " +
                 "Backward transitions are banned. To handle a shape change, call " +
                 "resetForNextPage() to destroy the current plan and let the cache compile a fresh one.");
         }
@@ -839,7 +839,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     /**
      * Get the current plan-level phase from the native C++ plan.
      * Returns the phase that represents the overall plan lifecycle:
-     * SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING.
+     * SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING.
      *
      * @return the current PlanPhase, or null if no native plan is compiled
      */
@@ -890,9 +890,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Reset executor state for next-page reuse.
      * Releases GPU intermediates (CUDA graphs, replay workspaces) and destroys the current
      * native plan handle so the next execution starts with a fresh plan from the cache.
-     * Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
-     * REPLAYING) and cannot go backwards — unfreezing is illegal. Destroying the handle
-     * and letting the cache create a fresh entry is the only correct reset path.
+     * Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING) and cannot
+     * go backwards — unfreezing is illegal. Destroying the handle and letting the cache create
+     * a fresh entry is the only correct reset path.
      */
     public void resetForNextPage() {
         log.info("DSP resetForNextPage: releasing GPU intermediates and destroying native plan handle");
@@ -1216,6 +1216,20 @@ public class DynamicShapePlanExecutor implements Closeable {
                 !tritonAvailable) {
             log.warn("Native executor: TRITON mode requested but Triton is unavailable; falling back to AUTO");
             effectiveMode = GraphExecutionMode.AUTO;
+        }
+
+        // Platform-aware mode remapping: on platforms without a GPU graph backend
+        // (plain CPU), modes that require graph capture (CUDA_GRAPHS, TRITON, AUTO,
+        // etc.) cannot be honored. Remap to EMULATED_REPLAY which uses slot-by-slot
+        // execution with replay lifecycle tracking. This mirrors the C++ ModeContract
+        // check in NativeDynamicShapePlan::setGraphExecutionMode().
+        boolean hasGraphBackend = Nd4j.backends().isCudaAvailable();
+        if (!hasGraphBackend && effectiveMode.requiresGraphBackend()) {
+            log.info("Native executor: remapping {} -> EMULATED_REPLAY (no GPU graph backend on this platform)",
+                    effectiveMode);
+            effectiveMode = GraphExecutionMode.EMULATED_REPLAY;
+            // Also disable CUDA graph capture since there is no GPU
+            cachedCudaGraphsEnabled = false;
         }
 
         cachedEffectiveGraphModeCode = effectiveMode.getNativeCode();

@@ -1026,10 +1026,28 @@ void CudaMemoryPool::trimPool(int deviceId) {
       }
     }
   }
+  // Log pool state before trim when verbose/debug
+  size_t preUsed = 0, preReserved = 0;
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &preUsed);
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &preReserved);
+
   cudaError_t trimErr = cudaMemPoolTrimTo(pools_[deviceId], 0);
   if (trimErr != cudaSuccess) {
     // Clear the sticky error so callers (e.g. cudaStreamCreate) don't pick it up.
     cudaGetLastError();
+  }
+
+  size_t postUsed = 0, postReserved = 0;
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &postUsed);
+  cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &postReserved);
+
+  if (sd::Environment::getInstance().isDebug() || sd::Environment::getInstance().isVerbose()) {
+    if (preReserved > 0 || preUsed > 0) {
+      sd_printf("CudaMemoryPool::trimPool dev=%d: BEFORE used=%zuMB reserved=%zuMB AFTER used=%zuMB reserved=%zuMB freed=%zuMB\n",
+                deviceId, preUsed/(1024*1024), preReserved/(1024*1024),
+                postUsed/(1024*1024), postReserved/(1024*1024),
+                (preReserved > postReserved ? preReserved - postReserved : 0)/(1024*1024));
+    }
   }
 
   if (prevDevice != deviceId) {

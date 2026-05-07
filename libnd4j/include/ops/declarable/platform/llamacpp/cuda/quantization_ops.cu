@@ -302,6 +302,18 @@ static ggml_type dequantTypeToGgmlCuda(int quantType) {
         case 8: return GGML_TYPE_Q4_K;
         case 9: return GGML_TYPE_Q5_K;
         case 10: return GGML_TYPE_Q6_K;
+        case 11: return GGML_TYPE_Q8_K;
+        case 12: return GGML_TYPE_IQ2_XXS;
+        case 13: return GGML_TYPE_IQ2_XS;
+        case 14: return GGML_TYPE_IQ3_XXS;
+        case 15: return GGML_TYPE_IQ1_S;
+        case 16: return GGML_TYPE_IQ4_NL;
+        case 17: return GGML_TYPE_IQ3_S;
+        case 18: return GGML_TYPE_IQ2_S;
+        case 19: return GGML_TYPE_IQ4_XS;
+        case 20: return GGML_TYPE_IQ1_M;
+        case 21: return GGML_TYPE_TQ1_0;
+        case 22: return GGML_TYPE_TQ2_0;
         default: return GGML_TYPE_Q4_0;
     }
 }

@@ -125,6 +125,31 @@ SD_LIB_HIDDEN void kvScatterDynBatched(const KvScatterDynEntry* entries, int num
 SD_LIB_HIDDEN void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                                    const void* cachePosPtr, LaunchContext* context);
 
+/**
+ * Write new K/V data at cache_position into a BSHD-layout KV cache in-place.
+ *
+ * Unlike kvInPlaceWrite (BHSD pastKv, BSHD newKv), both arrays here are BSHD.
+ * This is used by dot_product_attention_v2 where the KV cache is BSHD.
+ *
+ * Rank-4 BSHD: cache [batch, maxSeqLen, numKvHeads, headDim]
+ *              newKv  [batch, seqKV, numKvHeads, headDim]
+ *              Writes newKv[b, s, h, d] → cache[b, cachePos+s, h, d].
+ *
+ * Rank-3 BSF:  cache [batch, maxSeqLen, features]
+ *              newKv  [batch, seqKV, features]
+ *              Writes newKv[b, s, f] → cache[b, cachePos+s, f].
+ *
+ * Cache position is read from a device-side pointer (CUDA) or host pointer (CPU),
+ * making this CUDA graph compatible.
+ *
+ * @param cache       BSHD [batch, maxSeqLen, heads, dim] or BSF [batch, maxSeqLen, features] — modified in-place
+ * @param newKv       BSHD [batch, seqKV, heads, dim] or BSF [batch, seqKV, features] — source data
+ * @param cachePosPtr pointer to int64 cache position (device on CUDA, host on CPU)
+ * @param context     launch context
+ */
+SD_LIB_HIDDEN void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
+                                       const void* cachePosPtr, LaunchContext* context);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

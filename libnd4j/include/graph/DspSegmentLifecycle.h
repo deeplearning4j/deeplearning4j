@@ -39,7 +39,6 @@ static inline const char* stateName(SLS s) {
     case SLS::NEEDS_WARMUP:    return "NEEDS_WARMUP";
     case SLS::NEEDS_COMPILE:   return "NEEDS_COMPILE";
     case SLS::CAPTURE_PENDING: return "CAPTURE_PENDING";
-    case SLS::CAPTURED:        return "CAPTURED";
     case SLS::REPLAYING:       return "REPLAYING";
     case SLS::FAILED:          return "FAILED";
     case SLS::OOM_DEFERRED:    return "OOM_DEFERRED";
@@ -52,8 +51,7 @@ static inline const char* stateName(SLS s) {
 // Valid transitions:
 //   NEEDS_WARMUP    → NEEDS_COMPILE     (markWarmupDone)
 //   NEEDS_COMPILE   → CAPTURE_PENDING   (markCompiled)
-//   CAPTURE_PENDING → CAPTURED          (markCaptured)
-//   CAPTURED        → REPLAYING         (markReplaying)  — one capture, many replays
+//   CAPTURE_PENDING → REPLAYING         (markCaptured)  — one capture, many replays
 //   CAPTURE_PENDING → OOM_DEFERRED      (markOomDeferred)
 //   any             → FAILED            (markFailed)     — terminal
 //   any             → NEEDS_WARMUP      (invalidateForRebuild) — full reset
@@ -62,23 +60,40 @@ static inline const char* stateName(SLS s) {
 // REPLAYING is steady-state: only invalidateForRebuild can leave it.
 
 #ifndef __CUDA_ARCH__
+// SLS_ASSERT_FROM: validates segPhase (source of truth) matches expected old SLS state.
+// Mapping: NEEDS_WARMUP→needsWarmup(), NEEDS_COMPILE→needsCompile(),
+//          CAPTURE_PENDING→needsCapture(), REPLAYING→isSealed(), FAILED→isFailed()
+static inline bool segPhaseMatchesSLS(const SegmentPhase& sp, SLS expected) {
+  switch (expected) {
+    case SLS::NEEDS_WARMUP:    return sp.needsWarmup();
+    case SLS::NEEDS_COMPILE:   return sp.needsCompile();
+    case SLS::CAPTURE_PENDING: return sp.needsCapture();
+    case SLS::REPLAYING:       return sp.isSealed();
+    case SLS::FAILED:          return sp.isFailed();
+    case SLS::OOM_DEFERRED:    return sp.needsCapture() && sp.oomRetryPending;
+    default:                   return false;
+  }
+}
+
 #define SLS_ASSERT_FROM(exec, expected, targetName) \
   do { \
-    if (exec.lifecycleState != (expected)) { \
+    if (!segPhaseMatchesSLS(exec.segPhase, (expected))) { \
       sd_printf("DSP LIFECYCLE VIOLATION: %s requires state %s, but segment is in %s\n", \
-                (targetName), stateName(expected), stateName(exec.lifecycleState)); \
+                (targetName), stateName(expected), exec.segPhase.displayName()); \
       DSP_DIAG(FALLBACK, "LIFECYCLE_VIOLATION: %s requires %s, actual %s", \
-               (targetName), stateName(expected), stateName(exec.lifecycleState)); \
+               (targetName), stateName(expected), exec.segPhase.displayName()); \
       assert(false && "DSP segment lifecycle violation"); \
     } \
   } while (0)
 
 #define SLS_ASSERT_NOT_TERMINAL(exec, targetName) \
   do { \
-    if (exec.lifecycleState == SLS::FAILED) { \
+    if (exec.segPhase.isFailed()) { \
       sd_printf("DSP LIFECYCLE VIOLATION: %s called on FAILED segment " \
-                "(use invalidateForRebuild to reset)\n", (targetName)); \
-      DSP_DIAG(FALLBACK, "LIFECYCLE_VIOLATION: %s on FAILED segment", (targetName)); \
+                "(segPhase=%s, use invalidateForRebuild to reset)\n", \
+                (targetName), exec.segPhase.displayName()); \
+      DSP_DIAG(FALLBACK, "LIFECYCLE_VIOLATION: %s on FAILED segment (segPhase=%s)", \
+               (targetName), exec.segPhase.displayName()); \
       assert(false && "DSP transition from FAILED without invalidation"); \
     } \
   } while (0)
@@ -87,60 +102,69 @@ static inline const char* stateName(SLS s) {
 #define SLS_ASSERT_NOT_TERMINAL(exec, targetName) ((void)0)
 #endif
 
-// NEEDS_WARMUP -> NEEDS_COMPILE
+// BUILDING:WARMUP -> BUILDING:COMPILING
 static inline void markWarmupDone(GraphSegmentExec& exec) {
   SLS_ASSERT_FROM(exec, SLS::NEEDS_WARMUP, "markWarmupDone");
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "NEEDS_COMPILE", "");
-  exec.lifecycleState = SLS::NEEDS_COMPILE;
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:COMPILING", exec.segPhase.displayName());
+  exec.segPhase.advanceToCompiling();  // PRIMARY
+  exec.lifecycleState = SLS::NEEDS_COMPILE;  // Legacy sync
 }
 
-// NEEDS_COMPILE -> CAPTURE_PENDING
+// BUILDING:COMPILING -> BUILDING:CAPTURING
 static inline void markCompiled(GraphSegmentExec& exec, const char* backendName, LongType shapeKey) {
   SLS_ASSERT_FROM(exec, SLS::NEEDS_COMPILE, "markCompiled");
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "CAPTURE_PENDING",
-                     "(backend=%s shapeKey=%lld)", backendName, (long long)shapeKey);
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:CAPTURING (backend=%s shapeKey=%lld execCount=%d)",
+           exec.segPhase.displayName(), backendName, (long long)shapeKey, exec.executionCount);
+  exec.segPhase.advanceToCapturing();  // PRIMARY
   exec.compiledByBackend = backendName;
-  exec.lifecycleState = SLS::CAPTURE_PENDING;
+  exec.lifecycleState = SLS::CAPTURE_PENDING;  // Legacy sync
 }
 
-// CAPTURE_PENDING -> CAPTURED
+// BUILDING:CAPTURING -> SEALED (capture complete — steady-state replay)
 static inline void markCaptured(GraphSegmentExec& exec,
                                 LongType inputAddrKey, LongType createValueKey,
                                 LongType slotAddrHash, const char* backendName) {
   SLS_ASSERT_FROM(exec, SLS::CAPTURE_PENDING, "markCaptured");
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "CAPTURED",
-                     "(backend=%s)", backendName);
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> SEALED (backend=%s inputAddrKey=%lld "
+           "createValueKey=%lld slotAddrHash=%lld execCount=%d argTableStable=%d)",
+           exec.segPhase.displayName(), backendName,
+           (long long)inputAddrKey, (long long)createValueKey,
+           (long long)slotAddrHash, exec.executionCount, (int)exec.argTableStable);
+  exec.segPhase.seal();  // PRIMARY: BUILDING:CAPTURING → SEALED
   exec.capturedInputAddrKey = inputAddrKey;
   exec.capturedCreateValueKey = createValueKey;
   exec.capturedSlotAddrHash = slotAddrHash;
   exec.gapOpsCapturedInGraph = false;
   if (exec.compiledByBackend.empty()) exec.compiledByBackend = backendName;
-  exec.lifecycleState = SLS::CAPTURED;
+  exec.lifecycleState = SLS::REPLAYING;  // Legacy sync
 }
 
-// CAPTURED -> REPLAYING
+// Legacy compatibility — markReplaying is now a no-op since markCaptured
+// transitions directly to SEALED. Callers that previously did
+// CAPTURED→REPLAYING on first replay are harmless no-ops.
 static inline void markReplaying(GraphSegmentExec& exec) {
-  SLS_ASSERT_FROM(exec, SLS::CAPTURED, "markReplaying");
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "REPLAYING", "");
-  exec.lifecycleState = SLS::REPLAYING;
+  (void)exec;
 }
 
 // any -> FAILED (terminal)
 static inline void markFailed(GraphSegmentExec& exec, const char* reason) {
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "FAILED",
-                     "(reason=%s)", reason);
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> FAILED (reason=%s execCount=%d compiledBy=%s)",
+           exec.segPhase.displayName(), reason, exec.executionCount,
+           exec.compiledByBackend.c_str());
+  exec.segPhase.fail();  // PRIMARY
   exec.compilationFailed = true;
-  exec.lifecycleState = SLS::FAILED;
+  exec.lifecycleState = SLS::FAILED;  // Legacy sync
 }
 
-// CAPTURE_PENDING -> OOM_DEFERRED
+// BUILDING:CAPTURING -> BUILDING:OOM_RETRY
 static inline void markOomDeferred(GraphSegmentExec& exec, int retryAfterExec) {
   SLS_ASSERT_FROM(exec, SLS::CAPTURE_PENDING, "markOomDeferred");
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "OOM_DEFERRED",
-                     "(retryAfter=%d retries=%d)", retryAfterExec, exec.captureOomRetries + 1);
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:OOM_RETRY (retryAfter=%d retries=%d)",
+           exec.segPhase.displayName(), retryAfterExec, exec.captureOomRetries + 1);
+  exec.segPhase.markOomRetry(retryAfterExec);  // PRIMARY
   exec.captureOomRetries++;
   exec.captureRetryAfterExec = retryAfterExec;
-  exec.lifecycleState = SLS::OOM_DEFERRED;
+  exec.lifecycleState = SLS::OOM_DEFERRED;  // Legacy sync
 }
 
 // any -> NEEDS_WARMUP (segment-only invalidation — no plan-level resetExecuteCount)
@@ -149,11 +173,16 @@ static inline void markOomDeferred(GraphSegmentExec& exec, int retryAfterExec) {
 static inline void invalidateSegmentCaptures(NativeDynamicShapePlan* plan, GraphSegment& seg,
                                               const char* reason) {
   auto& exec = seg.exec;
+  DSP_DIAG(EXECUTE, "invalidateSegmentCaptures: seg[%d-%d] from=%s reason=%s "
+           "execCount=%d argTableStable=%d compiledBy=%s",
+           seg.def.startSlot, seg.def.endSlot, exec.segPhase.displayName(), reason,
+           exec.executionCount, (int)exec.argTableStable, exec.compiledByBackend.c_str());
   DSP_SEG_EVENT(seg, INVALIDATE, "capturesOnly reason=%s", reason);
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "NEEDS_WARMUP",
-                     "(invalidateCaptures: %s)", reason);
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:WARMUP (invalidateCaptures: %s)",
+           exec.segPhase.displayName(), reason);
   plan->cleanupSegmentForRebuild(seg, reason);
   plan->clearNativeRangeSegmentsForSlotRange(seg.def.startSlot, seg.def.endSlot);
+  exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.cachedShapeKey = 0;
   exec.capturedInputAddrKey = 0;
   exec.capturedCreateValueKey = 0;
@@ -165,7 +194,7 @@ static inline void invalidateSegmentCaptures(NativeDynamicShapePlan* plan, Graph
   exec.compiledByBackend.clear();
   exec.executionCount = 0;
   exec.lastReplayExecCount = 0;
-  exec.lifecycleState = SLS::NEEDS_WARMUP;
+  exec.lifecycleState = SLS::NEEDS_WARMUP;  // Legacy sync
   // NOTE: intentionally do NOT call plan->resetExecuteCount() here.
   // The plan shapes are unchanged — only segment CUDA graph captures are stale.
   // Resetting executeCount would cause isFirstFrozenWarmup=true → phaseWarmup
@@ -176,15 +205,20 @@ static inline void invalidateSegmentCaptures(NativeDynamicShapePlan* plan, Graph
 static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegment& seg,
                                         const char* reason) {
   auto& exec = seg.exec;
+  DSP_DIAG(EXECUTE, "invalidateForRebuild: seg[%d-%d] from=%s reason=%s "
+           "execCount=%d argTableStable=%d compiledBy=%s — will resetExecuteCount+resetFrozenConstant",
+           seg.def.startSlot, seg.def.endSlot, exec.segPhase.displayName(), reason,
+           exec.executionCount, (int)exec.argTableStable, exec.compiledByBackend.c_str());
   DSP_SEG_EVENT(seg, INVALIDATE, "reason=%s", reason);
-  DSP_DIAG_STATE_TRANSITION(stateName, exec.lifecycleState, "NEEDS_WARMUP",
-                     "(invalidate: %s)", reason);
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:WARMUP (invalidate: %s)",
+           exec.segPhase.displayName(), reason);
   plan->cleanupSegmentForRebuild(seg, reason);
   // Clear any nativeRangeSegments_ entries within this segment's slot range.
   // These hold FunctionalReplayHandle captures that reference the OLD slot array
   // state. If they persist, the NativeSlotExecutor lambda replays stale data on
   // the next token instead of re-capturing against the rebuilt slot state.
   plan->clearNativeRangeSegmentsForSlotRange(seg.def.startSlot, seg.def.endSlot);
+  exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.cachedShapeKey = 0;
   exec.capturedInputAddrKey = 0;
   exec.capturedCreateValueKey = 0;
@@ -196,7 +230,7 @@ static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegme
   exec.compiledByBackend.clear();
   exec.executionCount = 0;
   exec.lastReplayExecCount = 0;
-  exec.lifecycleState = SLS::NEEDS_WARMUP;
+  exec.lifecycleState = SLS::NEEDS_WARMUP;  // Legacy sync
   // Reset plan-level executeCount so isFirstFrozenWarmup evaluates to true
   // on the next execute().  Without this, executeCount_ stays high after
   // invalidation, isFirstFrozenWarmup = (shapesFrozen && executeCount==0)

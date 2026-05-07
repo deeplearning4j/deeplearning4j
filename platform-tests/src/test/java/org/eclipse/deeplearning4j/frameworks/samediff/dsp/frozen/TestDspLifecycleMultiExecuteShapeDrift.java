@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * "in-place-fused pointer replacement").
  *
  * <p>The goal is to exercise the DSP AUTO path end-to-end through
- * {@code SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING} with:</p>
+ * {@code SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING} with:</p>
  *
  * <ol>
  *   <li>A gather-based embedding lookup — the canonical op whose VALDEP

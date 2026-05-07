@@ -32,10 +32,43 @@ SD_LIB_HIDDEN void tokenSampleCpu(NDArray* logits, NDArray* output,
                                    double temperature, int topK, double topP,
                                    LongType seed, LaunchContext* context);
 
+/**
+ * Extended token sampling with penalty and min-p support.
+ *
+ * Pipeline: penalties → temperature → top-k → min-p → top-p → sample
+ *
+ * @param logits       [batch, vocabSize] — will be modified in-place by penalties
+ * @param output       [batch] INT64 — sampled token IDs
+ * @param inputIds     [batch, seqLen] INT64 — prior tokens for penalty computation (nullable)
+ * @param temperature  Temperature for logit scaling (<=0 = greedy)
+ * @param topK         Top-K filtering (<=0 = off)
+ * @param topP         Top-P nucleus filtering (<=0 or >=1 = off)
+ * @param minP         Min-P adaptive filtering (<=0 = off)
+ * @param repPenalty   Repetition penalty (1.0 = off)
+ * @param freqPenalty  Frequency penalty (0.0 = off)
+ * @param presPenalty  Presence penalty (0.0 = off)
+ * @param seed         RNG seed (0 = random)
+ */
+SD_LIB_HIDDEN void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,
+                                                NDArray* inputIds,
+                                                double temperature, int topK,
+                                                double topP, double minP,
+                                                double repPenalty, double freqPenalty,
+                                                double presPenalty,
+                                                LongType seed, LaunchContext* context);
+
 #if defined(SD_CUDA)
 SD_LIB_HIDDEN void tokenSampleCuda(NDArray* logits, NDArray* output,
                                     double temperature, int topK, double topP,
                                     LongType seed, LaunchContext* context);
+
+SD_LIB_HIDDEN void tokenSampleWithPenaltiesCuda(NDArray* logits, NDArray* output,
+                                                 NDArray* inputIds,
+                                                 double temperature, int topK,
+                                                 double topP, double minP,
+                                                 double repPenalty, double freqPenalty,
+                                                 double presPenalty,
+                                                 LongType seed, LaunchContext* context);
 #endif
 
 }  // namespace helpers

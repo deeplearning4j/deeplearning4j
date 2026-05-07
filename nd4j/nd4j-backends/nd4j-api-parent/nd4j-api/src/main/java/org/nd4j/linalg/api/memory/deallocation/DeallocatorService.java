@@ -440,6 +440,43 @@ public class DeallocatorService {
         blockDeallocator.set(shouldBlock);
     }
 
+    /**
+     * Force-flush all entries in the referenceMap by invoking their deallocators.
+     * Call this after closing a model when you need to guarantee GPU memory is freed
+     * immediately, rather than waiting for GC to enqueue PhantomReferences.
+     *
+     * <p>This is necessary because System.gc() is advisory and PhantomReference
+     * processing is asynchronous — after model.close(), hundreds of DataBuffer
+     * and OpaqueNDArray deallocators may remain in the refMap holding GPU memory.
+     * Without this flush, sequential model configs can OOM because the previous
+     * model's GPU memory hasn't been reclaimed.</p>
+     *
+     * @return the number of entries that were deallocated
+     */
+    public int forceFlushAll() {
+        int flushed = 0;
+        int errors = 0;
+        // Snapshot the keys to avoid ConcurrentModificationException
+        for (Long id : new java.util.ArrayList<>(referenceMap.keySet())) {
+            DeallocatableReference ref = referenceMap.get(id);
+            if (ref == null) continue;
+            try {
+                ref.deallocate();
+                flushed++;
+            } catch (Exception e) {
+                errors++;
+                if (log.isDebugEnabled()) {
+                    log.debug("forceFlushAll: error deallocating id={}: {}", id, e.getMessage());
+                }
+            }
+            referenceMap.remove(id);
+        }
+        if (flushed > 0 || errors > 0) {
+            log.info("DeallocatorService.forceFlushAll: deallocated {} entries ({} errors), refMap now {}",
+                    flushed, errors, referenceMap.size());
+        }
+        return flushed;
+    }
 
     public long nextValue() {
         return counter.incrementAndGet();

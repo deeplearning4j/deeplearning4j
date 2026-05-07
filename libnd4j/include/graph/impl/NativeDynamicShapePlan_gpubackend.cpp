@@ -29,6 +29,7 @@
 // NativeDynamicShapePlan_gpubackend.cu, compiled only by NVCC.
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <system/op_boilerplate.h>
@@ -67,10 +68,10 @@ using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
 // phase-safety warning. Called from all cleanup sites.
 void NativeDynamicShapePlan::cleanupSegmentForRebuild(GraphSegment& seg,
                                                       const char* reason) {
-  bool isMonolithicReplaying = (seg.exec.lifecycleState == SegmentLifecycleState::REPLAYING &&
+  bool isMonolithicReplaying = (seg.exec.segPhase.isSealed() &&
                                 seg.exec.replayHandle != nullptr &&
                                 seg.exec.replayHandle->isReady());
-  bool isCompositeReplaying  = (seg.exec.lifecycleState == SegmentLifecycleState::REPLAYING &&
+  bool isCompositeReplaying  = (seg.exec.segPhase.isSealed() &&
                                 hasCompositeHandles(seg));
   if (isMonolithicReplaying || isCompositeReplaying) {
     DSP_DIAG(EXECUTE,
@@ -137,13 +138,8 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
   if (gpuGraphBackendChecked_) return gpuGraphBackend_;
   gpuGraphBackendChecked_ = true;
 
-  // If a specific backend is forced via setGraphExecutionMode(), use only that one.
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_LEVELZERO ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_VULKAN ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_METAL) {
+  // Modes that don't need a JIT compilation backend (pure replay or slot-by-slot).
+  if (!ModeContract::forMode(graphExecutionMode_).needsJitBackend) {
     gpuGraphBackend_ = nullptr;
     return nullptr;
   }
@@ -334,12 +330,13 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
   // NOTE: the old code PROMOTED view-capable slots to FROZEN here, which made
   // the problem worse — those slots would take the frozen context path with
   // stale dtypes.  Warmup must always use the normal path to re-derive shapes.
-  if (shapesFrozen_) {
+  if (!planLifecycle_.isSlotBySlot()) {
     int demoted = 0;
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       auto& sl = slots_[s];
-      if (sl.state_ > NativeSlot::SlotState::WARMUP) {
-        sl.state_ = NativeSlot::SlotState::WARMUP;
+      if (sl.slotPhase.shapeCacheValid || sl.slotPhase.isSealed()) {
+        sl.slotPhase.reset();  // PRIMARY: demote to BUILDING
+        sl.state_ = NativeSlot::SlotState::WARMUP;  // legacy sync
         demoted++;
       }
     }
@@ -349,10 +346,10 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
     }
   }
 
-  DSP_SEG_EVENT(seg, WARMUP_START, "shapesFrozen=%d", shapesFrozen_ ? 1 : 0);
+  DSP_SEG_EVENT(seg, WARMUP_START, "phase=%s", planLifecycle_.displayName());
   auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
 
-  if (shapesFrozen_ && warmupStatus == Status::OK && seg.exec.executionCount == 1
+  if (!planLifecycle_.isSlotBySlot() && warmupStatus == Status::OK && seg.exec.executionCount == 1
       && !Environment::getInstance().dspFreezeRecompile()) {
     if (!seg.def.shapeKeyState.neverCompiled()) {
       seg.exec.executionCount = 2;
@@ -371,7 +368,7 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
     }
     DSP_TRACE_LIFECYCLE(trace_,
                         static_cast<int8_t>(wuSegIdx),
-                        static_cast<uint8_t>(seg.exec.lifecycleState),
+                        static_cast<uint8_t>(seg.exec.segPhase.toLegacyCode()),
                         static_cast<uint8_t>(SegmentLifecycleState::NEEDS_COMPILE),
                         static_cast<uint32_t>(executeCount_));
     SegmentLifecycle::markWarmupDone(seg.exec);
@@ -392,23 +389,23 @@ Status NativeDynamicShapePlan::segDispatchCompile(
   const char* backendName = backend->name();
 
   seg.def.shapeKeyState.recordComputed(segShapeKey);
-  bool needsCompile = (seg.exec.lifecycleState == SegmentLifecycleState::NEEDS_COMPILE) ||
+  bool needsCompile = seg.exec.segPhase.needsCompile() ||
                       seg.def.shapeKeyState.hasDrifted();
 
   // Phase guard: compilation must not happen during REPLAYING
-  if (needsCompile && planPhase_ >= PlanPhase::REPLAYING) {
+  if (needsCompile && planLifecycle_.isReplaying()) {
     DSP_DIAG(COMPILE,
              "ERROR: compilation triggered during REPLAYING phase for seg[%d-%d] "
-             "(executionCount=%d, shapeKey compiled=%lld current=%lld, planPhase=%d). "
+             "(executionCount=%d, shapeKey compiled=%lld current=%lld, phase=%s). "
              "Compilation must only happen during warmup/capture phases.",
              seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
              (long long)seg.def.shapeKeyState.compiledShapeKey, (long long)segShapeKey,
-             static_cast<int>(planPhase_));
+             planLifecycle_.displayName());
     REQUIRE_TRUE(false, 0,
                  "DSP phase contract violation: compilation triggered during REPLAYING phase "
                  "for seg[%d-%d] (executionCount=%d). Fix the phase management bug.",
                  seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
-    demotePlanPhase(PlanPhase::POINTERS_STABLE,
+    demotePlanPhase(PlanPhase::SHAPES_FROZEN,
                     "compilation triggered during REPLAYING phase");
   }
 
@@ -462,7 +459,7 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       }
       DSP_TRACE_LIFECYCLE(trace_,
                           static_cast<int8_t>(lcSegIdx),
-                          static_cast<uint8_t>(seg.exec.lifecycleState),
+                          static_cast<uint8_t>(seg.exec.segPhase.toLegacyCode()),
                           static_cast<uint8_t>(SegmentLifecycleState::CAPTURE_PENDING),
                           static_cast<uint32_t>(executeCount_));
     }

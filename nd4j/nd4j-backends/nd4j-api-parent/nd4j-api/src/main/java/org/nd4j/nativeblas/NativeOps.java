@@ -1961,7 +1961,7 @@ public interface NativeOps {
 
   /**
    * Get the plan-level phase.
-   * Returns PlanPhase as int: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=POINTERS_STABLE, 3=REPLAYING
+   * Returns PlanPhase as int: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=REPLAYING
    */
   default int getPlanPhase(Pointer planHandle) { return -1; }
 

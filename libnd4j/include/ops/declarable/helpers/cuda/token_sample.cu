@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include <ops/declarable/helpers/token_sample.h>
+#include <ops/declarable/helpers/sampling_penalties.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <helpers/DebugHelper.h>
@@ -220,6 +221,27 @@ void tokenSampleCuda(NDArray* logits, NDArray* output,
                           (logits, output, temperature, topK, topP, seed, context),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {logits});
+}
+
+void tokenSampleWithPenaltiesCuda(NDArray* logits, NDArray* output,
+                                   NDArray* inputIds,
+                                   double temperature, int topK,
+                                   double topP, double minP,
+                                   double repPenalty, double freqPenalty,
+                                   double presPenalty,
+                                   LongType seed, LaunchContext* context) {
+    // Step 1: Apply penalties (in-place on device)
+    if (inputIds != nullptr && (repPenalty != 1.0 || freqPenalty != 0.0 || presPenalty != 0.0)) {
+        applyLogitPenaltiesCuda(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
+    }
+
+    // Step 2: Apply min-p filtering (in-place on device)
+    if (minP > 0.0) {
+        applyMinPFilterCuda(logits, minP, context);
+    }
+
+    // Step 3: Standard sampling (temperature, topK, topP)
+    tokenSampleCuda(logits, output, temperature, topK, topP, seed, context);
 }
 
 }  // namespace helpers

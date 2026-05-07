@@ -251,13 +251,14 @@ CUSTOM_OP_IMPL(rope, 1, 1, false, 0, 0) {
 
     // rope arg order matches RoPE.java: INT_ARG(0)=mode/ropeType, INT_ARG(1)=nPast/positionOffset, INT_ARG(2)=nDims/rotaryDims
     int ropeType = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-    int positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+    LongType positionOffset = block.getIArguments()->size() > 1 ? static_cast<LongType>(INT_ARG(1)) : 0;
     int rotaryDims = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
     float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
     float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
     // Delegate to the platform-correct helper (works on both CPU and CUDA)
-    helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
+    const void* posPtr = &positionOffset;
+    helpers::fusedRoPE(input, output, posPtr, freqBase, freqScale, ropeType,
                        block.launchContext(), rotaryDims);
 
     return Status::OK;

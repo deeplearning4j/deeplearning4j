@@ -887,10 +887,10 @@ public class TrainingSession extends InferenceSession {
      * with different data), the current native plan is destroyed and a fresh one is
      * compiled for the new shape on the next iteration.
      * <p>
-     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
-     * REPLAYING. Backward transitions (unfreezing) are illegal. When shapes change, the
-     * only correct action is to destroy the existing plan and let the cache produce a
-     * fresh entry for the new shape.
+     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING.
+     * Backward transitions (unfreezing) are illegal. When shapes change, the only correct
+     * action is to destroy the existing plan and let the cache produce a fresh entry for
+     * the new shape.
      */
     private void manageShapeFreezing(Map<String, INDArray> placeholders) {
         if (placeholders == null || placeholders.isEmpty()) {

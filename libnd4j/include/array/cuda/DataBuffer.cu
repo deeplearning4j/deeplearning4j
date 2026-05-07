@@ -47,6 +47,7 @@ namespace sd {
 // SD_TLS_EXPORT needed on Windows/MinGW so __emutls symbols are exported from DLL.
 SD_TLS_EXPORT thread_local bool tl_graphExecutionActive = false;
 SD_TLS_EXPORT thread_local bool tl_dspReplayActive = false;
+SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled = false;
 SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream = nullptr;
 
 // Thread-local accumulator for pinned host buffers during CUDA graph capture.
@@ -1547,10 +1548,26 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
   }
 
   if (res != cudaSuccess) {
-    if (switchedDevice) {
-      cudaSetDevice(currentDeviceId);
+    // cudaMemsetAsync fails on pinned host pointers (from OOM fallback allocation).
+    // Pinned host memory is CPU-accessible, so fall back to memset on the host side.
+    // Use cudaPointerGetAttributes to definitively check if the pointer is host memory.
+    cudaGetLastError();  // Clear the error before proceeding
+    cudaPointerAttributes ptrAttrs;
+    cudaError_t attrRes = cudaPointerGetAttributes(&ptrAttrs, special());
+    bool isHostPtr = (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeHost);
+    if (!isHostPtr) {
+      // Also check the pool's pinned host tracking as a fallback
+      isHostPtr = sd::memory::CudaMemoryPool::getInstance().isPinnedHostAllocation(special());
     }
-    throw cuda_exception::build("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed!", res);
+    if (attrRes != cudaSuccess) cudaGetLastError();  // Clear attribute query error
+    if (isHostPtr) {
+      memset(special(), 0, getLenInBytes());
+    } else {
+      if (switchedDevice) {
+        cudaSetDevice(currentDeviceId);
+      }
+      throw cuda_exception::build("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed!", res);
+    }
   }
 
   // Restore original device if we switched

@@ -149,6 +149,7 @@ public final class SameDiffMemoryUtils {
             log.debug("Exception clearing OpaqueNDArray during close: {}", e.getMessage());
         }
 
+        // Undo constant protection so close() can deallocate
         try {
             if (data != null && !data.wasClosed()) {
                 data.setConstant(false);
@@ -156,22 +157,34 @@ public final class SameDiffMemoryUtils {
             arr.setCloseable(true);
             if (arr.closeable()) {
                 arr.close();
-                return arr.wasClosed();
+                if (arr.wasClosed()) {
+                    if (data != null && data.wasClosed()) {
+                        closedBuffers.add(data);
+                    }
+                    return true;
+                }
             }
         } catch (Exception e) {
             log.debug("Exception during array close, falling back to data buffer close: {}", e.getMessage());
         }
 
         // Model constants can be stored as views or shape-adjusted wrappers whose
-        // INDArray.close() is intentionally conservative. The model owns these
-        // buffers, so close each unique data buffer directly when array close skips.
+        // INDArray.close() is intentionally conservative (sub-view check blocks close
+        // when length < buffer.length). Since freeModelArrays is called during model
+        // destruction, we know the entire buffer is being released — close the underlying
+        // data buffer directly for each unique buffer.
         if (data != null && !data.wasClosed() && closedBuffers.add(data)) {
             try {
                 data.setConstant(false);
+                if (data.isAttached()) {
+                    // Buffer is in a workspace — detach it first so it can be freed
+                    log.debug("Model buffer is attached to workspace, forcing detach for cleanup");
+                }
                 data.close();
                 return data.wasClosed();
             } catch (Exception e) {
-                log.debug("Exception closing model data buffer directly: {}", e.getMessage());
+                log.warn("Failed to close model data buffer (attached={}, constant={}, length={}): {}",
+                        data.isAttached(), data.isConstant(), data.length(), e.getMessage());
             }
         }
 

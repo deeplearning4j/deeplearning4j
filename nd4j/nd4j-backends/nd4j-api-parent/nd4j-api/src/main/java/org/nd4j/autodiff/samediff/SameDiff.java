@@ -4393,9 +4393,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * and buffer reuse. The executor must already exist (i.e., at least one output() call
      * must have been made).
      * <p>
-     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE →
-     * REPLAYING. Calling this method with {@code frozen=false} is illegal — backward
-     * transitions are architectural errors. If shapes change, destroy the current plan via
+     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING.
+     * Calling this method with {@code frozen=false} is illegal — backward transitions are
+     * architectural errors. If shapes change, destroy the current plan via
      * {@link DynamicShapePlanExecutor#resetForNextPage()} and let the plan cache create a
      * fresh entry for the new shape.
      *
@@ -4406,7 +4406,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         if (!frozen) {
             throw new IllegalArgumentException(
                 "LIFECYCLE VIOLATION: setDspShapesFrozen(false) is illegal. " +
-                "Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → POINTERS_STABLE → REPLAYING). " +
+                "Plan phases are strictly linear (SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING). " +
                 "Backward transitions are banned. To handle a shape change, call " +
                 "executor.resetForNextPage() to destroy the current plan and let the cache compile a fresh one.");
         }
@@ -5271,34 +5271,70 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         // constant=true during model loading, which causes DeallocatorService to
         // skip them (DeallocatableReference.deallocate checks isConstant). Without
         // explicit cleanup, model weight GPU memory is permanently leaked after close().
-        // Must un-poison (setConstant(false)) before close() since closeable() rejects constants.
-        int closedConstants = 0;
-        for (SDVariable v : variables()) {
-            if (v.getVariableType() == VariableType.CONSTANT || v.getVariableType() == VariableType.VARIABLE) {
-                INDArray arr = v.getArr();
-                if (arr != null && !arr.wasClosed()) {
-                    DataBuffer data = arr.data();
-                    if (data != null) {
-                        try {
-                            data.setConstant(false);
-                            data.close();
-                            closedConstants++;
-                        } catch (Exception e) {
-                            log.debug("SameDiff.close(): failed to close buffer: {}", e.getMessage());
+        //
+        // Iterate the underlying ArrayHolders directly (not SDVariable.getArr()) to
+        // guarantee we reach every stored array. Uses removeArray() to detach from the
+        // holder, IdentityHashMap to deduplicate shared DataBuffers across views, and
+        // falls back to direct DataBuffer.close() when INDArray.close() is blocked
+        // (e.g. sub-view length < buffer length).
+        Set<DataBuffer> closedBufferSet = Collections.newSetFromMap(new IdentityHashMap<>());
+        int closedCount = 0;
+        int errors = 0;
+
+        for (ArrayHolder holder : new ArrayHolder[]{ constantArrays, variablesArrays, eagerArrays }) {
+            if (holder == null) continue;
+            List<String> names = new ArrayList<>(holder.arrayNames());
+            for (String name : names) {
+                INDArray arr;
+                try {
+                    arr = holder.removeArray(name);
+                } catch (Exception e) {
+                    continue;
+                }
+                if (arr == null || arr.wasClosed()) continue;
+
+                DataBuffer data = null;
+                try { data = arr.data(); } catch (Exception ignored) {}
+
+                if (data != null && data.wasClosed()) continue;
+
+                // Try the full INDArray close path first
+                try {
+                    if (data != null) data.setConstant(false);
+                    arr.setCloseable(true);
+                    if (arr.closeable()) {
+                        arr.close();
+                        if (arr.wasClosed()) {
+                            if (data != null) closedBufferSet.add(data);
+                            closedCount++;
+                            continue;
                         }
+                    }
+                } catch (Exception e) {
+                    // Fall through to direct buffer close
+                }
+
+                // Fallback: close the data buffer directly (handles views whose
+                // INDArray.close() is blocked by sub-view length checks)
+                if (data != null && !data.wasClosed() && closedBufferSet.add(data)) {
+                    try {
+                        data.setConstant(false);
+                        data.close();
+                        if (data.wasClosed()) closedCount++;
+                    } catch (Exception e) {
+                        errors++;
                     }
                 }
             }
         }
-        if (closedConstants > 0) {
-            log.debug("SameDiff.close(): freed {} constant/variable data buffers", closedConstants);
-            // Trim pool AFTER closing constants so freed weight memory is returned to the driver.
-            // cudaFreeAsync (used by BaseCudaDataBuffer.close()) only returns memory to the pool's
-            // reserved bucket — it does NOT release it to the driver. Without this second trim,
-            // ~3 GB of model weights per config accumulate as pool-reserved-but-idle memory,
-            // causing OOM when running multiple configs sequentially.
-            trimSessionMemory();
-        }
+        log.info("SameDiff.close(): freed {} arrays ({} unique buffers, {} errors)",
+                closedCount, closedBufferSet.size(), errors);
+
+        // Always trim pool after close — even when closedBuffers == 0.
+        // cudaFreeAsync only returns memory to the pool's reserved bucket, not the driver.
+        // Without this trim, ~3 GB of model weights per config accumulate as
+        // pool-reserved-but-idle memory, causing OOM when running multiple configs sequentially.
+        trimSessionMemory();
     }
 
     /**

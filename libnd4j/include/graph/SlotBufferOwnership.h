@@ -319,8 +319,7 @@ struct BufferPointerSnapshot {
  * Phase-specific checks:
  *   SLOT_BY_SLOT: ownership consistency only
  *   SHAPES_FROZEN: + no closed DataBuffers in live slots
- *   POINTERS_STABLE: + buffer addresses match snapshot
- *   REPLAYING: + replay handles intact, no capture buffer drift
+ *   REPLAYING: + buffer addresses match snapshot, replay handles intact, no capture buffer drift
  */
 bool validateLifecycleForPhase(
     int planPhase,  // PlanPhase as int (to avoid circular include)

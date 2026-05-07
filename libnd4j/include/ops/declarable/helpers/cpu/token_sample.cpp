@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/token_sample.h>
+#include <ops/declarable/helpers/sampling_penalties.h>
 #include <algorithm>
 #include <cmath>
 #include <numeric>
@@ -153,6 +154,27 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
       }
     }
   }
+}
+
+void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,
+                                 NDArray* inputIds,
+                                 double temperature, int topK,
+                                 double topP, double minP,
+                                 double repPenalty, double freqPenalty,
+                                 double presPenalty,
+                                 LongType seed, LaunchContext* context) {
+    // Step 1: Apply penalties to logits (in-place)
+    if (inputIds != nullptr && (repPenalty != 1.0 || freqPenalty != 0.0 || presPenalty != 0.0)) {
+        applyLogitPenaltiesCpu(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
+    }
+
+    // Step 2: Apply min-p filtering (in-place)
+    if (minP > 0.0) {
+        applyMinPFilterCpu(logits, minP, context);
+    }
+
+    // Step 3: Standard sampling (temperature, topK, topP)
+    tokenSampleCpu(logits, output, temperature, topK, topP, seed, context);
 }
 
 }  // namespace helpers

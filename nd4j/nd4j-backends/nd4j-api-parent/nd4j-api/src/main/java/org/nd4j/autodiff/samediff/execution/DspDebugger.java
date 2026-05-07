@@ -243,12 +243,15 @@ public class DspDebugger {
         public final String opName;
         public final int flags;
         public final SlotState state;
+        /** Unified lifecycle phase — derived from slot SlotState. */
+        public final GraphNodePhase graphNodePhase;
 
         public SlotInfo(int index, String opName, int flags, SlotState state) {
             this.index = index;
             this.opName = opName;
             this.flags = flags;
             this.state = state;
+            this.graphNodePhase = GraphNodePhase.fromSlotState(state);
         }
 
         public boolean isViewCapable()       { return (flags & FLAG_VIEW_CAPABLE) != 0; }
@@ -311,6 +314,8 @@ public class DspDebugger {
         public final boolean captureFailed;
         public final int executionCount;
         public final ExecutionPhase phase;
+        /** Unified lifecycle phase — derived from segment ExecutionPhase. */
+        public final GraphNodePhase graphNodePhase;
 
         SegmentReport(int index, boolean capturable, boolean captureFailed,
                       int executionCount, ExecutionPhase phase) {
@@ -319,6 +324,7 @@ public class DspDebugger {
             this.captureFailed = captureFailed;
             this.executionCount = executionCount;
             this.phase = phase;
+            this.graphNodePhase = GraphNodePhase.fromExecutionPhase(phase);
         }
 
         @Override
@@ -334,6 +340,8 @@ public class DspDebugger {
         public final int numSlots;
         public final int numSegments;
         public final PlanPhase planPhase;
+        /** Unified lifecycle phase — single source of truth derived from planPhase. */
+        public final GraphNodePhase graphNodePhase;
         public final List<SlotInfo> slots;
         public final List<SegmentReport> segments;
         public final String errorMessage;
@@ -342,6 +350,7 @@ public class DspDebugger {
             this.numSlots = 0;
             this.numSegments = 0;
             this.planPhase = null;
+            this.graphNodePhase = GraphNodePhase.BUILDING;
             this.slots = Collections.emptyList();
             this.segments = Collections.emptyList();
             this.errorMessage = errorMessage;
@@ -352,6 +361,7 @@ public class DspDebugger {
             this.numSlots = numSlots;
             this.numSegments = numSegments;
             this.planPhase = planPhase;
+            this.graphNodePhase = GraphNodePhase.fromPlanPhase(planPhase);
             this.slots = slots;
             this.segments = segments;
             this.errorMessage = null;
@@ -394,8 +404,8 @@ public class DspDebugger {
             sb.append("═══════════════════════════════════════════════════════\n");
             sb.append("  DSP Plan Report\n");
             sb.append("═══════════════════════════════════════════════════════\n");
-            sb.append(String.format("  Slots: %d | Segments: %d | Phase: %s\n",
-                    numSlots, numSegments, planPhase));
+            sb.append(String.format("  Slots: %d | Segments: %d | Phase: %s (%s)\n",
+                    numSlots, numSegments, planPhase, graphNodePhase));
             sb.append("───────────────────────────────────────────────────────\n");
 
             // Op histogram
@@ -576,14 +586,14 @@ public class DspDebugger {
                     "SLOT_BY_SLOT — expected at least SHAPES_FROZEN"));
         }
 
-        // Check 3: If pointers are stable but phase hasn't reached POINTERS_STABLE
+        // Check 3: If pointers are stable but phase hasn't reached REPLAYING
         if (pointersStable == 1 && currentPlanPhase != null
-                && !currentPlanPhase.isAtLeast(PlanPhase.POINTERS_STABLE)) {
+                && !currentPlanPhase.isAtLeast(PlanPhase.REPLAYING)) {
             contractReport.addViolation(reportPhaseViolation(
                     PhaseViolationType.PHASE_DEMOTION,
                     currentPlanPhase, -1, -1,
                     "Pointers are stable but plan phase is " + currentPlanPhase +
-                    " — expected at least POINTERS_STABLE"));
+                    " — expected at least REPLAYING"));
         }
 
         // Check 4: Frozen slots should not have dynamic state
@@ -1098,6 +1108,8 @@ public class DspDebugger {
     public static class GraphReplayReport {
         public final int numSegments;
         public final PlanPhase planPhase;
+        /** Unified lifecycle phase — derived from planPhase. */
+        public final GraphNodePhase graphNodePhase;
         public final boolean pointersStable;
         public final int frozenExecutionCount;
         public final List<SegmentReplayInfo> segments;
@@ -1106,6 +1118,7 @@ public class DspDebugger {
         GraphReplayReport(String errorMessage) {
             this.numSegments = 0;
             this.planPhase = null;
+            this.graphNodePhase = GraphNodePhase.BUILDING;
             this.pointersStable = false;
             this.frozenExecutionCount = 0;
             this.segments = Collections.emptyList();
@@ -1116,6 +1129,7 @@ public class DspDebugger {
                           int frozenExecutionCount, List<SegmentReplayInfo> segments) {
             this.numSegments = numSegments;
             this.planPhase = planPhase;
+            this.graphNodePhase = GraphNodePhase.fromPlanPhase(planPhase);
             this.pointersStable = pointersStable;
             this.frozenExecutionCount = frozenExecutionCount;
             this.segments = segments;
@@ -1162,8 +1176,8 @@ public class DspDebugger {
             sb.append("═══════════════════════════════════════════════════════\n");
             sb.append("  Graph Replay Report\n");
             sb.append("═══════════════════════════════════════════════════════\n");
-            sb.append(String.format("  Plan phase: %s | Pointers stable: %s | Frozen exec count: %d\n",
-                    planPhase, pointersStable, frozenExecutionCount));
+            sb.append(String.format("  Plan phase: %s (%s) | Pointers stable: %s | Frozen exec count: %d\n",
+                    planPhase, graphNodePhase, pointersStable, frozenExecutionCount));
 
             List<SegmentReplayInfo> failures = getCaptureFailures();
             List<SegmentReplayInfo> stuck = getStuckSegments();

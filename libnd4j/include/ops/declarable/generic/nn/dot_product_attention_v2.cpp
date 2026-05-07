@@ -27,6 +27,7 @@
 
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/reverse.h>
+#include <ops/declarable/helpers/kv_scatter.h>
 #include <helpers/AttentionHelper.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <cmath>
@@ -196,42 +197,21 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   }
 
   if (useInPlaceKv) {
-    LongType cachePosVal = cachePosInput->e<LongType>(0);
-    LongType maxSeq = keyCache->sizeAt(isRank4 ? 1 : 1);  // seq dim is always 1 for both rank 3 and 4
+    // CUDA graph compatible: kvInPlaceWriteBSHD reads cache_position from a
+    // device-side pointer. The pointer ADDRESS is baked into the graph at capture
+    // time; only the VALUE changes between replays (updated via D2D staging).
+    // The old code used cachePosInput->e<LongType>(0) which bakes the HOST VALUE
+    // into the graph — broken on replay (every step writes to the same position).
+#if defined(SD_CUDA)
+    const void* cachePosPtr = cachePosInput->specialBuffer();
+#else
+    const void* cachePosPtr = cachePosInput->buffer();
+#endif
 
-    REQUIRE_TRUE(cachePosVal >= 0 && cachePosVal < maxSeq, 0,
-                 "dot_product_attention_v2: cache_position %lld must be in [0, %lld)",
-                 (long long)cachePosVal, (long long)maxSeq);
-
-    // Write current K/V at cache_position in the buffers (in-place)
-    if (isRank4) {
-      // BSHD: keyCache[batch, maxSeq, heads, dim], keys[batch, 1, heads, dim]
-      auto batch = keys->sizeAt(0);
-      auto numKvHeads = keys->sizeAt(2);
-      auto headDim = keys->sizeAt(3);
-      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, numKvHeads, 0, headDim};
-      auto* kSlice = (*keyCache)(writeIdx);
-      auto* vSlice = (*valueCache)(writeIdx);
-      kSlice->assign(keys);
-      vSlice->assign(values);
-      kSlice->syncToDevice();
-      vSlice->syncToDevice();
-      delete kSlice;
-      delete vSlice;
-    } else {
-      // BSF: keyCache[batch, maxSeq, features], keys[batch, 1, features]
-      auto batch = keys->sizeAt(0);
-      auto features = keys->sizeAt(2);
-      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, features};
-      auto* kSlice = (*keyCache)(writeIdx);
-      auto* vSlice = (*valueCache)(writeIdx);
-      kSlice->assign(keys);
-      vSlice->assign(values);
-      kSlice->syncToDevice();
-      vSlice->syncToDevice();
-      delete kSlice;
-      delete vSlice;
-    }
+    // Write current K/V at cache_position in the buffers (in-place).
+    // kvInPlaceWriteBSHD handles both rank-4 BSHD and rank-3 BSF layouts.
+    helpers::kvInPlaceWriteBSHD(keyCache, keys, cachePosPtr, block.launchContext());
+    helpers::kvInPlaceWriteBSHD(valueCache, values, cachePosPtr, block.launchContext());
 
     // Use full cache buffers as K/V for attention
     keys = keyCache;

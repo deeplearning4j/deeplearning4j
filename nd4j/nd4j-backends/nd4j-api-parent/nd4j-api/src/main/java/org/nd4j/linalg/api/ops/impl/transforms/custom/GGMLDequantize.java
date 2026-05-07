@@ -49,6 +49,18 @@ import java.util.List;
  *   <li>8 = Q4_K</li>
  *   <li>9 = Q5_K</li>
  *   <li>10 = Q6_K</li>
+ *   <li>11 = Q8_K</li>
+ *   <li>12 = IQ2_XXS</li>
+ *   <li>13 = IQ2_XS</li>
+ *   <li>14 = IQ3_XXS</li>
+ *   <li>15 = IQ1_S</li>
+ *   <li>16 = IQ4_NL</li>
+ *   <li>17 = IQ3_S</li>
+ *   <li>18 = IQ2_S</li>
+ *   <li>19 = IQ4_XS</li>
+ *   <li>20 = IQ1_M</li>
+ *   <li>21 = TQ1_0</li>
+ *   <li>22 = TQ2_0</li>
  * </ul>
  * </p>
  *
@@ -77,6 +89,18 @@ public class GGMLDequantize extends DynamicCustomOp {
     public static final int QUANT_Q4_K = 8;
     public static final int QUANT_Q5_K = 9;
     public static final int QUANT_Q6_K = 10;
+    public static final int QUANT_Q8_K = 11;
+    public static final int QUANT_IQ2_XXS = 12;
+    public static final int QUANT_IQ2_XS = 13;
+    public static final int QUANT_IQ3_XXS = 14;
+    public static final int QUANT_IQ1_S = 15;
+    public static final int QUANT_IQ4_NL = 16;
+    public static final int QUANT_IQ3_S = 17;
+    public static final int QUANT_IQ2_S = 18;
+    public static final int QUANT_IQ4_XS = 19;
+    public static final int QUANT_IQ1_M = 20;
+    public static final int QUANT_TQ1_0 = 21;
+    public static final int QUANT_TQ2_0 = 22;
 
     // Output data type constants matching the C++ GgmlDequantOutputType enum
     public static final int OUTPUT_F32 = 0;

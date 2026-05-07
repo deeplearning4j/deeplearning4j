@@ -2151,7 +2151,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         // Now safe to set Java-side flags
         this.constant = reallyConstant;
-        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        if (reallyConstant) {
+            Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        }
     }
 
     @Override

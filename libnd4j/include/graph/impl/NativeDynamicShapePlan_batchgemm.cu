@@ -459,7 +459,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   // In steady state (shapes frozen, pointers stable), the device pointer
   // arrays already contain the correct addresses from the previous step.
   // Skip input resolution, syncToDevice, and H2D copies entirely.
-  bool canSkipPtrRefresh = group.ptrStable && pointersStable_ && shapesFrozen_ && executeCount_ >= 3;
+  bool canSkipPtrRefresh = group.ptrStable && planLifecycle_.pointersStable() && !planLifecycle_.isSlotBySlot() && executeCount_ >= 3;
 
   std::vector<NDArray*> inputAs;
   std::vector<NDArray*> inputBs;

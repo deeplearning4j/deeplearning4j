@@ -512,6 +512,425 @@ static void dequantize_q6_K(const uint8_t* data, float* output, LongType numElem
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Q8_K: 8-bit K-quant
+// Block: 4 bytes d (float32) + 256 bytes qs + 32 bytes bsums = 292 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_q8_K(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 292;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        float d;
+        memcpy(&d, block, 4);
+        const int8_t* qs = reinterpret_cast<const int8_t*>(block + 4);
+
+        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+            output[outIdx++] = d * qs[j];
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ4_NL: Non-linear 4-bit importance quantization
+// Block: 2 bytes d (FP16) + 16 bytes qs = 18 bytes per 32 elements
+// Uses a 16-entry codebook (kvalues_iq4nl) instead of linear scale.
+//////////////////////////////////////////////////////////////////////////
+static const int8_t kvalues_iq4nl[16] = {
+    -127, -104, -83, -65, -49, -35, -22, -10,
+    1, 13, 25, 38, 53, 69, 89, 113
+};
+
+static void dequantize_iq4_nl(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int QK4_NL = 32;
+    constexpr int BLOCK_SIZE = 18;
+    LongType numBlocks = (numElements + QK4_NL - 1) / QK4_NL;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qs = block + 2;
+
+        for (int j = 0; j < QK4_NL / 2 && outIdx < numElements; j++) {
+            int lo = qs[j] & 0x0F;
+            int hi = (qs[j] >> 4) & 0x0F;
+            if (outIdx < numElements) output[outIdx++] = d * kvalues_iq4nl[lo];
+            if (outIdx < numElements) output[outIdx++] = d * kvalues_iq4nl[hi];
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ4_XS: 4-bit importance quantization with extra scales
+// Block: 2 bytes d + 2 bytes scales_h + 4 bytes scales_l + 128 bytes qs
+//        = 136 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq4_xs(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 136;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+
+        uint16_t scales_h;
+        memcpy(&scales_h, block + 2, 2);
+        const uint8_t* scales_l = block + 4;
+        const uint8_t* qs = block + 8;
+
+        // Decode 8 sub-block scales (6 bits each)
+        int scales[8];
+        for (int i = 0; i < 4; i++) {
+            scales[2 * i] = (scales_l[i] & 0x0F) | (((scales_h >> (2 * i)) & 3) << 4);
+            scales[2 * i + 1] = ((scales_l[i] >> 4) & 0x0F) | (((scales_h >> (2 * i + 1)) & 3) << 4);
+        }
+
+        for (int ib = 0; ib < 8; ib++) {
+            float dl = d * (scales[ib] - 32);
+            const uint8_t* qBlock = qs + ib * 16;
+            for (int j = 0; j < 16; j++) {
+                int lo = qBlock[j] & 0x0F;
+                int hi = (qBlock[j] >> 4) & 0x0F;
+                LongType idx1 = outIdx + ib * 32 + j;
+                LongType idx2 = outIdx + ib * 32 + j + 16;
+                if (idx1 < numElements) output[idx1] = dl * kvalues_iq4nl[lo];
+                if (idx2 < numElements) output[idx2] = dl * kvalues_iq4nl[hi];
+            }
+        }
+
+        outIdx += QK_K;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ3_XXS: 3-bit importance quantization (extra extra small)
+// Reference fallback: linear 3-bit dequantization.
+// Block: 98 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq3_xxs(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 98;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qBytes = block + 2;
+
+        int qOff = 0;
+        int bitAccum = 0;
+        int bitsInAccum = 0;
+
+        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+            while (bitsInAccum < 3 && qOff < (BLOCK_SIZE - 2)) {
+                bitAccum |= (static_cast<int>(qBytes[qOff++]) << bitsInAccum);
+                bitsInAccum += 8;
+            }
+            int val = bitAccum & 0x7;
+            bitAccum >>= 3;
+            bitsInAccum -= 3;
+            output[outIdx++] = d * (val - 4);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ3_S: 3-bit importance quantization (standard)
+// Reference fallback with sign bits.
+// Block: 110 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq3_s(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 110;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+
+        const uint8_t* qs = block + 2;       // 96 bytes
+        const uint8_t* signs = block + 98;   // 32 bytes (after qs+qh)
+        const uint8_t* scales = block + 102; // 8 bytes
+
+        int qOff = 0;
+        int bitAccum = 0;
+        int bitsInAccum = 0;
+
+        for (int ib = 0; ib < 8; ib++) {
+            float dl = d * (1 + 2 * (scales[ib] & 0x0F));
+            for (int j = 0; j < 32 && outIdx < numElements; j++) {
+                while (bitsInAccum < 3 && qOff < 96) {
+                    bitAccum |= (static_cast<int>(qs[qOff++]) << bitsInAccum);
+                    bitsInAccum += 8;
+                }
+                int val = bitAccum & 0x7;
+                bitAccum >>= 3;
+                bitsInAccum -= 3;
+
+                int signIdx = ib * 4 + j / 8;
+                int signBit = (signIdx < 32) ? ((signs[signIdx] >> (j % 8)) & 1) : 0;
+                float fval = dl * (val - 4);
+                output[outIdx++] = signBit ? -fval : fval;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ2_XXS: 2-bit importance quantization (extra extra small)
+// Reference fallback: linear 2-bit dequantization.
+// Block: 66 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq2_xxs(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 66;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qBytes = block + 2;
+
+        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+            int byteIdx = j / 4;
+            int bitOff = (j % 4) * 2;
+            if (byteIdx < 64) {
+                int val = (qBytes[byteIdx] >> bitOff) & 0x3;
+                output[outIdx++] = d * (val - 1.5f);
+            } else {
+                output[outIdx++] = 0.0f;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ2_XS: 2-bit importance quantization (extra small)
+// Reference fallback with sub-block scales.
+// Block: 74 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq2_xs(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 74;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qs = block + 2;      // 64 bytes
+        const uint8_t* scales = block + 66; // 8 bytes
+
+        for (int ib = 0; ib < 8; ib++) {
+            float dl = d * (1 + 2 * (scales[ib] & 0x0F));
+            for (int j = 0; j < 32 && outIdx < numElements; j++) {
+                int byteIdx = ib * 8 + j / 4;
+                int bitOff = (j % 4) * 2;
+                if (byteIdx < 64) {
+                    int val = (qs[byteIdx] >> bitOff) & 0x3;
+                    output[outIdx++] = dl * (val - 1.5f);
+                } else {
+                    output[outIdx++] = 0.0f;
+                }
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ2_S: 2-bit importance quantization (standard)
+// Reference fallback with sign bits from qh.
+// Block: 82 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq2_s(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 82;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qs = block + 2;   // 64 bytes
+        const uint8_t* qh = block + 66;  // 16 bytes
+
+        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+            int byteIdx = j / 4;
+            int bitOff = (j % 4) * 2;
+            if (byteIdx < 64) {
+                int val = (qs[byteIdx] >> bitOff) & 0x3;
+                int qhIdx = j / 16;
+                int qhBit = j % 8;
+                int signBit = (qhIdx < 16) ? ((qh[qhIdx] >> qhBit) & 1) : 0;
+                float fval = d * (val - 1.5f);
+                output[outIdx++] = signBit ? -fval : fval;
+            } else {
+                output[outIdx++] = 0.0f;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ1_S: ~1.5-bit ternary importance quantization
+// Reference fallback: approximate ternary {-1, 0, +1} * d.
+// Block: 50 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq1_s(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 50;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qs = block + 2;     // 32 bytes
+        const uint8_t* qh = block + 34;    // 16 bytes (sign bits)
+
+        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+            int byteIdx = j / 8;
+            int bitOff = j % 8;
+            if (byteIdx < 32) {
+                int bit = (qs[byteIdx] >> bitOff) & 1;
+                int signBit = (byteIdx < 16) ? ((qh[byteIdx] >> bitOff) & 1) : 0;
+                float val = bit ? d : 0.0f;
+                output[outIdx++] = signBit ? -val : val;
+            } else {
+                output[outIdx++] = 0.0f;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// IQ1_M: ~1.75-bit ternary importance quantization
+// Reference fallback with sub-block scales.
+// Block: 56 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_iq1_m(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 56;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        const uint8_t* qs = block;          // 32 bytes
+        const uint8_t* qh = block + 32;     // 16 bytes
+        const uint8_t* scalesRaw = block + 48; // 8 bytes
+
+        // d is encoded in the last 2 bytes of scales
+        uint16_t dRaw;
+        memcpy(&dRaw, scalesRaw + 6, 2);
+        float d = fp16ToFloat(dRaw);
+
+        for (int ib = 0; ib < 8; ib++) {
+            float dl = d * (1 + 2 * (scalesRaw[ib < 6 ? ib : 0] & 0x0F));
+            for (int j = 0; j < 32 && outIdx < numElements; j++) {
+                int idx = ib * 4 + j / 8;
+                int bitOff = j % 8;
+                if (idx < 32) {
+                    int bit = (qs[idx] >> bitOff) & 1;
+                    int signIdx = ib * 2 + j / 8;
+                    int sign = (signIdx < 16) ? ((qh[signIdx] >> (j % 8)) & 1) : 0;
+                    float val = bit ? dl : 0.0f;
+                    output[outIdx++] = sign ? -val : val;
+                } else {
+                    output[outIdx++] = 0.0f;
+                }
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// TQ1_0: Ternary 1-bit quantization
+// Reference fallback: simple ternary {-1, 0, +1} * d
+// Block: ~54 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_tq1_0(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 54;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qs = block + 2;
+
+        // Each byte encodes ~5 ternary values via base-3
+        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+            int byteIdx = j / 5;
+            int posInByte = j % 5;
+            if (byteIdx < 52) {
+                int packed = qs[byteIdx] & 0xFF;
+                // Extract base-3 digit
+                for (int p = 0; p < posInByte; p++) packed /= 3;
+                int trit = packed % 3; // 0, 1, 2 -> -1, 0, +1
+                output[outIdx++] = d * (trit - 1);
+            } else {
+                output[outIdx++] = 0.0f;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// TQ2_0: Ternary 2-bit quantization
+// Reference fallback: 2-bit ternary
+// Block: ~66 bytes per 256 elements
+//////////////////////////////////////////////////////////////////////////
+static void dequantize_tq2_0(const uint8_t* data, float* output, LongType numElements) {
+    constexpr int BLOCK_SIZE = 66;
+    LongType numBlocks = (numElements + QK_K - 1) / QK_K;
+    LongType outIdx = 0;
+
+    for (LongType b = 0; b < numBlocks; b++) {
+        const uint8_t* block = data + b * BLOCK_SIZE;
+        uint16_t dRaw;
+        memcpy(&dRaw, block, 2);
+        float d = fp16ToFloat(dRaw);
+        const uint8_t* qs = block + 2;
+
+        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+            int byteIdx = j / 4;
+            int bitOff = (j % 4) * 2;
+            if (byteIdx < 64) {
+                int val = (qs[byteIdx] >> bitOff) & 0x3;
+                // 2-bit ternary: 0->-1, 1->0, 2->+1, 3->0
+                float tval;
+                switch (val) {
+                    case 0: tval = -1.0f; break;
+                    case 2: tval = 1.0f; break;
+                    default: tval = 0.0f; break;
+                }
+                output[outIdx++] = d * tval;
+            } else {
+                output[outIdx++] = 0.0f;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Dispatch to the right dequantizer, then convert F32 to target type
 //////////////////////////////////////////////////////////////////////////
 static void dequantizeToFloat32(const uint8_t* rawBytes, float* output, int quantType, LongType numElements) {
@@ -527,6 +946,18 @@ static void dequantizeToFloat32(const uint8_t* rawBytes, float* output, int quan
         case GGML_QUANT_Q4_K: dequantize_q4_K(rawBytes, output, numElements); break;
         case GGML_QUANT_Q5_K: dequantize_q5_K(rawBytes, output, numElements); break;
         case GGML_QUANT_Q6_K: dequantize_q6_K(rawBytes, output, numElements); break;
+        case GGML_QUANT_Q8_K: dequantize_q8_K(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ4_NL: dequantize_iq4_nl(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ4_XS: dequantize_iq4_xs(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ3_XXS: dequantize_iq3_xxs(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ3_S: dequantize_iq3_s(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ2_XXS: dequantize_iq2_xxs(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ2_XS: dequantize_iq2_xs(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ2_S: dequantize_iq2_s(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ1_S: dequantize_iq1_s(rawBytes, output, numElements); break;
+        case GGML_QUANT_IQ1_M: dequantize_iq1_m(rawBytes, output, numElements); break;
+        case GGML_QUANT_TQ1_0: dequantize_tq1_0(rawBytes, output, numElements); break;
+        case GGML_QUANT_TQ2_0: dequantize_tq2_0(rawBytes, output, numElements); break;
         default:
             THROW_EXCEPTION("ggmlDequantize: unsupported quant type");
     }

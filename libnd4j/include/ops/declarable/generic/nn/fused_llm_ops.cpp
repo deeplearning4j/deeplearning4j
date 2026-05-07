@@ -155,22 +155,33 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
     } else {
         // Dynamic position from scalar input tensor (2-input, rank-0 input[1])
         // or static iArg (1-input path, or 2-input ropeCache path with rank > 0 input[1])
-        int positionOffset;
+        const void* positionOffsetPtr;
+        LongType staticPosOffset = 0;
         if (block.width() == 2) {
             auto secondInput = INPUT_VARIABLE(1);
             if (secondInput->rankOf() == 0 || secondInput->isScalar()) {
-                // Scalar position offset tensor (dynamic position for KV cache decode)
-                positionOffset = secondInput->e<int>(0);
+                // Scalar position offset tensor (dynamic position for KV cache decode).
+                // CUDA graph compatible: pass the DEVICE pointer so the kernel reads the
+                // value at runtime, not a host-baked constant from capture time.
+                // The old code used secondInput->e<int>(0) which reads from the HOST buffer
+                // and bakes the value as a constant during CUDA graph capture.
+#if defined(SD_CUDA)
+                positionOffsetPtr = secondInput->specialBuffer();
+#else
+                positionOffsetPtr = secondInput->buffer();
+#endif
             } else {
                 // RoPE cache tensor (not a position) — fall back to iArg
-                positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+                staticPosOffset = block.getIArguments()->size() > 1 ? static_cast<LongType>(INT_ARG(1)) : 0;
+                positionOffsetPtr = &staticPosOffset;
             }
         } else {
-            positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+            staticPosOffset = block.getIArguments()->size() > 1 ? static_cast<LongType>(INT_ARG(1)) : 0;
+            positionOffsetPtr = &staticPosOffset;
         }
         float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
         float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
-        helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
+        helpers::fusedRoPE(input, output, positionOffsetPtr, freqBase, freqScale, ropeType,
                             block.launchContext(), rotaryDims);
     }
 

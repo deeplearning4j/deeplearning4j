@@ -577,7 +577,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               if (slots[si2].wiring.outputSlotIndices[o2] == srcIdx) {
                 DSP_DIAG(COMPILE, "  -> produced by op[%d] '%s' state=%d shapeCacheValid=%d "
                           "cachedOutputShapes.size=%d numOutputs=%d",
-                          si2, slots[si2].ident.opName.c_str(), static_cast<int>(slots[si2].state_),
+                          si2, slots[si2].ident.opName.c_str(), slots[si2].slotPhase.toLegacyCode(),
                           slots[si2].shapeCacheValid() ? 1 : 0,
                           static_cast<int>(slots[si2].shapeCache.cachedOutputShapes.size()),
                           slots[si2].wiring.numOutputs);
@@ -4182,7 +4182,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               if (slots[si2].wiring.outputSlotIndices[o2] == srcIdx) {
                 DSP_DIAG(COMPILE, "  -> produced by op[%d] '%s' state=%d shapeCacheValid=%d "
                           "cachedOutputShapes.size=%d",
-                          si2, slots[si2].ident.opName.c_str(), static_cast<int>(slots[si2].state_),
+                          si2, slots[si2].ident.opName.c_str(), slots[si2].slotPhase.toLegacyCode(),
                           slots[si2].shapeCacheValid() ? 1 : 0,
                           static_cast<int>(slots[si2].shapeCache.cachedOutputShapes.size()));
               }

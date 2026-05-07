@@ -46,8 +46,8 @@ public class BenchmarkConfigApplier {
 
     /**
      * Reset all cached state in a model between benchmark configurations.
-     * NOTE: Does NOT invalidate Triton disk cache - that persists across runs.
-     * Only clears DSP plan cache which must be recompiled for each config.
+     * Invalidates GPU-resident Triton modules (disk cache persists across runs).
+     * Clears DSP plan cache which must be recompiled for each config.
      */
     public static void resetModelState(SameDiff model) {
         model.resetSession();
@@ -63,15 +63,16 @@ public class BenchmarkConfigApplier {
         // when requestedMode is null).
         model.setGraphExecutionMode(GraphExecutionMode.AUTO);
 
-        // NOTE: We do NOT call invalidateTritonCache() here because:
-        // 1. Triton PTX kernels are cached to disk (~/.nd4j/triton_cache/)
-        // 2. CUDA graphs are cached in-memory (CudaGraphScheduler._graphCache)
-        // 3. Both should persist across benchmark configs for the same model
-        // 4. invalidateTritonCache() would force re-compilation, defeating the cache
-
-        // Only reset Triton counters for clean metrics
+        // Invalidate the Triton GPU module cache between configs. Each config
+        // creates a new native plan with different segment boundaries, which means
+        // different CUmodule/CUfunction handles. If stale CUmodule entries from
+        // a prior config remain in the singleton TritonGraphBackend cache, CUDA
+        // graph capture can reference invalidated CUfunction pointers, causing
+        // SIGSEGV on cudaGraphLaunch. The Triton disk cache (~/.nd4j/triton_cache/)
+        // is NOT affected — reloading modules from disk (cuModuleLoadDataEx) is fast.
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         if (nativeOps.isTritonAvailable()) {
+            nativeOps.invalidateTritonCache();
             nativeOps.resetTritonCounters();
         }
 
@@ -126,7 +127,7 @@ public class BenchmarkConfigApplier {
         env.setTritonDumpArgs(false);
         env.setTritonDumpGraphDot(false);
         env.setTritonAllowFallbackCapture(false);
-        env.setTritonMergedCaptureThroughViews(false);
+        env.setTritonMergedCaptureThroughViews(true);
 
         // Apply the named profile first, then let explicit config fields override it.
         // This keeps profile defaults useful without silently discarding per-config tuning.

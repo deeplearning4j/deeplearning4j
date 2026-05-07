@@ -121,23 +121,23 @@ void FrozenPlan::emitStateReport() const {
   const auto& segments = plan_->getSegments();
   int numSegs = static_cast<int>(segments.size());
   int numSlots = plan_->getNumSlots();
-  int phaseCode = plan_->getPlanPhaseCode();
+  const char* phaseName = plan_->planLifecycle().displayName();
   bool sealed = isSealed();
 
   diag.recordEvent(DSP_DIAG_LIFECYCLE, -1, -1, -1, "FrozenPlan", 0,
-                   "[DSP_PLAN_STATE] buildPassCount=%d sealed=%s phase=%d segments=%d slots=%d",
-                   buildPassCount_, sealed ? "true" : "false", phaseCode, numSegs, numSlots);
+                   "[DSP_PLAN_STATE] buildPassCount=%d sealed=%s phase=%s segments=%d slots=%d",
+                   buildPassCount_, sealed ? "true" : "false", phaseName, numSegs, numSlots);
 
   // Per-segment state dump
   for (int i = 0; i < numSegs; i++) {
     const auto& seg = segments[i];
-    int segPhase = seg.exec.getExecutionPhaseCode();
+    const char* segPhaseName = seg.exec.segPhase.displayName();
     int segStart = seg.def.startSlot;
     int segEnd = seg.def.endSlot;
 
     diag.recordEvent(DSP_DIAG_LIFECYCLE, -1, i, -1, "FrozenPlan", 0,
-                     "  seg[%d: %d-%d] phase=%d backend=%s",
-                     i, segStart, segEnd, segPhase,
+                     "  seg[%d: %d-%d] phase=%s backend=%s",
+                     i, segStart, segEnd, segPhaseName,
                      seg.exec.compiledByBackend.empty() ? "none" : seg.exec.compiledByBackend.c_str());
   }
 }

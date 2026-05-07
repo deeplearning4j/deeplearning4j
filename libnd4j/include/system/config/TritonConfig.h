@@ -92,7 +92,7 @@ class SD_LIB_EXPORT TritonConfig {
   std::atomic<bool> _graphReinstantiate{false};
   std::atomic<bool> _graphAutoFree{false};
   std::atomic<bool> _graphDotVerbose{false};
-  std::atomic<bool> _mergedCaptureThroughViews{false};
+  std::atomic<bool> _mergedCaptureThroughViews{true};
 
   // Compilation scope
   std::atomic<bool> _compileAll{false};

@@ -71,7 +71,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
 
   // Preconditions: shapes frozen, past warmup+compile, all segments resolved
-  if (!shapesFrozen_ || executeCount_ < 2) {
+  if (planLifecycle_.isSlotBySlot() || executeCount_ < 2) {
     return Status::MAYBE;
   }
 
@@ -105,7 +105,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // Lazy compile path: backend not yet resolved. Call the full cascade
       // (warmup → compile → execute) which populates resolvedCpuBackend.
       // This happens when platformPrecompileSegments skips segments with
-      // executionCount==0 after resegmentForFreeze() rebuilds them.
+      // executionCount==0 after freeze resets them.
       status = executeSegmentWithCpuGraph(seg, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
         seg.exec.compilationFailed = true;
@@ -344,6 +344,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
   seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
   seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
   seg.exec.compositeReplaySchedule.units.clear();
+  seg.exec.bumpArgGeneration();
   seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
   seg.exec.addrKeyStableCount = 0;
   seg.exec.slotAddrStableCount = 0;
@@ -360,6 +361,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
     seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
     seg.exec.compositeReplaySchedule.units.clear();
+    seg.exec.bumpArgGeneration();
     seg.exec.argTableStable = false;  // Invalidate fast-replay on plan teardown
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
@@ -404,8 +406,6 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     ctx->extInputsSynced = false;
     ctx->crossStreamSynced = false;
     ctx->stagingBuffersSynced = false;
-    ctx->phaseHandledPostSegments = false;
-    ctx->phaseHandledOutputs = false;
     ctx->flowEventCount = 0;
     ctx->streamSyncCount = 0;
     ctx->eventSyncCount = 0;
@@ -477,13 +477,14 @@ SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCaptu
 #if HAVE_ONEDNN || HAVE_OPENVINO || HAVE_ARMCOMPUTE || HAVE_MLIR || HAVE_NNAPI || HAVE_MLX
   return SelectedBackend::CPU_GRAPH;
 #else
-  if (isGraphCapture) {
-    // No CPU graph backends — graph capture mode can't do anything useful
-    return SelectedBackend::SLOT_BY_SLOT;
-  }
-  // No graph backends available — use emulated replay so DSP still gets
-  // shape freezing, pointer stability tracking, and segment timing.
-  // NEVER fall back to bare SLOT_BY_SLOT from AUTO.
+  // No CPU graph backends available — use emulated replay for ALL non-SLOT_BY_SLOT
+  // modes. EMULATED_REPLAY correctly handles the replay lifecycle on CPU
+  // (shape freezing, pointer stability tracking, segment timing) without
+  // requiring actual hardware graph capture. Previously, isGraphCapture=true
+  // returned SLOT_BY_SLOT, but the plan-level mode (GEM_CUDA_GRAPHS) still
+  // dispatched to phaseReplay, which expected EMULATED_REPLAY segments.
+  // The backend mismatch caused phaseReplay to hit the fallback path with
+  // wrong lifecycle state, corrupting execution.
   return SelectedBackend::EMULATED_REPLAY;
 #endif
 }
@@ -511,6 +512,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
       seg.exec.replayHandle.reset();
     }
     seg.exec.gapOpsCapturedInGraph = false;
+    seg.exec.bumpArgGeneration();
     seg.exec.argTableStable = false;
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
@@ -522,7 +524,8 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureOomRetries = 0;
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
-    seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
+    seg.exec.segPhase.reset();  // PRIMARY: BUILDING:WARMUP
+    seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;  // Legacy sync
     seg.def.shapeKeyState.reset();
   }
 }
@@ -546,7 +549,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     if (slot.flags.inPlaceFused) continue;
     if (slot.fusedChain.isFusedChainTail) continue;
 
-    if (slot.state_ >= NativeSlot::SlotState::FROZEN && slot.flags.isFullyWriting) continue;
+    if (slot.slotPhase.isSealed() && slot.flags.isFullyWriting) continue;
 
     bool didZero = false;
     for (int o = 0; o < slot.wiring.numOutputs; o++) {

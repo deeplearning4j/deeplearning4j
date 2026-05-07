@@ -150,6 +150,15 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
             } finally {
                 array = null;
                 deallocated = true;
+                // Remove from referenceMap — mirrors BaseDataBuffer.release() (line 2250)
+                // and prevents unbounded refMap growth across model close/reimport cycles.
+                // Without this, each model close leaves ~500+ stale OpaqueNDArray entries
+                // that persist until GC enqueues the corresponding PhantomReference.
+                try {
+                    Nd4j.getDeallocatorService().getReferenceMap().remove(uniqueId);
+                } catch (Exception ignored) {
+                    // DeallocatorService may be shut down
+                }
             }
         }
     }
@@ -177,6 +186,13 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
     @Override
     public void setConstant(boolean constant) {
         this.constant = constant;
+        // Mirror BaseDataBuffer.setConstant() behavior: when marked constant,
+        // remove from DeallocatorService.referenceMap since the deallocator will
+        // never fire (deallocate() returns early when constant=true). Without this,
+        // OpaqueNDArrays for constant model weights permanently occupy refMap slots.
+        if (constant) {
+            Nd4j.getDeallocatorService().getReferenceMap().remove(uniqueId);
+        }
     }
 
     /**

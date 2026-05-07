@@ -60,6 +60,13 @@ extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
 
 namespace sd {
 
+// Set by NativeDynamicShapePlan when graphExecutionMode is CUDA_GRAPHS.
+// Forces MmulHelper to: (1) skip cublasLt (split-K algorithms are non-deterministic
+// under graph replay), and (2) use CUBLAS_GEMM_DEFAULT instead of
+// CUBLAS_GEMM_DEFAULT_TENSOR_OP (tensor core reductions have non-deterministic warp
+// scheduling during graph replay, causing FP drift through GDN recurrent state).
+extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
+
 // Thread-local cublasLt epilogue state — set by DSP executor before matmul dispatch
 static thread_local int tl_ltEpilogueType = 0;
 static thread_local const void* tl_ltEpilogueBiasPtr = nullptr;
@@ -243,6 +250,13 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
                        bool transA, bool transB,
                        cudaDataType aType, cudaDataType bType, cudaDataType cType,
                        int epilogueType = 0, const void* biasPtr = nullptr, int64_t biasSize = 0) {
+  // Skip cublasLt entirely when CUDA_GRAPHS mode is active. cublasLt may select
+  // split-K algorithms whose internal reductions are non-deterministic when the
+  // kernel is replayed via CUDA graph (threadblock scheduling order varies between
+  // replay iterations). Standard cublasGemmEx with CUBLAS_GEMM_DEFAULT_TENSOR_OP
+  // is deterministic across replays, matching SLOT_BY_SLOT output exactly.
+  if (tl_cublasLtDisabled) return false;
+
   // When epilogue fusion is requested, relax the gating — cublasLt handles general matmul.
   // Without epilogue, keep tight gating for the decoder logits projection fast path.
   if (epilogueType == 0) {
@@ -1029,6 +1043,14 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        M == 1 && !transA && transB &&
        aContiguous && pB->strideAt(1) == 1 && cContiguous;
 
+   // CUDA_GRAPHS mode: use CUBLAS_GEMM_DEFAULT (no tensor ops) to ensure
+   // deterministic results when cuBLAS kernels are captured and replayed via
+   // CUDA graphs. Tensor core reductions have non-deterministic warp scheduling
+   // during graph replay, causing FP drift that accumulates through GDN state.
+   // SLOT_BY_SLOT uses tensor ops (CUBLAS_GEMM_DEFAULT_TENSOR_OP) for performance.
+   const cublasGemmAlgo_t gemmAlgo = tl_cublasLtDisabled
+       ? CUBLAS_GEMM_DEFAULT : CUBLAS_GEMM_DEFAULT_TENSOR_OP;
+
    if (rowVectorFastPath && (typeDouble || typeFloat || typeHalf || typeHalfFloat)) {
      const int ldaFast = static_cast<int>(pB->strideAt(0));
      const int ldbFast = K;
@@ -1058,7 +1080,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                              pA->specialBuffer(), CUDA_R_16F, ldbFast,
                              &getCublasScalars()->betaF,
                              pC->specialBuffer(), CUDA_R_16F, ldcFast,
-                             CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+                             CUBLAS_COMPUTE_32F, gemmAlgo);
      } else {
        getCublasScalars()->alphaF = static_cast<float>(alpha);
        getCublasScalars()->betaF  = static_cast<float>(beta);
@@ -1068,7 +1090,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                              pA->specialBuffer(), CUDA_R_16F, ldbFast,
                              &getCublasScalars()->betaF,
                              pC->specialBuffer(), CUDA_R_32F, ldcFast,
-                             CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+                             CUBLAS_COMPUTE_32F, gemmAlgo);
      }
    } else if (typeDouble) {
      getCublasScalars()->alphaD = alpha;
@@ -1091,7 +1113,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                            pB->specialBuffer(), CUDA_R_16F, ldb,
                            &getCublasScalars()->betaF,
                            pC->specialBuffer(), CUDA_R_16F, ldc,
-                           CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+                           CUBLAS_COMPUTE_32F, gemmAlgo);
    } else if (typeIntFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
@@ -1268,7 +1290,8 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
                            effX->specialBuffer(), CUDA_R_16F, N,  // ldb = N (contiguous vector)
                            &getCublasScalars()->betaF,
                            Y->specialBuffer(), CUDA_R_32F, M,    // ldc = M
-                           CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+                           CUBLAS_COMPUTE_32F,
+                           tl_cublasLtDisabled ? CUBLAS_GEMM_DEFAULT : CUBLAS_GEMM_DEFAULT_TENSOR_OP);
    }
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
@@ -1704,7 +1727,8 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
         &getCublasScalars()->betaF,
         C->specialBuffer(), CUDA_R_16F, N, strideC,
         batchSize,
-        CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+        CUBLAS_COMPUTE_32F,
+        tl_cublasLtDisabled ? CUBLAS_GEMM_DEFAULT : CUBLAS_GEMM_DEFAULT_TENSOR_OP);
   } else {
     NDArray::registerSpecialUse({C}, {A, B});
     return false;

@@ -414,6 +414,97 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
     NDArray::registerSpecialUse({pastKv}, {newKv});
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// BSHD→BSHD in-place KV write (for dot_product_attention_v2)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * CUDA kernel: writes newKv[b, s, h, d] → cache[b, cachePos+s, h, d]
+ *
+ * Both arrays are BSHD layout. For rank-3 BSF, treat as BSHD with heads=1
+ * and dim=features.
+ *
+ * cachePosPtr is dereferenced at kernel runtime (not baked as a literal),
+ * making this kernel CUDA graph compatible.
+ */
+template <typename T>
+SD_KERNEL void kvInPlaceWriteBSHDKernel(const T* __restrict__ newKv,
+                                         T* __restrict__ cache,
+                                         const LongType* __restrict__ cachePosPtr,
+                                         LongType batch,
+                                         LongType seqKV,
+                                         LongType innerSize,
+                                         LongType cacheMaxSeqLen) {
+    LongType cachePos = *cachePosPtr;
+
+    // Each block handles one (b, s) pair; grid-stride over innerSize (heads*dim or features)
+    LongType slice = blockIdx.x;
+    LongType s = slice % seqKV;
+    LongType b = slice / seqKV;
+
+    // BSHD/BSF: contiguous innerSize elements per (b, s) position
+    LongType srcOffset = b * seqKV * innerSize + s * innerSize;
+    LongType dstOffset = b * cacheMaxSeqLen * innerSize + (cachePos + s) * innerSize;
+
+    for (LongType i = threadIdx.x; i < innerSize; i += blockDim.x) {
+        cache[dstOffset + i] = newKv[srcOffset + i];
+    }
+}
+
+template <typename T>
+static void kvInPlaceWriteBSHDCudaLauncher(const cudaStream_t* stream,
+                                            const void* vNewKv, void* vCache,
+                                            const void* cachePosPtr,
+                                            LongType batch, LongType seqKV,
+                                            LongType innerSize, LongType cacheMaxSeqLen) {
+    auto newKv = reinterpret_cast<const T*>(vNewKv);
+    auto cache = reinterpret_cast<T*>(vCache);
+    auto posPtr = reinterpret_cast<const LongType*>(cachePosPtr);
+
+    auto numSlices = batch * seqKV;
+    dim3 launchDims = getLaunchDims("kv_scatter");
+
+    kvInPlaceWriteBSHDKernel<T><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
+        newKv, cache, posPtr, batch, seqKV, innerSize, cacheMaxSeqLen);
+    DebugHelper::checkGlobalErrorCode("kvInPlaceWriteBSHD kernel failed");
+}
+
+BUILD_SINGLE_TEMPLATE(void kvInPlaceWriteBSHDCudaLauncher,
+    (const cudaStream_t* stream, const void* vNewKv, void* vCache,
+     const void* cachePosPtr, LongType batch, LongType seqKV,
+     LongType innerSize, LongType cacheMaxSeqLen),
+    SD_FLOAT_TYPES);
+
+void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
+                         const void* cachePosPtr, LaunchContext* context) {
+    auto stream = context->getCudaStream();
+
+    auto batch = newKv->sizeAt(0);
+    auto seqKV = newKv->sizeAt(1);
+    // innerSize = everything after the seq dimension (heads*dim for rank4, features for rank3)
+    LongType innerSize = 1;
+    for (int d = 2; d < newKv->rankOf(); d++) {
+        innerSize *= newKv->sizeAt(d);
+    }
+
+    auto cacheMaxSeqLen = cache->sizeAt(1);
+
+    if (cache->dataType() != newKv->dataType()) {
+        std::string msg = "kvInPlaceWriteBSHD: cache dtype " + std::to_string((int)cache->dataType()) +
+                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
+        THROW_EXCEPTION(msg.c_str());
+    }
+
+    NDArray::prepareSpecialUse({cache}, {newKv});
+
+    BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteBSHDCudaLauncher,
+                          (stream, newKv->specialBuffer(), cache->specialBuffer(),
+                           cachePosPtr, batch, seqKV, innerSize, cacheMaxSeqLen),
+                          SD_FLOAT_TYPES);
+
+    NDArray::registerSpecialUse({cache}, {newKv});
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

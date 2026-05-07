@@ -213,6 +213,49 @@ public enum GraphExecutionMode {
     }
 
     /**
+     * Whether this mode requires a hardware graph capture/replay backend
+     * (CUDA graphs, HIP graphs, Vulkan command buffers, etc.).
+     * Mirrors the {@code usesGraphCapture} field from C++ ModeContract.
+     *
+     * <p>Modes returning true here drive the DSP lifecycle into
+     * freeze→capture→replay phases. On platforms without a graph backend
+     * (e.g., plain CPU), these modes must be remapped to
+     * {@link #EMULATED_REPLAY} to avoid entering the replay path
+     * with no hardware graph to replay.</p>
+     */
+    public boolean requiresGraphBackend() {
+        switch (this) {
+            case AUTO:
+            case CUDA_GRAPHS:
+            case TRITON:
+            case NVRTC_JIT:
+            case PTX_JIT:
+            case HIP_GRAPHS:
+            case LEVEL_ZERO:
+            case VULKAN:
+            case METAL:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Whether this mode executes slot-by-slot (no graph capture).
+     * Mirrors the {@code isSlotBySlot} field from C++ ModeContract.
+     */
+    public boolean isSlotBySlot() {
+        switch (this) {
+            case SLOT_BY_SLOT:
+            case EMULATED_REPLAY:
+            case SHAPE_INFERENCE_ONLY:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
      * Look up a mode from its native integer code.
      */
     public static GraphExecutionMode fromNativeCode(int code) {

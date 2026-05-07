@@ -20,6 +20,7 @@
 #define LIBND4J_SLOT_ARRAY_H
 
 #include <array/NDArray.h>
+#include <graph/DspGraphTypes.h>
 #include <graph/SlotBufferOwnership.h>
 #include <system/common.h>
 
@@ -68,10 +69,19 @@ struct SlotEntry {
   // Ownership classification — drives all cleanup decisions
   SlotBufferInfo ownership;
 
-  // Lifecycle state — mutable per-execution, independent of topology
+  // ══════════════════════════════════════════════════════════════════════════
+  // PRIMARY lifecycle: SlotPhase (GraphNodePhase + property flags)
+  // ══════════════════════════════════════════════════════════════════════════
+  // This is the SINGLE source of truth for slot lifecycle.
+  // The old SlotLifecycleState enum is derived from slotPhase for backward compat.
+  SlotPhase slotPhase;
+
+  // Legacy lifecycle state — derived from slotPhase. Kept for old code that reads it.
+  // Migration: use slotPhase.isSealed(), slotPhase.isConstant, etc.
   SlotLifecycleState state = SlotLifecycleState::WARMUP;
 
-  // View producer flag — set during warmup when the slot creates a view
+  // View producer flag — now also in slotPhase.isViewProducer.
+  // Kept as separate field during migration (old code sets it independently).
   bool isViewProducer = false;
 
   // Write generation counter — bumped on every write to this slot's output
@@ -85,13 +95,19 @@ struct SlotEntry {
   bool canFree() const { return ownership.canFree(); }
   bool canFreeNow() const { return ownership.canFreeNow(); }
 
-  // Convenience: check state
-  bool isFrozen() const { return state >= SlotLifecycleState::FROZEN; }
-  bool isFrozenConstant() const { return state == SlotLifecycleState::FROZEN_CONSTANT; }
-  bool shapeCacheValid() const { return state >= SlotLifecycleState::SHAPE_CACHED; }
+  // ── Phase queries (delegate to slotPhase) ──────────────────────────────
+  bool isFrozen() const { return slotPhase.isSealed(); }
+  bool isFrozenConstant() const { return slotPhase.isSealed() && slotPhase.isConstant; }
+  bool shapeCacheValid() const { return slotPhase.shapeCacheValid; }
 
   // Bump generation and return new value
   uint32_t bumpGeneration() { return ++generation; }
+
+  // Unified lifecycle accessor
+  GraphNodePhase graphNodePhase() const { return slotPhase.phase; }
+
+  // Property accessors
+  bool isConstant() const { return slotPhase.isConstant; }
 };
 
 /**

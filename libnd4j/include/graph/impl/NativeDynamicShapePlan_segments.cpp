@@ -183,7 +183,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   // ── Frozen fast path: reuse cached key if shapes can't change ──
   // This is the AUTHORITATIVE cache check — applies to ALL callers
   // (phaseCompile, executeSegmentWithGpuGraph, executeSegmentWithSpecificBackend, etc.)
-  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
+  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0) {
     return seg.exec.cachedShapeKey;
   }
 
@@ -228,7 +228,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     if (!isWarmupComplete(profile)) {
       recordObservedShapes(profile, crossInputs.data(),
                            static_cast<int>(crossInputs.size()));
-      if (shapesFrozen_ && !isWarmupComplete(profile)) {
+      if (!planLifecycle_.isSlotBySlot() && !isWarmupComplete(profile)) {
         // Frozen shapes won't change, so one observation is enough.
         // Record again to satisfy the 2-step warmup requirement immediately.
         recordObservedShapes(profile, crossInputs.data(),
@@ -621,7 +621,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   // compiled segment exists in the next backend's cache).
   LongType segShapeKey;
   bool needsCompile;
-  if (shapesFrozen_ && seg.exec.cachedShapeKey != 0) {
+  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0) {
     segShapeKey = seg.exec.cachedShapeKey;
     needsCompile = false;
   } else {
@@ -631,16 +631,16 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   }
 
   // ── Phase guard: compilation must not happen during REPLAYING ────────────
-  if (needsCompile && planPhase_ >= PlanPhase::REPLAYING) {
+  if (needsCompile && planLifecycle_.isReplaying()) {
     DSP_DIAG(COMPILE,
              "ERROR: CPU backend compilation triggered during REPLAYING phase for seg[%d-%d] "
-             "(executionCount=%d, planPhase=%d). Demoting plan phase.",
+             "(executionCount=%d, planPhase=%s). Demoting plan phase.",
              seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount,
-             static_cast<int>(planPhase_));
+             planLifecycle_.displayName());
     REQUIRE_TRUE(false, 0,
                  "DSP phase contract violation: CPU compilation during REPLAYING phase "
                  "for seg[%d-%d].", seg.def.startSlot, seg.def.endSlot);
-    demotePlanPhase(PlanPhase::POINTERS_STABLE,
+    demotePlanPhase(PlanPhase::SHAPES_FROZEN,
                     "CPU compilation triggered during REPLAYING phase");
   }
 
@@ -810,7 +810,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   if (status == Status::OK) {
     // Cache the shape key only after successful compile+execute so the cascade
     // doesn't skip compilation for the next backend when the current one fails.
-    if (shapesFrozen_) {
+    if (!planLifecycle_.isSlotBySlot()) {
       seg.exec.cachedShapeKey = segShapeKey;
     }
     seg.exec.executionCount++;
@@ -822,7 +822,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
       int segInvalid = validateSlotRange(
           seg.def.startSlot, seg.def.endSlot,
           outputSlots_, totalOutputSlots_,
-          executeCount_, static_cast<int>(planPhase_),
+          executeCount_, planLifecycle_.toLegacyCode(),
           segErr, sizeof(segErr));
       if (segInvalid > 0) {
         DSP_THROW(MEMORY,
@@ -1000,7 +1000,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // This skips: control flow dispatch, dead propagation, batched GEMM checks,
   // diagnostic logging, and all non-executable slots (frozen constants,
   // identity ops, fused chain tails) at the outer loop level.
-  if (shapesFrozen_ && executeCount_ >= 2 && !hasControlFlow_ &&
+  if (!planLifecycle_.isSlotBySlot() && executeCount_ >= 2 && !hasControlFlow_ &&
       seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
     // dynamic_cast required: on CUDA builds, GraphReplayFactory::create(0) returns
     // CudaGraphReplayHandle, not FunctionalReplayHandle. static_cast would be UB.
@@ -1234,7 +1234,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     // When shapes are frozen and past warmup, skip trivially no-op slots
     // at the loop level, avoiding executeSlot() function call overhead.
     // This mirrors the GPU compositeReplay gap loop optimization.
-    if (shapesFrozen_ && executeCount_ >= 2) {
+    if (!planLifecycle_.isSlotBySlot() && executeCount_ >= 2) {
       // Frozen constant: output never changes, skip entirely
       if (slot.frozenConstantSlot()) {
         bool allPopulated = true;
@@ -1345,7 +1345,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           stepIdx, doneSlot.ident.opName.c_str(),
           outputSlots_, totalOutputSlots_,
           doneSlot.wiring.outputSlotIndices, doneSlot.wiring.numOutputs,
-          executeCount_, static_cast<int>(planPhase_),
+          executeCount_, planLifecycle_.toLegacyCode(),
           postSlotErr, sizeof(postSlotErr));
       if (badOutputs > 0) {
         DSP_THROW(MEMORY,
@@ -1578,7 +1578,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     int segInvalid = validateSlotRange(
         seg.def.startSlot, seg.def.endSlot,
         outputSlots_, totalOutputSlots_,
-        executeCount_, static_cast<int>(planPhase_),
+        executeCount_, planLifecycle_.toLegacyCode(),
         segErr, sizeof(segErr));
     if (segInvalid > 0) {
       DSP_THROW(MEMORY,
@@ -1616,7 +1616,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
   // PLACEHOLDER externals (position_ids, attention_mask, …) are excluded —
   // Java allocates fresh arrays for them every decode step, so their
   // pointers always change; hashing them would pin the plan below
-  // POINTERS_STABLE forever. Weights / constants are device-authoritative
+  // REPLAYING forever. Weights / constants are device-authoritative
   // and supposed to be stable; a user-visible close+associateArrayWithVariable
   // rebind on one of them should invalidate the cached replay rather than
   // silently replay against freed device memory.
@@ -1695,15 +1695,16 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
            seg.def.isCapturable ? 1 : 0, shapesFrozen_ ? 1 : 0);
 
   // ── Gap 1: Fast path — skip key recomputation when stable ──────────────
-  // When argTableStable was set on the previous execution (both shape and addr
-  // keys matched), skip the expensive hash computations and go straight to
-  // slot-by-slot execution. This eliminates shape key overhead (~5-10us per
-  // segment) that real graph replay also avoids.
+  // When the generation counter shows no refresh needed (both shape and addr
+  // keys matched on previous execution), skip expensive hash computations and
+  // go straight to slot-by-slot execution. This eliminates shape key overhead
+  // (~5-10us per segment) that real graph replay also avoids.
   bool fastPath = false;
-  if (execCount >= 2 && seg.exec.argTableStable) {
+  if (execCount >= 2 && !seg.exec.needsArgRefresh()) {
     fastPath = true;
     DSP_DIAG(EMULATED_REPLAY,
-             "  FAST PATH: argTableStable=true from previous step, skipping key recomputation");
+             "  FAST PATH: args current (gen %llu), skipping key recomputation",
+             (unsigned long long)seg.exec.argTableGeneration);
   }
 
   LongType currentShapeKey = 0;
@@ -1721,6 +1722,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     // ══════════════════════════════════════════════════════════════════════
     seg.exec.cachedShapeKey = currentShapeKey;
     seg.exec.capturedInputAddrKey = currentAddrKey;
+    seg.exec.bumpArgGeneration();
     seg.exec.argTableStable = false;
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
@@ -1986,12 +1988,14 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
     // Replay readiness assessment
     if (shapeStable && addrStable) {
-      seg.exec.argTableStable = true;  // Enable fast path on next step
+      seg.exec.argTableStable = true;  // Legacy flag
+      seg.exec.markArgsCurrent();      // Generation counter: no refresh needed
       DSP_DIAG(EMULATED_REPLAY,
                "  REPLAY READY: shapes and addresses stable — "
                "CUDA graph replay would succeed without re-capture. (fast path enabled)");
     } else {
-      seg.exec.argTableStable = false;  // Disable fast path
+      seg.exec.argTableStable = false;  // Legacy flag
+      seg.exec.bumpArgGeneration();     // Generation counter: force refresh
       seg.exec.addrKeyStableCount = 0;
       seg.exec.slotAddrStableCount = 0;
       if (shapeStable && !addrStable) {
@@ -2037,6 +2041,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
            slotUs > 0 ? (100.0 * estimatedDispatchUs / slotUs) : 0.0);
 
   if (status != Status::OK) {
+    seg.exec.bumpArgGeneration();
     seg.exec.argTableStable = false;  // Force stability re-check on next step
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;

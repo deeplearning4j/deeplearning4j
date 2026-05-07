@@ -86,7 +86,11 @@ bool CudaGraphReplayHandle::finalize() {
 }
 
 bool CudaGraphReplayHandle::replay(void* stream) {
-  if (!handle_) return false;
+  if (!handle_) {
+    DSP_DIAG_DEV(FALLBACK, deviceId_,
+                 "CudaGraphReplayHandle::replay: handle_ is NULL device=%d", deviceId_);
+    return false;
+  }
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   // Fast path: call cudaGraphLaunch directly, bypassing launchAsync overhead
@@ -98,17 +102,29 @@ bool CudaGraphReplayHandle::replay(void* stream) {
   //   4. getGraphExec() is stable after instantiate — no concurrent mutation during replay
   cudaGraphExec_t exec = handle_->getGraphExec();
   if (exec != nullptr) {
+    DSP_DIAG_DEV(EXECUTE, deviceId_,
+                 "CudaGraphReplayHandle::replay cudaGraphLaunch exec=%p stream=%p device=%d "
+                 "nodes=%zu state=%d",
+                 (void*)exec, (void*)cudaStr, deviceId_,
+                 handle_->getNumNodes(), (int)handle_->getState());
     cudaError_t err = cudaGraphLaunch(exec, cudaStr);
     if (err == cudaSuccess) return true;
     // Launch failed — fall through to full launchAsync for detailed diagnostics
+    DSP_DIAG_DEV(FALLBACK, deviceId_,
+                 "CudaGraphReplayHandle::replay cudaGraphLaunch FAILED err=%d (%s) exec=%p stream=%p",
+                 (int)err, cudaGetErrorString(err), (void*)exec, (void*)cudaStr);
     cudaGetLastError();  // Clear the error before retrying via launchAsync
+  } else {
+    DSP_DIAG_DEV(FALLBACK, deviceId_,
+                 "CudaGraphReplayHandle::replay: graphExec is NULL — using slow path device=%d state=%d",
+                 deviceId_, (int)handle_->getState());
   }
 
   // Slow path: full launchAsync with diagnostics
   bool ok = handle_->launchAsync(cudaStr);
   if (!ok) {
     DSP_DIAG_DEV(FALLBACK, deviceId_,
-                 "CudaGraphReplayHandle::replay FAILED device=%d state=%d",
+                 "CudaGraphReplayHandle::replay launchAsync FAILED device=%d state=%d",
                  deviceId_, (int)handle_->getState());
   }
   return ok;

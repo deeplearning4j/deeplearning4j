@@ -90,7 +90,7 @@ public interface TritonEnvironmentConfig {
     default void setTritonGraphCapture(boolean enable) {}
     default boolean tritonDumpGraphDot() { return false; }
     default void setTritonDumpGraphDot(boolean dump) {}
-    default boolean tritonMergedCaptureThroughViews() { return false; }
+    default boolean tritonMergedCaptureThroughViews() { return true; }
     default void setTritonMergedCaptureThroughViews(boolean v) {}
 
     // Compilation scope

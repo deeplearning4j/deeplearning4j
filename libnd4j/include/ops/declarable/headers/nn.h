@@ -550,6 +550,74 @@ DECLARE_CUSTOM_OP(relative_position_bias, 1, 1, false, 0, 3);
 DECLARE_CUSTOM_OP(token_sample, 1, 1, false, 0, 0);
 #endif
 
+/**
+ * sampling_penalties - Apply repetition, frequency, presence penalties and min-P filtering
+ *
+ * Modifies logits before sampling to control repetition and token diversity.
+ *
+ * Input:
+ *   0: logits   [batch, vocabSize] or [vocabSize] — float
+ *   1: inputIds [batch, seqLen] or [seqLen] — INT64 prior tokens
+ *
+ * Output:
+ *   0: penalized logits (same shape/type as input 0)
+ *
+ * Float args:
+ *   0: repetitionPenalty (1.0 = off, >1.0 penalizes repetition)
+ *   1: frequencyPenalty  (0.0 = off, positive penalizes by count)
+ *   2: presencePenalty   (0.0 = off, positive penalizes any presence)
+ *   3: minP              (0.0 = off, 0.05-0.1 typical)
+ */
+#if NOT_EXCLUDED(OP_sampling_penalties)
+DECLARE_CUSTOM_OP(sampling_penalties, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * fp8_quantize - Quantize float tensor to FP8 E4M3 representation.
+ *
+ * Input:  0: [numTokens, hiddenDim] float
+ * Output: 0: [numTokens, hiddenDim] INT8 (FP8 values)
+ *         1: scale factors (shape depends on mode)
+ *
+ * Int args: 0: mode (0=per-tensor, 1=per-token, 2=per-group)
+ *           1: groupSize (for mode=2, default 128)
+ *           2: fp8Format (0=E4M3, 1=E5M2)
+ */
+#if NOT_EXCLUDED(OP_fp8_quantize)
+DECLARE_CUSTOM_OP(fp8_quantize, 1, 2, false, 0, 0);
+#endif
+
+/**
+ * fp8_dequantize - Dequantize FP8 E4M3 tensor back to float.
+ *
+ * Input:  0: [numTokens, hiddenDim] INT8 (FP8 values)
+ *         1: scale factors (float32)
+ * Output: 0: [numTokens, hiddenDim] float/half
+ *
+ * Int args: 0: outputType (0=FLOAT32, 1=FLOAT16)
+ */
+#if NOT_EXCLUDED(OP_fp8_dequantize)
+DECLARE_CUSTOM_OP(fp8_dequantize, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * silu_and_mul - Fused SiLU (Swish) activation with element-wise multiply.
+ * Computes: output = silu(gate) * up = (gate * sigmoid(gate)) * up
+ * Core SwiGLU computation used in LLaMA, Qwen, Gemma, Mistral.
+ */
+#if NOT_EXCLUDED(OP_silu_and_mul)
+DECLARE_CUSTOM_OP(silu_and_mul, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * gelu_and_mul - Fused GELU activation with element-wise multiply.
+ * Computes: output = gelu(gate) * up
+ * Int args: 0: useTanhApprox (0=exact, 1=tanh approximation)
+ */
+#if NOT_EXCLUDED(OP_gelu_and_mul)
+DECLARE_CUSTOM_OP(gelu_and_mul, 2, 1, false, 0, 0);
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 /**
  * ema_update - Exponential Moving Average parameter update
@@ -676,6 +744,63 @@ DECLARE_CUSTOM_OP(paged_attention_forward, 5, 1, false, 1, 4);
 
 #if NOT_EXCLUDED(OP_paged_kv_append)
 DECLARE_CUSTOM_OP(paged_kv_append, 6, 1, false, 0, 1);
+#endif
+
+/**
+ * top_k_renorm - Top-K filtering with renormalization.
+ *
+ * Keeps only the top-K highest-probability tokens, zeros the rest,
+ * then renormalizes so the kept probabilities sum to 1.
+ *
+ * Input:
+ *   0: logits [batch, vocabSize] or [vocabSize] — pre-softmax logits
+ *
+ * Int args:
+ *   0: k — number of top tokens to keep
+ *
+ * Output:
+ *   0: renormalized probabilities (same shape as input)
+ */
+#if NOT_EXCLUDED(OP_top_k_renorm)
+DECLARE_CUSTOM_OP(top_k_renorm, 1, 1, false, 0, 1);
+#endif
+
+/**
+ * top_p_renorm - Top-P (nucleus) filtering with renormalization.
+ *
+ * Sorts tokens by descending probability, accumulates until cumulative
+ * probability >= p, zeros the rest, then renormalizes.
+ *
+ * Input:
+ *   0: logits [batch, vocabSize] or [vocabSize] — pre-softmax logits
+ *
+ * Float args:
+ *   0: p — cumulative probability threshold (0.0-1.0)
+ *
+ * Output:
+ *   0: renormalized probabilities (same shape as input)
+ */
+#if NOT_EXCLUDED(OP_top_p_renorm)
+DECLARE_CUSTOM_OP(top_p_renorm, 1, 1, false, 1, 0);
+#endif
+
+/**
+ * segment_gemm - Variable-length batched GEMM for MoE expert dispatch.
+ *
+ * Performs per-expert matrix multiply where each expert processes a
+ * variable number of tokens. Core operation for Mixture of Experts.
+ *
+ * Input:
+ *   0: input          [totalTokens, inDim]
+ *   1: weights        [numExperts, inDim, outDim]
+ *   2: segmentOffsets [numExperts] INT64
+ *   3: segmentSizes   [numExperts] INT64
+ *
+ * Output:
+ *   0: output [totalTokens, outDim]
+ */
+#if NOT_EXCLUDED(OP_segment_gemm)
+DECLARE_CUSTOM_OP(segment_gemm, 4, 1, false, 0, 0);
 #endif
 
 // dual_rope, shared_kv_attention, squared_relu, and mamba2_ssm are declared in headers/llm.h

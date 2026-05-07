@@ -52,6 +52,20 @@ public class DequantizerFactory {
         register(new Q4_KDequantizer());
         register(new Q5_KDequantizer());
         register(new Q6_KDequantizer());
+        register(new Q8_KDequantizer());
+        // Importance quantization types
+        register(new IQ1_SDequantizer());
+        register(new IQ1_MDequantizer());
+        register(new IQ2_XXSDequantizer());
+        register(new IQ2_XSDequantizer());
+        register(new IQ2_SDequantizer());
+        register(new IQ3_XXSDequantizer());
+        register(new IQ3_SDequantizer());
+        register(new IQ4_NLDequantizer());
+        register(new IQ4_XSDequantizer());
+        // Ternary quantization types
+        register(new TQ1_0Dequantizer());
+        register(new TQ2_0Dequantizer());
     }
 
     private DequantizerFactory() {
@@ -164,6 +178,18 @@ public class DequantizerFactory {
             case GGML_TYPE_Q4_K: return GGMLDequantize.QUANT_Q4_K;
             case GGML_TYPE_Q5_K: return GGMLDequantize.QUANT_Q5_K;
             case GGML_TYPE_Q6_K: return GGMLDequantize.QUANT_Q6_K;
+            case GGML_TYPE_Q8_K: return GGMLDequantize.QUANT_Q8_K;
+            case GGML_TYPE_IQ2_XXS: return GGMLDequantize.QUANT_IQ2_XXS;
+            case GGML_TYPE_IQ2_XS: return GGMLDequantize.QUANT_IQ2_XS;
+            case GGML_TYPE_IQ3_XXS: return GGMLDequantize.QUANT_IQ3_XXS;
+            case GGML_TYPE_IQ1_S: return GGMLDequantize.QUANT_IQ1_S;
+            case GGML_TYPE_IQ4_NL: return GGMLDequantize.QUANT_IQ4_NL;
+            case GGML_TYPE_IQ3_S: return GGMLDequantize.QUANT_IQ3_S;
+            case GGML_TYPE_IQ2_S: return GGMLDequantize.QUANT_IQ2_S;
+            case GGML_TYPE_IQ4_XS: return GGMLDequantize.QUANT_IQ4_XS;
+            case GGML_TYPE_IQ1_M: return GGMLDequantize.QUANT_IQ1_M;
+            case GGML_TYPE_TQ1_0: return GGMLDequantize.QUANT_TQ1_0;
+            case GGML_TYPE_TQ2_0: return GGMLDequantize.QUANT_TQ2_0;
             default: return -1;
         }
     }

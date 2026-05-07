@@ -82,8 +82,9 @@ public class BenchmarkConfig {
     boolean tritonFusionScoring = true;
     float tritonFusionMinScore = 5.0f;
 
-    // Merged capture through views
-    boolean tritonMergedCaptureThroughViews;
+    // Merged capture through views — default true since view/identity/frozen-constant ops
+    // are zero-copy metadata that don't issue CUDA kernels, always safe for graph capture
+    boolean tritonMergedCaptureThroughViews = true;
 
     // cuBLAS flags
     boolean cublasTf32;

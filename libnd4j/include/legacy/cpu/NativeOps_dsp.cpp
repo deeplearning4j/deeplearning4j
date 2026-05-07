@@ -809,7 +809,7 @@ int getPlanSlotFlags(sd::Pointer planHandle, int slotIdx) {
   if (slot.flags.needsZeroedOutput)             flags |= (1 << 7);
   if (slot.flags.needsIntLongSync)              flags |= (1 << 8);
   if (slot.shapeCache.shapeStatic)                   flags |= (1 << 9);
-  if (slot.state_ >= NativeSlot::SlotState::FROZEN_CONSTANT) flags |= (1 << 10);
+  if (slot.slotPhase.isSealed() && slot.slotPhase.isConstant) flags |= (1 << 10);
   return flags;
 }
 
@@ -1334,17 +1334,17 @@ int executeFrozenPlan(sd::Pointer planHandle, OpaqueContext* opContext, sd::Poin
 int isFrozenPlanSealed(sd::Pointer planHandle) {
     if (planHandle == nullptr) return -1;
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-    // Sealed = plan phase >= REPLAYING (phase code 3)
-    return plan->getPlanPhaseCode() >= 3 ? 1 : 0;
+    // Sealed = plan phase >= REPLAYING (phase code 2)
+    return plan->getPlanPhaseCode() >= 2 ? 1 : 0;
 }
 
 int getFrozenPlanBuildPassCount(sd::Pointer planHandle) {
     if (planHandle == nullptr) return -1;
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-    // Map from PlanPhase: SLOT_BY_SLOT=0, SHAPES_FROZEN=1, POINTERS_STABLE=2, REPLAYING=3
-    // buildPassCount semantics: 0=warmup, 1=compile, 2+=sealed
+    // Map from PlanPhase: SLOT_BY_SLOT=0, SHAPES_FROZEN=1, REPLAYING=2
+    // buildPassCount semantics: 0=warmup, 1=compile, 2=sealed
     int phase = plan->getPlanPhaseCode();
-    if (phase >= 3) return 2;  // REPLAYING = sealed
+    if (phase >= 2) return 2;  // REPLAYING = sealed
     return phase;
 }
 

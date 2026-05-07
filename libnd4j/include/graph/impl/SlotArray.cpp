@@ -104,7 +104,8 @@ void SlotArray::resetAll(bool keepWeights) {
     entry.array = nullptr;
     rawArrays_[i] = nullptr;
     entry.ownership.reset();
-    entry.state = SlotLifecycleState::WARMUP;
+    entry.slotPhase.reset();  // PRIMARY
+    entry.state = SlotLifecycleState::WARMUP;  // Legacy sync
     entry.isViewProducer = false;
     entry.generation = 0;
     for (int j = 0; j < SLOT_MAX_UNTRACKED_OUTPUTS; j++) {
@@ -116,7 +117,9 @@ void SlotArray::resetAll(bool keepWeights) {
 void SlotArray::demoteAllFrozen() {
   for (int i = 0; i < totalSlots_; i++) {
     if (entries_[i].state >= SlotLifecycleState::FROZEN) {
-      entries_[i].state = SlotLifecycleState::SHAPE_CACHED;
+      entries_[i].slotPhase.unseal();  // PRIMARY: back to BUILDING
+      entries_[i].slotPhase.shapeCacheValid = true;  // Retain shape knowledge
+      entries_[i].state = SlotLifecycleState::SHAPE_CACHED;  // Legacy sync
     }
   }
 }

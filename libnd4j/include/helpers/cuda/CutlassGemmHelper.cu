@@ -28,6 +28,7 @@
 #include <cutlass/gemm/device/gemm.h>
 #include <cutlass/layout/matrix.h>
 #include <cutlass/numeric_types.h>
+#include <cutlass/float8.h>
 
 #include <helpers/PointersManager.h>
 
@@ -83,12 +84,11 @@ using GemmBF16 = cutlass::gemm::device::Gemm<
     cutlass::arch::Sm80              // ArchTag
 >;
 
-// ---- FP8 E4M3 GEMM -> FP16 output (SM89+, Ada Lovelace) ----
-// Note: FP8 tensor core support requires SM89+.
-// CUTLASS 3.x uses a different API for FP8; this is a simplified version
-// that will be refined when we integrate CUTLASS 3.x collective GEMM.
-// For now, we cast FP8 inputs to FP16 and use the FP16 kernel.
-// True native FP8 GEMM will be added in a follow-up.
+// FP8 E4M3 GEMM (SM89+ Ada Lovelace) is only available when building
+// with -gencode compute_89 or higher. On SM86 builds the CUTLASS Sm89
+// template specializations are incomplete and cannot be instantiated.
+// The runtime shouldUseCutlass() already returns false for FP8 on SM < 89,
+// so the FP8 dispatch path below simply returns false when not compiled in.
 
 template <typename CutlassGemmOp>
 bool runCutlassGemm(NDArray* A, NDArray* B, NDArray* C,
@@ -213,9 +213,8 @@ bool CutlassGemmHelper::gemm(NDArray* A, NDArray* B, NDArray* C,
       result = runCutlassGemm<GemmBF16>(A, B, C, alpha, beta);
       break;
     case DataType::FLOAT8:
-      // For now, FP8 GEMM falls back to false (cuBLAS path).
-      // Native FP8 tensor core GEMM via CUTLASS 3.x collective API
-      // will be added in a follow-up iteration.
+      // FP8 CUTLASS GEMM requires SM89+ build target (compute_89 gencode).
+      // shouldUseCutlass() already gates this at runtime.
       result = false;
       break;
     default:

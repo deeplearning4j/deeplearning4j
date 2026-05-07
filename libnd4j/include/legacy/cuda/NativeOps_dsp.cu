@@ -463,7 +463,18 @@ void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle) {
 int releaseGpuIntermediates(sd::Pointer planHandle) {
   if (planHandle == nullptr) return 0;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  return plan->releaseGpuIntermediates();
+  int freed = plan->releaseGpuIntermediates();
+
+  // Trim the CUDA memory pool after freeing intermediates.
+  // releaseGpuIntermediates uses cudaFreeAsync which defers frees to pool sync.
+  // Without trimming, reserved pool memory is never returned to the device,
+  // causing OOM on subsequent configs that reuse the same GPU.
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  cudaDeviceSynchronize();
+  memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+
+  return freed;
 }
 
 // ─── Replay diagnostics (Phase 2) ──────────────────────────────────────────
@@ -990,7 +1001,7 @@ int getPlanFrozenExecutionCount(sd::Pointer planHandle) {
   // Use the plan phase to infer: frozenExecCount is internal, but we can
   // iterate segments to count. For simplicity, return the total graph replays
   // as a proxy — or better, just expose via getPlanPhaseCode context.
-  // Actually we have frozenExecutionCount_ but no getter yet — use segments.
+  // Actually we have postFreezeExecCount_ but no getter yet — use segments.
   auto& segs = plan->getSegments();
   int maxExecCount = 0;
   for (auto& seg : segs) {
@@ -1029,7 +1040,7 @@ int getPlanSlotFlags(sd::Pointer planHandle, int slotIdx) {
   if (slot.flags.needsZeroedOutput)             flags |= (1 << 7);
   if (slot.flags.needsIntLongSync)              flags |= (1 << 8);
   if (slot.shapeCache.shapeStatic)                   flags |= (1 << 9);
-  if (slot.state_ >= NativeSlot::SlotState::FROZEN_CONSTANT) flags |= (1 << 10);
+  if (slot.slotPhase.isSealed() && slot.slotPhase.isConstant) flags |= (1 << 10);
   return flags;
 }
 

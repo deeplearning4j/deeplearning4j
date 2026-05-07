@@ -31,21 +31,11 @@ OP_IMPL(boolean_not, 1, 1, true) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  // Sync input to host for reliable access
-  x->syncToHost();
-
-  // Direct buffer access to avoid O(n^2) sync from per-element p()/e()
-  auto xBuf = x->bufferAsT<int8_t>();
-  auto zBuf = z->bufferAsT<int8_t>();
-  auto len = x->lengthOf();
-
-  for (sd::LongType i = 0; i < len; i++) {
-    zBuf[i] = (xBuf[i] != 0) ? 0 : 1;
-  }
-
-  // Mark host written and sync to device ONCE
-  z->tickWriteHost();
-  z->syncToDevice();
+  // Use the built-in Not transform which dispatches to CUDA kernel on GPU.
+  // The previous host-side loop (syncToHost + CPU loop + syncToDevice) was
+  // capture-incompatible: the H2D/D2H copies invalidated CUDA graph capture,
+  // preventing composite replay and dropping throughput from 60+ to 5 tok/s.
+  x->applyTransform(sd::transform::BoolOps::Not, z);
 
   return Status::OK;
 }

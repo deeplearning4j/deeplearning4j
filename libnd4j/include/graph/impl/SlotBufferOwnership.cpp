@@ -643,7 +643,7 @@ void BufferPointerSnapshot::detectStaleActualityTransitions(
     NDArray** externalInputs, int numExt,
     int planPhase) const {
   if (!valid) return;
-  if (planPhase < 2) return;  // Only check from POINTERS_STABLE (2) onward
+  if (planPhase < 2) return;  // Only check from REPLAYING (2) onward
 
   int checkSlots = std::min(totalSlots, numSlots);
   for (int i = 0; i < checkSlots; i++) {
@@ -816,12 +816,12 @@ bool validateLifecycleForPhase(
     }
   }
 
-  // ── Level 2: POINTERS_STABLE — snapshot drift detection ──
+  // ── Level 2: REPLAYING — snapshot drift detection ──
   // Buffer identity/address checks only become authoritative once the plan has
   // observed stable pointers across replay-eligible segments. SHAPES_FROZEN
   // still allows legitimate buffer churn while the plan converges on stable
   // steady-state allocations.
-  if (planPhase >= 2 && snapshot != nullptr) {  // POINTERS_STABLE
+  if (planPhase >= 2 && snapshot != nullptr) {  // REPLAYING
     if (!snapshot->validate(outputSlots, totalSlots,
                             externalInputs, numExternalInputs,
                             errMsg, errMsgLen)) {
@@ -829,7 +829,7 @@ bool validateLifecycleForPhase(
     }
   }
 
-  // ── Level 2: POINTERS_STABLE — device sync state invariant ──
+  // ── Level 2: REPLAYING — device sync state invariant ──
   // In frozen steady-state the plan skips prepareSpecialUse/registerSpecialUse,
   // so every SLOT_OWNED buffer must remain device-authoritative (sAct=true).
   // If pAct=1 && sAct=0, a host write poisoned the device state.

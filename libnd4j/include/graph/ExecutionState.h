@@ -63,16 +63,14 @@ struct SegmentExecState {
  * The plan is bound to one thread (error if called from another).
  *
  * Contains:
- *   - slotArrays[totalSlots]: THE single array collection (replaces
- *     outputSlots + slotArrayCache + pendingClose + deferredClose)
+ *   - slotArrays[totalSlots]: THE single array collection
  *   - ownership[totalSlots]: ownership drives ALL cleanup decisions
- *   - Per-segment state (executionCount, replayHandle, etc.)
- *   - Shape cache per slot
+ *   - Per-segment device/stream state
+ *   - Capture workspace (bump allocator for CUDA graph capture temps)
  *   - Protected weight buffer set
- *   - GPU resources (#ifdef SD_CUDA)
  *
- * Phase 4: Initially a thin struct. Fields will be moved from
- * NativeDynamicShapePlan incrementally.
+ * Lifecycle state (phase, executeCount) lives in NativeDynamicShapePlan
+ * via PlanLifecycle. This class owns per-instance resources only.
  */
 class ExecutionState {
  public:
@@ -125,15 +123,6 @@ class ExecutionState {
 
   std::unordered_set<DataBuffer*>& protectedWeightBuffers() { return protectedWeightBuffers_; }
   bool isProtectedWeight(DataBuffer* db) const { return protectedWeightBuffers_.count(db) > 0; }
-
-  // ── Execution counters ────────────────────────────────────────────────
-
-  int executeCount() const { return executeCount_; }
-  void incrementExecuteCount() { executeCount_++; }
-  void resetExecuteCount() { executeCount_ = 0; }
-
-  bool shapesFrozen() const { return shapesFrozen_; }
-  void setShapesFrozen(bool v) { shapesFrozen_ = v; }
 
   // ── Capture workspace ────────────────────────────────────────────────
 
@@ -228,10 +217,6 @@ class ExecutionState {
 
   // Protected weight DataBuffers (never freed by plan)
   std::unordered_set<DataBuffer*> protectedWeightBuffers_;
-
-  // Execution state
-  int executeCount_ = 0;
-  bool shapesFrozen_ = false;
 
   // Per-segment execution state
   SegmentExecState* segmentStates_ = nullptr;
