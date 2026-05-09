@@ -645,45 +645,50 @@ public class DynamicShapePlanCompiler {
             }
 
             // Consult the C++ OpTraitTable (single source of truth) rather than the
-            // crude "any int/long input → value-dependent" heuristic. Only ops actually
-            // carrying VALUE_DEPENDENT_SHAPE or DATA_DEPENDENT traits stamp this flag;
-            // e.g. gather takes INT indices but its output shape is derivable from shapes,
-            // so it must NOT be flagged value-dependent.
+            // Value-dependent shape classification: only use VALUE_DEPENDENT_SHAPE trait.
+            // DATA_DEPENDENT is orthogonal — it means the op's result depends on data,
+            // not that the output SHAPE depends on data. argmax/argmin are data-dependent
+            // but have shapes fully determined by input shapes + axis iArgs.
+            // Ops whose shape function reads input tensor VALUES carry
+            // VALUE_DEPENDENT_SHAPE in the trait table (reshape, fill, range, slice, etc.).
             int opTraits = opTraitsOf(opName);
             boolean shapeDependsOnValues;
             if (opTraits != 0) {
-                shapeDependsOnValues = (opTraits &
-                        (OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT)) != 0;
+                shapeDependsOnValues = (opTraits & OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0;
             } else {
                 // Op not in trait table (e.g. legacy / unregistered) — fall back to the
                 // old heuristic so we stay safe on unclassified ops.
                 shapeDependsOnValues = hasIntLongInputs;
             }
 
-            // Per-instance refinement: Some ops are marked DATA_DEPENDENT in the
-            // trait table because their shape function MAY read input values in certain
-            // configurations, but when a specific instance uses INT_ARG instead, no
-            // data read occurs and the op can be classified as value-independent.
+            // Per-instance demotion for ops with VALUE_DEPENDENT_SHAPE trait that
+            // don't actually read input values in specific configurations.
             if (shapeDependsOnValues) {
-                if ("concat".equals(opName)) {
-                    // DATA_DEPENDENT only when isAxisInLastArr (bArgs[0]==true): axis
-                    // read from last input array. Otherwise axis comes from INT_ARG.
-                    boolean isAxisInLastArr = bArgs.length > 0 && bArgs[0];
-                    if (!isAxisInLastArr) {
-                        shapeDependsOnValues = false;
-                    }
-                } else if ("reshape".equals(opName) || "reshape_no_copy".equals(opName)) {
-                    // DATA_DEPENDENT only when width > 1: shape read from INPUT(1).
+                if ("reshape".equals(opName) || "reshape_no_copy".equals(opName)) {
+                    // VALUE_DEPENDENT_SHAPE only when width > 1: shape read from INPUT(1).
                     // Single-input reshape reads target shape from iArgs.
                     if (numInputs <= 1) {
                         shapeDependsOnValues = false;
                     }
-                } else if ("expand_dims".equals(opName)) {
-                    // DATA_DEPENDENT only when axis comes from INPUT(1) (no INT_ARG).
-                    // When iArgs is non-empty, axis is in iArgs[0].
-                    if (iArgs.length > 0) {
-                        shapeDependsOnValues = false;
+                }
+            }
+            // Per-instance promotion for ops with DATA_DEPENDENT that genuinely have
+            // value-dependent shape in certain configurations:
+            if (!shapeDependsOnValues) {
+                if ("concat".equals(opName)) {
+                    // Axis read from last input array when isAxisInLastArr (bArgs[0]==true).
+                    boolean isAxisInLastArr = bArgs.length > 0 && bArgs[0];
+                    if (isAxisInLastArr) {
+                        shapeDependsOnValues = true;
                     }
+                } else if ("expand_dims".equals(opName)) {
+                    // Axis from INPUT(1)->e<>() when no INT_ARG present.
+                    if (iArgs.length == 0) {
+                        shapeDependsOnValues = true;
+                    }
+                } else if (("argmax".equals(opName) || "argmin".equals(opName)) && numInputs > 1) {
+                    // 2-input form reads axes from INPUT_VARIABLE(1).
+                    shapeDependsOnValues = true;
                 }
             }
 

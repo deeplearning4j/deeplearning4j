@@ -30,6 +30,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
+#include <graph/ModeContract.h>
 #include <graph/CaptureStateGuard.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspHashUtils.h>
@@ -153,19 +154,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
 
 namespace {
 uint32_t resolveCreateValueKeyTraits(const NativeSlot& slot) {
-  uint32_t traits = 0;
-  if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
-    traits |= slot.ident.op->getOpDescriptor()->getTraits();
-  }
-  // Fallback: look up traits by op name from the trait table.
-  if (traits == 0 && !slot.ident.opName.empty()) {
-    traits |= sd::ops::getOpTraitsByName(slot.ident.opName);
-  }
-  if (slot.flags.outputShapeDependsOnInputValues) traits |= sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE;
-  if (slot.flags.isDataDependent) traits |= sd::ops::OP_TRAIT_DATA_DEPENDENT;
-  if (slot.flags.isViewCapableOp) traits |= sd::ops::OP_TRAIT_VIEW_PRODUCING;
-  if (slot.flags.isIdentityOp) traits |= sd::ops::OP_TRAIT_IDENTITY;
-  return traits;
+  return slot.opTraits();
 }
 
 bool slotUsesValueTrackedConstantGeneration(const NativeSlot& slot) {
@@ -358,6 +347,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         seg.exec.lastReplayExecCount = executeCount_;
         totalGraphReplays_++;
         seg.exec.executionCount++;
+
+        // Tick actuality: CUDA graph replay writes device memory directly without
+        // registerSpecialUse. Without this tick, syncToHost sees stale host data.
+        for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
+          if (stepIdx < 0 || stepIdx >= numSlots_) continue;
+          const NativeSlot& slot = slots_[stepIdx];
+          for (int o = 0; o < slot.wiring.numOutputs; o++) {
+            int outIdx = slot.wiring.outputSlotIndices[o];
+            if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
+            NDArray* arr = outputSlots_[outIdx];
+            if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
+              arr->tickWriteDevice();
+            }
+          }
+        }
+
         return Status::OK;
       }
 
@@ -396,9 +401,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       platformCleanupSegmentForRebuild(seg);
     }
     seg.exec.cachedShapeKey = segShapeKey;
-    if (shapeChanged) inShapeChangeWarmup_ = true;
+    std::unique_ptr<ShapeChangeWarmupGuard> warmupGuard;
+    if (shapeChanged) {
+      warmupGuard.reset(new ShapeChangeWarmupGuard(*this, seg.def.startSlot, seg.def.endSlot));
+    }
     auto warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    if (shapeChanged) inShapeChangeWarmup_ = false;
     if (warmupResult == Status::OK) {
       seg.exec.executionCount++;
     }
@@ -720,11 +727,48 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   bool captureOk = true;
   bool captureOomFailure = false;
   int lastCaptureSlot = seg.def.startSlot;
+  int frozenConstSkipped = 0;
   lastCaptureAudit_.clear();
+
+  // Contract-driven capture behavior: the mode contract declares whether
+  // forceSync and frozen-const-skip are appropriate for this capture style.
+  // Monolithic capture (CUDA_GRAPHS): forceSync=false, skipFrozenConsts=false
+  // Composite capture (TRITON etc.): forceSync=true, skipFrozenConsts=true
+  auto contract = ModeContract::forMode(graphExecutionMode_);
+  DSP_DIAG(GRAPH_REPLAY,
+           "captureSegment: contract[forceSyncDuringCapture=%d skipFrozenConsts=%d "
+           "forcesSyncOnFrozen=%d deterministicCublas=%d] mode=%s seg[%d-%d]",
+           (int)contract.forceSyncDuringCapture, (int)contract.skipFrozenConstsDuringCapture,
+           (int)contract.forcesSyncOnFrozen, (int)contract.requiresDeterministicCublas,
+           ModeContract::modeName(static_cast<int>(graphExecutionMode_)), seg.def.startSlot, seg.def.endSlot);
+  // Scoped sync override: if the contract requires sync during capture,
+  // push an override so needsSync() returns true for each captured slot.
+  // Destroyed at function exit — no manual restore needed.
+  std::unique_ptr<SyncOverride> captureSync;
+  if (contract.forceSyncDuringCapture) {
+    captureSync.reset(new SyncOverride(*this, "cuda_graph_capture"));
+  }
 
   try {
     for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
       lastCaptureSlot = stepIdx;
+
+      // Skip frozen constant slots if the mode contract says to.
+      if (contract.skipFrozenConstsDuringCapture && slots_[stepIdx].frozenConstantSlot()) {
+        bool allOutputsPopulated = true;
+        for (int o = 0; o < slots_[stepIdx].wiring.numOutputs; o++) {
+          int si = slots_[stepIdx].wiring.outputSlotIndices[o];
+          if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr) {
+            allOutputsPopulated = false;
+            break;
+          }
+        }
+        if (allOutputsPopulated) {
+          frozenConstSkipped++;
+          continue;
+        }
+      }
+
       {
         cudaStreamCaptureStatus capStatus;
         cudaError_t capErr = cudaStreamGetCaptureInfo(cudaStr, &capStatus, nullptr);
@@ -773,8 +817,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
 
     }
+    // captureSync (SyncOverride) destroyed automatically at scope exit.
   } catch (const std::exception& e) {
     // Guard destructor handles TLS cleanup + host ptr freeing on rethrow.
+    // captureSync (SyncOverride) destroyed automatically by stack unwinding.
     tl_graphExecutionActive = false;  // deactivate before endCapture
     handle->endCapture(cudaStr);
     clearGraphStreamError(cudaStr);
@@ -810,6 +856,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     platformCleanupSegmentForRebuild(seg);
     THROW_EXCEPTION("Unknown exception during CUDA graph capture");
+  }
+
+  if (frozenConstSkipped > 0) {
+    DSP_DIAG_SEG(COMPILE, segIdx, "capture skipped %d frozen constant slots (of %d total)",
+                 frozenConstSkipped, seg.def.endSlot - seg.def.startSlot + 1);
   }
 
   // Capture phase complete — save workspace used before guard clears TLS.
@@ -1034,9 +1085,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    "marking segment as non-capturable",
                    seg.def.startSlot, seg.def.endSlot);
       seg.exec.compilationFailed = true;
-      // tl_capturedHostPtrs is already clear at this point (guard cleared it on construction,
-      // and the empty graph path produces no host allocations). The guard destructor will
-      // iterate an empty vector — no double-free.
       tl_captureReplicateCache.clear();
       platformCleanupSegmentForRebuild(seg);
       seg.exec.executionCount++;

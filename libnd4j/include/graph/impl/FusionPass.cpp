@@ -104,7 +104,7 @@ static bool isNormalizationSlot(const NativeSlot& slot) {
 static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
                            int slotAOutputIdx) {
     if (!isElementwiseSlot(slotB)) return false;
-    if (slotB.flags.isDataDependent || slotB.flags.outputShapeDependsOnInputValues) return false;
+    if (slotB.hasValueDependentShape()) return false;
 
     // Check that B has exactly the right number of inputs
     bool bIsBinary = slotHasTrait(slotB, sd::ops::OP_TRAIT_BINARY_ELEMENTWISE);
@@ -342,8 +342,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                 if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) break;
 
                 // Mark both as identity ops (skip execution, wire through)
-                slots[i].flags.isIdentityOp = true;
-                slots[j].flags.isIdentityOp = true;
+                slots[i].addOpTrait(sd::ops::OP_TRAIT_IDENTITY);
+                slots[j].addOpTrait(sd::ops::OP_TRAIT_IDENTITY);
                 fused[i] = true;
                 fused[j] = true;
                 castsEliminated += 2;
@@ -405,7 +405,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             if (consumerCount > 0 && allConsumersAreMatmul) {
                 // Mark cast as identity — matmuls will receive FP16 input directly
                 // and MmulHelper handles mixed precision via cublasSgemmEx
-                slots[i].flags.isIdentityOp = true;
+                slots[i].addOpTrait(sd::ops::OP_TRAIT_IDENTITY);
                 fused[i] = true;
                 castsSunk++;
             } else if (consumerCount > 0) {

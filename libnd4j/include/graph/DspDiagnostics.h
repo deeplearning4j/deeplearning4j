@@ -445,6 +445,44 @@ class SD_LIB_EXPORT DspDiagnostics {
     } \
   } while (0)
 
+// ── CUDA graph capture status probe ───────────────────────────────────────
+// Check whether a CUDA stream's capture status is still valid. If the capture
+// has been INVALIDATED, log the probe TAG, SLOT, and OP via GRAPH_REPLAY diag.
+// Returns true if capture was invalidated (caller should break/abort).
+// Gated on GRAPH_REPLAY category — zero overhead when diagnostics are disabled.
+// Safe to call from any thread during active capture.
+//
+// Usage:
+//   bool bad = false;
+//   DSP_CAPTURE_PROBE(stream, slotIdx, "AFTER_STEP1", opName, bad);
+//   if (bad) { /* handle invalidation */ }
+//
+#if defined(SD_CUDA)
+#define DSP_CAPTURE_PROBE(STREAM, SLOT, TAG, OP, OUT_INVALID) \
+  do { \
+    (OUT_INVALID) = false; \
+    if (tl_graphExecutionActive && \
+        sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_GRAPH_REPLAY)) { \
+      cudaStreamCaptureStatus _dsp_cap_stat = cudaStreamCaptureStatusNone; \
+      cudaError_t _dsp_cap_err = cudaStreamGetCaptureInfo_v2( \
+          (STREAM), &_dsp_cap_stat, nullptr, nullptr, nullptr, nullptr); \
+      if (_dsp_cap_err != cudaSuccess || \
+          _dsp_cap_stat == cudaStreamCaptureStatusInvalidated) { \
+        sd::graph::DspDiagnostics::getInstance().recordEvent( \
+            sd::graph::DSP_DIAG_GRAPH_REPLAY, (SLOT), -1, -1, (OP), 0, \
+            "CAPTURE_INVALIDATED: slot=%d tag=%s op=%s capErr=%d capStat=%d", \
+            (int)(SLOT), (TAG), (OP) ? (OP) : "?", \
+            (int)_dsp_cap_err, (int)_dsp_cap_stat); \
+        cudaGetLastError(); \
+        (OUT_INVALID) = true; \
+      } \
+    } \
+  } while (0)
+#else
+#define DSP_CAPTURE_PROBE(STREAM, SLOT, TAG, OP, OUT_INVALID) \
+  do { (OUT_INVALID) = false; } while (0)
+#endif
+
 // Emit a titled summary banner as a single ring-buffer event.
 // Fuses a section title and formatted body into one recordEvent call,
 // replacing multi-call blocks like "=== TITLE === \n details \n ===".
@@ -540,6 +578,7 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_COMPARE_ADDRS(TAG_A, TAG_B) (0)
 #define DSP_DIAG_SLOT_WRITE(SLOT_IDX, OP, BYTES, STREAM, PHASE) ((void)0)
 #define DSP_DIAG_SLOT_ZERO(SLOT_IDX, REASON, STREAM, PHASE) ((void)0)
+#define DSP_CAPTURE_PROBE(STREAM, SLOT, TAG, OP, OUT_INVALID) do { (OUT_INVALID) = false; } while (0)
 #define DSP_DIAG_BANNER(CAT, TITLE, FMT, ...) ((void)0)
 #define DSP_DIAG_STATE_TRANSITION(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) ((void)0)
 #define DSP_DIAG_LIFECYCLE_TRANSITION DSP_DIAG_STATE_TRANSITION

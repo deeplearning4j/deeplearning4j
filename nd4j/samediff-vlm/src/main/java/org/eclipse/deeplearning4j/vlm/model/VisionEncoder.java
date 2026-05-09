@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -102,6 +103,14 @@ public class VisionEncoder implements AutoCloseable {
         List<String> inputNames = model.inputs();
         String[] outputNames = model.outputs().toArray(new String[0]);
 
+        // Force SLOT_BY_SLOT for the vision encoder: each frame is independent
+        // (no recurrent state between frames), so CUDA graph capture/replay
+        // provides no benefit. Worse, DSP's output slot lifecycle causes
+        // use-after-free when .dup() is called on plan-owned arrays between
+        // frames — the GPU addresses baked into captured graphs get freed.
+        GraphExecutionMode savedMode = model.getGraphExecutionMode();
+        model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+
         List<INDArray> frameEmbeddings = new ArrayList<>();
         for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
             INDArray frameSlice = tiledImage.get(
@@ -130,16 +139,16 @@ public class VisionEncoder implements AutoCloseable {
             INDArray out = selected.tensor.dup();
             frameEmbeddings.add(out);
 
-            // Clean up per-frame outputs
-            for (var entry : outputs.entrySet()) {
-                INDArray arr = entry.getValue();
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
+            // Do NOT close plan-owned output arrays — their DataBuffers are frozen
+            // and their GPU addresses are baked into captured CUDA graphs. Closing
+            // them frees GPU memory that graph replay depends on, causing illegal
+            // memory access on subsequent frames. The .dup() above already created
+            // a safe copy of the data we need.
             singleFrame.close();
         }
 
-        // Clean up encoder session state — must mirror BenchmarkConfigApplier.resetModelState()
-        // to avoid stale DSP plan cache / placeholder overrides causing Triton capture failures.
+        // Restore original execution mode and clean up encoder session state.
+        model.setGraphExecutionMode(savedMode);
         model.resetSession();
         model.clearPlaceholderOverrides();
         model.clearPlaceholders(true);

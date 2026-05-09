@@ -84,6 +84,7 @@
 #include <unordered_set>
 #include <system/Environment.h>
 
+
 // Include CPU graph backends conditionally
 #include <config.h>
 #if HAVE_ONEDNN
@@ -170,6 +171,35 @@ bool segmentHasReadyCompositeHandles(const GraphSegment& seg) {
     }
   }
   return false;
+}
+
+bool NativeDynamicShapePlan::allSegmentsReplayReady() const {
+  bool hasReplayableSegment = false;
+  for (auto& seg : segments_) {
+    // All-frozen-constant segments need no replay — outputs are already populated
+    if (seg.def.allFrozenConstants) continue;
+    // Segments that produce 0 GPU nodes execute slot-by-slot — no replay needed
+    if (seg.exec.captureProducedNoKernels) continue;
+    // Non-capturable segments execute slot-by-slot — no replay needed
+    if (!seg.def.isCapturable) continue;
+    // This is a capturable segment — it must have a ready replay handle
+    // Monolithic replay handle
+    if (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady()) {
+      hasReplayableSegment = true;
+      continue;
+    }
+    // Composite replay handles
+    if (segmentHasReadyCompositeHandles(seg)) {
+      hasReplayableSegment = true;
+      continue;
+    }
+    // This segment has no replay handle — fast path cannot be used
+    return false;
+  }
+  // At least one segment must have an actual replay handle for the fast path
+  // to be meaningful. If all segments were skipped (frozen/non-capturable/0-node),
+  // there's nothing to replay — fall through to normal execution.
+  return hasReplayableSegment;
 }
 
 bool segmentIsCompiledSteadyState(const GraphSegment& seg, int minExecutionCountExclusive) {
@@ -326,7 +356,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr), slotIsViewProducer_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
       gpuGraphCaptureEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
-      shapesFrozen_(false), executeCount_(0), forceSync_(false), compilationDone_(false), shapePrePassDone_(true), executionTimingEnabled_(false), traceEnabled_(false),
+      shapesFrozen_(false), executeCount_(0), syncOverrideDepth_(0), compilationDone_(false), shapePrePassDone_(true), executionTimingEnabled_(false), traceEnabled_(false),
       cpuGraphBackend_(nullptr), cpuGraphBackendChecked_(false),
       gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
@@ -613,7 +643,7 @@ void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
   // isSlotBySlot=true, so populateDerivedState() correctly stays on the
   // slot-by-slot execution path while still tracking replay lifecycle
   // (shape freezing, pointer stability, segment timing).
-#if !defined(__CUDACC__) && !defined(HAVE_ONEDNN) && !defined(HAVE_OPENVINO) && \
+#if !defined(SD_CUDA) && !defined(HAVE_ONEDNN) && !defined(HAVE_OPENVINO) && \
     !defined(HAVE_ARMCOMPUTE) && !defined(HAVE_MLIR) && !defined(HAVE_NNAPI) && !defined(HAVE_MLX)
   if (ModeContract::forMode(mode).usesGraphCapture) {
     DSP_DIAG(EXECUTE, "setGraphExecutionMode: remapping %d -> GEM_EMULATED_REPLAY (no graph backend on this platform)",
@@ -975,9 +1005,11 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       }
     }
 
-    // Flags
-    slot.flags.needsZeroedOutput = reader.read<uint8_t>() != 0;
-    slot.flags.isDataDependent = reader.read<uint8_t>() != 0;
+    // Flags — read serialized bytes for format compatibility (Java writes placeholders
+    // for needsZeroedOutput and isDataDependent; only outputShapeDependsOnInputValues
+    // carries a real value). Trait-derived flags come from opTraits_ set below.
+    reader.read<uint8_t>();  // needsZeroedOutput placeholder (derived from opTraits_)
+    reader.read<uint8_t>();  // isDataDependent placeholder (derived from opTraits_)
     slot.flags.outputShapeDependsOnInputValues = reader.read<uint8_t>() != 0;
     slot.flags.needsIntLongSync = reader.read<uint8_t>() != 0;
     slot.flags.isCustomOp = reader.read<uint8_t>() != 0;
@@ -1098,31 +1130,19 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
 
     // Use the C++ hash for internal computations (shape key, etc.)
     slot.ident.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.ident.opName);
-    // Structural replay/capture classification must come from op traits, not
-    // hardcoded op-name lists.
-    uint32_t opTraits = 0;
+    // Set opTraits_ bitmask — single source of truth for trait-derived queries.
+    // Query methods on NativeSlot (isDataDependent, isIdentityOp, isViewCapableOp,
+    // isFullyWriting, needsZeroedOutput, aliasesInput) all derive from this mask.
     if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
-      opTraits = slot.ident.op->getOpDescriptor()->getTraits();
+      slot.opTraits_ = slot.ident.op->getOpDescriptor()->getTraits();
     }
-    // Fallback: look up traits by op name from the trait table.
-    if (opTraits == 0 && !slot.ident.opName.empty()) {
-      opTraits = sd::ops::getOpTraitsByName(slot.ident.opName);
+    if (slot.opTraits_ == 0 && !slot.ident.opName.empty()) {
+      slot.opTraits_ = sd::ops::getOpTraitsByName(slot.ident.opName);
     }
-    slot.flags.isIdentityOp = (opTraits & sd::ops::OP_TRAIT_IDENTITY) != 0;
-    slot.flags.isViewCapableOp = (opTraits & sd::ops::OP_TRAIT_VIEW_PRODUCING) != 0;
-    // Trait-driven output-zeroing classification (same formula as NativePlanCompiler).
-    // Single source of truth — no per-path overrides downstream.
-    {
-      bool aliasesInput  = slot.flags.isViewCapableOp || slot.flags.isIdentityOp;
-      bool fullyWrites   = (opTraits & sd::ops::OP_TRAIT_FULLY_WRITING) != 0;
-      // scatter_nd is a true partial writer (zeroes output, then scatters at indices).
-      // scatter_nd_update has FULLY_WRITING because it does output->assign(input) first.
-      // Only suppress isFullyWriting for ops that are partial AND lack explicit FULLY_WRITING.
-      bool partialWriter = (opTraits & (sd::ops::OP_TRAIT_SCATTER_ND |
-                                        sd::ops::OP_TRAIT_SCATTER_ND_UPDATE)) != 0
-                           && !fullyWrites;
-      slot.flags.isFullyWriting = fullyWrites && !slot.flags.isDataDependent && !partialWriter;
-      slot.flags.needsZeroedOutput = !aliasesInput && !slot.flags.isFullyWriting;
+    // Apply where-hack: where with 3 inputs is elementwise select, not data-dependent.
+    if (slot.isDataDependent() && normalizeOpName(slot.ident.opName) == "where"
+        && slot.wiring.numInputs == 3) {
+      slot.clearOpTrait(sd::ops::OP_TRAIT_DATA_DEPENDENT);
     }
 
     // Set structural iArg count from table (consistent with NativePlanCompiler)
@@ -1350,8 +1370,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       NativeSlot& slot = plan->slots_[s];
       slot.shapeCache.shapeStatic = true;  // assume static
 
-      // Data-dependent ops always dynamic (output shape depends on runtime values)
-      if (slot.flags.isDataDependent || slot.flags.outputShapeDependsOnInputValues) {
+      // Value-dependent shape ops are dynamic (output shape depends on runtime values)
+      if (slot.hasValueDependentShape()) {
         slot.shapeCache.shapeStatic = false;
         dynamicCount++;
         continue;
@@ -1387,7 +1407,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     // Count identity ops for diagnostics
     int identityCount = 0;
     for (int i = 0; i < plan->numSlots_; i++) {
-      if (plan->slots_[i].flags.isIdentityOp) identityCount++;
+      if (plan->slots_[i].isIdentityOp()) identityCount++;
     }
     if (identityCount > 0) {
       DSP_DIAG(SHAPE, "%d identity ops (will use fast-path)", identityCount);
@@ -1571,7 +1591,7 @@ Status NativeDynamicShapePlan::execute(
   // Created by platformBeginExecution (CUDA: stream guard + cross-stream sync,
   // CPU: minimal struct). Destroyed by platformEndExecution at end of execute().
   // Cast from void* to typed pointer — header keeps void* to avoid rebuild cascade.
-  void* executionStatePtr = platformBeginExecution(stream, !planLifecycle_.isSlotBySlot(), executeCount_);
+  void* executionStatePtr = platformBeginExecution(stream, shapesFrozen_, executeCount_);
   auto* execCtx = static_cast<PlanExecutionContext*>(executionStatePtr);
   activeExecCtx_ = executionStatePtr;  // Expose to _gpubackend.cpp methods
 
@@ -1598,7 +1618,7 @@ Status NativeDynamicShapePlan::execute(
   // not from scattered plan fields. This eliminates re-derivation of the same
   // conditions across execute(), platform methods, and segment dispatch.
   execCtx->populateDerivedState(
-      !planLifecycle_.isSlotBySlot(), executeCount_,
+      shapesFrozen_, executeCount_,
       static_cast<int>(effectiveMode),
       tritonSkip,
       Environment::getInstance().tritonGraphCapture(),
@@ -1701,7 +1721,7 @@ Status NativeDynamicShapePlan::execute(
     }
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
-    platformEndExecution(executionStatePtr, stream, !planLifecycle_.isSlotBySlot(), executeCount_);
+    platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
     return fastPathResult;
   }
 
@@ -1769,7 +1789,7 @@ Status NativeDynamicShapePlan::execute(
     if (!lifecycleOk) {
       execCtx->endDiag(executeCount_);
       activeExecCtx_ = nullptr;
-      platformEndExecution(executionStatePtr, stream, !planLifecycle_.isSlotBySlot(), executeCount_);
+      platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
       DSP_THROW(VERIFY, "LIFECYCLE_VALIDATION_FAILED: %s", errMsg);
     }
 
@@ -1990,7 +2010,7 @@ Status NativeDynamicShapePlan::execute(
       DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: phase failed status=%d", static_cast<int>(siStatus));
       execCtx->endDiag(executeCount_);
       activeExecCtx_ = nullptr;
-      platformEndExecution(executionStatePtr, stream, !planLifecycle_.isSlotBySlot(), executeCount_);
+      platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
       return siStatus;
     }
     // Extract outputs — shape-only arrays are in outputSlots_
@@ -2003,7 +2023,7 @@ Status NativeDynamicShapePlan::execute(
     DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: done, %d outputs populated", numRequestedOutputs_);
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
-    platformEndExecution(executionStatePtr, stream, !planLifecycle_.isSlotBySlot(), executeCount_);
+    platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
     return Status::OK;
   }
 
@@ -2052,7 +2072,7 @@ Status NativeDynamicShapePlan::execute(
     dumpTrace(stderr, 128);
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
-    platformEndExecution(executionStatePtr, stream, !planLifecycle_.isSlotBySlot(), executeCount_);
+    platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
     return phaseStatus;
   }
 
@@ -2376,6 +2396,9 @@ Status NativeDynamicShapePlan::execute(
                          planLifecycle_.toLegacyCode(), static_cast<int>(PlanPhase::SHAPES_FROZEN));
     // legacy sync
     shapesFrozen_ = true;
+    resegmentForFreeze();
+    int newSegCount = static_cast<int>(segments_.size());
+    execCtx->recordFlow(PlanExecutionContext::FlowEventType::RESEGMENT, oldSegCount, newSegCount);
     planLifecycle_.freezeShapes();
     if (executeCount_ < 1) executeCount_ = 1;
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::AUTO_SEAL_FIRED,
@@ -2407,6 +2430,27 @@ Status NativeDynamicShapePlan::execute(
   // frozen constant ops, and replay corrupts their device data.
   detectFrozenConstants();
 
+  // Update allFrozenConstants flag on each segment now that frozen constant
+  // detection has run. Segments where EVERY slot is a frozen constant need no
+  // capture or execution — their outputs are already populated from warmup.
+  {
+    int frozenConstSegCount = 0;
+    for (auto& seg : segments_) {
+      seg.def.allFrozenConstants = true;
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+        if (!slots_[s].frozenConstantSlot()) {
+          seg.def.allFrozenConstants = false;
+          break;
+        }
+      }
+      if (seg.def.allFrozenConstants) frozenConstSegCount++;
+    }
+    if (frozenConstSegCount > 0) {
+      DSP_DIAG(SEGMENT, "Post-freeze: %d of %d segments are all-frozen-constants "
+               "(will skip capture and execution)",
+               frozenConstSegCount, static_cast<int>(segments_.size()));
+    }
+  }
 
   // Eager precompilation: after warmup (executeCount_ just became 1), all shapes
   // are populated in outputSlots_. Compile all Triton modules now so the 2nd
@@ -2485,7 +2529,7 @@ Status NativeDynamicShapePlan::execute(
   // execCtx->endDiag() is safe to call even if already ended by an early return path.
   execCtx->endDiag(executeCount_);
   activeExecCtx_ = nullptr;
-  platformEndExecution(executionStatePtr, stream, !planLifecycle_.isSlotBySlot(), executeCount_);
+  platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
   executionStatePtr = nullptr;
 
   return Status::OK;
@@ -2616,6 +2660,16 @@ Status NativeDynamicShapePlan::executeSteadyState(
     // Mark synced so platformTryFrozenFastPath and compositeReplay skip the duplicate
     execCtx->crossStreamSynced = true;
   }
+
+  // Deterministic cuBLAS for modes that require it (CUDA_GRAPHS, SLOT_BY_SLOT).
+  // platformBeginExecution sets this for execute(), but executeSteadyState bypasses
+  // platformBeginExecution for speed. Without this, slot-by-slot fallback segments
+  // within the frozen fast path use non-deterministic cuBLAS (cublasLt + tensor ops),
+  // while the graph was captured with PEDANTIC_MATH — producing FP drift that causes
+  // token divergence at step ~14.
+  if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
+    platformSetDeterministicCublas(true);
+  }
 #endif
 
   // Populate derived state for steady state.
@@ -2670,6 +2724,10 @@ Status NativeDynamicShapePlan::executeSteadyState(
     if (stream != nullptr) {
       tl_dspExecutionStream = prevDspStream;
     }
+    // Restore cuBLAS on early exit too
+    if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
+      platformSetDeterministicCublas(false);
+    }
 #endif
     return result;
   }
@@ -2702,6 +2760,12 @@ Status NativeDynamicShapePlan::executeSteadyState(
 
     // Restore DspStreamGuard
     tl_dspExecutionStream = prevDspStream;
+  }
+
+  // Restore cuBLAS state for modes that enforced deterministic cuBLAS.
+  // Mirrors platformEndExecution's restore logic.
+  if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
+    platformSetDeterministicCublas(false);
   }
 #endif
 
@@ -3056,7 +3120,12 @@ Status NativeDynamicShapePlan::phaseFreeze() {
              s.exec.replayHandle != nullptr, s.exec.compilationFailed, s.exec.executionCount);
   }
 
-  // Reset segment execution state for freeze — segment topology is fixed.
+  // Resegment: merge data-dependent ops into capturable segments now that
+  // shapes are frozen. This collapses hundreds of fragments into a few large
+  // segments, enabling monolithic graph capture/replay.
+  resegmentForFreeze();
+
+  // Reset segment execution state for freeze.
   for (auto& seg : segments_) {
     seg.exec.executionCount = 0;
     seg.exec.bumpArgGeneration();
@@ -3609,8 +3678,8 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
     // shapes (e.g. numOfTrue=0) that corrupt every downstream slot's shape.
     // Leave outputSlots_ null for these slots; downstream ops will propagate
     // the skip via the null-input check below.
-    if (slot.flags.isDataDependent) {
-      DSP_DIAG(SHAPE, "SHAPE_INFER_ONLY: slot %d (%s) is data-dependent — skipping shape pre-pass",
+    if (slot.hasValueDependentShape()) {
+      DSP_DIAG(SHAPE, "SHAPE_INFER_ONLY: slot %d (%s) has value-dependent shape — skipping shape pre-pass",
                stepIdx, slot.ident.opName.c_str());
       continue;
     }
@@ -3665,7 +3734,7 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
     }
 
     // ── Identity ops: output shape = input[0] shape ─────────────────────
-    if (slot.flags.isIdentityOp && slot.wiring.numInputs >= 1 && siInputs[0] != nullptr) {
+    if (slot.isIdentityOp() && slot.wiring.numInputs >= 1 && siInputs[0] != nullptr) {
       DSP_DIAG(SHAPE, "SHAPE_PRE_PASS: slot %d (%s) IDENTITY — input[0] dtype=%s shape=%s",
                stepIdx, slot.ident.opName.c_str(),
                DataTypeUtils::asString(siInputs[0]->dataType()).c_str(),
@@ -3900,17 +3969,18 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
            (int)segments_.size(), numExternalInputs, shapesFrozen_ ? 1 : 0,
            planLifecycle_.displayName(), executeCount_);
 
-  // ── forceSync_ for modes that require deterministic sync ────────────
-  // Modes like CUDA_GRAPHS and SLOT_BY_SLOT with forcesSyncOnFrozen=true
-  // need prepareSpecialUse/registerSpecialUse on every slot execution
-  // when the plan is frozen. Without this, slot-by-slot fallback segments
-  // inside CUDA_GRAPHS mode produce different numerical results than pure
-  // SLOT_BY_SLOT (the 4-token mismatch at position 14).
+  // Sync policy is contract-driven via needsSync() — no mutable state to set.
+  // ModeContract.forcesSyncOnFrozen is checked by needsSync() at each slot.
   {
     auto contract = ModeContract::forMode(graphExecutionMode_);
-    if (contract.forcesSyncOnFrozen && shapesFrozen_) {
-      forceSync_ = true;
-    }
+    DSP_DIAG(STREAM_SYNC,
+             "phaseReplay sync policy: needsSync=%s reason=%s "
+             "contract[forcesSyncOnFrozen=%d forceSyncDuringCapture=%d] "
+             "mode=%s frozen=%d overrideDepth=%d execCount=%d",
+             needsSync() ? "YES" : "NO", syncReason(),
+             (int)contract.forcesSyncOnFrozen, (int)contract.forceSyncDuringCapture,
+             ModeContract::modeName(static_cast<int>(graphExecutionMode_)), (int)shapesFrozen_,
+             syncOverrideDepth_, executeCount_);
   }
 
   // ── LIFECYCLE CHECK: phaseReplay requires prior compilation ─────────
@@ -3950,6 +4020,19 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     }
     platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
 
+    // All-frozen-constant segments: outputs are already populated from warmup
+    // and never change. Skip capture and execution entirely — no 0-node CUDA
+    // graphs, no slot-by-slot dispatch, nothing. Just mark as handled.
+    if (segment.def.allFrozenConstants && !planLifecycle_.isSlotBySlot()) {
+      segment.exec.executionCount++;
+      DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
+                   "FROZEN_CONST_SKIP: seg[%d-%d] all %d slots are frozen constants — skipping",
+                   segment.def.startSlot, segment.def.endSlot,
+                   segment.def.endSlot - segment.def.startSlot + 1);
+      platformCleanupMigratedInputs();
+      continue;
+    }
+
     bool useGraph = platformShouldUseGraph(segment);
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     bool segUsedGraph = false;
@@ -3964,24 +4047,9 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
           segment, externalInputs, numExternalInputs, stream, segUsedGraph);
       if (status != Status::OK) return status;
     } else {
-      // MODE VIOLATION: post-freeze replay MUST use graphs — fallback is banned.
-      // During warmup (shapesFrozen_=false), slot-by-slot is expected for ALL modes —
-      // the plan must warm up before it can freeze shapes and capture graphs.
-      // The violation only applies post-freeze when graph capture should have succeeded.
-      if (shapesFrozen_ && !ModeContract::forMode(graphExecutionMode_).allowsFallback) {
-        REQUIRE_TRUE(false, 0,
-                     "DSP MODE VIOLATION: phaseReplay routing seg[%d-%d] to "
-                     "slot-by-slot. mode=%d shapesFrozen=%d compilationFailed=%d "
-                     "executionCount=%d capturable=%d. Graph execution mode requires "
-                     "graph capture/replay — silent fallback is banned.",
-                     segment.def.startSlot, segment.def.endSlot,
-                     static_cast<int>(graphExecutionMode_),
-                     static_cast<int>(shapesFrozen_),
-                     static_cast<int>(segment.exec.compilationFailed),
-                     segment.exec.executionCount,
-                     static_cast<int>(segment.def.isCapturable));
-      }
-      // Modes that allow fallback (SLOT_BY_SLOT, EMULATED_REPLAY) still route here.
+      // platformShouldUseGraph() returned false — either structurally exempt
+      // (non-capturable, pre-freeze, slot-by-slot mode) or mode violation
+      // already thrown there for capturable segments that can't graph-execute.
       segment.exec.segPhase.reset();  // PRIMARY: BUILDING:WARMUP
       segment.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::NEEDS_WARMUP;
       auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
@@ -4081,8 +4149,7 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     stats->slotBySlotSlots = slotBySlotSlots;
   }
 
-  // Reset forceSync_ so it doesn't leak into subsequent phases/warmups
-  forceSync_ = false;
+  // No mutable sync state to reset — needsSync() is computed from contract + state.
 
   return Status::OK;
 }
@@ -4747,6 +4814,32 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturab
   }
 }
 
+// ─── Freeze-time resegmentation ──────────────────────────────────────────────
+//
+// After shapes freeze, existing CUDA graph handles from warmup captures are
+// invalid (pointer addresses may have changed). This cleans up GPU resources
+// and rebuilds segments so fresh captures can occur with frozen shapes.
+
+void NativeDynamicShapePlan::resegmentForFreeze() {
+  if (!Environment::getInstance().dspFreezeMergeSegments()) return;
+  int oldSegCount = static_cast<int>(segments_.size());
+  if (oldSegCount <= 1) return;
+
+  // Cleanup GPU resources (CUDA graph handles etc.) from existing segments
+  for (auto& seg : segments_) {
+    if (seg.exec.replayHandle) {
+      platformCleanupSegmentForRebuild(seg);
+    }
+  }
+  segments_.clear();
+  nativeRangeSegments_.clear();
+
+  buildSegments();
+
+  DSP_DIAG(SEGMENT, "RESEGMENT: %d -> %d segments (shapes frozen)",
+           oldSegCount, static_cast<int>(segments_.size()));
+}
+
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────
 
 void NativeDynamicShapePlan::buildSegments() {
@@ -4783,11 +4876,6 @@ void NativeDynamicShapePlan::buildSegments() {
   // their own non-capturable segment, executed slot-by-slot.
   // Segment topology is built ONCE and never changes. Only truly uncapturable
   // ops (data-dependent, control flow) create segment boundaries.
-  auto isSlotCapturable = [](const NativeSlot& slot, int) -> bool {
-    if (slot.cf.controlFlowType != CF_NONE) return false;
-    return true;
-  };
-
   // Matmul segmentation: break segments at matmul/attention op boundaries.
   // This isolates element-wise chains for Triton fusion while matmuls run via cuBLAS.
   const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
@@ -4849,13 +4937,20 @@ void NativeDynamicShapePlan::buildSegments() {
         sd::ops::OP_TRAIT_MATMUL | sd::ops::OP_TRAIT_ATTENTION);
   };
 
+  // Only control flow ops break segments. All other ops (including those whose
+  // shape functions read tensor values) are capturable — shape functions run
+  // during warmup before capture, and shapes are cached after freeze.
+  auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
+    return slot.cf.controlFlowType == CF_NONE;
+  };
+
   GraphSegment current;
   current.def.startSlot = 0;
-  current.def.isCapturable = isSlotCapturable(slots_[0], 0);
+  current.def.isCapturable = isSlotCapturable(slots_[0]);
   currentSegmentBytes = estimateSlotOutputBytes(0);
 
   for (int i = 1; i < numSlots_; i++) {
-    bool thisCapturable = isSlotCapturable(slots_[i], i);
+    bool thisCapturable = isSlotCapturable(slots_[i]);
     bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
     int currentSize = i - current.def.startSlot;
     bool sizeLimit = (current.def.isCapturable && currentSize >= MAX_SEGMENT_SIZE);
@@ -5000,6 +5095,11 @@ void NativeDynamicShapePlan::buildSegments() {
         break;
       }
     }
+
+    // allFrozenConstants is set later by the post-freeze scan (after
+    // detectFrozenConstants runs). Default false here — safe conservative.
+    seg.def.allFrozenConstants = false;
+
     DSP_DIAG_SEG(SEGMENT, seg.def.startSlot, "segment[%d-%d] selectedBackend=%d hasValueDepOps=%d",
                  seg.def.startSlot, seg.def.endSlot, static_cast<int>(seg.def.selectedBackend),
                  seg.def.hasValueDepOps ? 1 : 0);
@@ -5035,23 +5135,11 @@ void NativeDynamicShapePlan::buildSegments() {
       if (sz < MIN_PROFITABLE_SIZE && seg.def.isCapturable) {
         isSmallTransparent = true;
         for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-          // A slot is "transparent" if it's a view, identity, shape-only, or constant
-          bool isTransparent = slots_[s].flags.isViewCapableOp ||
-                               slots_[s].flags.isIdentityOp;
-          // Also check op traits for shape/constant generation
-          if (!isTransparent) {
-            uint32_t traits = 0;
-            if (slots_[s].ident.op && slots_[s].ident.op->getOpDescriptor()) {
-              traits = slots_[s].ident.op->getOpDescriptor()->getTraits();
-            }
-            if (traits == 0 && !slots_[s].ident.opName.empty()) {
-              traits = sd::ops::getOpTraitsByName(slots_[s].ident.opName);
-            }
-            isTransparent = (traits & (sd::ops::OP_TRAIT_VIEW_PRODUCING |
-                                       sd::ops::OP_TRAIT_IDENTITY |
-                                       sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT |
-                                       sd::ops::OP_TRAIT_CONSTANT_GENERATION)) != 0;
-          }
+          // A slot is "transparent" if it's a view, identity, shape-only, or constant.
+          // Uses the slot's opTraits_ bitmask directly — no separate trait lookup needed.
+          bool isTransparent = slots_[s].aliasesInput() ||
+                               slots_[s].hasOpTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT) ||
+                               slots_[s].hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION);
           if (!isTransparent) {
             isSmallTransparent = false;
             break;

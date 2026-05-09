@@ -725,7 +725,11 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     if (nativeSeg.exec.executionCount == 0) {
       nativeSeg.def.startSlot = nativeStart;
       nativeSeg.def.endSlot   = nativeEnd;
-      nativeSeg.def.isCapturable = true;
+      bool capturable = true;
+      for (int s = nativeStart; s <= nativeEnd && capturable; s++) {
+        if (!slots_[s].isCapturable()) capturable = false;
+      }
+      nativeSeg.def.isCapturable = capturable;
       nativeSeg.exec.executionCount = 1;
     }
     if (!nativeSeg.exec.replayHandle && nativeSeg.def.isCapturable) {
@@ -1041,7 +1045,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                     slot.wiring.numOutputs > 0 ? slot.wiring.outputSlotIndices[0] : -1,
                     slot.wiring.numOutputs > 1 ? "," : "",
                     slot.wiring.numOutputs > 1 ? std::to_string(slot.wiring.outputSlotIndices[1]).c_str() : "",
-                    slot.flags.isIdentityOp ? 1 : 0,
+                    slot.isIdentityOp() ? 1 : 0,
                     slot.fusedChain.isFusedChainHead ? 1 : 0,
                     slot.fusedChain.isFusedChainTail ? 1 : 0,
                     slot.fusedChain.fusedChainLength,
@@ -1258,7 +1262,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
 
       // Identity op: just alias input → output
-      if (slot.flags.isIdentityOp && slot.wiring.numInputs == 1 && slot.wiring.numOutputs >= 1) {
+      if (slot.isIdentityOp() && slot.wiring.numInputs == 1 && slot.wiring.numOutputs >= 1) {
         int srcIdx = slot.wiring.inputSourceIndices[0];
         NDArray* input = nullptr;
         if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
@@ -1535,7 +1539,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     if (seg.exec.replayHandle && seg.exec.replayHandle->getState() == ReplayState::CAPTURING) {
       bool skipRecord = slot.frozenConstantSlot()
                      || slot.fusedChain.isFusedChainTail
-                     || (slot.flags.isIdentityOp && slot.wiring.numInputs == 1);
+                     || (slot.isIdentityOp() && slot.wiring.numInputs == 1);
       if (!skipRecord) {
         // dynamic_cast required: on CUDA builds, handle may be CudaGraphReplayHandle.
         auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
@@ -1806,12 +1810,12 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       NativeSlot& slot = slots_[s];
-      if (slot.flags.isIdentityOp)     numIdentity++;
-      if (slot.flags.isViewCapableOp)  numViewOps++;
+      if (slot.isIdentityOp())     numIdentity++;
+      if (slot.isViewCapableOp())  numViewOps++;
       if (slot.fusedChain.isFusedChainHead) { numFusedChains++; totalFusedChainOps += slot.fusedChain.fusedChainLength; }
       if (slot.fusedChain.isFusedChainTail) numFusedTails++;
       if (slot.flags.inPlaceFused)     numInPlaceFused++;
-      if (slot.flags.isDataDependent)  numDataDependent++;
+      if (slot.isDataDependent())  numDataDependent++;
       if (slot.cf.controlFlowType != CF_NONE) numControlFlow++;
 
       // Classify by op name heuristic
@@ -1819,11 +1823,11 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       if (name.find("matmul") != std::string::npos || name.find("mmul") != std::string::npos ||
           name.find("gemm") != std::string::npos || name.find("batched_gemm") != std::string::npos) {
         numMatmul++;
-      } else if (slot.flags.isIdentityOp || slot.flags.isViewCapableOp || slot.fusedChain.isFusedChainTail) {
+      } else if (slot.isIdentityOp() || slot.isViewCapableOp() || slot.fusedChain.isFusedChainTail) {
         // Already counted above — these are "free" ops
       } else {
         // Heuristic: ops with no iArgs, 1-2 inputs, and no data dependency are likely elementwise
-        if (!slot.flags.isDataDependent && slot.wiring.numInputs <= 2 && slot.wiring.numOutputs == 1) {
+        if (!slot.isDataDependent() && slot.wiring.numInputs <= 2 && slot.wiring.numOutputs == 1) {
           numElementwise++;
         } else {
           numOther++;
@@ -1890,11 +1894,11 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
         const char* color = "white";
-        if (slot.flags.isIdentityOp)         color = "gray90";
+        if (slot.isIdentityOp())         color = "gray90";
         else if (slot.fusedChain.isFusedChainHead) color = "lightyellow";
         else if (slot.fusedChain.isFusedChainTail) color = "lightyellow";
-        else if (slot.flags.isViewCapableOp)  color = "honeydew";
-        else if (slot.flags.isDataDependent)  color = "mistyrose";
+        else if (slot.isViewCapableOp())  color = "honeydew";
+        else if (slot.isDataDependent())  color = "mistyrose";
 
         DSP_DIAG(EMULATED_REPLAY,
                  "    slot_%d [label=\"[%d] %s\", style=filled, fillcolor=%s];",
@@ -2022,7 +2026,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   // Identity/fused-tail ops are skipped by executeSlot, so don't count them.
   int estimatedSkippedOps = 0;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    if (slots_[s].flags.isIdentityOp || slots_[s].fusedChain.isFusedChainTail) estimatedSkippedOps++;
+    if (slots_[s].isIdentityOp() || slots_[s].fusedChain.isFusedChainTail) estimatedSkippedOps++;
   }
   int effectiveDispatchOps = segSize - estimatedSkippedOps;
   long long estimatedDispatchUs = effectiveDispatchOps * 15LL;

@@ -79,7 +79,6 @@ SD_INLINE const char* dspStatusName(Status status) {
     case Status::KERNEL_FAILURE: return "KERNEL_FAILURE";
     case Status::EQ_TRUE:        return "EQ_TRUE";
     case Status::EQ_FALSE:       return "EQ_FALSE";
-    case Status::MAYBE:          return "MAYBE";
     default:                     return "UNKNOWN";
   }
 }

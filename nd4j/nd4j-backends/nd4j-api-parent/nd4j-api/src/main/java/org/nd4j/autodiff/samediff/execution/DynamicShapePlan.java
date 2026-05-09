@@ -613,8 +613,8 @@ public class DynamicShapePlan implements Closeable {
                 }
             }
 
-            buf.put((byte) 0);  // needsZeroedOutput — always false, C++ OpTraitTable handles this
-            buf.put((byte) 0);  // isDataDependent — always false, C++ OpTraitTable handles this
+            buf.put((byte) 0);  // needsZeroedOutput — format placeholder, derived from OpTraitTable in C++
+            buf.put((byte) 0);  // isDataDependent — format placeholder, derived from OpTraitTable in C++
             buf.put(slot.isOutputShapeDependsOnInputValues() ? (byte) 1 : (byte) 0);
             buf.put(slot.isNeedsIntLongSync() ? (byte) 1 : (byte) 0);
             buf.put(slot.isCustomOp() ? (byte) 1 : (byte) 0);

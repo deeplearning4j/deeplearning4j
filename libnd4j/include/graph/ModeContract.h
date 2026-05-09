@@ -23,7 +23,11 @@
 #ifndef LIBND4J_MODE_CONTRACT_H
 #define LIBND4J_MODE_CONTRACT_H
 
-#include <graph/NativeDynamicShapePlan.h>
+// Forward-declare GraphExecutionMode so ModeContract.h is self-contained.
+// Full definition in NativeDynamicShapePlan.h — any TU calling forMode()
+// must include that header (which it always does, since the plan is the
+// only consumer of ModeContract).
+namespace sd { namespace graph { enum class GraphExecutionMode : int; } }
 
 namespace sd {
 namespace graph {
@@ -33,242 +37,156 @@ struct ModeContract {
   // Compilation & Backend Selection
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /** Mode requires a JIT/compilation backend (Triton, NVRTC, PTX, etc.). */
-  bool requiresCompilation;
+  // All fields default to false — each mode's factory only sets what's true.
+  // Adding a field never silently breaks existing modes.
 
-  /** Mode needs a gpuGraphBackend_ (JIT compiler). False for pure-replay modes. */
-  bool needsJitBackend;
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Graph Capture & Replay
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /** Mode uses CUDA/HIP/Metal/Vulkan graph capture for segment replay. */
-  bool usesGraphCapture;
-
-  /** Mode allows the frozen graph fast path (input-stable skip refresh). */
-  bool allowsFrozenFastPath;
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Fallback & Assertions
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /** Mode tolerates capturable segments executing slot-by-slot without assertion. */
-  bool allowsFallback;
-
-  /** Mode tolerates phase stalls (segments stuck in non-REPLAYING state). */
-  bool allowsPhaseStall;
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // cuBLAS / Compute Determinism
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /** Mode requires deterministic cuBLAS (PEDANTIC_MATH, no workspace, no cublasLt). */
-  bool requiresDeterministicCublas;
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Execution Path Control
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /** Mode is purely slot-by-slot with no segment optimization. */
-  bool isSlotBySlot;
-
-  /** Mode is shape-inference-only (no actual op execution). */
-  bool isShapeInferenceOnly;
-
-  /** Mode forces full stream sync on every frozen execute (for diagnostics). */
-  bool forcesSyncOnFrozen;
+  bool requiresCompilation = false;
+  bool needsJitBackend = false;
+  bool usesGraphCapture = false;
+  bool allowsFrozenFastPath = false;
+  bool forceSyncDuringCapture = false;
+  bool skipFrozenConstsDuringCapture = false;
+  bool allowsFallback = false;
+  bool allowsPhaseStall = false;
+  bool requiresDeterministicCublas = false;
+  bool isSlotBySlot = false;
+  bool isShapeInferenceOnly = false;
+  bool forcesSyncOnFrozen = false;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Factory
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static ModeContract forMode(GraphExecutionMode mode) {
+  // Primary factory — uses int to avoid dependency on GraphExecutionMode enum values.
+  // Int values match GraphExecutionMode::GEM_* (defined in NativeDynamicShapePlan.h).
+  static ModeContract forMode(int mode) {
+    ModeContract c{};
     switch (mode) {
-      case GraphExecutionMode::GEM_SLOT_BY_SLOT:
-        return {
-          /* requiresCompilation */       false,
-          /* needsJitBackend */           false,
-          /* usesGraphCapture */          false,
-          /* allowsFrozenFastPath */      false,
-          /* allowsFallback */            true,
-          /* allowsPhaseStall */          true,
-          /* requiresDeterministicCublas */ true,
-          /* isSlotBySlot */              true,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        true,
-        };
+      case 1: // GEM_SLOT_BY_SLOT
+        c.allowsFallback = true;
+        c.allowsPhaseStall = true;
+        c.requiresDeterministicCublas = true;
+        c.isSlotBySlot = true;
+        c.forcesSyncOnFrozen = true;
+        return c;
 
-      case GraphExecutionMode::GEM_AUTO:
-        return {
-          /* requiresCompilation */       false, // AUTO resolves dynamically
-          /* needsJitBackend */           true,  // tries to find one
-          /* usesGraphCapture */          true,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            true,
-          /* allowsPhaseStall */          true,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+      case 0: // GEM_AUTO
+        c.needsJitBackend = true;
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        c.forceSyncDuringCapture = true;
+        c.skipFrozenConstsDuringCapture = true;
+        c.allowsFallback = true;
+        c.allowsPhaseStall = true;
+        return c;
 
-      case GraphExecutionMode::GEM_CUDA_GRAPHS:
-        return {
-          /* requiresCompilation */       false, // captures inline, no JIT
-          /* needsJitBackend */           false,
-          /* usesGraphCapture */          true,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            false,
-          /* allowsPhaseStall */          false,
-          /* requiresDeterministicCublas */ true,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        true,
-        };
+      case 2: // GEM_CUDA_GRAPHS
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        c.requiresDeterministicCublas = true;
+        c.forcesSyncOnFrozen = true;
+        return c;
 
-      case GraphExecutionMode::GEM_TRITON:
-        return {
-          /* requiresCompilation */       true,
-          /* needsJitBackend */           true,
-          /* usesGraphCapture */          true,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            false,
-          /* allowsPhaseStall */          false,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+      case 5: // GEM_TRITON
+        c.requiresCompilation = true;
+        c.needsJitBackend = true;
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        c.forceSyncDuringCapture = true;
+        c.skipFrozenConstsDuringCapture = true;
+        return c;
 
-      case GraphExecutionMode::GEM_NVRTC_JIT:
-        return {
-          /* requiresCompilation */       true,
-          /* needsJitBackend */           true,
-          /* usesGraphCapture */          true,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            false,
-          /* allowsPhaseStall */          false,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+      case 3: // GEM_NVRTC_JIT
+      case 4: // GEM_PTX_JIT
+        c.requiresCompilation = true;
+        c.needsJitBackend = true;
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        c.forceSyncDuringCapture = true;
+        c.skipFrozenConstsDuringCapture = true;
+        return c;
 
-      case GraphExecutionMode::GEM_PTX_JIT:
-        return {
-          /* requiresCompilation */       true,
-          /* needsJitBackend */           true,
-          /* usesGraphCapture */          true,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            false,
-          /* allowsPhaseStall */          false,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+      case 9: // GEM_HIP_GRAPHS
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        return c;
 
-      case GraphExecutionMode::GEM_HIP_GRAPHS:
-        return {
-          /* requiresCompilation */       false,
-          /* needsJitBackend */           false,
-          /* usesGraphCapture */          true,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            false,
-          /* allowsPhaseStall */          false,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+      case 10: // GEM_LEVELZERO
+      case 11: // GEM_VULKAN
+      case 12: // GEM_METAL
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        return c;
 
-      case GraphExecutionMode::GEM_LEVELZERO:
-      case GraphExecutionMode::GEM_VULKAN:
-      case GraphExecutionMode::GEM_METAL:
-        return {
-          /* requiresCompilation */       false,
-          /* needsJitBackend */           false,
-          /* usesGraphCapture */          true,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            false,
-          /* allowsPhaseStall */          false,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+      case 6:  // GEM_MLX
+      case 7:  // GEM_ARM_HYBRID
+      case 8:  // GEM_NNAPI
+      case 13: // GEM_TPU
+      case 14: // GEM_HEXAGON
+      case 15: // GEM_OPENVINO
+        c.requiresCompilation = true;
+        c.needsJitBackend = true;
+        c.allowsFrozenFastPath = true;
+        return c;
 
-      case GraphExecutionMode::GEM_MLX:
-      case GraphExecutionMode::GEM_ARM_HYBRID:
-      case GraphExecutionMode::GEM_NNAPI:
-      case GraphExecutionMode::GEM_TPU:
-      case GraphExecutionMode::GEM_HEXAGON:
-      case GraphExecutionMode::GEM_OPENVINO:
-        return {
-          /* requiresCompilation */       true,
-          /* needsJitBackend */           true,
-          /* usesGraphCapture */          false,
-          /* allowsFrozenFastPath */      true,
-          /* allowsFallback */            false,
-          /* allowsPhaseStall */          false,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              false,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+      case 17: // GEM_EMULATED_REPLAY
+        c.allowsFallback = true;
+        c.allowsPhaseStall = true;
+        c.requiresDeterministicCublas = true;
+        c.isSlotBySlot = true;
+        c.forcesSyncOnFrozen = true;
+        return c;
 
-      case GraphExecutionMode::GEM_EMULATED_REPLAY:
-        return {
-          /* requiresCompilation */       false,
-          /* needsJitBackend */           false,
-          /* usesGraphCapture */          false,
-          /* allowsFrozenFastPath */      false,
-          /* allowsFallback */            true,
-          /* allowsPhaseStall */          true,
-          /* requiresDeterministicCublas */ true,
-          /* isSlotBySlot */              true,  // executes slot-by-slot with replay lifecycle
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        true,
-        };
+      case 18: // GEM_SHAPE_INFERENCE_ONLY
+        c.allowsFallback = true;
+        c.allowsPhaseStall = true;
+        c.isSlotBySlot = true;
+        c.isShapeInferenceOnly = true;
+        return c;
 
-      case GraphExecutionMode::GEM_SHAPE_INFERENCE_ONLY:
-        return {
-          /* requiresCompilation */       false,
-          /* needsJitBackend */           false,
-          /* usesGraphCapture */          false,
-          /* allowsFrozenFastPath */      false,
-          /* allowsFallback */            true,
-          /* allowsPhaseStall */          true,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              true,
-          /* isShapeInferenceOnly */      true,
-          /* forcesSyncOnFrozen */        false,
-        };
-
-      case GraphExecutionMode::GEM_TVM:
+      case 16: // GEM_TVM (deprecated)
       default:
-        // Deprecated/unknown → safe fallback: slot-by-slot semantics
-        return {
-          /* requiresCompilation */       false,
-          /* needsJitBackend */           false,
-          /* usesGraphCapture */          false,
-          /* allowsFrozenFastPath */      false,
-          /* allowsFallback */            true,
-          /* allowsPhaseStall */          true,
-          /* requiresDeterministicCublas */ false,
-          /* isSlotBySlot */              true,
-          /* isShapeInferenceOnly */      false,
-          /* forcesSyncOnFrozen */        false,
-        };
+        c.allowsFallback = true;
+        c.allowsPhaseStall = true;
+        c.isSlotBySlot = true;
+        return c;
     }
   }
 
+  // Typed overload — casts enum to int and delegates.
+  static ModeContract forMode(GraphExecutionMode mode) {
+    return forMode(static_cast<int>(mode));
+  }
+
   /**
-   * Convenience: build from int (for PlanExecutionContext which stores mode as int).
+   * Human-readable mode name for logging. Returns a short string like
+   * "SLOT_BY_SLOT", "CUDA_GRAPHS", "TRITON", etc.
+   * Takes int to avoid circular dependency with NativeDynamicShapePlan.h
+   * (which defines GraphExecutionMode). Callers cast: modeName(static_cast<int>(mode)).
    */
-  static ModeContract forMode(int modeInt) {
-    return forMode(static_cast<GraphExecutionMode>(modeInt));
+  static const char* modeName(int modeInt) {
+    switch (modeInt) {
+      case 0: return "AUTO";
+      case 1: return "SLOT_BY_SLOT";
+      case 2: return "CUDA_GRAPHS";
+      case 3: return "NVRTC_JIT";
+      case 4: return "PTX_JIT";
+      case 5: return "TRITON";
+      case 6: return "MLX";
+      case 7: return "ARM_HYBRID";
+      case 8: return "NNAPI";
+      case 9: return "HIP_GRAPHS";
+      case 10: return "LEVELZERO";
+      case 11: return "VULKAN";
+      case 12: return "METAL";
+      case 13: return "TPU";
+      case 14: return "HEXAGON";
+      case 15: return "OPENVINO";
+      case 16: return "TVM";
+      case 17: return "EMULATED_REPLAY";
+      case 18: return "SHAPE_INFERENCE_ONLY";
+      default: return "UNKNOWN";
+    }
   }
 };
 

@@ -846,7 +846,7 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
   for (int stepIdx = seg.def.startSlot;
        stepIdx <= seg.def.endSlot && stepIdx < numSlots_; stepIdx++) {
     NativeSlot& slot = slots_[stepIdx];
-    if (!slot.flags.isViewCapableOp) {
+    if (!slot.isViewCapableOp()) {
       continue;
     }
     if (slot.wiring.numOutputs <= 0) continue;
@@ -1102,10 +1102,55 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     }
   }
 
+  // ── Single-pass slot classification ────────────────────────────────────────
+  //
+  // Every slot is classified in ONE forward pass (topological order guarantees
+  // all inputs are classified before the slot itself). The decision is IMMUTABLE.
+  // No unfreezing, no correction passes, no mutable state.
+  //
+  // Classification:
+  //
+  //   FROZEN_CONSTANT — dependsOnExternal is false for ALL of this slot's output
+  //     indices AND the op is not dynamicShape. This means every transitive input
+  //     is structurally stable: external constants, weights, shape-only ops, or
+  //     other frozen constants. The dependsOnExternal propagation (above) already
+  //     handled data-dependent ops correctly — if a concat reads a variable
+  //     external (KV cache), dependsOnExternal propagates through it. If all its
+  //     inputs are frozen constants, dependsOnExternal stays false and the concat
+  //     IS safe to freeze (its inputs never change, so neither does its output).
+  //
+  //     Buffer invariants:
+  //       - Populated once during warmup, read-only thereafter
+  //       - In-place writes to this buffer are BANNED (enforced below)
+  //       - Buffer must remain allocated for plan lifetime
+  //
+  //   LIVE — anything not frozen. Must execute every step.
+  //     Buffer invariants:
+  //       - May be overwritten each step
+  //       - Sync per needsSync() policy
+  //
+  // Why no view-alias unfreezing:
+  //   View ops share their input's DataBuffer. If the input is from an unstable
+  //   source, dependsOnExternal propagates through the view op — it won't be
+  //   frozen. If the input is from a frozen source, the shared buffer is read-only.
+  //   The only corruption path is in-place writes, which are blocked by the
+  //   in-place protection below. No separate view-alias pass needed.
+  //
+  // Why no value-dep unfreezing:
+  //   If a value-dep op reads shape data from a frozen upstream, that data is
+  //   correct and stable (frozen = never changes). Unfreezing the upstream is
+  //   unnecessary — it would just re-execute to produce the same result.
+
   int frozenConstCount = 0;
   int valueIndepCount = 0;
+  std::unordered_set<int> frozenOutputSlots;
+
   for (int s = 0; s < numSlots_; s++) {
     auto& sl = slots_[s];
+
+    // Check: do all output slot fingerprints prove stability?
+    // dependsOnExternal[si] == true means a variable external is in the
+    // transitive input chain (propagated topologically above).
     bool allOutputsConstant = true;
     for (int o = 0; o < sl.wiring.numOutputs; o++) {
       int si = sl.wiring.outputSlotIndices[o];
@@ -1114,324 +1159,123 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
         break;
       }
     }
-    // Freeze if ALL outputs are constant AND the op won't produce different results.
-    //
-    // Data-dependent ops (concat with axis-in-last-arr, etc.) read input VALUES
-    // to determine their output. They cannot be frozen if their inputs come from
-    // external/variable sources. BUT if ALL of their inputs are themselves frozen
-    // constants (no external dependency), then the values they read are the same
-    // every step — so the op IS safe to freeze.
-    //
-    // This handles the SmolDocling case: 552 concat ops build shape vectors like
-    // [batch,1,heads,dim] from frozen scalar constants. The concat is DATADEP
-    // (conservatively, for axis-in-last-arr mode) but all inputs are frozen.
-    bool effectivelyDataDependent = sl.flags.isDataDependent;
-    if (effectivelyDataDependent && allOutputsConstant) {
-      // Check if ALL inputs are from frozen-constant slots or frozen externals.
-      // If so, the data the op depends on is itself frozen → safe to freeze.
-      bool allInputsFrozen = true;
-      for (int inp = 0; inp < sl.wiring.numInputs; inp++) {
-        int srcIdx = sl.wiring.inputSourceIndices[inp];
-        if (srcIdx < 0) {
-          // External input — check if it's a non-variable (weight/constant).
-          int extIdx = -(srcIdx + 1);
-          if (extIdx >= 0 && extIdx < static_cast<int>(externalInputIsVariable_.size()) &&
-              externalInputIsVariable_[extIdx]) {
-            allInputsFrozen = false;
-            break;
-          }
-          // Non-variable external (weight) → frozen by definition
-        } else if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-          // Internal slot output — check if producing slot is frozen
-          if (dependsOnExternal[srcIdx]) {
-            allInputsFrozen = false;
-            break;
-          }
-        }
-      }
-      if (allInputsFrozen) {
-        effectivelyDataDependent = false;
-        DSP_DIAG_SLOT(SHAPE, s, "DATADEP op '%s' has all-frozen inputs → safe to freeze as constant",
-                       sl.ident.opName.c_str());
-      }
-    }
-    if (allOutputsConstant && !effectivelyDataDependent && !sl.flags.isDynamicShape) {
-      sl.slotPhase.seal(true);  // PRIMARY: frozen constant
-      sl.state_ = NativeSlot::SlotState::FROZEN_CONSTANT;  // legacy sync
-      frozenConstCount++;
-      if (isValueIndependentSlot[s]) valueIndepCount++;
-    }
-  }
-  // Collect frozen output slot indices for quick lookup
-  std::unordered_set<int> frozenOutputSlots;
-  for (int s = 0; s < numSlots_; s++) {
-    if (slots_[s].frozenConstantSlot()) {
-      for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
-        frozenOutputSlots.insert(slots_[s].wiring.outputSlotIndices[o]);
-      }
-    }
-  }
 
-  // Un-freeze any frozen constant whose output DataBuffer is shared (via view aliasing)
-  // with a non-frozen slot's output. View-producing ops (reshape, expand_dims, etc.)
-  // create outputs that share their input's DataBuffer. If the frozen constant's output
-  // is a view of a non-frozen slot's buffer, the non-frozen slot can overwrite the buffer
-  // on subsequent steps, corrupting the frozen constant's data.
-  // Example: shape_of → concat → reshape(view) chain where reshape shares concat's buffer,
-  // and a downstream non-frozen op writes to the same buffer region.
-  int viewAliasUnfrozen = 0;
-  {
-    // Build a set of DataBuffer pointers owned by non-frozen output slots
-    std::unordered_set<const void*> nonFrozenBuffers;
-    for (int si = 0; si < totalOutputSlots_; si++) {
-      if (!frozenOutputSlots.count(si) && outputSlots_[si] != nullptr
-          && outputSlots_[si]->dataBuffer() != nullptr) {
-        nonFrozenBuffers.insert(
-            static_cast<const void*>(outputSlots_[si]->dataBuffer()));
-      }
-    }
-    // Check each frozen constant's outputs for buffer aliasing
-    for (int s = 0; s < numSlots_; s++) {
-      auto& sl = slots_[s];
-      if (!sl.frozenConstantSlot()) continue;
-      bool aliased = false;
+    // Freeze decision (immutable — never revisited)
+    if (allOutputsConstant && !sl.flags.isDynamicShape) {
+      // ── Pre-freeze validation ─────────────────────────────────────────
+      // Every output slot MUST have a populated, valid buffer. Freezing a slot
+      // with null/closed outputs means executeSlot will skip it and downstream
+      // ops read garbage. Throw immediately — this is a lifecycle bug, not a
+      // recoverable condition.
+      bool outputsValid = true;
       for (int o = 0; o < sl.wiring.numOutputs; o++) {
         int si = sl.wiring.outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr
-            && outputSlots_[si]->dataBuffer() != nullptr) {
-          const void* bufPtr = static_cast<const void*>(
-              outputSlots_[si]->dataBuffer());
-          if (nonFrozenBuffers.count(bufPtr)) {
-            aliased = true;
-            break;
-          }
-        }
-      }
-      if (aliased) {
-        sl.slotPhase.unseal(); sl.slotPhase.shapeCacheValid = true;  // PRIMARY: demote to SHAPE_CACHED
-        sl.state_ = NativeSlot::SlotState::SHAPE_CACHED;  // legacy sync
-        // Remove from frozenOutputSlots
-        for (int o = 0; o < sl.wiring.numOutputs; o++) {
-          frozenOutputSlots.erase(sl.wiring.outputSlotIndices[o]);
-        }
-        viewAliasUnfrozen++;
-        frozenConstCount--;
-      }
-    }
-  }
-
-  // Un-freeze any frozen constant whose output feeds (directly or transitively)
-  // a downstream op with outputShapeDependsOnInputValues (e.g., reshape_no_copy
-  // where input[1] is the shape tensor). When the plan is destroyed and recreated,
-  // the frozen slot's DataBuffer is freed but the CUDA host allocator may reuse
-  // its memory before the next plan's shape inference reads it — causing garbage
-  // shape values. We also transitively un-freeze any frozen upstream of an
-  // un-frozen slot, because an un-frozen slot's execution depends on its inputs
-  // being alive and up-to-date.
-  int valueDepUnfrozen = 0;
-  int valueDepStableKept = 0;
-  {
-    // Build a map: output-slot-index → op-slot index that produces it
-    std::unordered_map<int, int> outputSlotToOpSlot;
-    for (int s = 0; s < numSlots_; s++) {
-      for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
-        int si = slots_[s].wiring.outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_) {
-          outputSlotToOpSlot[si] = s;
-        }
-      }
-    }
-    // Seed: any frozen slot whose output feeds a value-dependent op.
-    // OPTIMIZATION: If the value-dep op's ALL inputs come from frozen plan-internal
-    // slots (no external inputs), its shape-tensor values are stable and it does not
-    // need its upstream un-frozen. This keeps the entire shape-control ladder frozen
-    // during decode (shape_of → concat → reshape_no_copy chains where all shapes
-    // are constant). Only un-freeze when the value-dep op has external inputs whose
-    // values may change between steps.
-    std::unordered_set<int> toUnfreeze;
-    for (int s = 0; s < numSlots_; s++) {
-      auto& sl = slots_[s];
-      if (!sl.flags.outputShapeDependsOnInputValues) continue;
-
-      // Check if ALL inputs to this value-dep op come from frozen plan-internal slots.
-      // If so, the shape tensor values are stable — skip un-freezing upstream.
-      bool hasUnstableInput = false;
-      for (int i = 0; i < sl.wiring.numInputs; i++) {
-        int srcIdx = sl.wiring.inputSourceIndices[i];
-        if (srcIdx < 0) {
-          // External input — may change between steps, so upstream must be un-frozen
-          hasUnstableInput = true;
+        if (si < 0 || si >= totalOutputSlots_) continue;
+        NDArray* arr = outputSlots_[si];
+        if (arr == nullptr) {
+          DSP_THROW(SHAPE,
+              "FREEZE_NULL_OUTPUT: slot %d (%s) output[%d] (outputSlot=%d) is null at "
+              "freeze time (executeCount=%d). Cannot freeze a slot whose output was "
+              "never populated during warmup.",
+              s, sl.ident.opName.c_str(), o, si, executeCount_);
+          outputsValid = false;
           break;
         }
-        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-          auto it = outputSlotToOpSlot.find(srcIdx);
-          if (it != outputSlotToOpSlot.end() && !slots_[it->second].frozenConstantSlot()) {
-            // Input comes from a non-frozen plan-internal slot — unstable
-            hasUnstableInput = true;
-            break;
-          }
-          // srcIdx might not map to any op (Java-managed slot) — treat as unstable
-          if (it == outputSlotToOpSlot.end() && !producedByPlanOp[srcIdx]) {
-            hasUnstableInput = true;
-            break;
-          }
+        auto* db = arr->dataBuffer();
+        if (db == nullptr || db->isClosed()) {
+          DSP_THROW(SHAPE,
+              "FREEZE_INVALID_BUFFER: slot %d (%s) output[%d] (outputSlot=%d) has %s "
+              "DataBuffer at freeze time (executeCount=%d). Cannot freeze a slot "
+              "with an invalid buffer.",
+              s, sl.ident.opName.c_str(), o, si,
+              db == nullptr ? "null" : "closed", executeCount_);
+          outputsValid = false;
+          break;
         }
       }
+      if (!outputsValid) continue;  // DSP_THROW may not always abort
 
-      if (!hasUnstableInput) {
-        // All inputs are frozen plan-internal — this value-dep op is stable.
-        // Mark it frozen too (its outputs are constant when shapes are frozen).
-        if (!sl.flags.isDataDependent && !sl.flags.isDynamicShape) {
-          sl.slotPhase.seal(true);  // PRIMARY: frozen constant
-          sl.state_ = NativeSlot::SlotState::FROZEN_CONSTANT;  // legacy sync
-          for (int o = 0; o < sl.wiring.numOutputs; o++) {
-            frozenOutputSlots.insert(sl.wiring.outputSlotIndices[o]);
-          }
-          frozenConstCount++;
-          valueDepStableKept++;
-          continue;
-        }
-        // isDataDependent=true (e.g. reshape_no_copy): this op WILL execute every step
-        // because it can't be frozen, but its frozen upstream inputs must also execute
-        // to keep producing valid data. Un-freeze them.
-        for (int i = 0; i < sl.wiring.numInputs; i++) {
-          int srcIdx = sl.wiring.inputSourceIndices[i];
-          if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-            auto it = outputSlotToOpSlot.find(srcIdx);
-            if (it != outputSlotToOpSlot.end() && slots_[it->second].frozenConstantSlot()) {
-              toUnfreeze.insert(it->second);
-            }
-          }
-        }
-        continue;
-      }
-
-      // Has unstable input — un-freeze frozen upstream as before
-      for (int i = 0; i < sl.wiring.numInputs; i++) {
-        int srcIdx = sl.wiring.inputSourceIndices[i];
-        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-          auto it = outputSlotToOpSlot.find(srcIdx);
-          if (it != outputSlotToOpSlot.end() && slots_[it->second].frozenConstantSlot()) {
-            toUnfreeze.insert(it->second);
-          }
+      sl.slotPhase.seal(true);
+      sl.state_ = NativeSlot::SlotState::FROZEN_CONSTANT;
+      frozenConstCount++;
+      if (isValueIndependentSlot[s]) valueIndepCount++;
+      for (int o = 0; o < sl.wiring.numOutputs; o++) {
+        int si = sl.wiring.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) {
+          frozenOutputSlots.insert(si);
         }
       }
     }
-    // Transitively un-freeze: any frozen upstream of an already-to-unfreeze slot
-    std::vector<int> worklist(toUnfreeze.begin(), toUnfreeze.end());
-    for (size_t wi = 0; wi < worklist.size(); wi++) {
-      auto& sl = slots_[worklist[wi]];
-      for (int i = 0; i < sl.wiring.numInputs; i++) {
-        int srcIdx = sl.wiring.inputSourceIndices[i];
-        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-          auto it = outputSlotToOpSlot.find(srcIdx);
-          if (it != outputSlotToOpSlot.end() && slots_[it->second].frozenConstantSlot()
-              && toUnfreeze.find(it->second) == toUnfreeze.end()) {
-            toUnfreeze.insert(it->second);
-            worklist.push_back(it->second);
-          }
-        }
-      }
-    }
-    for (int s : toUnfreeze) {
-      slots_[s].slotPhase.unseal(); slots_[s].slotPhase.shapeCacheValid = true;  // PRIMARY: demote
-      slots_[s].state_ = NativeSlot::SlotState::SHAPE_CACHED;  // legacy sync
-      for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
-        frozenOutputSlots.erase(slots_[s].wiring.outputSlotIndices[o]);
-      }
-      valueDepUnfrozen++;
-      frozenConstCount--;
-    }
+    // else: LIVE — slot state stays default (not sealed, not frozen)
   }
 
-  // Disable in-place fusion for any op that would overwrite a protected output buffer.
-  // In-place fusion writes the op's output directly into its input buffer — if another
-  // slot later reads that buffer for shape inference (outputShapeDependsOnInputValues)
-  // or another downstream consumer, it gets garbage.
+  // ── In-place protection (single pass) ────────────────────────────────────
   //
-  // Protected output slots:
-  // 1. Frozen constant slots (must remain stable for frozen skip)
-  // 2. Slots that serve as inputs to value-dependent ops (shape data must remain valid
-  //    until the value-dep op executes — e.g., concat→reshape_no_copy chain)
-  // 3. Slots consumed by multiple downstream ops (in-place overwrites corrupt the buffer
-  //    for all other consumers that haven't read it yet)
-  std::unordered_set<int> protectedSlots(frozenOutputSlots.begin(), frozenOutputSlots.end());
+  // In-place fusion writes the op's output directly into its input buffer.
+  // This MUST be disabled when the input buffer is protected:
+  //
+  //   1. Frozen constant buffer — must remain stable for frozen skip
+  //   2. Value-dep op input — shape data must survive until the op reads it
+  //   3. Multi-consumer buffer — other consumers haven't read it yet
+  //
+  // These three checks are computed inline. No separate "protected slots" set
+  // needed — each check directly inspects the source slot's state.
 
-  // Count consumers per output slot to identify multi-consumer slots
+  // Pre-compute: consumer count per output slot and value-dep input set
   std::vector<int> slotConsumerCount(totalOutputSlots_, 0);
+  std::unordered_set<int> valueDepInputSlots;
   for (int s = 0; s < numSlots_; s++) {
-    for (int i = 0; i < slots_[s].wiring.numInputs; i++) {
-      int srcIdx = slots_[s].wiring.inputSourceIndices[i];
+    auto& sl = slots_[s];
+    for (int i = 0; i < sl.wiring.numInputs; i++) {
+      int srcIdx = sl.wiring.inputSourceIndices[i];
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
         slotConsumerCount[srcIdx]++;
-      }
-    }
-  }
-
-  for (int s = 0; s < numSlots_; s++) {
-    // Protect inputs to value-dependent ops
-    if (slots_[s].flags.outputShapeDependsOnInputValues) {
-      for (int i = 0; i < slots_[s].wiring.numInputs; i++) {
-        int srcIdx = slots_[s].wiring.inputSourceIndices[i];
-        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-          protectedSlots.insert(srcIdx);
+        if (sl.flags.outputShapeDependsOnInputValues) {
+          valueDepInputSlots.insert(srcIdx);
         }
       }
     }
   }
-  // Multi-consumer in-place protection: conservatively disable in-place for ANY
-  // multi-consumer slot. When frozen-constant skip is active (executeCount_ >= 2),
-  // allowing in-place writes to shared buffers corrupts data that frozen ops reuse
-  // on subsequent iterations. The "last consumer" optimization is unsafe because
-  // frozen ops don't re-execute — they rely on stable buffer contents from prior runs.
 
   int disabledInPlace = 0;
   for (int s = 0; s < numSlots_; s++) {
     auto& sl = slots_[s];
-    if (sl.flags.inPlaceFused && sl.flags.inPlaceFusedInputIdx >= 0 &&
-        sl.flags.inPlaceFusedInputIdx < sl.wiring.numInputs) {
-      int srcSlot = sl.wiring.inputSourceIndices[sl.flags.inPlaceFusedInputIdx];
-      if (srcSlot < 0) continue;
+    if (!sl.flags.inPlaceFused || sl.flags.inPlaceFusedInputIdx < 0 ||
+        sl.flags.inPlaceFusedInputIdx >= sl.wiring.numInputs) continue;
 
-      // Always protect frozen constant slots and value-dep op inputs
-      if (protectedSlots.count(srcSlot)) {
-        sl.flags.inPlaceFused = false;
-        sl.flags.inPlaceFusedInputIdx = -1;
-        disabledInPlace++;
-        continue;
-      }
+    int srcSlot = sl.wiring.inputSourceIndices[sl.flags.inPlaceFusedInputIdx];
+    if (srcSlot < 0) continue;
 
-      // Protect ALL multi-consumer slots — in-place overwrites corrupt the buffer
-      // for any other consumer, and frozen-skip relies on stable buffer contents
-      if (slotConsumerCount[srcSlot] > 1) {
-        sl.flags.inPlaceFused = false;
-        sl.flags.inPlaceFusedInputIdx = -1;
-        disabledInPlace++;
-      }
+    bool mustDisable =
+        frozenOutputSlots.count(srcSlot) ||        // frozen buffer: read-only
+        valueDepInputSlots.count(srcSlot) ||        // value-dep input: must survive
+        slotConsumerCount[srcSlot] > 1;             // multi-consumer: others need it
+
+    if (mustDisable) {
+      sl.flags.inPlaceFused = false;
+      sl.flags.inPlaceFusedInputIdx = -1;
+      disabledInPlace++;
     }
   }
 
-  // Count Java-managed slots for diagnostics
+  // ── Diagnostics ──────────────────────────────────────────────────────────
   int javaManagedCount = 0;
   for (int si = 0; si < totalOutputSlots_; si++) {
     if (!producedByPlanOp[si]) javaManagedCount++;
   }
 
-  DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants "
-            "(%d shape-only-trait, %d value-independent, %d value-dep-stable-kept, "
-            "%d in-place disabled, %d view-alias unfrozen, "
-            "%d value-dep unfrozen, %d java-managed output slots)",
-            frozenConstCount, numSlots_, shapeOnlyCount, valueIndepCount, valueDepStableKept,
-            disabledInPlace, viewAliasUnfrozen, valueDepUnfrozen, javaManagedCount);
+  DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots frozen "
+            "(%d shape-only-trait, %d value-independent, "
+            "%d in-place disabled, %d java-managed output slots)",
+            frozenConstCount, numSlots_, shapeOnlyCount, valueIndepCount,
+            disabledInPlace, javaManagedCount);
 
-  // Populate execution context with frozen constant stats so downstream
-  // diagnostics (logExecutionSummary, dumpFlowLog on failure) show what happened.
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
   if (execCtx != nullptr) {
     execCtx->frozenConstCount = frozenConstCount;
     execCtx->shapeOnlyTraitCount = shapeOnlyCount;
     execCtx->valueIndepCount = valueIndepCount;
-    execCtx->viewAliasUnfrozen = viewAliasUnfrozen;
+    execCtx->viewAliasUnfrozen = 0;
     execCtx->javaManagedSlots = javaManagedCount;
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::FROZEN_CONST_DETECT,
                          frozenConstCount, numSlots_);
@@ -1594,14 +1438,7 @@ Status NativeDynamicShapePlan::executeSlot(
       !planLifecycle_.isSlotBySlot() && execCtx != nullptr &&
       ModeContract::forMode(execCtx->graphExecutionMode).forcesSyncOnFrozen;
   auto prezeroThisSlot = [&]() {
-    if (slot.frozenConstantSlot()) return;
-    if (!slot.flags.needsZeroedOutput) return;
-    if (slot.flags.isViewCapableOp) return;
-    if (slot.flags.isIdentityOp) return;
-    if (slot.flags.inPlaceFused) return;
-    if (slot.fusedChain.isFusedChainTail) return;
-    if (slot.slotPhase.isSealed() && slot.flags.isFullyWriting) return;
-
+    if (!slot.needsPrezero()) return;
     GraphSegment zeroSeg;
     zeroSeg.def.startSlot = stepIdx;
     zeroSeg.def.endSlot = stepIdx;
@@ -1617,8 +1454,8 @@ Status NativeDynamicShapePlan::executeSlot(
         slot.slotPhase.displayName(),
         slot.frozenContextReady() ? 1 : 0,
         slot.shapeCacheValid() ? 1 : 0,
-        slot.flags.isViewCapableOp ? 1 : 0,
-        slot.flags.isDataDependent ? 1 : 0,
+        slot.isViewCapableOp() ? 1 : 0,
+        slot.isDataDependent() ? 1 : 0,
         slot.flags.outputShapeDependsOnInputValues ? 1 : 0,
         executeCount_,
         shapesFrozen_ ? 1 : 0);
@@ -1724,7 +1561,7 @@ Status NativeDynamicShapePlan::executeSlot(
         !tl_dspReplayActive &&
 #endif
         contextPool_[stepIdx] != nullptr && slot.frozenContextReady() &&
-        !slot.flags.isIdentityOp &&
+        !slot.isIdentityOp() &&
         !slot.frozenConstantSlot() &&
         !slot.fusedChain.isFusedChainHead &&
         !slot.fusedChain.isFusedChainTail &&
@@ -1753,7 +1590,7 @@ Status NativeDynamicShapePlan::executeSlot(
     // View-capable ops: verify the installed view still shares a buffer with
     // the current input. If the upstream gap op replaced the input array with
     // a new allocation, the view is stale and we must fall through.
-    if (slot.flags.isViewCapableOp && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
+    if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
       int outSi = slot.wiring.outputSlotIndices[0];
       if (outSi < 0 || outSi >= totalOutputSlots_) break;
 
@@ -1918,13 +1755,20 @@ Status NativeDynamicShapePlan::executeSlot(
 
       // Composite replay gap ops: graph replay writes device memory directly
       // without updating actuality flags (no registerSpecialUse in CUDA graph
-      // replay). When forceSync_ is true (set by compositeReplay for gap ops),
-      // we MUST call prepareSpecialUse to ensure inputs are synced from device
-      // and registerSpecialUse to tick the output's device-write counter.
+      // replay). needsSync() checks the contract + scoped override to decide.
       // Without this, gap ops (especially matmul for logits) read stale data
       // and produce zeros from exec=2 onward.
-      if (forceSync_) {
-        NDArray::prepareSpecialUse(ffCtx.fastpath_out(), ffCtx.fastpath_in());
+      {
+        bool gapSync = needsSync();
+        if (executeCount_ <= 2 && DSP_DIAG_ENABLED(STREAM_SYNC)) {
+          DSP_DIAG_SLOT(STREAM_SYNC, stepIdx,
+                        "compositeGap sync=%s reason=%s exec=%d overrideDepth=%d",
+                        gapSync ? "YES" : "NO", syncReason(),
+                        executeCount_, syncOverrideDepth_);
+        }
+        if (gapSync) {
+          NDArray::prepareSpecialUse(ffCtx.fastpath_out(), ffCtx.fastpath_in());
+        }
       }
 
       // Skip shape inference in frozen steady-state: outputs are already
@@ -1994,7 +1838,7 @@ Status NativeDynamicShapePlan::executeSlot(
             fsLabel, executeCount_);
       }
 
-      if (forceSync_) {
+      if (needsSync()) {
         NDArray::registerSpecialUse(ffCtx.fastpath_out(), ffCtx.fastpath_in());
       }
 
@@ -2134,7 +1978,7 @@ Status NativeDynamicShapePlan::executeSlot(
     // wrapper can point at a closed DataBuffer by the time Step 3 reaches it.
     // Treat that as a cache miss and let the view-install path below recreate
     // the wrapper from current inputs. Non-view slots remain a hard error.
-    if (slot.flags.isViewCapableOp ||
+    if (slot.isViewCapableOp() ||
         slot.flags.outputShapeDependsOnInputValues ||
         executeCount_ == 0) {
       // View-capable ops recreate their output wrapper each step.
@@ -2174,7 +2018,7 @@ Status NativeDynamicShapePlan::executeSlot(
   };
 
   // ── Fast path: identity ops ──────────────────────────────────────────────
-  if (slot.flags.isIdentityOp && slot.wiring.numInputs == 1 && slot.wiring.numOutputs >= 1) {
+  if (slot.isIdentityOp() && slot.wiring.numInputs == 1 && slot.wiring.numOutputs >= 1) {
     int srcIdx = slot.wiring.inputSourceIndices[0];
     NDArray* input = nullptr;
     if (srcIdx >= 0) {
@@ -2224,22 +2068,43 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
     if (allOutputsPopulated) {
+      // ── Frozen buffer invariant check ─────────────────────────────────
+      // A frozen constant's buffer was populated during warmup and must remain
+      // valid for the entire plan lifetime. If ANY output has a null or closed
+      // DataBuffer, the freeze classification was wrong or something
+      // deallocated the buffer. Throw — no fallback.
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        int si = slot.wiring.outputSlotIndices[o];
+        if (si < 0 || si >= totalOutputSlots_) continue;
+        NDArray* arr = outputSlots_[si];
+        if (arr == nullptr) continue;  // shouldn't happen (allOutputsPopulated), belt-and-suspenders
+        auto* db = arr->dataBuffer();
+        if (db == nullptr || db->isClosed()) {
+          DSP_THROW(EXECUTE,
+              "FROZEN_BUFFER_INVALID: step=%d (%s) outputSlot=%d has %s DataBuffer. "
+              "Frozen constants must have valid buffers for the plan's lifetime. "
+              "This means either: (1) something deallocated a frozen buffer, "
+              "(2) the freeze classification was wrong, or "
+              "(3) an in-place op overwrote the buffer despite protection. "
+              "execCount=%d numSlots=%d",
+              stepIdx, slot.ident.opName.c_str(), si,
+              db == nullptr ? "null" : "closed",
+              executeCount_, numSlots_);
+        }
+      }
       DSP_DIAG(VERIFY, "SLOT_EXEC step=%d op=%s [SKIPPED:frozen-const]", stepIdx, slot.ident.opName.c_str());
       backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
-#if defined(SD_CUDA)
-      if (tl_graphExecutionActive && stepIdx == 273) {
-        cudaStream_t retStr = *LaunchContext::defaultContext()->getCudaStream();
-        cudaStreamCaptureStatus retStat = cudaStreamCaptureStatusNone;
-        cudaStreamGetCaptureInfo_v2(retStr, &retStat, nullptr, nullptr, nullptr, nullptr);
-        printf("SLOT_FCONST_RETURN: slot 273 returning early (frozen-const skip) capStat=%d\n", (int)retStat);
-        fflush(stdout);
-      }
-#endif
       return Status::OK;
     }
-    // Fall through to execute — output slot is null, must re-execute to populate it
-    DSP_DIAG(EXECUTE, "SLOT_EXEC step=%d op=%s frozen-const but output null, re-executing",
-             stepIdx, slot.ident.opName.c_str());
+    // Frozen constant with null output — this should never happen post-warmup.
+    // detectFrozenConstants runs at executeCount_==1, and warmup populates all
+    // outputs. If we get here, the slot was incorrectly classified as frozen
+    // before its outputs were populated.
+    DSP_THROW(EXECUTE,
+        "FROZEN_NULL_OUTPUT: step=%d (%s) is frozenConstantSlot but has null output "
+        "at executeCount=%d. detectFrozenConstants must run AFTER warmup populates "
+        "all outputs. This indicates a lifecycle ordering bug.",
+        stepIdx, slot.ident.opName.c_str(), executeCount_);
   }
 
   // ── Fused chain tail skip ─────────────────────────────────────────────────
@@ -2518,7 +2383,7 @@ Status NativeDynamicShapePlan::executeSlot(
   if (!frozenSlotBySlot && slot.frozenContextReady() && !slot.flags.isDynamicShape) {
 
     // ── View-capable fast path (reshape/expand_dims/squeeze/strided_slice) ──
-    if (slot.flags.isViewCapableOp && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
+    if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
       int si = slot.wiring.outputSlotIndices[0];
       if (si >= 0 && si < totalOutputSlots_) {
         // Resolve input0 from slot source indices
@@ -2688,7 +2553,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
     // Fallback: view-capable op in frozen path but view fast path didn't handle it.
     // If input is non-empty but cached outputs are empty, re-infer via normal path.
-    if (slot.flags.isViewCapableOp && slot.wiring.numInputs >= 1) {
+    if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1) {
       int srcIdx0 = slot.wiring.inputSourceIndices[0];
       NDArray* inp0 = nullptr;
       if (srcIdx0 >= 0 && srcIdx0 < totalOutputSlots_) inp0 = outputSlots_[srcIdx0];
@@ -2799,11 +2664,17 @@ Status NativeDynamicShapePlan::executeSlot(
     // device-resident and actuality flags are correct. Skipping these calls eliminates
     // ~5486 syncToDevice calls per decode step (2743 ops × 2 calls).
     //
-    // forceSync_: Pre-capture warmup at exec=2+ sets this to force sync even when
-    // executeCount_ >= 2. The warmup needs coherency because prior segments'
-    // composite captures may have changed actuality flags.
-    bool needsSync = forceSync_ || planLifecycle_.isSlotBySlot() || executeCount_ < 2;
-    if (needsSync) {
+    // Sync policy: computed from ModeContract + lifecycle + scoped overrides.
+    // During warmup (count<2), slot-by-slot, or when contract requires it, sync runs.
+    bool syncNeeded = needsSync();
+    if (executeCount_ <= 2 && DSP_DIAG_ENABLED(STREAM_SYNC)) {
+      DSP_DIAG_SLOT(STREAM_SYNC, stepIdx,
+                    "frozenCtx sync=%s reason=%s exec=%d mode=%s frozen=%d overrideDepth=%d",
+                    syncNeeded ? "YES" : "NO", syncReason(),
+                    executeCount_, ModeContract::modeName(static_cast<int>(graphExecutionMode_)),
+                    (int)shapesFrozen_, syncOverrideDepth_);
+    }
+    if (syncNeeded) {
         NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
     } else {
 #if defined(SD_CUDA)
@@ -2987,7 +2858,7 @@ Status NativeDynamicShapePlan::executeSlot(
           fcLabel, executeCount_);
     }
 
-    if (needsSync) {
+    if (syncNeeded) {
         NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
     } else if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
       // Trace post-exec output state. When registerSpecialUse is skipped, the
@@ -3215,6 +3086,16 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   }
 
+  // ── Capture probe: after Step 1 (gather inputs) ──────────────────────────
+#if defined(SD_CUDA)
+  {
+    bool _capInvalid = false;
+    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+                      stepIdx, "AFTER_GATHER_INPUTS",
+                      slot.ident.opName.c_str(), _capInvalid);
+  }
+#endif
 
   // ── Step 2: Shape inference ──────────────────────────────────────────────
   LongType shapeKey = 0;
@@ -3232,7 +3113,7 @@ Status NativeDynamicShapePlan::executeSlot(
     // inference produces empty output shapes that get cached. On subsequent
     // executions the inputs become non-empty (concat grows KV), but
     // shapesFrozen_ prevents re-inference. Detect this and force a cache miss.
-    if (cacheHit && slot.flags.isViewCapableOp && !slot.shapeCache.cachedOutputShapes.empty()) {
+    if (cacheHit && slot.isViewCapableOp() && !slot.shapeCache.cachedOutputShapes.empty()) {
       bool allCachedEmpty = true;
       for (const auto& s : slot.shapeCache.cachedOutputShapes) {
         if (!shape::isEmpty(const_cast<LongType*>(s))) {
@@ -3257,7 +3138,7 @@ Status NativeDynamicShapePlan::executeSlot(
     // cached shapes. computeShapeKey does NOT include the ARRAY_EMPTY flag,
     // so an input that transitions from empty (ARRAY_EMPTY) to non-empty with
     // the same dimensions produces an identical key but needs re-inference.
-    if (cacheHit && slot.flags.isViewCapableOp && !slot.shapeCache.cachedOutputShapes.empty()) {
+    if (cacheHit && slot.isViewCapableOp() && !slot.shapeCache.cachedOutputShapes.empty()) {
       bool allCachedEmpty = true;
       for (const auto& s : slot.shapeCache.cachedOutputShapes) {
         if (!shape::isEmpty(const_cast<LongType*>(s))) {
@@ -3634,6 +3515,17 @@ Status NativeDynamicShapePlan::executeSlot(
     delete shapeList;
   }
 
+  // ── Capture probe: after Step 2 (shape inference) ────────────────────────
+#if defined(SD_CUDA)
+  {
+    bool _capInvalid = false;
+    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+                      stepIdx, "AFTER_SHAPE_INFERENCE",
+                      slot.ident.opName.c_str(), _capInvalid);
+  }
+#endif
+
   // ── Step 3: Allocate/reuse outputs ───────────────────────────────────────
   // Use the shape function's output count (not the graph wiring count) so the
   // op sees the same outputWidth() as InferenceSession. Extra outputs beyond
@@ -3719,7 +3611,7 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── View-capable ops: share input 0's DataBuffer for output 0 ──────────
-  if (!outputsReady && slot.flags.isViewCapableOp && slot.wiring.numInputs >= 1 && numActualOutputs >= 1) {
+  if (!outputsReady && slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && numActualOutputs >= 1) {
     NDArray* input0 = inputs[0];
     if (input0 != nullptr) {
       NDArray* view = nullptr;
@@ -4104,7 +3996,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
         NDArray* maxOut = nullptr;
         try {
-          if (!slot.flags.isViewCapableOp) {
+          if (!slot.isViewCapableOp()) {
             std::vector<LongType> contigShape(rank);
             for (int d = 0; d < rank; d++) contigShape[d] = shape[d];
             maxOut = new NDArray(order, contigShape, dt);
@@ -4153,7 +4045,7 @@ Status NativeDynamicShapePlan::executeSlot(
       // info so strides match the physical layout (legacy COPY_SHAPE ops can
       // inherit non-contiguous strides from permuted inputs, which would be
       // wrong on a fresh buffer). View ops keep original strides/offsets.
-      if (!slot.flags.isViewCapableOp) {
+      if (!slot.isViewCapableOp()) {
         std::vector<LongType> contigShape(rank);
         for (int d = 0; d < rank; d++) contigShape[d] = shapeInfo[d + 1];
         out = new NDArray(order, contigShape, dt);
@@ -4179,6 +4071,17 @@ Status NativeDynamicShapePlan::executeSlot(
     outputSlots_[slotIdx] = out;
   }
 
+  // ── Capture probe: after Step 3 (output allocation) ──────────────────────
+#if defined(SD_CUDA)
+  {
+    bool _capInvalid = false;
+    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+                      stepIdx, "AFTER_OUTPUT_ALLOC",
+                      slot.ident.opName.c_str(), _capInvalid);
+  }
+#endif
+
   // ── Step 4: Execute ──
 
   // Skip execution if all outputs are empty arrays — nothing to compute.
@@ -4198,7 +4101,7 @@ Status NativeDynamicShapePlan::executeSlot(
     if (allOutputsEmpty && numActualOutputs > 0) {
       // For view-capable ops, check if primary input is non-empty.
       // If so, the output shape is stale — re-derive from input and execute.
-      bool isViewOp = slot.flags.isViewCapableOp;
+      bool isViewOp = slot.isViewCapableOp();
       bool primaryInputNonEmpty = (slot.wiring.numInputs > 0 && inputs[0] != nullptr &&
                                    !inputs[0]->isEmpty() && inputs[0]->lengthOf() > 0);
       if (isViewOp && primaryInputNonEmpty) {
@@ -4251,14 +4154,14 @@ Status NativeDynamicShapePlan::executeSlot(
   // Shape-key computation and shape functions may sync control tensors to host
   // in order to read value-dependent shape inputs. Re-sync those inputs before
   // execution so the kernel does not read stale device-side shape values.
-  if (slot.flags.isDataDependent || slot.flags.outputShapeDependsOnInputValues) {
+  if (slot.isDataDependent() || slot.flags.outputShapeDependsOnInputValues) {
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       NDArray* in = inputs[i];
       if (in == nullptr || in->isEmpty()) continue;
       auto* db = in->dataBuffer();
       if (db == nullptr || db->isClosed()) continue;
 
-      const bool syncAllInputs = slot.flags.isDataDependent;
+      const bool syncAllInputs = slot.isDataDependent();
       const bool isControlInput = isSmallIntegralControlArray(in);
       if (!syncAllInputs && !isControlInput) continue;
 
@@ -4351,15 +4254,18 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // Ensure CUDA host↔device coherency (warmup path).
-  // PERFORMANCE: In frozen steady-state (executeCount_ >= 2), all data is already
-  // device-resident and actuality flags are correct. Skipping eliminates ~5486
-  // syncToDevice calls per decode step.
-  // forceSync_: Pre-capture warmup forces sync at exec=2+ (same rationale as above).
-  bool needsSync = forceSync_ || planLifecycle_.isSlotBySlot() || executeCount_ < 2;
-  if (needsSync) {
+  // Sync policy is contract-driven via needsSync().
+  bool syncNeeded2 = needsSync();
+  if (executeCount_ <= 2 && DSP_DIAG_ENABLED(STREAM_SYNC)) {
+    DSP_DIAG_SLOT(STREAM_SYNC, stepIdx,
+                  "warmupSlot sync=%s reason=%s exec=%d mode=%s",
+                  syncNeeded2 ? "YES" : "NO", syncReason(),
+                  executeCount_, ModeContract::modeName(static_cast<int>(graphExecutionMode_)));
+  }
+  if (syncNeeded2) {
     NDArray::prepareSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
   }
-  if (!needsSync && DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
+  if (!syncNeeded2 && DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
     auto& fpin = ctx.fastpath_in();
     for (size_t ii = 0; ii < fpin.size(); ii++) {
       NDArray* a = fpin[ii];
@@ -4401,6 +4307,18 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   }
   prezeroThisSlot();
+
+  // ── Capture probe: immediately before op->execute() ──────────────────────
+#if defined(SD_CUDA)
+  {
+    bool _capInvalid = false;
+    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+                      stepIdx, "BEFORE_OP_EXECUTE",
+                      slot.ident.opName.c_str(), _capInvalid);
+  }
+#endif
+
   try {
     status = slot.ident.op->execute(&ctx);
   } catch (const std::exception& e) {
@@ -4423,6 +4341,17 @@ Status NativeDynamicShapePlan::executeSlot(
     return Status::KERNEL_FAILURE;
   }
   }  // end else (!shapeOnlyMode_)
+
+  // ── Capture probe: after Step 4 (op execution) ──────────────────────────
+#if defined(SD_CUDA)
+  {
+    bool _capInvalid = false;
+    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+                      stepIdx, "AFTER_OP_EXECUTE",
+                      slot.ident.opName.c_str(), _capInvalid);
+  }
+#endif
 
   // Post-execute corruption scan (warmup path)
   for (int i = 0; i < numActualOutputs; i++) {
@@ -4468,7 +4397,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
   // Register device writes (warmup path).
   // PERFORMANCE: Skip in frozen steady-state to eliminate ~5486 sync calls/step.
-  if (needsSync) {
+  if (syncNeeded2) {
     NDArray::registerSpecialUse(ctx.fastpath_out(), ctx.fastpath_in());
   } else if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_MEMORY)) {
     auto& fpout = ctx.fastpath_out();
@@ -4627,7 +4556,7 @@ Status NativeDynamicShapePlan::executeSlot(
 //
 // Returns:
 //   Status::OK — normal completion
-//   Status::MAYBE — NextIteration, caller should jump back to loopBackTarget
+//   Status::EQ_TRUE — NextIteration, caller should jump back to loopBackTarget
 //   Negative int via KERNEL_FAILURE — error
 //
 // Note: This method is called from executeSegmentSlotBySlot (in _segments.cpp)

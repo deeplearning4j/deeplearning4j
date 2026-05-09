@@ -167,68 +167,131 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
 
   // ── CHECK 2: Variable input mutation across steps ─────────────────────
   // After warmup (execCount >= 3), at least one variable input's device data
-  // must differ from the previous step. If ALL are identical, the decode loop
-  // is not updating inputs (input_ids, position_ids, etc.) and graph replay
-  // will produce wrong tokens.
+  // should differ from the previous step in a decode loop.  If ALL inputs are
+  // identical for N or more consecutive steps it indicates a stagnant loop
+  // (e.g. input_ids / position_ids not advancing) and replay will produce
+  // wrong output.
+  //
+  // Threshold kStaleThreshold=3: a single identical-step pair is tolerated
+  // because vision encoder tiles can legitimately share pixel data (blank or
+  // uniform regions) or identical attention masks.  A real decode-loop
+  // stagnation produces dozens of unchanged steps, so threshold=3 catches it
+  // while suppressing false positives from occasional duplicate vision frames.
+  //
+  // The per-plan consecutive-unchanged counter is stored in prevStepFingerprints_
+  // under the sentinel key -1 (all real external-input indices are >= 0).
+  static constexpr int kStaleThreshold = 3;
+
   if (executeCount_ >= 3) {
-    bool anyChanged = false;
-    bool anyChecked = false;
-    std::vector<std::pair<int, uint64_t>> currentFingerprints;
+    // Sentinel key -2 stores the executeCount_ value of the execute() invocation
+    // at which fingerprints were last saved.  Multiple compositeReplay calls within
+    // the same execute() invocation share the same executeCount_; only the FIRST
+    // call per invocation should run the staleness check and update fingerprints.
+    // Subsequent calls for other segments skip to prevent false-positive
+    // consecutive-unchanged accumulation across segments of a single frame
+    // (e.g. vision encoder issuing N segment replays per encode() call).
+    auto it2 = prevStepFingerprints_.find(-2);
+    bool skipCheck2 = (it2 != prevStepFingerprints_.end() &&
+                       static_cast<int>(it2->second) == executeCount_);
+    if (!skipCheck2) {
+      bool anyChanged = false;
+      bool anyChecked = false;
+      std::vector<std::pair<int, uint64_t>> currentFingerprints;
 
-    for (int idx : varIndices) {
-      if (idx < 0 || idx >= numExt) continue;
-      NDArray* arr = effectiveArrays[idx];
-      if (arr == nullptr) continue;
-
-      void* devBuf = arr->specialBuffer();
-      size_t bytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
-      uint64_t fp = deviceBufFingerprint(devBuf, bytes, cudaStr);
-      currentFingerprints.push_back({idx, fp});
-      anyChecked = true;
-
-      // Compare against previous step's fingerprint
-      auto it = prevStepFingerprints_.find(idx);
-      if (it != prevStepFingerprints_.end() && it->second != fp) {
-        anyChanged = true;
+      // Read the consecutive-unchanged counter from the sentinel slot.
+      uint64_t consecutiveUnchanged = 0;
+      {
+        auto it = prevStepFingerprints_.find(-1);
+        if (it != prevStepFingerprints_.end()) consecutiveUnchanged = it->second;
       }
-    }
 
-    if (anyChecked && !anyChanged && !prevStepFingerprints_.empty()) {
-      // ALL variable inputs identical to previous step
-      std::string detail;
+      for (int idx : varIndices) {
+        if (idx < 0 || idx >= numExt) continue;
+        NDArray* arr = effectiveArrays[idx];
+        if (arr == nullptr) continue;
+
+        void* devBuf = arr->specialBuffer();
+        size_t bytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+        uint64_t fp = deviceBufFingerprint(devBuf, bytes, cudaStr);
+        currentFingerprints.push_back({idx, fp});
+        anyChecked = true;
+
+        // Compare against previous step's fingerprint (ignore sentinel keys < 0).
+        auto it = prevStepFingerprints_.find(idx);
+        if (it != prevStepFingerprints_.end() && it->second != fp) {
+          anyChanged = true;
+        }
+      }
+
+      if (anyChecked) {
+        // prevStepFingerprints_ is non-empty only when we have a prior step's data.
+        // The sentinel key -1 also keeps it non-empty, so gate on having at least
+        // one real fingerprint (any key >= 0).
+        bool hasPriorStep = false;
+        for (auto& kv : prevStepFingerprints_) {
+          if (kv.first >= 0) { hasPriorStep = true; break; }
+        }
+
+        if (!anyChanged && hasPriorStep) {
+          ++consecutiveUnchanged;
+
+          if (static_cast<int>(consecutiveUnchanged) >= kStaleThreshold) {
+            // Enough consecutive unchanged steps to be confident this is a real bug.
+            std::string detail;
+            for (auto& [idx, fp] : currentFingerprints) {
+              const char* name = (idx < static_cast<int>(externalInputNames_.size()))
+                                 ? externalInputNames_[idx].c_str() : "?";
+              char buf[128];
+              snprintf(buf, sizeof(buf), "  ext[%d]='%s' fp=0x%016llx (UNCHANGED)\n",
+                       idx, name, static_cast<unsigned long long>(fp));
+              detail += buf;
+            }
+
+            char msg[1024];
+            snprintf(msg, sizeof(msg),
+                     "STALENESS CHECK 2 FAILED: %s execCount=%d — ALL %d variable "
+                     "inputs have been identical for %llu consecutive steps "
+                     "(threshold=%d). Inputs are not being updated between steps; "
+                     "graph replay will produce stale/wrong output.\n%s",
+                     diagTag, executeCount_,
+                     static_cast<int>(currentFingerprints.size()),
+                     static_cast<unsigned long long>(consecutiveUnchanged),
+                     kStaleThreshold,
+                     detail.c_str());
+            DSP_DIAG(VERIFY, "%s", msg);
+            throw std::runtime_error(msg);
+          } else {
+            // Warn but tolerate: may be a vision-encoder with identical tiles.
+            DSP_DIAG(VERIFY,
+                     "%s MUTATION_WARN: execCount=%d, %d variable inputs unchanged "
+                     "(consecutive=%llu, threshold=%d — tolerated)",
+                     diagTag, executeCount_,
+                     static_cast<int>(currentFingerprints.size()),
+                     static_cast<unsigned long long>(consecutiveUnchanged),
+                     kStaleThreshold);
+          }
+        } else {
+          // At least one input changed — reset the counter.
+          consecutiveUnchanged = 0;
+          DSP_DIAG(VERIFY, "%s MUTATION_OK: execCount=%d, %d variable inputs checked, "
+                   "anyChanged=%d",
+                   diagTag, executeCount_, static_cast<int>(currentFingerprints.size()),
+                   anyChanged ? 1 : 0);
+        }
+      }
+
+      // Save fingerprints for next step; persist consecutive counter in sentinel -1.
+      // Record this execute() invocation in sentinel -2 so that subsequent
+      // compositeReplay calls for other segments skip this check.
+      prevStepFingerprints_.clear();
       for (auto& [idx, fp] : currentFingerprints) {
-        const char* name = (idx < static_cast<int>(externalInputNames_.size()))
-                           ? externalInputNames_[idx].c_str() : "?";
-        char buf[128];
-        snprintf(buf, sizeof(buf), "  ext[%d]='%s' fp=0x%016llx (UNCHANGED)\n",
-                 idx, name, static_cast<unsigned long long>(fp));
-        detail += buf;
+        prevStepFingerprints_[idx] = fp;
       }
-
-      char msg[1024];
-      snprintf(msg, sizeof(msg),
-               "STALENESS CHECK 2 FAILED: %s execCount=%d — ALL %d variable "
-               "inputs have identical device data to the previous step. "
-               "The decode loop is not updating variable inputs between steps. "
-               "This causes the graph to replay with stale data.\n%s",
-               diagTag, executeCount_, static_cast<int>(currentFingerprints.size()),
-               detail.c_str());
-      DSP_DIAG(VERIFY, "%s", msg);
-      throw std::runtime_error(msg);
-    }
-
-    if (anyChecked) {
-      DSP_DIAG(VERIFY, "%s MUTATION_OK: execCount=%d, %d variable inputs checked, "
-               "anyChanged=%d",
-               diagTag, executeCount_, static_cast<int>(currentFingerprints.size()),
-               anyChanged ? 1 : 0);
-    }
-
-    // Save for next step
-    prevStepFingerprints_.clear();
-    for (auto& [idx, fp] : currentFingerprints) {
-      prevStepFingerprints_[idx] = fp;
-    }
+      if (consecutiveUnchanged > 0) {
+        prevStepFingerprints_[-1] = consecutiveUnchanged;
+      }
+      prevStepFingerprints_[-2] = static_cast<uint64_t>(executeCount_);
+    } // end if (!skipCheck2)
   }
 
   // ── CHECK 3: Staging address stability ────────────────────────────────

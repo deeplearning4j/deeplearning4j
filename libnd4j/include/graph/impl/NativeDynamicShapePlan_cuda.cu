@@ -185,15 +185,25 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
 
-  if (ModeContract::forMode(graphExecutionMode_).isSlotBySlot ||
-      Environment::getInstance().tritonSkipKernels()) {
-    DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: disabled for slot-by-slot/skip-kernels mode");
+  // Soft preconditions — return MAYBE so the caller falls through to normal execution.
+  if (ModeContract::forMode(graphExecutionMode_).isSlotBySlot || planLifecycle_.isSlotBySlot()) {
+    return Status::MAYBE;
+  }
+  if (executeCount_ < 1) {
+    return Status::MAYBE;
+  }
+  // The frozen fast path requires shapes to be frozen and all segments to have
+  // ready replay handles (monolithic or composite). Without this check, early
+  // executions fall through to compositeReplay with empty schedules → KERNEL_FAILURE.
+  if (!shapesFrozen_ || !allSegmentsReplayReady()) {
+    return Status::MAYBE;
+  }
+  // Mode contract: some modes explicitly disable the frozen fast path.
+  if (!ModeContract::forMode(graphExecutionMode_).allowsFrozenFastPath) {
     return Status::MAYBE;
   }
 
   // Ensure VERIFY diagnostics are enabled and at FULL level when tritonVerifyKernels is on.
-  // This mirrors the same logic in executeSegmentWithGpuGraph (gpubackend.cpp) but is needed
-  // here because the CUDA_GRAPHS mode uses this path directly (no GPU graph backend).
   if (Environment::getInstance().tritonVerifyKernels()) {
     if (!DSP_DIAG_ENABLED(VERIFY)) {
       sd::graph::DspDiagnostics::getInstance().enableCategories(sd::graph::DSP_DIAG_VERIFY);
@@ -201,267 +211,209 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
   }
 
-  bool allowFrozenGraphFastPath =
-      ModeContract::forMode(graphExecutionMode_).allowsFrozenFastPath;
-  bool frozenFastPathInputStable = true;
-  bool frozenFastPathSlotsStable = true;
-  if (allowFrozenGraphFastPath && !planLifecycle_.isSlotBySlot() && executeCount_ >= 1 && segments_.size() == 1) {
-    auto& seg0 = segments_[0];
-    // Per-address comparison: catches address changes that the hash may miss
-    // (e.g. CUDA pool reuses an address for a different allocation, changing
-    // only a subset of the hashed values in a way that produces a collision).
-    if (planLifecycle_.pointersStable()) {
-      // All pointers (inputs + slots) confirmed stable — skip both hashes
-      frozenFastPathInputStable = true;
-    } else if (seg0.exec.capturedInputAddrKey != 0) {
-      // Prefer the filtered/staged address key when available. Triton decode
-      // stabilizes variable placeholder inputs via plan-owned staging buffers;
-      // comparing raw external addresses first would reject replay on every
-      // step even though the captured graph is bound to the stable staged
-      // pointers.
-      frozenFastPathInputStable =
-          (computeSegmentInputAddrKey(seg0, externalInputs, numExternalInputs) == seg0.exec.capturedInputAddrKey);
-    } else if (seg0.exec.replayHandle && !seg0.exec.replayHandle->getCapturedExternalAddresses().empty()) {
-      frozenFastPathInputStable = externalAddrsMatch(seg0, externalInputs, numExternalInputs);
-    }
-    if (planLifecycle_.pointersStable()) {
-      frozenFastPathSlotsStable = true;
-    } else if (seg0.exec.capturedSlotAddrHash != 0) {
-      frozenFastPathSlotsStable =
-          (computeSlotAddrHash(outputSlots_, seg0.def.startSlot, seg0.def.endSlot, totalOutputSlots_) ==
-           seg0.exec.capturedSlotAddrHash);
-    }
-  }
-  bool fastPathApplicable = allowFrozenGraphFastPath && !planLifecycle_.isSlotBySlot() && executeCount_ >= 1 && segments_.size() == 1 &&
-        frozenFastPathInputStable && frozenFastPathSlotsStable &&
-        segments_[0].exec.replayHandle != nullptr &&
-        segments_[0].exec.replayHandle->isReady();
-  bool compositeFastPathApplicable = false;
-  if (!fastPathApplicable && allowFrozenGraphFastPath && !planLifecycle_.isSlotBySlot() && executeCount_ >= 1 && segments_.size() == 1 &&
-      frozenFastPathInputStable && frozenFastPathSlotsStable &&
-      !Environment::getInstance().tritonVerifyKernels()) {
-    compositeFastPathApplicable = hasCompositeHandles(segments_[0]);
-    // Don't short-circuit via composite fast path while the segment is in the
-    // CUDA graph capture window and hasn't been captured yet. The capture
-    // decision lives in executeSegmentWithGpuGraph → segDispatchCaptureOrDirect,
-    // which is only reachable through the full phaseReplay path. If we return
-    // OK here, the capture window passes without capture being attempted.
-    if (compositeFastPathApplicable && Environment::getInstance().tritonGraphCapture()) {
-      auto& seg0 = segments_[0];
-      bool hasCapturedGraph = (seg0.exec.replayHandle != nullptr);
-      if (!hasCapturedGraph) {
-        int captureMinExec = Environment::getInstance().tritonCaptureMinExec();
-        bool inCaptureWindow = (seg0.exec.executionCount >= captureMinExec) &&
-                               (seg0.exec.executionCount <= (captureMinExec + 2));
-        if (inCaptureWindow) {
-          DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: composite ready but deferring to full path for "
-                   "CUDA graph capture (execCount=%d window=[%d,%d])",
-                   seg0.exec.executionCount, captureMinExec, captureMinExec + 2);
-          compositeFastPathApplicable = false;
-        }
-      }
-    }
-  }
-  DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: allow=%d frozen=%d execCount=%d segs=%d inputStable=%d slotStable=%d hasHandle=%d ready=%d compositeReady=%d -> %s",
-           (int)allowFrozenGraphFastPath, (int)shapesFrozen_, (int)executeCount_, (int)segments_.size(),
-           (int)frozenFastPathInputStable, (int)frozenFastPathSlotsStable,
-           (int)(segments_[0].exec.replayHandle != nullptr),
-           (int)(segments_[0].exec.replayHandle ? segments_[0].exec.replayHandle->isReady() : 0),
-           (int)compositeFastPathApplicable,
-           (fastPathApplicable || compositeFastPathApplicable) ? "OK" : "MAYBE");
-  if (!fastPathApplicable && !compositeFastPathApplicable) {
-    return Status::MAYBE;  // Fast path not applicable
-  }
-
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
-  // Stale CUDA error clearing is handled by executeSteadyState (conditional)
-  // or execute() before this call. Only clear the sticky CUDA driver error.
-  cudaGetLastError();
+  cudaGetLastError();  // Clear stale CUDA error
 
-  GraphSegment& seg = segments_[0];
-  if (!bindSegmentCudaDevice(seg, slots_, numSlots_, "frozenFastPath")) {
-    return Status::KERNEL_FAILURE;
-  }
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
-
-  // Set DSP execution stream BEFORE the ext input sync loop so that
-  // syncToSpecial() routes H2D copies to the DSP stream (async, no per-call
-  // cudaStreamSynchronize). Without this, each syncToSpecial uses stream 0
-  // with a blocking sync per call — N pipeline drains for N variable inputs.
-  // The compositeReplay path in gpubackend.cu already does this correctly.
   sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
 
-  if (fastPathApplicable) {
-    bool ok = true;
-
-  // Unified pre-replay sync: cross-stream ordering + H2D variable inputs + D2D staging.
-  // Replaces the three separate inline sync blocks that were previously here.
-  // performPreReplaySync is idempotent (PlanExecutionContext dedup flags).
+  // Unified pre-replay sync for all segments: cross-stream ordering + H2D
+  // variable inputs + D2D staging. Idempotent (PlanExecutionContext dedup flags).
   externalInputs = performPreReplaySync(externalInputs, numExternalInputs, stream, "frozen_fast_path");
 
-  if (ok) {
-    auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+  // ── Per-segment replay iteration ─────────────────────────────────────────
+  // Iterate all segments and replay each one. Every segment must have a replay
+  // handle (monolithic or composite) — allSegmentsReplayReady() was checked
+  // by the caller before entry.
+  DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: replaying %d segments (execCount=%d)",
+           (int)segments_.size(), (int)executeCount_);
+
+  for (size_t segIdx = 0; segIdx < segments_.size(); segIdx++) {
+    GraphSegment& seg = segments_[segIdx];
+
+    // All-frozen-constant segments: outputs are already populated from warmup.
+    // No capture, no replay, no execution needed.
+    if (seg.def.allFrozenConstants) {
+      seg.exec.executionCount++;
+      continue;
+    }
+
+    // Segments that produced 0 GPU nodes during capture, or are non-capturable,
+    // have no replay handles (allSegmentsReplayReady skips them). Execute these
+    // slot-by-slot — they are typically reshape/view/identity ops with no kernels.
+    if (seg.exec.captureProducedNoKernels || !seg.def.isCapturable) {
+      if (!bindSegmentCudaDevice(seg, slots_, numSlots_, "frozenFastPath_sbs")) {
+        return Status::KERNEL_FAILURE;
+      }
+      auto sbsStatus = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
+      if (sbsStatus != Status::OK) {
+        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: slot-by-slot FAILED seg[%d-%d] status=%d "
+                 "(captureProducedNoKernels=%d isCapturable=%d)",
+                 seg.def.startSlot, seg.def.endSlot, (int)sbsStatus,
+                 (int)seg.exec.captureProducedNoKernels, (int)seg.def.isCapturable);
+        return sbsStatus;
+      }
+      seg.exec.executionCount++;
+      continue;
+    }
+
+    if (!bindSegmentCudaDevice(seg, slots_, numSlots_, "frozenFastPath")) {
+      return Status::KERNEL_FAILURE;
+    }
+
+    bool hasMonolithicReplay = (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady());
+
+    if (hasMonolithicReplay) {
+      // ── Monolithic graph replay ────────────────────────────────────────
+      // Pre-replay zeroing: slots that accumulate (e.g. scatter-add, reduce)
+      // need their output buffers zeroed before each replay. Without this,
+      // stale values from the prior step bleed through and accumulate FP
+      // drift that eventually flips argmax to a wrong token.
+      DSP_DIAG(STREAM_SYNC,
+               "FROZEN_FAST_PATH pre-replay: seg[%d-%d] execCount=%d "
+               "prezero=YES cublasWsZero=%s cublasWsPtr=%p cublasWsSize=%zu "
+               "deterministicCublas=%d cublasLtDisabled=%d",
+               seg.def.startSlot, seg.def.endSlot, (int)executeCount_,
+               (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) ? "YES" : "NO",
+               cublasWorkspaceBuffer_, cublasWorkspaceSize_,
+               (int)ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas,
+               (int)tl_cublasLtDisabled);
+      prezeroSegmentOutputs(seg, stream);
+
+      // Zero cuBLAS workspace before replay to match live cuBLAS behavior.
+      if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
+        cudaMemsetAsync(cublasWorkspaceBuffer_, 0, cublasWorkspaceSize_, cudaStr);
+      }
 
 #if HAVE_TRITON
-    // Gate arg table refresh on generation counter (replaces argTableStable boolean)
-    if (seg.exec.needsArgRefresh()) {
-      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
-      if (tritonBackend != nullptr) {
-        tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
-                                                 outputSlots_, totalOutputSlots_,
-                                                 stream);
-        // Copy consolidated arg table to device after refresh (was missing)
-        tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
-      }
-      seg.exec.markArgsCurrent();
-    } else {
-      DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: args current — skip refresh seg[%d-%d]",
-               seg.def.startSlot, seg.def.endSlot);
-    }
-#endif
-
-    // Zero slot outputs that require it before each graph replay. The prezero
-    // was intended to be captured into the CUDA graph during the capture phase,
-    // but the per-slot prezeroThisSlot lambda in executeSlot was never invoked
-    // (dead code). Without this, ops whose output is not fully overwritten
-    // (reductions, scatter, GDN state) read stale data from the previous
-    // replay step. The error accumulates through recurrent state (GDN/conv)
-    // and eventually causes token divergence vs SLOT_BY_SLOT.
-    prezeroSegmentOutputs(seg, stream);
-
-    // Zero cuBLAS workspace before each graph replay. Captured cuBLAS kernels may
-    // use workspace as scratch space; stale data from the previous replay step can
-    // cause tiny FP differences that accumulate through recurrent state (GDN).
-    // TRITON composite runs cuBLAS live (fresh workspace each call) and matches
-    // SLOT_BY_SLOT perfectly — this zeroing makes monolithic replay match too.
-    if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
-      cudaMemsetAsync(cublasWorkspaceBuffer_, 0, cublasWorkspaceSize_, cudaStr);
-    }
-
-    if (seg.exec.replayHandle->replay(stream)) {
-      auto tLaunchDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-      for (int i = 0; i < numRequestedOutputs_; i++) {
-        int slotIdx = requestedOutputSlotIndices_[i];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          requestedOutputs[i] = outputSlots_[slotIdx];
-        } else {
-          requestedOutputs[i] = nullptr;
+      if (seg.exec.needsArgRefresh()) {
+        auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+        if (tritonBackend != nullptr) {
+          tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
+                                                   outputSlots_, totalOutputSlots_, stream);
+          tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
         }
+        seg.exec.markArgsCurrent();
       }
+#endif
+      if (!seg.exec.replayHandle->replay(stream)) {
+        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: monolithic replay FAILED seg[%d-%d]",
+                 seg.def.startSlot, seg.def.endSlot);
+        return Status::KERNEL_FAILURE;
+      }
+
       totalGraphReplays_++;
       seg.exec.executionCount++;
-      executeCount_++;
-
-      // markCaptured() transitions directly to REPLAYING — no separate step needed.
 
       // Tick actuality: CUDA graph replay writes device memory directly without
       // registerSpecialUse. Without this tick, syncToHost sees stale host data.
-      // Skip frozen constant slots — they were excluded from graph capture and
-      // their device buffers are already authoritative from warmup execution.
-      for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < totalOutputSlots_; s++) {
-        if (s < numSlots_ && slots_[s].frozenConstantSlot()) continue;
-        NDArray* arr = outputSlots_[s];
-        if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
-          arr->tickWriteDevice();
-        }
-      }
-
-      // No blocking cudaStreamSynchronize here — platformEndExecution provides
-      // event-based cross-stream ordering (record on dspStream, wait on default
-      // stream) which is non-blocking and sufficient for correctness.
-
-      // Diagnostic: dump argmax from replay output at divergence steps
-      if (Environment::getInstance().isDebug() && executeCount_ >= 10 && executeCount_ <= 22) {
-        // Sync to get accurate read
-        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
-        // Find last output slot (logits)
-        int lastOutSlot = seg.def.endSlot;
-        if (lastOutSlot >= 0 && lastOutSlot < totalOutputSlots_ && outputSlots_[lastOutSlot] != nullptr) {
-          NDArray* logitsArr = outputSlots_[lastOutSlot];
-          if (logitsArr->lengthOf() > 0 && logitsArr->specialBuffer() != nullptr) {
-            int len = static_cast<int>(logitsArr->lengthOf());
-            // Find argmax via D2H copy of top values
-            int sampleSize = std::min(len, 8);
-            if (logitsArr->dataType() == DataType::FLOAT32) {
-              std::vector<float> topVals(len);
-              cudaMemcpy(topVals.data(), logitsArr->specialBuffer(),
-                         len * sizeof(float), cudaMemcpyDeviceToHost);
-              int argmax = 0;
-              float maxVal = topVals[0];
-              for (int v = 1; v < len; v++) {
-                if (topVals[v] > maxVal) { maxVal = topVals[v]; argmax = v; }
-              }
-              sd_printf("REPLAY_DIAG[exec=%d] logits slot=%d len=%d argmax=%d maxVal=%.4f "
-                        "first8: %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n",
-                        executeCount_, lastOutSlot, len, argmax, maxVal,
-                        topVals[0], topVals[std::min(1,len-1)], topVals[std::min(2,len-1)],
-                        topVals[std::min(3,len-1)], topVals[std::min(4,len-1)],
-                        topVals[std::min(5,len-1)], topVals[std::min(6,len-1)],
-                        topVals[std::min(7,len-1)]);
-            }
+      // Iterate through each slot's wiring.outputSlotIndices (not step indices)
+      // because step indices != output slot indices when ops have multiple outputs.
+      for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
+        if (stepIdx < 0 || stepIdx >= numSlots_) continue;
+        const NativeSlot& slot = slots_[stepIdx];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          int outIdx = slot.wiring.outputSlotIndices[o];
+          if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
+          NDArray* arr = outputSlots_[outIdx];
+          if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
+            arr->tickWriteDevice();
           }
         }
       }
 
-      // ── REPLAY VERIFICATION (CUDA_GRAPHS path) ──────────────────────────
       if (Environment::getInstance().tritonVerifyKernels()) {
         performReplayVerify(seg, externalInputs, numExternalInputs, stream, "CUDA_GRAPHS");
       }
 
-      if (executionTimingEnabled_) {
-        auto tDone = Clock::now();
-        auto copyUs = std::chrono::duration_cast<std::chrono::microseconds>(tCopyDone - t0).count();
-        auto launchUs = std::chrono::duration_cast<std::chrono::microseconds>(tLaunchDone - tCopyDone).count();
-        auto scatterUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - tLaunchDone).count();
-        auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - t0).count();
-        DSP_DIAG(TIMING, "DSP timing: copy=%lldus launch=%lldus scatter=%lldus total=%lldus",
-                 copyUs, launchUs, scatterUs, totalUs);
-      }
-      return Status::OK;
-    }
-  }
-
-    DSP_DIAG(EXECUTE, "NativeDSP::execute: frozen fast path not applicable (ok=%d), using full path",
-             static_cast<int>(ok));
-  } else {
-    // Composite fast path: bypass phaseReplay/executeSegmentWithGpuGraph overhead
-    // and call compositeReplay directly. All H2D sync, cross-stream ordering,
-    // arg table refresh, and prezero are handled inside compositeReplay.
-    sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
-
-    auto replayStatus = compositeReplay(seg, seg.exec.compositeReplaySchedule,
-                                        externalInputs, numExternalInputs, stream);
-    if (replayStatus == Status::OK) {
-      for (int i = 0; i < numRequestedOutputs_; i++) {
-        int slotIdx = requestedOutputSlotIndices_[i];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          requestedOutputs[i] = outputSlots_[slotIdx];
-        } else {
-          requestedOutputs[i] = nullptr;
-        }
+    } else if (!seg.exec.compositeReplaySchedule.units.empty()) {
+      // ── Composite replay (schedule has units — merged or island handles) ──
+      auto replayStatus = compositeReplay(seg, seg.exec.compositeReplaySchedule,
+                                          externalInputs, numExternalInputs, stream);
+      if (replayStatus != Status::OK) {
+        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: composite replay FAILED seg[%d-%d] status=%d",
+                 seg.def.startSlot, seg.def.endSlot, (int)replayStatus);
+        return replayStatus;
       }
       totalGraphReplays_++;
       seg.exec.executionCount++;
-      executeCount_++;
-
-      // markCaptured() transitions directly to REPLAYING — no separate step needed.
-
-      // compositeReplay ticks slots per-unit inside the replay loop.
-      // No need to double-tick here.
-
-      if (executionTimingEnabled_) {
-        auto tDone = Clock::now();
-        auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - t0).count();
-        DSP_DIAG(TIMING, "DSP timing: composite_fast_path total=%lldus", totalUs);
+    } else {
+      // ── No replay handles — execute slot-by-slot as fallback ──
+      // This covers segments that weren't captured during the capture window
+      // (e.g., compilation still in progress, or capture failed silently).
+      DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: no replay handles for seg[%d-%d] — "
+               "executing slot-by-slot (capturable=%d noKernels=%d)",
+               seg.def.startSlot, seg.def.endSlot,
+               (int)seg.def.isCapturable, (int)seg.exec.captureProducedNoKernels);
+      auto sbsStatus = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
+      if (sbsStatus != Status::OK) {
+        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: slot-by-slot fallback FAILED seg[%d-%d] status=%d",
+                 seg.def.startSlot, seg.def.endSlot, (int)sbsStatus);
+        return sbsStatus;
       }
-      return Status::OK;
+      seg.exec.executionCount++;
     }
-    DSP_DIAG(EXECUTE, "NativeDSP::execute: composite fast path failed, using full path");
   }
-  return Status::MAYBE;  // Not applicable — use full execution path
+
+  // All segments replayed successfully — populate requested outputs
+  for (int i = 0; i < numRequestedOutputs_; i++) {
+    int slotIdx = requestedOutputSlotIndices_[i];
+    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+      requestedOutputs[i] = outputSlots_[slotIdx];
+    } else {
+      requestedOutputs[i] = nullptr;
+    }
+  }
+  executeCount_++;
+
+  if (executionTimingEnabled_) {
+    auto tDone = Clock::now();
+    auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - t0).count();
+    DSP_DIAG(TIMING, "DSP timing: frozen_fast_path total=%lldus segs=%d",
+             totalUs, (int)segments_.size());
+  }
+
+  // Diagnostic: dump argmax from replay output at divergence steps
+  if (Environment::getInstance().isDebug() && executeCount_ >= 10 && executeCount_ <= 22) {
+    if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
+    if (!segments_.empty()) {
+      auto& lastSeg = segments_.back();
+      // Use the last step's actual output slot index (not the step index)
+      int lastStepIdx = lastSeg.def.endSlot;
+      int lastOutSlot = -1;
+      if (lastStepIdx >= 0 && lastStepIdx < numSlots_ && slots_[lastStepIdx].wiring.numOutputs > 0) {
+        lastOutSlot = slots_[lastStepIdx].wiring.outputSlotIndices[0];
+      }
+      if (lastOutSlot >= 0 && lastOutSlot < totalOutputSlots_ && outputSlots_[lastOutSlot] != nullptr) {
+        NDArray* logitsArr = outputSlots_[lastOutSlot];
+        if (logitsArr->lengthOf() > 0 && logitsArr->specialBuffer() != nullptr) {
+          int len = static_cast<int>(logitsArr->lengthOf());
+          if (logitsArr->dataType() == DataType::FLOAT32) {
+            std::vector<float> topVals(len);
+            cudaMemcpy(topVals.data(), logitsArr->specialBuffer(),
+                       len * sizeof(float), cudaMemcpyDeviceToHost);
+            int argmax = 0;
+            float maxVal = topVals[0];
+            for (int v = 1; v < len; v++) {
+              if (topVals[v] > maxVal) { maxVal = topVals[v]; argmax = v; }
+            }
+            sd_printf("REPLAY_DIAG[exec=%d] logits slot=%d len=%d argmax=%d maxVal=%.4f "
+                      "first8: %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n",
+                      executeCount_, lastOutSlot, len, argmax, maxVal,
+                      topVals[0], topVals[std::min(1,len-1)], topVals[std::min(2,len-1)],
+                      topVals[std::min(3,len-1)], topVals[std::min(4,len-1)],
+                      topVals[std::min(5,len-1)], topVals[std::min(6,len-1)],
+                      topVals[std::min(7,len-1)]);
+          }
+        }
+      }
+    }
+  }
+
+  return Status::OK;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -548,13 +500,6 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
     auto& seg = segments_[si];
     if (seg.exec.compilationFailed) continue;
-    // Skip data-dependent segments — they require host sync during execution
-    // which is incompatible with CUDA graph capture.
-    bool hasDataDep = false;
-    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      if (slots_[s].flags.isDataDependent) { hasDataDep = true; break; }
-    }
-    if (hasDataDep) continue;
     bool tryCapture = seg.def.isCapturable || (!planLifecycle_.isSlotBySlot() && executeCount_ > 0);
     if (!tryCapture) continue;
     if (!gpuBackend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) continue;
@@ -842,43 +787,46 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
-  if (ModeContract::forMode(graphExecutionMode_).isSlotBySlot) {
-    DSP_DIAG_SEG(EXECUTE, segment.def.startSlot, "platformShouldUseGraph: false (slot-by-slot mode)");
-    return false;
-  }
+  auto mode = ModeContract::forMode(graphExecutionMode_);
 
-  // When tritonSkipKernels=true, route directly to slot-by-slot execution.
-  // Going through executeSegmentWithGpuGraph would demote FROZEN→SHAPE_CACHED
-  // (breaking the prezero isFullyWriting guard) and fragment execution into
-  // per-subkernel ranges (double-zero risk, lost executionCount increments).
-  if (Environment::getInstance().tritonSkipKernels()) {
-    DSP_DIAG_SEG(EXECUTE, segment.def.startSlot, "platformShouldUseGraph: false (tritonSkipKernels=true, routing to slot-by-slot)");
-    return false;
-  }
-
-  // Non-frozen execution: use slot-by-slot to avoid memory leaks.
-  // Graph capture with tl_graphExecutionActive=true suppresses cudaFreeAsync,
-  // leaking temporary NDArrays. When shapes change each step, new captures
-  // compound the leak. Slot-by-slot execution properly frees all temporaries.
+  // ── Structural exemptions: these legitimately skip graph execution ──
+  if (mode.isSlotBySlot) return false;
   if (planLifecycle_.isSlotBySlot()) return false;
+  if (!segment.def.isCapturable) return false;  // data-dependent / control-flow ops
 
-  bool tryCapture = (segment.def.isCapturable || (!planLifecycle_.isSlotBySlot() && executeCount_ > 0))
-                    && !segment.exec.compilationFailed;
-  // Use selectedBackend to determine if graph capture is possible — no cascade check needed.
-  bool hasGraphBackend = (segment.def.selectedBackend == SelectedBackend::GPU_COMPILER ||
-                          segment.def.selectedBackend == SelectedBackend::CUDA_GRAPHS);
-  bool result = tryCapture && hasGraphBackend;
-  if (!result) {
+  if (Environment::getInstance().tritonSkipKernels()) {
     DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
-                 "platformShouldUseGraph: false (frozen=%d execCount=%d capturable=%d "
-                 "compilFailed=%d backend=%d tryCapture=%d hasBackend=%d)",
-                 shapesFrozen_ ? 1 : 0, executeCount_,
-                 segment.def.isCapturable ? 1 : 0,
-                 segment.exec.compilationFailed ? 1 : 0,
-                 static_cast<int>(segment.def.selectedBackend),
-                 tryCapture ? 1 : 0, hasGraphBackend ? 1 : 0);
+                 "platformShouldUseGraph: false (tritonSkipKernels)");
+    return false;
   }
-  return result;
+
+  // ── Capturable segment, post-freeze, graph mode — should use graph ──
+  // No Triton-island check here: CUDA graph capture records ALL GPU operations
+  // (cuBLAS, element-wise, Triton-compiled, etc.). A segment with 0 Triton
+  // sub-kernels is still graph-capturable via monolithic capture. Triton is just
+  // another kernel type — segments do NOT need it to be replayable.
+  bool hasBackend = (segment.def.selectedBackend == SelectedBackend::GPU_COMPILER ||
+                     segment.def.selectedBackend == SelectedBackend::CUDA_GRAPHS);
+  bool canCapture = !segment.exec.compilationFailed && hasBackend;
+
+  if (!canCapture && shapesFrozen_ && !mode.allowsFallback) {
+    REQUIRE_TRUE(false, 0,
+                 "DSP MODE VIOLATION: seg[%d-%d] capturable but cannot graph-execute. "
+                 "mode=%d compilFailed=%d backend=%d. "
+                 "Graph mode requires capture/replay — silent fallback is banned.",
+                 segment.def.startSlot, segment.def.endSlot,
+                 static_cast<int>(graphExecutionMode_),
+                 static_cast<int>(segment.exec.compilationFailed),
+                 static_cast<int>(segment.def.selectedBackend));
+  }
+
+  if (!canCapture) {
+    DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
+                 "platformShouldUseGraph: false (compilFailed=%d backend=%d)",
+                 segment.exec.compilationFailed ? 1 : 0,
+                 static_cast<int>(segment.def.selectedBackend));
+  }
+  return canCapture;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -907,16 +855,9 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                       segment.def.startSlot, segment.def.endSlot);
       }
 
-      // Compilation has permanently failed for this segment. This means a prior
-      // attempt to compile or capture failed and was recorded. Throw immediately
-      // so the failure is visible rather than silently producing wrong results.
-      if (segment.exec.compilationFailed) {
-        DSP_THROW_SEG(COMPILE, segment.def.startSlot,
-                      "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s "
-                      "compilationFailed=true — prior compilation/capture failed permanently. "
-                      "Fix the root cause.",
-                      executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name());
-      }
+      // compilationFailed is checked by platformShouldUseGraph() — the single
+      // gate for graph eligibility.  If we reach here, it returned true, which
+      // implies compilationFailed == false.
 
       // ── Fusibility pre-check ──────────────────────────────────────────────
       // canFuseSegment() returns false when the segment contains ops that cannot
@@ -980,10 +921,10 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         return Status::OK;
       }
 
-      // GPU backend execution failed — propagate the error. Do NOT fall back to
-      // slot-by-slot; fix the root cause (e.g., ensure model is closed+reloaded
-      // between configs to free GPU memory before capture).
-      segment.exec.compilationFailed = true;
+      // GPU backend execution failed — mark permanently failed and throw.
+      // Do NOT fall back to slot-by-slot; fix the root cause (e.g., ensure
+      // model is closed+reloaded between configs to free GPU memory before capture).
+      SegmentLifecycle::markFailed(segment.exec, "gpu_backend_exec_failed");
       DSP_THROW_SEG(COMPILE, segment.def.startSlot,
                     "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d. "
                     "GPU compilation/capture failed — fix the root cause.",
@@ -994,9 +935,9 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     case SelectedBackend::CUDA_GRAPHS: {
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        // Graph capture failed — propagate the error. Do NOT fall back to
-        // slot-by-slot; fix the root cause (memory management during capture).
-        segment.exec.compilationFailed = true;
+        // Graph capture failed — mark permanently failed and throw.
+        // Do NOT fall back to slot-by-slot; fix the root cause.
+        SegmentLifecycle::markFailed(segment.exec, "cuda_graph_capture_failed");
         DSP_THROW_SEG(COMPILE, segment.def.startSlot,
                       "NativeDSP::execute: CUDA graph capture failed for seg[%d-%d] status=%d. "
                       "Fix capture memory management — do NOT fall back to slot-by-slot.",
@@ -1411,6 +1352,17 @@ static void logGpuMemState(const char* label) {
 }
 
 void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, int execCount) {
+  // Safety reset: clear stale TLS from any prior crashed execution that
+  // didn't reach platformEndExecution. Without this, a crash in config A
+  // leaves tl_cublasLtDisabled=true, poisoning every subsequent config.
+  if (tl_cublasLtDisabled) {
+    tl_cublasLtDisabled = false;
+    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+    if (handlePtr != nullptr) {
+      cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
+    }
+  }
+
   auto* ctx = new PlanExecutionContext();
   ctx->execCount = execCount;
   ctx->frozen = frozen;
@@ -1583,11 +1535,19 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
                "mode=%d execCount=%d frozen=%d",
                static_cast<int>(graphExecutionMode_), execCount, static_cast<int>(frozen));
   // tl_cublasLtDisabled should be false by now (restored above for SBS/CG modes,
-  // never set for TRITON/other modes).
-  REQUIRE_TRUE(!tl_cublasLtDisabled, 0,
-               "TLS LEAK: tl_cublasLtDisabled=true at platformEndExecution exit. "
-               "cuBLAS determinism override was not restored. mode=%d",
-               static_cast<int>(graphExecutionMode_));
+  // never set for TRITON/other modes). If a prior execution crashed before
+  // platformEndExecution, this TLS may be stale. Force-reset it to prevent
+  // cascading failures into subsequent configs.
+  if (tl_cublasLtDisabled) {
+    DSP_DIAG(EXECUTE, "TLS_CLEANUP: tl_cublasLtDisabled=true at platformEndExecution — "
+             "force-resetting (mode=%d). Likely leaked from a prior crashed execution.",
+             static_cast<int>(graphExecutionMode_));
+    tl_cublasLtDisabled = false;
+    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+    if (handlePtr != nullptr) {
+      cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
+    }
+  }
   // Capture stream must be null — active capture would mean we're inside beginCapture
   // but exited execution without endCapture.
   REQUIRE_TRUE(tl_graphCaptureStream == nullptr, 0,
@@ -1600,6 +1560,37 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
   delete ctx->streamGuard;
   ctx->streamGuard = nullptr;
   delete ctx;
+}
+
+void NativeDynamicShapePlan::platformSetDeterministicCublas(bool enable) {
+  if (enable) {
+    // Reset stale cublasLt state from prior non-DSP ops
+    if (tl_cublasLtDisabled) {
+      tl_cublasLtDisabled = false;
+      auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+      if (handlePtr != nullptr) {
+        cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
+      }
+    }
+    // Set deterministic cuBLAS: PEDANTIC_MATH + no workspace + no cublasLt
+    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+    if (handlePtr != nullptr) {
+      cublasSetMathMode(*handlePtr, CUBLAS_PEDANTIC_MATH);
+      cublasSetWorkspace(*handlePtr, nullptr, 0);
+    }
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+    tl_cublasLtDisabled = true;
+  } else {
+    // Restore cuBLAS to default state
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+    tl_cublasLtDisabled = false;
+    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+    if (handlePtr != nullptr) {
+      cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
+    }
+  }
 }
 
 void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount) {

@@ -59,14 +59,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     if (s < 0 || s >= numSlots_) continue;
     NativeSlot& slot = slots_[s];
 
-    if (slot.frozenConstantSlot()) continue;
-    if (!slot.flags.needsZeroedOutput) continue;
-    if (slot.flags.isViewCapableOp) continue;
-    if (slot.flags.isIdentityOp) continue;
-    if (slot.flags.inPlaceFused) continue;
-    if (slot.fusedChain.isFusedChainTail) continue;
-
-    if (slot.slotPhase.isSealed() && slot.flags.isFullyWriting) continue;
+    if (!slot.needsPrezero()) continue;
 
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];
@@ -129,6 +122,18 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     DSP_DIAG(MEMORY, "prezeroSegmentOutputs: batched %d buffers into 1 kernel launch", targetCount);
   }
 
+  // Log prezero summary (STREAM_SYNC so it's visible alongside sync decisions)
+  {
+    size_t totalBytes = 0;
+    for (int i = 0; i < targetCount; i++) {
+      totalBytes += (useHeap ? heapBuf[i].bytes : stackBuf[i].bytes);
+    }
+    DSP_DIAG(STREAM_SYNC,
+             "prezeroSegmentOutputs: seg[%d-%d] zeroed %d buffers (%zuKB) execCount=%d",
+             seg.def.startSlot, seg.def.endSlot, targetCount,
+             totalBytes / 1024, executeCount_);
+  }
+
   // Bump generation for all slots that were zeroed
   if (targetCount > 0) {
     int prevSlot = -1;
@@ -152,7 +157,7 @@ void NativeDynamicShapePlan::platformReconcileOutputActuality(
   const bool primaryActual = db->isPrimaryActual();
   const bool specialActual = db->isSpecialActual();
   const bool needsDeviceVisibleControl =
-      slot.flags.isDataDependent || slot.flags.outputShapeDependsOnInputValues ||
+      slot.isDataDependent() || slot.flags.outputShapeDependsOnInputValues ||
       ((output->dataType() == INT32 || output->dataType() == INT64 || output->dataType() == BOOL) &&
        output->lengthOf() > 0 && output->lengthOf() <= 32);
 

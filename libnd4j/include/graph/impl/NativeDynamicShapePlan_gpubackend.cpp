@@ -302,7 +302,7 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
       }
       DSP_DIAG(VERIFY, "STEP %4d: %-20s inputs:[%s] -> outputs:[%s]%s%s%s",
                s, sl.ident.opName.c_str(), inputsStr.c_str(), outputsStr.c_str(),
-               sl.flags.isIdentityOp ? " [IDENTITY]" : "",
+               sl.isIdentityOp() ? " [IDENTITY]" : "",
                sl.frozenConstantSlot() ? " [FROZEN]" : "",
                sl.fusedChain.isFusedChainTail ? " [FUSED_TAIL]" : "");
     }
@@ -426,9 +426,11 @@ Status NativeDynamicShapePlan::segDispatchCompile(
 #ifdef SD_CUDA
       batchD2DCount_ = 0;
 #endif
-      inShapeChangeWarmup_ = true;
-      auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-      inShapeChangeWarmup_ = false;
+      Status warmupStatus;
+      {
+        ShapeChangeWarmupGuard warmupGuard(*this, seg.def.startSlot, seg.def.endSlot);
+        warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      }
       if (warmupStatus != Status::OK) {
         DSP_DIAG(COMPILE, "segDispatchCompile: shape-change warmup FAILED for seg[%d-%d] status=%d",
                  seg.def.startSlot, seg.def.endSlot, static_cast<int>(warmupStatus));

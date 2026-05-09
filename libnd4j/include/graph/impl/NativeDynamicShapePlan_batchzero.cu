@@ -55,39 +55,12 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       continue;
     }
 
-    if (!slot.flags.needsZeroedOutput) {
+    // Use consolidated needsPrezero() for the standard skip conditions.
+    // Fused chain heads are special — they don't prezero their own outputs,
+    // but DO need to prezero the last chain slot's output.
+    if (!slot.needsPrezero() && !(slot.fusedChain.isFusedChainHead && slot.fusedChain.fusedChainLength > 0)) {
       skippedNoZeroNeeded++;
-      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=no-zero-needed",
-                   s, slot.ident.opName.c_str());
-      continue;
-    }
-
-    // Skip identity ops — they wire output=input, no nullify happens
-    if (slot.flags.isIdentityOp) {
-      skippedIdentity++;
-      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=identity-op",
-                   s, slot.ident.opName.c_str());
-      continue;
-    }
-
-    // Skip fused chain tails — head already computed, tail returns early
-    if (slot.fusedChain.isFusedChainTail) {
-      skippedTail++;
-      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=fused-chain-tail",
-                   s, slot.ident.opName.c_str());
-      continue;
-    }
-
-    // Skip in-place fused — output IS the input
-    if (slot.flags.inPlaceFused) {
-      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=in-place-fused",
-                   s, slot.ident.opName.c_str());
-      continue;
-    }
-
-    if (slot.slotPhase.isSealed() && slot.flags.isFullyWriting) {
-      skippedFullyWriting++;
-      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=fully-writing",
+      DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=needsPrezero=false",
                    s, slot.ident.opName.c_str());
       continue;
     }
@@ -124,8 +97,9 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       continue;  // Don't fall through to collect head's own outputs
     }
 
-    // Skip view-capable ops — they share input's buffer, zeroing would corrupt data
-    if (slot.flags.isViewCapableOp) {
+    // Skip view-capable ops — they share input's buffer, zeroing would corrupt data.
+    // (Redundant with needsPrezero() above, but guards the fused-chain-head fall-through.)
+    if (slot.isViewCapableOp()) {
       DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d op=%s reason=view-capable",
                    s, slot.ident.opName.c_str());
       continue;

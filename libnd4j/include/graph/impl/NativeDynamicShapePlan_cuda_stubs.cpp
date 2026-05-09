@@ -32,6 +32,7 @@
 #ifndef SD_CUDA
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/ModeContract.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/GraphBackend.h>
 #include <graph/GraphReplayHandle.h>
@@ -70,8 +71,19 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
 
-  // Preconditions: shapes frozen, past warmup+compile, all segments resolved
-  if (planLifecycle_.isSlotBySlot() || executeCount_ < 2) {
+  // Soft preconditions — return MAYBE so the caller falls through to normal execution.
+  if (ModeContract::forMode(graphExecutionMode_).isSlotBySlot || planLifecycle_.isSlotBySlot()) {
+    return Status::MAYBE;
+  }
+  if (executeCount_ < 2) {
+    return Status::MAYBE;
+  }
+  // The frozen fast path requires shapes to be frozen and all segments to have
+  // ready replay handles. Without this, early executions with no handles fail.
+  if (!shapesFrozen_ || !allSegmentsReplayReady()) {
+    return Status::MAYBE;
+  }
+  if (!ModeContract::forMode(graphExecutionMode_).allowsFrozenFastPath) {
     return Status::MAYBE;
   }
 
@@ -83,6 +95,11 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   // Graph backends fuse multiple ops into optimized subgraphs, dramatically
   // reducing per-op dispatch overhead (1761 individual calls → ~dozens of fused calls).
   for (auto& seg : segments_) {
+    // All-frozen-constant segments: outputs already populated from warmup.
+    if (seg.def.allFrozenConstants) {
+      seg.exec.executionCount++;
+      continue;
+    }
     Status status;
     if (seg.resolvedCpuBackend != nullptr) {
       // Fast path: backend already compiled — execute via executeSegmentWithSpecificBackend
@@ -443,6 +460,10 @@ void NativeDynamicShapePlan::platformClearCastCache() {
   // MmulHelper cast cache is CUDA-only
 }
 
+void NativeDynamicShapePlan::platformSetDeterministicCublas(bool enable) {
+  // cuBLAS is CUDA-only — no-op on CPU
+}
+
 void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int execCount) {
   // No GPU memory pool on CPU
 }
@@ -542,14 +563,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     if (s < 0 || s >= numSlots_) continue;
     NativeSlot& slot = slots_[s];
 
-    if (slot.frozenConstantSlot()) continue;
-    if (!slot.flags.needsZeroedOutput) continue;
-    if (slot.flags.isViewCapableOp) continue;
-    if (slot.flags.isIdentityOp) continue;
-    if (slot.flags.inPlaceFused) continue;
-    if (slot.fusedChain.isFusedChainTail) continue;
-
-    if (slot.slotPhase.isSealed() && slot.flags.isFullyWriting) continue;
+    if (!slot.needsPrezero()) continue;
 
     bool didZero = false;
     for (int o = 0; o < slot.wiring.numOutputs; o++) {

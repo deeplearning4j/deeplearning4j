@@ -249,26 +249,21 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     auto* inputPaired = node->inputPaired();
     int numInputs = inputPaired ? inputPaired->size() : 0;
 
-    // Classify op via OpDescriptor traits (set by OpTraitTable at init time).
+    // Set the trait bitmask from OpTraitTable (single source of truth).
+    // Query methods on NativeSlot derive isDataDependent, isIdentityOp,
+    // isViewCapableOp, isFullyWriting, needsZeroedOutput from this mask.
+    if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
+      slot.opTraits_ = slot.ident.op->getOpDescriptor()->getTraits();
+    }
+    if (slot.opTraits_ == 0 && !slot.ident.opName.empty()) {
+      slot.opTraits_ = sd::ops::getOpTraitsByName(slot.ident.opName);
+    }
     // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
     // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
-    bool isDataDep = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_DATA_DEPENDENT);
-    if (isDataDep && normalizeOpName(slot.ident.opName) == "where" && numInputs == 3) {
-      isDataDep = false;
+    // Fix by clearing the DATA_DEPENDENT bit for the 3-input arity rather than a runtime hack.
+    if (slot.isDataDependent() && normalizeOpName(slot.ident.opName) == "where" && numInputs == 3) {
+      slot.clearOpTrait(sd::ops::OP_TRAIT_DATA_DEPENDENT);
     }
-    slot.flags.isDataDependent = isDataDep;
-    slot.flags.isIdentityOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_IDENTITY);
-    slot.flags.isViewCapableOp = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_VIEW_PRODUCING);
-    // Output-zeroing classification (computed once, read at runtime).
-    bool aliasesInput  = slot.flags.isViewCapableOp || slot.flags.isIdentityOp;
-    bool fullyWrites   = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_FULLY_WRITING);
-    // scatter_nd is a true partial writer; scatter_nd_update has FULLY_WRITING
-    // because it does output->assign(input). Only suppress for partial without FULLY_WRITING.
-    bool partialWriter = (hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND) ||
-                          hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_SCATTER_ND_UPDATE))
-                         && !fullyWrites;
-    slot.flags.isFullyWriting    = fullyWrites && !slot.flags.isDataDependent && !partialWriter;
-    slot.flags.needsZeroedOutput = !aliasesInput && !slot.flags.isFullyWriting;
     slot.wiring.numInputs = numInputs;
     slot.wiring.inputSourceIndices = new int[numInputs];
     slot.wiring.inputSourceTypes = new int8_t[numInputs];
@@ -378,11 +373,15 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         }
       }
     }
-    slot.flags.needsIntLongSync = hasIntLong || isDataDep;
+    slot.flags.needsIntLongSync = hasIntLong || slot.isDataDependent();
     // VALUE_DEPENDENT_SHAPE trait: ops whose output shapes depend on input VALUES
     // (not just shapes). Drives shapeStatic=false and shape key value-hashing.
-    bool isValueDepShape = hasOpTrait(slot.ident.op, sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
-    slot.flags.outputShapeDependsOnInputValues = isValueDepShape || isDataDep;
+    // DATA_DEPENDENT is orthogonal: it means the op's result depends on data,
+    // not that the output shape depends on data. argmax/argmin are data-dependent
+    // but their output shapes are determined by input shapes + axis iArgs.
+    // Stored as a boolean because it can be cleared per-instance below.
+    slot.flags.outputShapeDependsOnInputValues =
+        slot.hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 
     // Build output wiring
     auto* outputNames = node->outputNames();
@@ -665,7 +664,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       NativeSlot& slot = plan->slots_[s];
       slot.shapeCache.shapeStatic = true;
 
-      if (slot.flags.isDataDependent || slot.flags.outputShapeDependsOnInputValues) {
+      if (slot.hasValueDependentShape()) {
         slot.shapeCache.shapeStatic = false;
         dynamicCount++;
         continue;
@@ -729,13 +728,13 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     int needsZero = 0, skipZero = 0, customOps = 0, cfOps = 0;
     int dataDep = 0, valueDep = 0, identityOps = 0, fusedChains = 0;
     for (int i = 0; i < plan->numSlots_; i++) {
-      if (plan->slots_[i].flags.needsZeroedOutput) needsZero++;
+      if (plan->slots_[i].needsZeroedOutput()) needsZero++;
       else skipZero++;
       if (plan->slots_[i].flags.isCustomOp) customOps++;
       if (plan->slots_[i].cf.controlFlowType != CF_NONE) cfOps++;
-      if (plan->slots_[i].flags.isDataDependent) dataDep++;
+      if (plan->slots_[i].isDataDependent()) dataDep++;
       if (plan->slots_[i].flags.outputShapeDependsOnInputValues) valueDep++;
-      if (plan->slots_[i].flags.isIdentityOp) identityOps++;
+      if (plan->slots_[i].isIdentityOp()) identityOps++;
       if (plan->slots_[i].fusedChain.isFusedChainHead) fusedChains++;
     }
     DSP_DIAG(SHAPE, "%d/%d slots need zeroed output (%d can skip nullify)",

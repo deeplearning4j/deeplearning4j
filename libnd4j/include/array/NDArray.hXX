@@ -5530,10 +5530,12 @@ void NDArray::applyTransform(sd::transform::BoolOps op, NDArray *target, ExtraAr
   if (!target->isB()) THROW_EXCEPTION("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
   NDArray::prepareSpecialUse({target}, {this});
-  NativeOpExecutioner::execTransformBool(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(),
-      extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
+
+  void* extra = extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr;
+
+  NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                         target->buffer(), target->shapeInfo(), target->specialBuffer(),
+                                         target->specialShapeInfo(), extra);
   NDArray::registerSpecialUse({target}, {this});
 }
 

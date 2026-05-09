@@ -1227,8 +1227,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                 si, slot.ident.opName.c_str(), static_cast<int>(cat),
                 slot.wiring.numInputs, slot.wiring.numOutputs,
                 slot.args.numIArgs, slot.args.numTArgs, slot.args.numBArgs,
-                slot.flags.isIdentityOp ? 1 : 0, slot.flags.isViewCapableOp ? 1 : 0,
-                slot.flags.inPlaceFused ? 1 : 0, slot.flags.needsZeroedOutput ? 1 : 0,
+                slot.isIdentityOp() ? 1 : 0, slot.isViewCapableOp() ? 1 : 0,
+                slot.flags.inPlaceFused ? 1 : 0, slot.needsZeroedOutput() ? 1 : 0,
                 slot.frozenConstantSlot() ? 1 : 0);
       for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
         int srcIdx = slot.wiring.inputSourceIndices[inp];
@@ -1529,7 +1529,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
       // If cast elimination marked this as identity, forward the SSA value
       // without computing the cast (consistent with slot-by-slot identity path).
-      if (slot.flags.isIdentityOp) {
+      if (slot.isIdentityOp()) {
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
         }
@@ -4805,8 +4805,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   "identity=%d view=%d fused=%d zeroOut=%d",
                   si, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs,
                   slot.args.numIArgs, slot.args.numTArgs, slot.args.numBArgs,
-                  slot.flags.isIdentityOp ? 1 : 0, slot.flags.isViewCapableOp ? 1 : 0,
-                  slot.flags.inPlaceFused ? 1 : 0, slot.flags.needsZeroedOutput ? 1 : 0);
+                  slot.isIdentityOp() ? 1 : 0, slot.isViewCapableOp() ? 1 : 0,
+                  slot.flags.inPlaceFused ? 1 : 0, slot.needsZeroedOutput() ? 1 : 0);
 
         // Every input for this slot
         for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
@@ -5087,7 +5087,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             // If cast elimination marked this slot as identity, forward the SSA
             // value without computing the cast. This keeps the Triton path
             // consistent with the slot-by-slot identity fast path.
-            if (slot.flags.isIdentityOp) {
+            if (slot.isIdentityOp()) {
               for (int o = 0; o < slot.wiring.numOutputs; o++)
                 ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
             } else {

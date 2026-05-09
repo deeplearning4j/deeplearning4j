@@ -41,6 +41,7 @@
 
 #include <graph/DspGraphTypes.h>
 #include <graph/GraphReplayHandle.h>
+// ModeContract.h included AFTER GraphExecutionMode enum (see below) to break circular dependency.
 #include <graph/SlotBufferOwnership.h>
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
@@ -105,6 +106,16 @@ enum class GraphExecutionMode : int {
   GEM_EMULATED_REPLAY = 17,  // Emulated graph replay: slot-by-slot with replay lifecycle diagnostics
   GEM_SHAPE_INFERENCE_ONLY = 18  // Shape inference only: calculates output shapes without executing ops
 };
+
+// Close namespace before including ModeContract.h — it opens its own sd::graph namespace.
+// Including inside an open namespace would create sd::graph::sd::graph.
+}  // namespace graph
+}  // namespace sd
+
+#include <graph/ModeContract.h>
+
+namespace sd {
+namespace graph {
 
 /**
  * SelectedBackend — resolved once at build time, stored per-segment.
@@ -214,7 +225,7 @@ struct LoopRegion {
  *   slot.ident.opHash      (was slot.opHash)
  *   slot.wiring.numInputs  (was slot.numInputs)
  *   slot.args.iArgs        (was slot.iArgs)
- *   slot.flags.isDataDependent  (was slot.isDataDependent)
+ *   slot.isDataDependent()  (was slot.flags.isDataDependent, now derived from opTraits_)
  *   slot.fusedChain.isFusedChainHead  (was slot.isFusedChainHead)
  *   slot.cf.controlFlowType  (was slot.controlFlowType)
  *   slot.legacy.legacyOpType (was slot.legacyOpType)
@@ -302,16 +313,24 @@ struct SlotArgs {
   SlotArgs& operator=(const SlotArgs&) = delete;
 };
 
-/** Execution flags and fusion metadata. */
+/**
+ * Execution flags and fusion metadata.
+ *
+ * Fields here are either:
+ *   - Compile-time resolved values that cannot be derived from OpTraits alone
+ *     (outputShapeDependsOnInputValues can be cleared per-instance).
+ *   - Runtime state set during warmup/fusion passes.
+ *
+ * Trait-derivable properties (isDataDependent, isIdentityOp, isViewCapableOp,
+ * isFullyWriting, needsZeroedOutput) live as query methods on NativeSlot,
+ * backed by the opTraits_ bitmask.
+ */
 struct SlotFlags {
-  bool needsZeroedOutput = true;
-  bool isDataDependent = false;
+  // Compile-time resolved: starts from VALUE_DEPENDENT_SHAPE || DATA_DEPENDENT,
+  // then refined per-instance (e.g. concat without axis-in-last-arr cleared).
   bool outputShapeDependsOnInputValues = false;
   bool needsIntLongSync = false;
   bool isCustomOp = true;
-  bool isIdentityOp = false;
-  bool isViewCapableOp = false;
-  bool isFullyWriting = false;
   bool inPlaceFused = false;
   int inPlaceFusedInputIdx = -1;
   // cublasLt epilogue fusion
@@ -389,6 +408,16 @@ struct NativeSlot {
   LegacyOpInfo legacy;
   ShapeCache shapeCache;
 
+  // ── Op trait bitmask (single source of truth for op classification) ─
+  //
+  // Set once at compile time (NativePlanCompiler) or deserialization
+  // (fromSerializedPlan). The where-hack (where with 3 inputs = elementwise
+  // select, not data-dependent) is applied by clearing the DATA_DEPENDENT
+  // bit from this mask rather than a runtime override.
+  //
+  // Query methods below derive all classification decisions from this mask.
+  uint32_t opTraits_ = 0;
+
   // ── Top-level fields (not grouped) ────────────────────────────────
   int targetDeviceId = -1;             // -1 = auto
 
@@ -442,6 +471,84 @@ struct NativeSlot {
   bool shapeCacheValid() const { return slotPhase.shapeCacheValid; }
   bool frozenContextReady() const { return slotPhase.isSealed(); }
   bool frozenConstantSlot() const { return slotPhase.isSealed() && slotPhase.isConstant; }
+
+  // ── Trait queries (derived from opTraits_ bitmask) ────────────────
+  // These replace the removed SlotFlags booleans (isDataDependent,
+  // isIdentityOp, isViewCapableOp, isFullyWriting, needsZeroedOutput).
+  // Each is a const inline bitcheck — zero overhead vs stored booleans.
+
+  bool hasOpTrait(uint32_t trait) const { return (opTraits_ & trait) != 0; }
+  void addOpTrait(uint32_t trait) { opTraits_ |= trait; }
+  void clearOpTrait(uint32_t trait) { opTraits_ &= ~trait; }
+  uint32_t opTraits() const { return opTraits_; }
+
+  bool isDataDependent() const { return hasOpTrait(sd::ops::OP_TRAIT_DATA_DEPENDENT); }
+  bool isIdentityOp()    const { return hasOpTrait(sd::ops::OP_TRAIT_IDENTITY); }
+  bool isViewCapableOp() const { return hasOpTrait(sd::ops::OP_TRAIT_VIEW_PRODUCING); }
+
+  /** View or identity — aliases input buffer without computing. */
+  bool aliasesInput() const { return isViewCapableOp() || isIdentityOp(); }
+
+  /** Op writes every element of its output (no partial writes, no aliasing).
+   *  DATA_DEPENDENT is orthogonal to write coverage: it means the shape
+   *  function reads input values (e.g., argmax 2-input reads axes from
+   *  input[1]), NOT that the write extent varies. Ops with variable output
+   *  size (unique, non_max_suppression, 1-input where) simply don't carry
+   *  OP_TRAIT_FULLY_WRITING — that's the correct separation of concerns. */
+  bool isFullyWriting() const {
+    return hasOpTrait(sd::ops::OP_TRAIT_FULLY_WRITING);
+  }
+
+  /** Output needs zero-fill before execution (not a view/identity, not fully writing). */
+  bool needsZeroedOutput() const { return !aliasesInput() && !isFullyWriting(); }
+
+  /** Shape function reads input tensor VALUES (not just shapes).
+   *  These ops need host-synced inputs for shape inference and block the
+   *  shape pre-pass. This does NOT affect capturability or segmentation.
+   *
+   *  Uses OP_TRAIT_VALUE_DEPENDENT_SHAPE (carried by reshape, fill, range,
+   *  slice, etc.) and the Java-serialized outputShapeDependsOnInputValues flag.
+   *  DATA_DEPENDENT is NOT included — it means the op's result depends on data,
+   *  not that the output SHAPE depends on data. argmax/argmin are data-dependent
+   *  but have shapes determined by input shapes + axis iArgs. */
+  bool hasValueDependentShape() const {
+    return hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) ||
+           flags.outputShapeDependsOnInputValues;
+  }
+
+  /**
+   * Whether this slot's output buffer needs prezero memset before execution.
+   * Consolidates the skip-prezero logic that was duplicated across 4 call sites:
+   *   - executeSlot prezero lambda (slotexec.cpp)
+   *   - prezeroSegmentOutputs (slotexec_cuda.cu)
+   *   - prezeroSegmentOutputs (cuda_stubs.cpp)
+   *   - batchZeroSegmentOutputs (batchzero.cu)
+   */
+  bool needsPrezero() const {
+    if (frozenConstantSlot()) return false;        // output never changes
+    if (aliasesInput()) return false;              // no output buffer to zero
+    if (isFullyWriting()) return false;            // op writes every element
+    if (flags.inPlaceFused) return false;          // handled by fusion host
+    if (fusedChain.isFusedChainTail) return false; // tail of fused chain
+    return true;
+  }
+
+  // ── Capturability (single source of truth) ────────────────────────
+  // Returns true if this slot can live inside a CUDA graph capture.
+  //
+  //  mergeViews = true  →  view/identity/frozen-constant ops are allowed
+  //                        (zero-copy metadata that doesn't break capture).
+  //  mergeViews = false →  those ops are excluded (e.g. gap analysis when
+  //                        mergedCaptureThroughViews config is off).
+  //
+  // Every call site that decides "can I capture this slot?" MUST use
+  // this method instead of ad-hoc flag checks.
+  bool isCapturable(bool mergeViews = true) const {
+    if (cf.controlFlowType != CF_NONE) return false;
+    if (!mergeViews && (isViewCapableOp() || isIdentityOp() || frozenConstantSlot()))
+      return false;
+    return true;
+  }
 
   // ── Generation counter accessors ─────────────────────────────────
   uint32_t generation() const { return generation_; }
@@ -558,6 +665,13 @@ struct GraphSegmentDef {
   // User-forced backend override (empty = automatic selection via priority chain)
   std::string backendOverride;
 
+  // True if EVERY slot in this segment is a frozen constant (frozenConstantSlot()).
+  // Set once at buildSegments() time after warmup populates slot state.
+  // These segments need no execution or capture — outputs are already populated
+  // from warmup and never change.  Replaying a 0-node CUDA graph for them is
+  // pure overhead; skip them entirely during dispatch.
+  bool allFrozenConstants = false;
+
   // Resolved backend — set once at buildSegments() time, never changes.
   // For non-capturable segments, always SLOT_BY_SLOT.
   // For capturable: resolved from graphExecutionMode_ at build time.
@@ -640,12 +754,6 @@ struct ReplayScheduleUnit {
   int startSlot;
   int endSlot;
   int islandIndex;  // For TRITON_ISLAND: index into compositeReplayHandles
-
-  // ── Island merging through capture-safe gaps ──
-  // A gap is "capture-safe" if ALL its slots launch CUDA kernels (no view ops,
-  // no identity ops, no shape-only ops, no frozen constants). Such gaps can be
-  // captured into the preceding island's CUDA graph instead of running natively.
-  bool isCaptureSafe = false;
 
   // Merged capture group tracking. Units with the same non-negative mergedGroupId
   // share one merged CudaGraphReplayHandle. The isMergedLeader unit triggers the
@@ -759,6 +867,12 @@ struct GraphSegmentExec {
   // The segment executes slot-by-slot every step without re-attempting the cascade.
   // Unlike compilationFailed, this is expected behavior — not an error.
   bool noFusibleOps = false;
+
+  // True after a capture attempt produced a 0-node CUDA graph. This means the
+  // segment's ops don't generate any GPU kernels (views, shapes, identity) even
+  // though Triton compilation succeeded. Re-capturing is wasteful — execute
+  // slot-by-slot instead. Set by ZERO_NODE_REJECT in the capture path.
+  bool captureProducedNoKernels = false;
 
   // OOM retry mechanism — now derived from segPhase.oomRetryCount/oomRetryAfterExec.
   // Kept as fields during migration; will be removed when all callers use segPhase.
@@ -1144,6 +1258,76 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Used when segment drops out of replay steady state.
    */
   void demotePlanPhase(PlanPhase targetPhase, const char* reason);
+
+  // ── Sync policy (contract-driven) ──────────────────────────────────────
+  // Whether executeSlot should call prepareSpecialUse/registerSpecialUse.
+  // Computed from ModeContract + plan lifecycle + scoped overrides.
+  // Replaces the old mutable forceSync_ boolean.
+  bool needsSync() const {
+    // Always sync during warmup (device buffers not yet stable)
+    if (executeCount_ < 2) return true;
+    // Always sync in slot-by-slot mode (no capture optimization)
+    if (planLifecycle_.isSlotBySlot()) return true;
+    // Scoped override (gpu backend gap execution, pre-capture warmup)
+    if (syncOverrideDepth_ > 0) return true;
+    // Contract: mode requires sync on every frozen execution
+    auto contract = ModeContract::forMode(graphExecutionMode_);
+    if (contract.forcesSyncOnFrozen && shapesFrozen_) return true;
+    return false;
+  }
+
+  // Returns a human-readable reason string for WHY needsSync() returned its value.
+  // Used by DSP_DIAG logging at call sites so logs show the deciding factor.
+  const char* syncReason() const {
+    if (executeCount_ < 2) return "WARMUP(execCount<2)";
+    if (planLifecycle_.isSlotBySlot()) return "SLOT_BY_SLOT";
+    if (syncOverrideDepth_ > 0) return "SCOPED_OVERRIDE";
+    auto contract = ModeContract::forMode(graphExecutionMode_);
+    if (contract.forcesSyncOnFrozen && shapesFrozen_) return "CONTRACT(forcesSyncOnFrozen)";
+    return "NONE(sync_skipped)";
+  }
+
+  // RAII guard for scoped sync override. GPU backend gap execution and
+  // pre-capture warmup use this to force sync within a bracket.
+  // Logs entry/exit via DSP_DIAG(STREAM_SYNC) when diagnostics are enabled.
+  struct SyncOverride {
+    NativeDynamicShapePlan& plan_;
+    const char* context_;  // caller label for logging
+    SyncOverride(NativeDynamicShapePlan& plan, const char* context = "unknown")
+        : plan_(plan), context_(context) {
+      plan_.syncOverrideDepth_++;
+      DSP_DIAG(STREAM_SYNC, "SyncOverride ENTER: context=%s depth=%d->%d execCount=%d mode=%s",
+               context_, plan_.syncOverrideDepth_ - 1, plan_.syncOverrideDepth_,
+               plan_.executeCount_, ModeContract::modeName(static_cast<int>(plan_.graphExecutionMode_)));
+    }
+    ~SyncOverride() {
+      plan_.syncOverrideDepth_--;
+      DSP_DIAG(STREAM_SYNC, "SyncOverride EXIT: context=%s depth=%d->%d",
+               context_, plan_.syncOverrideDepth_ + 1, plan_.syncOverrideDepth_);
+    }
+    SyncOverride(const SyncOverride&) = delete;
+    SyncOverride& operator=(const SyncOverride&) = delete;
+  };
+
+  // ── Shape change warmup guard (contract-driven) ──────────────────────
+  // RAII guard that sets inShapeChangeWarmup_ for the duration of a
+  // shape-change warmup pass. Replaces the bracket pattern:
+  //   inShapeChangeWarmup_ = true; ... inShapeChangeWarmup_ = false;
+  struct ShapeChangeWarmupGuard {
+    NativeDynamicShapePlan& plan_;
+    ShapeChangeWarmupGuard(NativeDynamicShapePlan& plan, int segStart, int segEnd)
+        : plan_(plan) {
+      plan_.inShapeChangeWarmup_ = true;
+      DSP_DIAG(SHAPE, "ShapeChangeWarmup ENTER: seg[%d-%d] execCount=%d",
+               segStart, segEnd, plan_.executeCount_);
+    }
+    ~ShapeChangeWarmupGuard() {
+      plan_.inShapeChangeWarmup_ = false;
+      DSP_DIAG(SHAPE, "ShapeChangeWarmup EXIT");
+    }
+    ShapeChangeWarmupGuard(const ShapeChangeWarmupGuard&) = delete;
+    ShapeChangeWarmupGuard& operator=(const ShapeChangeWarmupGuard&) = delete;
+  };
 
   /**
    * Clear per-slot shape caches for shape-dynamic slots only.
@@ -1845,8 +2029,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                                        // Allows slot shape reassignment in step3_allocateOutputs.
   int executeCount_;  // Total plan execution count (monotonically increasing)
   uint64_t identityFingerprint_ = 0; // FNV-1a hash of (numSlots, opNames, wiring) — set at deserialization
-  bool forceSync_;    // When true, executeSlot forces prepareSpecialUse/registerSpecialUse
-                      // regardless of executeCount_. Used during pre-capture warmup at exec=2+.
+  // Sync override depth counter. When > 0, needsSync() returns true regardless
+  // of contract/lifecycle state. Incremented/decremented by SyncOverride RAII guard.
+  // Replaces the old mutable forceSync_ boolean — all sync policy now flows from
+  // the ModeContract (forcesSyncOnFrozen, forceSyncDuringCapture) plus this
+  // scoped override for gpu backend bracket execution (gap ops, pre-capture warmup).
+  int syncOverrideDepth_ = 0;
+
   bool compilationDone_;  // True after platformPrecompileSegments succeeds; skip phaseCompile
 
   // Count of compileSegment() calls that occurred AFTER compilationDone_ was set
@@ -1955,6 +2144,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Internal methods
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
+  void resegmentForFreeze();
   SelectedBackend resolveBackendForSegment(bool isCapturable) const;
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
@@ -2054,6 +2244,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // These methods abstract platform-specific (CUDA vs CPU) behavior.
   // CUDA implementations are in _cuda.cu; CPU fallbacks in _cuda_stubs.cpp.
   // The linker picks the right version based on the build configuration.
+
+  // Returns true when ALL segments have a replay handle ready (monolithic or
+  // composite). Callers use this to decide whether platformTryFrozenFastPath
+  // can be invoked. When false, the caller must use phaseReplay instead.
+  bool allSegmentsReplayReady() const;
+
+  // Replays all segments via their captured graph handles. Returns OK on
+  // success, KERNEL_FAILURE on replay error. Precondition: allSegmentsReplayReady()
+  // must be true — calling without replay handles is a hard error.
   Status platformTryFrozenFastPath(NDArray** externalInputs, int numExternalInputs,
                                     NDArray** requestedOutputs, int numRequestedOutputs, void* stream);
   void platformPreExecuteSetup(NDArray** externalInputs, int numExternalInputs, void* stream);
@@ -2077,6 +2276,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount);
   void platformDumpExtInputGpuValues(NDArray* arr, int extIdx, int execCount, void* stream);
   void platformClearCastCache();
+  void platformSetDeterministicCublas(bool enable);
   void platformPostSegmentPoolManagement(bool frozen, int execCount);
   void platformDumpLogitsArgmax(int execCount, void* stream);
   void platformDetectAndPrepareBatchedGemm(NDArray** ext, int numExt, void* stream);
@@ -2123,13 +2323,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
 #ifdef SD_CUDA
   // segDispatchReplay — attempts composite replay for a segment that has
-  // captured composite handles. Returns OK if replay succeeded, MAYBE if
-  // replay conditions not met (caller falls through to capture/direct).
+  // captured composite handles. Sets handled=true and returns the replay
+  // Status if replay was attempted. Sets handled=false when replay
+  // conditions are not met (caller falls through to capture/direct).
   Status segDispatchReplay(GraphSegment& seg, NDArray** externalArrays,
                            int numExt, void* stream,
                            bool allowTritonCudaGraphReplay,
                            bool createValuesStable, bool extAddrsStable,
-                           LongType segShapeKey, const char* backendName);
+                           LongType segShapeKey, const char* backendName,
+                           bool& handled);
 
   // segDispatchCaptureOrDirect — handles CUDA graph capture AND direct
   // (non-capture) Triton execution. Includes TritonOrderedRangeGuard RAII,
