@@ -1097,7 +1097,8 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps()),
-                      std::hash<std::string>()(refreshEnv.tritonIncludeTypes())};
+                      std::hash<std::string>()(refreshEnv.tritonIncludeTypes()),
+                      refreshEnv.tritonGraphCapture()};
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -1165,7 +1166,27 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
             if (!isExternal) changedInternalPtrs++;
           }
           argTableHostPinned[i] = newVal;
+        } else {
+          // arr exists but specialBuffer is null — zero the slot rather than
+          // leaving a stale pointer baked in from a prior plan instance.
+          // Count it as changed so argTableStable cannot go true while
+          // the slot still holds a freed/foreign pointer.
+          if (argTableHostPinned[i] != 0) {
+            changedPtrs++;
+            if (!isExternal) changedInternalPtrs++;
+          }
+          argTableHostPinned[i] = 0;
+          DSP_DIAG(EXECUTE, "REFRESH_NULL_SBUF: seg[%d-%d] subK[%zu] arg[%d] arr=%p has null specialBuffer, zeroing slot",
+                   seg.def.startSlot, seg.def.endSlot, ki, i, (void*)arr);
         }
+      } else {
+        // arr is null — zero the slot rather than leaving a stale pointer
+        // from a prior plan instance baked in.
+        if (argTableHostPinned[i] != 0) {
+          changedPtrs++;
+          if (!isExternal) changedInternalPtrs++;
+        }
+        argTableHostPinned[i] = 0;
       }
     }
     totalChangedPtrs += changedPtrs;
@@ -1265,7 +1286,8 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps()),
-                      std::hash<std::string>()(refreshEnv.tritonIncludeTypes())};
+                      std::hash<std::string>()(refreshEnv.tritonIncludeTypes()),
+                      refreshEnv.tritonGraphCapture()};
 
   CompiledSegment* compiledSeg = nullptr;
   {

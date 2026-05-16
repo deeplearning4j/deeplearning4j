@@ -238,6 +238,11 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
 
 
 void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, int* actualDeviceId) {
+  // After releaseAll(), the pool is torn down. Return nullptr.
+  if (released_.load(std::memory_order_acquire)) {
+    return nullptr;
+  }
+
   // During CUDA graph capture, use pre-allocated workspace instead of cudaMallocAsync.
   // This eliminates cudaGraphMemAllocNode from the captured graph, preventing
   // "invalid argument" on cudaGraphLaunch from unpaired alloc/free nodes.
@@ -737,6 +742,14 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     return;
   }
 
+  // After releaseAll() (called from ~CudaMemoryPool during shutdown), all internal
+  // maps are cleared. Any free() call at this point would walk freed map nodes →
+  // SIGSEGV. This happens when GC finalizer threads race with C++ static destruction.
+  // The OS reclaims all GPU memory when the process exits, so skipping is safe.
+  if (released_.load(std::memory_order_acquire)) {
+    return;
+  }
+
   // Check if this pointer falls within an active capture workspace.
   // Capture workspaces are single cudaMalloc blocks used as bump allocators during
   // CUDA graph capture. Interior pointers (sub-allocations) cannot be freed individually —
@@ -930,6 +943,9 @@ void CudaMemoryPool::removeDirtyStream(int deviceId, cudaStream_t stream) {
 // ─── Pinned Host Memory Management ─────────────────────────────────────
 
 void* CudaMemoryPool::allocatePinnedHost(size_t size) {
+  if (released_.load(std::memory_order_acquire)) {
+    return nullptr;
+  }
   // Enforce limit if set
   size_t limit = pinnedHostBytesLimit_.load();
   size_t currentUsage = pinnedHostBytesUsed_.load();
@@ -1209,6 +1225,15 @@ bool CudaMemoryPool::isDirectAllocation(void* ptr) const {
 }
 
 void CudaMemoryPool::releaseAll() {
+  // Signal all concurrent free() calls to become no-ops BEFORE touching any maps.
+  // GC finalizer threads may be in CudaMemoryPool::free() right now, walking the
+  // hostAllocations_ or directAllocations_ hash maps. If we clear() those maps
+  // while another thread is iterating, the iterator dereferences freed bucket nodes
+  // → SIGSEGV on the VMThread. Setting released_ first makes concurrent free()
+  // callers bail out at the top, so by the time we acquire the mutexes below,
+  // no other thread is inside the critical sections.
+  released_.store(true, std::memory_order_release);
+
   if (!supported_) {
     return;
   }

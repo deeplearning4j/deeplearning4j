@@ -37,6 +37,7 @@
 #include <graph/SdzReader.h>
 #include <graph/ReplayCacheManager.h>
 #include <system/common.h>
+#include <system/Environment.h>
 
 #include <cstring>
 #include <cstdio>
@@ -1367,4 +1368,287 @@ int getSegmentExecutorPhase(sd::Pointer planHandle, int segIdx) {
         case 4: return 2;  // SLOT_BY_SLOT (failed) → FAILED
         default: return -1;
     }
+}
+
+// ─── External input variable management ─────────────────────────────────────
+
+void markPlanExternalInputVariable(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return;
+  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->markExternalInputVariable(extIdx);
+}
+
+int getPlanNumCachedVariableExtIndices(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumCachedVariableExtIndices();
+}
+
+int getPlanCachedVariableExtIndex(sd::Pointer planHandle, int i) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getCachedVariableExtIndex(i);
+}
+
+void markPlanExternalInputPlaceholder(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return;
+  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->markExternalInputPlaceholder(extIdx);
+}
+
+bool getPlanIsExternalInputVariable(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return false;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->isExternalInputVariable(extIdx);
+}
+
+bool getPlanIsExternalInputPlaceholder(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return false;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->isExternalInputPlaceholder(extIdx);
+}
+
+int getPlanNumVariableExternalInputs(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumVariableExternalInputs();
+}
+
+int getPlanExecuteCount(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getExecuteCount();
+}
+
+// =============================================================================
+// DSP Diagnostics (additional counters)
+// =============================================================================
+
+int dspDiagGetStepCount() {
+  return sd::graph::DspDiagnostics::getInstance().getStepsExecuted();
+}
+
+long long dspDiagGetTotalEventCount() {
+  return sd::graph::DspDiagnostics::getInstance().getTotalEventCount();
+}
+
+long long dspDiagGetCategoryEventCount(int categoryIndex) {
+  return sd::graph::DspDiagnostics::getInstance().getCategoryEventCount(categoryIndex);
+}
+
+// =============================================================================
+// Staging Buffer Introspection
+// =============================================================================
+
+int getPlanNumStagingBuffers(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumStagingBuffers();
+}
+
+long long getPlanStagingBufferAddress(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getStagingBufferAddress(extIdx);
+}
+
+long long getPlanEffectiveExternalAddress(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getEffectiveExternalAddress(extIdx);
+}
+
+long long getPlanLastExternalInputAddress(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExternalInputAddress(extIdx);
+}
+
+OpaqueNDArray getPlanStagingBufferArray(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return nullptr;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getStagingBufferArray(extIdx);
+}
+
+int copyPlanStagingToBuffer(sd::Pointer planHandle, int extIdx, OpaqueDataBuffer* dstBuffer) {
+  if (planHandle == nullptr) return -1;
+  if (dstBuffer == nullptr) return -3;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->copyStagingToBuffer(extIdx, dstBuffer->dataBuffer());
+}
+
+// =============================================================================
+// Slot Output Introspection
+// =============================================================================
+
+OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx) {
+  if (planHandle == nullptr) return nullptr;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSlotOutputArray(slotIdx);
+}
+
+int getTotalPlanOutputSlots(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getTotalOutputSlots();
+}
+
+int getPlanSlotGeneration(sd::Pointer planHandle, int slotIdx) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSlotGeneration(slotIdx);
+}
+
+// =============================================================================
+// Replay Mode & Arg Generation
+// =============================================================================
+
+int getPlanSegmentReplayMode(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentReplayMode(segIdx);
+}
+
+long long getPlanSegmentArgGeneration(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentArgGeneration(segIdx);
+}
+
+long long getPlanSegmentCapturedArgGeneration(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentCapturedArgGeneration(segIdx);
+}
+
+int getPlanSegmentNeedsArgRefresh(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentNeedsArgRefresh(segIdx);
+}
+
+long long getPlanSegmentCapturedInputAddrKey(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentCapturedInputAddrKey(segIdx);
+}
+
+// =============================================================================
+// Per-Execution Stats
+// =============================================================================
+
+int getLastExecSegmentsWarmup(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsWarmup();
+}
+
+int getLastExecSegmentsCaptured(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsCaptured();
+}
+
+int getLastExecSegmentsReplayed(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsReplayed();
+}
+
+int getLastExecSegmentsSlotBySlot(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsSlotBySlot();
+}
+
+int getLastExecSegmentsFailed(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsFailed();
+}
+
+int getLastExecSegmentsTotal(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsTotal();
+}
+
+int getLastExecSyncLevel(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSyncLevel();
+}
+
+int getLastExecStreamSyncCount(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecStreamSyncCount();
+}
+
+int getLastExecConsecutiveUnchangedCount(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecConsecutiveUnchangedCount();
+}
+
+// =============================================================================
+// Cross-Stream Testing API (CPU stubs — no CUDA streams on CPU)
+// =============================================================================
+
+sd::Pointer dspCreateTestStream() {
+  return nullptr;  // No streams on CPU
+}
+
+void dspDestroyTestStream(sd::Pointer streamPtr) {
+  // No-op on CPU
+}
+
+int dspWriteDeviceBufferOnDefaultStream(sd::Pointer planHandle, int extIdx, sd::Pointer srcHost, long long numBytes) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->writeDeviceBufferOnDefaultStream(
+      extIdx, reinterpret_cast<void*>(srcHost), numBytes);
+}
+
+int dspWriteDeviceBufferOnExplicitStream(sd::Pointer planHandle, int extIdx, sd::Pointer srcHost, long long numBytes, sd::Pointer streamPtr) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->writeDeviceBufferOnExplicitStream(
+      extIdx, reinterpret_cast<void*>(srcHost), numBytes, reinterpret_cast<void*>(streamPtr));
+}
+
+int dspSyncStream(sd::Pointer streamPtr) {
+  return 0;  // No-op on CPU — always "synced"
+}
+
+int dspIsExtInputDeviceAuthoritative(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->isExtInputDeviceAuthoritative(extIdx);
+}
+
+sd::Pointer dspGetExecutionStream(sd::Pointer planHandle) {
+  return nullptr;  // No streams on CPU
+}
+
+sd::Pointer dspGetDefaultStream() {
+  return nullptr;  // No streams on CPU
+}
+
+// =============================================================================
+// DSP Freeze Config
+// =============================================================================
+
+void setDspFreezeMergeSegments(bool enable) {
+  sd::Environment::getInstance().setDspFreezeMergeSegments(enable);
+}
+
+void setDspFreezeRecompile(bool enable) {
+  sd::Environment::getInstance().setDspFreezeRecompile(enable);
+}
+
+bool getDspFreezeMergeSegments() {
+  return sd::Environment::getInstance().dspFreezeMergeSegments();
+}
+
+bool getDspFreezeRecompile() {
+  return sd::Environment::getInstance().dspFreezeRecompile();
+}
+
+// =============================================================================
+// Output slot pre-allocation & KV scatter (CPU stubs)
+// =============================================================================
+
+void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
+                               const int* slotIndices, const sd::LongType* maxSizes) {
+  if (planHandle == nullptr) return;
+  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setPlanOutputSlotMaxSizes(
+      numSlots, slotIndices, maxSizes);
+}
+
+void configurePlanKvScatter(sd::Pointer planHandle,
+                            const int* presentSlotIndices,
+                            const sd::Pointer* staticKvBufferPtrs,
+                            sd::LongType numPairs,
+                            int dtypeInt,
+                            sd::LongType heads,
+                            sd::LongType srcSeqLen,
+                            sd::LongType dstSeqLen,
+                            sd::LongType dim,
+                            sd::LongType* kvPositionPtr) {
+  // KV scatter is GPU-only; no-op on CPU
+}
+
+void resetPlanKvCachePosition(sd::Pointer planHandle, sd::LongType position) {
+  // KV scatter is GPU-only; no-op on CPU
+}
+
+sd::LongType getPlanKvCachePosition(sd::Pointer planHandle) {
+  return -1;  // KV scatter is GPU-only
 }

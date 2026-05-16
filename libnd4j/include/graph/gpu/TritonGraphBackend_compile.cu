@@ -112,7 +112,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   bool cacheCompileAll = cacheEnv.tritonCompileAll();
   size_t cacheExcludeHash = std::hash<std::string>()(cacheEnv.tritonExcludeOps());
   size_t cacheIncludeHash = std::hash<std::string>()(cacheEnv.tritonIncludeTypes());
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash, cacheIncludeHash};
+  bool cacheGraphCapture = cacheEnv.tritonGraphCapture();
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash, cacheIncludeHash, cacheGraphCapture};
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -163,6 +164,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                                       externalInputs, numExternalInputs);
 
   if (sections.empty()) {
+    // Populate audit with all ops in the segment so the caller can report them
+    lastCompilationAudit_.clear();
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      CompilationAuditEntry entry;
+      entry.slotIndex = s;
+      entry.opName = slots[s].ident.opName;
+      entry.wasCompiled = false;
+      entry.reason = "identifySections returned empty — no compilable sections found";
+      lastCompilationAudit_.push_back(entry);
+    }
     DSP_DIAG(COMPILE, "TritonGraphBackend::compileSegment: no sections found for segment [%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
     return false;
@@ -602,7 +613,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   auto isNativeOrderedSection = [&](const KernelSection& section) -> bool {
     const auto& cfg = getSectionTypeConfig(section.type);
-    if (shouldStayNativeOrdered(cfg, compileAll, includedTypes)) return true;
+    if (shouldStayNativeOrdered(cfg, compileAll, includedTypes,
+                                    sd::Environment::getInstance().tritonGraphCapture())) return true;
 
     // Shape-control heuristic: catches small-integer bookkeeping ops (position IDs,
     // axis scalars) that are cheaper to run natively than compile.  BUT: if the user
@@ -1030,6 +1042,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         entry.slotIndex = s;
         entry.opName = slots[s].ident.opName;
         entry.wasCompiled = false;
+        entry.isNativeHandled = true;
         entry.reason = "leaf range not Triton-compilable, using native ordered execution";
         compiledSeg.audit.push_back(entry);
       }
@@ -1054,8 +1067,19 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
               return a.startSlot_ < b.startSlot_;
             });
 
-  if (compiledSeg.subKernels.empty()) {
-    DSP_DIAG(COMPILE, "TritonGraphBackend: no compiled sub-kernels for segment [%d-%d]",
+  if (compiledSeg.subKernels.empty() && compiledSeg.orderedRanges.empty()) {
+    // Populate audit for the full segment so the error message includes op names
+    lastCompilationAudit_.clear();
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      CompilationAuditEntry entry;
+      entry.slotIndex = s;
+      entry.opName = slots[s].ident.opName;
+      entry.wasCompiled = false;
+      entry.reason = "all compilation attempts failed — no sub-kernels or native ranges produced";
+      lastCompilationAudit_.push_back(entry);
+    }
+    DSP_DIAG(COMPILE, "TritonGraphBackend: no compiled sub-kernels AND no native ordered "
+             "ranges for segment [%d-%d] — genuine compilation failure",
              seg.def.startSlot, seg.def.endSlot);
     {
       std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -1070,13 +1094,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                              kernel.audit.end());
   }
 
-  DSP_DIAG(COMPILE, "TritonGraphBackend: adaptive compilation produced %d sub-segments for [%d-%d]",
+  DSP_DIAG(COMPILE, "TritonGraphBackend: adaptive compilation produced %d sub-segments "
+           "and %d native ordered ranges for [%d-%d]",
            static_cast<int>(compiledSeg.subKernels.size()),
+           static_cast<int>(compiledSeg.orderedRanges.size()),
            seg.def.startSlot, seg.def.endSlot);
 
   // Pre-allocate launch workspace outside runtime execution/capture.
   // This ensures the first captured Triton execution does not perform allocations.
-  if (compileDevice >= 0) {
+  // Skip entirely when there are no compiled sub-kernels (all-native segment).
+  if (compileDevice >= 0 && !compiledSeg.subKernels.empty()) {
     auto setDevErr = cudaSetDevice(compileDevice);
     if (setDevErr != cudaSuccess) {
       DSP_DIAG(BACKEND, "TritonGraphBackend: failed to set CUDA device %d for launch workspace pre-allocation: %s",
@@ -1165,7 +1192,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           kernel.cachedArgTableBytes < tableBytes ||
           kernel.cachedArgTableDeviceId != compileDevice) {
         if (kernel.cachedArgTableDevice != nullptr) {
-          auto freeErr = freeDeviceBufferAsync(kernel.cachedArgTableDevice, preallocStream);
+          // Use synchronous cudaFree for stale buffers — they were allocated on a
+          // previous compile's preallocStream which may have been destroyed since then.
+          // cudaFreeAsync requires the stream to be alive; cudaFree always works
+          // (CUDA docs: "Memory allocated by cudaMallocAsync can be freed by cudaFree").
+          auto freeErr = cudaFree(kernel.cachedArgTableDevice);
           if (freeErr != cudaSuccess) {
             DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing stale arg table for sub-kernel [%d-%d]: %s",
                       kernel.startSlot_, kernel.endSlot_, cudaGetErrorString(freeErr));
@@ -1194,7 +1225,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       if (kernel.cachedSyncCounterDevice == nullptr ||
           kernel.cachedSyncCounterDeviceId != compileDevice) {
         if (kernel.cachedSyncCounterDevice != nullptr) {
-          auto freeErr = freeDeviceBufferAsync(kernel.cachedSyncCounterDevice, preallocStream);
+          // Use synchronous cudaFree — stale buffer from a previous compile's stream.
+          auto freeErr = cudaFree(kernel.cachedSyncCounterDevice);
           if (freeErr != cudaSuccess) {
             DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing stale sync counter for sub-kernel [%d-%d]: %s",
                       kernel.startSlot_, kernel.endSlot_, cudaGetErrorString(freeErr));
@@ -1230,7 +1262,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           kernel.cachedGlobalScratchBytes < totalScratchBytes ||
           kernel.cachedGlobalScratchDeviceId != compileDevice) {
         if (kernel.cachedGlobalScratchDevice != nullptr) {
-          auto freeErr = freeDeviceBufferAsync(kernel.cachedGlobalScratchDevice, preallocStream);
+          // Use synchronous cudaFree — stale buffer from a previous compile's stream.
+          auto freeErr = cudaFree(kernel.cachedGlobalScratchDevice);
           if (freeErr != cudaSuccess) {
             DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing stale global scratch for sub-kernel [%d-%d]: %s",
                       kernel.startSlot_, kernel.endSlot_, cudaGetErrorString(freeErr));

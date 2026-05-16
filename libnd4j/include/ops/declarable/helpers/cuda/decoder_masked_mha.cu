@@ -101,7 +101,7 @@ __device__ float mhaBlockReduceMax(float val, float* sharedMem) {
 //   float reductionBuf[numWarps]  - for block reductions
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void decoderMaskedMhaKernel(
+__global__ __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     const T* __restrict__ hiddenStates,   // [B, 1, H]
     const T* __restrict__ qkvWeight,      // [H, 3*H]
     const T* __restrict__ oWeight,        // [H, H]
@@ -286,7 +286,7 @@ __global__ void decoderMaskedMhaKernel(
             dot += static_cast<float>(maskBuf[batchIdx * seqLen + pos]);
         }
 
-        float expVal = expf(dot - globalMax);
+        float expVal = __expf(dot - globalMax);
         localSum += expVal;
     }
 
@@ -314,7 +314,7 @@ __global__ void decoderMaskedMhaKernel(
             if (maskBuf != nullptr) {
                 dot += static_cast<float>(maskBuf[batchIdx * seqLen + pos]);
             }
-            float weight = expf(dot - globalMax) * invSum;
+            float weight = __expf(dot - globalMax) * invSum;
 
             LongType vOffset = ((batchIdx * numKvHeads + kvHeadIdx) * kvCacheMaxSeq + pos) * headDim;
             acc += weight * static_cast<float>(updatedVBuf[vOffset + d]);
@@ -342,7 +342,7 @@ __global__ void decoderMaskedMhaKernel(
 // Kernel to zero output buffer before accumulation
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void zeroOutputKernel(T* output, LongType size) {
+__global__ __launch_bounds__(256, 2) void zeroOutputKernel(T* output, LongType size) {
     LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < size) {
         output[idx] = static_cast<T>(0);
@@ -353,7 +353,7 @@ __global__ void zeroOutputKernel(T* output, LongType size) {
 // Kernel to copy KV cache (existing entries, not the new one)
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void copyKvCacheKernel(
+__global__ __launch_bounds__(256, 2) void copyKvCacheKernel(
     const T* __restrict__ src,
     T* __restrict__ dst,
     LongType size) {

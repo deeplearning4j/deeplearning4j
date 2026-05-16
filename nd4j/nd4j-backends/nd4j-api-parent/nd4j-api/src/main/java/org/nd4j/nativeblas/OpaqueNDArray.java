@@ -411,7 +411,13 @@ public class OpaqueNDArray extends Pointer {
         );
 
         if (opaque != null && !array.closeable()) {
-            opaque.setConstant(true);
+            // Only mark the OpaqueNDArray deallocator as constant to prevent GC
+            // from freeing the native wrapper during op execution. Do NOT propagate
+            // to the data buffer — views share their parent's DataBuffer, and marking
+            // it constant would poison all D2H sync for the parent and all other views.
+            if (opaque.deallocator != null) {
+                opaque.deallocator.setConstant(true);
+            }
         }
 
         return opaque;
@@ -491,7 +497,14 @@ public class OpaqueNDArray extends Pointer {
         }
 
         if (!array.closeable() && !opaque.isConstant()) {
-            opaque.setConstant(true);
+            // Only mark the OpaqueNDArray deallocator as constant to prevent GC
+            // from freeing the native wrapper during op execution. Do NOT propagate
+            // to the data buffer — views share their parent's DataBuffer, and marking
+            // it constant would poison all D2H sync for the parent and all other views.
+            // See OpaqueNDArray.create() for the careful constant-propagation logic.
+            if (opaque.deallocator != null) {
+                opaque.deallocator.setConstant(true);
+            }
         }
 
         return opaque;

@@ -139,7 +139,10 @@ public class OptimizationUtils {
                 v = sd.getVariables().get(s);
             }
             if (v != null && v.getInputsForOp() != null) {
-                v.getInputsForOp().remove(op.getName());
+                // removeAll to handle ops that use the same variable as multiple inputs
+                // (e.g., x*x). List.remove(Object) only removes the first occurrence,
+                // leaving a stale entry that causes DSP to see a phantom consumer.
+                while (v.getInputsForOp().remove(op.getName())) { }
             }
         }
     }

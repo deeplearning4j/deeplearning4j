@@ -202,6 +202,10 @@ class SD_LIB_EXPORT ArrayOptions {
   static SD_HOST SD_INLINE LongType copyOffsetFlagForInput(int inputIndex);
   static SD_HOST SD_INLINE void clearAllCopyOffsets(LongType *shapeInfo);
   static SD_HOST SD_INLINE int getActiveCopyOffsets(const LongType *shapeInfo);
+    /** Returns true if shapeInfo has ANY ARRAY_COPY_OFFSET_INPUT_N flag set.
+   *  This means the array's DataBuffer is shared with at least one input,
+   *  and zeroing it would corrupt the shared data. */
+  static SD_HOST SD_INLINE bool hasAnyCopyOffset(const LongType *shapeInfo);
 };
 
 }

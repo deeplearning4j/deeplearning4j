@@ -79,9 +79,12 @@ public class TestNativeDecodeInputsRegression {
         int initialFilled = 680; // positions 0..679
 
         INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-        // Initial fill
-        mask.get(org.nd4j.linalg.indexing.NDArrayIndex.point(0),
-                org.nd4j.linalg.indexing.NDArrayIndex.interval(0, initialFilled)).assign(1);
+        // Initial fill via view.assign — this is the pattern used in decode loops
+        INDArray view = mask.get(org.nd4j.linalg.indexing.NDArrayIndex.point(0),
+                org.nd4j.linalg.indexing.NDArrayIndex.interval(0, initialFilled));
+        view.assign(1);
+        Nd4j.getExecutioner().commit();
+
         // Last position (current token)
         mask.putScalar(0, totalSeqLen - 1, 1);
 

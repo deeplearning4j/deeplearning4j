@@ -236,30 +236,19 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
           ++consecutiveUnchanged;
 
           if (static_cast<int>(consecutiveUnchanged) >= kStaleThreshold) {
-            // Enough consecutive unchanged steps to be confident this is a real bug.
-            std::string detail;
-            for (auto& [idx, fp] : currentFingerprints) {
-              const char* name = (idx < static_cast<int>(externalInputNames_.size()))
-                                 ? externalInputNames_[idx].c_str() : "?";
-              char buf[128];
-              snprintf(buf, sizeof(buf), "  ext[%d]='%s' fp=0x%016llx (UNCHANGED)\n",
-                       idx, name, static_cast<unsigned long long>(fp));
-              detail += buf;
-            }
-
-            char msg[1024];
-            snprintf(msg, sizeof(msg),
-                     "STALENESS CHECK 2 FAILED: %s execCount=%d — ALL %d variable "
-                     "inputs have been identical for %llu consecutive steps "
-                     "(threshold=%d). Inputs are not being updated between steps; "
-                     "graph replay will produce stale/wrong output.\n%s",
+            // All variable inputs unchanged for multiple consecutive steps.
+            // This MAY indicate a stagnant decode loop, but it is also a valid
+            // use case (repeated inference on same data, testing, batch queries).
+            // Log a diagnostic warning but do NOT throw — the caller may
+            // legitimately be passing the same inputs.
+            DSP_DIAG(VERIFY,
+                     "%s MUTATION_STALE_WARN: execCount=%d, ALL %d variable inputs "
+                     "unchanged for %llu consecutive steps (threshold=%d). "
+                     "If this is a decode loop, inputs may not be advancing.",
                      diagTag, executeCount_,
                      static_cast<int>(currentFingerprints.size()),
                      static_cast<unsigned long long>(consecutiveUnchanged),
-                     kStaleThreshold,
-                     detail.c_str());
-            DSP_DIAG(VERIFY, "%s", msg);
-            throw std::runtime_error(msg);
+                     kStaleThreshold);
           } else {
             // Warn but tolerate: may be a vision-encoder with identical tiles.
             DSP_DIAG(VERIFY,
@@ -424,6 +413,17 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
       if (!variableExternalInputIndices_.empty()) {
         for (int idx : variableExternalInputIndices_) {
           if (idx < 0 || idx >= numExt || externalArrays[idx] == nullptr) continue;
+          // Skip H2D sync for inputs that have a pending JNI device write.
+          // JNI writeDeviceBuffer* wrote fresh data directly to the staging buffer's
+          // device memory. H2D sync would overwrite the external array's device buffer
+          // with stale host data (Java placeholder), and the subsequent D2D staging copy
+          // would be skipped (deviceWritePending_ flag), but the external array would
+          // still have stale device data. By skipping H2D entirely, the external array's
+          // device buffer is left unchanged and the staging buffer retains the JNI data.
+          if (idx < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[idx]) {
+            skipped++;
+            continue;
+          }
           auto* db = externalArrays[idx]->dataBuffer();
           if (db != nullptr && db->isPrimaryActual()) {
             db->syncToSpecial(true);  // Force H2D: host has newer data
@@ -436,6 +436,10 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
         // Variable filter enabled but no variable indices cached — sync all
         for (int ei = 0; ei < numExt; ei++) {
           if (externalArrays[ei] == nullptr) continue;
+          if (ei < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[ei]) {
+            skipped++;
+            continue;
+          }
           auto* db = externalArrays[ei]->dataBuffer();
           if (db != nullptr && db->isPrimaryActual()) {
             db->syncToSpecial(true);
@@ -447,6 +451,10 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
       // No variable filter (warmup / non-frozen): sync all external inputs
       for (int ei = 0; ei < numExt; ei++) {
         if (externalArrays[ei] == nullptr) continue;
+        if (ei < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[ei]) {
+          skipped++;
+          continue;
+        }
         externalArrays[ei]->syncToDevice();
         synced++;
       }

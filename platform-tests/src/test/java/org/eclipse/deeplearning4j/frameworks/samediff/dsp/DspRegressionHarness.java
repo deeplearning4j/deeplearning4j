@@ -62,7 +62,9 @@ public abstract class DspRegressionHarness {
     /** Whether CUDA is available. Used by @Disabled conditions and skip logic. */
     protected static boolean isCudaAvailable() {
         try {
-            return Nd4j.getBackend().getClass().getName().toLowerCase().contains("cuda");
+            String name = Nd4j.getBackend().getClass().getName().toLowerCase();
+            // JCublasBackend is the CUDA backend — check for both "cuda" and "cublas"
+            return name.contains("cuda") || name.contains("cublas") || name.contains("jcublas");
         } catch (Throwable t) {
             return false;
         }

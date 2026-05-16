@@ -227,9 +227,10 @@ class TritonIRBuilder {
 
   // ── Op emitters (TritonIRBuilder_emitters.cpp) ──
 
-  // Emit a binary element-wise op (add, sub, mul, div, min, max)
+  // Emit a binary element-wise op (add, sub, mul, div, min, max, activation backward)
   static mlir::Value emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
                                            const TritonOpMapping& mapping,
+                                           const NativeSlot& slot,
                                            mlir::Value lhs, mlir::Value rhs);
 
   // Emit a unary element-wise op (relu, sigmoid, tanh, gelu, exp, log, etc.)
@@ -498,6 +499,27 @@ class TritonIRBuilder {
                                   int headDim, int numHeads,
                                   const std::vector<LongType>& cosShape,
                                   int nElements);
+
+  // RoPE SSA with position-offset: computes cos/sin inline from position scalar.
+  // For fused_rope with <=2 inputs (no precomputed cos/sin tensors).
+  // posPtr is a pointer to a scalar position offset (ext input).
+  static mlir::Value emitRoPEPositionSSA(mlir::OpBuilder& builder, mlir::Location loc,
+                                          mlir::Value inputSSA,
+                                          mlir::Value posPtr,
+                                          mlir::Value pid, int blockSize,
+                                          int headDim, int numHeads,
+                                          float freqBase, float freqScale,
+                                          int ropeType, int nElements);
+
+  // Pointer-based RoPE with position-offset: store/reload path for when SSA constraints fail.
+  // Reads input from inPtr, computes RoPE with position from posPtr, writes to outPtr.
+  static void emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Location loc,
+                                       mlir::Value pid, int blockSize,
+                                       mlir::Value inPtr, mlir::Value posPtr,
+                                       mlir::Value outPtr,
+                                       const std::vector<LongType>& inShape,
+                                       int ropeType, float freqBase, float freqScale,
+                                       int nElements);
 
   // Per-element fallback: matmul/attention via scalar K-loop (no tt.dot, no grid sync)
   static void emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Location loc,

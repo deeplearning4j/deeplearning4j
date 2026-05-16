@@ -2900,6 +2900,136 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
+   * via intra/inter-chunk decomposition.<br>
+   * <br>
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
+   * <br>
+   * The algorithm decomposes each chunk into:<br>
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
+   *   Combined:     O_i = O_inter + O_intra<br>
+   * <br>
+   * State shape: [batch, numHeads, headDim, headDim].<br>
+   *
+   * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param value Value tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param decayRates Per-head scalar decay rate [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDim, headDim] (in-place update) (NUMERIC type)
+   * @param isCausal Whether to apply causal masking (0=no, 1=yes)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable lightningAttention(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable decayRates, SDVariable state, int isCausal) {
+    SDValidation.validateNumerical("lightningAttention", "query", query);
+    SDValidation.validateNumerical("lightningAttention", "key", key);
+    SDValidation.validateNumerical("lightningAttention", "value", value);
+    SDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
+    SDValidation.validateNumerical("lightningAttention", "state", state);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(sd,query, key, value, decayRates, state, isCausal).outputVariable();
+  }
+
+  /**
+   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
+   * via intra/inter-chunk decomposition.<br>
+   * <br>
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
+   * <br>
+   * The algorithm decomposes each chunk into:<br>
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
+   *   Combined:     O_i = O_inter + O_intra<br>
+   * <br>
+   * State shape: [batch, numHeads, headDim, headDim].<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param value Value tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param decayRates Per-head scalar decay rate [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDim, headDim] (in-place update) (NUMERIC type)
+   * @param isCausal Whether to apply causal masking (0=no, 1=yes)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable lightningAttention(String name, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable decayRates, SDVariable state, int isCausal) {
+    SDValidation.validateNumerical("lightningAttention", "query", query);
+    SDValidation.validateNumerical("lightningAttention", "key", key);
+    SDValidation.validateNumerical("lightningAttention", "value", value);
+    SDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
+    SDValidation.validateNumerical("lightningAttention", "state", state);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(sd,query, key, value, decayRates, state, isCausal).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
+   * via intra/inter-chunk decomposition.<br>
+   * <br>
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
+   * <br>
+   * The algorithm decomposes each chunk into:<br>
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
+   *   Combined:     O_i = O_inter + O_intra<br>
+   * <br>
+   * State shape: [batch, numHeads, headDim, headDim].<br>
+   *
+   * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param value Value tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param decayRates Per-head scalar decay rate [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDim, headDim] (in-place update) (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable lightningAttention(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable decayRates, SDVariable state) {
+    SDValidation.validateNumerical("lightningAttention", "query", query);
+    SDValidation.validateNumerical("lightningAttention", "key", key);
+    SDValidation.validateNumerical("lightningAttention", "value", value);
+    SDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
+    SDValidation.validateNumerical("lightningAttention", "state", state);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(sd,query, key, value, decayRates, state, 1).outputVariable();
+  }
+
+  /**
+   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
+   * via intra/inter-chunk decomposition.<br>
+   * <br>
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
+   * <br>
+   * The algorithm decomposes each chunk into:<br>
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
+   *   Combined:     O_i = O_inter + O_intra<br>
+   * <br>
+   * State shape: [batch, numHeads, headDim, headDim].<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param value Value tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param decayRates Per-head scalar decay rate [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDim, headDim] (in-place update) (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable lightningAttention(String name, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable decayRates, SDVariable state) {
+    SDValidation.validateNumerical("lightningAttention", "query", query);
+    SDValidation.validateNumerical("lightningAttention", "key", key);
+    SDValidation.validateNumerical("lightningAttention", "value", value);
+    SDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
+    SDValidation.validateNumerical("lightningAttention", "state", state);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(sd,query, key, value, decayRates, state, 1).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Linear layer operation: out = mmul(in,w) + bias<br>
    * Note that bias array is optional<br>
    *
@@ -2972,6 +3102,62 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("linear", "weights", weights);
     SDValidation.validateNumerical("linear", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(sd,input, weights, bias, false, false, false).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Linear Attention Decode — single-token decode step for linear attention.<br>
+   * <br>
+   * Implements the recurrent form of linear attention:<br>
+   *   state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)<br>
+   *   output    = q @ state_new                            (matrix-vector product)<br>
+   * <br>
+   * State is always stored and computed as float32 regardless of input dtype.<br>
+   * State shape: [batch, numHeads, headDimV, headDimK].<br>
+   *
+   * @param query Query tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
+   * @param key Key tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
+   * @param value Value tensor [batch, 1, numHeads, headDimV] (NUMERIC type)
+   * @param decayRates Per-head log-decay magnitude [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDimV, headDimK] float32 (in-place update) (NUMERIC type)
+   * @return output Decode output [batch, 1, numHeads, headDimV] (NUMERIC type)
+   */
+  public SDVariable linearAttentionDecode(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable decayRates, SDVariable state) {
+    SDValidation.validateNumerical("linearAttentionDecode", "query", query);
+    SDValidation.validateNumerical("linearAttentionDecode", "key", key);
+    SDValidation.validateNumerical("linearAttentionDecode", "value", value);
+    SDValidation.validateNumerical("linearAttentionDecode", "decayRates", decayRates);
+    SDValidation.validateNumerical("linearAttentionDecode", "state", state);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LinearAttentionDecode(sd,query, key, value, decayRates, state).outputVariable();
+  }
+
+  /**
+   * Linear Attention Decode — single-token decode step for linear attention.<br>
+   * <br>
+   * Implements the recurrent form of linear attention:<br>
+   *   state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)<br>
+   *   output    = q @ state_new                            (matrix-vector product)<br>
+   * <br>
+   * State is always stored and computed as float32 regardless of input dtype.<br>
+   * State shape: [batch, numHeads, headDimV, headDimK].<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
+   * @param key Key tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
+   * @param value Value tensor [batch, 1, numHeads, headDimV] (NUMERIC type)
+   * @param decayRates Per-head log-decay magnitude [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDimV, headDimK] float32 (in-place update) (NUMERIC type)
+   * @return output Decode output [batch, 1, numHeads, headDimV] (NUMERIC type)
+   */
+  public SDVariable linearAttentionDecode(String name, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable decayRates, SDVariable state) {
+    SDValidation.validateNumerical("linearAttentionDecode", "query", query);
+    SDValidation.validateNumerical("linearAttentionDecode", "key", key);
+    SDValidation.validateNumerical("linearAttentionDecode", "value", value);
+    SDValidation.validateNumerical("linearAttentionDecode", "decayRates", decayRates);
+    SDValidation.validateNumerical("linearAttentionDecode", "state", state);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LinearAttentionDecode(sd,query, key, value, decayRates, state).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3719,6 +3905,411 @@ public class SDNN extends SDOps {
       SDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
     }
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
+      int numHeads, double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, null, null, null, null, numHeads, scale, useCausalMask).outputVariables();
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
+      SDVariable value, int numHeads, double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, null, null, null, null, numHeads, scale, useCausalMask).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable attnBias, int numHeads, double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, attnBias, null, null, null, numHeads, scale, useCausalMask).outputVariables();
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable attnBias, int numHeads, double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, attnBias, null, null, null, numHeads, scale, useCausalMask).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable pastKey, SDVariable pastValue, int numHeads, double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (pastKey != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, null, pastKey, pastValue, null, numHeads, scale, useCausalMask).outputVariables();
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable pastKey, SDVariable pastValue, int numHeads, double scale,
+      boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (pastKey != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, null, pastKey, pastValue, null, numHeads, scale, useCausalMask).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable attnBias, SDVariable pastKey, SDVariable pastValue, int numHeads, double scale,
+      boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    if (pastKey != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, attnBias, pastKey, pastValue, null, numHeads, scale, useCausalMask).outputVariables();
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable attnBias, SDVariable pastKey, SDVariable pastValue, int numHeads,
+      double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    if (pastKey != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, attnBias, pastKey, pastValue, null, numHeads, scale, useCausalMask).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param cachePosition Optional cache position [1] INT64 scalar for in-place KV write mode, or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable attnBias, SDVariable pastKey, SDVariable pastValue, SDVariable cachePosition,
+      int numHeads, double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    if (pastKey != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    if (cachePosition != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "cachePosition", cachePosition);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, attnBias, pastKey, pastValue, cachePosition, numHeads, scale, useCausalMask).outputVariables();
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param cachePosition Optional cache position [1] INT64 scalar for in-place KV write mode, or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
+      SDVariable cachePosition, int numHeads, double scale, boolean useCausalMask) {
+    SDValidation.validateNumerical("multiHeadAttention", "query", query);
+    SDValidation.validateNumerical("multiHeadAttention", "key", key);
+    SDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    if (pastKey != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    if (cachePosition != null) {
+      SDValidation.validateNumerical("multiHeadAttention", "cachePosition", cachePosition);
+    }
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(sd,query, key, value, attnBias, pastKey, pastValue, cachePosition, numHeads, scale, useCausalMask).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 

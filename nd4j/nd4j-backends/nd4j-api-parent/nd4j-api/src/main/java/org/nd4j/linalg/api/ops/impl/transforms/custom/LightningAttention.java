@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -32,54 +31,69 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Lightning Attention — O(N) linear attention using cumulative sum recurrence.
+ * Lightning Attention — O(N) linear attention with per-head exponential decay
+ * via intra/inter-chunk decomposition.
  *
- * Instead of the full N×N attention matrix, uses a running state:
- *   S_i = sum_{j<=i} (K_j^T * V_j)
- *   O_i = scale * Q_i @ S_i
+ * Based on cuLA (inclusionAI/cuLA) algorithmic patterns.
+ * Reference: https://arxiv.org/abs/2405.17381 (Lightning Attention-2)
  *
- * Complexity: O(N * d²) vs O(N² * d) for standard attention.
+ * The algorithm decomposes each chunk into:
+ *   - Inter-chunk: O_inter = Q_i @ S_{i-1}
+ *   - Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i
+ *   - State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
  *
  * Inputs:
- *   0: query  [batch, heads, seqLen, headDim]
- *   1: key    [batch, heads, seqLen, headDim]
- *   2: value  [batch, heads, seqLen, headDim]
+ *   0: query      [batch, seqLen, numHeads, headDim]
+ *   1: key        [batch, seqLen, numHeads, headDim]
+ *   2: value      [batch, seqLen, numHeads, headDim]
+ *   3: decayRates [numHeads] float32 — per-head scalar decay rate
+ *   4: state      [batch, numHeads, headDim, headDim] float32 — recurrent state (in-place)
+ *
+ * Int args:
+ *   0: isCausal (0 or 1, default 1)
  *
  * Output:
- *   0: attention output [batch, heads, seqLen, headDim]
+ *   0: attention output [batch, seqLen, numHeads, headDim]
  *
- * Float args:
- *   0: scale (default: 1/sqrt(headDim))
+ * @author Eclipse Deeplearning4j Contributors
  */
 @NoArgsConstructor
 public class LightningAttention extends DynamicCustomOp {
 
-    @Getter private double scale = 0.0;
-
-    public LightningAttention(INDArray query, INDArray key, INDArray value) {
-        super(new INDArray[]{query, key, value}, null);
+    public LightningAttention(INDArray query, INDArray key, INDArray value,
+                              INDArray decayRates, INDArray state) {
+        super(new INDArray[]{query, key, value, decayRates, state}, null);
+        addIArgument(1L); // isCausal default true
     }
 
-    public LightningAttention(INDArray query, INDArray key, INDArray value, double scale) {
-        super(new INDArray[]{query, key, value}, null);
-        this.scale = scale;
-        addTArgument(scale);
+    public LightningAttention(INDArray query, INDArray key, INDArray value,
+                              INDArray decayRates, INDArray state, boolean isCausal) {
+        super(new INDArray[]{query, key, value, decayRates, state}, null);
+        addIArgument(isCausal ? 1L : 0L);
     }
 
-    public LightningAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value) {
-        super(null, sd, new SDVariable[]{query, key, value}, false);
+    public LightningAttention(INDArray query, INDArray key, INDArray value,
+                              INDArray decayRates, INDArray state, int isCausal) {
+        super(new INDArray[]{query, key, value, decayRates, state}, null);
+        addIArgument((long) isCausal);
     }
 
-    public LightningAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value, double scale) {
-        super(null, sd, new SDVariable[]{query, key, value}, false);
-        this.scale = scale;
-        addTArgument(scale);
+    public LightningAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
+                              SDVariable decayRates, SDVariable state) {
+        super(null, sd, new SDVariable[]{query, key, value, decayRates, state});
+        addIArgument(1L); // isCausal default true
     }
 
-    @Override
-    public void configureFromArguments() {
-        super.configureFromArguments();
-        if (tArguments.size() > 0) this.scale = tArguments.get(0);
+    public LightningAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
+                              SDVariable decayRates, SDVariable state, boolean isCausal) {
+        super(null, sd, new SDVariable[]{query, key, value, decayRates, state});
+        addIArgument(isCausal ? 1L : 0L);
+    }
+
+    public LightningAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
+                              SDVariable decayRates, SDVariable state, int isCausal) {
+        super(null, sd, new SDVariable[]{query, key, value, decayRates, state});
+        addIArgument((long) isCausal);
     }
 
     @Override

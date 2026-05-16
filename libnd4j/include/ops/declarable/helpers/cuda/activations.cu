@@ -37,7 +37,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void *vy, const LongType *yShapeInfo,
+void SD_KERNEL __launch_bounds__(256, 2) preluCuda(const void *vx, const LongType *xShapeInfo, const void *vy, const LongType *yShapeInfo,
                          void *vz) {
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
@@ -96,6 +96,8 @@ void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const
 ///////////////////////////////////////////////////////////////////
 void prelu(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *output) {
   dim3 launchDims = getLaunchDims("prelu");
+  // Cap at 256: preluCuda kernel uses __launch_bounds__(256, 2)
+  if (launchDims.y > 256) launchDims.y = 256;
 
   const auto xType = input->dataType();
   const auto yType = alpha->dataType();
@@ -112,7 +114,7 @@ void prelu(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *outp
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const void *vAlpha,
+void SD_KERNEL __launch_bounds__(256, 2) preluBPCuda(const void *vIn, const LongType *inShapeInfo, const void *vAlpha,
                            const LongType *alphaShapeInfo, const void *vdLdO, const LongType *dLdOShapeInfo,
                            void *vdLdI, const LongType *dLdIShapeInfo, void *vdLdA,
                            const LongType *dLdAShapeInfo) {
@@ -198,6 +200,8 @@ void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dL
   dLdA->nullify();
 
   dim3 launchDims = getLaunchDims("prelu");
+  // Cap at 256: preluBPCuda kernel uses __launch_bounds__(256, 2)
+  if (launchDims.y > 256) launchDims.y = 256;
 
   const auto xType = input->dataType();
   const auto zType = alpha->dataType();
@@ -364,7 +368,7 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
 }
 
 template <typename T>
-void SD_KERNEL softMaxForVectorCudaGlobal(const void *vx, const LongType *xShapeInfo, void *vz,
+void SD_KERNEL __launch_bounds__(256, 2) softMaxForVectorCudaGlobal(const void *vx, const LongType *xShapeInfo, void *vz,
                                           const LongType *zShapeInfo, LongType numOfSubArrs) {
   softMaxForVectorCuda<T>(vx, xShapeInfo, vz, zShapeInfo);
 }
@@ -401,7 +405,7 @@ SD_DEVICE SD_INLINE T warpReduceSum(T val) {
 // Warp-per-TAD kernel with vectorized float4 loads for contiguous data
 // Each warp processes one TAD, using float4 for 4x memory bandwidth
 template <typename T>
-SD_KERNEL static void softMaxCudaWarpPerTadVec4(const void *vx, const LongType *xOffsets,
+SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTadVec4(const void *vx, const LongType *xOffsets,
                                                  void *vz, const LongType *zOffsets,
                                                  LongType numTads, LongType tadLen) {
   const auto x = reinterpret_cast<const float *>(vx);
@@ -438,16 +442,16 @@ SD_KERNEL static void softMaxCudaWarpPerTadVec4(const void *vx, const LongType *
     for (LongType j = laneId; j < vec4Len; j += 32) {
       float4 val = reinterpret_cast<const float4*>(inBuff)[j];
       float4 expVal;
-      expVal.x = expf(val.x - maxVal);
-      expVal.y = expf(val.y - maxVal);
-      expVal.z = expf(val.z - maxVal);
-      expVal.w = expf(val.w - maxVal);
+      expVal.x = __expf(val.x - maxVal);
+      expVal.y = __expf(val.y - maxVal);
+      expVal.z = __expf(val.z - maxVal);
+      expVal.w = __expf(val.w - maxVal);
       reinterpret_cast<float4*>(outBuff)[j] = expVal;
       threadSum += expVal.x + expVal.y + expVal.z + expVal.w;
     }
     // Handle remainder
     for (LongType j = vec4Len * 4 + laneId; j < tadLen; j += 32) {
-      float temp = expf(inBuff[j] - maxVal);
+      float temp = __expf(inBuff[j] - maxVal);
       outBuff[j] = temp;
       threadSum += temp;
     }
@@ -476,7 +480,7 @@ SD_KERNEL static void softMaxCudaWarpPerTadVec4(const void *vx, const LongType *
 // Optimized for contiguous short TADs (typical in attention: 128-512 elements)
 // Multiple warps per block = multiple TADs processed in parallel
 template <typename T>
-SD_KERNEL static void softMaxCudaWarpPerTad(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
+SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTad(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
                                             void *vz, const LongType *zTadShapeInfo, const LongType *zOffsets,
                                             LongType numTads, LongType tadLen, LongType xStride0, LongType zStride0) {
   const auto x = reinterpret_cast<const T *>(vx);
@@ -521,7 +525,7 @@ SD_KERNEL static void softMaxCudaWarpPerTad(const void *vx, const LongType *xTad
 // Multi-TAD kernel: each block processes multiple TADs using grid-stride loop
 // Uses warp shuffle for fast reductions - for longer TADs
 template <typename T>
-SD_KERNEL static void softMaxCuda(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
+SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
                                   void *vz, const LongType *zTadShapeInfo, const LongType *zOffsets, LongType numTads) {
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
@@ -684,7 +688,7 @@ void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int 
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeInfo, void *vz) {
+void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeInfo, void *vz) {
   // logic of this kernel is based on assumption gridDim = 1
 
   const auto x = reinterpret_cast<const T *>(vx);
@@ -823,7 +827,7 @@ void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const i
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShapeInfo, void *vz) {
+void SD_KERNEL __launch_bounds__(256, 2) softMaxDerivForVectorCuda(const void *vx, const LongType *xzShapeInfo, void *vz) {
   // logic of this kernel is based on assumption gridDim = 1
 
   const auto x = reinterpret_cast<const T *>(vx);

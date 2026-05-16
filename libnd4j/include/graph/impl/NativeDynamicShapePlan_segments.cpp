@@ -1660,11 +1660,23 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
         arr = outputSlots_[srcIdx];
       }
       if (arr != nullptr) {
+        // Guard against stale view NDArrays whose DataBuffer has been freed
+        // between calls. In EMULATED_REPLAY (and unfrozen slot-by-slot),
+        // placeholder arrays are closed by Java after each execution. View
+        // chains (permute→reshape→...) that wrap a placeholder's DataBuffer
+        // become dangling. Calling specialBuffer() on such an array triggers
+        // syncToDevice → migrate() on the freed DataBuffer, reading corrupted
+        // _lenInBytes/_deviceId fields → SIGSEGV in Workspace::allocateBytes.
+        auto* db = arr->dataBuffer();
+        if (db == nullptr || !db->isValid()) {
+          mix(0);
+        } else {
 #if defined(SD_CUDA)
-        mix(reinterpret_cast<uintptr_t>(arr->specialBuffer()));
+          mix(reinterpret_cast<uintptr_t>(arr->specialBuffer()));
 #else
-        mix(reinterpret_cast<uintptr_t>(arr->buffer()));
+          mix(reinterpret_cast<uintptr_t>(arr->buffer()));
 #endif
+        }
       } else {
         mix(0);  // cross-segment nullptr sentinel
       }
@@ -1697,6 +1709,69 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
            "EMULATED seg[%d-%d] phase=%s execCount=%d slots=%d capturable=%d frozen=%d",
            seg.def.startSlot, seg.def.endSlot, phaseName, execCount, segSize,
            seg.def.isCapturable ? 1 : 0, shapesFrozen_ ? 1 : 0);
+
+  // ── External input dtype validation ────────────────────────────────────
+  // Fresh placeholder arrays passed from Java must have valid dtypes (FLOAT32,
+  // HALF, etc.). An UNKNOWN dtype on a freshly created NDArray means its
+  // shapeInfo extras word lost its dtype flags — typically from a
+  // ConstantShapeHelper trie entry being overwritten by a corrected shape
+  // from a prior plan execution, or from a freed DataBuffer whose shapeInfo
+  // pointer was recycled.  Detect and repair here before the UNKNOWN poisons
+  // downstream view chains and causes "Unknown data type requested" throws.
+  for (int ei = 0; ei < numExt; ei++) {
+    if (externalArrays[ei] == nullptr) continue;
+    auto extDt = externalArrays[ei]->dataType();
+    if (extDt == DataType::UNKNOWN || extDt == DataType::INHERIT) {
+      // Repair: the DataBuffer knows its true type even if shapeInfo is corrupt.
+      auto* db = externalArrays[ei]->dataBuffer();
+      if (db != nullptr && db->isValid()) {
+        DataType dbDt = db->getDataType();
+        if (dbDt != DataType::UNKNOWN && dbDt != DataType::INHERIT) {
+          const LongType* curShape = externalArrays[ei]->shapeInfo();
+          int rank = shape::rank(curShape);
+          const LongType* fixedShape = ConstantShapeHelper::getInstance().createShapeInfo(
+              dbDt, shape::order(curShape), rank, shape::shapeOf(curShape));
+          externalArrays[ei]->setShapeInfo(const_cast<LongType*>(fixedShape));
+          DSP_DIAG(SHAPE,
+              "EXT_INPUT_DTYPE_REPAIR: ext[%d] had UNKNOWN dtype, repaired to %s "
+              "from DataBuffer (execCount=%d phase=%s)",
+              ei, DataTypeUtils::asString(dbDt).c_str(), execCount, phaseName);
+        } else {
+          DSP_THROW(SHAPE,
+              "EXT_INPUT_UNRECOVERABLE: ext[%d] has UNKNOWN dtype AND DataBuffer "
+              "dtype is also UNKNOWN/INHERIT. Cannot execute. execCount=%d phase=%s "
+              "db=%p valid=%d closed=%d",
+              ei, execCount, phaseName, (void*)db, db->isValid() ? 1 : 0,
+              db->isClosed() ? 1 : 0);
+        }
+      }
+    }
+  }
+
+  // ── View wrapper refresh ───────────────────────────────────────────────
+  // View-producer slots (permute, reshape, etc.) wrap their input's DataBuffer.
+  // When the placeholder is replaced between calls and the old one is closed,
+  // the view in outputSlots_ holds a dangling DataBuffer pointer. Refresh
+  // stale view wrappers BEFORE any key computation or slot execution to
+  // prevent downstream slots from reading UNKNOWN dtype from freed memory.
+  //
+  // The guard uses outputSlots_[seg.def.startSlot] != nullptr rather than
+  // execCount > 0 because the segment's executionCount can be reset to 0 by
+  // platformReleaseSegmentGpuResources (releaseGpuIntermediates teardown)
+  // while the output slot arrays from a previous execution persist. In this
+  // case execCount is 0 but the slots hold stale views that need refresh.
+  bool hasPopulatedSlots = (outputSlots_ != nullptr &&
+      seg.def.startSlot < totalOutputSlots_ &&
+      outputSlots_[seg.def.startSlot] != nullptr);
+  if (slotIsViewProducer_ != nullptr && hasPopulatedSlots) {
+    int viewRefreshResult = refreshStaleViewWrappersInSegment(seg, externalArrays, numExt);
+    if (viewRefreshResult > 0) {
+      seg.exec.bumpArgGeneration();
+      seg.exec.argTableStable = false;
+      seg.exec.addrKeyStableCount = 0;
+      seg.exec.slotAddrStableCount = 0;
+    }
+  }
 
   // ── Gap 1: Fast path — skip key recomputation when stable ──────────────
   // When the generation counter shows no refresh needed (both shape and addr

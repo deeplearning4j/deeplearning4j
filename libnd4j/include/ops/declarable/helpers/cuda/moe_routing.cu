@@ -42,7 +42,7 @@ constexpr int MOE_WARP_SIZE = 32;
 // One block per token. Computes sigmoid scores and selects top-K experts.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void moeTopkSigmoidKernel(
+SD_KERNEL __launch_bounds__(128, 4) void moeTopkSigmoidKernel(
     const T* __restrict__ gatingLogits,     // [numTokens, numExperts]
     const T* __restrict__ expertBias,       // [numExperts] or nullptr
     T* __restrict__ expertScores,           // [numTokens, topK]
@@ -70,7 +70,7 @@ SD_KERNEL void moeTopkSigmoidKernel(
             logit += static_cast<float>(expertBias[e]);
         }
         // sigmoid: 1 / (1 + exp(-x))
-        scores[e] = 1.0f / (1.0f + expf(-logit));
+        scores[e] = 1.0f / (1.0f + __expf(-logit));
     }
     __syncthreads();
 
@@ -129,7 +129,7 @@ SD_KERNEL void moeTopkSigmoidKernel(
 // Softmax top-K routing kernel with optional softcap
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void moeTopkSoftmaxKernel(
+SD_KERNEL __launch_bounds__(128, 4) void moeTopkSoftmaxKernel(
     const T* __restrict__ gatingLogits,     // [numTokens, numExperts]
     T* __restrict__ expertScores,           // [numTokens, topK]
     int32_t* __restrict__ expertIndices,    // [numTokens, topK]
@@ -170,7 +170,7 @@ SD_KERNEL void moeTopkSoftmaxKernel(
         // Softmax: exp and sum
         float sumExp = 0.0f;
         for (int e = 0; e < numExperts; e++) {
-            scores[e] = expf(scores[e] - maxVal);
+            scores[e] = __expf(scores[e] - maxVal);
             sumExp += scores[e];
         }
         for (int e = 0; e < numExperts; e++) {
@@ -220,7 +220,7 @@ SD_KERNEL void moeTopkSoftmaxKernel(
 // Phase 2: Compute expert offsets (prefix sum)
 // Phase 3: Sort tokens into expert-major order
 //////////////////////////////////////////////////////////////////////////////
-SD_KERNEL void moeCountTokensKernel(
+SD_KERNEL __launch_bounds__(256, 2) void moeCountTokensKernel(
     const int32_t* __restrict__ expertIndices,  // [numTokens, topK]
     int32_t* __restrict__ tokenCounts,          // [numExperts] (atomically incremented)
     const LongType numTokens,
@@ -236,7 +236,7 @@ SD_KERNEL void moeCountTokensKernel(
     }
 }
 
-SD_KERNEL void moeSortTokensKernel(
+SD_KERNEL __launch_bounds__(256, 2) void moeSortTokensKernel(
     const int32_t* __restrict__ expertIndices,   // [numTokens, topK]
     const int32_t* __restrict__ expertOffsets,    // [numExperts] prefix sum
     int32_t* __restrict__ sortedTokenIds,         // [totalPaddedTokens]
@@ -268,7 +268,7 @@ SD_KERNEL void moeSortTokensKernel(
 // Each block handles one token's output dimension
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void moeSumReduceKernel(
+SD_KERNEL __launch_bounds__(256, 2) void moeSumReduceKernel(
     const T* __restrict__ expertOutputs,   // [numTokens, topK, hiddenDim]
     const T* __restrict__ routingWeights,   // [numTokens, topK]
     T* __restrict__ output,                 // [numTokens, hiddenDim]

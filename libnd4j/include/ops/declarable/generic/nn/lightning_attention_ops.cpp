@@ -28,34 +28,32 @@ namespace sd {
 namespace ops {
 
 /**
- * Lightning Attention — O(N) linear attention using cumulative sum recurrence.
- *
- * Instead of computing the full N×N attention matrix, linear attention
- * uses a running state accumulator:
- *   S_i = sum_{j<=i} (K_j^T * V_j)
- *   O_i = scale * Q_i @ S_i
- *
- * Complexity: O(N * d²) instead of O(N² * d).
+ * Lightning Attention — O(N) linear attention with per-head exponential decay
+ * via intra/inter-chunk decomposition.
  *
  * Inputs:
- *   0: query  [batch, heads, seqLen, headDim]
- *   1: key    [batch, heads, seqLen, headDim]
- *   2: value  [batch, heads, seqLen, headDim]
+ *   0: query      [batch, seqLen, numHeads, headDim]
+ *   1: key        [batch, seqLen, numHeads, headDim]
+ *   2: value      [batch, seqLen, numHeads, headDim]
+ *   3: decayRates [numHeads]  (per-head scalar decay rate, float32)
+ *   4: state      [batch, numHeads, headDim, headDim] (recurrent state, float32, in/out)
  *
  * Output:
- *   0: attention output [batch, heads, seqLen, headDim]
+ *   0: attention output [batch, seqLen, numHeads, headDim]
  *
- * Float args:
- *   0: scale (default: 1/sqrt(headDim))
+ * Int args:
+ *   0: isCausal (0 or 1, default 1)
  */
-CUSTOM_OP_IMPL(lightning_attention, 3, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(lightning_attention, 5, 1, false, 0, 0) {
     auto query = INPUT_VARIABLE(0);
     auto key = INPUT_VARIABLE(1);
     auto value = INPUT_VARIABLE(2);
+    auto decayRates = INPUT_VARIABLE(3);
+    auto state = INPUT_VARIABLE(4);
     auto output = OUTPUT_VARIABLE(0);
 
     REQUIRE_TRUE(query->rankOf() == 4, 0,
-                 "lightning_attention: query must be rank 4 [batch, heads, seqLen, headDim], got %lld",
+                 "lightning_attention: query must be rank 4 [batch, seqLen, numHeads, headDim], got %lld",
                  (long long)query->rankOf());
     REQUIRE_TRUE(key->rankOf() == 4, 0,
                  "lightning_attention: key must be rank 4, got %lld",
@@ -63,14 +61,19 @@ CUSTOM_OP_IMPL(lightning_attention, 3, 1, false, 0, 0) {
     REQUIRE_TRUE(value->rankOf() == 4, 0,
                  "lightning_attention: value must be rank 4, got %lld",
                  (long long)value->rankOf());
+    REQUIRE_TRUE(decayRates->rankOf() == 1, 0,
+                 "lightning_attention: decayRates must be rank 1 [numHeads], got %lld",
+                 (long long)decayRates->rankOf());
+    REQUIRE_TRUE(state->rankOf() == 4, 0,
+                 "lightning_attention: state must be rank 4 [batch, numHeads, headDim, headDim], got %lld",
+                 (long long)state->rankOf());
 
-    auto headDim = query->sizeAt(3);
-    double scale = block.getTArguments()->size() > 0 ? T_ARG(0) : (1.0 / std::sqrt(static_cast<double>(headDim)));
+    bool isCausal = block.getIArguments()->size() > 0 ? (I_ARG(0) != 0) : true;
 
 #if defined(SD_CUDA)
-    helpers::lightningAttentionCuda(block.launchContext(), query, key, value, output, scale);
+    helpers::lightningAttentionCuda(block.launchContext(), query, key, value, decayRates, state, output, isCausal);
 #else
-    helpers::lightningAttentionCpu(block.launchContext(), query, key, value, output, scale);
+    helpers::lightningAttentionCpu(block.launchContext(), query, key, value, decayRates, state, output, isCausal);
 #endif
 
     return sd::Status::OK;

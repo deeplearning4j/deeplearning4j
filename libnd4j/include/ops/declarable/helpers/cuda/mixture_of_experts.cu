@@ -41,7 +41,7 @@ __device__ static void deviceSoftmax(T* data, int size) {
     }
     T sum = static_cast<T>(0);
     for (int i = 0; i < size; i++) {
-        data[i] = exp(data[i] - maxVal);
+        data[i] = static_cast<T>(__expf(static_cast<float>(data[i] - maxVal)));
         sum += data[i];
     }
     for (int i = 0; i < size; i++) {
@@ -72,7 +72,7 @@ __device__ static void deviceTopK(T* data, int size, int k, int* indices, T* val
 }
 
 template <typename T>
-__global__ static void mixtureOfExpertsKernel(
+__global__ __launch_bounds__(128, 4) static void mixtureOfExpertsKernel(
     const T* input,
     const T* gatingWeights,
     const T* expertWeights,

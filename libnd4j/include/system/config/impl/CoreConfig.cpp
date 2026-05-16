@@ -166,6 +166,16 @@ void CoreConfig::initFromEnvironment() {
   if (std::getenv("SD_BLAS_FALLBACK") != nullptr) {
     _blasFallback = true;
   }
+
+  // Debug / verbose flags — settable via ND4J_DEBUG=1 and ND4J_VERBOSE=1 env vars.
+  // When debug is on, DataBuffer::validateIntegrity() checks magic bytes on every
+  // NDArray construction, catching use-after-free and heap corruption early.
+  if (readBoolEnv("ND4J_DEBUG", false)) {
+    _debug.store(true);
+  }
+  if (readBoolEnv("ND4J_VERBOSE", false)) {
+    _verbose.store(true);
+  }
 }
 
 }  // namespace config

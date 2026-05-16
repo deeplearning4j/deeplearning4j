@@ -62,6 +62,35 @@
 #   ./run-benchmark.sh --op-timing                # Decode-only op timing CSV + hotspot table
 #   ./run-benchmark.sh --no-fp16                  # FP32 weights (baseline comparison)
 #   ./run-benchmark.sh --no-optimizer             # No optimization at all
+#
+# DSP audit options:
+#   --skip-audit        Skip the DSP test audit entirely (fast benchmark only)
+#   --audit-only        Run ONLY the DSP audit, skip the benchmark
+#   --audit-suite SUITE Which audit suites to run. Comma-separated list from:
+#                         lifecycle   — DspLifecycleValidationTest, DspLifecycleExhaustiveTest,
+#                                      DspSlotLifecycleAuditTest, DspLifecycleGates
+#                         frozen      — DspFrozenConstantInvariantTest, FrozenPhaseDriftDetection,
+#                                      DspViewOpFrozenReplayTest, ValueDependentShapeClassification
+#                         replay      — DspCompositeReplayTest, DspDeepIsolationTest,
+#                                      DspPipelineIsolationTest, DspRepeatedOutputFreshness,
+#                                      DspMergedSegmentReplay
+#                         regression  — DspRegressionHarness tests: SegmentOutputZeroInvariant,
+#                                      CrossStreamEventOrdering, GapExecutionSlotInvariants,
+#                                      ArgTableStablePerfFloor
+#                         capture     — DspCaptureConfigMatrix, DspHandleTest, DspHandleDataModelTest
+#                         training    — DspTrainingE2ETest, DspOptimizedSlotBySlotTest
+#                         ext-input   — DspExtInputStalenessTest, DspValueKeySegmentTest
+#                         pooling     — DynamicShapePlanPoolingTest, DspBatchedModulePreloadTest,
+#                                      DspLruModuleResidencyTest, DspCompilationSealTest
+#                         validation  — TestDspValidation (outputAccuracy + decodeStep)
+#                         all         — Run ALL suites (DEFAULT)
+#   --audit-timeout N   Timeout in seconds for the audit phase (default: 600)
+#
+# Examples with audit:
+#   ./run-benchmark.sh --skip-audit                # Quick benchmark, no audit
+#   ./run-benchmark.sh --audit-only                # Audit only, no benchmark
+#   ./run-benchmark.sh --audit-suite lifecycle,frozen  # Benchmark + selected suites
+#   ./run-benchmark.sh --audit-suite validation    # Benchmark + validation only
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -112,6 +141,14 @@ DIAG_STREAM=false
 DIAG_DEVICE=false
 DIAG_ALL=false
 DIAG_JSON=""
+DIAG_STEP=false
+DIAG_D2D=false
+DIAG_CAPTURE=false
+DSP_ASSERT=false
+SKIP_AUDIT=false
+AUDIT_ONLY=false
+AUDIT_SUITE="all"
+AUDIT_TIMEOUT=600
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -254,8 +291,40 @@ while [[ $# -gt 0 ]]; do
             DIAG_ALL=true
             shift
             ;;
+        --diag-step)
+            DIAG_STEP=true
+            shift
+            ;;
+        --diag-d2d)
+            DIAG_D2D=true
+            shift
+            ;;
+        --diag-capture)
+            DIAG_CAPTURE=true
+            shift
+            ;;
         --diag-json)
             DIAG_JSON="$2"
+            shift 2
+            ;;
+        --dsp-assert)
+            DSP_ASSERT=true
+            shift
+            ;;
+        --skip-audit)
+            SKIP_AUDIT=true
+            shift
+            ;;
+        --audit-only)
+            AUDIT_ONLY=true
+            shift
+            ;;
+        --audit-suite)
+            AUDIT_SUITE="$2"
+            shift 2
+            ;;
+        --audit-timeout)
+            AUDIT_TIMEOUT="$2"
             shift 2
             ;;
         *)
@@ -269,6 +338,9 @@ while [[ $# -gt 0 ]]; do
 echo "       [--disable-view-fastpath] [--disable-cast-hwm] [--disable-ws-skip]"
 echo "       [--dsp-timing]"
 echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
+echo "       [--diag-step] [--diag-d2d] [--diag-capture]"
+echo "       [--dsp-assert]"
+echo "       [--skip-audit] [--audit-only] [--audit-suite SUITE] [--audit-timeout N]"
             exit 1
             ;;
     esac
@@ -308,12 +380,22 @@ $DIAG_REPLAY  && echo "  Diag:     GRAPH_REPLAY (capture/instantiate/launch phas
 $DIAG_STREAM  && echo "  Diag:     STREAM_SYNC (stream ordering, event waits)"
 $DIAG_DEVICE  && echo "  Diag:     MULTI_DEVICE (device selection, P2P, migrations)"
 $DIAG_ALL     && echo "  Diag:     ALL categories at FULL level"
+$DIAG_STEP    && echo "  Diag:     Per-step StepSnapshot introspection"
+$DIAG_D2D     && echo "  Diag:     D2D copy status per step"
+$DIAG_CAPTURE && echo "  Diag:     Capture quality audit"
 $DSP_TIMING   && echo "  Diag:     DSP_TIMING (COMPOSITE_REPLAY breakdown)"
 [ -n "$DIAG_JSON" ] && echo "  Diag JSON: $DIAG_JSON"
 $OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
 $OP_TIMING_DETAILED && echo "  OpTiming: detailed phase breakdown ON"
 [ -n "$OP_BREAKDOWN_OPS" ] && echo "  Op breakdowns: $OP_BREAKDOWN_OPS"
 [ -n "$OP_HISTOGRAM_OPS" ] && echo "  Op histograms: $OP_HISTOGRAM_OPS"
+if $AUDIT_ONLY; then
+    echo "  Audit:    ONLY (no benchmark)"
+elif $SKIP_AUDIT; then
+    echo "  Audit:    SKIPPED"
+else
+    echo "  Audit:    ON (suite: $AUDIT_SUITE, timeout: ${AUDIT_TIMEOUT}s)"
+fi
 echo "═══════════════════════════════════════════════════════════"
 echo ""
 
@@ -402,10 +484,8 @@ if $DEBUG_MODE; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.summary=true"
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.debug=true"
     EXTRA_ARGS="$EXTRA_ARGS -Dcuda.log.file=$CUDA_LOG"
-    # NOTE: Do NOT set nd4j.env.debug=true here — that enables C++ per-op
-    # debug printing (DeclarableOp.cpp isDebugAndVerbose path) which crashes
-    # with SIGSEGV in __strlen_avx2 on large models. Use Java-side
-    # Nd4j.getEnvironment().setDebug(true) in the test code for per-op tracing.
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.env.verbose=true"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.env.debug=true"
     # Export CUDA_LOG_FILE for the CUDA driver (picked up by surefire env)
     export CUDA_LOG_FILE="$CUDA_LOG"
 fi
@@ -437,6 +517,20 @@ else
 fi
 if [ -n "$DIAG_JSON" ]; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.file=$DIAG_JSON"
+fi
+
+# Pipeline introspection flags (DspHandle StepSnapshot, D2D, capture audit)
+if $DIAG_STEP; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.diag.stepSnapshot=true"
+fi
+if $DIAG_D2D; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.diag.d2dCheck=true"
+fi
+if $DIAG_CAPTURE; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.diag.captureAudit=true"
+fi
+if $DSP_ASSERT; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.dspAssert=true"
 fi
 
 if $OP_TIMING; then
@@ -484,8 +578,11 @@ else
     exit 1
 fi
 
+BUILD_RESULT=0
+
+if ! $AUDIT_ONLY; then
 echo ""
-echo "Skipping validation preflight — running benchmark directly..."
+echo "Running benchmark..."
 
 set +e
 $MVN test \
@@ -853,6 +950,27 @@ if composite_replay_count > 0 or island_launches > 0 or arg_stable_count > 0:
     print(f"  [diag] Arg table stable:        {arg_stable_count}")
     print(f"  [diag] Capture failures:        {capture_failures}")
 
+# Pipeline introspection (only with --diag-step/--diag-d2d/--diag-capture)
+d2d_fired = sum(1 for l in lines if 'D2D:' in l and 'fired' in l)
+d2d_drift = sum(1 for l in lines if 'POINTER DRIFT' in l or 'address drift' in l.lower())
+stale_count = sum(1 for l in lines if 'stale output' in l.lower() or 'STALE_OUTPUT' in l)
+capture_complete = any('testCaptureCompleteness PASSED' in l for l in lines)
+d2d_integrity = any('testD2DCopyIntegrity PASSED' in l for l in lines)
+
+if d2d_fired > 0 or d2d_drift > 0 or stale_count > 0 or capture_complete or d2d_integrity:
+    print("")
+    print("  ─── Pipeline Introspection ───────────────────────")
+    if d2d_fired > 0:
+        print(f"  D2D copies fired:  {d2d_fired} report(s)")
+    if d2d_drift > 0:
+        print(f"  Pointer drift:     {d2d_drift} detection(s) *** WARNING ***")
+    if stale_count > 0:
+        print(f"  Stale outputs:     {stale_count} detection(s) *** WARNING ***")
+    if d2d_integrity:
+        print(f"  D2D integrity:     PASS")
+    if capture_complete:
+        print(f"  Capture complete:  PASS")
+
 if errors:
     print("")
     print("  *** ERRORS — fix these before trusting perf numbers ***")
@@ -881,5 +999,223 @@ echo "    Validation: $VALIDATION_LOG"
 echo "    Surefire:   $SUREFIRE_OUT"
 echo "═══════════════════════════════════════════════════════════"
 
-# Exit with build result — 0 for pass, non-zero for fail
-exit $BUILD_RESULT
+fi  # end of if ! $AUDIT_ONLY
+
+# ═══════════════════════════════════════════════════════════════════════
+# DSP AUDIT — runs ALL DSP test suites to catch validation issues
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Suite → test class mapping. Each suite groups related DSP tests.
+# Tests are run with failsafe-style error collection: failures in one
+# suite do NOT abort subsequent suites.
+
+if ! $SKIP_AUDIT; then
+
+AUDIT_LOG="$SCRIPT_DIR/dsp-audit.log"
+AUDIT_RESULT=0
+AUDIT_PASS=0
+AUDIT_FAIL=0
+AUDIT_SKIP=0
+AUDIT_SUITES_RUN=0
+AUDIT_SUITES_FAILED=0
+AUDIT_FAILED_SUITES=""
+AUDIT_FAILED_TESTS=""
+
+# ─── Suite definitions ──────────────────────────────────────────────
+# Each suite is: SUITE_NAME|TEST_SELECTOR
+# TEST_SELECTOR is the -Dtest= value (comma-separated class names, optional #method)
+declare -a AUDIT_ENTRIES=()
+
+add_suite() {
+    local suite_name="$1"
+    local test_selector="$2"
+    # Check if this suite is selected
+    if [ "$AUDIT_SUITE" = "all" ]; then
+        AUDIT_ENTRIES+=("${suite_name}|${test_selector}")
+    else
+        # Check if suite_name appears in the comma-separated AUDIT_SUITE
+        IFS=',' read -ra SELECTED <<< "$AUDIT_SUITE"
+        for s in "${SELECTED[@]}"; do
+            if [ "$s" = "$suite_name" ]; then
+                AUDIT_ENTRIES+=("${suite_name}|${test_selector}")
+                return
+            fi
+        done
+    fi
+}
+
+# lifecycle — DSP phase progression, lifecycle gates, slot lifecycle, shape drift
+add_suite "lifecycle" \
+    "DspLifecycleValidationTest,DspLifecycleExhaustiveTest,DspSlotLifecycleAuditTest,TestDspLifecycleGates,TestDspLifecycleMultiExecuteShapeDrift"
+
+# frozen — frozen constants, phase drift, view-op replay, value-dependent shapes, op-level frozen shape
+add_suite "frozen" \
+    "DspFrozenConstantInvariantTest,TestFrozenPhaseDriftDetection,DspViewOpFrozenReplayTest,TestValueDependentShapeClassification,AllRegisteredOpsFrozenShapeTest,OpCategoryFrozenShapeTest"
+
+# replay — composite replay, deep isolation, pipeline isolation, output freshness, merged segments, device analytics
+add_suite "replay" \
+    "DspCompositeReplayTest,DspDeepIsolationTest,DspPipelineIsolationTest,TestDspRepeatedOutputFreshness,TestDspMergedSegmentReplay,DspReplayDeviceAnalyticsTest"
+
+# regression — harness-based regression tests: segment output, cross-stream, gap execution, arg-table, native decode, mythic PDF
+add_suite "regression" \
+    "TestSegmentOutputZeroInvariant,TestCrossStreamEventOrdering,TestGapExecutionSlotInvariants,TestArgTableStablePerfFloor,TestNativeDecodeLoopRegression,TestNativeDecodeInputsRegression,TestMythicPdfRegression"
+
+# capture — capture config matrix, DspHandle tests, handle data model, view capture correctness
+add_suite "capture" \
+    "TestDspCaptureConfigMatrix,DspHandleTest,DspHandleDataModelTest,TestDspViewCaptureCorrectness"
+
+# training — end-to-end training, optimized slot-by-slot parity
+add_suite "training" \
+    "DspTrainingE2ETest,DspOptimizedSlotBySlotTest"
+
+# ext-input — external input staleness, value-key segment invalidation
+add_suite "ext-input" \
+    "DspExtInputStalenessTest,DspValueKeySegmentTest"
+
+# pooling — buffer pooling, batched module preload, LRU residency, compilation seal
+add_suite "pooling" \
+    "DynamicShapePlanPoolingTest,DspBatchedModulePreloadTest,DspLruModuleResidencyTest,DspCompilationSealTest"
+
+# precision — mixed precision replay, FP16 constant lifecycle, weight chain NaN detection
+add_suite "precision" \
+    "DspMixedPrecisionReplayTest"
+
+# pipeline — pipeline facets, shape pre-pass, config enumeration, working tree changes, decode perf floor
+add_suite "pipeline" \
+    "TestDspPipelineFacets,TestDspShapePrePass,TestDspConfigEnumeration,TestDspWorkingTreeChanges,TestDspDecodePerfFloor"
+
+# device — multi-device memory leak simulation, multi-device analytics
+add_suite "device" \
+    "DspMultiDeviceMemoryLeakSimulationTest"
+
+# openvino — OpenVINO accuracy tests
+add_suite "openvino" \
+    "DspOpenVinoAccuracyTest"
+
+# validation — SmolDocling DSP accuracy validation (ALL test methods)
+add_suite "validation" \
+    "TestDspValidation"
+
+if [ ${#AUDIT_ENTRIES[@]} -eq 0 ]; then
+    echo ""
+    echo "WARNING: No audit suites matched '$AUDIT_SUITE'"
+    echo "Available suites: lifecycle, frozen, replay, regression, capture, training, ext-input, pooling, validation, all"
+else
+
+echo ""
+echo "═══════════════════════════════════════════════════════════"
+echo "  DSP AUDIT"
+echo "  Suites:  ${#AUDIT_ENTRIES[@]}"
+echo "  Timeout: ${AUDIT_TIMEOUT}s per suite"
+echo "  Backend: $BACKEND_ARTIFACT"
+echo "  Log:     $AUDIT_LOG"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+
+# Truncate the audit log
+> "$AUDIT_LOG"
+
+for entry in "${AUDIT_ENTRIES[@]}"; do
+    SUITE_NAME="${entry%%|*}"
+    TEST_SELECTOR="${entry#*|}"
+    AUDIT_SUITES_RUN=$((AUDIT_SUITES_RUN + 1))
+
+    echo "─── [$AUDIT_SUITES_RUN/${#AUDIT_ENTRIES[@]}] Suite: $SUITE_NAME ───"
+    echo "    Tests: $TEST_SELECTOR"
+
+    SUITE_LOG="$SCRIPT_DIR/dsp-audit-${SUITE_NAME}.log"
+
+    set +e
+    timeout "${AUDIT_TIMEOUT}s" \
+    $MVN test \
+      -Dtest="$TEST_SELECTOR" \
+      $TRITON_FLAG \
+      -Dbackend.artifactId=$BACKEND_ARTIFACT \
+      -Dnd4j.dsp.diagnostics=EXECUTE,SEGMENT,FALLBACK \
+      -Dnd4j.dsp.diagnostics.level=summary \
+      2>&1 | tee "$SUITE_LOG"
+    SUITE_RESULT=${PIPESTATUS[0]}
+    set -e
+
+    # Parse results from the tee log
+    SUITE_TESTS_RUN=$(grep -c 'Tests run:' "$SUITE_LOG" 2>/dev/null || echo 0)
+    SUITE_PASS=$(grep -oP 'Tests run: \d+, Failures: \d+, Errors: \d+, Skipped: \d+' "$SUITE_LOG" | tail -1 || echo "")
+
+    if [ $SUITE_RESULT -eq 0 ]; then
+        echo "    Result: PASS"
+        AUDIT_PASS=$((AUDIT_PASS + 1))
+    elif [ $SUITE_RESULT -eq 124 ]; then
+        echo "    Result: TIMEOUT (>${AUDIT_TIMEOUT}s)"
+        AUDIT_FAIL=$((AUDIT_FAIL + 1))
+        AUDIT_SUITES_FAILED=$((AUDIT_SUITES_FAILED + 1))
+        AUDIT_FAILED_SUITES="${AUDIT_FAILED_SUITES}  [TIMEOUT] ${SUITE_NAME}\n"
+    else
+        echo "    Result: FAIL (exit $SUITE_RESULT)"
+        AUDIT_FAIL=$((AUDIT_FAIL + 1))
+        AUDIT_SUITES_FAILED=$((AUDIT_SUITES_FAILED + 1))
+        AUDIT_FAILED_SUITES="${AUDIT_FAILED_SUITES}  [FAIL]    ${SUITE_NAME}\n"
+        # Extract failed test names from the log
+        FAILED_NAMES=$(grep -oP '(?<=FAILED: )\S+|(?<=<<< FAILURE!)\s*\S+|(?<=<<< ERROR!)\s*\S+' "$SUITE_LOG" 2>/dev/null | head -10 || true)
+        if [ -n "$FAILED_NAMES" ]; then
+            AUDIT_FAILED_TESTS="${AUDIT_FAILED_TESTS}  ${SUITE_NAME}:\n"
+            while IFS= read -r fname; do
+                AUDIT_FAILED_TESTS="${AUDIT_FAILED_TESTS}    - ${fname}\n"
+            done <<< "$FAILED_NAMES"
+        fi
+    fi
+
+    if [ -n "$SUITE_PASS" ]; then
+        echo "    $SUITE_PASS"
+    fi
+
+    # Append to combined audit log
+    echo "═══ SUITE: $SUITE_NAME (exit=$SUITE_RESULT) ═══" >> "$AUDIT_LOG"
+    cat "$SUITE_LOG" >> "$AUDIT_LOG"
+    echo "" >> "$AUDIT_LOG"
+    echo ""
+done
+
+# ─── Audit summary ──────────────────────────────────────────────────
+echo "═══════════════════════════════════════════════════════════"
+echo "  DSP AUDIT SUMMARY"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "  Suites run:    $AUDIT_SUITES_RUN"
+echo "  Suites passed: $AUDIT_PASS"
+echo "  Suites failed: $AUDIT_SUITES_FAILED"
+echo ""
+
+if [ $AUDIT_SUITES_FAILED -gt 0 ]; then
+    echo "  ── Failed Suites ──────────────────────────────────────"
+    echo -e "$AUDIT_FAILED_SUITES"
+    if [ -n "$AUDIT_FAILED_TESTS" ]; then
+        echo "  ── Failed Tests ───────────────────────────────────────"
+        echo -e "$AUDIT_FAILED_TESTS"
+    fi
+    echo "  To debug a specific suite:"
+    echo "    ./run-benchmark.sh --audit-only --audit-suite <SUITE>"
+    echo ""
+    echo "  Per-suite logs:"
+    for entry in "${AUDIT_ENTRIES[@]}"; do
+        SUITE_NAME="${entry%%|*}"
+        echo "    $SUITE_NAME: $SCRIPT_DIR/dsp-audit-${SUITE_NAME}.log"
+    done
+    AUDIT_RESULT=1
+else
+    echo "  ALL SUITES PASSED"
+fi
+echo ""
+echo "  Combined audit log: $AUDIT_LOG"
+echo "═══════════════════════════════════════════════════════════"
+
+fi  # end of AUDIT_ENTRIES check
+fi  # end of ! SKIP_AUDIT
+
+# ─── Final exit ──────────────────────────────────────────────────────
+# Non-zero if either benchmark OR audit failed
+if [ $BUILD_RESULT -ne 0 ]; then
+    exit $BUILD_RESULT
+elif [ "${AUDIT_RESULT:-0}" -ne 0 ]; then
+    exit 1
+fi
+exit 0

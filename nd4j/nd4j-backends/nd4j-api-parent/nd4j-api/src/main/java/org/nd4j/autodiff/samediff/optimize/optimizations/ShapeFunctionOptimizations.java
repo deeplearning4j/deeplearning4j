@@ -171,10 +171,12 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
                     return false;
                 }
 
+                String replacementName;
                 if (isIdentity) {
                     // Combined permutation is identity - just rewire to use original input
                     log.debug("Fusing {} chained permutes into identity (removing all)", permuteChain.size());
                     OptimizationUtils.replaceOpInputsWith(sd, helper, outerOutputVar, originalInput);
+                    replacementName = originalInput;
                 } else {
                     // Create a single fused permute
                     log.debug("Fusing {} chained permutes into single permute with dims {}",
@@ -182,7 +184,13 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
 
                     SDVariable fusedOutput = sd.permute(inputVar, combinedPerm);
                     OptimizationUtils.replaceOpInputsWith(sd, helper, outerOutputVar, fusedOutput.name());
+                    replacementName = fusedOutput.name();
                 }
+
+                // Temporarily remove outerOutputVar from graph outputs so removeOp/
+                // removeVariable guards don't refuse deletion, leaving ghost ops.
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(outerOutputVar);
 
                 // Remove all the old permute ops and intermediate variables
                 // Go from outermost to innermost
@@ -202,6 +210,15 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
                             OptimizationUtils.removeVariable(sd, helper, outVar);
                         }
                     }
+                }
+
+                // If outerOutputVar was a graph output, rename the replacement to
+                // preserve the original name for downstream lookups.
+                if (wasOutput) {
+                    if (!replacementName.equals(outerOutputVar)) {
+                        sd.renameVariable(replacementName, outerOutputVar);
+                    }
+                    graphOutputs.add(outerOutputVar);
                 }
 
                 return true;
@@ -317,6 +334,11 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
                 SDVariable fusedOutput = sd.reshape(inputVar, finalShape);
                 OptimizationUtils.replaceOpInputsWith(sd, helper, outerOutputVar, fusedOutput.name());
 
+                // Temporarily remove outerOutputVar from graph outputs so removeOp/
+                // removeVariable guards don't refuse deletion, leaving ghost ops.
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(outerOutputVar);
+
                 // Remove all the old reshape ops and intermediate variables
                 for (SameDiffOp reshapeOp : reshapeChain) {
                     OptimizationUtils.removeOp(sd, helper, reshapeOp.getName());
@@ -327,6 +349,13 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
                             OptimizationUtils.removeVariable(sd, helper, outVar);
                         }
                     }
+                }
+
+                // If outerOutputVar was a graph output, rename the fused variable to
+                // preserve the original name for downstream lookups.
+                if (wasOutput) {
+                    sd.renameVariable(fusedOutput.name(), outerOutputVar);
+                    graphOutputs.add(outerOutputVar);
                 }
 
                 return true;
@@ -439,6 +468,11 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
                 SDVariable fusedOutput = sd.concat(concatDim, inputVars);
                 OptimizationUtils.replaceOpInputsWith(sd, helper, outerOutputVar, fusedOutput.name());
 
+                // Temporarily remove outerOutputVar from graph outputs so removeOp/
+                // removeVariable guards don't refuse deletion, leaving ghost ops.
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(outerOutputVar);
+
                 // Remove the outer concat
                 OptimizationUtils.removeOp(sd, helper, op.getName());
                 List<String> outputs = op.getOutputsOfOp();
@@ -457,6 +491,13 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
                             OptimizationUtils.removeVariable(sd, helper, outVar);
                         }
                     }
+                }
+
+                // If outerOutputVar was a graph output, rename the fused variable to
+                // preserve the original name for downstream lookups.
+                if (wasOutput) {
+                    sd.renameVariable(fusedOutput.name(), outerOutputVar);
+                    graphOutputs.add(outerOutputVar);
                 }
 
                 return true;

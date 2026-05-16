@@ -22,6 +22,7 @@
 // __half definitions are compatible.
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
 #include <system/Environment.h>
 #include <cublas_v2.h>
@@ -83,34 +84,31 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   // into the graph on the correct stream.
   cublasSetStream_v2(*handlePtr, resolvedStream);
 
-  // ── Deterministic capture (CUDA_GRAPHS mode) ──────────────────────────────
-  // When tl_cublasLtDisabled is set (CUDA_GRAPHS and SLOT_BY_SLOT modes), we
-  // must NOT provide a workspace to cuBLAS. With workspace available, cuBLAS may
-  // select workspace-using algorithms (split-K variants) whose internal reduction
-  // order differs between graph capture and graph replay. This produces tiny FP
-  // differences that compound through GDN recurrent state until token divergence.
+  // ── Deterministic cuBLAS for ALL capture modes ────────────────────────────
+  // CUDA graph capture bakes cuBLAS GEMM algorithm choices into the graph.
+  // Without CUBLAS_PEDANTIC_MATH, cuBLAS may select nondeterministic algorithms
+  // (split-K with nondeterministic reduction order, TF32 tensor ops with varying
+  // threadblock scheduling). Two independent captures of the same operations can
+  // select different algorithms, producing numerically different results that
+  // compound through recurrent/autoregressive state until token divergence.
   //
-  // Without workspace, cuBLAS is forced to select algorithms that DON'T use
-  // workspace scratch — matching exactly what SLOT_BY_SLOT does during live
-  // execution. For M=1 decode GEMV (the entire decode hot path), cuBLAS does NOT
-  // need workspace for the basic non-split-K algorithm.
+  // CUBLAS_PEDANTIC_MATH forces bitwise-reproducible algorithm selection for ALL
+  // capture modes (both CUDA_GRAPHS and Triton composite capture). This is
+  // applied during capture only — restoreCublasWorkspaceAfterCapture restores
+  // the normal math mode for non-capture execution.
   //
-  // We explicitly call cublasSetWorkspace(handle, nullptr, 0) to clear any
-  // previously-set workspace on the handle, ensuring the captured kernels are
-  // identical to what live execution would produce.
-  if (tl_cublasLtDisabled) {
-    cublasSetWorkspace(*handlePtr, nullptr, 0);
-    tl_cublasWorkspacePtr = nullptr;
-    tl_cublasWorkspaceSize = 0;
-    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: workspace CLEARED (deterministic mode, "
-             "tl_cublasLtDisabled=true) — forces non-split-K algorithms matching SLOT_BY_SLOT");
-    return;
-  }
+  // Workspace is still provided (when cublasCaptureWorkspace=true) to prevent
+  // cuBLAS from inserting MemAlloc/MemFree graph nodes during capture (OOM).
+  // PEDANTIC_MATH constrains algorithm selection to deterministic variants
+  // regardless of workspace availability.
+  //
+  // cublasLt is also disabled during capture: cublasLt has its own split-K
+  // implementation that bypasses the PEDANTIC_MATH setting.
+  cublasSetMathMode(*handlePtr, CUBLAS_PEDANTIC_MATH);
+  tl_cublasLtDisabled = true;
 
-  // Explicit workspace prevents cuBLAS from creating per-GEMM MemAlloc/MemFree
-  // graph nodes during capture, which cause OOM on graph launch.
-  // This path is only used by TRITON composite mode (which manages its own
-  // capture segments around matmul gaps).
+  // ── Workspace configuration ───────────────────────────────────────────────
+  // Provide explicit workspace to prevent per-GEMM MemAlloc/MemFree graph nodes.
   bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
 
   if (useCublasWorkspace) {
@@ -118,44 +116,45 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
     cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
     tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
     tl_cublasWorkspaceSize = cublasWorkspaceSize_;
-    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: workspace SET buffer=%p size=%zuMB",
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: PEDANTIC_MATH + workspace SET buffer=%p size=%zuMB "
+             "tl_cublasLtDisabled=1",
              cublasWorkspaceBuffer_, cublasWorkspaceSize_ / (1024*1024));
   } else {
-    // Clear any previously set workspace so cuBLAS uses its own internal allocator
     cublasSetWorkspace(*handlePtr, nullptr, 0);
     tl_cublasWorkspacePtr = nullptr;
     tl_cublasWorkspaceSize = 0;
-    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: workspace DISABLED (cublasCaptureWorkspace=false)");
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: PEDANTIC_MATH + workspace DISABLED "
+             "tl_cublasLtDisabled=1");
   }
 }
 
 void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
-  // In deterministic mode (tl_cublasLtDisabled = CUDA_GRAPHS or SLOT_BY_SLOT),
-  // warmup must see the same cuBLAS state as capture: no workspace. This ensures
-  // cuBLAS selects the same non-split-K algorithm during warmup, capture, and
-  // replay, producing bit-identical results.
-  if (tl_cublasLtDisabled) {
-    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-    if (handlePtr != nullptr) {
-      cublasSetWorkspace(*handlePtr, nullptr, 0);
-    }
-    tl_cublasWorkspacePtr = nullptr;
-    tl_cublasWorkspaceSize = 0;
-    return;
-  }
-
-  // Non-deterministic mode (TRITON): same workspace as capture so cuBLAS
-  // selects identical algorithms during warmup and capture.
-  if (!sd::Environment::getInstance().cublasCaptureWorkspace()) return;
-
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
   if (handlePtr == nullptr) return;
 
-  ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
-  cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
+  // Warmup must use the SAME cuBLAS settings as capture so that cuBLAS selects
+  // identical GEMM algorithms. Algorithm selection depends on math mode and
+  // workspace availability — any mismatch means the warmup pre-allocates output
+  // buffers with one algorithm's layout but capture records a different algorithm,
+  // causing shape/result divergence on replay.
+  //
+  // Since capture now always uses CUBLAS_PEDANTIC_MATH (for determinism),
+  // warmup must also use PEDANTIC_MATH.
+  cublasSetMathMode(*handlePtr, CUBLAS_PEDANTIC_MATH);
+  tl_cublasLtDisabled = true;
 
-  tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
-  tl_cublasWorkspaceSize = cublasWorkspaceSize_;
+  // Workspace: match capture's workspace configuration.
+  bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
+  if (useCublasWorkspace) {
+    ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
+    cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
+    tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
+    tl_cublasWorkspaceSize = cublasWorkspaceSize_;
+  } else {
+    cublasSetWorkspace(*handlePtr, nullptr, 0);
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+  }
 }
 
 void NativeDynamicShapePlan::restoreCublasWorkspaceAfterCapture(void* stream) {
@@ -167,11 +166,30 @@ void NativeDynamicShapePlan::restoreCublasWorkspaceAfterCapture(void* stream) {
   }
 
   DSP_DIAG(EXECUTE, "restoreCublasWorkspaceAfterCapture: clearing cuBLAS workspace "
-           "(was ptr=%p size=%zu) tl_graphExecutionActive=%d",
+           "(was ptr=%p size=%zu) tl_graphExecutionActive=%d tl_cublasLtDisabled=%d",
            (void*)tl_cublasWorkspacePtr, tl_cublasWorkspaceSize,
-           (int)tl_graphExecutionActive);
+           (int)tl_graphExecutionActive, (int)tl_cublasLtDisabled);
 
   cublasSetWorkspace(*handlePtr, nullptr, 0);
+
+  // Keep CUBLAS_PEDANTIC_MATH active after capture ends. Gap matmuls during
+  // composite replay must use the same deterministic cuBLAS algorithms that
+  // were active when the graph was captured. Without this, replay-time gap
+  // matmuls use TF32 tensor core ops that produce different floating-point
+  // results than the capture-time PEDANTIC matmuls, causing self-consistency
+  // failures (4/20 steps diverge in matmul-only graphs).
+  //
+  // For modes with requiresDeterministicCublas=true (CUDA_GRAPHS, AUTO),
+  // PEDANTIC was already set by platformBeginExecution — keep it.
+  // For modes that use graph capture (AUTO, TRITON), PEDANTIC was set by
+  // setCublasWorkspaceForCapture just before capture — keep it so replay
+  // uses identical algorithms.
+  //
+  // platformEndExecution restores the cuBLAS math mode to DEFAULT/TF32
+  // at plan end for all graph capture modes.
+  if (!ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
+    tl_cublasLtDisabled = false;
+  }
 
   // Clear thread-locals so MmulHelper stops re-applying workspace
   tl_cublasWorkspacePtr = nullptr;

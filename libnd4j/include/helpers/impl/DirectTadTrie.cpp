@@ -49,21 +49,23 @@ std::shared_ptr<TadPack> DirectTadTrie::enhancedSearch(const std::vector<LongTyp
     if (!current) return nullptr;
   }
 
-  // Found a matching node, now verify TadPack compatibility
+  // Navigate through original shape dimension nodes (prevents collisions
+  // between arrays with same rank/TAD dims but different shapes)
+  int shapeLevel = dimensions.size() + 2;
+  LongType* shapeOf = shape::shapeOf(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = findChild(current, shapeOf[i], shapeLevel + i, false, rank);
+    if (!current) return nullptr;
+  }
+
+  // Navigate to dtype node
+  current = findChild(current, static_cast<LongType>(ArrayOptions::dataType(originalShape)),
+                       shapeLevel + rank, false, rank);
+  if (!current) return nullptr;
+
+  // Found a matching node, now verify TadPack exists
   std::shared_ptr<TadPack> pack = current->pack();
   if (!pack) return nullptr;
-
-  // Use cached signature for fast comparison - no TadCalculator needed!
-  const TadPackSignature* signature = current->packSignature();
-  if (!signature) {
-    // Signature not cached (shouldn't happen, but handle gracefully)
-    return nullptr;
-  }
-
-  // Fast comparison using cached signature instead of creating TadCalculator
-  if (!signature->matches(originalShape)) {
-    return nullptr;
-  }
 
   return pack;
 }
@@ -133,6 +135,9 @@ std::vector<LongType> DirectTadTrie::sortDimensions(const std::vector<LongType>&
 
 std::shared_ptr<TadPack> DirectTadTrie::search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const {
   // No need for locking - caller handles locking (e.g., in getOrCreate)
+  // NOTE: This method only navigates to the dimension level — it does NOT
+  // navigate through shape/dtype levels. It is used only by exists() for
+  // basic presence checks. For full matching, use enhancedSearch().
   const TadTrieNode* current = _roots[stripeIdx].get();
 
   int deviceId = AffinityManager::currentDeviceId();
@@ -213,6 +218,28 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
     }
   }
 
+  // Fourth level: original shape dimensions to prevent collisions between
+  // arrays with the same rank and TAD dims but different shapes.
+  // E.g., [1,4,512,512]@dim3 vs [1,1,1,2]@dim3 both have rank=4, dims={3},
+  // but need different TAD packs (2048 vs 2 offsets).
+  int shapeLevel = dimensions.size() + 2;
+  LongType* shapeOf = shape::shapeOf(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = current->findOrCreateChild(shapeOf[i], shapeLevel + i, false, rank);
+    if (!current) {
+      THROW_EXCEPTION("Failed to create shape dimension node");
+    }
+  }
+
+  // Fifth level: data type to prevent collisions between same-shaped arrays
+  // with different dtypes (e.g., FLOAT32 vs FLOAT16)
+  current = current->findOrCreateChild(
+      static_cast<LongType>(ArrayOptions::dataType(originalShape)),
+      shapeLevel + rank, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create dtype node");
+  }
+
   // Create the TadPack only if it doesn't exist yet
   if (!current->pack()) {
     TadCalculator *calculator = nullptr;
@@ -234,7 +261,8 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
 
       // Store the TadPack in the node
       // setPack now also caches the signature for future fast comparisons
-      current->setPack(newPack);
+      // Pass originalShape so the signature stores the original array's shape
+      current->setPack(newPack, originalShape);
 
       // Clean up the calculator (safe now that offsets ownership was transferred)
       delete calculator;

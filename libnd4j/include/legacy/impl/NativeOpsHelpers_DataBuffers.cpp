@@ -624,6 +624,26 @@ void dbMigrate(OpaqueDataBuffer *dataBuffer) {
     dataBuffer->dataBuffer()->migrate();
 }
 
+#ifndef SD_CUDA
+// CPU fallback: cross-device copy is GPU-only. On CPU there's only one "device"
+// so this is a simple memcpy between DataBuffer primary buffers.
+void dbAsyncCrossDeviceCopy(OpaqueDataBuffer *dstBuffer, OpaqueDataBuffer *srcBuffer, void *dstStream) {
+  if (dstBuffer == nullptr || srcBuffer == nullptr)
+    THROW_EXCEPTION("dbAsyncCrossDeviceCopy: null buffer");
+  auto* dst = dstBuffer->dataBuffer();
+  auto* src = srcBuffer->dataBuffer();
+  if (dst == nullptr || src == nullptr)
+    THROW_EXCEPTION("dbAsyncCrossDeviceCopy: null inner DataBuffer");
+  size_t bytes = std::min(dst->getLenInBytes(), src->getLenInBytes());
+  if (bytes == 0) return;
+  // On CPU, just memcpy between primary buffers
+  if (dst->primary() != nullptr && src->primary() != nullptr) {
+    std::memcpy(dst->primary(), src->primary(), bytes);
+    dst->writePrimary();
+  }
+}
+#endif
+
 
 
 void dbTickHostRead(OpaqueDataBuffer *dataBuffer) {

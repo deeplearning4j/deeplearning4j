@@ -1,0 +1,7 @@
+<project name="test" default="run">
+    <target name="run">
+        <replace token="com.google.protobuf." value="org.nd4j.shade.protobuf.">
+            <fileset dir="nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/tensorflow" includes="**/*.java"/>
+        </replace>
+    </target>
+</project>

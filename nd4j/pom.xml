@@ -154,7 +154,7 @@
                         <include>**/*.so.*</include>
                         <include>META-INF/*</include>
                         <include>META-INF/services/**</include>
-                        <include>org.*</include>
+                        <include>org/**</include>
                         <include>**/*.properties</include>
                         <include>**/*.json</include>
                         <include>**/*.proto</include>

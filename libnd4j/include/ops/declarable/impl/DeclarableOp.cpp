@@ -427,7 +427,10 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
     if (sd::env_isDebugAndVerbose()) {
-      sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
+      auto* desc = this->getOpDescriptor();
+      auto* namePtr = desc ? desc->getOpName() : nullptr;
+      const char* opNameStr = (namePtr && !namePtr->empty()) ? namePtr->c_str() : "<unknown>";
+      sd_printf("Node_%i: %s\n", ctx.nodeId(), opNameStr);
       sd_printf("Input shapes:\n",0);
       for (int e = 0; e < inSha.size(); e++) {
         if (inSha.at(e) != nullptr) {
@@ -944,7 +947,9 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 }
 
 sd::Status sd::ops::DeclarableOp::execute(Context *block) {
-  sd_debug("Executing op: [%s]\n", this->getOpName()->c_str());
+  auto* _opNamePtr = this->getOpName();
+  const char* _safeOpName = (_opNamePtr && !_opNamePtr->empty()) ? _opNamePtr->c_str() : "<unknown>";
+  sd_debug("Executing op: [%s]\n", _safeOpName);
 
   std::chrono::time_point<std::chrono::system_clock> timeEnter, timeStart, timeEnd;
   sd::LongType prepTime, outerTime;
@@ -1145,7 +1150,9 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     timeEnd = std::chrono::system_clock::now();
     outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
     block->setInnerTime(outerTime);
-    sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper ? "helper" : "ordinary", this->getOpName()->c_str(),
+    auto* _profOpName = this->getOpName();
+    const char* _profSafeName = (_profOpName && !_profOpName->empty()) ? _profOpName->c_str() : "<unknown>";
+    sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper ? "helper" : "ordinary", _profSafeName,
              static_cast<sd::LongType>(prepTime), static_cast<sd::LongType>(outerTime));
   }
 
@@ -1154,24 +1161,22 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   // now we print out all outputs for this node
   if (sd::env_isDebugAndVerbose()) {
-    std::string * opName = this->getOpName();
-    if(opName == nullptr) {
-      THROW_EXCEPTION("Op name is null!");
-    }
+    auto* _dbgOpName = this->getOpName();
+    const char* _dbgSafeName = (_dbgOpName && !_dbgOpName->empty()) ? _dbgOpName->c_str() : "<unknown>";
+
     if(block == nullptr) {
       THROW_EXCEPTION("Block is null!");
     }
-    sd::LongType  width = block->width();
-    sd_printf("Op with name %s and num inputs %i \n", opName->c_str(), block->width());
+    sd_printf("Op with name %s and num inputs %i \n", _dbgSafeName, block->width());
     auto vs = block->getVariableSpace();
     int numInputs = block->width();
     for (int e = 0; e < numInputs; e++) {
       auto array = block->isFastPath() ?  block->fastpath_in()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
-      sd_printf("Checking input %d  block fast path %d op name %s\n",e,block->isFastPath(),this->getOpName()->c_str());
+      sd_printf("Checking input %d  block fast path %d op name %s\n", e, block->isFastPath(), _dbgSafeName);
       if (array == nullptr) {
         std::string msg = "DeclarableOp::execute: input array at index " + std::to_string(e) +
-                          " is nullptr for op " + *this->getOpName();
+                          " is nullptr for op " + std::string(_dbgSafeName);
         THROW_EXCEPTION(msg.c_str());
       }
 
@@ -1187,31 +1192,37 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         sd_printf("node_%i:%i input  shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), e, shape.c_str());
         continue;
       }
+      // Guard against closed buffers — asString() calls syncToHost() which crashes on closed DataBuffers
+      if (dataBuffer->isClosed()) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_printf("node_%i:%i input  shape: %s; dtype: %s; values: CLOSED BUFFER\n",
+                  block->nodeId(), e, shape.c_str(), DataTypeUtils::asString(array->dataType()).c_str());
+        continue;
+      }
 
       auto shape = ShapeUtils::shapeAsString(array);
-      //limit size preview for string arrays due to allocation size when debugging
-      int sizePreview = array->isS() ? 2 : 32;
-      auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(sizePreview);
       auto type = DataTypeUtils::asString(array->dataType());
 
-      sd_printf("node_%i:%i input  shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
-                type.c_str(), first->c_str());
-      delete first;
+      // SAFETY: Do NOT read buffer values here (no asString / e<T> / syncToHost).
+      // asString() → e<float>() → preparePrimaryUse() → cudaMemcpy on CUDA.
+      // If the device buffer was freed (view of a replaced constant, DSP slot
+      // whose GPU allocation was reclaimed, or offset past valid allocation),
+      // cudaMemcpy triggers SIGSEGV which kills the JVM. SIGSEGV is a signal —
+      // C++ try-catch cannot intercept it. Shape and dtype are always safe to
+      // read (stored in CPU-side metadata). Value preview requires explicit
+      // opt-in via printIndexedBuffer() at call sites that guarantee buffer validity.
+      sd_printf("node_%i:%i input  shape: %s; dtype: %s; length: %lld%s\n",
+                block->nodeId(), e, shape.c_str(), type.c_str(),
+                (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
     }
 
     for (size_t e = 0; e < static_cast<size_t>(numOutputs); e++) {
-      // if given output index doesn't exist - we're done
-      sd_printf("Declarable op execute: processing output %d\n",e);
+      sd_printf("Declarable op execute: processing output %d\n", e);
 
       if (!block->isFastPath()) {
         if (!vs->hasVariable(block->nodeId(), e)) break;
       } else {
-        // we have to check either in or out stack, depending on isInplace()
-        if (block->isInplace()) {
-          if (block->fastpath_out().size() <= e) break;
-        } else {
-          if (block->fastpath_out().size() <= e) break;
-        }
+        if (block->fastpath_out().size() <= e) break;
       }
 
       auto array = block->isFastPath() ?  block->fastpath_out()[e]
@@ -1221,7 +1232,6 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         THROW_EXCEPTION("DeclarableOp::execute: output array is nullptr");
       }
 
-      // Validate buffer before reading values
       auto shapeInfo = array->shapeInfo();
       if (shapeInfo == nullptr) {
         sd_printf("node_%i:%i result shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), (int)e);
@@ -1233,15 +1243,20 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         sd_printf("node_%i:%i result shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), (int)e, shape.c_str());
         continue;
       }
+      if (dataBuffer->isClosed()) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_printf("node_%i:%i result shape: %s; dtype: %s; values: CLOSED BUFFER\n",
+                  block->nodeId(), (int)e, shape.c_str(), DataTypeUtils::asString(array->dataType()).c_str());
+        continue;
+      }
 
       auto shape = ShapeUtils::shapeAsString(array);
-      sd::LongType len = sd::math::sd_min(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
-      auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 
-      sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), (int)e, shape.c_str(),
-                type.c_str(), first->c_str());
-      delete first;
+      // SAFETY: Same as input logging — no value reads. See comment above.
+      sd_printf("node_%i:%i result shape: %s; dtype: %s; length: %lld%s\n",
+                block->nodeId(), (int)e, shape.c_str(), type.c_str(),
+                (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
     }
   }
 

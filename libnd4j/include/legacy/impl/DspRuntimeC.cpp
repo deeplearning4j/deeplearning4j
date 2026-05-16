@@ -18,6 +18,7 @@
 
 #include <dsp/runtime/dsp_runtime_c.h>
 #include <legacy/NativeOps.h>
+#include <dsp/NativeOpsDsp.h>
 
 #include <array/DataTypeUtils.h>
 #include <array/NDArray.h>

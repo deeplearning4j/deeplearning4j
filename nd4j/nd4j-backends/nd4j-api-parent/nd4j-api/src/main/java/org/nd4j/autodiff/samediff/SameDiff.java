@@ -41,6 +41,7 @@ import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.*;
 import org.nd4j.autodiff.samediff.execution.DevicePlacementPlanner;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
@@ -4680,6 +4681,15 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Get a {@link DspHandle} for direct DSP plan replay and buffer inspection.
+     * The plan must already be compiled (call {@link #output} or
+     * {@link #compileNativeDynamicShapePlan} first).
+     */
+    public DspHandle dsp() {
+        return new DspHandle(this);
+    }
+
+    /**
      * Get the InferenceSession for the current thread, creating one if needed.
      */
     public InferenceSession getOrCreateSession() {
@@ -4990,8 +5000,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         // ── Step 2: Standard path (no DSP) ──────────────────────────────
         boolean dspWas = InferenceSession.isDynamicShapePlanEnabled();
         InferenceSession.setDynamicShapePlanEnabled(false);
-        clearDynamicShapePlanCache();
+        // resetSession() MUST come before clearDynamicShapePlanCache(): the session's
+        // executor holds a nativePlanHandle and calls releaseGpuIntermediates() during
+        // destroySession(). If we clear the C++ plan cache first, the C++ plan is
+        // destroyed via ~NativeDynamicShapePlan, and the subsequent releaseGpuIntermediates()
+        // call dereferences a dangling pointer → SIGSEGV / heap corruption.
         resetSession();
+        clearDynamicShapePlanCache();
 
         // Rebuild placeholders (DSP path may have consumed them)
         Map<String, INDArray> stdPlaceholders = new LinkedHashMap<>();
@@ -5132,8 +5147,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         String[] outputArr = outputs.toArray(new String[0]);
 
         // ── Step 1: Run modeA (reference) ───────────────────────────────
-        clearDynamicShapePlanCache();
+        // resetSession BEFORE clearDynamicShapePlanCache: the session executor's
+        // releaseGpuIntermediates() must run while the C++ plan is still alive.
         resetSession();
+        clearDynamicShapePlanCache();
         compileNativeDynamicShapePlan(outputs, modeA, true);
 
         Map<String, INDArray> phA = new LinkedHashMap<>();
@@ -5151,8 +5168,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
 
         // ── Step 2: Run modeB (test) ────────────────────────────────────
-        clearDynamicShapePlanCache();
+        // resetSession BEFORE clearDynamicShapePlanCache: same ordering rationale.
         resetSession();
+        clearDynamicShapePlanCache();
         compileNativeDynamicShapePlan(outputs, modeB, true);
 
         Map<String, INDArray> phB = new LinkedHashMap<>();

@@ -46,12 +46,13 @@ DataType DataTypeUtils::pickPairwiseResultType(DataType typeX, DataType typeY) {
   if (rX && !rY) return typeX;
   if (!rX && rY) return typeY;
 
+  // For floating-point pairs, always use the higher-precision type.
+  // precisionBoostAllowed() only gates integer type promotion — using a lower-precision
+  // float type for a mixed-precision operation produces garbage bit patterns in the
+  // output buffer (HALF data written into a FLOAT32 buffer) which are not NaN but yield
+  // wrong argmax results.  Java's Shape.pickPairwiseResultType always takes max for floats.
   if (rX && rY) {
-    if (Environment::getInstance().precisionBoostAllowed()) {
-      return sd_max(typeX, typeY);
-    } else {
-      return typeX;
-    }
+    return sd_max(typeX, typeY);
   }
 
   if (!rX && !rY) {

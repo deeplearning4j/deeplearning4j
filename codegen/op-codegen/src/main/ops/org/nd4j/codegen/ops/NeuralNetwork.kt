@@ -1933,6 +1933,56 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("multiHeadAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "OnnxMultiHeadAttention"
+        val query = Input(NUMERIC, "query") { description = "Query tensor [batch, seqQ, hidden]" }
+        val key = Input(NUMERIC, "key") { description = "Key tensor [batch, seqKV, hidden]" }
+        val value = Input(NUMERIC, "value") { description = "Value tensor [batch, seqKV, hidden]" }
+        val attnBias = Input(NUMERIC, "attnBias") { description = "Optional attention bias [batch, numHeads, seqQ, seqKV] or null"; defaultValue = null }
+        val pastKey = Input(NUMERIC, "pastKey") { description = "Optional past key [batch, numHeads, pastSeq, headDim] or null"; defaultValue = null }
+        val pastValue = Input(NUMERIC, "pastValue") { description = "Optional past value [batch, numHeads, pastSeq, headDim] or null"; defaultValue = null }
+        val cachePosition = Input(NUMERIC, "cachePosition") { description = "Optional cache position [1] INT64 scalar for in-place KV write mode, or null"; defaultValue = null }
+
+        val numHeads = Arg(INT, "numHeads") { description = "Number of attention heads" }
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Scale factor (0 = auto: 1/sqrt(headDim))" }
+        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "Whether to apply causal masking" }
+
+        Output(NUMERIC, "output") { description = "Attention output [batch, seqQ, hidden]" }
+        Output(NUMERIC, "presentKey") { description = "Present key (past + new) [batch, numHeads, totalSeq, headDim]" }
+        Output(NUMERIC, "presentValue") { description = "Present value (past + new) [batch, numHeads, totalSeq, headDim]" }
+
+        // Basic: Q, K, V + config args (no past KV, no bias)
+        Signature(query, key, value, numHeads, scale, useCausalMask)
+        // With attention bias (no past KV)
+        Signature(query, key, value, attnBias, numHeads, scale, useCausalMask)
+        // With past KV (no bias)
+        Signature(query, key, value, pastKey, pastValue, numHeads, scale, useCausalMask)
+        // Full: Q, K, V, bias, past KV
+        Signature(query, key, value, attnBias, pastKey, pastValue, numHeads, scale, useCausalMask)
+        // Full with cache position for in-place KV write
+        Signature(query, key, value, attnBias, pastKey, pastValue, cachePosition, numHeads, scale, useCausalMask)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Multi-head attention (ONNX-compatible).
+
+             Takes pre-projected Q, K, V tensors and computes multi-head attention:
+               output = concat(head_1, ..., head_h)
+               head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+
+             Supports:
+             - Grouped Query Attention (GQA) when numKvHeads < numHeads
+             - KV cache concatenation (past + current → present)
+             - In-place KV cache write via cachePosition
+             - Causal masking for autoregressive decoding
+             - Fused GQA decode kernel for seqQ=1
+
+             See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
+            """.trimIndent()
+        }
+    }
+
     Op("mamba2Ssm") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "Mamba2SSM"
@@ -1964,6 +2014,66 @@ fun NN() = Namespace("NN") {
 
              See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through
              Structured State Space Duality" (https://arxiv.org/abs/2405.21060)
+            """.trimIndent()
+        }
+    }
+
+    Op("lightningAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "LightningAttention"
+        val q = Input(NUMERIC, "query") { description = "Query tensor [batch, seqLen, numHeads, headDim]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor [batch, seqLen, numHeads, headDim]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor [batch, seqLen, numHeads, headDim]" }
+        val decayRates = Input(NUMERIC, "decayRates") { description = "Per-head scalar decay rate [numHeads] float32" }
+        val state = Input(NUMERIC, "state") { description = "Recurrent state [batch, numHeads, headDim, headDim] (in-place update)" }
+        val isCausal = Arg(INT, "isCausal") { description = "Whether to apply causal masking (0=no, 1=yes)"; defaultValue = 1 }
+
+        Output(NUMERIC, "output") { description = "Attention output [batch, seqLen, numHeads, headDim]" }
+
+        AllParamSignature()
+        Signature(q, k, v, decayRates, state)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Lightning Attention — O(N) linear attention with per-head exponential decay
+             via intra/inter-chunk decomposition.
+
+             Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).
+
+             The algorithm decomposes each chunk into:
+               Inter-chunk: O_inter = Q_i @ S_{i-1}
+               Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i
+               State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
+               Combined:     O_i = O_inter + O_intra
+
+             State shape: [batch, numHeads, headDim, headDim].
+            """.trimIndent()
+        }
+    }
+
+    Op("linearAttentionDecode") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "LinearAttentionDecode"
+        val q = Input(NUMERIC, "query") { description = "Query tensor [batch, 1, numHeads, headDimK]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor [batch, 1, numHeads, headDimK]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor [batch, 1, numHeads, headDimV]" }
+        val decayRates = Input(NUMERIC, "decayRates") { description = "Per-head log-decay magnitude [numHeads] float32" }
+        val state = Input(NUMERIC, "state") { description = "Recurrent state [batch, numHeads, headDimV, headDimK] float32 (in-place update)" }
+
+        Output(NUMERIC, "output") { description = "Decode output [batch, 1, numHeads, headDimV]" }
+
+        AllParamSignature()
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Linear Attention Decode — single-token decode step for linear attention.
+
+             Implements the recurrent form of linear attention:
+               state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)
+               output    = q @ state_new                            (matrix-vector product)
+
+             State is always stored and computed as float32 regardless of input dtype.
+             State shape: [batch, numHeads, headDimV, headDimK].
             """.trimIndent()
         }
     }

@@ -46,7 +46,7 @@ static constexpr int SKV_WARP_SIZE = 32;
  * Template parameter T is the element data type.
  */
 template <typename T>
-SD_KERNEL void sharedKvAttentionKernel(
+SD_KERNEL __launch_bounds__(256, 2) void sharedKvAttentionKernel(
     const T* __restrict__ query,        // [batch, numHeads,   qSeqLen,  headDim]
     const T* __restrict__ key,          // [batch, numKvHeads, kvSeqLen, headDim]
     const T* __restrict__ value,        // [batch, numKvHeads, kvSeqLen, headDim]
@@ -179,7 +179,7 @@ SD_KERNEL void sharedKvAttentionKernel(
     // ===== Pass 2: exp(score - max) and sum =====
     float threadSum = 0.0f;
     for (sd::LongType k = threadIdx.x; k < kvSeqLen; k += blockDim.x) {
-        float val = expf(scores[k] - rowMax);
+        float val = __expf(scores[k] - rowMax);
         scores[k] = val;
         threadSum += val;
     }

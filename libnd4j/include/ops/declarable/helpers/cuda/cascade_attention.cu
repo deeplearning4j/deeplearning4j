@@ -41,7 +41,7 @@ namespace helpers {
  * using shared memory reductions.
  */
 template <typename T>
-static SD_KERNEL void cascadeAttentionKernel(const void* vQuery,
+static SD_KERNEL __launch_bounds__(128, 4) void cascadeAttentionKernel(const void* vQuery,
                                               const void* vKey,
                                               const void* vValue,
                                               void* vOutput,
@@ -149,7 +149,7 @@ static SD_KERNEL void cascadeAttentionKernel(const void* vQuery,
                     tempBuf[threadIdx.x] += tempBuf[threadIdx.x + stride];
                 __syncthreads();
             }
-            float w = expf(tempBuf[0] * scale - chunkMax);
+            float w = __expf(tempBuf[0] * scale - chunkMax);
             chunkSumExp += w;
             __syncthreads();
 
@@ -199,7 +199,7 @@ static SD_KERNEL void cascadeAttentionKernel(const void* vQuery,
                     tempBuf[threadIdx.x] += tempBuf[threadIdx.x + stride];
                 __syncthreads();
             }
-            float w = expf(tempBuf[0] * scale - chunkMax);
+            float w = __expf(tempBuf[0] * scale - chunkMax);
             chunkSumExp2 += w;
 
             LongType vBase = b * vBatchStride + h * vHeadStride + (chunkStart + k2) * vSeqStride;
@@ -219,8 +219,8 @@ static SD_KERNEL void cascadeAttentionKernel(const void* vQuery,
             }
         } else {
             float newMax = fmaxf(globalMax, chunkMax);
-            float globalRescale = expf(globalMax - newMax);
-            float chunkRescale = expf(chunkMax - newMax);
+            float globalRescale = __expf(globalMax - newMax);
+            float chunkRescale = __expf(chunkMax - newMax);
 
             globalSumExp = globalSumExp * globalRescale + chunkSumExp2 * chunkRescale;
 

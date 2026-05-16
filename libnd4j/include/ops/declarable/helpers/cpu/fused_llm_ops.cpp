@@ -229,12 +229,12 @@ void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* outpu
 // Fused RoPE
 //////////////////////////////////////////////////////////////////////////////
 
-void fusedRoPE(NDArray* input, NDArray* output, const void* positionOffsetPtr,
+void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
                float freqBase, float freqScale, int ropeType, LaunchContext* context,
                int rotaryDims) {
-  // On CPU, positionOffsetPtr is a host pointer to LongType (int64).
-  // Dereference once at the start — this is NOT captured by CUDA graphs on CPU.
-  const LongType positionOffset = *reinterpret_cast<const LongType*>(positionOffsetPtr);
+
+  // On CPU, safe to read position scalar directly.
+  LongType positionOffset = positionArr->e<LongType>(0);
 
   const int rank = input->rankOf();
   const LongType batch    = input->sizeAt(0);

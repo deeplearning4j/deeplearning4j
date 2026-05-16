@@ -32,8 +32,8 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
@@ -125,6 +125,14 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
          */
         private static final long MIN_ELEMENTS_FOR_LOW_PRECISION = 1024;
 
+        /**
+         * Quantize all large FP32 constants/variables to a low-precision target type.
+         *
+         * <p>Constants are converted in-place to HALF/BFLOAT16 for ~2x memory savings.
+         * Element-wise ops (add, mul, etc.) automatically upcast HALF→FLOAT via
+         * {@code pickPairwiseResultType}, so no dequant Cast nodes are needed.
+         * Matmul ops handle mixed HALF+FLOAT natively via cuBLAS.</p>
+         */
         public static int quantizeAllToType(SameDiff sd, DataType targetType) {
             if (targetType != DataType.HALF && targetType != DataType.BFLOAT16) {
                 throw new IllegalArgumentException("Unsupported low-precision target type: " + targetType);
@@ -137,18 +145,12 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             long quantizedBytes = 0;
             String modeName = targetType == DataType.BFLOAT16 ? "BF16" : "FP16";
 
-            // Convert large FP32 constants (2D+ weight matrices)
             for (String name : new ArrayList<>(constantArrays.arrayNames())) {
                 INDArray arr = constantArrays.getArray(name);
                 if (arr != null && arr.dataType() == DataType.FLOAT) {
-                    // Only quantize large 2D+ arrays (matmul weights)
-                    // Skip 1D (biases, norms), scalars, and small arrays
                     if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION) {
                         fp32Bytes += arr.length() * 4;
                         INDArray quantizedArr = arr.castTo(targetType);
-                        // Remove first in case the holder is an OptimizedGraphArrayHolder
-                        // with a function-backed entry (set by a prior optimizer pass).
-                        // removeArray clears the function entry so setArray can proceed.
                         constantArrays.removeArray(name);
                         constantArrays.setArray(name, quantizedArr);
                         quantizedBytes += arr.length() * targetType.width();
@@ -159,7 +161,6 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                 }
             }
 
-            // Convert large FP32 variables (e.g., embed_tokens weight)
             for (String name : new ArrayList<>(variableArrays.arrayNames())) {
                 INDArray arr = variableArrays.getArray(name);
                 if (arr != null && arr.dataType() == DataType.FLOAT) {
@@ -177,7 +178,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             }
 
             if (quantizedCount > 0) {
-                log.info("{} weights: {} arrays quantized ({}MB -> {}MB, {}x), {} small arrays kept FP32",
+                log.info("{} quantization: {} arrays quantized ({}MB -> {}MB, {}x reduction), {} small kept FP32",
                     modeName, quantizedCount, fp32Bytes / (1024 * 1024), quantizedBytes / (1024 * 1024),
                     String.format("%.1f", (double) fp32Bytes / Math.max(1, quantizedBytes)),
                     skippedCount);

@@ -103,6 +103,11 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  NOTE: C++ tracks this via PlanPhase; kept here for Java-side fast-path decisions. */
     private boolean shapesFrozen;
 
+    /** True once shapes have been frozen at least once in this executor's lifetime.
+     *  Used to block plan cache swaps after the first freeze — swaps after freeze
+     *  indicate a cache key instability bug and cause cascading performance loss. */
+    private boolean wasEverFrozen;
+
     private final SameDiff sd;
     private final SessionMemMgr mmgr;
 
@@ -347,6 +352,20 @@ public class DynamicShapePlanExecutor implements Closeable {
             // AffinityManager may throw on arrays whose allocation point is
             // gone (closed, poisoned). Treat as unknown.
         }
+        // Fallback: check native DataBuffer device ID which tracks the actual CUDA
+        // device the buffer was allocated on. AffinityManager.getDeviceForArray()
+        // reads AllocationPoint metadata which may not be updated after
+        // replicateToDevice(), but dbDeviceId() reflects the real device.
+        try {
+            if (arr.data() != null && arr.data().opaqueBuffer() != null) {
+                NativeOps nOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                int dbDevice = nOps.dbDeviceId(arr.data().opaqueBuffer());
+                if (dbDevice >= 0 && dbDevice < numDevices) {
+                    return dbDevice;
+                }
+            }
+        } catch (Exception ignored) {
+        }
         return fallbackDevice;
     }
 
@@ -410,6 +429,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             nativeExecutorFailed = false;
             executionCount = 0;
             shapesFrozen = false;
+            wasEverFrozen = false;
             nativeExecutionDevice = -1;
             return;
         }
@@ -426,6 +446,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Reset native executor state for new plan
         freeNativePlanHandle("PLAN_CHANGED");
         shapesFrozen = false;
+        wasEverFrozen = false;
         executionCount = 0;
         nativeExecutorFailed = false;
 
@@ -777,6 +798,22 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Override a specific external input slot with a new array.
+     * Used by DspHandle to inject buffers directly into the plan's ext input array.
+     * Package-private — only accessible from the execution package.
+     *
+     * @param extIdx the external input index
+     * @param arr    the array to inject (must not be null)
+     */
+    void overrideExternalInput(int extIdx, INDArray arr) {
+        if (externalInputs == null || extIdx < 0 || extIdx >= externalInputs.length) {
+            throw new IndexOutOfBoundsException("overrideExternalInput: extIdx=" + extIdx +
+                    " len=" + (externalInputs == null ? 0 : externalInputs.length));
+        }
+        externalInputs[extIdx] = arr;
+    }
+
+    /**
      * Freeze shapes on the native plan, enabling CUDA graph capture and buffer reuse.
      * When frozen, shape inference and cache clearing are skipped between executions.
      * Use during static KV decode where all external input shapes are guaranteed constant.
@@ -805,6 +842,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             return;
         }
         this.shapesFrozen = true;
+        this.wasEverFrozen = true;
         log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={})",
                 nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java");
         DspDiagnostics.record(DspDiagnostics.SHAPE,
@@ -920,6 +958,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Reset Java-side tracking that freeNativePlanHandle clears (shapesFrozen is on the
         // Java side only; the C++ plan is gone).
         shapesFrozen = false;
+        wasEverFrozen = false;
         nativeExecutorFailed = false;
         executionCount = 0;
 
@@ -1195,7 +1234,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             int protectedCount = 0;
             for (int i = 0; i < extKeys.length; i++) {
                 SDVariable var = sd.getVariable(extKeys[i]);
-                if (var != null && var.getVariableType() == VariableType.CONSTANT) {
+                if (var != null && (var.getVariableType() == VariableType.CONSTANT || var.getVariableType() == VariableType.VARIABLE)) {
                     INDArray arr = var.getArr();
                     if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
                         protectedConstantBuffers.put(arr.data(), Boolean.TRUE);
@@ -1204,7 +1243,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
             if (protectedCount > 0) {
-                log.info("Native executor: protecting {} constant DataBuffers for plan lifetime", protectedCount);
+                log.info("Native executor: protecting {} constant/variable DataBuffers for plan lifetime", protectedCount);
             }
         }
 
@@ -1380,24 +1419,46 @@ public class DynamicShapePlanExecutor implements Closeable {
                             " phKeys=" + (cachedPhKeys != null ? cachedPhKeys.length : "null") +
                             " outputs=" + (cachedSortedOutputs != null ? cachedSortedOutputs.length : "null"));
                     }
-                    // Unpin the old plan so it becomes eligible for LRU eviction.
-                    // This MUST happen before the new plan is pinned (which
-                    // getOrInsert already did) to avoid dangling pointers — the
-                    // old plan's GPU resources are freed on eviction.
-                    nativeOps.unpinNativePlan(cache, nativePlanHandle);
-                    log.info("redispatchForCurrentShapes: plan swapped from {} to {} — resetting frozen state",
-                            nativePlanHandle.address(), newHandle.address());
-                    frozenOutputsInitialized = false;
-                    frozenCallCount = 0;
-                    closeZeroCopyOutputCache();
-                    // Clear cached input arrays: the new plan may have different
-                    // external input mappings or slot assignments.
-                    cachedInputArrays = null;
-                    cachedInputOpaques = null;
-                    contextInputRefs = null;
-                    inputIsPlaceholder = null;
+                    // PLAN SWAP SUPPRESSION: if shapes were ever frozen in this executor's
+                    // lifetime, the plan cache returning a different plan is a cache key
+                    // instability bug. Suppress the swap to prevent cascading performance loss
+                    // (each swap resets frozen state → triggers re-warmup → re-compile → re-capture).
+                    // The existing plan handle is still valid and has all captured graphs intact.
+                    if (wasEverFrozen) {
+                        // Unpin the NEW plan (which getOrInsert auto-pinned) since we're not using it.
+                        nativeOps.unpinNativePlan(cache, newHandle);
+                        log.warn("redispatchForCurrentShapes: SUPPRESSED plan swap from {} to {} " +
+                                "(wasEverFrozen=true, shapesFrozen={}, executionCount={}). " +
+                                "Keeping existing plan to preserve graph replay state.",
+                                nativePlanHandle.address(), newHandle.address(),
+                                shapesFrozen, executionCount);
+                        // Don't update nativePlanHandle — keep the existing one.
+                        // Re-freeze if it was unfrozen by a previous swap.
+                        if (!shapesFrozen) {
+                            shapesFrozen = true;
+                        }
+                    } else {
+                        // Unpin the old plan so it becomes eligible for LRU eviction.
+                        // This MUST happen before the new plan is pinned (which
+                        // getOrInsert already did) to avoid dangling pointers — the
+                        // old plan's GPU resources are freed on eviction.
+                        nativeOps.unpinNativePlan(cache, nativePlanHandle);
+                        log.info("redispatchForCurrentShapes: plan swapped from {} to {} — resetting frozen state",
+                                nativePlanHandle.address(), newHandle.address());
+                        frozenOutputsInitialized = false;
+                        frozenCallCount = 0;
+                        closeZeroCopyOutputCache();
+                        // Clear cached input arrays: the new plan may have different
+                        // external input mappings or slot assignments.
+                        cachedInputArrays = null;
+                        cachedInputOpaques = null;
+                        contextInputRefs = null;
+                        inputIsPlaceholder = null;
+                        nativePlanHandle = newHandle;
+                    }
+                } else {
+                    nativePlanHandle = newHandle;
                 }
-                nativePlanHandle = newHandle;
             }
             // Apply per-handle settings the first time we see each cached handle.
             applySettingsIfNewHandle(nativeOps, newHandle);
@@ -2041,7 +2102,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         // After shapes freeze, the plan handle is guaranteed stable (a swap would throw
         // PLAN_CACHE_BUG). Skip the redispatch to avoid per-step BytePointer allocation
         // of the full serialized plan + JNI call overhead.
-        if (!shapesFrozen || nativePlanHandle == null || nativePlanHandle.isNull()) {
+        // Skip redispatch when shapes are frozen OR when shapes were ever frozen and we have
+        // a valid plan handle. wasEverFrozen prevents the cascade where a spurious plan swap
+        // resets shapesFrozen, causing another redispatch on the next step, which swaps again.
+        boolean needsRedispatch = (nativePlanHandle == null || nativePlanHandle.isNull())
+                || (!shapesFrozen && !wasEverFrozen);
+        if (needsRedispatch) {
             redispatchForCurrentShapes(placeholderArrays);
         }
 
@@ -2091,13 +2157,23 @@ public class DynamicShapePlanExecutor implements Closeable {
                         staleConstantCount++;
                         INDArray fresh = var.getArr();
                         if (isArrayLive(fresh)) {
-                            extInputs[i] = fresh;
-                            cachedInputArrays[i] = fresh;
-                            if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
-                            if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
-                                staleNonPlaceholderIndices = java.util.Arrays.copyOf(staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
-                            staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
-                            resolvedCount++;
+                            // The Java layer can re-resolve to the new array, but the C++ frozen
+                            // plan holds raw NDArray* pointers baked into segment snapshots and
+                            // CUDA graph arg tables from the ORIGINAL buffer. Those pointers are
+                            // now dangling (the old buffer was freed). setGraphContextInputArray
+                            // updates the opContext, but frozen segments don't re-read from opContext —
+                            // they use their baked snapshot. Continuing would cause a use-after-free
+                            // crash in native code (SIGSEGV in Workspace::allocateBytes).
+                            // Throw here so callers get a clean Java exception instead of a JVM crash.
+                            throw new RuntimeException(
+                                "LIFECYCLE_ERROR: external input '" + extKeys[i] + "' (type=" + vt +
+                                ") DataBuffer was closed and re-resolved to a new buffer between " +
+                                "frozen DSP executions. The C++ frozen plan holds baked pointers to " +
+                                "the OLD buffer which is now freed — continuing would cause a " +
+                                "use-after-free crash. Close the plan executor or unfreeze shapes " +
+                                "before swapping variable buffers. " +
+                                "(dtype=" + fresh.dataType() +
+                                ", shape=" + Arrays.toString(fresh.shape()) + ")");
                         } else {
                             throw new RuntimeException(
                                 "LIFECYCLE_ERROR: external input '" + extKeys[i] + "' (type=" + vt +
@@ -2115,15 +2191,28 @@ public class DynamicShapePlanExecutor implements Closeable {
                             extInputs[i] = ph;
                             resolvedCount++;
                         } else {
-                            DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                                "Java: ext[" + i + "] '" + extKeys[i] + "' type=PLACEHOLDER" +
-                                " STALE, placeholder not available in map");
+                            // Stale placeholder with no live replacement in the map.
+                            // Passing a closed DataBuffer to native code causes SIGSEGV —
+                            // the C++ plan dereferences freed GPU memory in Workspace::allocateBytes.
+                            // Throw a clean Java exception instead of crashing the JVM.
+                            throw new RuntimeException(
+                                "LIFECYCLE_ERROR: external input '" + extKeys[i] + "' (type=PLACEHOLDER)" +
+                                " DataBuffer was closed between DSP executions and no live replacement " +
+                                "was provided in placeholderArrays. " +
+                                (ph != null ? "(placeholder present but closed)" :
+                                    "(placeholder missing from map)") +
+                                " — cannot proceed, would use-after-free in native code.");
                         }
                     } else {
                         staleOtherCount++;
-                        DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                            "Java: ext[" + i + "] '" + extKeys[i] + "' type=" + vt +
-                            " STALE but not CONST/VAR/PLACEHOLDER — cannot re-resolve!");
+                        // Stale input of unrecognized type (null variable or unexpected VariableType).
+                        // We cannot re-resolve it. Passing the closed DataBuffer to native code
+                        // causes SIGSEGV. Throw a clean Java exception.
+                        throw new RuntimeException(
+                            "LIFECYCLE_ERROR: external input '" + extKeys[i] + "' (type=" + vt + ")" +
+                            " DataBuffer was closed between DSP executions and cannot be re-resolved — " +
+                            "variable type is not CONSTANT/VARIABLE/PLACEHOLDER. " +
+                            "Continuing would use-after-free in native code.");
                     }
                 }
             }
@@ -2140,6 +2229,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                     if (inputIsPlaceholder[i]) {
                         INDArray ph = placeholderArrays.get(extKeys[i]);
                         if (ph != null) {
+                            if (!isArrayLive(ph)) {
+                                throw new RuntimeException(
+                                    "LIFECYCLE_ERROR: placeholder input '" + extKeys[i] +
+                                    "' DataBuffer was closed — cannot pass freed buffer to native plan.");
+                            }
                             extInputs[i] = ph;
                         }
                     }
@@ -2154,6 +2248,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                 INDArray arr = null;
                 if (placeholderArrays != null) {
                     arr = placeholderArrays.get(varName);
+                    if (arr != null && !isArrayLive(arr)) {
+                        throw new RuntimeException(
+                            "LIFECYCLE_ERROR: external input '" + varName + "' (type=PLACEHOLDER)" +
+                            " DataBuffer was closed — cannot pass freed buffer to native plan.");
+                    }
                 }
                 if (arr == null) {
                     SDVariable var = sd.getVariable(varName);
@@ -2416,14 +2515,42 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 }
                             }
 
-                            // Cross-device migration via replicateToDevice (handles non-peer GPUs)
+                            // Cross-device migration via async peer copy on the DSP stream.
+                            // Uses cudaMemcpyPeerAsync — the CUDA driver handles P2P or
+                            // host-staging internally, all async on the execution stream.
+                            // No sync D2H, no host relay, no pipeline drain.
                             log.info("DSP MIGRATE: ext[{}] '{}' shape={} dtype={} from device {} to {} (placeholder={}, view={})",
                                     i, extKeys != null && i < extKeys.length ? extKeys[i] : "?",
                                     java.util.Arrays.toString(arr.shape()), arr.dataType(),
                                     arrDevice, nativeExecutionDevice, isPlaceholder, arr.isView());
                             long startTime = System.nanoTime();
-                            INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(
-                                    nativeExecutionDevice, arr);
+
+                            // For views, dup first to get a contiguous buffer
+                            INDArray srcArr = arr.isView() ? arr.dup() : arr;
+
+                            // Allocate destination buffer on the target device
+                            INDArray migrated;
+                            try (org.nd4j.linalg.api.memory.MemoryWorkspace ws =
+                                    Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                migrated = Nd4j.createUninitialized(srcArr.dataType(), srcArr.shape(), srcArr.ordering());
+                            }
+
+                            // Async cross-device copy: cudaMemcpyPeerAsync on DSP stream.
+                            // The copy is ordered on the same stream the plan executes on,
+                            // so data is visible when the plan reads it — no sync needed.
+                            Pointer execStream = nativePlanHandle != null
+                                    ? nativeOps.dspGetExecutionStream(nativePlanHandle)
+                                    : null;
+                            nativeOps.dbAsyncCrossDeviceCopy(
+                                    migrated.data().opaqueBuffer(),
+                                    srcArr.data().opaqueBuffer(),
+                                    execStream);
+
+                            // Clean up view dup if we created one
+                            if (srcArr != arr) {
+                                srcArr.close();
+                            }
+
                             long durationNs = System.nanoTime() - startTime;
 
                             extInputs[i] = migrated;
@@ -2484,6 +2611,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
                 if (migratedCount > 0) {
+                    // No commit() needed: dbAsyncCrossDeviceCopy uses cudaMemcpyPeerAsync
+                    // on the DSP execution stream — the plan executes on the same stream,
+                    // so CUDA stream ordering guarantees the copy completes first.
+
+                    // Invalidate zeroCopyOutputCache: migrated inputs mean the plan must
+                    // re-execute with the new data.
+                    if (zeroCopyOutputCache != null) {
+                        closeZeroCopyOutputCache();
+                    }
                     log.info("DSP native executor: migrated {} inputs ({}MB) to device {}, replicaCache={}",
                             migratedCount, migratedBytes / (1024 * 1024), nativeExecutionDevice,
                             nativeConstantReplicaCache != null ? nativeConstantReplicaCache.size() : 0);
@@ -2640,6 +2776,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 cachedInputOpaques[ci] = opaqueIn;
                                 DspDiagnostics.record(DspDiagnostics.MEMORY,
                                     "Java: FROZEN_FAST_PATH re-set stale constant ext[" + ci + "] '" + extKeys[ci] + "'");
+                            }
+                        }
+                    }
+
+                    // Sync same-identity placeholder inputs whose host buffer may have
+                    // been modified via assign() since the last step. Without this,
+                    // the frozen fast-path skips these inputs entirely (identity matches)
+                    // and the C++ side reads stale device data.
+                    if (inputIsPlaceholder != null) {
+                        for (int i = 0; i < extInputs.length; i++) {
+                            INDArray arr = extInputs[i];
+                            if (arr != null && arr == cachedInputArrays[i] && inputIsPlaceholder[i]) {
+                                if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
+                                    OpaqueDataBuffer odb = arr.data().opaqueBuffer();
+                                    if (odb != null && !odb.isNull()) {
+                                        odb.syncToSpecial();
+                                    }
+                                }
                             }
                         }
                     }
@@ -2829,17 +2983,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
-            // Set empty output slots on context (C++ plan will allocate and fill them)
-            // When frozen, skip after first call — C++ manages its own output slots
-            if (!shapesFrozen || !frozenOutputsInitialized) {
-                for (int i = 0; i < numOutputs; i++) {
-                    INDArray dummy = Nd4j.empty(DataType.FLOAT);
-                    OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
-                    nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
-                }
-                if (shapesFrozen) {
-                    frozenOutputsInitialized = true;
-                }
+            // Set empty output slots on context — C++ plan will allocate and fill them.
+            // Must be done every call (not just first frozen call) because C++ may
+            // reorder output slot indices across executions, and skipping this causes
+            // multi-output graphs to return wrong outputs after shape freezing.
+            for (int i = 0; i < numOutputs; i++) {
+                INDArray dummy = Nd4j.empty(DataType.FLOAT);
+                OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
+                nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
             }
 
             // Get execution stream — cache to avoid 2 JNI calls per step
@@ -2925,13 +3076,35 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
+            // Final safety check: ensure no closed DataBuffer will reach native code.
+            // This catches any remaining paths where a closed buffer slipped through
+            // earlier validation. A SIGSEGV in Workspace::allocateBytes or DataBuffer::migrate
+            // is far harder to diagnose than a clean Java exception thrown here.
+            for (int i = 0; i < extInputs.length; i++) {
+                INDArray arr = extInputs[i];
+                if (arr != null && !arr.isEmpty()) {
+                    DataBuffer db = arr.data();
+                    if (db != null && db.wasClosed()) {
+                        throw new IllegalStateException(
+                            "LIFECYCLE_ERROR: external input " + i + " ('" + extKeys[i] +
+                            "') has a CLOSED DataBuffer immediately before native execution — " +
+                            "use-after-free would occur in native code. " +
+                            "This indicates a validation gap upstream.");
+                    }
+                }
+            }
+
             // Execute the plan in C++
+            log.info("DSP_EXEC_PRE: handle={} executionCount={} numInputs={} numOutputs={} frozen={}",
+                    nativePlanHandle != null ? "0x" + Long.toHexString(nativePlanHandle.address()) : "null",
+                    executionCount, numInputs, numOutputs, shapesFrozen);
             long execStart = System.nanoTime();
             int status = nativeOps.executeDynamicShapePlan(
                     nativePlanHandle,
                     opContext,
                     execStream);
             long execMs = (System.nanoTime() - execStart) / 1_000_000;
+            log.info("DSP_EXEC_POST: status={} execMs={} executionCount={}", status, execMs, executionCount);
 
             if (status != 0) {
                 String errMsg = nativeOps.lastErrorMessage();
@@ -3057,6 +3230,20 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // Sync stream to ensure async D2D copies complete before returning
                 Nd4j.getExecutioner().commit();
 
+                // Update outputSlots from zeroCopyOutputCache for introspection access
+                if (outputSlots != null) {
+                    Map<String, Integer> outputNameToSlot = plan.getOutputNameToSlotIndex();
+                    for (Map.Entry<String, INDArray> entry : zeroCopyOutputCache.entrySet()) {
+                        Integer slotIdx = outputNameToSlot.get(entry.getKey());
+                        if (slotIdx == null || slotIdx < 0) {
+                            slotIdx = findOutputSlotIndex(plan, entry.getKey());
+                        }
+                        if (slotIdx != null && slotIdx >= 0 && slotIdx < outputSlots.length) {
+                            outputSlots[slotIdx] = entry.getValue();
+                        }
+                    }
+                }
+
                 long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
                 if (execMs > 100) {
                     log.info("Native executor: exec={}ms copy={}ms (frozen, {}/{} outputs copied)",
@@ -3170,6 +3357,32 @@ public class DynamicShapePlanExecutor implements Closeable {
                     log.info(sb.toString());
                 }
                 results.put(outputName, result);
+                // Diagnostic: log first few values of each output immediately after copy
+                if (result.length() > 0) {
+                    Nd4j.getExecutioner().commit();
+                    float v0 = result.getFloat(0);
+                    float v1 = result.length() > 1 ? result.getFloat(1) : Float.NaN;
+                    log.info("DSP_OUTPUT_VERIFY: '{}' shape={} dtype={} first2=[{}, {}] allZero={}",
+                            outputName, java.util.Arrays.toString(result.shape()), result.dataType(),
+                            v0, v1, result.sumNumber().floatValue() == 0.0f);
+                }
+            }
+
+            // Populate the outputSlots array with the results at their corresponding slot indices.
+            // The outputSlots field is allocated at plan initialization but was never populated
+            // with actual arrays during execution. Tests and introspection APIs access this field
+            // via reflection to inspect the live output arrays after execution.
+            if (outputSlots != null) {
+                Map<String, Integer> outputNameToSlot = plan.getOutputNameToSlotIndex();
+                for (Map.Entry<String, INDArray> entry : results.entrySet()) {
+                    Integer slotIdx = outputNameToSlot.get(entry.getKey());
+                    if (slotIdx == null || slotIdx < 0) {
+                        slotIdx = findOutputSlotIndex(plan, entry.getKey());
+                    }
+                    if (slotIdx != null && slotIdx >= 0 && slotIdx < outputSlots.length) {
+                        outputSlots[slotIdx] = entry.getValue();
+                    }
+                }
             }
 
             // Synchronize the CUDA stream to ensure all async D2D copies (copyBuffer)

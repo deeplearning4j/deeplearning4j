@@ -726,6 +726,56 @@ public class DynamicShapePlan implements Closeable {
         return PlanIntrospection.formatReplaySummary(nativePlanHandle);
     }
 
+    /**
+     * Returns the pre-compiled slot descriptors in execution order.
+     */
+    public DynamicShapeSlot[] getSlots() {
+        return slots;
+    }
+
+    /**
+     * Returns the mapping from requested output variable name to its flat output slot index.
+     */
+    public Map<String, Integer> getOutputNameToSlotIndex() {
+        return outputNameToSlotIndex;
+    }
+
+    /**
+     * Returns the ordered array of external input variable names
+     * (constants, variables, placeholders).
+     */
+    public String[] getExternalInputKeys() {
+        return externalInputKeys;
+    }
+
+    /**
+     * Returns the total number of flat output slots.
+     */
+    public int getTotalOutputSlots() {
+        return totalOutputSlots;
+    }
+
+    /**
+     * Returns the set of output variable names this plan was compiled for.
+     */
+    public Set<String> getRequestedOutputs() {
+        return requestedOutputs;
+    }
+
+    /**
+     * Returns the release schedule.
+     */
+    public int[][] getReleaseAtStep() {
+        return releaseAtStep;
+    }
+
+    /**
+     * Returns whether this plan contains control flow ops.
+     */
+    public boolean hasControlFlowOps() {
+        return hasControlFlowOps;
+    }
+
     @Override
     public void close() {
         // Clear shape caches first to release DataBuffer references

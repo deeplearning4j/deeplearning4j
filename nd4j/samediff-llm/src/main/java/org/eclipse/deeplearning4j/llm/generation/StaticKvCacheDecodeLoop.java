@@ -425,7 +425,7 @@ public class StaticKvCacheDecodeLoop {
             long currentSeqLen = currentEmbeddings.shape()[1];
 
             if (memoryDiag && step <= 10) {
-                var nops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+                org.nd4j.nativeblas.NativeOps nops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
                 int dev = org.nd4j.linalg.factory.Nd4j.getAffinityManager()
                         .getDeviceForCurrentThread().intValue();
                 long free = nops.getDeviceFreeMemory(dev);

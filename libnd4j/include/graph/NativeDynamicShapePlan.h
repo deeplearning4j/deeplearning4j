@@ -1376,6 +1376,125 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   NDArray** getLastExternalInputs() const { return lastExternalInputs_; }
   int getLastNumExternalInputs() const { return lastNumExternalInputs_; }
 
+  // ── External input introspection (for assertions and diagnostics) ──────
+
+  /** True if ext[extIdx] was marked variable (participates in staging D2D). */
+  bool isExternalInputVariable(int extIdx) const {
+    if (extIdx < 0 || extIdx >= static_cast<int>(externalInputIsVariable_.size())) return false;
+    return externalInputIsVariable_[extIdx];
+  }
+
+  /** True if ext[extIdx] was marked placeholder (forces H2D sync). */
+  bool isExternalInputPlaceholder(int extIdx) const {
+    if (extIdx < 0 || extIdx >= static_cast<int>(externalInputIsPlaceholder_.size())) return false;
+    return externalInputIsPlaceholder_[extIdx];
+  }
+
+  /** Count of external inputs currently classified as variable. */
+  int getNumVariableExternalInputs() const {
+    int count = 0;
+    for (int i = 0; i < static_cast<int>(externalInputIsVariable_.size()); i++) {
+      if (externalInputIsVariable_[i]) count++;
+    }
+    return count;
+  }
+
+  /** Device address of the plan-owned staging buffer for ext[extIdx], or 0 if none. */
+  long long getStagingBufferAddress(int extIdx) const {
+    if (placeholderStagingBuffers_ == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
+      return 0;
+    NDArray* staging = placeholderStagingBuffers_[extIdx];
+    if (staging == nullptr) return 0;
+    return reinterpret_cast<long long>(staging->specialBuffer());
+  }
+
+  /** Device address the CUDA graph will actually read from for ext[extIdx].
+   *  Returns staging address if variable with staging, else the original ext address, else 0. */
+  long long getEffectiveExternalAddress(int extIdx) const {
+    if (effectiveExternals_ != nullptr && extIdx >= 0 && extIdx < numExternalInputs_) {
+      NDArray* eff = effectiveExternals_[extIdx];
+      if (eff != nullptr) return reinterpret_cast<long long>(eff->specialBuffer());
+    }
+    if (placeholderStagingBuffers_ != nullptr && extIdx >= 0 && extIdx < numExternalInputs_) {
+      NDArray* staging = placeholderStagingBuffers_[extIdx];
+      if (staging != nullptr) return reinterpret_cast<long long>(staging->specialBuffer());
+    }
+    return 0;
+  }
+
+  /** Number of variable ext inputs with allocated staging buffers. */
+  int getNumStagingBuffers() const {
+    if (placeholderStagingBuffers_ == nullptr) return 0;
+    int count = 0;
+    for (int i = 0; i < numExternalInputs_; i++) {
+      if (placeholderStagingBuffers_[i] != nullptr) count++;
+    }
+    return count;
+  }
+
+  /** Name of ext input at index, or empty string. */
+  const std::string& getExternalInputName(int extIdx) const {
+    static const std::string empty;
+    if (extIdx < 0 || extIdx >= static_cast<int>(externalInputNames_.size())) return empty;
+    return externalInputNames_[extIdx];
+  }
+
+  /** Current plan execution count. */
+  int getExecuteCount() const { return executeCount_; }
+
+  /** Number of cached variable ext input indices (fast-path list). */
+  int getNumCachedVariableExtIndices() const {
+    return static_cast<int>(cachedVariableExtIndices_.size());
+  }
+
+  /** Get the i-th cached variable ext input index, or -1 if out of range. */
+  int getCachedVariableExtIndex(int i) const {
+    if (i < 0 || i >= static_cast<int>(cachedVariableExtIndices_.size())) return -1;
+    return cachedVariableExtIndices_[i];
+  }
+
+  /** Get the staging NDArray* for ext[extIdx], or nullptr if none. For JNI introspection.
+   *  Returns nullptr if the staging buffer's shapeInfo is corrupted or DataBuffer is
+   *  closed/invalid (prevents Java crash from stale pointers after segment invalidation). */
+  NDArray* getStagingBufferArray(int extIdx) const {
+    if (placeholderStagingBuffers_ == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
+      return nullptr;
+    NDArray* staging = placeholderStagingBuffers_[extIdx];
+    if (staging == nullptr) return nullptr;
+    // Validate DataBuffer is alive — after markExternalInputVariable, staging buffers
+    // are freed and reallocated. A closed DataBuffer means the specialBuffer() pointer
+    // is stale and reading it would cause an illegal memory access (error 700/719).
+    auto* db = staging->dataBuffer();
+    if (db == nullptr || db->isClosed()) return nullptr;
+    if (staging->specialBuffer() == nullptr) return nullptr;
+    if (staging->shapeInfo() != nullptr) {
+      LongType rank = staging->shapeInfo()[0];
+      if (rank < 0 || rank > SD_MAX_RANK) {
+        sd_printf("getStagingBufferArray: SHAPE CORRUPTION ext[%d] rank=%lld (0x%llx) "
+                  "shapeInfo=%p staging=%p. Returning nullptr to prevent Java crash.\n",
+                  extIdx, (long long)rank, (unsigned long long)rank,
+                  (void*)staging->shapeInfo(), (void*)staging);
+        fflush(stdout);
+        return nullptr;
+      }
+    }
+    return staging;
+  }
+
+  /**
+   * Atomically copy staging buffer content for ext[extIdx] into dstDataBuffer.
+   * This avoids the stale-pointer race of extracting specialBuffer() then copying separately.
+   * Returns: 0 = success, -1 = no staging, -2 = invalid staging, -3 = copy failed.
+   */
+  int copyStagingToBuffer(int extIdx, sd::DataBuffer* dstDataBuffer);
+
+  /** Get the last external input NDArray* at index, or nullptr. Stable after execute(). */
+  NDArray* getLastExternalInput(int extIdx) const {
+    if (lastExternalInputs_ == nullptr || extIdx < 0 || extIdx >= lastNumExternalInputs_)
+      return nullptr;
+    return lastExternalInputs_[extIdx];
+  }
+
   /**
    * Get the number of requested outputs.
    */
@@ -1697,6 +1816,118 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return slots_[slotIdx].slotPhase.toLegacyCode();
   }
 
+  // ── JNI introspection methods (NativeOpsDsp.h wrappers) ──────────────────
+
+  /** Device address of the last external input at index, or 0. */
+  long long getLastExternalInputAddress(int extIdx) const {
+    NDArray* arr = getLastExternalInput(extIdx);
+    if (arr == nullptr) return 0;
+    return reinterpret_cast<long long>(arr->specialBuffer());
+  }
+
+  /** Get the output NDArray* at a specific slot index, or nullptr. */
+  NDArray* getSlotOutputArray(int slotIdx) const {
+    if (outputSlots_ == nullptr || slotIdx < 0 || slotIdx >= totalOutputSlots_)
+      return nullptr;
+    return outputSlots_[slotIdx];
+  }
+
+  /** Get the dirty generation counter for a slot (0 if out of range). */
+  int getSlotGeneration(int slotIdx) const {
+    if (slotIdx < 0 || slotIdx >= static_cast<int>(dirtySlotGenerations_.size())) return 0;
+    return static_cast<int>(dirtySlotGenerations_[slotIdx]);
+  }
+
+  /** Get the execution phase code for a segment (via GraphSegmentExec). */
+  int getSegmentReplayMode(int segIdx) const {
+    if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return 0;
+    return segments_[segIdx].exec.getExecutionPhaseCode();
+  }
+
+  /** Get the arg table generation counter for a segment. */
+  long long getSegmentArgGeneration(int segIdx) const {
+    if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return 0;
+    return static_cast<long long>(segments_[segIdx].exec.argTableGeneration);
+  }
+
+  /** Get the captured arg generation counter for a segment. */
+  long long getSegmentCapturedArgGeneration(int segIdx) const {
+    if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return 0;
+    return static_cast<long long>(segments_[segIdx].exec.capturedArgGeneration);
+  }
+
+  /** Check if a segment needs arg refresh (generation mismatch). */
+  int getSegmentNeedsArgRefresh(int segIdx) const {
+    if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return 0;
+    return segments_[segIdx].exec.needsArgRefresh() ? 1 : 0;
+  }
+
+  /** Get the captured input address key for a segment. */
+  long long getSegmentCapturedInputAddrKey(int segIdx) const {
+    if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return 0;
+    return static_cast<long long>(segments_[segIdx].exec.capturedInputAddrKey);
+  }
+
+  // ── Last execution stats snapshot ──────────────────────────────────────
+  // Snapshotted from PlanExecutionContext at end of each execute() call.
+  // Returns -1 if no execution has occurred yet.
+
+  struct LastExecStats {
+    int segmentsWarmup = -1;
+    int segmentsCaptured = -1;
+    int segmentsReplayed = -1;
+    int segmentsSlotBySlot = -1;
+    int segmentsFailed = -1;
+    int segmentsTotal = -1;
+    int syncLevel = -1;          // SyncLevel enum as int
+    int streamSyncCount = -1;
+    int consecutiveUnchangedCount = -1;
+    bool valid = false;          // true after first execute()
+  };
+
+  int getLastExecSegmentsWarmup() const { return lastExecStats_.segmentsWarmup; }
+  int getLastExecSegmentsCaptured() const { return lastExecStats_.segmentsCaptured; }
+  int getLastExecSegmentsReplayed() const { return lastExecStats_.segmentsReplayed; }
+  int getLastExecSegmentsSlotBySlot() const { return lastExecStats_.segmentsSlotBySlot; }
+  int getLastExecSegmentsFailed() const { return lastExecStats_.segmentsFailed; }
+  int getLastExecSegmentsTotal() const { return lastExecStats_.segmentsTotal; }
+  int getLastExecSyncLevel() const { return lastExecStats_.syncLevel; }
+  int getLastExecStreamSyncCount() const { return lastExecStats_.streamSyncCount; }
+  int getLastExecConsecutiveUnchangedCount() const { return lastExecStats_.consecutiveUnchangedCount; }
+
+  /** Called at end of execute() to snapshot PlanExecutionContext stats. */
+  void snapshotExecStats(void* execCtxPtr);
+
+  // ── Cross-stream testing API (CUDA only) ────────────────────────────────
+
+  /** Write host data to a staging buffer's device memory on the default stream. */
+  int writeDeviceBufferOnDefaultStream(int extIdx, void* srcHost, long long numBytes);
+
+  /** Write host data to a staging buffer's device memory on an explicit stream. */
+  int writeDeviceBufferOnExplicitStream(int extIdx, void* srcHost, long long numBytes, void* stream);
+
+  /** Check if ext input at index has device-authoritative data. */
+  int isExtInputDeviceAuthoritative(int extIdx) const {
+    NDArray* arr = getLastExternalInput(extIdx);
+    if (arr == nullptr) return 0;
+    auto* db = arr->dataBuffer();
+    if (db == nullptr) return 0;
+    return db->isPrimaryActual() ? 0 : 1;  // device-authoritative = special is actual, primary is NOT
+  }
+
+  /** Get the CUDA execution stream (or nullptr on CPU). */
+  void* getExecutionStream() const {
+#ifdef SD_CUDA
+    auto lc = sd::LaunchContext::defaultContext();
+    return lc != nullptr ? reinterpret_cast<void*>(lc->getCudaStream()) : nullptr;
+#else
+    return nullptr;
+#endif
+  }
+
+  /** Get JSON summary of all plan segments (for diagnostics). */
+  std::string getSegmentsSummaryJson() const;
+
   /**
    * Enable/disable per-execution timing breakdown logging.
    * When enabled, prints phase-level timing after each execute() call.
@@ -1710,6 +1941,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * in .cpp/.cu files that include PlanExecutionContext.h.
    */
   void* activeExecutionContext() const { return activeExecCtx_; }
+
+  /**
+   * Access the persisted steady-state execution context (survives across execute() calls).
+   * Returns null before the first steady-state execute().
+   */
+  void* steadyStateExecutionContext() const { return steadyStateExecCtx_; }
+
+  /** Access prev-step fingerprints map for diagnostic queries. */
+  const std::unordered_map<int, uint64_t>& getPrevStepFingerprints() const { return prevStepFingerprints_; }
 
   /**
    * Ensure plan-owned staging buffers exist for variable external inputs,
@@ -1933,7 +2173,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numSlots_;
   int totalOutputSlots_;
   int numExternalInputs_;
-  NDArray** lastExternalInputs_ = nullptr;       // last ext inputs passed to execute() (not owned)
+  std::vector<NDArray*> lastExternalInputsCopy_;  // owned copy of ext input pointer array
+  NDArray** lastExternalInputs_ = nullptr;       // points to lastExternalInputsCopy_.data() (stable after execute)
   int lastNumExternalInputs_ = 0;               // size of lastExternalInputs_
   std::vector<std::string> externalInputNames_;  // name for each external input index
   std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
@@ -2028,6 +2269,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool inShapeChangeWarmup_ = false;  // True during segDispatchCompile's shape-change warmup pass.
                                        // Allows slot shape reassignment in step3_allocateOutputs.
   int executeCount_;  // Total plan execution count (monotonically increasing)
+  LastExecStats lastExecStats_;  // Snapshotted from PlanExecutionContext at end of each execute()
   uint64_t identityFingerprint_ = 0; // FNV-1a hash of (numSlots, opNames, wiring) — set at deserialization
   // Sync override depth counter. When > 0, needsSync() returns true regardless
   // of contract/lifecycle state. Incremented/decremented by SyncOverride RAII guard.
@@ -2094,6 +2336,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   NDArray** placeholderStagingBuffers_ = nullptr;
   NDArray** effectiveExternals_ = nullptr;
   std::vector<int> cachedVariableExtIndices_;  // fast-path: only iterate variable inputs
+  std::vector<bool> deviceWritePending_;        // per-input: JNI wrote staging directly, skip D2D overwrite
 
   // Staleness detection state (used by verifyStagingNotStale)
   std::unordered_map<int, uint64_t> prevStepFingerprints_;  // ext idx → FNV-1a of device data
@@ -2117,6 +2360,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Compilation audit: per-op compilation status for CPU graph backends
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
+
+  // Human-readable detail of last compile failure (for error messages)
+  std::string lastCompileFailureDetail_;
 
   // Owned legacy ops created during deserialization
   // (for ops not registered in OpRegistrator)
@@ -2461,8 +2707,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     int batchedGemmGroupIdx;    // only valid for BATCHED_GEMM action
     int outputSlotIdx;          // first output slot for tick actions
   };
-  std::vector<ActiveGapSlot> cachedActiveGapSlots_;
-  bool activeGapSlotsCached_ = false;
+  // Per-gap-unit cache keyed by the unit's startSlot.
+  // Each gap unit in the composite replay schedule gets its own cached
+  // active slot list.  A single flat vector was a bug: the first gap
+  // unit (e.g. [0-2]) would set activeGapSlotsCached_=true and all
+  // subsequent units (e.g. [4-4]) would replay the first unit's slots
+  // instead of their own.
+  std::unordered_map<int, std::vector<ActiveGapSlot>> cachedActiveGapSlotsMap_;
+  std::unordered_set<int> activeGapSlotsCachedSet_;
 
   // Shared capture workspace: all segments share one 128MB workspace
   // instead of each allocating their own. Since segments execute sequentially

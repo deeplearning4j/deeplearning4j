@@ -58,7 +58,7 @@ namespace helpers {
  *   int     counts[PENALTY_HASH_SIZE]  — occurrence counts
  */
 template <typename T>
-static SD_KERNEL void applyPenaltiesKernel(void* vLogits,
+static SD_KERNEL __launch_bounds__(256, 2) void applyPenaltiesKernel(void* vLogits,
                                             const LongType logitsRowStride,
                                             const LongType logitsElemStride,
                                             const void* vInputIds,
@@ -210,7 +210,7 @@ void applyLogitPenaltiesCuda(NDArray* logits, NDArray* inputIds,
 // ────────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static SD_KERNEL void minPFilterKernel(void* vLogits,
+static SD_KERNEL __launch_bounds__(256, 2) void minPFilterKernel(void* vLogits,
                                         const LongType vocabSize,
                                         const LongType rowStride,
                                         const LongType elemStride,
@@ -243,7 +243,7 @@ static SD_KERNEL void minPFilterKernel(void* vLogits,
     float localSum = 0.0f;
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         float val = static_cast<float>(logits[base + v * elemStride]);
-        localSum += expf(val - rowMax);
+        localSum += __expf(val - rowMax);
     }
     sdata[threadIdx.x] = localSum;
     __syncthreads();
@@ -268,7 +268,7 @@ static SD_KERNEL void minPFilterKernel(void* vLogits,
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         LongType offset = base + v * elemStride;
         float val = static_cast<float>(logits[offset]);
-        float expVal = expf(val - rowMax);
+        float expVal = __expf(val - rowMax);
         if (expVal < threshold * sumExp) {
             logits[offset] = static_cast<T>(-FLT_MAX);
         }

@@ -68,6 +68,15 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
       NDArray* arr = outputSlots_[outIdx];
       if (arr == nullptr) continue;
       if (arr->isView()) continue;
+      // Skip prezero for outputs that share their DataBuffer with an input
+      // (e.g., KvScatter with ARRAY_COPY_OFFSET_INPUT_0). Zeroing the shared
+      // buffer would destroy the input data, which includes previously computed
+      // KV cache entries accumulated across decode steps.
+      if (sd::ArrayOptions::hasAnyCopyOffset(arr->shapeInfo())) {
+        DSP_DIAG(MEMORY, "prezeroSegmentOutputs: SKIP slot=%d outIdx=%d op=%s (copy-offset, shared buffer)",
+                 s, outIdx, slot.ident.opName.c_str());
+        continue;
+      }
       auto* db = arr->dataBuffer();
       if (db == nullptr) continue;
       size_t bytes = db->getLenInBytes();

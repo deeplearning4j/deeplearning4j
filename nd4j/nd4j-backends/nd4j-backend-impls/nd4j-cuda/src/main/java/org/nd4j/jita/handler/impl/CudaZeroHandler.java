@@ -334,6 +334,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             flowController.registerAction(tContext, point);
             point.tickDeviceWrite();
+            nativeOps.dbTickDeviceWrite(dstBuffer.opaqueBuffer());
 
             // we optionally copy to host memory
             if (point.getHostPointer() != null) {
@@ -355,6 +356,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     flowController.registerAction(context, point);
 
                 point.tickHostWrite();
+                nativeOps.dbTickHostWrite(dstBuffer.opaqueBuffer());
             }
         }
     }
@@ -370,6 +372,7 @@ public class CudaZeroHandler implements MemoryHandler {
             throw new ND4JIllegalStateException("memcpyAsync failed");
 
         point.tickDeviceWrite();
+        nativeOps.dbTickDeviceWrite(dstBuffer.opaqueBuffer());
     }
 
     /**
@@ -411,8 +414,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
         context.syncOldStream();
 
-
         point.tickDeviceWrite();
+        nativeOps.dbTickDeviceWrite(dstBuffer.opaqueBuffer());
     }
 
 
@@ -468,7 +471,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed();
 
         if (srcPoint.isActualOnDeviceSide() && (!crossDevice || p2pAvailable)) {
-            // Same device or P2P available - can do direct device-to-device copy
+            // Same device or P2P available - direct device-to-device copy
             sP = AtomicAllocator.getInstance().getPointer(srcBuffer, context);
             dP = AtomicAllocator.getInstance().getPointer(dstBuffer, context);
 
@@ -477,16 +480,15 @@ public class CudaZeroHandler implements MemoryHandler {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
 
-            dstPoint.tickDeviceWrite();
             direction = MemcpyDirection.DEVICE_TO_DEVICE;
         } else if (crossDevice && !p2pAvailable) {
-            // Cross-device without P2P - must go through host memory
-            // Use OpaqueDataBuffer to sync and get primary (host) pointer
-            OpaqueDataBuffer srcOpaque = srcBuffer.opaqueBuffer();
-            srcOpaque.syncToPrimary();
+            // Cross-device without P2P - relay through host memory.
+            // Force sync: the normal isPrimaryActual() check can be stale if
+            // the device write happened through a Java-level memcpy that didn't
+            // update C++ counters (e.g., prior cross-device copies).
+            nativeOps.dbForceSyncToPrimary(srcBuffer.opaqueBuffer());
 
-            // Get host pointer from OpaqueDataBuffer (more reliable than AllocationPoint)
-            sP = srcOpaque.primaryBuffer();
+            sP = srcBuffer.opaqueBuffer().primaryBuffer();
             if (sP == null || sP.isNull()) {
                 throw new ND4JIllegalStateException("Source primary buffer is null for cross-device copy");
             }
@@ -496,8 +498,6 @@ public class CudaZeroHandler implements MemoryHandler {
                 throw new ND4JIllegalStateException("Destination device pointer is null for cross-device copy");
             }
 
-            // Use synchronous memcpy for cross-device - async requires pinned memory
-            // which might not be available with the new OpaqueDataBuffer architecture
             if (nativeOps.memcpySync(dP, sP, copyBytes,
                     CudaConstants.cudaMemcpyHostToDevice, null) == 0) {
                 throw new ND4JIllegalStateException("memcpySync H2D failed for cross-device copy");
@@ -505,7 +505,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             direction = MemcpyDirection.HOST_TO_DEVICE;
         } else {
-            // Source is on host - simple host to device copy
+            // Source is on host - host to device copy
             sP = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
             dP = AtomicAllocator.getInstance().getPointer(dstBuffer, context);
 
@@ -517,7 +517,11 @@ public class CudaZeroHandler implements MemoryHandler {
             direction = MemcpyDirection.HOST_TO_DEVICE;
         }
 
+        // Update BOTH Java-level and C++ DataBuffer counters.
+        // Without dbTickDeviceWrite, the C++ counter system doesn't know about
+        // the write, so syncToPrimary sees stale counters and skips D2H.
         dstPoint.tickDeviceWrite();
+        nativeOps.dbTickDeviceWrite(dstBuffer.opaqueBuffer());
 
         // it has to be blocking call
         context.syncOldStream();
@@ -676,6 +680,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                 // marking it as proper on device
                 dstPoint.tickDeviceWrite();
+                nativeOps.dbTickDeviceWrite(buffer.opaqueBuffer());
             } else {
                 // this call will automagically take care of workspaces, so it'll be either
                 BaseCudaDataBuffer nBuffer = (BaseCudaDataBuffer) Nd4j.createBuffer(buffer.length());
@@ -768,7 +773,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     @Override
-    public Table<AllocationStatus, Integer, Long> getAllocationStatistics() {
+    public Table getAllocationStatistics() {
         Table<AllocationStatus, Integer, Long> table = HashBasedTable.create();
         table.put(AllocationStatus.HOST, 0, zeroUseCounter.get());
         for (Integer deviceId : configuration.getAvailableDevices()) {

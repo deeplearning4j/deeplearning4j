@@ -38,6 +38,7 @@
 #include "../cublasHelper.h"
 #include "execution/cuda/LaunchDims.h"
 #include <system/env_functions.h>
+#include <system/Environment.h>
 #include <config.h>
 #if HAVE_CUTLASS
 #include <helpers/CutlassGemmHelper.h>
@@ -152,12 +153,16 @@ struct LtMatmulCacheKey {
   cudaDataType aType, bType, cType;
   cublasOperation_t transA, transB;
   int epilogueType;  // 0=none, 1=bias, 2=bias+relu, 3=bias+gelu
+  size_t workspaceSizeHint;
+  int graphCaptureEnabled;
 
   bool operator==(const LtMatmulCacheKey& other) const {
     return deviceId == other.deviceId && M == other.M && N == other.N && K == other.K &&
            aType == other.aType && bType == other.bType && cType == other.cType &&
            transA == other.transA && transB == other.transB &&
-           epilogueType == other.epilogueType;
+           epilogueType == other.epilogueType &&
+           workspaceSizeHint == other.workspaceSizeHint &&
+           graphCaptureEnabled == other.graphCaptureEnabled;
   }
 };
 
@@ -175,6 +180,8 @@ struct LtMatmulCacheKeyHash {
     h ^= std::hash<int>{}(key.transA) + 0x9e3779b9 + (h << 6) + (h >> 2);
     h ^= std::hash<int>{}(key.transB) + 0x9e3779b9 + (h << 6) + (h >> 2);
     h ^= std::hash<int>{}(key.epilogueType) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<size_t>{}(key.workspaceSizeHint) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.graphCaptureEnabled) + 0x9e3779b9 + (h << 6) + (h >> 2);
     return h;
   }
 };
@@ -250,11 +257,10 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
                        bool transA, bool transB,
                        cudaDataType aType, cudaDataType bType, cudaDataType cType,
                        int epilogueType = 0, const void* biasPtr = nullptr, int64_t biasSize = 0) {
-  // Skip cublasLt entirely when CUDA_GRAPHS mode is active. cublasLt may select
-  // split-K algorithms whose internal reductions are non-deterministic when the
-  // kernel is replayed via CUDA graph (threadblock scheduling order varies between
-  // replay iterations). Standard cublasGemmEx with CUBLAS_GEMM_DEFAULT_TENSOR_OP
-  // is deterministic across replays, matching SLOT_BY_SLOT output exactly.
+  // Skip cublasLt when tl_cublasLtDisabled is set (CUDA_GRAPHS, AUTO capture).
+  // cublasLt may select split-K algorithms whose internal reductions are
+  // non-deterministic when replayed via CUDA graph (threadblock scheduling
+  // order varies between replay iterations).
   if (tl_cublasLtDisabled) return false;
 
   // When epilogue fusion is requested, relax the gating — cublasLt handles general matmul.
@@ -286,6 +292,12 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
   key.transA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
   key.transB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
   key.epilogueType = epilogueType;
+  // Keep algo cache partitioned by effective workspace regime. This prevents
+  // cross-run reuse of heuristics selected under different workspace settings.
+  key.workspaceSizeHint = tl_cublasWorkspaceSize;
+  // Partition by graph-capture execution regime: tests toggle this between
+  // methods and reusing Lt heuristics across regimes can select unstable algos.
+  key.graphCaptureEnabled = Environment::getInstance().tritonGraphCapture() ? 1 : 0;
 
   // Look up cached algorithm
   auto cacheIt = tl_ltAlgoCache.find(key);
@@ -893,10 +905,18 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  // For models stored natively in FP16, the mixed-precision path below handles
  // them correctly without any autocast.
 
- if (aType != bType && cType == FLOAT32 && major >= 6) {
+ if (aType != bType && (cType == FLOAT32 || cType == HALF) && major >= 6) {
    if (aType == FLOAT32 && bType == HALF) {
+     // sameLogicalA shortcut: reuse last cast if same NDArray pointer AND we are
+     // NOT in gap replay. During gap replay, the buffer pool may reuse the same
+     // NDArray pointer for DIFFERENT activations (e.g., rms_norm output from layer 0
+     // vs layer 1 occupies the same pool slot). The content changes even though
+     // the pointer is stable, so the shortcut would return stale cast data.
+     // The shortcut is ONLY safe during capture (content is frozen) or when the
+     // same op is called back-to-back within one step (e.g., q/k/v projections).
      const bool sameLogicalA =
-         tl_lastCaptureCastArrayA != nullptr && tl_lastCaptureCastSourceA == A;
+         tl_lastCaptureCastArrayA != nullptr && tl_lastCaptureCastSourceA == A
+         && !tl_dspReplayActive;
      if (useCastCache && sameLogicalA && tl_castIdxA < tl_castCacheA.size()) {
        // q/k/v and gate/up projections commonly reuse the same row-vector activation
        // back-to-back during decode. Reuse the already-cast HALF buffer and only
@@ -918,8 +938,10 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        tl_lastCaptureCastArrayA = nullptr;
      }
    } else if (aType == HALF && bType == FLOAT32) {
+     // Same logic for B: disable shortcut during gap replay
      const bool sameLogicalB =
-         tl_lastCaptureCastArrayB != nullptr && tl_lastCaptureCastSourceB == B;
+         tl_lastCaptureCastArrayB != nullptr && tl_lastCaptureCastSourceB == B
+         && !tl_dspReplayActive;
      if (useCastCache && sameLogicalB && tl_castIdxB < tl_castCacheB.size()) {
        tl_castIdxB++;
        effB = tl_lastCaptureCastArrayB;
@@ -955,10 +977,10 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
  auto stream = A->getContext()->getCudaStream();
 
-  // Skip cublasSetStream_v2 during CUDA graph capture: calling it on a capturing stream causes cuBLAS
-  // to inject an internal cudaLaunchHostFunc (host-callback) node into the graph, serializing every
-  // replay on the CPU.  The stream was already bound to the capture stream by setCublasWorkspaceForCapture
-  // before cudaStreamBeginCapture was called, so the call is redundant inside capture.
+  // Skip cublasSetStream_v2 only during CUDA graph replay — calling it on a
+  // capturing/replaying stream injects host-callback nodes that serialize on CPU.
+  // For live execution (including SLOT_BY_SLOT with deterministic cuBLAS), the
+  // stream MUST be set so the matmul actually executes on the correct stream.
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
   if (!tl_graphExecutionActive) {
     status = cublasSetStream_v2(*handle, *stream);
@@ -1020,7 +1042,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    // Mixed precision: FLOAT32 x HALF -> FLOAT32 with large N (vocab)
    const cudaDataType ltAType = effAType == HALF ? CUDA_R_16F : CUDA_R_32F;
    const cudaDataType ltBType = effBType == HALF ? CUDA_R_16F : CUDA_R_32F;
-   const cudaDataType ltCType = CUDA_R_32F;
+   const cudaDataType ltCType = cType == HALF ? CUDA_R_16F : CUDA_R_32F;
 
    if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType,
                    tl_ltEpilogueType, tl_ltEpilogueBiasPtr, tl_ltEpilogueBiasSize)) {
@@ -1043,11 +1065,15 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        M == 1 && !transA && transB &&
        aContiguous && pB->strideAt(1) == 1 && cContiguous;
 
-   // CUDA_GRAPHS mode: use CUBLAS_GEMM_DEFAULT (no tensor ops) to ensure
-   // deterministic results when cuBLAS kernels are captured and replayed via
-   // CUDA graphs. Tensor core reductions have non-deterministic warp scheduling
-   // during graph replay, causing FP drift that accumulates through GDN state.
-   // SLOT_BY_SLOT uses tensor ops (CUBLAS_GEMM_DEFAULT_TENSOR_OP) for performance.
+   // When tl_cublasLtDisabled is true (deterministic cuBLAS for DSP modes),
+   // use CUBLAS_GEMM_DEFAULT — under CUBLAS_PEDANTIC_MATH (set by
+   // platformBeginExecution), DEFAULT selects deterministic non-tensor-core
+   // algorithms that produce identical results inside/outside CUDA graph
+   // capture. ALGO0 silently produces zeros for FP16 input with no
+   // workspace on some GPUs. DEFAULT + PEDANTIC_MATH is the supported
+   // combination for deterministic results across all precisions.
+   // When tl_cublasLtDisabled is false, use CUBLAS_GEMM_DEFAULT_TENSOR_OP
+   // for performance (standard execution outside DSP).
    const cublasGemmAlgo_t gemmAlgo = tl_cublasLtDisabled
        ? CUBLAS_GEMM_DEFAULT : CUBLAS_GEMM_DEFAULT_TENSOR_OP;
 
@@ -1059,17 +1085,19 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      if (typeDouble) {
        getCublasScalars()->alphaD = alpha;
        getCublasScalars()->betaD  = beta;
-       status = cublasDgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaD,
-                            (double*)pB->specialBuffer(), ldaFast,
-                            (double*)pA->specialBuffer(), ldbFast,
-                            &getCublasScalars()->betaD, (double*)pC->specialBuffer(), ldcFast);
+       status = cublasGemmEx(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaD,
+                            pB->specialBuffer(), CUDA_R_64F, ldaFast,
+                            pA->specialBuffer(), CUDA_R_64F, ldbFast,
+                            &getCublasScalars()->betaD, pC->specialBuffer(), CUDA_R_64F, ldcFast,
+                            CUBLAS_COMPUTE_64F, gemmAlgo);
      } else if (typeFloat) {
        getCublasScalars()->alphaF = static_cast<float>(alpha);
        getCublasScalars()->betaF  = static_cast<float>(beta);
-       status = cublasSgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaF,
-                            (float*)pB->specialBuffer(), ldaFast,
-                            (float*)pA->specialBuffer(), ldbFast,
-                            &getCublasScalars()->betaF, (float*)pC->specialBuffer(), ldcFast);
+       status = cublasGemmEx(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &getCublasScalars()->alphaF,
+                            pB->specialBuffer(), CUDA_R_32F, ldaFast,
+                            pA->specialBuffer(), CUDA_R_32F, ldbFast,
+                            &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldcFast,
+                            CUBLAS_COMPUTE_32F, gemmAlgo);
      } else if (typeHalf) {
        // Use GemmEx with FP32 accumulation for row-vector path (decode phase).
        // cublasHgemm accumulates in FP16 — catastrophic for K=1024 transformer matmuls.
@@ -1095,13 +1123,19 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    } else if (typeDouble) {
      getCublasScalars()->alphaD = alpha;
      getCublasScalars()->betaD  = beta;
-     status = cublasDgemm(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaD, (double*)pA->specialBuffer(), lda,
-                          (double*)pB->specialBuffer(), ldb, &getCublasScalars()->betaD, (double*)pC->specialBuffer(), ldc);
+     status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaD,
+                          pA->specialBuffer(), CUDA_R_64F, lda,
+                          pB->specialBuffer(), CUDA_R_64F, ldb,
+                          &getCublasScalars()->betaD, pC->specialBuffer(), CUDA_R_64F, ldc,
+                          CUBLAS_COMPUTE_64F, gemmAlgo);
    } else if (typeFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
-     status = cublasSgemm(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF, (float*)pA->specialBuffer(), lda,
-                          (float*)pB->specialBuffer(), ldb, &getCublasScalars()->betaF, (float*)pC->specialBuffer(), ldc);
+     status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF,
+                          pA->specialBuffer(), CUDA_R_32F, lda,
+                          pB->specialBuffer(), CUDA_R_32F, ldb,
+                          &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldc,
+                          CUBLAS_COMPUTE_32F, gemmAlgo);
    } else if (typeHalf) {
      // Use GemmEx with FP32 accumulation instead of cublasHgemm (FP16 accumulation).
      // cublasHgemm accumulates dot products in FP16, causing catastrophic precision loss
@@ -1117,13 +1151,19 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    } else if (typeIntFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
-     status = cublasSgemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF, pA->specialBuffer(), CUDA_R_8I, lda,
-                            pB->specialBuffer(), CUDA_R_8I, ldb, &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldc);
+     status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF,
+                           pA->specialBuffer(), CUDA_R_8I, lda,
+                           pB->specialBuffer(), CUDA_R_8I, ldb,
+                           &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldc,
+                           CUBLAS_COMPUTE_32F, gemmAlgo);
    } else if (typeHalfFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
-     status = cublasSgemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF, pA->specialBuffer(), CUDA_R_16F, lda,
-                            pB->specialBuffer(), CUDA_R_16F, ldb, &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldc);
+     status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF,
+                           pA->specialBuffer(), CUDA_R_16F, lda,
+                           pB->specialBuffer(), CUDA_R_16F, ldb,
+                           &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_32F, ldc,
+                           CUBLAS_COMPUTE_32F, gemmAlgo);
    }
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
@@ -1191,7 +1231,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  // The activation vector is small (model_dim elements), so cast overhead is minimal.
  // This is REQUIRED for correctness: without it, usualGemv interprets HALF weight
  // memory as FLOAT32 bytes → complete garbage output (root cause of VLM EOS bug).
- if (A->dataType() != X->dataType() && yType == FLOAT32 && major >= 6) {
+ if (A->dataType() != X->dataType() && (yType == FLOAT32 || yType == HALF) && major >= 6) {
    if (A->dataType() == HALF && X->dataType() == FLOAT32) {
      // Weight is HALF (pre-cast by GraphOptimizer), activation is FLOAT32 → cast X to HALF
      castX = X->cast(HALF);

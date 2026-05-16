@@ -65,6 +65,12 @@ struct ModeContract {
       case 1: // GEM_SLOT_BY_SLOT
         c.allowsFallback = true;
         c.allowsPhaseStall = true;
+        // SLOT_BY_SLOT must use the same cuBLAS math mode as DSP replay modes
+        // so parity tests (SLOT_BY_SLOT vs CUDA_GRAPHS/TRITON/AUTO) produce
+        // matching results.  CUBLAS_PEDANTIC_MATH disables tensor-core fast
+        // paths that reorder FP16 accumulation — without this, SLOT_BY_SLOT
+        // uses CUBLAS_DEFAULT_MATH (tensor cores) while DSP modes use PEDANTIC,
+        // causing maxDiff=48-113 for mixed-precision FP16 GEMM.
         c.requiresDeterministicCublas = true;
         c.isSlotBySlot = true;
         c.forcesSyncOnFrozen = true;
@@ -76,6 +82,7 @@ struct ModeContract {
         c.allowsFrozenFastPath = true;
         c.forceSyncDuringCapture = true;
         c.skipFrozenConstsDuringCapture = true;
+        c.requiresDeterministicCublas = true;
         c.allowsFallback = true;
         c.allowsPhaseStall = true;
         return c;
@@ -94,6 +101,7 @@ struct ModeContract {
         c.allowsFrozenFastPath = true;
         c.forceSyncDuringCapture = true;
         c.skipFrozenConstsDuringCapture = true;
+        c.requiresDeterministicCublas = true;
         return c;
 
       case 3: // GEM_NVRTC_JIT

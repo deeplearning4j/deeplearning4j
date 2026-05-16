@@ -265,6 +265,18 @@ class SD_LIB_EXPORT DspDiagnostics {
   static int categoryIndex(uint32_t category);
   static uint32_t parseCategories(const char* str);
 
+  // ── JNI-exposed aggregate accessors ──
+  int getStepsExecuted() const { return stepsExecuted_; }
+  int64_t getCategoryEventCount(int catIndex) const {
+    if (catIndex < 0 || catIndex >= DSP_DIAG_NUM_CATEGORIES) return 0;
+    return categoryStats_[catIndex].eventCount;
+  }
+  int64_t getTotalEventCount() const {
+    int64_t total = 0;
+    for (int i = 0; i < DSP_DIAG_NUM_CATEGORIES; ++i) total += categoryStats_[i].eventCount;
+    return total;
+  }
+
  private:
   DspDiagnostics();
   ~DspDiagnostics() = default;

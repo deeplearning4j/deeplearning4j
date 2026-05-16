@@ -537,4 +537,547 @@ public class CrossDeviceTransferTest extends BaseNd4jTestWithBackends {
 
         large.close();
     }
+
+    // ===================================================================
+    // Test: Isolate replicateToDevice round-trip to find zero-data bug
+    // Each step is validated independently.
+    // ===================================================================
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("replicateToDevice round-trip data integrity")
+    void testReplicateToDeviceRoundTrip(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        float[] srcData = {1.0f, 2.0f, 3.0f, 4.0f};
+
+        // Step 1: Create array on dev0 with known values
+        INDArray orig = Nd4j.createFromArray(srcData).reshape(2, 2);
+        Nd4j.getExecutioner().commit();
+        int origDev = getBufferDeviceId(orig);
+        log.info("STEP1: orig created on dev={}, values={}", origDev, java.util.Arrays.toString(orig.dup().data().asFloat()));
+        assertArrayEquals(srcData, orig.dup().data().asFloat(), 1e-6f, "Step1: orig data wrong");
+
+        // Step 2: Replicate orig -> dev1
+        INDArray onDev1 = Nd4j.getAffinityManager().replicateToDevice(dev1, orig);
+        Nd4j.getExecutioner().commit();
+        int dev1Actual = getBufferDeviceId(onDev1);
+        log.info("STEP2: onDev1 deviceId={}", dev1Actual);
+
+        // Switch to dev1 to read the data there
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "read-dev1-data");
+        Nd4j.getExecutioner().commit();
+        float[] dev1Data = onDev1.dup().data().asFloat();
+        log.info("STEP2: onDev1 values={}", java.util.Arrays.toString(dev1Data));
+        assertArrayEquals(srcData, dev1Data, 1e-6f, "Step2: dev0->dev1 replication lost data");
+
+        // Step 3: Switch back to dev0, replicate onDev1 -> dev0
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "back-to-dev0");
+        Nd4j.getExecutioner().commit();
+
+        INDArray backOnDev0 = Nd4j.getAffinityManager().replicateToDevice(dev0, onDev1);
+        Nd4j.getExecutioner().commit();
+        int dev0Actual = getBufferDeviceId(backOnDev0);
+        log.info("STEP3: backOnDev0 deviceId={}", dev0Actual);
+
+        float[] dev0Data = backOnDev0.dup().data().asFloat();
+        log.info("STEP3: backOnDev0 values={}", java.util.Arrays.toString(dev0Data));
+        assertArrayEquals(srcData, dev0Data, 1e-6f, "Step3: dev1->dev0 round-trip lost data");
+
+        // Step 4: Verify original is still intact
+        float[] origCheck = orig.dup().data().asFloat();
+        log.info("STEP4: orig still = {}", java.util.Arrays.toString(origCheck));
+        assertArrayEquals(srcData, origCheck, 1e-6f, "Step4: original array corrupted");
+
+        orig.close();
+        onDev1.close();
+        backOnDev0.close();
+    }
+
+    // ===================================================================
+    // Test: Isolate syncToPrimary on a cross-device buffer
+    // Verifies the C++ D2H path returns correct data for a buffer
+    // that was populated via memcpySync H2D (no C++ counter update).
+    // ===================================================================
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("syncToPrimary returns correct data after cross-device memcpy")
+    void testSyncToPrimaryAfterCrossDeviceMemcpy(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Create on dev0 with known data
+        INDArray src = Nd4j.createFromArray(10.0f, 20.0f, 30.0f, 40.0f);
+        Nd4j.getExecutioner().commit();
+        log.info("src dev={}, data={}", getBufferDeviceId(src),
+                java.util.Arrays.toString(src.dup().data().asFloat()));
+
+        // Replicate to dev1 — this goes through the memcpySync H2D path in CudaZeroHandler
+        INDArray onDev1 = Nd4j.getAffinityManager().replicateToDevice(dev1, src);
+        Nd4j.getExecutioner().commit();
+
+        // Now explicitly sync the dev1 buffer's device data to host.
+        // This is the exact path that was producing zeros.
+        onDev1.data().opaqueBuffer().syncToPrimary();
+
+        // Read the host data via primaryBuffer
+        org.bytedeco.javacpp.Pointer hostPtr = onDev1.data().opaqueBuffer().primaryBuffer();
+        assertNotNull(hostPtr, "Primary buffer must exist after syncToPrimary");
+        assertFalse(hostPtr.isNull(), "Primary buffer must not be null");
+
+        org.bytedeco.javacpp.FloatPointer fp = new org.bytedeco.javacpp.FloatPointer(hostPtr);
+        float[] hostVals = new float[4];
+        for (int i = 0; i < 4; i++) {
+            hostVals[i] = fp.get(i);
+        }
+        log.info("After syncToPrimary on dev1 buffer: hostVals={}", java.util.Arrays.toString(hostVals));
+
+        assertArrayEquals(new float[]{10.0f, 20.0f, 30.0f, 40.0f}, hostVals, 1e-6f,
+                "syncToPrimary must return correct data for cross-device buffer");
+
+        // Also verify via the standard dup path
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "verify-dup-dev1");
+        float[] dupVals = onDev1.dup().data().asFloat();
+        log.info("dup on dev1: {}", java.util.Arrays.toString(dupVals));
+        assertArrayEquals(new float[]{10.0f, 20.0f, 30.0f, 40.0f}, dupVals, 1e-6f,
+                "dup on dev1 must return correct data");
+
+        // Restore to dev0
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "restore-final");
+
+        src.close();
+        onDev1.close();
+    }
+
+    // ===================================================================
+    // Cross-device STREAM tests
+    // ===================================================================
+
+    /**
+     * Test: Replication after in-flight async kernel.
+     *
+     * Creates data via an async kernel (mmul), then immediately replicates
+     * to another device WITHOUT explicit commit first.  replicateToDevice
+     * must internally commit/sync the source device before the D2H copy
+     * so the host-staged data reflects the kernel output, not stale zeros.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("replicateToDevice after in-flight async kernel gets correct data")
+    void testReplicateAfterAsyncKernel(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Create known inputs on dev0
+        INDArray a = Nd4j.createFromArray(new float[]{1, 2, 3, 4}).reshape(2, 2);
+        INDArray b = Nd4j.createFromArray(new float[]{5, 6, 7, 8}).reshape(2, 2);
+        Nd4j.getExecutioner().commit();
+
+        // Launch async kernel (mmul) — result is in GPU memory, not yet committed
+        INDArray c = a.mmul(b);
+        // Intentionally NO commit() here — replicateToDevice must handle it
+
+        // Replicate to dev1 — must sync dev0's stream first
+        INDArray cOnDev1 = Nd4j.getAffinityManager().replicateToDevice(dev1, c);
+
+        // Read back on dev1
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "read-dev1");
+        float[] dev1Vals = cOnDev1.dup().data().asFloat();
+        log.info("mmul result on dev1: {}", java.util.Arrays.toString(dev1Vals));
+
+        // Expected: [[1,2],[3,4]] x [[5,6],[7,8]] = [[19,22],[43,50]]
+        float[] expected = {19.0f, 22.0f, 43.0f, 50.0f};
+        assertArrayEquals(expected, dev1Vals, 1e-3f,
+                "Replicated mmul result must match expected (stream must be synced before D2H)");
+
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "restore");
+        a.close(); b.close(); c.close(); cOnDev1.close();
+    }
+
+    /**
+     * Test: Cross-device replication preserves data when source has
+     * pending writes from multiple kernels chained without intermediate commits.
+     *
+     * This catches the case where syncToPrimary skips the D2H copy because
+     * isPrimaryActual() returns true (stale counter state), or because
+     * the stream sync doesn't wait for all pending work.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("replicateToDevice after chained async ops preserves data")
+    void testReplicateAfterChainedOps(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Chain: create -> add -> mul -> add (all async on dev0, no commits)
+        INDArray x = Nd4j.createFromArray(1.0f, 2.0f, 3.0f, 4.0f);
+        Nd4j.getExecutioner().commit(); // commit creation only
+        INDArray y = x.add(10.0f);      // [11, 12, 13, 14]
+        INDArray z = y.mul(2.0f);       // [22, 24, 26, 28]
+        INDArray w = z.add(100.0f);     // [122, 124, 126, 128]
+        // NO commit — pending on dev0's exec stream
+
+        INDArray wOnDev1 = Nd4j.getAffinityManager().replicateToDevice(dev1, w);
+
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "read-chained");
+        float[] vals = wOnDev1.dup().data().asFloat();
+        log.info("Chained ops result on dev1: {}", java.util.Arrays.toString(vals));
+
+        assertArrayEquals(new float[]{122, 124, 126, 128}, vals, 1e-3f,
+                "Chained async ops must be fully synced before cross-device D2H");
+
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "restore-chained");
+        x.close(); y.close(); z.close(); w.close(); wOnDev1.close();
+    }
+
+    /**
+     * Test: Cross-device matmul with large operands exercises the actual
+     * cuBLAS stream-to-copy synchronization path.
+     *
+     * Large enough to have meaningful async overlap (256x256 matmul),
+     * small enough to run fast.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Large matmul cross-device transfer has correct stream sync")
+    void testLargeMatmulCrossDeviceStreamSync(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        INDArray a = Nd4j.rand(DataType.FLOAT, 256, 256);
+        INDArray b = Nd4j.rand(DataType.FLOAT, 256, 256);
+        Nd4j.getExecutioner().commit();
+
+        // Compute reference on dev0 with explicit sync
+        INDArray ref = a.mmul(b);
+        Nd4j.getExecutioner().commit();
+        float refSum = ref.sumNumber().floatValue();
+
+        // New matmul — NO commit before replication
+        INDArray c = a.mmul(b);
+        INDArray cOnDev1 = Nd4j.getAffinityManager().replicateToDevice(dev1, c);
+
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "read-large-matmul");
+        float dev1Sum = cOnDev1.sumNumber().floatValue();
+
+        assertEquals(refSum, dev1Sum, Math.abs(refSum) * 1e-4f,
+                "Large matmul cross-device transfer must match reference (stream sync issue)");
+
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "restore-large-matmul");
+        a.close(); b.close(); ref.close(); c.close(); cOnDev1.close();
+    }
+
+    /**
+     * Test: Concurrent operations on both devices after cross-device transfer.
+     *
+     * After replicating A from dev0 to dev1, run independent ops on BOTH
+     * devices simultaneously. This exercises stream isolation — dev0's
+     * exec stream must not be entangled with dev1's after the transfer.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Post-transfer ops on both devices are stream-isolated")
+    void testPostTransferStreamIsolation(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Create and compute on dev0
+        INDArray orig = Nd4j.rand(DataType.FLOAT, 128, 128);
+        Nd4j.getExecutioner().commit();
+
+        // Replicate to dev1
+        INDArray onDev1 = Nd4j.getAffinityManager().replicateToDevice(dev1, orig);
+
+        // Op on dev0 with orig — should use dev0 stream
+        INDArray dev0Result = orig.mul(2.0f);
+        Nd4j.getExecutioner().commit();
+        float dev0Sum = dev0Result.sumNumber().floatValue();
+
+        // Op on dev1 with replica — should use dev1 stream
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "dev1-op");
+        INDArray dev1Result = onDev1.mul(3.0f);
+        Nd4j.getExecutioner().commit();
+        float dev1Sum = dev1Result.sumNumber().floatValue();
+
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "restore-isolation");
+
+        // Verify: dev0Sum = 2 * origSum, dev1Sum = 3 * origSum
+        float origSum = orig.sumNumber().floatValue();
+        assertEquals(2.0f * origSum, dev0Sum, Math.abs(origSum) * 1e-4f,
+                "Dev0 op result incorrect — stream contamination?");
+        assertEquals(3.0f * origSum, dev1Sum, Math.abs(origSum) * 1e-4f,
+                "Dev1 op result incorrect — stream contamination?");
+
+        orig.close(); onDev1.close(); dev0Result.close(); dev1Result.close();
+    }
+
+    /**
+     * Test: syncToPrimary on a buffer written by a kernel on a DIFFERENT device
+     * than the current thread's device.
+     *
+     * This is the exact scenario that produces zeros: buffer lives on dev1,
+     * thread is on dev0, syncToPrimary must switch to dev1 for the D2H copy.
+     * The stream used for D2H (stream 0 on dev1) must implicitly sync with
+     * the kernel that wrote the data.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("syncToPrimary from wrong-device thread returns correct data")
+    void testSyncToPrimaryFromWrongDeviceThread(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Create and compute on dev1
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "create-on-dev1");
+        INDArray x = Nd4j.createFromArray(5.0f, 10.0f, 15.0f, 20.0f);
+        INDArray y = x.mul(3.0f); // [15, 30, 45, 60] — kernel on dev1
+        Nd4j.getExecutioner().commit();
+
+        // Switch to dev0 — thread is now on dev0, but y's data is on dev1
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "switch-to-dev0");
+
+        // syncToPrimary must handle the device mismatch internally
+        y.data().opaqueBuffer().syncToPrimary();
+
+        org.bytedeco.javacpp.Pointer hostPtr = y.data().opaqueBuffer().primaryBuffer();
+        assertNotNull(hostPtr, "Primary buffer must exist");
+        assertFalse(hostPtr.isNull(), "Primary buffer must not be null");
+
+        org.bytedeco.javacpp.FloatPointer fp = new org.bytedeco.javacpp.FloatPointer(hostPtr);
+        float[] vals = new float[4];
+        for (int i = 0; i < 4; i++) vals[i] = fp.get(i);
+        log.info("syncToPrimary from wrong device: {}", java.util.Arrays.toString(vals));
+
+        assertArrayEquals(new float[]{15.0f, 30.0f, 45.0f, 60.0f}, vals, 1e-3f,
+                "syncToPrimary from wrong-device thread must return correct data");
+
+        mgr.switchDevice(dev1, "CrossDeviceTransferTest", "cleanup-dev1");
+        x.close(); y.close();
+        mgr.switchDevice(dev0, "CrossDeviceTransferTest", "restore-final-wrongdev");
+    }
+
+    // ===================================================================
+    // DSP Stream tests — exercises the DSP execution path with
+    // cross-device inputs, verifying stream lifecycle through SameDiff
+    // ===================================================================
+
+    /**
+     * Test: SameDiff DSP execution with input on wrong device.
+     *
+     * Creates a simple SameDiff graph, runs it with input on dev0 (normal),
+     * then with input on dev1 (cross-device). The DSP executor must
+     * migrate the input from dev1 to dev0 and produce correct output.
+     * This exercises tl_dspExecutionStream handling during migration.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DSP handles cross-device input migration with correct stream sync")
+    void testDspCrossDeviceInputMigration(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Build a simple matmul graph: out = x @ w + bias
+        org.nd4j.autodiff.samediff.SameDiff sd = org.nd4j.autodiff.samediff.SameDiff.create();
+        org.nd4j.autodiff.samediff.SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 4);
+        org.nd4j.autodiff.samediff.SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 8));
+        org.nd4j.autodiff.samediff.SDVariable bias = sd.var("bias", Nd4j.ones(DataType.FLOAT, 8));
+        org.nd4j.autodiff.samediff.SDVariable mm = sd.mmul("mm", x, w);
+        org.nd4j.autodiff.samediff.SDVariable out = mm.add("out", bias);
+
+        try {
+            // Reference: input on dev0, SLOT_BY_SLOT
+            INDArray inputDev0 = Nd4j.rand(DataType.FLOAT, 2, 4);
+            Nd4j.getExecutioner().commit();
+
+            sd.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.SLOT_BY_SLOT);
+            java.util.Map<String, INDArray> refOut = sd.output(java.util.Map.of("x", inputDev0), "out");
+            INDArray ref = refOut.get("out").dup();
+            refOut.values().forEach(v -> { if (v.closeable() && !v.wasClosed()) v.close(); });
+
+            // Create same input data on dev1
+            mgr.switchDevice(dev1, "CrossDeviceTransferTest", "create-input-dev1");
+            INDArray inputDev1 = Nd4j.createFromArray(inputDev0.dup().data().asFloat()).reshape(2, 4);
+            Nd4j.getExecutioner().commit();
+            mgr.switchDevice(dev0, "CrossDeviceTransferTest", "back-to-dev0-for-dsp");
+
+            // Now run DSP with input from dev1 — DSP must migrate it
+            sd.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.AUTO);
+            sd.setDspAutoCompileEnabled(true);
+            sd.setDspNativeAutoCompileEnabled(true);
+            java.util.Map<String, INDArray> dspOut = sd.output(java.util.Map.of("x", inputDev1), "out");
+            INDArray dspResult = dspOut.get("out").dup();
+            dspOut.values().forEach(v -> { if (v.closeable() && !v.wasClosed()) v.close(); });
+
+            // Must match reference
+            float[] refVals = ref.dup().data().asFloat();
+            float[] dspVals = dspResult.dup().data().asFloat();
+            log.info("Ref: {}, DSP with cross-dev input: {}",
+                    java.util.Arrays.toString(java.util.Arrays.copyOf(refVals, Math.min(4, refVals.length))),
+                    java.util.Arrays.toString(java.util.Arrays.copyOf(dspVals, Math.min(4, dspVals.length))));
+
+            assertArrayEquals(refVals, dspVals, 1e-4f,
+                    "DSP output with cross-device input must match SLOT_BY_SLOT reference");
+
+            ref.close(); dspResult.close();
+            inputDev0.close(); inputDev1.close();
+        } finally {
+            sd.close();
+        }
+    }
+
+    /**
+     * Test: DSP execution on dev0, then dev1, then dev0 again.
+     *
+     * Exercises stream state isolation between DSP executions on different
+     * devices. The tl_dspExecutionStream is thread-local but CUDA streams
+     * are device-specific — if DSP doesn't properly manage the stream per
+     * device, the second execution may use a stream from the wrong device.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DSP stream state isolated across device switches")
+    void testDspStreamStateIsolation(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Build simple graph: out = relu(x * 2 + 1)
+        org.nd4j.autodiff.samediff.SameDiff sd = org.nd4j.autodiff.samediff.SameDiff.create();
+        org.nd4j.autodiff.samediff.SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 8);
+        org.nd4j.autodiff.samediff.SDVariable scaled = x.mul("scaled", 2.0);
+        org.nd4j.autodiff.samediff.SDVariable shifted = scaled.add("shifted", 1.0);
+        org.nd4j.autodiff.samediff.SDVariable out = sd.nn.relu("out", shifted, 0);
+
+        sd.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.SLOT_BY_SLOT);
+
+        try {
+            float[] inputData = {-2, -1, 0, 1, 2, 3, 4, 5};
+            // Expected: relu(x*2+1) = relu([-3,-1,1,3,5,7,9,11]) = [0,0,1,3,5,7,9,11]
+            float[] expected = {0, 0, 1, 3, 5, 7, 9, 11};
+
+            // Run on dev0
+            INDArray inputDev0 = Nd4j.createFromArray(inputData).reshape(1, 8);
+            Nd4j.getExecutioner().commit();
+            java.util.Map<String, INDArray> out0 = sd.output(java.util.Map.of("x", inputDev0), "out");
+            float[] vals0 = out0.get("out").dup().data().asFloat();
+            out0.values().forEach(v -> { if (v.closeable() && !v.wasClosed()) v.close(); });
+            assertArrayEquals(expected, vals0, 1e-4f, "Dev0 execution incorrect");
+
+            // Switch to dev1 and run
+            mgr.switchDevice(dev1, "CrossDeviceTransferTest", "dsp-dev1");
+            INDArray inputDev1 = Nd4j.createFromArray(inputData).reshape(1, 8);
+            Nd4j.getExecutioner().commit();
+            java.util.Map<String, INDArray> out1 = sd.output(java.util.Map.of("x", inputDev1), "out");
+            float[] vals1 = out1.get("out").dup().data().asFloat();
+            out1.values().forEach(v -> { if (v.closeable() && !v.wasClosed()) v.close(); });
+            assertArrayEquals(expected, vals1, 1e-4f,
+                    "Dev1 execution incorrect — stream state contamination from dev0?");
+
+            // Switch back to dev0 and run again
+            mgr.switchDevice(dev0, "CrossDeviceTransferTest", "dsp-dev0-again");
+            INDArray inputDev0Again = Nd4j.createFromArray(inputData).reshape(1, 8);
+            Nd4j.getExecutioner().commit();
+            java.util.Map<String, INDArray> out2 = sd.output(java.util.Map.of("x", inputDev0Again), "out");
+            float[] vals2 = out2.get("out").dup().data().asFloat();
+            out2.values().forEach(v -> { if (v.closeable() && !v.wasClosed()) v.close(); });
+            assertArrayEquals(expected, vals2, 1e-4f,
+                    "Dev0 re-execution incorrect after dev1 — stream state not restored?");
+
+            inputDev0.close(); inputDev1.close(); inputDev0Again.close();
+        } finally {
+            sd.close();
+        }
+    }
+
+    /**
+     * Test: DSP AUTO mode with cross-device input, repeated iterations.
+     *
+     * Simulates a decode loop where the input comes from a different device
+     * each iteration. This exercises the DSP plan cache, stream management,
+     * and migration path under repeated device switching.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DSP AUTO with alternating device inputs stays correct")
+    void testDspAutoAlternatingDeviceInputs(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+        int dev0 = mgr.getCurrentDeviceId();
+        int dev1 = (dev0 == 0) ? 1 : 0;
+
+        // Build graph: out = x @ w
+        org.nd4j.autodiff.samediff.SameDiff sd = org.nd4j.autodiff.samediff.SameDiff.create();
+        org.nd4j.autodiff.samediff.SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 4);
+        org.nd4j.autodiff.samediff.SDVariable w = sd.var("w", Nd4j.eye(4).castTo(DataType.FLOAT));
+        sd.mmul("out", x, w);
+
+        sd.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.AUTO);
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+
+        try {
+            float[] data = {1, 2, 3, 4};
+
+            for (int iter = 0; iter < 6; iter++) {
+                int srcDev = (iter % 2 == 0) ? dev0 : dev1;
+                mgr.switchDevice(srcDev, "CrossDeviceTransferTest", "input-dev-" + srcDev);
+
+                INDArray input = Nd4j.createFromArray(data).reshape(1, 4);
+                Nd4j.getExecutioner().commit();
+
+                mgr.switchDevice(dev0, "CrossDeviceTransferTest", "exec-dev0-iter-" + iter);
+                java.util.Map<String, INDArray> result = sd.output(java.util.Map.of("x", input), "out");
+                float[] vals = result.get("out").dup().data().asFloat();
+                result.values().forEach(v -> { if (v.closeable() && !v.wasClosed()) v.close(); });
+
+                // With identity weight, output should equal input
+                assertArrayEquals(data, vals, 1e-4f,
+                        "Iter " + iter + " (input from dev" + srcDev + ") incorrect — " +
+                        "DSP stream/migration bug");
+
+                input.close();
+            }
+        } finally {
+            sd.close();
+        }
+    }
 }

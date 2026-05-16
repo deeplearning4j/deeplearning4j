@@ -111,6 +111,8 @@
 #ifdef SD_CUDA
 // DSP gap stream — defined in LaunchContext.cu, shared across translation units
 extern thread_local cudaStream_t tl_dspGapStream;
+// CudaMemoryPool needed for deferred workspace free in ~NativeDynamicShapePlan
+#include <memory/cuda/CudaMemoryPool.h>
 #endif
 
 namespace sd {
@@ -133,6 +135,32 @@ static void scanAllSlotsForCorruption(
       fflush(stdout);
       return;
     }
+  }
+}
+
+// ─── Deferred slot-array deletion ───────────────────────────────────────────
+// writeOutputSlot() replaces plan-owned NDArray pointers inline during slot
+// execution.  Calling `delete old` immediately can corrupt heap metadata when
+// the allocator tries to update its internal free-list while the plan is still
+// iterating over adjacent allocations (the exact failure mode seen in the
+// Workspace::allocateBytes SIGSEGV where `this` is garbage string data).
+//
+// The fix: push the old pointer into a thread-local vector and delete it only
+// once execution of the current plan step is fully complete (just before
+// platformEndExecution is called from execute()).  By that point no more slot
+// iteration is in progress and the heap is in a consistent state.
+static thread_local std::vector<NDArray*> tl_deferredSlotDeletes;
+
+static void flushDeferredSlotDeletes() {
+  if (tl_deferredSlotDeletes.empty()) return;
+  // Swap into a local vector so that any re-entrant call during deletion
+  // (e.g., a DataBuffer destructor that triggers another writeOutputSlot)
+  // accumulates into a fresh tl_deferredSlotDeletes rather than invalidating
+  // the iterator we are currently walking.
+  std::vector<NDArray*> pending;
+  pending.swap(tl_deferredSlotDeletes);
+  for (NDArray* arr : pending) {
+    delete arr;
   }
 }
 
@@ -586,16 +614,30 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
         if (!referencedElsewhere) {
           planOwnedArrays_.erase(old);
           outputSlots_[slotIdx] = nullptr;  // Null slot BEFORE delete to prevent dangling pointer window
-          delete old;
-          old = nullptr;  // Prevent any further access to freed memory
-          // Scan all slots after delete — heap metadata from free can corrupt
-          // adjacent NDArray._shapeInfoBuffer if there's a heap buffer overrun.
-          if (sd::Environment::getInstance().isDebug()) {
-            scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
-                                     "AFTER_writeOutputSlot_delete", executeCount_);
+          // Guard: if the DataBuffer was closed from the Java side (e.g. a placeholder closed
+          // between DSP calls), the C++ DataBuffer object still exists (JavaCPP doesn't immediately
+          // free it) but its memory has been released. Deleting a view NDArray that references
+          // a closed DataBuffer would access freed memory → heap corruption → DataType::UNKNOWN.
+          bool oldDbClosed = (oldDb != nullptr && oldDb->isClosed());
+          if (!oldDbClosed) {
+            // Defer deletion until after the full execute() step completes.
+            // Deleting inline while plan execution is still iterating slots can
+            // corrupt heap metadata: the allocator's free-list update overwrites
+            // adjacent allocations (seen as Workspace::allocateBytes SIGSEGV with
+            // a garbage `this` pointer full of ASCII string data).
+            // flushDeferredSlotDeletes() is called at every platformEndExecution
+            // site in execute(), by which point slot iteration is finished and the
+            // heap is in a consistent state.
+            tl_deferredSlotDeletes.push_back(old);
+            DSP_DIAG(MEMORY, "WRITE_SLOT_FREE_DEFERRED: slot=%d deferred delete of old=%p (db=%p)",
+                     slotIdx, (void*)old, (void*)oldDb);
+          } else {
+            DSP_DIAG(MEMORY,
+                     "WRITE_SLOT_SKIP_FREE_CLOSED: slot=%d old array %p has closed db=%p "
+                     "— skipping delete to avoid use-after-free (view of freed placeholder)",
+                     slotIdx, (void*)old, (void*)oldDb);
           }
-          DSP_DIAG(MEMORY, "WRITE_SLOT_FREE: slot=%d freed old plan-owned array (db=%p)",
-                   slotIdx, (void*)oldDb);
+          old = nullptr;  // Prevent any further access to freed memory
         }
       } else {
         DSP_DIAG(MEMORY, "WRITE_SLOT_SKIP_FREE: slot=%d old array %p has protected weight db=%p — not freed",
@@ -613,7 +655,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   // When the buffer address changes (replacement), emit BUFFER_REPLACED so
   // post-mortem analysis can distinguish genuine replacements from same-buffer
   // re-writes (e.g. in-place ops that reuse the same allocation).
-  // Uses pre-captured oldBufAddr — old NDArray may have been deleted above.
+  // Uses pre-captured oldBufAddr — old NDArray may have been queued for deferred deletion above.
   // Short-circuit when trace_ is null (the common case in production) to avoid
   // computing newAddr and the two DSP_BUF_SAFE() calls on every write.
   if (trace_ != nullptr) {
@@ -732,6 +774,14 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
       if (!deleted.insert(outputSlots_[i]).second) continue;
 
       if (planOwnedArrays_.count(outputSlots_[i]) > 0) {
+        // Pre-clean the DataBuffer before deleting the NDArray to avoid crash
+        // in ~NDArray if _shapeInfo points to freed ConstantShapeHelper memory.
+        auto* db = outputSlots_[i]->dataBuffer();
+        bool dbClosed = (db != nullptr && db->isClosed());
+        if (db != nullptr && !dbClosed) {
+          db->deleteBuffers();
+        }
+        outputSlots_[i]->setShapeInfo((sd::LongType*)nullptr);
         freedOwned++;
         delete outputSlots_[i];
       } else {
@@ -740,22 +790,44 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     }
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed %d plan-owned, skipped %d external from outputSlots_",
              freedOwned, skippedExternal);
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: about to delete[] outputSlots_ array (%p)", (void*)outputSlots_);
     delete[] outputSlots_;
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: delete[] outputSlots_ done");
   }
   // outputSlots_ owns the NDArray* array — do NOT delete[] separately
 
   // Free placeholder staging buffers (plan-owned stable device buffers for variable inputs)
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: stagingBuffers=%p numExtInputs=%d",
+           (void*)placeholderStagingBuffers_, numExternalInputs_);
   if (placeholderStagingBuffers_ != nullptr) {
     int freedStaging = 0;
     for (int i = 0; i < numExternalInputs_; i++) {
+      DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: staging[%d] ptr=%p", i, (void*)placeholderStagingBuffers_[i]);
       if (placeholderStagingBuffers_[i] != nullptr) {
+        auto* db = placeholderStagingBuffers_[i]->dataBuffer();
+        bool dbClosed = (db != nullptr && db->isClosed());
+        DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: staging[%d] db=%p closed=%d",
+                 i, (void*)db, dbClosed);
+        // Pre-clean GPU memory AND null _shapeInfo before deleting the NDArray.
+        // The NDArray destructor reads _shapeInfo to check isView — if _shapeInfo
+        // is a dangling pointer (ConstantShapeHelper cache entry freed during an
+        // earlier teardown phase), the destructor crashes. Nulling _shapeInfo makes
+        // the destructor skip the isView check (defaults to false = non-view).
+        // Pre-cleaning the DataBuffer ensures ~DataBuffer sees closed=true and skips
+        // GPU free, avoiding double-free with the pool.
+        if (db != nullptr && !dbClosed) {
+          db->deleteBuffers();
+        }
+        placeholderStagingBuffers_[i]->setShapeInfo((sd::LongType*)nullptr);
         delete placeholderStagingBuffers_[i];
+        placeholderStagingBuffers_[i] = nullptr;
         freedStaging++;
       }
     }
     delete[] placeholderStagingBuffers_;
     placeholderStagingBuffers_ = nullptr;
   }
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: staging done, freeing effectiveExternals");
   delete[] effectiveExternals_;
   effectiveExternals_ = nullptr;
   cachedVariableExtIndices_.clear();
@@ -764,26 +836,63 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   delete[] slotIsViewProducer_;
 
   // Free context pool
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing contextPool (%p, numSlots=%d)", (void*)contextPool_, numSlots_);
   if (contextPool_) {
     for (int i = 0; i < numSlots_; i++) {
       delete contextPool_[i];
     }
     delete[] contextPool_;
   }
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: contextPool done");
 
   // Free owned legacy ops (created during deserialization for ops
   // not registered in OpRegistrator, like exp, log, abs, etc.)
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing %zu legacy ops", ownedLegacyOps_.size());
   for (auto* legacyOp : ownedLegacyOps_) {
     delete legacyOp;
   }
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: legacy ops done");
 
   // Free untracked output cache
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: untrackedCache=%p size=%d",
+           (void*)untrackedOutputCache_, untrackedOutputCacheSize_);
   if (untrackedOutputCache_) {
     for (int i = 0; i < untrackedOutputCacheSize_; i++) {
-      delete untrackedOutputCache_[i];
+      if (untrackedOutputCache_[i] != nullptr) {
+        auto* udb = untrackedOutputCache_[i]->dataBuffer();
+        bool udbClosed = (udb != nullptr && udb->isClosed());
+        DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: untracked[%d]=%p db=%p closed=%d",
+                 i, (void*)untrackedOutputCache_[i], (void*)udb, udbClosed);
+        if (udb != nullptr && !udbClosed) {
+          udb->deleteBuffers();
+        }
+        untrackedOutputCache_[i]->setShapeInfo((sd::LongType*)nullptr);
+        delete untrackedOutputCache_[i];
+      }
     }
     delete[] untrackedOutputCache_;
   }
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: untracked cache done");
+
+  // ── Deferred workspace free (CUDA only) ───────────────────────────────────
+  // The capture workspace is freed HERE — after all plan-owned DataBuffers have
+  // been destroyed — so that DataBuffer::deleteSpecial() can use
+  // CudaMemoryPool::isInCaptureWorkspace() to skip invalid cudaFreeAsync calls
+  // on workspace-interior pointers. If we freed the workspace earlier (in
+  // platformFreePlanResources), the isInCaptureWorkspace guard would fail because
+  // the range was already removed from captureWorkspaceRanges_, leading to
+  // cudaFreeAsync on freed GPU memory → error 700 → CUDA context corruption.
+#ifdef SD_CUDA
+  if (sharedCaptureWorkspace_ != nullptr) {
+    memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(sharedCaptureWorkspace_);
+    cudaFree(sharedCaptureWorkspace_);
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed SHARED capture workspace %zuMB on device %d",
+             sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
+    sharedCaptureWorkspace_ = nullptr;
+    sharedCaptureWorkspaceBytes_ = 0;
+    sharedCaptureWorkspaceDevice_ = -1;
+  }
+#endif
 
   // Free control flow structures
   delete[] loopRegions_;
@@ -1571,10 +1680,11 @@ Status NativeDynamicShapePlan::execute(
   // Clear dirty bitmap.
   std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
 
-  // Store reference to current external inputs (valid only during this execute() call).
-  // NOTE: This pointer is only valid while this function is on the stack. Do NOT use
-  // it after execute() returns — the caller's vector is destroyed on return.
-  lastExternalInputs_ = externalInputs;
+  // Store a persistent copy of external input pointers so they remain valid
+  // after execute() returns. The NDArray* pointers themselves are Java-owned
+  // and live beyond the call, but the array-of-pointers may be stack-allocated.
+  lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
+  lastExternalInputs_ = lastExternalInputsCopy_.data();
   lastNumExternalInputs_ = numExternalInputs;
 
   // Capture external input ranks on first call — used by FusionPass pass 5
@@ -1624,8 +1734,7 @@ Status NativeDynamicShapePlan::execute(
       Environment::getInstance().tritonGraphCapture(),
       Environment::getInstance().tritonVerifyKernels(),
       !externalInputIsVariable_.empty(),
-      executionTimingEnabled_,
-      Environment::getInstance().isDebug());
+      executionTimingEnabled_);
   execCtx->segmentsTotal = static_cast<int>(segments_.size());
   execCtx->recordFlow(PlanExecutionContext::FlowEventType::EXECUTE_ENTRY,
                        executeCount_, shapesFrozen_ ? 1 : 0);
@@ -1721,6 +1830,7 @@ Status NativeDynamicShapePlan::execute(
     }
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
+    flushDeferredSlotDeletes();
     platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
     return fastPathResult;
   }
@@ -1789,6 +1899,7 @@ Status NativeDynamicShapePlan::execute(
     if (!lifecycleOk) {
       execCtx->endDiag(executeCount_);
       activeExecCtx_ = nullptr;
+      flushDeferredSlotDeletes();
       platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
       DSP_THROW(VERIFY, "LIFECYCLE_VALIDATION_FAILED: %s", errMsg);
     }
@@ -2010,6 +2121,7 @@ Status NativeDynamicShapePlan::execute(
       DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: phase failed status=%d", static_cast<int>(siStatus));
       execCtx->endDiag(executeCount_);
       activeExecCtx_ = nullptr;
+      flushDeferredSlotDeletes();
       platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
       return siStatus;
     }
@@ -2023,6 +2135,7 @@ Status NativeDynamicShapePlan::execute(
     DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: done, %d outputs populated", numRequestedOutputs_);
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
+    flushDeferredSlotDeletes();
     platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
     return Status::OK;
   }
@@ -2072,6 +2185,7 @@ Status NativeDynamicShapePlan::execute(
     dumpTrace(stderr, 128);
     execCtx->endDiag(executeCount_);
     activeExecCtx_ = nullptr;
+    flushDeferredSlotDeletes();
     platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
     return phaseStatus;
   }
@@ -2414,8 +2528,7 @@ Status NativeDynamicShapePlan::execute(
         Environment::getInstance().tritonGraphCapture(),
         Environment::getInstance().tritonVerifyKernels(),
         !externalInputIsVariable_.empty(),
-        executionTimingEnabled_,
-        Environment::getInstance().isDebug());
+        executionTimingEnabled_);
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::DERIVED_STATE_REFRESH,
                          executeCount_, shapesFrozen_ ? 1 : 0);
   }
@@ -2528,7 +2641,12 @@ Status NativeDynamicShapePlan::execute(
   // End DSP diagnostic step + cross-stream sync + DspStreamGuard cleanup.
   // execCtx->endDiag() is safe to call even if already ended by an early return path.
   execCtx->endDiag(executeCount_);
+
+  // Snapshot per-execution stats from PlanExecutionContext before clearing it.
+  snapshotExecStats(execCtx);
+
   activeExecCtx_ = nullptr;
+  flushDeferredSlotDeletes();
   platformEndExecution(executionStatePtr, stream, shapesFrozen_, executeCount_);
   executionStatePtr = nullptr;
 
@@ -2606,8 +2724,9 @@ Status NativeDynamicShapePlan::executeSteadyState(
     std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
   }
 
-  // Store reference to current external inputs
-  lastExternalInputs_ = externalInputs;
+  // Store a persistent copy of external input pointers (see execute() comment)
+  lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
+  lastExternalInputs_ = lastExternalInputsCopy_.data();
   lastNumExternalInputs_ = numExternalInputs;
 
   // Reuse cached PlanExecutionContext — avoid heap alloc/free per step.
@@ -2661,7 +2780,7 @@ Status NativeDynamicShapePlan::executeSteadyState(
     execCtx->crossStreamSynced = true;
   }
 
-  // Deterministic cuBLAS for modes that require it (CUDA_GRAPHS, SLOT_BY_SLOT).
+  // Deterministic cuBLAS for modes that require it (CUDA_GRAPHS, AUTO).
   // platformBeginExecution sets this for execute(), but executeSteadyState bypasses
   // platformBeginExecution for speed. Without this, slot-by-slot fallback segments
   // within the frozen fast path use non-deterministic cuBLAS (cublasLt + tensor ops),
@@ -2827,30 +2946,41 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
     externalInputIsVariable_.resize(numExternalInputs_, false);
   }
 
-  if (externalInputIsVariable_[extIdx]) {
-    if (sd::Environment::getInstance().isVerbose()) {
-      sd_printf("markExternalInputVariable: ext[%d] ALREADY variable — skip\n", extIdx);
-    }
-    return;  // already variable
-  }
-
+  bool wasAlreadyVariable = externalInputIsVariable_[extIdx];
   if (sd::Environment::getInstance().isVerbose()) {
-    sd_printf("markExternalInputVariable: ext[%d] marking as variable NOW\n", extIdx);
+    sd_printf("markExternalInputVariable: ext[%d] %s\n", extIdx,
+              wasAlreadyVariable ? "ALREADY variable — still invalidating" : "marking as variable NOW");
   }
   externalInputIsVariable_[extIdx] = true;
 
-  // Determine if this is the first newly-variable input (triggers full invalidation)
-  // vs a subsequent one (only needs flag update since invalidation already done).
+  // Always invalidate when markVariable is called explicitly, even if the flag
+  // was already set during compilation (e.g. SOURCE_PLACEHOLDER auto-detection).
+  // The caller's intent is to force re-capture with staging buffer addresses —
+  // the flag may have been set but the captures were done without staging.
   bool needsFullInvalidation = (effectiveExternals_ != nullptr ||
                                 placeholderStagingBuffers_ != nullptr ||
                                 !cachedVariableExtIndices_.empty() ||
-                                variableIndicesCached_);
+                                variableIndicesCached_ ||
+                                !planLifecycle_.isSlotBySlot());
 
   // Invalidate cached variable indices so they're rebuilt on the next
   // compositeReplay / platformTryFrozenFastPath call.
   cachedVariableExtIndices_.clear();
   variableExternalInputIndices_.clear();
   variableIndicesCached_ = false;
+
+  // Immediately rebuild cachedVariableExtIndices_ from the authoritative
+  // externalInputIsVariable_ vector. The staging buffer setup path
+  // (ensureAndSyncStagingBuffers) only runs during composite replay, but
+  // the first execution after markVariable may go through slot-by-slot
+  // warmup which never calls it. Without this, introspection APIs like
+  // getNumCachedVariableExtIndices() return 0 even though the variable
+  // flag is set — breaking test assertions and diagnostic tooling.
+  for (int i = 0; i < static_cast<int>(externalInputIsVariable_.size()); i++) {
+    if (externalInputIsVariable_[i]) {
+      cachedVariableExtIndices_.push_back(i);
+    }
+  }
 
   if (needsFullInvalidation) {
     // Force staging buffers to be re-created with the new variable set.
@@ -2859,9 +2989,29 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
       effectiveExternals_ = nullptr;
     }
     if (placeholderStagingBuffers_ != nullptr) {
+      // Free individual staging NDArrays before freeing the pointer array.
+      // Without this, the NDArray objects leak and their DataBuffers are never freed.
+      for (int i = 0; i < numExternalInputs_; i++) {
+        if (placeholderStagingBuffers_[i] != nullptr) {
+          auto* db = placeholderStagingBuffers_[i]->dataBuffer();
+          if (db != nullptr && !db->isClosed()) {
+            db->deleteBuffers();
+          }
+          placeholderStagingBuffers_[i]->setShapeInfo((sd::LongType*)nullptr);
+          delete placeholderStagingBuffers_[i];
+          placeholderStagingBuffers_[i] = nullptr;
+        }
+      }
       delete[] placeholderStagingBuffers_;
       placeholderStagingBuffers_ = nullptr;
     }
+
+    // Clear stale staging address records. The old staging buffers were freed
+    // above, and new ones will be allocated during re-warmup/re-capture.
+    // Without this, the staleness check (CHECK 3) in frozenFastPath compares
+    // the new staging addresses against the old (freed) addresses, causing a
+    // false "address changed" failure on the first post-mark replay.
+    prevStagingAddresses_.clear();
 
     // Invalidate segment captures: the merged CUDA graphs have baked-in device
     // addresses from the Java-side warmup capture. With newly-variable inputs
@@ -2881,12 +3031,46 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
     // If left stale, compositeReplay will iterate gap slots from the
     // pre-invalidation execution context, producing wrong outputs.
 #ifdef SD_CUDA
-    activeGapSlotsCached_ = false;
-    cachedActiveGapSlots_.clear();
+    activeGapSlotsCachedSet_.clear();
+    cachedActiveGapSlotsMap_.clear();
 #endif
 
     // Global pointer stability is lost — force full re-evaluation.
+    // unseal() transitions from REPLAYING → SHAPES_FROZEN so that
+    // executeSteadyState() falls back to full execute() which handles
+    // segment re-capture with the newly-allocated staging buffer addresses.
+    // Without this, the plan stays SEALED and the fast path replays
+    // invalidated CUDA graphs → stale data → repeating tokens.
+    if (planLifecycle_.isReplaying()) {
+      planLifecycle_.unseal();
+    }
     planLifecycle_.recordPointersUnstable();
+
+    // Reset compilation and frozen-constant detection so the plan re-evaluates
+    // with the updated variable set. Without this, phaseCompile (gated on
+    // compilationDone) is skipped and staging buffers are never allocated.
+    // frozenConstantDetectionDone must also reset so detectFrozenConstants
+    // re-runs with the new externalInputIsVariable_ entries — ops that were
+    // frozen because their transitive inputs appeared constant may now depend
+    // on a variable external.
+    planLifecycle_.compilationDone = false;
+    frozenConstantDetectionDone_ = false;
+  }
+
+  // Pre-allocate staging buffer for the marked input so getStagingBufferAddress()
+  // returns non-zero immediately after markVariable (before the plan re-enters
+  // composite replay where ensureAndSyncStagingBuffers normally allocates).
+  NDArray* lastExt = getLastExternalInput(extIdx);
+  if (lastExt != nullptr && !lastExt->isEmpty()) {
+    if (placeholderStagingBuffers_ == nullptr) {
+      placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
+      effectiveExternals_ = new NDArray*[numExternalInputs_]();
+    }
+    if (placeholderStagingBuffers_[extIdx] == nullptr) {
+      placeholderStagingBuffers_[extIdx] = new NDArray(
+          lastExt->ordering(), *lastExt->getShapeAsVector(),
+          lastExt->dataType(), LaunchContext::defaultContext());
+    }
   }
 
   const char* name = (extIdx < static_cast<int>(externalInputNames_.size()))
@@ -4052,7 +4236,18 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
       // already thrown there for capturable segments that can't graph-execute.
       segment.exec.segPhase.reset();  // PRIMARY: BUILDING:WARMUP
       segment.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::NEEDS_WARMUP;
-      auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+      // For segments assigned a graph backend (GPU_COMPILER / CUDA_GRAPHS) that
+      // fall back here — e.g. compilationFailed after Triton compile failure in
+      // AUTO/TRITON mode — add SyncOverride so needsSync() returns true.
+      // Without it, external inputs are read stale after the first two warmup
+      // steps, producing identical wrong output on every token decode step.
+      Status status;
+      if (segment.def.selectedBackend != SelectedBackend::SLOT_BY_SLOT) {
+        SyncOverride compilationFallbackSync(*this, "gpu_backend_fallback");
+        status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+      } else {
+        status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+      }
       if (status != Status::OK) return status;
     }
 
@@ -4211,6 +4406,17 @@ void NativeDynamicShapePlan::resetSegmentExecutionState() {
 int NativeDynamicShapePlan::releaseGpuIntermediates() {
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: START plan=%p numSlots=%d totalOutputSlots=%d",
            this, numSlots_, totalOutputSlots_);
+
+  // ── Flush deferred slot deletes BEFORE any direct deletion ────────────────
+  // writeOutputSlot() defers old-array deletes into tl_deferredSlotDeletes to
+  // prevent heap corruption during active slot iteration. If the session is
+  // torn down (destroySession → releaseGpuIntermediates) before the next
+  // execute() flushes them, the deferred list still holds live pointers.
+  // releaseGpuIntermediates then deletes those same arrays from outputSlots_,
+  // and any later flush of the deferred list double-frees them (SIGSEGV on
+  // 0xdeadbeefcafebabe poison value in ~NDArray).
+  // Flush here so releaseGpuIntermediates is the sole owner of all deletions.
+  flushDeferredSlotDeletes();
 
   // ── Phase demotion: demote to SLOT_BY_SLOT BEFORE freeing any arrays ──────
   // This ensures no code path can observe REPLAYING phase
@@ -4476,9 +4682,10 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     }
   }
 
-  // ── Step 4c: Null stale non-owned pointer caches ────────────────────────
-  // These are raw pointers to caller-owned arrays that become dangling once
+  // ── Step 4c: Clear ext input pointer caches ─────────────────────────────
+  // The NDArray* pointers target Java-owned arrays that become invalid once
   // the Java session resets. They are rebuilt on the next execute() call.
+  lastExternalInputsCopy_.clear();
   lastExternalInputs_ = nullptr;
   lastNumExternalInputs_ = 0;
   externalInputRanks_.clear();
@@ -4488,10 +4695,25 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // allocated by ensureAndSyncStagingBuffers(). They survive across decode
   // steps but must be freed on session reset to reclaim GPU memory. They are
   // re-allocated lazily on the next executeSteadyState() / execute() call.
+  DSP_DIAG(MEMORY, "releaseGpuIntermediates: Step 4d staging buffers=%p numExtInputs=%d",
+           (void*)placeholderStagingBuffers_, numExternalInputs_);
   if (placeholderStagingBuffers_ != nullptr) {
     int freedStaging = 0;
     for (int i = 0; i < numExternalInputs_; i++) {
+      DSP_DIAG(MEMORY, "releaseGpuIntermediates: staging[%d] ptr=%p",
+               i, (void*)placeholderStagingBuffers_[i]);
       if (placeholderStagingBuffers_[i] != nullptr) {
+        auto* db = placeholderStagingBuffers_[i]->dataBuffer();
+        bool dbClosed = (db != nullptr && db->isClosed());
+        DSP_DIAG(MEMORY, "releaseGpuIntermediates: staging[%d] db=%p closed=%d",
+                 i, (void*)db, dbClosed);
+
+        // Pre-clean GPU memory AND null _shapeInfo before deleting the NDArray.
+        // Same rationale as the destructor staging cleanup: _shapeInfo may be dangling.
+        if (db != nullptr && !dbClosed) {
+          db->deleteBuffers();
+        }
+        placeholderStagingBuffers_[i]->setShapeInfo((sd::LongType*)nullptr);
         delete placeholderStagingBuffers_[i];
         placeholderStagingBuffers_[i] = nullptr;
         freedStaging++;
@@ -4508,6 +4730,32 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   cachedVariableExtIndices_.clear();
   variableExternalInputIndices_.clear();
   variableIndicesCached_ = false;
+
+  // ── Step 4e: Free untracked output cache ────────────────────────────────
+  // The untrackedOutputCache_ holds NDArrays created during slot execution
+  // that are NOT tracked in planOwnedArrays_ (e.g., multi-output ops).
+  // Without cleaning them here, the destructor (called later from
+  // NativePlanCache::clear) will try to delete NDArrays whose DataBuffers
+  // may have already been closed by Java's destroySession() → SIGSEGV.
+  if (untrackedOutputCache_ != nullptr) {
+    int freedUntracked = 0;
+    for (int i = 0; i < untrackedOutputCacheSize_; i++) {
+      if (untrackedOutputCache_[i] != nullptr) {
+        auto* db = untrackedOutputCache_[i]->dataBuffer();
+        if (db != nullptr && !db->isClosed()) {
+          db->deleteBuffers();
+        }
+        untrackedOutputCache_[i]->setShapeInfo((sd::LongType*)nullptr);
+        delete untrackedOutputCache_[i];
+        untrackedOutputCache_[i] = nullptr;
+        freedUntracked++;
+      }
+    }
+    delete[] untrackedOutputCache_;
+    untrackedOutputCache_ = nullptr;
+    untrackedOutputCacheSize_ = 0;
+    DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed %d untracked output cache entries", freedUntracked);
+  }
 
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;
@@ -4565,8 +4813,8 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
 #ifdef SD_CUDA
   gapPrezeroTargetsCached_ = false;
   cachedGapPrezeroCount_ = 0;
-  activeGapSlotsCached_ = false;
-  cachedActiveGapSlots_.clear();
+  activeGapSlotsCachedSet_.clear();
+  cachedActiveGapSlotsMap_.clear();
 #endif
 
   // Clear protected weight buffers so they're rebuilt from the next session's
@@ -5211,6 +5459,152 @@ bool NativeDynamicShapePlan::validateCompiledCpuGraph(int segmentIndex) const {
 
   return allOpsCompiled;
 }
+
+// ─── JNI introspection implementations ──────────────────────────────────────
+
+void NativeDynamicShapePlan::snapshotExecStats(void* execCtxPtr) {
+  if (execCtxPtr == nullptr) return;
+  auto* ctx = static_cast<PlanExecutionContext*>(execCtxPtr);
+  lastExecStats_.segmentsWarmup = ctx->segmentsWarmup;
+  lastExecStats_.segmentsCaptured = ctx->segmentsCaptured;
+  lastExecStats_.segmentsReplayed = ctx->segmentsReplayed;
+  lastExecStats_.segmentsSlotBySlot = ctx->segmentsSlotBySlot;
+  lastExecStats_.segmentsFailed = ctx->segmentsFailed;
+  lastExecStats_.segmentsTotal = ctx->segmentsTotal;
+  lastExecStats_.syncLevel = static_cast<int>(ctx->currentSyncLevel);
+  lastExecStats_.streamSyncCount = ctx->streamSyncCount;
+  // consecutiveUnchangedCount from prevStepFingerprints_ sentinel key -1
+  auto it = prevStepFingerprints_.find(-1);
+  lastExecStats_.consecutiveUnchangedCount = (it != prevStepFingerprints_.end())
+      ? static_cast<int>(it->second) : 0;
+  lastExecStats_.valid = true;
+}
+
+int NativeDynamicShapePlan::writeDeviceBufferOnDefaultStream(int extIdx, void* srcHost, long long numBytes) {
+  if (extIdx < 0 || extIdx >= numExternalInputs_) return -1;
+  // Lazily allocate staging buffers if ensureAndSyncStagingBuffers hasn't run yet
+  // (plan may still be in warmup when JNI write is called after initial output())
+  if (placeholderStagingBuffers_ == nullptr) {
+    NDArray* lastExt = getLastExternalInput(extIdx);
+    if (lastExt == nullptr || lastExt->isEmpty()) return -1;
+    placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
+    effectiveExternals_ = new NDArray*[numExternalInputs_]();
+  }
+  if (placeholderStagingBuffers_[extIdx] == nullptr) {
+    NDArray* lastExt = getLastExternalInput(extIdx);
+    if (lastExt == nullptr || lastExt->isEmpty()) return -2;
+    placeholderStagingBuffers_[extIdx] = new NDArray(
+        lastExt->ordering(), *lastExt->getShapeAsVector(),
+        lastExt->dataType(), LaunchContext::defaultContext());
+  }
+  NDArray* staging = placeholderStagingBuffers_[extIdx];
+  if (staging == nullptr || staging->specialBuffer() == nullptr) return -2;
+#ifdef SD_CUDA
+  auto err = cudaMemcpyAsync(staging->specialBuffer(), srcHost,
+                             static_cast<size_t>(numBytes),
+                             cudaMemcpyHostToDevice, nullptr);
+  if (err != cudaSuccess) return -3;
+  // Also write to the external array's device buffer so warmup execution
+  // (which reads from externalArrays directly, not staging) sees the data.
+  NDArray* ext = getLastExternalInput(extIdx);
+  if (ext != nullptr && ext->specialBuffer() != nullptr) {
+    cudaMemcpyAsync(ext->specialBuffer(), srcHost,
+                    static_cast<size_t>(numBytes),
+                    cudaMemcpyHostToDevice, nullptr);
+    // Mark device as authoritative so performPreReplaySync H2D doesn't
+    // overwrite our write with stale host data.
+    ext->dataBuffer()->writeSpecial();
+  }
+  // Mark staging as JNI-written so ensureAndSyncStagingBuffers skips D2D overwrite
+  if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
+    deviceWritePending_.resize(numExternalInputs_, false);
+  deviceWritePending_[extIdx] = true;
+  return 0;
+#else
+  std::memcpy(staging->buffer(), srcHost, static_cast<size_t>(numBytes));
+  NDArray* ext = getLastExternalInput(extIdx);
+  if (ext != nullptr && ext->buffer() != nullptr) {
+    std::memcpy(ext->buffer(), srcHost, static_cast<size_t>(numBytes));
+  }
+  if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
+    deviceWritePending_.resize(numExternalInputs_, false);
+  deviceWritePending_[extIdx] = true;
+  return 0;
+#endif
+}
+
+int NativeDynamicShapePlan::writeDeviceBufferOnExplicitStream(int extIdx, void* srcHost, long long numBytes, void* stream) {
+  if (extIdx < 0 || extIdx >= numExternalInputs_) return -1;
+  // Lazily allocate staging buffers if ensureAndSyncStagingBuffers hasn't run yet
+  if (placeholderStagingBuffers_ == nullptr) {
+    NDArray* lastExt = getLastExternalInput(extIdx);
+    if (lastExt == nullptr || lastExt->isEmpty()) return -1;
+    placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
+    effectiveExternals_ = new NDArray*[numExternalInputs_]();
+  }
+  if (placeholderStagingBuffers_[extIdx] == nullptr) {
+    NDArray* lastExt = getLastExternalInput(extIdx);
+    if (lastExt == nullptr || lastExt->isEmpty()) return -2;
+    placeholderStagingBuffers_[extIdx] = new NDArray(
+        lastExt->ordering(), *lastExt->getShapeAsVector(),
+        lastExt->dataType(), LaunchContext::defaultContext());
+  }
+  NDArray* staging = placeholderStagingBuffers_[extIdx];
+  if (staging == nullptr || staging->specialBuffer() == nullptr) return -2;
+#ifdef SD_CUDA
+  cudaStream_t cs = reinterpret_cast<cudaStream_t>(stream);
+  auto err = cudaMemcpyAsync(staging->specialBuffer(), srcHost,
+                             static_cast<size_t>(numBytes),
+                             cudaMemcpyHostToDevice, cs);
+  if (err != cudaSuccess) return -3;
+  // Also write to external array so warmup execution sees the data.
+  NDArray* ext = getLastExternalInput(extIdx);
+  if (ext != nullptr && ext->specialBuffer() != nullptr) {
+    cudaMemcpyAsync(ext->specialBuffer(), srcHost,
+                    static_cast<size_t>(numBytes),
+                    cudaMemcpyHostToDevice, cs);
+    ext->dataBuffer()->writeSpecial();
+  }
+  if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
+    deviceWritePending_.resize(numExternalInputs_, false);
+  deviceWritePending_[extIdx] = true;
+  return 0;
+#else
+  std::memcpy(staging->buffer(), srcHost, static_cast<size_t>(numBytes));
+  NDArray* ext = getLastExternalInput(extIdx);
+  if (ext != nullptr && ext->buffer() != nullptr) {
+    std::memcpy(ext->buffer(), srcHost, static_cast<size_t>(numBytes));
+  }
+  if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
+    deviceWritePending_.resize(numExternalInputs_, false);
+  deviceWritePending_[extIdx] = true;
+  return 0;
+#endif
+}
+
+std::string NativeDynamicShapePlan::getSegmentsSummaryJson() const {
+  std::string json = "[";
+  for (int i = 0; i < static_cast<int>(segments_.size()); i++) {
+    if (i > 0) json += ",";
+    const auto& seg = segments_[i];
+    json += "{\"idx\":" + std::to_string(i)
+         + ",\"start\":" + std::to_string(seg.def.startSlot)
+         + ",\"end\":" + std::to_string(seg.def.endSlot)
+         + ",\"phase\":\"" + std::string(seg.exec.displayPhaseName()) + "\""
+         + ",\"capturable\":" + (seg.def.isCapturable ? "true" : "false")
+         + ",\"argGen\":" + std::to_string(seg.exec.argTableGeneration)
+         + ",\"capArgGen\":" + std::to_string(seg.exec.capturedArgGeneration)
+         + ",\"needsRefresh\":" + (seg.exec.needsArgRefresh() ? "true" : "false")
+         + ",\"backend\":\"" + seg.exec.compiledByBackend + "\""
+         + "}";
+  }
+  json += "]";
+  return json;
+}
+
+// copyStagingToBuffer is platform-dispatched:
+//   CUDA: NativeDynamicShapePlan_cuda.cu  (D2D + stream sync)
+//   CPU:  NativeDynamicShapePlan_cuda_stubs.cpp  (H2H memcpy)
 
 }  // namespace graph
 }  // namespace sd

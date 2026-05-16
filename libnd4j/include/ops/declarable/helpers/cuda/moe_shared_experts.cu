@@ -43,7 +43,7 @@ SD_DEVICE static void deviceSoftmaxMoe(T* data, int size) {
     }
     T sum = static_cast<T>(0);
     for (int i = 0; i < size; i++) {
-        data[i] = exp(data[i] - maxVal);
+        data[i] = static_cast<T>(__expf(static_cast<float>(data[i] - maxVal)));
         sum += data[i];
     }
     for (int i = 0; i < size; i++) {
@@ -72,7 +72,7 @@ SD_DEVICE static void deviceTopKMoe(T* data, int size, int k, int* indices, T* v
 
 template <typename T>
 SD_DEVICE SD_INLINE static T deviceSilu(T x) {
-    return x / (static_cast<T>(1) + exp(-x));
+    return x / (static_cast<T>(1) + static_cast<T>(__expf(static_cast<float>(-x))));
 }
 
 /**
@@ -86,7 +86,7 @@ SD_DEVICE SD_INLINE static T deviceSilu(T x) {
  *   - sharedIntermedBuf[sharedIntermediate] (for gate/up intermediate values)
  */
 template <typename T>
-SD_KERNEL static void moeSharedExpertsKernel(
+SD_KERNEL __launch_bounds__(256, 2) static void moeSharedExpertsKernel(
     const T* input,
     const T* routerWeights,
     const T* routedExpertWeights,

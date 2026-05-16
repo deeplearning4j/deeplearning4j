@@ -3545,9 +3545,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (localData == null || isEmpty() || length() == 0) {
             return new double[0];
         }
-        if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
-        }
         // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
         Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
         int len = (int) length();
@@ -3563,9 +3560,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         DataBuffer localData = this.data;
         if (localData == null || isEmpty() || length() == 0) {
             return new float[0];
-        }
-        if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
         // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
         Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
@@ -3606,10 +3600,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (localData == null || isEmpty() || length() == 0) {
             return new int[0];
         }
-
-        if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
-        }
         // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
         Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
         int len = (int) length();
@@ -3625,10 +3615,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         DataBuffer localData = this.data;
         if (localData == null || isEmpty() || length() == 0) {
             return new long[0];
-        }
-
-        if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
         // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
         Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
@@ -6630,18 +6616,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!closeable) {
             // Mark the data buffer as constant to protect it from deallocation
             // during SameDiff execution (batchOutputHelper brackets execution with
-            // setCloseable(false) / setCloseable(true)).  This applies to views too:
-            // views share the DataBuffer with their parent, but constantSetByCloseable
-            // tracks that WE set the flag, so setCloseable(true) safely undoes it.
-            DataBuffer dataBuffer = data();
-            if (dataBuffer != null && !dataBuffer.wasClosed()) {
-                // Only change constant state if the buffer wasn't already constant.
-                // Tracking this prevents setCloseable(true) from destroying the
-                // constant protection on buffers that were constant before we touched them
-                // (e.g., empty/zero-length buffers, shared constant buffers).
-                if (!dataBuffer.isConstant()) {
-                    dataBuffer.setConstant(true);
-                    constantSetByCloseable = true;
+            // setCloseable(false) / setCloseable(true)).
+            // EXCEPTION: Sub-views (length < data.length) share their DataBuffer with
+            // the parent array. Marking the shared buffer constant poisons D2H sync
+            // for the parent and all other views — syncToPrimary returns early when
+            // isConstant is true, causing getLong/toFloatVector to see stale host zeros
+            // even though the device has correct data. For sub-views, we only set the
+            // closeable flag (preventing close()) without touching the DataBuffer.
+            boolean isSubView = data != null && length() < data.length();
+            if (!isSubView) {
+                DataBuffer dataBuffer = data();
+                if (dataBuffer != null && !dataBuffer.wasClosed()) {
+                    // Only change constant state if the buffer wasn't already constant.
+                    // Tracking this prevents setCloseable(true) from destroying the
+                    // constant protection on buffers that were constant before we touched them
+                    // (e.g., empty/zero-length buffers, shared constant buffers).
+                    if (!dataBuffer.isConstant()) {
+                        dataBuffer.setConstant(true);
+                        constantSetByCloseable = true;
+                    }
                 }
             }
 

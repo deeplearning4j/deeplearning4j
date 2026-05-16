@@ -55,6 +55,16 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
         shapeCopy[i] = shapeInfo[i];
     }
 
+    // Write canary stamps in the padding area to detect buffer overruns.
+    // If the data at indices [0..shapeInfoLength-1] gets corrupted but the
+    // canaries are intact, the write came from WITHIN the buffer (pointer
+    // mutation or reinterpretation). If the canaries are also corrupted,
+    // an adjacent allocation overran into this buffer.
+    static constexpr LongType SHAPE_CANARY = static_cast<LongType>(0x5AFE5AFE5AFE5AFELL);
+    for (int i = 0; i < 8 && (shapeInfoLength + i) < (shapeInfoLength + SD_SHAPE_ALLOC_PADDING); i++) {
+        shapeCopy[shapeInfoLength + i] = SHAPE_CANARY;
+    }
+
     // Verify copy is correct (the rank at index 0 should match)
     if (shapeCopy[0] != rank) {
         delete[] shapeCopy;

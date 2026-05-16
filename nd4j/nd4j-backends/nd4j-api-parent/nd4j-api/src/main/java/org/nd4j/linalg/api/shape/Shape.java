@@ -3590,16 +3590,11 @@ public class Shape {
         if (!rX && rY)
             return typeY;
 
-        // if both data types are float - return biggest one
+        // if both data types are float - always return the higher-precision type.
+        // HALF+FLOAT must produce FLOAT regardless of operand order.
+        // precisionBoostAllowed only gates integer type promotions.
         if (rX && rY) {
-            // if we allow precision boost, then we pick bigger data type
-            if (Nd4j.isPrecisionBoostAllowed()) {
-                return max(typeX, typeY);
-            } else {
-                // and we return first operand otherwise
-                return typeX;
-            }
-
+            return max(typeX, typeY);
         }
 
         // if that's not real type, we apply same rules

@@ -68,8 +68,14 @@ public class DspOpenVinoAccuracyTest {
     private static final int WARMUP_ITERS = 2;
     private static final int FROZEN_ITERS = 5;
 
+    private static boolean isNativeBackend() {
+        return Nd4j.getBackend().getClass().getName().toLowerCase().contains("native")
+            || Nd4j.getBackend().getClass().getName().toLowerCase().contains("cpu");
+    }
+
     @BeforeEach
     void setUp() {
+        assumeTrue(isNativeBackend(), "OpenVINO tests require the CPU/native backend");
         System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "ALL");
         System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "summary");
     }

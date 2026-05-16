@@ -1927,7 +1927,7 @@ public class GenerationPipeline implements AutoCloseable {
 
             List<Integer> tokens = new ArrayList<>();
             tokens.add(firstTokenId);
-            if (!stopTokenIds.contains(firstTokenId)) {
+            if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) {
                 tokens.add(secondTokenId);
             }
 
@@ -2069,7 +2069,12 @@ public class GenerationPipeline implements AutoCloseable {
         long decodeLoopStart = System.currentTimeMillis();
         List<Integer> allTokens = new ArrayList<>();
         allTokens.add(firstTokenId);
-        allTokens.add(secondTokenId);
+        // Only add the second warmup token if maxNewTokens >= 2.
+        // The warmup decode step runs unconditionally (needed for DSP plan compilation
+        // with decode shapes), but when maxNewTokens==1 we must not include its token.
+        if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) {
+            allTokens.add(secondTokenId);
+        }
 
         if (remainingTokens > 0 && !stopTokenIds.contains(firstTokenId) && !stopTokenIds.contains(secondTokenId)) {
             // Resolve cache_position ext idx if the model has it (GGUF models).
@@ -2533,6 +2538,12 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
         if (embeddingTable != null) {
+            // If the optimizer quantized constants to HALF for memory savings,
+            // cast the embedding table back to FLOAT for the autoregressive_decode op.
+            if (embeddingTable.dataType() == DataType.HALF || embeddingTable.dataType() == DataType.BFLOAT16) {
+                log.info("Extracted embedding table is {} — casting to FLOAT for decode op", embeddingTable.dataType());
+                embeddingTable = embeddingTable.castTo(DataType.FLOAT);
+            }
             log.info("Extracted embedding table: shape={}", java.util.Arrays.toString(embeddingTable.shape()));
         } else {
             log.warn("Could not extract embedding table from model");

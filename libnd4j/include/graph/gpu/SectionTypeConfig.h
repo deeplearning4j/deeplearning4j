@@ -132,7 +132,8 @@ inline bool shouldBeStandalone(const SectionTypeConfig& cfg,
 // Should this section stay in native ordered execution instead of Triton compilation?
 inline bool shouldStayNativeOrdered(const SectionTypeConfig& cfg,
                                     bool compileAll,
-                                    const std::unordered_set<KernelSectionType>& includedTypes) {
+                                    const std::unordered_set<KernelSectionType>& includedTypes,
+                                    bool graphCapture = false) {
   // Explicit includedTypes override alwaysNativeOrdered — if the caller explicitly
   // lists a type, they want it compiled.  CONST_GEN has alwaysNativeOrdered=true as
   // the safe default, but the OPTIMAL config explicitly includes it.
@@ -140,6 +141,15 @@ inline bool shouldStayNativeOrdered(const SectionTypeConfig& cfg,
                             includedTypes.find(cfg.type) != includedTypes.end();
 
   if (cfg.alwaysNativeOrdered && !explicitlyIncluded) return true;
+
+  // MATMUL sections must stay native-ordered when CUDA graph capture is active.
+  // Triton-compiled MATMUL kernels use indirect arg tables that get baked into
+  // the captured CUDA graph. On replay, the arg table refresh may miss internal
+  // slot address drift, causing nondeterministic output. cuBLAS handles MATMUL
+  // natively with fresh addresses each step, which is deterministic.
+  if (graphCapture && cfg.type == KernelSectionType::MATMUL && !explicitlyIncluded) {
+    return true;
+  }
 
   if (!compileAll) {
     // Default: only compiledByDefault types (ELEMENTWISE, IDENTITY) are compiled

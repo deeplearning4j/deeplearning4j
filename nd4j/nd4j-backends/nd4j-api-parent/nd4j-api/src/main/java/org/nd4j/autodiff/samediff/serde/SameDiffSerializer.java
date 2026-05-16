@@ -884,6 +884,11 @@ public class SameDiffSerializer {
                         continue;
                     }
 
+                    // Sync device → host before reading the host buffer for serialization.
+                    // On CUDA, ops like muli() leave results on the GPU (device-authoritative).
+                    // Without this sync, buffer.asNio() reads stale host zeros.
+                    Nd4j.getAffinityManager().ensureLocation(arr, AffinityManager.Location.HOST);
+
                     DataBuffer buffer = arr.data();
                     long lengthBytes = arr.length() * buffer.getElementSize();
                     if (lengthBytes <= 0) {
@@ -2849,6 +2854,11 @@ public class SameDiffSerializer {
 
         // --- Standard non-scalar, non-empty array handling ---
         try {
+            // Sync device → host before reading the host buffer for serialization.
+            // On CUDA, ops like muli() leave results on the GPU (device-authoritative).
+            // Without this sync, dataBuffer.asNio() reads stale host zeros.
+            Nd4j.getAffinityManager().ensureLocation(arr, AffinityManager.Location.HOST);
+
             int shapeOffset = FlatArray.createShapeVector(builder, shape);
             byte dtype = FlatBuffersMapper.getDataTypeAsByte(arr.dataType());
             byte order = (byte)(arr.ordering() == 'c' ? 0 : 1);

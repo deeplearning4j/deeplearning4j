@@ -256,9 +256,7 @@ CUSTOM_OP_IMPL(rope, 1, 1, false, 0, 0) {
     float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
     float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
-    // Delegate to the platform-correct helper (works on both CPU and CUDA)
-    const void* posPtr = &positionOffset;
-    helpers::fusedRoPE(input, output, posPtr, freqBase, freqScale, ropeType,
+    helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
                        block.launchContext(), rotaryDims);
 
     return Status::OK;

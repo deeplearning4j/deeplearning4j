@@ -456,7 +456,7 @@ struct PlanExecutionContext {
       bool shapesFrozen, int executeCount, int gemMode,
       bool tritonSkipKernels, bool tritonGraphCapture,
       bool tritonVerify, bool hasVariableList,
-      bool execTimingEnabled, bool isDebugMode = false) {
+      bool execTimingEnabled) {
 
     // Snapshot execution identity
     execCount = executeCount;
@@ -473,10 +473,7 @@ struct PlanExecutionContext {
         ? static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT) : gemMode;
 
     // Graph capture/replay gate
-    // Debug mode disables graph capture: debug tracing adds syncToHost calls
-    // that cannot be captured and cause capture workspace OOM.
-    allowGraphCaptureReplay = tritonGraphCapture && shapesFrozen && !tritonSkipKernels
-        && !isDebugMode;
+    allowGraphCaptureReplay = tritonGraphCapture && shapesFrozen && !tritonSkipKernels;
 
     // Variable/weight filter for syncExternalInputs
     useVariableFilter = shapesFrozen && hasVariableList;

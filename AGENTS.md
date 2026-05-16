@@ -12,7 +12,7 @@ These actions are NEVER allowed regardless of context. Violating any of these is
 | `git stash` | Silently hides uncommitted changes, risks losing work. |
 | `git reset --hard` | Destroys uncommitted work irreversibly. |
 | `git clean` | Deletes untracked files irreversibly. |
-| `make` (direct invocation) | Skips Java binding regeneration. Bindings MUST be rebuilt for any C++ change to be visible from Java. Always use full `mvn` build with both `libnd4j` and the bindings module. |
+| `make` (direct invocation) | Skips Java binding regeneration. Always use full `mvn` build with both `libnd4j` and the bindings module. |
 | `tail` on build/test output | Loses earlier output. Use `tee` to capture the complete log. |
 | `LD_PRELOAD=libjemalloc.so` | Crashes on pointers from other allocators. System allocator only. |
 | `ccache -C` / `ccache --clear` | Forces a full rebuild of the entire C++ codebase (hours). |
@@ -24,13 +24,12 @@ These actions are NEVER allowed regardless of context. Violating any of these is
 
 | Pattern | Why | Use Instead |
 |---|---|---|
-| `ews()` / `elementWiseStride` | Deprecated. Invalid for views, non-contiguous arrays. Silently produces wrong results. | `shape::strideDescendingCAscendingF(shapeInfo)`, `ordering() == 'c'` + stride checks, `strideAt(dim)` |
+| `ews()` / `elementWiseStride` | Deprecated. Invalid for views, non-contiguous arrays. | `shape::strideDescendingCAscendingF(shapeInfo)`, `ordering() == 'c'` + stride checks |
 | `unique_ptr` / `shared_ptr` | Not used in libnd4j codebase | Raw pointers with manual delete |
 | Raw `__host__`, `__device__`, `__global__` | Won't compile cross-platform | `SD_HOST`, `SD_DEVICE`, `SD_KERNEL`, `SD_HOST_DEVICE` |
 | Raw `__forceinline__` | Platform-specific | `SD_INLINE` |
 | Raw `#pragma omp` directives | MSVC compatibility issues | `PRAGMA_OMP_*` macros |
 | `.arr` or `.shape` in model import | Must be variable-based for dynamic shapes | `sd.shape(..)`, `sd.rank(..)` |
-| Fully qualified class names | Clutters code | Use imports |
 | Ad-hoc printf/logging for DSP | Use diagnostic infrastructure | DSP diagnostics framework |
 | `MALLOC_CHECK_=3` | Unreliable | Don't rely on it |
 
@@ -46,8 +45,6 @@ Specific manifestations that are all workarounds:
 - If DSP has a bug, fix it -- do NOT fall back to slot-by-slot execution.
 - If a Triton kernel crashes, fix the kernel -- do NOT skip it, stub it out, or route around it.
 - If CUDA graph replay fails, fix the replay infrastructure -- do NOT disable it.
-- If cross-device transfers fail, fix the transfer code -- do NOT replace D2D with H2D+D2H.
-- If device routing picks the wrong device, fix the routing -- do NOT hardcode `device=0`.
 
 **Fix ALL errors -- no exceptions.** Never dismiss a test error as "pre-existing" or "unrelated." The word "pre-existing" is BANNED. If you encounter ANY failure -- whether you caused it or not -- fix it immediately. Dispatch a parallel task if needed.
 
@@ -63,7 +60,6 @@ Specific manifestations that are all workarounds:
 
 ### CUDA builds
 
-Require `-Pcuda -Dlibnd4j.chip=cuda`:
 ```bash
 mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 \
   -Dlibnd4j.log=libnd4j-build.log \
@@ -73,7 +69,6 @@ mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 \
 
 ### CPU builds
 
-Require `-Pcpu`:
 ```bash
 mvn -Pcpu -Dlibnd4j.buildthreads=12 \
   -Dlibnd4j.log=libnd4j-build.log \
@@ -92,10 +87,10 @@ mvn install -DskipTests -pl <module>
 - Always `install`, never just `compile` -- downstream modules need the jar in the local repo.
 - If building C++, always rebuild bindings too (both `libnd4j` AND `:nd4j-cuda-12.9` or `:nd4j-native`).
 - Always use `-Dlibnd4j.buildthreads=12` for native builds.
-- Always pass `-Dlibnd4j.log=libnd4j-build.log` for native builds (captures C++ log separately).
-- **ALL build commands MUST be piped through `tee` to a named file.** Use `mvn ... 2>&1 | tee build-output.log`.
+- Always pass `-Dlibnd4j.log=libnd4j-build.log` for native builds.
+- **ALL build commands MUST be piped through `tee` to a named file.**
 - **Build timeouts:** Header changes trigger full recompiles (30-45 min). Use at least 3600000ms (60 min) timeout. If a build times out, restart the full `mvn` build (not `make`).
-- Never deviate from the standard build command. Partial builds (just libnd4j, just bindings) cause stale/mismatched artifacts.
+- Never deviate from the standard build command. Partial builds cause stale/mismatched artifacts.
 
 ### Build Log Locations
 
@@ -118,42 +113,31 @@ cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
   mvn test -Dtest=<TestClass>#<method> 2>&1 | tee /tmp/<descriptive-name>.log
 ```
 
-**Read the `tee` log file for output.** Do NOT read surefire report files (`target/surefire-reports/*`) -- they split output across files, may omit stdout/stderr, and are unreliable for C++ diagnostics. The `tee` file has EVERYTHING in one place.
+**Read the `tee` log file for output.** Do NOT read surefire report files (`target/surefire-reports/*`) -- they split output across files, may omit stdout/stderr, and are unreliable for C++ diagnostics.
 
 ### Test Runner Wrapper (`platform-tests/bin/java`)
 
-`platform-tests` has a custom `bin/java` wrapper that surefire uses as its JVM. It supports diagnostic tools via `-Dtest.prefix`:
+Custom `bin/java` wrapper supporting diagnostic tools via `-Dtest.prefix`:
 
-| Prefix | Tool | Purpose |
-|---|---|---|
-| `valgrind` | Valgrind | Memory debugging with automatic JVM suppressions |
-| `/usr/local/cuda/bin/compute-sanitizer` | compute-sanitizer | CUDA memory errors, race conditions, GPU leaks |
-| `asan` | AddressSanitizer | Fast (2-3x slowdown) memory error + leak detection |
-| `nsys` | Nsight Systems | GPU profiling with CUDA/cuBLAS/cuDNN tracing |
-| `nvprof` | nvprof | Legacy NVIDIA profiler |
-
-The wrapper handles suppressions, output files, and JIT disabling automatically.
+| Prefix | Tool |
+|---|---|
+| `valgrind` | Valgrind memory debugging |
+| `/usr/local/cuda/bin/compute-sanitizer` | CUDA memory errors, race conditions |
+| `asan` | AddressSanitizer (2-3x slowdown) |
+| `nsys` | Nsight Systems GPU profiling |
 
 ### Environment Variables and Surefire
 
 Surefire forks a new JVM. Shell environment variables do NOT propagate. To pass configuration:
-
-1. Add the property to `platform-tests/pom.xml` in the surefire `<configuration>` under `<environmentVariables>`.
-2. Wire it via a `-D` Maven property so it can be set from the command line.
+1. Add the property to `platform-tests/pom.xml` surefire `<configuration>` under `<environmentVariables>`.
+2. Wire it via a `-D` Maven property.
 3. **NEVER** rely on `export VAR=value` before `mvn test`.
-
-### Where Test Output Goes
-
-| Output | Location | Notes |
-|---|---|---|
-| **ALL test output** | **The `tee` log file** | Java logs, C++ DSP_DIAG, surefire summaries, everything |
-| Native build log | `libnd4j/blasbuild/cuda/libnd4j-build.log` | Separate from Maven output |
 
 ### Writing Tests
 
-- Write standalone isolation tests when debugging -- reproduce the bug minimally before fixing.
-- Test ALL configuration combinations using parameterized/matrix-style tests (backends, data types, execution modes).
-- Make individual configurations runnable: `@MethodSource` with named parameters or `-Dtest=TestClass#method[configName]`.
+- Write standalone isolation tests when debugging -- reproduce the bug minimally.
+- Test ALL configuration combinations using parameterized/matrix-style tests.
+- Make individual configurations runnable: `@MethodSource` with named parameters.
 - ALL tests go in `platform-tests/` -- NEVER in the module being tested.
 
 ---
@@ -166,10 +150,7 @@ Surefire forks a new JVM. Shell environment variables do NOT propagate. To pass 
 
 ### Parallelize Work
 
-When dealing with a difficult bug or complex task, **multi-task aggressively**. Dispatch parallel agents to:
-- Investigate competing hypotheses simultaneously
-- Fix discovered bugs while you continue the main task
-- Run searches across different parts of the codebase
+When dealing with a difficult bug or complex task, **multi-task aggressively**. Dispatch parallel agents to investigate competing hypotheses, fix discovered bugs while you continue the main task, and run searches across different parts of the codebase.
 
 ### Optimization and Crash Handling
 
@@ -181,87 +162,47 @@ When optimizing code or searching for optimal configurations, if you encounter a
 
 ### Header Discipline
 
-**Avoid modifying headers whenever possible.** Header changes invalidate caches and cause hours of rebuilds. If you can refactor code to keep headers unchanged (move logic to .cpp/.cu files, use forward declarations, etc.), do that. Only modify headers when there is no alternative.
+**Avoid modifying headers whenever possible.** Header changes invalidate caches and cause hours of rebuilds. Move logic to .cpp/.cu files, use forward declarations. Only modify headers when there is no alternative.
 
 ### Kernel and Helper Organization
 
 When adding a new helper or kernel:
-1. **Study existing patterns first.** Header in `helpers/`, CPU impl in `helpers/cpu/`, CUDA impl in `helpers/cuda/`.
+1. Study existing patterns. Header in `helpers/`, CPU impl in `helpers/cpu/`, CUDA impl in `helpers/cuda/`.
 2. Never add one-off standalone code -- follow established patterns.
-3. Never add a kernel for one platform and stub the others -- implement for ALL platforms (CPU and CUDA minimum).
+3. Implement for ALL platforms (CPU and CUDA minimum).
 4. Use templates (`<typename T>`) + `BUILD_SINGLE_TEMPLATE` + `BUILD_SINGLE_SELECTOR` -- never hardcode types.
 5. Use `getLaunchDims("op_name")` from `LaunchDims.h` -- never hardcode thread counts.
 6. Register new ops in `LaunchDims.h` (macros) and `LaunchDims.cu` (both maps).
 
 ### Platform Abstraction Macros (MANDATORY)
 
-Always use libnd4j's platform macros instead of raw compiler/platform keywords. These are defined in `libnd4j/include/system/` and ensure code compiles on CPU (GCC, Clang, MSVC) and GPU (NVCC) without `#ifdef` sprawl.
+Use libnd4j's platform macros instead of raw compiler keywords. Defined in `libnd4j/include/system/`.
 
-**CUDA function qualifiers** (`system/common.h`):
+**CUDA qualifiers** (`system/common.h`): `SD_HOST`, `SD_DEVICE`, `SD_KERNEL`, `SD_HOST_DEVICE`, `SD_INLINE`, `SD_LIB_EXPORT`, `SD_LIB_HIDDEN`, `SD_ALIGN32`
 
-| Macro | Replaces | Notes |
-|---|---|---|
-| `SD_HOST` | `__host__` | Empty on CPU builds |
-| `SD_DEVICE` | `__device__` | Empty on CPU builds |
-| `SD_KERNEL` | `__global__` | Empty on CPU builds |
-| `SD_HOST_DEVICE` | `__host__ __device__` | Empty on CPU builds |
-| `SD_INLINE` | `__forceinline__` (NVCC) / `__forceinline` (MSVC) / `inline` (GCC/Clang) | Portable forced inline |
-| `SD_LIB_EXPORT` | `__declspec(dllexport)` / `visibility("default")` | Public API |
-| `SD_LIB_HIDDEN` | hidden visibility | |
-| `SD_ALIGN32` | 32-byte alignment attribute | |
+**OpenMP** (`system/openmp_pragmas.h`): `PRAGMA_OMP_PARALLEL_FOR`, `PRAGMA_OMP_PARALLEL_FOR_SIMD`, `PRAGMA_OMP_PARALLEL_FOR_THREADS(n)`, `PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(n)`, `PRAGMA_OMP_PARALLEL_FOR_REDUCTION(...)`, `PRAGMA_OMP_SIMD`, `PRAGMA_OMP_ATOMIC`, `PRAGMA_OMP_CRITICAL`, `OMP_IF(args)`, `OMP_SCHEDULE(args)`
 
-**OpenMP pragmas** (`system/openmp_pragmas.h`) -- no-ops on MSVC, fully expand on GCC/Clang:
+**Templates** (`system/type_boilerplate.h`): `BUILD_SINGLE_TEMPLATE`, `BUILD_SINGLE_SELECTOR`, `BUILD_DOUBLE_SELECTOR`, `BUILD_TRIPLE_SELECTOR`
 
-| Macro | Replaces |
-|---|---|
-| `PRAGMA_OMP_PARALLEL_FOR` | `#pragma omp parallel for` |
-| `PRAGMA_OMP_PARALLEL_FOR_SIMD` | `#pragma omp parallel for simd` |
-| `PRAGMA_OMP_PARALLEL_FOR_THREADS(n)` | parallel for with thread count |
-| `PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(n)` | parallel for with loop collapsing |
-| `PRAGMA_OMP_PARALLEL_FOR_REDUCTION(...)` | parallel for with reduction |
-| `PRAGMA_OMP_SIMD` | `#pragma omp simd` |
-| `PRAGMA_OMP_ATOMIC` | `#pragma omp atomic` |
-| `PRAGMA_OMP_CRITICAL` | `#pragma omp critical` |
-| `OMP_IF(args)` / `OMP_SCHEDULE(args)` | conditional / schedule wrappers |
-| `PRAGMA_OMP_DECLARE_SIMD_SAFE` | SIMD declaration with unsupported-type warning suppression |
-
-**Template instantiation** (`system/type_boilerplate.h`) -- never manually instantiate templates for each type:
-
-| Macro | Purpose |
-|---|---|
-| `BUILD_SINGLE_TEMPLATE(NAME, SIG, TYPES)` | Instantiate a template for all types in a type list |
-| `BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIG, TYPES)` | Runtime type dispatch (switch on DataType) |
-| `BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, ...)` | Two-type dispatch |
-| `BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, ...)` | Three-type dispatch |
-
-**Other macros:**
-
-| Macro | Source | Purpose |
-|---|---|---|
-| `SD_PROMOTE_FUNC(NAME, BODY)` | `math/templatemath.h` | Binary math with automatic type promotion |
-| `DECLARE_PLATFORM(NAME, ENGINE)` | `system/platform_boilerplate.h` | Declare a platform-specific op |
-| `PLATFORM_IMPL(NAME, ENGINE)` | `system/platform_boilerplate.h` | Implement the op |
-| `PLATFORM_CHECK(NAME, ENGINE)` | `system/platform_boilerplate.h` | Check if platform can run the op |
+**Other**: `SD_PROMOTE_FUNC` (templatemath.h), `DECLARE_PLATFORM`/`PLATFORM_IMPL`/`PLATFORM_CHECK` (platform_boilerplate.h)
 
 ### Configuration and Environment
 
 When adding any new configuration option:
 1. Add it to `libnd4j/include/system/Environment.h` and `Environment.cpp` (C++ side).
-2. Add it to `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/factory/Environment.java` (Java interface).
+2. Add it to `nd4j/.../org/nd4j/linalg/factory/Environment.java` (Java interface).
 3. Add the system property constant to `ND4JSystemProperties.java`.
 4. Wire it through the preset if it needs JNI exposure.
 
 ### Generated Code
 
-**NEVER** edit generated code directly. Update the **presets** instead:
-- `nd4j-native-preset`, `nd4j-cuda-preset`, `nd4j-minimizer-preset`, `nd4j-tpu-preset`
-- Headers are automatically parsed by JavaCPP. Most of the time, modifying a header is sufficient -- the presets pick it up.
+**NEVER** edit generated code directly. Update the **presets** instead: `nd4j-native-preset`, `nd4j-cuda-preset`, `nd4j-minimizer-preset`, `nd4j-tpu-preset`. Headers are automatically parsed by JavaCPP.
 
 ### Debugging
 
-- Use `array->printIndexedBuffer()` for printing NDArray values -- never manual loops (wrong strides, wrong types, missing sync).
+- Use `array->printIndexedBuffer()` for printing NDArray values -- never manual loops.
 - Gate diagnostics behind `isVerbose`/`isDebug` -- no unconditional `syncToHost`.
-- Make diagnostics reusable: add to DSP diagnostics or OpTimingTracker, not one-off prints. Diagnostic code should be toggleable via configuration, not commented-out code.
+- Make diagnostics reusable: add to DSP diagnostics or OpTimingTracker, not one-off prints.
 
 ---
 
@@ -269,13 +210,13 @@ When adding any new configuration option:
 
 ### Core Principles
 
-**Maximize configuration optionality.** The goal is to blend different execution configurations (graph replay, slot-based, Triton-compiled, cuBLAS fallback) for optimal performance. Skipping kernels or falling back to slot-by-slot destroys this optionality. Every execution path must work correctly so configurations can be mixed freely.
+**Maximize configuration optionality.** The goal is to blend execution configurations (graph replay, slot-based, Triton-compiled, cuBLAS fallback) for optimal performance. Every execution path must work correctly so configurations can be mixed freely.
 
-**Fix bugs encountered during profiling.** When profiling and you encounter a crash, wrong result, or other bug, fix it immediately (dispatch a parallel task if needed). Profiling is not an excuse to ignore correctness.
+**Fix bugs encountered during profiling.** Dispatch a parallel task if needed. Profiling is not an excuse to ignore correctness.
 
 ### DSP Diagnostics
 
-When debugging DSP (DynamicShapePlan) related issues, **always use DSP diagnostics**. Do NOT add ad-hoc printf/logging.
+When debugging DSP issues, **always use DSP diagnostics**. Do NOT add ad-hoc printf/logging.
 
 **Header:** `libnd4j/include/graph/DspDiagnostics.h` | **Impl:** `libnd4j/include/graph/impl/DspDiagnostics.cpp`
 
@@ -289,48 +230,14 @@ cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
   2>&1 | tee /tmp/my-test.log
 ```
 
-**CRITICAL: If you don't see DSP_DIAG output, the level is probably not `full`.** At `summary` (the default), events go to a ring buffer and are only printed in the plan report at the end. Set `full` for real-time event output.
+**CRITICAL: If you don't see DSP_DIAG output, the level is probably not `full`.** At `summary` (default), events go to a ring buffer and are only printed at plan end. Set `full` for real-time output.
 
-**Diagnostic levels:**
+**Levels:** `summary`(0) = category stats only | `detailed`(1) = per-step info | **`full`(2) = every event echoed in real-time**
 
-| Level | Value | Behavior |
-|---|---|---|
-| `summary` | 0 | Category stats only -- printed at plan end or `printPlanReport()` |
-| `detailed` | 1 | Per-step info tracked |
-| **`full`** | **2** | **Every event echoed to stdout in real-time -- use this for debugging** |
-
-**Diagnostic categories** (comma-separated, case-insensitive):
-
-| Category | What it traces |
-|---|---|
-| `COMPILE` | Backend compilation (Triton, MLIR) |
-| `JIT` | Kernel generation, PTX/cubin, cache hits/misses |
-| `EXECUTE` | Per-step execution flow, segment dispatch |
-| `TIMING` | Detailed timing breakdowns |
-| `MEMORY` | Allocations, OOM, failover, pool state |
-| `BACKEND` | Backend selection, device placement |
-| `SHAPE` | Shape analysis, static/dynamic, frozen detection |
-| `SEGMENT` | Segment building, boundaries, capturable analysis |
-| `FUSION` | Op fusion, identity elimination |
-| `VERIFY` | Golden comparison, output validation |
-| `KV_CACHE` | KV cache config, retention, scattering |
-| `FALLBACK` | Fallback events, error recovery |
-| `STREAM_SYNC` | Stream ordering, event waits, sync points |
-| `MULTI_DEVICE` | Device selection, P2P, migrations |
-| `GRAPH_REPLAY` | Capture/instantiate/launch/address validation |
-| `ALL` | All categories enabled |
+**Categories** (comma-separated, case-insensitive): `COMPILE`, `JIT`, `EXECUTE`, `TIMING`, `MEMORY`, `BACKEND`, `SHAPE`, `SEGMENT`, `FUSION`, `VERIFY`, `KV_CACHE`, `FALLBACK`, `STREAM_SYNC`, `MULTI_DEVICE`, `GRAPH_REPLAY`, `ALL`
 
 **Maven properties -> env vars** (configured in `platform-tests/pom.xml`):
-
-| Maven `-D` property | Env var in forked JVM |
-|---|---|
-| `nd4j.dsp.diagnostics` | `ND4J_DSP_DIAGNOSTICS` |
-| `nd4j.dsp.diagnostics.level` | `ND4J_DSP_DIAGNOSTICS_LEVEL` |
-| `nd4j.dsp.diagnostics.file` | `ND4J_DSP_DIAGNOSTICS_FILE` |
-
-**Legacy env vars** (auto-mapped): `ND4J_DSP_TRACE` -> EXECUTE, `ND4J_TRITON_VERBOSE` -> COMPILE|JIT|BACKEND, `ND4J_DSP_EXECUTION_TIMING` -> TIMING, `ND4J_DSP_NATIVE_DUMP_OUTPUTS` -> VERIFY.
-
-Ring buffer: 65,536 events, pre-allocated. `printPlanReport()` dumps stats regardless of level.
+`nd4j.dsp.diagnostics` -> `ND4J_DSP_DIAGNOSTICS`, `nd4j.dsp.diagnostics.level` -> `ND4J_DSP_DIAGNOSTICS_LEVEL`, `nd4j.dsp.diagnostics.file` -> `ND4J_DSP_DIAGNOSTICS_FILE`
 
 ### DSP System Properties
 
@@ -346,8 +253,8 @@ Ring buffer: 65,536 events, pre-allocated. `printPlanReport()` dumps stats regar
 | `nd4j.dsp.matmulSegmentation` | MatMul segmentation |
 | `nd4j.dsp.castElimination` | Cast elimination |
 | `nd4j.dsp.fp16Compute` | FP16 compute path |
-| `nd4j.dsp.trace` | Execution trace (-> EXECUTE category) |
-| `nd4j.dsp.executionTiming` | Timing (-> TIMING category) |
+| `nd4j.dsp.trace` | Execution trace (-> EXECUTE) |
+| `nd4j.dsp.executionTiming` | Timing (-> TIMING) |
 | `nd4j.op.timing` | Op timing |
 | `nd4j.optimizer.enabled` | GraphOptimizer |
 | `nd4j.optimizer.fp16` | FP16 weight pre-cast |
@@ -379,7 +286,7 @@ ADRs/                 -- Architecture Decision Records
 ### ADRs (Architecture Decision Records)
 
 New features and significant changes require ADR checks:
-1. Read existing ADRs in `ADRs/` to understand the format (Status, Context, Decision sections).
+1. Read existing ADRs in `ADRs/` to understand the format.
 2. Create a new ADR for new features or architectural decisions.
 3. Update existing ADRs when modifying behavior covered by a prior decision.
 
@@ -408,55 +315,27 @@ New features and significant changes require ADR checks:
 
 ### DSP Replay Analytics + Device Stubbing
 
-For multi-device testing on single-GPU machines, use `DeviceMemoryManager.configureStubTopology()` with `StubDeviceDescriptor` builders.
-
-| Class | Package | Purpose |
-|---|---|---|
-| `StubDeviceDescriptor` | `o.n.linalg.api.device` | Fake device with mutable memory, configurable peer topology, per-peer bandwidth |
-| `StubDeviceContextProvider` | `o.n.linalg.api.device` | Fake context provider with device switch history tracking |
-| `DspReplayTransferAnalytics` | `o.n.autodiff.samediff.execution` | Per-step/segment transfer recording, memory pressure rerouting |
-| `ReplayProfileManager` | `o.n.autodiff.samediff.execution` | Replay profiles enriched with transfer analytics |
-| `DeviceMemoryManager` | `o.n.linalg.api.device` | Singleton with `configureStubTopology()` for test-time multi-device simulation |
-
-**Usage pattern:**
-```java
-StubDeviceDescriptor gpu0 = StubDeviceDescriptor.builder(DeviceType.CUDA_GPU, 0)
-    .deviceName("Stub RTX 4090")
-    .totalMemory(24L * 1024 * 1024 * 1024)
-    .availableMemory(20L * 1024 * 1024 * 1024)
-    .addPeerDevice(1)
-    .peerBandwidth(1, 300L * 1024 * 1024 * 1024)
-    .build();
-
-DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
-mgr.configureStubTopology(Arrays.asList(gpu0, gpu1));
-```
-
-Always call `mgr.clearStubTopology()` in `@AfterEach`. Transfer recording uses `DspReplayTransferAnalytics.beginStep()`/`endStep()` brackets. Memory pressure rerouting via `checkMemoryPressureForTransfer()`. Progressive OOM simulation via `StubDeviceDescriptor.consumeMemory()`. Device switch tracking via `StubDeviceContextProvider.getSwitchHistory()`.
-
-Tests: `DspReplayDeviceAnalyticsTest` in `platform-tests/.../framework/device/`.
+For multi-device testing on single-GPU machines, use `DeviceMemoryManager.configureStubTopology()` with `StubDeviceDescriptor` builders. Key classes: `StubDeviceDescriptor`, `StubDeviceContextProvider`, `DspReplayTransferAnalytics`, `ReplayProfileManager`, `DeviceMemoryManager`. Always call `mgr.clearStubTopology()` in `@AfterEach`. Tests: `DspReplayDeviceAnalyticsTest` in `platform-tests/.../framework/device/`.
 
 ### CUDA-Specific Notes
 
 - Heap corruption is often from buffer overruns in native ops, not double-frees. The glibc `(!prev)` message means corrupted malloc metadata from a prior write.
-- Views from `.get()` / `.getRow()` on CUDA may have stale device buffers. Use `.dup()` after view operations when the result will be used outside the current SameDiff execution scope.
-- `Nd4j.argMax()` has issues with views/non-contiguous arrays. Manual iteration may be needed.
-- `setPrimaryBuffer` / `setSpecialBuffer` must keep allocation sizes in sync -- mismatched sizes cause overruns during sync.
+- Views from `.get()` / `.getRow()` on CUDA may have stale device buffers. Use `.dup()` after view operations outside SameDiff execution scope.
+- `setPrimaryBuffer` / `setSpecialBuffer` must keep allocation sizes in sync.
 - `p()` method: writes host then syncToDevice (hidden H2D). Don't bypass without understanding this.
 - `toFloatVector()` on CUDA views is extremely slow -- use `dup().data().asFloat()`.
 
 ### ONNX Import Notes
 
-- ONNX Gather with 2D constant indices `[[0]]` produces higher-rank output than expected. Squeeze single-element constant indices.
-- ONNX Softmax opset 13+ defaults axis to -1. The libnd4j softmax op normalizes negative dimensions.
+- ONNX Gather with 2D constant indices `[[0]]` produces higher-rank output. Squeeze single-element constant indices.
+- ONNX Softmax opset 13+ defaults axis to -1.
 - Mixed-type ops (FLOAT + LONG) silently truncate. Cast explicitly.
-- Attention masks must be FLOAT, not LONG, to work with FLOAT attention scores.
+- Attention masks must be FLOAT, not LONG.
 
 ### Double-Free and Shutdown Crashes
 
-When debugging double-frees, use-after-free, or shutdown crashes:
 - Always check the `DeallocatorService` for proper shutdown flags.
-- Verify that deallocation ordering respects object lifetimes.
+- Verify deallocation ordering respects object lifetimes.
 - Check that `setCloseable(false)` / `setConstant(true)` poisoning is properly undone.
 
 ---
@@ -474,17 +353,11 @@ When debugging double-frees, use-after-free, or shutdown crashes:
 1. Read the Maven output from the tee log.
 2. Check for missing imports, type mismatches, API changes.
 3. If an API changed in a dependency, grep for the new API signature.
-4. Fix and rebuild.
 
 ### Linker Errors
 1. Missing symbols -- usually a .cpp/.cu file not included in CMake.
 2. Duplicate symbols -- usually a header with non-inline function definitions.
 3. Check CMakeLists.txt if source files were added/removed.
-
-### CMake Errors
-1. Read the CMake output section of the build log.
-2. Check CMakeLists.txt for syntax errors or missing dependencies.
-3. Do NOT modify CMake configuration casually -- understand the build system first.
 
 ### Test Failures
 1. Read the full output from the tee log (NOT surefire reports).
@@ -502,8 +375,6 @@ All scripts live in `platform-tests/`:
 
 ### VLM Decode Benchmark (`run-benchmark.sh`)
 
-Primary benchmark for SmolDocling VLM decode throughput.
-
 ```bash
 cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests
 ./run-benchmark.sh [OPTIONS]
@@ -515,7 +386,7 @@ cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests
 | `--config NAME` | Config name (default: OPTIMAL) |
 | `--op-timing` | Enable native op timing CSV export |
 | `--op-timing-detailed` | Per-phase timing breakdown |
-| `--op-breakdown OPS` | Per-op timing for specific comma-separated ops |
+| `--op-breakdown OPS` | Per-op timing for specific ops |
 | `--op-histogram OPS` | Per-op timing histograms |
 | `--fp16` / `--no-fp16` | FP16 weight pre-casting (default: ON) |
 | `--no-optimizer` | Disable GraphOptimizer |
@@ -529,7 +400,7 @@ cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests
 
 ### LLM Multi-Model Benchmark (`run-llm-benchmarks.sh`)
 
-Runs across model families: qwen (0.8B), gemma (1B), phi, mistral, lfm2-extract (350M).
+Models: qwen (0.8B), gemma (1B), phi, mistral, lfm2-extract (350M).
 
 | Flag | Purpose |
 |---|---|
@@ -541,9 +412,6 @@ Runs across model families: qwen (0.8B), gemma (1B), phi, mistral, lfm2-extract 
 | `--quant TYPE` | Quantization type (default: Q4_K_M) |
 | `--op-timing` | Native op timing |
 | `--debug` | DSP diagnostics at FULL level |
-
-### CPU Benchmark (`run-benchmark-cpu.sh`)
-Wrapper for `run-benchmark.sh --backend cpu`.
 
 ### Performance Analysis Workflow
 
@@ -597,14 +465,7 @@ Sweeps 8 configs against golden SLOT_BY_SLOT baseline:
 | `TRITON_frozen_batchedGemm` | Full Triton + frozen + batched GEMM |
 | `CUDA_GRAPHS_frozen` | CUDA graph capture + replay |
 
-| Flag | Purpose |
-|---|---|
-| `--config NAME` | Run single config |
-| `--list` | Print available configs |
-| `--cpu` | CPU backend |
-| `--no-triton` | Skip Triton kernels |
-| `--diag-replay` / `--diag-segment` / `--diag-phase` / `--diag-all` | Diagnostics |
-| `--diag-json FILE` | JSON diagnostic report |
+Flags: `--config NAME`, `--list`, `--cpu`, `--no-triton`, `--diag-replay`/`--diag-segment`/`--diag-phase`/`--diag-all`, `--diag-json FILE`
 
 ### Domain Test Suites (in `platform-tests/`)
 
@@ -631,7 +492,7 @@ Sweeps 8 configs against golden SLOT_BY_SLOT baseline:
 | `TestDspPipelineFacets` | Pipeline facet integration |
 | `TestNativeDecodeLoopRegression` | Native decode loop regression |
 | `TestMythicPdfRegression` | Mythic PDF regression |
-| `DspPlanAssertions` | Shared assertion helper (phases: POINTERS_STABLE, REPLAYING) |
+| `DspPlanAssertions` | Shared assertion helper (POINTERS_STABLE, REPLAYING) |
 
 ---
 
@@ -689,7 +550,7 @@ Success: TestClass all pass."
 
 Subagents do NOT automatically inherit knowledge of AGENTS.md. When dispatching a subagent, you **MUST** include:
 
-1. **Explicit rule reminders.** Copy the specific rules that apply. Do NOT say "follow AGENTS.md." Key rules to always include:
+1. **Explicit rule reminders.** Copy the specific rules that apply. Key rules to always include:
    - Git Safety: NEVER use `git checkout`, `git stash`, `git reset --hard`, or `git clean`
    - No Workarounds: Fix root causes directly
    - Build commands: Include the exact build command. NEVER use `make` directly
@@ -702,3 +563,28 @@ Subagents do NOT automatically inherit knowledge of AGENTS.md. When dispatching 
 3. **Scope boundaries.** Tell the subagent exactly what it should and should NOT modify.
 
 **If a subagent violates a rule**, it is YOUR fault for not including the rule in the prompt.
+
+---
+
+## Kompile Tool Usage
+
+Use kompile MCP tools for all file I/O, search, and web operations. Bash is restricted to system commands only (compiling, testing, git, package managers).
+
+| Operation | Tool |
+|---|---|
+| Read files | `read` (not cat/head/tail) |
+| Write files | `write` (not echo/heredoc) |
+| Edit files | `edit` (not sed/awk) |
+| Search content | `grep` (not grep/rg) |
+| Find files | `glob` (not find/fd) |
+| List dirs | `list` (not ls) |
+| Fetch URLs | `webfetch` (not curl/wget) |
+| Web search | `websearch` |
+
+Always `read` before `edit`. In multi-agent mode, use `edit_coordinator` to lock files. For multi-step tasks, use `todowrite` to track progress.
+
+---
+
+## Skills
+
+Skills are loaded on-demand via `/skillname` and are managed by the skill manager. They are NOT inlined here. Use the Skill tool or invoke `/skillname` to load a skill. Available skills include: `commit`, `pr`, `review`, `simplify`, `explain`, `test`, `fix`, `bench`, `build-fix`, `dispatch`, `dl4j-build`, `dl4j-test`, `dl4j`, `dsp-debug`, `full-loop`, `investigate`, `k-agents`, `k-config`, `k-files`, `k-memory`, `k-process`, `k-research`, `k-search-code`, `k-todo`, `k-track`, `regress`, `test-fix`, `workflow`.

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -366,6 +367,9 @@ public class TestDspShapePrePass {
         log.info("Transformer block output: shape={} dtype={} min={} max={}",
                 Arrays.toString(out.shape()), out.dataType(),
                 out.minNumber().floatValue(), out.maxNumber().floatValue());
+
+        // After execution, no segment failures should have occurred
+        DspPlanAssertions.assertNoSegmentFailures(sd2, "transformerBlock");
     }
 
     // ─── Test: Shape pre-pass vs normal execution consistency ─────────────
@@ -481,6 +485,9 @@ public class TestDspShapePrePass {
 
         log.info("Prefill logits shape: {}", Arrays.toString(prefillResult.get("logits").shape()));
         log.info("Decode logits shape: {}", Arrays.toString(decodeResult.get("logits").shape()));
+
+        // After shape transition (prefill→decode), no segment failures
+        DspPlanAssertions.assertNoSegmentFailures(sd, "prefillThenDecode");
     }
 
     // ─── Test: Mixed dtype concat (FP16 constants + FP32 activations) ────

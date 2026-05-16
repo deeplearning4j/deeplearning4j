@@ -44,6 +44,12 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
     }
     std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
 
+    // Write canary stamps in the padding area to detect buffer overruns
+    static constexpr LongType SHAPE_CANARY = static_cast<LongType>(0x5AFE5AFE5AFE5AFELL);
+    for (int i = 0; i < 8 && (shapeInfoLength + i) < (shapeInfoLength + SD_SHAPE_ALLOC_PADDING); i++) {
+        shapeCopy[shapeInfoLength + i] = SHAPE_CANARY;
+    }
+
     // Previously used PointerDeallocator (no-op) which leaked memory
     auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(
         new PrimaryPointerDeallocator(),

@@ -30,6 +30,7 @@
 #include <array/DataTypeUtils.h>
 #include <array/ShapeList.h>
 #include <array/DataBuffer.h>
+#include <memory/cuda/CudaMemoryPool.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -302,7 +303,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, execDevice,
                       execEnv.tritonCompileAll(),
                       std::hash<std::string>()(execEnv.tritonExcludeOps()),
-                      std::hash<std::string>()(execEnv.tritonIncludeTypes())};
+                      std::hash<std::string>()(execEnv.tritonIncludeTypes()),
+                      execEnv.tritonGraphCapture()};
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -411,10 +413,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         }
 
         // Sync all INPUT arrays to device.
-        // External inputs (slotIndex < 0) use forceSync=true because readSpecial()
-        // from prior sub-kernels or markOrderedRangeDeviceCurrent() can leave
-        // isSpecialActual()=true even after Java modifies the host buffer. Without
-        // forceSync, the actuality check would skip the H2D, leaving stale device data.
+        // External inputs (slotIndex < 0) use conditional logic matching executeSingleKernel
+        // (TritonGraphBackend_kernel.cu:198-213): only force H2D when host is actual and
+        // device is stale (pAct && !sAct). If device is already actual (e.g. written by a
+        // native gap op or writeDeviceBufferOnDefaultStream), do NOT force H2D — that would
+        // overwrite valid device data with stale host data.
         for (auto& argMapping : sk.argSlotMapping) {
           if (argMapping.isOutput) continue;
           NDArray* arr = nullptr;
@@ -427,7 +430,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           }
           if (arr && arr->lengthOf() > 0) {
             if (isExternal && arr->dataBuffer()) {
-              arr->dataBuffer()->syncToSpecial(true);
+              bool pAct = arr->dataBuffer()->isPrimaryActual();
+              bool sAct = arr->dataBuffer()->isSpecialActual();
+              if (pAct && !sAct) {
+                // Host was updated by Java, device is stale — force H2D
+                arr->dataBuffer()->syncToSpecial(true);
+              } else {
+                // Device already actual — do not overwrite valid GPU data with stale host
+                arr->syncToDevice();
+              }
             } else {
               arr->syncToDevice();
             }
@@ -1495,7 +1506,8 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   bool compileAll = gapEnv.tritonCompileAll();
   size_t excludeOpsHash = std::hash<std::string>()(gapEnv.tritonExcludeOps());
   size_t includeTypesHash = std::hash<std::string>()(gapEnv.tritonIncludeTypes());
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, activeDevice, compileAll, excludeOpsHash, includeTypesHash};
+  bool graphCapture = gapEnv.tritonGraphCapture();
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, activeDevice, compileAll, excludeOpsHash, includeTypesHash, graphCapture};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
   auto it = cache_.find(key);
@@ -1562,7 +1574,11 @@ void TritonGraphBackend::invalidateCache() {
       if (seg.consolidatedArgTableDevice != nullptr) {
         recordModuleFree(seg.consolidatedArgTableDeviceId >= 0 ? seg.consolidatedArgTableDeviceId : segDeviceId,
                          seg.consolidatedArgTableBytes);
-        cudaFree(seg.consolidatedArgTableDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed.
+        // The workspace base is freed separately by releaseWorkspace/unregisterCaptureWorkspace.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(seg.consolidatedArgTableDevice)) {
+          cudaFree(seg.consolidatedArgTableDevice);
+        }
         seg.consolidatedArgTableDevice = nullptr;
         seg.consolidatedArgTableBytes = 0;
       }
@@ -1587,7 +1603,10 @@ void TritonGraphBackend::invalidateCache() {
       // arg tables were freed above; per-kernel pointers are interior offsets).
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableDevice != nullptr) {
         recordModuleFree(kDevId, kernel.cachedArgTableBytes);
-        cudaFree(kernel.cachedArgTableDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(kernel.cachedArgTableDevice)) {
+          cudaFree(kernel.cachedArgTableDevice);
+        }
         kernel.cachedArgTableDevice = nullptr;
         kernel.cachedArgTableBytes = 0;
         kernel.cachedArgTableDeviceId = -1;
@@ -1601,14 +1620,20 @@ void TritonGraphBackend::invalidateCache() {
       if (kernel.cachedSyncCounterDevice != nullptr) {
         recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : segDeviceId,
                          sizeof(int));
-        cudaFree(kernel.cachedSyncCounterDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(kernel.cachedSyncCounterDevice)) {
+          cudaFree(kernel.cachedSyncCounterDevice);
+        }
         kernel.cachedSyncCounterDevice = nullptr;
         kernel.cachedSyncCounterDeviceId = -1;
       }
       if (kernel.cachedGlobalScratchDevice != nullptr) {
         recordModuleFree(kernel.cachedGlobalScratchDeviceId >= 0 ? kernel.cachedGlobalScratchDeviceId : segDeviceId,
                          kernel.cachedGlobalScratchBytes);
-        cudaFree(kernel.cachedGlobalScratchDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(kernel.cachedGlobalScratchDevice)) {
+          cudaFree(kernel.cachedGlobalScratchDevice);
+        }
         kernel.cachedGlobalScratchDevice = nullptr;
         kernel.cachedGlobalScratchBytes = 0;
         kernel.cachedGlobalScratchDeviceId = -1;
@@ -1661,7 +1686,13 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       if (seg.consolidatedArgTableDevice != nullptr) {
         recordModuleFree(seg.consolidatedArgTableDeviceId >= 0 ? seg.consolidatedArgTableDeviceId : segDeviceId,
                          seg.consolidatedArgTableBytes);
-        cudaFree(seg.consolidatedArgTableDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed with cudaFree.
+        // The workspace base is freed by releaseWorkspace/unregisterCaptureWorkspace (called
+        // AFTER invalidateCacheForSegments in platformFreePlanResources). Skip cudaFree here;
+        // the memory will be reclaimed when the workspace block is freed.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(seg.consolidatedArgTableDevice)) {
+          cudaFree(seg.consolidatedArgTableDevice);
+        }
       }
       if (seg.consolidatedArgTableHostPinned != nullptr) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();
@@ -1678,7 +1709,10 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       int kDevId = kernel.cachedArgTableDeviceId >= 0 ? kernel.cachedArgTableDeviceId : segDeviceId;
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableDevice != nullptr) {
         recordModuleFree(kDevId, kernel.cachedArgTableBytes);
-        cudaFree(kernel.cachedArgTableDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(kernel.cachedArgTableDevice)) {
+          cudaFree(kernel.cachedArgTableDevice);
+        }
       }
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();
@@ -1687,12 +1721,18 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       if (kernel.cachedSyncCounterDevice != nullptr) {
         recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : segDeviceId,
                          sizeof(int));
-        cudaFree(kernel.cachedSyncCounterDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(kernel.cachedSyncCounterDevice)) {
+          cudaFree(kernel.cachedSyncCounterDevice);
+        }
       }
       if (kernel.cachedGlobalScratchDevice != nullptr) {
         recordModuleFree(kernel.cachedGlobalScratchDeviceId >= 0 ? kernel.cachedGlobalScratchDeviceId : segDeviceId,
                          kernel.cachedGlobalScratchBytes);
-        cudaFree(kernel.cachedGlobalScratchDevice);
+        // Guard: capture workspace interior pointers cannot be individually freed.
+        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(kernel.cachedGlobalScratchDevice)) {
+          cudaFree(kernel.cachedGlobalScratchDevice);
+        }
       }
       if (kernel.gpuModule) {
         recordModuleFree(kDevId, kernel.estimatedModuleBytes);

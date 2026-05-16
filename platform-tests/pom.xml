@@ -1673,6 +1673,8 @@
                         <ND4J_DSP_DISABLE_WS_SKIP>${nd4j.dsp.disableWsSkip}</ND4J_DSP_DISABLE_WS_SKIP>
                         <ND4J_DSP_CAPTURE_WORKSPACE_MB>${nd4j.dsp.captureWorkspaceMb}</ND4J_DSP_CAPTURE_WORKSPACE_MB>
                         <ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB>${nd4j.dsp.captureHostWorkspaceMb}</ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB>
+                        <ND4J_DEBUG>${nd4j.debug}</ND4J_DEBUG>
+                        <ND4J_VERBOSE>${nd4j.verbose}</ND4J_VERBOSE>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->

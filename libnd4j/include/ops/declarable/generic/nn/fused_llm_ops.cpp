@@ -153,36 +153,32 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
         helpers::fusedRoPECached(input, cosValues, sinValues, output, ropeType,
                                   block.launchContext());
     } else {
-        // Dynamic position from scalar input tensor (2-input, rank-0 input[1])
-        // or static iArg (1-input path, or 2-input ropeCache path with rank > 0 input[1])
-        const void* positionOffsetPtr;
-        LongType staticPosOffset = 0;
+        // Position-offset path: position is read from device pointer by the kernel
+        // (capture-safe — no host sync needed).
+        float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
+        float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
+
         if (block.width() == 2) {
             auto secondInput = INPUT_VARIABLE(1);
             if (secondInput->rankOf() == 0 || secondInput->isScalar()) {
-                // Scalar position offset tensor (dynamic position for KV cache decode).
-                // CUDA graph compatible: pass the DEVICE pointer so the kernel reads the
-                // value at runtime, not a host-baked constant from capture time.
-                // The old code used secondInput->e<int>(0) which reads from the HOST buffer
-                // and bakes the value as a constant during CUDA graph capture.
-#if defined(SD_CUDA)
-                positionOffsetPtr = secondInput->specialBuffer();
-#else
-                positionOffsetPtr = secondInput->buffer();
-#endif
+                // Pass position NDArray directly — kernel reads from device pointer.
+                helpers::fusedRoPE(input, output, secondInput, freqBase, freqScale, ropeType,
+                                    block.launchContext(), rotaryDims);
             } else {
-                // RoPE cache tensor (not a position) — fall back to iArg
-                staticPosOffset = block.getIArguments()->size() > 1 ? static_cast<LongType>(INT_ARG(1)) : 0;
-                positionOffsetPtr = &staticPosOffset;
+                // RoPE cache tensor (not a position) — fall back to iArg via scalar
+                LongType posVal = block.getIArguments()->size() > 1 ? static_cast<LongType>(INT_ARG(1)) : 0;
+                auto posArr = NDArrayFactory::create_<LongType>(posVal, block.launchContext());
+                helpers::fusedRoPE(input, output, posArr, freqBase, freqScale, ropeType,
+                                    block.launchContext(), rotaryDims);
+                delete posArr;
             }
         } else {
-            staticPosOffset = block.getIArguments()->size() > 1 ? static_cast<LongType>(INT_ARG(1)) : 0;
-            positionOffsetPtr = &staticPosOffset;
+            LongType posVal = block.getIArguments()->size() > 1 ? static_cast<LongType>(INT_ARG(1)) : 0;
+            auto posArr = NDArrayFactory::create_<LongType>(posVal, block.launchContext());
+            helpers::fusedRoPE(input, output, posArr, freqBase, freqScale, ropeType,
+                                block.launchContext(), rotaryDims);
+            delete posArr;
         }
-        float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
-        float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
-        helpers::fusedRoPE(input, output, positionOffsetPtr, freqBase, freqScale, ropeType,
-                            block.launchContext(), rotaryDims);
     }
 
     return Status::OK;

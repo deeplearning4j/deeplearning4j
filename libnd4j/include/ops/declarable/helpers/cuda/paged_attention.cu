@@ -46,7 +46,7 @@ namespace helpers {
 // ──────────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static __global__ void pagedAttentionDecodeKernel(
+static __global__ __launch_bounds__(256, 2) void pagedAttentionDecodeKernel(
     const T* __restrict__ query,          // [batch, 1, numHeads, headDim]
     const T* __restrict__ keyPool,        // [numBlocks, blockSize, numKvHeads, headDim]
     const T* __restrict__ valuePool,      // [numBlocks, blockSize, numKvHeads, headDim]
@@ -129,7 +129,7 @@ static __global__ void pagedAttentionDecodeKernel(
     if (tid == 0) {
         sumExp = 0.0f;
         for (int i = 0; i < ctxLen; i++) {
-            scores[i] = expf(scores[i] - maxScore);
+            scores[i] = __expf(scores[i] - maxScore);
             sumExp += scores[i];
         }
         // Normalize
@@ -164,7 +164,7 @@ static __global__ void pagedAttentionDecodeKernel(
 // ──────────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static __global__ void pagedKvAppendKernel(
+static __global__ __launch_bounds__(256, 2) void pagedKvAppendKernel(
     T* __restrict__ keyPool,              // [numBlocks, blockSize, numKvHeads, headDim]
     T* __restrict__ valuePool,            // [numBlocks, blockSize, numKvHeads, headDim]
     const T* __restrict__ newKeys,        // [batch, newLen, numKvHeads, headDim]

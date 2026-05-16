@@ -123,6 +123,20 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
  LongType* returnedShapeInfo = buffer->primary();
  LongType returnedRank = returnedShapeInfo[0];
  if (returnedRank < 0 || returnedRank > SD_MAX_RANK) {
+   // Shape data corruption detected. Check canary stamps in the padding area
+   // to determine whether this is an adjacent buffer overrun or a pointer mutation.
+   static constexpr LongType SHAPE_CANARY = static_cast<LongType>(0x5AFE5AFE5AFE5AFELL);
+   int expectedLen = shape::shapeInfoLength(static_cast<int>(inputRank));
+   int canariesIntact = 0;
+   int canariesCorrupted = 0;
+   for (int i = 0; i < 8; i++) {
+     if (returnedShapeInfo[expectedLen + i] == SHAPE_CANARY) {
+       canariesIntact++;
+     } else {
+       canariesCorrupted++;
+     }
+   }
+
    std::string errorMessage = "bufferForShapeInfo: RETURNED buffer contains invalid rank: ";
    errorMessage += std::to_string(returnedRank);
    errorMessage += " (input rank was: ";
@@ -133,6 +147,19 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(returnedShapeInfo));
    errorMessage += ", ConstantShapeBuffer ptr: ";
    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(buffer));
+   errorMessage += ", canaries intact: ";
+   errorMessage += std::to_string(canariesIntact);
+   errorMessage += "/8, corrupted: ";
+   errorMessage += std::to_string(canariesCorrupted);
+   errorMessage += "/8";
+
+   // Dump the first 16 values of the returned shape buffer for forensics
+   errorMessage += ", data[0..15]: ";
+   for (int i = 0; i < 16; i++) {
+     char hexBuf[32];
+     snprintf(hexBuf, sizeof(hexBuf), "0x%lx ", static_cast<unsigned long>(returnedShapeInfo[i]));
+     errorMessage += hexBuf;
+   }
    errorMessage += ")";
    THROW_EXCEPTION(errorMessage.c_str());
  }

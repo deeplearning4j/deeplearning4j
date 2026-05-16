@@ -92,6 +92,16 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
     }
 
     /**
+     * SameDiff constructor with cache_position (codegen-compatible, defaults numOutputs=3).
+     */
+    public OnnxMultiHeadAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
+                                  SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
+                                  SDVariable cachePosition,
+                                  int numHeads, double scale, boolean useCausalMask) {
+        this(sd, query, key, value, attnBias, pastKey, pastValue, cachePosition, numHeads, scale, useCausalMask, 3);
+    }
+
+    /**
      * SameDiff constructor with cache_position for in-place KV write mode.
      * When cachePosition is non-null, the op writes current K/V at that position
      * in past_key/past_value (in-place) instead of concatenating. This fixes causal
@@ -137,6 +147,23 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
         Preconditions.checkArgument(numOutputs >= 1 && numOutputs <= 3,
                 "numOutputs must be in [1, 3], got %s", numOutputs);
         this.numOutputs = numOutputs;
+        addIArgument(numHeads);
+        addIArgument(useCausalMask ? 1 : 0);
+        addTArgument(scale);
+    }
+
+    /**
+     * INDArray constructor with cachePosition (codegen-compatible, defaults numOutputs=3).
+     */
+    public OnnxMultiHeadAttention(INDArray query, INDArray key, INDArray value,
+                                  INDArray attnBias, INDArray pastKey, INDArray pastValue,
+                                  INDArray cachePosition,
+                                  int numHeads, double scale, boolean useCausalMask) {
+        super(buildInputs(query, key, value, attnBias, pastKey, pastValue, cachePosition), null);
+        this.numHeads = numHeads;
+        this.scale = scale;
+        this.useCausalMask = useCausalMask;
+        this.numOutputs = 3;
         addIArgument(numHeads);
         addIArgument(useCausalMask ? 1 : 0);
         addTArgument(scale);

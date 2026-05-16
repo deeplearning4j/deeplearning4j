@@ -49,7 +49,9 @@ PLATFORM_IMPL(xw_plus_b, ENGINE_CPU) {
                "But got rank %i, and got length %i instead %i.",
                z->sizeAt(-1), b->rankOf(), b->lengthOf(), z->sizeAt(-1));
 
-  const bool bShouldTransp = block.getIArguments()->size() > 0 ? (1 != INT_ARG(0)) : true;
+  // INT_ARG(1) is bTranspose (weight transpose). When bTranspose=0, user weights
+  // are [K,N] and need transposing. When bTranspose=1, already in [N,K] form.
+  const bool bShouldTransp = block.getIArguments()->size() > 1 ? (0 == INT_ARG(1)) : true;
 
   // Create ARM Compute tensor info
   auto xInfo = getArmTensorInfo(*x, Arm_DataLayout::UNKNOWN);

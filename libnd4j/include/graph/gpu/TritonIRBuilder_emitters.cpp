@@ -53,6 +53,7 @@ using namespace ir_builder_internal;
 
 mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
                                                     const TritonOpMapping& mapping,
+                                                    const NativeSlot& slot,
                                                     mlir::Value lhs, mlir::Value rhs) {
   auto opIr = mapping.tritonIrOp;
   bool lhsIsFloat = isFloatType(lhs.getType());
@@ -164,6 +165,251 @@ mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mli
     auto logBase = builder.create<mlir::math::LogOp>(loc, absBase);
     auto eLogBase = builder.create<mlir::arith::MulFOp>(loc, rhs, logBase);
     return builder.create<mlir::math::ExpOp>(loc, eLogBase);
+  }
+
+  // ─── Activation backward ops ──────────────────────────────────────────────
+  // All _bp ops: lhs = x (forward input), rhs = dy (upstream gradient)
+  // Output: dx = dy * f'(x)
+
+  if (opIr == "custom.relu_bp") {
+    // relu_bp: dx = x > 0 ? dy : 0
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto cmp = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGT, lhs, zero);
+    return builder.create<mlir::arith::SelectOp>(loc, cmp, rhs, zero);
+  }
+
+  if (opIr == "custom.relu6_bp") {
+    // relu6_bp: dx = (x > 0 && x < 6) ? dy : 0
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto six = splatConstantF32(builder, loc, tensorTy, 6.0f);
+    auto gtZero = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGT, lhs, zero);
+    auto ltSix = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLT, lhs, six);
+    auto inRange = builder.create<mlir::arith::AndIOp>(loc, gtZero, ltSix);
+    return builder.create<mlir::arith::SelectOp>(loc, inRange, rhs, zero);
+  }
+
+  if (opIr == "custom.thresholdedrelu_bp") {
+    // thresholdedrelu_bp: dx = x > threshold ? dy : 0
+    float threshold = 0.0f;
+    if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+      threshold = static_cast<float>(slot.args.tArgs[0]);
+    }
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto threshSplat = splatConstantF32(builder, loc, tensorTy, threshold);
+    auto cmp = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGT, lhs, threshSplat);
+    return builder.create<mlir::arith::SelectOp>(loc, cmp, rhs, zero);
+  }
+
+  if (opIr == "custom.sigmoid_bp") {
+    // sigmoid_bp: s = sigmoid(x), dx = dy * s * (1 - s)
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto negX = builder.create<mlir::arith::NegFOp>(loc, lhs);
+    auto expNegX = builder.create<mlir::math::ExpOp>(loc, negX);
+    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
+    auto sig = builder.create<mlir::arith::DivFOp>(loc, one, onePlusExp);
+    auto oneMinusSig = builder.create<mlir::arith::SubFOp>(loc, one, sig);
+    auto sigDeriv = builder.create<mlir::arith::MulFOp>(loc, sig, oneMinusSig);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, sigDeriv);
+  }
+
+  if (opIr == "custom.tanh_bp") {
+    // tanh_bp: t = tanh(x), dx = dy * (1 - t^2)
+    // Numerically stable: clamp input to [-10,10]
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto clampLo = splatConstantF32(builder, loc, tensorTy, -10.0f);
+    auto clampHi = splatConstantF32(builder, loc, tensorTy, 10.0f);
+    auto clampedLo = builder.create<mlir::arith::MaximumFOp>(loc, lhs, clampLo);
+    auto clamped = builder.create<mlir::arith::MinimumFOp>(loc, clampedLo, clampHi);
+    auto two = splatConstantF32(builder, loc, tensorTy, 2.0f);
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto twoX = builder.create<mlir::arith::MulFOp>(loc, two, clamped);
+    auto exp2x = builder.create<mlir::math::ExpOp>(loc, twoX);
+    auto num = builder.create<mlir::arith::SubFOp>(loc, exp2x, one);
+    auto den = builder.create<mlir::arith::AddFOp>(loc, exp2x, one);
+    auto tanhX = builder.create<mlir::arith::DivFOp>(loc, num, den);
+    auto tanhSq = builder.create<mlir::arith::MulFOp>(loc, tanhX, tanhX);
+    auto deriv = builder.create<mlir::arith::SubFOp>(loc, one, tanhSq);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, deriv);
+  }
+
+  if (opIr == "custom.elu_bp") {
+    // elu_bp: dx = dy * (x >= 0 ? 1 : alpha * exp(x)), default alpha = 1.0
+    float alpha = 1.0f;
+    if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+      alpha = static_cast<float>(slot.args.tArgs[0]);
+    }
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto alphaSplat = splatConstantF32(builder, loc, tensorTy, alpha);
+    auto expX = builder.create<mlir::math::ExpOp>(loc, lhs);
+    auto negDeriv = builder.create<mlir::arith::MulFOp>(loc, alphaSplat, expX);
+    auto cmp = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGE, lhs, zero);
+    auto deriv = builder.create<mlir::arith::SelectOp>(loc, cmp, one, negDeriv);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, deriv);
+  }
+
+  if (opIr == "custom.selu_bp") {
+    // selu_bp: dx = dy * (x > 0 ? lambda : alpha * lambda * exp(x))
+    float lambda = 1.0507009873554804934193349852946f;
+    float alphaLambda = 1.6732632423543772848170429916717f * lambda;
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto lambdaSplat = splatConstantF32(builder, loc, tensorTy, lambda);
+    auto alphaLambdaSplat = splatConstantF32(builder, loc, tensorTy, alphaLambda);
+    auto expX = builder.create<mlir::math::ExpOp>(loc, lhs);
+    auto negDeriv = builder.create<mlir::arith::MulFOp>(loc, alphaLambdaSplat, expX);
+    auto cmp = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGT, lhs, zero);
+    auto deriv = builder.create<mlir::arith::SelectOp>(loc, cmp, lambdaSplat, negDeriv);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, deriv);
+  }
+
+  if (opIr == "custom.lrelu_bp") {
+    // lrelu_bp: dx = x < 0 ? alpha * dy : dy
+    float alpha = 0.01f;
+    if (slot.args.numTArgs > 0 && slot.args.tArgs) {
+      alpha = static_cast<float>(slot.args.tArgs[0]);
+    }
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto alphaSplat = splatConstantF32(builder, loc, tensorTy, alpha);
+    auto alphaDy = builder.create<mlir::arith::MulFOp>(loc, alphaSplat, rhs);
+    auto cmp = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLT, lhs, zero);
+    return builder.create<mlir::arith::SelectOp>(loc, cmp, alphaDy, rhs);
+  }
+
+  if (opIr == "custom.softplus_bp") {
+    // softplus_bp: dx = dy * sigmoid(x)
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto negX = builder.create<mlir::arith::NegFOp>(loc, lhs);
+    auto expNegX = builder.create<mlir::math::ExpOp>(loc, negX);
+    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
+    auto sig = builder.create<mlir::arith::DivFOp>(loc, one, onePlusExp);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, sig);
+  }
+
+  if (opIr == "custom.softsign_bp") {
+    // softsign_bp: dx = dy / (1 + |x|)^2
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto absX = builder.create<mlir::math::AbsFOp>(loc, lhs);
+    auto denom = builder.create<mlir::arith::AddFOp>(loc, one, absX);
+    auto denomSq = builder.create<mlir::arith::MulFOp>(loc, denom, denom);
+    return builder.create<mlir::arith::DivFOp>(loc, rhs, denomSq);
+  }
+
+  if (opIr == "custom.hardsigmoid_bp") {
+    // hardsigmoid_bp: dx = dy * (0.2 if -2.5 <= x <= 2.5 else 0)
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto fifth = splatConstantF32(builder, loc, tensorTy, 0.2f);
+    auto lo = splatConstantF32(builder, loc, tensorTy, -2.5f);
+    auto hi = splatConstantF32(builder, loc, tensorTy, 2.5f);
+    auto geLo = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGE, lhs, lo);
+    auto leHi = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLE, lhs, hi);
+    auto inRange = builder.create<mlir::arith::AndIOp>(loc, geLo, leHi);
+    auto scaledDy = builder.create<mlir::arith::MulFOp>(loc, rhs, fifth);
+    return builder.create<mlir::arith::SelectOp>(loc, inRange, scaledDy, zero);
+  }
+
+  if (opIr == "custom.hardtanh_bp") {
+    // hardtanh_bp: dx = dy * (1 if -1 <= x <= 1 else 0)
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto negOne = splatConstantF32(builder, loc, tensorTy, -1.0f);
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto geLo = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGE, lhs, negOne);
+    auto leHi = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLE, lhs, one);
+    auto inRange = builder.create<mlir::arith::AndIOp>(loc, geLo, leHi);
+    return builder.create<mlir::arith::SelectOp>(loc, inRange, rhs, zero);
+  }
+
+  if (opIr == "custom.silu_bp") {
+    // silu_bp: s = sigmoid(x), dx = dy * (s + x * s * (1 - s))
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto negX = builder.create<mlir::arith::NegFOp>(loc, lhs);
+    auto expNegX = builder.create<mlir::math::ExpOp>(loc, negX);
+    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
+    auto sig = builder.create<mlir::arith::DivFOp>(loc, one, onePlusExp);
+    auto oneMinusSig = builder.create<mlir::arith::SubFOp>(loc, one, sig);
+    auto xTimesSig = builder.create<mlir::arith::MulFOp>(loc, lhs, sig);
+    auto xSig1mS = builder.create<mlir::arith::MulFOp>(loc, xTimesSig, oneMinusSig);
+    auto deriv = builder.create<mlir::arith::AddFOp>(loc, sig, xSig1mS);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, deriv);
+  }
+
+  if (opIr == "custom.fused_gelu_bp") {
+    // fused_gelu_bp: s = sigmoid(1.702*x), dx = dy * (s + x * 1.702 * s * (1-s))
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto coeff = splatConstantF32(builder, loc, tensorTy, 1.702f);
+    auto scaled = builder.create<mlir::arith::MulFOp>(loc, coeff, lhs);
+    auto negScaled = builder.create<mlir::arith::NegFOp>(loc, scaled);
+    auto expNeg = builder.create<mlir::math::ExpOp>(loc, negScaled);
+    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNeg);
+    auto sig = builder.create<mlir::arith::DivFOp>(loc, one, onePlusExp);
+    auto oneMinusSig = builder.create<mlir::arith::SubFOp>(loc, one, sig);
+    auto xCoeff = builder.create<mlir::arith::MulFOp>(loc, lhs, coeff);
+    auto xCoeffSig = builder.create<mlir::arith::MulFOp>(loc, xCoeff, sig);
+    auto xCoeffSig1mS = builder.create<mlir::arith::MulFOp>(loc, xCoeffSig, oneMinusSig);
+    auto deriv = builder.create<mlir::arith::AddFOp>(loc, sig, xCoeffSig1mS);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, deriv);
+  }
+
+  if (opIr == "custom.squared_relu_bp") {
+    // squared_relu_bp: dx = dy * 2 * x * (x > 0)
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto two = splatConstantF32(builder, loc, tensorTy, 2.0f);
+    auto cmp = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGT, lhs, zero);
+    auto twoX = builder.create<mlir::arith::MulFOp>(loc, two, lhs);
+    auto dyTwoX = builder.create<mlir::arith::MulFOp>(loc, rhs, twoX);
+    return builder.create<mlir::arith::SelectOp>(loc, cmp, dyTwoX, zero);
+  }
+
+  if (opIr == "custom.rectifiedtanh_bp") {
+    // rectifiedtanh_bp: dx = x > 0 ? dy * (1 - tanh(x)^2) : 0
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto zero = splatConstantF32(builder, loc, tensorTy, 0.0f);
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto clampLo = splatConstantF32(builder, loc, tensorTy, -10.0f);
+    auto clampHi = splatConstantF32(builder, loc, tensorTy, 10.0f);
+    auto clampedLo = builder.create<mlir::arith::MaximumFOp>(loc, lhs, clampLo);
+    auto clamped = builder.create<mlir::arith::MinimumFOp>(loc, clampedLo, clampHi);
+    auto two = splatConstantF32(builder, loc, tensorTy, 2.0f);
+    auto twoX = builder.create<mlir::arith::MulFOp>(loc, two, clamped);
+    auto exp2x = builder.create<mlir::math::ExpOp>(loc, twoX);
+    auto num = builder.create<mlir::arith::SubFOp>(loc, exp2x, one);
+    auto den = builder.create<mlir::arith::AddFOp>(loc, exp2x, one);
+    auto tanhX = builder.create<mlir::arith::DivFOp>(loc, num, den);
+    auto tanhSq = builder.create<mlir::arith::MulFOp>(loc, tanhX, tanhX);
+    auto deriv = builder.create<mlir::arith::SubFOp>(loc, one, tanhSq);
+    auto dyDeriv = builder.create<mlir::arith::MulFOp>(loc, rhs, deriv);
+    auto gtZero = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OGT, lhs, zero);
+    return builder.create<mlir::arith::SelectOp>(loc, gtZero, dyDeriv, zero);
+  }
+
+  if (opIr == "custom.swish_mul_bp") {
+    // swish_mul_bp: forward = silu(x) * y, gradient w.r.t. x only
+    // s = sigmoid(x), dx = dy * y * (s + x * s * (1 - s))
+    // Note: lhs = x, rhs = dy. This produces gradient w.r.t. x only.
+    auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+    auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
+    auto negX = builder.create<mlir::arith::NegFOp>(loc, lhs);
+    auto expNegX = builder.create<mlir::math::ExpOp>(loc, negX);
+    auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
+    auto sig = builder.create<mlir::arith::DivFOp>(loc, one, onePlusExp);
+    auto oneMinusSig = builder.create<mlir::arith::SubFOp>(loc, one, sig);
+    auto xTimesSig = builder.create<mlir::arith::MulFOp>(loc, lhs, sig);
+    auto xSig1mS = builder.create<mlir::arith::MulFOp>(loc, xTimesSig, oneMinusSig);
+    auto deriv = builder.create<mlir::arith::AddFOp>(loc, sig, xSig1mS);
+    return builder.create<mlir::arith::MulFOp>(loc, rhs, deriv);
   }
 
   std::string msg = "TritonIRBuilder::emitBinaryElementwise: unknown op '" + opIr +

@@ -174,12 +174,24 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["relu6"]       = {"relu6",       TritonOpCategory::UNARY_ELEMENTWISE, "custom.relu6",       true};
   table["Relu6"]       = {"Relu6",       TritonOpCategory::UNARY_ELEMENTWISE, "custom.relu6",       true};
 
-  // Activation backward ops — use dedicated backward emitters
-  table["silu_bp"]          = {"silu_bp",          TritonOpCategory::UNARY_ELEMENTWISE, "custom.silu_bp",          true};
-  table["fused_gelu_bp"]    = {"fused_gelu_bp",    TritonOpCategory::UNARY_ELEMENTWISE, "custom.fused_gelu_bp",    true};
-  table["squared_relu_bp"]  = {"squared_relu_bp",  TritonOpCategory::UNARY_ELEMENTWISE, "custom.squared_relu_bp",  true};
-  table["center_and_sharpen_bp"] = {"center_and_sharpen_bp", TritonOpCategory::UNARY_ELEMENTWISE, "custom.center_and_sharpen_bp", true};
-  table["swish_mul_bp"]     = {"swish_mul_bp",     TritonOpCategory::BINARY_ELEMENTWISE, "custom.swish_mul_bp",    true};
+  // Activation backward ops — binary: input[0]=x, input[1]=dy, output=dx
+  table["relu_bp"]          = {"relu_bp",          TritonOpCategory::BINARY_ELEMENTWISE, "custom.relu_bp",          true};
+  table["relu6_bp"]         = {"relu6_bp",         TritonOpCategory::BINARY_ELEMENTWISE, "custom.relu6_bp",         true};
+  table["thresholdedrelu_bp"] = {"thresholdedrelu_bp", TritonOpCategory::BINARY_ELEMENTWISE, "custom.thresholdedrelu_bp", true};
+  table["sigmoid_bp"]       = {"sigmoid_bp",       TritonOpCategory::BINARY_ELEMENTWISE, "custom.sigmoid_bp",       true};
+  table["tanh_bp"]          = {"tanh_bp",          TritonOpCategory::BINARY_ELEMENTWISE, "custom.tanh_bp",          true};
+  table["elu_bp"]           = {"elu_bp",           TritonOpCategory::BINARY_ELEMENTWISE, "custom.elu_bp",           true};
+  table["selu_bp"]          = {"selu_bp",          TritonOpCategory::BINARY_ELEMENTWISE, "custom.selu_bp",          true};
+  table["lrelu_bp"]         = {"lrelu_bp",         TritonOpCategory::BINARY_ELEMENTWISE, "custom.lrelu_bp",         true};
+  table["softplus_bp"]      = {"softplus_bp",      TritonOpCategory::BINARY_ELEMENTWISE, "custom.softplus_bp",      true};
+  table["softsign_bp"]      = {"softsign_bp",      TritonOpCategory::BINARY_ELEMENTWISE, "custom.softsign_bp",      true};
+  table["hardsigmoid_bp"]   = {"hardsigmoid_bp",   TritonOpCategory::BINARY_ELEMENTWISE, "custom.hardsigmoid_bp",   true};
+  table["hardtanh_bp"]      = {"hardtanh_bp",      TritonOpCategory::BINARY_ELEMENTWISE, "custom.hardtanh_bp",      true};
+  table["silu_bp"]          = {"silu_bp",          TritonOpCategory::BINARY_ELEMENTWISE, "custom.silu_bp",          true};
+  table["fused_gelu_bp"]    = {"fused_gelu_bp",    TritonOpCategory::BINARY_ELEMENTWISE, "custom.fused_gelu_bp",    true};
+  table["squared_relu_bp"]  = {"squared_relu_bp",  TritonOpCategory::BINARY_ELEMENTWISE, "custom.squared_relu_bp",  true};
+  table["rectifiedtanh_bp"] = {"rectifiedtanh_bp", TritonOpCategory::BINARY_ELEMENTWISE, "custom.rectifiedtanh_bp", true};
+  table["swish_mul_bp"]     = {"swish_mul_bp",     TritonOpCategory::BINARY_ELEMENTWISE, "custom.swish_mul_bp",     true};
 
   // Scalar binary ops (treated as unary with tArgs)
   table["add_scalar"]      = {"add_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.add_scalar",      true};
@@ -482,20 +494,16 @@ bool TritonIRBuilder::isTritonMappable(const std::string& opName) {
   // Fall back to OpCategoryTable.h (shared category-only table with broader coverage)
   const auto& catTable = getOpCategoryTable();
   if (catTable.find(opName) != catTable.end()) return true;
-  // Trait-based fallback: if the op is registered with any classification traits,
-  // consider it mappable (concrete routing is decided by getOpCategory). This means
-  // a newly-added op with proper traits in OpTraitTable.cpp is immediately visible
-  // to the Triton layer without manual entries in the two tables above.
-  uint32_t traits = lookupRegistryTraits(opName);
-  if (traits != 0 && categoryFromTraits(traits) != TritonOpCategory::UNSUPPORTED) {
-    return true;
-  }
-  // Unknown op — do NOT throw. Segment containing this op will have canCompile=false
-  // and fall back to slot-by-slot native execution. Log once for diagnosability.
+  // OpTraitTable.cpp traits are NOT sufficient for mappability. An op having traits
+  // means it's classified for DSP segmentation, but that does NOT mean the Triton IR
+  // builder can emit MLIR code for it. Only ops explicitly listed in getOpTable() or
+  // OpCategoryTable.h have corresponding IR emission logic. The trait-based fallback
+  // caused false positives (e.g. thresholdedrelu_bp classified as UNARY_ELEMENTWISE
+  // but with no IR emission code), leading to KERNEL_FAILURE on compilation.
   DSP_DIAG(FALLBACK,
-           "TritonIRBuilder::isTritonMappable: op '%s' has no entry in buildOpTable(), "
-           "OpCategoryTable.h, or OpTraitTable.cpp — routing to native fallback. "
-           "Add traits to OpTraitTable.cpp for proper classification.",
+           "TritonIRBuilder::isTritonMappable: op '%s' has no entry in buildOpTable() or "
+           "OpCategoryTable.h — routing to native execution. "
+           "Add to OpCategoryTable.h for Triton compilation support.",
            opName.c_str());
   return false;
 }
@@ -508,23 +516,14 @@ TritonOpCategory TritonIRBuilder::getOpCategory(const std::string& opName) {
   const auto& catTable = getOpCategoryTable();
   auto catIt = catTable.find(opName);
   if (catIt != catTable.end()) return catIt->second;
-  // Trait-based fallback via OpRegistrator → OpDescriptor. Avoids manual drift between
-  // the hardcoded tables and the authoritative trait table.
-  uint32_t traits = lookupRegistryTraits(opName);
-  if (traits != 0) {
-    TritonOpCategory cat = categoryFromTraits(traits);
-    if (cat != TritonOpCategory::UNSUPPORTED) {
-      DSP_DIAG(FALLBACK,
-               "TritonIRBuilder::getOpCategory: op '%s' resolved via trait fallback "
-               "(traits=0x%08x)", opName.c_str(), traits);
-      return cat;
-    }
-  }
-  // Return UNSUPPORTED — allows graceful fallback to native execution.
-  // The segment containing this op will have canCompile=false and fall back to slot-by-slot.
-  DSP_DIAG(FALLBACK, "TritonIRBuilder::getOpCategory: op '%s' not found in buildOpTable(), "
-            "OpCategoryTable.h, or via op traits. Falling back to native execution. "
-            "Add it to OpTraitTable.cpp for proper categorization.", opName.c_str());
+  // Do NOT use OpTraitTable.cpp trait-based fallback here. OpTraitTable traits classify
+  // ops for DSP segmentation, but the Triton IR builder can only emit code for ops
+  // explicitly listed in getOpTable() or OpCategoryTable.h. Using trait fallback causes
+  // ops to be placed in ELEMENTWISE sections without IR emission support, leading to
+  // empty kernels and KERNEL_FAILURE.
+  DSP_DIAG(FALLBACK, "TritonIRBuilder::getOpCategory: op '%s' not found in buildOpTable() "
+            "or OpCategoryTable.h — classifying as UNSUPPORTED for Triton. "
+            "Add to OpCategoryTable.h for Triton compilation support.", opName.c_str());
   return TritonOpCategory::UNSUPPORTED;
 }
 

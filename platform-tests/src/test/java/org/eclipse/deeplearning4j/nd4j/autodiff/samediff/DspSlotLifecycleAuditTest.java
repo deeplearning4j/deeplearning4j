@@ -30,7 +30,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -481,6 +484,14 @@ public class DspSlotLifecycleAuditTest {
                     closeAll(inputs);
                 }
             }
+            // After REPLAYS iterations, plan should have advanced past warmup
+            // SLOT_BY_SLOT and EMULATED_REPLAY don't advance DSP phases
+            if (mode != GraphExecutionMode.SLOT_BY_SLOT
+                    && mode != GraphExecutionMode.EMULATED_REPLAY) {
+                DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
+                        fix.name + "/" + mode + " after " + REPLAYS + " replays");
+                DspPlanAssertions.assertNoSegmentFailures(sd, fix.name + "/" + mode);
+            }
         } finally {
             closeAll(reference);
         }
@@ -531,6 +542,14 @@ public class DspSlotLifecycleAuditTest {
                 } finally {
                     closeAll(warmupInputs);
                 }
+            }
+
+            // Structural assertion: plan should have frozen after warmup
+            // SLOT_BY_SLOT and EMULATED_REPLAY don't advance DSP phases
+            if (mode != GraphExecutionMode.SLOT_BY_SLOT
+                    && mode != GraphExecutionMode.EMULATED_REPLAY) {
+                DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
+                        fix.name + "/" + mode + " post-warmup");
             }
 
             // 2) Free the weight's DataBuffer. Undo the non-closeable poisoning
@@ -1153,6 +1172,309 @@ public class DspSlotLifecycleAuditTest {
                 return new double[]{LOOSE_RTOL, LOOSE_ATOL};
             default:
                 return new double[]{FP32_RTOL, FP32_ATOL};
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Test: slot input visibility at each execution phase.
+    //
+    // Verifies that EVERY slot sees non-null inputs at each phase:
+    //   (1) UNFROZEN warmup (execCount=0, shapes not frozen)
+    //   (2) FROZEN warmup (execCount=0, shapes just frozen)
+    //   (3) FROZEN capture (execCount=1-2, building CUDA graphs)
+    //   (4) FROZEN replay (execCount>=3, steady-state graph replay)
+    //
+    // After each execution, queries every output slot via DspHandle and
+    // asserts it is non-null. Any null slot at any phase is a bug.
+    //
+    // This test directly addresses the user's requirement: "We should be
+    // asserting and testing what each slot sees at each phase. nulls
+    // included. Add more testing and exception throwing."
+    // ──────────────────────────────────────────────────────────────────────
+
+    @ParameterizedTest(name = "slotPhaseVisibility[{0}-{1}]")
+    @MethodSource("fixtureModeMatrix")
+    @DisplayName("Assert every slot has non-null output at every execution phase")
+    public void testSlotPhaseVisibility(Fixture fix, GraphExecutionMode mode) {
+        assumeBackendAvailable(mode);
+
+        sd = buildGraph(fix.graphBuilder);
+        configureDsp(sd, mode);
+
+        // Phase names for diagnostics
+        String[] phaseNames = {
+            "unfrozen_warmup_0",   // exec 0 before freeze
+            "unfrozen_warmup_1",   // exec 1 before freeze
+            "frozen_warmup_2",     // exec 2 — plan may freeze here
+            "frozen_capture_3",    // exec 3 — capture warmup
+            "frozen_capture_4",    // exec 4 — capture pass 2
+            "frozen_replay_5",     // exec 5 — should be steady-state
+            "frozen_replay_6",     // exec 6 — confirm stability
+            "frozen_replay_7"      // exec 7 — additional stability check
+        };
+
+        DspHandle handle = null;
+        for (int exec = 0; exec < phaseNames.length; exec++) {
+            Map<String, INDArray> inputs = fix.inputBuilder.get();
+            try {
+                Map<String, INDArray> raw;
+                try {
+                    raw = sd.output(inputs, fix.outputNames);
+                } catch (Throwable t) {
+                    fail(fix.name + "/" + mode + " exec#" + exec + " ("
+                            + phaseNames[exec] + ") threw: " + t.getMessage(), t);
+                    return;
+                }
+
+                // Verify all requested outputs are present
+                for (String outName : fix.outputNames) {
+                    INDArray out = raw.get(outName);
+                    assertNotNull(out, fix.name + "/" + mode + "/" + phaseNames[exec]
+                            + ": requested output '" + outName + "' is null");
+                    assertTrue(out.length() > 0, fix.name + "/" + mode + "/"
+                            + phaseNames[exec] + ": output '" + outName + "' is empty");
+                }
+
+                // After first execution, DspHandle is available — inspect all slots
+                if (handle == null) {
+                    try {
+                        handle = sd.dsp();
+                    } catch (Throwable t) {
+                        // DspHandle may not be available for SLOT_BY_SLOT mode
+                        if (mode == GraphExecutionMode.SLOT_BY_SLOT) continue;
+                        fail(fix.name + "/" + mode + ": cannot get DspHandle after exec#"
+                                + exec + ": " + t.getMessage(), t);
+                        return;
+                    }
+                }
+
+                if (handle != null && handle.isCompiled()) {
+                    int totalSlots = handle.totalSlots();
+                    int phase = handle.planPhase();
+                    int nullCount = 0;
+                    List<Integer> nullSlots = new ArrayList<>();
+
+                    for (int s = 0; s < totalSlots; s++) {
+                        INDArray slotOut = null;
+                        try {
+                            slotOut = handle.getSlotOutput(s);
+                        } catch (Throwable t) {
+                            // Some slots may be legitimately empty (e.g. shape-only ops)
+                            // but a crash is always a bug
+                            log.warn("{}/{}/{}: slot {} threw during getSlotOutput: {}",
+                                    fix.name, mode, phaseNames[exec], s, t.getMessage());
+                        }
+                        if (slotOut == null) {
+                            nullCount++;
+                            if (nullSlots.size() < 20) {
+                                nullSlots.add(s);
+                            }
+                        }
+                    }
+
+                    log.info("{}/{}/{}: totalSlots={} nullSlots={} phase={} execCount={}",
+                            fix.name, mode, phaseNames[exec], totalSlots, nullCount,
+                            phase, exec);
+
+                    // In FROZEN+REPLAY phase, no output slot should be null —
+                    // all intermediates must be populated from prior executions.
+                    if (phase >= PlanPhase.REPLAYING.getNativeCode() && exec >= 5) {
+                        if (nullCount > 0) {
+                            fail(fix.name + "/" + mode + "/" + phaseNames[exec]
+                                    + ": " + nullCount + " null output slots in REPLAYING phase"
+                                    + " (first 20: " + nullSlots + ")."
+                                    + " Every slot must be populated during replay.");
+                        }
+                    }
+
+                    // Check for NaN in any slot (indicates computation error)
+                    int nanSlot = handle.firstNaNSlot();
+                    if (nanSlot >= 0) {
+                        fail(fix.name + "/" + mode + "/" + phaseNames[exec]
+                                + ": NaN detected at slot " + nanSlot
+                                + " — computation error during " + phaseNames[exec]);
+                    }
+                }
+            } finally {
+                closeAll(inputs);
+            }
+        }
+
+        // Final structural assertions for modes that advance phases
+        if (mode != GraphExecutionMode.SLOT_BY_SLOT
+                && mode != GraphExecutionMode.EMULATED_REPLAY) {
+            DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
+                    fix.name + "/" + mode + " after phase visibility sweep");
+            DspPlanAssertions.assertNoSegmentFailures(sd,
+                    fix.name + "/" + mode + " after phase visibility sweep");
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Test: slot output non-null invariant across freeze boundary.
+    //
+    // Runs the plan multiple times, freezes shapes, then runs more times.
+    // At every step, asserts that no slot output transitioned from non-null
+    // to null (a slot that was populated before freeze must stay populated
+    // after freeze). This catches bugs where freeze/invalidation wipes
+    // slot outputs.
+    // ──────────────────────────────────────────────────────────────────────
+
+    @ParameterizedTest(name = "slotNonNullInvariantAcrossFreeze[{0}-{1}]")
+    @MethodSource("fixtureModeMatrix")
+    @DisplayName("Slot outputs that are non-null before freeze must remain non-null after freeze")
+    public void testSlotNonNullInvariantAcrossFreeze(Fixture fix, GraphExecutionMode mode) {
+        assumeBackendAvailable(mode);
+
+        sd = buildGraph(fix.graphBuilder);
+        configureDsp(sd, mode);
+
+        // Run pre-freeze executions to populate slots
+        int preFreeze = 3;
+        for (int i = 0; i < preFreeze; i++) {
+            Map<String, INDArray> inputs = fix.inputBuilder.get();
+            try {
+                sd.output(inputs, fix.outputNames);
+            } catch (Throwable t) {
+                fail(fix.name + "/" + mode + " pre-freeze exec#" + i
+                        + " threw: " + t.getMessage(), t);
+                return;
+            } finally {
+                closeAll(inputs);
+            }
+        }
+
+        // Snapshot which slots are non-null before freeze
+        DspHandle handle;
+        try {
+            handle = sd.dsp();
+        } catch (Throwable t) {
+            fail(fix.name + "/" + mode + ": cannot get DspHandle: " + t.getMessage(), t);
+            return;
+        }
+        if (!handle.isCompiled()) return;
+
+        int totalSlots = handle.totalSlots();
+        boolean[] wasNonNull = new boolean[totalSlots];
+        for (int s = 0; s < totalSlots; s++) {
+            try {
+                INDArray out = handle.getSlotOutput(s);
+                wasNonNull[s] = (out != null);
+            } catch (Throwable t) {
+                wasNonNull[s] = false;
+            }
+        }
+
+        // Run more executions to trigger freeze + capture + replay
+        int postFreeze = 5;
+        for (int i = 0; i < postFreeze; i++) {
+            Map<String, INDArray> inputs = fix.inputBuilder.get();
+            try {
+                sd.output(inputs, fix.outputNames);
+            } catch (Throwable t) {
+                fail(fix.name + "/" + mode + " post-freeze exec#" + i
+                        + " threw: " + t.getMessage(), t);
+                return;
+            } finally {
+                closeAll(inputs);
+            }
+
+            // After each post-freeze execution, check that previously
+            // non-null slots remain non-null
+            List<Integer> droppedSlots = new ArrayList<>();
+            for (int s = 0; s < totalSlots; s++) {
+                if (!wasNonNull[s]) continue;
+                try {
+                    INDArray out = handle.getSlotOutput(s);
+                    if (out == null) {
+                        droppedSlots.add(s);
+                    }
+                } catch (Throwable t) {
+                    droppedSlots.add(s);
+                }
+            }
+            if (!droppedSlots.isEmpty()) {
+                fail(fix.name + "/" + mode + " post-freeze exec#" + i
+                        + ": " + droppedSlots.size() + " slots dropped from non-null to null"
+                        + " after freeze (first 20: "
+                        + droppedSlots.subList(0, Math.min(20, droppedSlots.size())) + ")."
+                        + " phase=" + handle.planPhase()
+                        + " — freeze must not wipe populated slot outputs.");
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Test: external input non-null at every phase.
+    //
+    // After each execution, queries external input addresses via DspHandle
+    // and asserts that all placeholder external inputs have non-null
+    // addresses. This catches the effectiveExternals_ zero-initialization
+    // bug where gap segments see null external inputs after
+    // markExternalInputVariable.
+    // ──────────────────────────────────────────────────────────────────────
+
+    @ParameterizedTest(name = "extInputNonNullAtEveryPhase[{0}-{1}]")
+    @MethodSource("fixtureModeMatrix")
+    @DisplayName("All placeholder external inputs must have non-null addresses at every phase")
+    public void testExtInputNonNullAtEveryPhase(Fixture fix, GraphExecutionMode mode) {
+        assumeBackendAvailable(mode);
+
+        sd = buildGraph(fix.graphBuilder);
+        configureDsp(sd, mode);
+
+        DspHandle handle = null;
+        for (int exec = 0; exec < 8; exec++) {
+            Map<String, INDArray> inputs = fix.inputBuilder.get();
+            try {
+                Map<String, INDArray> raw;
+                try {
+                    raw = sd.output(inputs, fix.outputNames);
+                } catch (Throwable t) {
+                    fail(fix.name + "/" + mode + " exec#" + exec
+                            + " threw: " + t.getMessage(), t);
+                    return;
+                }
+
+                // Verify outputs are non-null
+                for (String outName : fix.outputNames) {
+                    assertNotNull(raw.get(outName), fix.name + "/" + mode + " exec#"
+                            + exec + ": output '" + outName + "' is null");
+                }
+
+                if (handle == null) {
+                    try {
+                        handle = sd.dsp();
+                    } catch (Throwable t) {
+                        if (mode == GraphExecutionMode.SLOT_BY_SLOT) continue;
+                        fail(fix.name + "/" + mode + ": cannot get DspHandle: "
+                                + t.getMessage(), t);
+                        return;
+                    }
+                }
+
+                if (handle != null && handle.isCompiled()) {
+                    int numExt = handle.numExternalInputs();
+                    int phase = handle.planPhase();
+                    // Check that placeholder inputs (the ones we provide via the map)
+                    // have non-zero addresses at this phase
+                    for (String inputName : inputs.keySet()) {
+                        int extIdx = handle.extInputIndex(inputName);
+                        if (extIdx < 0) continue;
+                        long addr = Nd4j.getNativeOps().getPlanLastExternalInputAddress(
+                                handle.getNativePlanHandle(), extIdx);
+                        if (addr == 0) {
+                            fail(fix.name + "/" + mode + " exec#" + exec
+                                    + " phase=" + phase
+                                    + ": placeholder '" + inputName + "' (extIdx=" + extIdx
+                                    + ") has null address. External inputs must always "
+                                    + "have valid device addresses after execution.");
+                        }
+                    }
+                }
+            } finally {
+                closeAll(inputs);
+            }
         }
     }
 

@@ -408,6 +408,45 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     auto warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
     if (warmupResult == Status::OK) {
       seg.exec.executionCount++;
+
+      // Sync staging buffers during warmup so introspection APIs
+      // (copyStagingToBuffer / getStagingBufferContent) return current data
+      // even before the plan enters replay mode.  Without this, staging
+      // buffers pre-allocated by markExternalInputVariable stay zero-filled
+      // until the first composite replay calls ensureAndSyncStagingBuffers.
+      if (placeholderStagingBuffers_ != nullptr && !cachedVariableExtIndices_.empty()) {
+        cudaStream_t cudaStr = (stream != nullptr)
+            ? *static_cast<cudaStream_t*>(stream) : nullptr;
+        // Ensure all warmup ops (which may run on default stream) are
+        // complete before issuing D2D copies on cudaStr.
+        auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+        if (defaultStreamPtr != nullptr && *defaultStreamPtr != cudaStr) {
+          cudaStreamSynchronize(*defaultStreamPtr);
+        }
+        for (int vi : cachedVariableExtIndices_) {
+          if (vi < 0 || vi >= numExt) continue;
+          NDArray* ext = externalArrays[vi];
+          NDArray* staging = placeholderStagingBuffers_[vi];
+          if (ext == nullptr || staging == nullptr || ext->isEmpty()) continue;
+          // Ensure ext device buffer is up-to-date (assign writes host first)
+          ext->syncToDevice();
+          void* srcBuf = ext->specialBuffer();
+          void* dstBuf = staging->specialBuffer();
+          DSP_DIAG(MEMORY, "WARMUP_STAGING_SYNC: vi=%d len=%lld bytes=%lld",
+                   vi, (long long)ext->lengthOf(), (long long)(ext->lengthOf() * ext->sizeOfT()));
+          if (srcBuf != nullptr && dstBuf != nullptr) {
+            size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+            if (bytes > 0) {
+              cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+              staging->dataBuffer()->writeSpecial();
+            }
+          }
+        }
+        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
+      } else {
+        DSP_DIAG(MEMORY, "WARMUP_STAGING_SYNC: SKIPPED — stagingBufs=%p varIndices.size=%d",
+                 (void*)placeholderStagingBuffers_, (int)cachedVariableExtIndices_.size());
+      }
     }
     return warmupResult;
   }
@@ -1443,14 +1482,48 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
 
   // Fast path: after first call, only iterate variable input indices
   // instead of all 1000+ entries. Non-variable (weight) pointers are stable.
-  if (!cachedVariableExtIndices_.empty()) {
+  // Guard: fast path requires all variable staging buffers to be allocated.
+  // After markExternalInputVariable, cachedVariableExtIndices_ is populated
+  // immediately but staging buffers haven't been allocated yet — fall through
+  // to the slow path which handles allocation.
+  bool allStagingAllocated = !cachedVariableExtIndices_.empty();
+  if (allStagingAllocated) {
+    for (int i : cachedVariableExtIndices_) {
+      if (placeholderStagingBuffers_[i] == nullptr) {
+        allStagingAllocated = false;
+        break;
+      }
+    }
+  }
+
+  if (allStagingAllocated) {
+    // Populate ALL entries from externalArrays first — the loop below only
+    // overwrites variable entries with staging buffers. Without this, non-variable
+    // entries (weights/constants) stay null from the zero-initialized allocation,
+    // causing NULL input errors during CUDA graph capture.
+    std::memcpy(effectiveExternals_, externalArrays, sizeof(NDArray*) * numExt);
+
+    int copiedCount = 0, skippedNull = 0, skippedEmpty = 0, skippedNullBuf = 0, skippedJniWrite = 0;
     for (int i : cachedVariableExtIndices_) {
       NDArray* ext = externalArrays[i];
       effectiveExternals_[i] = externalArrays[i];  // default passthrough
-      if (ext == nullptr || ext->isEmpty()) continue;
+      if (ext == nullptr || ext->isEmpty()) {
+        skippedEmpty++;
+        continue;
+      }
 
       NDArray* staging = placeholderStagingBuffers_[i];
-      if (staging == nullptr) continue;  // KV buffer or uninitialized
+
+      // If JNI wrote directly to staging via writeDeviceBuffer*, skip D2D overwrite
+      // — the staging buffer already has the fresh data from the JNI write.
+      bool jniWritten = (i < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[i]);
+      if (jniWritten) {
+        deviceWritePending_[i] = false;
+        skippedJniWrite++;
+        staging->dataBuffer()->writeSpecial();
+        effectiveExternals_[i] = staging;
+        continue;
+      }
 
       void* dstBuf = staging->specialBuffer();
       void* srcBuf = ext->specialBuffer();
@@ -1458,64 +1531,52 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
         if (bytes > 0) {
           cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+          copiedCount++;
         }
-      }
-
-      // Diagnostic: dump first few values of staging buffer after D2D copy
-      // for variable inputs around the divergence point.
-      // Gate behind isDebug() to avoid perf impact in production.
-      if (Environment::getInstance().isDebug() && executeCount_ >= 10 && executeCount_ <= 20) {
-        // Sync to ensure D2D is complete before reading
-        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
-        int numDump = std::min(16, static_cast<int>(ext->lengthOf()));
-        if (ext->dataType() == DataType::FLOAT32 && numDump > 0) {
-          std::vector<float> vals(numDump);
-          cudaMemcpy(vals.data(), dstBuf, numDump * sizeof(float), cudaMemcpyDeviceToHost);
-          std::string name = (i < static_cast<int>(externalInputNames_.size()))
-                             ? externalInputNames_[i] : "?";
-          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' staging first %d vals:",
-                    executeCount_, i, name.c_str(), numDump);
-          for (int v = 0; v < numDump; v++) {
-            sd_printf(" %.4f", vals[v]);
-          }
-          sd_printf("\n");
-          // Also dump source buffer for comparison
-          cudaMemcpy(vals.data(), srcBuf, numDump * sizeof(float), cudaMemcpyDeviceToHost);
-          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' source  first %d vals:",
-                    executeCount_, i, name.c_str(), numDump);
-          for (int v = 0; v < numDump; v++) {
-            sd_printf(" %.4f", vals[v]);
-          }
-          sd_printf("\n");
-        } else if (ext->dataType() == DataType::INT64 && numDump > 0) {
-          std::vector<LongType> vals(numDump);
-          cudaMemcpy(vals.data(), dstBuf, numDump * sizeof(LongType), cudaMemcpyDeviceToHost);
-          std::string name = (i < static_cast<int>(externalInputNames_.size()))
-                             ? externalInputNames_[i] : "?";
-          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' staging first %d vals:",
-                    executeCount_, i, name.c_str(), numDump);
-          for (int v = 0; v < numDump; v++) {
-            sd_printf(" %lld", (long long)vals[v]);
-          }
-          sd_printf("\n");
-        } else if (ext->dataType() == DataType::HALF && numDump > 0) {
-          // Read as raw bytes, convert from fp16
-          std::vector<uint16_t> raw(numDump);
-          cudaMemcpy(raw.data(), dstBuf, numDump * sizeof(uint16_t), cudaMemcpyDeviceToHost);
-          std::string name = (i < static_cast<int>(externalInputNames_.size()))
-                             ? externalInputNames_[i] : "?";
-          sd_printf("STAGING_DIAG[exec=%d] ext[%d]='%s' staging(fp16) first %d raw:",
-                    executeCount_, i, name.c_str(), numDump);
-          for (int v = 0; v < numDump; v++) {
-            sd_printf(" 0x%04x", raw[v]);
-          }
-          sd_printf("\n");
-        }
+      } else {
+        skippedNullBuf++;
       }
 
       staging->dataBuffer()->writeSpecial();
+
+      // ── Shape corruption detector ─────────────────────────────────
+      // Validates that the D2D copy did not overwrite the staging
+      // NDArray's shapeInfo memory. The shapeInfo is a CPU pointer into
+      // ConstantShapeHelper's trie; if a buffer overrun or address
+      // aliasing causes the D2D copy to land on CPU shape memory, the
+      // rank field will contain data values (e.g., float32 200.0 =
+      // 0x43480000) instead of a small integer.
+      if (staging->shapeInfo() != nullptr) {
+        LongType sRank = staging->shapeInfo()[0];
+        if (sRank < 0 || sRank > SD_MAX_RANK) {
+          sd_printf("STAGING_SHAPE_CORRUPTION_DETECTED: ext[%d] shapeInfo[0]=%lld (0x%llx) "
+                    "after D2D copy. staging=%p shapeInfo=%p specialBuffer=%p "
+                    "primaryBuffer=%p lenInBytes=%lld\n",
+                    i, (long long)sRank, (unsigned long long)sRank,
+                    (void*)staging, (void*)staging->shapeInfo(),
+                    staging->specialBuffer(), staging->buffer(),
+                    (long long)staging->dataBuffer()->getLenInBytes());
+          fflush(stdout);
+        }
+      }
+
       effectiveExternals_[i] = staging;
     }
+
+    // Detect silent D2D skip conditions — O(1) counter checks, zero perf impact.
+    if (copiedCount == 0 && static_cast<int>(cachedVariableExtIndices_.size()) > 0) {
+      DSP_DIAG(EXECUTE,
+               "STAGING_D2D_WARNING: ALL %d variable inputs skipped D2D copy! "
+               "Breakdown: empty=%d nullBuf=%d. "
+               "CUDA graph replay will use STALE staging data.",
+               static_cast<int>(cachedVariableExtIndices_.size()),
+               skippedEmpty, skippedNullBuf);
+    }
+    DSP_DIAG(EXECUTE, "STAGING_D2D: copied=%d skippedEmpty=%d "
+             "skippedNullBuf=%d total=%d",
+             copiedCount, skippedEmpty, skippedNullBuf,
+             static_cast<int>(cachedVariableExtIndices_.size()));
+
     return effectiveExternals_;
   }
 
@@ -1571,19 +1632,51 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       staging = new NDArray(ext->ordering(), *ext->getShapeAsVector(),
                             ext->dataType(), LaunchContext::defaultContext());
       placeholderStagingBuffers_[i] = staging;
+
+      // Verify shape immediately after allocation
+      if (staging->shapeInfo() != nullptr) {
+        LongType sRank = staging->shapeInfo()[0];
+        if (sRank < 0 || sRank > SD_MAX_RANK) {
+          sd_printf("STAGING_SHAPE_CORRUPT_AT_ALLOC: ext[%d] rank=%lld (0x%llx) "
+                    "shapeInfo=%p specialBuffer=%p primaryBuffer=%p\n",
+                    i, (long long)sRank, (unsigned long long)sRank,
+                    (void*)staging->shapeInfo(), staging->specialBuffer(),
+                    staging->buffer());
+          fflush(stdout);
+        }
+      }
     }
 
-    // D2D copy: external input (already H2D-synced) → plan-owned staging buffer.
-    // Async on the execution stream — no CPU sync needed.
-    void* dstBuf = staging->specialBuffer();
-    void* srcBuf = ext->specialBuffer();
-    if (dstBuf != nullptr && srcBuf != nullptr) {
-      size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
-      if (bytes > 0) {
-        cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+    // If JNI wrote directly to staging, skip D2D overwrite (slow path)
+    bool jniWritten = (i < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[i]);
+    if (jniWritten) {
+      deviceWritePending_[i] = false;
+    } else {
+      // D2D copy: external input (already H2D-synced) → plan-owned staging buffer.
+      // Async on the execution stream — no CPU sync needed.
+      void* dstBuf = staging->specialBuffer();
+      void* srcBuf = ext->specialBuffer();
+      if (dstBuf != nullptr && srcBuf != nullptr) {
+        size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+        if (bytes > 0) {
+          cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+        }
       }
     }
     staging->dataBuffer()->writeSpecial();
+
+    // ── Shape corruption detector (slow path) ──────────────────────
+    if (staging->shapeInfo() != nullptr) {
+      LongType sRank = staging->shapeInfo()[0];
+      if (sRank < 0 || sRank > SD_MAX_RANK) {
+        sd_printf("STAGING_SHAPE_CORRUPT_AFTER_D2D (slow): ext[%d] rank=%lld (0x%llx) "
+                  "shapeInfo=%p specialBuffer=%p primaryBuffer=%p\n",
+                  i, (long long)sRank, (unsigned long long)sRank,
+                  (void*)staging->shapeInfo(), staging->specialBuffer(),
+                  staging->buffer());
+        fflush(stdout);
+      }
+    }
 
     effectiveExternals_[i] = staging;
   }

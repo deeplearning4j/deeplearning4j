@@ -92,8 +92,15 @@ class ReverseV2 : PreImportHook {
         val output = if (axis.isNotEmpty()) {
             sd.reverse(outputNames[0], input, *axis)
         } else {
-            // Pass axis as variable when not constant
-            sd.reverse(outputNames[0], input, axisVar)
+            // Fallback: try resolving axis from variable value if it is already materialized during import.
+            val runtimeAxis = axisVar.arr?.toLongVector() ?: longArrayOf()
+            if (runtimeAxis.isNotEmpty()) {
+                sd.reverse(outputNames[0], input, *runtimeAxis)
+            } else {
+                throw IllegalStateException(
+                    "ReverseV2 axis must be constant or materialized at import time for op ${op.name} (${outputNames[0]})"
+                )
+            }
         }
 
         return mapOf(outputNames[0] to listOf(output))

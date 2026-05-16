@@ -66,11 +66,7 @@ SD_LIB_HIDDEN void fusedRmsNormSwiGLU(
  *
  * @param input Input tensor [batch, seq_len, num_heads, head_dim]
  * @param output Output tensor [batch, seq_len, num_heads, head_dim]
- * @param positionOffsetPtr Pointer to int32 position offset value.
- *        On CUDA: device-accessible pointer (read by kernel at launch time, NOT baked as constant).
- *        On CPU:  host pointer (dereferenced directly).
- *        This makes the op CUDA graph compatible: the pointer address is captured,
- *        but the value at that address can change between graph replays.
+ * @param positionOffset Position offset value (added to each sequence position)
  * @param freqBase Base frequency (default 10000)
  * @param freqScale Frequency scale factor
  * @param ropeType 0=standard, 1=neox, 2=gptj
@@ -79,7 +75,7 @@ SD_LIB_HIDDEN void fusedRmsNormSwiGLU(
 SD_LIB_HIDDEN void fusedRoPE(
     NDArray* input,
     NDArray* output,
-    const void* positionOffsetPtr,
+    NDArray* positionArr,
     float freqBase,
     float freqScale,
     int ropeType,

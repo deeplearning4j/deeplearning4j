@@ -143,6 +143,13 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
                 // Replace all uses of the mul output with swish output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, mulOutputVar, swishName);
 
+                // Temporarily remove mulOutputVar from graph outputs so removeOp/
+                // removeVariable guards don't refuse deletion. Without this, when
+                // mulOutputVar is a graph output, removeVariable is refused and the
+                // subsequent renameVariable fails with a Preconditions exception.
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(mulOutputVar);
+
                 // Remove the old mul and sigmoid operations
                 OptimizationUtils.removeOp(sd, helper, op.getName());
                 OptimizationUtils.removeOp(sd, helper, sigmoidOp.getName());
@@ -154,6 +161,9 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
                 // Rename fused output to match original output name
                 if (!swishName.equals(mulOutputVar)) {
                     sd.renameVariable(swishName, mulOutputVar);
+                }
+                if (wasOutput) {
+                    graphOutputs.add(mulOutputVar);
                 }
 
                 return true;
@@ -253,6 +263,13 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
                 // Replace all uses of the mul output with swish_mul output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, mulOutputVar, swishMulName);
 
+                // Temporarily remove mulOutputVar from graph outputs so removeOp/
+                // removeVariable guards don't refuse deletion. Without this, when
+                // mulOutputVar is a graph output, removeVariable is refused and the
+                // subsequent renameVariable fails with a Preconditions exception.
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(mulOutputVar);
+
                 // Remove the old mul and swish operations
                 OptimizationUtils.removeOp(sd, helper, op.getName());
                 OptimizationUtils.removeOp(sd, helper, swishOp.getName());
@@ -264,6 +281,9 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
                 // Rename fused output to match original output name
                 if (!swishMulName.equals(mulOutputVar)) {
                     sd.renameVariable(swishMulName, mulOutputVar);
+                }
+                if (wasOutput) {
+                    graphOutputs.add(mulOutputVar);
                 }
 
                 return true;

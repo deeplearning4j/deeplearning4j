@@ -380,6 +380,86 @@ public class TestMythicPdfRegression {
         assertTrue(hasStructuralTags,
                 "GenerationPipeline should produce structural DocTags on mythic PDF. "
                         + "Text: " + text);
+
+        // Degenerate output detection: the model should NOT produce only picture tags
+        // and then immediately stop. A well-functioning model on this PDF produces
+        // content tags like <text>, <section_header>, <otsl> — not just <picture></picture>.
+        boolean isDegenerateOutput = text.contains("<picture>") && text.contains("</doctag>")
+                && !text.contains("<text>") && !text.contains("<section_header>")
+                && !text.contains("<otsl>") && tokens.length < maxTokens;
+
+        assertFalse(isDegenerateOutput,
+                "Degenerate output detected: model produced only picture tags and stopped "
+                        + "prematurely (" + tokens.length + " tokens). Expected content tags "
+                        + "(<text>, <section_header>, <otsl>) in output. Text: " + text);
+    }
+
+    /**
+     * Degenerate output regression test.
+     *
+     * The model should produce at least 30 tokens on the mythic PDF page and
+     * include content-bearing tags. A degenerate model produces only:
+     *   {@code <doctag><picture><loc_0><loc_0><loc_500><loc_500><other></picture></doctag><end_of_utterance>}
+     * — 25 tokens with no text/table content, hitting EOS prematurely.
+     *
+     * Root causes that have triggered this:
+     *   1. Stale vision encoder SDZ cache with incorrect FP16 precast
+     *   2. Softmax kernel launch bounds crash in vision encoder (error 1: invalid argument)
+     *   3. Flash attention launch bounds mismatch (1024 threads vs __launch_bounds__(512))
+     */
+    @Test
+    @DisplayName("Degenerate output detection: model must produce content beyond picture tags")
+    public void testDegenerateOutputDetection() throws Exception {
+        ensureModelsLoaded();
+        int maxTokens = 50;
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(maxTokens)
+                .hiddenSize(hiddenSize)
+                .build());
+
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        String text = result.getText();
+        int[] tokens = result.getTokenIds();
+
+        log.info("Degenerate check: {} tokens, text='{}'", tokens.length, text);
+        for (int i = 0; i < Math.min(15, tokens.length); i++) {
+            String tokText = tokenizer.decode(new int[]{tokens[i]}, true);
+            log.info("  Token {}: id={} text='{}'", i, tokens[i], tokText);
+        }
+
+        // Must produce a minimum number of tokens — premature EOS is a sign of broken
+        // vision encoder or attention computation
+        assertTrue(tokens.length >= 30,
+                "Model produced only " + tokens.length + " tokens (expected >= 30). "
+                        + "Premature EOS suggests vision encoder or attention bug. Text: " + text);
+
+        // Must contain content tags beyond just picture structure
+        boolean hasContentTags = text.contains("<text>") || text.contains("<section_header>")
+                || text.contains("<otsl>") || text.contains("<table>");
+
+        assertTrue(hasContentTags,
+                "Model output contains no content tags (<text>, <section_header>, <otsl>, <table>). "
+                        + "Only structural/picture tags found — this is degenerate output. "
+                        + "Tokens: " + tokens.length + " Text: " + text);
+
+        // Count unique token IDs — degenerate output often has very low diversity
+        Set<Integer> uniqueTokens = new HashSet<>();
+        for (int t : tokens) uniqueTokens.add(t);
+        double diversity = (double) uniqueTokens.size() / tokens.length;
+        log.info("Token diversity: {}/{} unique ({}%)",
+                uniqueTokens.size(), tokens.length, String.format("%.1f", diversity * 100));
+
+        assertTrue(diversity > 0.3,
+                "Token diversity too low: " + uniqueTokens.size() + "/" + tokens.length
+                        + " unique tokens (" + String.format("%.1f%%", diversity * 100)
+                        + "). Model may be stuck in a repetition loop.");
     }
 
     @Test

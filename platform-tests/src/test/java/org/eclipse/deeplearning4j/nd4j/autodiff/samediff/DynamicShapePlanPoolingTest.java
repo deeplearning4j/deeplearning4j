@@ -231,6 +231,8 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             // Execute to populate LocalBufferPool
             Map<String, INDArray> out = sd.output(placeholders, "d");
             assertNotNull(out.get("d"));
+            // Dup the output before reset — resetSession frees session-owned arrays
+            INDArray firstResult = out.get("d").dup();
 
             // resetSession should flush the pool - no crash, no leak
             sd.resetSession();
@@ -238,7 +240,8 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             // Execute again after reset - should work with fresh allocations
             Map<String, INDArray> out2 = sd.output(placeholders, "d");
             assertNotNull(out2.get("d"));
-            assertEquals(out.get("d"), out2.get("d"), "Results should match after session reset");
+            assertEquals(firstResult, out2.get("d"), "Results should match after session reset");
+            firstResult.close();
 
             // Second reset should also work
             sd.resetSession();

@@ -33,7 +33,7 @@ namespace helpers {
 
 // Kernel: greedy argmax — one block per batch element, threads cooperate via shared mem reduction
 template <typename T>
-static SD_KERNEL void greedyArgmaxKernel(const void* vlogits,
+static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* vlogits,
                                           void* voutput,
                                           const LongType vocabSize,
                                           const LongType rowStride,
@@ -81,7 +81,7 @@ static SD_KERNEL void greedyArgmaxKernel(const void* vlogits,
 // Kernel: apply temperature, compute softmax probabilities, write to float probs buffer
 // One block per batch element
 template <typename T>
-static SD_KERNEL void tempSoftmaxSampleKernel(const void* vlogits,
+static SD_KERNEL __launch_bounds__(256, 2) void tempSoftmaxSampleKernel(const void* vlogits,
                                                void* voutput,
                                                const LongType vocabSize,
                                                const LongType rowStride,
@@ -119,7 +119,7 @@ static SD_KERNEL void tempSoftmaxSampleKernel(const void* vlogits,
     float localSum = 0.0f;
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         float val = static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp;
-        localSum += expf(val - rowMax);
+        localSum += __expf(val - rowMax);
     }
     sdata[threadIdx.x] = localSum;
     __syncthreads();
@@ -142,7 +142,7 @@ static SD_KERNEL void tempSoftmaxSampleKernel(const void* vlogits,
         LongType sampled = vocabSize - 1;
         for (LongType v = 0; v < vocabSize; v++) {
             float val = static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp;
-            cumSum += expf(val - rowMax);
+            cumSum += __expf(val - rowMax);
             if (cumSum >= target) {
                 sampled = v;
                 break;

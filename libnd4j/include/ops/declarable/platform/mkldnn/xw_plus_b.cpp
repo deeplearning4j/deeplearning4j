@@ -275,8 +275,11 @@ PLATFORM_IMPL(xw_plus_b, ENGINE_CPU) {
   const int wRank = w->rankOf();
   const int zRank = z->rankOf();
 
-  const bool bShouldTransp = block.getIArguments()->size() > 0
-                                 ? (1 != INT_ARG(0))
+  // INT_ARG(1) is bTranspose (weight transpose). OneDNN inner_product expects
+  // weights in [N,K] format. When bTranspose=0, user weights are [K,N] and need
+  // transposing to MKL format. When bTranspose=1, user weights are already [N,K].
+  const bool bShouldTransp = block.getIArguments()->size() > 1
+                                 ? (0 == INT_ARG(1))
                                  : true;  // [M,K] * [K,N] -> [M, N], mkl -> [M,K] * [N, K]^T -> [M, N]
 
   REQUIRE_TRUE(xRank == 2, 0, "xw_plus_b MKL: Input x array should have rank equal 2, but got instead %i!", xRank);
@@ -375,8 +378,9 @@ PLATFORM_IMPL(xw_plus_b_bp, ENGINE_CPU) {
   const int wRank = w->rankOf();
   const int dLdzRank = dLdz->rankOf();
 
-  const bool bShouldTransp = block.getIArguments()->size() > 0
-                                 ? (1 != INT_ARG(0))
+  // INT_ARG(1) is bTranspose (weight transpose) — see forward pass comment.
+  const bool bShouldTransp = block.getIArguments()->size() > 1
+                                 ? (0 == INT_ARG(1))
                                  : true;  // [M,K] * [K,N] -> [M, N], mkl -> [M,K] * [N, K]^T -> [M, N]
 
   REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b BP MKL: Input x array should have rank equal 2, but got instead %i!",

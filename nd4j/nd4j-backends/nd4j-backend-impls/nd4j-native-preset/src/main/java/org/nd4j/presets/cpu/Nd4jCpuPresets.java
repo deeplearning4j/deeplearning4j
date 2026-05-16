@@ -70,6 +70,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 "system/CudaLimitType.h",
                 "types/utf8string.h",
                 "legacy/NativeOps.h",
+                "dsp/NativeOpsDsp.h",
                 "build_info.h",
                 "memory/ExternalWorkspace.h",
                 "memory/Workspace.h",

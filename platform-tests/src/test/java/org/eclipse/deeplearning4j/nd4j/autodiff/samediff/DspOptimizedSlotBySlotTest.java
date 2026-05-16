@@ -790,9 +790,21 @@ public class DspOptimizedSlotBySlotTest {
         int nIn = 4, nOut = 1, batchSize = 8, epochs = 10;
         DataSet ds = generateRegressionData(seed + 500, batchSize, nIn, nOut);
 
-        // Reference: legacy (non-DSP)
+        // Build BOTH models BEFORE training either — ensures identical weight init
+        // (buildLinearTrainingModel calls setSeed(seed) but training consumes RNG state)
         InferenceSession.setDynamicShapePlanEnabled(false);
         SameDiff sdLegacy = buildLinearTrainingModel(seed, nIn, nOut);
+        INDArray legacyWInit = sdLegacy.getVariable("w").getArr().dup();
+
+        InferenceSession.setDynamicShapePlanEnabled(true);
+        SameDiff sdSlot = buildLinearTrainingModel(seed, nIn, nOut);
+        // Verify weights are identical after init
+        INDArray slotWInit = sdSlot.getVariable("w").getArr().dup();
+        double initWeightDiff = legacyWInit.sub(slotWInit).amaxNumber().doubleValue();
+        log.info("[{}] Initial weight diff: {}", updaterName, initWeightDiff);
+
+        // Train legacy
+        InferenceSession.setDynamicShapePlanEnabled(false);
         TrainingConfig config = new TrainingConfig.Builder()
                 .updater(updater)
                 .dataSetFeatureMapping("input")
@@ -804,9 +816,9 @@ public class DspOptimizedSlotBySlotTest {
         double legacyFirstLoss = legacyLossCurve.getDouble(0);
         double legacyFinalLoss = legacyLossCurve.getDouble((int) legacyLossCurve.length() - 1);
 
-        // Test: DSP SLOT_BY_SLOT
+        // Train DSP SLOT_BY_SLOT
         InferenceSession.setDynamicShapePlanEnabled(true);
-        SameDiff sdSlot = buildLinearTrainingModel(seed, nIn, nOut);
+        forceSlotBySlot(sdSlot);
         forceSlotBySlot(sdSlot);
         sdSlot.setTrainingConfig(new TrainingConfig.Builder()
                 .updater(updater)

@@ -279,6 +279,7 @@ class TritonGraphBackend : public GraphBackend {
     bool compileAll;         // Whether tritonCompileAll was enabled at compile time
     size_t excludeOpsHash;   // Hash of tritonExcludeOps string (0 if empty)
     size_t includeTypesHash; // Hash of tritonIncludeTypes string (0 if empty)
+    bool graphCapture;       // Whether tritonGraphCapture was enabled (affects MATMUL handling)
     bool operator==(const SegmentCacheKey& o) const {
       return startSlot == o.startSlot &&
              endSlot == o.endSlot &&
@@ -286,7 +287,8 @@ class TritonGraphBackend : public GraphBackend {
              deviceId == o.deviceId &&
              compileAll == o.compileAll &&
              excludeOpsHash == o.excludeOpsHash &&
-             includeTypesHash == o.includeTypesHash;
+             includeTypesHash == o.includeTypesHash &&
+             graphCapture == o.graphCapture;
     }
   };
   struct SegmentCacheHash {
@@ -298,6 +300,7 @@ class TritonGraphBackend : public GraphBackend {
       h ^= std::hash<bool>()(k.compileAll) << 4;
       h ^= std::hash<size_t>()(k.excludeOpsHash) << 5;
       h ^= std::hash<size_t>()(k.includeTypesHash) << 6;
+      h ^= std::hash<bool>()(k.graphCapture) << 7;
       return h;
     }
   };

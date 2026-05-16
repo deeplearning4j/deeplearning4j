@@ -1263,27 +1263,57 @@ DECLARE_CUSTOM_OP(fused_attention_projection, 2, 1, false, 0, 0);
 #endif
 
 /**
- * lightning_attention - O(N) linear attention using cumulative sum recurrence.
+ * lightning_attention - O(N) linear attention with per-head exponential decay
+ * via intra/inter-chunk decomposition.
  *
- * Instead of the full N×N attention matrix, uses a running state:
- *   S_i = sum_{j<=i} (K_j^T * V_j)
- *   O_i = scale * Q_i @ S_i
+ * Based on the algorithmic patterns from cuLA (inclusionAI/cuLA).
+ * Reference: https://arxiv.org/abs/2405.17381 (Lightning Attention-2)
  *
- * Complexity: O(N * d²) vs O(N² * d) for standard attention.
+ * The algorithm decomposes each chunk into:
+ *   - Inter-chunk: O_inter = Q_i @ S_{i-1}           (recurrent state contribution)
+ *   - Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask
+ *                  O_intra = A @ V_i                  (local chunk attention)
+ *   - State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
+ *   - Combined:     O_i = O_inter + O_intra
  *
  * Input:
- *   0: query  [batch, heads, seqLen, headDim]
- *   1: key    [batch, heads, seqLen, headDim]
- *   2: value  [batch, heads, seqLen, headDim]
+ *   0: query      [batch, seqLen, numHeads, headDim]
+ *   1: key        [batch, seqLen, numHeads, headDim]
+ *   2: value      [batch, seqLen, numHeads, headDim]
+ *   3: decayRates [numHeads] float32 — per-head scalar decay rate
+ *   4: state      [batch, numHeads, headDim, headDim] float32 — recurrent state (in-place)
  *
- * Float args:
- *   0: scale (default: 1/sqrt(headDim))
+ * Int args:
+ *   0: isCausal (0 or 1, default 1)
  *
  * Output:
- *   0: attention output [batch, heads, seqLen, headDim]
+ *   0: attention output [batch, seqLen, numHeads, headDim]
  */
 #if NOT_EXCLUDED(OP_lightning_attention)
-DECLARE_CUSTOM_OP(lightning_attention, 3, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(lightning_attention, 5, 1, false, 0, 1);
+#endif
+
+/**
+ * linear_attention_decode - Single-token decode step for linear attention.
+ *
+ * Implements the recurrent form of linear attention:
+ *   state_new = exp(-decay[h]) * state_old + k ⊗ v   (rank-1 outer-product update)
+ *   output    = q @ state_new                          (matrix-vector product)
+ *
+ * State is always stored and computed as float32 regardless of input dtype.
+ *
+ * Input:
+ *   0: query      [batch, 1, numHeads, headDimK]
+ *   1: key        [batch, 1, numHeads, headDimK]
+ *   2: value      [batch, 1, numHeads, headDimV]
+ *   3: decayRates [numHeads] float32 — per-head log-decay magnitude
+ *   4: state      [batch, numHeads, headDimV, headDimK] float32 — in-place update
+ *
+ * Output:
+ *   0: output [batch, 1, numHeads, headDimV]
+ */
+#if NOT_EXCLUDED(OP_linear_attention_decode)
+DECLARE_CUSTOM_OP(linear_attention_decode, 5, 1, false, 0, 0);
 #endif
 
 /**

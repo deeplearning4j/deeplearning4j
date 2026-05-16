@@ -814,6 +814,17 @@ SD_HOST SD_INLINE int ArrayOptions::getActiveCopyOffsets(const LongType *shapeIn
   return count;
 }
 
+// hasAnyCopyOffset - returns true if any ARRAY_COPY_OFFSET_INPUT_N flag is set
+SD_HOST SD_INLINE bool ArrayOptions::hasAnyCopyOffset(const LongType *shapeInfo) {
+  return (ArrayOptions::extra(shapeInfo) &
+          (ARRAY_COPY_OFFSET_INPUT_0 | ARRAY_COPY_OFFSET_INPUT_1 |
+           ARRAY_COPY_OFFSET_INPUT_2 | ARRAY_COPY_OFFSET_INPUT_3 |
+           ARRAY_COPY_OFFSET_INPUT_4 | ARRAY_COPY_OFFSET_INPUT_5 |
+           ARRAY_COPY_OFFSET_INPUT_6 | ARRAY_COPY_OFFSET_INPUT_7 |
+           ARRAY_COPY_OFFSET_INPUT_8 | ARRAY_COPY_OFFSET_INPUT_9 |
+           ARRAY_COPY_OFFSET_INPUT_10)) != 0;
+}
+
 // isView - const overload for consistency
 SD_HOST SD_INLINE bool ArrayOptions::isView(const LongType *shapeInfo) {
   return hasPropertyBitSet(shapeInfo, ARRAY_IS_VIEW);

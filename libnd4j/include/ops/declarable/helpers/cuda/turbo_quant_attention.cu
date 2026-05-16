@@ -38,7 +38,7 @@ namespace helpers {
 // ──────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static __global__ void turboQuantAttentionKernel(
+static __global__ __launch_bounds__(256, 2) void turboQuantAttentionKernel(
     const T* __restrict__ query,         // [B, H, Sq, D]
     const T* __restrict__ kMse,          // [B, H, Sk, D]
     const int8_t* __restrict__ qjlSigns, // [B, H, Sk, D]
@@ -148,7 +148,7 @@ static __global__ void turboQuantAttentionKernel(
   // ---- Phase 2: Softmax (exp and sum) ----
   float localSum = 0.0f;
   for (int sk = tid; sk < seqK; sk += blockDim.x) {
-    float w = expf(sharedScores[sk] - maxVal);
+    float w = __expf(sharedScores[sk] - maxVal);
     sharedScores[sk] = w;
     localSum += w;
   }

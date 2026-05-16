@@ -661,14 +661,26 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"fused_gelu",        TritonOpCategory::UNARY_ELEMENTWISE},
     {"FusedGelu",         TritonOpCategory::UNARY_ELEMENTWISE},
 
-    // ── Activation backward ops (elementwise gradient kernels) ──
-    // These share the emitter category of their forward counterparts.
-    // Attention/normalization _bp ops are intentionally excluded here —
-    // they need custom multi-output emitters that do not yet exist.
-    {"silu_bp",               TritonOpCategory::UNARY_ELEMENTWISE},
-    {"fused_gelu_bp",         TritonOpCategory::UNARY_ELEMENTWISE},
-    {"squared_relu_bp",       TritonOpCategory::UNARY_ELEMENTWISE},
-    {"center_and_sharpen_bp", TritonOpCategory::UNARY_ELEMENTWISE},
+    // ── Activation backward ops (binary: input[0]=x, input[1]=dy, output=dx) ──
+    // Only ops with matching emitters in emitBinaryElementwise are listed here.
+    // Ops listed here without opTable entries would cause isTritonMappable=true
+    // but no IR emission — DO NOT add ops without corresponding emitters.
+    {"relu_bp",               TritonOpCategory::BINARY_ELEMENTWISE},
+    {"relu6_bp",              TritonOpCategory::BINARY_ELEMENTWISE},
+    {"thresholdedrelu_bp",    TritonOpCategory::BINARY_ELEMENTWISE},
+    {"sigmoid_bp",            TritonOpCategory::BINARY_ELEMENTWISE},
+    {"tanh_bp",               TritonOpCategory::BINARY_ELEMENTWISE},
+    {"elu_bp",                TritonOpCategory::BINARY_ELEMENTWISE},
+    {"selu_bp",               TritonOpCategory::BINARY_ELEMENTWISE},
+    {"lrelu_bp",              TritonOpCategory::BINARY_ELEMENTWISE},
+    {"softplus_bp",           TritonOpCategory::BINARY_ELEMENTWISE},
+    {"softsign_bp",           TritonOpCategory::BINARY_ELEMENTWISE},
+    {"hardsigmoid_bp",        TritonOpCategory::BINARY_ELEMENTWISE},
+    {"hardtanh_bp",           TritonOpCategory::BINARY_ELEMENTWISE},
+    {"silu_bp",               TritonOpCategory::BINARY_ELEMENTWISE},
+    {"fused_gelu_bp",         TritonOpCategory::BINARY_ELEMENTWISE},
+    {"squared_relu_bp",       TritonOpCategory::BINARY_ELEMENTWISE},
+    {"rectifiedtanh_bp",      TritonOpCategory::BINARY_ELEMENTWISE},
     {"swish_mul_bp",          TritonOpCategory::BINARY_ELEMENTWISE},
   };
   return table;

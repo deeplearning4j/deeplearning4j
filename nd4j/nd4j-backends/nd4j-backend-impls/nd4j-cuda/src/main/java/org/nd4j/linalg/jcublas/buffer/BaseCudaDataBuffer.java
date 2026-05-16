@@ -1493,10 +1493,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, float element) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        allocator.tickHostWrite(this);
-        super.put(i, element);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            allocator.tickHostWrite(this);
+            super.put(i, element);
+        }
     }
 
     /**

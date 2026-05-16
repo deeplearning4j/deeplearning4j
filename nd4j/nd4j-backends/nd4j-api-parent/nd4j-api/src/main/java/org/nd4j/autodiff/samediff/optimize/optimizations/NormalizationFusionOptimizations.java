@@ -99,14 +99,15 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 SDVariable fused = sd.nn().rmsNorm(x, gamma, match.epsilon);
                 OptimizationUtils.replaceOpInputsWith(sd, helper, finalOutputVar, fused.name());
 
+                // Temporarily remove finalOutputVar from graph outputs BEFORE the
+                // removeOp loop so that removeOp isn't refused by the output guard.
+                // Without this, the finalMul op persists as a ghost in the ops map.
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(finalOutputVar);
+
                 for (String opName : match.opsToRemove) {
                     OptimizationUtils.removeOp(sd, helper, opName);
                 }
-
-                // Temporarily remove finalOutputVar from graph outputs so removeVariable
-                // won't refuse to delete it (mirrors FuseRMSNormLinearPattern logic)
-                List<String> graphOutputs = sd.outputs();
-                boolean wasOutput = graphOutputs != null && graphOutputs.remove(finalOutputVar);
 
                 for (String varName : match.varsToRemove) {
                     if (!match.xVar.equals(varName) && !match.gammaVar.equals(varName)) {
@@ -723,6 +724,15 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                     SDVariable gamma = sd.getVariable(gammaVar);
                     SDVariable w = sd.getVariable(weightVar);
                     if (x == null || gamma == null || w == null) {
+                        continue;
+                    }
+
+                    // Guard against mixed dtypes: if QuantizeConstantsToFP16 converted
+                    // weights to HALF but activation is FLOAT32, the internal GEMM in
+                    // rms_norm_linear hits the same cuBLAS mixed-type rejection (status 50).
+                    DataType xDtype = x.dataType();
+                    DataType wDtype = w.dataType();
+                    if (wDtype != null && xDtype != null && !wDtype.equals(xDtype)) {
                         continue;
                     }
 

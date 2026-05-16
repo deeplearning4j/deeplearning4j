@@ -560,16 +560,21 @@ public class DspDebugger {
         // Check 1: All capturable segments should have replay handles (no orphans)
         for (SegmentReport seg : planReport.segments) {
             if (seg.capturable && !seg.captureFailed) {
-                // A capturable segment that has executed enough should have a replay handle
+                // A capturable segment that has executed enough should have a replay handle.
+                // COMPILED is also valid: GPU_COMPILER segments may compile Triton code
+                // but produce 0-node graphs when all ops are gap ops (no Triton islands).
+                // These segments execute slot-by-slot with SyncOverride and are considered
+                // in steady state by segmentIsFullyReplayingForPlanPhase().
                 if (seg.executionCount > 2 && seg.phase != null
                         && seg.phase != ExecutionPhase.REPLAYING
-                        && seg.phase != ExecutionPhase.COMPILING) {
+                        && seg.phase != ExecutionPhase.COMPILING
+                        && seg.phase != ExecutionPhase.COMPILED) {
                     contractReport.addViolation(reportPhaseViolation(
                             PhaseViolationType.ADDRESS_DRIFT,
                             currentPlanPhase, -1, seg.index,
                             "Capturable segment[" + seg.index + "] has executed " +
                             seg.executionCount + " times but is in phase " + seg.phase +
-                            " — expected COMPILING or REPLAYING"));
+                            " — expected COMPILING, COMPILED, or REPLAYING"));
                 }
             }
         }

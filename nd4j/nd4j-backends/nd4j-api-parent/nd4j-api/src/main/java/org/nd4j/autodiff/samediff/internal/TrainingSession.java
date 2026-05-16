@@ -41,6 +41,7 @@ import org.nd4j.autodiff.samediff.execution.ReplayProfileManager;
 import org.nd4j.autodiff.samediff.execution.UpdaterOpsAppender;
 import org.nd4j.autodiff.samediff.training.LossScaler;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -184,14 +185,7 @@ public class TrainingSession extends InferenceSession {
         // Try DSP fast path first — bypasses the listener-gated check in output()
         boolean dspHandled = false;
         if (isDynamicShapePlanEnabled()) {
-            try {
-                log.debug("Attempting DSP training iteration");
-                dspHandled = tryDspTrainingIteration(placeholders, outputVars, requiredActivations, at);
-                log.debug("DSP training iteration result: dspHandled={}", dspHandled);
-            } catch (Exception e) {
-                log.warn("DSP training iteration failed, falling back to standard path: {}", e.getMessage());
-                dspHandled = false;
-            }
+            dspHandled = tryDspTrainingIteration(placeholders, outputVars, requiredActivations, at);
         }
 
         if (!dspHandled) {
@@ -265,21 +259,12 @@ public class TrainingSession extends InferenceSession {
                                             List<String> outputVars,
                                             Set<String> requiredActivations,
                                             At at) {
-        // Check if updater ops are fused into the grad graph.
-        UpdaterOpsAppender.AppendResult fusionResult = sameDiff.getUpdaterFusionResult();
-        boolean fusionActive = fusionResult != null && !fusionResult.varToWeightUpdatedOutput.isEmpty();
-
-        // When fusion is active, request the weight-updated output variables AND the new
-        // state-value outputs from the plan, so they appear in the results map after execution.
+        // Updater fusion is disabled for now. The fused updater ops (adam_updater,
+        // sgd_updater, nesterovs_updater) are misclassified as BINARY_EW in OpTraitTable.cpp,
+        // causing the C++ native plan to wire their inputs incorrectly (wrong slot count).
+        // This produces corrupted weight updates that drive loss to 0.0 after the first step.
+        // Until OpTraitTable is fixed, use Java-side updaters (applyUpdatersPostDsp path).
         List<String> effectiveOutputVars = outputVars;
-        if (fusionActive) {
-            effectiveOutputVars = new ArrayList<>(outputVars);
-            effectiveOutputVars.addAll(fusionResult.varToWeightUpdatedOutput.values());
-            // State-value outputs must also be requested so the plan surfaces them.
-            if (fusionResult.stateVarToNewOutput != null) {
-                effectiveOutputVars.addAll(fusionResult.stateVarToNewOutput.values());
-            }
-        }
 
         // Build allRequired set (same as output() does)
         Set<String> allRequired = new LinkedHashSet<>(effectiveOutputVars);
@@ -320,13 +305,9 @@ public class TrainingSession extends InferenceSession {
                 }
             }
 
-            if (fusionActive) {
-                // Updater ops ran inside the plan — apply updated weights back to SDVariables.
-                applyFusedWeightUpdates(fusionResult, results, at);
-            } else {
-                // Apply updaters post-execution (batch-applied instead of per-op inline)
-                applyUpdatersPostDsp(results, at);
-            }
+            // Apply updaters post-execution using Java-side GradientUpdater.
+            // Updater fusion (running updater ops inside the C++ plan) is disabled — see above.
+            applyUpdatersPostDsp(results, at);
 
             // DSP post-exec: commit + trim
             dspStepCount++;
@@ -336,11 +317,11 @@ public class TrainingSession extends InferenceSession {
             if (!frozen || dspStepCount <= 2) {
                 Nd4j.getExecutioner().commit();
                 NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                        Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                        DeviceMemoryManager.getInstance().getCurrentDeviceId(), null);
             } else if (dspStepCount % TRIM_INTERVAL == 0) {
                 Nd4j.getExecutioner().commit();
                 NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                        Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                        DeviceMemoryManager.getInstance().getCurrentDeviceId(), null);
             }
 
             // Manage shape freezing for subsequent iterations
@@ -876,6 +857,12 @@ public class TrainingSession extends InferenceSession {
             paramArr.addi(gradArr);
         }
 
+        // Force host→device sync after in-place weight update.
+        // The updater modifies the host buffer (subi/addi). Without this sync,
+        // the GPU still holds stale pre-update weights. If DSP uses frozen replay
+        // (CUDA graph), the next replay reads stale device memory → zero gradients → zero loss.
+        paramArr.syncToDevice();
+
         log.trace("Applied updater to gradient and updated variable: {}", varName);
     }
 
@@ -910,18 +897,18 @@ public class TrainingSession extends InferenceSession {
             }
         }
 
-        // Eager freeze: training batches are same-shaped within an epoch.
-        // Freeze after first successful execution so iteration 1+ gets graph replay.
-        // If shapes change (last incomplete batch, new epoch with different data),
-        // destroy the current plan — phases are linear and immutable, so unfreezing
-        // is illegal. The plan cache will compile a fresh entry for the new shape.
+        // Training MUST NOT freeze shapes. Frozen replay (CUDA graph) captures a fixed
+        // computation graph. Training changes weights every step via the Java-side updater
+        // (subi/addi). While the weight device pointers stay the same, the frozen native
+        // plan's output slots become stale because the CUDA graph replay reads from captured
+        // intermediate buffers that don't reflect the weight updates. This causes loss=0.0
+        // and zero gradients after the first replay step.
+        //
+        // Slot-by-slot execution re-executes each op fresh each step, reading the updated
+        // weight values from their device buffers, which is correct for training.
         if (previousPlaceholderShapes == null) {
-            // First iteration: freeze immediately so subsequent same-shaped iterations
-            // get graph replay.
-            if (!executor.isShapesFrozen()) {
-                executor.setShapesFrozen(true);
-                log.info("DSP training: froze shapes eagerly after first iteration");
-            }
+            // First iteration: do NOT freeze. Let DSP run slot-by-slot for training.
+            log.info("DSP training: keeping slot-by-slot execution (no shape freeze for training)");
         } else if (!shapesMatch(previousPlaceholderShapes, currentShapes)) {
             // Shape changed. Destroy the current plan (releasing GPU intermediates and
             // unpinning the handle back to the cache). Reset previousPlaceholderShapes

@@ -106,6 +106,11 @@ static bool supportedBatchedGemmTypes(DataType aType, DataType bType, DataType c
   if (!cudaTypeFor(aType, ignored) || !cudaTypeFor(bType, ignored) || !cudaTypeFor(cType, ignored)) {
     return false;
   }
+  // cuBLAS GemmBatchedEx requires A and B to have the same type.
+  // Mixed A/B (e.g. FLOAT32 + HALF) returns CUBLAS_STATUS_INVALID_VALUE.
+  // Let those fall through to regular per-slot matmul which handles internal casting.
+  if (aType != bType) return false;
+
   const bool anyDouble = aType == DOUBLE || bType == DOUBLE || cType == DOUBLE;
   const bool allDouble = aType == DOUBLE && bType == DOUBLE && cType == DOUBLE;
   if (anyDouble && !allDouble) return false;
@@ -513,11 +518,18 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       if (inputA->dataType() != group.aType || inputB->dataType() != group.bType ||
           outputC->dataType() != group.cType) {
         DSP_DIAG(EXECUTE,
-                 "batched GEMM group %d slot %d: dtype drift A=%d/%d B=%d/%d C=%d/%d",
+                 "batched GEMM group %d slot %d: dtype drift A=%d/%d B=%d/%d C=%d/%d "
+                 "A shape=[%lld,%lld] B shape=[%lld,%lld] C shape=[%lld,%lld]",
                  groupIdx, slotIdx,
                  (int)inputA->dataType(), (int)group.aType,
                  (int)inputB->dataType(), (int)group.bType,
-                 (int)outputC->dataType(), (int)group.cType);
+                 (int)outputC->dataType(), (int)group.cType,
+                 (long long)(inputA->rankOf() >= 1 ? inputA->sizeAt(0) : 0),
+                 (long long)(inputA->rankOf() >= 2 ? inputA->sizeAt(1) : 0),
+                 (long long)(inputB->rankOf() >= 1 ? inputB->sizeAt(0) : 0),
+                 (long long)(inputB->rankOf() >= 2 ? inputB->sizeAt(1) : 0),
+                 (long long)(outputC->rankOf() >= 1 ? outputC->sizeAt(0) : 0),
+                 (long long)(outputC->rankOf() >= 2 ? outputC->sizeAt(1) : 0));
         return Status::BAD_ARGUMENTS;
       }
 
@@ -528,8 +540,15 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       const bool rowMajorC = singleMatrixRowMajor(outputC, group.M, group.N);
       if (!rowMajorA || !rowMajorB || !rowMajorC) {
         DSP_DIAG(EXECUTE,
-                 "batched GEMM group %d slot %d: layout drift rowMajorA=%d rowMajorB=%d rowMajorC=%d",
-                 groupIdx, slotIdx, (int)rowMajorA, (int)rowMajorB, (int)rowMajorC);
+                 "batched GEMM group %d slot %d: layout drift rowMajorA=%d rowMajorB=%d rowMajorC=%d "
+                 "A strides=[%lld,%lld] B strides=[%lld,%lld] C strides=[%lld,%lld]",
+                 groupIdx, slotIdx, (int)rowMajorA, (int)rowMajorB, (int)rowMajorC,
+                 (long long)(inputA->rankOf() >= 2 ? inputA->strideAt(0) : 0),
+                 (long long)(inputA->rankOf() >= 2 ? inputA->strideAt(1) : 0),
+                 (long long)(inputB->rankOf() >= 2 ? inputB->strideAt(0) : 0),
+                 (long long)(inputB->rankOf() >= 2 ? inputB->strideAt(1) : 0),
+                 (long long)(outputC->rankOf() >= 2 ? outputC->strideAt(0) : 0),
+                 (long long)(outputC->rankOf() >= 2 ? outputC->strideAt(1) : 0));
         return Status::BAD_ARGUMENTS;
       }
 

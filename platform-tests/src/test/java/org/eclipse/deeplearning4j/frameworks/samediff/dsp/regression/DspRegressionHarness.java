@@ -349,17 +349,10 @@ public abstract class DspRegressionHarness {
     protected static void assumeCudaAvailable() {
         boolean cuda = false;
         try {
-            cuda = Nd4j.getAffinityManager().getNumberOfDevices() > 0
-                    && "CUDA".equalsIgnoreCase(Nd4j.getBackend().getClass().getSimpleName().contains("Cuda") ? "CUDA" : "CPU");
-            // Heuristic: a cuda backend exposes a non-empty GPU device list.
+            String name = Nd4j.getBackend().getClass().getName().toLowerCase(Locale.ROOT);
+            // JCublasBackend is the CUDA backend — check for both "cuda" and "cublas"
+            cuda = name.contains("cuda") || name.contains("cublas") || name.contains("jcublas");
         } catch (Throwable ignored) {
-        }
-        // Back-stop: if the backend class name literally contains "Cuda" we accept it.
-        if (!cuda) {
-            try {
-                cuda = Nd4j.getBackend().getClass().getName().toLowerCase(Locale.ROOT).contains("cuda");
-            } catch (Throwable ignored) {
-            }
         }
         assumeTrue(cuda, "CUDA backend not active — skipping");
     }

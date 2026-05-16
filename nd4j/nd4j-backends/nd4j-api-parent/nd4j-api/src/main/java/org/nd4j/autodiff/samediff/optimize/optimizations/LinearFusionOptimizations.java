@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 
 import java.util.List;
@@ -114,17 +115,19 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             SDVariable biasSDVar = sd.getVariable(biasVar);
             if (biasSDVar == null) return false;
 
-            // Bias must be a model parameter (CONSTANT or VARIABLE), not a computed value.
-            // ARRAY variables are computed during execution (e.g., residual connections)
-            // and must not be fused as bias.
-            if (biasSDVar.getVariableType() == VariableType.ARRAY) {
+            // Bias must be a model parameter (CONSTANT or VARIABLE), not a computed value
+            // or an input placeholder. ARRAY variables are computed during execution
+            // (e.g., residual connections) and PLACEHOLDERs are input tensors — neither
+            // is a bias vector. Only CONSTANT and VARIABLE are valid bias sources.
+            VariableType biasType = biasSDVar.getVariableType();
+            if (biasType != VariableType.CONSTANT && biasType != VariableType.VARIABLE) {
                 return false;
             }
 
-            // Get bias shape - it should be 1D for xw_plus_b
+            // xw_plus_b expects a 1D bias vector [N]. Reject 2D+ tensors — those are
+            // residual connections or full matrices, not bias vectors.
             long[] biasShape = biasSDVar.getShape();
-            if (biasShape != null && biasShape.length > 2) {
-                // Bias has too many dimensions
+            if (biasShape != null && biasShape.length > 1) {
                 return false;
             }
 
@@ -157,9 +160,18 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             // xw_plus_b relies on oneDNN inner_product which requires hardware BF16/FP16
             // support. Skip fusion for non-FP32 types — the unfused matmul+add path works
             // for all types via generic C++ MmulHelper.
-            org.nd4j.linalg.api.buffer.DataType xDtype = xSDVar.dataType();
-            if (xDtype != null && xDtype != org.nd4j.linalg.api.buffer.DataType.FLOAT
-                    && xDtype != org.nd4j.linalg.api.buffer.DataType.DOUBLE) {
+            DataType xDtype = xSDVar.dataType();
+            if (xDtype != null && xDtype != DataType.FLOAT
+                    && xDtype != DataType.DOUBLE) {
+                return false;
+            }
+
+            // Also guard against mixed-dtype: if weights were quantized to HALF by
+            // QuantizeConstantsToFP16 but activation is FLOAT32, cuBLAS rejects the
+            // mixed A=FLOAT32, B=HALF combination. Let unfused matmul+add handle it
+            // (MmulHelper does internal casting).
+            DataType wDtype = wSDVar.dataType();
+            if (wDtype != null && xDtype != null && !wDtype.equals(xDtype)) {
                 return false;
             }
 
@@ -279,13 +291,16 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             SDVariable biasSDVar = sd.getVariable(biasVar);
             if (biasSDVar == null) return false;
 
-            // Bias must be a model parameter (CONSTANT or VARIABLE), not a computed value.
-            if (biasSDVar.getVariableType() == VariableType.ARRAY) {
+            // Bias must be a model parameter (CONSTANT or VARIABLE), not a computed value
+            // or an input placeholder.
+            VariableType biasType2 = biasSDVar.getVariableType();
+            if (biasType2 != VariableType.CONSTANT && biasType2 != VariableType.VARIABLE) {
                 return false;
             }
 
+            // xw_plus_b expects a 1D bias vector [N].
             long[] biasShape = biasSDVar.getShape();
-            if (biasShape != null && biasShape.length > 2) {
+            if (biasShape != null && biasShape.length > 1) {
                 return false;
             }
 
@@ -300,6 +315,20 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             SDVariable wSDVar = sd.getVariable(wVar);
 
             if (xSDVar == null || wSDVar == null) {
+                return false;
+            }
+
+            // Guard against mixed dtypes (same issue as FuseMatMulWithAdd):
+            // if QuantizeConstantsToFP16 converted weights to HALF but activation
+            // is FLOAT32, cuBLAS rejects the mixed combination. Also skip for
+            // non-FP32/DOUBLE activations since xw_plus_b relies on oneDNN.
+            DataType xDtype = xSDVar.dataType();
+            if (xDtype != null && xDtype != DataType.FLOAT
+                    && xDtype != DataType.DOUBLE) {
+                return false;
+            }
+            DataType wDtype = wSDVar.dataType();
+            if (wDtype != null && xDtype != null && !wDtype.equals(xDtype)) {
                 return false;
             }
 

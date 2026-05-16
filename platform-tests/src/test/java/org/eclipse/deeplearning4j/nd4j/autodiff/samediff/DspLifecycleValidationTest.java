@@ -33,11 +33,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -952,6 +955,15 @@ public class DspLifecycleValidationTest {
             assertTrue(maxIdenticalRun <= 2,
                     cfg.getName() + ": " + maxIdenticalRun
                             + " consecutive identical outputs (stale replay suspected)");
+
+            // After many steps with DSP enabled, plan should have frozen
+            // SLOT_BY_SLOT and EMULATED_REPLAY don't advance DSP phases
+            if (cfg.getExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT
+                    && cfg.getExecutionMode() != GraphExecutionMode.EMULATED_REPLAY) {
+                DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
+                        cfg.getName() + " after " + steps + " steps");
+                DspPlanAssertions.assertNoSegmentFailures(sd, cfg.getName());
+            }
         } finally {
             sd.close();
         }
@@ -1240,6 +1252,11 @@ public class DspLifecycleValidationTest {
             }
             if (x.closeable() && !x.wasClosed()) x.close();
 
+            // Structural DSP assertions: after 5 steps, plan should have advanced
+            DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN, "lifecycle-contract");
+            DspPlanAssertions.assertDiagnosticsRecorded(sd, "lifecycle-contract");
+            DspPlanAssertions.assertNoFallbacks(sd, "lifecycle-contract");
+
             String report = DspDiagnostics.getPlanReport();
             assertNotNull(report, "DSP plan report should not be null");
             log.info("DSP plan report:\n{}", report);
@@ -1258,6 +1275,29 @@ public class DspLifecycleValidationTest {
     public void testCrossDeviceMatmulExecution() {
         int nDev = Nd4j.getAffinityManager().getNumberOfDevices();
         assumeTrue(nDev >= 2, "Skipping — only " + nDev + " device(s)");
+
+        // Verify round-trip replication works before the actual test
+        {
+            INDArray orig = Nd4j.create(new float[]{1.0f, 2.0f, 3.0f, 4.0f}, new long[]{2, 2});
+            log.info("REPLICATE_TEST: orig on dev0 = {}", orig.toFloatVector());
+
+            INDArray onDev1 = Nd4j.getAffinityManager().replicateToDevice(1, orig);
+            Nd4j.getExecutioner().commit();
+            // Read back from device 1 by syncing
+            float[] dev1Data = onDev1.dup().toFloatVector();
+            log.info("REPLICATE_TEST: on dev1 = {}", java.util.Arrays.toString(dev1Data));
+
+            INDArray backOnDev0 = Nd4j.getAffinityManager().replicateToDevice(0, onDev1);
+            Nd4j.getExecutioner().commit();
+            float[] dev0Data = backOnDev0.dup().toFloatVector();
+            log.info("REPLICATE_TEST: back on dev0 = {}", java.util.Arrays.toString(dev0Data));
+
+            assertTrue(dev0Data[0] == 1.0f && dev0Data[1] == 2.0f && dev0Data[2] == 3.0f && dev0Data[3] == 4.0f,
+                    "Round-trip dev0->dev1->dev0 failed: " + java.util.Arrays.toString(dev0Data));
+            orig.close();
+            onDev1.close();
+            backOnDev0.close();
+        }
 
         SameDiff sd = buildMatmulMlp();
         try {

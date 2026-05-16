@@ -637,6 +637,21 @@ void NativeDynamicShapePlan::platformLogSlotOutput(
   (void)numOutputs;
 }
 
+int NativeDynamicShapePlan::copyStagingToBuffer(int extIdx, sd::DataBuffer* dstDataBuffer) {
+  if (placeholderStagingBuffers_ == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
+    return -1;
+  NDArray* staging = placeholderStagingBuffers_[extIdx];
+  if (staging == nullptr) return -1;
+
+  auto* srcDb = staging->dataBuffer();
+  if (srcDb == nullptr || srcDb->isClosed()) return -2;
+  if (dstDataBuffer == nullptr) return -3;
+
+  // CPU: DataBuffer::memcpy does synchronous H2H copy.
+  sd::DataBuffer::memcpy(dstDataBuffer, srcDb, 0, 0, staging->lengthOf());
+  return 0;
+}
+
 }  // namespace graph
 }  // namespace sd
 

@@ -44,7 +44,7 @@ namespace helpers {
 //   lse_out = m + log(w_a + w_b)
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void mergeAttentionStatesKernel(
+SD_KERNEL __launch_bounds__(128, 4) void mergeAttentionStatesKernel(
     const T* __restrict__ attnA,      // [B, H, S, D]
     const float* __restrict__ lseA,   // [B, H, S]
     const T* __restrict__ attnB,      // [B, H, S, D]
@@ -74,8 +74,8 @@ SD_KERNEL void mergeAttentionStatesKernel(
 
     // Numerically stable merge weights
     const float m = fmaxf(lA, lB);
-    const float wA = expf(lA - m);
-    const float wB = expf(lB - m);
+    const float wA = __expf(lA - m);
+    const float wB = __expf(lB - m);
     const float wSum = wA + wB;
     const float invWSum = 1.0f / wSum;
 
@@ -102,7 +102,7 @@ SD_KERNEL void mergeAttentionStatesKernel(
 //////////////////////////////////////////////////////////////////////////////
 // Half-precision optimized variant using half2 vectorized loads
 //////////////////////////////////////////////////////////////////////////////
-SD_KERNEL void mergeAttentionStatesHalf2Kernel(
+SD_KERNEL __launch_bounds__(128, 4) void mergeAttentionStatesHalf2Kernel(
     const half* __restrict__ attnA,
     const float* __restrict__ lseA,
     const half* __restrict__ attnB,
@@ -122,8 +122,8 @@ SD_KERNEL void mergeAttentionStatesHalf2Kernel(
     const float lB = lseB[lseOffset];
 
     const float m = fmaxf(lA, lB);
-    const float wA = expf(lA - m);
-    const float wB = expf(lB - m);
+    const float wA = __expf(lA - m);
+    const float wB = __expf(lB - m);
     const float invWSum = 1.0f / (wA + wB);
 
     const LongType dataOffset = posIdx * headDim;
@@ -186,8 +186,9 @@ void mergeAttentionStates(LaunchContext* context,
     auto stream = context->getCudaStream();
     auto dtype = attnPrefix->dataType();
 
+    // Cap at 128: both mergeAttentionStatesKernel and mergeAttentionStatesHalf2Kernel
+    // use __launch_bounds__(128, 4). Launching with more threads exceeds register budget.
     int threads = 128;
-    if (headDim > 128) threads = 256;
 
     float* lseOutPtr = (lseOutput != nullptr) ?
         reinterpret_cast<float*>(lseOutput->specialBuffer()) : nullptr;

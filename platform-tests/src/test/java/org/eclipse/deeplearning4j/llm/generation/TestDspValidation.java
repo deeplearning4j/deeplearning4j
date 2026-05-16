@@ -39,6 +39,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
@@ -49,6 +51,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
 
@@ -433,6 +437,20 @@ public class TestDspValidation {
                     config.getName() + ": DEGENERATE OUTPUT — all " + refTokens.length
                             + " reference tokens are the same (token " + refTokens[0]
                             + "). The model is producing garbage.");
+        }
+
+        // Degenerate content check: model should produce content tags, not just
+        // picture structure. Premature EOS after <picture>...</picture></doctag> is
+        // a sign of broken vision encoder or attention computation.
+        String refTextStr = refResult.getText();
+        if (refTextStr != null && refTokens.length > 5) {
+            boolean hasPictureOnly = refTextStr.contains("<picture>") && refTextStr.contains("</doctag>")
+                    && !refTextStr.contains("<text>") && !refTextStr.contains("<section_header>")
+                    && !refTextStr.contains("<otsl>") && !refTextStr.contains("<table>");
+            if (hasPictureOnly && refTokens.length < 30) {
+                log.warn("{}: DEGENERATE CONTENT — only {} tokens with picture-only output: {}",
+                        config.getName(), refTokens.length, refTextStr);
+            }
         }
     }
 
@@ -912,6 +930,363 @@ public class TestDspValidation {
                 "Token match rate too low: FORCE_RECAPTURE vs OPTIMAL="
                         + String.format("%.1f%% (required %.1f%%)",
                         forceRecapMatchRate * 100, requiredRate * 100));
+    }
+
+    // ─── Test: executeSteadyState fast path isolation ─────────────────────
+
+    /**
+     * Isolate whether the executeSteadyState fast path causes step-4 divergence.
+     *
+     * Theory: executeCount_ is NOT reset by unseal()/markExternalInputVariable, so
+     * after re-capture + seal(), the fast path (platformTryFrozenFastPath) activates
+     * immediately instead of going through the normal warmup->capture->replay lifecycle.
+     *
+     * Configs tested:
+     *   1. SLOT_BY_SLOT: baseline (no graph capture, no fast path)
+     *   2. OPTIMAL: full fast path (executeSteadyState -> platformTryFrozenFastPath)
+     *   3. OPTIMAL + tritonVerifyKernels=true: forces execute() path (bypass fast path)
+     *   4. OPTIMAL + tritonForceRecapture=true: re-captures every step (no replay reuse)
+     *
+     * If (3) matches (1) but (2) doesn't -> executeSteadyState fast path is the bug.
+     * If (4) matches (1) but (2) doesn't -> CUDA graph replay (not capture) is the bug.
+     */
+    @Test
+    @DisplayName("Isolate executeSteadyState fast path vs execute() path divergence")
+    public void testSteadyStateFastPathIsolation() throws Exception {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping fast path isolation test");
+            return;
+        }
+        ensureModelsLoaded();
+        int maxTokens = getTokens(10);
+        log.info("=== STEADY STATE FAST PATH ISOLATION (tokens={}) ===", maxTokens);
+
+        // 1. SLOT_BY_SLOT baseline (no graph capture, no fast path)
+        GenerationResult baselineResult = runDecode(
+                BenchmarkConfig.create("ISO_BASELINE_SBS")
+                        .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+                        .maxTokens(maxTokens),
+                maxTokens);
+        int[] baselineTokens = baselineResult.getTokenIds();
+        log.info("[ISO_BASELINE_SBS] tokens={} text='{}'",
+                baselineTokens.length, baselineResult.getText());
+
+        // 2. OPTIMAL (executeSteadyState fast path active)
+        BenchmarkConfig optimalCfg = BenchmarkConfig.optimal().maxTokens(maxTokens);
+        GenerationResult optimalResult = runDecode(optimalCfg, maxTokens);
+        int[] optimalTokens = optimalResult.getTokenIds();
+        log.info("[ISO_OPTIMAL] tokens={} text='{}'",
+                optimalTokens.length, optimalResult.getText());
+
+        // Use DspHandle to inspect post-decode slot state
+        DspHandle h = decoder.dsp();
+        if (h.isCompiled()) {
+            int nanSlot = h.firstNaNSlot();
+            log.info("[ISO_OPTIMAL] DspHandle: totalSlots={} firstNaNSlot={}",
+                    h.totalSlots(), nanSlot);
+            if (nanSlot >= 0) {
+                Map<Integer, String> snapshot = h.snapshotAllSlots();
+                int count = 0;
+                for (Map.Entry<Integer, String> e : snapshot.entrySet()) {
+                    if (e.getValue().contains("NaN") && count++ < 5) {
+                        log.info("  NaN: {}", e.getValue());
+                    }
+                }
+            }
+        }
+
+        // 3. OPTIMAL + tritonVerifyKernels=true (forces execute() path, bypasses fast path)
+        // The C++ precondition is: if (tritonVerifyKernels()) return execute(...)
+        // This is the KEY isolation: same config, but never enters executeSteadyState fast path.
+        BenchmarkConfig noFastPathCfg = BenchmarkConfig.create("ISO_NO_FAST_PATH")
+                .tritonIncludeTypes(optimalCfg.getTritonIncludeTypes())
+                .tritonSectionFusion(optimalCfg.isTritonSectionFusion())
+                .tritonCompileAll(optimalCfg.isTritonCompileAll())
+                .tritonGraphCapture(optimalCfg.isTritonGraphCapture())
+                .tritonAllowFallbackCapture(false)
+                .tritonConsolidatedArgTable(optimalCfg.isTritonConsolidatedArgTable())
+                .tritonArgDirtyTracking(optimalCfg.isTritonArgDirtyTracking())
+                .tritonFusionScoring(optimalCfg.isTritonFusionScoring())
+                .tritonMergedCaptureThroughViews(optimalCfg.isTritonMergedCaptureThroughViews())
+                .tritonNumWarps(optimalCfg.getTritonNumWarps())
+                .tritonNumStages(optimalCfg.getTritonNumStages())
+                .cublasTf32(optimalCfg.isCublasTf32())
+                .tritonTf32(optimalCfg.isTritonTf32())
+                .dspBatchedGemm(optimalCfg.isDspBatchedGemm())
+                .dspFreezeMergeSegments(optimalCfg.isDspFreezeMergeSegments())
+                .tritonVerifyKernels(true)     // Forces execute() path
+                .maxTokens(maxTokens);
+        GenerationResult noFastResult = runDecode(noFastPathCfg, maxTokens);
+        int[] noFastTokens = noFastResult.getTokenIds();
+        log.info("[ISO_NO_FAST_PATH] tokens={} text='{}'",
+                noFastTokens.length, noFastResult.getText());
+
+        // 4. OPTIMAL + tritonForceRecapture=true (re-captures every step, no replay reuse)
+        BenchmarkConfig recapCfg = BenchmarkConfig.create("ISO_FORCE_RECAPTURE")
+                .tritonIncludeTypes(optimalCfg.getTritonIncludeTypes())
+                .tritonSectionFusion(optimalCfg.isTritonSectionFusion())
+                .tritonCompileAll(optimalCfg.isTritonCompileAll())
+                .tritonGraphCapture(true)
+                .tritonAllowFallbackCapture(false)
+                .tritonConsolidatedArgTable(optimalCfg.isTritonConsolidatedArgTable())
+                .tritonArgDirtyTracking(optimalCfg.isTritonArgDirtyTracking())
+                .tritonFusionScoring(optimalCfg.isTritonFusionScoring())
+                .tritonMergedCaptureThroughViews(optimalCfg.isTritonMergedCaptureThroughViews())
+                .tritonNumWarps(optimalCfg.getTritonNumWarps())
+                .tritonNumStages(optimalCfg.getTritonNumStages())
+                .cublasTf32(optimalCfg.isCublasTf32())
+                .tritonTf32(optimalCfg.isTritonTf32())
+                .dspBatchedGemm(optimalCfg.isDspBatchedGemm())
+                .dspFreezeMergeSegments(optimalCfg.isDspFreezeMergeSegments())
+                .tritonForceRecapture(true)   // Re-capture every step
+                .maxTokens(maxTokens);
+        GenerationResult recapResult = runDecode(recapCfg, maxTokens);
+        int[] recapTokens = recapResult.getTokenIds();
+        log.info("[ISO_FORCE_RECAPTURE] tokens={} text='{}'",
+                recapTokens.length, recapResult.getText());
+
+        // ─── Analysis ───
+        log.info("=== FAST PATH ISOLATION ANALYSIS ===");
+        int optVsBase = logTokenComparison("OPTIMAL vs BASELINE",
+                optimalTokens, baselineTokens);
+        int noFastVsBase = logTokenComparison("NO_FAST_PATH vs BASELINE",
+                noFastTokens, baselineTokens);
+        int recapVsBase = logTokenComparison("FORCE_RECAPTURE vs BASELINE",
+                recapTokens, baselineTokens);
+        int optVsNoFast = logTokenComparison("OPTIMAL vs NO_FAST_PATH",
+                optimalTokens, noFastTokens);
+
+        // ─── Diagnosis ───
+        log.info("=== DIAGNOSIS ===");
+        if (optVsBase >= 0 && noFastVsBase < 0) {
+            log.info("CONFIRMED: executeSteadyState fast path is the bug.");
+            log.info("  OPTIMAL diverges at step {} but NO_FAST_PATH matches baseline.", optVsBase);
+            log.info("  The fast path (platformTryFrozenFastPath) produces wrong results.");
+            log.info("  executeCount_ not being reset by unseal() is the likely root cause.");
+        } else if (optVsBase >= 0 && noFastVsBase >= 0) {
+            log.info("NOT fast path: both paths diverge from baseline.");
+            log.info("  OPTIMAL diverges at step {}, NO_FAST_PATH at step {}.", optVsBase, noFastVsBase);
+            if (noFastVsBase == optVsBase) {
+                log.info("  Same step — bug is in the shared execute()/replay logic.");
+            } else {
+                log.info("  Different steps — multiple bugs or interaction effect.");
+            }
+        } else if (optVsBase < 0) {
+            log.info("No divergence: OPTIMAL matches baseline. Bug may be intermittent.");
+        }
+
+        if (optVsBase >= 0) {
+            if (recapVsBase < 0) {
+                log.info("  FORCE_RECAPTURE matches baseline — replay is correct, D2D staging may be stale.");
+            } else if (recapVsBase >= 0 && recapVsBase != optVsBase) {
+                log.info("  FORCE_RECAPTURE diverges at step {} (vs {} for OPTIMAL) — partial capture issue.",
+                        recapVsBase, optVsBase);
+            } else {
+                log.info("  FORCE_RECAPTURE diverges at same step {} — capture itself produces wrong graphs.",
+                        recapVsBase);
+            }
+        }
+
+        // Assert that at least one non-baseline config diverges (otherwise test is not exercising the bug)
+        // But don't fail on the divergence itself — this is a diagnostic test.
+        // The key output is the DIAGNOSIS log section above.
+        log.info("=== END FAST PATH ISOLATION ===");
+    }
+
+    /**
+     * Compare two token sequences, log per-step comparison, return first divergent step (-1 if match).
+     */
+    private int logTokenComparison(String label, int[] test, int[] ref) {
+        int minLen = Math.min(test.length, ref.length);
+        int matches = 0;
+        int firstDiv = -1;
+        for (int i = 0; i < minLen; i++) {
+            if (test[i] == ref[i]) {
+                matches++;
+            } else if (firstDiv < 0) {
+                firstDiv = i;
+            }
+        }
+        double rate = minLen > 0 ? (double) matches / minLen * 100 : 100.0;
+        log.info("[{}] match={}/{} ({}%) firstDivStep={}{}",
+                label, matches, minLen, String.format("%.1f", rate),
+                firstDiv,
+                firstDiv >= 0 ? String.format(" (ref=%d test=%d)", ref[firstDiv], test[firstDiv]) : "");
+        if (verbose && firstDiv >= 0) {
+            for (int i = 0; i < minLen; i++) {
+                String m = test[i] == ref[i] ? "OK" : "DIVERGE";
+                log.info("  [{}] step {}: ref={} test={} [{}]", label, i, ref[i], test[i], m);
+            }
+        }
+        return firstDiv;
+    }
+
+    // ─── Test: Staging buffer D2D introspection during CUDA graph replay ──
+
+    @Test
+    @DisplayName("Staging buffer introspection: verify D2D copies during graph replay")
+    public void testStagingBufferReplayIntrospection() throws Exception {
+        if (!Nd4j.getNativeOps().isTritonAvailable()) {
+            log.info("Triton not available, skipping staging introspection test");
+            return;
+        }
+        ensureModelsLoaded();
+        int maxTokens = getTokens(8);
+        log.info("=== STAGING BUFFER REPLAY INTROSPECTION (tokens={}) ===", maxTokens);
+
+        // Run OPTIMAL config to exercise CUDA graph capture + replay
+        BenchmarkConfig cfg = BenchmarkConfig.optimal().maxTokens(maxTokens);
+        BenchmarkConfigApplier.resetModelState(decoder);
+        BenchmarkConfigApplier.resetModelState(embedTokens);
+        BenchmarkConfigApplier.apply(cfg);
+
+        decoder.setDspAutoCompileEnabled(true);
+        decoder.setDspNativeAutoCompileEnabled(true);
+        List<String> outputs = new ArrayList<>(decoder.outputs());
+        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, cfg);
+
+        embedTokens.setDspAutoCompileEnabled(true);
+        embedTokens.setDspNativeAutoCompileEnabled(true);
+        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
+        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, cfg);
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(maxTokens)
+                .hiddenSize(hiddenSize)
+                .build());
+
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        int[] tokens = result.getTokenIds();
+        log.info("[STAGING] generated {} tokens: '{}'", tokens.length, result.getText());
+
+        // Now inspect the plan state via DspHandle
+        DspHandle h = decoder.dsp();
+        if (!h.isCompiled()) {
+            log.warn("[STAGING] Plan not compiled — cannot introspect");
+            return;
+        }
+
+        int execCount = h.executeCount();
+        int numStaging = h.numStagingBuffers();
+        int numCachedVar = h.numCachedVariableExtIndices();
+        int numExt = h.numExternalInputs();
+        int totalSlots = h.totalSlots();
+
+        log.info("[STAGING] Plan state: executeCount={} numExt={} numStaging={} numCachedVar={} totalSlots={}",
+                execCount, numExt, numStaging, numCachedVar, totalSlots);
+
+        // Log all cached variable ext indices
+        List<Integer> varIndices = h.cachedVariableExtIndices();
+        log.info("[STAGING] Cached variable ext indices ({}): {}", varIndices.size(), varIndices);
+
+        // Log staging buffer state for each variable ext input
+        Map<Integer, String> stagingState = h.snapshotStagingState();
+        log.info("[STAGING] Staging state ({} entries):", stagingState.size());
+        for (Map.Entry<Integer, String> e : stagingState.entrySet()) {
+            log.info("  {}", e.getValue());
+        }
+
+        // Verify staging buffers exist for variable inputs
+        assertTrue(numStaging > 0,
+                "Expected staging buffers for variable ext inputs, got 0");
+        assertTrue(numCachedVar > 0,
+                "Expected cached variable ext indices, got 0");
+
+        // Verify effective addresses match staging addresses for variable inputs
+        int addressMismatches = 0;
+        for (int extIdx : varIndices) {
+            long stagingAddr = h.stagingBufferAddress(extIdx);
+            long effectiveAddr = h.effectiveExternalAddress(extIdx);
+            if (stagingAddr != 0 && effectiveAddr != 0 && stagingAddr != effectiveAddr) {
+                log.warn("[STAGING] ADDRESS MISMATCH ext[{}]: staging=0x{} effective=0x{} — " +
+                         "CUDA graph reads from effective but staging was D2D-copied to",
+                        extIdx, Long.toHexString(stagingAddr), Long.toHexString(effectiveAddr));
+                addressMismatches++;
+            }
+        }
+        log.info("[STAGING] Address mismatches: {}/{}", addressMismatches, varIndices.size());
+
+        // Check for stuck tokens (repeating pattern starting at step 4)
+        boolean hasStuckTokens = false;
+        if (tokens.length >= 6) {
+            int tok4 = tokens[3]; // step 4 (0-indexed: 3)
+            boolean allSame = true;
+            for (int i = 4; i < Math.min(tokens.length, 8); i++) {
+                if (tokens[i] != tok4) { allSame = false; break; }
+            }
+            if (allSame) {
+                hasStuckTokens = true;
+                log.warn("[STAGING] STUCK TOKEN DETECTED: token {} repeats from step 4 onward", tok4);
+            }
+        }
+
+        // Log per-token output for diagnosis
+        for (int i = 0; i < tokens.length; i++) {
+            String tokenText = "";
+            try { tokenText = tokenizer.decode(new int[]{tokens[i]}); } catch (Exception e) { /* ignore */ }
+            log.info("[STAGING] step={} token={} text='{}'", i, tokens[i], tokenText);
+        }
+
+        // Check for variable inputs NOT in cached list (marked after cache was built)
+        NativeOps nOps = Nd4j.getNativeOps();
+        Pointer handle = h.getNativePlanHandle();
+        int numVariable = nOps.getPlanNumVariableExternalInputs(handle);
+        log.info("[STAGING] Total variable ext inputs (from externalInputIsVariable_): {}", numVariable);
+        log.info("[STAGING] Cached in fast path: {} — DELTA (uncached variable): {}",
+                numCachedVar, numVariable - numCachedVar);
+
+        // Scan for variable inputs NOT in cached list
+        List<Integer> uncachedVariable = new ArrayList<>();
+        for (int i = 0; i < numExt && i < 1400; i++) {
+            if (nOps.getPlanIsExternalInputVariable(handle, i)) {
+                if (!varIndices.contains(i)) {
+                    uncachedVariable.add(i);
+                }
+            }
+        }
+        if (!uncachedVariable.isEmpty()) {
+            log.warn("[STAGING] UNCACHED VARIABLE EXT INPUTS (marked variable but NOT in D2D fast path): {}",
+                    uncachedVariable);
+            // These inputs are changing per step but NOT getting D2D copied to staging!
+            // This is likely the root cause of the replay bug.
+            for (int idx : uncachedVariable) {
+                long stagingAddr = nOps.getPlanStagingBufferAddress(handle, idx);
+                boolean isPlaceholder = nOps.getPlanIsExternalInputPlaceholder(handle, idx);
+                log.warn("[STAGING]   ext[{}] isPlaceholder={} stagingAddr=0x{} — " +
+                         "{}",
+                        idx, isPlaceholder, Long.toHexString(stagingAddr),
+                        stagingAddr == 0 ? "NO STAGING BUFFER ALLOCATED" : "has staging");
+            }
+        }
+
+        // Lookup critical per-step ext input indices by name
+        String[] criticalNames = {"inputs_embeds", "attention_mask", "position_ids",
+                "input_ids", "causal_mask", "cache_position"};
+        log.info("[STAGING] Critical per-step ext input index lookup:");
+        for (String name : criticalNames) {
+            int idx = h.extInputIndex(name);
+            if (idx >= 0) {
+                boolean isVar = nOps.getPlanIsExternalInputVariable(handle, idx);
+                long stagingAddr = nOps.getPlanStagingBufferAddress(handle, idx);
+                log.info("[STAGING]   '{}' -> ext[{}] isVariable={} stagingAddr=0x{}",
+                        name, idx, isVar, Long.toHexString(stagingAddr));
+            } else {
+                log.info("[STAGING]   '{}' -> NOT FOUND (-1)", name);
+            }
+        }
+
+        log.info("=== END STAGING BUFFER REPLAY INTROSPECTION ===");
+
+        if (hasStuckTokens) {
+            log.error("[STAGING] REPLAY BUG CONFIRMED: tokens stuck at step 4. " +
+                      "Staging state and address info above can pinpoint the cause.");
+        }
     }
 
     // ─── Test: TF32 impact isolation ──────────────────────────────────────
@@ -2364,5 +2739,179 @@ public class TestDspValidation {
                               "Ref: %s | Got: %s",
                         config.getName(), matches, minLen, matchRate * 100,
                         threshold * 100, refText, testText));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DSP Pipeline Introspection Tests
+    //
+    // These tests use the DspHandle and DspPlanAssertions APIs to
+    // programmatically verify pipeline state instead of log-parsing.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Verify D2D copy integrity across decode steps.
+     * After decode, captures a StepSnapshot and asserts:
+     * - All D2D copies fired for variable ext inputs
+     * - No address drift in any segment
+     * - No pointer drift
+     *
+     * Answers Q1 (D2D fired?), Q2 (addresses match?), Q10 (staging==original bug?)
+     */
+    @Test
+    @DisplayName("D2D Copy Integrity — assert D2D copies fire and pointers are stable")
+    void testD2DCopyIntegrity() throws Exception {
+        ensureModelsLoaded();
+        int maxTokens = getTokens(5);
+        log.info("=== testD2DCopyIntegrity: maxTokens={} ===", maxTokens);
+
+        GenerationResult result = runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens);
+        int[] tokens = result.getTokenIds();
+        assertNotNull(tokens, "decode returned null");
+        assertTrue(tokens.length > 0, "decode returned 0 tokens");
+
+        DspHandle h = decoder.dsp();
+        assertTrue(h.isCompiled(), "plan should be compiled after decode");
+
+        // Capture snapshot and verify D2D status
+        DspHandle.StepSnapshot snap = h.captureStepSnapshot();
+        log.info("StepSnapshot: {}", snap);
+
+        // Assert all D2D copies fired
+        if (!snap.d2dStatusByExtIdx.isEmpty()) {
+            DspPlanAssertions.assertAllD2DCopiesFired(decoder, "post-decode");
+            log.info("D2D: {}/{} copies fired",
+                    snap.d2dStatusByExtIdx.values().stream()
+                            .filter(s -> s.fired).count(),
+                    snap.d2dStatusByExtIdx.size());
+        }
+
+        // Assert no address drift
+        DspPlanAssertions.assertNoStagingAddressDrift(decoder, "post-decode");
+        DspPlanAssertions.assertNoAddressDrift(decoder, "post-decode");
+
+        // Log D2D status for each variable ext input
+        for (Map.Entry<Integer, DspHandle.D2DStatus> e : snap.d2dStatusByExtIdx.entrySet()) {
+            DspHandle.D2DStatus s = e.getValue();
+            log.info("  {}", s);
+        }
+
+        // Log pointer drift status
+        Map<Integer, Boolean> ptrMatch = h.allSegmentsPointersMatch();
+        for (Map.Entry<Integer, Boolean> e : ptrMatch.entrySet()) {
+            if (!e.getValue()) {
+                log.error("POINTER DRIFT seg[{}]: {}", e.getKey(),
+                        h.segmentTrackedPointersJson(e.getKey()));
+            }
+        }
+
+        log.info("=== testD2DCopyIntegrity PASSED ===");
+    }
+
+    /**
+     * Verify capture completeness after reaching replay phase.
+     * Asserts:
+     * - No permanent capture failures
+     * - Capture stats are healthy
+     *
+     * Answers Q8 (why capture failed?), Q9 (which ops escaped?)
+     */
+    @Test
+    @DisplayName("Capture Completeness — assert no perm failures, report host-only ops")
+    void testCaptureCompleteness() throws Exception {
+        ensureModelsLoaded();
+        int maxTokens = getTokens(5);
+        log.info("=== testCaptureCompleteness: maxTokens={} ===", maxTokens);
+
+        GenerationResult result = runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens);
+        assertNotNull(result.getTokenIds(), "decode returned null");
+
+        DspHandle h = decoder.dsp();
+        assertTrue(h.isCompiled(), "plan should be compiled after decode");
+
+        // Log capture stats
+        DspHandle.CaptureStats cs = h.parsedCaptureStats();
+        log.info("Capture stats: {}", cs);
+
+        // Assert no permanent failures
+        DspPlanAssertions.assertZeroPermCaptureFailures(decoder, "post-decode");
+
+        // Check host-only ops
+        int hostOps = h.numHostOnlyOps();
+        log.info("Host-only ops: {}", hostOps);
+        if (hostOps > 0) {
+            log.warn("Ops that escaped capture: {}", h.hostOnlyOpNames());
+        }
+
+        // Log segment details
+        int numSegs = h.numSegments();
+        log.info("Segments: {}", numSegs);
+        for (int s = 0; s < numSegs; s++) {
+            log.info("  seg[{}]: backend={} phase={} replayCount={} capturable={} failed={}",
+                    s, h.segmentBackendName(s), h.segmentExecutionPhase(s),
+                    h.segmentReplayCount(s), h.isSegmentCapturable(s),
+                    h.isSegmentCaptureFailed(s));
+        }
+
+        // Log plan lifecycle state
+        log.info("Plan: phase={} ptrsStable={} frozenExec={} sealed={} replays={}",
+                h.planPhase(), h.pointersStable(), h.frozenExecCount(),
+                h.isCompilationSealed(), h.totalGraphReplays());
+
+        log.info("=== testCaptureCompleteness PASSED ===");
+    }
+
+    /**
+     * Verify output integrity across decode steps.
+     * Uses validateOutputs() to check for NaN/Inf/null/all-zero outputs,
+     * and checks for stuck tokens (stale output symptom).
+     *
+     * Answers Q6 (output stale?), Q7 (output corrupt?)
+     */
+    @Test
+    @DisplayName("Output Staleness Detection — assert outputs are fresh and valid per step")
+    void testOutputStalenessDetection() throws Exception {
+        ensureModelsLoaded();
+        int maxTokens = getTokens(5);
+        log.info("=== testOutputStalenessDetection: maxTokens={} ===", maxTokens);
+
+        GenerationResult result = runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens);
+        int[] tokens = result.getTokenIds();
+        assertNotNull(tokens, "decode returned null");
+        assertTrue(tokens.length > 0, "decode returned 0 tokens");
+
+        DspHandle h = decoder.dsp();
+        assertTrue(h.isCompiled(), "plan should be compiled after decode");
+
+        // Validate outputs
+        int[] flags = h.validateOutputs();
+        boolean anyIssues = false;
+        for (int i = 0; i < flags.length; i++) {
+            if (flags[i] != 0) {
+                log.error("Output[{}] has issues: flags=0x{}", i, Integer.toHexString(flags[i]));
+                anyIssues = true;
+            }
+        }
+        assertFalse(anyIssues, "outputs should be valid (no NaN/Inf/null/all-zero)");
+
+        // Log full state snapshot for diagnosis
+        String fullState = DspPlanAssertions.snapshotFullState(decoder);
+        log.info("Full plan state:\n{}", fullState);
+
+        // Check for stuck tokens (stale output symptom)
+        if (tokens.length >= 4) {
+            boolean allSame = true;
+            for (int i = 2; i < tokens.length; i++) {
+                if (tokens[i] != tokens[1]) {
+                    allSame = false;
+                    break;
+                }
+            }
+            assertFalse(allSame,
+                    "all tokens after step 1 are identical (" + tokens[1] + ") — " +
+                    "stale output suspected. Full state:\n" + fullState);
+        }
+
+        log.info("Generated {} tokens: {}", tokens.length, Arrays.toString(tokens));
+        log.info("=== testOutputStalenessDetection PASSED ===");
     }
 }

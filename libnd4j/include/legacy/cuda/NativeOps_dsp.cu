@@ -417,6 +417,12 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
 
     auto* plan = cache->getOrInsert(key, factory);
     if (plan) {
+      if (sd::Environment::getInstance().isVerbose()) {
+        sd_printf("dispatchNativePlan: plan=%p contentHash=0x%016llx outputHash=0x%016llx phCount=%lld mode=%d cacheSize=%zu\n",
+                  (void*)plan, (unsigned long long)key.phShapeContentHash,
+                  (unsigned long long)key.outputSetHash, (long long)key.phCount,
+                  key.graphExecutionMode, cache->size());
+      }
       DSP_DIAG(COMPILE, "dispatchNativePlan: plan=%p slots=%d contentHash=0x%016llx cacheSize=%zu",
                (void*)plan, plan->getNumSlots(),
                (unsigned long long)key.phShapeContentHash, cache->size());
@@ -2067,6 +2073,347 @@ int getSegmentExecutorPhase(sd::Pointer planHandle, int segIdx) {
         case 4: return 2;  // SLOT_BY_SLOT (failed) → FAILED
         default: return -1;
     }
+}
+
+// ─── External input variable management ─────────────────────────────────────
+
+void markPlanExternalInputVariable(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return;
+  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->markExternalInputVariable(extIdx);
+}
+
+int getPlanNumCachedVariableExtIndices(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumCachedVariableExtIndices();
+}
+
+int getPlanCachedVariableExtIndex(sd::Pointer planHandle, int i) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getCachedVariableExtIndex(i);
+}
+
+void markPlanExternalInputPlaceholder(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return;
+  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->markExternalInputPlaceholder(extIdx);
+}
+
+bool getPlanIsExternalInputVariable(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return false;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->isExternalInputVariable(extIdx);
+}
+
+bool getPlanIsExternalInputPlaceholder(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return false;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->isExternalInputPlaceholder(extIdx);
+}
+
+int getPlanNumVariableExternalInputs(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumVariableExternalInputs();
+}
+
+int getPlanExecuteCount(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getExecuteCount();
+}
+
+// =============================================================================
+// DSP Diagnostics (additional counters)
+// =============================================================================
+
+int dspDiagGetStepCount() {
+  return sd::graph::DspDiagnostics::getInstance().getStepsExecuted();
+}
+
+long long dspDiagGetTotalEventCount() {
+  return sd::graph::DspDiagnostics::getInstance().getTotalEventCount();
+}
+
+long long dspDiagGetCategoryEventCount(int categoryIndex) {
+  return sd::graph::DspDiagnostics::getInstance().getCategoryEventCount(categoryIndex);
+}
+
+// =============================================================================
+// Staging Buffer Introspection
+// =============================================================================
+
+int getPlanNumStagingBuffers(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumStagingBuffers();
+}
+
+long long getPlanStagingBufferAddress(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getStagingBufferAddress(extIdx);
+}
+
+long long getPlanEffectiveExternalAddress(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getEffectiveExternalAddress(extIdx);
+}
+
+long long getPlanLastExternalInputAddress(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExternalInputAddress(extIdx);
+}
+
+OpaqueNDArray getPlanStagingBufferArray(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return nullptr;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getStagingBufferArray(extIdx);
+}
+
+int copyPlanStagingToBuffer(sd::Pointer planHandle, int extIdx, OpaqueDataBuffer* dstBuffer) {
+  if (planHandle == nullptr) return -1;
+  if (dstBuffer == nullptr) return -3;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->copyStagingToBuffer(extIdx, dstBuffer->dataBuffer());
+}
+
+// =============================================================================
+// Slot Output Introspection
+// =============================================================================
+
+OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx) {
+  if (planHandle == nullptr) return nullptr;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSlotOutputArray(slotIdx);
+}
+
+int getTotalPlanOutputSlots(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getTotalOutputSlots();
+}
+
+int getPlanSlotGeneration(sd::Pointer planHandle, int slotIdx) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSlotGeneration(slotIdx);
+}
+
+// =============================================================================
+// Replay Mode & Arg Generation
+// =============================================================================
+
+int getPlanSegmentReplayMode(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentReplayMode(segIdx);
+}
+
+long long getPlanSegmentArgGeneration(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentArgGeneration(segIdx);
+}
+
+long long getPlanSegmentCapturedArgGeneration(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentCapturedArgGeneration(segIdx);
+}
+
+int getPlanSegmentNeedsArgRefresh(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentNeedsArgRefresh(segIdx);
+}
+
+long long getPlanSegmentCapturedInputAddrKey(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSegmentCapturedInputAddrKey(segIdx);
+}
+
+// =============================================================================
+// Per-Execution Stats
+// =============================================================================
+
+int getLastExecSegmentsWarmup(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsWarmup();
+}
+
+int getLastExecSegmentsCaptured(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsCaptured();
+}
+
+int getLastExecSegmentsReplayed(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsReplayed();
+}
+
+int getLastExecSegmentsSlotBySlot(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsSlotBySlot();
+}
+
+int getLastExecSegmentsFailed(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsFailed();
+}
+
+int getLastExecSegmentsTotal(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSegmentsTotal();
+}
+
+int getLastExecSyncLevel(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecSyncLevel();
+}
+
+int getLastExecStreamSyncCount(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecStreamSyncCount();
+}
+
+int getLastExecConsecutiveUnchangedCount(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getLastExecConsecutiveUnchangedCount();
+}
+
+// =============================================================================
+// Cross-Stream Testing API
+// =============================================================================
+
+sd::Pointer dspCreateTestStream() {
+  cudaStream_t stream;
+  auto err = cudaStreamCreate(&stream);
+  if (err != cudaSuccess) return nullptr;
+  return reinterpret_cast<sd::Pointer>(stream);
+}
+
+void dspDestroyTestStream(sd::Pointer streamPtr) {
+  if (streamPtr != nullptr) {
+    cudaStreamDestroy(reinterpret_cast<cudaStream_t>(streamPtr));
+  }
+}
+
+int dspWriteDeviceBufferOnDefaultStream(sd::Pointer planHandle, int extIdx, sd::Pointer srcHost, long long numBytes) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->writeDeviceBufferOnDefaultStream(
+      extIdx, reinterpret_cast<void*>(srcHost), numBytes);
+}
+
+int dspWriteDeviceBufferOnExplicitStream(sd::Pointer planHandle, int extIdx, sd::Pointer srcHost, long long numBytes, sd::Pointer streamPtr) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->writeDeviceBufferOnExplicitStream(
+      extIdx, reinterpret_cast<void*>(srcHost), numBytes, reinterpret_cast<void*>(streamPtr));
+}
+
+int dspSyncStream(sd::Pointer streamPtr) {
+  if (streamPtr == nullptr) {
+    auto err = cudaStreamSynchronize(nullptr);
+    return (err == cudaSuccess) ? 0 : -1;
+  }
+  auto err = cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(streamPtr));
+  return (err == cudaSuccess) ? 0 : -1;
+}
+
+int dspIsExtInputDeviceAuthoritative(sd::Pointer planHandle, int extIdx) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->isExtInputDeviceAuthoritative(extIdx);
+}
+
+sd::Pointer dspGetExecutionStream(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return nullptr;
+  return static_cast<sd::Pointer>(reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getExecutionStream());
+}
+
+sd::Pointer dspGetDefaultStream() {
+  auto lc = sd::LaunchContext::defaultContext();
+  return lc != nullptr ? reinterpret_cast<sd::Pointer>(lc->getCudaStream()) : nullptr;
+}
+
+// ─── Async cross-device buffer copy ─────────────────────────────────────────
+// tl_dspExecutionStream is declared extern in DataBuffer.h, defined in DataBuffer.cu
+
+// Replaces the sync host-relay path (D2H + memcpySync H2D) with a single
+// cudaMemcpyPeerAsync call. The CUDA driver handles P2P vs host-staging
+// internally — no manual host relay needed.
+//
+// This is the ONLY correct way to do cross-device copies in DSP context:
+// - cudaMemcpyPeerAsync is ordered on dstStream — the plan executes on the
+//   same stream, so data is visible without any sync
+// - No pipeline drain (no cudaStreamSynchronize, no cudaMemcpy blocking)
+// - No host relay (no syncToPrimary, no isPrimaryActual checks, no TLS guards)
+// - Works with cudaMallocAsync stream-ordered allocations
+void dbAsyncCrossDeviceCopy(OpaqueDataBuffer *dstBuffer, OpaqueDataBuffer *srcBuffer, void *dstStream) {
+  if (dstBuffer == nullptr || srcBuffer == nullptr) {
+    THROW_EXCEPTION("dbAsyncCrossDeviceCopy: null buffer");
+  }
+
+  auto* dst = dstBuffer->dataBuffer();
+  auto* src = srcBuffer->dataBuffer();
+  if (dst == nullptr || src == nullptr) {
+    THROW_EXCEPTION("dbAsyncCrossDeviceCopy: null inner DataBuffer");
+  }
+
+  void* dstPtr = dst->special();
+  void* srcPtr = src->special();
+  if (dstPtr == nullptr || srcPtr == nullptr) {
+    THROW_EXCEPTION("dbAsyncCrossDeviceCopy: null special (device) buffer");
+  }
+
+  size_t bytes = std::min(dst->getLenInBytes(), src->getLenInBytes());
+  if (bytes == 0) return;
+
+  // Resolve device IDs from CUDA pointer attributes — metadata can be stale
+  int srcDevice = -1, dstDevice = -1;
+  {
+    cudaPointerAttributes srcAttrs, dstAttrs;
+    auto srcRes = cudaPointerGetAttributes(&srcAttrs, srcPtr);
+    auto dstRes = cudaPointerGetAttributes(&dstAttrs, dstPtr);
+    if (srcRes != cudaSuccess || dstRes != cudaSuccess) {
+      cudaGetLastError();
+      THROW_EXCEPTION("dbAsyncCrossDeviceCopy: cudaPointerGetAttributes failed");
+    }
+    srcDevice = srcAttrs.device;
+    dstDevice = dstAttrs.device;
+  }
+
+  // Resolve the stream to use for the copy
+  cudaStream_t stream = nullptr;
+  if (dstStream != nullptr) {
+    stream = *reinterpret_cast<cudaStream_t*>(dstStream);
+  } else {
+    // Fall back to the DSP execution stream or default LaunchContext stream
+    if (sd::tl_dspExecutionStream != nullptr) {
+      stream = sd::tl_dspExecutionStream;
+    } else {
+      auto* lc = sd::LaunchContext::defaultContext();
+      if (lc != nullptr && lc->getCudaStream() != nullptr) {
+        stream = *lc->getCudaStream();
+      }
+    }
+  }
+
+  cudaError_t copyRes;
+  if (srcDevice == dstDevice) {
+    // Same device — async D2D on the stream
+    int currentDevice = -1;
+    cudaGetDevice(&currentDevice);
+    if (currentDevice != dstDevice) cudaSetDevice(dstDevice);
+    copyRes = cudaMemcpyAsync(dstPtr, srcPtr, bytes, cudaMemcpyDeviceToDevice, stream);
+    if (currentDevice != dstDevice) cudaSetDevice(currentDevice);
+  } else {
+    // Cross-device — cudaMemcpyPeerAsync handles P2P or host staging internally.
+    // The copy is ordered on `stream` which must belong to dstDevice.
+    // Ensure we're on the destination device for the stream to be valid.
+    int currentDevice = -1;
+    cudaGetDevice(&currentDevice);
+    if (currentDevice != dstDevice) cudaSetDevice(dstDevice);
+    copyRes = cudaMemcpyPeerAsync(dstPtr, dstDevice, srcPtr, srcDevice, bytes, stream);
+    if (currentDevice != dstDevice) cudaSetDevice(currentDevice);
+  }
+
+  if (copyRes != cudaSuccess) {
+    std::string err = "dbAsyncCrossDeviceCopy failed: " + std::string(cudaGetErrorString(copyRes))
+        + " bytes=" + std::to_string(bytes)
+        + " src(dev=" + std::to_string(srcDevice) + " ptr=" + std::to_string((uintptr_t)srcPtr) + ")"
+        + " dst(dev=" + std::to_string(dstDevice) + " ptr=" + std::to_string((uintptr_t)dstPtr) + ")";
+    THROW_EXCEPTION(err.c_str());
+  }
+
+  // Mark destination as device-actual. No host sync needed — the data
+  // flows directly device-to-device (or via driver-managed host staging).
+  dst->writeSpecial();
+
+  DSP_DIAG(TRANSFER, "ASYNC_CROSS_DEVICE: %zu bytes src(dev=%d) -> dst(dev=%d) stream=%p",
+           bytes, srcDevice, dstDevice, (void*)stream);
 }
 
 // FrozenPlan API v1 - cache invalidation marker

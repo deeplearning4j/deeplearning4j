@@ -1,3 +1,4 @@
+
 /* ******************************************************************************
  *
  *
@@ -120,10 +121,17 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   // Build Triton IR
   const auto tIrStart = now();
   TritonIRBuilder localBuilder;
-  auto irModule = localBuilder.buildModule(slots, startSlot, endSlot,
-                                           totalSlots,
-                                           externalInputs, numExternalInputs,
-                                           outputSlots, totalOutputSlots);
+  TritonIRModule irModule;
+  try {
+    irModule = localBuilder.buildModule(slots, startSlot, endSlot,
+                                             totalSlots,
+                                             externalInputs, numExternalInputs,
+                                             outputSlots, totalOutputSlots);
+  } catch (const std::exception& e) {
+    DSP_DIAG(COMPILE, "TritonGraphBackend: buildModule EXCEPTION for [%d-%d]: %s",
+             startSlot, endSlot, e.what());
+    irModule.valid = false;
+  }
   const long long irBuildMs = elapsedMs(tIrStart);
   auto cleanupModule = [&irModule]() {
     if (irModule.mlirModule) {
@@ -294,7 +302,8 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     entry.opName = slots[i].ident.opName;
     entry.wasCompiled = TritonIRBuilder::isTritonMappable(slots[i].ident.opName);
     if (!entry.wasCompiled) {
-      entry.reason = "unmappable op (not in Triton op table)";
+      entry.isNativeHandled = true;
+      entry.reason = "unmappable op (not in Triton op table), handled via native ordered execution";
     }
     result.audit.push_back(entry);
   }

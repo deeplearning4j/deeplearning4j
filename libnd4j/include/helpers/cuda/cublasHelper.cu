@@ -171,10 +171,16 @@ void* CublasHelper::handle(int deviceId) {
 
   // Lazily apply/remove TF32 mode when the flag changes.
   // Only check the atomic bool (cheap), and only call cublasSetMathMode on transitions.
+  // CRITICAL: When DSP has set deterministic cuBLAS (PEDANTIC_MATH via
+  // tl_cublasLtDisabled=true), skip the lazy TF32 application entirely.
+  // Otherwise this overwrites PEDANTIC_MATH with TF32/DEFAULT between
+  // DSP's own cublasSetMathMode calls and the GEMM kernel dispatch,
+  // causing self-consistency failures (two plans with identical inputs diverge).
+  extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
   static thread_local bool tl_tf32Applied = false;
   static thread_local int tl_smMajor = -1;
   bool wantTf32 = sd::Environment::getInstance().cublasTf32Enabled();
-  if (wantTf32 != tl_tf32Applied) {
+  if (!tl_cublasLtDisabled && wantTf32 != tl_tf32Applied) {
     if (tl_smMajor < 0) {
       cudaDeviceProp prop;
       cudaGetDeviceProperties(&prop, deviceId);

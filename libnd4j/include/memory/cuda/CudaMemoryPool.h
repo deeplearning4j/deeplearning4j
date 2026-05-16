@@ -351,6 +351,11 @@ class SD_LIB_EXPORT CudaMemoryPool {
   // Whether the system supports memory pools (CUDA 11.2+)
   bool supported_{false};
 
+  // Set by releaseAll() during shutdown. Once true, free() is a no-op.
+  // Prevents SIGSEGV from GC/finalizer threads calling free() after the
+  // pool's internal maps have been cleared by the destructor.
+  std::atomic<bool> released_{false};
+
   // Check if current CUDA version supports memory pools
   bool checkSupport();
 

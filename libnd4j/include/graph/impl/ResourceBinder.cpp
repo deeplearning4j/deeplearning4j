@@ -26,6 +26,7 @@
 #ifdef SD_CUDA
 #include <cuda_runtime.h>
 #include <array/DataBuffer.h>  // for tl_dspExecutionStream (declared as cudaStream_t)
+#include <memory/cuda/CudaMemoryPool.h>  // for removeDirtyStream before cudaStreamDestroy
 #endif
 
 namespace sd {
@@ -284,6 +285,16 @@ int ResourceBinder::releaseAll() {
 #ifdef SD_CUDA
   for (int i = 0; i < numSegments_; i++) {
     if (segmentStreams_[i] != nullptr) {
+      // Remove from the pool's dirty-stream tracking BEFORE destroying the stream.
+      // CudaMemoryPool::free() records each stream that received a cudaFreeAsync on it.
+      // trimPool() later syncs those streams to safely reclaim memory. If the stream
+      // is destroyed first, that sync hits a dangling handle → cudaError 700
+      // (illegal memory access) which corrupts the entire CUDA context, causing all
+      // subsequent allocations and frees to fail.
+      if (deviceId_ >= 0) {
+        memory::CudaMemoryPool::getInstance().removeDirtyStream(
+            deviceId_, static_cast<cudaStream_t>(segmentStreams_[i]));
+      }
       cudaStreamDestroy(static_cast<cudaStream_t>(segmentStreams_[i]));
       segmentStreams_[i] = nullptr;
       freed++;
@@ -324,6 +335,12 @@ void ResourceBinder::releaseSegment(int segIdx) {
 
 #ifdef SD_CUDA
   if (segmentStreams_[segIdx] != nullptr) {
+    // Remove from dirty-stream tracking before stream destruction — same rationale
+    // as releaseAll(): prevents trimPool() from syncing a destroyed stream handle.
+    if (deviceId_ >= 0) {
+      memory::CudaMemoryPool::getInstance().removeDirtyStream(
+          deviceId_, static_cast<cudaStream_t>(segmentStreams_[segIdx]));
+    }
     cudaStreamDestroy(static_cast<cudaStream_t>(segmentStreams_[segIdx]));
     segmentStreams_[segIdx] = nullptr;
   }

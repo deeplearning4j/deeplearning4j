@@ -43,44 +43,46 @@ namespace sd {
 
 /**
  * Stores cached metadata about a TadPack for fast comparison without recomputation.
- * Matches only on shape, rank, and dataType (not strides or order).
+ * Stores the ORIGINAL array's shape, rank, dataType, and numTads — NOT the TAD
+ * sub-array shape. This ensures that different original arrays that happen to
+ * produce the same TAD sub-array shape (but different numTads) do not collide.
  */
 struct TadPackSignature {
   LongType* shape = nullptr;
   int rank = 0;
   DataType dataType = DataType::FLOAT32;
+  LongType numTads = 0;
 
   ~TadPackSignature() {
     if (shape) delete[] shape;
   }
 
-  // Store signature from shapeInfo (FIXED: No longer stores strides/order)
-  void store(LongType* shapeInfo) {
-    if (!shapeInfo) return;
+  // Store signature from the ORIGINAL array's shapeInfo + numTads
+  void store(LongType* originalShapeInfo, LongType tadCount) {
+    if (!originalShapeInfo) return;
 
-    rank = shape::rank(shapeInfo);
-    dataType = ArrayOptions::dataType(shapeInfo);
+    rank = shape::rank(originalShapeInfo);
+    dataType = ArrayOptions::dataType(originalShapeInfo);
+    numTads = tadCount;
 
-    // Allocate and copy shape only (strides removed)
     if (shape) delete[] shape;
     shape = new LongType[rank + SD_SHAPE_ALLOC_PADDING];
-    LongType* srcShape = shape::shapeOf(shapeInfo);
+    LongType* srcShape = shape::shapeOf(originalShapeInfo);
     for (int i = 0; i < rank; i++) {
       shape[i] = srcShape[i];
     }
   }
 
-  // Compare with another shapeInfo (FIXED: No longer compares strides/order)
-  bool matches(LongType* shapeInfo) const {
-    if (!shapeInfo || !shape) return false;
+  // Compare with another ORIGINAL array's shapeInfo
+  bool matches(LongType* originalShapeInfo) const {
+    if (!originalShapeInfo || !shape) return false;
 
-    int otherRank = shape::rank(shapeInfo);
+    int otherRank = shape::rank(originalShapeInfo);
     if (rank != otherRank) return false;
 
+    if (dataType != ArrayOptions::dataType(originalShapeInfo)) return false;
 
-    if (dataType != ArrayOptions::dataType(shapeInfo)) return false;
-
-    LongType* otherShape = shape::shapeOf(shapeInfo);
+    LongType* otherShape = shape::shapeOf(originalShapeInfo);
     for (int i = 0; i < rank; i++) {
       if (shape[i] != otherShape[i]) return false;
     }
@@ -191,14 +193,17 @@ class SD_LIB_EXPORT TadTrieNode {
  const TadPackSignature* packSignature() const { return _packSignature; }
 
  // Enhanced TadPack setter with signature caching
- void setPack(std::shared_ptr<TadPack> pack) {
+ // originalShape is the ORIGINAL array's shapeInfo (not the TAD sub-array shape)
+ void setPack(std::shared_ptr<TadPack> pack, LongType* originalShape = nullptr) {
    // Thread-safe assignment using atomic operations
    std::atomic_store(&_tadPack, pack);
 
    // Cache the signature for future fast comparisons
-   if (pack && pack->primaryShapeInfo() && !_packSignature) {
+   // Use the ORIGINAL array's shape (not TAD shape) to prevent collisions
+   // between arrays with different shapes that produce the same TAD sub-array shape
+   if (pack && originalShape && !_packSignature) {
      _packSignature = new TadPackSignature();
-     _packSignature->store(pack->primaryShapeInfo());
+     _packSignature->store(originalShape, pack->numberOfTads());
    }
  }
 

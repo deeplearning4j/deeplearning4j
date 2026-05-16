@@ -140,9 +140,11 @@ public class DspValueKeySegmentTest {
         // read by multiple ops — in-place fusion on this chain must not corrupt Consumer 1)
         SDVariable shapeFloat = targetShape.castTo(DataType.FLOAT);
         SDVariable shapeScaled = sd.math.mul("shape_scaled", shapeFloat, sd.constant(Nd4j.scalar(2.0f)));
+        // Sum the shape-scaled vector to a scalar so it broadcasts with reshaped [1,64]
+        SDVariable shapeScalar = sd.math.sum("shape_scalar", shapeScaled);
 
-        // Final output combines both paths
-        SDVariable sum = sd.math.add("output", reshaped, shapeScaled);
+        // Final output combines both paths: [1,64] + scalar
+        SDVariable sum = sd.math.add("output", reshaped, shapeScalar);
 
         INDArray inputArr = Nd4j.randn(DataType.FLOAT, 1, 1, 64);
 
@@ -157,10 +159,10 @@ public class DspValueKeySegmentTest {
             assertArrayEquals(new long[]{1, 64}, result.shape(),
                     "Step " + step + ": wrong output shape — reshape_no_copy got corrupted shape");
 
-            // Verify: output = reshaped + [2.0, 128.0] (shape [1,64] scaled by 2)
-            // First element should be input[0,0,0] + 2.0 (batchSize=1, scaled=2.0)
+            // Verify: output = reshaped + sum([2.0, 128.0]) = reshaped + 130.0
+            // First element should be input[0,0,0] + 130.0
             float inputFirst = inputArr.getFloat(0, 0, 0);
-            float expected = inputFirst + 2.0f;  // 1 * 2.0 = 2.0
+            float expected = inputFirst + 130.0f;  // sum(1*2 + 64*2) = 2+128 = 130
             assertEquals(expected, result.getFloat(0), 1e-4f,
                     "Step " + step + ": value corruption detected");
         }
@@ -256,12 +258,12 @@ public class DspValueKeySegmentTest {
             SDVariable dim = sd.constant("dim_" + layer, Nd4j.scalar(DataType.INT64, headDim));
             SDVariable attnShape = sd.concat(0, batch, seq, heads, dim);
 
-            // reshape for multi-head attention
+            // reshape for multi-head attention: [1,1,64] -> [1,1,4,16]
             SDVariable attnInput = sd.reshape("attn_reshape_" + layer, layerInput, attnShape);
 
-            // Simulate attention output (just a sum to keep it simple)
-            SDVariable attnOut = sd.math.sum(attnInput, 2);  // reduce heads dim
-            // Reshape back
+            // Simulate attention output — elementwise (preserves shape, no reduction)
+            SDVariable attnOut = sd.nn.relu("attn_act_" + layer, attnInput, 0);
+            // Reshape back: [1,1,4,16] -> [1,1,64] (element count preserved: 64=64)
             SDVariable outShape = sd.concat(0, batch, seq,
                     sd.constant("hidden_" + layer, Nd4j.scalar(DataType.INT64, hiddenSize)));
             layerInput = sd.reshape("layer_out_" + layer, attnOut, outShape);

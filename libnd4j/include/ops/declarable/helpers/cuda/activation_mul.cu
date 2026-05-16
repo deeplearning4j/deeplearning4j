@@ -33,7 +33,7 @@ namespace helpers {
 // ─── SiLU and Mul (SwiGLU) CUDA kernel ──────────────────────────────────────
 
 template <typename T>
-static SD_KERNEL void siluAndMulKernel(const void* vGate, const void* vUp,
+static SD_KERNEL __launch_bounds__(256, 2) void siluAndMulKernel(const void* vGate, const void* vUp,
                                         void* vOutput, const LongType len) {
     auto gate = reinterpret_cast<const T*>(vGate);
     auto up = reinterpret_cast<const T*>(vUp);
@@ -46,7 +46,7 @@ static SD_KERNEL void siluAndMulKernel(const void* vGate, const void* vUp,
         float g = static_cast<float>(gate[i]);
         float u = static_cast<float>(up[i]);
         // silu(g) * u = g * sigmoid(g) * u
-        float sigmoid_g = 1.0f / (1.0f + expf(-g));
+        float sigmoid_g = 1.0f / (1.0f + __expf(-g));
         output[i] = static_cast<T>(g * sigmoid_g * u);
     }
 }
@@ -75,7 +75,7 @@ void siluAndMul(LaunchContext* context, NDArray* gate, NDArray* up, NDArray* out
 // ─── GELU and Mul (GEGLU) CUDA kernel ───────────────────────────────────────
 
 template <typename T>
-static SD_KERNEL void geluAndMulKernel(const void* vGate, const void* vUp,
+static SD_KERNEL __launch_bounds__(256, 2) void geluAndMulKernel(const void* vGate, const void* vUp,
                                         void* vOutput, const LongType len) {
     auto gate = reinterpret_cast<const T*>(vGate);
     auto up = reinterpret_cast<const T*>(vUp);
@@ -117,7 +117,7 @@ void geluAndMul(LaunchContext* context, NDArray* gate, NDArray* up, NDArray* out
 // ─── GELU (tanh approx) and Mul CUDA kernel ─────────────────────────────────
 
 template <typename T>
-static SD_KERNEL void geluTanhAndMulKernel(const void* vGate, const void* vUp,
+static SD_KERNEL __launch_bounds__(256, 2) void geluTanhAndMulKernel(const void* vGate, const void* vUp,
                                             void* vOutput, const LongType len) {
     auto gate = reinterpret_cast<const T*>(vGate);
     auto up = reinterpret_cast<const T*>(vUp);

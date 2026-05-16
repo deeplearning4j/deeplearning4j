@@ -50,7 +50,7 @@ namespace helpers {
  * For K <= 1024, the K-th largest is found by iterating K times with max-reductions.
  */
 template <typename T>
-static SD_KERNEL void topKRenormKernel(const void* vLogits,
+static SD_KERNEL __launch_bounds__(256, 2) void topKRenormKernel(const void* vLogits,
                                         void* vOutput,
                                         const LongType vocabSize,
                                         const LongType inRowStride,
@@ -88,7 +88,7 @@ static SD_KERNEL void topKRenormKernel(const void* vLogits,
     float localSum = 0.0f;
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         float val = static_cast<float>(logits[inBase + v * inElemStride]);
-        localSum += expf(val - rowMax);
+        localSum += __expf(val - rowMax);
     }
     sdata[threadIdx.x] = localSum;
     __syncthreads();
@@ -104,7 +104,7 @@ static SD_KERNEL void topKRenormKernel(const void* vLogits,
     // Pass 1c: write probabilities to output
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         float val = static_cast<float>(logits[inBase + v * inElemStride]);
-        float prob = expf(val - rowMax) / sumExp;
+        float prob = __expf(val - rowMax) / sumExp;
         output[outBase + v * outElemStride] = static_cast<T>(prob);
     }
     __syncthreads();
@@ -272,7 +272,7 @@ void topKRenorm(LaunchContext* context, NDArray* logits, NDArray* output, int k)
 // ────────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static SD_KERNEL void topPRenormKernel(const void* vLogits,
+static SD_KERNEL __launch_bounds__(256, 2) void topPRenormKernel(const void* vLogits,
                                         void* vOutput,
                                         const LongType vocabSize,
                                         const LongType inRowStride,
@@ -309,7 +309,7 @@ static SD_KERNEL void topPRenormKernel(const void* vLogits,
     float localSum = 0.0f;
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         float val = static_cast<float>(logits[inBase + v * inElemStride]);
-        localSum += expf(val - rowMax);
+        localSum += __expf(val - rowMax);
     }
     sdata[threadIdx.x] = localSum;
     __syncthreads();
@@ -324,7 +324,7 @@ static SD_KERNEL void topPRenormKernel(const void* vLogits,
     // Pass 1c: write probabilities to output
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         float val = static_cast<float>(logits[inBase + v * inElemStride]);
-        float prob = expf(val - rowMax) / sumExp;
+        float prob = __expf(val - rowMax) / sumExp;
         output[outBase + v * outElemStride] = static_cast<T>(prob);
     }
     __syncthreads();

@@ -249,7 +249,33 @@ public final class DspPlanIntrospection {
     public int getPlanNumExternalInputs(Pointer planHandle) {
         return nativeOps.getPlanNumExternalInputs(planHandle);
     }
-    
+
+    // ── External input introspection ─────────────────────────────────────
+
+    public boolean isExternalInputVariable(Pointer planHandle, int extIdx) {
+        return nativeOps.getPlanIsExternalInputVariable(planHandle, extIdx);
+    }
+
+    public boolean isExternalInputPlaceholder(Pointer planHandle, int extIdx) {
+        return nativeOps.getPlanIsExternalInputPlaceholder(planHandle, extIdx);
+    }
+
+    public int getNumVariableExternalInputs(Pointer planHandle) {
+        return nativeOps.getPlanNumVariableExternalInputs(planHandle);
+    }
+
+    public long getStagingBufferAddress(Pointer planHandle, int extIdx) {
+        return nativeOps.getPlanStagingBufferAddress(planHandle, extIdx);
+    }
+
+    public long getEffectiveExternalAddress(Pointer planHandle, int extIdx) {
+        return nativeOps.getPlanEffectiveExternalAddress(planHandle, extIdx);
+    }
+
+    public int getNumStagingBuffers(Pointer planHandle) {
+        return nativeOps.getPlanNumStagingBuffers(planHandle);
+    }
+
     /**
      * Get number of requested outputs from native plan handle
      */

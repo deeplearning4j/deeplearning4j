@@ -32,6 +32,15 @@
 #include <execution/cuda/LaunchDims.h>
 #include <math/templatemath.h>
 
+// Fast exponential for softmax hot paths.
+// __expf has ~4 ULP error (vs ~1 ULP for expf), which is irrelevant for softmax
+// because the normalization cancels relative error. This maps to a single PTX
+// instruction and is ~5x faster than IEEE expf().
+// Reference: cuLA (inclusionAI/cuLA) uses exp2f throughout for the same reason.
+SD_DEVICE SD_INLINE float sd_fast_exp(float x) {
+    return __expf(x);
+}
+
 namespace sd {
 
 // Block sizes for tiling - tuned for modern GPUs (Ada Lovelace / Ampere)
@@ -46,7 +55,7 @@ constexpr int DEFAULT_BLOCK_SIZE = 512;  // Increased from 256 for better occupa
 // This replaces: create mask array + nullify + fillAsTriangular + broadcast add
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void applyCausalMaskInPlaceKernel(
+__global__ __launch_bounds__(256, 4) void applyCausalMaskInPlaceKernel(
    T* __restrict__ scores,  // [batch, seqQ, seqKV]
    const LongType batch,
    const LongType seqQ,
@@ -111,7 +120,7 @@ void applyCausalMaskCuda(NDArray* scores, LaunchContext* context) {
 // Fuses: causal mask application + row-wise softmax
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void fusedCausalMaskSoftmaxKernel(
+__global__ __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
    const T* __restrict__ input,   // [batch, seqQ, seqKV] - logits from Q@K^T
    T* __restrict__ output,        // [batch, seqQ, seqKV] - softmax output
    T* __restrict__ logitsOut,     // [batch, seqQ, seqKV] - masked logits (optional)
@@ -187,7 +196,7 @@ __global__ void fusedCausalMaskSoftmaxKernel(
    } else {
      val = static_cast<float>(input[rowStart + j]);
    }
-   threadSum += expf(val - rowMax);
+   threadSum += sd_fast_exp(val - rowMax);
  }
 
  // Warp reduce sum
@@ -222,7 +231,7 @@ __global__ void fusedCausalMaskSoftmaxKernel(
    } else {
      val = static_cast<float>(input[rowStart + j]);
    }
-   float expVal = expf(val - rowMax);
+   float expVal = sd_fast_exp(val - rowMax);
    output[rowStart + j] = static_cast<T>(expVal * invSum);
  }
 }
@@ -294,7 +303,7 @@ void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray* logits
 // Supports optional additive attention bias for ONNX compatibility
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void fusedAttention3DKernel(
+__global__ __launch_bounds__(512, 1) void fusedAttention3DKernel(
    const T* __restrict__ query,    // [batch, seqQ, dim]
    const T* __restrict__ key,      // [batch, seqKV, dim]
    const T* __restrict__ value,    // [batch, seqKV, dim]
@@ -432,7 +441,7 @@ __global__ void fusedAttention3DKernel(
 
    // Step 3: Rescale previous output if max changed
    if (newMax > globalMax) {
-     float rescale = expf(globalMax - newMax);
+     float rescale = sd_fast_exp(globalMax - newMax);
      for (int d = threadIdx.x; d < dim; d += blockDim.x) {
        sharedOutput[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) * rescale);
      }
@@ -447,7 +456,7 @@ __global__ void fusedAttention3DKernel(
    float tileSum = 0.0f;
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
      float score = static_cast<float>(sharedScores[k]);
-     float expScore = expf(score - globalMax);
+     float expScore = sd_fast_exp(score - globalMax);
      sharedScores[k] = static_cast<T>(expScore);
      tileSum += expScore;
    }
@@ -490,8 +499,9 @@ __global__ void fusedAttention3DKernel(
  }
 
  // Step 6: Normalize by sum and write output
+ float invSum3d = (globalSum > 0.0f) ? (1.0f / globalSum) : 0.0f;
  for (int d = threadIdx.x; d < dim; d += blockDim.x) {
-   O[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) / globalSum);
+   O[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) * invSum3d);
  }
 }
 
@@ -501,7 +511,7 @@ __global__ void fusedAttention3DKernel(
 // This version materializes the full attention row for each query position
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void fusedAttentionWithScores3DKernel(
+__global__ __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
    const T* __restrict__ query,         // [batch, seqQ, dim]
    const T* __restrict__ key,           // [batch, seqKV, dim]
    const T* __restrict__ value,         // [batch, seqKV, dim]
@@ -606,7 +616,7 @@ __global__ void fusedAttentionWithScores3DKernel(
      score = -INFINITY;
    }
 
-   float expScore = expf(score - globalMax);
+   float expScore = sd_fast_exp(score - globalMax);
    threadSum += expScore;
 
    // Temporarily store exp score (will normalize after we have sum)
@@ -636,7 +646,7 @@ __global__ void fusedAttentionWithScores3DKernel(
  }
  __syncthreads();
  globalSum = sharedSum[0];
- float invSum = 1.0f / globalSum;
+ float invSum = (globalSum > 0.0f) ? (1.0f / globalSum) : 0.0f;
 
  // Step 3: Normalize scores (write to scoresRow if needed)
  if (scoresRow != nullptr) {
@@ -657,7 +667,7 @@ __global__ void fusedAttentionWithScores3DKernel(
        attnWeight = static_cast<float>(scoresRow[k]);
      } else if (logitsRow != nullptr) {
        float score = static_cast<float>(logitsRow[k]);
-       attnWeight = expf(score - globalMax) * invSum;
+       attnWeight = sd_fast_exp(score - globalMax) * invSum;
      } else if (k < maxKV) {
        // Recompute score
        const T* Krow = K + k * dim;
@@ -666,7 +676,7 @@ __global__ void fusedAttentionWithScores3DKernel(
          score += static_cast<float>(Q[dd]) * static_cast<float>(Krow[dd]);
        }
        score *= scale;
-       attnWeight = expf(score - globalMax) * invSum;
+       attnWeight = sd_fast_exp(score - globalMax) * invSum;
      } else {
        attnWeight = 0.0f;
      }
@@ -750,7 +760,7 @@ void launchFusedAttention3D(
  // Optimize block size based on sequence length and dimension
  // Use larger blocks for better occupancy on modern GPUs
  int blockSize = DEFAULT_BLOCK_SIZE;  // 512 for RTX 4090
- if (dim > 512) blockSize = 1024;     // Use max threads for very large dims
+ // Cap at 512: fusedAttention3DKernel uses __launch_bounds__(512, 1)
  if (seqKV < 64 && dim < 128) blockSize = 256;  // Smaller blocks for tiny inputs
  dim3 block(blockSize);
 
@@ -875,7 +885,7 @@ void fusedAttentionCuda(
 // fusedAttention3DKernel). NO atomicAdd — each thread owns output dimensions.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void fusedGQADecodeKernel(
+__global__ __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const T* __restrict__ query,      // [batch, 1, numQHeads, headDim] BSHD
    const T* __restrict__ key,        // [batch, seqKV, numKvHeads, headDim] BSHD
    const T* __restrict__ value,      // [batch, seqKV, numKvHeads, headDim] BSHD
@@ -1005,7 +1015,7 @@ __global__ void fusedGQADecodeKernel(
 
    // Step 3: Rescale previous output accumulator if max changed
    if (newMax > globalMax) {
-     float rescale = expf(globalMax - newMax);
+     float rescale = sd_fast_exp(globalMax - newMax);
      for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
        sharedOutput[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) * rescale);
      }
@@ -1020,7 +1030,7 @@ __global__ void fusedGQADecodeKernel(
    float tileSum = 0.0f;
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
      float score = static_cast<float>(sharedScores[k]);
-     float expScore = expf(score - globalMax);
+     float expScore = sd_fast_exp(score - globalMax);
      sharedScores[k] = static_cast<T>(expScore);
      tileSum += expScore;
    }
@@ -1064,8 +1074,11 @@ __global__ void fusedGQADecodeKernel(
  }
 
  // Step 6: Normalize by sum and write output
+ // Guard against globalSum == 0 (all positions masked → exp sums to 0).
+ // Output zeros when nothing is attended to, matching PyTorch behavior.
+ float invSum = (globalSum > 0.0f) ? (1.0f / globalSum) : 0.0f;
  for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-   O[d * oStride3] = static_cast<T>(static_cast<float>(sharedOutput[d]) / globalSum);
+   O[d * oStride3] = static_cast<T>(static_cast<float>(sharedOutput[d]) * invSum);
  }
 }
 

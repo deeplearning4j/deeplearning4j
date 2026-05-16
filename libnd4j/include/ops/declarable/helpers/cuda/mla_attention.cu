@@ -109,7 +109,7 @@ __device__ T mlaBlockReduceMax(T val, T* sharedMem) {
 // Uses online softmax for numerical stability.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void mlaAttentionKernel(
+__global__ __launch_bounds__(512, 1) void mlaAttentionKernel(
     const T* __restrict__ query,          // [B, numHeads, headDim] (squeezed seq=1)
     const T* __restrict__ latentKVCache,  // [B, maxSeqLen, latentDim]
     const T* __restrict__ kvDownProj,     // [latentDim, 2 * numKvHeads * headDim]
@@ -192,7 +192,7 @@ __global__ void mlaAttentionKernel(
     // Pass 3: Compute exp(score - max) and sum
     float localSum = 0.0f;
     for (int s = threadIdx.x; s < seqLen; s += blockDim.x) {
-        scores[s] = expf(scores[s] - sharedMax);
+        scores[s] = __expf(scores[s] - sharedMax);
         localSum += scores[s];
     }
     float globalSum = mlaBlockReduceSum(localSum, sdata);

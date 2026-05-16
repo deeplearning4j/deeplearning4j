@@ -42,7 +42,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspDebugger;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -253,9 +255,11 @@ public class TestSmolDoclingOptimizedPipeline {
 
     @BeforeAll
     public static void setup() {
-        // Enable debug + verbose for native op tracing when system property is set
-        if ("true".equals(System.getProperty("nd4j.env.debug"))) {
+        // Only enable debug+verbose when explicitly requested via -Dnd4j.env.debug=true / -Dnd4j.env.verbose=true
+        if (Boolean.getBoolean("nd4j.env.debug")) {
             Nd4j.getEnvironment().setDebug(true);
+        }
+        if (Boolean.getBoolean("nd4j.env.verbose")) {
             Nd4j.getEnvironment().setVerbose(true);
         }
 
@@ -568,6 +572,14 @@ public class TestSmolDoclingOptimizedPipeline {
             long valPhaseNs = phaseStart("FINAL_VALIDATE", config.getName() + " " + summarizeResult(result));
             try {
                 validateResult(config, result);
+                // DSP structural assertions (enabled via --dsp-assert / -Dvlm.benchmark.dspAssert=true)
+                if (isDspAssertEnabled() && config.getExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT) {
+                    DspPlanAssertions.assertPhaseReached(decoder, PlanPhase.SHAPES_FROZEN,
+                            config.getName() + " benchmark");
+                    DspPlanAssertions.assertNoSegmentFailures(decoder, config.getName() + " benchmark");
+                    DspPlanAssertions.assertNoFallbacks(decoder, config.getName() + " benchmark");
+                    log.info("[DSP_ASSERT] {} — all structural assertions passed", config.getName());
+                }
                 phaseSuccess("FINAL_VALIDATE", valPhaseNs, config.getName());
             } catch (Throwable t) {
                 throw phaseFailure("FINAL_VALIDATE",
@@ -958,6 +970,10 @@ public class TestSmolDoclingOptimizedPipeline {
 
     private boolean isDspStateLoggingEnabled() {
         return Boolean.parseBoolean(System.getProperty("vlm.benchmark.dspStateLogging", "true"));
+    }
+
+    private boolean isDspAssertEnabled() {
+        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.dspAssert", "false"));
     }
 
     private int tensorFingerprintSamples() {

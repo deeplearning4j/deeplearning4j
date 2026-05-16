@@ -367,9 +367,17 @@ NDArray::NDArray(NDArray &other) {
       THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - other shapeInfo is nullptr");
     }
 
-    // Cache owns all shape buffers - share the pointer WITHOUT reference counting
-    // The cache manages lifetime, not individual NDArrays
+    // Share the shape buffer from the other (view) NDArray.
+    // We must addRef() here because setShapeInfo(nullptr) called during plan
+    // destruction (NativeDynamicShapePlan::~NativeDynamicShapePlan) always calls
+    // release() on _shapeInfoBuffer. Without addRef(), that release() over-decrements
+    // the refcount to 0, freeing the ConstantShapeBuffer while the DirectShapeTrie
+    // still holds the pointer — causing use-after-free and the
+    // "bufferForShapeInfo: RETURNED buffer contains invalid rank" crash on the next test.
     _shapeInfoBuffer = other._shapeInfoBuffer;
+    if (_shapeInfoBuffer != nullptr) {
+      _shapeInfoBuffer->addRef();
+    }
     _shapeInfo = other._shapeInfo;
     _shapeInfoD = other._shapeInfoD;
   }
@@ -707,12 +715,10 @@ NDArray::NDArray(NDArray &&other) noexcept {
   _buffer = other._buffer;  // Transfer buffer pointer
   _ownsBuffer = other._ownsBuffer;  // Transfer ownership flag
   _shapeInfoBuffer = other._shapeInfoBuffer;
-  // DON'T call addRef() - ConstantShapeHelper cache manages lifetime
-  // The cache stores buffers and handles cleanup via clearCache()
-  // If we addRef, we'll have unbalanced release() calls because:
-  // 1. Cache stores pointer without addRef()
-  // 2. NDArray destructor calls release()
-  // 3. After all NDArrays released, refCount != 0 → buffer leaked
+  // Move semantics: transfer ownership without addRef(). The source clears its pointer
+  // below (other._shapeInfoBuffer = nullptr) so the source destructor won't call release().
+  // This preserves exactly one counted reference per buffer per NDArray.
+  // When this object is destroyed, ~NDArray() will call release() to balance the ref.
 
   if (other._shapeInfo == nullptr && _shapeInfoBuffer != nullptr) {
     // Try to recover shape info from buffer
@@ -855,19 +861,24 @@ NDArray::~NDArray() {
   _buffer = nullptr;
   _ownsBuffer = false;
 
-  ConstantShapeBuffer* bufferToRelease = nullptr;  // DON'T release - cache manages lifetime
+  // Release our reference to the shape buffer.
+  // Every code path that sets _shapeInfoBuffer acquires exactly one reference:
+  //   - Constructors via bufferForShapeInfo() -> getOrCreate() -> addRef()
+  //   - Copy constructor view-branch: explicit addRef() call
+  //   - Copy constructor non-view branch: bufferForShapeInfoWithView() -> getOrCreate() -> addRef()
+  // setShapeInfo(nullptr) also calls release() — if it was called first (e.g., from plan
+  // destructor), _shapeInfoBuffer is already nullptr here and we skip the release.
+  if (this->_shapeInfoBuffer != nullptr) {
+    this->_shapeInfoBuffer->release();
+  }
 
-  // Clear all shape-related pointers immediately
+  // Clear all shape-related pointers
   this->_shapeInfo = nullptr;
   this->_shapeInfoD = nullptr;
   this->_shapeInfoBuffer = nullptr;
 
   // Clear context pointer
   _context = nullptr;
-
-  // DON'T release the buffer - ConstantShapeHelper cache manages lifetime
-  // The cache stores buffers and handles cleanup via clearCache()
-  // Calling release() here would decrement refCount incorrectly
 }
 
 NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::LongType> &shape,
@@ -2347,11 +2358,12 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
   }
   if (this == &other) return *this;
 
-  // Release our old shapeInfoBuffer reference - cache handles lifetime
-  // DON'T call release() - ConstantShapeHelper cache manages lifetime
-  // See comment in move constructor for explanation
+  // Release our old shapeInfoBuffer reference before stealing the source's.
+  // Every NDArray that holds a _shapeInfoBuffer has one counted reference
+  // (acquired via getOrCreate()->addRef() or explicit addRef()). We must
+  // release it here to avoid leaking the old buffer's ref count.
   if (_shapeInfoBuffer != nullptr) {
-    // Just clear the pointer, don't release
+    _shapeInfoBuffer->release();
     _shapeInfoBuffer = nullptr;
   }
 

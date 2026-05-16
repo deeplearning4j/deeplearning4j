@@ -34,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__global__ static void windowedAttentionKernel(
+__global__ __launch_bounds__(64, 8) static void windowedAttentionKernel(
     const T* query,
     const T* key,
     const T* value,
@@ -137,7 +137,7 @@ __global__ static void windowedAttentionKernel(
     // Compute softmax
     T sumExp = static_cast<T>(0);
     for (int w = threadIdx.x; w < actualWindowSize; w += blockDim.x) {
-        softmaxScores[w] = exp(scores[w] - maxScore);
+        softmaxScores[w] = __expf(static_cast<float>(scores[w] - maxScore));
     }
     __syncthreads();
 

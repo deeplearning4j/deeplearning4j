@@ -48,7 +48,87 @@
 namespace sd {
 namespace graph {
 
+// Deferred deletion list for discardCachedSlotArray — inline delete during slot
+// execution causes heap corruption (freed chunk is reused by the allocator for
+// the next op's output, corrupting adjacent Workspace metadata).  Flushed at the
+// end of each executeSlot() call, after the slot has completely finished.
+static thread_local std::vector<NDArray*> tl_slotExecDeferredDeletes;
+
+// RAII guard: flushes tl_slotExecDeferredDeletes when the guard goes out of scope.
+// Used at the top of executeSlot() so every return path is covered automatically.
+struct SlotExecDeferredDeleteGuard {
+  ~SlotExecDeferredDeleteGuard() {
+    if (tl_slotExecDeferredDeletes.empty()) return;
+    std::vector<NDArray*> pending;
+    pending.swap(tl_slotExecDeferredDeletes);
+    for (NDArray* arr : pending) {
+      delete arr;
+    }
+  }
+};
+
 // Verify helpers now in DspVerifyUtils.h (dspLogSlotOutput, dspDumpSlotValues, etc.)
+
+/**
+ * Ensure a shape to be cached does not carry UNKNOWN dtype.
+ *
+ * View ops (permute, reshape, squeeze, expand_dims) preserve their input's
+ * dtype, so their output shape must carry a concrete type.  When a stale
+ * or corrupted view leaks UNKNOWN into its shapeInfo extras, every
+ * downstream consumer (refreshStaleViewWrappersInSegment, frozen fast path,
+ * inline view re-creation, and matmul shape inference via max(dtypeX, dtypeY))
+ * inherits the poison.
+ *
+ * Fix: if the shape has UNKNOWN dtype and the slot has a resolvable first
+ * input, re-create the shape with the input's dtype via ConstantShapeHelper.
+ * This keeps the cache clean so all consumers see valid dtypes.
+ */
+static const LongType* sanitizeCachedShapeDtype(
+    const LongType* shape, const NativeSlot& slot,
+    NDArray** outputSlots, int totalOutputSlots,
+    NDArray** externalArrays = nullptr, int numExt = 0) {
+  if (shape == nullptr) return nullptr;
+  if (ArrayOptions::dataType(shape) != DataType::UNKNOWN) return shape;
+
+  // Resolve the first input to derive the correct dtype.
+  DataType fallbackDt = DataType::UNKNOWN;
+  for (int ii = 0; ii < slot.wiring.numInputs && fallbackDt == DataType::UNKNOWN; ii++) {
+    int srcIdx = slot.wiring.inputSourceIndices[ii];
+    NDArray* resolved = nullptr;
+    if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
+      resolved = outputSlots[srcIdx];
+    } else if (srcIdx < 0 && externalArrays != nullptr) {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx < numExt) resolved = externalArrays[extIdx];
+    }
+    if (resolved != nullptr) {
+      fallbackDt = resolved->dataType();
+    }
+  }
+
+  if (fallbackDt == DataType::UNKNOWN) return shape;  // nothing we can do
+
+  // Re-create with correct dtype.  ConstantShapeHelper returns a
+  // cache-managed pointer so the caller does not own it.
+  return ConstantShapeHelper::getInstance().createShapeInfo(
+      fallbackDt, shape::order(shape),
+      static_cast<int>(shape::rank(shape)),
+      shape::shapeOf(const_cast<LongType*>(shape)));
+}
+
+/**
+ * Apply sanitizeCachedShapeDtype to every entry in a cachedOutputShapes
+ * vector, fixing any UNKNOWN-dtype entries in place.
+ */
+static void sanitizeCachedOutputShapes(
+    NativeSlot& slot, NDArray** outputSlots, int totalOutputSlots,
+    NDArray** externalArrays = nullptr, int numExt = 0) {
+  for (size_t i = 0; i < slot.shapeCache.cachedOutputShapes.size(); i++) {
+    slot.shapeCache.cachedOutputShapes[i] = sanitizeCachedShapeDtype(
+        slot.shapeCache.cachedOutputShapes[i], slot,
+        outputSlots, totalOutputSlots, externalArrays, numExt);
+  }
+}
 
 /**
  * Backfill cachedOutputShapes from the actual output arrays in outputSlots_.
@@ -73,6 +153,8 @@ static void backfillCachedOutputShapes(NativeSlot& slot, NDArray** outputSlots, 
       slot.shapeCache.cachedOutputShapes.push_back(cached);
     }
   }
+  // Sanitize: ensure no UNKNOWN dtype leaked into the cache from stale views.
+  sanitizeCachedOutputShapes(slot, outputSlots, totalOutputSlots);
   if (!slot.shapeCache.cachedOutputShapes.empty() && !slot.slotPhase.shapeCacheValid) {
     slot.slotPhase.markShapeCached();  // PRIMARY
     slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;  // legacy sync
@@ -165,11 +247,26 @@ static bool validateSlotShapeBufferAlignment(
     fflush(stdout);
     return false;
   }
+  // Also check the actual shape data for corruption (rank validity).
+  // This catches cases where the ConstantShapeBuffer itself is fine but
+  // the underlying shapeCopy data has been overwritten by float/garbage.
+  auto* si = arr->shapeInfo();
+  if (si != nullptr) {
+    LongType rank = si[0];
+    if (rank < 0 || rank > SD_MAX_RANK) {
+      sd_printf("SHAPE_DATA_CORRUPTION: slot=%d tag=%s arr=%p shapeInfo=%p "
+                "rank=%lld (0x%llx) execCount=%d\n",
+                slotIdx, tag, (void*)arr, (void*)si,
+                (long long)rank, (unsigned long long)rank, execCount);
+      fflush(stdout);
+      return false;
+    }
+  }
   return true;
 }
 
 /**
- * Scan ALL output slots for _shapeInfoBuffer alignment corruption.
+ * Scan ALL output slots for _shapeInfoBuffer alignment AND data corruption.
  * Emits the FIRST corrupt slot found with the given checkpoint tag.
  * Call at strategic points to bracket the corruption window.
  */
@@ -189,6 +286,19 @@ static void scanAllSlotsForCorruption(
                 execCount);
       fflush(stdout);
       return;  // report first hit only
+    }
+    // Check shape data integrity — catches float overwrite of shape buffer
+    auto* si = outputSlots[i]->shapeInfo();
+    if (si != nullptr) {
+      LongType rank = si[0];
+      if (rank < 0 || rank > SD_MAX_RANK) {
+        sd_printf("SHAPE_DATA_SCAN_HIT: checkpoint=%s slot=%d arr=%p "
+                  "shapeInfo=%p rank=%lld (0x%llx) execCount=%d\n",
+                  checkpoint, i, (void*)outputSlots[i], (void*)si,
+                  (long long)rank, (unsigned long long)rank, execCount);
+        fflush(stdout);
+        return;  // report first hit only
+      }
     }
   }
 }
@@ -721,7 +831,7 @@ static ViewCreateResult tryCreateViewForSlot(
       input0 != nullptr && isSmallIntegralControlArray(input0) && outLen > 0 && outLen <= 32;
 
   // Check C-contiguity of input
-  if (input0->dataBuffer() == nullptr ||
+  if (input0->dataBuffer() == nullptr || !input0->dataBuffer()->isValid() ||
       input0->ordering() != 'c' ||
       !shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
     if (traceSmallControl && DSP_DIAG_ENABLED(SHAPE)) {
@@ -759,6 +869,12 @@ static ViewCreateResult tryCreateViewForSlot(
   *outViewOffset = viewOffset;
 
   LongType absoluteOffset = input0->offset() + viewOffset;
+  // Guard against closed/invalid DataBuffer (use-after-free: Java GC zeroed the memory,
+  // making _dataType = 0 = INHERIT). getNumElements() now returns 0 for closed/INHERIT
+  // buffers, but check isValid() here for an early-exit diagnostic.
+  if (!input0->dataBuffer()->isValid()) {
+    return VIEW_NOT_POSSIBLE;
+  }
   LongType sourceBufferElems =
       input0->dataBuffer() != nullptr ? input0->dataBuffer()->getNumElements() : 0;
   bool allowSubsetView =
@@ -842,6 +958,14 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
   }
 
   int refreshedCount = 0;
+  // Defer deletion of old view NDArrays until after the entire loop completes.
+  // In deep view chains (e.g., 8+ sequential permute/reshape ops), interleaving
+  // delete/new within the loop causes heap fragmentation where freed memory is
+  // immediately reused for the next view, and a subtle heap metadata corruption
+  // can manifest later as a SIGSEGV in Workspace::allocateBytes during op
+  // execution.  Batching deletes after all new views are installed avoids this.
+  static thread_local std::vector<NDArray*> deferredDeletes;
+  deferredDeletes.clear();
 
   for (int stepIdx = seg.def.startSlot;
        stepIdx <= seg.def.endSlot && stepIdx < numSlots_; stepIdx++) {
@@ -879,34 +1003,125 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
 
       if (input0 == nullptr || input0->dataBuffer() == nullptr
           || !input0->dataBuffer()->isValid()) {
+        // Input DataBuffer was freed (placeholder closed between calls).
+        // Demote this slot from view producer so normal execution recomputes it.
         DSP_DIAG_SLOT(MEMORY, stepIdx,
-            "REFRESH_VIEW_FAIL: step %d (%s) outputSlot=%d input0 unresolved or invalid",
+            "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d input0 unresolved or invalid "
+            "— demoting from view producer",
             stepIdx, slot.ident.opName.c_str(), outSi);
-        return -1;
+        slotIsViewProducer_[outSi] = false;
+        auto* demoteDb = cachedValid ? cached->dataBuffer() : nullptr;
+        if (!cachedValid || (demoteDb != nullptr && !demoteDb->isValid())) {
+          outputSlots_[outSi] = nullptr;
+          planOwnedArrays_.erase(cached);
+          if (cachedValid) {
+            deferredDeletes.push_back(cached);
+          }
+        }
+        refreshedCount++;
+        continue;
       }
 
       if (!slot.shapeCacheValid() ||
           outIdx >= static_cast<int>(slot.shapeCache.cachedOutputShapes.size()) ||
           slot.shapeCache.cachedOutputShapes[outIdx] == nullptr) {
+        // Shape cache not valid — demote this slot like above.
         DSP_DIAG_SLOT(MEMORY, stepIdx,
-            "REFRESH_VIEW_FAIL: step %d (%s) outputSlot=%d has no cached output shape",
+            "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d has no cached output shape "
+            "— demoting from view producer",
             stepIdx, slot.ident.opName.c_str(), outSi);
-        return -1;
+        slotIsViewProducer_[outSi] = false;
+        auto* demoteDb2 = cachedValid ? cached->dataBuffer() : nullptr;
+        if (!cachedValid || (demoteDb2 != nullptr && !demoteDb2->isValid())) {
+          outputSlots_[outSi] = nullptr;
+          planOwnedArrays_.erase(cached);
+          if (cachedValid) {
+            deferredDeletes.push_back(cached);
+          }
+        }
+        refreshedCount++;
+        continue;
+      }
+
+      // Validate cached shape dtype before creating a view from it.
+      // View ops preserve input dtype, so a cached shape with UNKNOWN or INHERIT dtype
+      // is corrupt — fix it from the input before it poisons downstream ops.
+      const LongType* cachedOutShape = slot.shapeCache.cachedOutputShapes[outIdx];
+      if ((ArrayOptions::dataType(cachedOutShape) == DataType::UNKNOWN ||
+           ArrayOptions::dataType(cachedOutShape) == DataType::INHERIT) && input0 != nullptr) {
+        DataType inputDt = input0->dataType();
+        if (inputDt != DataType::UNKNOWN && inputDt != DataType::INHERIT) {
+          DSP_DIAG_SLOT(SHAPE, stepIdx,
+              "VIEW_DTYPE_FIX: step %d (%s) cached shape had UNKNOWN dtype, "
+              "correcting to %s from input",
+              stepIdx, slot.ident.opName.c_str(),
+              DataTypeUtils::asString(inputDt).c_str());
+          cachedOutShape = ConstantShapeHelper::getInstance().createShapeInfo(
+              inputDt, shape::order(cachedOutShape),
+              static_cast<int>(shape::rank(cachedOutShape)),
+              shape::shapeOf(const_cast<LongType*>(cachedOutShape)));
+          slot.shapeCache.cachedOutputShapes[outIdx] = cachedOutShape;
+        }
       }
 
       NDArray* newView = nullptr;
       LongType viewOffset = 0;
       ViewCreateResult vcr = tryCreateViewForSlot(
-          stepIdx, slot, input0, slot.shapeCache.cachedOutputShapes[outIdx],
+          stepIdx, slot, input0, cachedOutShape,
           viewInputs.data(), slot.wiring.numInputs,
           &newView, &viewOffset);
 
       if (vcr != VIEW_CREATED || newView == nullptr) {
-        DSP_DIAG_SLOT(MEMORY, stepIdx,
-            "REFRESH_VIEW_FAIL: step %d (%s) outputSlot=%d tryCreateViewForSlot returned %d",
-            stepIdx, slot.ident.opName.c_str(), outSi, static_cast<int>(vcr));
         if (newView != nullptr) delete newView;
-        return -1;
+
+        // VIEW_NOT_POSSIBLE means the input is no longer contiguous enough for a
+        // zero-copy view (e.g., a permute upstream changed strides).  Demote this
+        // slot: clear the view-producer flag so future refreshes skip it, and
+        // null out the stale cached output so the normal slot-by-slot execution
+        // path recomputes the output with its own allocation.  Without this, the
+        // cached NDArray keeps wrapping a freed DataBuffer whose shape metadata
+        // decays to UNKNOWN dtype, poisoning downstream ops.
+        if (vcr == VIEW_NOT_POSSIBLE) {
+          DSP_DIAG_SLOT(MEMORY, stepIdx,
+              "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d cannot create "
+              "zero-copy view (input non-contiguous) — demoting from view producer, "
+              "slot will be recomputed during execution",
+              stepIdx, slot.ident.opName.c_str(), outSi);
+          slotIsViewProducer_[outSi] = false;
+          // If the cached output holds a stale/freed DataBuffer, null it out
+          // so normal execution allocates fresh.
+          auto* demoteCachedDb = cachedValid ? cached->dataBuffer() : nullptr;
+          if (!cachedValid || (demoteCachedDb != nullptr && !demoteCachedDb->isValid())) {
+            outputSlots_[outSi] = nullptr;
+            planOwnedArrays_.erase(cached);
+            if (cachedValid) {
+              deferredDeletes.push_back(cached);
+            }
+          }
+          refreshedCount++;
+          continue;
+        }
+
+        // VIEW_STALE_EMPTY_SHAPE or VIEW_STRIDED_SLICE_FAIL: demote like
+        // VIEW_NOT_POSSIBLE — the slot cannot be a view, let normal execution
+        // recompute it.
+        DSP_DIAG_SLOT(MEMORY, stepIdx,
+            "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d tryCreateViewForSlot "
+            "returned %d — demoting from view producer",
+            stepIdx, slot.ident.opName.c_str(), outSi, static_cast<int>(vcr));
+        slotIsViewProducer_[outSi] = false;
+        {
+          auto* demoteCachedDb2 = cachedValid ? cached->dataBuffer() : nullptr;
+          if (!cachedValid || (demoteCachedDb2 != nullptr && !demoteCachedDb2->isValid())) {
+            outputSlots_[outSi] = nullptr;
+            planOwnedArrays_.erase(cached);
+            if (cachedValid) {
+              deferredDeletes.push_back(cached);
+            }
+          }
+        }
+        refreshedCount++;
+        continue;
       }
 
       auto* cachedDb = cachedValid ? cached->dataBuffer() : nullptr;
@@ -921,32 +1136,48 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
         continue;
       }
 
-      // Remove old cached array before installing the new view.
-      // The old code (pre-refactor) did: erase(cached); delete cached;
-      // Missing this causes a leak and leaves a stale NDArray on the heap
-      // whose _shapeInfoBuffer field (offset 16) gets overwritten by malloc
-      // metadata when the heap reuses the memory — manifesting as the +1
-      // byte _shapeInfoBuffer corruption.
+      // Remove old cached array and defer its deletion until after the loop.
+      // The old code deleted inline here, but in deep view chains (8+ sequential
+      // permute/reshape ops) the freed memory from `delete cached` can be
+      // immediately reused by the `new NDArray(...)` in tryCreateViewForSlot,
+      // and heap metadata corruption can propagate to adjacent allocations.
+      // Deferring all deletes until after all new views are installed prevents
+      // this interleaving.
       outputSlots_[outSi] = nullptr;
       planOwnedArrays_.erase(cached);
       if (cachedValid) {
-        delete cached;
+        deferredDeletes.push_back(cached);
       }
       // If !cachedValid, cached is already corrupt — don't delete it
       // (the destructor would SIGSEGV reading corrupt _shapeInfo).
 
-      // Scan immediately after delete — if the freed NDArray's heap metadata
-      // overwrites an adjacent NDArray's _shapeInfoBuffer, we catch it here.
-      if (sd::Environment::getInstance().isDebug()) {
-        char vdLabel[256];
-        snprintf(vdLabel, sizeof(vdLabel),
-                 "AFTER_viewRefresh_delete_slot%d_%s", outSi, slot.ident.opName.c_str());
-        scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
-            vdLabel, executeCount_);
-      }
-
       writeOutputSlot(outSi, newView, "ff-view-install");
       // writeOutputSlot already handles slot assignment and ownership tracking
+
+      // Post-install dtype guard: if the new view ended up with UNKNOWN or INHERIT dtype
+      // (heap corruption from `delete cached`, stale ConstantShapeHelper entry,
+      // or transient shapeInfo zero-init), fix it in-place from the input's dtype.
+      // Without this, the UNKNOWN/INHERIT propagates down the view chain and eventually
+      // reaches sizeOfElement() in mmul/matmul shape inference, causing a throw.
+      if ((newView->dataType() == DataType::UNKNOWN || newView->dataType() == DataType::INHERIT) &&
+          input0 != nullptr &&
+          input0->dataType() != DataType::UNKNOWN && input0->dataType() != DataType::INHERIT) {
+        const LongType* fixedShape = ConstantShapeHelper::getInstance().createShapeInfo(
+            input0->dataType(), shape::order(newView->shapeInfo()),
+            static_cast<int>(shape::rank(newView->shapeInfo())),
+            shape::shapeOf(newView->shapeInfo()));
+        newView->setShapeInfo(const_cast<LongType*>(fixedShape));
+        // Also update the cached shape entry so future fast-path lookups see
+        // the corrected dtype.
+        if (outIdx < static_cast<int>(slot.shapeCache.cachedOutputShapes.size())) {
+          slot.shapeCache.cachedOutputShapes[outIdx] = fixedShape;
+        }
+        DSP_DIAG_SLOT(SHAPE, stepIdx,
+            "VIEW_POST_INSTALL_DTYPE_FIX: step %d (%s) outputSlot=%d had UNKNOWN dtype "
+            "after view install — corrected to %s from input",
+            stepIdx, slot.ident.opName.c_str(), outSi,
+            DataTypeUtils::asString(input0->dataType()).c_str());
+      }
 
       // Validate newView itself and neighboring slots for corruption
       // immediately after view swap — bracket the exact mutation.
@@ -998,6 +1229,16 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       refreshedCount++;
     }
   }
+
+  // Deferred deletion: free old view NDArrays now that ALL new views are
+  // installed and all outputSlots_ entries point to the new views.
+  // This separation ensures that no `new NDArray(...)` allocation in the loop
+  // above can reuse memory that was just freed by a `delete` in the same loop
+  // iteration, preventing heap metadata corruption in deep view chains.
+  for (NDArray* old : deferredDeletes) {
+    delete old;
+  }
+  deferredDeletes.clear();
 
   return refreshedCount;
 }
@@ -1209,6 +1450,109 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     // else: LIVE — slot state stays default (not sealed, not frozen)
   }
 
+  // ── View-alias unfreezing ──────────────────────────────────────────────
+  //
+  // View ops (reshape, permute, expand_dims) share their input's DataBuffer.
+  // If a frozen slot's output buffer is the SAME DataBuffer as a non-frozen
+  // slot's output, the frozen skip becomes unsafe: the non-frozen slot writes
+  // to the shared buffer every step, but the frozen slot never re-executes
+  // to pick up the new data. This commonly happens with attention mask view
+  // chains — the mask is variable (updated per step) but a reshape wrapping
+  // it appears constant from the dependency graph (its shape inputs are fixed).
+  //
+  // Unfreeze any frozen slot whose DataBuffer is shared with a live slot.
+  int viewAliasUnfrozen = 0;
+  {
+    // Collect DataBuffers from all non-frozen output slots
+    std::unordered_set<void*> liveBuffers;
+    for (int si = 0; si < totalOutputSlots_; si++) {
+      if (frozenOutputSlots.count(si)) continue;
+      NDArray* arr = outputSlots_[si];
+      if (arr != nullptr && arr->dataBuffer() != nullptr) {
+        liveBuffers.insert(static_cast<void*>(arr->dataBuffer()));
+      }
+    }
+
+    // Check frozen slots for shared buffers with live slots
+    for (int s = 0; s < numSlots_; s++) {
+      auto& sl = slots_[s];
+      if (!sl.frozenConstantSlot()) continue;
+
+      bool sharedWithLive = false;
+      for (int o = 0; o < sl.wiring.numOutputs; o++) {
+        int si = sl.wiring.outputSlotIndices[o];
+        if (si < 0 || si >= totalOutputSlots_) continue;
+        NDArray* arr = outputSlots_[si];
+        if (arr != nullptr && arr->dataBuffer() != nullptr &&
+            liveBuffers.count(static_cast<void*>(arr->dataBuffer()))) {
+          sharedWithLive = true;
+          break;
+        }
+      }
+
+      if (sharedWithLive) {
+        sl.slotPhase.unseal();
+        sl.state_ = NativeSlot::SlotState::SHAPE_CACHED;
+        frozenConstCount--;
+        viewAliasUnfrozen++;
+        for (int o = 0; o < sl.wiring.numOutputs; o++) {
+          int si = sl.wiring.outputSlotIndices[o];
+          if (si >= 0 && si < totalOutputSlots_) {
+            frozenOutputSlots.erase(si);
+          }
+        }
+        DSP_DIAG(SHAPE,
+            "VIEW_ALIAS_UNFREEZE: slot %d (%s) shares DataBuffer with live slot — unfrozen",
+            s, sl.ident.opName.c_str());
+      }
+    }
+  }
+
+  // ── Value-dep upstream unfreezing ──────────────────────────────────────
+  //
+  // Ops with outputShapeDependsOnInputValues read shape data from their
+  // inputs (e.g. reshape_no_copy reads a shape tensor). If the shape tensor
+  // comes from a frozen slot, and that frozen slot's cached output carries
+  // stale or UNKNOWN dtype, the downstream op's calculateOutputShape will
+  // produce wrong shapes or trigger KERNEL_FAILURE. Unfreeze frozen slots
+  // that feed value-dep ops.
+  int valueDepUnfrozen = 0;
+  for (int s = 0; s < numSlots_; s++) {
+    auto& sl = slots_[s];
+    if (!sl.flags.outputShapeDependsOnInputValues) continue;
+
+    for (int i = 0; i < sl.wiring.numInputs; i++) {
+      int srcIdx = sl.wiring.inputSourceIndices[i];
+      if (srcIdx < 0 || srcIdx >= totalOutputSlots_) continue;
+      if (!frozenOutputSlots.count(srcIdx)) continue;
+
+      // Find the producing slot and unfreeze it
+      for (int ps = 0; ps < numSlots_; ps++) {
+        auto& psl = slots_[ps];
+        if (!psl.frozenConstantSlot()) continue;
+        for (int o = 0; o < psl.wiring.numOutputs; o++) {
+          if (psl.wiring.outputSlotIndices[o] == srcIdx) {
+            psl.slotPhase.unseal();
+            psl.state_ = NativeSlot::SlotState::SHAPE_CACHED;
+            frozenConstCount--;
+            valueDepUnfrozen++;
+            for (int o2 = 0; o2 < psl.wiring.numOutputs; o2++) {
+              int si2 = psl.wiring.outputSlotIndices[o2];
+              if (si2 >= 0 && si2 < totalOutputSlots_) {
+                frozenOutputSlots.erase(si2);
+              }
+            }
+            DSP_DIAG(SHAPE,
+                "VALUE_DEP_UNFREEZE: slot %d (%s) feeds value-dep slot %d (%s) — unfrozen",
+                ps, psl.ident.opName.c_str(), s, sl.ident.opName.c_str());
+            goto next_input;
+          }
+        }
+      }
+      next_input:;
+    }
+  }
+
   // ── In-place protection (single pass) ────────────────────────────────────
   //
   // In-place fusion writes the op's output directly into its input buffer.
@@ -1266,8 +1610,10 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
 
   DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots frozen "
             "(%d shape-only-trait, %d value-independent, "
+            "%d view-alias-unfrozen, %d value-dep-unfrozen, "
             "%d in-place disabled, %d java-managed output slots)",
             frozenConstCount, numSlots_, shapeOnlyCount, valueIndepCount,
+            viewAliasUnfrozen, valueDepUnfrozen,
             disabledInPlace, javaManagedCount);
 
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
@@ -1275,7 +1621,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     execCtx->frozenConstCount = frozenConstCount;
     execCtx->shapeOnlyTraitCount = shapeOnlyCount;
     execCtx->valueIndepCount = valueIndepCount;
-    execCtx->viewAliasUnfrozen = 0;
+    execCtx->viewAliasUnfrozen = viewAliasUnfrozen;
     execCtx->javaManagedSlots = javaManagedCount;
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::FROZEN_CONST_DETECT,
                          frozenConstCount, numSlots_);
@@ -1432,6 +1778,7 @@ static void dspPropagateSlotError(int stepIdx, const NativeSlot& slot,
 
 Status NativeDynamicShapePlan::executeSlot(
     int stepIdx, NDArray** externalArrays, int numExt, void* stream) {
+  SlotExecDeferredDeleteGuard deferredDeleteGuard;  // flushes deferred deletes on any exit path
   NativeSlot& slot = slots_[stepIdx];
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
   const bool frozenSlotBySlot =
@@ -1626,10 +1973,22 @@ Status NativeDynamicShapePlan::executeSlot(
           }
         }
 
+        // Fix UNKNOWN dtype in cached shape before view creation (frozen fast path)
+        const LongType* ffCachedShape = slot.shapeCache.cachedOutputShapes[0];
+        if (ffCachedShape != nullptr &&
+            ArrayOptions::dataType(ffCachedShape) == DataType::UNKNOWN &&
+            input0 != nullptr && input0->dataType() != DataType::UNKNOWN) {
+          ffCachedShape = ConstantShapeHelper::getInstance().createShapeInfo(
+              input0->dataType(), shape::order(ffCachedShape),
+              static_cast<int>(shape::rank(ffCachedShape)),
+              shape::shapeOf(const_cast<LongType*>(ffCachedShape)));
+          slot.shapeCache.cachedOutputShapes[0] = ffCachedShape;
+        }
+
         NDArray* ffNewView = nullptr;
         LongType ffViewOffset = 0;
         ViewCreateResult ffVcr = tryCreateViewForSlot(
-            stepIdx, slot, input0, slot.shapeCache.cachedOutputShapes[0],
+            stepIdx, slot, input0, ffCachedShape,
             ffViewInputs.data(), slot.wiring.numInputs,
             &ffNewView, &ffViewOffset);
 
@@ -1799,6 +2158,48 @@ Status NativeDynamicShapePlan::executeSlot(
         }
       }
 
+      // Pre-execute UNKNOWN dtype guard: if any input has UNKNOWN dtype, fix it
+      // from its source's cached shape. This catches residual UNKNOWN from heap
+      // corruption in view refresh or stale ConstantShapeHelper entries. Without
+      // this, sizeOfElement(UNKNOWN) throws inside op shape inference / prepareOutputs.
+      for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
+        NDArray* inArr = (ii < static_cast<int>(ffCtx.fastpath_in().size()))
+                             ? ffCtx.fastpath_in()[ii] : nullptr;
+        if (inArr != nullptr && inArr->dataType() == DataType::UNKNOWN) {
+          // Try to derive correct dtype from the slot's cached output shapes
+          // of the PRODUCING slot for this input.
+          int srcIdx = slot.wiring.inputSourceIndices[ii];
+          DataType fixDt = DataType::FLOAT32;  // last-resort default
+          if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+            // Find the producing slot for this output index
+            int prodStep = dsp::findProducingStepForOutputSlot(slots_, numSlots_, srcIdx);
+            if (prodStep >= 0 && !slots_[prodStep].shapeCache.cachedOutputShapes.empty()) {
+              for (int oi = 0; oi < slots_[prodStep].wiring.numOutputs; oi++) {
+                if (slots_[prodStep].wiring.outputSlotIndices[oi] == srcIdx &&
+                    oi < static_cast<int>(slots_[prodStep].shapeCache.cachedOutputShapes.size())) {
+                  auto dt = ArrayOptions::dataType(slots_[prodStep].shapeCache.cachedOutputShapes[oi]);
+                  if (dt != DataType::UNKNOWN) { fixDt = dt; break; }
+                }
+              }
+            }
+          } else if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            if (extIdx < numExt && externalArrays[extIdx] != nullptr) {
+              fixDt = externalArrays[extIdx]->dataType();
+            }
+          }
+          const LongType* fixedSI = ConstantShapeHelper::getInstance().createShapeInfo(
+              fixDt, shape::order(inArr->shapeInfo()),
+              static_cast<int>(shape::rank(inArr->shapeInfo())),
+              shape::shapeOf(inArr->shapeInfo()));
+          inArr->setShapeInfo(const_cast<LongType*>(fixedSI));
+          DSP_DIAG_SLOT(SHAPE, stepIdx,
+              "INPUT_DTYPE_FIX: slot %d (%s) input[%d] had UNKNOWN dtype — corrected to %s",
+              stepIdx, slot.ident.opName.c_str(), ii,
+              DataTypeUtils::asString(fixDt).c_str());
+        }
+      }
+
       Status ffStatus = Status::OK;
       if (shapeOnlyMode_) {
         DSP_DIAG(EXECUTE,
@@ -1935,15 +2336,15 @@ Status NativeDynamicShapePlan::executeSlot(
 
     if (!tl_graphExecutionActive && !isSlotArrayShared(cached, slotIdx)) {
       planOwnedArrays_.erase(cached);
-      delete cached;
-      if (sd::Environment::getInstance().isDebug()) {
-        char dcLabel[256];
-        snprintf(dcLabel, sizeof(dcLabel),
-                 "AFTER_discardCached_slot%d_%s", slotIdx, tag);
-        scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
-            dcLabel, executeCount_);
-      }
-      DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s deleted=%p",
+      // Defer deletion until after executeSlot completes to prevent heap
+      // corruption.  Inline delete here frees the NDArray memory, which the
+      // allocator may immediately reuse for a subsequent op's output or
+      // workspace allocation.  If the freed chunk is adjacent to a Workspace
+      // object, the allocator's free-list metadata update corrupts the
+      // Workspace, producing SIGSEGV in Workspace::allocateBytes with a
+      // garbage `this` pointer full of ASCII string data.
+      tl_slotExecDeferredDeletes.push_back(cached);
+      DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s deferred-delete=%p",
                slotIdx, tag, (void*)cached);
     } else {
       DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s preserved=%p sharedOrCapturing=%d",
@@ -3004,14 +3405,15 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     if (inputs[i] == nullptr) {
-      // Enhanced diagnostic: identify which step produces the missing output slot
-      // and whether it's a self-reference, forward-reference, or simply unpopulated.
+      // Phase-aware null input detection — a null input is ALWAYS a bug.
+      // Identify the source for diagnostics then throw a hard exception.
       const char* srcOpName = "?";
       int srcStep = -1;
       bool isSelfRef = false;
       bool isForwardRef = false;
+      bool isExternal = (srcIdx < 0);
+      int extIdx = isExternal ? -(srcIdx + 1) : -1;
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-        // Find which step produces this output slot
         for (int fs = 0; fs < numSlots_; fs++) {
           for (int fo = 0; fo < slots_[fs].wiring.numOutputs; fo++) {
             if (slots_[fs].wiring.outputSlotIndices[fo] == srcIdx) {
@@ -3022,7 +3424,6 @@ Status NativeDynamicShapePlan::executeSlot(
           }
           if (srcStep >= 0) break;
         }
-        // Check for self-reference (this step's output slot is also its input source)
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           if (slot.wiring.outputSlotIndices[o] == srcIdx) {
             isSelfRef = true;
@@ -3031,17 +3432,34 @@ Status NativeDynamicShapePlan::executeSlot(
         }
         isForwardRef = (srcStep > stepIdx);
       }
-      DSP_DIAG_SLOT(EXECUTE, stepIdx,
-                "NULL input for slot %d (%s) input %d, srcIdx=%d "
-                "producerStep=%d producerOp=%s selfRef=%d forwardRef=%d "
-                "execCount=%d frozen=%d planAddr=%p planFP=0x%016llx "
-                "outputSlot[srcIdx]=%p",
-                stepIdx, slot.ident.opName.c_str(), i, slot.wiring.inputSourceIndices[i],
-                srcStep, srcOpName, isSelfRef ? 1 : 0, isForwardRef ? 1 : 0,
-                executeCount_, shapesFrozen_ ? 1 : 0,
-                (void*)this, (unsigned long long)identityFingerprint_,
-                (srcIdx >= 0 && srcIdx < totalOutputSlots_) ? (void*)outputSlots_[srcIdx] : nullptr);
-      return Status::BAD_INPUT;
+      // Determine execution phase for the error message
+      const char* phaseStr = "UNKNOWN";
+      if (planLifecycle_.isSlotBySlot()) {
+        phaseStr = "SLOT_BY_SLOT";
+      } else if (shapesFrozen_) {
+        phaseStr = (executeCount_ == 0) ? "FROZEN_WARMUP" :
+                   (executeCount_ < 3)  ? "FROZEN_CAPTURE" : "FROZEN_REPLAY";
+      } else {
+        phaseStr = "UNFROZEN_WARMUP";
+      }
+      DSP_THROW(EXECUTE,
+               "NativeDynamicShapePlan: NULL input at slot %d (%s) input[%d] "
+               "during %s phase (execCount=%d frozen=%d). "
+               "srcIdx=%d %s extIdx=%d producerStep=%d producerOp=%s "
+               "selfRef=%d forwardRef=%d effectiveExt=%p stagingBufs=%p "
+               "planAddr=%p planFP=0x%016llx. "
+               "A null input means the producer slot or external input was never populated. "
+               "Fix the source — never work around by guarding the consumer.",
+               stepIdx, slot.ident.opName.c_str(), i,
+               phaseStr, executeCount_, shapesFrozen_ ? 1 : 0,
+               slot.wiring.inputSourceIndices[i],
+               isExternal ? "EXTERNAL" : "SLOT_OUTPUT",
+               extIdx, srcStep, srcOpName,
+               isSelfRef ? 1 : 0, isForwardRef ? 1 : 0,
+               (void*)effectiveExternals_,
+               (void*)placeholderStagingBuffers_,
+               (void*)this, (unsigned long long)identityFingerprint_);
+      return Status::BAD_INPUT;  // unreachable, but keeps return-type analysis clean
     }
 
     // Validate shapeInfo is present — an NDArray with nullptr _shapeInfo is
@@ -3073,16 +3491,50 @@ Status NativeDynamicShapePlan::executeSlot(
     // CUDA illegal memory access (error 700) downstream.
     auto* db = inputs[i]->dataBuffer();
     if (db != nullptr && db->isClosed()) {
-      DSP_DIAG_SLOT(EXECUTE, stepIdx,
-          "CLOSED DataBuffer for slot %d (%s) input %d, srcIdx=%d "
-          "specialBuf=%p isConst=%d exec=%d",
-          stepIdx, slot.ident.opName.c_str(), i, slot.wiring.inputSourceIndices[i],
-          db->special(), db->isConstant ? 1 : 0, executeCount_);
-      return Status::BAD_INPUT;
+      const char* closedPhaseStr = "UNKNOWN";
+      if (planLifecycle_.isSlotBySlot()) {
+        closedPhaseStr = "SLOT_BY_SLOT";
+      } else if (shapesFrozen_) {
+        closedPhaseStr = (executeCount_ == 0) ? "FROZEN_WARMUP" :
+                         (executeCount_ < 3)  ? "FROZEN_CAPTURE" : "FROZEN_REPLAY";
+      } else {
+        closedPhaseStr = "UNFROZEN_WARMUP";
+      }
+      DSP_THROW(EXECUTE,
+               "NativeDynamicShapePlan: CLOSED DataBuffer at slot %d (%s) input[%d] "
+               "during %s phase (execCount=%d frozen=%d). "
+               "srcIdx=%d specialBuf=%p isConst=%d. "
+               "The buffer was freed while the slot still references it — "
+               "this is a lifecycle bug in the producer or caller.",
+               stepIdx, slot.ident.opName.c_str(), i,
+               closedPhaseStr, executeCount_, shapesFrozen_ ? 1 : 0,
+               slot.wiring.inputSourceIndices[i],
+               db->special(), db->isConstant ? 1 : 0);
+      return Status::BAD_INPUT;  // unreachable, but keeps return-type analysis clean
     }
     // Validate platform buffer (GPU special buffer or CPU primary buffer)
     if (!platformValidateSlotInputBuffer(stepIdx, slot, i, inputs[i])) {
-      return Status::BAD_INPUT;
+      const char* bufPhaseStr = "UNKNOWN";
+      if (planLifecycle_.isSlotBySlot()) {
+        bufPhaseStr = "SLOT_BY_SLOT";
+      } else if (shapesFrozen_) {
+        bufPhaseStr = (executeCount_ == 0) ? "FROZEN_WARMUP" :
+                      (executeCount_ < 3)  ? "FROZEN_CAPTURE" : "FROZEN_REPLAY";
+      } else {
+        bufPhaseStr = "UNFROZEN_WARMUP";
+      }
+      DSP_THROW(EXECUTE,
+               "NativeDynamicShapePlan: invalid platform buffer at slot %d (%s) input[%d] "
+               "during %s phase (execCount=%d frozen=%d). "
+               "srcIdx=%d ptr=%p db=%p len=%lld. "
+               "The slot's input has a null device/host buffer — "
+               "this is a lifecycle bug in the producer or buffer allocation.",
+               stepIdx, slot.ident.opName.c_str(), i,
+               bufPhaseStr, executeCount_, shapesFrozen_ ? 1 : 0,
+               slot.wiring.inputSourceIndices[i],
+               (void*)inputs[i], (void*)inputs[i]->dataBuffer(),
+               (long long)inputs[i]->lengthOf());
+      return Status::BAD_INPUT;  // unreachable
     }
   }
 
@@ -3160,7 +3612,29 @@ Status NativeDynamicShapePlan::executeSlot(
   std::vector<const LongType*> outputShapes;
   if (cacheHit) {
     outputShapes = slot.shapeCache.cachedOutputShapes;
-  } else {
+    // Validate cached output shapes: UNKNOWN/INHERIT dtype means the cache
+    // was poisoned (view-chain use-after-free with zeroed DataBuffer).
+    // Force a cache miss so shape re-inference runs and fixes the dtype.
+    for (int i = 0; i < static_cast<int>(outputShapes.size()); i++) {
+      if (outputShapes[i] != nullptr) {
+        DataType dt = ArrayOptions::dataType(outputShapes[i]);
+        if (dt == DataType::UNKNOWN || dt == DataType::INHERIT) {
+          DSP_DIAG_SLOT(SHAPE, stepIdx,
+              "CACHE_HIT_DTYPE_POISON: slot %d (%s) cached output[%d] has UNKNOWN/INHERIT dtype "
+              "— forcing cache miss for re-inference",
+              stepIdx, slot.ident.opName.c_str(), i);
+          cacheHit = false;
+          break;
+        }
+      }
+    }
+    if (cacheHit) {
+      // Cache hit is clean — keep outputShapes as assigned
+    } else {
+      outputShapes.clear();
+    }
+  }
+  if (!cacheHit) {
     bool allowRestabilization =
         !planLifecycle_.isSlotBySlot() && executeCount_ > 0 && slot.shapeCacheValid() &&
         allowFrozenShapeRestabilization(stepIdx, slot, getPlanPhase(),
@@ -3268,6 +3742,40 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
+    // Validate: no input shape may carry UNKNOWN or INHERIT dtype into calculateOutputShape.
+    // UNKNOWN (255) is numerically larger than all real types, so ops that infer
+    // output dtype via max(dtypeX, dtypeY) (e.g. matmul) silently inherit the
+    // poison.  INHERIT (0) is the zero-init value of freed memory and indicates a
+    // use-after-free of a DataBuffer whose memory was reclaimed by Java GC.
+    // Catching it here gives a clear diagnostic instead of a cryptic
+    // "Unknown data type requested DataTypeUtils" from elementSize().
+    for (int i = 0; i < static_cast<int>(inputShapes.size()); i++) {
+      const LongType* inShape = inputShapes.at(i);
+      if (inShape != nullptr &&
+          (ArrayOptions::dataType(inShape) == DataType::UNKNOWN ||
+           ArrayOptions::dataType(inShape) == DataType::INHERIT)) {
+        int srcIdx = (i < slot.wiring.numInputs) ? slot.wiring.inputSourceIndices[i] : -9999;
+        int producerStep = -1;
+        std::string producerName = "?";
+        if (srcIdx >= 0) {
+          producerStep = findProducingStepForOutputSlot(slots_, numSlots_, srcIdx);
+          if (producerStep >= 0) producerName = slots_[producerStep].ident.opName;
+        } else if (srcIdx < 0 && srcIdx != -9999) {
+          producerName = "ext[" + std::to_string(-(srcIdx + 1)) + "]";
+        }
+        std::string msg = "UNKNOWN dtype on input[" + std::to_string(i)
+            + "] of slot " + std::to_string(stepIdx) + " (" + slot.ident.opName
+            + "). Producer: step " + std::to_string(producerStep)
+            + " (" + producerName + "), srcIdx=" + std::to_string(srcIdx)
+            + ". Shape: " + ShapeUtils::shapeAsString(inShape);
+        DSP_DIAG_SLOT(SHAPE, stepIdx,
+            "UNKNOWN_DTYPE_INPUT: %s", msg.c_str());
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+            static_cast<int>(Status::KERNEL_FAILURE));
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg.c_str());
+        return Status::KERNEL_FAILURE;
+      }
+    }
 
     ShapeList* shapeList = nullptr;
     try {
@@ -3369,6 +3877,28 @@ Status NativeDynamicShapePlan::executeSlot(
       } catch (const std::exception& e) {
         DSP_DIAG_SLOT(SHAPE, stepIdx, "createFromExisting EXCEPTION at slot %d (%s) output[%d]: %s",
                   stepIdx, slot.ident.opName.c_str(), i, e.what());
+        delete shapeList;
+        return Status::KERNEL_FAILURE;
+      }
+    }
+
+    // Validate output shapes: UNKNOWN dtype in any output is a bug.
+    // The pre-calculateOutputShape input validation above should have caught
+    // UNKNOWN inputs before they poison shape inference.  If we still see
+    // UNKNOWN here, a new code path is leaking it — fail hard so we find it.
+    for (int i = 0; i < static_cast<int>(outputShapes.size()); i++) {
+      if (ArrayOptions::dataType(outputShapes[i]) == DataType::UNKNOWN) {
+        std::string msg = "calculateOutputShape produced UNKNOWN dtype for output["
+            + std::to_string(i) + "] of slot " + std::to_string(stepIdx)
+            + " (" + slot.ident.opName + "). Input dtypes:";
+        for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
+          msg += " i" + std::to_string(ii) + "=";
+          msg += inputs[ii] ? DataTypeUtils::asString(inputs[ii]->dataType()) : "null";
+        }
+        DSP_DIAG_SLOT(SHAPE, stepIdx, "UNKNOWN_DTYPE_OUTPUT: %s", msg.c_str());
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+            static_cast<int>(Status::KERNEL_FAILURE));
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg.c_str());
         delete shapeList;
         return Status::KERNEL_FAILURE;
       }
@@ -3495,6 +4025,8 @@ Status NativeDynamicShapePlan::executeSlot(
       if (allowRestabilization && !outputShapesMatch) {
         slot.shapeCache.cachedShapeKey = shapeKey;
         slot.shapeCache.cachedOutputShapes = outputShapes;
+        sanitizeCachedOutputShapes(slot, outputSlots_, totalOutputSlots_,
+                                   externalArrays, numExt);
         if (!slot.slotPhase.shapeCacheValid) {
           slot.slotPhase.markShapeCached();  // PRIMARY
           slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;  // legacy sync
@@ -3506,6 +4038,8 @@ Status NativeDynamicShapePlan::executeSlot(
     } else {
       slot.shapeCache.cachedShapeKey = shapeKey;
       slot.shapeCache.cachedOutputShapes = outputShapes;
+      sanitizeCachedOutputShapes(slot, outputSlots_, totalOutputSlots_,
+                                 externalArrays, numExt);
       if (!slot.slotPhase.shapeCacheValid) {
         slot.slotPhase.markShapeCached();  // PRIMARY
         slot.state_ = NativeSlot::SlotState::SHAPE_CACHED;  // legacy sync
@@ -3580,7 +4114,7 @@ Status NativeDynamicShapePlan::executeSlot(
                          "(required=%zu available=%zu) — reallocating",
                          stepIdx, i, requiredBytes, availableBytes);
               }
-              delete cached;
+              tl_slotExecDeferredDeletes.push_back(cached);
               untrackedOutputCache_[cacheIdx] = nullptr;
               if (sd::Environment::getInstance().isDebug()) {
                 scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
@@ -3816,7 +4350,7 @@ Status NativeDynamicShapePlan::executeSlot(
         NDArray* cached = untrackedOutputCache_[cacheIdx];
         if (cached != nullptr) {
           if (!cached->hasValidShapeInfo()) {
-            delete cached;
+            tl_slotExecDeferredDeletes.push_back(cached);
             untrackedOutputCache_[cacheIdx] = nullptr;
             if (sd::Environment::getInstance().isDebug()) {
               scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
@@ -3839,7 +4373,7 @@ Status NativeDynamicShapePlan::executeSlot(
                        "(required=%zu available=%zu) — reallocating",
                        stepIdx, i, requiredBytes, availableBytes);
             }
-            delete cached;
+            tl_slotExecDeferredDeletes.push_back(cached);
             untrackedOutputCache_[cacheIdx] = nullptr;
             if (sd::Environment::getInstance().isDebug()) {
               scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,

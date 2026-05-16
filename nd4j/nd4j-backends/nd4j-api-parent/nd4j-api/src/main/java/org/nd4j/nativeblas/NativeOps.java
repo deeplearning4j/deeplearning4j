@@ -537,6 +537,9 @@ public interface NativeOps {
  void dbForceSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbForceSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbMigrate(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbAsyncCrossDeviceCopy(org.nd4j.nativeblas.OpaqueDataBuffer dstBuffer,
+                             org.nd4j.nativeblas.OpaqueDataBuffer srcBuffer,
+                             org.bytedeco.javacpp.Pointer dstStream);
  void dbTickHostRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickHostWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickDeviceRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
@@ -1694,6 +1697,72 @@ public interface NativeOps {
      throw new UnsupportedOperationException("getPlanNumSlots not implemented in this backend");
  }
 
+ // ── External input introspection ─────────────────────────────────────────
+
+ /** True if ext[extIdx] is classified as variable (participates in staging D2D). */
+ default boolean getPlanIsExternalInputVariable(Pointer planHandle, int extIdx) {
+     return false;
+ }
+
+ /** True if ext[extIdx] is classified as placeholder (forces H2D sync). */
+ default boolean getPlanIsExternalInputPlaceholder(Pointer planHandle, int extIdx) {
+     return false;
+ }
+
+ /** Count of external inputs currently classified as variable. */
+ default int getPlanNumVariableExternalInputs(Pointer planHandle) {
+     return 0;
+ }
+
+ /** Device address of the plan-owned staging buffer for ext[extIdx], or 0 if none. */
+ default long getPlanStagingBufferAddress(Pointer planHandle, int extIdx) {
+     return 0;
+ }
+
+ /** Device address the graph will read from for ext[extIdx] (staging or original). */
+ default long getPlanEffectiveExternalAddress(Pointer planHandle, int extIdx) {
+     return 0;
+ }
+
+ /** Number of variable ext inputs with allocated staging buffers. */
+ default int getPlanNumStagingBuffers(Pointer planHandle) {
+     return 0;
+ }
+
+ /** Current plan execution count. */
+ default int getPlanExecuteCount(Pointer planHandle) {
+     return -1;
+ }
+
+ /** Number of cached variable ext input indices (fast-path list). */
+ default int getPlanNumCachedVariableExtIndices(Pointer planHandle) {
+     return -1;
+ }
+
+ /** Get the i-th cached variable ext input index. Returns -1 if out of range. */
+ default int getPlanCachedVariableExtIndex(Pointer planHandle, int i) {
+     return -1;
+ }
+
+ /** Get the staging buffer NDArray for ext[extIdx]. Returns null if none. */
+ default OpaqueNDArray getPlanStagingBufferArray(Pointer planHandle, int extIdx) {
+     return null;
+ }
+
+ /**
+  * Atomically copy staging buffer content for ext[extIdx] into dstBuffer.
+  * Avoids the stale-pointer race of extracting specialBuffer() then copying separately.
+  * Returns: 0=success, -1=no staging, -2=invalid staging, -3=copy failed.
+  */
+ default int copyPlanStagingToBuffer(Pointer planHandle, int extIdx, OpaqueDataBuffer dstBuffer) {
+     return -1;
+ }
+
+ /** Device address of the last externalArrays[extIdx] passed to execute(). */
+ default long getPlanLastExternalInputAddress(Pointer planHandle, int extIdx) {
+     return 0;
+ }
+
  /**
   * Enable or disable CUDA Graphs for a compiled plan.
   * @param planHandle handle from compileDynamicShapePlan()
@@ -1979,6 +2048,43 @@ public interface NativeOps {
   int getPlanReplayUnitCount(Pointer planHandle, int segIdx);
 
   /**
+   * Get the number of GAP units in the segment's composite replay schedule.
+   * Returns 0 if the segment has no composite schedule.
+   */
+  default int getPlanSegmentGapUnitCount(Pointer planHandle, int segIdx) { return 0; }
+
+  /**
+   * Get the number of TRITON_ISLAND units in the segment's composite replay schedule.
+   * Returns 0 if the segment has no composite schedule.
+   */
+  default int getPlanSegmentIslandUnitCount(Pointer planHandle, int segIdx) { return 0; }
+
+  /**
+   * Get total gap slot count (sum of all gap unit ranges) in the segment.
+   * Returns 0 if no gaps.
+   */
+  default int getPlanSegmentGapSlotCount(Pointer planHandle, int segIdx) { return 0; }
+
+  /**
+   * Check if a specific island's composite replay handle is ready.
+   * @param islandIdx  Island index (0-based)
+   * @return 1=ready, 0=not ready or null, -1=invalid index
+   */
+  default int getPlanSegmentIslandHandleReady(Pointer planHandle, int segIdx, int islandIdx) { return -1; }
+
+  /**
+   * Get the replay mode for this segment.
+   * Returns: 0=NONE, 1=MONOLITHIC, 2=COMPOSITE, 3=SLOT_BY_SLOT
+   */
+  default int getPlanSegmentReplayMode(Pointer planHandle, int segIdx) { return 0; }
+
+  /**
+   * Check if the monolithic replay handle is ready.
+   * Returns 1=ready, 0=not ready, -1=invalid.
+   */
+  default int getPlanSegmentMonolithicHandleReady(Pointer planHandle, int segIdx) { return -1; }
+
+  /**
    * Get the execution count for a specific segment.
    * Returns -1 on error.
    */
@@ -2093,8 +2199,70 @@ public interface NativeOps {
    */
   default int getPlanSlotFlags(Pointer planHandle, int slotIdx) { return -1; }
 
+  /**
+   * Get the monotonic write-generation counter for a slot.
+   * Incremented on kernel dispatch, prezero, nullify, fused chain emit, view install.
+   * Returns -1 if invalid.
+   */
+  default int getPlanSlotGeneration(Pointer planHandle, int slotIdx) { return -1; }
+
   default boolean isPlanSegmentCapturable(Pointer planHandle, int segmentIdx) { return false; }
   default boolean isPlanSegmentCaptureFailed(Pointer planHandle, int segmentIdx) { return false; }
+
+  // =============================================================================
+  // Per-execution stats from last PlanExecutionContext
+  // =============================================================================
+
+  /** Segment stats from last execute(). Returns -1 if no context available. */
+  default int getLastExecSegmentsWarmup(Pointer planHandle) { return -1; }
+  default int getLastExecSegmentsCaptured(Pointer planHandle) { return -1; }
+  default int getLastExecSegmentsReplayed(Pointer planHandle) { return -1; }
+  default int getLastExecSegmentsSlotBySlot(Pointer planHandle) { return -1; }
+  default int getLastExecSegmentsFailed(Pointer planHandle) { return -1; }
+  default int getLastExecSegmentsTotal(Pointer planHandle) { return -1; }
+
+  /** Sync level from last execute(): 0=NONE, 1=EVENT, 2=STREAM, 3=FULL_DEVICE, -1=unavailable. */
+  default int getLastExecSyncLevel(Pointer planHandle) { return -1; }
+
+  /** Stream sync count from last execute(). */
+  default int getLastExecStreamSyncCount(Pointer planHandle) { return -1; }
+
+  /** Consecutive executions where no variable ext input changed. */
+  default int getLastExecConsecutiveUnchangedCount(Pointer planHandle) { return -1; }
+
+  // =============================================================================
+  // DspHandle API — Direct Plan Replay and Slot Inspection
+  // =============================================================================
+
+  /** Mark external input extIdx as variable (D2D staging buffer allocated). */
+  default void markPlanExternalInputVariable(Pointer planHandle, int extIdx) {
+    throw new UnsupportedOperationException("markPlanExternalInputVariable not implemented");
+  }
+
+  /** Mark external input extIdx as placeholder (variable + H2D sync forced). */
+  default void markPlanExternalInputPlaceholder(Pointer planHandle, int extIdx) {
+    throw new UnsupportedOperationException("markPlanExternalInputPlaceholder not implemented");
+  }
+
+  /**
+   * Execute plan in steady-state mode (fast path).
+   * Returns 0 on success, 8 if plan not in steady state, other = error.
+   */
+  default int executeSteadyStatePlan(Pointer planHandle, OpaqueContext opContext, Pointer stream) {
+    return executeDynamicShapePlan(planHandle, opContext, stream);
+  }
+
+  /**
+   * Get the OpaqueNDArray at the given output slot index.
+   * Non-owning view — valid until next execute(). Returns null if out of range or empty.
+   */
+  default OpaqueNDArray getPlanSlotOutputArray(Pointer planHandle, int slotIdx) { return null; }
+
+  /**
+   * Get total number of output slots (all intermediate + final).
+   * Returns -1 if handle is invalid.
+   */
+  default int getTotalPlanOutputSlots(Pointer planHandle) { return -1; }
 
   // =============================================================================
   // Per-Segment Pointer Tracking
@@ -2448,6 +2616,23 @@ public interface NativeOps {
   default void dspDiagClear() {}
 
   /**
+   * Get the total number of steps executed by the diagnostic singleton.
+   */
+  default int dspDiagGetStepCount() { return 0; }
+
+  /**
+   * Get the total event count across all diagnostic categories.
+   */
+  default long dspDiagGetTotalEventCount() { return 0; }
+
+  /**
+   * Get the event count for a specific diagnostic category by index (0..18).
+   * @param categoryIndex  index into the category stats array
+   * @return event count, 0 for invalid indices
+   */
+  default long dspDiagGetCategoryEventCount(int categoryIndex) { return 0; }
+
+  /**
    * Validate plan outputs after execution. Checks each output for NaN, Inf, all-zeros, or null.
    * Flags are bitmask: 1=NULL, 2=NaN, 4=Inf, 8=ALL_ZERO.
    *
@@ -2467,4 +2652,106 @@ public interface NativeOps {
    * @return number of stale outputs detected
    */
   default int dspDetectStaleOutputs(Pointer planHandle, float[] prevNorms, boolean[] staleOut, float epsilon) { return 0; }
+
+  // ─── DSP Cross-Stream Testing API ──────────────────────────────────────────
+
+  /**
+   * Create an independent CUDA stream for testing cross-stream sync behavior.
+   * @return Opaque pointer to a cudaStream_t, or null on CPU builds
+   */
+  default Pointer dspCreateTestStream() {
+    throw new UnsupportedOperationException("dspCreateTestStream not implemented");
+  }
+
+  /**
+   * Destroy a test stream created by dspCreateTestStream().
+   */
+  default void dspDestroyTestStream(Pointer streamPtr) {
+    throw new UnsupportedOperationException("dspDestroyTestStream not implemented");
+  }
+
+  /**
+   * Write data from host to an external input's device buffer on the LC default stream.
+   * Marks device as authoritative after write (isPrimaryActual() returns false).
+   * @return 0 on success, -1 on error, -2 on CPU (no-op)
+   */
+  default int dspWriteDeviceBufferOnDefaultStream(
+      Pointer planHandle, int extIdx, Pointer srcHost, long numBytes) {
+    throw new UnsupportedOperationException("dspWriteDeviceBufferOnDefaultStream not implemented");
+  }
+
+  /**
+   * Write data from host to an external input's device buffer on an explicit stream.
+   * Creates the cross-stream hazard that performPreReplaySync must handle.
+   * @return 0 on success, -1 on error, -2 on CPU (no-op)
+   */
+  default int dspWriteDeviceBufferOnExplicitStream(
+      Pointer planHandle, int extIdx, Pointer srcHost, long numBytes, Pointer streamPtr) {
+    throw new UnsupportedOperationException("dspWriteDeviceBufferOnExplicitStream not implemented");
+  }
+
+  /**
+   * Synchronize a CUDA stream (cudaStreamSynchronize).
+   * @param streamPtr  Pointer to stream, or null for default stream
+   * @return 0 on success, CUDA error code on failure, -2 on CPU (no-op)
+   */
+  default int dspSyncStream(Pointer streamPtr) {
+    throw new UnsupportedOperationException("dspSyncStream not implemented");
+  }
+
+  /**
+   * Query whether an external input's device buffer is authoritative.
+   * @return 1 if device authoritative, 0 if host authoritative, -1 on error
+   */
+  default int dspIsExtInputDeviceAuthoritative(Pointer planHandle, int extIdx) {
+    throw new UnsupportedOperationException("dspIsExtInputDeviceAuthoritative not implemented");
+  }
+
+  /**
+   * Get the DSP execution stream pointer for a plan.
+   * @return Opaque pointer to the DSP stream, or null
+   */
+  default Pointer dspGetExecutionStream(Pointer planHandle) {
+    throw new UnsupportedOperationException("dspGetExecutionStream not implemented");
+  }
+
+  /**
+   * Get the LaunchContext default stream pointer.
+   * @return Opaque pointer to the default stream, or null
+   */
+  default Pointer dspGetDefaultStream() {
+    throw new UnsupportedOperationException("dspGetDefaultStream not implemented");
+  }
+
+  /**
+   * Returns 1 if the segment's arg table needs refreshing (argTableGeneration != capturedArgGeneration),
+   * 0 if up-to-date, -1 on error.
+   */
+  default int getPlanSegmentNeedsArgRefresh(Pointer planHandle, int segIdx) {
+    throw new UnsupportedOperationException("getPlanSegmentNeedsArgRefresh not implemented");
+  }
+
+  /**
+   * Returns the segment's argTableGeneration counter (incremented by bumpArgGeneration).
+   * Returns -1 on error.
+   */
+  default long getPlanSegmentArgGeneration(Pointer planHandle, int segIdx) {
+    throw new UnsupportedOperationException("getPlanSegmentArgGeneration not implemented");
+  }
+
+  /**
+   * Returns the segment's capturedArgGeneration counter (set by markArgsCurrent at capture).
+   * Returns -1 on error.
+   */
+  default long getPlanSegmentCapturedArgGeneration(Pointer planHandle, int segIdx) {
+    throw new UnsupportedOperationException("getPlanSegmentCapturedArgGeneration not implemented");
+  }
+
+  /**
+   * Returns the capturedInputAddrKey for the segment (hash of non-variable external input
+   * device addresses recorded at graph capture time). Returns 0 if not yet captured, -1 on error.
+   */
+  default long getPlanSegmentCapturedInputAddrKey(Pointer planHandle, int segIdx) {
+    throw new UnsupportedOperationException("getPlanSegmentCapturedInputAddrKey not implemented");
+  }
 }

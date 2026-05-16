@@ -774,9 +774,7 @@ public class DecodeValidationFramework implements AutoCloseable {
             if (session != null) {
                 DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
                 if (executor != null) {
-                    // Access native plan handle via reflection if needed
-                    // For now, return null — metadata tracking is optional
-                    return null;
+                    return executor.getNativePlanHandle();
                 }
             }
         } catch (Exception e) {

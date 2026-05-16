@@ -113,7 +113,9 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
                zEffective->rankOf());
 
   // Perform matrix multiplication: z = x @ w
-  // Use ops::matmul to leverage OneDNN platform helper for acceleration
+  // Use ops::matmul to leverage OneDNN platform helper for acceleration.
+  // Transposes were ALREADY applied to xEffective/wEffective above (lines 84-103),
+  // so matmul must see {0, 0} — passing the original flags would double-transpose.
   matmul mmulOp;
   mmulOp.execute({xEffective, wEffective}, {zEffective}, {}, {0, 0}, {});
 
@@ -150,16 +152,11 @@ DECLARE_SHAPE_FN(xw_plus_b) {
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
   bool cTranspose = (block.getIArguments()->size() > 2 ? INT_ARG(2) == 1 : false);
 
-  int nWeightsFormat = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-
-  const LongType* weightsShape;
-  if (1 == nWeightsFormat) {
-    auto temp = ShapeUtils::evalTransposeShapeInfo(*weights, nullptr);
-    weightsShape = ConstantShapeHelper::getInstance().createFromExisting(temp);
-    RELEASE(temp, nullptr);
-  } else {
-    weightsShape = inputShape->at(1);
-  }
+  // INT_ARG(0) is aTranspose (set by FuseMatMulWithAdd and used by the exec function).
+  // The weights shape is passed as-is; bTranspose handles transposition in matrixProductShape.
+  // Previously this read INT_ARG(0) as nWeightsFormat and pre-transposed weights when
+  // aTranspose=true, causing double-transposition and wrong output shapes.
+  const LongType* weightsShape = inputShape->at(1);
 
   // Handle higher rank inputs
   if (shape::rank(xShape) > 2) {

@@ -38,14 +38,12 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   auto outputs = _descriptor->getOutputTypesForOutput(0);
   sd::DataType dtype = block.dataType(0);
   if (block.dataType(0) != sd::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == sd::DataType::BOOL)) {
-    if (sd::env_isExperimentalBuild()) {
-      if (shape::length(y) > shape::length(x)) {
-        dtype = DataTypeUtils::pickPairwiseResultType(y, x);
-      } else {
-        dtype = DataTypeUtils::pickPairwiseResultType(x, y);
-      }
+    // Always use pickPairwiseResultType to resolve mixed floating-point types.
+    // HALF+FLOAT must produce FLOAT output regardless of operand order.
+    if (shape::length(y) > shape::length(x)) {
+      dtype = DataTypeUtils::pickPairwiseResultType(y, x);
     } else {
-      dtype = ArrayOptions::dataType(x);
+      dtype = DataTypeUtils::pickPairwiseResultType(x, y);
     }
   } else
     dtype = sd::DataType::BOOL;

@@ -1,3 +1,4 @@
+
 /* ******************************************************************************
  *
  * This program and the accompanying materials are made available under the
@@ -70,7 +71,7 @@ __device__ __forceinline__ T blockReduceSum(T val, T* sharedMem) {
 }
 
 __device__ __forceinline__ float fastSigmoid(float x) {
-  return 1.0f / (1.0f + expf(-x));
+  return 1.0f / (1.0f + __expf(-x));
 }
 
 __device__ __forceinline__ float silu(float x) {
@@ -82,7 +83,7 @@ __device__ __forceinline__ float silu(float x) {
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-static SD_KERNEL void fusedGELUKernel(
+static SD_KERNEL __launch_bounds__(256, 2) void fusedGELUKernel(
     const T* __restrict__ input,
     T* __restrict__ output,
     const LongType totalElements) {
@@ -97,7 +98,7 @@ static SD_KERNEL void fusedGELUKernel(
 }
 
 template <typename T>
-static SD_KERNEL void fusedGELUBackwardKernel(
+static SD_KERNEL __launch_bounds__(256, 2) void fusedGELUBackwardKernel(
     const T* __restrict__ input,
     const T* __restrict__ gradOut,
     T* __restrict__ gradIn,
@@ -120,7 +121,7 @@ static SD_KERNEL void fusedGELUBackwardKernel(
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-__global__ void fusedLayerNormKernel(
+__global__ __launch_bounds__(256, 2) void fusedLayerNormKernel(
     const T* __restrict__ input,
     const T* __restrict__ gain,
     const T* __restrict__ bias,
@@ -211,15 +212,15 @@ __global__ void fusedLayerNormKernel(
 // Fused RoPE Kernel
 //////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-__global__ void fusedRoPEKernel(
+template <typename T, typename P>
+SD_KERNEL __launch_bounds__(256, 2) void fusedRoPEKernel(
     const T* __restrict__ input,
     T* __restrict__ output,
     const LongType batch,
     const LongType seqLen,
     const LongType numHeads,
     const LongType headDim,
-    const LongType* __restrict__ positionOffsetPtr,
+    const P* __restrict__ positionPtr,
     const float freqBase,
     const float freqScale,
     const int ropeType,
@@ -239,10 +240,8 @@ __global__ void fusedRoPEKernel(
   const LongType s = rem % seqLen;
   const LongType b = rem / seqLen;
 
-  // Read position offset from device pointer at kernel runtime (NOT baked as constant).
-  // This makes the kernel CUDA graph compatible: the pointer address is captured,
-  // but the value can change between graph replays via D2D staging.
-  const LongType pos = static_cast<LongType>(*positionOffsetPtr) + s;
+  // Read position from device pointer — capture-safe (no host sync).
+  const LongType pos = static_cast<LongType>(positionPtr[0]) + s;
 
   // Compute theta using rotateDims for frequency spacing
   float theta = static_cast<float>(pos) * freqScale /
@@ -272,7 +271,7 @@ __global__ void fusedRoPEKernel(
 }
 
 template <typename T>
-__global__ void fusedRoPEBackwardKernel(
+__global__ __launch_bounds__(256, 2) void fusedRoPEBackwardKernel(
     const T* __restrict__ gradOut,
     T* __restrict__ gradIn,
     const LongType batch,
@@ -330,7 +329,7 @@ __global__ void fusedRoPEBackwardKernel(
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-SD_KERNEL void fusedRoPECachedKernel(
+SD_KERNEL __launch_bounds__(256, 2) void fusedRoPECachedKernel(
     const T* __restrict__ input,
     const T* __restrict__ cosValues,
     const T* __restrict__ sinValues,
@@ -385,7 +384,7 @@ SD_KERNEL void fusedRoPECachedKernel(
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-__global__ void fusedBiasDropoutResidualKernel(
+__global__ __launch_bounds__(256, 2) void fusedBiasDropoutResidualKernel(
     const T* __restrict__ input,
     const T* __restrict__ bias,
     const T* __restrict__ residual,
@@ -488,7 +487,7 @@ void launchFusedLayerNorm(
   DebugHelper::checkGlobalErrorCode("fusedLayerNormKernel failed");
 }
 
-template <typename T>
+template <typename T, typename P>
 void launchFusedRoPE(
     const T* input,
     T* output,
@@ -496,7 +495,7 @@ void launchFusedRoPE(
     LongType seqLen,
     LongType numHeads,
     LongType headDim,
-    const LongType* positionOffsetPtr,
+    const P* positionPtr,
     float freqBase,
     float freqScale,
     int ropeType,
@@ -523,9 +522,9 @@ void launchFusedRoPE(
   int threadsPerBlock = 256;
   int numBlocks = (totalPairs + threadsPerBlock - 1) / threadsPerBlock;
 
-  fusedRoPEKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
+  fusedRoPEKernel<T, P><<<numBlocks, threadsPerBlock, 0, stream>>>(
       input, output, batch, seqLen, numHeads, headDim,
-      positionOffsetPtr, freqBase, freqScale, ropeType, rotateDims);
+      positionPtr, freqBase, freqScale, ropeType, rotateDims);
   DebugHelper::checkGlobalErrorCode("fusedRoPEKernel failed");
 }
 
@@ -607,12 +606,7 @@ template void launchFusedLayerNorm<double>(const double*, const double*, const d
 template void launchFusedLayerNorm<float16>(const float16*, const float16*, const float16*, float16*,
     LongType, LongType, float, cudaStream_t);
 
-template void launchFusedRoPE<float>(const float*, float*, LongType, LongType, LongType, LongType,
-    const LongType*, float, float, int, cudaStream_t, int);
-template void launchFusedRoPE<double>(const double*, double*, LongType, LongType, LongType, LongType,
-    const LongType*, float, float, int, cudaStream_t, int);
-template void launchFusedRoPE<float16>(const float16*, float16*, LongType, LongType, LongType, LongType,
-    const LongType*, float, float, int, cudaStream_t, int);
+// launchFusedRoPE: implicitly instantiated via BUILD_SINGLE_SELECTOR in fusedRoPE().
 
 template void launchFusedRoPEBackward<float>(const float*, float*, LongType, LongType, LongType, LongType,
     int, float, float, int, cudaStream_t, int);
@@ -729,7 +723,20 @@ void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* outpu
   NDArray::registerSpecialUse({output}, {input, gain, bias});
 }
 
-void fusedRoPE(NDArray* input, NDArray* output, const void* positionOffsetPtr,
+template <typename T, typename P>
+void fusedRoPE_(NDArray* input, NDArray* output, NDArray* positionArr,
+                LongType batch, LongType seqLen, LongType numHeads, LongType headDim,
+                float freqBase, float freqScale, int ropeType,
+                cudaStream_t stream, int rotaryDims) {
+  launchFusedRoPE<T, P>(
+      reinterpret_cast<const T*>(input->specialBuffer()),
+      reinterpret_cast<T*>(output->specialBuffer()),
+      batch, seqLen, numHeads, headDim,
+      reinterpret_cast<const P*>(positionArr->specialBuffer()),
+      freqBase, freqScale, ropeType, stream, rotaryDims);
+}
+
+void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
                float freqBase, float freqScale, int ropeType, LaunchContext* context,
                int rotaryDims) {
   const int rank = input->rankOf();
@@ -738,38 +745,14 @@ void fusedRoPE(NDArray* input, NDArray* output, const void* positionOffsetPtr,
   auto numHeads = (rank >= 4) ? input->sizeAt(2) : static_cast<LongType>(1);
   auto headDim = (rank >= 4) ? input->sizeAt(3) : input->sizeAt(2);
 
-  NDArray::prepareSpecialUse({output}, {input});
+  NDArray::prepareSpecialUse({output}, {input, positionArr});
   auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
 
-  // positionOffsetPtr is a device-accessible int64 pointer on CUDA.
-  // The kernel reads *positionOffsetPtr at runtime, NOT as a baked constant.
-  // position_offset is INT64 (LongType) — must match the placeholder dtype.
-  const LongType* posPtr = reinterpret_cast<const LongType*>(positionOffsetPtr);
+  BUILD_DOUBLE_SELECTOR(input->dataType(), positionArr->dataType(), fusedRoPE_,
+      (input, output, positionArr, batch, seqLen, numHeads, headDim,
+       freqBase, freqScale, ropeType, *stream, rotaryDims), SD_FLOAT_TYPES, SD_COMMON_TYPES);
 
-  if (dtype == DataType::FLOAT32) {
-    launchFusedRoPE<float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<float*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        posPtr, freqBase, freqScale, ropeType, *stream, rotaryDims);
-  } else if (dtype == DataType::DOUBLE) {
-    launchFusedRoPE<double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<double*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        posPtr, freqBase, freqScale, ropeType, *stream, rotaryDims);
-  } else if (dtype == DataType::HALF) {
-    launchFusedRoPE<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        posPtr, freqBase, freqScale, ropeType, *stream, rotaryDims);
-  } else {
-    THROW_EXCEPTION("fusedRoPE: Unsupported data type");
-  }
-
-  NDArray::registerSpecialUse({output}, {input});
+  NDArray::registerSpecialUse({output}, {input, positionArr});
 }
 
 void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
@@ -803,7 +786,6 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
     cosStride2 = cosValues->strideAt(3);
   }
 
-  NDArray::prepareSpecialUse({output}, {input, cosValues, sinValues});
   auto stream = context->getCudaStream();
   auto dtype = input->dataType();
 
@@ -811,10 +793,47 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
 
   // headDim < 2 means no pairs to rotate — RoPE is a no-op, just copy input
   if (totalPairs == 0) {
+    NDArray::prepareSpecialUse({output}, {input, cosValues, sinValues});
     output->assign(input);
     NDArray::registerSpecialUse({output}, {input, cosValues, sinValues});
     return;
   }
+
+  // Cast cos/sin to match input dtype if they differ (e.g., cos/sin are FP16 but input is FP32).
+  // The kernel uses a single template type T for all buffers — mismatched dtypes cause
+  // reinterpret_cast to read garbage (e.g., two FP16 values combined into one FP32).
+  NDArray* cosWork = cosValues;
+  NDArray* sinWork = sinValues;
+  NDArray* cosCast = nullptr;
+  NDArray* sinCast = nullptr;
+  if (cosValues->dataType() != dtype) {
+    cosCast = cosValues->cast(dtype);
+    cosWork = cosCast;
+    // Recompute strides for the casted array (cast always produces contiguous)
+    cosStride0 = 0;
+    cosStride1 = 0;
+    cosStride2 = 1;
+    auto castRank = cosWork->rankOf();
+    if (castRank == 2) {
+      cosStride0 = 0;
+      cosStride1 = cosWork->strideAt(0);
+      cosStride2 = cosWork->strideAt(1);
+    } else if (castRank == 3) {
+      cosStride0 = cosWork->strideAt(0);
+      cosStride1 = cosWork->strideAt(1);
+      cosStride2 = cosWork->strideAt(2);
+    } else if (castRank == 4) {
+      cosStride0 = cosWork->strideAt(0);
+      cosStride1 = cosWork->strideAt(1);
+      cosStride2 = cosWork->strideAt(3);
+    }
+  }
+  if (sinValues->dataType() != dtype) {
+    sinCast = sinValues->cast(dtype);
+    sinWork = sinCast;
+  }
+
+  NDArray::prepareSpecialUse({output}, {input, cosWork, sinWork});
 
   dim3 launchDims = getLaunchDims("fusedRopeCached");
   int threadsPerBlock = launchDims.y;
@@ -823,22 +842,22 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
   if (dtype == DataType::FLOAT32) {
     fusedRoPECachedKernel<float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
         reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float*>(sinValues->specialBuffer()),
+        reinterpret_cast<const float*>(cosWork->specialBuffer()),
+        reinterpret_cast<const float*>(sinWork->specialBuffer()),
         reinterpret_cast<float*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
   } else if (dtype == DataType::DOUBLE) {
     fusedRoPECachedKernel<double><<<numBlocks, threadsPerBlock, 0, *stream>>>(
         reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(cosValues->specialBuffer()),
-        reinterpret_cast<const double*>(sinValues->specialBuffer()),
+        reinterpret_cast<const double*>(cosWork->specialBuffer()),
+        reinterpret_cast<const double*>(sinWork->specialBuffer()),
         reinterpret_cast<double*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
   } else if (dtype == DataType::HALF) {
     fusedRoPECachedKernel<float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
         reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
+        reinterpret_cast<const float16*>(cosWork->specialBuffer()),
+        reinterpret_cast<const float16*>(sinWork->specialBuffer()),
         reinterpret_cast<float16*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
   } else {
@@ -846,7 +865,10 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
   }
 
   DebugHelper::checkGlobalErrorCode("fusedRoPECachedKernel failed");
-  NDArray::registerSpecialUse({output}, {input, cosValues, sinValues});
+  NDArray::registerSpecialUse({output}, {input, cosWork, sinWork});
+
+  if (cosCast != nullptr) delete cosCast;
+  if (sinCast != nullptr) delete sinCast;
 }
 
 void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
@@ -930,7 +952,7 @@ void fusedBiasDropoutResidual(NDArray* input, NDArray* bias, NDArray* residual,
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-static SD_KERNEL void rmsNormGammaKernel(
+static SD_KERNEL __launch_bounds__(512, 1) void rmsNormGammaKernel(
     T* __restrict__ output,
     const T* __restrict__ input,
     const T* __restrict__ gamma,
@@ -987,7 +1009,7 @@ static SD_KERNEL void rmsNormGammaKernel(
 }
 
 template <typename T>
-static SD_KERNEL void siluMultiplyKernel(
+static SD_KERNEL __launch_bounds__(256, 2) void siluMultiplyKernel(
     T* __restrict__ output,
     const T* __restrict__ gate,
     const T* __restrict__ up,
@@ -1000,7 +1022,7 @@ static SD_KERNEL void siluMultiplyKernel(
   float u = static_cast<float>(up[idx]);
   
   // SiLU(x) = x * sigmoid(x)
-  float siluG = g / (1.0f + expf(-g));
+  float siluG = g / (1.0f + __expf(-g));
   
   output[idx] = static_cast<T>(siluG * u);
 }
@@ -1111,7 +1133,7 @@ void fusedLayerNormBackward(NDArray* input, NDArray* gain, NDArray* gradOut,
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-static SD_KERNEL void biasAddKernel(
+static SD_KERNEL __launch_bounds__(256, 2) void biasAddKernel(
     T* __restrict__ output,
     const T* __restrict__ bias,
     const LongType totalRows,

@@ -374,7 +374,9 @@ dim3 getSoftmaxDims(sd::LongType numTads, sd::LongType tadLen) {
   int maxBlocks = GRID_SIZE_SOFTMAX;
 
   // Use more threads for longer TADs to maximize parallelism
+  // Cap at 256: all softMaxCuda kernels use __launch_bounds__(256, 2)
   int threadsPerBlock = (tadLen >= 512) ? BLOCK_SIZE_SOFTMAX_LARGE : BLOCK_SIZE_SOFTMAX;
+  if (threadsPerBlock > 256) threadsPerBlock = 256;
 
   // Cap blocksPerGrid - each block will process multiple TADs via grid-stride
   int blocksPerGrid = static_cast<int>(sd::math::sd_min<sd::LongType>(numTads, maxBlocks));
