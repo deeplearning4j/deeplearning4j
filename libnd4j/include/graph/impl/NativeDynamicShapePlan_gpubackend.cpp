@@ -450,7 +450,29 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                  outputSlots_, totalOutputSlots_, segShapeKey,
                                  numSlots_)) {
-      DSP_SEG_EVENT(seg, COMPILE_FAILED, "backend=%s", backendName);
+      // Fetch audit even on failure — it contains per-op detail about what failed
+      auto failAudit = backend->getLastCompilationAudit();
+      lastCompilationAudit_ = failAudit;
+      std::string failedOps;
+      int failCount = 0;
+      for (const auto& entry : failAudit) {
+        if (!entry.wasCompiled && !entry.isNativeHandled) {
+          if (!failedOps.empty()) failedOps += ", ";
+          failedOps += "slot " + std::to_string(entry.slotIndex) + " (" + entry.opName + "): " + entry.reason;
+          failCount++;
+        }
+      }
+      if (failedOps.empty()) {
+        // No audit entries — list the ops in the segment for context
+        for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+          if (!failedOps.empty()) failedOps += ", ";
+          failedOps += slots_[s].ident.opName;
+        }
+        failedOps = "segment ops: " + failedOps + " (no per-op audit available)";
+      }
+      DSP_SEG_EVENT(seg, COMPILE_FAILED, "backend=%s failedOps=[%s]", backendName, failedOps.c_str());
+      // Store the failure detail so DSP_THROW_SEG can include it
+      lastCompileFailureDetail_ = failedOps;
       return Status::KERNEL_FAILURE;
     }
     DSP_SEG_EVENT(seg, COMPILE_DONE, "backend=%s", backendName);
@@ -465,7 +487,19 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                           static_cast<uint8_t>(SegmentLifecycleState::CAPTURE_PENDING),
                           static_cast<uint32_t>(executeCount_));
     }
-    SegmentLifecycle::markCompiled(seg.exec, backendName, segShapeKey);
+    // Guard: only transition lifecycle if the segment is in the expected
+    // NEEDS_COMPILE state. Plan cache can return a plan whose segment was
+    // previously captured+sealed; re-compiling (e.g. after plan-swap refreeze)
+    // must not fire a lifecycle transition on an already-sealed segment.
+    if (seg.exec.segPhase.needsCompile()) {
+      SegmentLifecycle::markCompiled(seg.exec, backendName, segShapeKey);
+    } else if (seg.exec.segPhase.isSealed()) {
+      // Already sealed from a prior run on this plan — skip lifecycle transition
+      // but still update shape key state so the Triton cache lookup matches.
+      DSP_DIAG(COMPILE, "segDispatchCompile: seg[%d-%d] already SEALED — "
+               "skipping markCompiled lifecycle transition (plan cache re-hit)",
+               seg.def.startSlot, seg.def.endSlot);
+    }
     // Store the compiled shape key so the Triton cache lookup key matches.
     // This MUST only happen when compilation actually occurred — the caller
     // previously did this unconditionally, which overwrote compiledShapeKey
@@ -475,22 +509,30 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     DSP_SEG_EVENT(seg, SHAPE_KEY_STORED, "compilation complete");
   }
 
-  // On first compilation, validate coverage
-  if (seg.exec.executionCount == 1) {
+  // Validate compilation coverage on every compilation (not just the first).
+  // Post-freeze recompiles at execCount=2+ can have different failure modes
+  // (e.g., TritonIRBuilder missing SSA values for frozen slots) that must be
+  // detected here rather than producing KERNEL_FAILURE during execution.
+  if (needsCompile) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
     int compiledCount = 0;
+    int nativeHandledCount = 0;
     int failedCount = 0;
     for (const auto& entry : audit) {
       if (entry.wasCompiled) {
         compiledCount++;
+      } else if (entry.isNativeHandled) {
+        nativeHandledCount++;
+        DSP_DIAG_SLOT(COMPILE, entry.slotIndex, "%s VALIDATION: slot %d (%s) native-handled: %s",
+                      backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       } else {
         failedCount++;
         DSP_DIAG_SLOT(COMPILE, entry.slotIndex, "%s VALIDATION: slot %d (%s) was NOT compiled: %s",
                       backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       }
     }
-    if (compiledCount == 0 && failedCount > 0) {
+    if (compiledCount == 0 && nativeHandledCount == 0 && failedCount > 0) {
       DSP_DIAG(COMPILE, "%s COMPILE ERROR: segment [%d-%d] has zero compiled ops "
                         "(failed=%d). Compilation failures are errors, not fallbacks.",
                backendName, seg.def.startSlot, seg.def.endSlot, failedCount);
@@ -501,19 +543,24 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       return Status::KERNEL_FAILURE;
     }
     if (compiledCount == 0 && failedCount == 0) {
-      DSP_DIAG(COMPILE, "%s: segment [%d-%d] has only native ordered sections (no Triton kernels needed). "
-                        "Segment remains eligible for CUDA graph capture.",
-               backendName, seg.def.startSlot, seg.def.endSlot);
+      DSP_DIAG(COMPILE, "%s: segment [%d-%d] has only native ordered sections (no Triton kernels needed, "
+                        "nativeHandled=%d). Segment remains eligible for CUDA graph capture.",
+               backendName, seg.def.startSlot, seg.def.endSlot, nativeHandledCount);
     }
     if (failedCount > 0) {
       DSP_DIAG(COMPILE, "%s COMPILE ERROR: segment [%d-%d] partial compile FAILED "
-                        "(compiled=%d failed=%d). Compilation failures are errors, not fallbacks.",
-               backendName, seg.def.startSlot, seg.def.endSlot, compiledCount, failedCount);
+                        "(compiled=%d nativeHandled=%d failed=%d). Compilation failures are errors, not fallbacks.",
+               backendName, seg.def.startSlot, seg.def.endSlot, compiledCount, nativeHandledCount, failedCount);
       DSP_TRACE_ERROR(trace_, -1, seg.def.startSlot,
                       static_cast<uint32_t>(executeCount_),
                       static_cast<uint64_t>(Status::KERNEL_FAILURE));
       SegmentLifecycle::markFailed(seg.exec, "partial_compile_failure");
       return Status::KERNEL_FAILURE;
+    }
+    if (nativeHandledCount > 0) {
+      DSP_DIAG(COMPILE, "%s: segment [%d-%d] mixed compile OK (compiled=%d nativeHandled=%d). "
+                        "Native-handled ops will execute via slot-by-slot within the segment.",
+               backendName, seg.def.startSlot, seg.def.endSlot, compiledCount, nativeHandledCount);
     }
   }
 

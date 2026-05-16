@@ -265,6 +265,58 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
 
     bool hasMonolithicReplay = (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady());
+    bool hasCompositeSchedule = !seg.exec.compositeReplaySchedule.units.empty();
+
+    // When a segment has BOTH a monolithic replay handle AND a composite replay
+    // schedule with gap units, the composite path MUST be preferred. The monolithic
+    // CUDA graph only contains Triton island kernels — gap ops (matmul, etc.) are
+    // NOT captured into the monolithic graph. Replaying the monolithic graph alone
+    // skips gap ops entirely, leaving their output slots with stale capture-time
+    // data. The composite path properly alternates island graph replays with live
+    // gap execution, ensuring gap ops process fresh inputs every step.
+    if (hasMonolithicReplay && hasCompositeSchedule) {
+      bool hasGapUnits = false;
+      for (const auto& u : seg.exec.compositeReplaySchedule.units) {
+        if (u.kind == REPLAY_UNIT_GAP) { hasGapUnits = true; break; }
+      }
+      if (hasGapUnits) {
+        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: seg[%d-%d] has monolithic handle + composite "
+                 "schedule with gap units — routing to composite replay (monolithic would "
+                 "skip gap ops)",
+                 seg.def.startSlot, seg.def.endSlot);
+        hasMonolithicReplay = false;  // Force composite path
+      }
+    }
+
+#if HAVE_TRITON
+    // When a monolithic replay handle exists but the composite schedule was never
+    // built, the monolithic graph may only contain Triton island kernels while gap
+    // ops (matmul via cuBLAS) were skipped during capture (GAP_SKIP_DURING_CAPTURE).
+    // Replaying such a graph skips all gap ops → stale outputs.
+    //
+    // The composite schedule is normally built in _gpubackend.cu, but only inside
+    // a `compiledByBackend.empty()` gate that fires once. If the monolithic capture
+    // path ran first and set compiledByBackend, the schedule never gets built.
+    //
+    // Detect this by querying the Triton backend for gap slots. If gap slots exist,
+    // fall through to slot-by-slot execution rather than replaying a partial graph.
+    if (hasMonolithicReplay && !hasCompositeSchedule) {
+      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+      if (tritonBackend != nullptr) {
+        auto gapSlots = tritonBackend->getGapSlots(seg, slots_);
+        if (!gapSlots.empty()) {
+          DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: seg[%d-%d] has monolithic handle but %d gap "
+                   "slots (not in graph) and no composite schedule — clearing monolithic "
+                   "handle and falling through to slot-by-slot (monolithic would skip gap ops)",
+                   seg.def.startSlot, seg.def.endSlot, static_cast<int>(gapSlots.size()));
+          // Destroy the stale monolithic handle permanently so we don't re-check
+          // gap slots on every subsequent frozen fast path iteration.
+          seg.exec.replayHandle.reset();
+          hasMonolithicReplay = false;  // Force slot-by-slot fallback at bottom
+        }
+      }
+    }
+#endif
 
     if (hasMonolithicReplay) {
       // ── Monolithic graph replay ────────────────────────────────────────
@@ -1443,25 +1495,43 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   //    and forces CUBLAS_GEMM_DEFAULT instead of CUBLAS_GEMM_DEFAULT_TENSOR_OP.
   //
   // All three must be set for BOTH modes so they use identical cuBLAS state.
-  // Modes requiring deterministic cuBLAS enforce PEDANTIC_MATH + no workspace + no Lt.
+  // Modes requiring deterministic cuBLAS enforce PEDANTIC_MATH + workspace + no Lt.
+  // A workspace MUST be provided: CUBLAS_PEDANTIC_MATH with no workspace causes
+  // CUBLAS_GEMM_DEFAULT to produce all-zeros for FP16 inputs on some GPUs because
+  // the only PEDANTIC-compatible algorithm for that precision needs workspace.
   // TRITON composite mode manages its own workspace/algorithm lifecycle.
   if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
     auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
     if (handlePtr != nullptr) {
       // (1) Force bitwise-reproducible algorithms
       cublasSetMathMode(*handlePtr, CUBLAS_PEDANTIC_MATH);
-      // (2) Clear workspace so cuBLAS cannot pick split-K
-      cublasSetWorkspace(*handlePtr, nullptr, 0);
+      // (2) Provide workspace — required for PEDANTIC + FP16 algorithm selection.
+      // ensureCublasWorkspace is idempotent (allocates once).
+      ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
+      if (cublasWorkspaceBuffer_ != nullptr) {
+        cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
+        tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
+        tl_cublasWorkspaceSize = cublasWorkspaceSize_;
+      } else {
+        cublasSetWorkspace(*handlePtr, nullptr, 0);
+        tl_cublasWorkspacePtr = nullptr;
+        tl_cublasWorkspaceSize = 0;
+      }
     }
-    // Clear thread-locals so reapplyCublasWorkspace() is a no-op
-    tl_cublasWorkspacePtr = nullptr;
-    tl_cublasWorkspaceSize = 0;
     // (3) Block cublasLt and force CUBLAS_GEMM_DEFAULT
     tl_cublasLtDisabled = true;
     DSP_DIAG(EXECUTE, "platformBeginExecution: deterministic cuBLAS for mode=%d "
-             "(PEDANTIC_MATH + no workspace + no Lt)",
-             static_cast<int>(graphExecutionMode_));
+             "(PEDANTIC_MATH + workspace=%p size=%zuMB + no Lt)",
+             static_cast<int>(graphExecutionMode_),
+             cublasWorkspaceBuffer_, cublasWorkspaceSize_ / (1024*1024));
   }
+
+  // Reset FP16 cast-cache indices at plan execution boundary.
+  // Two interleaved plans share the same thread-local cast cache
+  // (tl_castCacheA/tl_castIdxA). Without resetting, plan2 inherits
+  // plan1's stale index and reads wrong HALF-cast buffers, causing
+  // maxDiff=83+ in mixed-precision FP16 matmuls.
+  MmulHelper::resetCastCacheIndices();
 
   return static_cast<void*>(ctx);
 }
@@ -1513,16 +1583,24 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
 
   // Restore cuBLAS state for modes that enforced deterministic cuBLAS.
   if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
-    if (tl_cublasWorkspacePtr != nullptr) {
-      tl_cublasWorkspacePtr = nullptr;
-      tl_cublasWorkspaceSize = 0;
+    // Clear workspace from handle and TLS (workspace buffer itself is kept for reuse)
+    auto* restoreHandle = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+    if (restoreHandle != nullptr && tl_cublasWorkspacePtr != nullptr) {
+      cublasSetWorkspace(*restoreHandle, nullptr, 0);
     }
-    tl_cublasLtDisabled = false;
-    // Restore math mode to default (undo CUBLAS_PEDANTIC_MATH from begin)
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+    // Get handle while tl_cublasLtDisabled is still true — this suppresses
+    // the lazy-TF32 logic in CublasHelper::handle() so it doesn't overwrite
+    // our restore below with a stale TF32/DEFAULT mode.
     auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
     if (handlePtr != nullptr) {
       cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
+    // Clear AFTER math mode restore — the next CublasHelper::handle() call
+    // from non-DSP code will see tl_cublasLtDisabled=false and correctly
+    // lazy-apply TF32 if wanted.
+    tl_cublasLtDisabled = false;
   }
 
   // ── TLS STATE ASSERTIONS ─────────────────────────────────────────────────
@@ -1829,6 +1907,10 @@ size_t NativeDynamicShapePlan::platformEstimateCaptureBudget() const {
 }
 
 void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
+  if (segments_.empty()) {
+    DSP_DIAG(MEMORY, "platformReleaseSegmentGpuResources: no segments — nothing to release");
+    return;
+  }
   logGpuMemState("STEP-0-ENTRY");
   for (auto& seg : segments_) {
     // Clean up monolithic replay handle
@@ -2044,6 +2126,51 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
     }
   }
 #endif
+}
+
+int NativeDynamicShapePlan::copyStagingToBuffer(int extIdx, sd::DataBuffer* dstDataBuffer) {
+  if (placeholderStagingBuffers_ == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
+    return -1;
+  NDArray* staging = placeholderStagingBuffers_[extIdx];
+  if (staging == nullptr) return -1;
+
+  auto* srcDb = staging->dataBuffer();
+  if (srcDb == nullptr || srcDb->isClosed()) return -2;
+  if (dstDataBuffer == nullptr) return -3;
+
+  // Just-in-time staging sync: during warmup after markExternalInputVariable,
+  // the staging buffer is pre-allocated but zero-filled (ensureAndSyncStagingBuffers
+  // only runs during capture/replay, not during warmup slot-by-slot). Sync from the
+  // last external input to the staging buffer now so the caller reads fresh data.
+  NDArray* lastExt = getLastExternalInput(extIdx);
+  if (lastExt != nullptr && !lastExt->isEmpty() && lastExt->specialBuffer() != nullptr) {
+    void* stagingDev = staging->specialBuffer();
+    void* extDev = lastExt->specialBuffer();
+    if (stagingDev != nullptr && extDev != nullptr && stagingDev != extDev) {
+      size_t bytes = static_cast<size_t>(lastExt->lengthOf()) * lastExt->sizeOfT();
+      if (bytes > 0) {
+        // Ensure ext device data is current (assign writes host first)
+        lastExt->syncToDevice();
+        auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+        cudaStream_t cudaStr = (streamPtr != nullptr) ? *streamPtr : nullptr;
+        cudaMemcpyAsync(stagingDev, extDev, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+        staging->dataBuffer()->writeSpecial();
+        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
+      }
+    }
+  }
+
+  // DataBuffer::memcpy does async D2D via cudaMemcpyAsync on captureSafeStreamOrDefault().
+  sd::DataBuffer::memcpy(dstDataBuffer, srcDb, 0, 0, staging->lengthOf());
+
+  // The async copy is on LaunchContext::defaultContext()->getCudaStream(). The caller
+  // (Java side) may immediately run a CUDA kernel (e.g. sumNumber) on a different stream.
+  // Without this sync the kernel reads stale/uninitialized device memory → error 700.
+  auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+  if (streamPtr != nullptr) {
+    cudaStreamSynchronize(*streamPtr);
+  }
+  return 0;
 }
 
 }  // namespace graph

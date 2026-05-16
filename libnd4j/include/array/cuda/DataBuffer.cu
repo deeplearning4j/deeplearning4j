@@ -1,6 +1,7 @@
 /* ******************************************************************************
  *
  *
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -237,7 +238,20 @@ void DataBuffer::expand(const uint64_t size) {
     _lenInBytes = size;
     _specialAllocBytes = size + 8;  // match actual allocation (size + 8)
     if (_primaryBuffer != nullptr) _primaryAllocBytes = hostAllocSize;
-    _isOwnerSpecial = true;
+
+    // If CudaMemoryPool returned a capture-workspace interior pointer (bump-allocated
+    // during CUDA graph capture), the workspace lifecycle manages this memory — not
+    // this DataBuffer. Setting _isOwnerSpecial=true would cause deleteSpecial() to
+    // call cudaFreeAsync on a workspace interior pointer after the workspace is
+    // unregistered → "illegal memory access" (error 700) → CUDA context corruption.
+    // Mirror the allocateSpecial() workspace path: set _isOwnerSpecial=false so
+    // deleteSpecial() skips the free entirely (workspace is freed as a whole unit).
+    if (_workspace == nullptr &&
+        memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(newSpecialBuffer)) {
+      _isOwnerSpecial = false;
+    } else {
+      _isOwnerSpecial = true;
+    }
 
     // Store actual device where memory was allocated (may differ from currentDeviceId after failover)
     _deviceId.store(actualExpandDevice);
@@ -512,8 +526,11 @@ void DataBuffer::allocateSpecial() {
     if (bufferDeviceId == currentDeviceId) {
       return;  // Already allocated on correct device — no-op
     }
-    // Buffer exists but on wrong device — migrate requires mutation
-    throwIfFrozen("allocateSpecial (device migration)");
+    // Buffer exists but on wrong device — migrate requires mutation.
+    // If frozen, skip: the buffer is pinned to its freeze-time device.
+    if (_frozenRefCount.load(std::memory_order_relaxed) > 0) {
+      return;
+    }
     migrate();
     return;
   }
@@ -703,12 +720,28 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     return;
   }
 
+  // Constant buffers (shape DataBuffers created via dbCreateConstantExternalDataBuffer)
+  // are initialized with valid host data (shapeCopy) and must NEVER be overwritten by
+  // D2H transfers. The counter state for these buffers has _writeSpecial=1 and all
+  // other counters=0, so isPrimaryActual() permanently returns false, causing every
+  // syncToPrimary call to proceed. If the GPU shape pointer (_specialBuffer) becomes
+  // stale (e.g., after DirectShapeTrie::clearCache() frees it), the cudaMemcpyAsync
+  // would corrupt shapeCopy with whatever GPU memory happens to be at that address —
+  // causing ConstantShapeBuffer data corruption and downstream crashes/wrong results.
+  if (isConstant) {
+    return;
+  }
+
   // During graph execution (CUDA Graphs capture, oneDNN Graph, ACL Dynamic Fusion),
   // D2H transfers are forbidden — for CUDA, they create illegal dependencies between
   // the capture stream and the legacy stream; for CPU graphs, they cause unnecessary
   // data movement. Data stays on the compute device; the warmup pass already computed
   // any needed host-side values.
-  if (tl_graphExecutionActive) {
+  // EXCEPTION: forceSync=true bypasses this guard. Cross-device migration (Java
+  // CudaZeroHandler.memcpy) calls dbForceSyncToPrimary which sets forceSync=true.
+  // Without this exception, migration during DSP execution sees zeros because the
+  // D2H from the source device is skipped.
+  if (tl_graphExecutionActive && !forceSync) {
     return;
   }
 
@@ -717,7 +750,8 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   // cudaStreamSynchronize(stream=0) which is a full GPU pipeline drain
   // (~30-50us per call). With 818 reshape_no_copy calls per step, this adds
   // ~40ms/step of pure sync overhead. Skip D2H entirely during replay.
-  if (tl_dspReplayActive) {
+  // EXCEPTION: forceSync=true bypasses this guard for the same reason as above.
+  if (tl_dspReplayActive && !forceSync) {
     return;
   }
 
@@ -885,8 +919,20 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // This prevents copying uninitialized host garbage to the device for newly created
   // output arrays (e.g., createUninitialized), which would overwrite valid device data
   // or create stale values that survive kernel execution due to stream ordering.
+  //
+  // Exception: when ALL counters are zero (neither host nor device is "actual") AND
+  // the device buffer was never written to (_writeSpecial == 0), a host buffer with
+  // valid data from external initialization (e.g., Java/JNI via DataBuffer ctor or
+  // SameDiff.dup()) would never get synced. In this case, the host data should be
+  // considered the source of truth — the device buffer is freshly allocated (zeros)
+  // and needs the host data copied.
   if (!forceSync && !isPrimaryActual()) {
-    return;
+    // Only skip if the device was explicitly written at some point, meaning it has
+    // real data and the host doesn't. When _writeSpecial == 0, the device buffer
+    // was never written — fall through to do the H2D copy.
+    if (_writeSpecial.load() > 0) {
+      return;
+    }
   }
 
   // During CUDA graph capture, use a capture-safe path:
@@ -1671,9 +1717,12 @@ void DataBuffer::migrate() {
   // frozen slot contexts and/or CUDA graph replay handles. Migrating would free
   // the old pointer and allocate a new one on a different device, leaving the
   // frozen plan with a dangling address → SIGSEGV on next replay.
-  // Throw immediately so the offending caller shows up in the stack trace
-  // instead of surfacing later as a corrupted pointer in BufferPointerSnapshot.
-  throwIfFrozen("migrate");
+  // Skip silently: the buffer is already on the correct device (pinned there at
+  // freeze time). The device-ID mismatch that triggered syncToDevice → migrate
+  // is from a stale NDArray._deviceId, not a genuine need to relocate data.
+  if (_frozenRefCount.load(std::memory_order_relaxed) > 0) {
+    return;
+  }
 
   auto currentDeviceId = AffinityManager::currentDeviceId();
   // Use _specialDeviceId for the old buffer since we're migrating the special buffer
@@ -1959,7 +2008,17 @@ void DataBuffer::migrate() {
     }
   }
 
-   _isOwnerSpecial = true;
+  // If CudaMemoryPool returned a capture-workspace interior pointer during CUDA
+  // graph capture (bump-allocated from the shared workspace), the workspace
+  // lifecycle manages this memory — not this DataBuffer. Setting _isOwnerSpecial=true
+  // would cause deleteSpecial() to call cudaFreeAsync on a workspace interior pointer
+  // after unregisterCaptureWorkspace → "illegal memory access" (error 700).
+  if (_workspace == nullptr &&
+      memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(newBuffer)) {
+    _isOwnerSpecial = false;
+  } else {
+    _isOwnerSpecial = true;
+  }
    _specialBuffer = newBuffer;
 
    // Store actual device where memory was allocated (may differ after failover)

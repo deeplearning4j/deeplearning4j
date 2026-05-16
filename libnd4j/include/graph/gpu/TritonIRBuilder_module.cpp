@@ -602,28 +602,35 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     auto dtype = resolveDtypeLocal(outIdx);
     bool hasLiveArr = (outIdx < totalOutputSlots && outputSlots && outputSlots[outIdx]);
     bool hasShape = !shape.empty() || cachedShapeInfoMap.count(outIdx);
-    if (hasLiveArr || hasShape) {
-      TritonKernelArg arg;
-      arg.slotIndex = outIdx;
-      arg.outputIndex = 0;
-      arg.isOutput = false;
-      arg.dtype = dtype;
-      arg.shape = shape;
-      // Extract actual strides for frozen slot outputs (may be views)
-      if (hasLiveArr) {
-        auto& arr = *outputSlots[outIdx];
-        for (int d = 0; d < arr.rankOf(); d++) {
-          arg.strides.push_back(arr.strideAt(d));
-        }
-      } else if (outIdx >= 0 && outIdx < totalSlots) {
-        auto viewStrides = computeViewStridesFromOp(
-            slots, outIdx, totalSlots, outputSlots, totalOutputSlots, cachedShapeInfoMap);
-        if (!viewStrides.empty()) {
-          arg.strides = viewStrides;
-        }
-      }
-      inputArgs.push_back(arg);
+    if (!hasLiveArr && !hasShape) {
+      // Frozen constant output has no live array and no cached shape — this happens
+      // when post-freeze recompile occurs after releaseGpuIntermediates freed the slot.
+      // The frozen constant cannot be loaded without shape info. Fail the build.
+      DSP_DIAG(FALLBACK, "TritonIRBuilder: frozen constant output slot %d has no live array "
+               "and no cached shape — cannot generate tt.load input arg. Failing module build.",
+               outIdx);
+      return TritonIRModule();  // valid = false
     }
+    TritonKernelArg arg;
+    arg.slotIndex = outIdx;
+    arg.outputIndex = 0;
+    arg.isOutput = false;
+    arg.dtype = dtype;
+    arg.shape = shape;
+    // Extract actual strides for frozen slot outputs (may be views)
+    if (hasLiveArr) {
+      auto& arr = *outputSlots[outIdx];
+      for (int d = 0; d < arr.rankOf(); d++) {
+        arg.strides.push_back(arr.strideAt(d));
+      }
+    } else if (outIdx >= 0 && outIdx < totalSlots) {
+      auto viewStrides = computeViewStridesFromOp(
+          slots, outIdx, totalSlots, outputSlots, totalOutputSlots, cachedShapeInfoMap);
+      if (!viewStrides.empty()) {
+        arg.strides = viewStrides;
+      }
+    }
+    inputArgs.push_back(arg);
   }
 
   // Outputs: only externally-visible outputs need kernel args.
@@ -1292,9 +1299,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
       }
       if (allSet) continue;
-      // If SSA values are missing (frozen output not in inputArgs), fall through
-      // to normal computation. This shouldn't happen but provides safety.
-      DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: frozen slot %d has missing SSA values, falling through to compute", si);
+      // If SSA values are missing (frozen output not in inputArgs), this is a
+      // compilation bug — the frozen constant should have been included in the
+      // kernel's input argument list. Fail the entire module build so the segment
+      // compilation path detects the failure and prevents execution with a broken
+      // kernel (which would cause KERNEL_FAILURE at runtime).
+      DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: frozen slot %d (%s) has missing SSA values — "
+                    "compilation BUG (frozen constant not in inputArgs). Failing module build.",
+                    si, slot.ident.opName.c_str());
+      return TritonIRModule();  // valid = false
     }
 
     if (cat == TritonOpCategory::BINARY_ELEMENTWISE) {
@@ -1338,7 +1351,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         continue;
       }
 
-      auto opResult = emitBinaryElementwise(builder, loc, mapping, lhsIt->second, rhsIt->second);
+      auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second);
       opResult = emulateNativePrecision(opResult, si);
 
       // Store result SSA value for each output slot
@@ -3250,12 +3263,138 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               ". Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
-      } else if (slot.wiring.numInputs == 1 && slot.wiring.numOutputs >= 1) {
-        // Non-cached ROPE (computes sin/cos internally) — pass through as identity for now
+      } else if (slot.wiring.numInputs <= 2 && slot.wiring.numOutputs >= 1) {
+        // Position-offset ROPE (1 or 2 inputs): compute cos/sin inline from position.
+        // Input[0] = data, Input[1] = position offset (scalar, may be ext input).
+        // iArgs: [0]=ropeType, [2]=rotaryDims. tArgs: [0]=freqBase, [1]=freqScale.
         int inputSrc = slot.wiring.inputSourceIndices[0];
-        auto inputIt = ssaValues.find(inputSrc);
-        if (inputIt != ssaValues.end()) {
-          for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
+        int outSlot = slot.wiring.outputSlotIndices[0];
+
+        // Extract parameters from iArgs/tArgs (same as native fused_rope op)
+        int ropeType = (slot.args.numIArgs > 0 && slot.args.iArgs)
+                       ? static_cast<int>(slot.args.iArgs[0]) : 0;
+        float freqBase = (slot.args.numTArgs > 0 && slot.args.tArgs)
+                         ? static_cast<float>(slot.args.tArgs[0]) : 10000.0f;
+        float freqScale = (slot.args.numTArgs > 1 && slot.args.tArgs)
+                          ? static_cast<float>(slot.args.tArgs[1]) : 1.0f;
+
+        // Resolve input shape and dimensions
+        NDArray* inArr = resolveArr(inputSrc);
+        NDArray* outArr = resolveArr(outSlot);
+        std::vector<LongType> inShape;
+        if (inArr) {
+          for (int d = 0; d < inArr->rankOf(); d++) inShape.push_back(inArr->sizeAt(d));
+        } else {
+          inShape = resolveShapeLocal(inputSrc);
+        }
+
+        int inputRank = static_cast<int>(inShape.size());
+        int headDim = (inputRank > 0) ? static_cast<int>(inShape[inputRank - 1]) : 0;
+        int numHeads = (inputRank >= 3) ? static_cast<int>(inShape[inputRank - 2]) : 1;
+        int nElements = 0;
+        if (outArr) {
+          nElements = static_cast<int>(outArr->lengthOf());
+        } else if (!inShape.empty()) {
+          nElements = 1;
+          for (auto d : inShape) nElements *= static_cast<int>(d);
+        }
+
+        // Get position pointer (input[1] if present, otherwise position comes from iArgs)
+        mlir::Value posPtr;
+        if (slot.wiring.numInputs >= 2) {
+          int posSrc = slot.wiring.inputSourceIndices[1];
+          posPtr = getSlotArgPtr(posSrc);
+        }
+
+        // Try SSA path: needs input in SSA and valid dimensions.
+        // blockSize must fit within one seq position: blockSize <= numHeads * headDim.
+        // For small inputs (single head), adjust effective block params for the emitter.
+        auto ssaIt = ssaValues.find(inputSrc);
+        int effectiveBlockSize = blockSize;
+        int effectiveNumHeads = numHeads;
+        // When blockSize exceeds data in one sequence position, clamp to actual data size.
+        // The emitter will operate on nElements-worth of data with masking from the main loop.
+        if (blockSize > numHeads * headDim && numHeads * headDim > 0) {
+          effectiveBlockSize = numHeads * headDim;
+          effectiveNumHeads = numHeads;
+        }
+        bool canUseSSA = ssaIt != ssaValues.end()
+                         && headDim > 0 && (headDim % 2 == 0)
+                         && (effectiveBlockSize % headDim == 0)
+                         && (effectiveBlockSize <= effectiveNumHeads * headDim)
+                         && posPtr;  // need position pointer
+
+        if (canUseSSA) {
+          // If the block is larger than actual data, we need to handle partial blocks.
+          // For now, use effectiveBlockSize for the RoPE computation.
+          auto inputVal = ssaIt->second;
+
+          // If blockSize was clamped, slice the SSA value to effective size
+          if (effectiveBlockSize < blockSize) {
+            // Use tt.reshape to extract the first effectiveBlockSize elements,
+            // apply RoPE, then pad back. For simplicity with small test inputs,
+            // just use the pointer-based fallback path.
+            auto inPtr = getSlotArgPtr(inputSrc);
+            auto outPtr = getSlotArgPtr(outSlot);
+            if (inPtr && outPtr && posPtr) {
+              // Pointer-based RoPE: store SSA → global, compute RoPE via pointer path, reload
+              auto maybeStoreSSA = [&](int srcIdx) {
+                auto ssaIt2 = ssaValues.find(srcIdx);
+                if (ssaIt2 != ssaValues.end()) {
+                  auto argPtr = getSlotArgPtr(srcIdx);
+                  if (argPtr) {
+                    auto ptrType = mlir::cast<mlir::triton::PointerType>(argPtr.getType());
+                    auto elemType = ptrType.getPointeeType();
+                    auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+                    auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, argPtr);
+                    auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, offsets);
+                    auto storeVal = castTo(builder, loc, ssaIt2->second, elemType);
+                    builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, mask,
+                        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+                  }
+                }
+              };
+              maybeStoreSSA(inputSrc);
+
+              // Emit pointer-based position-offset RoPE
+              emitRoPEPositionSection(builder, loc, pid, blockSize,
+                                       inPtr, posPtr, outPtr,
+                                       inShape, ropeType, freqBase, freqScale, nElements);
+
+              DataType outDtype = outArr ? outArr->dataType() : resolveDtypeLocal(outSlot);
+              auto loaded = loadBackFromBuffer(outSlot, outDtype);
+              if (loaded) {
+                loaded = emulateNativePrecision(loaded, si);
+                for (int o = 0; o < slot.wiring.numOutputs; o++)
+                  ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
+              }
+            } else {
+              std::string msg = "TritonIRBuilder: ROPE '" + slot.ident.opName +
+                  "' at slot " + std::to_string(si) +
+                  " — position-offset ROPE pointer path failed: inPtr=" + std::to_string(inPtr ? 1 : 0) +
+                  " outPtr=" + std::to_string(outPtr ? 1 : 0) +
+                  " posPtr=" + std::to_string(posPtr ? 1 : 0);
+              THROW_EXCEPTION(msg.c_str());
+            }
+          } else {
+            auto result = emitRoPEPositionSSA(builder, loc, inputVal,
+                                               posPtr, pid, effectiveBlockSize,
+                                               headDim, effectiveNumHeads,
+                                               freqBase, freqScale,
+                                               ropeType, nElements);
+            result = emulateNativePrecision(result, si);
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+              ssaValues[slot.wiring.outputSlotIndices[o]] = result;
+          }
+        } else {
+          std::string msg = "TritonIRBuilder: ROPE '" + slot.ident.opName +
+              "' at slot " + std::to_string(si) +
+              " — position-offset ROPE emit failed: headDim=" + std::to_string(headDim) +
+              " numHeads=" + std::to_string(numHeads) +
+              " blockSize=" + std::to_string(blockSize) +
+              " hasSSA=" + std::to_string(ssaIt != ssaValues.end() ? 1 : 0) +
+              " hasPosPtr=" + std::to_string(posPtr ? 1 : 0);
+          THROW_EXCEPTION(msg.c_str());
         }
       } else {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: ROPE '%s' at slot %d — insufficient inputs(%d)",
@@ -4999,7 +5138,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
             auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
             if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) continue;
-            auto opResult = emitBinaryElementwise(builder, loc, mapping, lhsIt->second, rhsIt->second);
+            auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second);
             for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::UNARY_ELEMENTWISE) {
             if (slot.wiring.numInputs < 1) continue;
@@ -5537,7 +5676,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
                   auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
                   if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                    epiResult = emitBinaryElementwise(builder, loc, epiMapping, lhsIt->second, rhsIt->second);
+                    epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second);
                   }
                 } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
                   auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
@@ -6173,7 +6312,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
               auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
               if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                epiResult = emitBinaryElementwise(builder, loc, epiMapping, lhsIt->second, rhsIt->second);
+                epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second);
               }
             } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
               auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
