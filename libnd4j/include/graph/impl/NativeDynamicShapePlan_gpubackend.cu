@@ -789,18 +789,37 @@ static bool findUnsupportedTritonReplayGap(TritonGraphBackend* tritonBackend,
 // capture.  Delegates to NativeSlot::isCapturable() — the single source of
 // truth for control-flow, data-dependent, and view/identity/frozen checks.
 static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot, bool mergeViews) {
-  // A gap is safe to merge into a CUDA graph capture only if ALL its slots
-  // are zero-compute ops (views, identity, frozen constants, shape ops).
-  // Compute ops (matmul, gather w/ real kernels, etc.) launch CUDA kernels
-  // whose args get baked into the captured graph.  During replay, Triton arg
-  // table refresh only covers Triton island kernels — cuBLAS/native gap
-  // kernels keep their capture-time device pointers, producing stale output.
+  // A gap is safe to merge into a CUDA graph capture if ALL its slots either:
+  //   (a) are zero-compute ops (views, identity, frozen constants), OR
+  //   (b) are non-cuBLAS compute ops whose args are all plan-owned pointers.
+  //
+  // Category (b) is safe because:
+  //   - syncToHost() is a no-op during capture (tl_graphExecutionActive guard)
+  //   - effectiveExternalsForCapture provides stable staging pointers for ext inputs
+  //   - outputSlots_ pointers are stable once pointersStable()=true
+  //   - only cuBLAS ops have external state (handle/workspace) that goes stale
+  //   - Gather indices change per step but pointer args don't (data changes, not addresses)
+  //   - VALUE_DEPENDENT_SHAPE only affects shape function (not called during capture)
+  //
+  // We limit captured gap size to avoid lifecycle conflicts in large gaps.
+  // Small gaps (≤8 slots) between islands are "glue" ops (equals, broadcast_to,
+  // Where, gather) that create unnecessary island boundaries. Merging them through
+  // reduces the number of graph launch/end transitions without creating mega-graphs.
+  // Larger gaps may contain view ops that trigger frozen DataBuffer conflicts
+  // during capture-phase allocation.
+  static constexpr int MAX_CAPTURABLE_GAP_SLOTS = 8;
+  static constexpr uint32_t UNSAFE_CAPTURE_TRAITS = sd::ops::OP_TRAIT_MATMUL;
+
+  int gapSize = endSlot - startSlot + 1;
+  if (gapSize > MAX_CAPTURABLE_GAP_SLOTS) return false;
+
   for (int s = startSlot; s <= endSlot; s++) {
     if (!slots[s].isCapturable(mergeViews)) return false;
-    // Reject slots that launch real GPU kernels (not view/identity/frozen).
-    // Only zero-compute ops can be merged through safely because they add
-    // no CUDA graph nodes and have no baked-in kernel args.
-    if (!slots[s].aliasesInput() && !slots[s].frozenConstantSlot()) return false;
+    // Zero-compute ops (view/identity/frozen) are always safe — no GPU kernel nodes.
+    if (slots[s].aliasesInput() || slots[s].frozenConstantSlot()) continue;
+    // Compute ops: allow if non-cuBLAS and fully-writing.
+    if (slots[s].hasOpTrait(UNSAFE_CAPTURE_TRAITS)) return false;
+    if (!slots[s].isFullyWriting()) return false;
   }
   return true;
 }
@@ -995,8 +1014,11 @@ Status NativeDynamicShapePlan::compositeReplay(
   // already points to staging buffers (if active) or raw externals.
   //
   // Diagnostic-only: fingerprint + KV-stale detection (gated behind DSP_DIAG).
+  // FULL level only — syncToHost() + FNV hash of entire variable inputs is O(data_size)
+  // and blocks the GPU pipeline. Adds ~10-20ms per decode step.
   if (!planLifecycle_.isSlotBySlot() && !externalInputIsVariable_.empty() &&
-      DspDiagnostics::getInstance().isEnabled(DSP_DIAG_EXECUTE)) {
+      DspDiagnostics::getInstance().isEnabled(DSP_DIAG_EXECUTE) &&
+      DspDiagnostics::getInstance().getLevel() >= DSP_LEVEL_FULL) {
     // Fingerprint variable inputs at replay entry.
     fingerprintVariableInputs(externalArrays, numExt, externalInputIsVariable_,
                               externalInputNames_, "replay-entry", seg.exec.executionCount);
@@ -1060,7 +1082,10 @@ Status NativeDynamicShapePlan::compositeReplay(
 
   // Diagnostic: dump staging buffer first element for variable inputs to confirm D2D.
   // Detects "frozen staging" bugs where D2D doesn't update the staging buffer.
-  if (DSP_DIAG_ENABLED(VERIFY) && !cachedVariableExtIndices_.empty() && effectiveExternals_ != nullptr) {
+  // FULL level only — cudaStreamSynchronize blocks GPU pipeline.
+  if (DSP_DIAG_ENABLED(VERIFY) &&
+      DspDiagnostics::getInstance().getLevel() >= DSP_LEVEL_FULL &&
+      !cachedVariableExtIndices_.empty() && effectiveExternals_ != nullptr) {
     cudaStream_t diagStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
     if (diagStr != nullptr) cudaStreamSynchronize(diagStr);  // sync to read device data
     for (int vi : cachedVariableExtIndices_) {
@@ -1097,8 +1122,26 @@ Status NativeDynamicShapePlan::compositeReplay(
   // merged graphs have device addresses baked in and cannot be patched. The graph
   // must be invalidated and re-captured. Drift with only Triton arg-table replay
   // is recoverable via refresh.
+  //
+  // OPTIMIZATION: Once addresses have been confirmed stable for kAddrStableSkipThreshold
+  // consecutive steps, skip the expensive O(N) hash computation (N = total slot inputs
+  // in segment, typically 2500+). Only recheck every kAddrRecheckInterval steps as a
+  // safety net. This is safe because:
+  //   1. Staging buffers provide pointer stability after capture by design
+  //   2. Shape freeze prevents reallocation
+  //   3. Legitimate address changes go through invalidation paths that reset counters
+  //   4. Merged CUDA graphs would crash on drift anyway (baked-in addresses)
+  static constexpr int kAddrStableSkipThreshold = 3;
+  static constexpr int kAddrRecheckInterval = 64;
   bool driftDetected = false;
   if (!seg.exec.needsArgRefresh() && seg.exec.capturedInputAddrKey != 0) {
+    // Skip the O(N) hash when addresses have been stable for multiple consecutive steps.
+    // Periodic recheck (every kAddrRecheckInterval steps) catches pathological cases.
+    bool skipAddrCheck = (seg.exec.addrKeyStableCount >= kAddrStableSkipThreshold) &&
+                         ((seg.exec.executionCount % kAddrRecheckInterval) != 0);
+    if (skipAddrCheck) {
+      seg.exec.addrKeyStableCount++;
+    } else {
     LongType currentAddrKey = computeSegmentInputAddrKey(seg, effectiveExternals, numExt);
     if (currentAddrKey != seg.exec.capturedInputAddrKey) {
       driftDetected = true;
@@ -1143,9 +1186,16 @@ Status NativeDynamicShapePlan::compositeReplay(
     } else {
       seg.exec.addrKeyStableCount++;
     }
+    } // end !skipAddrCheck
   }
 
   if (!driftDetected && !seg.exec.needsArgRefresh() && seg.exec.capturedSlotAddrHash != 0) {
+    // Same skip optimization for slot address hash (O(slotRange) per step)
+    bool skipSlotCheck = (seg.exec.slotAddrStableCount >= kAddrStableSkipThreshold) &&
+                         ((seg.exec.executionCount % kAddrRecheckInterval) != 0);
+    if (skipSlotCheck) {
+      seg.exec.slotAddrStableCount++;
+    } else {
     LongType currentSlotHash = computeSlotAddrHash(
         outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
     if (currentSlotHash != seg.exec.capturedSlotAddrHash) {
@@ -1175,6 +1225,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     } else {
       seg.exec.slotAddrStableCount++;
     }
+    } // end !skipSlotCheck
   }
 
   // LIFECYCLE ERROR: address drift with merged CUDA graph handles.
@@ -1285,13 +1336,18 @@ Status NativeDynamicShapePlan::compositeReplay(
           cudaMemsetAsync(entry.ptr, 0, entry.bytes, cudaStr);
         }
       } else {
-        std::vector<void*> dstPtrs(gapZeroCount);
-        std::vector<size_t> sizes(gapZeroCount);
+        // Stack arrays avoid heap alloc/free per decode step (up to 128 entries).
+        constexpr int kStackCap = 128;
+        void* stackPtrs[kStackCap];
+        size_t stackSizes[kStackCap];
+        void** dstPtrs = (gapZeroCount <= kStackCap) ? stackPtrs : new void*[gapZeroCount];
+        size_t* sizes = (gapZeroCount <= kStackCap) ? stackSizes : new size_t[gapZeroCount];
         for (int i = 0; i < gapZeroCount; i++) {
           dstPtrs[i] = batchZeroEntries_[i].ptr;
           sizes[i] = static_cast<size_t>(batchZeroEntries_[i].bytes);
         }
-        launchBatchMemset(cudaStr, dstPtrs.data(), sizes.data(), gapZeroCount);
+        launchBatchMemset(cudaStr, dstPtrs, sizes, gapZeroCount);
+        if (gapZeroCount > kStackCap) { delete[] dstPtrs; delete[] sizes; }
         DSP_DIAG(MEMORY, "compositeReplay gap-only prezero: batched %d buffers in 1 kernel launch",
                  gapZeroCount);
       }
@@ -1336,6 +1392,7 @@ Status NativeDynamicShapePlan::compositeReplay(
   long long tMergedLaunchUs = 0, tMergedDirtyUs = 0, tGapExecUs = 0;
   long long tIslandLaunchUs = 0, tIslandDirtyUs = 0, tArgRefreshUs = 0;
   int nMergedLaunches = 0, nGapUnits = 0, nIslandLaunches = 0, nArgRefreshes = 0;
+  int nExecSlots = 0, nTickSlots = 0, nBatchedGemmSlots = 0;
 
   bool gapSlotsExecutedSinceArgCopy = false;
   for (auto& unit : sched.units) {
@@ -1390,13 +1447,16 @@ Status NativeDynamicShapePlan::compositeReplay(
       DSP_DIAG(EXECUTE, "MERGED_REPLAY: group %d leader [%d-%d] launching",
                mgId, unit.startSlot, unit.endSlot);
       // Diagnostic: verify staging buffer content before first merged group launch
-      if (mgId == 0 && DSP_DIAG_ENABLED(VERIFY) && effectiveExternals_ != nullptr &&
-          !cachedVariableExtIndices_.empty()) {
+      // FULL level only — the cudaStreamSynchronize blocks the entire GPU pipeline
+      // and adds ~5-25ms per decode step, killing throughput from 100+ to ~32 tok/s.
+      if (mgId == 0 && DSP_DIAG_ENABLED(VERIFY) &&
+          DspDiagnostics::getInstance().getLevel() >= DSP_LEVEL_FULL &&
+          effectiveExternals_ != nullptr && !cachedVariableExtIndices_.empty()) {
         cudaStream_t diagStr2 = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
         if (diagStr2 != nullptr) cudaStreamSynchronize(diagStr2);
-        for (int vi : cachedVariableExtIndices_) {
-          if (vi >= numExt) continue;
-          NDArray* staging = effectiveExternals_[vi];
+        for (int vi2 : cachedVariableExtIndices_) {
+          if (vi2 >= numExt) continue;
+          NDArray* staging = effectiveExternals_[vi2];
           if (staging == nullptr || staging->isEmpty()) continue;
           int64_t val = 0;
           void* buf = staging->specialBuffer();
@@ -1404,10 +1464,10 @@ Status NativeDynamicShapePlan::compositeReplay(
             size_t eb = staging->sizeOfT();
             cudaMemcpy(&val, buf, eb < 8 ? eb : 8, cudaMemcpyDeviceToHost);
           }
-          const char* nm = (vi < static_cast<int>(externalInputNames_.size()))
-                           ? externalInputNames_[vi].c_str() : "?";
+          const char* nm = (vi2 < static_cast<int>(externalInputNames_.size()))
+                           ? externalInputNames_[vi2].c_str() : "?";
           DSP_DIAG(VERIFY, "PRE_MERGED_LAUNCH_STAGING: ext[%d] name='%s' staging[0]=%lld buf=%p execCount=%d",
-                   vi, nm, (long long)val, buf, seg.exec.executionCount);
+                   vi2, nm, (long long)val, buf, seg.exec.executionCount);
         }
       }
       auto tML0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
@@ -1427,7 +1487,10 @@ Status NativeDynamicShapePlan::compositeReplay(
       // inside the merged graph is producing different output each step
       // (pointing to gap input wiring as the bug) or whether the Triton
       // kernel itself is stuck (pointing to arg table or baked-data issues).
-      if (DSP_DIAG_ENABLED(EXECUTE)) {
+      // FULL level only — the cudaStreamSynchronize + D2H dumps add 5-25ms
+      // per decode step, reducing throughput from 100+ to ~32 tok/s.
+      if (DSP_DIAG_ENABLED(EXECUTE) &&
+          DspDiagnostics::getInstance().getLevel() >= DSP_LEVEL_FULL) {
         cudaStream_t diagSyncStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
         if (diagSyncStr != nullptr) cudaStreamSynchronize(diagSyncStr);
         int postRangeMin, postRangeMax;
@@ -1518,7 +1581,9 @@ Status NativeDynamicShapePlan::compositeReplay(
       auto tGE0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap [%d-%d]", unit.startSlot, unit.endSlot);
       // ── Pre-gap input diagnostic: verify gap reads correct island output ──
-      if (DSP_DIAG_ENABLED(EXECUTE)) {
+      // FULL level only — cudaStreamSynchronize + D2H per gap unit kills throughput.
+      if (DSP_DIAG_ENABLED(EXECUTE) &&
+          DspDiagnostics::getInstance().getLevel() >= DSP_LEVEL_FULL) {
         cudaStream_t preGapStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
         if (preGapStr != nullptr) cudaStreamSynchronize(preGapStr);
         for (int gs = unit.startSlot; gs <= unit.endSlot && gs < numSlots_; gs++) {
@@ -1554,15 +1619,13 @@ Status NativeDynamicShapePlan::compositeReplay(
       // ── Active gap slot cache: skip 97% of slot iterations in steady state ──
       // On the first frozen+steady pass, classify every slot and cache only those
       // that need work. On subsequent steps, iterate over the compact cached list.
-      // NOTE: cache is per-gap-unit (keyed by startSlot) — each gap unit in the
-      // composite schedule gets its own cached list.
-      int gapUnitKey = unit.startSlot;
-      bool useCachedActiveSlots = (activeGapSlotsCachedSet_.count(gapUnitKey) > 0)
+      // NOTE: cache is per-gap-unit keyed by startSlot.
+      bool useCachedActiveSlots = activeGapSlotsCachedSet_.count(unit.startSlot)
                                   && !planLifecycle_.isSlotBySlot() && executeCount_ >= 3;
 
       if (useCachedActiveSlots) {
         // ── FAST PATH: iterate only over pre-classified active slots ──
-        auto& cachedSlots = cachedActiveGapSlotsMap_[gapUnitKey];
+        auto& cachedSlots = cachedActiveGapSlotsMap_[unit.startSlot];
         for (const auto& active : cachedSlots) {
           switch (active.action) {
             case ActiveSlotAction::IDENTITY_TICK: {
@@ -1570,6 +1633,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
                 outputSlots_[si]->tickWriteDevice();
               }
+              if (executionTimingEnabled_) nTickSlots++;
               break;
             }
             case ActiveSlotAction::VIEW_TICK: {
@@ -1578,6 +1642,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                 outputSlots_[si]->tickWriteDevice();
                 dirtySlotGenerations_[si] = currentDirtyGeneration_;
               }
+              if (executionTimingEnabled_) nTickSlots++;
               break;
             }
             case ActiveSlotAction::BATCHED_GEMM: {
@@ -1586,15 +1651,23 @@ Status NativeDynamicShapePlan::compositeReplay(
               if (batchStatus != Status::OK) {
                 return batchStatus;  // replayGuard restores tl_dspReplayActive
               }
+              if (executionTimingEnabled_) nBatchedGemmSlots++;
               break;
             }
             case ActiveSlotAction::EXECUTE: {
-              auto slotStatus = executeSlot(active.slotIdx, effectiveExternals, numExt, stream);
+              // Use ultra-fast path in steady state (pointers stable, well past warmup)
+              Status slotStatus;
+              if (executeCount_ >= 5 && skipPtrTracking) {
+                slotStatus = executeSlotGapFast(active.slotIdx, effectiveExternals, numExt);
+              } else {
+                slotStatus = executeSlot(active.slotIdx, effectiveExternals, numExt, stream);
+              }
               if (slotStatus != Status::OK) {
                 DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap slot %d FAILED status=%d",
                          active.slotIdx, static_cast<int>(slotStatus));
                 return slotStatus;  // replayGuard restores tl_dspReplayActive
               }
+              if (executionTimingEnabled_) nExecSlots++;
               break;
             }
             case ActiveSlotAction::SKIP:
@@ -1604,10 +1677,10 @@ Status NativeDynamicShapePlan::compositeReplay(
       } else {
         // ── CLASSIFICATION PATH: run full logic, optionally build cache ──
         bool buildingCache = !planLifecycle_.isSlotBySlot() && executeCount_ >= 2
-                             && (activeGapSlotsCachedSet_.count(gapUnitKey) == 0);
+                             && !activeGapSlotsCachedSet_.count(unit.startSlot);
         if (buildingCache) {
-          cachedActiveGapSlotsMap_[gapUnitKey].clear();
-          cachedActiveGapSlotsMap_[gapUnitKey].reserve(128);  // ~82 expected
+          cachedActiveGapSlotsMap_[unit.startSlot].clear();
+          cachedActiveGapSlotsMap_[unit.startSlot].reserve(128);  // ~82 expected
         }
 
       for (int s = unit.startSlot; s <= unit.endSlot; s++) {
@@ -1625,7 +1698,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                 outputSlots_[si]->tickWriteDevice();
               }
               if (buildingCache) {
-                cachedActiveGapSlotsMap_[gapUnitKey].push_back({s, ActiveSlotAction::IDENTITY_TICK, -1, si});
+                cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::IDENTITY_TICK, -1, si});
               }
             }
             continue;
@@ -1656,7 +1729,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                 }
               }
               if (buildingCache) {
-                cachedActiveGapSlotsMap_[gapUnitKey].push_back({s, ActiveSlotAction::BATCHED_GEMM, bgIdx, -1});
+                cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::BATCHED_GEMM, bgIdx, -1});
               }
               continue;
             } else {
@@ -1694,7 +1767,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               currentOut->tickWriteDevice();
               dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
               if (buildingCache) {
-                cachedActiveGapSlotsMap_[gapUnitKey].push_back({s, ActiveSlotAction::VIEW_TICK, -1, outSi});
+                cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::VIEW_TICK, -1, outSi});
               }
               continue;
             }
@@ -1720,17 +1793,17 @@ Status NativeDynamicShapePlan::compositeReplay(
           gapOutputPointersChanged = true;
         }
         if (buildingCache) {
-          cachedActiveGapSlotsMap_[gapUnitKey].push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
+          cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
         }
       }
 
         if (buildingCache) {
-          activeGapSlotsCachedSet_.insert(gapUnitKey);
+          activeGapSlotsCachedSet_.insert(unit.startSlot);
           DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap[%d-%d] cached %d active gap slots out of %d total (%.1f%% skip rate)",
                    unit.startSlot, unit.endSlot,
-                   static_cast<int>(cachedActiveGapSlotsMap_[gapUnitKey].size()),
+                   static_cast<int>(cachedActiveGapSlotsMap_[unit.startSlot].size()),
                    unit.endSlot - unit.startSlot + 1,
-                   100.0 * (1.0 - static_cast<double>(cachedActiveGapSlotsMap_[gapUnitKey].size()) /
+                   100.0 * (1.0 - static_cast<double>(cachedActiveGapSlotsMap_[unit.startSlot].size()) /
                             std::max(1, unit.endSlot - unit.startSlot + 1)));
         }
       }  // end classification vs cached path
@@ -1744,7 +1817,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                gapOutputPointersChanged ? " -> refresh arg table before next Triton replay"
                                         : " -> skip arg table refresh");
 
-      // Cross-stream sync after gap ops — no-op when gap stream == cudaStr
+      // Cross-stream sync after gap ops
       {
         auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
         cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
@@ -1868,14 +1941,16 @@ Status NativeDynamicShapePlan::compositeReplay(
     sd_printf("COMPOSITE_REPLAY_TIMING: total=%lldus prezero=%lldus units=%lldus "
               "execCount=%d mergedGroups=%d islands=%d "
               "BREAKDOWN: mergedLaunch=%lldus(%d) mergedDirty=%lldus gapExec=%lldus(%d) "
-              "islandLaunch=%lldus(%d) islandDirty=%lldus argRefresh=%lldus(%d)\n",
+              "islandLaunch=%lldus(%d) islandDirty=%lldus argRefresh=%lldus(%d) "
+              "GAP_SLOTS: exec=%d tick=%d bgemm=%d\n",
               totalUs, prezeroUs, unitsUs, seg.exec.executionCount,
               static_cast<int>(sched.mergedReplayHandles.size()),
               static_cast<int>(sched.compositeReplayHandles.size()),
               tMergedLaunchUs, nMergedLaunches, tMergedDirtyUs,
               tGapExecUs, nGapUnits,
               tIslandLaunchUs, nIslandLaunches, tIslandDirtyUs,
-              tArgRefreshUs, nArgRefreshes);
+              tArgRefreshUs, nArgRefreshes,
+              nExecSlots, nTickSlots, nBatchedGemmSlots);
   }
 
   // Update replay tracking
