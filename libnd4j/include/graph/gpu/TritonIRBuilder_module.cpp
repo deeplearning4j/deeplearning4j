@@ -491,9 +491,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
       int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
-      seenInputs.insert(srcIdx);
 
       if (srcIdx < 0) {
+        seenInputs.insert(srcIdx);
         // Skip external inputs only consumed by CONST_GEN ops — they don't need data buffers
         if (constGenOnlyInputs.count(srcIdx)) continue;
         int extIdx = -(srcIdx + 1);
@@ -529,6 +529,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
         }
       } else if (!internalSlotOutputs.count(srcIdx) || forceExternalInputs.count(srcIdx)) {
+        seenInputs.insert(srcIdx);
         auto shape = resolveShapeLocal(srcIdx);
         auto dtype = resolveDtypeLocal(srcIdx);
         bool hasLiveArr = (srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]);
