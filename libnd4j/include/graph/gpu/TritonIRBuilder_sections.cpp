@@ -154,6 +154,15 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       return KernelSectionType::SCATTER_ND;
     }
     if (slotHasTrait(slot, sd::ops::OP_TRAIT_SLICE)) {
+      // Dynamically-parameterized strided_slice (tensor-based begin/end/stride,
+      // numInputs >= 3) cannot be safely compiled into a Triton kernel for CUDA
+      // graph replay. emitSliceSection() bakes inputShape, begins, ends,
+      // inStrides, and nElements as IR constants at compile time. When the input
+      // pointer is refreshed on replay, these baked constants produce OOB reads
+      // if the slice position has changed (e.g., KV cache slices in decode).
+      if (slot.wiring.numInputs >= 3 || slot.flags.outputShapeDependsOnInputValues) {
+        return KernelSectionType::SHAPE_MANIPULATION;
+      }
       return KernelSectionType::STRIDED_SLICE;
     }
     return KernelSectionType::GATHER;

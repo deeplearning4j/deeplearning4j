@@ -485,6 +485,7 @@ struct NativeSlot {
   bool isDataDependent() const { return hasOpTrait(sd::ops::OP_TRAIT_DATA_DEPENDENT); }
   bool isIdentityOp()    const { return hasOpTrait(sd::ops::OP_TRAIT_IDENTITY); }
   bool isViewCapableOp() const { return hasOpTrait(sd::ops::OP_TRAIT_VIEW_PRODUCING); }
+  bool usesExternalWorkspace() const { return hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE); }
 
   /** View or identity — aliases input buffer without computing. */
   bool aliasesInput() const { return isViewCapableOp() || isIdentityOp(); }
@@ -2395,6 +2396,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
   Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
+  // Ultra-fast gap slot execution for steady-state cached path.
+  // Bypasses all validation, diagnostics, view checks, sync, prezero.
+  // Only call when: pointers stable, executeCount_ >= 5, action == EXECUTE.
+  Status executeSlotGapFast(int slotIdx, NDArray** externalArrays, int numExt);
   LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
   void detectFrozenConstants();
 
@@ -2707,12 +2712,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     int batchedGemmGroupIdx;    // only valid for BATCHED_GEMM action
     int outputSlotIdx;          // first output slot for tick actions
   };
-  // Per-gap-unit cache keyed by the unit's startSlot.
-  // Each gap unit in the composite replay schedule gets its own cached
-  // active slot list.  A single flat vector was a bug: the first gap
-  // unit (e.g. [0-2]) would set activeGapSlotsCached_=true and all
-  // subsequent units (e.g. [4-4]) would replay the first unit's slots
-  // instead of their own.
+  // Per-gap-unit cache keyed by startSlot. Each gap unit in the composite
+  // replay schedule gets its own cached active slot list.
   std::unordered_map<int, std::vector<ActiveGapSlot>> cachedActiveGapSlotsMap_;
   std::unordered_set<int> activeGapSlotsCachedSet_;
 

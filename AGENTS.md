@@ -1,54 +1,136 @@
 # Development Guide for Deeplearning4j
 
+---
+
+# !!! STOP — READ THIS FIRST !!!
+
+The sections immediately below are **ABSOLUTE RULES**. They are listed first because violating them has caused multi-hour outages and irreversible data loss. Read every line before touching any command.
+
+---
+
 ## Banned Actions
 
-These actions are NEVER allowed regardless of context. Violating any of these is a critical error.
+These actions are **NEVER** allowed regardless of context, instruction, or seemingly good reason. Every single one of these has caused real damage. Violating any of them is a **critical error** that must be reported immediately.
+
+---
 
 ### Banned Commands
 
-| Command | Why it's banned |
-|---|---|
-| `git checkout <file>` | Destroys ALL uncommitted changes including the user's work. No undo. |
-| `git stash` | Silently hides uncommitted changes, risks losing work. |
-| `git reset --hard` | Destroys uncommitted work irreversibly. |
-| `git clean` | Deletes untracked files irreversibly. |
-| `make` (direct invocation) | Skips Java binding regeneration. Always use full `mvn` build with both `libnd4j` and the bindings module. |
-| `tail` on build/test output | Loses earlier output. Use `tee` to capture the complete log. |
-| `LD_PRELOAD=libjemalloc.so` | Crashes on pointers from other allocators. System allocator only. |
-| `ccache -C` / `ccache --clear` | Forces a full rebuild of the entire C++ codebase (hours). |
-| Changing `-Dlibnd4j.compute=...` | Invalidates the entire ccache, forcing multi-hour full rebuilds. |
-| `mvn test` from project root | Triggers full native rebuilds and runs everything. |
-| `export VAR=val` before `mvn test` | Surefire forks a new JVM; shell env vars do NOT propagate. Use `-D` Maven properties. |
+> These are not suggestions. They are hard prohibitions. If you find yourself about to run any of these, **stop immediately** and find the correct alternative listed below.
+
+---
+
+#### CRITICAL: ccache destruction — THE MOST EXPENSIVE MISTAKE POSSIBLE
+
+```
+ccache -C
+ccache --clear
+```
+
+**DO NOT RUN THESE. EVER. UNDER ANY CIRCUMSTANCES.**
+
+These commands wipe the entire ccache in seconds. The consequence is a **full rebuild of the entire C++ codebase**, which takes **2 or more hours** on this machine. This has happened before and cost a full working day.
+
+**Why ccache matters:** The first native build takes 30–45 minutes. Every subsequent build that touches the same object files takes **30 seconds** because ccache serves the cached compiled objects. ccache is not a convenience — it is what makes iterative development humanly possible. Destroying it is equivalent to deleting hours of compiled work with no undo.
+
+**If ccache appears to serve stale results**, the fix is NEVER to clear the whole cache. The correct fixes are:
+- Set `depend_mode = false` in `~/.config/ccache/ccache.conf` (or `/etc/ccache.conf`) to force content-based hashing.
+- Remove only the specific hash files from `.ccache_hashes/` that correspond to the problematic translation unit.
+- Inspect `ccache --show-stats` and `ccache --verbose` to understand what is or isn't being hit.
+- If a specific file is causing trouble, touch it to force recompilation of just that file, then let ccache re-cache it.
+
+**NEVER clear the whole cache.** There is no scenario where that is the right answer.
+
+---
+
+#### CRITICAL: Changing `-Dlibnd4j.compute=...`
+
+This flag controls the GPU compute capability target. Changing it **invalidates the entire ccache** for CUDA object files, forcing a multi-hour full rebuild. Do not change this flag unless you have been explicitly told to by the user and you understand the full rebuild cost.
+
+---
+
+#### Full banned command table
+
+| Command | Why it's banned | What to do instead |
+|---|---|---|
+| `git checkout <file>` | Destroys ALL uncommitted changes including the user's work. No undo. | Edit the specific lines you changed directly. |
+| `git stash` | Silently hides uncommitted changes, risks losing work. | Keep changes visible. If you need to isolate, ask the user. |
+| `git reset --hard` | Destroys uncommitted work irreversibly. | Edit the specific lines you changed directly. |
+| `git clean` | Deletes untracked files irreversibly. | Do not delete files without explicit user instruction. |
+| `make` (direct invocation) | Skips Java binding regeneration. Produces stale/mismatched artifacts. | Always use the full `mvn` build with both `libnd4j` AND the bindings module. |
+| `tail` on build/test output | Loses earlier output. Build errors appear early, not at the end. | Use `tee` to capture the complete log. Read from the log file. |
+| `LD_PRELOAD=libjemalloc.so` | Crashes on pointers from other allocators. | System allocator only. Do not set LD_PRELOAD. |
+| `ccache -C` / `ccache --clear` | **Forces a full rebuild of the entire C++ codebase (2+ hours). Destroys the cache that makes iterative builds possible.** | See the CRITICAL section above. Fix stale results without clearing. |
+| Changing `-Dlibnd4j.compute=...` | Invalidates the entire CUDA ccache, forcing multi-hour full rebuilds. | Do not change this flag. Ask the user if you think it needs to change. |
+| `mvn test` from project root | Triggers full native rebuilds and runs ALL tests. Takes hours. | Always `cd platform-tests` first and run from there. |
+| `export VAR=val` before `mvn test` | Surefire forks a new JVM; shell env vars do NOT propagate. The test sees nothing. | Use `-D` Maven properties. Wire through `pom.xml` `<environmentVariables>`. |
+
+---
 
 ### Banned Code Patterns
 
 | Pattern | Why | Use Instead |
 |---|---|---|
-| `ews()` / `elementWiseStride` | Deprecated. Invalid for views, non-contiguous arrays. | `shape::strideDescendingCAscendingF(shapeInfo)`, `ordering() == 'c'` + stride checks |
-| `unique_ptr` / `shared_ptr` | Not used in libnd4j codebase | Raw pointers with manual delete |
-| Raw `__host__`, `__device__`, `__global__` | Won't compile cross-platform | `SD_HOST`, `SD_DEVICE`, `SD_KERNEL`, `SD_HOST_DEVICE` |
-| Raw `__forceinline__` | Platform-specific | `SD_INLINE` |
-| Raw `#pragma omp` directives | MSVC compatibility issues | `PRAGMA_OMP_*` macros |
-| `.arr` or `.shape` in model import | Must be variable-based for dynamic shapes | `sd.shape(..)`, `sd.rank(..)` |
-| Ad-hoc printf/logging for DSP | Use diagnostic infrastructure | DSP diagnostics framework |
-| `MALLOC_CHECK_=3` | Unreliable | Don't rely on it |
+| `ews()` / `elementWiseStride` | Deprecated. Invalid for views, non-contiguous arrays. Returns wrong results silently. | `shape::strideDescendingCAscendingF(shapeInfo)`, `ordering() == 'c'` + stride checks |
+| `unique_ptr` / `shared_ptr` | Not used in libnd4j codebase. Causes ownership confusion with raw-pointer APIs. | Raw pointers with manual `delete` |
+| Raw `__host__`, `__device__`, `__global__` | Won't compile cross-platform (MSVC, ROCm, etc.). | `SD_HOST`, `SD_DEVICE`, `SD_KERNEL`, `SD_HOST_DEVICE` |
+| Raw `__forceinline__` | Platform-specific keyword. | `SD_INLINE` |
+| Raw `#pragma omp` directives | MSVC compatibility issues. | `PRAGMA_OMP_*` macros |
+| `.arr` or `.shape` in model import | Must be variable-based for dynamic shapes. Will break on shape changes. | `sd.shape(..)`, `sd.rank(..)` |
+| Ad-hoc printf/logging for DSP | Pollutes output, not queryable, not reusable. | DSP diagnostics framework (`DspDiagnostics.h`) |
+| `MALLOC_CHECK_=3` | Unreliable. Does not detect all corruption. Creates false confidence. | Don't rely on it. Use compute-sanitizer or Valgrind. |
+
+---
 
 ### Banned Practices
 
-**No workarounds -- EVER.** Fix root causes directly. A workaround is ANY compromise: a shortcut, a guard in the caller, reordering in test code, a "temporary" hack, forcing a particular approach to sidestep a problem, or disabling a feature because it has a bug.
+**No workarounds — EVER.** Fix root causes directly. A workaround is ANY compromise: a shortcut, a guard in the caller, reordering in test code, a "temporary" hack, forcing a particular approach to sidestep a problem, or disabling a feature because it has a bug.
 
-Specific manifestations that are all workarounds:
+Specific manifestations that are all workarounds — every one of these is prohibited:
 
-- If graph replay crashes, fix graph replay -- do NOT bypass it or fall back to eager execution.
-- If multi-device transfer fails, fix the transfer -- do NOT hardcode to a single GPU.
-- If a kernel produces wrong results, fix the kernel -- do NOT route around that code path.
-- If DSP has a bug, fix it -- do NOT fall back to slot-by-slot execution.
-- If a Triton kernel crashes, fix the kernel -- do NOT skip it, stub it out, or route around it.
-- If CUDA graph replay fails, fix the replay infrastructure -- do NOT disable it.
+- If graph replay crashes, fix graph replay — do NOT bypass it or fall back to eager execution.
+- If multi-device transfer fails, fix the transfer — do NOT hardcode to a single GPU.
+- If a kernel produces wrong results, fix the kernel — do NOT route around that code path.
+- If DSP has a bug, fix it — do NOT fall back to slot-by-slot execution.
+- If a Triton kernel crashes, fix the kernel — do NOT skip it, stub it out, or route around it.
+- If CUDA graph replay fails, fix the replay infrastructure — do NOT disable it.
 
-**Fix ALL errors -- no exceptions.** Never dismiss a test error as "pre-existing" or "unrelated." The word "pre-existing" is BANNED. If you encounter ANY failure -- whether you caused it or not -- fix it immediately. Dispatch a parallel task if needed.
+**Fix ALL errors — no exceptions.** Never dismiss a test error as "pre-existing" or "unrelated." The word "pre-existing" is **BANNED**. If you encounter ANY failure — whether you caused it or not — fix it immediately. Dispatch a parallel task if needed.
 
 **If you need to undo YOUR changes to a file**, restore the specific lines you changed by editing them directly. Do NOT use git commands that affect the entire file.
+
+---
+
+### Rules for Subagents — READ BEFORE DISPATCHING
+
+**Subagents do NOT automatically inherit knowledge of AGENTS.md.** Every subagent you dispatch starts with a blank slate. It does not know the banned commands. It does not know the build rules. It will cheerfully run `ccache -C`, `git reset --hard`, `make`, or pipe output through `tail` unless you explicitly tell it not to.
+
+**If a subagent violates a rule, it is YOUR fault for not including the rule in the dispatch prompt.**
+
+When dispatching any subagent (kompile task or Claude Code subagent), you MUST include these rules verbatim in the prompt:
+
+```
+CRITICAL RULES — READ BEFORE DOING ANYTHING:
+1. NEVER run: git checkout <file>, git stash, git reset --hard, git clean
+2. NEVER run: ccache -C or ccache --clear (destroys 2+ hours of compiled cache)
+3. NEVER run: make directly (always use full mvn with libnd4j + bindings module)
+4. NEVER pipe build or test output through tail (use tee, read the tee log)
+5. NEVER use LD_PRELOAD=libjemalloc.so
+6. NEVER run mvn test from the project root
+7. NEVER use export VAR=val before mvn test (use -D Maven properties)
+8. ALL tests run from platform-tests/ directory only
+9. Fix root causes — NO workarounds, NO fallbacks, NO disabling features
+10. If you need to undo your own changes, edit the specific lines — NEVER use git commands
+```
+
+Additionally include:
+- The list of currently modified files (from `git status`) so the agent does not overwrite them.
+- Exact scope boundaries (what can and cannot be modified).
+- The exact build command to use.
+- The exact test command to use.
+- The success criteria.
+
+See the **Kompile Agent Dispatch** and **Dispatching Subagents (Claude Code)** sections below for the full dispatch patterns.
 
 ---
 
@@ -56,12 +138,24 @@ Specific manifestations that are all workarounds:
 
 **Ask the user for a build command if one isn't provided.** The user is often working on something specific and the build target varies.
 
-**IMPORTANT:** Only build backend-specific modules. **NEVER** include `platform-tests` in a build `-pl` list -- it is only for running tests, never for building with the project.
+**IMPORTANT:** Only build backend-specific modules. **NEVER** include `platform-tests` in a build `-pl` list — it is only for running tests, never for building with the project.
+
+### How ccache Works and Why It Matters
+
+The first full native build (CUDA or CPU) takes **30–45 minutes**. This is unavoidable — the C++ codebase is large, CUDA compilation is slow, and there are thousands of translation units.
+
+On subsequent builds, ccache intercepts compiler invocations and returns cached object files for translation units whose inputs have not changed. A typical incremental build after a small change takes **30 seconds** instead of 30–45 minutes. This speedup is the difference between an iterative development workflow and waiting all day.
+
+**Anything that invalidates the cache causes a full rebuild.** The two main causes are:
+1. Running `ccache -C` or `ccache --clear` — this is explicitly banned.
+2. Changing `-Dlibnd4j.compute=...` — this changes the compilation target and invalidates all CUDA object files.
+
+Header changes also cause widespread invalidation (anything that includes the changed header must recompile), which is why the C++ Conventions section insists on avoiding header modifications.
 
 ### CUDA builds
 
 ```bash
-mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 \
+/home/agibsonccc/dev-apps/mvn/bin/mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 \
   -Dlibnd4j.log=libnd4j-build.log \
   -pl libnd4j,:nd4j-cuda-12.9 \
   clean install -DskipTests 2>&1 | tee cuda-build-output.log
@@ -70,33 +164,36 @@ mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 \
 ### CPU builds
 
 ```bash
-mvn -Pcpu -Dlibnd4j.buildthreads=12 \
+/home/agibsonccc/dev-apps/mvn/bin/mvn -Pcpu -Dlibnd4j.buildthreads=12 \
   -Dlibnd4j.log=libnd4j-build.log \
   -pl libnd4j,:nd4j-cpu-backend-common,:nd4j-native \
   clean install -DskipTests 2>&1 | tee cpu-build-output.log
 ```
 
 ### Java-only module install (no native compile)
+
 ```bash
-mvn install -DskipTests -pl <module>
+/home/agibsonccc/dev-apps/mvn/bin/mvn install -DskipTests -pl <module>
 ```
 
 ### Build Rules
 
+- **Always use the full Maven path:** `/home/agibsonccc/dev-apps/mvn/bin/mvn` — never bare `mvn`.
 - **Backend selection:** `-Dbackend.artifactId=nd4j-cuda-12.9` or `-Dbackend.artifactId=nd4j-native`.
-- Always `install`, never just `compile` -- downstream modules need the jar in the local repo.
+- Always `install`, never just `compile` — downstream modules need the jar in the local Maven repo.
 - If building C++, always rebuild bindings too (both `libnd4j` AND `:nd4j-cuda-12.9` or `:nd4j-native`).
 - Always use `-Dlibnd4j.buildthreads=12` for native builds.
 - Always pass `-Dlibnd4j.log=libnd4j-build.log` for native builds.
-- **ALL build commands MUST be piped through `tee` to a named file.**
-- **Build timeouts:** Header changes trigger full recompiles (30-45 min). Use at least 3600000ms (60 min) timeout. If a build times out, restart the full `mvn` build (not `make`).
-- Never deviate from the standard build command. Partial builds cause stale/mismatched artifacts.
+- **ALL build commands MUST be piped through `tee` to a named file.** Read errors from the tee log, not from terminal scroll.
+- **Build timeouts:** Header changes trigger full recompiles (30–45 min). Use at least 3600000ms (60 min) timeout for the Bash tool. If a build times out, restart the full `mvn` build — do NOT run `make`.
+- Never deviate from the standard build command. Partial builds cause stale and mismatched artifacts.
+- Always include `-Dlibnd4j.triton=ON` for CUDA builds. Never drop this flag.
 
 ### Build Log Locations
 
 | Log | Location |
 |---|---|
-| Maven + native output | The `tee` log file |
+| Maven + native output | The `tee` log file you specified |
 | C++ build log | `libnd4j/blasbuild/cuda/libnd4j-build.log` (when `-Dlibnd4j.log` is used) |
 
 ---
@@ -107,13 +204,14 @@ mvn install -DskipTests -pl <module>
 
 ### Running Tests
 
-**ALL test commands MUST be piped through `tee`** -- this is the ONLY reliable way to capture ALL output:
+**ALL test commands MUST be piped through `tee`** — this is the ONLY reliable way to capture ALL output. Build errors appear early in the log. C++ diagnostics are interleaved with Java output. `tail` throws all of this away.
+
 ```bash
 cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
-  mvn test -Dtest=<TestClass>#<method> 2>&1 | tee /tmp/<descriptive-name>.log
+  /home/agibsonccc/dev-apps/mvn/bin/mvn test -Dtest=<TestClass>#<method> 2>&1 | tee /tmp/<descriptive-name>.log
 ```
 
-**Read the `tee` log file for output.** Do NOT read surefire report files (`target/surefire-reports/*`) -- they split output across files, may omit stdout/stderr, and are unreliable for C++ diagnostics.
+**Read the `tee` log file for output.** Do NOT read surefire report files (`target/surefire-reports/*`) — they split output across files, may omit stdout/stderr, and are unreliable for C++ diagnostics.
 
 ### Test Runner Wrapper (`platform-tests/bin/java`)
 
@@ -135,10 +233,10 @@ Surefire forks a new JVM. Shell environment variables do NOT propagate. To pass 
 
 ### Writing Tests
 
-- Write standalone isolation tests when debugging -- reproduce the bug minimally.
+- Write standalone isolation tests when debugging — reproduce the bug minimally.
 - Test ALL configuration combinations using parameterized/matrix-style tests.
 - Make individual configurations runnable: `@MethodSource` with named parameters.
-- ALL tests go in `platform-tests/` -- NEVER in the module being tested.
+- ALL tests go in `platform-tests/` — NEVER in the module being tested.
 
 ---
 
@@ -147,6 +245,18 @@ Surefire forks a new JVM. Shell environment variables do NOT propagate. To pass 
 ### Investigate Before Coding
 
 **Fully investigate** every task before writing code. Builds take too long to guess. Read the relevant code, trace values to their origins, understand the architecture. Use parallel agents to investigate competing hypotheses simultaneously when dealing with difficult bugs.
+
+### Iterative Development Workflow
+
+Because the full build is 30–45 minutes but incremental builds are ~30 seconds (thanks to ccache), the correct workflow is:
+
+1. **Understand the problem fully** before writing a single line of code.
+2. **Make a targeted change** to the minimum set of files needed.
+3. **Build incrementally** — if you only changed `.cpp` or `.cu` files (not headers), only those files recompile.
+4. **Run the targeted test** from `platform-tests/`.
+5. **Iterate** — each iteration costs ~30 seconds if you avoid touching headers.
+
+**Avoid touching headers.** Every header change cascades to all translation units that include it, potentially invalidating hundreds of ccache entries and turning a 30-second build into a 10-minute build.
 
 ### Parallelize Work
 
@@ -162,16 +272,16 @@ When optimizing code or searching for optimal configurations, if you encounter a
 
 ### Header Discipline
 
-**Avoid modifying headers whenever possible.** Header changes invalidate caches and cause hours of rebuilds. Move logic to .cpp/.cu files, use forward declarations. Only modify headers when there is no alternative.
+**Avoid modifying headers whenever possible.** Header changes invalidate ccache entries for every translation unit that includes the modified header, causing widespread recompilation. Move logic to `.cpp`/`.cu` files. Use forward declarations. Only modify headers when there is absolutely no alternative, and when you do, understand that it may trigger a 10–45 minute rebuild.
 
 ### Kernel and Helper Organization
 
 When adding a new helper or kernel:
 1. Study existing patterns. Header in `helpers/`, CPU impl in `helpers/cpu/`, CUDA impl in `helpers/cuda/`.
-2. Never add one-off standalone code -- follow established patterns.
+2. Never add one-off standalone code — follow established patterns.
 3. Implement for ALL platforms (CPU and CUDA minimum).
-4. Use templates (`<typename T>`) + `BUILD_SINGLE_TEMPLATE` + `BUILD_SINGLE_SELECTOR` -- never hardcode types.
-5. Use `getLaunchDims("op_name")` from `LaunchDims.h` -- never hardcode thread counts.
+4. Use templates (`<typename T>`) + `BUILD_SINGLE_TEMPLATE` + `BUILD_SINGLE_SELECTOR` — never hardcode types.
+5. Use `getLaunchDims("op_name")` from `LaunchDims.h` — never hardcode thread counts.
 6. Register new ops in `LaunchDims.h` (macros) and `LaunchDims.cu` (both maps).
 
 ### Platform Abstraction Macros (MANDATORY)
@@ -196,12 +306,12 @@ When adding any new configuration option:
 
 ### Generated Code
 
-**NEVER** edit generated code directly. Update the **presets** instead: `nd4j-native-preset`, `nd4j-cuda-preset`, `nd4j-minimizer-preset`, `nd4j-tpu-preset`. Headers are automatically parsed by JavaCPP.
+**NEVER** edit generated code directly. Update the **presets** instead: `nd4j-native-preset`, `nd4j-cuda-preset`, `nd4j-minimizer-preset`, `nd4j-tpu-preset`. Headers are automatically parsed by JavaCPP. Editing generated files means your changes will be overwritten the next time the generator runs.
 
 ### Debugging
 
-- Use `array->printIndexedBuffer()` for printing NDArray values -- never manual loops.
-- Gate diagnostics behind `isVerbose`/`isDebug` -- no unconditional `syncToHost`.
+- Use `array->printIndexedBuffer()` for printing NDArray values — never manual loops.
+- Gate diagnostics behind `isVerbose`/`isDebug` — no unconditional `syncToHost`.
 - Make diagnostics reusable: add to DSP diagnostics or OpTimingTracker, not one-off prints.
 
 ---
@@ -223,7 +333,7 @@ When debugging DSP issues, **always use DSP diagnostics**. Do NOT add ad-hoc pri
 **How to enable** (via Maven `-D` properties, NEVER shell env vars):
 ```bash
 cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
-  mvn test -Dtest=MyTest \
+  /home/agibsonccc/dev-apps/mvn/bin/mvn test -Dtest=MyTest \
   -Dnd4j.dsp.diagnostics=ALL \
   -Dnd4j.dsp.diagnostics.level=full \
   -Dnd4j.dsp.diagnostics.file=/tmp/dsp-report.json \
@@ -323,7 +433,7 @@ For multi-device testing on single-GPU machines, use `DeviceMemoryManager.config
 - Views from `.get()` / `.getRow()` on CUDA may have stale device buffers. Use `.dup()` after view operations outside SameDiff execution scope.
 - `setPrimaryBuffer` / `setSpecialBuffer` must keep allocation sizes in sync.
 - `p()` method: writes host then syncToDevice (hidden H2D). Don't bypass without understanding this.
-- `toFloatVector()` on CUDA views is extremely slow -- use `dup().data().asFloat()`.
+- `toFloatVector()` on CUDA views is extremely slow — use `dup().data().asFloat()`.
 
 ### ONNX Import Notes
 
@@ -343,11 +453,11 @@ For multi-device testing on single-GPU machines, use `DeviceMemoryManager.config
 ## Error Diagnosis Strategy
 
 ### C++ Compile Errors
-1. Read the error from the tee log -- find the FIRST error (ignore cascading ones).
+1. Read the error from the tee log — find the FIRST error (ignore cascading ones).
 2. Read the source file at the error line.
-3. Understand the context -- read surrounding code, check includes.
-4. Fix the root cause -- not a workaround.
-5. If it's a header error, check if the fix can go in a .cpp/.cu instead (avoid cache invalidation).
+3. Understand the context — read surrounding code, check includes.
+4. Fix the root cause — not a workaround.
+5. If it's a header error, check if the fix can go in a `.cpp`/`.cu` instead (avoids cache invalidation).
 
 ### Java Compile Errors
 1. Read the Maven output from the tee log.
@@ -355,9 +465,9 @@ For multi-device testing on single-GPU machines, use `DeviceMemoryManager.config
 3. If an API changed in a dependency, grep for the new API signature.
 
 ### Linker Errors
-1. Missing symbols -- usually a .cpp/.cu file not included in CMake.
-2. Duplicate symbols -- usually a header with non-inline function definitions.
-3. Check CMakeLists.txt if source files were added/removed.
+1. Missing symbols — usually a `.cpp`/`.cu` file not included in CMake.
+2. Duplicate symbols — usually a header with non-inline function definitions.
+3. Check `CMakeLists.txt` if source files were added or removed.
 
 ### Test Failures
 1. Read the full output from the tee log (NOT surefire reports).
@@ -498,17 +608,17 @@ Flags: `--config NAME`, `--list`, `--cpu`, `--no-triton`, `--diag-replay`/`--dia
 
 ## Kompile Agent Dispatch
 
-When dispatching tasks to kompile agents, ALWAYS assign a DL4J role. Agents start blank -- the role injects DL4J rules and knowledge into their system prompt.
+When dispatching tasks to kompile agents, ALWAYS assign a DL4J role. Agents start blank — the role injects DL4J rules and knowledge into their system prompt.
 
 ### Available DL4J Roles
 
 | Role | When to use |
 |---|---|
 | `dl4j-fixer` | **DEFAULT for fixes.** Autonomous build->test->fix loop. Will NOT stop to ask. |
-| `dl4j-dev` | General development -- features, refactoring, code changes |
-| `dl4j-investigator` | Research only -- traces code, finds root causes, does NOT modify files |
-| `dl4j-benchmarker` | Performance work -- runs benchmarks, analyzes tok/s, profiles hotspots |
-| `dl4j-reviewer` | Code review -- checks for rule violations, safety issues, perf problems |
+| `dl4j-dev` | General development — features, refactoring, code changes |
+| `dl4j-investigator` | Research only — traces code, finds root causes, does NOT modify files |
+| `dl4j-benchmarker` | Performance work — runs benchmarks, analyzes tok/s, profiles hotspots |
+| `dl4j-reviewer` | Code review — checks for rule violations, safety issues, perf problems |
 
 ### Dispatch Pattern (Single Fix Task)
 
@@ -517,11 +627,21 @@ mcp__kompile__task:
   description: "Fix the regression in X"
   prompt: "Fix the regression...
 
+CRITICAL RULES — READ BEFORE DOING ANYTHING:
+1. NEVER run: git checkout <file>, git stash, git reset --hard, git clean
+2. NEVER run: ccache -C or ccache --clear (destroys 2+ hours of compiled cache)
+3. NEVER run: make directly (always use full mvn with libnd4j + bindings module)
+4. NEVER pipe build or test output through tail (use tee, read the tee log)
+5. NEVER use LD_PRELOAD=libjemalloc.so
+6. ALL tests run from platform-tests/ directory only
+7. Fix root causes — NO workarounds, NO fallbacks, NO disabling features
+
 Currently modified files (DO NOT touch): <list from git status>
 Scope: only modify files in <path>
 
 Build: /home/agibsonccc/dev-apps/mvn/bin/mvn -Pcuda -Dlibnd4j.triton=ON ...
-Test: cd platform-tests && mvn test -Dtest=TestClass 2>&1 | tee /tmp/test.log
+Test: cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+      /home/agibsonccc/dev-apps/mvn/bin/mvn test -Dtest=TestClass 2>&1 | tee /tmp/test.log
 
 Success: TestClass all pass."
   agent: "qwen"
@@ -530,11 +650,12 @@ Success: TestClass all pass."
 
 ### Before Dispatching
 
-1. Run `git status` to get modified files
-2. Include modified files in the prompt so agents don't destroy them
-3. Specify scope boundaries (what can/cannot be modified)
-4. Include build and test commands if needed
-5. Define success criteria
+1. Run `git status` to get modified files.
+2. Include modified files in the prompt so agents do not destroy them.
+3. Specify scope boundaries (what can and cannot be modified).
+4. Include the exact build and test commands.
+5. Define success criteria.
+6. **Include the CRITICAL RULES block verbatim.** Do not summarize. Do not shorten. Copy it.
 
 ### Dispatch Tools
 
@@ -550,19 +671,21 @@ Success: TestClass all pass."
 
 Subagents do NOT automatically inherit knowledge of AGENTS.md. When dispatching a subagent, you **MUST** include:
 
-1. **Explicit rule reminders.** Copy the specific rules that apply. Key rules to always include:
+1. **Explicit rule reminders.** Copy the CRITICAL RULES block (from the Kompile Agent Dispatch section above) verbatim. Key rules to always include:
    - Git Safety: NEVER use `git checkout`, `git stash`, `git reset --hard`, or `git clean`
+   - ccache: NEVER run `ccache -C` or `ccache --clear`
    - No Workarounds: Fix root causes directly
    - Build commands: Include the exact build command. NEVER use `make` directly
-   - Test location: ALL tests from `platform-tests/`. Output in the `tee` log file
+   - Test location: ALL tests from `platform-tests/`. Output piped through `tee`. Read the tee log.
    - No jemalloc: NEVER use `LD_PRELOAD=libjemalloc.so`
    - No `tail`: NEVER pipe build or test output through `tail`
+   - No `mvn test` from project root
 
 2. **Context about modified files.** Tell the subagent which files have uncommitted changes.
 
 3. **Scope boundaries.** Tell the subagent exactly what it should and should NOT modify.
 
-**If a subagent violates a rule**, it is YOUR fault for not including the rule in the prompt.
+**If a subagent violates a rule, it is YOUR fault for not including the rule in the prompt.** There is no exception to this. The subagent cannot read AGENTS.md on its own. You are responsible for briefing it.
 
 ---
 

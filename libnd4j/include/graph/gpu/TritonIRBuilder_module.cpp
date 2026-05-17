@@ -2380,9 +2380,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             }
           }
           if (skipVal) {
-            // Cast skip to match input type if needed
-            auto inputElemType = getElementType(inputValue);
-            skipVal = castTo(builder, loc, skipVal, inputElemType);
+            // Cast both operands to a common float type before adding.
+            // inputValue and skipVal may be integer (e.g. i64) when the skip
+            // connection comes from a strided_slice output of an INT64 array.
+            // arith.addf requires floating-point operands — promote to f32 if needed.
+            auto commonFTy = mlir::isa<mlir::FloatType>(getElementType(inputValue))
+                                 ? getElementType(inputValue)
+                                 : builder.getF32Type();
+            inputValue = castTo(builder, loc, inputValue, commonFTy);
+            skipVal = castTo(builder, loc, skipVal, commonFTy);
             inputValue = builder.create<mlir::arith::AddFOp>(loc, inputValue, skipVal);
           }
         }
@@ -5597,6 +5603,13 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               // Load skip with rowWise=true (same shape as input)
               auto skipVal = loadNormInput(slot.wiring.inputSourceIndices[1], /*rowWise=*/true);
               if (skipVal) {
+                // Promote both operands to a common float type before adding.
+                // arith.addf requires floating-point operands.
+                auto commonFTy = mlir::isa<mlir::FloatType>(getElementType(inputValue))
+                                     ? getElementType(inputValue)
+                                     : builder.getF32Type();
+                inputValue = castTo(builder, loc, inputValue, commonFTy);
+                skipVal    = castTo(builder, loc, skipVal, commonFTy);
                 inputValue = builder.create<mlir::arith::AddFOp>(loc, inputValue, skipVal);
               }
               hiddenValue = inputValue;  // save pre-norm hidden for output[1]

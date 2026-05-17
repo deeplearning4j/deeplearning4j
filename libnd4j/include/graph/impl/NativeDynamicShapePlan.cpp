@@ -1,3 +1,4 @@
+// ccache invalidation: activeGapSlotsCachedSet_ rename 2026-05-17-v2
 /* ******************************************************************************
  *
  * Copyright (c) 2024-2026 Contributors

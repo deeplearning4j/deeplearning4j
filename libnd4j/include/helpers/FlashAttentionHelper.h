@@ -159,6 +159,11 @@ class SD_LIB_EXPORT FlashAttentionHelper {
     int numKvHeads = 0;         // Number of KV heads (0 = same as numHeads)
     int windowSize = 0;         // Sliding window size (0 = no window)
     bool returnSoftmax = false; // Return softmax weights (for debugging)
+    const void* effectiveSeqKVPtr = nullptr; // Device pointer to int64 effective KV length
+                                             // When non-null: kernel reads *ptr to limit KV
+                                             // iteration (for in-place KV cache decode).
+                                             // CUDA graph safe: pointer address is stable,
+                                             // only the pointed-to value changes per step.
   };
 
   /**
@@ -415,7 +420,8 @@ extern void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray*
 extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
                                 NDArray* output, float scale,
                                 LaunchContext* context,
-                                NDArray* attentionBias = nullptr);
+                                NDArray* attentionBias = nullptr,
+                                const void* effectiveSeqKVPtr = nullptr);
 #endif
 
 }  // namespace sd

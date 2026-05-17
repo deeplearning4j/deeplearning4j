@@ -34,6 +34,16 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
 
   auto output = OUTPUT_VARIABLE(0);
 
+  // Fast path: if input and output already have the same shape, just assign.
+  // Common in decode mode where seq_len=1 makes broadcast a no-op.
+  if (shape::equalsSoft(input->shapeInfo(), output->shapeInfo())) {
+    if (input->dataBuffer() == output->dataBuffer() && input->offset() == output->offset()) {
+      return Status::OK;  // Same buffer, same shape — truly no-op
+    }
+    output->assign(input);
+    return Status::OK;
+  }
+
   const int inputRank = input->rankOf();
   const int shapeRank = shape->rankOf();
   const LongType shapeLen = shape->lengthOf();

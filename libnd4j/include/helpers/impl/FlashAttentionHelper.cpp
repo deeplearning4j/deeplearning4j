@@ -293,7 +293,8 @@ void FlashAttentionHelper::forward4D(
   bool isDecode = (seqLenQ == 1);
   if (supportedType && isDecode && !needScores && !needLogits) {
     fusedGQADecodeCuda(query, key, value, output, scale, context,
-                       hasAttentionBias ? attentionBias : nullptr);
+                       hasAttentionBias ? attentionBias : nullptr,
+                       config.effectiveSeqKVPtr);
     if (softmaxLse != nullptr) softmaxLse->nullify();
     return;
   }

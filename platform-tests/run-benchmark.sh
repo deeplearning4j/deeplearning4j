@@ -147,6 +147,11 @@ DIAG_CAPTURE=false
 DSP_ASSERT=false
 SKIP_AUDIT=false
 AUDIT_ONLY=false
+# Gap capture tuning (empty = use C++ defaults)
+GAP_MAX_SLOTS=""
+GAP_BLOCK_EXT_WS=""
+GAP_TC=""
+GAP_TC_WARMUP=""
 AUDIT_SUITE="all"
 AUDIT_TIMEOUT=600
 
@@ -327,6 +332,30 @@ while [[ $# -gt 0 ]]; do
             AUDIT_TIMEOUT="$2"
             shift 2
             ;;
+        --max-gap-slots)
+            GAP_MAX_SLOTS="$2"
+            shift 2
+            ;;
+        --no-gap-block-ext-ws)
+            GAP_BLOCK_EXT_WS="0"
+            shift
+            ;;
+        --gap-block-ext-ws)
+            GAP_BLOCK_EXT_WS="1"
+            shift
+            ;;
+        --gap-tensor-cores)
+            GAP_TC="1"
+            shift
+            ;;
+        --no-gap-tensor-cores)
+            GAP_TC="0"
+            shift
+            ;;
+        --gap-tc-warmup)
+            GAP_TC_WARMUP="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--op-timing-detailed]"
@@ -340,6 +369,8 @@ echo "       [--dsp-timing]"
 echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
 echo "       [--diag-step] [--diag-d2d] [--diag-capture]"
 echo "       [--dsp-assert]"
+echo "       [--max-gap-slots N] [--gap-block-ext-ws] [--no-gap-block-ext-ws]"
+echo "       [--gap-tensor-cores] [--no-gap-tensor-cores] [--gap-tc-warmup N]"
 echo "       [--skip-audit] [--audit-only] [--audit-suite SUITE] [--audit-timeout N]"
             exit 1
             ;;
@@ -548,6 +579,24 @@ if $OP_TIMING; then
     if [ -n "$OP_HISTOGRAM_OPS" ]; then
         EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingHistogramOps=$OP_HISTOGRAM_OPS"
     fi
+fi
+
+# Gap capture tuning knobs
+if [ -n "$GAP_MAX_SLOTS" ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.maxCapturableGapSlots=$GAP_MAX_SLOTS"
+    echo "  Gap max slots: $GAP_MAX_SLOTS"
+fi
+if [ -n "$GAP_BLOCK_EXT_WS" ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.gapCaptureBlockExternalWorkspace=$GAP_BLOCK_EXT_WS"
+    echo "  Gap block ext ws: $GAP_BLOCK_EXT_WS"
+fi
+if [ -n "$GAP_TC" ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.gapTensorCores=$GAP_TC"
+    echo "  Gap tensor cores: $GAP_TC"
+fi
+if [ -n "$GAP_TC_WARMUP" ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.gapTensorCoreWarmup=$GAP_TC_WARMUP"
+    echo "  Gap TC warmup: $GAP_TC_WARMUP"
 fi
 
 VALIDATION_TOKENS="$MAX_TOKENS"

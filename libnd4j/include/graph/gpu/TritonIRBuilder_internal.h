@@ -388,7 +388,46 @@ inline int getFloatBitWidth(mlir::Type type) {
 inline mlir::Value castTo(mlir::OpBuilder& builder, mlir::Location loc,
                            mlir::Value val, mlir::Type targetElemType) {
   auto tensorTy = mlir::dyn_cast<mlir::RankedTensorType>(val.getType());
-  if (!tensorTy) return val;
+  if (!tensorTy) {
+    // Scalar (non-tensor) cast path — e.g. scalar i64 loaded from a !tt.ptr<i64>
+    // must be cast to f32 before use in arith.addf / arith.mulf etc.
+    auto srcType = val.getType();
+    if (srcType == targetElemType) return val;
+    bool srcIsFloat = mlir::isa<mlir::FloatType>(srcType);
+    bool dstIsFloat = mlir::isa<mlir::FloatType>(targetElemType);
+    bool srcIsInt   = srcType.isIntOrIndex();
+    bool dstIsInt   = targetElemType.isIntOrIndex();
+    if (srcIsFloat && dstIsFloat) {
+      int srcBits = mlir::cast<mlir::FloatType>(srcType).getWidth();
+      int dstBits = mlir::cast<mlir::FloatType>(targetElemType).getWidth();
+      if (dstBits > srcBits)
+        return builder.create<mlir::arith::ExtFOp>(loc, targetElemType, val, nullptr);
+      else
+        return builder.create<mlir::arith::TruncFOp>(loc, targetElemType, val);
+    } else if (srcIsInt && dstIsFloat) {
+      int srcBits = srcType.getIntOrFloatBitWidth();
+      int dstFloatBits = mlir::cast<mlir::FloatType>(targetElemType).getWidth();
+      if (srcBits > 32 && dstFloatBits < 64) {
+        // i64 → f64 → f32 to avoid precision loss
+        auto f64Ty = builder.getF64Type();
+        auto toF64 = builder.create<mlir::arith::SIToFPOp>(loc, f64Ty, val);
+        return builder.create<mlir::arith::TruncFOp>(loc, targetElemType, toF64);
+      }
+      return builder.create<mlir::arith::SIToFPOp>(loc, targetElemType, val);
+    } else if (srcIsFloat && dstIsInt) {
+      return builder.create<mlir::arith::FPToSIOp>(loc, targetElemType, val);
+    } else if (srcIsInt && dstIsInt) {
+      int srcBits = srcType.getIntOrFloatBitWidth();
+      int dstBits = targetElemType.getIntOrFloatBitWidth();
+      if (srcBits == dstBits) return val;
+      if (dstBits > srcBits)
+        return builder.create<mlir::arith::ExtSIOp>(loc, targetElemType, val);
+      else
+        return builder.create<mlir::arith::TruncIOp>(loc, targetElemType, val);
+    }
+    // Unknown scalar type combination — return as-is and let MLIR verifier catch it
+    return val;
+  }
   auto srcElemType = tensorTy.getElementType();
   if (srcElemType == targetElemType) return val;
 

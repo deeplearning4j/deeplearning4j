@@ -5102,6 +5102,10 @@ Status NativeDynamicShapePlan::executeSlot(
 Status NativeDynamicShapePlan::executeSlotGapFast(
     int slotIdx, NDArray** externalArrays, int numExt) {
   NativeSlot& slot = slots_[slotIdx];
+  if (contextPool_[slotIdx] == nullptr) {
+    // Context not initialized — fall back to full executeSlot
+    return executeSlot(slotIdx, externalArrays, numExt, nullptr);
+  }
   auto& ctx = *contextPool_[slotIdx];
 
   // Direct input pointer assignment — bypasses Context::setInputArray validation.
@@ -5109,6 +5113,10 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
   // (2) pointers are stable so no null/stale sources, (3) vector already sized
   // from prior executions. This eliminates ~2000 null checks + dtype checks per step.
   auto& fpIn = ctx.fastpath_in();
+  if (static_cast<int>(fpIn.size()) < slot.wiring.numInputs) {
+    // Vector not sized from prior executions — fall back to full path
+    return executeSlot(slotIdx, externalArrays, numExt, nullptr);
+  }
   for (int i = 0; i < slot.wiring.numInputs; i++) {
     int srcIdx = slot.wiring.inputSourceIndices[i];
     if (srcIdx < 0) {
@@ -5122,7 +5130,7 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
   }
 
   // Shape override already set from prior frozen-context path (executeCount_ >= 3).
-  // Prezero not needed: gap EXECUTE slots are fully-writing or validated during warmup.
+  // Prezero: handled by batch prezero pass in compositeReplay before gap loop.
   // Sync not needed: device-resident in steady state.
 
   // Disable helper dispatch for non-matmul ops in steady-state gap execution.

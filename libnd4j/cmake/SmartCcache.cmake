@@ -63,7 +63,7 @@ case \"\$(uname -o 2>/dev/null)\" in
 esac
 
 # Set sloppiness for all files to ensure cacheability
-export CCACHE_SLOPPINESS=\"file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed\"
+export CCACHE_SLOPPINESS=\"file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,clang_index_store,locale,random_seed\"
 
 # ==============================================================================
 # Extract compute capability / architecture from command line arguments
@@ -204,6 +204,15 @@ hash_deps_from_d_file() {
 }
 
 if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
+    # Force recache for files with known stale ccache direct-mode manifests.
+    # This ensures header-level renames (member variables) are picked up even when
+    # ccache's direct-mode manifest incorrectly matches on file stat data.
+    case \"\$SOURCE_FILE\" in
+        *NativeDynamicShapePlan.cpp|*NativeDynamicShapePlan_gpubackend.cu|*NativeDynamicShapePlan_slotexec.cpp)
+            export CCACHE_RECACHE=1
+            ;;
+    esac
+
     IS_GENERATED=0
     case \"\$SOURCE_FILE\" in
         \"\$BUILD_DIR\"*)

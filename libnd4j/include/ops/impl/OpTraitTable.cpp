@@ -50,7 +50,7 @@ static constexpr uint32_t BINARY_LOG = BINARY_EW | OP_TRAIT_LOGICAL;
 static constexpr uint32_t TERNARY_EW = OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING;
 static constexpr uint32_t REDUCE = OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING;
 static constexpr uint32_t NORM = OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING;
-static constexpr uint32_t MATMUL = OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING;
+static constexpr uint32_t MATMUL = OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_EXTERNAL_WORKSPACE;
 // VIEW_SHAPE_DEP: shape-manipulating view whose output shape is fully determined by
 // input shapes + iArgs (no tensor-value read). Examples: expand_dims, squeeze,
 // flatten, permute. These ops MUST NOT carry VALUE_DEPENDENT_SHAPE — otherwise

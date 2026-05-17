@@ -69,9 +69,10 @@
 
 // DSP gap-stream override — defined in LaunchContext.cu (file scope, no namespace).
 extern thread_local cudaStream_t tl_dspGapStream;
-// cuBLAS workspace thread-locals — defined in MmulHelper.cu.
+// cuBLAS workspace thread-locals — defined in MmulHelper.cu / DataBuffer.cu.
 extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+// cuBLAS Lt disable flag lives in DataBuffer.cu — not referenced here.
 
 // Portable buffer accessor (CUDA form).
 #define DSP_BUF(arr) ((arr)->specialBuffer())
@@ -803,22 +804,28 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
   //
   // We limit captured gap size to avoid lifecycle conflicts in large gaps.
   // Small gaps (≤8 slots) between islands are "glue" ops (equals, broadcast_to,
-  // Where, gather) that create unnecessary island boundaries. Merging them through
-  // reduces the number of graph launch/end transitions without creating mega-graphs.
+  // Where, gather) that create unnecessary island boundaries. Merging them
+  // through reduces the number of graph launch/end transitions.
   // Larger gaps may contain view ops that trigger frozen DataBuffer conflicts
   // during capture-phase allocation.
-  static constexpr int MAX_CAPTURABLE_GAP_SLOTS = 8;
-  static constexpr uint32_t UNSAFE_CAPTURE_TRAITS = sd::ops::OP_TRAIT_MATMUL;
+  // Configurable via ND4J_DSP_MAX_CAPTURABLE_GAP_SLOTS env var (default 32).
+  const int maxCapturableGapSlots = Environment::getInstance().dspMaxCapturableGapSlots();
+  // Configurable via ND4J_DSP_GAP_CAPTURE_BLOCK_EXTERNAL_WORKSPACE env var (default true).
+  // When true, ops declaring OP_TRAIT_EXTERNAL_WORKSPACE (cuBLAS matmul, etc.) are
+  // excluded from gap capture. These ops use external library handles/workspaces that
+  // may not replay correctly in CUDA graphs without explicit workspace pinning.
+  const bool blockExtWorkspace = Environment::getInstance().dspGapCaptureBlockExternalWorkspace();
 
   int gapSize = endSlot - startSlot + 1;
-  if (gapSize > MAX_CAPTURABLE_GAP_SLOTS) return false;
+  if (gapSize > maxCapturableGapSlots) return false;
 
   for (int s = startSlot; s <= endSlot; s++) {
     if (!slots[s].isCapturable(mergeViews)) return false;
     // Zero-compute ops (view/identity/frozen) are always safe — no GPU kernel nodes.
     if (slots[s].aliasesInput() || slots[s].frozenConstantSlot()) continue;
-    // Compute ops: allow if non-cuBLAS and fully-writing.
-    if (slots[s].hasOpTrait(UNSAFE_CAPTURE_TRAITS)) return false;
+    // Block ops that use external library workspaces (cuBLAS, etc.) — trait-driven, not op-specific.
+    if (blockExtWorkspace && slots[s].hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE)) return false;
+    // Block non-fully-writing ops (reduce, scatter) that need prezero.
     if (!slots[s].isFullyWriting()) return false;
   }
   return true;
@@ -1360,6 +1367,12 @@ Status NativeDynamicShapePlan::compositeReplay(
 
   auto tPrezero = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
+  // NOTE: Single-stream unification was tried here (routing gap ops onto cudaStr
+  // via tl_dspGapStream) but REGRESSED performance from 42.6→35.9 tok/s because
+  // it serialized gap ops with merged graph replays, eliminating beneficial
+  // overlap between the two streams. Separate streams allow GPU to pipeline
+  // graph replay launches while gap ops execute concurrently.
+
   // ── Cross-stream sync: ensure prezero memsets on cudaStr are visible ───
   // Gap-only prezero above issues cudaMemsetAsync / batchMemsetKernel on cudaStr. Gap ops that
   // follow run on the LaunchContext's default stream. Without sync, gap ops
@@ -1367,6 +1380,7 @@ Status NativeDynamicShapePlan::compositeReplay(
   // stale (non-zero) data in output buffers instead of zeros — causing
   // accumulation errors for ops that read-modify-write their output.
   // Event-based: gap stream waits for prezero completion without CPU block.
+  // Guard: skipped when gapStream==cudaStr (same stream, no sync needed).
   {
     auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
     cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
@@ -1394,6 +1408,7 @@ Status NativeDynamicShapePlan::compositeReplay(
   int nMergedLaunches = 0, nGapUnits = 0, nIslandLaunches = 0, nArgRefreshes = 0;
   int nExecSlots = 0, nTickSlots = 0, nBatchedGemmSlots = 0;
 
+  // ── Tensor-core acceleration for steady-state gap matmuls (hoisted) ────────
   bool gapSlotsExecutedSinceArgCopy = false;
   for (auto& unit : sched.units) {
     // ── Merged group: non-leader units skip entirely ──
@@ -1580,6 +1595,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     if (unit.kind == REPLAY_UNIT_GAP) {
       auto tGE0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap [%d-%d]", unit.startSlot, unit.endSlot);
+
       // ── Pre-gap input diagnostic: verify gap reads correct island output ──
       // FULL level only — cudaStreamSynchronize + D2H per gap unit kills throughput.
       if (DSP_DIAG_ENABLED(EXECUTE) &&
@@ -1923,6 +1939,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
     }
   }
+
 
   auto tActTick = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 

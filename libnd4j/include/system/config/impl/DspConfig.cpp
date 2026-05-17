@@ -74,6 +74,24 @@ void DspConfig::initFromEnvironment() {
     if (v >= 0) setCastSinkMatmul(v == 1);
   }
 
+  // Gap capture tuning
+  {
+    int v = readIntEnv("ND4J_DSP_MAX_CAPTURABLE_GAP_SLOTS", -1);
+    if (v > 0) setMaxCapturableGapSlots(v);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_GAP_CAPTURE_BLOCK_EXTERNAL_WORKSPACE");
+    if (v >= 0) setGapCaptureBlockExternalWorkspace(v == 1);
+  }
+  {
+    int v = readIntEnv("ND4J_DSP_GAP_TENSOR_CORE_WARMUP", -1);
+    if (v >= 0) setGapCaptureTensorCoreWarmup(v);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_GAP_TENSOR_CORES");
+    if (v >= 0) setGapTensorCores(v == 1);
+  }
+
   // Symbolic shapes
   {
     int v = readBoolEnvTriState("ND4J_DSP_SYMBOLIC_SHAPES");

@@ -386,6 +386,14 @@ class SD_LIB_EXPORT Environment {
   void setCublasCaptureWorkspace(bool v) { _dsp.setCublasCaptureWorkspace(v); }
   bool dspCastSinkMatmul() { return _dsp.castSinkMatmul(); }
   void setDspCastSinkMatmul(bool v) { _dsp.setCastSinkMatmul(v); }
+  bool dspGapTensorCores() { return _dsp.gapTensorCores(); }
+  void setDspGapTensorCores(bool v) { _dsp.setGapTensorCores(v); }
+  int dspMaxCapturableGapSlots() { return _dsp.maxCapturableGapSlots(); }
+  void setDspMaxCapturableGapSlots(int v) { _dsp.setMaxCapturableGapSlots(v); }
+  bool dspGapCaptureBlockExternalWorkspace() { return _dsp.gapCaptureBlockExternalWorkspace(); }
+  void setDspGapCaptureBlockExternalWorkspace(bool v) { _dsp.setGapCaptureBlockExternalWorkspace(v); }
+  int dspGapCaptureTensorCoreWarmup() { return _dsp.gapCaptureTensorCoreWarmup(); }
+  void setDspGapCaptureTensorCoreWarmup(int v) { _dsp.setGapCaptureTensorCoreWarmup(v); }
   bool dspSymbolicShapes() { return _dsp.symbolicShapes(); }
   void setDspSymbolicShapes(bool v) { _dsp.setSymbolicShapes(v); }
   int dspSymbolicShapeWarmup() { return _dsp.symbolicShapeWarmup(); }

@@ -74,6 +74,7 @@ enum OpTraits : uint32_t {
   OP_TRAIT_SCATTER_ND_UPDATE     = 1 << 27,
   OP_TRAIT_CAST                  = 1 << 28,
   OP_TRAIT_BACKWARD              = 1 << 29,  // marks backprop / gradient ops (_bp suffix)
+  OP_TRAIT_EXTERNAL_WORKSPACE    = 1 << 30,  // op uses external library workspace (cuBLAS, etc.) — capture-unsafe by default
 };
 
 class SD_LIB_EXPORT OpExecTrace {

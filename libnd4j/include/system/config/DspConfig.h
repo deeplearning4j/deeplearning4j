@@ -49,6 +49,12 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<bool> _cublasTf32Enabled{false};
   std::atomic<bool> _cublasCaptureWorkspace{true};
   std::atomic<bool> _castSinkMatmul{false};
+  std::atomic<bool> _gapTensorCores{false};  // default OFF: cublasSetMathMode switching overhead > benefit (~3 tok/s cost)
+
+  // Gap capture tuning knobs
+  std::atomic<int> _maxCapturableGapSlots{32};
+  std::atomic<bool> _gapCaptureBlockExternalWorkspace{true};  // true = block ops with OP_TRAIT_EXTERNAL_WORKSPACE from gap capture
+  std::atomic<int> _gapCaptureTensorCoreWarmup{5};  // exec count before enabling tensor cores in gaps
 
   // Symbolic shape ranges
   std::atomic<bool> _symbolicShapes{true};
@@ -129,6 +135,16 @@ class SD_LIB_EXPORT DspConfig {
   void setCublasCaptureWorkspace(bool v) { _cublasCaptureWorkspace.store(v); }
   bool castSinkMatmul() { return _castSinkMatmul.load(); }
   void setCastSinkMatmul(bool v) { _castSinkMatmul.store(v); }
+  bool gapTensorCores() { return _gapTensorCores.load(); }
+  void setGapTensorCores(bool v) { _gapTensorCores.store(v); }
+
+  // --- Gap capture tuning ---
+  int maxCapturableGapSlots() { return _maxCapturableGapSlots.load(); }
+  void setMaxCapturableGapSlots(int v) { _maxCapturableGapSlots.store(v); }
+  bool gapCaptureBlockExternalWorkspace() { return _gapCaptureBlockExternalWorkspace.load(); }
+  void setGapCaptureBlockExternalWorkspace(bool v) { _gapCaptureBlockExternalWorkspace.store(v); }
+  int gapCaptureTensorCoreWarmup() { return _gapCaptureTensorCoreWarmup.load(); }
+  void setGapCaptureTensorCoreWarmup(int v) { _gapCaptureTensorCoreWarmup.store(v); }
 
   // --- Symbolic shapes ---
   bool symbolicShapes() { return _symbolicShapes.load(); }

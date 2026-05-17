@@ -342,7 +342,20 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   config.dropout = 0.0f;
   config.numHeads = numHeads;
   config.numKvHeads = numKvHeads;
-  
+
+  // In-place KV decode optimization: when using in-place KV cache in decode mode,
+  // pass the cache position to the kernel so it limits KV iteration internally.
+  // This eliminates the need for the external attention bias mask (equals+broadcast_to+Where
+  // subgraph = 162 gap ops per step), AND switches from workspace+nullify+copy to direct write.
+  // CUDA graph safe: cachePosInput->specialBuffer() is a stable device pointer address.
+#if defined(SD_CUDA)
+  if (useInPlaceKv && seqQ == 1 && cachePosInput != nullptr
+      && cachePosInput->dataType() == INT64) {
+    config.effectiveSeqKVPtr = cachePosInput->specialBuffer();
+    attnBias = nullptr;  // Kernel handles masking internally via effectiveSeqKV
+  }
+#endif
+
   // Cast attention bias to query dtype if needed
   std::unique_ptr<NDArray> attnBiasCastOwner;
   if (attnBias != nullptr && attnBias->dataType() != query->dataType()) {
