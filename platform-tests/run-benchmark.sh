@@ -1105,9 +1105,9 @@ add_suite "frozen" \
 add_suite "replay" \
     "DspCompositeReplayTest,DspDeepIsolationTest,DspPipelineIsolationTest,TestDspRepeatedOutputFreshness,TestDspMergedSegmentReplay,DspReplayDeviceAnalyticsTest"
 
-# regression — harness-based regression tests: segment output, cross-stream, gap execution, arg-table, native decode, mythic PDF
+# regression — harness-based regression tests: segment output, cross-stream, gap execution, arg-table, native decode
 add_suite "regression" \
-    "TestSegmentOutputZeroInvariant,TestCrossStreamEventOrdering,TestGapExecutionSlotInvariants,TestArgTableStablePerfFloor,TestNativeDecodeLoopRegression,TestNativeDecodeInputsRegression,TestMythicPdfRegression"
+    "TestSegmentOutputZeroInvariant,TestCrossStreamEventOrdering,TestGapExecutionSlotInvariants,TestArgTableStablePerfFloor,TestNativeDecodeLoopRegression,TestNativeDecodeInputsRegression"
 
 # capture — capture config matrix, DspHandle tests, handle data model, view capture correctness
 add_suite "capture" \

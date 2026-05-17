@@ -898,7 +898,6 @@ __global__ __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const LongType headDim,
    const LongType headsPerKvHead,
    const float scale,
-   const LongType* __restrict__ effectiveSeqKVPtr, // Device ptr to actual KV len (nullptr=use seqKV)
    // Strides for Q [batch, 1, numQHeads, headDim]
    const LongType qStride0, const LongType qStride2, const LongType qStride3,
    // Strides for K [batch, seqKV, numKvHeads, headDim]
@@ -956,20 +955,9 @@ __global__ __launch_bounds__(512, 1) void fusedGQADecodeKernel(
 
  if (headDim <= 0 || seqKV <= 0) return;
 
- // Determine actual KV length: if effectiveSeqKVPtr is set, read from device memory.
- // This supports in-place KV cache where the buffer is max_seq_len but only
- // cachePos+1 positions are valid. Reading from device ptr is CUDA graph safe
- // (pointer address baked at capture, value changes between replays).
- // The effectiveSeqKVPtr stores cachePos (the write index). Valid positions are
- // 0..cachePos inclusive, so we add 1 to get the iteration bound.
- const LongType actualSeqKV = (effectiveSeqKVPtr != nullptr)
-     ? min(*effectiveSeqKVPtr + 1, seqKV)
-     : seqKV;
- if (actualSeqKV <= 0) return;
-
  // Tile over KV positions — same structure as fusedAttention3DKernel
- for (LongType kvStart = 0; kvStart < actualSeqKV; kvStart += TILE_SIZE_KV) {
-   const LongType kvEnd = min(kvStart + TILE_SIZE_KV, actualSeqKV);
+ for (LongType kvStart = 0; kvStart < seqKV; kvStart += TILE_SIZE_KV) {
+   const LongType kvEnd = min(kvStart + TILE_SIZE_KV, seqKV);
    const int tileSize = static_cast<int>(kvEnd - kvStart);
    if (tileSize <= 0) continue;
 
@@ -1105,7 +1093,6 @@ static void fusedGQADecodeLauncher(
    void* vOutput,
    LongType batch, LongType seqKV, LongType numQHeads, LongType numKvHeads,
    LongType headDim, LongType headsPerKvHead, float scale,
-   const LongType* effectiveSeqKVPtr,
    LongType qStride0, LongType qStride2, LongType qStride3,
    LongType kStride0, LongType kStride1, LongType kStride2, LongType kStride3,
    LongType vStride0, LongType vStride1, LongType vStride2, LongType vStride3,
@@ -1129,7 +1116,6 @@ static void fusedGQADecodeLauncher(
  fusedGQADecodeKernel<T><<<grid, block, smem, *stream>>>(
      query, key, value, attnBias, output,
      batch, seqKV, numQHeads, numKvHeads, headDim, headsPerKvHead, scale,
-     effectiveSeqKVPtr,
      qStride0, qStride2, qStride3,
      kStride0, kStride1, kStride2, kStride3,
      vStride0, vStride1, vStride2, vStride3,
@@ -1144,8 +1130,7 @@ static void fusedGQADecodeLauncher(
 void fusedGQADecodeCuda(
    NDArray* query, NDArray* key, NDArray* value,
    NDArray* output, float scale,
-   LaunchContext* context, NDArray* attentionBias,
-   const void* effectiveSeqKVPtr) {
+   LaunchContext* context, NDArray* attentionBias) {
 
  auto stream = context->getCudaStream();
 
@@ -1205,7 +1190,6 @@ void fusedGQADecodeCuda(
                         output->specialBuffer(),
                         batch, seqKV, numQHeads, numKvHeads,
                         headDim, headsPerKvHead, scale,
-                        reinterpret_cast<const LongType*>(effectiveSeqKVPtr),
                         qStride0, qStride2, qStride3,
                         kStride0, kStride1, kStride2, kStride3,
                         vStride0, vStride1, vStride2, vStride3,
