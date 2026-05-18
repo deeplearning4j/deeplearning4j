@@ -1319,13 +1319,16 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
     } else {
       // Fast path: refresh device pointers from cached output slot indices.
-      // After freeze, outputSlots_ pointers are stable, so this is redundant but safe.
-      for (int i = 0; i < cachedGapPrezeroCount_; i++) {
-        int outIdx = batchZeroEntries_[i].outputSlotIndex;
-        NDArray* cached = outputSlots_[outIdx];
-        if (cached != nullptr) {
-          batchZeroEntries_[i].ptr = cached->specialBuffer();
-          batchZeroEntries_[i].bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
+      // N19: Skip refresh entirely when pointers are stable — outputSlots_ addresses
+      // don't change after pointer stabilization, so cached ptrs are still valid.
+      if (!planLifecycle_.pointersStable()) {
+        for (int i = 0; i < cachedGapPrezeroCount_; i++) {
+          int outIdx = batchZeroEntries_[i].outputSlotIndex;
+          NDArray* cached = outputSlots_[outIdx];
+          if (cached != nullptr) {
+            batchZeroEntries_[i].ptr = cached->specialBuffer();
+            batchZeroEntries_[i].bytes = static_cast<int>(cached->dataBuffer()->getLenInBytes());
+          }
         }
       }
     }
@@ -1408,6 +1411,9 @@ Status NativeDynamicShapePlan::compositeReplay(
   long long tIslandLaunchUs = 0, tIslandDirtyUs = 0, tArgRefreshUs = 0;
   int nMergedLaunches = 0, nGapUnits = 0, nIslandLaunches = 0, nArgRefreshes = 0;
   int nExecSlots = 0, nTickSlots = 0, nBatchedGemmSlots = 0;
+  // Per-op-name EXECUTE slot counters for gap profiling (only first 250 decode steps)
+  std::unordered_map<std::string, int> execOpCounts;
+  bool collectExecOpNames = executionTimingEnabled_ && seg.exec.executionCount < 3;
 
   // ── Tensor-core acceleration for steady-state gap matmuls (hoisted) ────────
   bool gapSlotsExecutedSinceArgCopy = false;
@@ -1717,6 +1723,9 @@ Status NativeDynamicShapePlan::compositeReplay(
                 return slotStatus;  // replayGuard restores tl_dspReplayActive
               }
               if (executionTimingEnabled_) nExecSlots++;
+              if (collectExecOpNames && active.slotIdx >= 0 && active.slotIdx < numSlots_) {
+                execOpCounts[slots_[active.slotIdx].ident.opName]++;
+              }
               break;
             }
             case ActiveSlotAction::SKIP:
@@ -1843,6 +1852,9 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
         if (buildingCache) {
           cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
+        }
+        if (collectExecOpNames) {
+          execOpCounts[slots_[s].ident.opName]++;
         }
       }
 
@@ -2001,6 +2013,14 @@ Status NativeDynamicShapePlan::compositeReplay(
               tIslandLaunchUs, nIslandLaunches, tIslandDirtyUs,
               tArgRefreshUs, nArgRefreshes,
               nExecSlots, nTickSlots, nBatchedGemmSlots);
+    // Per-op-name breakdown of EXECUTE gap slots (first 3 steps only to avoid log spam)
+    if (!execOpCounts.empty()) {
+      std::string opBreakdown = "GAP_EXEC_OPS:";
+      for (auto& kv : execOpCounts) {
+        opBreakdown += " " + kv.first + "=" + std::to_string(kv.second);
+      }
+      sd_printf("%s\n", opBreakdown.c_str());
+    }
   }
 
   // Update replay tracking
