@@ -404,8 +404,13 @@ void NativeDynamicShapePlan::reconcileSlotDispatchAfterMerge(const ReplaySchedul
   }
   if (!anyMerged) return;
 
-  // Pass 2: fix up each group — remove merged members, update trigger, disable if <2
+  // Pass 2: fix up each group — remove merged members, collect orphans for re-grouping
   int disabledGroups = 0, removedSlots = 0;
+
+  // Collect orphaned gap-side matmuls with their signature for cross-segment re-grouping
+  struct OrphanInfo { int slotIdx; BatchedMatmulSig sig; };
+  std::vector<OrphanInfo> orphans;
+
   for (int gi = 0; gi < static_cast<int>(batchedGemmGroups_.size()); gi++) {
     auto& group = batchedGemmGroups_[gi];
 
@@ -418,9 +423,12 @@ void NativeDynamicShapePlan::reconcileSlotDispatchAfterMerge(const ReplaySchedul
     removedSlots += removed;
 
     if (static_cast<int>(group.slotIndices.size()) < 2) {
-      // Too few for batching — unmap remaining members so they fall through
-      // to individual executeSlot dispatch in the replay loop
+      // Collect orphans with their signature before clearing — they may re-group
+      // with orphans from other segments that share the same (M,N,K,trans,types).
+      BatchedMatmulSig sig{group.M, group.N, group.K, group.transA, group.transB,
+                           group.aType, group.bType, group.cType};
       for (int s : group.slotIndices) {
+        orphans.push_back({s, sig});
         slotToBatchedGemmGroup_[s] = -1;
       }
       group.slotIndices.clear();
@@ -435,8 +443,103 @@ void NativeDynamicShapePlan::reconcileSlotDispatchAfterMerge(const ReplaySchedul
     }
   }
 
-  DSP_DIAG(EXECUTE, "reconcileSlotDispatchAfterMerge: %d matmul slots removed, %d groups disabled",
-           removedSlots, disabledGroups);
+  DSP_DIAG(EXECUTE, "reconcileSlotDispatchAfterMerge: %d matmul slots removed, %d groups disabled, %d orphans",
+           removedSlots, disabledGroups, (int)orphans.size());
+
+  // Pass 3: Re-group orphaned matmuls across segments by signature.
+  // After island merging, each segment may have had its bgemm group reduced to 1 member.
+  // Orphans from different segments with the same (M,N,K,transA,transB,types) can form
+  // new cross-segment batched groups — e.g. 24 transformer layers each contributing
+  // one gap-side matmul with identical dimensions.
+  if (orphans.size() >= 2) {
+    // Build reverse map for dependency analysis
+    std::vector<int> outputSlotToStep(totalOutputSlots_, -1);
+    for (int i = 0; i < numSlots_; i++) {
+      for (int o = 0; o < slots_[i].wiring.numOutputs; o++) {
+        int outIdx = slots_[i].wiring.outputSlotIndices[o];
+        if (outIdx >= 0 && outIdx < totalOutputSlots_) {
+          outputSlotToStep[outIdx] = i;
+        }
+      }
+    }
+
+    // Bucket orphans by signature
+    std::unordered_map<BatchedMatmulSig, std::vector<int>, BatchedMatmulSigHash> orphanBuckets;
+    for (auto& o : orphans) {
+      orphanBuckets[o.sig].push_back(o.slotIdx);
+    }
+
+    int regroupedSlots = 0, newGroups = 0;
+    for (auto& [sig, slotsInBucket] : orphanBuckets) {
+      if (slotsInBucket.size() < 2) continue;
+
+      std::sort(slotsInBucket.begin(), slotsInBucket.end());
+
+      // Build independent sub-groups with dependency analysis (same as detectBatchedGemmGroups)
+      std::vector<std::vector<int>> subGroups;
+
+      for (int slot : slotsInBucket) {
+        bool addedToExisting = false;
+
+        for (auto& sg : subGroups) {
+          int firstSlot = sg.front();
+
+          if (!allInputsAvailableBefore(slots_[slot], firstSlot, totalOutputSlots_, outputSlotToStep)) {
+            continue;
+          }
+
+          std::unordered_set<int> existingMembers(sg.begin(), sg.end());
+          int minExisting = sg.front();
+
+          if (hasTransitiveDependency(slots_, numSlots_, totalOutputSlots_,
+                                       outputSlotToStep, slot, existingMembers, minExisting)) {
+            continue;
+          }
+
+          sg.push_back(slot);
+          addedToExisting = true;
+          break;
+        }
+
+        if (!addedToExisting) {
+          subGroups.push_back({slot});
+        }
+      }
+
+      // Create groups for sub-groups with >= 2 members (cap at 32 per batch)
+      for (auto& sg : subGroups) {
+        if (sg.size() < 2) continue;
+
+        for (size_t start = 0; start < sg.size(); start += 32) {
+          size_t end = std::min(start + 32, sg.size());
+          if (end - start < 2) continue;
+
+          int groupIdx = static_cast<int>(batchedGemmGroups_.size());
+          BatchedGemmGroup group;
+          group.slotIndices.assign(sg.begin() + start, sg.begin() + end);
+          group.triggerSlot = group.slotIndices.front();
+          group.M = sig.M; group.N = sig.N; group.K = sig.K;
+          group.transA = sig.transA; group.transB = sig.transB;
+          group.aType = sig.aType; group.bType = sig.bType; group.cType = sig.cType;
+          group.d_A_ptrs = nullptr; group.d_B_ptrs = nullptr; group.d_C_ptrs = nullptr;
+          group.h_A_ptrs = nullptr; group.h_B_ptrs = nullptr; group.h_C_ptrs = nullptr;
+          group.maxBatchSize = static_cast<int>(end - start);
+          batchedGemmGroups_.push_back(std::move(group));
+
+          for (size_t s = start; s < end; s++) {
+            slotToBatchedGemmGroup_[sg[s]] = groupIdx;
+          }
+          regroupedSlots += static_cast<int>(end - start);
+          newGroups++;
+        }
+      }
+    }
+
+    if (regroupedSlots > 0) {
+      DSP_DIAG(EXECUTE, "reconcileSlotDispatchAfterMerge: re-grouped %d orphans into %d cross-segment groups",
+               regroupedSlots, newGroups);
+    }
+  }
 }
 
 // ── Device resource allocation ───────────────────────────────────────────────
