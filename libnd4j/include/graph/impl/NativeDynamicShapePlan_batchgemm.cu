@@ -456,8 +456,46 @@ void NativeDynamicShapePlan::prepareBatchedGemmDevice(cudaStream_t stream) {
     cudaMallocHost(&group.h_B_ptrs, ptrArrayBytes);
     cudaMallocHost(&group.h_C_ptrs, ptrArrayBytes);
 
-    DSP_DIAG(MEMORY, "batched GEMM group: allocated %d pointer arrays (%zu bytes each)",
-              bs, ptrArrayBytes);
+    // Pre-determine if this group needs mixed-type casting
+    const bool usesBfloat = group.aType == BFLOAT16 || group.bType == BFLOAT16 || group.cType == BFLOAT16;
+    group.needsCast = (group.aType != group.bType) && !usesBfloat;
+
+    // Pre-allocate persistent cast scratch for mixed-type groups.
+    // Eliminates per-step cudaMalloc/cudaFreeAsync (was 4 CUDA mem ops × 60 groups = 240/step).
+    if (group.needsCast) {
+      const bool castA = (group.aType == FLOAT32 && (group.bType == HALF || group.bType == BFLOAT16));
+      const DataType targetType = castA ? group.bType : group.aType;
+      const int castElem = castA ? (group.M * group.K) : (group.K * group.N);
+      const size_t elemSize = (targetType == HALF) ? sizeof(__half) : sizeof(__nv_bfloat16);
+      const size_t perMemberBytes = castElem * elemSize;
+      group.castScratchBytes = perMemberBytes * bs;
+
+      auto err = cudaMalloc(&group.castScratch, group.castScratchBytes);
+      if (err != cudaSuccess) {
+        DSP_DIAG(MEMORY, "batched GEMM group: cast scratch alloc failed (%zu bytes): %s",
+                 group.castScratchBytes, cudaGetErrorString(err));
+        cudaGetLastError();
+        group.castScratch = nullptr;
+        group.castScratchBytes = 0;
+        group.needsCast = false;  // fall back to per-step alloc
+      } else {
+        err = cudaMalloc((void**)&group.d_castPtrs, ptrArrayBytes);
+        if (err != cudaSuccess) {
+          cudaFree(group.castScratch);
+          cudaGetLastError();
+          group.castScratch = nullptr;
+          group.castScratchBytes = 0;
+          group.d_castPtrs = nullptr;
+          group.needsCast = false;
+        } else {
+          DSP_DIAG(MEMORY, "batched GEMM group: persistent cast scratch %zu bytes + %zu ptr bytes",
+                   group.castScratchBytes, ptrArrayBytes);
+        }
+      }
+    }
+
+    DSP_DIAG(MEMORY, "batched GEMM group: allocated %d pointer arrays (%zu bytes each) needsCast=%d",
+              bs, ptrArrayBytes, group.needsCast ? 1 : 0);
   }
 }
 
@@ -669,40 +707,22 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
     // NOT mixed FLOAT32×HALF (returns CUBLAS_STATUS_NOT_SUPPORTED=15). For mixed
     // types, cast the FLOAT32 operand to HALF before the call. For decode-phase
     // GEMV (M=1), the activation is 1×K elements — cast cost is negligible.
-    const bool isMixedType = (group.aType != group.bType) && !usesBfloat;
-    void* castScratch = nullptr;
-    void** d_castPtrs_dev = nullptr;
-    void* h_castPtrs_host[64] = {};  // stack-allocated for ≤64 batch members
-
-    if (isMixedType) {
+    //
+    // OPTIMIZATION: Cast scratch is pre-allocated in prepareBatchedGemmDevice()
+    // as persistent buffers (group.castScratch, group.d_castPtrs). This eliminates
+    // 4 CUDA memory operations per group per step (was cudaMalloc×2 + cudaFreeAsync×2).
+    if (group.needsCast && group.castScratch != nullptr && group.d_castPtrs != nullptr) {
       const bool castA = (group.aType == FLOAT32 && (group.bType == HALF || group.bType == BFLOAT16));
-      const bool castB = (group.bType == FLOAT32 && (group.aType == HALF || group.aType == BFLOAT16));
       const DataType targetType = castA ? group.bType : group.aType;
       const int castElem = castA ? (group.M * group.K) : (group.K * group.N);
       const size_t elemSize = (targetType == HALF) ? sizeof(__half) : sizeof(__nv_bfloat16);
       const size_t perMemberBytes = castElem * elemSize;
-      const size_t totalCastBytes = perMemberBytes * batchCount;
-      const size_t ptrArrayBytes = batchCount * sizeof(void*);
 
-      auto err = cudaMalloc(&castScratch, totalCastBytes);
-      if (err != cudaSuccess) {
-        DSP_DIAG(EXECUTE, "batched GEMM group %d: cast scratch alloc failed (%zu bytes): %s",
-                 groupIdx, totalCastBytes, cudaGetErrorString(err));
-        cudaGetLastError();
-        return Status::KERNEL_FAILURE;
-      }
-      err = cudaMalloc((void**)&d_castPtrs_dev, ptrArrayBytes);
-      if (err != cudaSuccess) {
-        cudaFree(castScratch);
-        cudaGetLastError();
-        return Status::KERNEL_FAILURE;
-      }
-
-      // Launch float→half cast kernel per batch member and build pointer array
+      // Launch float→half cast kernel per batch member using persistent scratch
+      void* h_castPtrs_host[64] = {};
       for (int b = 0; b < batchCount; b++) {
-        char* dst = static_cast<char*>(castScratch) + perMemberBytes * b;
+        char* dst = static_cast<char*>(group.castScratch) + perMemberBytes * b;
         const void* src = castA ? group.h_A_ptrs[b] : group.h_B_ptrs[b];
-        // float→half conversion via vectorized CUDA kernel
         const int blocks = (castElem + 255) / 256;
         batchedGemmCastFloat2Half<<<blocks, 256, 0, stream>>>(
             reinterpret_cast<const float*>(src),
@@ -710,14 +730,14 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
             castElem);
         h_castPtrs_host[b] = dst;
       }
-      cudaMemcpyAsync(d_castPtrs_dev, h_castPtrs_host, ptrArrayBytes,
+      cudaMemcpyAsync(group.d_castPtrs, h_castPtrs_host, batchCount * sizeof(void*),
                        cudaMemcpyHostToDevice, stream);
 
       // Call cuBLAS with uniform HALF A × HALF B → FLOAT32 C
       cudaDataType halfType = CUDA_R_16F;
       cudaDataType cCudaUniform = CUDA_R_32F;
-      const void** dB = castA ? (const void**)group.d_B_ptrs : (const void**)d_castPtrs_dev;
-      const void** dA = castA ? (const void**)d_castPtrs_dev : (const void**)group.d_A_ptrs;
+      const void** dB = castA ? (const void**)group.d_B_ptrs : (const void**)group.d_castPtrs;
+      const void** dA = castA ? (const void**)group.d_castPtrs : (const void**)group.d_A_ptrs;
       status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
                                     group.N, group.M, group.K,
                                     &alpha,
@@ -727,8 +747,62 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
                                     (void**)group.d_C_ptrs, cCudaUniform, ldc,
                                     batchCount,
                                     CUBLAS_COMPUTE_32F, algo);
-      cudaFreeAsync(castScratch, stream);
-      cudaFreeAsync(d_castPtrs_dev, stream);
+      // No cudaFreeAsync — scratch is persistent
+    } else if (group.aType != group.bType && !usesBfloat) {
+      // Fallback: per-step alloc (only if persistent alloc failed)
+      const bool castA = (group.aType == FLOAT32 && (group.bType == HALF || group.bType == BFLOAT16));
+      const DataType targetType = castA ? group.bType : group.aType;
+      const int castElem = castA ? (group.M * group.K) : (group.K * group.N);
+      const size_t elemSize = (targetType == HALF) ? sizeof(__half) : sizeof(__nv_bfloat16);
+      const size_t perMemberBytes = castElem * elemSize;
+      const size_t totalCastBytes = perMemberBytes * batchCount;
+      const size_t ptrArrayBytes = batchCount * sizeof(void*);
+
+      void* fallbackScratch = nullptr;
+      void** fallbackPtrs = nullptr;
+      auto err = cudaMalloc(&fallbackScratch, totalCastBytes);
+      if (err != cudaSuccess) {
+        DSP_DIAG(EXECUTE, "batched GEMM group %d: fallback cast scratch alloc failed (%zu bytes): %s",
+                 groupIdx, totalCastBytes, cudaGetErrorString(err));
+        cudaGetLastError();
+        return Status::KERNEL_FAILURE;
+      }
+      err = cudaMalloc((void**)&fallbackPtrs, ptrArrayBytes);
+      if (err != cudaSuccess) {
+        cudaFree(fallbackScratch);
+        cudaGetLastError();
+        return Status::KERNEL_FAILURE;
+      }
+
+      void* h_castPtrs_host[64] = {};
+      for (int b = 0; b < batchCount; b++) {
+        char* dst = static_cast<char*>(fallbackScratch) + perMemberBytes * b;
+        const void* src = castA ? group.h_A_ptrs[b] : group.h_B_ptrs[b];
+        const int blocks = (castElem + 255) / 256;
+        batchedGemmCastFloat2Half<<<blocks, 256, 0, stream>>>(
+            reinterpret_cast<const float*>(src),
+            reinterpret_cast<__half*>(dst),
+            castElem);
+        h_castPtrs_host[b] = dst;
+      }
+      cudaMemcpyAsync(fallbackPtrs, h_castPtrs_host, ptrArrayBytes,
+                       cudaMemcpyHostToDevice, stream);
+
+      cudaDataType halfType = CUDA_R_16F;
+      cudaDataType cCudaUniform = CUDA_R_32F;
+      const void** dB = castA ? (const void**)group.d_B_ptrs : (const void**)fallbackPtrs;
+      const void** dA = castA ? (const void**)fallbackPtrs : (const void**)group.d_A_ptrs;
+      status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
+                                    group.N, group.M, group.K,
+                                    &alpha,
+                                    dB, halfType, lda,
+                                    dA, halfType, ldb,
+                                    &beta,
+                                    (void**)group.d_C_ptrs, cCudaUniform, ldc,
+                                    batchCount,
+                                    CUBLAS_COMPUTE_32F, algo);
+      cudaFreeAsync(fallbackScratch, stream);
+      cudaFreeAsync(fallbackPtrs, stream);
     } else {
       status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
                                     group.N, group.M, group.K,
@@ -789,6 +863,8 @@ void NativeDynamicShapePlan::freeBatchedGemmResources() {
     if (group.h_A_ptrs) { cudaFreeHost(group.h_A_ptrs); group.h_A_ptrs = nullptr; }
     if (group.h_B_ptrs) { cudaFreeHost(group.h_B_ptrs); group.h_B_ptrs = nullptr; }
     if (group.h_C_ptrs) { cudaFreeHost(group.h_C_ptrs); group.h_C_ptrs = nullptr; }
+    if (group.castScratch) { cudaFree(group.castScratch); group.castScratch = nullptr; group.castScratchBytes = 0; }
+    if (group.d_castPtrs) { cudaFree(group.d_castPtrs); group.d_castPtrs = nullptr; }
   }
   batchedGemmGroups_.clear();
   slotToBatchedGemmGroup_.clear();

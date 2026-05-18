@@ -2766,6 +2766,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     void** h_C_ptrs;
     int maxBatchSize;   // allocated capacity
     bool ptrStable = false;  // true when H2D pointer arrays match device-side
+    // Persistent cast scratch for mixed-type (FLOAT32×HALF) groups.
+    // Allocated once in prepareBatchedGemmDevice, reused every step.
+    void* castScratch = nullptr;       // device buffer for casted operands
+    size_t castScratchBytes = 0;       // allocated size
+    void** d_castPtrs = nullptr;       // device pointer array for casted batch members
+    bool needsCast = false;            // true when aType!=bType and cast is required
   };
   std::vector<BatchedGemmGroup> batchedGemmGroups_;
   // Maps slot index → index into batchedGemmGroups_ (-1 if not part of a group)
