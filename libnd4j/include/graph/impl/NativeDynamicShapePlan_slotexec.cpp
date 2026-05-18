@@ -5152,15 +5152,14 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
     }
   }
 
-  // Disable helper dispatch for non-matmul ops in steady-state gap execution.
+  // Disable helper dispatch for ALL ops in steady-state gap execution.
   // By executeCount_>=5, the auto-tuner has determined the optimal backend.
-  // Non-matmul ops (equals, broadcast_to, Where, gather, concat, etc.) never use
-  // platform helpers on CUDA — their CUSTOM_OP_IMPL IS the optimal path.
-  // Skipping dispatch saves ~5-10µs per slot (avoids KernelDispatchHelper iteration).
-  // Matmul keeps helpers enabled in case a platform helper (MKL-DNN, etc.) is active.
-  if (!slot.hasOpTrait(sd::ops::OP_TRAIT_MATMUL)) {
-    ctx.allowHelpers(false);
-  }
+  // On CUDA, no gap ops have platform helpers — matmul uses MmulHelper/cuBLAS
+  // (not a platform helper), and all other gap ops (reshape_no_copy, permute,
+  // tile, etc.) use their CUSTOM_OP_IMPL directly. Skipping dispatch saves
+  // ~5-10µs per slot × 129 slots = ~0.6-1.3ms/step by avoiding
+  // KernelDispatchHelper::dispatchWithAutoTune → getAllHelpersForOp linear scans.
+  ctx.allowHelpers(false);
 
   // Execute the op directly.
   Status result = slot.ident.op->execute(&ctx);
