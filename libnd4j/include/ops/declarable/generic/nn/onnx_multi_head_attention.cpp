@@ -80,8 +80,11 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   if (attnBias != nullptr && (attnBias->isEmpty() || attnBias->rankOf() == 0 || attnBias->lengthOf() <= 1)) attnBias = nullptr;
   if (pastKey != nullptr && (pastKey->isEmpty() || pastKey->rankOf() == 0 || pastKey->lengthOf() <= 1)) pastKey = nullptr;
   if (pastValue != nullptr && (pastValue->isEmpty() || pastValue->rankOf() == 0 || pastValue->lengthOf() <= 1)) pastValue = nullptr;
-  // cache_position must be a non-empty scalar or 1-element tensor with value >= 0
-  if (cachePosInput != nullptr && (cachePosInput->isEmpty() || cachePosInput->lengthOf() <= 0)) cachePosInput = nullptr;
+  // cache_position must be a non-empty scalar or 1-element tensor with an allocated buffer.
+  // A placeholder that was never fed has no buffer — using it would dereference null/garbage.
+  if (cachePosInput != nullptr && (cachePosInput->isEmpty() || cachePosInput->lengthOf() <= 0
+      || cachePosInput->buffer() == nullptr || cachePosInput->specialBuffer() == nullptr))
+    cachePosInput = nullptr;
   bool useInPlaceKv = (cachePosInput != nullptr && pastKey != nullptr && pastValue != nullptr);
   
   auto output = OUTPUT_VARIABLE(0);
