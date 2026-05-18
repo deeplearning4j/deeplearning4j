@@ -834,9 +834,11 @@ void autoregressiveDecodeCuda(
             }
         }
 
-        auto tStopCheck = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
+        auto tStopCheck = std::chrono::high_resolution_clock::now();
 
         // Compute step time using the stop check timestamp (before KV scatter/embed updates)
+        // Always measure real wall-clock step time — needed for lateSteady metric even
+        // when detailed sub-step timing (stepTimingEnabled) is off.
         double stepMs = std::chrono::duration<double, std::milli>(tStopCheck - stepStart).count();
         stepTimesMs.push_back(stepMs);
 
