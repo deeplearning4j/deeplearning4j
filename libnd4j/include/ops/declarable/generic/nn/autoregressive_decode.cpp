@@ -349,8 +349,10 @@ DECLARE_SHAPE_FN(autoregressive_decode) {
   // Output 1: tokenCount [1] INT64 scalar
   auto tokenCountShape = ConstantShapeHelper::getInstance().vectorShapeInfo(1, INT64);
 
-  // Output 2: timingInfo [5] FLOAT32
-  auto timingShape = ConstantShapeHelper::getInstance().vectorShapeInfo(5, FLOAT32);
+  // Output 2: timingInfo [7] FLOAT32
+  // [0]=totalMs [1]=avgDecodeMs [2]=tokPerSec [3]=p50Ms [4]=p99Ms
+  // [5]=lateSteadyTokPerSec (steps 60+) [6]=lateSteadyAvgMs
+  auto timingShape = ConstantShapeHelper::getInstance().vectorShapeInfo(7, FLOAT32);
 
   return SHAPELIST(tokenIdsShape, tokenCountShape, timingShape);
 }

@@ -1299,6 +1299,7 @@ public class GenerationPipeline implements AutoCloseable {
             long endTime = System.currentTimeMillis();
             long timeMs = endTime - startTime;
             float tokPerSec = nativeTimingInfo.getFloat(2);
+            float lateSteadyTokPerSec = nativeTimingInfo.length() > 5 ? nativeTimingInfo.getFloat(5) : tokPerSec;
             boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
 
             dummyEmbeddings.close();
@@ -1319,6 +1320,7 @@ public class GenerationPipeline implements AutoCloseable {
                     .generationTimeMs(timeMs)
                     .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
                     .steadyStateTokensPerSecond(tokPerSec)
+                    .lateSteadyStateTokensPerSecond(lateSteadyTokPerSec)
                     .build();
         } else {
             decodeInputIds.close();
@@ -2076,6 +2078,7 @@ public class GenerationPipeline implements AutoCloseable {
             allTokens.add(secondTokenId);
         }
 
+        INDArray nativeTimingInfo = null;  // Hoisted for late-steady metric access after block
         if (remainingTokens > 0 && !stopTokenIds.contains(firstTokenId) && !stopTokenIds.contains(secondTokenId)) {
             // Resolve cache_position ext idx if the model has it (GGUF models).
             // VLM/ONNX models typically don't, so this resolves to -1.
@@ -2116,7 +2119,7 @@ public class GenerationPipeline implements AutoCloseable {
             INDArray[] results = Nd4j.getExecutioner().exec(op);
             INDArray nativeTokenIds = results[0];
             INDArray nativeTokenCountArr = results[1];
-            INDArray nativeTimingInfo = results[2];
+            nativeTimingInfo = results[2];
             int nativeCount = nativeTokenCountArr.getInt(0);
 
             // Collect tokens from native op output — use actual token count, not buffer length.
@@ -2133,6 +2136,8 @@ public class GenerationPipeline implements AutoCloseable {
         int decodeSteps = allTokens.size() - 1;  // exclude first token (from prefill)
         double tokPerSec = decodeSteps > 0 && decodeLoopMs > 0
                 ? (decodeSteps * 1000.0 / decodeLoopMs) : 0;
+        float lateSteadyTokPerSec = nativeTimingInfo != null && nativeTimingInfo.length() > 5
+                ? nativeTimingInfo.getFloat(5) : (float) tokPerSec;
 
         int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
         String text = tokenizer.decode(tokenIds, false);
@@ -2168,6 +2173,7 @@ public class GenerationPipeline implements AutoCloseable {
                 .generationTimeMs(timeMs)
                 .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
                 .steadyStateTokensPerSecond(tokPerSec)
+                .lateSteadyStateTokensPerSecond(lateSteadyTokPerSec)
                 .build();
     }
 

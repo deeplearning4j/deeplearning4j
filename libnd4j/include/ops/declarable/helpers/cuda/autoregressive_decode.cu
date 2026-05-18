@@ -1006,6 +1006,26 @@ void autoregressiveDecodeCuda(
         timingInfo->p(2, static_cast<float>(tokPerSec));
         timingInfo->p(3, static_cast<float>(p50));
         timingInfo->p(4, static_cast<float>(p99));
+
+        // Late-steady throughput (steps 60+): excludes warmup bimodal oscillation.
+        // DSP warmup takes ~60 steps to converge to true steady-state.
+        constexpr int LATE_STEADY_START = 60;
+        if (static_cast<int>(stepTimesMs.size()) > LATE_STEADY_START) {
+            double lateSteadyTotalMs = 0.0;
+            int lateSteadyCount = 0;
+            for (int i = LATE_STEADY_START; i < static_cast<int>(stepTimesMs.size()); i++) {
+                lateSteadyTotalMs += stepTimesMs[i];
+                lateSteadyCount++;
+            }
+            double lateSteadyAvgMs = lateSteadyTotalMs / lateSteadyCount;
+            double lateSteadyTokPerSec = lateSteadyCount * 1000.0 / lateSteadyTotalMs;
+            timingInfo->p(5, static_cast<float>(lateSteadyTokPerSec));
+            timingInfo->p(6, static_cast<float>(lateSteadyAvgMs));
+        } else {
+            // Not enough steps — fall back to overall
+            timingInfo->p(5, static_cast<float>(tokPerSec));
+            timingInfo->p(6, static_cast<float>(avgMs));
+        }
     }
 
     // ── Cleanup internal allocations ──
