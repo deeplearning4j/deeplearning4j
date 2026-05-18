@@ -76,7 +76,9 @@ extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
 // N6: defined in NativeDynamicShapePlan_batchgemm.cu — hoisted cuBLAS stream+workspace flag.
 extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;
-// cuBLAS Lt disable flag lives in DataBuffer.cu — not referenced here.
+// cuBLAS Lt disable flag — defined in DataBuffer.cu (inside namespace sd). Temporarily cleared
+// during gap execution to enable cublasLt fast path for logits-projection matmul [1,K]×[K,N].
+namespace sd { extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled; }
 
 // Portable buffer accessor (CUDA form).
 #define DSP_BUF(arr) ((arr)->specialBuffer())
@@ -1664,6 +1666,16 @@ Status NativeDynamicShapePlan::compositeReplay(
       bool gapOutputPointersChanged = false;
       bool skipPtrTracking = !seg.exec.needsArgRefresh() && planLifecycle_.pointersStable();
 
+      // ── cuBLAS Lt for gap matmul ops (logits projection) ─────────────
+      // Gap ops execute outside CUDA graph capture, so split-K non-determinism
+      // from cublasLt doesn't affect graph replay. Temporarily enable cublasLt
+      // for the gap execution window to unlock the fast path for large-N vocab
+      // projections [1,K]×[K,N] where N≥16384 (e.g. SmolDocling logits [1,576]×[576,49280]).
+      bool gapLtEnabled = Environment::getInstance().dsp().cublasLtGapEnabled() && tl_cublasLtDisabled;
+      if (gapLtEnabled) {
+        tl_cublasLtDisabled = false;
+      }
+
       // ── Active gap slot cache: skip 97% of slot iterations in steady state ──
       // On the first frozen+steady pass, classify every slot and cache only those
       // that need work. On subsequent steps, iterate over the compact cached list.
@@ -1902,6 +1914,11 @@ Status NativeDynamicShapePlan::compositeReplay(
                gapOutputPointersChanged ? 1 : 0,
                gapOutputPointersChanged ? " -> refresh arg table before next Triton replay"
                                         : " -> skip arg table refresh");
+
+      // ── Restore cuBLAS Lt disable for subsequent island replays ──
+      if (gapLtEnabled) {
+        tl_cublasLtDisabled = true;
+      }
 
       // Cross-stream sync after gap ops
       {

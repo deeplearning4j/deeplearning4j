@@ -91,6 +91,10 @@ void DspConfig::initFromEnvironment() {
     int v = readBoolEnvTriState("ND4J_DSP_GAP_TENSOR_CORES");
     if (v >= 0) setGapTensorCores(v == 1);
   }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_CUBLAS_LT_GAP");
+    if (v >= 0) setCublasLtGapEnabled(v == 1);
+  }
 
   // Symbolic shapes
   {

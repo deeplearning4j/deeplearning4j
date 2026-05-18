@@ -50,6 +50,7 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<bool> _cublasCaptureWorkspace{true};
   std::atomic<bool> _castSinkMatmul{false};
   std::atomic<bool> _gapTensorCores{false};  // default OFF: cublasSetMathMode switching overhead > benefit (~3 tok/s cost)
+  std::atomic<bool> _cublasLtGapEnabled{true};  // default ON: enable cublasLt for gap matmul ops (e.g. logits projection [1,K]x[K,V])
 
   // Gap capture tuning knobs
   std::atomic<int> _maxCapturableGapSlots{32};
@@ -137,6 +138,8 @@ class SD_LIB_EXPORT DspConfig {
   void setCastSinkMatmul(bool v) { _castSinkMatmul.store(v); }
   bool gapTensorCores() { return _gapTensorCores.load(); }
   void setGapTensorCores(bool v) { _gapTensorCores.store(v); }
+  bool cublasLtGapEnabled() { return _cublasLtGapEnabled.load(); }
+  void setCublasLtGapEnabled(bool v) { _cublasLtGapEnabled.store(v); }
 
   // --- Gap capture tuning ---
   int maxCapturableGapSlots() { return _maxCapturableGapSlots.load(); }
