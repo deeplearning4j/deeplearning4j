@@ -92,19 +92,22 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   // select different algorithms, producing numerically different results that
   // compound through recurrent/autoregressive state until token divergence.
   //
-  // CUBLAS_PEDANTIC_MATH forces bitwise-reproducible algorithm selection for ALL
-  // capture modes (both CUDA_GRAPHS and Triton composite capture). This is
-  // applied during capture only — restoreCublasWorkspaceAfterCapture restores
-  // the normal math mode for non-capture execution.
+  // CUBLAS_DEFAULT_MATH allows cuBLAS to use tensor cores and optimal algorithms
+  // during CUDA graph capture. At commit 0e221dd2c8 (86 tok/s), no math mode was
+  // ever set — cuBLAS used its default which includes tensor cores.
+  //
+  // Previously CUBLAS_PEDANTIC_MATH was used here for bitwise determinism, but this
+  // baked SLOW algorithms into captured CUDA graphs (causing 7.24 tok/s when gap
+  // matmuls were captured). Decode-phase matmuls are M=1 GEMVs that are memory-
+  // bandwidth-bound — algorithm selection barely matters for them, and the overhead
+  // of slow algorithms in prefill-sized captures is catastrophic.
   //
   // Workspace is still provided (when cublasCaptureWorkspace=true) to prevent
   // cuBLAS from inserting MemAlloc/MemFree graph nodes during capture (OOM).
-  // PEDANTIC_MATH constrains algorithm selection to deterministic variants
-  // regardless of workspace availability.
   //
-  // cublasLt is also disabled during capture: cublasLt has its own split-K
-  // implementation that bypasses the PEDANTIC_MATH setting.
-  cublasSetMathMode(*handlePtr, CUBLAS_PEDANTIC_MATH);
+  // cublasLt remains disabled during capture: cublasLt has its own internal
+  // allocation patterns that can break CUDA graph capture.
+  cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
   tl_cublasLtDisabled = true;
 
   // ── Workspace configuration ───────────────────────────────────────────────
@@ -116,14 +119,14 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
     cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
     tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
     tl_cublasWorkspaceSize = cublasWorkspaceSize_;
-    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: PEDANTIC_MATH + workspace SET buffer=%p size=%zuMB "
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: DEFAULT_MATH + workspace SET buffer=%p size=%zuMB "
              "tl_cublasLtDisabled=1",
              cublasWorkspaceBuffer_, cublasWorkspaceSize_ / (1024*1024));
   } else {
     cublasSetWorkspace(*handlePtr, nullptr, 0);
     tl_cublasWorkspacePtr = nullptr;
     tl_cublasWorkspaceSize = 0;
-    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: PEDANTIC_MATH + workspace DISABLED "
+    DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: DEFAULT_MATH + workspace DISABLED "
              "tl_cublasLtDisabled=1");
   }
 }
@@ -138,9 +141,8 @@ void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
   // buffers with one algorithm's layout but capture records a different algorithm,
   // causing shape/result divergence on replay.
   //
-  // Since capture now always uses CUBLAS_PEDANTIC_MATH (for determinism),
-  // warmup must also use PEDANTIC_MATH.
-  cublasSetMathMode(*handlePtr, CUBLAS_PEDANTIC_MATH);
+  // Matches capture's CUBLAS_DEFAULT_MATH (allows tensor cores + optimal algorithms).
+  cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
   tl_cublasLtDisabled = true;
 
   // Workspace: match capture's workspace configuration.
@@ -172,21 +174,13 @@ void NativeDynamicShapePlan::restoreCublasWorkspaceAfterCapture(void* stream) {
 
   cublasSetWorkspace(*handlePtr, nullptr, 0);
 
-  // Keep CUBLAS_PEDANTIC_MATH active after capture ends. Gap matmuls during
-  // composite replay must use the same deterministic cuBLAS algorithms that
-  // were active when the graph was captured. Without this, replay-time gap
-  // matmuls use TF32 tensor core ops that produce different floating-point
-  // results than the capture-time PEDANTIC matmuls, causing self-consistency
-  // failures (4/20 steps diverge in matmul-only graphs).
+  // cuBLAS math mode for live gap ops after capture ends:
+  // For modes with requiresDeterministicCublas=true (AUTO), platformBeginExecution
+  // or platformSetDeterministicCublas already sets PEDANTIC for live execution.
+  // Captured CUDA graphs are immune to runtime math mode — they replay the exact
+  // algorithms selected at capture time (now CUBLAS_DEFAULT_MATH with tensor cores).
   //
-  // For modes with requiresDeterministicCublas=true (CUDA_GRAPHS, AUTO),
-  // PEDANTIC was already set by platformBeginExecution — keep it.
-  // For modes that use graph capture (AUTO, TRITON), PEDANTIC was set by
-  // setCublasWorkspaceForCapture just before capture — keep it so replay
-  // uses identical algorithms.
-  //
-  // platformEndExecution restores the cuBLAS math mode to DEFAULT/TF32
-  // at plan end for all graph capture modes.
+  // platformEndExecution restores the cuBLAS math mode to DEFAULT at plan end.
   if (!ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
     tl_cublasLtDisabled = false;
   }

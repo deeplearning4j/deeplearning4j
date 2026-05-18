@@ -55,6 +55,18 @@ namespace graph {
 
 using namespace op_detection;  // isMatmulOp, extractMatmulDims, hasTransitiveDependency, allInputsAvailableBefore
 
+// Vectorized float→half conversion kernel for batched GEMM mixed-type support.
+// Used when cublasGemmBatchedEx rejects mixed FLOAT32×HALF inputs (it only
+// supports HALF×HALF→FLOAT32 with CUBLAS_COMPUTE_32F).
+SD_KERNEL void batchedGemmCastFloat2Half(const float* __restrict__ src,
+                                          __half* __restrict__ dst,
+                                          int n) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < n) {
+    dst[idx] = __float2half_rn(src[idx]);
+  }
+}
+
 namespace {
 
 struct BatchedMatmulSig {
@@ -106,14 +118,20 @@ static bool supportedBatchedGemmTypes(DataType aType, DataType bType, DataType c
   if (!cudaTypeFor(aType, ignored) || !cudaTypeFor(bType, ignored) || !cudaTypeFor(cType, ignored)) {
     return false;
   }
-  // cuBLAS GemmBatchedEx requires A and B to have the same type.
-  // Mixed A/B (e.g. FLOAT32 + HALF) returns CUBLAS_STATUS_INVALID_VALUE.
-  // Let those fall through to regular per-slot matmul which handles internal casting.
-  if (aType != bType) return false;
 
   const bool anyDouble = aType == DOUBLE || bType == DOUBLE || cType == DOUBLE;
   const bool allDouble = aType == DOUBLE && bType == DOUBLE && cType == DOUBLE;
   if (anyDouble && !allDouble) return false;
+
+  // cublasGemmBatchedEx with CUBLAS_COMPUTE_32F supports mixed HALF/FLOAT32 A/B
+  // in CUDA 12+. Allow mixed types within {HALF, FLOAT32, BFLOAT16} — the execution
+  // path uses cublasGemmBatchedEx with per-operand cudaDataType and FP32 accumulation.
+  // Only reject mixed types outside the supported set.
+  if (aType != bType) {
+    const bool aMixed = (aType == HALF || aType == FLOAT32 || aType == BFLOAT16);
+    const bool bMixed = (bType == HALF || bType == FLOAT32 || bType == BFLOAT16);
+    if (!aMixed || !bMixed) return false;
+  }
 
   if (!allDouble && cType != FLOAT32 && cType != HALF && cType != BFLOAT16) return false;
   return true;
@@ -643,20 +661,85 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       return Status::BAD_ARGUMENTS;
     }
 
-    // Use FP32 accumulation for half/bfloat/mixed paths. This matches the
-    // regular MmulHelper transformer path and avoids FP16 dot-product loss.
     float alpha = 1.0f, beta = 0.0f;
     const bool usesBfloat = group.aType == BFLOAT16 || group.bType == BFLOAT16 || group.cType == BFLOAT16;
     cublasGemmAlgo_t algo = usesBfloat ? CUBLAS_GEMM_DEFAULT : CUBLAS_GEMM_DEFAULT_TENSOR_OP;
-    status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
-                                  group.N, group.M, group.K,
-                                  &alpha,
-                                  (const void**)group.d_B_ptrs, bCuda, lda,
-                                  (const void**)group.d_A_ptrs, aCuda, ldb,
-                                  &beta,
-                                  (void**)group.d_C_ptrs, cCuda, ldc,
-                                  batchCount,
-                                  CUBLAS_COMPUTE_32F, algo);
+
+    // cublasGemmBatchedEx with CUBLAS_COMPUTE_32F supports HALF×HALF→FLOAT32 but
+    // NOT mixed FLOAT32×HALF (returns CUBLAS_STATUS_NOT_SUPPORTED=15). For mixed
+    // types, cast the FLOAT32 operand to HALF before the call. For decode-phase
+    // GEMV (M=1), the activation is 1×K elements — cast cost is negligible.
+    const bool isMixedType = (group.aType != group.bType) && !usesBfloat;
+    void* castScratch = nullptr;
+    void** d_castPtrs_dev = nullptr;
+    void* h_castPtrs_host[64] = {};  // stack-allocated for ≤64 batch members
+
+    if (isMixedType) {
+      const bool castA = (group.aType == FLOAT32 && (group.bType == HALF || group.bType == BFLOAT16));
+      const bool castB = (group.bType == FLOAT32 && (group.aType == HALF || group.aType == BFLOAT16));
+      const DataType targetType = castA ? group.bType : group.aType;
+      const int castElem = castA ? (group.M * group.K) : (group.K * group.N);
+      const size_t elemSize = (targetType == HALF) ? sizeof(__half) : sizeof(__nv_bfloat16);
+      const size_t perMemberBytes = castElem * elemSize;
+      const size_t totalCastBytes = perMemberBytes * batchCount;
+      const size_t ptrArrayBytes = batchCount * sizeof(void*);
+
+      auto err = cudaMalloc(&castScratch, totalCastBytes);
+      if (err != cudaSuccess) {
+        DSP_DIAG(EXECUTE, "batched GEMM group %d: cast scratch alloc failed (%zu bytes): %s",
+                 groupIdx, totalCastBytes, cudaGetErrorString(err));
+        cudaGetLastError();
+        return Status::KERNEL_FAILURE;
+      }
+      err = cudaMalloc((void**)&d_castPtrs_dev, ptrArrayBytes);
+      if (err != cudaSuccess) {
+        cudaFree(castScratch);
+        cudaGetLastError();
+        return Status::KERNEL_FAILURE;
+      }
+
+      // Launch float→half cast kernel per batch member and build pointer array
+      for (int b = 0; b < batchCount; b++) {
+        char* dst = static_cast<char*>(castScratch) + perMemberBytes * b;
+        const void* src = castA ? group.h_A_ptrs[b] : group.h_B_ptrs[b];
+        // float→half conversion via vectorized CUDA kernel
+        const int blocks = (castElem + 255) / 256;
+        batchedGemmCastFloat2Half<<<blocks, 256, 0, stream>>>(
+            reinterpret_cast<const float*>(src),
+            reinterpret_cast<__half*>(dst),
+            castElem);
+        h_castPtrs_host[b] = dst;
+      }
+      cudaMemcpyAsync(d_castPtrs_dev, h_castPtrs_host, ptrArrayBytes,
+                       cudaMemcpyHostToDevice, stream);
+
+      // Call cuBLAS with uniform HALF A × HALF B → FLOAT32 C
+      cudaDataType halfType = CUDA_R_16F;
+      cudaDataType cCudaUniform = CUDA_R_32F;
+      const void** dB = castA ? (const void**)group.d_B_ptrs : (const void**)d_castPtrs_dev;
+      const void** dA = castA ? (const void**)d_castPtrs_dev : (const void**)group.d_A_ptrs;
+      status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
+                                    group.N, group.M, group.K,
+                                    &alpha,
+                                    dB, halfType, lda,
+                                    dA, halfType, ldb,
+                                    &beta,
+                                    (void**)group.d_C_ptrs, cCudaUniform, ldc,
+                                    batchCount,
+                                    CUBLAS_COMPUTE_32F, algo);
+      cudaFreeAsync(castScratch, stream);
+      cudaFreeAsync(d_castPtrs_dev, stream);
+    } else {
+      status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
+                                    group.N, group.M, group.K,
+                                    &alpha,
+                                    (const void**)group.d_B_ptrs, bCuda, lda,
+                                    (const void**)group.d_A_ptrs, aCuda, ldb,
+                                    &beta,
+                                    (void**)group.d_C_ptrs, cCuda, ldc,
+                                    batchCount,
+                                    CUBLAS_COMPUTE_32F, algo);
+    }
   } else {
     DSP_DIAG(EXECUTE, "batched GEMM group %d: unsupported dtype combination A=%d B=%d C=%d",
              groupIdx, (int)group.aType, (int)group.bType, (int)group.cType);
@@ -664,8 +747,14 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   }
 
   if (status != CUBLAS_STATUS_SUCCESS) {
-    DSP_DIAG(EXECUTE, "batched GEMM group %d: cublasGemmBatched failed with status %d",
-              groupIdx, (int)status);
+    DSP_DIAG(EXECUTE, "batched GEMM group %d: cublasGemmBatched FAILED cublas_status=%d "
+              "aType=%d bType=%d cType=%d M=%d N=%d K=%d batch=%d mixedType=%d "
+              "transA=%d transB=%d lda=%d ldb=%d ldc=%d",
+              groupIdx, (int)status,
+              (int)group.aType, (int)group.bType, (int)group.cType,
+              group.M, group.N, group.K, batchCount,
+              (int)(group.aType != group.bType),
+              (int)group.transA, (int)group.transB, lda, ldb, ldc);
     return Status::KERNEL_FAILURE;
   }
 
