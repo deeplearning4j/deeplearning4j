@@ -57,6 +57,8 @@
 #include <graph/gpu/TritonGraphBackend.h>
 #endif
 
+#include <cublas_v2.h>  // N6: cublasSetStream_v2 / cublasSetWorkspace for hoisted gap setup
+
 #include <algorithm>
 #include <chrono>
 #include <thread>
@@ -72,6 +74,8 @@ extern thread_local cudaStream_t tl_dspGapStream;
 // cuBLAS workspace thread-locals — defined in MmulHelper.cu / DataBuffer.cu.
 extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+// N6: defined in NativeDynamicShapePlan_batchgemm.cu — hoisted cuBLAS stream+workspace flag.
+extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;
 // cuBLAS Lt disable flag lives in DataBuffer.cu — not referenced here.
 
 // Portable buffer accessor (CUDA form).
@@ -1414,6 +1418,27 @@ Status NativeDynamicShapePlan::compositeReplay(
   // Per-op-name EXECUTE slot counters for gap profiling (only first 250 decode steps)
   std::unordered_map<std::string, int> execOpCounts;
   bool collectExecOpNames = executionTimingEnabled_ && seg.exec.executionCount < 3;
+
+  // ── N6: Hoist cuBLAS stream+workspace setup before gap loop ────────────────
+  // All 60 bgemm groups use the same CUDA stream (cudaStr).  Per cuBLAS docs,
+  // cublasSetStream resets the user workspace, so both calls are a coupled pair.
+  // Calling once here and skipping 59 redundant pairs inside executeBatchedGemmGroup
+  // eliminates 118 cuBLAS host-API calls per decode step.
+  // RAII guard resets tl_cublasGapStreamReady on any exit path.
+  struct CublasGapStreamGuard {
+    CublasGapStreamGuard() { tl_cublasGapStreamReady = false; }
+    ~CublasGapStreamGuard() { tl_cublasGapStreamReady = false; }
+  } cublasGapStreamGuard;
+  if (!batchedGemmGroups_.empty() && !tl_graphExecutionActive) {
+    auto* ctx2 = LaunchContext::defaultContext();
+    std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
+    auto handle = reinterpret_cast<cublasHandle_t*>(ctx2->getCublasHandle());
+    cublasSetStream_v2(*handle, cudaStr);
+    if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+      cublasSetWorkspace(*handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
+    }
+    tl_cublasGapStreamReady = true;
+  }
 
   // ── Tensor-core acceleration for steady-state gap matmuls (hoisted) ────────
   bool gapSlotsExecutedSinceArgCopy = false;

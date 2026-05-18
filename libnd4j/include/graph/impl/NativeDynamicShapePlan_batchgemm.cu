@@ -49,6 +49,10 @@
 extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
 extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
+// N6: When true, compositeReplay has already called cublasSetStream_v2 +
+// cublasSetWorkspace for the current gap loop's stream.  Per-group calls
+// inside executeBatchedGemmGroup skip the redundant setup.
+SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady = false;
 
 namespace sd {
 namespace graph {
@@ -757,11 +761,14 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   auto* context = LaunchContext::defaultContext();
   std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
   auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
-  // Skip cublasSetStream_v2 during CUDA graph capture (see MmulHelper mmulMxM comment).
-  if (!tl_graphExecutionActive) {
+  // N6: Skip cublasSetStream_v2 + workspace if compositeReplay already set them
+  // for this gap loop (tl_cublasGapStreamReady).  Per cuBLAS docs,
+  // cublasSetStream resets the user workspace, so both calls are coupled.
+  // During CUDA graph capture, skip entirely (workspace was pre-set).
+  if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
     cublasSetStream_v2(*handle, stream);
+    reapplyCublasWorkspaceBG(*handle);
   }
-  reapplyCublasWorkspaceBG(*handle);
 
   // cuBLAS uses column-major. For row-major C = op(A) * op(B), we swap:
   //   cuBLAS_A = our B, cuBLAS_B = our A
