@@ -147,6 +147,9 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     if (slotHasTrait(slot, sd::ops::OP_TRAIT_TILE)) {
       return KernelSectionType::TILE;
     }
+    // broadcast_to is handled via the op table as IDENTITY category, which maps to
+    // ELEMENTWISE section type via categoryToSectionType(). The elementwise preloader
+    // uses per-dimension broadcast indexing (unravel→mod→ravel) for correct N-D broadcasting.
     if (slotHasTrait(slot, sd::ops::OP_TRAIT_SCATTER_ND_UPDATE)) {
       return KernelSectionType::SCATTER_ND_UPDATE;
     }

@@ -488,7 +488,21 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   for (int i = startSlot; i <= endSlot; i++) {
+    // For broadcast_to: skip input[1] (shape tensor) — it's metadata only, not data.
+    // The IDENTITY emitter only forwards input[0]; loading the shape tensor would
+    // read integer shape values as float, producing garbage.
+    bool isBroadcastToSlot = false;
+    if (slots[i].wiring.numInputs == 2) {
+      auto cat = getOpCategoryFromName(slots[i].ident.opName);
+      if (cat == TritonOpCategory::IDENTITY) {
+        std::string opL = slots[i].ident.opName;
+        std::transform(opL.begin(), opL.end(), opL.begin(), ::tolower);
+        isBroadcastToSlot = (opL == "broadcast_to" || opL == "broadcastto");
+      }
+    }
     for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      // Skip shape tensor (input[1]) for broadcast_to
+      if (isBroadcastToSlot && inp == 1) continue;
       int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
 
@@ -1512,7 +1526,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
       // For assign(target, source): output = source = input[1]
       // For identity(x): output = x = input[0]
-      int inputIdx = (slot.wiring.numInputs >= 2) ? 1 : 0;
+      // For broadcast_to(data, shape): output = data = input[0]
+      std::string identOpL = slot.ident.opName;
+      std::transform(identOpL.begin(), identOpL.end(), identOpL.begin(), ::tolower);
+      int inputIdx;
+      if (identOpL == "broadcast_to" || identOpL == "broadcastto") {
+        inputIdx = 0;  // forward data tensor, not shape tensor
+      } else {
+        inputIdx = (slot.wiring.numInputs >= 2) ? 1 : 0;
+      }
       int inputSrc = slot.wiring.inputSourceIndices[inputIdx];
       auto inputIt = ssaValues.find(inputSrc);
       if (inputIt == ssaValues.end()) {
@@ -3582,8 +3604,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           THROW_EXCEPTION(msg.c_str());
         }
 
-      } else if (opLower == "tile") {
-        // ─── TILE ───
+      } else if (opLower == "tile" || opLower == "broadcast_to") {
+        // ─── TILE / BROADCAST_TO ───
+        // broadcast_to is semantically identical to tile: for each dimension where
+        // input size is 1 and output size is N, the repeat factor is N. We derive
+        // repeats from the output/input shape ratio, which works for both ops.
         int dataSrc = slot.wiring.inputSourceIndices[0];
         int outSlot = slot.wiring.outputSlotIndices[0];
         auto dataPtr = getSlotArgPtr(dataSrc);
@@ -3609,7 +3634,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
         } else {
-          std::string msg = "TritonIRBuilder: tile '" + slot.ident.opName + "' at slot " + std::to_string(si) +
+          std::string msg = "TritonIRBuilder: " + slot.ident.opName + " at slot " + std::to_string(si) +
               " — missing kernel arg ptrs. Cannot compile.";
           THROW_EXCEPTION(msg.c_str());
         }
@@ -4270,7 +4295,18 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   std::vector<TritonKernelArg> inputArgs;
   std::unordered_set<int> seenInputs;
   for (int i = startSlot; i <= endSlot; i++) {
+    // For broadcast_to: skip input[1] (shape tensor) — metadata only, not data.
+    bool isBroadcastToSlot = false;
+    if (slots[i].wiring.numInputs == 2) {
+      auto cat = getOpCategoryFromName(slots[i].ident.opName);
+      if (cat == TritonOpCategory::IDENTITY) {
+        std::string opL = slots[i].ident.opName;
+        std::transform(opL.begin(), opL.end(), opL.begin(), ::tolower);
+        isBroadcastToSlot = (opL == "broadcast_to" || opL == "broadcastto");
+      }
+    }
     for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
+      if (isBroadcastToSlot && inp == 1) continue;
       int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
@@ -5046,15 +5082,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         auto offsets = builder.create<mlir::arith::AddIOp>(loc, splatBase, range);
 
         // Load inputs that aren't already in SSA map, with broadcast indexing
-        // Compute max output elements for this section (for broadcast detection)
+        // Compute max output elements and shape for this section (for broadcast detection)
         LongType secMaxOutputElements = 0;
+        std::vector<LongType> secMaxOutputShape;
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           for (int o = 0; o < slots[si].wiring.numOutputs; o++) {
             int outIdx = slots[si].wiring.outputSlotIndices[o];
             auto outShape = resolveShape(outIdx);
             LongType oElems = 1;
             for (auto d : outShape) oElems *= d;
-            if (oElems > secMaxOutputElements) secMaxOutputElements = oElems;
+            if (oElems > secMaxOutputElements) {
+              secMaxOutputElements = oElems;
+              secMaxOutputShape = outShape;
+            }
           }
         }
         // Fallback: if output shapes unavailable, use max input elements
@@ -5067,7 +5107,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto& argDesc = result.args[argIt->second];
               LongType iElems = 1;
               for (auto d : argDesc.shape) iElems *= d;
-              if (iElems > secMaxOutputElements) secMaxOutputElements = iElems;
+              if (iElems > secMaxOutputElements) {
+                secMaxOutputElements = iElems;
+                secMaxOutputShape = argDesc.shape;
+              }
             }
           }
         }
@@ -5087,7 +5130,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         bool skipGenericPreload = (sec.type == KernelSectionType::NORMALIZATION);
         if (!skipGenericPreload) {
           for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+            // For broadcast_to (IDENTITY with 2 inputs): skip input[1] (shape tensor).
+            // The shape tensor is metadata only — it describes the target shape but
+            // carries no data needed for the kernel. Loading it would read integer
+            // shape values as float, producing garbage.
+            auto slotCat = getOpCategoryFromName(slots[si].ident.opName);
+            bool isBroadcastTo = false;
+            if (slotCat == TritonOpCategory::IDENTITY && slots[si].wiring.numInputs == 2) {
+              std::string opLower = slots[si].ident.opName;
+              std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+              isBroadcastTo = (opLower == "broadcast_to" || opLower == "broadcastto");
+            }
             for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+              // Skip shape tensor (input[1]) for broadcast_to
+              if (isBroadcastTo && inp == 1) continue;
               int srcIdx = slots[si].wiring.inputSourceIndices[inp];
               if (ssaValues.count(srcIdx)) continue;
               auto argIt = slotToArgIdx.find(srcIdx);
@@ -5099,15 +5155,77 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto elemType = ptrType.getPointeeType();
               auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
-              // Broadcast indexing: if input is smaller than max output, use modular offsets
+              // Broadcast indexing: if input is smaller than max output, remap offsets
               LongType inputElements = 1;
               for (auto d : argDesc.shape) inputElements *= d;
               mlir::Value loadOffsets = offsets;
               if (inputElements > 0 && inputElements < secMaxOutputElements) {
-                auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(
-                    loc, static_cast<int>(inputElements), 32);
-                auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
-                loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+                // Check if N-D broadcast indexing is needed.
+                // N-D broadcast is required when input and output shapes differ in
+                // non-trailing dimensions (e.g., [1,1142,1,1] → [1,1142,9,64]).
+                // Flat modular indexing (offset % inputElements) only works for
+                // scalar broadcasting or last-dimension-only broadcasting.
+                const auto& inShapeRaw = argDesc.shape;
+                bool needsNdBroadcast = false;
+                if (!secMaxOutputShape.empty() && !inShapeRaw.empty() && secMaxOutputShape.size() >= 1) {
+                  // Left-pad input shape with 1s if ranks differ
+                  int outRank = static_cast<int>(secMaxOutputShape.size());
+                  int inRank = static_cast<int>(inShapeRaw.size());
+                  std::vector<LongType> inShape(outRank, 1);
+                  int padDims = outRank - inRank;
+                  for (int d = 0; d < inRank; d++)
+                    inShape[padDims + d] = inShapeRaw[d];
+
+                  // N-D broadcast needed if any dimension is 1 in input but >1 in output
+                  for (int d = 0; d < outRank; d++) {
+                    if (inShape[d] != secMaxOutputShape[d] && inShape[d] == 1) {
+                      needsNdBroadcast = true;
+                      break;
+                    }
+                  }
+
+                  if (needsNdBroadcast) {
+                    // Per-dimension broadcast indexing: unravel output flat offset to N-D coords,
+                    // wrap each coord by input dim (coord % inputShape[d]), ravel back to flat input offset.
+                    // Same math as emitTileSection but inlined for elementwise fusion.
+                    int rank = outRank;
+
+                    // Compute output strides (row-major)
+                    std::vector<int> outStrides(rank, 1);
+                    for (int d = rank - 2; d >= 0; d--)
+                      outStrides[d] = outStrides[d + 1] * static_cast<int>(secMaxOutputShape[d + 1]);
+
+                    // Compute input strides (row-major), using padded input shape
+                    std::vector<int> inStrides(rank, 1);
+                    for (int d = rank - 2; d >= 0; d--)
+                      inStrides[d] = inStrides[d + 1] * static_cast<int>(inShape[d + 1]);
+
+                    // Unravel output flat offset, mod each coord by inputShape[d], ravel to input offset
+                    mlir::Value srcOffset = splatConstantI32(builder, loc, i32TensorType, 0);
+                    mlir::Value remaining = offsets;
+                    for (int d = 0; d < rank; d++) {
+                      auto strideConst = splatConstantI32(builder, loc, i32TensorType, outStrides[d]);
+                      auto coord = builder.create<mlir::arith::DivSIOp>(loc, remaining, strideConst);
+                      if (d < rank - 1)
+                        remaining = builder.create<mlir::arith::RemSIOp>(loc, remaining, strideConst);
+                      // Wrap to input dimension (dims where inShape[d]==1 collapse to coord 0)
+                      auto inDimConst = splatConstantI32(builder, loc, i32TensorType, static_cast<int>(inShape[d]));
+                      auto wrappedCoord = builder.create<mlir::arith::RemSIOp>(loc, coord, inDimConst);
+                      auto inStrideConst = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
+                      auto contrib = builder.create<mlir::arith::MulIOp>(loc, wrappedCoord, inStrideConst);
+                      srcOffset = builder.create<mlir::arith::AddIOp>(loc, srcOffset, contrib);
+                    }
+                    loadOffsets = srcOffset;
+                  }
+                }
+
+                if (!needsNdBroadcast) {
+                  // Flat modular indexing: works for scalar broadcast and last-dim-only broadcast
+                  auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(
+                      loc, static_cast<int>(inputElements), 32);
+                  auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
+                  loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+                }
               }
 
               auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
@@ -5222,7 +5340,15 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           } else if (cat == TritonOpCategory::IDENTITY) {
             if (slot.wiring.numInputs < 1) continue;
             // assign(target, source): forward input[1]; identity(x): forward input[0]
-            int identIdx = (slot.wiring.numInputs >= 2) ? 1 : 0;
+            // broadcast_to(data, shape): forward input[0] — shape tensor is metadata only
+            std::string identOpLower = slot.ident.opName;
+            std::transform(identOpLower.begin(), identOpLower.end(), identOpLower.begin(), ::tolower);
+            int identIdx;
+            if (identOpLower == "broadcast_to" || identOpLower == "broadcastto") {
+              identIdx = 0;  // forward data tensor, not shape tensor
+            } else {
+              identIdx = (slot.wiring.numInputs >= 2) ? 1 : 0;
+            }
             auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[identIdx]);
             if (inputIt == ssaValues.end()) continue;
             for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;

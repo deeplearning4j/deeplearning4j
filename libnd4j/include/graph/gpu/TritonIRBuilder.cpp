@@ -373,6 +373,11 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["Tile"]                = {"Tile",                TritonOpCategory::DATA_MOVEMENT, "custom.tile",          true};
   table["repeat"]              = {"repeat",              TritonOpCategory::DATA_MOVEMENT, "custom.tile",          true};
   table["Repeat"]              = {"Repeat",              TritonOpCategory::DATA_MOVEMENT, "custom.tile",          true};
+  // broadcast_to: classified as IDENTITY so it fuses into elementwise sections.
+  // The elementwise preloader handles N-D broadcast indexing (unravel→mod→ravel)
+  // instead of flat modular indexing, which is correct for arbitrary dimension broadcasting.
+  table["broadcast_to"]          = {"broadcast_to",          TritonOpCategory::IDENTITY,       "identity",             false};
+  table["BroadcastTo"]           = {"BroadcastTo",           TritonOpCategory::IDENTITY,       "identity",             false};
   table["scatter_nd"]          = {"scatter_nd",          TritonOpCategory::DATA_MOVEMENT, "custom.scatter_nd",    true};
   table["ScatterNd"]           = {"ScatterNd",           TritonOpCategory::DATA_MOVEMENT, "custom.scatter_nd",    true};
   table["scatter_nd_update"]   = {"scatter_nd_update",   TritonOpCategory::DATA_MOVEMENT, "custom.scatter_nd_update", true};

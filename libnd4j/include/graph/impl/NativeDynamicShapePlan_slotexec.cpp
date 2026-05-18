@@ -5133,6 +5133,25 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
   // Prezero: handled by batch prezero pass in compositeReplay before gap loop.
   // Sync not needed: device-resident in steady state.
 
+  // ── View-op fast path ──────────────────────────────────────────────────
+  // For view-capable ops (reshape, reshape_no_copy, permute, etc.) in steady state,
+  // if the output already shares the input's data buffer, the op is a no-op —
+  // just tick the write counter. This avoids full op dispatch (~33µs/call).
+  // The first executeSlotGapFast call goes through execute() which establishes
+  // the view; all subsequent calls hit this fast path.
+  if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
+    NDArray* input0 = fpIn[0];
+    int outSi = slot.wiring.outputSlotIndices[0];
+    if (input0 != nullptr && outSi >= 0 && outSi < totalOutputSlots_) {
+      NDArray* output = outputSlots_[outSi];
+      if (output != nullptr && input0->dataBuffer() != nullptr &&
+          output->dataBuffer() == input0->dataBuffer()) {
+        output->tickWriteDevice();
+        return Status::OK;
+      }
+    }
+  }
+
   // Disable helper dispatch for non-matmul ops in steady-state gap execution.
   // By executeCount_>=5, the auto-tuner has determined the optimal backend.
   // Non-matmul ops (equals, broadcast_to, Where, gather, concat, etc.) never use

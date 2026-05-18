@@ -1368,10 +1368,11 @@ Status NativeDynamicShapePlan::compositeReplay(
   auto tPrezero = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
   // NOTE: Single-stream unification was tried here (routing gap ops onto cudaStr
-  // via tl_dspGapStream) but REGRESSED performance from 42.6→35.9 tok/s because
-  // it serialized gap ops with merged graph replays, eliminating beneficial
-  // overlap between the two streams. Separate streams allow GPU to pipeline
-  // graph replay launches while gap ops execute concurrently.
+  // via tl_dspGapStream). Tested twice:
+  //   1. Pre-bgemm (42.6→35.9 tok/s, -16%) — thought to eliminate beneficial overlap
+  //   2. Post-bgemm (51.1→50.5 tok/s, neutral) — confirmed NO overlap exists
+  //      (gap+merged ≈ total), but slight per-dispatch latency increase from
+  //      sharing a single stream's command buffer. Not worth the change.
 
   // ── Cross-stream sync: ensure prezero memsets on cudaStr are visible ───
   // Gap-only prezero above issues cudaMemsetAsync / batchMemsetKernel on cudaStr. Gap ops that
@@ -1642,7 +1643,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       if (useCachedActiveSlots) {
         // ── FAST PATH: iterate only over pre-classified active slots ──
         auto& cachedSlots = cachedActiveGapSlotsMap_[unit.startSlot];
-        for (const auto& active : cachedSlots) {
+        for (auto& active : cachedSlots) {
           switch (active.action) {
             case ActiveSlotAction::IDENTITY_TICK: {
               int si = active.outputSlotIdx;
@@ -1671,6 +1672,38 @@ Status NativeDynamicShapePlan::compositeReplay(
               break;
             }
             case ActiveSlotAction::EXECUTE: {
+              // ── N12: Reclassify EXECUTE → VIEW_TICK when view is now established ──
+              // On cache build (executeCount_==2), reshape_no_copy may not yet share
+              // dataBuffer with input, so it gets classified as EXECUTE. Once the view
+              // is established in later steps, demote to VIEW_TICK to skip full op dispatch.
+              if (executeCount_ >= 4 && skipPtrTracking) {
+                auto& slot = slots_[active.slotIdx];
+                if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
+                  int outSi = slot.wiring.outputSlotIndices[0];
+                  if (outSi >= 0 && outSi < totalOutputSlots_) {
+                    NDArray* currentOut = outputSlots_[outSi];
+                    int inSrc = slot.wiring.inputSourceIndices[0];
+                    NDArray* input0 = nullptr;
+                    if (inSrc >= 0 && inSrc < totalOutputSlots_) {
+                      input0 = outputSlots_[inSrc];
+                    } else if (inSrc < 0) {
+                      int extIdx = -(inSrc + 1);
+                      if (extIdx >= 0 && extIdx < numExt) input0 = effectiveExternals[extIdx];
+                    }
+                    if (currentOut != nullptr && input0 != nullptr &&
+                        currentOut->dataBuffer() != nullptr &&
+                        currentOut->dataBuffer() == input0->dataBuffer()) {
+                      // View is established — demote to VIEW_TICK permanently
+                      currentOut->tickWriteDevice();
+                      dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
+                      active.action = ActiveSlotAction::VIEW_TICK;
+                      active.outputSlotIdx = outSi;
+                      if (executionTimingEnabled_) nTickSlots++;
+                      break;
+                    }
+                  }
+                }
+              }
               // Use ultra-fast path in steady state (pointers stable, well past warmup)
               Status slotStatus;
               if (executeCount_ >= 5 && skipPtrTracking) {
