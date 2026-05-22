@@ -671,7 +671,7 @@ static void appendUpstreamControlTrace(std::string& out,
  *
  * Returns a ConstantShapeHelper-managed pointer (not owned by caller).
  */
-static const LongType* buildPermutedViewShapeInfo(const NDArray* input, const NativeSlot& slot,
+static const LongType* buildPermutedViewShapeInfo(NDArray* input, const NativeSlot& slot,
                                                     NDArray** allInputs, int numInputs) {
   // Build the permutation array from iArgs, normalizing negative indices
   int rank = shape::rank(input->shapeInfo());
