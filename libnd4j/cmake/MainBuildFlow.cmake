@@ -648,11 +648,11 @@ function(create_and_link_library)
         if(OpenMP_CXX_FOUND)
             # Use generator expressions so -fopenmp only applies to C/CXX, not CUDA.
             # nvcc does not understand -fopenmp and fatals on Windows CUDA builds.
-            # MSVC uses /openmp; GCC/Clang use -fopenmp.
+            # MSVC needs /openmp:experimental for #pragma omp simd support.
             if(MSVC)
                 target_compile_options(${OBJECT_LIB_NAME} PUBLIC
-                    $<$<COMPILE_LANGUAGE:CXX>:/openmp>
-                    $<$<COMPILE_LANGUAGE:C>:/openmp>)
+                    $<$<COMPILE_LANGUAGE:CXX>:/openmp:experimental>
+                    $<$<COMPILE_LANGUAGE:C>:/openmp:experimental>)
             else()
                 target_compile_options(${OBJECT_LIB_NAME} PUBLIC
                     $<$<COMPILE_LANGUAGE:CXX>:-fopenmp>
