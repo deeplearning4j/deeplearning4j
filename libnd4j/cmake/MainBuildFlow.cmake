@@ -585,8 +585,17 @@ function(configure_cpu_linking main_target_name)
     if(OpenMP_CXX_FOUND)
         target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
 
+        # Android NDK: OpenMP::OpenMP_CXX imported target may not propagate the
+        # link flag correctly through the NDK toolchain file. The NDK bundles a
+        # static libomp.a — explicitly add -fopenmp -static-openmp so the linker
+        # resolves __kmpc_* symbols.
+        if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+            target_link_libraries(${main_target_name} PUBLIC "-fopenmp" "-static-openmp")
+            message(STATUS "✅ Android: added -fopenmp -static-openmp to linker for ${main_target_name}")
+        endif()
+
         # Bundle OpenMP runtime library for cross-platform deployment
-        if(NOT WIN32 AND OpenMP_omp_LIBRARY AND EXISTS "${OpenMP_omp_LIBRARY}")
+        if(NOT WIN32 AND NOT ANDROID AND OpenMP_omp_LIBRARY AND EXISTS "${OpenMP_omp_LIBRARY}")
             message(STATUS "📦 Bundling OpenMP library: ${OpenMP_omp_LIBRARY}")
             add_custom_command(TARGET ${main_target_name} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenMP_omp_LIBRARY}" "${CMAKE_BINARY_DIR}/libomp.dylib"
