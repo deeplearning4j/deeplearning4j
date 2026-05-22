@@ -228,15 +228,18 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     helpers::kvInPlaceWrite(origPastKey, kReshaped, cachePosPtr, block.launchContext());
     helpers::kvInPlaceWrite(origPastValue, vReshaped, cachePosPtr, block.launchContext());
 
-    // Use the ORIGINAL pastKey/pastValue for attention (permute BHSD→BSHD).
+    // Use the (possibly cast) pastKey/pastValue for attention (permute BHSD→BSHD).
+    // pastKey/pastValue were auto-cast to query dtype at lines 127-134 if needed.
+    // origPastKey/origPastValue are the real cache buffers (may be HALF);
+    // pastKey/pastValue are FLOAT copies if cast was needed.
     // totalSeqKV = maxSeqLen: the causal mask handles token visibility,
     // so we pass the full buffer. Positions beyond cachePos+seqKV contain
     // zeros or stale data but are masked out by the attention mask.
-    totalSeqKV = origPastKey->sizeAt(2);  // maxSeqLen
+    totalSeqKV = pastKey->sizeAt(2);  // maxSeqLen
 
     std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
-    kFinal = origPastKey->permute(permBHSDtoBSHD, false, false);
-    vFinal = origPastValue->permute(permBHSDtoBSHD, false, false);
+    kFinal = pastKey->permute(permBHSDtoBSHD, false, false);
+    vFinal = pastValue->permute(permBHSDtoBSHD, false, false);
     ownKVFinal = true;   // We own the permuted views (need delete)
     skipPresentOutput = true;  // No present output copy needed — past IS the cache
   } else if (pastKey != nullptr && pastValue != nullptr && !pastAlreadyConcat) {
@@ -469,7 +472,15 @@ DECLARE_SHAPE_FN(onnx_multi_head_attention) {
     }
   }
 
+  // Promote to widest FP type among Q/K/V (mirrors runtime auto-cast in CUSTOM_OP_IMPL)
+  auto valueShape = inputShape->at(2);
   auto dtype = ArrayOptions::dataType(queryShape);
+  auto keyDtype = ArrayOptions::dataType(keyShape);
+  auto valueDtype = ArrayOptions::dataType(valueShape);
+  if (DataTypeUtils::sizeOfElement(keyDtype) > DataTypeUtils::sizeOfElement(dtype))
+    dtype = keyDtype;
+  if (DataTypeUtils::sizeOfElement(valueDtype) > DataTypeUtils::sizeOfElement(dtype))
+    dtype = valueDtype;
 
   // Handle empty K/V — produce empty present shapes with ARRAY_EMPTY flag
   if (shape::isEmpty(keyShape) || seqKV == 0) {

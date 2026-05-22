@@ -1958,9 +1958,6 @@ public class TestGraphOptimizerAccuracy {
         // Apply attention fusion — must handle additive causal mask pattern
         SameDiff optimized = GraphOptimizer.optimize(sd, Collections.singletonList("output"),
                 Collections.singletonList(new AttentionFusionOptimizations()));
-        // Disable DSP to isolate attention fusion correctness from DSP execution issues
-        optimized.setDspAutoCompileEnabled(false);
-        optimized.setDspNativeAutoCompileEnabled(false);
 
         INDArray optOutput = optimized.outputSingle(Map.of("input", inputArr), "output");
 
@@ -1973,5 +1970,122 @@ public class TestGraphOptimizerAccuracy {
         double maxDiff = refOutput.sub(optOutput).amaxNumber().doubleValue();
         log.info("Causal attention fusion maxDiff={}", maxDiff);
         assertTrue(maxDiff < 1e-3, "Causal attention fusion corrupted output: maxDiff=" + maxDiff);
+    }
+
+    /**
+     * Direct test of DotProductAttentionV2 with isCausal=true against manual computation.
+     * No optimizer, no graph copy — just verify the fused op produces correct results.
+     */
+    @Test
+    public void testDotProductAttentionV2_CausalDirect() {
+        Nd4j.getRandom().setSeed(42);
+        int B = 1, S = 4, H = 2, D = 4;
+        float scale = (float)(1.0 / Math.sqrt(D));
+
+        // BSHD inputs
+        INDArray Q = Nd4j.randn(DataType.FLOAT, B, S, H, D);
+        INDArray K = Nd4j.randn(DataType.FLOAT, B, S, H, D);
+        INDArray V = Nd4j.randn(DataType.FLOAT, B, S, H, D);
+
+        // Manual attention: permute to BHSD, compute Q@K^T*scale, causal mask, softmax, @V, permute back
+        INDArray Qp = Q.permute(0, 2, 1, 3);  // [B,H,S,D]
+        INDArray Kp = K.permute(0, 2, 1, 3);  // [B,H,S,D]
+        INDArray Vp = V.permute(0, 2, 1, 3);  // [B,H,S,D]
+
+        // Q@K^T per head: reshape to [B*H,S,D]
+        INDArray Qf = Qp.reshape(B*H, S, D);
+        INDArray Kf = Kp.reshape(B*H, S, D);
+        INDArray Vf = Vp.reshape(B*H, S, D);
+
+        // Batched matmul: Q@K^T
+        INDArray scores = Nd4j.create(DataType.FLOAT, B*H, S, S);
+        for (int i = 0; i < B*H; i++) {
+            INDArray qi = Qf.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            INDArray ki = Kf.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            scores.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i)).assign(qi.mmul(ki.transpose()).mul(scale));
+        }
+
+        // Causal mask
+        for (int b = 0; b < B*H; b++) {
+            for (int i = 0; i < S; i++) {
+                for (int j = i + 1; j < S; j++) {
+                    scores.putScalar(new int[]{b, i, j}, -1e9f);
+                }
+            }
+        }
+
+        // Softmax on last dim
+        INDArray weights = Nd4j.create(DataType.FLOAT, B*H, S, S);
+        for (int b = 0; b < B*H; b++) {
+            for (int i = 0; i < S; i++) {
+                INDArray row = scores.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b),
+                        org.nd4j.linalg.indexing.NDArrayIndex.point(i),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all());
+                double max = row.maxNumber().doubleValue();
+                INDArray expRow = Nd4j.math.exp(row.sub(max));
+                double sum = expRow.sumNumber().doubleValue();
+                weights.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b),
+                        org.nd4j.linalg.indexing.NDArrayIndex.point(i),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all()).assign(expRow.div(sum));
+            }
+        }
+
+        // Weighted sum: weights @ V
+        INDArray out = Nd4j.create(DataType.FLOAT, B*H, S, D);
+        for (int i = 0; i < B*H; i++) {
+            INDArray wi = weights.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            INDArray vi = Vf.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            out.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i)).assign(wi.mmul(vi));
+        }
+
+        // Permute back: [B*H,S,D] -> [B,H,S,D] -> [B,S,H,D]
+        INDArray manualOut = out.reshape(B, H, S, D).permute(0, 2, 1, 3);  // BSHD
+
+        // Run fused op with isCausal=true
+        INDArray fusedResultCausal = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(
+                Q, V, K, null, null, scale, 0.0, true, false))[0];
+
+        System.out.println("[DIRECT-TEST] manual shape=" + java.util.Arrays.toString(manualOut.shape()));
+        System.out.println("[DIRECT-TEST] fused causal shape=" + java.util.Arrays.toString(fusedResultCausal.shape()));
+        double causalDiff = manualOut.sub(fusedResultCausal).amaxNumber().doubleValue();
+        System.out.println("[DIRECT-TEST] causal maxDiff=" + causalDiff);
+
+        // Also test without causal to confirm non-causal path works
+        // Manual without causal mask
+        INDArray scoresNoCausal = Nd4j.create(DataType.FLOAT, B*H, S, S);
+        for (int i = 0; i < B*H; i++) {
+            INDArray qi = Qf.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            INDArray ki = Kf.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            scoresNoCausal.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i)).assign(qi.mmul(ki.transpose()).mul(scale));
+        }
+        INDArray weightsNC = Nd4j.create(DataType.FLOAT, B*H, S, S);
+        for (int b = 0; b < B*H; b++) {
+            for (int i = 0; i < S; i++) {
+                INDArray row = scoresNoCausal.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b),
+                        org.nd4j.linalg.indexing.NDArrayIndex.point(i),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all());
+                double max = row.maxNumber().doubleValue();
+                INDArray expRow = Nd4j.math.exp(row.sub(max));
+                double sum = expRow.sumNumber().doubleValue();
+                weightsNC.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b),
+                        org.nd4j.linalg.indexing.NDArrayIndex.point(i),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all()).assign(expRow.div(sum));
+            }
+        }
+        INDArray outNC = Nd4j.create(DataType.FLOAT, B*H, S, D);
+        for (int i = 0; i < B*H; i++) {
+            INDArray wi = weightsNC.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            INDArray vi = Vf.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i));
+            outNC.get(org.nd4j.linalg.indexing.NDArrayIndex.point(i)).assign(wi.mmul(vi));
+        }
+        INDArray manualNoCausal = outNC.reshape(B, H, S, D).permute(0, 2, 1, 3);
+
+        INDArray fusedResultNoCausal = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(
+                Q, V, K, null, null, scale, 0.0, false, false))[0];
+        double noCausalDiff = manualNoCausal.sub(fusedResultNoCausal).amaxNumber().doubleValue();
+        System.out.println("[DIRECT-TEST] non-causal maxDiff=" + noCausalDiff);
+
+        assertTrue(noCausalDiff < 1e-4, "Non-causal DotProductAttentionV2 mismatch: maxDiff=" + noCausalDiff);
+        assertTrue(causalDiff < 1e-4, "Causal DotProductAttentionV2 mismatch: maxDiff=" + causalDiff);
     }
 }

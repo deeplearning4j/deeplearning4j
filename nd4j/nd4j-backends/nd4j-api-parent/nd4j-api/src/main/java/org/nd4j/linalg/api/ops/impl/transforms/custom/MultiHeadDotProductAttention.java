@@ -86,17 +86,18 @@ public class MultiHeadDotProductAttention extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 7 || dataTypes.size() == 8), "Expected 7 or 8 input datatypes, got %s", dataTypes);
-        DataType first = dataTypes.get(0);
+        // Auto-promote to widest FP type when inputs differ
+        DataType outputType = dataTypes.get(0);
         for( int i=0; i<dataTypes.size(); i++ ) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0){
-                Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
+            if (dataTypes.get(i).width() > outputType.width()) {
+                outputType = dataTypes.get(i);
             }
         }
         if(withWeights){
-            return Arrays.asList(first, first);
+            return Arrays.asList(outputType, outputType);
         }else{
-            return Collections.singletonList(first);
+            return Collections.singletonList(outputType);
         }
     }
 

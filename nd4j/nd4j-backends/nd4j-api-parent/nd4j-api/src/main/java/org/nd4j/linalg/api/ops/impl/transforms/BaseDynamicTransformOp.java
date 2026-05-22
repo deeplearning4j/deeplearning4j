@@ -80,7 +80,20 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
 
         // If either input is empty, the output is empty (TF broadcast semantics)
         if (x.isEmpty() || y.isEmpty()) {
-            return null; // Fall back to C++ which handles empty array broadcasting correctly
+            // Use calculateOutputDataTypes to get the correct output dtype
+            List<DataType> inputDtypes = java.util.Arrays.asList(x.dataType(), y.dataType());
+            List<DataType> outputDtypes;
+            try {
+                outputDtypes = calculateOutputDataTypes(inputDtypes);
+            } catch (Exception e) {
+                outputDtypes = Collections.singletonList(Shape.pickPairwiseDataType(x.dataType(), y.dataType()));
+            }
+            DataType outputDtype = outputDtypes != null && !outputDtypes.isEmpty()
+                    ? outputDtypes.get(0)
+                    : Shape.pickPairwiseDataType(x.dataType(), y.dataType());
+            // Create a rank-0 scalar empty shape info
+            DataBuffer shapeInfo = Shape.createShapeInformation(new long[0], new long[0], 0, 'c', outputDtype, true);
+            return Collections.singletonList(shapeInfo);
         }
 
         // Shape.broadcastOutputShape has a bug with rank-1 arrays, so only use Java-side

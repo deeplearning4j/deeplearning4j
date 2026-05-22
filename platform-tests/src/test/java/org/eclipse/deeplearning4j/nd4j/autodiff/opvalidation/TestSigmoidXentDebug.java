@@ -500,7 +500,7 @@ public class TestSigmoidXentDebug {
         // Replicate testLoss2d's log case
         double eps = 1e-7;
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution(labelsArr, 0.5));
-        predictionsArr = Nd4j.rand(predictionsArr.shape()).muli(0.8).addi(0.1);
+        predictionsArr = Nd4j.rand(DataType.DOUBLE, predictionsArr.shape()).muli(0.8).addi(0.1);
 
         // Method 1: Original test code (chained in-place ops)
         INDArray logP = Transforms.log(predictionsArr.add(eps), true);

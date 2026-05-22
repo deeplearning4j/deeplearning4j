@@ -67,7 +67,7 @@ public class OneHot extends DynamicCustomOp {
     }
 
     public OneHot(INDArray indices, int depth) {
-        this(indices, null, depth, 0, 1.0, 0.0);
+        this(indices, null, depth, -1, 1.0, 0.0);
     }
 
     public OneHot(INDArray indices, INDArray output, int depth, int axis, double on, double off) {

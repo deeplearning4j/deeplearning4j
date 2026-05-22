@@ -34,6 +34,16 @@
 #include <types/float16.h>
 #include <graph/Context.h>
 
+// Opaque type aliases used in JNI bridge declarations.
+// These mirror the typedefs in NativeOps.h but are repeated here
+// to avoid including NativeOps.h (widely included, causes rebuild blast).
+// Duplicate typedefs to the same type are legal in C++11+.
+#include <array/InteropDataBuffer.h>
+typedef sd::graph::Context OpaqueContext;
+typedef sd::NDArray* OpaqueNDArray;
+typedef sd::NDArray** OpaqueNDArrayArr;
+typedef sd::InteropDataBuffer OpaqueDataBuffer;
+
 // ========================
 // Native Graph Executor API
 // ========================

@@ -109,7 +109,9 @@ typedef struct {
   int32_t dtype;
   size_t bytes;
   int32_t device_type;
-  /* For CUDA/AMD tensors, device_id must be >= 0 and consistent across all GPU tensors in a run. */
+  /* For CUDA/AMD tensors, device_id must be >= 0. Mixed device_ids are
+   * supported — the runtime elects the majority device and migrates
+   * off-device inputs automatically. Constant replicas are cached. */
   int32_t device_id;
 } sdx_tensor_view_t;
 
@@ -122,6 +124,10 @@ typedef struct {
   uint64_t execution_time_ns;
   int32_t requested_gpu_target;
   int32_t applied_gpu_target;
+  /** Plan phase after execution: 0=WARMUP, 1=STABLE, 2=FROZEN, 3=REPLAYING */
+  int32_t plan_phase;
+  /** Number of executions completed on this context */
+  int32_t execution_count;
 } sdx_execution_report_t;
 
 SDX_API int sdxGetRuntimeAbiVersion(void);
@@ -155,6 +161,38 @@ SDX_API const char* sdxGetLastError(const sdx_runtime_t* runtime);
 SDX_API sdx_status_t sdxGetExecutionReport(
     const sdx_context_t* context,
     sdx_execution_report_t* out_report);
+
+/**
+ * Mark an external input index as a VARIABLE (changes value between runs but
+ * keeps the same shape). This enables D2D staging buffers for that input.
+ * Call after sdxCreateContext(), before the first sdxRun().
+ */
+SDX_API sdx_status_t sdxMarkInputVariable(sdx_context_t* context, int32_t input_index);
+
+/**
+ * Mark an external input index as a PLACEHOLDER (changes both value and
+ * potentially shape between runs). Placeholders always get H2D sync.
+ * Call after sdxCreateContext(), before the first sdxRun().
+ */
+SDX_API sdx_status_t sdxMarkInputPlaceholder(sdx_context_t* context, int32_t input_index);
+
+/**
+ * Freeze shapes on the plan. After freezing, all shapes are assumed constant,
+ * enabling CUDA graph capture and the argTableStable fast path.
+ * Typically called after a warmup phase (a few sdxRun() calls to stabilize shapes).
+ */
+SDX_API sdx_status_t sdxFreezeShapes(sdx_context_t* context);
+
+/**
+ * Query the current plan phase.
+ * Returns: 0=WARMUP, 1=STABLE, 2=FROZEN, 3=REPLAYING, -1 on error.
+ */
+SDX_API int32_t sdxGetPlanPhase(const sdx_context_t* context);
+
+/**
+ * Get the number of executions completed on this context.
+ */
+SDX_API int32_t sdxGetExecutionCount(const sdx_context_t* context);
 
 #ifdef __cplusplus
 }

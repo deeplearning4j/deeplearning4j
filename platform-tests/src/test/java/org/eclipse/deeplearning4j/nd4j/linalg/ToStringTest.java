@@ -83,7 +83,7 @@ public class ToStringTest extends BaseNd4jTestWithBackends {
                     sb.append("]");
                 }
                 String exp = sb.toString();
-                assertEquals("Rank: " + i + ", DT: " + dataTypes[dt], exp, str);
+                assertEquals(exp, str, "Rank: " + i + ", DT: " + dataTypes[dt]);
             }
         }
     }

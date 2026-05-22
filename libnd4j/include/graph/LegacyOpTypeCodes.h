@@ -57,6 +57,7 @@ enum LegacyOpTypeCode : int {
   LEGACY_BROADCAST            = 15,
   LEGACY_BROADCAST_BOOL       = 16,
   LEGACY_RANDOM               = 17,
+  LEGACY_PAIRWISE_BOOL        = 18,
 };
 
 // True for legacy op types whose reduction/broadcast dimensions live in

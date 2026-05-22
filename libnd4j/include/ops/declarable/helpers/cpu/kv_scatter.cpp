@@ -232,13 +232,16 @@ static void kvInPlaceWrite_(NDArray* pastKv, NDArray* newKv,
 
 void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                      const void* cachePosPtr, LaunchContext* context) {
+    // Auto-cast newKv to match cache dtype (e.g. FLOAT→HALF after FusedRoPE promotion).
+    // Cache dtype is authoritative — it's the persistent storage format.
+    NDArray* castBuf = nullptr;
     if (pastKv->dataType() != newKv->dataType()) {
-        std::string msg = "kvInPlaceWrite: pastKv dtype " + std::to_string((int)pastKv->dataType()) +
-                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
-        THROW_EXCEPTION(msg.c_str());
+        castBuf = newKv->cast(pastKv->dataType());
+        newKv = castBuf;
     }
     BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWrite_,
                           (pastKv, newKv, cachePosPtr, context), SD_FLOAT_TYPES);
+    delete castBuf;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -287,13 +290,16 @@ static void kvInPlaceWriteBSHD_(NDArray* cache, NDArray* newKv,
 
 void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
                          const void* cachePosPtr, LaunchContext* context) {
+    // Auto-cast newKv to match cache dtype (e.g. FLOAT→HALF after FusedRoPE promotion).
+    // Cache dtype is authoritative — it's the persistent storage format.
+    NDArray* castBuf = nullptr;
     if (cache->dataType() != newKv->dataType()) {
-        std::string msg = "kvInPlaceWriteBSHD: cache dtype " + std::to_string((int)cache->dataType()) +
-                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
-        THROW_EXCEPTION(msg.c_str());
+        castBuf = newKv->cast(cache->dataType());
+        newKv = castBuf;
     }
     BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteBSHD_,
                           (cache, newKv, cachePosPtr, context), SD_FLOAT_TYPES);
+    delete castBuf;
 }
 
 }  // namespace helpers

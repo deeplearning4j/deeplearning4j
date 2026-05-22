@@ -811,11 +811,10 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     protected void release() {
-        if(!released.get())
+        if(!released.get()) {
             ptrDataBuffer.closeBuffer();
-
-
-
+            released.set(true);
+        }
     }
 
     /**

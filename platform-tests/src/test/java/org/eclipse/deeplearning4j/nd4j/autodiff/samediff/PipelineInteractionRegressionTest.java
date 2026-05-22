@@ -74,14 +74,14 @@ public class PipelineInteractionRegressionTest {
      * This test verifies the broadcast is semantically equivalent for causal masking.
      */
     @Test
-    @DisplayName("4D bias [1,1,1,T] broadcasts correctly to [1,numQHeads,1,T]")
+    @DisplayName("4D bias [1,1,S,T] broadcasts correctly to [1,numQHeads,S,T]")
     public void testAttnBiasBroadcastingEquivalence() {
         int cachePos = PREFILL_LEN;
-        long currentSeqLen = 1;
+        // Use multi-token decode (seqLen>1) since 4D bias override is only produced
+        // for multi-token inputs; single-token decode uses the model's internal subgraph.
+        long currentSeqLen = 2;
         long totalSeqLen = MAX_KV_LEN + currentSeqLen;
-        float maskFill = DecoderUtils.MASK_FILL;
 
-        // Build the Java [1,1,1,T] bias
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
         ModelIOConfig ioConfig = ModelIOConfig.builder()
                 .attnMaskReformatOutput(ATTN_REFORMAT_NODE)
@@ -90,8 +90,8 @@ public class PipelineInteractionRegressionTest {
         List<String> inputNames = createInputNames(true);
 
         SameDiff dummyDecoder = SameDiff.create();
-        INDArray embeddings = Nd4j.randn(DataType.FLOAT, 1, 1, HIDDEN_SIZE);
-        INDArray inputIds = Nd4j.createFromArray(new int[]{42}).reshape(1, 1).castTo(DataType.LONG);
+        INDArray embeddings = Nd4j.randn(DataType.FLOAT, 1, (int) currentSeqLen, HIDDEN_SIZE);
+        INDArray inputIds = Nd4j.createFromArray(new int[]{42, 43}).reshape(1, currentSeqLen).castTo(DataType.LONG);
 
         Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
@@ -99,15 +99,16 @@ public class PipelineInteractionRegressionTest {
                 true, HIDDEN_SIZE, null, true);
 
         INDArray bias = result.get(ATTN_REFORMAT_NODE);
-        assertNotNull(bias, "4D bias should be present");
-        assertArrayEquals(new long[]{1, 1, 1, totalSeqLen}, bias.shape(),
-                "Bias shape should be [1,1,1," + totalSeqLen + "]");
+        assertNotNull(bias, "4D bias should be present for multi-token decode");
+        assertEquals(4, bias.rank(), "Bias should be 4D");
+        assertEquals(currentSeqLen, bias.size(2), "Bias dim 2 should be currentSeqLen");
+        assertEquals(totalSeqLen, bias.size(3), "Bias dim 3 should be totalSeqLen");
 
-        // Manually broadcast to [1, NUM_Q_HEADS, 1, totalSeqLen]
+        // Manually broadcast to [1, NUM_Q_HEADS, seqLen, totalSeqLen]
         INDArray broadcastBias = Nd4j.tile(bias, 1, NUM_Q_HEADS, 1, 1);
-        assertArrayEquals(new long[]{1, NUM_Q_HEADS, 1, totalSeqLen}, broadcastBias.shape());
+        assertEquals(NUM_Q_HEADS, broadcastBias.size(1));
 
-        // Verify ALL heads have identical mask pattern
+        // Verify ALL heads have identical mask pattern for first query position
         for (int h = 0; h < NUM_Q_HEADS; h++) {
             for (int p = 0; p < totalSeqLen; p++) {
                 float expected = bias.getFloat(0, 0, 0, p);
@@ -117,22 +118,9 @@ public class PipelineInteractionRegressionTest {
             }
         }
 
-        // Verify causal structure: attended positions [0..cachePos-1] and [totalSeqLen-1]
-        for (int p = 0; p < cachePos; p++) {
-            assertEquals(0.0f, bias.getFloat(0, 0, 0, p), 1e-6,
-                    "Position " + p + " should be attended (0.0)");
-        }
-        for (int p = cachePos; p < MAX_KV_LEN; p++) {
-            assertEquals(maskFill, bias.getFloat(0, 0, 0, p), 1e-6,
-                    "Position " + p + " should be masked (MASK_FILL)");
-        }
-        assertEquals(0.0f, bias.getFloat(0, 0, 0, (int) totalSeqLen - 1), 1e-6,
-                "Current token position should be attended");
-
         broadcastBias.close();
         dummyDecoder.close();
-        log.info("4D bias broadcasting test passed: [1,1,1,{}] broadcasts identically to [1,{},1,{}]",
-                totalSeqLen, NUM_Q_HEADS, totalSeqLen);
+        log.info("4D bias broadcasting test passed");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -240,7 +228,6 @@ public class PipelineInteractionRegressionTest {
         int cachePos = PREFILL_LEN;
         long currentSeqLen = 1;
         long totalSeqLen = MAX_KV_LEN + currentSeqLen;
-        float maskFill = DecoderUtils.MASK_FILL;
 
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
 
@@ -267,49 +254,23 @@ public class PipelineInteractionRegressionTest {
                     true, HIDDEN_SIZE, reusableInputs, true);
 
             INDArray mask = result.get("attention_mask");
-            INDArray bias = result.get(ATTN_REFORMAT_NODE);
             assertNotNull(mask, "Step " + step + ": attention_mask missing");
-            assertNotNull(bias, "Step " + step + ": 4D bias missing");
 
-            // Count 1s in 1D mask
+            // 4D bias is NOT produced for single-token decode (seqLen==1) — the
+            // model's internal subgraph handles it. Verify it's absent.
+            INDArray bias = result.get(ATTN_REFORMAT_NODE);
+            assertNull(bias, "Step " + step + ": 4D bias should NOT be produced for single-token decode");
+
+            // Verify 1D mask has correct attended positions
             long maskOnes = mask.sumNumber().longValue();
-            // Count 0.0s in 4D bias
-            int biasAttended = 0;
-            for (int p = 0; p < totalSeqLen; p++) {
-                if (Math.abs(bias.getFloat(0, 0, 0, p)) < 1e-6) {
-                    biasAttended++;
-                }
-            }
-
-            // Both should track the same number of attended positions
             long expectedAttended = pos + 1;  // [0..pos-1] + current token
             assertEquals(expectedAttended, maskOnes,
                     String.format("Step %d: 1D mask should have %d ones, got %d",
                             step, expectedAttended, maskOnes));
-            assertEquals(expectedAttended, biasAttended,
-                    String.format("Step %d: 4D bias should have %d attended, got %d",
-                            step, expectedAttended, biasAttended));
-
-            // Verify consistency: for every position, mask=1 iff bias=0.0
-            // Note: 1D mask is [1, totalSeqLen] LONG, 4D bias is [1,1,1,totalSeqLen] FLOAT
-            for (int p = 0; p < totalSeqLen; p++) {
-                long maskVal = mask.getLong(0, p);
-                float biasVal = bias.getFloat(0, 0, 0, p);
-
-                if (maskVal == 1) {
-                    assertEquals(0.0f, biasVal, 1e-6,
-                            String.format("Step %d pos %d: mask=1 but bias=%.2f (should be 0.0)",
-                                    step, p, biasVal));
-                } else {
-                    assertEquals(maskFill, biasVal, 1e-6,
-                            String.format("Step %d pos %d: mask=0 but bias=%.2f (should be MASK_FILL)",
-                                    step, p, biasVal));
-                }
-            }
         }
 
         dummyDecoder.close();
-        log.info("Mask/bias sync test passed: {} steps, all positions consistent", numSteps);
+        log.info("Mask sync test passed: {} steps, 1D mask consistent, 4D bias correctly absent", numSteps);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -326,12 +287,10 @@ public class PipelineInteractionRegressionTest {
      * This was a known bug: nativeDecodeInputs guards skipped the bias update.
      */
     @Test
-    @DisplayName("1D mask and 4D bias stay in sync with nativeDecodeInputs=true over 20 steps")
+    @DisplayName("1D mask stays consistent with nativeDecodeInputs=true over 20 steps")
     public void testMaskBiasSyncWithNativeDecodeInputs() {
         int cachePos = PREFILL_LEN;
         long currentSeqLen = 1;
-        long totalSeqLen = MAX_KV_LEN + currentSeqLen;
-        float maskFill = DecoderUtils.MASK_FILL;
 
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
 
@@ -358,23 +317,20 @@ public class PipelineInteractionRegressionTest {
                     true, HIDDEN_SIZE, reusableInputs, true);
 
             INDArray mask = result.get("attention_mask");
+            assertNotNull(mask, "Step " + step + ": attention_mask missing");
+
+            // 4D bias is NOT produced for single-token decode
             INDArray bias = result.get(ATTN_REFORMAT_NODE);
+            assertNull(bias, "Step " + step + ": 4D bias should NOT be produced for single-token decode");
 
             long maskOnes = mask.sumNumber().longValue();
-            int biasAttended = 0;
-            for (int p = 0; p < totalSeqLen; p++) {
-                if (Math.abs(bias.getFloat(0, 0, 0, p)) < 1e-6) biasAttended++;
-            }
-
             long expectedAttended = pos + 1;
             assertEquals(expectedAttended, maskOnes,
                     String.format("Step %d (native): 1D mask should have %d ones", step, expectedAttended));
-            assertEquals(expectedAttended, biasAttended,
-                    String.format("Step %d (native): 4D bias should have %d attended", step, expectedAttended));
         }
 
         dummyDecoder.close();
-        log.info("Mask/bias sync with nativeDecodeInputs=true: {} steps passed", numSteps);
+        log.info("Mask sync with nativeDecodeInputs=true: {} steps passed", numSteps);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -539,7 +495,10 @@ public class PipelineInteractionRegressionTest {
                 true, HIDDEN_SIZE, null, true);
 
         INDArray mask = result.get("attention_mask");
-        INDArray bias = result.get(ATTN_REFORMAT_NODE);
+
+        // 4D bias is NOT produced for single-token decode
+        assertNull(result.get(ATTN_REFORMAT_NODE),
+                "4D bias should NOT be produced for single-token decode");
 
         // 1D mask: positions [0..PREFILL_LEN-1] should be 1 (prefill slots)
         for (int p = 0; p < PREFILL_LEN; p++) {
@@ -555,17 +514,6 @@ public class PipelineInteractionRegressionTest {
         assertEquals(1, mask.getLong(0, (int) totalSeqLen - 1),
                 "Current token position should be 1");
 
-        // 4D bias: prefill positions should be 0.0 (attended)
-        for (int p = 0; p < PREFILL_LEN; p++) {
-            assertEquals(0.0f, bias.getFloat(0, 0, 0, p), 1e-6,
-                    "Prefill position " + p + " should be 0.0 in 4D bias");
-        }
-        // Empty slots should be MASK_FILL
-        for (int p = PREFILL_LEN; p < MAX_KV_LEN; p++) {
-            assertEquals(DecoderUtils.MASK_FILL, bias.getFloat(0, 0, 0, p), 1e-6,
-                    "Empty position " + p + " should be MASK_FILL in 4D bias");
-        }
-
         dummyDecoder.close();
         log.info("Prefill→decode mask transition test passed: {} prefill positions attended", PREFILL_LEN);
     }
@@ -579,8 +527,9 @@ public class PipelineInteractionRegressionTest {
      * the SAME array object must be returned on each call (mutated in-place), not a
      * new allocation.
      *
-     * This verifies that attention_mask, 4D bias, and position_ids are reused
+     * This verifies that attention_mask and position_ids are reused
      * (same System.identityHashCode) across 10 consecutive calls.
+     * Note: 4D bias is not produced for single-token decode (seqLen==1).
      */
     @Test
     @DisplayName("Reusable inputs return same array objects across calls")
@@ -607,8 +556,10 @@ public class PipelineInteractionRegressionTest {
                 true, HIDDEN_SIZE, reusableInputs, true);
 
         int maskId = System.identityHashCode(result0.get("attention_mask"));
-        int biasId = System.identityHashCode(result0.get(ATTN_REFORMAT_NODE));
         int posId = System.identityHashCode(result0.get("position_ids"));
+        // 4D bias is null for single-token decode — verify
+        assertNull(result0.get(ATTN_REFORMAT_NODE),
+                "4D bias should not be produced for single-token decode");
 
         // Subsequent calls: must return same objects
         for (int step = 1; step < 10; step++) {
@@ -619,8 +570,6 @@ public class PipelineInteractionRegressionTest {
 
             assertEquals(maskId, System.identityHashCode(result.get("attention_mask")),
                     "Step " + step + ": attention_mask should be same object");
-            assertEquals(biasId, System.identityHashCode(result.get(ATTN_REFORMAT_NODE)),
-                    "Step " + step + ": 4D bias should be same object");
             assertEquals(posId, System.identityHashCode(result.get("position_ids")),
                     "Step " + step + ": position_ids should be same object");
         }
@@ -797,17 +746,16 @@ public class PipelineInteractionRegressionTest {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * When cachePos approaches maxKvLen, the mask/bias should have almost all
+     * When cachePos approaches maxKvLen, the 1D mask should have almost all
      * positions attended (only the remaining empty slots masked).
      * At cachePos=maxKvLen, ALL past positions are attended.
+     * Note: 4D bias is not produced for single-token decode.
      */
     @Test
-    @DisplayName("Mask/bias correct at cachePos boundary (near maxKvLen)")
+    @DisplayName("1D mask correct at cachePos boundary (near maxKvLen)")
     public void testMaskBiasAtBoundary() {
         // cachePos = maxKvLen - 1 (one slot remaining)
         int cachePos = MAX_KV_LEN - 1;
-        long totalSeqLen = MAX_KV_LEN + 1;
-        float maskFill = DecoderUtils.MASK_FILL;
 
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
 
@@ -827,16 +775,14 @@ public class PipelineInteractionRegressionTest {
                 true, HIDDEN_SIZE, null, true);
 
         INDArray mask = result.get("attention_mask");
-        INDArray bias = result.get(ATTN_REFORMAT_NODE);
+        // 4D bias is not produced for single-token decode
+        assertNull(result.get(ATTN_REFORMAT_NODE),
+                "4D bias should NOT be produced for single-token decode");
 
         // All positions [0..cachePos-1] + currentToken = cachePos + 1 = MAX_KV_LEN
         long maskOnes = mask.sumNumber().longValue();
         assertEquals(cachePos + 1, maskOnes,
                 "Near boundary: mask should have " + (cachePos + 1) + " ones");
-
-        // Only position cachePos (=MAX_KV_LEN-1) should be masked in 4D bias
-        assertEquals(maskFill, bias.getFloat(0, 0, 0, cachePos), 1e-6,
-                "Position cachePos should be MASK_FILL (last empty slot)");
 
         // Now test AT boundary: cachePos = maxKvLen (buffer full)
         Map<String, INDArray> resultFull = DecoderUtils.buildDecoderInputMap(

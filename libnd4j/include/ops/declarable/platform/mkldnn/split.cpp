@@ -79,9 +79,11 @@ static void splitMKLDNN(NDArray* input, std::vector<NDArray*>& outputs, int axis
 PLATFORM_IMPL(split, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
 
+  // iArgs layout: INT_ARG(0) = numSplit, INT_ARG(1) = axis
+  // Match the generic split op's convention (see generic/transforms/split.cpp)
   int axis = 0;
-  if (block.getIArguments()->size() > 0) {
-    axis = INT_ARG(0);
+  if (block.numI() >= 2) {
+    axis = static_cast<int>(INT_ARG(1));
   }
 
   if (axis < 0) axis += input->rankOf();

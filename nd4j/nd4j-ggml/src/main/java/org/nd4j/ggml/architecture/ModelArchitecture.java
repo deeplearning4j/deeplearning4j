@@ -77,6 +77,46 @@ public interface ModelArchitecture {
     Map<String, String> getTensorNamePatterns();
 
     /**
+     * Get the default chat template type for this architecture.
+     * Used by tests and generation pipelines to format prompts correctly.
+     *
+     * @return one of: "chatml", "llama2", "vicuna", "alpaca", "gemma", "phi", "plain", "none"
+     */
+    default String getDefaultChatTemplateType() {
+        return "chatml";
+    }
+
+    /**
+     * Get the system property name for the GGUF model path in tests.
+     * Tests are gated on this property: {@code -D<name>=<path-to.gguf>}
+     *
+     * @return the system property name (e.g. "llama.gguf.path")
+     */
+    default String getModelSystemProperty() {
+        return getName() + ".gguf.path";
+    }
+
+    /**
+     * Get a reference test prompt appropriate for this architecture.
+     * Returns a prompt that should produce a factual, verifiable answer.
+     *
+     * @return a simple test prompt
+     */
+    default String getReferencePrompt() {
+        return "What is the capital of France?";
+    }
+
+    /**
+     * Get expected substrings in the reference prompt's answer.
+     * Used by degeneracy tests to verify the model produces coherent output.
+     *
+     * @return expected substrings (case-insensitive)
+     */
+    default String[] getReferenceExpected() {
+        return new String[]{"Paris"};
+    }
+
+    /**
      * Get architecture-specific configuration from metadata.
      */
     default ArchitectureConfig getConfig(GGMLMetadata metadata) {

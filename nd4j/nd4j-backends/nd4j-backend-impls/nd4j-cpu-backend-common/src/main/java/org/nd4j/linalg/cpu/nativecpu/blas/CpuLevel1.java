@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce3.Dot;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.Nd4jBlas;
 
@@ -171,7 +172,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void haxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        Nd4j.getExecutioner().exec(new Axpy(X, Y, Y, alpha));
     }
 
     @Override

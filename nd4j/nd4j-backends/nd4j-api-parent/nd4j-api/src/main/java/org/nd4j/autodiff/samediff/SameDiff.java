@@ -3297,7 +3297,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, String... outputs) {
         return batchOutput().output(outputs)
-                .listeners(new ControlflowListener())
                 .inputs(placeholders).output();
     }
 
@@ -4205,9 +4204,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         // Note: dup() alone is not sufficient because it copies the entire backing buffer.
         // We need to create a compact copy with a properly-sized buffer.
         if (!duped && arr.isView()) {
-            // Create a new array with exactly the right buffer size and copy values
+            // Create a new array with exactly the right buffer size and copy values.
+            // Views must be compacted because they share the larger backing buffer,
+            // which causes StackOverflowError during gradient computation (recursive
+            // shape info buffer creation on views).
             INDArray compactCopy = Nd4j.createUninitialized(arr.dataType(), arr.shape(), arr.ordering());
             compactCopy.assign(arr);
+            Nd4j.getExecutioner().commit();
             arr = compactCopy;
             duped = true;
         }
@@ -4221,6 +4224,12 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
         }
 
+        // On CUDA, arrays created by dup() or assign() may have data only on the device
+        // with the host buffer containing zeros. Ensure the host buffer is synced so
+        // downstream code (DeviceLocalNDArray, FlatBuffer serialization) reads correct data.
+        // This MUST happen BEFORE setCloseable(false) because setCloseable(false) marks
+        // the buffer as constant, and syncToPrimary skips constant buffers.
+        org.nd4j.linalg.api.device.DeviceMemoryManager.getInstance().ensureHostAccess(arr);
         //avoid closing variables so they don't get returned from cache
         arr.setCloseable(false);
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType());
@@ -7357,6 +7366,14 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         Variable varMeta = this.variables.get(fromName);
 
+        // --- Apply name scope prefix if applicable ---
+        if (!exactName) {
+            String nameScope = currentNameScope();
+            if (nameScope != null && !newVarName.startsWith(nameScope + "/")) {
+                newVarName = nameScope + "/" + newVarName;
+            }
+        }
+
         // --- Determine Final Name (Handle potential clashes based on exactName) ---
         String finalName = newVarName; // Start with the requested name
 
@@ -7821,9 +7838,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
-            if (variable.getVariableType() == VariableType.SEQUENCE) continue;
-
-            INDArray arr = variable.getVariableType() == VariableType.ARRAY ? null : variable.getArr();
+            INDArray arr;
+            if (variable.getVariableType() == VariableType.SEQUENCE) {
+                INDArray[] seqArrays = sequences.get(variable.name());
+                arr = (seqArrays != null && seqArrays.length > 0) ? seqArrays[0] : null;
+            } else {
+                arr = variable.getVariableType() == VariableType.ARRAY ? null : variable.getArr();
+            }
             log.trace("Exporting variable: [{}]", variable.name());
 
             String varName = variable.name();
@@ -7870,7 +7891,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
             byte varTypeByte = (byte) variable.getVariableType().ordinal();
 
-            if (arr != null && (variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE)) {
+            if (arr != null && (variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE || variable.getVariableType() == VariableType.SEQUENCE)) {
                 arrayOffset = arr.toFlatArray(bufferBuilder);
             }
 
@@ -8509,7 +8530,14 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @throws IOException
      */
     public static SameDiff fromFlatFile(@NonNull File file, boolean loadUpdaterState) throws IOException {
-        return SameDiffSerializer.load(file,loadUpdaterState);
+        try {
+            return SameDiffSerializer.load(file, loadUpdaterState);
+        } catch (IOException e) {
+            // Fall back to legacy raw FlatBuffer format for pre-SDNB files
+            byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+            ByteBuffer bb = ByteBuffer.wrap(bytes);
+            return fromFlatBuffers(bb, loadUpdaterState);
+        }
     }
 
     /**
@@ -8630,6 +8658,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                     } finally {
                         Nd4j.getDeallocatorService().releasePendingConstant(arr);
                     }
+                } else if (vt == VariableType.SEQUENCE) {
+                    sd.sequences.put(n, new INDArray[]{arr});
                 } else {
                     sd.setArrayForVariable(n, arr);
                 }

@@ -26,6 +26,9 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.device.DeviceContext;
 import org.nd4j.linalg.api.device.DeviceContextProvider;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueLaunchContext;
@@ -133,6 +136,24 @@ public class CudaDeviceContextProvider implements DeviceContextProvider {
     @Override
     public boolean supportsStreams() {
         return true;
+    }
+
+    @Override
+    public void ensureHostAccess(INDArray array) {
+        if (array == null || array.isEmpty() || array.isS())
+            return;
+        // Ensure host pointer exists for the data buffer
+        ((BaseCudaDataBuffer) array.data()).lazyAllocateHostPointer();
+        // Commit pending CUDA operations first so device data is finalized
+        Nd4j.getExecutioner().commit();
+        // Bidirectional sync: first H→D (so device has any host-only data, e.g.,
+        // from FlatBuffer deserialization), then force D→H (so host has the final
+        // authoritative data including any device-side writes from ops like assign).
+        // Without the H→D step, force D→H on a deserialized array would overwrite
+        // correct host data with zeros from the uninitialized device buffer.
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.dbSyncToSpecial(array.data().opaqueBuffer());
+        nativeOps.dbForceSyncToPrimary(array.data().opaqueBuffer());
     }
 
     /**

@@ -86,10 +86,12 @@ public class IsMax extends DynamicCustomOp {
 
     @Override
     public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
-        if (oc == null || oc.numInputArguments() < 1) {
-            return null;
+        INDArray input = null;
+        if (oc != null && oc.numInputArguments() >= 1) {
+            input = oc.getInputArray(0);
+        } else if (numInputArguments() >= 1) {
+            input = getInputArgument(0);
         }
-        INDArray input = oc.getInputArray(0);
         if (input == null) {
             return null;
         }

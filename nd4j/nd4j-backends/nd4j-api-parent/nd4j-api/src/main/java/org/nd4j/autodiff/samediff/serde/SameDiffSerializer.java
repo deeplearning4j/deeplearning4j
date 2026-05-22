@@ -172,26 +172,16 @@ public class SameDiffSerializer {
         }
 
 
-        // Check individual large variable sizes against shard limit (relevant for both paths)
+        // Log any variables that individually exceed the shard limit — they will each
+        // get their own shard. The raw array data is appended outside the FlatBuffer
+        // metadata, so shards larger than MAX_SHARD_FILE_BYTES are safe to write/read.
         for (SDVariable var : appendableVars) {
             INDArray arr = var.getArr();
             long varSizeBytes = arr.length() * arr.dataType().width();
             if (varSizeBytes < 0) varSizeBytes = Long.MAX_VALUE;
-            // Estimate size if this var was in its own shard (min overhead)
-            long singleVarOverhead = HEADER_SIZE + calculateBaseMetadataSizeEstimate(null) // Minimal base meta
-                    + calculateVariableMetadataSizeEstimate(var)
-                    + calculateManifestSizeEstimate(1); // Manifest for 1 entry
-            long estimatedSizeInShard = -1;
-            try {
-                estimatedSizeInShard = Math.addExact(singleVarOverhead, varSizeBytes);
-            } catch (ArithmeticException e) {
-                estimatedSizeInShard = Long.MAX_VALUE;
-            }
-
-            if (estimatedSizeInShard > MAX_SHARD_FILE_BYTES) {
-                throw new IOException(String.format(
-                        "Variable '%s' size (%d bytes) + estimated overhead potentially exceeds shard limit (%d bytes). Cannot save model.",
-                        var.name(), varSizeBytes, MAX_SHARD_FILE_BYTES));
+            if (varSizeBytes > MAX_SHARD_FILE_BYTES) {
+                log.info("Variable '{}' size ({} bytes, ~{} GB) exceeds shard limit — will be placed in its own shard.",
+                        var.name(), varSizeBytes, String.format("%.2f", varSizeBytes / (1024.0 * 1024.0 * 1024.0)));
             }
         }
 
@@ -311,16 +301,18 @@ public class SameDiffSerializer {
                         startNewShard = true;
                     }
                 }
-                // Also check single large var constraint
-                if (!startNewShard && appendData) {
-                    long baseOverhead = HEADER_SIZE + calculateBaseMetadataSizeEstimate(null) + calculateManifestSizeEstimate(1); // Assumed helper
+                // If a single variable exceeds the shard limit, ensure it starts a new shard
+                // so it is isolated. The raw data is appended outside the FlatBuffer so this is safe.
+                if (!startNewShard && appendData && !currentVarShard.getVariables().isEmpty()) {
+                    long baseOverhead = HEADER_SIZE + calculateBaseMetadataSizeEstimate(null) + calculateManifestSizeEstimate(1);
                     long singleVarShardSizeEst = -1;
                     try {
                         singleVarShardSizeEst = Math.addExact(baseOverhead, varMetadataEstimate);
                         singleVarShardSizeEst = Math.addExact(singleVarShardSizeEst, varSizeBytes);
                     } catch (ArithmeticException e) { singleVarShardSizeEst = Long.MAX_VALUE; }
                     if (singleVarShardSizeEst > MAX_SHARD_FILE_BYTES) {
-                        throw new IOException(String.format("Variable '%s' (%d bytes) + overhead exceeds shard limit (%d).", var.name(), varSizeBytes, MAX_SHARD_FILE_BYTES));
+                        log.info("Variable '{}' ({} bytes) exceeds shard limit — isolating into its own shard.", var.name(), varSizeBytes);
+                        startNewShard = true;
                     }
                 }
                 // --- End Check ---
@@ -1793,7 +1785,12 @@ public class SameDiffSerializer {
                 IntPair outputPair = fg.outputs(i);
                 if (outputPair != null) {
                     SDVariable outputVar = variablesByNodeAndOutNum.get(new Pair<>(outputPair.first(), outputPair.second()));
-                    if (outputVar != null && outputVar.name() != null) outputs.add(outputVar.name());
+                    if (outputVar != null && outputVar.name() != null) {
+                        outputs.add(outputVar.name());
+                    } else {
+                        log.debug("Output pair ({},{}) not found in variablesByNodeAndOutNum",
+                                outputPair.first(), outputPair.second());
+                    }
                 }
             }
             if (!outputs.isEmpty()) sd.setOutputs(outputs);
@@ -2461,9 +2458,19 @@ public class SameDiffSerializer {
                 } else {
                     varIdx = idxForOps.get(producingOpFunc);
                 }
-                String[] outNames = producingOpFunc.outputVariablesNames();
-                outputNum = ArrayUtil.indexOf(outNames, varName);
-                if (outputNum < 0) outputNum = 0;
+                // Use SameDiffOp metadata (authoritative) instead of op.outputVariablesNames()
+                // which can return stale/empty arrays for multi-output ops like CausalConv1d,
+                // causing all outputs to fall back to outputNum=0 and collide during restore.
+                SameDiffOp producingSdo = sameDiff.getOps().get(producingOpName);
+                List<String> sdoOutputs = producingSdo != null ? producingSdo.getOutputsOfOp() : null;
+                if (sdoOutputs != null && !sdoOutputs.isEmpty()) {
+                    outputNum = sdoOutputs.indexOf(varName);
+                    if (outputNum < 0) outputNum = 0;
+                } else {
+                    String[] outNames = producingOpFunc.outputVariablesNames();
+                    outputNum = ArrayUtil.indexOf(outNames, varName);
+                    if (outputNum < 0) outputNum = 0;
+                }
             } else {
                 varIdx = idCounter.incrementAndGet();
                 outputNum = 0;
@@ -2602,10 +2609,17 @@ public class SameDiffSerializer {
                     Variable varMeta = sameDiff.getVariables().get(outputName);
                     if (varMeta != null && varMeta.getOutputOfOp() != null) {
                         SameDiffOp op = sameDiff.getOps().get(varMeta.getOutputOfOp());
-                        if (op != null && op.getOp() != null) {
-                            String[] outNames = op.getOp().outputVariablesNames();
-                            outputNum = ArrayUtil.indexOf(outNames, outputName);
-                            if (outputNum < 0) outputNum = 0;
+                        if (op != null) {
+                            // Use SameDiffOp metadata (authoritative) for multi-output op indexing
+                            List<String> opOutputs = op.getOutputsOfOp();
+                            if (opOutputs != null && !opOutputs.isEmpty()) {
+                                outputNum = opOutputs.indexOf(outputName);
+                                if (outputNum < 0) outputNum = 0;
+                            } else if (op.getOp() != null) {
+                                String[] outNames = op.getOp().outputVariablesNames();
+                                outputNum = ArrayUtil.indexOf(outNames, outputName);
+                                if (outputNum < 0) outputNum = 0;
+                            }
                         }
                     }
                     outputOffsets.add(IntPair.createIntPair(bufferBuilder, nodeId, outputNum));
@@ -3493,6 +3507,22 @@ public class SameDiffSerializer {
                 else {
                     log.warn("Loss variable '{}' missing in graph shard stubs. Cannot mark as loss.", lossVar);
                 }
+            }
+        }
+
+        // --- 4b. Copy Outputs ---
+        if (sameDiff.outputs() != null && !sameDiff.outputs().isEmpty()) {
+            List<String> validOutputs = new ArrayList<>();
+            for (String outName : sameDiff.outputs()) {
+                if (graphShard.hasVariable(outName)) {
+                    validOutputs.add(outName);
+                } else {
+                    log.warn("Output variable '{}' missing in graph shard stubs. Cannot mark as output.", outName);
+                }
+            }
+            if (!validOutputs.isEmpty()) {
+                graphShard.setOutputs(validOutputs);
+                log.info("Copied {} output variables to graph shard: {}", validOutputs.size(), validOutputs);
             }
         }
 

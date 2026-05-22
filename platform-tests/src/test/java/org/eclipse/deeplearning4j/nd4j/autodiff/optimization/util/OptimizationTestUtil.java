@@ -61,21 +61,35 @@ public class OptimizationTestUtil {
         }
 
 
-        //Second: check that they all produce the same
+        //Second: check that they all produce the same for the requested outputs
         //TODO this won't work for random ops!
         Map<String,INDArray> origOut = original.output(ph, outputs);
         Map<String,INDArray> copyOut = copy.output(ph, outputs);
         Map<String,INDArray> optimizedOut = optimized.output(ph, outputs);
 
-        assertEquals(copyOut, origOut);
-        assertEquals(copyOut, optimizedOut);
+        // Compare only the requested output variables — optimization may remove intermediate
+        // variables (e.g., fusing matmul+add into xw_plus_b removes the standalone matmul var).
+        // The full map comparison can fail when DSP returns extra variables.
+        for (String outName : outputs) {
+            assertTrue("Output '" + outName + "' missing from original", origOut.containsKey(outName));
+            assertTrue("Output '" + outName + "' missing from copy", copyOut.containsKey(outName));
+            assertTrue("Output '" + outName + "' missing from optimized", optimizedOut.containsKey(outName));
+            assertEquals("Output '" + outName + "' should match between copy and original",
+                    copyOut.get(outName), origOut.get(outName));
+            assertEquals("Output '" + outName + "' should match between copy and optimized",
+                    copyOut.get(outName), optimizedOut.get(outName));
+        }
 
         File f = new File(config.getTempFolder(), "optimized.sd");
         optimized.save(f, true);
 
         SameDiff loaded = SameDiff.load(f, true);
         Map<String,INDArray> loadedOut = loaded.output(ph, outputs);
-        assertEquals(copyOut, loadedOut);
+        for (String outName : outputs) {
+            assertTrue("Output '" + outName + "' missing from loaded", loadedOut.containsKey(outName));
+            assertEquals("Output '" + outName + "' should match between copy and loaded",
+                    copyOut.get(outName), loadedOut.get(outName));
+        }
 
         //TODO add support for training checks!
         //This is especially important for updaters... if we permute the weights, we should permute the updater state also

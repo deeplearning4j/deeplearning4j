@@ -123,10 +123,12 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     bool isFullArrayReduce = (dimensionLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT));
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
 
     if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<sd::LongType> *dims =
@@ -142,7 +144,7 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
                                         zShapeInfoH,
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        z->specialShapeInfo(),
+                                        zShapeInfoD,
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -170,10 +172,12 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     bool isFullArrayReduce = (dimensionLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT));
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
 
     if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<sd::LongType> *dims =
@@ -188,7 +192,7 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
                                         zShapeInfoH,
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        z->specialShapeInfo(),
+                                        zShapeInfoD,
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -214,10 +218,12 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
     std::vector<sd::LongType> dimensions(dimensionData, dimensionData + dimensionLength);
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
 
     if (shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<sd::LongType> *dims =
@@ -232,7 +238,7 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
                                         zShapeInfoH,
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        z->specialShapeInfo(),
+                                        zShapeInfoD,
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -260,10 +266,12 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     bool isFullArrayReduce = (dimensionLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT));
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
 
     if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<sd::LongType> *dims =
@@ -279,7 +287,7 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
                                         zShapeInfoH,
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        z->specialShapeInfo(),
+                                        zShapeInfoD,
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -305,10 +313,12 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
     std::vector<sd::LongType> dimensions(dimensionData, dimensionData + dimensionLength);
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
 
     if (shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<sd::LongType> *dims =
@@ -324,7 +334,7 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
                                         zShapeInfoH,
                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        z->specialShapeInfo(),
+                                        zShapeInfoD,
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -352,10 +362,12 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, vo
     bool isFullArrayReduce = (dimensionLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT));
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
 
     if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<sd::LongType> *dims =
@@ -371,7 +383,7 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, vo
                                          shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
                                          zShapeInfoH,
                                          shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                         z->specialShapeInfo(),
+                                         zShapeInfoD,
                                          dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});

@@ -167,6 +167,39 @@ int executeDynamicShapePlan(
                  db->isDestroyed() ? 1 : 0, db->isValid() ? 1 : 0,
                  (long long)db->getLenInBytes());
       }
+
+      // DIAGNOSTIC: Dump raw bytes and INT64 values for INT64 inputs (to find source of negative gather indices)
+      if (inputPtrs[i]->dataType() == sd::DataType::INT64 && db != nullptr) {
+        void* primary = db->primary();
+        sd::LongType len = inputPtrs[i]->lengthOf();
+        if (primary != nullptr && len > 0 && len <= 32) {
+          int8_t* rawBytes = reinterpret_cast<int8_t*>(primary);
+          sd::LongType offset = inputPtrs[i]->offset();
+          sd_printf("DSP_INT64_INPUT: idx=%d len=%lld offset=%lld dtype=%d addr=%p\n",
+                    i, (long long)len, (long long)offset,
+                    (int)inputPtrs[i]->dataType(), primary);
+          // Print raw bytes
+          sd_printf("  rawBytes[0..%lld]: ", (long long)(len * 8 - 1));
+          for (sd::LongType b = 0; b < len * 8; b++) {
+            sd_printf("%02x ", (unsigned char)rawBytes[b]);
+          }
+          sd_printf("\n");
+          // Print as INT64 values
+          int64_t* asInt64 = reinterpret_cast<int64_t*>(primary);
+          sd_printf("  asInt64[]: ");
+          for (sd::LongType e = 0; e < len; e++) {
+            sd_printf("%lld ", (long long)asInt64[e + offset]);
+          }
+          sd_printf("\n");
+          // Print as INT32 values (first 4 per element)
+          int32_t* asInt32 = reinterpret_cast<int32_t*>(primary);
+          sd_printf("  asInt32[]: ");
+          for (sd::LongType e = 0; e < len * 2; e++) {
+            sd_printf("%d ", asInt32[e]);
+          }
+          sd_printf("\n");
+        }
+      }
     }
 
     // Initialize outputPtrs to nullptr — NOT from opContext->outputArray(i).
@@ -1599,56 +1632,4 @@ sd::Pointer dspGetExecutionStream(sd::Pointer planHandle) {
 
 sd::Pointer dspGetDefaultStream() {
   return nullptr;  // No streams on CPU
-}
-
-// =============================================================================
-// DSP Freeze Config
-// =============================================================================
-
-void setDspFreezeMergeSegments(bool enable) {
-  sd::Environment::getInstance().setDspFreezeMergeSegments(enable);
-}
-
-void setDspFreezeRecompile(bool enable) {
-  sd::Environment::getInstance().setDspFreezeRecompile(enable);
-}
-
-bool getDspFreezeMergeSegments() {
-  return sd::Environment::getInstance().dspFreezeMergeSegments();
-}
-
-bool getDspFreezeRecompile() {
-  return sd::Environment::getInstance().dspFreezeRecompile();
-}
-
-// =============================================================================
-// Output slot pre-allocation & KV scatter (CPU stubs)
-// =============================================================================
-
-void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
-                               const int* slotIndices, const sd::LongType* maxSizes) {
-  if (planHandle == nullptr) return;
-  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setPlanOutputSlotMaxSizes(
-      numSlots, slotIndices, maxSizes);
-}
-
-void configurePlanKvScatter(sd::Pointer planHandle,
-                            const int* presentSlotIndices,
-                            const sd::Pointer* staticKvBufferPtrs,
-                            sd::LongType numPairs,
-                            int dtypeInt,
-                            sd::LongType heads,
-                            sd::LongType srcSeqLen,
-                            sd::LongType dstSeqLen,
-                            sd::LongType dim,
-                            sd::LongType* kvPositionPtr) {
-  // KV scatter is GPU-only; no-op on CPU
-}
-
-void resetPlanKvCachePosition(sd::Pointer planHandle, sd::LongType position) {
-  // KV scatter is GPU-only; no-op on CPU
-}
-
-sd::LongType getPlanKvCachePosition(sd::Pointer planHandle) {
-  return -1;  // KV scatter is GPU-only
 }

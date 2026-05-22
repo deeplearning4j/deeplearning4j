@@ -23,6 +23,7 @@ package org.nd4j.ggml.format;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -163,13 +164,78 @@ public class GGUFHeader {
     }
 
     /**
-     * Get the number of key-value attention heads (for grouped-query attention)
+     * Get the number of key-value attention heads (for grouped-query attention).
+     * If the GGUF metadata stores a per-layer array (as in LFM-2), this returns
+     * the first non-zero entry, or falls back to the full head count.
      */
     public int getAttentionHeadCountKV() {
         String arch = getArchitecture();
         if (arch == null) return getAttentionHeadCount();
-        int kvHeads = getMetadataInt(arch + KEY_ATTENTION_HEAD_COUNT_KV, 0);
-        return kvHeads > 0 ? kvHeads : getAttentionHeadCount();
+        Object raw = metadata.get(arch + KEY_ATTENTION_HEAD_COUNT_KV);
+        if (raw instanceof Number) {
+            int kvHeads = ((Number) raw).intValue();
+            return kvHeads > 0 ? kvHeads : getAttentionHeadCount();
+        }
+        // GGUFReader.readArray() returns primitive int[] for INT32/UINT32 arrays
+        if (raw instanceof int[]) {
+            for (int val : (int[]) raw) {
+                if (val > 0) return val;
+            }
+        }
+        if (raw instanceof long[]) {
+            for (long val : (long[]) raw) {
+                if (val > 0) return (int) val;
+            }
+        }
+        if (raw instanceof List) {
+            List<?> perLayer = (List<?>) raw;
+            for (Object entry : perLayer) {
+                if (entry instanceof Number) {
+                    int val = ((Number) entry).intValue();
+                    if (val > 0) return val;
+                }
+            }
+        }
+        return getAttentionHeadCount();
+    }
+
+    /**
+     * Get the per-layer KV head count array.
+     * Some architectures (e.g., LFM-2) store head_count_kv as a per-layer array
+     * where 0 means the layer has no attention. Returns null if the metadata
+     * is a scalar or absent.
+     */
+    @SuppressWarnings("unchecked")
+    public List<Integer> getAttentionHeadCountKVPerLayer() {
+        String arch = getArchitecture();
+        if (arch == null) return null;
+        Object raw = metadata.get(arch + KEY_ATTENTION_HEAD_COUNT_KV);
+        // GGUFReader.readArray() returns primitive int[] for INT32/UINT32 arrays
+        if (raw instanceof int[]) {
+            int[] arr = (int[]) raw;
+            List<Integer> result = new ArrayList<>(arr.length);
+            for (int v : arr) result.add(v);
+            return result;
+        }
+        if (raw instanceof long[]) {
+            long[] arr = (long[]) raw;
+            List<Integer> result = new ArrayList<>(arr.length);
+            for (long v : arr) result.add((int) v);
+            return result;
+        }
+        if (raw instanceof List) {
+            List<?> perLayer = (List<?>) raw;
+            List<Integer> result = new ArrayList<>(perLayer.size());
+            for (Object entry : perLayer) {
+                if (entry instanceof Number) {
+                    result.add(((Number) entry).intValue());
+                } else {
+                    result.add(0);
+                }
+            }
+            return result;
+        }
+        return null;
     }
 
     /**

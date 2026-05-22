@@ -414,6 +414,11 @@ public class GGMLToSameDiffConverter {
         // a well-tested path that correctly marks host data as authoritative.
         ByteBuffer bb = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
 
+        // Cast to target dtype if needed — non-quantized tensors (e.g. F16 norm weights
+        // in Q8_0 files) must match the target dtype to avoid mixed-precision errors
+        // in the SameDiff graph (e.g. FLOAT / HALF mismatches in RMSNorm).
+        DataType targetType = getTargetDataType();
+
         switch (nd4jType) {
             case FLOAT: {
                 float[] floatData = new float[(int) numElements];
@@ -435,6 +440,11 @@ public class GGMLToSameDiffConverter {
                 // Force device→host sync so host has correct data for later host→device transfers
                 Nd4j.getAffinityManager().ensureLocation(array,
                         org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+                // Cast F16 tensors to target dtype (usually FLOAT32) to avoid mixed-precision
+                // errors in the SameDiff graph — e.g. F16 norm weights vs F32 activations
+                if (targetType != DataType.HALF && targetType != null) {
+                    array = array.castTo(targetType);
+                }
                 return array;
             }
             case DOUBLE: {

@@ -48,14 +48,14 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
     NDArray *norm2Result = z->reduceAlongDimension(reduce::Norm2, &emptyVec);
     if (useAverage) {
       NDArray *divResult = (*norm2Result) / z->lengthOf();
-      if (divResult->e<float>(0) > clipNorm->e<float>(0)) {
+      if (divResult->e<double>(0) > clipNorm->e<double>(0)) {
         NDArray *clipDivResult = (*clipNorm) / (*divResult);
         *z *= (*clipDivResult);
         delete clipDivResult;
       }
       delete divResult;
     } else {
-      if (norm2Result->e<float>(0) > clipNorm->e<float>(0)) {
+      if (norm2Result->e<double>(0) > clipNorm->e<double>(0)) {
         NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
         *z *= (*clipDivResult);
         delete clipDivResult;
@@ -71,14 +71,14 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
         NDArray *norm2Result = listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
         if (useAverage) {
           NDArray *divResult = (*norm2Result) / listOfSubArrs.at(i)->lengthOf();
-          if (divResult->e<float>(0) > clipNorm->e<float>(0)) {
+          if (divResult->e<double>(0) > clipNorm->e<double>(0)) {
             NDArray *clipDivResult = (*clipNorm) / (*divResult);
             *listOfSubArrs.at(i) *= (*clipDivResult);
             delete clipDivResult;
           }
           delete divResult;
         } else {
-          if (norm2Result->e<float>(0) > clipNorm->e<float>(0)) {
+          if (norm2Result->e<double>(0) > clipNorm->e<double>(0)) {
             NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
             *listOfSubArrs.at(i) *= (*clipDivResult);
             delete clipDivResult;

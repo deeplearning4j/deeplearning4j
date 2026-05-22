@@ -144,8 +144,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray eFwd;
         INDArray eBwd;
-        //workspaces  can sometimes not be opened due to the way the layer is used in practice
-       // workspaceMgr.keepOpen(ArrayType.INPUT, ArrayType.ACTIVATION_GRAD, ArrayType.BP_WORKING_MEM,ArrayType.ACTIVATIONS);
+
         val n = epsilon.size(1) / 2;
         epsilon = epsilon.dup(epsilon.ordering());
         switch (layerConf.getMode()) {
@@ -193,17 +192,20 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        INDArray out1 = null;
-        INDArray out2 = null;
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            out1 = fwd.activate(training, workspaceMgr).detach();
-            out2 = bwd.activate(training, workspaceMgr).detach();
-        }
+        //Activate forward and backward RNNs — results are in ACTIVATIONS workspace
+        INDArray out1 = fwd.activate(training, workspaceMgr);
+        INDArray out2 = bwd.activate(training, workspaceMgr);
+
+        //Cache for backprop — dup to ACTIVATIONS to ensure stable copies
+        this.outFwd = workspaceMgr.dup(ArrayType.ACTIVATIONS, out1);
 
         //Reverse the output time series. Note: when using LastTimeStepLayer, output can be rank 2
-        out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM, getRNNDataFormat());
-        this.outFwd = out1.detach();
-        this.outBwd = out2.detach();
+        //Use ACTIVATIONS workspace so result is valid for subsequent operations
+        out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.ACTIVATIONS, getRNNDataFormat());
+        this.outBwd = workspaceMgr.dup(ArrayType.ACTIVATIONS, out2);
+
+        out1 = this.outFwd;
+        out2 = this.outBwd;
 
         INDArray ret = null;
         switch (layerConf.getMode()) {

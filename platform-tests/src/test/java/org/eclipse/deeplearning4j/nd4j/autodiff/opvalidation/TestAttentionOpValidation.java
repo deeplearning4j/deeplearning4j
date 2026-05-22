@@ -38,6 +38,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
+import org.junit.jupiter.api.Test;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -1150,5 +1154,277 @@ public class TestAttentionOpValidation extends BaseOpValidation {
 
             prevOutput = attnOut;
         }
+    }
+
+    // ========================= Mixed Dtype Tests =========================
+
+    /**
+     * Verifies DotProductAttentionV2 auto-promotes mixed FP types (FLOAT Q/K + HALF V)
+     * instead of throwing. This is the scenario that occurs when FusedRoPE promotes
+     * Q/K to FLOAT while V stays in HALF — the kernel must handle it internally.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Attention - Mixed Dtype Q(FLOAT) K(FLOAT) V(HALF) auto-promotes")
+    public void testMixedDtypeAutoPromotion(Nd4jBackend backend) {
+        int batch = 1, seqQ = 4, seqKV = 4, dim = 16;
+        double scale = 1.0 / Math.sqrt(dim);
+
+        // Q and K in FLOAT (as if FusedRoPE promoted them), V in HALF
+        INDArray qArr = Nd4j.rand(DataType.FLOAT, batch, seqQ, dim).muli(0.1f);
+        INDArray kArr = Nd4j.rand(DataType.FLOAT, batch, seqKV, dim).muli(0.1f);
+        INDArray vArr = Nd4j.rand(DataType.HALF, batch, seqKV, dim).muli(0.1f);
+
+        // Direct op execution — should NOT throw
+        INDArray[] outputs = Nd4j.exec(DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(qArr, vArr, kArr)
+                .addFloatingPointArguments(scale, 0.0)
+                .addBooleanArguments(false, false, true)
+                .build());
+
+        assertNotNull(outputs[0], "Output should not be null");
+        assertEquals(DataType.FLOAT, outputs[0].dataType(),
+                "Output dtype should be promoted to FLOAT (widest of Q/K/V)");
+        assertFalse(outputs[0].isNaN().any(),
+                "Output should not contain NaN values");
+    }
+
+    /**
+     * Verifies mixed dtype attention works through a SameDiff graph
+     * both with and without GraphOptimizer. The optimizer may strip
+     * explicit cast ops, so the kernel must handle the mismatch.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Attention - Mixed Dtype with SameDiff + GraphOptimizer")
+    public void testMixedDtypeWithGraphOptimizer(Nd4jBackend backend) {
+        int batch = 1, seqQ = 4, seqKV = 4, numHeads = 2, headDim = 8;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        // 4D BSHD format — Q/K as FLOAT, V as HALF (realistic FusedRoPE scenario)
+        INDArray qArr = Nd4j.rand(DataType.FLOAT, batch, seqQ, numHeads, headDim).muli(0.1f);
+        INDArray kArr = Nd4j.rand(DataType.FLOAT, batch, seqKV, numHeads, headDim).muli(0.1f);
+        INDArray vArr = Nd4j.rand(DataType.HALF, batch, seqKV, numHeads, headDim).muli(0.1f);
+
+        // Run WITHOUT optimizer first as baseline
+        SameDiff sdBase = SameDiff.create();
+        SDVariable q1 = sdBase.placeHolder("query", DataType.FLOAT, batch, seqQ, numHeads, headDim);
+        SDVariable v1 = sdBase.placeHolder("value", DataType.HALF, batch, seqKV, numHeads, headDim);
+        SDVariable k1 = sdBase.placeHolder("key", DataType.FLOAT, batch, seqKV, numHeads, headDim);
+        SDVariable out1 = sdBase.nn().dotProductAttentionV2("attn", q1, v1, k1,
+                null, null, null, scale, 0.0, false, false);
+
+        Map<String, INDArray> feed = new java.util.LinkedHashMap<>();
+        feed.put("query", qArr);
+        feed.put("value", vArr);
+        feed.put("key", kArr);
+
+        Map<String, INDArray> baseResult = sdBase.output(feed, "attn");
+        INDArray baseOutput = baseResult.get("attn");
+        assertNotNull(baseOutput);
+        assertEquals(DataType.FLOAT, baseOutput.dataType());
+        assertFalse(baseOutput.isNaN().any(), "Baseline output should not contain NaN");
+
+        // Run WITH optimizer — GraphOptimizer may strip cast ops
+        SameDiff sdOpt = SameDiff.create();
+        SDVariable q2 = sdOpt.placeHolder("query", DataType.FLOAT, batch, seqQ, numHeads, headDim);
+        SDVariable v2 = sdOpt.placeHolder("value", DataType.HALF, batch, seqKV, numHeads, headDim);
+        SDVariable k2 = sdOpt.placeHolder("key", DataType.FLOAT, batch, seqKV, numHeads, headDim);
+        SDVariable out2 = sdOpt.nn().dotProductAttentionV2("attn", q2, v2, k2,
+                null, null, null, scale, 0.0, false, false);
+
+        GraphOptimizer optimizer = new GraphOptimizer();
+        optimizer.optimize(sdOpt);
+
+        Map<String, INDArray> optResult = sdOpt.output(feed, "attn");
+        INDArray optOutput = optResult.get("attn");
+        assertNotNull(optOutput);
+        assertEquals(DataType.FLOAT, optOutput.dataType());
+        assertFalse(optOutput.isNaN().any(), "Optimized output should not contain NaN");
+
+        // Both paths should give the same result (within FP tolerance)
+        double maxDiff = baseOutput.sub(optOutput).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-3,
+                "Base vs optimized output max diff " + maxDiff + " exceeds tolerance 1e-3");
+    }
+
+    /**
+     * Verifies mixed dtype with all HALF Q/K/V — the non-mismatch case
+     * should still work correctly (regression guard).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Attention - Uniform HALF dtype still works")
+    public void testUniformHalfDtype(Nd4jBackend backend) {
+        int batch = 1, seqQ = 4, seqKV = 4, dim = 16;
+        double scale = 1.0 / Math.sqrt(dim);
+
+        INDArray qArr = Nd4j.rand(DataType.HALF, batch, seqQ, dim).muli(0.1f);
+        INDArray kArr = Nd4j.rand(DataType.HALF, batch, seqKV, dim).muli(0.1f);
+        INDArray vArr = Nd4j.rand(DataType.HALF, batch, seqKV, dim).muli(0.1f);
+
+        INDArray[] outputs = Nd4j.exec(DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(qArr, vArr, kArr)
+                .addFloatingPointArguments(scale, 0.0)
+                .addBooleanArguments(false, false, true)
+                .build());
+
+        assertNotNull(outputs[0]);
+        assertEquals(DataType.HALF, outputs[0].dataType());
+        assertFalse(outputs[0].isNaN().any());
+    }
+
+    /**
+     * Verifies onnx_multi_head_attention auto-promotes mixed FP types.
+     * Q is FLOAT, K/V are HALF — kernel must auto-cast without throwing.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("ONNX MHA - Mixed Dtype Q(FLOAT) K(HALF) V(HALF) auto-promotes")
+    public void testOnnxMhaMixedDtypeAutoPromotion(Nd4jBackend backend) {
+        int batch = 1, seqQ = 4, seqKV = 4, numHeads = 2, headDim = 8;
+        int hidden = numHeads * headDim;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        // Q in FLOAT, K/V in HALF (realistic mixed-precision scenario)
+        INDArray qArr = Nd4j.rand(DataType.FLOAT, batch, seqQ, hidden).muli(0.1f);
+        INDArray kArr = Nd4j.rand(DataType.HALF, batch, seqKV, hidden).muli(0.1f);
+        INDArray vArr = Nd4j.rand(DataType.HALF, batch, seqKV, hidden).muli(0.1f);
+
+        INDArray[] outputs = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                qArr, kArr, vArr, null, null, null,
+                numHeads, scale, false, 1));
+
+        assertNotNull(outputs[0], "Output should not be null");
+        assertEquals(DataType.FLOAT, outputs[0].dataType(),
+                "Output dtype should be promoted to FLOAT (widest of Q/K/V)");
+        assertFalse(outputs[0].isNaN().any(),
+                "Output should not contain NaN values");
+    }
+
+    /**
+     * Verifies onnx_multi_head_attention with mixed dtypes through SameDiff + GraphOptimizer.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("ONNX MHA - Mixed Dtype with SameDiff + GraphOptimizer")
+    public void testOnnxMhaMixedDtypeWithGraphOptimizer(Nd4jBackend backend) {
+        int batch = 1, seqQ = 4, seqKV = 4, numHeads = 2, headDim = 8;
+        int hidden = numHeads * headDim;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        INDArray qArr = Nd4j.rand(DataType.FLOAT, batch, seqQ, hidden).muli(0.1f);
+        INDArray kArr = Nd4j.rand(DataType.HALF, batch, seqKV, hidden).muli(0.1f);
+        INDArray vArr = Nd4j.rand(DataType.HALF, batch, seqKV, hidden).muli(0.1f);
+
+        // Without optimizer
+        SameDiff sdBase = SameDiff.create();
+        SDVariable q1 = sdBase.placeHolder("query", DataType.FLOAT, batch, seqQ, hidden);
+        SDVariable k1 = sdBase.placeHolder("key", DataType.HALF, batch, seqKV, hidden);
+        SDVariable v1 = sdBase.placeHolder("value", DataType.HALF, batch, seqKV, hidden);
+        sdBase.addVariable(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                sdBase, q1, k1, v1, null, null, null,
+                numHeads, scale, false, 1).outputVariables()[0]);
+
+        Map<String, INDArray> feed = new java.util.LinkedHashMap<>();
+        feed.put("query", qArr);
+        feed.put("key", kArr);
+        feed.put("value", vArr);
+
+        // Get the output variable name
+        String outName = null;
+        for (String name : sdBase.variableMap().keySet()) {
+            if (name.contains("onnx_multi_head_attention")) {
+                outName = name;
+                break;
+            }
+        }
+        assertNotNull(outName, "Should find onnx_mha output variable");
+
+        Map<String, INDArray> baseResult = sdBase.output(feed, outName);
+        INDArray baseOutput = baseResult.get(outName);
+        assertNotNull(baseOutput);
+        assertEquals(DataType.FLOAT, baseOutput.dataType());
+        assertFalse(baseOutput.isNaN().any(), "Baseline output should not contain NaN");
+
+        // With optimizer
+        SameDiff sdOpt = SameDiff.create();
+        SDVariable q2 = sdOpt.placeHolder("query", DataType.FLOAT, batch, seqQ, hidden);
+        SDVariable k2 = sdOpt.placeHolder("key", DataType.HALF, batch, seqKV, hidden);
+        SDVariable v2 = sdOpt.placeHolder("value", DataType.HALF, batch, seqKV, hidden);
+        sdOpt.addVariable(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                sdOpt, q2, k2, v2, null, null, null,
+                numHeads, scale, false, 1).outputVariables()[0]);
+
+        String outNameOpt = null;
+        for (String name : sdOpt.variableMap().keySet()) {
+            if (name.contains("onnx_multi_head_attention")) {
+                outNameOpt = name;
+                break;
+            }
+        }
+
+        GraphOptimizer optimizer = new GraphOptimizer();
+        optimizer.optimize(sdOpt);
+
+        Map<String, INDArray> optResult = sdOpt.output(feed, outNameOpt);
+        INDArray optOutput = optResult.get(outNameOpt);
+        assertNotNull(optOutput);
+        assertEquals(DataType.FLOAT, optOutput.dataType());
+        assertFalse(optOutput.isNaN().any(), "Optimized output should not contain NaN");
+    }
+
+    /**
+     * Tests dot_product_attention_v2 with KV cache where the cache is HALF
+     * but the incoming K/V are FLOAT (simulates FusedRoPE type promotion).
+     * Verifies that kvInPlaceWriteBSHD auto-casts instead of throwing.
+     */
+    @DisplayName("testKvCacheMixedDtype")
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testKvCacheMixedDtype(Nd4jBackend backend) {
+        int batch = 1, seqQ = 1, seqKV = 1, numHeads = 2, headDim = 4;
+        int maxSeqLen = 16;
+
+        // Queries are FLOAT (as after FusedRoPE promotion)
+        INDArray queries = Nd4j.rand(DataType.FLOAT, batch, seqQ, numHeads, headDim);
+        // Keys and values are FLOAT (FusedRoPE promoted from HALF)
+        INDArray keys = Nd4j.rand(DataType.FLOAT, batch, seqKV, numHeads, headDim);
+        INDArray values = Nd4j.rand(DataType.FLOAT, batch, seqKV, numHeads, headDim);
+
+        // KV caches are HALF (model's persistent storage format from DEQUANTIZE_TO_FLOAT16)
+        INDArray keyCache = Nd4j.zeros(DataType.HALF, batch, maxSeqLen, numHeads, headDim);
+        INDArray valueCache = Nd4j.zeros(DataType.HALF, batch, maxSeqLen, numHeads, headDim);
+
+        // cache_position = 0 (first token)
+        INDArray cachePos = Nd4j.createFromArray(new long[]{0});
+
+        // Build the op: inputs are [Q, K, V, qMask, vMask, keyCache, valueCache, cachePos]
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(queries, keys, values,
+                        Nd4j.empty(DataType.FLOAT),  // qMask
+                        Nd4j.empty(DataType.FLOAT),  // vMask
+                        keyCache, valueCache, cachePos)
+                .addOutputs(Nd4j.create(DataType.FLOAT, batch, seqQ, numHeads, headDim))
+                .addIntegerArguments(1, 0, 0, 0)  // scaled=1, withWeights=0, useCausal=0, flash=0
+                .addFloatingPointArguments(0.0)    // dropout=0
+                .build();
+
+        // This should NOT throw "kvInPlaceWriteBSHD: cache dtype 3 must match newKv dtype 5"
+        Nd4j.exec(op);
+
+        INDArray output = op.outputArguments().get(0);
+        assertNotNull(output);
+        assertFalse(output.isNaN().any(), "Output should not contain NaN with mixed KV cache dtypes");
+
+        // Verify the cache was actually written (not still all zeros at position 0)
+        // Extract the first seq position from the HALF cache
+        INDArray keyCacheSlice = keyCache.get(
+                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                org.nd4j.linalg.indexing.NDArrayIndex.point(0),
+                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                org.nd4j.linalg.indexing.NDArrayIndex.all());
+        assertFalse(keyCacheSlice.eq(0).all(),
+                "KV cache at position 0 should have been written");
     }
 }

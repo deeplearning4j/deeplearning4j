@@ -30,8 +30,10 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
+import org.nd4j.linalg.api.ops.impl.shape.ExpandDims;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
 import org.nd4j.linalg.api.ops.impl.shape.Reshape;
+import org.nd4j.linalg.api.ops.impl.shape.Squeeze;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -505,6 +507,174 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
                 log.warn("Failed to fuse chained concats: {}", e.getMessage());
                 return false;
             }
+        }
+    }
+
+    /**
+     * Eliminate squeeze(expand_dims(x, axis), axis) → x.
+     *
+     * <p>Common in ONNX-imported models where unsqueeze/squeeze pairs are
+     * inserted for broadcasting compatibility but cancel each other out.</p>
+     */
+    public static class EliminateSqueezeExpandDims implements Optimizer {
+
+        @Override
+        public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
+            return Set.of(Squeeze.class);
+        }
+
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (!(op.getOp() instanceof Squeeze)) return false;
+            Squeeze squeeze = (Squeeze) op.getOp();
+
+            long[] squeezeArgs = squeeze.iArgs();
+            if (squeezeArgs == null || squeezeArgs.length != 1) return false;
+            long squeezeAxis = squeezeArgs[0];
+
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null || inputs.isEmpty()) return false;
+            List<String> outputs = op.getOutputsOfOp();
+            if (outputs == null || outputs.isEmpty()) return false;
+
+            String inputVar = inputs.get(0);
+            String outputVar = outputs.get(0);
+
+            // Check if the input was produced by expand_dims
+            Variable inputVariable = sd.getVariables().get(inputVar);
+            if (inputVariable == null) return false;
+            String producerOpName = inputVariable.getOutputOfOp();
+            if (producerOpName == null) return false;
+
+            SameDiffOp producerOp = sd.getOps().get(producerOpName);
+            if (producerOp == null || !(producerOp.getOp() instanceof ExpandDims)) return false;
+            ExpandDims expand = (ExpandDims) producerOp.getOp();
+
+            long[] expandArgs = expand.iArgs();
+            if (expandArgs == null || expandArgs.length != 1) return false;
+            long expandAxis = expandArgs[0];
+
+            // The axes must match for cancellation
+            if (squeezeAxis != expandAxis) return false;
+
+            // The intermediate must only be consumed by this squeeze
+            List<String> intermediateUsers = inputVariable.getInputsForOp();
+            if (intermediateUsers == null || intermediateUsers.size() != 1) return false;
+
+            // Get the original input (before expand_dims)
+            List<String> expandInputs = producerOp.getInputsToOp();
+            if (expandInputs == null || expandInputs.isEmpty()) return false;
+            String originalInput = expandInputs.get(0);
+
+            log.debug("Eliminating squeeze(expand_dims({}, {}), {}) -> {}", originalInput, expandAxis, squeezeAxis, originalInput);
+
+            OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, originalInput);
+
+            List<String> graphOutputs = sd.outputs();
+            if (graphOutputs != null) {
+                for (int i = 0; i < graphOutputs.size(); i++) {
+                    if (graphOutputs.get(i).equals(outputVar)) {
+                        graphOutputs.set(i, originalInput);
+                    }
+                }
+            }
+
+            OptimizationUtils.removeOp(sd, helper, op.getName());
+            OptimizationUtils.removeVariable(sd, helper, outputVar);
+
+            // If expand_dims now has no consumers, remove it too
+            Variable intermediateAfter = sd.getVariables().get(inputVar);
+            if (intermediateAfter != null) {
+                List<String> remaining = intermediateAfter.getInputsForOp();
+                if (remaining == null || remaining.isEmpty()) {
+                    OptimizationUtils.removeOp(sd, helper, producerOpName);
+                    OptimizationUtils.removeVariable(sd, helper, inputVar);
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * Eliminate expand_dims(squeeze(x, axis), axis) → x.
+     *
+     * <p>The reverse of {@link EliminateSqueezeExpandDims}.</p>
+     */
+    public static class EliminateExpandDimsSqueeze implements Optimizer {
+
+        @Override
+        public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
+            return Set.of(ExpandDims.class);
+        }
+
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (!(op.getOp() instanceof ExpandDims)) return false;
+            ExpandDims expand = (ExpandDims) op.getOp();
+
+            long[] expandArgs = expand.iArgs();
+            if (expandArgs == null || expandArgs.length != 1) return false;
+            long expandAxis = expandArgs[0];
+
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null || inputs.isEmpty()) return false;
+            List<String> outputs = op.getOutputsOfOp();
+            if (outputs == null || outputs.isEmpty()) return false;
+
+            String inputVar = inputs.get(0);
+            String outputVar = outputs.get(0);
+
+            Variable inputVariable = sd.getVariables().get(inputVar);
+            if (inputVariable == null) return false;
+            String producerOpName = inputVariable.getOutputOfOp();
+            if (producerOpName == null) return false;
+
+            SameDiffOp producerOp = sd.getOps().get(producerOpName);
+            if (producerOp == null || !(producerOp.getOp() instanceof Squeeze)) return false;
+            Squeeze squeeze = (Squeeze) producerOp.getOp();
+
+            long[] squeezeArgs = squeeze.iArgs();
+            if (squeezeArgs == null || squeezeArgs.length != 1) return false;
+            long squeezeAxis = squeezeArgs[0];
+
+            if (squeezeAxis != expandAxis) return false;
+
+            List<String> intermediateUsers = inputVariable.getInputsForOp();
+            if (intermediateUsers == null || intermediateUsers.size() != 1) return false;
+
+            List<String> squeezeInputs = producerOp.getInputsToOp();
+            if (squeezeInputs == null || squeezeInputs.isEmpty()) return false;
+            String originalInput = squeezeInputs.get(0);
+
+            log.debug("Eliminating expand_dims(squeeze({}, {}), {}) -> {}", originalInput, squeezeAxis, expandAxis, originalInput);
+
+            OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, originalInput);
+
+            List<String> graphOutputs = sd.outputs();
+            if (graphOutputs != null) {
+                for (int i = 0; i < graphOutputs.size(); i++) {
+                    if (graphOutputs.get(i).equals(outputVar)) {
+                        graphOutputs.set(i, originalInput);
+                    }
+                }
+            }
+
+            OptimizationUtils.removeOp(sd, helper, op.getName());
+            OptimizationUtils.removeVariable(sd, helper, outputVar);
+
+            Variable intermediateAfter = sd.getVariables().get(inputVar);
+            if (intermediateAfter != null) {
+                List<String> remaining = intermediateAfter.getInputsForOp();
+                if (remaining == null || remaining.isEmpty()) {
+                    OptimizationUtils.removeOp(sd, helper, producerOpName);
+                    OptimizationUtils.removeVariable(sd, helper, inputVar);
+                }
+            }
+
+            return true;
         }
     }
 

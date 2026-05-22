@@ -356,6 +356,14 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public boolean initializeOutputs(OpContext ctx) {
+        // DSP allocates its own output buffers. The view created below has
+        // non-standard strides (input.stride * slice_stride) which corrupt
+        // DynamicShapePlanCompiler's shape capture for the native plan.
+        // Only skip for SameDiff graph execution (sameDiff != null), not direct imperative ops.
+        if (sameDiff != null && org.nd4j.autodiff.samediff.internal.InferenceSession.isDynamicShapePlanEnabled()) {
+            return super.initializeOutputs(ctx);
+        }
+
         // Ensure fields are populated from iArguments
         configureFromArguments();
 

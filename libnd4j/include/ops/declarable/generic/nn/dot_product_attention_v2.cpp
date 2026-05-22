@@ -322,6 +322,26 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     attentionBias = attentionBiasCastOwner.get();
   }
 
+  // Auto-cast K/V to match Q dtype when they differ (e.g. FusedRoPE promotes
+  // Q/K to FLOAT while V stays HALF, or GraphOptimizer strips type casts).
+  // This mirrors how MmulHelper handles mixed dtypes via pickPairwiseResultType.
+  // Without this, CUDA kernels would reinterpret_cast the wrong dtype → silent corruption.
+  NDArray* keysCastOwner = nullptr;
+  NDArray* valuesCastOwner = nullptr;
+  // Save pre-cast pointers for reshape cleanup (reshapedQ path).
+  // After cast, `keys`/`values` will point to new allocations, but the
+  // reshapedQ cleanup must still delete the original reshape results.
+  NDArray* keysPreCast = keys;
+  NDArray* valuesPreCast = values;
+  if (keys->dataType() != queries->dataType()) {
+    keysCastOwner = keys->cast(queries->dataType());
+    keys = keysCastOwner;
+  }
+  if (values->dataType() != queries->dataType()) {
+    valuesCastOwner = values->cast(queries->dataType());
+    values = valuesCastOwner;
+  }
+
   // Fast flash path: explicitly enabled + no masks + no dropout
   // The fused CUDA kernel now handles attention bias internally
   bool canUseFlashFast = useFlashAttention && !hasInputMasks && dropout == 0.0;
@@ -466,12 +486,15 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     }
   }
 
-  // Cleanup reshaped arrays and restore output shapes
+  // Cleanup reshaped arrays and restore output shapes.
+  // Use pre-cast pointers: if K/V were auto-cast, `keys`/`values` now point to
+  // the cast copies (freed below as keysCastOwner/valuesCastOwner), while
+  // keysPreCast/valuesPreCast still hold the reshape results that must be freed here.
   if(reshapedQ) {
     delete queries;
-    delete values;
+    delete valuesPreCast;
     if(block.width() > 2) {
-      delete keys;
+      delete keysPreCast;
     }
     if(qMaskOrig != nullptr) {
       delete qMask;
@@ -493,6 +516,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   if (promotedV) delete valuesOrig;
   if (promotedK) delete promotedKPtr;
   if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
+  delete keysCastOwner;
+  delete valuesCastOwner;
 
   return sd::Status::OK;
 }
@@ -512,7 +537,15 @@ DECLARE_TYPES(dot_product_attention_v2) {
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2) {
-  auto firstInputType = ArrayOptions::dataType(inputShape->at(0));
+  auto queriesType = ArrayOptions::dataType(inputShape->at(0));
+  auto valuesType = ArrayOptions::dataType(inputShape->at(1));
+  auto keysType = block.width() > 2 ? ArrayOptions::dataType(inputShape->at(2)) : valuesType;
+  // Promote to widest FP type among Q/K/V (mirrors runtime auto-cast in CUSTOM_OP_IMPL)
+  auto firstInputType = queriesType;
+  if (DataTypeUtils::sizeOfElement(valuesType) > DataTypeUtils::sizeOfElement(firstInputType))
+    firstInputType = valuesType;
+  if (DataTypeUtils::sizeOfElement(keysType) > DataTypeUtils::sizeOfElement(firstInputType))
+    firstInputType = keysType;
   auto queriesShape = inputShape->at(0);
   auto valuesShape = inputShape->at(1);
   auto keysShape = block.width() > 2 ? inputShape->at(2) : valuesShape;

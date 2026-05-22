@@ -175,9 +175,20 @@ static void syncExternalInputs(NDArray** externalArrays, int numExt,
 
   // Fast path: when cached variable indices are available and we're in steady
   // state with variable filtering, iterate only the 2-3 variable inputs instead
-  // of all ~1333 external inputs. Weights are guaranteed stable after freeze.
+  // of all ~1333 external inputs. Weights are normally stable after freeze.
+  // EXCEPTION: associateArrayWithVariable() can rebind a weight between calls,
+  // replacing its DataBuffer. The new DataBuffer has isPrimaryActual()=true.
+  // Scan for this condition before the early return — the scan is O(N) but
+  // only triggers when ANY non-variable input has isPrimaryActual()=true, which
+  // is rare in production (normal LLM inference: weights never rebind, scan
+  // is a trivial boolean check per entry).
   if (useVariableFilter && cachedVariableIndices != nullptr &&
       !cachedVariableIndices->empty() && !tritonVerify) {
+    // Fast path: only iterate the 2-3 variable inputs (KV caches, embeddings).
+    // Weight rebinding (associateArrayWithVariable) is handled on the Java side:
+    // DynamicShapePlanExecutor detects identity changes and passes the updated
+    // INDArray via setGraphContextInputArray, so we don't need to scan all ~1333
+    // non-variable inputs here.
     for (int idx : *cachedVariableIndices) {
       if (idx < 0 || idx >= numExt || externalArrays[idx] == nullptr) continue;
       auto* db = externalArrays[idx]->dataBuffer();
@@ -231,6 +242,10 @@ static void syncExternalInputs(NDArray** externalArrays, int numExt,
     }
 
     if (isWeight) {
+      // Weights are stable after freeze — same DataBuffer for plan lifetime.
+      // Weight rebinding (associateArrayWithVariable) is handled on the Java side:
+      // DynamicShapePlanExecutor detects identity changes and passes the updated
+      // INDArray via setGraphContextInputArray before calling into C++.
       skipped++;
       continue;
     }
@@ -831,6 +846,9 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
     if (slots[s].aliasesInput() || slots[s].frozenConstantSlot()) continue;
     // Block ops that use external library workspaces (cuBLAS, etc.) — trait-driven, not op-specific.
     if (blockExtWorkspace && slots[s].hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE)) return false;
+    // Block ops with dynamic output sizes (Where, unique) — they allocate during execution,
+    // which poisons CUDA graph capture (cudaStreamCaptureStatusInvalidated).
+    if (slots[s].hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE)) return false;
     // Block non-fully-writing ops (reduce, scatter) that need prezero.
     if (!slots[s].isFullyWriting()) return false;
   }
@@ -1144,6 +1162,12 @@ Status NativeDynamicShapePlan::compositeReplay(
   //   2. Shape freeze prevents reallocation
   //   3. Legitimate address changes go through invalidation paths that reset counters
   //   4. Merged CUDA graphs would crash on drift anyway (baked-in addresses)
+  //   4. Merged CUDA graphs would crash on drift anyway (baked-in addresses)
+  //
+  // Staging buffers (ensureAndSyncStagingBuffers) isolate merged CUDA graphs
+  // from external address drift: graphs were captured against staging buffer
+  // addresses which are stable for plan lifetime. The skip optimization is
+  // therefore safe even with merged graphs.
   static constexpr int kAddrStableSkipThreshold = 3;
   static constexpr int kAddrRecheckInterval = 64;
   bool driftDetected = false;
@@ -1203,7 +1227,9 @@ Status NativeDynamicShapePlan::compositeReplay(
   }
 
   if (!driftDetected && !seg.exec.needsArgRefresh() && seg.exec.capturedSlotAddrHash != 0) {
-    // Same skip optimization for slot address hash (O(slotRange) per step)
+    // Same skip optimization for slot address hash (O(slotRange) per step).
+    // Staging buffers isolate merged graphs from external address drift, so
+    // the skip threshold works correctly regardless of merged graph presence.
     bool skipSlotCheck = (seg.exec.slotAddrStableCount >= kAddrStableSkipThreshold) &&
                          ((seg.exec.executionCount % kAddrRecheckInterval) != 0);
     if (skipSlotCheck) {
@@ -2362,6 +2388,14 @@ Status NativeDynamicShapePlan::segDispatchReplay(
     }
     handled = true;
     return replayStatus;
+  } else if (compositeReplayReady) {
+    // Composite handles exist but a condition blocked replay — log which one.
+    DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY_BLOCKED: seg[%d-%d] allowReplay=%d shapeKeyMatch=%d "
+             "(cached=%lld current=%lld) — falling through to monolithic/capture path",
+             seg.def.startSlot, seg.def.endSlot,
+             allowTritonCudaGraphReplay ? 1 : 0,
+             (seg.exec.cachedShapeKey == segShapeKey) ? 1 : 0,
+             (long long)seg.exec.cachedShapeKey, (long long)segShapeKey);
   }
 
   // ── MONOLITHIC REPLAY ─────────────────────────────────────────────────────
@@ -3160,6 +3194,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // gap ops to read zeros and produce wrong results that propagate through the
       // entire model. Composite replay handles zeroing correctly: pre-replay batch-zero
       // zeros outputs before each replay, and gap ops call nullify() on their own outputs.
+      //
       bool willUseCompositeCapture = false;
 #if HAVE_TRITON
       {
@@ -3267,6 +3302,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          if (u.kind == REPLAY_UNIT_TRITON_ISLAND) { hasIslandUnits = true; break; }
        }
        if (hasIslandUnits && !sched.units.empty()) {
+         DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_ENTER: seg[%d-%d] units=%d hasIsland=1 execCount=%d",
+                  seg.def.startSlot, seg.def.endSlot, (int)sched.units.size(), executeCount_);
          DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE_BEGIN: seg[%d-%d] units=%d "
                   "segPhase=%s shapesFrozen=%d planPhase=%s executeCount=%d "
                   "tl_graphExecutionActive=%d tl_cublasWorkspacePtr=%p/%zu",
@@ -3388,6 +3425,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                 }
 
                 if (!gapOk) {
+                  DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: gap [%d-%d] invalidated capture (gapOk=false)",
+                           unit.startSlot, unit.endSlot);
                   // Gap op invalidated capture — likely a pool allocation
                   // (cudaMallocAsync/cudaFreeAsync) that's capture-incompatible.
                   // After capture invalidation the GPU stream state is undefined —
@@ -3666,6 +3705,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              tl_islandSlotMax = INT_MIN;
 
              if (captureStatus != Status::OK) {
+               DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: island captureStatus=%d at group=%d [%d-%d]",
+                        (int)captureStatus, mergedGroupId, mergedStartSlot, mergedEndSlot);
                if (mergedNativeHandle->isCapturing()) {
                  mergedNativeHandle->endCapture(ctx.cudaStr);
                }
@@ -3686,12 +3727,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (!validateAndStoreMergedCapture("MERGED_CAPTURE", mergedNativeHandle,
                        mergedHandle, sched, mergedGroupId, mergedStartSlot, mergedEndSlot,
                        nodeCount, stream, ctx.cudaStr)) {
+                 DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: validateAndStore FAILED group=%d [%d-%d] nodes=%zu",
+                          mergedGroupId, mergedStartSlot, mergedEndSlot, nodeCount);
                  allIslandsOk = false;
                }
              } else {
-               if (endOk && nodeCount == 0) {
-                 DSP_DIAG(EXECUTE, "MERGED_CAPTURE: group=%d has 0 nodes — non-capturable", mergedGroupId);
-               }
+               DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: endCapture=%d nodeCount=%zu group=%d [%d-%d]",
+                        endOk ? 1 : 0, nodeCount, mergedGroupId, mergedStartSlot, mergedEndSlot);
                allIslandsOk = false;
              }
 
@@ -3766,6 +3808,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             // Guard: only transition lifecycle if the segment is not already SEALED.
             // Plan cache can return a plan whose segment was previously captured+sealed;
             // re-capturing updates handles but must not re-fire the lifecycle transition.
+            // Use ctx.segInputAddrKey: variable inputs are skipped in computeSegmentInputAddrKey,
+            // so the key is identical whether computed against raw or staged externals.
             if (!seg.exec.segPhase.isSealed()) {
               SegmentLifecycle::markCaptured(seg.exec, ctx.segInputAddrKey, ctx.createValueKey,
                   computeSlotAddrHash(outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_),
@@ -3869,7 +3913,19 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            tritonOrderedRangeGuard.active = false;
            TritonGraphBackend::clearOrderedRangeExecutor();
          } else {
-           // Partial failure — free any successfully captured merged handles
+           // Partial failure — log which unit failed and why (COMPILE category
+           // is always enabled for graph-capture configs, unlike EXECUTE).
+           DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAILED_DETAIL: seg[%d-%d] allIslandsOk=false "
+                    "units=%d mergedHandles=%d — scanning for first failure...",
+                    seg.def.startSlot, seg.def.endSlot,
+                    (int)sched.units.size(), (int)sched.mergedReplayHandles.size());
+           for (size_t ui = 0; ui < sched.units.size(); ui++) {
+             auto& u = sched.units[ui];
+             DSP_DIAG(COMPILE, "  unit[%d] kind=%d [%d-%d] mergedGroupId=%d isMergedLeader=%d",
+                      (int)ui, (int)u.kind, u.startSlot, u.endSlot, u.mergedGroupId,
+                      u.isMergedLeader ? 1 : 0);
+           }
+           // Free any successfully captured merged handles
            for (auto& h : sched.mergedReplayHandles) {
              h.reset();
            }
@@ -4675,13 +4731,22 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
     // Snapshot addresses for direct execution (baseline for comparison with capture/replay)
     snapshotAddrs(outputSlots_, totalOutputSlots_, externalArrays, numExt, "direct-entry");
 
+    // Pre-execution sync: H2D variable external inputs + cross-stream ordering.
+    // The frozen fast-path (forcesSyncOnFrozen=false for TRITON/AUTO) skips
+    // prepareSpecialUse after execCount>=2, so variable placeholder inputs like
+    // "x" have stale device buffers. performPreReplaySync forces H2D for inputs
+    // classified as variable, regardless of frozen state. Without this, Triton
+    // direct execution reads stale capture-time device data every step.
+    NDArray** directExternals = performPreReplaySync(
+        externalArrays, numExt, stream, "tritonDirectExec");
+
     DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
                  "direct-exec invoking prezeroSegmentOutputs seg=[%d-%d] stream=%p execCount=%d",
                  seg.def.startSlot, seg.def.endSlot, (void*)stream, seg.exec.executionCount);
     prezeroSegmentOutputs(seg, stream);
 
     try {
-      status = ctx.backend->executeSegment(seg, slots_, externalArrays, numExt,
+      status = ctx.backend->executeSegment(seg, slots_, directExternals, numExt,
                                        outputSlots_, totalOutputSlots_, stream);
     } catch (...) {
       restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotStateNonCapture, savedSlotPhasesNonCapture);
@@ -4706,7 +4771,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       {
         SyncOverride directSync(*this, "native_direct_exec");
         for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-          auto slotStatus = executeSlot(s, externalArrays, numExt, stream);
+          auto slotStatus = executeSlot(s, directExternals, numExt, stream);
           if (slotStatus != Status::OK) {
             DSP_DIAG(EXECUTE, "NATIVE_DIRECT_EXEC: slot %d (%s) FAILED status=%d",
                      s, slots_[s].ident.opName.c_str(), static_cast<int>(slotStatus));
@@ -4719,29 +4784,37 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
     restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotStateNonCapture, savedSlotPhasesNonCapture);
 
-
-    // Dump final output for direct Triton path (baseline comparison)
-    if (status == Status::OK && seg.def.endSlot < totalOutputSlots_ &&
-        outputSlots_[seg.def.endSlot] != nullptr) {
-      auto* finalOut = outputSlots_[seg.def.endSlot];
-      if (finalOut->dataType() == FLOAT32) {
-        DSP_DIAG_DUMP_SLOT("direct", seg.def.endSlot,
-                           DSP_BUF(finalOut), finalOut->lengthOf());
-      }
-    }
-    // Always-on diagnostic: dump top logit for non-capture Triton execution
-    if (!usedTritonGraphCapture && status == Status::OK &&
-        seg.def.endSlot < totalOutputSlots_ && outputSlots_[seg.def.endSlot] != nullptr) {
-      auto* out = outputSlots_[seg.def.endSlot];
-      if (out->dataType() == FLOAT32 && out->lengthOf() > 0) {
-        DSP_DIAG_DUMP_SEG_OUTPUT("DIRECT_TRITON", seg.def.endSlot, DSP_BUF(out),
-                                 out->lengthOf(), seg.exec.executionCount, stream);
-      }
-    }
-    // Diagnostic: segment exit argmax
+    // Mark output slot device buffers as current after Triton kernel writes.
+    // The Triton kernel writes directly to device memory via specialBuffer(),
+    // but does not update NDArray actuality flags. Without tickWriteDevice(),
+    // subsequent Java-side .dup() reads from stale host data (isPrimaryActual
+    // was true from prior H2D sync), producing identical outputs every step.
     if (status == Status::OK) {
-      dumpSegFinalArgmax(seg, outputSlots_, totalOutputSlots_, numSlots_, slots_,
-                         ctx.cudaStr, "SEG_EXIT_ARGMAX", seg.exec.executionCount);
+      for (int si = seg.def.startSlot; si <= seg.def.endSlot && si < totalOutputSlots_; si++) {
+        if (outputSlots_[si] != nullptr && outputSlots_[si]->dataBuffer() != nullptr) {
+          outputSlots_[si]->tickWriteDevice();
+        }
+      }
+    }
+
+    // DSP_DIAG-gated diagnostics for Triton direct execution path.
+    // All output verification is behind DSP_DIAG_ENABLED checks to avoid
+    // unconditional cudaStreamSynchronize / cudaMemcpy on every step.
+    if (DSP_DIAG_ENABLED(EXECUTE)) {
+      // Dump final output for direct Triton path (baseline comparison)
+      if (status == Status::OK && seg.def.endSlot < totalOutputSlots_ &&
+          outputSlots_[seg.def.endSlot] != nullptr) {
+        auto* finalOut = outputSlots_[seg.def.endSlot];
+        if (finalOut->dataType() == FLOAT32) {
+          DSP_DIAG_DUMP_SLOT("direct", seg.def.endSlot,
+                             DSP_BUF(finalOut), finalOut->lengthOf());
+        }
+      }
+      // Segment exit argmax
+      if (status == Status::OK) {
+        dumpSegFinalArgmax(seg, outputSlots_, totalOutputSlots_, numSlots_, slots_,
+                           ctx.cudaStr, "SEG_EXIT_ARGMAX", seg.exec.executionCount);
+      }
     }
 
     DSP_DIAG(EXECUTE, "executeSegmentWithGpuGraph: exec%d seg[%d-%d]: backend=%s %s status=%d(%s) "
@@ -5406,11 +5479,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   if (hasInternalValueShapeInputs) {
     const bool shapeKeyStable = (seg.exec.cachedShapeKey == 0) ||
                                 (seg.exec.cachedShapeKey == segShapeKey);
+    // For composite captures, create-value stability doesn't affect arg table
+    // because create ops execute live as gap slots (not baked into CUDA graphs).
+    // Don't let create-value churn poison the arg table stability flag.
+    const bool effectiveCreateValuesStable = createValuesStable || hasComposite;
     const bool wasStable = !seg.exec.needsArgRefresh();
-    const bool nowStable = wasStable && extAddrsStable && createValuesStable && shapeKeyStable;
+    const bool nowStable = wasStable && extAddrsStable && effectiveCreateValuesStable && shapeKeyStable;
     seg.exec.argTableStable = seg.exec.argTableStable &&
                               extAddrsStable &&
-                              createValuesStable &&
+                              effectiveCreateValuesStable &&
                               shapeKeyStable;
     // Keep generation counter in sync: bump if transitioning from stable to unstable
     if (wasStable && !nowStable) {
@@ -5427,12 +5504,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                  createValuesStable ? 1 : 0,
                  extAddrsStable ? 1 : 0);
   }
-  if (!createValuesStable && seg.exec.replayHandle) {
-    DSP_DIAG(EXECUTE, "CREATE_VALUE_KEY mismatch: captured=%lld current=%lld → invalidating graph seg[%d-%d]",
+  // Create-value-key invalidation: only for MONOLITHIC captures where create ops
+  // (ConstantOfShape, etc.) may be baked into the CUDA graph with specific memset sizes.
+  // Composite captures execute create ops as live gap slots — they are NOT baked into
+  // CUDA graphs — so value changes are handled naturally during replay execution.
+  // Invalidating composite handles here destroys the entire capture and triggers
+  // COMPOSITE_CAPTURE_FAILED on re-capture (the capture window has passed).
+  if (!createValuesStable && seg.exec.replayHandle && !hasComposite) {
+    DSP_DIAG(EXECUTE, "CREATE_VALUE_KEY mismatch: captured=%lld current=%lld → invalidating MONOLITHIC graph seg[%d-%d]",
              (long long)seg.exec.capturedCreateValueKey, (long long)createValueKey, seg.def.startSlot, seg.def.endSlot);
     SegmentLifecycle::invalidateForRebuild(this, seg, "create_value_key_mismatch");
     batchD2DCount_ = 0;
     extAddrsStable = false;  // Force re-capture path
+  } else if (!createValuesStable && hasComposite) {
+    DSP_DIAG(EXECUTE, "CREATE_VALUE_KEY mismatch: captured=%lld current=%lld — COMPOSITE seg[%d-%d] "
+             "skipping invalidation (create ops execute live as gap slots)",
+             (long long)seg.exec.capturedCreateValueKey, (long long)createValueKey,
+             seg.def.startSlot, seg.def.endSlot);
   }
 
   // Triton graph replay conditions:

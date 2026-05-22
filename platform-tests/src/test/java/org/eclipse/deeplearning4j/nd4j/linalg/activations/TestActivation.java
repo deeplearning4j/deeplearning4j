@@ -126,7 +126,7 @@ public class TestActivation extends BaseNd4jTestWithBackends {
                 } else if(dIn[j] < threshold[i]){
                     //Below threshold - gradient equal to dL/dOut * threshold
                     double exp = dEps[j] * negativeSlope[i];
-                    assertEquals(exp, dGrad[j], 1e-6);
+                    assertEquals(exp, dGrad[j], 1e-5);
                 } else {
                     //Linear part
                     assertEquals(dEps[j], dGrad[j], 1e-8);

@@ -17,14 +17,43 @@
  ******************************************************************************/
 
 #include <dsp/runtime/dsp_runtime_c.h>
-#include <legacy/NativeOps.h>
 #include <dsp/NativeOpsDsp.h>
 
 #include <array/DataTypeUtils.h>
 #include <array/NDArray.h>
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
+#include <graph/Context.h>
 #include <helpers/ShapeBuilders.h>
+
+// ---------------------------------------------------------------------------
+// Standalone SDX helpers — replace the 6 NativeOps.h functions that
+// DspRuntimeC.cpp used to call.  These are trivial one-liners with no JNI
+// dependency, allowing libsdx to be built without linking libjvm.
+// The typedef mirrors what NativeOps.h defines; we keep the same names
+// so the call sites below do not change.
+// ---------------------------------------------------------------------------
+typedef sd::graph::Context OpaqueContext;
+typedef sd::NDArray* OpaqueNDArray;
+
+static inline OpaqueContext* createGraphContext(int nodeId) {
+  return new sd::graph::Context(nodeId);
+}
+static inline void deleteGraphContext(OpaqueContext* ptr) {
+  if (ptr != nullptr) delete ptr;
+}
+static inline void ctxPurgeNoSync(OpaqueContext* ptr) {
+  ptr->clearFastPathNoSync();
+}
+static inline void setGraphContextInputArray(OpaqueContext* ptr, int index, OpaqueNDArray arr) {
+  ptr->setInputArray(index, arr, false);
+}
+static inline void setGraphContextOutputArray(OpaqueContext* ptr, int index, OpaqueNDArray arr) {
+  ptr->setOutputArray(index, arr, false);
+}
+static inline const char* lastErrorMessage() {
+  return sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
+}
 
 #include <algorithm>
 #include <chrono>
@@ -91,10 +120,80 @@ struct sdx_context {
   OpaqueContext* graph_context = nullptr;
   int num_inputs = -1;
   int num_outputs = -1;
+  int execution_count = 0;
   std::string last_error;
   sdx_execution_report_t last_report{};
+
+  // Cached NDArray wrappers — persisted across sdxRun() calls.
+  // Only rebuilt when the corresponding tensor view changes (data pointer,
+  // shape, dtype, or device). This eliminates ~2N allocations per step.
   std::vector<std::unique_ptr<sd::NDArray>> input_wrappers;
   std::vector<std::unique_ptr<sd::NDArray>> output_wrappers;
+
+  // Cached tensor view metadata for change detection.
+  // Each entry stores {data, shape_hash, rank, dtype, bytes, device_type, device_id}
+  // so we can detect when a wrapper needs rebuilding.
+  struct CachedTensorMeta {
+    void* data = nullptr;
+    uint64_t shape_hash = 0;
+    int32_t rank = -1;
+    int32_t dtype = -1;
+    size_t bytes = 0;
+    int32_t device_type = -1;
+    int32_t device_id = -1;
+
+    bool matches(const sdx_tensor_view_t& tv) const {
+      if (data != tv.data || rank != tv.rank || dtype != tv.dtype ||
+          bytes != tv.bytes || device_type != tv.device_type ||
+          device_id != tv.device_id) {
+        return false;
+      }
+      // Compare shape content via hash
+      uint64_t h = 14695981039346656037ULL;
+      for (int i = 0; i < tv.rank; i++) {
+        uint64_t v = static_cast<uint64_t>(tv.shape[i]);
+        h ^= v; h *= 1099511628211ULL;
+      }
+      return shape_hash == h;
+    }
+
+    void update(const sdx_tensor_view_t& tv) {
+      data = tv.data;
+      rank = tv.rank;
+      dtype = tv.dtype;
+      bytes = tv.bytes;
+      device_type = tv.device_type;
+      device_id = tv.device_id;
+      uint64_t h = 14695981039346656037ULL;
+      for (int i = 0; i < tv.rank; i++) {
+        uint64_t v = static_cast<uint64_t>(tv.shape[i]);
+        h ^= v; h *= 1099511628211ULL;
+      }
+      shape_hash = h;
+    }
+  };
+  std::vector<CachedTensorMeta> cached_input_meta;
+  std::vector<CachedTensorMeta> cached_output_meta;
+
+  // Cached execution stream — avoids LaunchContext lookup every call
+  sd::Pointer cached_exec_stream = nullptr;
+  bool exec_stream_cached = false;
+
+  // Cached mode settings — skip redundant setPlan* calls
+  int cached_backend = -1;
+  int cached_jit_mode = -1;
+
+  // Multi-device state
+  bool has_cuda_like_tensors = false;
+  int elected_device_id = -1;        // majority-device election result (-1 = not yet elected)
+  bool device_election_done = false;  // only true after freeze when device is stable
+
+  // Constant replica cache: input index -> migrated NDArray on elected device.
+  // Only non-placeholder inputs (model weights, constants) are cached.
+  // Placeholders change every step and must be migrated each call.
+  std::vector<std::unique_ptr<sd::NDArray>> constant_replicas;
+  // Track which inputs are marked as placeholders (change shape/value per step)
+  std::vector<bool> is_placeholder_input;
 };
 
 namespace {
@@ -790,6 +889,14 @@ SDX_API sdx_status_t sdxCreateContext(
     return SDX_STATUS_EXECUTION_FAILED;
   }
 
+  // Pre-allocate cache vectors so sdxRun can do incremental updates
+  context->input_wrappers.resize(static_cast<size_t>(context->num_inputs));
+  context->output_wrappers.resize(static_cast<size_t>(context->num_outputs));
+  context->cached_input_meta.resize(static_cast<size_t>(context->num_inputs));
+  context->cached_output_meta.resize(static_cast<size_t>(context->num_outputs));
+  context->constant_replicas.resize(static_cast<size_t>(context->num_inputs));
+  context->is_placeholder_input.resize(static_cast<size_t>(context->num_inputs), false);
+
   setLastError(model->runtime, "");
   *out_context = context;
   return SDX_STATUS_OK;
@@ -802,6 +909,9 @@ SDX_API void sdxDestroyContext(sdx_context_t* context) {
 
   context->input_wrappers.clear();
   context->output_wrappers.clear();
+  context->cached_input_meta.clear();
+  context->cached_output_meta.clear();
+  context->constant_replicas.clear();
 
   if (context->graph_context != nullptr) {
     deleteGraphContext(context->graph_context);
@@ -870,108 +980,165 @@ SDX_API sdx_status_t sdxRun(
     }
   }
 
-  int requestedDeviceId = -1;
-  bool sawCudaTensor = false;
-  bool sawAmdTensor = false;
-  auto collectDeviceInfo = [&](const sdx_tensor_view_t& tensor) -> sdx_status_t {
-    if (!isCudaLikeDeviceType(tensor.device_type)) {
+  // ══════════════════════════════════════════════════════════════════════
+  // MULTI-CHIP DEVICE SCAN + MAJORITY-DEVICE ELECTION
+  // ══════════════════════════════════════════════════════════════════════
+  // Always scan tensors for device info unless frozen (device is stable
+  // after freeze). This handles the serving scenario where different
+  // requests may arrive with tensors on different GPUs.
+  //
+  // Instead of rejecting mixed device_id, we elect the device holding
+  // the most data (data locality) — matching the Java DSP path's
+  // majority-device election in DynamicShapePlanExecutor.
+  // ══════════════════════════════════════════════════════════════════════
+  int electedDeviceId = -1;
+  bool hasCudaLikeTensors = false;
+
+  if (context->device_election_done) {
+    // Frozen fast path — device is stable, reuse cached election
+    electedDeviceId = context->elected_device_id;
+    hasCudaLikeTensors = context->has_cuda_like_tensors;
+  } else {
+    // Scan all tensor device_type/device_id fields
+    bool sawCudaTensor = false;
+    bool sawAmdTensor = false;
+
+    // Count bytes per device for majority election
+    // Support up to 16 devices; if more, fall back to first-seen
+    constexpr int kMaxDevicesForElection = 16;
+    size_t deviceBytes[kMaxDevicesForElection] = {};
+    bool hasMultipleDevices = false;
+
+    auto scanTensor = [&](const sdx_tensor_view_t& tensor, size_t tensorBytes) -> sdx_status_t {
+      if (!isCudaLikeDeviceType(tensor.device_type)) {
+        return SDX_STATUS_OK;
+      }
+      if (tensor.device_id < 0) {
+        setContextError(context, "CUDA/AMD tensor has invalid device_id");
+        return SDX_STATUS_INVALID_ARGUMENT;
+      }
+      sawCudaTensor = sawCudaTensor || isCudaDeviceType(tensor.device_type);
+      sawAmdTensor = sawAmdTensor || isAmdDeviceType(tensor.device_type);
+
+      // Accumulate bytes for majority election
+      if (tensor.device_id < kMaxDevicesForElection) {
+        deviceBytes[tensor.device_id] += tensorBytes;
+      }
+      if (electedDeviceId < 0) {
+        electedDeviceId = tensor.device_id;
+      } else if (electedDeviceId != tensor.device_id) {
+        hasMultipleDevices = true;
+      }
       return SDX_STATUS_OK;
+    };
+
+    for (int i = 0; i < context->num_inputs; i++) {
+      auto st = scanTensor(inputs[i], inputs[i].bytes);
+      if (st != SDX_STATUS_OK) return st;
     }
-    if (tensor.device_id < 0) {
-      setContextError(context, "CUDA/AMD tensor has invalid device_id");
+    for (int i = 0; i < context->num_outputs; i++) {
+      auto st = scanTensor(outputs[i], outputs[i].bytes);
+      if (st != SDX_STATUS_OK) return st;
+    }
+
+    if (sawCudaTensor && sawAmdTensor) {
+      setContextError(context, "Mixed CUDA and AMD tensor types are not supported in a single sdxRun call");
       return SDX_STATUS_INVALID_ARGUMENT;
     }
-    if (requestedDeviceId < 0) {
-      requestedDeviceId = tensor.device_id;
-    } else if (requestedDeviceId != tensor.device_id) {
-      setContextError(context, "Mixed CUDA/AMD device_id values are not supported in a single sdxRun call");
+
+    // Majority-device election: pick the device holding the most bytes.
+    // This matches Java's DynamicShapePlanExecutor data-locality strategy.
+    if (hasMultipleDevices) {
+      size_t bestBytes = 0;
+      int bestDevice = electedDeviceId;  // fallback to first-seen
+      for (int d = 0; d < kMaxDevicesForElection; d++) {
+        if (deviceBytes[d] > bestBytes) {
+          bestBytes = deviceBytes[d];
+          bestDevice = d;
+        }
+      }
+      electedDeviceId = bestDevice;
+    }
+
+    if (requestedGpuTarget == static_cast<int>(SDX_GPU_TARGET_AUTO)) {
+      if (sawAmdTensor) {
+        requestedGpuTarget = static_cast<int>(SDX_GPU_TARGET_AMD);
+      } else if (sawCudaTensor) {
+        requestedGpuTarget = static_cast<int>(SDX_GPU_TARGET_CUDA);
+      }
+    } else if (requestedGpuTarget == static_cast<int>(SDX_GPU_TARGET_CUDA) && sawAmdTensor) {
+      setContextError(context, "gpu_target CUDA is incompatible with AMD tensor inputs/outputs");
+      return SDX_STATUS_INVALID_ARGUMENT;
+    } else if (requestedGpuTarget == static_cast<int>(SDX_GPU_TARGET_AMD) && sawCudaTensor) {
+      setContextError(context, "gpu_target AMD is incompatible with CUDA tensor inputs/outputs");
       return SDX_STATUS_INVALID_ARGUMENT;
     }
-    sawCudaTensor = sawCudaTensor || isCudaDeviceType(tensor.device_type);
-    sawAmdTensor = sawAmdTensor || isAmdDeviceType(tensor.device_type);
-    return SDX_STATUS_OK;
-  };
 
-  for (int i = 0; i < context->num_inputs; i++) {
-    auto infoStatus = collectDeviceInfo(inputs[i]);
-    if (infoStatus != SDX_STATUS_OK) {
-      return infoStatus;
-    }
-  }
-  for (int i = 0; i < context->num_outputs; i++) {
-    auto infoStatus = collectDeviceInfo(outputs[i]);
-    if (infoStatus != SDX_STATUS_OK) {
-      return infoStatus;
-    }
+    hasCudaLikeTensors = sawCudaTensor || sawAmdTensor;
+    context->has_cuda_like_tensors = hasCudaLikeTensors;
   }
 
-  if (sawCudaTensor && sawAmdTensor) {
-    setContextError(context, "Mixed CUDA and AMD tensor types are not supported in a single sdxRun call");
-    return SDX_STATUS_INVALID_ARGUMENT;
-  }
-
-  if (requestedGpuTarget == static_cast<int>(SDX_GPU_TARGET_AUTO)) {
-    if (sawAmdTensor) {
-      requestedGpuTarget = static_cast<int>(SDX_GPU_TARGET_AMD);
-    } else if (sawCudaTensor) {
-      requestedGpuTarget = static_cast<int>(SDX_GPU_TARGET_CUDA);
-    }
-  } else if (requestedGpuTarget == static_cast<int>(SDX_GPU_TARGET_CUDA) && sawAmdTensor) {
-    setContextError(context, "gpu_target CUDA is incompatible with AMD tensor inputs/outputs");
-    return SDX_STATUS_INVALID_ARGUMENT;
-  } else if (requestedGpuTarget == static_cast<int>(SDX_GPU_TARGET_AMD) && sawCudaTensor) {
-    setContextError(context, "gpu_target AMD is incompatible with CUDA tensor inputs/outputs");
-    return SDX_STATUS_INVALID_ARGUMENT;
-  }
-
+  // ══════════════════════════════════════════════════════════════════════
+  // DEVICE SWITCHING — persist on execution device (no RAII restore)
+  // ══════════════════════════════════════════════════════════════════════
+  // Unlike the old DeviceScopeGuard which restored the previous device
+  // on scope exit, SDX should persist on the elected device. For serving
+  // scenarios, the thread stays on the execution device until a different
+  // election result changes it.
+  // ══════════════════════════════════════════════════════════════════════
 #ifdef SD_CUDA
-  struct DeviceScopeGuard {
-    int previous = -1;
-    bool switched = false;
-    std::string switch_error;
-    explicit DeviceScopeGuard(int targetDevice) {
-      if (targetDevice < 0) return;
-      previous = sd::AffinityManager::currentDeviceId();
-      if (previous != targetDevice) {
-        try {
-          sd::AffinityManager::setCurrentDevice(targetDevice);
-          switched = true;
-        } catch (const std::exception& e) {
-          switch_error = e.what();
-        } catch (...) {
-          switch_error = "unknown error";
-        }
+  if (electedDeviceId >= 0) {
+    int currentDevice = sd::AffinityManager::currentDeviceId();
+    if (currentDevice != electedDeviceId) {
+      try {
+        sd::AffinityManager::setCurrentDevice(electedDeviceId);
+      } catch (const std::exception& e) {
+        setContextError(context, std::string("Failed to switch to device ") +
+                        std::to_string(electedDeviceId) + ": " + e.what());
+        return SDX_STATUS_EXECUTION_FAILED;
+      } catch (...) {
+        setContextError(context, "Failed to switch to device " + std::to_string(electedDeviceId));
+        return SDX_STATUS_EXECUTION_FAILED;
       }
+
+      // Invalidate cached exec stream — it belongs to the previous device
+      context->exec_stream_cached = false;
+      context->cached_exec_stream = nullptr;
     }
-    ~DeviceScopeGuard() noexcept {
-      if (switched && previous >= 0) {
-        try {
-          sd::AffinityManager::setCurrentDevice(previous);
-        } catch (...) {
-        }
-      }
+  }
+
+  // Cache election result after device switch succeeds.
+  // Only cache when frozen — before freeze, tensors may shift devices.
+  if (!context->device_election_done) {
+    int planPhase = getPlanPhase(context->plan_handle);
+    if (planPhase >= 2) {  // FROZEN or REPLAYING
+      context->elected_device_id = electedDeviceId;
+      context->device_election_done = true;
     }
-    bool ok() const { return switch_error.empty(); }
-  };
-  DeviceScopeGuard deviceScope(requestedDeviceId);
-  if (!deviceScope.ok()) {
-    setContextError(context, "Failed to set CUDA/AMD device for sdxRun: " + deviceScope.switch_error);
-    return SDX_STATUS_EXECUTION_FAILED;
   }
 #endif
 
-  setPlanGraphExecutionMode(context->plan_handle, requestedBackend);
-  if (!context->model->allow_runtime_jit) {
-    setPlanJitMode(context->plan_handle, 0);
+  // Only call setPlanGraphExecutionMode/setPlanJitMode when values change.
+  // These involve string formatting + DSP_DIAG calls that cost ~1-2us each.
+  if (requestedBackend != context->cached_backend) {
+    setPlanGraphExecutionMode(context->plan_handle, requestedBackend);
+    context->cached_backend = requestedBackend;
+  }
+  int jitMode = context->model->allow_runtime_jit ? 1 : 0;
+  if (jitMode != context->cached_jit_mode) {
+    setPlanJitMode(context->plan_handle, jitMode);
+    context->cached_jit_mode = jitMode;
   }
   applyGpuTargetHint(requestedGpuTarget);
 
-  context->input_wrappers.clear();
-  context->output_wrappers.clear();
-  context->input_wrappers.reserve(static_cast<size_t>(context->num_inputs));
-  context->output_wrappers.reserve(static_cast<size_t>(context->num_outputs));
-
+  // ── Cached wrapper update: only rebuild wrappers whose tensor view changed ──
+  bool anyInputChanged = false;
   for (int i = 0; i < context->num_inputs; i++) {
+    const size_t idx = static_cast<size_t>(i);
+    if (context->input_wrappers[idx] != nullptr && context->cached_input_meta[idx].matches(inputs[i])) {
+      continue;  // Cache hit — skip allocation
+    }
+    // Cache miss — rebuild this wrapper
     std::unique_ptr<sd::NDArray> wrapped;
     std::string error;
     auto status = wrapTensorView(inputs[i], &wrapped, &error);
@@ -979,23 +1146,9 @@ SDX_API sdx_status_t sdxRun(
       setContextError(context, "Input tensor[" + std::to_string(i) + "] invalid: " + error);
       return status;
     }
-    context->input_wrappers.emplace_back(std::move(wrapped));
-  }
-
-  bool hasCudaLikeTensors = false;
-  for (int i = 0; i < context->num_inputs; i++) {
-    if (isCudaLikeDeviceType(inputs[i].device_type)) {
-      hasCudaLikeTensors = true;
-      break;
-    }
-  }
-  if (!hasCudaLikeTensors) {
-    for (int i = 0; i < context->num_outputs; i++) {
-      if (isCudaLikeDeviceType(outputs[i].device_type)) {
-        hasCudaLikeTensors = true;
-        break;
-      }
-    }
+    context->input_wrappers[idx] = std::move(wrapped);
+    context->cached_input_meta[idx].update(inputs[i]);
+    anyInputChanged = true;
   }
 
 #ifndef SD_CUDA
@@ -1005,18 +1158,86 @@ SDX_API sdx_status_t sdxRun(
   }
 #endif
 
-  if (hasCudaLikeTensors) {
+#ifdef SD_CUDA
+  // ══════════════════════════════════════════════════════════════════════
+  // CROSS-DEVICE DATA MIGRATION
+  // ══════════════════════════════════════════════════════════════════════
+  // For multi-GPU: migrate off-device inputs to the elected execution
+  // device. Cache constant/variable replicas to avoid re-copying model
+  // weights every step. Only placeholders are migrated every call.
+  //
+  // This mirrors Java's DynamicShapePlanExecutor cross-device migration
+  // at lines 2525-2687, using dbAsyncCrossDeviceCopy for async peer copy.
+  //
+  // Strategy: the device is already switched to electedDeviceId above,
+  // so dup() allocates on the correct device. We then use
+  // dbAsyncCrossDeviceCopy for the actual data transfer (async on the
+  // execution stream, so CUDA ordering guarantees visibility).
+  // ══════════════════════════════════════════════════════════════════════
+  if (hasCudaLikeTensors && electedDeviceId >= 0) {
     for (int i = 0; i < context->num_inputs; i++) {
-      auto& in = context->input_wrappers[static_cast<size_t>(i)];
-      if (inputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
-        in->syncToDevice();
-      } else if (isCudaLikeDeviceType(inputs[i].device_type)) {
-        in->syncToDevice();
+      const size_t idx = static_cast<size_t>(i);
+      auto& wrapper = context->input_wrappers[idx];
+      if (wrapper == nullptr) continue;
+
+      int inputDeviceId = inputs[i].device_id;
+      bool inputIsCudaLike = isCudaLikeDeviceType(inputs[i].device_type);
+
+      if (inputIsCudaLike && inputDeviceId != electedDeviceId) {
+        // This input lives on a different device — needs migration.
+        bool isPlaceholder = context->is_placeholder_input[idx];
+
+        // Check constant replica cache for non-placeholder inputs
+        if (!isPlaceholder && context->constant_replicas[idx] != nullptr) {
+          // Reuse cached replica — model weights don't change
+          context->input_wrappers[idx] = std::make_unique<sd::NDArray>(
+              *context->constant_replicas[idx]);
+          anyInputChanged = true;
+          continue;
+        }
+
+        // Migrate via dup() — since we already switched to electedDeviceId,
+        // dup() allocates on the correct device. This handles the data copy
+        // internally through the DataBuffer allocation + memcpy path.
+        try {
+          auto migrated = std::make_unique<sd::NDArray>(wrapper->dup());
+          if (migrated->dataBuffer() != nullptr) {
+            migrated->dataBuffer()->setDeviceId(electedDeviceId);
+          }
+
+          // Cache non-placeholder replicas for reuse across decode steps
+          if (!isPlaceholder) {
+            context->constant_replicas[idx] = std::make_unique<sd::NDArray>(*migrated);
+          }
+
+          context->input_wrappers[idx] = std::move(migrated);
+          anyInputChanged = true;
+        } catch (const std::exception& e) {
+          setContextError(context, "Cross-device migration failed for input[" +
+                          std::to_string(i) + "]: " + e.what());
+          return SDX_STATUS_EXECUTION_FAILED;
+        } catch (...) {
+          setContextError(context, "Cross-device migration failed for input[" + std::to_string(i) + "]");
+          return SDX_STATUS_EXECUTION_FAILED;
+        }
+      } else {
+        // Same device or host — normal sync
+        if (inputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
+          wrapper->syncToDevice();
+        } else if (inputIsCudaLike) {
+          wrapper->syncToDevice();
+        }
       }
     }
   }
+#endif
 
+  bool anyOutputChanged = false;
   for (int i = 0; i < context->num_outputs; i++) {
+    const size_t idx = static_cast<size_t>(i);
+    if (context->output_wrappers[idx] != nullptr && context->cached_output_meta[idx].matches(outputs[i])) {
+      continue;  // Cache hit
+    }
     std::unique_ptr<sd::NDArray> wrapped;
     std::string error;
     auto status = wrapTensorView(outputs[i], &wrapped, &error);
@@ -1024,30 +1245,43 @@ SDX_API sdx_status_t sdxRun(
       setContextError(context, "Output tensor[" + std::to_string(i) + "] invalid: " + error);
       return status;
     }
-    context->output_wrappers.emplace_back(std::move(wrapped));
+    context->output_wrappers[idx] = std::move(wrapped);
+    context->cached_output_meta[idx].update(outputs[i]);
+    anyOutputChanged = true;
   }
 
-  ctxPurgeNoSync(context->graph_context);
-  for (int i = 0; i < context->num_inputs; i++) {
-    setGraphContextInputArray(
-        context->graph_context,
-        i,
-        context->input_wrappers[static_cast<size_t>(i)].get());
-  }
-  for (int i = 0; i < context->num_outputs; i++) {
-    setGraphContextOutputArray(
-        context->graph_context,
-        i,
-        context->output_wrappers[static_cast<size_t>(i)].get());
+  // Only purge and re-set context arrays when wrappers actually changed.
+  // On the fast path (same pointers, shapes, dtypes), this skips all context setup.
+  if (anyInputChanged || anyOutputChanged || context->execution_count == 0) {
+    ctxPurgeNoSync(context->graph_context);
+    for (int i = 0; i < context->num_inputs; i++) {
+      setGraphContextInputArray(
+          context->graph_context,
+          i,
+          context->input_wrappers[static_cast<size_t>(i)].get());
+    }
+    for (int i = 0; i < context->num_outputs; i++) {
+      setGraphContextOutputArray(
+          context->graph_context,
+          i,
+          context->output_wrappers[static_cast<size_t>(i)].get());
+    }
   }
 
   auto start = std::chrono::steady_clock::now();
   sd::Pointer execStream = nullptr;
 #ifdef SD_CUDA
   if (hasCudaLikeTensors) {
-    auto* launchContext = sd::LaunchContext::defaultContext();
-    if (launchContext != nullptr) {
-      execStream = reinterpret_cast<sd::Pointer>(launchContext->getCudaStream());
+    // Cache execution stream — avoids LaunchContext lookup every call
+    if (context->exec_stream_cached) {
+      execStream = context->cached_exec_stream;
+    } else {
+      auto* launchContext = sd::LaunchContext::defaultContext();
+      if (launchContext != nullptr) {
+        execStream = reinterpret_cast<sd::Pointer>(launchContext->getCudaStream());
+      }
+      context->cached_exec_stream = execStream;
+      context->exec_stream_cached = true;
     }
   }
 #endif
@@ -1055,7 +1289,8 @@ SDX_API sdx_status_t sdxRun(
   auto end = std::chrono::steady_clock::now();
   uint64_t durationNs = static_cast<uint64_t>(
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
-  ctxPurgeNoSync(context->graph_context);
+
+  context->execution_count++;
 
   sdx_status_t status = mapExecuteStatus(execCode);
   if (status != SDX_STATUS_OK &&
@@ -1071,6 +1306,8 @@ SDX_API sdx_status_t sdxRun(
   context->last_report.status_code = static_cast<int32_t>(status);
   context->last_report.used_fallback = -1;
   context->last_report.execution_time_ns = durationNs;
+  context->last_report.plan_phase = getPlanPhase(context->plan_handle);
+  context->last_report.execution_count = context->execution_count;
 
   if (status != SDX_STATUS_OK) {
     const char* nativeError = lastErrorMessage();
@@ -1082,13 +1319,13 @@ SDX_API sdx_status_t sdxRun(
     return status;
   }
 
+  // Sync outputs: skip syncToHost for GPU-targeted outputs (zero-copy path)
   for (int i = 0; i < context->num_outputs; i++) {
     auto& out = context->output_wrappers[static_cast<size_t>(i)];
     if (outputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
       out->syncToHost();
-    } else if (isCudaLikeDeviceType(outputs[i].device_type)) {
-      out->syncToDevice();
     }
+    // GPU outputs: data is already on device, no sync needed
   }
 
   setContextError(context, "");
@@ -1117,6 +1354,58 @@ SDX_API sdx_status_t sdxGetExecutionReport(
   const size_t copySize = std::min(dstSize, sizeof(sdx_execution_report_t));
   std::memcpy(out_report, &context->last_report, copySize);
   return SDX_STATUS_OK;
+}
+
+SDX_API sdx_status_t sdxMarkInputVariable(sdx_context_t* context, int32_t input_index) {
+  if (context == nullptr) {
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  if (input_index < 0 || input_index >= context->num_inputs) {
+    setContextError(context, "sdxMarkInputVariable: input_index out of range");
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  markPlanExternalInputVariable(context->plan_handle, input_index);
+  return SDX_STATUS_OK;
+}
+
+SDX_API sdx_status_t sdxMarkInputPlaceholder(sdx_context_t* context, int32_t input_index) {
+  if (context == nullptr) {
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  if (input_index < 0 || input_index >= context->num_inputs) {
+    setContextError(context, "sdxMarkInputPlaceholder: input_index out of range");
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  markPlanExternalInputPlaceholder(context->plan_handle, input_index);
+  // Record in local cache so cross-device migration knows not to cache this input
+  context->is_placeholder_input[static_cast<size_t>(input_index)] = true;
+  return SDX_STATUS_OK;
+}
+
+SDX_API sdx_status_t sdxFreezeShapes(sdx_context_t* context) {
+  if (context == nullptr) {
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  if (context->plan_handle == nullptr) {
+    setContextError(context, "sdxFreezeShapes: no compiled plan");
+    return SDX_STATUS_EXECUTION_FAILED;
+  }
+  setPlanShapesFrozen(context->plan_handle, true);
+  return SDX_STATUS_OK;
+}
+
+SDX_API int32_t sdxGetPlanPhase(const sdx_context_t* context) {
+  if (context == nullptr || context->plan_handle == nullptr) {
+    return -1;
+  }
+  return getPlanPhase(context->plan_handle);
+}
+
+SDX_API int32_t sdxGetExecutionCount(const sdx_context_t* context) {
+  if (context == nullptr) {
+    return -1;
+  }
+  return context->execution_count;
 }
 
 }  // extern "C"

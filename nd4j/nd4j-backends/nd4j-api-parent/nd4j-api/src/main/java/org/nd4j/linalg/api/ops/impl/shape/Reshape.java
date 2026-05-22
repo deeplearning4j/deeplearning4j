@@ -242,6 +242,13 @@ public class Reshape extends DynamicCustomOp {
     }
     @Override
     public boolean initializeOutputs(OpContext ctx) {
+        // DSP allocates its own output buffers. The view created below shares the
+        // input's data buffer, which conflicts with DSP's buffer management.
+        // Only skip for SameDiff graph execution (sameDiff != null), not direct imperative ops.
+        if (sameDiff != null && org.nd4j.autodiff.samediff.internal.InferenceSession.isDynamicShapePlanEnabled()) {
+            return super.initializeOutputs(ctx);
+        }
+
         if(!reshapeWithViewPossible)
             return super.initializeOutputs(ctx);
         else {

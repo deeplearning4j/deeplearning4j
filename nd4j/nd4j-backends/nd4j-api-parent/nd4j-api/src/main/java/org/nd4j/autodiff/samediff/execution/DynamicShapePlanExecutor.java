@@ -177,6 +177,10 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  to avoid repeated failure overhead. */
     private boolean nativeExecutorFailed;
 
+    /** True when the plan has zero slots (all outputs are direct placeholders/constants).
+     *  execute() returns passthrough results without native compilation. */
+    private boolean zeroSlotPassthrough;
+
     /** If CUDA graph capture fails, disable CUDA graphs but keep using slot-by-slot native execution. */
     private boolean cudaGraphsFailed;
 
@@ -235,6 +239,12 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  arrays drive value-dependent shape/controller chains and must be refreshed
      *  into the native opContext during frozen execution just like placeholders. */
     private int[] frozenControlInputIndices;
+
+    /** Cached indices of non-placeholder VARIABLE-type external inputs.
+     *  Only these can be rebound via associateArrayWithVariable(). Built on first
+     *  frozen call to avoid HashMap lookups on all 1332+ entries every step.
+     *  In LLM models, typically 0-5 entries (cos/sin caches, embedding weights). */
+    private int[] cachedVariableTypeIndices;
 
     /** Cached indices of external inputs backed by derived SameDiff variables.
      *  These values are produced by upstream ops outside the current native replay
@@ -414,6 +424,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             contextInputRefs = null;
             inputIsPlaceholder = null;
             placeholderIndices = null;
+            cachedVariableTypeIndices = null;
             frozenControlInputIndices = null;
             frozenDerivedExternalInputIndices = null;
             // Release C++ GPU intermediates (planOwnedArrays_, CUDA graph workspaces,
@@ -856,6 +867,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         contextInputRefs = null;
         inputIsPlaceholder = null;
         placeholderIndices = null;
+        cachedVariableTypeIndices = null;
         frozenControlInputIndices = null;
         frozenDerivedExternalInputIndices = null;
         frozenOutputsInitialized = false;
@@ -939,6 +951,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         contextInputRefs = null;
         inputIsPlaceholder = null;
         placeholderIndices = null;
+        cachedVariableTypeIndices = null;
         frozenControlInputIndices = null;
         frozenDerivedExternalInputIndices = null;
 
@@ -1131,6 +1144,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * rather than {@code nativePlanHandle}, which is swapped by redispatchForCurrentShapes.
      */
     public boolean isNativePlanCompiled(DynamicShapePlan plan) {
+        if (zeroSlotPassthrough && nativePlanSource == plan) return true;
         return cachedSerializedPlan != null && nativePlanSource == plan;
     }
 
@@ -1155,6 +1169,18 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (currentPlan != plan) {
             initialize(plan);
         }
+
+        // Zero-slot plans (all outputs are direct placeholders/constants) need no native
+        // compilation. This happens when the GraphOptimizer eliminates all ops (e.g.
+        // pow(x,1) → x, div(x,1) → x). execute() handles the passthrough.
+        DynamicShapeSlot[] planSlots = plan.getSlots();
+        if (planSlots == null || planSlots.length == 0) {
+            zeroSlotPassthrough = true;
+            nativePlanSource = plan;
+            log.debug("Native executor: zero-slot plan detected, using passthrough mode");
+            return requestedMode != null ? requestedMode : GraphExecutionMode.SLOT_BY_SLOT;
+        }
+        zeroSlotPassthrough = false;
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         boolean planChanged = nativePlanSource != null && nativePlanSource != plan;
@@ -1355,9 +1381,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                 arr = v != null ? v.getArr() : null;
             }
             if (arr == null || arr.shapeInfoDataBuffer() == null) {
-                throw new IllegalStateException(
-                    "redispatchForCurrentShapes: external input '" + phKey +
-                    "' has no array at execute time — cannot build shape-keyed cache key.");
+                // Empty constants (e.g., scalar placeholders compiled as EMPTY_CONSTANT)
+                // may have no backing array at execute time. Use a Pointer(0) as the
+                // shape sentinel — the C++ cache key treats null shape pointers as "any shape"
+                // which is correct for empty/scalar constants whose shape never changes.
+                phPtrs.add(new Pointer());
+                continue;
             }
             phPtrs.add(arr.shapeInfoDataBuffer().addressPointer());
         }
@@ -1731,6 +1760,40 @@ public class DynamicShapePlanExecutor implements Closeable {
     public Map<String, INDArray> execute(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
         if (currentPlan != plan) {
             initialize(plan);
+        }
+
+        // Identity passthrough: when the optimizer eliminates all ops (e.g. pow(x,1) → x),
+        // the plan has zero slots and all outputs map directly to external inputs (placeholders
+        // or constants). Return them directly without native plan compilation.
+        DynamicShapeSlot[] slots = plan.getSlots();
+        if (slots == null || slots.length == 0) {
+            Map<String, INDArray> result = new java.util.LinkedHashMap<>();
+            Set<String> requested = plan.getRequestedOutputs();
+            String[] extKeys = plan.getExternalInputKeys();
+            byte[] extTypes = plan.getExternalInputSourceTypes();
+            java.util.Set<String> extPlaceholders = new java.util.HashSet<>();
+            for (int i = 0; i < extKeys.length; i++) {
+                if (extTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
+                    extPlaceholders.add(extKeys[i]);
+                }
+            }
+            for (String output : requested) {
+                if (placeholderArrays != null && placeholderArrays.containsKey(output)) {
+                    result.put(output, placeholderArrays.get(output));
+                } else if (extPlaceholders.contains(output)) {
+                    result.put(output, placeholderArrays.get(output));
+                } else {
+                    // Constant or variable — resolve from SameDiff
+                    INDArray arr = sd.getArrForVarName(output);
+                    if (arr != null) {
+                        result.put(output, arr);
+                    } else {
+                        throw new IllegalStateException("Zero-op plan output '" + output +
+                                "' is not a placeholder and has no array in SameDiff.");
+                    }
+                }
+            }
+            return result;
         }
 
         // Native C++ graph executor — no fallback to Java allowed.
@@ -2138,6 +2201,54 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             System.arraycopy(cachedInputArrays, 0, frozenExtInputsWorkingCopy, 0, extKeys.length);
             extInputs = frozenExtInputsWorkingCopy;
+            // Re-resolve VARIABLE-type inputs that may have been rebound via
+            // associateArrayWithVariable(). That method updates SameDiff's storage
+            // (variablesArrays) but not cachedInputArrays, so the frozen fast path
+            // would silently use the old INDArray forever. Re-resolve from
+            // sd.getVariable(name).getArr() and update extInputs[i] (but NOT
+            // cachedInputArrays[i]) so the generic catch-all at the bottom of
+            // the frozen path detects the identity change and properly rebinds
+            // the C++ opContext with setGraphContextInputArray.
+            //
+            // Use cached variable-type indices to avoid HashMap lookups on all
+            // 1332+ entries every step. Only VARIABLE-type entries (not CONSTANT,
+            // not PLACEHOLDER) can be rebound — typically 0-5 entries in LLM models.
+            if (cachedVariableTypeIndices == null) {
+                // Build index cache on first frozen call
+                int count = 0;
+                for (int i = 0; i < extKeys.length; i++) {
+                    if (inputIsPlaceholder != null && inputIsPlaceholder[i]) continue;
+                    SDVariable var = sd.getVariable(extKeys[i]);
+                    if (var != null && var.getVariableType() == VariableType.VARIABLE) {
+                        count++;
+                    }
+                }
+                cachedVariableTypeIndices = new int[count];
+                int idx = 0;
+                for (int i = 0; i < extKeys.length; i++) {
+                    if (inputIsPlaceholder != null && inputIsPlaceholder[i]) continue;
+                    SDVariable var = sd.getVariable(extKeys[i]);
+                    if (var != null && var.getVariableType() == VariableType.VARIABLE) {
+                        cachedVariableTypeIndices[idx++] = i;
+                    }
+                }
+                DspDiagnostics.record(DspDiagnostics.EXECUTE,
+                        "Java: cached " + count + " VARIABLE-type ext input indices out of "
+                                + extKeys.length + " total");
+            }
+            int variableRebindCount = 0;
+            for (int vi : cachedVariableTypeIndices) {
+                INDArray current = sd.getVariable(extKeys[vi]).getArr();
+                if (current != null && current != cachedInputArrays[vi]) {
+                    extInputs[vi] = current;
+                    variableRebindCount++;
+                }
+            }
+            if (variableRebindCount > 0) {
+                DspDiagnostics.record(DspDiagnostics.EXECUTE,
+                        "Java: FROZEN_FAST_PATH re-resolved " + variableRebindCount
+                                + " VARIABLE-type inputs (associateArrayWithVariable rebind)");
+            }
             // Re-resolve any inputs whose DataBuffer has been freed between steps.
             // This can happen when setCloseable(true)+close() is called on KV outputs
             // that share a DataBuffer with past_key_values inputs.
@@ -3210,8 +3321,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                     long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
                     DataType dtype = cached.dataType();
 
-                    Pointer nativePrimary = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);
                     Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
+                    // On CUDA, prefer D2D copy from the device buffer. Calling
+                    // getOpaqueNDArrayBuffer triggers buffer() → syncToPrimary which
+                    // only syncs when primary is null (first call). On subsequent
+                    // executions the primary buffer is already allocated so buffer()
+                    // returns the STALE host pointer from the first sync without
+                    // re-syncing, causing all-zero outputs. By passing null for
+                    // primary when special is available, we force memcpyWithT to use
+                    // the device-to-device path which always reads fresh GPU data.
+                    Pointer nativePrimary = (nativeSpecial == null || nativeSpecial.isNull())
+                            ? nativeOps.getOpaqueNDArrayBuffer(opaqueOut) : null;
                     OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
                             length, dtype.toInt(), nativePrimary, nativeSpecial);
                     if (srcOdb != null) {
@@ -3292,9 +3412,16 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // would mis-interpret the buffer layout and produce wrong results.
                 INDArray result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
 
-                // Get raw pointers — primary may be null on CUDA (data only on GPU)
-                Pointer nativePrimary = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);
+                // Get raw pointers — prefer device buffer for D2D copy.
+                // On CUDA, getOpaqueNDArrayBuffer() calls buffer() which triggers
+                // syncToPrimary. This only syncs when the primary buffer is null
+                // (first execution). On subsequent executions the primary is already
+                // allocated, so buffer() returns STALE host data without re-syncing.
+                // By passing null for primary when the device buffer is available, we
+                // force memcpyWithT to use D2D copy from the always-fresh GPU buffer.
                 Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
+                Pointer nativePrimary = (nativeSpecial == null || nativeSpecial.isNull())
+                        ? nativeOps.getOpaqueNDArrayBuffer(opaqueOut) : null;
 
                 OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
                         length, dtype.toInt(), nativePrimary, nativeSpecial);
@@ -3357,15 +3484,6 @@ public class DynamicShapePlanExecutor implements Closeable {
                     log.info(sb.toString());
                 }
                 results.put(outputName, result);
-                // Diagnostic: log first few values of each output immediately after copy
-                if (result.length() > 0) {
-                    Nd4j.getExecutioner().commit();
-                    float v0 = result.getFloat(0);
-                    float v1 = result.length() > 1 ? result.getFloat(1) : Float.NaN;
-                    log.info("DSP_OUTPUT_VERIFY: '{}' shape={} dtype={} first2=[{}, {}] allZero={}",
-                            outputName, java.util.Arrays.toString(result.shape()), result.dataType(),
-                            v0, v1, result.sumNumber().floatValue() == 0.0f);
-                }
             }
 
             // Populate the outputSlots array with the results at their corresponding slot indices.
@@ -3514,6 +3632,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         contextInputRefs = null;
         inputIsPlaceholder = null;
         placeholderIndices = null;
+        cachedVariableTypeIndices = null;
         frozenControlInputIndices = null;
         frozenDerivedExternalInputIndices = null;
         frozenOutputsInitialized = false;

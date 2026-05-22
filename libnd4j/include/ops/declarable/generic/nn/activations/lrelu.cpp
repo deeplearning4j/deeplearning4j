@@ -52,7 +52,14 @@ CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, -2, 0) {
 
   float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
 
-  helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z, alpha);
+  // Cast epsilon to match input type if they differ — applyPairwiseLambda requires same type
+  if (epsilon->dataType() != input->dataType()) {
+    auto epsCast = epsilon->cast(input->dataType());
+    helpers::leakyReluDerivative(block.launchContext(), input, epsCast, z, alpha);
+    delete epsCast;
+  } else {
+    helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z, alpha);
+  }
   return Status::OK;
 }
 

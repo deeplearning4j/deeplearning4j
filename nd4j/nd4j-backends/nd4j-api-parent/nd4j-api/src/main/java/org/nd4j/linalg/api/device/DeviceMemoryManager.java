@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.device;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BackendRegistry;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -168,6 +169,19 @@ public class DeviceMemoryManager {
      */
     public int getCurrentDeviceId() {
         return contextProvider.getCurrentDeviceId();
+    }
+
+    /**
+     * Ensure an array's data is accessible on the host (CPU) side.
+     * On CUDA, this synchronizes device data to the host buffer so that
+     * host-side reads (e.g., serialization via {@code data().asBytes()})
+     * return current values instead of stale zeros.
+     * On CPU, this is a no-op.
+     *
+     * @param array the array whose data must be readable on host
+     */
+    public void ensureHostAccess(INDArray array) {
+        contextProvider.ensureHostAccess(array);
     }
 
     // =========================================================================

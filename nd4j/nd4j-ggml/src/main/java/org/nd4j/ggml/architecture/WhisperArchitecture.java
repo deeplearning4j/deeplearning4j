@@ -28,6 +28,7 @@ import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -71,6 +72,26 @@ public class WhisperArchitecture implements ModelArchitecture {
     @Override
     public Set<String> getSupportedVariants() {
         return new HashSet<>(Arrays.asList("whisper", "whisper.encoder", "whisper.decoder"));
+    }
+
+    @Override
+    public String getDefaultChatTemplateType() {
+        return "none"; // Whisper is speech-to-text, no chat template
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "whisper.gguf.path";
+    }
+
+    @Override
+    public String getReferencePrompt() {
+        return ""; // Whisper takes audio, not text prompts
+    }
+
+    @Override
+    public String[] getReferenceExpected() {
+        return new String[]{}; // No text expected from prompt
     }
 
     @Override
@@ -270,7 +291,7 @@ public class WhisperArchitecture implements ModelArchitecture {
             // Use 1D conv as matmul approximation for simplicity
             // The actual conv1d is along the time dimension
             x = sd.cnn().conv1d("encoder.conv1", x, conv1WVar, null,
-                    Conv1DConfig.builder().k(1).s(1).p(0).dataFormat("NWC").build());
+                    Conv1DConfig.builder().k(1).s(1).p(0).dataFormat("NWC").paddingMode(PaddingMode.VALID).build());
             if (conv1B != null) {
                 SDVariable conv1BVar = sd.constant("encoder.conv1.bias", conv1B);
                 x = x.add(conv1BVar);
@@ -284,7 +305,7 @@ public class WhisperArchitecture implements ModelArchitecture {
         if (conv2W != null) {
             SDVariable conv2WVar = sd.constant("encoder.conv2.weight", conv2W);
             x = sd.cnn().conv1d("encoder.conv2", x, conv2WVar, null,
-                    Conv1DConfig.builder().k(1).s(2).p(0).dataFormat("NWC").build());
+                    Conv1DConfig.builder().k(1).s(2).p(0).dataFormat("NWC").paddingMode(PaddingMode.VALID).build());
             if (conv2B != null) {
                 SDVariable conv2BVar = sd.constant("encoder.conv2.bias", conv2B);
                 x = x.add(conv2BVar);

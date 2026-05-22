@@ -76,11 +76,10 @@ public class Gather extends DynamicCustomOp {
     }
 
     public Gather(INDArray df, int[] indexes, int axis) {
-        addInputArgument(df);
+        addInputArgument(df, Nd4j.createFromArray(indexes));
         addIArgument(axis);
-        // FIXED: Removed incorrect addIArgument(indexes) call
         this.jaxis = axis;
-        this.indices = indexes; // FIXED: was setting to 'indices' instead of 'indexes'
+        this.indices = indexes;
     }
 
     public Gather(INDArray df, INDArray indexes, int axis) {

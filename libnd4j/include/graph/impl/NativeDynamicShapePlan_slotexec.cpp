@@ -1245,6 +1245,55 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
 
 // ─── Frozen constant detection ──────────────────────────────────────────────
 // After the warmup execution (executeCount_ just went from 0 to 1), identify
+// Compute per-slot transitive variable dependency: a slot transitively depends
+// on a variable ext input if it directly reads from one, or if any of its input
+// slots transitively depend on one. Uses a single forward pass since slots are
+// topologically ordered (downstream slots have higher indices).
+//
+// Called from NativePlanCompiler after externalInputIsVariable_ is populated,
+// from deserialization, and from markExternalInputVariable() when the variable
+// set changes at runtime.
+void NativeDynamicShapePlan::computeSlotVariableDependency() {
+  slotDependsOnVariableExtInput_.assign(numSlots_, false);
+  if (externalInputIsVariable_.empty()) return;
+
+  // Build output-slot-index → step-index mapping for O(1) lookup.
+  std::vector<int> outputSlotToStep(totalOutputSlots_, -1);
+  for (int s = 0; s < numSlots_; s++) {
+    auto& slot = slots_[s];
+    for (int oi = 0; oi < slot.wiring.numOutputs; oi++) {
+      int outIdx = slot.wiring.outputSlotIndices[oi];
+      if (outIdx >= 0 && outIdx < totalOutputSlots_) {
+        outputSlotToStep[outIdx] = s;
+      }
+    }
+  }
+
+  // Forward pass: slots are topologically ordered, so upstream deps are already computed.
+  for (int s = 0; s < numSlots_; s++) {
+    auto& slot = slots_[s];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
+      if (srcIdx < 0) {
+        // Direct external input
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < static_cast<int>(externalInputIsVariable_.size()) &&
+            externalInputIsVariable_[extIdx]) {
+          slotDependsOnVariableExtInput_[s] = true;
+          break;
+        }
+      } else if (srcIdx < totalOutputSlots_) {
+        // Input from another slot — propagate transitively via output-slot-to-step map.
+        int producerStep = outputSlotToStep[srcIdx];
+        if (producerStep >= 0 && slotDependsOnVariableExtInput_[producerStep]) {
+          slotDependsOnVariableExtInput_[s] = true;
+          break;
+        }
+      }
+    }
+  }
+}
+
 // slots whose output never changes between decode steps. These slots are
 // skipped entirely during subsequent executions (including graph capture),
 // removing their kernels, memsets, and memcpys from the captured graph.
@@ -1914,9 +1963,16 @@ Status NativeDynamicShapePlan::executeSlot(
         !slot.fusedChain.isFusedChainTail &&
         !slot.flags.isDynamicShape)) break;
 
-    // Skip frozen fast-path for slots that read directly from variable ext inputs.
+    // Skip frozen fast-path for slots that DIRECTLY read from variable ext inputs.
     // Variable ext inputs (KV caches, embeddings, masks) change every decode step,
     // so the cached frozen output from the previous step is stale.
+    //
+    // NOTE: We check DIRECT ext input reads only, NOT transitive dependencies.
+    // In composite replay, downstream slots get updated values through the slot chain
+    // naturally (gap ops execute live, island replays use updated arg tables).
+    // Transitive checking marks virtually ALL slots as variable-dependent in a
+    // transformer model (everything is downstream of KV cache / mask), which
+    // disables the frozen fast-path entirely and causes a 2.4x perf regression.
     {
       bool hasVariableExtInput = false;
       if (!externalInputIsVariable_.empty()) {
@@ -4521,7 +4577,9 @@ Status NativeDynamicShapePlan::executeSlot(
 
         NDArray* maxOut = nullptr;
         try {
-          if (!slot.isViewCapableOp()) {
+          if (rank == 0) {
+            maxOut = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+          } else if (!slot.isViewCapableOp()) {
             std::vector<LongType> contigShape(rank);
             for (int d = 0; d < rank; d++) contigShape[d] = shape[d];
             maxOut = new NDArray(order, contigShape, dt);
@@ -4570,7 +4628,13 @@ Status NativeDynamicShapePlan::executeSlot(
       // info so strides match the physical layout (legacy COPY_SHAPE ops can
       // inherit non-contiguous strides from permuted inputs, which would be
       // wrong on a fresh buffer). View ops keep original strides/offsets.
-      if (!slot.isViewCapableOp()) {
+      if (rank == 0) {
+        // Scalar output: use shapeInfo-preserving constructor so the exact
+        // cached shape info (dtype, ews, order from calculateOutputShape) is kept.
+        // The empty-vector NDArray constructor creates a fresh scalar shape via
+        // scalarDescriptor which may not match the cached shapeInfo exactly.
+        out = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+      } else if (!slot.isViewCapableOp()) {
         std::vector<LongType> contigShape(rank);
         for (int d = 0; d < rank; d++) contigShape[d] = shapeInfo[d + 1];
         out = new NDArray(order, contigShape, dt);

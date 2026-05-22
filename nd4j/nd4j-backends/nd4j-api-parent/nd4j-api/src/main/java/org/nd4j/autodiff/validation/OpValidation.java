@@ -138,99 +138,85 @@ public class OpValidation {
     private static String validateHelper(TestCase testCase) {
         testCase.assertConfigValid();
 
-        // Disable DSP auto-compilation during validation. OpValidation tests small
-        // synthetic graphs with gradient checks — DSP recompilation per perturbation
-        // is wasteful, and the native executor may attempt GPU backends on CPU-only runs.
-        SameDiff sd0 = testCase.sameDiff();
-        boolean dspBefore = sd0.isDspAutoCompileEnabled();
-        boolean dspNativeBefore = sd0.isDspNativeAutoCompileEnabled();
-        sd0.setDspAutoCompileEnabled(false);
-        sd0.setDspNativeAutoCompileEnabled(false);
-        try {
+        //First: collect coverage information
+        collectCoverageInformation(testCase);
 
-            //First: collect coverage information
-            collectCoverageInformation(testCase);
-
-            //Check serialization
-            ByteBuffer serializedBeforeExec = null;
-            if (testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH) {
-                serializedBeforeExec = testCase.sameDiff().asFlatBuffers(true);
-                Preconditions.checkNotNull(serializedBeforeExec, "Serialization failed? Null output");
-            }
-
-            SameDiff sameDiff = testCase.sameDiff();
-            List<Listener> listeners = sameDiff.getListeners();
-            //Check forward pass:
-            if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
-                SameDiff sd = testCase.sameDiff();
-
-                //Collect variables we need outputs for...
-                Set<String> reqVars = testCase.fwdTestFns().keySet();
-
-                Map<String, INDArray> out;
-                try {
-                    out = sd.output(testCase.placeholderValues(), new ArrayList<>(reqVars));
-                } catch (Exception e) {
-                    throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
-                }
-
-                for (Map.Entry<String, Function<INDArray, String>> e : testCase.fwdTestFns().entrySet()) {
-                    SDVariable v = sd.getVariable(e.getKey());
-                    if (v == null) {
-                        throw new IllegalStateException("Test case has expected result function defined for variable \"" +
-                                e.getKey() + "\" but SameDiff instance does not have a variable for this name" + testCase.testNameErrMsg());
-                    }
-
-                    INDArray actual = out.get(v.name());
-                    if (actual == null) {
-                        throw new IllegalStateException("Null INDArray after forward pass for variable \"" + e.getKey() + "\"");
-                    }
-
-                    String error;
-                    try {
-                        error = e.getValue().apply(actual);
-                    } catch (Throwable t) {
-                        throw new IllegalStateException("Error checking forward pass for variable \"" + e.getKey() + "\": exception was" +
-                                " thrown by forward pass validation function", t);
-                    }
-
-                    if (error != null) {
-                        return testCase.testNameErrMsg() + ": Variable " + e.getKey() + " failed: " + error;
-                    }
-                }
-
-                ByteBuffer serializedAfterExec = null;
-                if (testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH) {
-                    serializedAfterExec = testCase.sameDiff().asFlatBuffers(true);
-                    Preconditions.checkNotNull(serializedAfterExec, "Serialization failed? Null output");
-                }
-
-                //Now: deserialize, and check the results
-                if (serializedBeforeExec != null) {
-                    checkDeserializedEquality(sd, serializedBeforeExec, testCase);
-                }
-            }
-
-            //Check gradients:
-            if (testCase.gradientCheck()) {
-                boolean ok;
-                try {
-                    ok = GradCheckUtil.checkGradients(testCase);
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                    throw new IllegalStateException("Exception encountered during gradient check" + testCase.testNameErrMsg(), t);
-                }
-
-                if (!ok) {
-                    return "Gradient check failed" + testCase.testNameErrMsg();
-                }
-            }
-
-            return null;    //OK - passed
-        } finally {
-            sd0.setDspAutoCompileEnabled(dspBefore);
-            sd0.setDspNativeAutoCompileEnabled(dspNativeBefore);
+        //Check serialization
+        ByteBuffer serializedBeforeExec = null;
+        if (testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH) {
+            serializedBeforeExec = testCase.sameDiff().asFlatBuffers(true);
+            Preconditions.checkNotNull(serializedBeforeExec, "Serialization failed? Null output");
         }
+
+        SameDiff sameDiff = testCase.sameDiff();
+        List<Listener> listeners = sameDiff.getListeners();
+        //Check forward pass:
+        if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
+            SameDiff sd = testCase.sameDiff();
+
+            //Collect variables we need outputs for...
+            Set<String> reqVars = testCase.fwdTestFns().keySet();
+
+            Map<String, INDArray> out;
+            try {
+                out = sd.output(testCase.placeholderValues(), new ArrayList<>(reqVars));
+            } catch (Exception e) {
+                throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
+            }
+
+            for (Map.Entry<String, Function<INDArray, String>> e : testCase.fwdTestFns().entrySet()) {
+                SDVariable v = sd.getVariable(e.getKey());
+                if (v == null) {
+                    throw new IllegalStateException("Test case has expected result function defined for variable \"" +
+                            e.getKey() + "\" but SameDiff instance does not have a variable for this name" + testCase.testNameErrMsg());
+                }
+
+                INDArray actual = out.get(v.name());
+                if (actual == null) {
+                    throw new IllegalStateException("Null INDArray after forward pass for variable \"" + e.getKey() + "\"");
+                }
+
+                String error;
+                try {
+                    error = e.getValue().apply(actual);
+                } catch (Throwable t) {
+                    throw new IllegalStateException("Error checking forward pass for variable \"" + e.getKey() + "\": exception was" +
+                            " thrown by forward pass validation function", t);
+                }
+
+                if (error != null) {
+                    return testCase.testNameErrMsg() + ": Variable " + e.getKey() + " failed: " + error;
+                }
+            }
+
+            ByteBuffer serializedAfterExec = null;
+            if (testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH) {
+                serializedAfterExec = testCase.sameDiff().asFlatBuffers(true);
+                Preconditions.checkNotNull(serializedAfterExec, "Serialization failed? Null output");
+            }
+
+            //Now: deserialize, and check the results
+            if (serializedBeforeExec != null) {
+                checkDeserializedEquality(sd, serializedBeforeExec, testCase);
+            }
+        }
+
+        //Check gradients:
+        if (testCase.gradientCheck()) {
+            boolean ok;
+            try {
+                ok = GradCheckUtil.checkGradients(testCase);
+            } catch (Throwable t) {
+                t.printStackTrace();
+                throw new IllegalStateException("Exception encountered during gradient check" + testCase.testNameErrMsg(), t);
+            }
+
+            if (!ok) {
+                return "Gradient check failed" + testCase.testNameErrMsg();
+            }
+        }
+
+        return null;    //OK - passed
     }
 
     public static void checkDeserializedEquality(SameDiff original, ByteBuffer bbSerialized, TestCase tc) {
@@ -240,10 +226,6 @@ public class OpValidation {
         } catch (IOException e){
             throw new RuntimeException("IOException deserializing from FlatBuffers", e);
         }
-
-        // Disable DSP on the deserialized graph — OpValidation tests are single-op
-        // graphs where DSP compilation can fail or produce wrong shapes.
-        deserialized.setDspAutoCompileEnabled(false);
 
         //Check variables:
         List<SDVariable> vars = original.variables();
@@ -341,6 +323,15 @@ public class OpValidation {
 
         if(tc.fwdTestFns() != null && !tc.fwdTestFns().isEmpty()) {
             //Finally: check execution/output
+            // Verify deserialized variables have correct data before execution
+            for (SDVariable v : deserialized.variables()) {
+                if (v.getVariableType() == org.nd4j.autodiff.samediff.VariableType.VARIABLE || v.getVariableType() == org.nd4j.autodiff.samediff.VariableType.CONSTANT) {
+                    INDArray arr = v.getArr();
+                    if (arr != null && !arr.isEmpty()) {
+                        org.nd4j.linalg.api.device.DeviceMemoryManager.getInstance().ensureHostAccess(arr);
+                    }
+                }
+            }
             Map<String,INDArray> outOrig = original.outputAll(tc.placeholderValues());
             Map<String,INDArray> outDe = deserialized.outputAll(tc.placeholderValues());
             Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
@@ -399,7 +390,11 @@ public class OpValidation {
 
                 Preconditions.checkState(err == null, "Variable result (%s) failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", s, orig, deser, orig, deser, err);
             }
+
         }
+
+        // Close the deserialized SameDiff to free its GPU memory
+        deserialized.close();
     }
 
     protected static void equalConsideringNull(List<String> l1, List<String> l2, String msg, Object... args){

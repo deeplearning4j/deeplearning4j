@@ -174,6 +174,7 @@ public class DynamicShapeSlot {
     public static final int LEGACY_BROADCAST = 15;
     public static final int LEGACY_BROADCAST_BOOL = 16;
     public static final int LEGACY_RANDOM = 17;
+    public static final int LEGACY_PAIRWISE_BOOL = 18;
 
     /** Control flow type constants. */
     public static final byte CF_NONE = 0;

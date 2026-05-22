@@ -473,6 +473,12 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public boolean equals(Object o) {
+        // Commit pending CUDA operations before comparing data.
+        // Without this, the element-by-element comparison (sub, lt, sumNumber) may
+        // operate on stale device buffers when the producing op is still queued in a
+        // separate CUDA stream and has not yet been submitted to the driver.
+        // This mirrors the pattern used in dup(), leverageTo(), and toString().
+        Nd4j.getExecutioner().commit();
         return super.equals(o);
     }
 

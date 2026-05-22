@@ -136,33 +136,44 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCacheHit(Nd4jBackend backend) {
-        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
-        INDArray allocate = mmgr.allocate(false, DataType.INT64, 1);
-        mmgr.release(allocate);
-        INDArray allocate2 = mmgr.allocate(false,allocate.dataType(),1);
-        assertEquals(allocate.data(),allocate2.data());
+        boolean prev = ArrayCacheMemoryMgr.isCacheEnabled();
+        ArrayCacheMemoryMgr.setEnableCache(true);
+        try {
+            ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+            INDArray allocate = mmgr.allocate(false, DataType.INT64, 1);
+            mmgr.release(allocate);
+            INDArray allocate2 = mmgr.allocate(false, allocate.dataType(), 1);
+            assertEquals(allocate.data(), allocate2.data());
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(prev);
+        }
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testManyArrays(Nd4jBackend backend) {
+        boolean prev = ArrayCacheMemoryMgr.isCacheEnabled();
+        ArrayCacheMemoryMgr.setEnableCache(true);
+        try {
+            ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+            for (int i = 0; i < 1000; i++) {
+                mmgr.release(Nd4j.scalar(0));
+            }
 
-        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
-        for( int i = 0; i < 1000; i++) {
-            mmgr.release(Nd4j.scalar(0));
+            assertEquals(4 * 1000, mmgr.getCurrentCacheSize().get());
+            assertEquals(1000, mmgr.getLruCache().size());
+            assertEquals(1000, mmgr.getLruCacheValues().size());
+
+            for (int i = 0; i < 1000; i++) {
+                mmgr.release(Nd4j.scalar(0));
+            }
+
+            assertEquals(4 * 2000, mmgr.getCurrentCacheSize().get());
+            assertEquals(2000, mmgr.getLruCache().size());
+            assertEquals(2000, mmgr.getLruCacheValues().size());
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(prev);
         }
-
-        assertEquals(4 * 1000, mmgr.getCurrentCacheSize().get());
-        assertEquals(1000, mmgr.getLruCache().size());
-        assertEquals(1000, mmgr.getLruCacheValues().size());
-
-        for( int i = 0; i < 1000; i++ ){
-            mmgr.release(Nd4j.scalar(0));
-        }
-
-        assertEquals(4 * 2000, mmgr.getCurrentCacheSize().get());
-        assertEquals(2000, mmgr.getLruCache().size());
-        assertEquals(2000, mmgr.getLruCacheValues().size());
     }
 
     @ParameterizedTest

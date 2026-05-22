@@ -1645,7 +1645,10 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
         int extIdx = -(srcIdx + 1);
         if (extIdx < 0 || extIdx >= numExt) continue;
         if (extIdx >= static_cast<int>(externalInputIsVariable_.size())) continue;
-        if (externalInputIsVariable_[extIdx]) continue;  // skip placeholders
+        // Skip ALL variable inputs — their addresses churn every step as Java
+        // recreates NDArray wrappers, preventing addr key stabilization.
+        // Variable data sync is handled by syncExternalInputs + staging buffers.
+        if (externalInputIsVariable_[extIdx]) continue;
         NDArray* extArr = externalInputs[extIdx];
         if (extArr == nullptr) continue;
 #if defined(SD_CUDA)

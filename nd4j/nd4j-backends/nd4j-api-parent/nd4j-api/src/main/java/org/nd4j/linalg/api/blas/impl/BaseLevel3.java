@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import java.util.Arrays;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;

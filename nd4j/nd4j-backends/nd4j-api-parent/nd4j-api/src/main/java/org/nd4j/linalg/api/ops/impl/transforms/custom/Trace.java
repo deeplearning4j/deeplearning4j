@@ -28,6 +28,12 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -57,6 +63,50 @@ public class Trace extends DynamicCustomOp {
         SDVariable reshapedGrad = sameDiff.expandDims(gradAtOutput.get(0), -1);
         reshapedGrad = sameDiff.expandDims(reshapedGrad, -1);
         return Collections.singletonList(reshapedGrad.mul(eye));
+    }
+
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        INDArray input = null;
+        if (oc != null && oc.numInputArguments() >= 1) {
+            input = oc.getInputArray(0);
+        } else if (numInputArguments() >= 1) {
+            input = getInputArgument(0);
+        }
+        if (input == null) {
+            return null;
+        }
+
+        int inRank = input.rank();
+        if (inRank < 2) {
+            return null;
+        }
+
+        // Output rank = input rank - 2 (remove the last two matrix dimensions)
+        int outRank = inRank - 2;
+        DataType dtype = input.dataType();
+
+        if (outRank == 0) {
+            // Scalar output — use Nd4j scalar shape info
+            LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(new long[0], dtype);
+            DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+            return Collections.singletonList(shapeInfo);
+        }
+
+        long[] outputShape = new long[outRank];
+        long[] inputShape = input.shape();
+        for (int i = 0; i < outRank; i++) {
+            outputShape[i] = inputShape[i];
+        }
+
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 
     @Override

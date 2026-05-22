@@ -80,7 +80,7 @@ public class ModelMemoryEstimator {
         for (SDVariable var : sd.variables()) {
             VariableType type = var.getVariableType();
             boolean isConstant = (type == VariableType.CONSTANT || type == VariableType.VARIABLE);
-            boolean isActivation = (type == VariableType.ARRAY);
+            boolean isActivation = (type == VariableType.ARRAY || type == VariableType.PLACEHOLDER);
 
             long bytes = 0;
             INDArray arr = var.getArr();

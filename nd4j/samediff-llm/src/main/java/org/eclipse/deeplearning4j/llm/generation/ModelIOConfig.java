@@ -29,9 +29,17 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Configuration for decoder model input/output variable names.
@@ -72,6 +80,92 @@ public class ModelIOConfig {
     }
 
     /**
+     * A recurrent state input→output pair discovered from the graph.
+     * The input is a placeholder that feeds into an op; the output is the
+     * corresponding state output produced by that op.
+     */
+    public static class RecurrentStatePair {
+        public final String inputName;
+        public final String outputName;
+        /** The opName() of the consuming op, e.g. "gated_delta_rule", "causal_conv1d" */
+        public final String opType;
+
+        public RecurrentStatePair(String inputName, String outputName, String opType) {
+            this.inputName = inputName;
+            this.outputName = outputName;
+            this.opType = opType;
+        }
+
+        /** True if this is a GDN (gated delta rule) state. */
+        public boolean isGdn() { return "gated_delta_rule".equals(opType); }
+
+        /** True if this is a conv (causal conv1d) state. */
+        public boolean isConv() { return "causal_conv1d".equals(opType); }
+
+        @Override
+        public String toString() {
+            return inputName + " →[" + opType + "]→ " + outputName;
+        }
+    }
+
+    /**
+     * Discover recurrent state input→output pairs by walking the graph.
+     *
+     * <p>For each PLACEHOLDER input that is not a KV cache, position, mask, or
+     * embedding input, find which ops consume it and check if any of those ops
+     * produce a variable that is registered as a graph output. If so, that's a
+     * recurrent state pair (e.g., past_gdn_state.0 → gdn_state_out_0).</p>
+     *
+     * <p>This replaces hardcoded prefix matching like "past_gdn_state." and
+     * "past_conv_state." — the discovery is purely graph-structural.</p>
+     */
+    public static List<RecurrentStatePair> findRecurrentStatePairs(SameDiff sd, ModelIOConfig ioConfig) {
+        List<RecurrentStatePair> pairs = new ArrayList<>();
+        Set<String> graphOutputs = new HashSet<>(sd.outputs());
+        Set<String> knownInputs = new HashSet<>();
+
+        // Collect all "known" (non-state) input names so we can skip them
+        if (ioConfig.getInputIdsName() != null) knownInputs.add(ioConfig.getInputIdsName());
+        if (ioConfig.getInputEmbeddingsName() != null) knownInputs.add(ioConfig.getInputEmbeddingsName());
+        if (ioConfig.getAttentionMaskName() != null) knownInputs.add(ioConfig.getAttentionMaskName());
+        if (ioConfig.getCausalMaskName() != null) knownInputs.add(ioConfig.getCausalMaskName());
+        if (ioConfig.getPositionIdsName() != null) knownInputs.add(ioConfig.getPositionIdsName());
+        if (ioConfig.getPositionOffsetName() != null) knownInputs.add(ioConfig.getPositionOffsetName());
+        if (ioConfig.getCachePositionName() != null) knownInputs.add(ioConfig.getCachePositionName());
+
+        for (String inputName : sd.inputs()) {
+            if (knownInputs.contains(inputName)) continue;
+            if (ioConfig.isKvCacheInput(inputName)) continue;
+
+            SDVariable inputVar = sd.getVariable(inputName);
+            if (inputVar == null || inputVar.getVariableType() != VariableType.PLACEHOLDER) continue;
+
+            // Walk ops consuming this input, find which ones produce a graph output
+            Variable varMeta = sd.getVariables().get(inputName);
+            if (varMeta == null || varMeta.getInputsForOp() == null) continue;
+
+            for (String opName : varMeta.getInputsForOp()) {
+                DifferentialFunction op;
+                try {
+                    op = sd.getOpById(opName);
+                } catch (Exception e) {
+                    continue;
+                }
+                String[] opOutputs = sd.getOutputsForOp(op);
+                if (opOutputs == null) continue;
+
+                for (String outVar : opOutputs) {
+                    if (graphOutputs.contains(outVar)) {
+                        pairs.add(new RecurrentStatePair(inputName, outVar, op.opName()));
+                    }
+                }
+            }
+        }
+
+        return pairs;
+    }
+
+    /**
      * Find the logits output variable name from a decoder model.
      */
     public static String findLogitsOutputName(SameDiff decoder) {
@@ -82,6 +176,13 @@ public class ModelIOConfig {
         }
         if (!decoder.outputs().isEmpty()) {
             return decoder.outputs().get(0);
+        }
+        // Fallback: outputs list is empty, search graph variables directly
+        if (decoder.getVariable("logits") != null) {
+            return "logits";
+        }
+        if (decoder.getVariable("lm_logits") != null) {
+            return "lm_logits";
         }
         return null;
     }

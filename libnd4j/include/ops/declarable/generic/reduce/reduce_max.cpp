@@ -21,6 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
+#include <helpers/ShapeUtils.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/transforms.h>
@@ -142,6 +143,8 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
   // *** calculations *** //
 
   *gradI = 0;
+  // Ensure the zero fill is visible on host before scatterSimple writes host-side
+  gradI->syncToHost();
 
   if (gradO->lengthOf() == 1) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMax);
@@ -151,9 +154,11 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMax, &dimensions);
+    auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(), dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, *indicesArr,
-        dimensions);  // 6 corresponds to copy operation
+        *vec);  // 6 corresponds to copy operation
+    delete vec;
     delete indicesArr;
   }
 

@@ -85,7 +85,7 @@ SD_KERNEL static void confusionFunctorKernel(LongType* labelsBuffer, LongType* p
 
    INDEX2COORDS(pred, tadRank, tadShapePtr, predCoords);
    COORDS2INDEX(tadRank, tadStridePtr, predCoords, predOffset);
-   tZ[predOffset] = val;
+   sd::math::atomics::sd_atomicAdd(&tZ[predOffset], val);
  }
 }
 template <typename X, typename Z>

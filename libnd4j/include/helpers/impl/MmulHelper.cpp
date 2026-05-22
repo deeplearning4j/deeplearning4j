@@ -855,7 +855,9 @@ void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vecto
   mmul(aPR, bPR, cPR, 1.0, 0.0);
 
   if (cPR->buffer() != c->buffer()) {
-    c->assign(cPR);
+    // When cPR is a separate buffer, the matmul result must be assigned
+    // to cP (the permuted view of c) so values go through the correct strides.
+    cP->assign(cPR);
   }
 
   if (realFinalResult != nullptr && realFinalResult != c) {
@@ -889,18 +891,42 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   NDArray* aPR = aP->isSameShape(shapeAt) ? aP : aP->reshape(aP->ordering(), shapeAt, false);
   NDArray* bPR = bP->isSameShape(shapeBt) ? bP : bP->reshape(bP->ordering(), shapeBt, false);
 
+  // reshape returns nullptr when the array is non-contiguous and can't be reshaped as a view.
+  // In that case, make a contiguous copy.
+  bool aPROwned = false, bPROwned = false, cPROwned = false;
+  if (aPR == nullptr) {
+    aPR = new NDArray(aP->dup(aP->ordering()));
+    aPR->reshapei(aP->ordering(), shapeAt);
+    aPROwned = true;
+  }
+  if (bPR == nullptr) {
+    bPR = new NDArray(bP->dup(bP->ordering()));
+    bPR->reshapei(bP->ordering(), shapeBt);
+    bPROwned = true;
+  }
+
   std::vector<LongType> requiredCshape = {aPR->sizeAt(0), bPR->sizeAt(1)};
   NDArray* cPR = cP->isSameShape(requiredCshape) ? cP : cP->reshape(cP->ordering(), requiredCshape, false);
+  if (cPR == nullptr) {
+    cPR = new NDArray(cP->dup(cP->ordering()));
+    cPR->reshapei(cP->ordering(), requiredCshape);
+    cPROwned = true;
+  }
 
   mmul(aPR, bPR, cPR, 1.0, 0.0);
 
   if (cPR->buffer() != c->buffer()) {
-    c->assign(cPR);
+    // When cPR is a separate buffer, the matmul result must be assigned
+    // to cP (the permuted view of c) so values go through the correct strides.
+    cP->assign(cPR);
   }
 
-  if (aPR != aP && !aPR->isView()) delete aPR;
-  if (bPR != bP && !bPR->isView()) delete bPR;
-  if (cPR != cP && !cPR->isView()) delete cPR;
+  if (aPROwned) delete aPR;
+  else if (aPR != aP && !aPR->isView()) delete aPR;
+  if (bPROwned) delete bPR;
+  else if (bPR != bP && !bPR->isView()) delete bPR;
+  if (cPROwned) delete cPR;
+  else if (cPR != cP && !cPR->isView()) delete cPR;
   if (aP != a && !aP->isView()) delete aP;
   if (bP != b && !bP->isView()) delete bP;
   if (cP != c && !cP->isView()) delete cP;
@@ -935,14 +961,28 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   for (size_t i = 1; i < whatToDoWithA.size(); ++i)
     if (whatToDoWithA[i] == 'p')
       aPR->permutei(modifA[i], false, false);
-    else
-      aPR->reshapei(modifA[i]);
+    else {
+      if (!aPR->reshapei(modifA[i])) {
+        // reshapei failed because the array is non-contiguous (e.g., after permute).
+        // Make a contiguous copy, then reshape.
+        auto dup = aPR->dup(aPR->ordering());
+        if (aPR != a) delete aPR;
+        aPR = dup;
+        aPR->reshapei(modifA[i]);
+      }
+    }
 
   for (size_t i = 1; i < whatToDoWithB.size(); ++i)
     if (whatToDoWithB[i] == 'p')
       bPR->permutei(modifB[i], false, false);
-    else
-      bPR->reshapei(modifB[i]);
+    else {
+      if (!bPR->reshapei(modifB[i])) {
+        auto dup = bPR->dup(bPR->ordering());
+        if (bPR != b) delete bPR;
+        bPR = dup;
+        bPR->reshapei(modifB[i]);
+      }
+    }
 
   std::vector<NDArray*> cArrs = {c};
   if (!whatToDoWithC.empty()) {
@@ -958,8 +998,20 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   if (!whatToDoWithC.empty()) {
     for (int i = cArrs.size() - 1; i > 0; --i) {
       if (cArrs[i]->buffer() != cArrs[i - 1]->buffer() ||
-          cArrs[i]->specialBuffer() != cArrs[i - 1]->specialBuffer())
-        cArrs[i - 1]->assign(cArrs[i]);
+          cArrs[i]->specialBuffer() != cArrs[i - 1]->specialBuffer()) {
+        // When the reshape created a copy, the result must be written back
+        // through the intermediate view. Reshape the result to match the
+        // target's shape so assign can do a correct element-wise copy.
+        if (cArrs[i]->lengthOf() == cArrs[i - 1]->lengthOf() &&
+            !cArrs[i]->isSameShape(cArrs[i - 1])) {
+          auto shapeVec = *cArrs[i - 1]->getShapeAsVector();
+          auto reshaped = cArrs[i]->reshape(cArrs[i]->ordering(), shapeVec, false);
+          cArrs[i - 1]->assign(reshaped);
+          delete reshaped;
+        } else {
+          cArrs[i - 1]->assign(cArrs[i]);
+        }
+      }
       delete cArrs[i];
     }
   }

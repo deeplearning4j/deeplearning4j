@@ -48,6 +48,16 @@ public class GenericArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "plain";
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "generic.gguf.path";
+    }
+
+    @Override
     public boolean canHandle(GGMLMetadata metadata) {
         // Generic handler can handle anything as a fallback
         return true;

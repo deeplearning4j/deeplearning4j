@@ -993,8 +993,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         sd.setLossVariables("loss");
 
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        INDArray outArr = Nd4j.createFromArray(mb, nOut, 27L);
+        //Expected output size with SAME padding: out = ceil(in / stride) = ceil(28/1) = 28
+        INDArray outArr = Nd4j.createFromArray(mb, nOut, 28L);
         TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(true);
         String err = OpValidation
                 .validate(tc);
@@ -1635,7 +1635,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
                 assertArrayEquals(hL, outputs.getLastOutput().eval().shape());
                 assertArrayEquals(cL, outputs.getLastState().eval().shape());
 
-                sd.setLossVariables(outputs.getOutput(), outputs.getLastTimeStepOutput(), outputs.getTimeSeriesOutput());
+                sd.setLossVariables(outputs.getOutput(), outputs.getLastOutput(), outputs.getLastState());
 
                 String err = OpValidation.validate(new TestCase(sd)
                         .gradientCheck(true)

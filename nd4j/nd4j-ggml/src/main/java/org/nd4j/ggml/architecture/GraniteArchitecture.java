@@ -71,6 +71,16 @@ public class GraniteArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "chatml";
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "granite.gguf.path";
+    }
+
+    @Override
     public boolean canHandle(GGMLMetadata metadata) {
         String arch = metadata.getArchitecture();
         if (arch == null) return false;
@@ -358,6 +368,11 @@ public class GraniteArchitecture implements ModelArchitecture {
             k = new FusedRoPE(sd, k, 0, 0,
                     config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+        }
+
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
         }
 
         // muP attention scaling (replaces 1/sqrt(d_k))

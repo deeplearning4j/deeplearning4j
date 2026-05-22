@@ -168,14 +168,17 @@ public class Cast extends BaseDynamicTransformOp {
             return null; // Fall back to C++
         }
 
-        long[] strides = Nd4j.getStrides(outputShape, 'c');
-        boolean isEmpty = input.isEmpty();
-        if (!isEmpty) {
-            for (long dim : outputShape) {
-                if (dim == 0) { isEmpty = true; break; }
-            }
+        // For empty inputs, use the canonical empty descriptor (shape=[0], rank 1)
+        // which is what the C++ cache layer expects. Using input.shape() for rank-0
+        // empty arrays produces long[0] which may lose the empty bit in native round-trip.
+        if (input.isEmpty()) {
+            LongShapeDescriptor descriptor = LongShapeDescriptor.empty(dtype);
+            DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+            return Collections.singletonList(shapeInfo);
         }
-        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, false);
         DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
         return Collections.singletonList(shapeInfo);
     }

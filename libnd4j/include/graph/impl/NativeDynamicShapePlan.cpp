@@ -60,6 +60,7 @@
 #include <ops/declarable/LegacyScalarOp.h>
 #include <ops/declarable/LegacyScalarBoolOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
+#include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
 #include <ops/declarable/LegacyReduceFloatOp.h>
 #include <ops/declarable/LegacyReduceSameOp.h>
 #include <ops/declarable/LegacyReduceBoolOp.h>
@@ -499,7 +500,20 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
       // the view wrapper is minted over that fresh input buffer. Allow such swaps
       // only when the slot is flagged as a view producer.
       const bool allowViewProducerDbSwap = isViewProducerSlot && isViewOpTag && newDbValid;
-      if (!sameView && !allowSameBufferViewSwap && !allowViewProducerDbSwap) {
+      // Control flow ops (merge, switch, enter, exit, etc.) legitimately
+      // produce different output pointers on each execution depending on
+      // which branch is active. CF slots are already non-capturable (never
+      // included in CUDA/Triton graph capture) and always execute slot-by-slot,
+      // so pointer replacement is safe.
+      const bool isCfTag = tag != nullptr &&
+          (strcmp(tag, "cf-merge") == 0 ||
+           strcmp(tag, "cf-switch-live") == 0 ||
+           strcmp(tag, "cf-switch-dead") == 0 ||
+           strcmp(tag, "cf-enter") == 0 ||
+           strcmp(tag, "cf-exit") == 0 ||
+           strcmp(tag, "cf-loop-cond") == 0 ||
+           strcmp(tag, "cf-next-iter") == 0);
+      if (!sameView && !allowSameBufferViewSwap && !allowViewProducerDbSwap && !isCfTag) {
         DSP_THROW(EXECUTE,
                  "LIFECYCLE VIOLATION: NDArray pointer replacement at slot %d (tag=%s) "
                  "during frozen phase (phase=%s execCount=%d). old=%p new=%p "
@@ -1214,6 +1228,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
         case LEGACY_RANDOM:
           legacyOp = new sd::ops::LegacyRandomOp(slot.legacy.legacyOpNum);
           break;
+        case LEGACY_PAIRWISE_BOOL:
+          legacyOp = new sd::ops::LegacyPairwiseTransformBoolOp(slot.legacy.legacyOpNum);
+          break;
         default:
           DSP_DIAG(COMPILE, "unknown legacy op type %d for '%s'",
                     slot.legacy.legacyOpType, slot.ident.opName.c_str());
@@ -1431,6 +1448,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       }
     }
   }
+
+  // Compute transitive variable dependency for the frozen fast-path gate.
+  plan->computeSlotVariableDependency();
 
   // Allocate execution state
   plan->outputSlots_ = new NDArray*[plan->totalOutputSlots_];
@@ -2489,16 +2509,25 @@ Status NativeDynamicShapePlan::execute(
   // counter reflects real post-seal Triton compiles going forward. The eager
   // precompile gate below then calls phaseCompile.
   //
-  // Applies to every mode EXCEPT GEM_SLOT_BY_SLOT. For explicit modes like
-  // GEM_TRITON / GEM_NVRTC_JIT / GEM_CUDA_GRAPHS, the Java side does NOT propagate
-  // shapesFrozen (see DynamicShapePlanExecutor.applySettingsIfNewHandle comment at
-  // line 1248+) — the C++ plan owns its own frozen-state transition. Without this
-  // seal, shapesFrozen_ stays false, executeCount_ never increments (guarded at
+  // Applies to every mode EXCEPT GEM_SLOT_BY_SLOT and GEM_SHAPE_INFERENCE_ONLY.
+  // For explicit modes like GEM_TRITON / GEM_NVRTC_JIT / GEM_CUDA_GRAPHS, the Java
+  // side does NOT propagate shapesFrozen (see DynamicShapePlanExecutor.applySettingsIfNewHandle
+  // comment at line 1248+) — the C++ plan owns its own frozen-state transition. Without
+  // this seal, shapesFrozen_ stays false, executeCount_ never increments (guarded at
   // line 1476), phaseCompile defers (requires executeCount_>=1), and
   // platformShouldUseGraph returns false — forcing every segment to run slot-by-slot
   // for the life of the plan.
+  //
+  // GEM_EMULATED_REPLAY (CPU without graph backends) has isSlotBySlot=true in its
+  // ModeContract for execution dispatch, but MUST still participate in auto-seal so
+  // the plan lifecycle advances to SHAPES_FROZEN. The old guard (!explicitSlotBySlot)
+  // conflated "slot-by-slot execution" with "never advance lifecycle" — the check
+  // below distinguishes them by testing the actual mode, not the contract property.
+  const bool neverAutoSeal = execCtx->forcedSlotBySlot ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_SHAPE_INFERENCE_ONLY;
   if (!planLifecycle_.compilationDone && !planLifecycle_.isShapesFrozen() &&
-      !planLifecycle_.isReplaying() && !explicitSlotBySlot &&
+      !planLifecycle_.isReplaying() && !neverAutoSeal &&
       planLifecycle_.isSlotBySlot()) {
     int oldExecCount = executeCount_;
     int oldSegCount = static_cast<int>(segments_.size());
@@ -2982,6 +3011,9 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
       cachedVariableExtIndices_.push_back(i);
     }
   }
+
+  // Recompute transitive variable dependency since the variable set changed.
+  computeSlotVariableDependency();
 
   if (needsFullInvalidation) {
     // Force staging buffers to be re-created with the new variable set.

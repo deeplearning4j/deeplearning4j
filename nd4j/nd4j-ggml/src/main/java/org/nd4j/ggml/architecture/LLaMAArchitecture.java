@@ -86,6 +86,16 @@ public class LLaMAArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "chatml"; // Qwen, InternLM use ChatML; LLaMA3 uses a variant but ChatML is safe default
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "llama.gguf.path";
+    }
+
+    @Override
     public SameDiff buildGraph(GGMLMetadata metadata, Map<String, INDArray> weights, ConversionOptions options) {
         SameDiff sd = SameDiff.create();
         ArchitectureConfig config = getConfig(metadata);
@@ -480,6 +490,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
         }
 
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
+        }
+
         // Attention with built-in KV cache + attention bias for masking
         // useCausalMask=false — the causalMask (attention bias) handles all masking
         SDVariable attnOut = new DotProductAttentionV2(sd,
@@ -622,6 +637,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
         }
 
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
+        }
+
         // Attention with built-in KV cache + attention bias for masking
         SDVariable attnOut = new DotProductAttentionV2(sd,
                 q, v, k, null, null,
@@ -682,15 +702,30 @@ public class LLaMAArchitecture implements ModelArchitecture {
             return input;
         }
 
-        // GDN parameters: 16 heads, headDim=128 for both K and V
-        int qkvDim = (int) qkvWeight.shape()[0];   // 6144
-        int numGdnHeads = (int) ssmA.shape()[0];     // 16
-        int headDimKV = qkvDim / (3 * numGdnHeads);  // 128
-        int perComponentDim = numGdnHeads * headDimKV; // 2048
+        // GDN parameters — derive Q/K/V dimensions from weight shapes.
+        // GatedDeltaRule requires Q and K to share D_k, while V has D_v (may differ).
+        // The gate/output weights have size H*D_v (the value/output dimension).
+        // QKV layout: [Q(H*D_k), K(H*D_k), V(H*D_v)] where 2*H*D_k + H*D_v = qkvDim.
+        int qkvDim = (int) qkvWeight.shape()[0];
+        int numGdnHeads = (int) ssmA.shape()[0];
+
+        // Derive D_v from gate/output weights, then solve for D_k
+        int vDim;
+        if (gateWeight != null) {
+            vDim = (int) gateWeight.shape()[0];   // gate output = H * D_v
+        } else if (outWeight != null) {
+            vDim = (int) outWeight.shape()[1];     // output projection input = H * D_v
+        } else {
+            vDim = qkvDim / 3;  // fallback: equal split
+        }
+        int qkDim = (qkvDim - vDim) / 2;  // Q and K each get (qkvDim - vDim) / 2
+        int headDimQK = qkDim / numGdnHeads;   // D_k (shared by Q and K)
+        int headDimV = vDim / numGdnHeads;       // D_v
 
         if (layerIdx == 0) {
-            log.info("Layer {} GDN: gdnHeads={}, headDimKV={}, qkvDim={}, gateDim={}",
-                    layerIdx, numGdnHeads, headDimKV, qkvDim, gateWeight != null ? gateWeight.shape()[0] : 0);
+            log.info("Layer {} GDN: gdnHeads={}, headDimQK={}, headDimV={}, qkvDim={}, qkDim={}, vDim={}, gateDim={}",
+                    layerIdx, numGdnHeads, headDimQK, headDimV, qkvDim, qkDim, vDim,
+                    gateWeight != null ? gateWeight.shape()[0] : 0);
             log.info("Layer {} GDN weights: ssmA={} alpha={} beta={} dtBias={} ssmNorm={} gate={} out={}",
                     layerIdx,
                     ssmA != null ? java.util.Arrays.toString(ssmA.shape()) + " vals=" + ssmA : "null",
@@ -717,25 +752,29 @@ public class LLaMAArchitecture implements ModelArchitecture {
             sd.updateVariableNameAndReference(convStateOut, "conv_state_out_" + layerIdx);
         }
 
-        // 3. Split QKV into Q, K, V: each [B, L, perComponentDim]
-        SDVariable qProj = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(0, perComponentDim));
+        // 3. Split QKV into Q [B, L, qkDim], K [B, L, qkDim], V [B, L, vDim]
+        SDVariable qProj = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(0, qkDim));
         sd.updateVariableNameAndReference(qProj, "gdn_q_" + layerIdx);
-        SDVariable kProj = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(perComponentDim, 2 * perComponentDim));
+        SDVariable kProj = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(qkDim, 2 * qkDim));
         sd.updateVariableNameAndReference(kProj, "gdn_k_" + layerIdx);
-        SDVariable vProj = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(2 * perComponentDim, 3 * perComponentDim));
+        SDVariable vProj = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(2 * qkDim, 2 * qkDim + vDim));
         sd.updateVariableNameAndReference(vProj, "gdn_v_" + layerIdx);
 
-        // 4. Reshape to [B, L, H, D]
+        // 4. Reshape to [B, L, H, D] — Q/K share D_k, V has D_v
         SDVariable batchDim = sd.sizeAt(input, 0);
         SDVariable seqDim = sd.sizeAt(input, 1);
-        SDVariable gdnHeadShape = sd.stack("gdn_head_shape_" + layerIdx, 0,
+        SDVariable qkHeadShape = sd.stack("gdn_qk_head_shape_" + layerIdx, 0,
                 batchDim, seqDim,
                 sd.constant(Nd4j.scalar((long) numGdnHeads)),
-                sd.constant(Nd4j.scalar((long) headDimKV)));
+                sd.constant(Nd4j.scalar((long) headDimQK)));
+        SDVariable vHeadShape = sd.stack("gdn_v_head_shape_" + layerIdx, 0,
+                batchDim, seqDim,
+                sd.constant(Nd4j.scalar((long) numGdnHeads)),
+                sd.constant(Nd4j.scalar((long) headDimV)));
 
-        SDVariable q = sd.reshape("gdn_q_reshaped_" + layerIdx, qProj, gdnHeadShape);
-        SDVariable k = sd.reshape("gdn_k_reshaped_" + layerIdx, kProj, gdnHeadShape);
-        SDVariable v = sd.reshape("gdn_v_reshaped_" + layerIdx, vProj, gdnHeadShape);
+        SDVariable q = sd.reshape("gdn_q_reshaped_" + layerIdx, qProj, qkHeadShape);
+        SDVariable k = sd.reshape("gdn_k_reshaped_" + layerIdx, kProj, qkHeadShape);
+        SDVariable v = sd.reshape("gdn_v_reshaped_" + layerIdx, vProj, vHeadShape);
 
         // 5. L2-normalize Q and K (per head vector, matching use_qk_l2norm_in_kernel=True)
         // Upcast to FLOAT32 for squaring to prevent HALF overflow
@@ -748,9 +787,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable kNorm = sd.math.sqrt(kNormSq.add(1e-6));
         k = k.div("gdn_k_l2norm_" + layerIdx, kNorm.castTo("gdn_k_norm_cast_" + layerIdx, k.dataType()));
 
-        // 5b. Scale Q by 1/sqrt(head_dim) — standard attention scaling
+        // 5b. Scale Q by 1/sqrt(D_k) — standard attention scaling
         // Reference: scale = 1 / (query.shape[-1] ** 0.5); query = query * scale
-        double qScale = 1.0 / Math.sqrt(headDimKV);
+        double qScale = 1.0 / Math.sqrt(headDimQK);
         q = q.mul("gdn_q_scaled_" + layerIdx, qScale);
 
         // 6. Compute beta (update gate): sigmoid(input @ Wbeta^T) → [B, L, H]
@@ -813,19 +852,19 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
         if (gateWeight != null) {
             SDVariable wGate = sd.var(attnPrefix + "gate.weight", gateWeight);
-            SDVariable z = fp32Mmul(sd, "gdn_gate_proj_" + layerIdx, input, wGate.permute(1, 0), dtype); // [B,L,value_dim]
-            SDVariable zReshaped = sd.reshape("gdn_z_reshaped_" + layerIdx, z, gdnHeadShape); // [B,L,H,D]
+            SDVariable z = fp32Mmul(sd, "gdn_gate_proj_" + layerIdx, input, wGate.permute(1, 0), dtype); // [B,L,vDim]
+            SDVariable zReshaped = sd.reshape("gdn_z_reshaped_" + layerIdx, z, vHeadShape); // [B,L,H,headDimV]
             SDVariable gateAct = sd.nn.swish("gdn_gate_act_" + layerIdx, zReshaped);
             gdnOut = gdnOut.mul("gdn_gated_" + layerIdx, gateAct);
         }
 
-        // 10. Reshape from [B, L, H, D] to [B, L, H*D]
+        // 10. Reshape from [B, L, H, D_v] to [B, L, H*D_v]
         SDVariable flatShape = sd.stack("gdn_flat_shape_" + layerIdx, 0,
                 batchDim, seqDim,
-                sd.constant(Nd4j.scalar((long) perComponentDim)));
+                sd.constant(Nd4j.scalar((long) vDim)));
         gdnOut = sd.reshape("gdn_flat_" + layerIdx, gdnOut, flatShape);
 
-        // 11. Output projection: [B, L, perComponentDim] -> [B, L, hidden]
+        // 11. Output projection: [B, L, vDim] -> [B, L, hidden]
         SDVariable wOut = sd.var(attnPrefix + "out.weight", outWeight);
         return fp32Mmul(sd, "gdn_proj_" + layerIdx, gdnOut, wOut.permute(1, 0), dtype);
     }
@@ -903,6 +942,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
             k = new FusedRoPE(sd, k, config.getRopeType(), 0,
                     config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+        }
+
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
         }
 
         SDVariable attnOut = sd.nn.dotProductAttentionV2(

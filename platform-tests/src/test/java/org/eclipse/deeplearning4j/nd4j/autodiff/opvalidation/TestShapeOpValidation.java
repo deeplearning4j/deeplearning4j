@@ -2442,7 +2442,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStridedSliceEdgeCase(Nd4jBackend backend) {
-        INDArray in = Nd4j.scalar(10).reshape(1);   //Int [1]
+        INDArray in = Nd4j.createFromArray(new int[]{10});   //Int [1]
         INDArray begin = Nd4j.ones(DataType.INT, 1);
         INDArray end = Nd4j.zeros(DataType.INT, 1);
         INDArray stride = Nd4j.ones(DataType.INT, 1);

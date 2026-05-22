@@ -121,6 +121,11 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
         int extIdx = -(srcIdx + 1);
         if (extIdx < 0 || extIdx >= numExt) continue;
         if (extIdx >= static_cast<int>(externalInputIsVariable_.size())) continue;
+        // Skip ALL variable inputs: their addresses churn every step as Java
+        // recreates NDArray wrappers, causing the addr key to be perpetually
+        // unstable and forcing expensive O(N) recomputation. Variable inputs
+        // are handled by syncExternalInputs (H2D sync every step) and staging
+        // buffers (D2D into stable plan-owned addresses for graph replay).
         if (externalInputIsVariable_[extIdx]) continue;
         NDArray* extArr = externalInputs[extIdx];
         if (extArr == nullptr) continue;
@@ -1503,6 +1508,11 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     // causing NULL input errors during CUDA graph capture.
     std::memcpy(effectiveExternals_, externalArrays, sizeof(NDArray*) * numExt);
 
+    // Weight rebinding (associateArrayWithVariable) is handled on the Java side:
+    // DynamicShapePlanExecutor detects identity changes and passes the updated
+    // INDArray via setGraphContextInputArray before calling into C++. No need
+    // to scan all ~1333 non-variable inputs for isPrimaryActual() here.
+
     int copiedCount = 0, skippedNull = 0, skippedEmpty = 0, skippedNullBuf = 0, skippedJniWrite = 0;
     for (int i : cachedVariableExtIndices_) {
       NDArray* ext = externalArrays[i];
@@ -1582,7 +1592,8 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
 
   for (int i = 0; i < numExt; i++) {
     // Non-variable inputs (model weights) — pass through directly.
-    // Their specialBuffer() is already stable (same DataBuffer for plan lifetime).
+    // Their specialBuffer() is stable (same DataBuffer for plan lifetime).
+    // Weight rebinding is handled on the Java side via identity detection.
     if (i >= static_cast<int>(externalInputIsVariable_.size()) ||
         !externalInputIsVariable_[i]) {
       effectiveExternals_[i] = externalArrays[i];

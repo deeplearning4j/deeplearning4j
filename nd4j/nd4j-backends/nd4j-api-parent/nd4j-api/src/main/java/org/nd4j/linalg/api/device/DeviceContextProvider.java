@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.device;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * SPI interface for device context management. Backends (CUDA, CPU) provide
@@ -77,4 +78,13 @@ public interface DeviceContextProvider {
      * Returns false for CPU backends.
      */
     boolean supportsStreams();
+
+    /**
+     * Ensure an array's data is accessible on the host (CPU) side.
+     * On CUDA, this synchronizes device data to the host buffer.
+     * On CPU, this is a no-op since data is always on host.
+     *
+     * @param array the array whose data must be readable on host
+     */
+    void ensureHostAccess(INDArray array);
 }

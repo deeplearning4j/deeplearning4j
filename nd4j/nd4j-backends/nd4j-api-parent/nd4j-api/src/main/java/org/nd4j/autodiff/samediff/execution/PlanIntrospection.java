@@ -73,8 +73,7 @@ public final class PlanIntrospection {
             if (sourceType == DynamicShapeSlot.SOURCE_OP_OUTPUT) {
                 return "slot#" + fromSlot + "(OP)";
             } else {
-                int extIdx = -(index + 1);
-                return "ext#" + extIdx + ":\"" + externalKey + "\"(" + getSourceTypeName() + ")";
+                return "ext#" + index + ":\"" + externalKey + "\"(" + getSourceTypeName() + ")";
             }
         }
     }
@@ -224,7 +223,7 @@ public final class PlanIntrospection {
             } else {
                 int extIdx = -(idx + 1);
                 String extKey = extIdx < extKeys.length ? extKeys[extIdx] : name;
-                result.add(new DecodedInput(idx, type, name, -1, extKey));
+                result.add(new DecodedInput(extIdx, type, name, -1, extKey));
             }
         }
         return result;
@@ -416,13 +415,20 @@ public final class PlanIntrospection {
      * Find groups of slots that share the same predecessor set and could execute concurrently.
      */
     public static List<List<Integer>> getParallelGroups(DynamicShapePlan plan) {
+        DynamicShapeSlot[] slots = plan.getSlots();
+        if (slots == null || slots.length == 0) return Collections.emptyList();
+
         int[][] predecessors = plan.getPredecessors();
-        if (predecessors == null) return Collections.emptyList();
 
         Map<List<Integer>, List<Integer>> groups = new LinkedHashMap<>();
-        for (int i = 0; i < predecessors.length; i++) {
-            int[] preds = predecessors[i];
-            List<Integer> key = Arrays.stream(preds).sorted().boxed().collect(Collectors.toList());
+        for (int i = 0; i < slots.length; i++) {
+            List<Integer> key;
+            if (predecessors != null && i < predecessors.length) {
+                key = Arrays.stream(predecessors[i]).sorted().boxed().collect(Collectors.toList());
+            } else {
+                // Fallback: compute producers from input source indices
+                key = getProducersOf(plan, i).stream().sorted().collect(Collectors.toList());
+            }
             groups.computeIfAbsent(key, k -> new ArrayList<>()).add(i);
         }
 

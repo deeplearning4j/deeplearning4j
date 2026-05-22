@@ -575,6 +575,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             ensureDeviceCoherencyForOp(op);
         }
 
+        // Handle in-place broadcast on views: dup to contiguous, execute, assign back.
+        // Without this, the CUDA kernel writes to a shared DataBuffer region but only
+        // updates the view's portion, leaving the host-side stale for the parent array.
+        boolean viewInPlace = false;
+        INDArray originalView = null;
+        if (op.x() == op.z() && op.x() != null && op.x().isView()) {
+            viewInPlace = true;
+            originalView = op.x();
+            INDArray xDup = op.x().dup(op.x().ordering());
+            op.setX(xDup);
+            op.setZ(xDup);
+        }
+
         try {
             long st = profilingConfigurableHookIn(op);
 
@@ -655,6 +668,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw ND4JOpExceptionUtils.opExecutionException(op, Nd4j.getNativeOps().lastErrorMessage());
 
             profilingConfigurableHookOut(op, null, st);
+
+            // Assign result back to the original view if we duped for in-place broadcast
+            if (viewInPlace && originalView != null) {
+                originalView.assign(op.z());
+                return originalView;
+            }
 
             return op.z();
         } finally {
@@ -1078,6 +1097,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             INDArray dim1 = null;
             if (dimArr != null && dimArr.data() != null) {
                 dim1 = dimArr.castTo(DataType.LONG);
+            } else {
+                // Full reduce: pass empty LONG array to native code
+                dim1 = Nd4j.empty(DataType.LONG);
             }
             val dimension2 = OpaqueNDArray.fromINDArray(dim1);
             Nd4j.getNativeOps().execIndexReduce(xShapeInfoHostPointer, op.opNum(),
@@ -1817,7 +1839,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(scalar);
-        val zb = OpaqueNDArray.fromINDArray(z);
+        // When x == z (in-place op like muli), reuse xb to avoid a second
+        // fromINDArray call on the same buffer. The second call triggers
+        // syncToSpecial() which may H→D copy stale host data over the
+        // correct device data, causing the scalar to be applied twice.
+        val zb = (x == z) ? xb : OpaqueNDArray.fromINDArray(z);
 
         switch (op.getOpType()) {
             case SCALAR_BOOL:
@@ -1889,14 +1915,35 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer hostYShapeInfo = y == null ? null : AddressRetriever.retrieveHostPointer(y.shapeInfoDataBuffer());
 
 
-        if (z == null || z == x) {
-            // When z == x (set by BaseOp(x) → BaseOp(x, null, x)), the op would
-            // execute in-place. This corrupts shared DataBuffers when x is a view,
-            // because other views into the same buffer see the modification.
-            // Always allocate a separate output to prevent in-place corruption.
+        if (z == null) {
             ret = Nd4j.createUninitialized(op.resultType(), x.shape(), x.ordering());
             setZ(ret, op, oc);
             z = ret;
+        }
+
+        // In-place transform on a view: the view shares its DataBuffer with a parent array.
+        // On CUDA, OpaqueNDArray.fromINDArray() calls syncToSpecial() on the shared DataBuffer
+        // which does H→D for the entire buffer. The kernel writes results to the view's region
+        // on device, but the shared DataBuffer's actuality counters track the whole buffer, not
+        // per-element regions. When the same buffer is later read, syncToPrimary (D→H) may not
+        // correctly round-trip the view's portion because the host still holds pre-op values and
+        // the counter state can get confused when the same OpaqueNDArray serves as both x and z.
+        // Fix: dup the view to a contiguous standalone array, execute the op on it, then copy
+        // results back to the original view.
+        boolean viewInPlace = false;
+        INDArray originalView = null;
+        if (x == z && x.isView()) {
+            viewInPlace = true;
+            originalView = x;
+            x = x.dup(x.ordering());
+            z = x;
+            if (oc != null) {
+                oc.setInputArray(0, x);
+                oc.setOutputArray(0, z);
+            } else {
+                op.setX(x);
+                op.setZ(z);
+            }
         }
 
         Pointer extraArgs = op.extraArgs() != null ? allocator.getPointer(op.extraArgsDataBuff(op.getOpType() == Op.Type.TRANSFORM_BOOL || op.getOpType() == Op.Type.PAIRWISE_BOOL ? x.dataType() : z.dataType()), context) : null;
@@ -2024,6 +2071,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (z != null && !z.isEmpty() && z.data() != null) {
             ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
             AtomicAllocator.getInstance().tickDeviceWrite(z);
+        }
+
+        // Copy results from the temporary contiguous array back to the original view.
+        if (viewInPlace && originalView != null) {
+            originalView.assign(z);
         }
 
         profilingConfigurableHookOut(op, oc, st);
@@ -2495,6 +2547,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         long extras = ArrayOptionsHelper.composeTypicalChecks(empty, dtype, false, false, false, false, false);
+        return createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
+    }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+
+        long extras = ArrayOptionsHelper.composeTypicalChecks(empty, dtype, false, false, isView, false, false);
         return createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
 

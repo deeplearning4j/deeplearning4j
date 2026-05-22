@@ -583,7 +583,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStridedSliceEdgeCase(Nd4jBackend backend) {
-        INDArray in = Nd4j.scalar(10.0).reshape(1);   // shape [1]
+        INDArray in = Nd4j.createFromArray(new double[]{10.0});   // shape [1]
         INDArray begin = Nd4j.ones(DataType.INT, 1);
         INDArray end = Nd4j.zeros(DataType.INT, 1);
         INDArray stride = Nd4j.ones(DataType.INT, 1);
@@ -840,6 +840,22 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
 
         assertEquals(expValue, outValue);
         assertEquals(expIdx, outIdx);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testInvertPermutationDirect(Nd4jBackend backend) {
+        INDArray input = Nd4j.createFromArray(3, 4, 0, 2, 1);
+        INDArray expected = Nd4j.createFromArray(2, 4, 3, 0, 1);
+        INDArray output = Nd4j.create(DataType.INT, 5);
+
+        Nd4j.exec(DynamicCustomOp.builder("invert_permutation")
+                .addInputs(input)
+                .addOutputs(output)
+                .build());
+
+        assertEquals(expected, output);
     }
 
 
@@ -1934,7 +1950,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray exp = Nd4j.createFromArray(new double[] {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3.}).reshape(3,3);
 
         INDArray[] res = Nd4j.exec(new Cholesky(x));
-        assertEquals(res[0], exp);
+        assertEquals(exp, res[0]);
     }
 
 

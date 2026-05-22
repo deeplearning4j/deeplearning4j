@@ -71,6 +71,16 @@ public class OpenELMArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "plain";
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "openelm.gguf.path";
+    }
+
+    @Override
     public boolean canHandle(GGMLMetadata metadata) {
         String arch = metadata.getArchitecture();
         if (arch == null) return false;
@@ -253,6 +263,11 @@ public class OpenELMArchitecture implements ModelArchitecture {
             k = new FusedRoPE(sd, k, config.getRopeType(), 0,
                     config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+        }
+
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
         }
 
         // Dot-product attention

@@ -87,17 +87,40 @@ public class PlanIntrospectionTest {
         );
     }
 
-    /** Auto-extract ext keys from slot input var names */
+    /** Auto-extract ext keys from slot input var names, ordered by ext index */
     private static DynamicShapePlan makePlan(DynamicShapeSlot[] slots) {
-        LinkedHashSet<String> extKeySet = new LinkedHashSet<>();
+        // Collect ext keys by their encoded index: idx<0 means extIdx = -(idx+1)
+        TreeMap<Integer, String> extByIndex = new TreeMap<>();
         for (DynamicShapeSlot s : slots) {
-            if (s.getInputVarNames() != null) {
-                for (String n : s.getInputVarNames()) {
-                    if (n != null && !n.isEmpty()) extKeySet.add(n);
+            int[] srcIndices = s.getInputSourceIndices();
+            String[] varNames = s.getInputVarNames();
+            if (srcIndices == null || varNames == null) continue;
+            for (int i = 0; i < srcIndices.length; i++) {
+                if (srcIndices[i] < 0) {
+                    int extIdx = -(srcIndices[i] + 1);
+                    String name = i < varNames.length ? varNames[i] : "";
+                    if (name != null && !name.isEmpty()) {
+                        extByIndex.putIfAbsent(extIdx, name);
+                    }
                 }
             }
         }
-        return makePlan(slots, extKeySet.toArray(new String[0]));
+        // Build ext keys array in order of ext index
+        String[] extKeys;
+        if (extByIndex.isEmpty()) {
+            extKeys = new String[0];
+        } else {
+            int maxIdx = extByIndex.lastKey();
+            extKeys = new String[maxIdx + 1];
+            for (Map.Entry<Integer, String> e : extByIndex.entrySet()) {
+                extKeys[e.getKey()] = e.getValue();
+            }
+            // Fill gaps with empty string
+            for (int i = 0; i < extKeys.length; i++) {
+                if (extKeys[i] == null) extKeys[i] = "";
+            }
+        }
+        return makePlan(slots, extKeys);
     }
 
     // ─── getDecodedInputs ────────────────────────────────────────────
@@ -494,7 +517,7 @@ public class PlanIntrospectionTest {
         DynamicShapePlan plan = makePlan(new DynamicShapeSlot[]{s0});
         String formatted = PlanIntrospection.formatSlot(plan, 0);
         assertNotNull(formatted);
-        assertTrue(formatted.contains("slot#0"));
+        assertTrue(formatted.contains("Slot#0"));
         assertTrue(formatted.contains("mmul"));
         assertTrue(formatted.contains("Inputs:"));
     }

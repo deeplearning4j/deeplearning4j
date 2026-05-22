@@ -72,14 +72,26 @@ public class GraphOptimizer {
         List<OptimizerSet> all = Arrays.<OptimizerSet>asList(
                 new UnusedFunctionOptimizations(),
                 new ConstantFunctionOptimizations(),
+                new BroadcastEliminationOptimizations(), // Remove redundant broadcasts, double negation, canonicalize commutative ops
+                new ReorderingOptimizations(),       // Reassociate constants, eliminate double transpose
                 new AlgebraicOptimizations(),        // x+0->x, x*1->x, x*0->0, etc.
+                new PeepholeOptimizations(),         // Idempotent ops, inverse pairs, negation propagation
+                new ArithmeticChainOptimizations(),   // Fold chains: add(add(x,c1),c2)->add(x,c1+c2), same for mul
+                new StrengthReductionOptimizations(), // pow(x,2)->square, div(x,c)->mul(x,1/c)
                 new IdentityFunctionOptimizations(),
+                new ConcatSplitOptimizations(),       // Flatten nested concat, eliminate concat-split pairs
+                new SelectWhereOptimizations(),       // Simplify select/where with constant conditions
+                new RedundancyEliminationOptimizations(), // Single-input concat, full-extent slice, identity gather
                 new ShapeFunctionOptimizations(),
-                new ActivationFusionOptimizations(), // sigmoid(x)*x -> swish, SwiGLU detection
-                new NormalizationFusionOptimizations(), // RMSNorm detection
+                new CommonSubexpressionElimination(), // Deduplicate identical ops (same opName+inputs+args)
+                new AttentionFusionOptimizations(),  // Fuse attention patterns (must run before horizontal fusion — HF replaces Q/K/V matmuls with fused+slice, breaking attention pattern matching)
+                new HorizontalFusionOptimizations(), // Fuse parallel matmuls sharing same input
+                new MatMulChainOptimizations(),      // Fold constant matmul chains, absorb transposes into matmul flags
+                new ActivationFusionOptimizations(), // sigmoid(x)*x -> swish, SwiGLU detection (must run before rematerialization)
+                new NormalizationFusionOptimizations(), // RMSNorm detection (must run before rematerialization)
                 new GatedDeltaNetFusionOptimizations(), // GDN pattern fusion
+                new RematerializationOptimizations(), // Duplicate cheap ops to shorten live ranges (runs after fusion to avoid breaking patterns)
                 new LinearFusionOptimizations(),
-                new AttentionFusionOptimizations(),  // Fuse attention patterns
                 new QuantizationOptimizations(),     // Remove redundant casts, FP16 quantization
                 new UnusedFunctionOptimizations(),
                 new CuDNNFunctionOptimizations()
@@ -92,6 +104,22 @@ public class GraphOptimizer {
             if (SKIP_OPTIMIZERS.contains(opt.getClass().getSimpleName())) {
                 log.info("Skipping optimizer: {}", opt.getClass().getSimpleName());
             } else {
+                filtered.add(opt);
+            }
+        }
+        return filtered;
+    }
+
+    /**
+     * Default optimizations excluding precision-changing passes (FP16/BF16 quantization).
+     * Use this in tests that compare original vs optimized output for numerical correctness,
+     * since precision changes are expected to alter values.
+     */
+    public static List<OptimizerSet> defaultCorrectnessOptimizations() {
+        List<OptimizerSet> all = defaultOptimizations();
+        List<OptimizerSet> filtered = new ArrayList<>();
+        for (OptimizerSet opt : all) {
+            if (!(opt instanceof QuantizationOptimizations)) {
                 filtered.add(opt);
             }
         }

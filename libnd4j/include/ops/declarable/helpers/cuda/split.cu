@@ -138,11 +138,16 @@ void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArr
   // Prepare input and outputs for device access
   NDArray::prepareSpecialUse(outArrs, {&input});
 
-  bool luckCase1 = false;
+  const bool inputContiguous = shape::strideDescendingCAscendingF(input.shapeInfo());
+  const int xRank = input.rankOf();
+  bool luckCase1 = ((axis == 0 && input.ordering() == 'c') ||
+                    (axis == xRank - 1 && input.ordering() == 'f')) &&
+                   inputContiguous;
 
   if (luckCase1) {
     for (LongType i = 0; i < numOfSubArrs; ++i) {
-      luckCase1 &= outArrs[i]->ordering() == input.ordering();
+      const bool outContiguous = shape::strideDescendingCAscendingF(outArrs[i]->shapeInfo());
+      luckCase1 &= outArrs[i]->ordering() == input.ordering() && outContiguous;
       if (!luckCase1) break;
     }
   }

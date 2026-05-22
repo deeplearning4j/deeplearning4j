@@ -49,6 +49,7 @@
 
 #include "mkldnnUtils.h"
 #include <helpers/FlashAttentionHelper.h>
+#include <ops/declarable/helpers/kv_scatter.h>
 
 namespace sd {
 namespace ops {
@@ -380,7 +381,9 @@ static SDPACache::Entry& getSDPA(int64_t batch, int64_t seqQ, int64_t seqKV,
 
 //////////////////////////////////////////////////////////////////////////
 // Execute 3D SDPA - minimal overhead path
-static void executeSDPA3D(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
+// Returns true on success, false if the OneDNN graph compilation failed
+// (caller should fall back to FlashAttentionHelper).
+static bool executeSDPA3D(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
                           float scale, LaunchContext* context) {
   const auto batch = query->sizeAt(0);
   const auto seqQ = query->sizeAt(1);
@@ -393,7 +396,7 @@ static void executeSDPA3D(NDArray* query, NDArray* key, NDArray* value, NDArray*
 
   auto& entry = getSDPA(batch, seqQ, seqKV, 1, dim, dtype, false);
   if (!entry.valid) {
-    THROW_EXCEPTION("SDPA 3D graph compilation failed");
+    return false;
   }
 
   auto& cache = SDPACache::instance();
@@ -429,6 +432,7 @@ static void executeSDPA3D(NDArray* query, NDArray* key, NDArray* value, NDArray*
 
   entry.cp.execute(strm, {t_query, t_key, t_scale, t_value}, {t_output});
   strm.wait();
+  return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -610,7 +614,7 @@ static void mklSoftmaxInPlace(float* data, MKL_INT rows, MKL_INT cols, float sca
 // GQA: handled via stride_b=0 trick — no K/V tiling needed.
 static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
                                float scale, LaunchContext* context,
-                               NDArray* attentionBias = nullptr) {
+                               NDArray* attentionBias = nullptr, bool isCausal = false) {
   const MKL_INT batch = query->sizeAt(0);
   const MKL_INT seqQ = query->sizeAt(1);
   const MKL_INT seqKV = key->sizeAt(1);
@@ -768,6 +772,19 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
       }
     }
 
+    // Step 1.75: Apply causal mask — set scores[i][j] = -1e9 where j > i + causalOffset
+    if (isCausal) {
+      const MKL_INT causalOffset = (seqKV > seqQ) ? (seqKV - seqQ) : 0;
+      for (MKL_INT h = 0; h < numHeads; h++) {
+        float* sHead = allScores + h * scoreSize;
+        for (MKL_INT i = 0; i < seqQ; i++) {
+          for (MKL_INT j = i + causalOffset + 1; j < seqKV; j++) {
+            sHead[i * seqKV + j] = -1.0e9f;
+          }
+        }
+      }
+    }
+
     // Step 2: softmax with scale
     for (MKL_INT h = 0; h < numHeads; h++) {
       mklSoftmaxInPlace(allScores + h * scoreSize, seqQ, seqKV, scale);
@@ -900,7 +917,7 @@ static void executeSDPA4D_WithBias(NDArray* query, NDArray* key, NDArray* value,
 // Execute 4D SDPA with [batch, seq, heads, dim] layout
 static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
                           float scale, LaunchContext* context,
-                          NDArray* attentionBias = nullptr) {
+                          NDArray* attentionBias = nullptr, bool isCausal = false) {
   // Decode path (seqQ=1): route directly to MKL strided-batch GEMV path for FP32,
   // or promote to FP32 and use MKL for FP16/BF16.
   // Do NOT delegate to FlashAttentionHelper here — it copies and tiles K/V for GQA
@@ -913,7 +930,7 @@ static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray*
   if (query->sizeAt(1) == 1) {
 #ifdef HAVE_MKL
     if (query->dataType() == DataType::FLOAT32) {
-      executeSDPA4D_MKL(query, key, value, output, scale, context, attentionBias);
+      executeSDPA4D_MKL(query, key, value, output, scale, context, attentionBias, isCausal);
       return;
     }
 #endif
@@ -926,7 +943,7 @@ static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray*
       auto outShapePtr = output->getShapeAsVector();
       NDArray out32(query->ordering(), *outShapePtr, DataType::FLOAT32, context);
       delete outShapePtr;
-      executeSDPA4D(q32, k32, v32, &out32, scale, context, attentionBias);
+      executeSDPA4D(q32, k32, v32, &out32, scale, context, attentionBias, isCausal);
       output->assign(&out32);
       delete q32;
       delete k32;
@@ -936,7 +953,7 @@ static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray*
     // Fallback for non-MKL CPU or unsupported types: use FlashAttentionHelper.
     FlashAttentionHelper::Config cfg;
     cfg.scale    = scale;
-    cfg.isCausal = false;
+    cfg.isCausal = isCausal;
     cfg.dropout  = 0.0f;
     cfg.numHeads   = static_cast<int>(query->sizeAt(2));
     cfg.numKvHeads = static_cast<int>(key->sizeAt(2));
@@ -972,7 +989,7 @@ static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray*
     auto outShapePtr = output->getShapeAsVector();
     NDArray out32(q32->ordering(), *outShapePtr, DataType::FLOAT32, context);
     delete outShapePtr;
-    executeSDPA4D(q32, k32, v32, &out32, scale, context, attentionBias);
+    executeSDPA4D(q32, k32, v32, &out32, scale, context, attentionBias, isCausal);
     output->assign(&out32);
     delete q32;
     delete k32;
@@ -982,7 +999,7 @@ static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray*
 
 #ifdef HAVE_MKL
   if (query->dataType() == DataType::FLOAT32) {
-    executeSDPA4D_MKL(query, key, value, output, scale, context, attentionBias);
+    executeSDPA4D_MKL(query, key, value, output, scale, context, attentionBias, isCausal);
     return;
   }
 #endif
@@ -1080,29 +1097,11 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
   bool useInPlaceKv = hasKvCache && (cachePosInput != nullptr);
 
   if (useInPlaceKv) {
-    LongType cachePosVal = cachePosInput->e<LongType>(0);
-    if (isRank4) {
-      auto batch = keys->sizeAt(0);
-      auto numKvHeads = keys->sizeAt(2);
-      auto headDim = keys->sizeAt(3);
-      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, numKvHeads, 0, headDim};
-      auto* kSlice = (*kvCacheK)(writeIdx);
-      auto* vSlice = (*kvCacheV)(writeIdx);
-      kSlice->assign(keys);
-      vSlice->assign(values);
-      delete kSlice;
-      delete vSlice;
-    } else {
-      auto batch = keys->sizeAt(0);
-      auto features = keys->sizeAt(2);
-      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, features};
-      auto* kSlice = (*kvCacheK)(writeIdx);
-      auto* vSlice = (*kvCacheV)(writeIdx);
-      kSlice->assign(keys);
-      vSlice->assign(values);
-      delete kSlice;
-      delete vSlice;
-    }
+    // Use kvInPlaceWriteBSHD which handles multi-position writes (prefill seqLen > 1)
+    // and matches the generic op's behavior.
+    const void* cachePosPtr = cachePosInput->buffer();
+    helpers::kvInPlaceWriteBSHD(kvCacheK, keys, cachePosPtr, block.launchContext());
+    helpers::kvInPlaceWriteBSHD(kvCacheV, values, cachePosPtr, block.launchContext());
     // Use full cache as K/V for attention
     keys = kvCacheK;
     values = kvCacheV;
@@ -1183,11 +1182,13 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
 
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
 
-  // 4D path: route to executeSDPA4D which handles bias, GQA, and all dtypes via MKL GEMV.
+  bool useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
+
+  // 4D path: route to executeSDPA4D which handles bias, GQA, causal mask, and all dtypes via MKL GEMV.
   // This avoids FlashAttentionHelper's O(headsPerKvHead * seqKV * headDim) K/V tiling.
   if (rank == 4) {
     executeSDPA4D(queries, keys, values, output, static_cast<float>(scale),
-                  block.launchContext(), hasAttentionBias ? attentionBias : nullptr);
+                  block.launchContext(), hasAttentionBias ? attentionBias : nullptr, useCausalMask);
     if (!attentionScores->isEmpty()) attentionScores->nullify();
     if (!attentionLogits->isEmpty())  attentionLogits->nullify();
     if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
@@ -1248,7 +1249,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
     return sd::Status::OK;
   }
 
-  // No bias, rank 2/3: use OneDNN 3D graph path
+  // No bias, rank 2/3: try OneDNN 3D graph path, fall back to FlashAttentionHelper
   {
     NDArray *q3d = nullptr, *k3d = nullptr, *v3d = nullptr, *out3d = nullptr;
     bool needReshape = (rank == 2);
@@ -1268,10 +1269,24 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
       out3d = output;
     }
 
-    executeSDPA3D(q3d, k3d, v3d, out3d, static_cast<float>(scale), block.launchContext());
+    bool onednnOk = executeSDPA3D(q3d, k3d, v3d, out3d, static_cast<float>(scale), block.launchContext());
 
-    if (!attentionScores->isEmpty()) attentionScores->nullify();
-    if (!attentionLogits->isEmpty()) attentionLogits->nullify();
+    if (!onednnOk) {
+      // OneDNN graph compilation failed for this shape/dtype — fall back to FlashAttentionHelper
+      FlashAttentionHelper::Config config;
+      config.scale = static_cast<float>(scale);
+      config.isCausal = block.numB() > 0 ? B_ARG(0) : false;
+      config.dropout = 0.0f;
+      config.numHeads = 1;
+      config.numKvHeads = 1;
+
+      FlashAttentionHelper::forward(q3d, k3d, v3d, out3d, config,
+                                    nullptr, attentionScores, attentionLogits,
+                                    block.launchContext(), nullptr);
+    } else {
+      if (!attentionScores->isEmpty()) attentionScores->nullify();
+      if (!attentionLogits->isEmpty()) attentionLogits->nullify();
+    }
 
     if (needReshape) {
       delete q3d;

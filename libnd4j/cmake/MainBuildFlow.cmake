@@ -1307,6 +1307,12 @@ collect_all_sources(ALL_SOURCES)
 create_and_link_library()
 message(STATUS "Final library target created and linked with enhanced template support.")
 
+# --- SDX Standalone Runtime (no JVM dependency) ---
+if(SD_BUILD_SDX_STANDALONE)
+    include(BuildSDX)
+    build_sdx_library()
+endif()
+
 # --- Phase 5: Enhanced Final Reports and Summaries ---
 if(DEFINED SD_GENERATE_TYPE_REPORT AND SD_GENERATE_TYPE_REPORT)
     print_status_colored("INFO" "=== GENERATING ENHANCED USAGE DOCUMENTATION ===")
@@ -1501,17 +1507,24 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             COMMAND ${CMAKE_COMMAND} -E copy_directory "${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}" "${_sdx_sdk_wrappers_dir}")
     endif()
 
+    # Use standalone SDX library when available, otherwise fall back to monolithic
+    if(SD_BUILD_SDX_STANDALONE AND DEFINED SDX_STANDALONE_TARGET AND TARGET ${SDX_STANDALONE_TARGET})
+        set(_sdx_sdk_target ${SDX_STANDALONE_TARGET})
+    else()
+        set(_sdx_sdk_target ${SD_LIBRARY_NAME})
+    endif()
+
     add_custom_target(sdx_runtime_sdk
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_include_dir}"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_lib_dir}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_HEADER}" "${_sdx_sdk_include_dir}/dsp_runtime_c.h"
         ${_sdx_readme_stage_cmds}
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${SD_LIBRARY_NAME}>" "${_sdx_sdk_lib_dir}/$<TARGET_FILE_NAME:${SD_LIBRARY_NAME}>"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_LINKER_FILE:${SD_LIBRARY_NAME}>" "${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${SD_LIBRARY_NAME}>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_FILE_NAME:${_sdx_sdk_target}>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_LINKER_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${_sdx_sdk_target}>"
         ${_sdx_schema_stage_cmds}
         ${_sdx_wrapper_stage_cmds}
-        DEPENDS ${SD_LIBRARY_NAME}
-        COMMENT "Staging SDX C runtime SDK artifacts in ${SDX_RUNTIME_SDK_DIR}"
+        DEPENDS ${_sdx_sdk_target}
+        COMMENT "Staging SDX C runtime SDK artifacts in ${SDX_RUNTIME_SDK_DIR} (target: ${_sdx_sdk_target})"
         VERBATIM
     )
 

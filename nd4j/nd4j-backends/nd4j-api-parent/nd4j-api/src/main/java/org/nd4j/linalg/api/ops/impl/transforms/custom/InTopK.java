@@ -69,6 +69,24 @@ public class InTopK extends DynamicCustomOp {
     }
 
     @Override
+    public List<org.nd4j.linalg.api.buffer.DataBuffer> calculateOutputShapeFromInputs(org.nd4j.linalg.api.ops.OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 2) {
+            return null;
+        }
+        INDArray targets = oc.getInputArray(1);
+        if (targets == null) {
+            return null;
+        }
+        // Output shape matches the target (2nd input) shape, with BOOL dtype
+        long[] outputShape = targets.shape();
+        long[] strides = org.nd4j.linalg.factory.Nd4j.getStrides(outputShape, 'c');
+        org.nd4j.linalg.api.shape.LongShapeDescriptor descriptor =
+                org.nd4j.linalg.api.shape.LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', DataType.BOOL, false);
+        org.nd4j.linalg.api.buffer.DataBuffer shapeInfo = org.nd4j.linalg.api.shape.Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //3rd input: dynamic K value
         Preconditions.checkState(dataTypes != null && !dataTypes.isEmpty(), "Expected at  least 1 input data types. for %s, got %s", getClass(), dataTypes);

@@ -728,7 +728,10 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   // stale (e.g., after DirectShapeTrie::clearCache() frees it), the cudaMemcpyAsync
   // would corrupt shapeCopy with whatever GPU memory happens to be at that address —
   // causing ConstantShapeBuffer data corruption and downstream crashes/wrong results.
-  if (isConstant) {
+  // EXCEPTION: forceSync=true bypasses this guard. Java setCloseable(false) marks
+  // data buffers as constant to protect them from deallocation, but those buffers
+  // still need D2H sync for serialization and cross-device migration.
+  if (isConstant && !forceSync) {
     return;
   }
 

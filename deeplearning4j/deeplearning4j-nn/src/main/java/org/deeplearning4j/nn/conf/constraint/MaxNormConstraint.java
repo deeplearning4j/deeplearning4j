@@ -74,6 +74,14 @@ public class MaxNormConstraint extends BaseConstraint {
         clipped.divi(norm);
 
         Broadcast.mul(param, clipped, param, getBroadcastDims(dimensions, param.rank()));
+
+        // Second pass to correct float precision drift
+        INDArray norm2 = param.norm2(dimensions);
+        INDArray clipped2 = norm2.unsafeDuplication();
+        BooleanIndexing.replaceWhere(clipped2, maxNorm, Conditions.greaterThan(maxNorm));
+        norm2.addi(epsilon);
+        clipped2.divi(norm2);
+        Broadcast.mul(param, clipped2, param, getBroadcastDims(dimensions, param.rank()));
     }
 
     @Override

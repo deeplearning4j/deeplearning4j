@@ -3366,6 +3366,19 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     // FIX: registerSpecialUse takes (writeList, readList)
     NDArray::registerSpecialUse({other}, {thisArray});
 
+  } else if (thisArray->lengthOf() <= 1 && other->lengthOf() > 1) {
+    // Scalar source -> non-scalar destination: broadcast scalar to fill destination
+    NDArray::prepareSpecialUse({other}, {thisArray});
+    NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
+                                    other->buffer(), other->shapeInfo(),
+                                    other->specialBuffer(), other->specialShapeInfo(),
+                                    other->buffer(), other->shapeInfo(),
+                                    other->specialBuffer(), other->specialShapeInfo(),
+                                    thisArray->buffer(), thisArray->shapeInfo(),
+                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                    nullptr, allowParallelism);
+    NDArray::registerSpecialUse({other}, {thisArray});
+
   } else {
     // Fast path: use memcpy when both arrays are contiguous with same type, length, and order
     bool sameType = (thisArray->dataType() == other->dataType());

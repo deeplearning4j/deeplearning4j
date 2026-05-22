@@ -317,15 +317,19 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
                 "Value datatype must be floating point, got %s", second);
         Preconditions.checkState(third != null && third.isFPType(),
                 "Key datatype must be floating point, got %s", third);
-        Preconditions.checkState(first == second && first == third,
-                "Queries/values/keys datatypes must match, got %s", dataTypes.subList(0, 3));
+        // Auto-promote to widest floating-point type when Q/K/V dtypes differ
+        // (e.g. FusedRoPE promotes Q/K to FLOAT while V stays HALF).
+        // This mirrors how MmulHelper handles mixed dtypes via pickPairwiseResultType.
+        DataType outputType = first;
+        if (second.width() > outputType.width()) outputType = second;
+        if (third.width() > outputType.width()) outputType = third;
 
         // Optional mask/bias/cache inputs may be BOOL/INT in imported graphs.
         // Runtime op handles casting/validation for optional inputs.
         if (dropout > 0)
-            return Arrays.asList(first, first, first, first);
+            return Arrays.asList(outputType, outputType, outputType, outputType);
 
-        return Arrays.asList(first, first, first);
+        return Arrays.asList(outputType, outputType, outputType);
 
 
     }

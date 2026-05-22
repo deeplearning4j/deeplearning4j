@@ -47,6 +47,7 @@ import java.util.List;
  * - x * 0 -> 0 (MultiplyZero)
  * - x - x -> 0 (SubtractSelf)
  * - x / 1 -> x (DivideOne)
+ * - x / x -> 1 (DivideSelf)
  */
 @Slf4j
 public class AlgebraicOptimizations extends BaseOptimizerSet {
@@ -359,6 +360,65 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
             log.debug("Applying x / 1 -> x optimization: {} / 1 -> {}", dividend, dividend);
             replaceWithInput(sd, helper, op, outputVar, dividend);
             return true;
+        }
+    }
+
+    /**
+     * Simplifies x / x -> 1.
+     * Detects when both inputs to division are the same variable.
+     */
+    public static class DivideSelf implements Optimizer {
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (!(op.getOp() instanceof DivOp)) {
+                return false;
+            }
+
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null || inputs.size() != 2) {
+                return false;
+            }
+
+            if (!inputs.get(0).equals(inputs.get(1))) {
+                return false;
+            }
+
+            List<String> outputs = op.getOutputsOfOp();
+            if (outputs == null || outputs.isEmpty()) {
+                return false;
+            }
+            String outputVar = outputs.get(0);
+
+            SDVariable inputVar = sd.getVariable(inputs.get(0));
+            if (inputVar == null) return false;
+
+            log.debug("Applying x / x -> 1 optimization for variable: {}", inputs.get(0));
+
+            try {
+                SDVariable one = sd.constant("one_" + System.nanoTime(),
+                    org.nd4j.linalg.factory.Nd4j.ones(inputVar.dataType(), 1));
+
+                OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, one.name());
+
+                // Update graph outputs before removal
+                List<String> graphOutputs = sd.outputs();
+                if (graphOutputs != null) {
+                    for (int i = 0; i < graphOutputs.size(); i++) {
+                        if (graphOutputs.get(i).equals(outputVar)) {
+                            graphOutputs.set(i, one.name());
+                        }
+                    }
+                }
+
+                OptimizationUtils.removeOp(sd, helper, op.getName());
+                OptimizationUtils.removeVariable(sd, helper, outputVar);
+
+                return true;
+            } catch (Exception e) {
+                log.warn("Failed to apply x / x -> 1: {}", e.getMessage());
+                return false;
+            }
         }
     }
 }

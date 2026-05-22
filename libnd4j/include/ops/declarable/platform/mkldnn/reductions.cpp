@@ -173,8 +173,15 @@ PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
     }
   }
 
+  // oneDNN reduction primitive can fail to create descriptors for rank-3
+  // tensors when reducing a middle dimension (e.g. [1,4,16] -> [1,1,16]).
+  // Restrict to rank 2, 4, 5, 6 where oneDNN is well-tested.
+  // Rank 1 and rank 3 fall through to the generic CPU implementation.
+  bool rankSupported = (x->rankOf() == 2 || x->rankOf() >= 4);
+
   Requirements req("ONEDNN REDUCE_MEAN OP");
-  req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
+  req.expectTrue(makeInfoVariable(rankSupported, "RANK_SUPPORTED"), "OneDNN reduce_mean supports rank 2 or >= 4") &&
+      req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&

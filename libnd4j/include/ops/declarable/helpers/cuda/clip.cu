@@ -115,7 +115,7 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
     NDArray* actualNormPtr = z->reduceAlongDimension(reduce::Norm2, &empty);
     NDArray* actualNorm = useAverage ? (*actualNormPtr / static_cast<double>(z->lengthOf())) : actualNormPtr;
 
-    if (actualNorm->e<float>(0) > clipNorm->e<float>(0)) {
+    if (actualNorm->e<double>(0) > clipNorm->e<double>(0)) {
       auto scaleFactor = *clipNorm / *actualNorm;
       *z *= *scaleFactor;
       delete scaleFactor;

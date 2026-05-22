@@ -26,6 +26,7 @@ import lombok.val;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -145,10 +146,11 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
                         Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering())) :
                     Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering());
             }
-            // Ensure delayedArray data is synced to HOST before cross-device copy
-            // This prevents reading stale/zero data from uninitialized HOST buffers
-            Nd4j.getExecutioner().commit();
-            Nd4j.getAffinityManager().ensureLocation(delayedArray, AffinityManager.Location.HOST);
+            // Bidirectional sync delayedArray so HOST has current data for cross-device memcpy.
+            // ensureHostAccess does H→D then force D→H, handling both:
+            //   - device-only data (compact copies from assign ops)
+            //   - host-only data (deserialized from FlatBuffers)
+            DeviceMemoryManager.getInstance().ensureHostAccess(delayedArray);
             Nd4j.getMemoryManager().memcpy(newArray.data(), delayedArray.data());
 
             applyConstantFlag(newArray);
@@ -261,10 +263,10 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
             }
             set(deviceId, detachedForCurrentDevice);
            if(!array.isEmpty() && array.data() != null && numDevices > 1) {
-               // Sync the detached copy to HOST so other devices can copy from it on-demand.
-               // No extra GPU allocation needed — reuse the same array as the delayed source.
-               Nd4j.getExecutioner().commit();
-               Nd4j.getAffinityManager().ensureLocation(detachedForCurrentDevice, AffinityManager.Location.HOST);
+               // Bidirectional sync so HOST has current data for cross-device copies.
+               // ensureHostAccess does H→D then force D→H, handling both device-only
+               // data (compact copies) and host-only data (deserialized arrays).
+               DeviceMemoryManager.getInstance().ensureHostAccess(detachedForCurrentDevice);
                delayedArray = detachedForCurrentDevice;
 
                for (int i = 0; i < numDevices; i++) {

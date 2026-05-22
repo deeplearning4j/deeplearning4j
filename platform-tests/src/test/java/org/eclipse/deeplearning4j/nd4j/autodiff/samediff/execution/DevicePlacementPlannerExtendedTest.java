@@ -507,11 +507,11 @@ public class DevicePlacementPlannerExtendedTest {
     void testSameDiffDspAutoCompileFlags() {
         SameDiff sd = SameDiff.create();
 
-        // Default values
+        // Default values — both default to true (see SameDiff field initializers)
         assertTrue(sd.isDspAutoCompileEnabled());
-        assertFalse(sd.isDspNativeAutoCompileEnabled());
-
-        sd.setDspNativeAutoCompileEnabled(true);
         assertTrue(sd.isDspNativeAutoCompileEnabled());
+
+        sd.setDspNativeAutoCompileEnabled(false);
+        assertFalse(sd.isDspNativeAutoCompileEnabled());
     }
 }

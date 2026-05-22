@@ -211,6 +211,13 @@ public class OpExecutionDelegator {
                 if (inputSize >= config.getMinSizeForDeviceRouting()) {
                     return inputDevice;
                 }
+                // Below size threshold: still run on the input's device.
+                // The threshold gates whether to *move* data for performance,
+                // not whether to respect where the data already lives.
+                // Without this, small CPU arrays get routed to GPU by the
+                // default policy, then auto-transfer fails because CPU buffers
+                // don't support cross-device transfer.
+                return inputDevice;
             }
         }
 
@@ -221,7 +228,7 @@ public class OpExecutionDelegator {
             return mgr.selectDevice(size, DeviceMemoryManager.DeviceRoutingPolicy.PREFER_GPU);
         }
 
-        // Use default routing
+        // Use default routing (only reached when no inputs exist)
         DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
         long size = getOutputSize(op);
         return mgr.selectDevice(size, config.getDefaultPolicy());
@@ -267,6 +274,9 @@ public class OpExecutionDelegator {
                 if (inputSize >= config.getMinSizeForDeviceRouting()) {
                     return inputDevice;
                 }
+                // Below size threshold: still run on the input's device.
+                // See comment in the Op overload for rationale.
+                return inputDevice;
             }
         }
 

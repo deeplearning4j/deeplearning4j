@@ -88,10 +88,11 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgmin(Nd4jBackend backend) {
-        //Copy Paste from argmax, replaced with argmin.
+        //Use data without ties to ensure deterministic results across CPU and CUDA backends.
         NDBase base = new NDBase();
 
-        INDArray x = Nd4j.createFromArray(new double[][]{{0.75, 0.5, 0.25}, {0.5, 0.75, 0.25}, {0.5, 0.25, 0.75}});
+        // Unique minimums per column along axis=0: col0->row1(0.25), col1->row2(0.25), col2->row0(0.25)
+        INDArray x = Nd4j.createFromArray(new double[][]{{0.75, 0.5, 0.25}, {0.25, 0.75, 0.5}, {0.5, 0.25, 0.75}});
         INDArray y = base.argmin(x, 0); //with default keepdims
         INDArray y_exp = Nd4j.createFromArray(1L, 2L, 0L);
         assertEquals(y_exp, y);
@@ -208,7 +209,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray x = Nd4j.zeros(DataType.DOUBLE, 3, 3);
         int[] ind = new int[]{0};
         INDArray y = base.gather(x, ind, 0);
-        INDArray y_exp = Nd4j.createFromArray(0.0, 0.0, 0.0);
+        INDArray y_exp = Nd4j.createFromArray(new double[][]{{0.0, 0.0, 0.0}});
         assertEquals(y_exp, y);
     }
 
@@ -571,7 +572,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3);
         INDArray y = base.rank(x);
-        INDArray y_exp = Nd4j.scalar(2);
+        INDArray y_exp = Nd4j.scalar(DataType.LONG, 2);
         System.out.println(y);
         assertEquals(y_exp, y);
     }
@@ -798,7 +799,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray x = Nd4j.createFromArray(3.0, 6.0, 1.0, 4.0, 9.0,2.0, 2.0);
         INDArray segmentIDs = Nd4j.createFromArray(0,0,1,1,1,2,2);
         INDArray y = base.segmentMean(x, segmentIDs);
-        INDArray y_exp = Nd4j.createFromArray(4.5, 4.6667, 2.0);
+        INDArray y_exp = Nd4j.createFromArray(4.5, 14.0 / 3.0, 2.0);
         assertEquals(y_exp, y);
     }
 
@@ -1022,7 +1023,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray x = Nd4j.createFromArray(1,3,2,6,4,9,8).castTo(DataType.FLOAT);
         INDArray segmentIDs = Nd4j.createFromArray(1,0,2,0,1,1,2);
         INDArray y = base.unsortedSegmentMean(x, segmentIDs, 3);
-        INDArray y_exp = Nd4j.createFromArray(4.5f,4.6667f, 5.0f);
+        INDArray y_exp = Nd4j.createFromArray(4.5f, 14.0f / 3.0f, 5.0f);
         assertEquals(y_exp, y);
     }
 
@@ -1055,7 +1056,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray x = Nd4j.createFromArray(1.0,3.0,2.0,6.0,4.0,9.0,8.0);
         INDArray segmentIDs = Nd4j.createFromArray(1,0,2,0,1,1,2);
         INDArray y = base.unsortedSegmentSqrtN(x, segmentIDs, 3);
-        INDArray y_exp = Nd4j.createFromArray( 6.3640,    8.0829,    7.0711);
+        INDArray y_exp = Nd4j.createFromArray(9.0 / Math.sqrt(2), 14.0 / Math.sqrt(3), 10.0 / Math.sqrt(2));
         assertEquals(y_exp, y);
     }
 

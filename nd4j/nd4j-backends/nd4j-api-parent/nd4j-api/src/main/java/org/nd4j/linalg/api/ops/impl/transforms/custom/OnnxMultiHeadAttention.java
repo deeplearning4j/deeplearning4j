@@ -256,15 +256,24 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 3,
                 "Expected at least 3 input datatypes, got %s", dataTypes);
-        DataType first = dataTypes.get(0);
-        Preconditions.checkState(first.isFPType(),
-                "Query datatype must be floating point, got %s", first);
+        DataType qType = dataTypes.get(0);
+        DataType kType = dataTypes.get(1);
+        DataType vType = dataTypes.get(2);
+        Preconditions.checkState(qType.isFPType(),
+                "Query datatype must be floating point, got %s", qType);
+        // Auto-promote to widest FP type when Q/K/V dtypes differ
+        // (e.g. FusedRoPE promotes Q/K to FLOAT while V stays HALF).
+        // C++ runtime auto-casts K/V to match Q, but if K or V is wider
+        // than Q the output should use the wider type.
+        DataType outputType = qType;
+        if (kType.isFPType() && kType.width() > outputType.width()) outputType = kType;
+        if (vType.isFPType() && vType.width() > outputType.width()) outputType = vType;
         if (numOutputs == 1) {
-            return Arrays.asList(first);
+            return Arrays.asList(outputType);
         } else if (numOutputs == 2) {
-            return Arrays.asList(first, first);
+            return Arrays.asList(outputType, outputType);
         }
-        return Arrays.asList(first, first, first);
+        return Arrays.asList(outputType, outputType, outputType);
     }
 
     @Override

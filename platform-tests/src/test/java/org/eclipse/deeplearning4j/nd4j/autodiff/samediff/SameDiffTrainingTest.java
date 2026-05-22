@@ -103,7 +103,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
         //Second: let's create our variables
         SDVariable weights = sd.var("weights", new XavierInitScheme('c', nIn, nOut), FLOAT, nIn, nOut);
-        SDVariable bias = sd.var("bias");
+        SDVariable bias = sd.var("bias", FLOAT, 1, nOut);
 
         //And define our forward pass:
         SDVariable out = input.mmul(weights).add(bias);     //Note: it's broadcast add here

@@ -99,6 +99,12 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
 
     @Override
+    public void setDimensions(long... dimensions) {
+        this.dimensions = dimensions;
+        defineDimensions(dimensions);
+    }
+
+    @Override
     public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }

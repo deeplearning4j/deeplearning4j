@@ -266,7 +266,12 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
   }
   __syncthreads();
 
-  const LongType numItems = math::sd_min<LongType>(tadLen, blockDim.x);
+  // Use blockDim.x (power of 2) for reductions — NOT min(tadLen, blockDim.x).
+  // Non-power-of-2 numItems causes the tree reduction to skip elements
+  // (e.g., numItems=6: s=3,1 skips sPartials[2]).
+  // All threads initialize sPartials to identity values, so reducing the
+  // full blockDim.x is safe and eliminates this class of bug.
+  const LongType numItems = static_cast<LongType>(blockDim.x);
 
   // Fast path for rank 1 TADs (most common for attention softmax)
   if (xRank == 1) {

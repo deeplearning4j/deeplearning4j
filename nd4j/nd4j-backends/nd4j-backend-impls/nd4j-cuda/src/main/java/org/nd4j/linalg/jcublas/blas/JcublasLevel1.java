@@ -110,8 +110,13 @@ public class JcublasLevel1 extends BaseLevel1 {
             if (result != 0)
                 throw new IllegalStateException("cublasSetStream failed");
 
+            // Account for view offset: CublasPointer returns the base of the buffer.
+            // Views (e.g. getRow()) have a non-zero offset into that buffer.
+            FloatPointer xDevPtr = new FloatPointer(xCPointer.getDevicePointer()).position(X.offset());
+            FloatPointer yDevPtr = new FloatPointer(yCPointer.getDevicePointer()).position(Y.offset());
+
             val resultPointer = new FloatPointer(0.0f);
-            result = cublasSdot_v2(cctx, (int) N, (FloatPointer) xCPointer.getDevicePointer(), incX, (FloatPointer) yCPointer.getDevicePointer(), incY, resultPointer);
+            result = cublasSdot_v2(cctx, (int) N, xDevPtr, incX, yDevPtr, incY, resultPointer);
 
             if (result != 0)
                 throw new IllegalStateException("cublasSdot_v2 failed. Error code: " + result);
@@ -151,9 +156,13 @@ public class JcublasLevel1 extends BaseLevel1 {
             val cctx = new cublasContext(handle);
             cublasSetStream_v2(cctx, new CUstream_st(ctx.getCublasStream()));
 
+            // Account for view offset: CublasPointer returns the base of the buffer.
+            // Views (e.g. getRow()) have a non-zero offset into that buffer.
+            DoublePointer xDevPtr = new DoublePointer(xCPointer.getDevicePointer()).position(X.offset());
+            DoublePointer yDevPtr = new DoublePointer(yCPointer.getDevicePointer()).position(Y.offset());
+
             val resultPointer = new DoublePointer(0.0);
-            cublasDdot_v2(cctx, (int) N, (DoublePointer) xCPointer.getDevicePointer(), incX,
-                            (DoublePointer) yCPointer.getDevicePointer(), incY, resultPointer);
+            cublasDdot_v2(cctx, (int) N, xDevPtr, incX, yDevPtr, incY, resultPointer);
             ret = resultPointer.get();
         }
 
@@ -392,14 +401,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void haxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        //        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
-
-        //        CublasPointer xAPointer = new CublasPointer(X, ctx);
-        //        CublasPointer xBPointer = new CublasPointer(Y, ctx);
-
-        //        cublasHandle_t handle = ctx.getCublasHandle();
-
-        ((CudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, Y, alpha));
+        Nd4j.getExecutioner().exec(new Axpy(X, Y, Y, alpha));
 
         OpExecutionerUtil.checkForAny(Y);
     }

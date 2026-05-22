@@ -79,6 +79,16 @@ public class PhiArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "chatml"; // Phi-3+ uses ChatML format
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "phi.gguf.path";
+    }
+
+    @Override
     public SameDiff buildGraph(GGMLMetadata metadata, Map<String, INDArray> weights, ConversionOptions options) {
         SameDiff sd = SameDiff.create();
         ArchitectureConfig config = getConfig(metadata);
@@ -326,6 +336,11 @@ public class PhiArchitecture implements ModelArchitecture {
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
         }
 
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
+        }
+
         // Dot-product attention
         SDVariable attnOut = sd.nn.dotProductAttentionV2(
                 "attn_out_" + layerIdx,
@@ -413,6 +428,11 @@ public class PhiArchitecture implements ModelArchitecture {
             k = new FusedRoPE(sd, k, config.getRopeType(), 0,
                     config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+        }
+
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_phi3_" + layerIdx, q.dataType());
         }
 
         // Dot-product attention

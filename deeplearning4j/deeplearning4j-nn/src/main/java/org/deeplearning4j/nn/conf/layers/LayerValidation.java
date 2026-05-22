@@ -96,7 +96,7 @@ public class LayerValidation {
             if (layer.getConstraints() == null || layer.constraints.isEmpty()) {
                 List<LayerConstraint> allConstraints = new ArrayList<>();
                 if (allParamConstraints != null && !layer.initializer().paramKeys(layer).isEmpty()) {
-                    for (LayerConstraint c : allConstraints) {
+                    for (LayerConstraint c : allParamConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().paramKeys(layer)));
                         allConstraints.add(c2);

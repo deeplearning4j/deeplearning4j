@@ -62,17 +62,11 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   };
 
   if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
-    // this is edge case, [3, 4] + [] = []
-    if ((shape::isEmptyConst(x) && shape::rank(x) == 0) || (shape::isEmptyConst(y) && shape::rank(y) == 0)) {
-      auto desc = ShapeBuilders::emptyShapeInfo(dtype);
-      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
-      return shapeList;
-    }
-
-    sd::LongType *newshape = nullptr;
-    ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    // NOTE: newshape is already a cached pointer from ConstantShapeHelper, don't delete it
-    shapeList->push_back(newshape);
+    // TF semantics: broadcastableOp(empty, anything) -> empty scalar
+    // broadcastableOp(anything, empty) -> empty scalar
+    auto desc = ShapeBuilders::emptyShapeInfo(dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
+    return shapeList;
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
       shapeList->push_back(contiguousShapeFrom(x));

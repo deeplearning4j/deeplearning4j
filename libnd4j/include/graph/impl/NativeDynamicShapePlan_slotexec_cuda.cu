@@ -55,11 +55,36 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
   int targetCount = 0;
   bool useHeap = false;
 
+  // Build a per-slot GAP bitmap from the composite replay schedule (if any).
+  // GAP slots execute live — their outputs must NOT be prezeroed because
+  // islands captured after them read the live GAP results. Zeroing them
+  // would cause e.g. tanh/sigmoid to see 0 inputs and produce wrong values.
+  bool hasComposite = !seg.exec.compositeReplaySchedule.units.empty();
+  std::vector<bool> isGapSlot;
+  if (hasComposite) {
+    isGapSlot.resize(numSlots_, false);
+    for (const auto& unit : seg.exec.compositeReplaySchedule.units) {
+      if (unit.kind == REPLAY_UNIT_GAP) {
+        for (int gs = unit.startSlot; gs <= unit.endSlot && gs < numSlots_; gs++) {
+          if (gs >= 0) isGapSlot[gs] = true;
+        }
+      }
+    }
+  }
+
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     if (s < 0 || s >= numSlots_) continue;
     NativeSlot& slot = slots_[s];
 
     if (!slot.needsPrezero()) continue;
+
+    // GAP slots in a composite replay schedule execute live; their outputs
+    // are inputs to subsequently captured islands. Never zero them here.
+    if (hasComposite && isGapSlot[s]) {
+      DSP_DIAG(MEMORY, "prezeroSegmentOutputs: SKIP slot=%d op=%s (GAP slot in composite schedule)",
+               s, slot.ident.opName.c_str());
+      continue;
+    }
 
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];

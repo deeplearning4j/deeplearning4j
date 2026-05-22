@@ -675,9 +675,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             return getZ(op, oc);
         }
 
-        val x = OpaqueNDArray.fromINDArray(getX(op, oc));
+        INDArray xArr = getX(op, oc);
+        INDArray zArr = getZ(op, oc);
+        val x = OpaqueNDArray.fromINDArray(xArr);
         val scalar = OpaqueNDArray.fromINDArray(op.scalar());
-        val z =  OpaqueNDArray.fromINDArray(getZ(op, oc));
+        // When x == z (in-place op like muli), reuse x to avoid a second
+        // fromINDArray call on the same buffer which may trigger stale H→D sync.
+        val z = (xArr == zArr) ? x : OpaqueNDArray.fromINDArray(zArr);
 
 
         switch (op.getOpType()) {
@@ -746,6 +750,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             profilingConfigurableHookOut(op, oc, st);
             return;
+        }
+
+        // In-place transform on a view: dup to a contiguous array, execute, write back.
+        // Views share a DataBuffer with a parent array. OpaqueNDArray.fromINDArray() calls
+        // syncToSpecial() on the shared buffer which can interfere with per-element tracking
+        // when the same OpaqueNDArray serves as both x and z. This matches the CUDA fix.
+        boolean viewInPlace = false;
+        INDArray originalView = null;
+        if (x == z && x != null && x.isView()) {
+            viewInPlace = true;
+            originalView = x;
+            x = x.dup(x.ordering());
+            z = x;
+            if (oc != null) {
+                oc.setInputArray(0, x);
+                oc.setOutputArray(0, z);
+            } else {
+                op.setX(x);
+                op.setZ(z);
+            }
         }
 
         //redirect assign so we support more ops cases lke strings
@@ -887,6 +911,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
+
+        // Copy results from the temporary contiguous array back to the original view.
+        if (viewInPlace && originalView != null) {
+            originalView.assign(z);
+        }
 
         profilingConfigurableHookOut(op, oc, st);
 

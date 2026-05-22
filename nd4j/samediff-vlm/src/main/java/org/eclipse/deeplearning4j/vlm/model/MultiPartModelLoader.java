@@ -79,7 +79,7 @@ public class MultiPartModelLoader {
         "embed_tokens", "embeddings", "token_embeddings"
     };
     private static final String[] DECODER_NAMES = {
-        "decoder", "decoder_model", "model", "language_model"
+        "decoder", "decoder_model", "decoder_model_merged", "model", "language_model"
     };
 
     /**

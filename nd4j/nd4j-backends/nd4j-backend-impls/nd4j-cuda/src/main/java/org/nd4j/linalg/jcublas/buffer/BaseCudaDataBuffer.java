@@ -1707,20 +1707,37 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void write(DataOutputStream out) throws IOException {
         lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
+        // Use force-sync to ensure D2H copy happens even when the buffer is marked
+        // constant (via setCloseable(false)) or DSP replay is active. Regular
+        // synchronizeHostData uses dbSyncToPrimary (forceSync=false) which skips
+        // D2H for constant buffers, causing serialization to read stale zeros from
+        // the unsynced host buffer instead of the actual device data.
+        Nd4j.getExecutioner().commit();
+        if (!wasClosed())
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbForceSyncToPrimary(opaqueBuffer());
         super.write(out);
     }
 
     @Override
     public void write(OutputStream dos) {
         lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
+        // Use force-sync for the same reason as write(DataOutputStream): constant
+        // buffers must be force-synced to get actual device data into the host buffer.
+        Nd4j.getExecutioner().commit();
+        if (!wasClosed())
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbForceSyncToPrimary(opaqueBuffer());
         super.write(dos);
     }
 
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
         lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
+        // Use force-sync: constant buffers (marked via setCloseable(false)) must have
+        // their device data force-synced to host before serialization. The regular
+        // synchronizeHostData (forceSync=false) skips D2H for constant buffers,
+        // causing the serialized bytes to be stale zeros from the host buffer.
+        Nd4j.getExecutioner().commit();
+        if (!wasClosed())
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbForceSyncToPrimary(opaqueBuffer());
         stream.defaultWriteObject();
         write(stream);
     }

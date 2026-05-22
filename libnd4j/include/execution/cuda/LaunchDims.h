@@ -720,6 +720,10 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_DIGAMMA getEnvVariable("BLOCK_SIZE_DIGAMMA", 512)
 #define SHARED_MEM_SIZE_DIGAMMA getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", 1024)
 
+#define GRID_SIZE_LGAMMA getEnvVariable("GRID_SIZE_LGAMMA", 256)
+#define BLOCK_SIZE_LGAMMA getEnvVariable("BLOCK_SIZE_LGAMMA", 512)
+#define SHARED_MEM_SIZE_LGAMMA getEnvVariable("SHARED_MEM_SIZE_LGAMMA", 1024)
+
 
 #define GRID_SIZE_FILL_TRI getEnvVariable("GRID_SIZE_FILL_TRI", 256)
 #define BLOCK_SIZE_FILL_TRI getEnvVariable("BLOCK_SIZE_FILL_TRI", 512)

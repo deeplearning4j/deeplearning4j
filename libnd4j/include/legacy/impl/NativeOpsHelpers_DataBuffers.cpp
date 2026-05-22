@@ -338,6 +338,16 @@ OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType
 
   if (special != nullptr) {
     buffer->setSpecial(special, elements);
+    // Mark device buffer as authoritative so copyBuffer's memcpyWithT sees
+    // isSpecialActual()=true and performs D2D copy. Without this, the external
+    // buffer's actuality counters are all zero (from setCountersToZero in
+    // the DataBuffer constructor), so neither isSpecialActual() nor
+    // isPrimaryActual() returns true, and the copy silently does nothing —
+    // leaving the destination buffer full of zeros.
+    auto db = buffer->dataBuffer();
+    if (db != nullptr) {
+      db->writeSpecial();
+    }
   } else if (primary != nullptr) {
     // After clearing the stale special buffer and setting primary, the sync counters
     // still indicate "special is more recent" (from the initial writeSpecial() in the

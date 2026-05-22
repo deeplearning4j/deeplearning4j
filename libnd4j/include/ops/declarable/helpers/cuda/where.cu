@@ -449,7 +449,7 @@ void _where(LaunchContext* context, NDArray& condition, NDArray& output, memory:
                           (stream, condition.specialBuffer(), condition.specialShapeInfo(),
                            output.specialBuffer(), output.specialShapeInfo(),
                            dPositions, dBuffer, xLen),
-                          SD_COMMON_TYPES, SD_INDEXING_TYPES);
+                          SD_COMMON_TYPES, SD_NUMERIC_TYPES);
 
     NDArray::registerSpecialUse({&output}, {&condition});
 
@@ -563,7 +563,7 @@ BUILD_DOUBLE_TEMPLATE(void writeOrderedCoordinatesLauncher,
                       (const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
                        void* vz, const LongType* zShapeInfo, const LongType* positions,
                        const LongType* flags, LongType length),
-                      SD_COMMON_TYPES, SD_INDEXING_TYPES);
+                      SD_COMMON_TYPES, SD_NUMERIC_TYPES);
 
 BUILD_DOUBLE_TEMPLATE(void whereElementWiseLauncher,
                       (const cudaStream_t* stream, const void* vcond, const LongType* condShapeInfo,

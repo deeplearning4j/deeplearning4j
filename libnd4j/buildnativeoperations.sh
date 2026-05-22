@@ -630,6 +630,8 @@ MLIR="${MLIR:-OFF}"
 MLIR_VERSION="${MLIR_VERSION:-18}"
 MLIR_GPU="${MLIR_GPU:-OFF}"
 TRITON="${TRITON:-OFF}"
+BUILD_SDX_STANDALONE="${BUILD_SDX_STANDALONE:-OFF}"
+SDX_INCLUDE_TRITON="${SDX_INCLUDE_TRITON:-}"
 
 # Dependency cache - persists built dependencies across 'mvn clean'
 DEP_CACHE="${DEP_CACHE:-ON}"
@@ -1487,6 +1489,42 @@ do
                     exit 1
                     ;;
             esac
+            shift # past argument
+            ;;
+        --build-sdx-standalone)
+            BUILD_SDX_STANDALONE="$value"
+            case "$value" in
+                ON)
+                    print_colored "green" "✓ SDX standalone build enabled"
+                    ;;
+                OFF)
+                    print_colored "blue" "✓ SDX standalone build disabled"
+                    ;;
+                *)
+                    print_colored "red" "❌ ERROR: Invalid --build-sdx-standalone value '$value'"
+                    print_colored "yellow" "    Valid options: ON, OFF"
+                    exit 1
+                    ;;
+            esac
+            shift # past argument
+            ;;
+        --sdx-include-triton)
+            if [ -n "$value" ]; then
+                SDX_INCLUDE_TRITON="$value"
+                case "$value" in
+                    ON)
+                        print_colored "green" "✓ SDX will include Triton"
+                        ;;
+                    OFF)
+                        print_colored "green" "✓ SDX will exclude Triton (smaller binary)"
+                        ;;
+                    *)
+                        print_colored "red" "❌ ERROR: Invalid --sdx-include-triton value '$value'"
+                        print_colored "yellow" "    Valid options: ON, OFF (or empty to inherit from parent build)"
+                        exit 1
+                        ;;
+                esac
+            fi
             shift # past argument
             ;;
         --dep-cache)
@@ -2603,6 +2641,10 @@ if [ "$MLIR" == "ON" ]; then
     fi
 fi
 TRITON_CMAKE="-DSD_TRITON=${TRITON}"
+SDX_STANDALONE_CMAKE="-DSD_BUILD_SDX_STANDALONE=${BUILD_SDX_STANDALONE}"
+if [ -n "$SDX_INCLUDE_TRITON" ]; then
+    SDX_STANDALONE_CMAKE="${SDX_STANDALONE_CMAKE} -DSDX_INCLUDE_TRITON=${SDX_INCLUDE_TRITON}"
+fi
 UNITY_BUILD_CMAKE="-DSD_UNITY_BUILD=${UNITY_BUILD}"
 
 # Dependency cache CMake arguments
@@ -2643,6 +2685,8 @@ echo MLIR                = "$MLIR"
 echo MLIR_VERSION        = "$MLIR_VERSION"
 echo MLIR_GPU            = "$MLIR_GPU"
 echo TRITON              = "$TRITON"
+echo SDX_STANDALONE      = "$BUILD_SDX_STANDALONE"
+echo SDX_INCLUDE_TRITON  = "$SDX_INCLUDE_TRITON"
 echo UNITY_BUILD         = "$UNITY_BUILD"
 echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
 echo USE_LTO             = "$USE_LTO"
@@ -2707,6 +2751,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             $DEP_CACHE_CMAKE \
             $MLIR_ARG \
             $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
             $UNITY_BUILD_CMAKE \
             "$SHARED_LIBS_ARG" \
@@ -2742,6 +2787,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             $DEP_CACHE_CMAKE \
             $MLIR_ARG \
             $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
             $UNITY_BUILD_CMAKE \
             "$SHARED_LIBS_ARG" \
@@ -2811,6 +2857,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         $DEP_CACHE_CMAKE \
         $MLIR_ARG \
         $TRITON_CMAKE \
+        $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
@@ -2853,6 +2900,7 @@ else
         $DEP_CACHE_CMAKE \
         $MLIR_ARG \
         $TRITON_CMAKE \
+        $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
@@ -3046,6 +3094,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
             $UNITY_BUILD_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
@@ -3060,6 +3109,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
             $UNITY_BUILD_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \

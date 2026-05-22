@@ -681,7 +681,8 @@ public class TestQwen35Pipeline {
         int stride = 256;
 
         PerplexityResult result = PerplexityEvaluator.evaluate(
-                ctx.model, ctx.tokenizer, referenceText, contextLength, stride);
+                ctx.model, ctx.tokenizer, referenceText, contextLength, stride,
+                "input_ids", "lm_logits");
 
         log.info("Perplexity evaluation:");
         log.info("  Perplexity: {}", String.format("%.4f", result.getPerplexity()));

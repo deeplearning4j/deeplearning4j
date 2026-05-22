@@ -2334,7 +2334,7 @@ public class NDBase {
    */
   public INDArray reverseSequence(INDArray x, INDArray seq_lengths) {
     NDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, -1, 0));
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, 1, 0));
     try {
       return __tmp[0];
     } finally {

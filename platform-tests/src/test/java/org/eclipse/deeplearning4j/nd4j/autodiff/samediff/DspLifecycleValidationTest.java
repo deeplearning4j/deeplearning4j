@@ -42,6 +42,10 @@ import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.device.DeviceType;
+import org.nd4j.linalg.api.device.StubDeviceDescriptor;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -1268,13 +1272,22 @@ public class DspLifecycleValidationTest {
         }
     }
 
-    // ─── Real multi-device tests (skipped unless ≥2 GPUs) ──────────────────
+    // ─── Multi-device tests (uses stub topology for portability) ──────────────
 
     @Test
-    @DisplayName("Cross-device matmul execution (requires ≥2 GPUs)")
+    @DisplayName("Cross-device matmul execution (stub 2 devices)")
     public void testCrossDeviceMatmulExecution() {
-        int nDev = Nd4j.getAffinityManager().getNumberOfDevices();
-        assumeTrue(nDev >= 2, "Skipping — only " + nDev + " device(s)");
+        // Set up a 2-device stub topology so multi-device DSP paths are exercised.
+        // On CPU, replicateToDevice(1, arr) does dup() — the test verifies the DSP
+        // infrastructure handles logical multi-device correctly.
+        DeviceMemoryManager dmm = DeviceMemoryManager.getInstance();
+        StubDeviceDescriptor gpu0 = StubDeviceDescriptor.builder(DeviceType.CUDA_GPU, 0)
+                .deviceName("StubGPU-0").totalMemory(16L * 1024 * 1024 * 1024)
+                .availableMemory(14L * 1024 * 1024 * 1024).addPeerDevice(1).build();
+        StubDeviceDescriptor gpu1 = StubDeviceDescriptor.builder(DeviceType.CUDA_GPU, 1)
+                .deviceName("StubGPU-1").totalMemory(16L * 1024 * 1024 * 1024)
+                .availableMemory(14L * 1024 * 1024 * 1024).addPeerDevice(0).build();
+        dmm.configureStubTopology(Arrays.asList(gpu0, gpu1));
 
         // Verify round-trip replication works before the actual test
         {
@@ -1347,14 +1360,22 @@ public class DspLifecycleValidationTest {
             if (x1.closeable() && !x1.wasClosed()) x1.close();
         } finally {
             sd.close();
+            dmm.clearStubTopology();
         }
     }
 
     @Test
-    @DisplayName("Multi-device transfer recording (requires ≥2 GPUs)")
+    @DisplayName("Multi-device transfer recording (stub 2 devices)")
     public void testMultiDeviceTransferRecording() {
-        int nDev = Nd4j.getAffinityManager().getNumberOfDevices();
-        assumeTrue(nDev >= 2, "Skipping — only " + nDev + " device(s)");
+        // Set up a 2-device stub topology for multi-device transfer recording.
+        DeviceMemoryManager dmm = DeviceMemoryManager.getInstance();
+        StubDeviceDescriptor gpu0 = StubDeviceDescriptor.builder(DeviceType.CUDA_GPU, 0)
+                .deviceName("StubGPU-0").totalMemory(16L * 1024 * 1024 * 1024)
+                .availableMemory(14L * 1024 * 1024 * 1024).addPeerDevice(1).build();
+        StubDeviceDescriptor gpu1 = StubDeviceDescriptor.builder(DeviceType.CUDA_GPU, 1)
+                .deviceName("StubGPU-1").totalMemory(16L * 1024 * 1024 * 1024)
+                .availableMemory(14L * 1024 * 1024 * 1024).addPeerDevice(0).build();
+        dmm.configureStubTopology(Arrays.asList(gpu0, gpu1));
 
         // Enable transfer-related diagnostics and run a decode fixture
         DspDiagnostics.enableCategories(DspDiagnostics.TRANSFER | DspDiagnostics.MULTI_DEVICE);
@@ -1384,6 +1405,7 @@ public class DspLifecycleValidationTest {
         } finally {
             sd.close();
             DspDiagnostics.clear();
+            dmm.clearStubTopology();
         }
     }
 

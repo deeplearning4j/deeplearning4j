@@ -133,6 +133,17 @@
     <profiles>
 
         <profile>
+            <id>sdx</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-sdx</module>
+                <module>nd4j-sdx-preset</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>aurora</id>
             <activation>
                 <activeByDefault>false</activeByDefault>

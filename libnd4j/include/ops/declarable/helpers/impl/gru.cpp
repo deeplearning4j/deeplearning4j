@@ -174,7 +174,7 @@ void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
   NDArray *gatesULike = gates->ulike();
   NDArray temp = *gatesULike;
   MmulHelper::mmul(x, Wx, &temp);  // [bS, nIn] × [nIn, 3*nOut] = [bS, 3*nOut]
-  temp += *b;
+  temp.applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), b, &temp, false);
 
   MmulHelper::mmul(hI, Wh, gates);  // [bS, nOut] × [nOut, 3*nOut] = [bS, 3*nOut]
 
@@ -640,7 +640,7 @@ void gruTimeLoopBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray*
   const int bS = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
 
-  std::vector<sd::LongType> shape = {bS, 3 * nOut};
+  std::vector<sd::LongType> shape = {sL, bS, 3 * nOut};
   std::vector<sd::LongType> hShape = {sL + 1, bS, nOut};
   NDArray gates(x->ordering(), shape, dLdh->dataType(), x->getContext());
   NDArray h(x->ordering(), hShape, dLdh->dataType(), x->getContext());

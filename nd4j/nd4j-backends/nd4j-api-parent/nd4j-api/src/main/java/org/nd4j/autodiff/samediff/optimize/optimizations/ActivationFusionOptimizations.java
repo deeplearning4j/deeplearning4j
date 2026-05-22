@@ -28,8 +28,16 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.impl.reduce.same.Max;
+import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Swish;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid;
 
@@ -291,6 +299,160 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
                 log.warn("Failed to fuse SwiGLU pattern: {}", e.getMessage());
                 return false;
             }
+        }
+    }
+
+    /**
+     * Fuses decomposed softmax pattern into a single softmax op.
+     *
+     * Pattern: div(exp(sub(x, reduce_max(x, axis, keepDims=true))),
+     *              reduce_sum(exp(sub(x, reduce_max(x, axis, keepDims=true))), axis, keepDims=true))
+     *
+     * Anchors on DivOp: numerator must be exp(...), denominator must be
+     * reduce_sum(exp(...)) where both exp ops share the same shifted input.
+     */
+    public static class FuseSoftmaxPattern implements Optimizer {
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (!(op.getOp() instanceof DivOp)) {
+                return false;
+            }
+
+            List<String> divInputs = op.getInputsToOp();
+            if (divInputs == null || divInputs.size() != 2) {
+                return false;
+            }
+
+            String numeratorVar = divInputs.get(0);
+            String denominatorVar = divInputs.get(1);
+
+            // Numerator must be produced by exp
+            SameDiffOp expOp = producerOp(sd, helper, numeratorVar);
+            if (expOp == null || !(expOp.getOp() instanceof Exp)) {
+                return false;
+            }
+
+            // Denominator must be produced by reduce_sum
+            SameDiffOp sumOp = producerOp(sd, helper, denominatorVar);
+            if (sumOp == null || !(sumOp.getOp() instanceof Sum)) {
+                return false;
+            }
+
+            // reduce_sum's input must be the same exp output (numerator)
+            List<String> sumInputs = sumOp.getInputsToOp();
+            if (sumInputs == null || sumInputs.isEmpty() || !sumInputs.get(0).equals(numeratorVar)) {
+                return false;
+            }
+
+            // exp's input must come from sub
+            List<String> expInputs = expOp.getInputsToOp();
+            if (expInputs == null || expInputs.isEmpty()) {
+                return false;
+            }
+            String shiftedVar = expInputs.get(0);
+            SameDiffOp subOp = producerOp(sd, helper, shiftedVar);
+            if (subOp == null || !(subOp.getOp() instanceof SubOp)) {
+                return false;
+            }
+
+            // sub's inputs: (x, reduce_max(x))
+            List<String> subInputs = subOp.getInputsToOp();
+            if (subInputs == null || subInputs.size() != 2) {
+                return false;
+            }
+            String xVar = subInputs.get(0);
+            String maxVar = subInputs.get(1);
+
+            // maxVar must come from reduce_max
+            SameDiffOp maxOp = producerOp(sd, helper, maxVar);
+            if (maxOp == null || !(maxOp.getOp() instanceof Max)) {
+                return false;
+            }
+
+            // reduce_max's input must be x
+            List<String> maxInputs = maxOp.getInputsToOp();
+            if (maxInputs == null || maxInputs.isEmpty() || !maxInputs.get(0).equals(xVar)) {
+                return false;
+            }
+
+            // Verify single-consumer chains (each intermediate feeds only the next op)
+            if (!hasOnlyConsumer(sd, helper, maxVar, subOp.getName())) return false;
+            if (!hasOnlyConsumer(sd, helper, shiftedVar, expOp.getName())) return false;
+            // exp output feeds both the div numerator AND the sum — must have exactly 2 consumers
+            Variable expOutVar = helper != null ? helper.getVariable(numeratorVar) : sd.getVariables().get(numeratorVar);
+            if (expOutVar == null) return false;
+            List<String> expUsers = expOutVar.getInputsForOp();
+            if (expUsers == null || expUsers.size() != 2) return false;
+            if (!hasOnlyConsumer(sd, helper, denominatorVar, op.getName())) return false;
+
+            // Extract the dimension from reduce_max (it and reduce_sum should use the same axis)
+            int dimension = -1;
+            DifferentialFunction maxFunc = maxOp.getOp();
+            if (maxFunc instanceof BaseReduceOp) {
+                long[] dims = ((BaseReduceOp) maxFunc).dimensions().toLongVector();
+                if (dims != null && dims.length == 1) {
+                    dimension = (int) dims[0];
+                }
+            }
+
+            // Get div output
+            List<String> divOutputs = op.getOutputsOfOp();
+            if (divOutputs == null || divOutputs.isEmpty()) return false;
+            String divOutputVar = divOutputs.get(0);
+
+            log.info("Fusing decomposed softmax: x={}, dim={}", xVar, dimension);
+
+            try {
+                SDVariable x = sd.getVariable(xVar);
+                if (x == null) return false;
+
+                SDVariable fused = new SoftMax(sd, new SDVariable[]{x}, dimension).outputVariable();
+
+                OptimizationUtils.replaceOpInputsWith(sd, helper, divOutputVar, fused.name());
+
+                List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(divOutputVar);
+
+                // Remove all ops in the chain
+                OptimizationUtils.removeOp(sd, helper, op.getName());       // div
+                OptimizationUtils.removeOp(sd, helper, sumOp.getName());    // reduce_sum
+                OptimizationUtils.removeOp(sd, helper, expOp.getName());    // exp
+                OptimizationUtils.removeOp(sd, helper, subOp.getName());    // sub
+                OptimizationUtils.removeOp(sd, helper, maxOp.getName());    // reduce_max
+
+                // Remove intermediate variables (not x — it's the input)
+                OptimizationUtils.removeVariable(sd, helper, divOutputVar);
+                OptimizationUtils.removeVariable(sd, helper, denominatorVar);
+                OptimizationUtils.removeVariable(sd, helper, numeratorVar);
+                OptimizationUtils.removeVariable(sd, helper, shiftedVar);
+                OptimizationUtils.removeVariable(sd, helper, maxVar);
+
+                sd.renameVariable(fused.name(), divOutputVar);
+                if (wasOutput) {
+                    graphOutputs.add(divOutputVar);
+                }
+
+                return true;
+            } catch (Exception e) {
+                log.warn("Failed to fuse softmax pattern: {}", e.getMessage());
+                return false;
+            }
+        }
+
+        private SameDiffOp producerOp(SameDiff sd, OptimizationHelper helper, String varName) {
+            Variable v = helper != null ? helper.getVariable(varName) : sd.getVariables().get(varName);
+            if (v == null) return null;
+            String opName = v.getOutputOfOp();
+            if (opName == null) return null;
+            return sd.getOps().get(opName);
+        }
+
+        private boolean hasOnlyConsumer(SameDiff sd, OptimizationHelper helper, String varName, String expectedConsumerOp) {
+            Variable v = helper != null ? helper.getVariable(varName) : sd.getVariables().get(varName);
+            if (v == null) return false;
+            List<String> users = v.getInputsForOp();
+            return users != null && users.size() == 1 && expectedConsumerOp.equals(users.get(0));
         }
     }
 

@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.reduce3.BaseReduce3Op;
@@ -265,6 +266,9 @@ public class DynamicShapePlanCompiler {
                 } else if (op instanceof BaseTransformFloatOp) {
                     legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_FLOAT;
                     legacyOpNum = ((BaseTransformFloatOp) op).opNum();
+                } else if (op instanceof BaseTransformBoolOp && ((BaseTransformBoolOp) op).opType() == Op.Type.PAIRWISE_BOOL) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_PAIRWISE_BOOL;
+                    legacyOpNum = ((BaseTransformBoolOp) op).opNum();
                 } else if (op instanceof BaseTransformBoolOp) {
                     legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_BOOL;
                     legacyOpNum = ((BaseTransformBoolOp) op).opNum();
@@ -493,11 +497,18 @@ public class DynamicShapePlanCompiler {
             String[] sArgs = new String[0];
             if (isCustomOp && op instanceof DynamicCustomOp) {
                 DynamicCustomOp dynOp = (DynamicCustomOp) op;
-                iArgs = dynOp.iArgs();
-                tArgs = dynOp.tArgs();
-                bArgs = dynOp.bArgs();
-                dArgs = dynOp.dArgs();
-                sArgs = dynOp.sArgs();
+                // Guard against ops (e.g. BatchMmulBp) that return null from arg accessors
+                // when their argument lists are null instead of empty.
+                long[] rawIArgs = dynOp.iArgs();
+                double[] rawTArgs = dynOp.tArgs();
+                boolean[] rawBArgs = dynOp.bArgs();
+                DataType[] rawDArgs = dynOp.dArgs();
+                String[] rawSArgs = dynOp.sArgs();
+                iArgs = rawIArgs != null ? rawIArgs : new long[0];
+                tArgs = rawTArgs != null ? rawTArgs : new double[0];
+                bArgs = rawBArgs != null ? rawBArgs : new boolean[0];
+                dArgs = rawDArgs != null ? rawDArgs : new DataType[0];
+                sArgs = rawSArgs != null ? rawSArgs : new String[0];
 
                 // strided_slice: iArgs are [beginMask, ellipsisMask, endMask, newAxisMask, shrinkAxisMask].
                 // When begin/end/strides come as input tensors (numInputs > 1), the Java op may also

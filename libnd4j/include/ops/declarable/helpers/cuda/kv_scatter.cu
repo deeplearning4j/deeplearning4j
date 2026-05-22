@@ -389,6 +389,14 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                      const void* cachePosPtr, LaunchContext* context) {
     auto stream = context->getCudaStream();
 
+    // Auto-cast newKv to match cache dtype (e.g. FLOAT→HALF after FusedRoPE promotion).
+    // Cache dtype is authoritative — it's the persistent storage format.
+    NDArray* castBuf = nullptr;
+    if (pastKv->dataType() != newKv->dataType()) {
+        castBuf = newKv->cast(pastKv->dataType());
+        newKv = castBuf;
+    }
+
     // newKv is BSHD [batch, seqKV, numKvHeads, headDim]
     auto batch = newKv->sizeAt(0);
     auto seqKV = newKv->sizeAt(1);
@@ -398,12 +406,6 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
     // pastKv is BHSD [batch, numKvHeads, maxSeqLen, headDim]
     auto pastMaxSeqLen = pastKv->sizeAt(2);
 
-    if (pastKv->dataType() != newKv->dataType()) {
-        std::string msg = "kvInPlaceWrite: pastKv dtype " + std::to_string((int)pastKv->dataType()) +
-                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
-        THROW_EXCEPTION(msg.c_str());
-    }
-
     NDArray::prepareSpecialUse({pastKv}, {newKv});
 
     BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteCudaLauncher,
@@ -412,6 +414,8 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                           SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({pastKv}, {newKv});
+
+    delete castBuf;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -479,6 +483,14 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
                          const void* cachePosPtr, LaunchContext* context) {
     auto stream = context->getCudaStream();
 
+    // Auto-cast newKv to match cache dtype (e.g. FLOAT→HALF after FusedRoPE promotion).
+    // Cache dtype is authoritative — it's the persistent storage format.
+    NDArray* castBuf = nullptr;
+    if (cache->dataType() != newKv->dataType()) {
+        castBuf = newKv->cast(cache->dataType());
+        newKv = castBuf;
+    }
+
     auto batch = newKv->sizeAt(0);
     auto seqKV = newKv->sizeAt(1);
     // innerSize = everything after the seq dimension (heads*dim for rank4, features for rank3)
@@ -489,12 +501,6 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
 
     auto cacheMaxSeqLen = cache->sizeAt(1);
 
-    if (cache->dataType() != newKv->dataType()) {
-        std::string msg = "kvInPlaceWriteBSHD: cache dtype " + std::to_string((int)cache->dataType()) +
-                          " must match newKv dtype " + std::to_string((int)newKv->dataType());
-        THROW_EXCEPTION(msg.c_str());
-    }
-
     NDArray::prepareSpecialUse({cache}, {newKv});
 
     BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteBSHDCudaLauncher,
@@ -503,6 +509,8 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
                           SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({cache}, {newKv});
+
+    delete castBuf;
 }
 
 }  // namespace helpers

@@ -328,11 +328,11 @@ __global__ __launch_bounds__(256, 2) void fusedRoPEBackwardKernel(
 // Fused RoPE with pre-computed cos/sin (cached variant)
 //////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
+template <typename T, typename CS = T>
 SD_KERNEL __launch_bounds__(256, 2) void fusedRoPECachedKernel(
     const T* __restrict__ input,
-    const T* __restrict__ cosValues,
-    const T* __restrict__ sinValues,
+    const CS* __restrict__ cosValues,
+    const CS* __restrict__ sinValues,
     T* __restrict__ output,
     const LongType batch,
     const LongType seqLen,
@@ -799,76 +799,76 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
     return;
   }
 
-  // Cast cos/sin to match input dtype if they differ (e.g., cos/sin are FP16 but input is FP32).
-  // The kernel uses a single template type T for all buffers — mismatched dtypes cause
-  // reinterpret_cast to read garbage (e.g., two FP16 values combined into one FP32).
-  NDArray* cosWork = cosValues;
-  NDArray* sinWork = sinValues;
-  NDArray* cosCast = nullptr;
-  NDArray* sinCast = nullptr;
-  if (cosValues->dataType() != dtype) {
-    cosCast = cosValues->cast(dtype);
-    cosWork = cosCast;
-    // Recompute strides for the casted array (cast always produces contiguous)
-    cosStride0 = 0;
-    cosStride1 = 0;
-    cosStride2 = 1;
-    auto castRank = cosWork->rankOf();
-    if (castRank == 2) {
-      cosStride0 = 0;
-      cosStride1 = cosWork->strideAt(0);
-      cosStride2 = cosWork->strideAt(1);
-    } else if (castRank == 3) {
-      cosStride0 = cosWork->strideAt(0);
-      cosStride1 = cosWork->strideAt(1);
-      cosStride2 = cosWork->strideAt(2);
-    } else if (castRank == 4) {
-      cosStride0 = cosWork->strideAt(0);
-      cosStride1 = cosWork->strideAt(1);
-      cosStride2 = cosWork->strideAt(3);
-    }
-  }
-  if (sinValues->dataType() != dtype) {
-    sinCast = sinValues->cast(dtype);
-    sinWork = sinCast;
-  }
-
-  NDArray::prepareSpecialUse({output}, {input, cosWork, sinWork});
+  // The kernel uses separate template types for input (T) and cos/sin (CS), reading
+  // cos/sin in their native dtype and casting to float in-register. This eliminates
+  // temporary NDArray allocations from ->cast() which are unsafe during CUDA graph
+  // capture (the cast allocates device memory + launches a transform kernel, and the
+  // delete frees/nulls the buffer — on replay the baked-in kernel reads stale addresses).
+  NDArray::prepareSpecialUse({output}, {input, cosValues, sinValues});
 
   dim3 launchDims = getLaunchDims("fusedRopeCached");
   int threadsPerBlock = launchDims.y;
   int numBlocks = (totalPairs + threadsPerBlock - 1) / threadsPerBlock;
 
-  if (dtype == DataType::FLOAT32) {
-    fusedRoPECachedKernel<float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+  auto csDtype = cosValues->dataType();
+
+  // Dispatch: <T=input type, CS=cos/sin type>
+  // The kernel reads cos/sin as CS and casts to float in-register (lines 360-361).
+  if (dtype == DataType::FLOAT32 && csDtype == DataType::FLOAT32) {
+    fusedRoPECachedKernel<float, float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
         reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(cosWork->specialBuffer()),
-        reinterpret_cast<const float*>(sinWork->specialBuffer()),
+        reinterpret_cast<const float*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float*>(sinValues->specialBuffer()),
         reinterpret_cast<float*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::DOUBLE) {
-    fusedRoPECachedKernel<double><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(cosWork->specialBuffer()),
-        reinterpret_cast<const double*>(sinWork->specialBuffer()),
-        reinterpret_cast<double*>(output->specialBuffer()),
+  } else if (dtype == DataType::FLOAT32 && csDtype == DataType::HALF) {
+    fusedRoPECachedKernel<float, float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const float*>(input->specialBuffer()),
+        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
+        reinterpret_cast<float*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::HALF) {
-    fusedRoPECachedKernel<float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+  } else if (dtype == DataType::HALF && csDtype == DataType::HALF) {
+    fusedRoPECachedKernel<float16, float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
         reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(cosWork->specialBuffer()),
-        reinterpret_cast<const float16*>(sinWork->specialBuffer()),
+        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
         reinterpret_cast<float16*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
+  } else if (dtype == DataType::HALF && csDtype == DataType::FLOAT32) {
+    fusedRoPECachedKernel<float16, float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const float16*>(input->specialBuffer()),
+        reinterpret_cast<const float*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float*>(sinValues->specialBuffer()),
+        reinterpret_cast<float16*>(output->specialBuffer()),
+        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
+  } else if (dtype == DataType::DOUBLE && csDtype == DataType::DOUBLE) {
+    fusedRoPECachedKernel<double, double><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const double*>(input->specialBuffer()),
+        reinterpret_cast<const double*>(cosValues->specialBuffer()),
+        reinterpret_cast<const double*>(sinValues->specialBuffer()),
+        reinterpret_cast<double*>(output->specialBuffer()),
+        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
+  } else if (dtype == DataType::DOUBLE && csDtype == DataType::FLOAT32) {
+    fusedRoPECachedKernel<double, float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const double*>(input->specialBuffer()),
+        reinterpret_cast<const float*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float*>(sinValues->specialBuffer()),
+        reinterpret_cast<double*>(output->specialBuffer()),
+        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
+  } else if (dtype == DataType::DOUBLE && csDtype == DataType::HALF) {
+    fusedRoPECachedKernel<double, float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const double*>(input->specialBuffer()),
+        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
+        reinterpret_cast<double*>(output->specialBuffer()),
+        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
   } else {
-    THROW_EXCEPTION("fusedRoPECached: Unsupported data type");
+    THROW_EXCEPTION("fusedRoPECached: Unsupported data type combination");
   }
 
   DebugHelper::checkGlobalErrorCode("fusedRoPECachedKernel failed");
-  NDArray::registerSpecialUse({output}, {input, cosWork, sinWork});
-
-  if (cosCast != nullptr) delete cosCast;
-  if (sinCast != nullptr) delete sinCast;
+  NDArray::registerSpecialUse({output}, {input, cosValues, sinValues});
 }
 
 void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
@@ -1169,12 +1169,17 @@ void fusedAttentionProjection(NDArray* attentionOutput, NDArray* Wo, NDArray* bi
   NDArray::prepareSpecialUse({output}, {attentionOutput, Wo, bias});
 
   // Step 1: reshape attention output to 2D [B*S, hidden_dim]
+  // copyToNewBuff=false: create a view sharing the same DataBuffer.
+  // This avoids allocating new device memory + launching a copy kernel,
+  // which is unsafe during CUDA graph capture (baked-in addresses from temporary
+  // allocations become stale on replay). reshape() verifies contiguity internally
+  // and only copies when strides are incompatible.
   std::vector<LongType> flatShape = {batch * seqLen, hiddenDim};
-  NDArray* attnFlat = attentionOutput->reshape('c', flatShape);
+  NDArray* attnFlat = attentionOutput->reshape('c', flatShape, false);
 
   // Step 2: reshape output to 2D [B*S, out_dim]
   std::vector<LongType> outFlat2D = {batch * seqLen, outDim};
-  NDArray* outFlat = output->reshape('c', outFlat2D);
+  NDArray* outFlat = output->reshape('c', outFlat2D, false);
 
   // Step 3: cuBLAS-backed matmul
   MmulHelper::mmul(attnFlat, Wo, outFlat, 1.0, 0.0);

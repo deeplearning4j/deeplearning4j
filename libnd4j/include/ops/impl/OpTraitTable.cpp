@@ -209,9 +209,10 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"logical_or",     BINARY_LOG},
 
         // ── Ternary elementwise ────────────────────────────────────────────
-        {"where",          TERNARY_EW | OP_TRAIT_DATA_DEPENDENT},
+        {"where",          TERNARY_EW | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
         // NOTE: "where" with 3 inputs is ternary elementwise (select).
-        //       "where" with 1 input is data-dependent (coordinate extraction).
+        //       "where" with 1 input is data-dependent (coordinate extraction)
+        //       with variable-length output → non-capturable in CUDA graphs.
         //       The DATA_DEPENDENT trait is set here; NativePlanCompiler clears it
         //       for the 3-input case at compile time (runtime input count check).
         {"select",         TERNARY_EW},
@@ -320,10 +321,10 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"create",         CONST_GEN_VALDEP},
 
         // ── Data-dependent ops (variable-length output or shape reads tensor data) ──
-        {"unique",                      DATADEP},
-        {"non_max_suppression",         DATADEP},
-        {"non_max_suppression_v3",      DATADEP},
-        {"non_max_suppression_overlaps", DATADEP},  // shape fn runs full NMS to determine output length
+        {"unique",                      DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"non_max_suppression",         DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"non_max_suppression_v3",      DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"non_max_suppression_overlaps", DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},  // shape fn runs full NMS to determine output length
         // Space/batch transforms: shape fn reads block shape, crop, and pad tensor values
         {"batch_to_space",    DATA_MOVE | DATADEP},
         {"space_to_batch",    DATA_MOVE | DATADEP},
@@ -872,9 +873,9 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"ismax",               UNARY_EW | DATADEP},
         {"nth_element",         REDUCE | DATADEP},
         {"in_top_k",            BINARY_CMP | DATADEP},
-        {"listdiff",            DATA_MOVE | DATADEP},
+        {"listdiff",            DATA_MOVE | DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
         {"percentile",          REDUCE | DATADEP},
-        {"unique_with_counts",  DATADEP},
+        {"unique_with_counts",  DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
         {"hashcode",            REDUCE | DATADEP},
         {"confusion_matrix",    CONST_GEN_VALDEP | DATADEP},
         {"histogram",           REDUCE | DATADEP},
@@ -1069,7 +1070,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"tanhgrad",            UNARY_ACT | BP},                    // alias: TanhGrad
         {"triu",                DATA_MOVE},                         // upper triangular
         {"triu_bp",             DATA_MOVE | BP},                    // upper triangular backward
-        {"where_np",            DATADEP},                           // numpy-style where
+        {"where_np",            DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},  // numpy-style where, variable-length output
     };
     return TABLE;
 }

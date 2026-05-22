@@ -952,7 +952,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
     @Execution(ExecutionMode.SAME_THREAD)
     public void testMmap1(Nd4jBackend backend) {
         // we don't support MMAP on cuda yet
-        if (Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))
+        if (backend.getClass().getName().toLowerCase().contains("cublas") ||
+            backend.getClass().getName().toLowerCase().contains("cuda"))
             return;
 
         WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()

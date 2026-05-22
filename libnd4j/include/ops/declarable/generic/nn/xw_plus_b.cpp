@@ -45,6 +45,26 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
 
   if (x->isEmpty() || w->isEmpty() || b->isEmpty()) return Status::OK;
 
+  // Auto-cast to matching dtype if inputs differ (same as tensormmul behavior).
+  NDArray* xCast = nullptr;
+  NDArray* wCast = nullptr;
+  NDArray* bCast = nullptr;
+  if (x->dataType() != w->dataType()) {
+    auto higherType = DataTypeUtils::pickPairwiseResultType(x->dataType(), w->dataType());
+    if (x->dataType() != higherType) {
+      xCast = x->cast(higherType);
+      x = xCast;
+    }
+    if (w->dataType() != higherType) {
+      wCast = w->cast(higherType);
+      w = wCast;
+    }
+  }
+  if (b->dataType() != x->dataType()) {
+    bCast = b->cast(x->dataType());
+    b = bCast;
+  }
+
   // Handle higher rank inputs by reshaping to 2D for matmul
   // This supports inputs like [batch, 1, 1, hidden] from ONNX pooler operations
   NDArray* xEffective = nullptr;
@@ -141,6 +161,9 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   if (deleteW) delete wEffective;
   if (deleteX) delete xEffective;
   if (deleteZ) delete zEffective;
+  delete xCast;
+  delete wCast;
+  delete bCast;
 
   return Status::OK;
 }
@@ -152,52 +175,39 @@ DECLARE_SHAPE_FN(xw_plus_b) {
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
   bool cTranspose = (block.getIArguments()->size() > 2 ? INT_ARG(2) == 1 : false);
 
-  // INT_ARG(0) is aTranspose (set by FuseMatMulWithAdd and used by the exec function).
-  // The weights shape is passed as-is; bTranspose handles transposition in matrixProductShape.
-  // Previously this read INT_ARG(0) as nWeightsFormat and pre-transposed weights when
-  // aTranspose=true, causing double-transposition and wrong output shapes.
   const LongType* weightsShape = inputShape->at(1);
+  auto outType = DataTypeUtils::pickPairwiseResultType(ArrayOptions::dataType(xShape),
+                                                       ArrayOptions::dataType(weightsShape));
 
   // Handle higher rank inputs
   if (shape::rank(xShape) > 2) {
-    // Calculate 2D shapes for matmul
     sd::LongType batchSize = 1;
     for (int i = 0; i < shape::rank(xShape) - 1; i++) {
       batchSize *= shape::sizeAt(xShape, i);
     }
     sd::LongType lastDim = shape::sizeAt(xShape, shape::rank(xShape) - 1);
-    
-    // Create temporary 2D shape for x
+
     std::vector<sd::LongType> x2dShape = {batchSize, lastDim};
-    auto x2dShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShape), 
-                                                                         'c', x2dShape);
-    
-    // Get the output shape from matmul
-    auto matmulOutput = ShapeUtils::matrixProductShape(x2dShapeInfo, const_cast<sd::LongType *>(weightsShape), 
+    auto x2dShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(outType, 'c', x2dShape);
+
+    auto matmulOutput = ShapeUtils::matrixProductShape(x2dShapeInfo, const_cast<sd::LongType *>(weightsShape),
                                                        aTranspose, bTranspose,
-                                                       ArrayOptions::dataType(xShape), block.getWorkspace());
-    
-    // Calculate final output shape
+                                                       outType, block.getWorkspace());
+
     std::vector<sd::LongType> outputShape;
     for (int i = 0; i < shape::rank(xShape) - 1; i++) {
       outputShape.push_back(shape::sizeAt(xShape, i));
     }
-    // Add the output dimension from the weights
     outputShape.push_back(shape::sizeAt(matmulOutput, 1));
-    
-    auto finalShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShape), 
-                                                                         'c', outputShape);
+
+    auto finalShape = ConstantShapeHelper::getInstance().createShapeInfo(outType, 'c', outputShape);
     return SHAPELIST(finalShape);
   } else {
-    // Rank 2 inputs: compute output dimensions from matmul, but always use C order.
-    // matrixProductShape returns F-order (from cuBLAS convention), but xw_plus_b
-    // needs C-order output for correct row-major semantics when used in SameDiff graphs.
     auto matmulOutput = ShapeUtils::matrixProductShape(xShape, const_cast<sd::LongType *>(weightsShape), aTranspose,
                                                       bTranspose,
-                                                      ArrayOptions::dataType(xShape), block.getWorkspace());
+                                                      outType, block.getWorkspace());
     std::vector<sd::LongType> outDims = {shape::sizeAt(matmulOutput, 0), shape::sizeAt(matmulOutput, 1)};
-    auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(xShape), 'c', outDims);
+    auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(outType, 'c', outDims);
     return SHAPELIST(outputShape);
   }
 }

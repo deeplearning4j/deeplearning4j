@@ -431,66 +431,174 @@ public class ForwardExecutionDAGBuilder {
     }
     
     /**
-     * Create topological execution order respecting dependencies.
-     * This ensures operations execute in the correct order.
+     * Create topological execution order with memory-aware scheduling.
+     *
+     * Uses Kahn's algorithm (BFS-based topo-sort) with a priority heuristic:
+     * when multiple nodes are ready (in-degree = 0), prefer nodes that free
+     * the most memory — i.e., nodes that are the last consumer of their input
+     * variables. This minimizes peak live memory by releasing buffers as early
+     * as possible.
+     *
+     * For a transformer graph with Q/K/V projections, this naturally schedules
+     * each projection's consumers immediately after it rather than interleaving
+     * branches, which keeps intermediate buffers live for shorter windows.
      */
     private List<ExecutionNode> createTopologicalOrder(Map<String, ExecutionNode> operationNodes) {
-        List<ExecutionNode> result = new ArrayList<>();
-        Set<String> visited = new HashSet<>();
-        Set<String> visiting = new HashSet<>();
-        
-        // Start with nodes that have no dependencies (constants, variables, placeholders)
+        int numNodes = operationNodes.size();
+
+        // Build in-degree map (only counting edges within operationNodes)
+        Map<String, Integer> inDegree = new HashMap<>(numNodes);
         for (ExecutionNode node : operationNodes.values()) {
-            if (node.getDependsOnOperations().isEmpty()) {
-                topologicalSort(node, operationNodes, visited, visiting, result);
+            inDegree.putIfAbsent(node.getOperationName(), 0);
+            for (String dep : node.getDependsOnOperations()) {
+                if (operationNodes.containsKey(dep)) {
+                    inDegree.merge(node.getOperationName(), 1, Integer::sum);
+                }
             }
         }
-        
-        // Then process remaining nodes
+
+        // Build reverse adjacency: dep -> list of nodes that depend on it
+        Map<String, List<String>> successors = new HashMap<>(numNodes);
         for (ExecutionNode node : operationNodes.values()) {
-            if (!visited.contains(node.getOperationName())) {
-                topologicalSort(node, operationNodes, visited, visiting, result);
+            for (String dep : node.getDependsOnOperations()) {
+                if (operationNodes.containsKey(dep)) {
+                    successors.computeIfAbsent(dep, k -> new ArrayList<>())
+                              .add(node.getOperationName());
+                }
             }
         }
-        
-        log.debug("Created topological execution order with {} nodes", result.size());
+
+        // Pre-compute consumer counts per input variable across all ops.
+        // A variable's consumer count tells us how many ops read it.
+        // When we schedule an op, we decrement consumer counts for its inputs.
+        // If a count hits 0, that variable's buffer can be freed.
+        Map<String, Integer> varConsumerCount = new HashMap<>();
+        for (ExecutionNode node : operationNodes.values()) {
+            for (String inputVar : node.getInputVariables()) {
+                varConsumerCount.merge(inputVar, 1, Integer::sum);
+            }
+        }
+        // Working copy decremented as nodes are scheduled
+        Map<String, Integer> remainingConsumers = new HashMap<>(varConsumerCount);
+
+        // Pre-compute estimated byte size per variable for size-weighted scheduling.
+        // This makes the scheduler prefer freeing large tensors over small ones,
+        // reducing peak memory more effectively than count-based scheduling.
+        Map<String, Long> varEstimatedBytes = new HashMap<>();
+        for (String varName : varConsumerCount.keySet()) {
+            varEstimatedBytes.put(varName, estimateVariableBytes(varName));
+        }
+
+        List<ExecutionNode> result = new ArrayList<>(numNodes);
+        Set<String> scheduled = new HashSet<>(numNodes);
+
+        // Priority queue sorted by size-weighted memory freed heuristic.
+        // Primary: prefer nodes that free the most bytes (not just most variables).
+        // This is critical for transformer models where matmul outputs (large) and
+        // bias vectors (small) both count as "1 variable" but differ by 100x+ in size.
+        PriorityQueue<ExecutionNode> readyQueue = new PriorityQueue<>((a, b) -> {
+            // Primary: prefer nodes that free more bytes (higher = better)
+            long bytesA = estimateFreedBytes(a, remainingConsumers, varEstimatedBytes);
+            long bytesB = estimateFreedBytes(b, remainingConsumers, varEstimatedBytes);
+            if (bytesA != bytesB) return Long.compare(bytesB, bytesA);  // descending
+
+            // Secondary: prefer nodes with fewer successors (complete short chains first)
+            int succA = successors.getOrDefault(a.getOperationName(), Collections.emptyList()).size();
+            int succB = successors.getOrDefault(b.getOperationName(), Collections.emptyList()).size();
+            if (succA != succB) return succA - succB;  // ascending
+
+            // Tertiary: stable tie-break by name
+            return a.getOperationName().compareTo(b.getOperationName());
+        });
+
+        for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) {
+                readyQueue.add(operationNodes.get(entry.getKey()));
+            }
+        }
+
+        while (!readyQueue.isEmpty()) {
+            // Re-sort: drain and re-add since priorities depend on remainingConsumers
+            // which changes as nodes are scheduled. Only needed when queue has > 1 element.
+            if (readyQueue.size() > 1) {
+                List<ExecutionNode> pending = new ArrayList<>(readyQueue);
+                readyQueue.clear();
+                readyQueue.addAll(pending);
+            }
+
+            ExecutionNode node = readyQueue.poll();
+            String nodeName = node.getOperationName();
+            scheduled.add(nodeName);
+            result.add(node);
+
+            // Decrement consumer counts for this node's inputs
+            for (String inputVar : node.getInputVariables()) {
+                remainingConsumers.computeIfPresent(inputVar, (k, v) -> v - 1);
+            }
+
+            // Update in-degrees and enqueue newly ready nodes
+            List<String> succs = successors.getOrDefault(nodeName, Collections.emptyList());
+            for (String succName : succs) {
+                int newDeg = inDegree.merge(succName, -1, Integer::sum);
+                if (newDeg == 0 && !scheduled.contains(succName)) {
+                    readyQueue.add(operationNodes.get(succName));
+                }
+            }
+        }
+
+        // Handle any nodes not reached (cycles from control flow)
+        if (result.size() < numNodes) {
+            for (ExecutionNode node : operationNodes.values()) {
+                if (!scheduled.contains(node.getOperationName())) {
+                    log.debug("Adding unscheduled node (cycle): {}", node.getOperationName());
+                    result.add(node);
+                }
+            }
+        }
+
+        log.debug("Created memory-aware topological order with {} nodes", result.size());
         return result;
     }
-    
+
     /**
-     * Recursive topological sort implementation
+     * Estimate total bytes freed if this node were scheduled now.
+     * A variable is freed when its remaining consumer count drops to 0.
+     * Size-weighted: a 1MB tensor freed matters more than a 4-byte scalar.
      */
-    private void topologicalSort(ExecutionNode node, Map<String, ExecutionNode> allNodes,
-                               Set<String> visited, Set<String> visiting, List<ExecutionNode> result) {
-        
-        String nodeName = node.getOperationName();
-        
-        if (visiting.contains(nodeName)) {
-            // Control flow ops (Merge, NextIteration, etc.) create expected cycles.
-            // Non-control-flow cycles are unexpected but we still continue gracefully.
-            if (node.getNodeType() != ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP) {
-                log.warn("Cycle detected involving node: {}", nodeName);
-            }
-            return;
-        }
-        
-        if (visited.contains(nodeName)) {
-            return;
-        }
-        
-        visiting.add(nodeName);
-        
-        // Visit all dependencies first
-        for (String depName : node.getDependsOnOperations()) {
-            ExecutionNode depNode = allNodes.get(depName);
-            if (depNode != null) {
-                topologicalSort(depNode, allNodes, visited, visiting, result);
+    private long estimateFreedBytes(ExecutionNode node, Map<String, Integer> remainingConsumers,
+                                    Map<String, Long> varEstimatedBytes) {
+        long freed = 0;
+        for (String inputVar : node.getInputVariables()) {
+            Integer remaining = remainingConsumers.get(inputVar);
+            if (remaining != null && remaining <= 1) {
+                freed += varEstimatedBytes.getOrDefault(inputVar, 1L);
             }
         }
-        
-        visiting.remove(nodeName);
-        visited.add(nodeName);
-        result.add(node);
+        return freed;
+    }
+
+    /**
+     * Estimate the byte size of a variable's tensor for scheduling decisions.
+     * Uses shape and dtype from the SameDiff graph. For dynamic dimensions (-1),
+     * uses 1 as a conservative placeholder — the count-based tiebreaker still
+     * differentiates correctly when shapes are fully dynamic.
+     */
+    private long estimateVariableBytes(String varName) {
+        org.nd4j.autodiff.samediff.SDVariable sdVar = sameDiff.getVariable(varName);
+        if (sdVar == null) return 1L;
+
+        long[] shape = sdVar.getShape();
+        if (shape == null || shape.length == 0) return 1L;
+
+        long elements = 1;
+        for (long dim : shape) {
+            elements *= (dim > 0) ? dim : 1;  // -1 (dynamic) → 1 (conservative)
+        }
+
+        org.nd4j.linalg.api.buffer.DataType dtype = sdVar.dataType();
+        int bytesPerElement = (dtype != null) ? dtype.width() : 4;  // default to FLOAT32
+
+        return elements * bytesPerElement;
     }
     
     /**

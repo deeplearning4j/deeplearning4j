@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.device;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -96,6 +97,11 @@ public class StubDeviceContextProvider implements DeviceContextProvider {
     @Override
     public boolean supportsStreams() {
         return false;
+    }
+
+    @Override
+    public void ensureHostAccess(INDArray array) {
+        // no-op in stub — data is always on host
     }
 
     /**

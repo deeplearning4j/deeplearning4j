@@ -55,6 +55,8 @@ public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
     public static class CudnnConv2dNCHWtoNHWCConversion implements Optimizer {
         @Override
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op, ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (!isCudaBackend)
+                return false;
             if(!(op.getOp() instanceof Conv2D))
                 return false;
 

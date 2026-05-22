@@ -95,7 +95,7 @@ Specific manifestations that are all workarounds — every one of these is prohi
 - If a Triton kernel crashes, fix the kernel — do NOT skip it, stub it out, or route around it.
 - If CUDA graph replay fails, fix the replay infrastructure — do NOT disable it.
 
-**Fix ALL errors — no exceptions.** Never dismiss a test error as "pre-existing" or "unrelated." The word "pre-existing" is **BANNED**. If you encounter ANY failure — whether you caused it or not — fix it immediately. Dispatch a parallel task if needed.
+**Fix ALL errors — no exceptions.** Never dismiss a test error as "known" or "unrelated." If you encounter ANY failure — whether you caused it or not — fix it immediately. If an issue is a blocker, **FIX** it no matter what it is. Dispatch a parallel task if needed.
 
 **If you need to undo YOUR changes to a file**, restore the specific lines you changed by editing them directly. Do NOT use git commands that affect the entire file.
 
@@ -313,6 +313,8 @@ When adding any new configuration option:
 - Use `array->printIndexedBuffer()` for printing NDArray values — never manual loops.
 - Gate diagnostics behind `isVerbose`/`isDebug` — no unconditional `syncToHost`.
 - Make diagnostics reusable: add to DSP diagnostics or OpTimingTracker, not one-off prints.
+- **For Java-side debugging**, use the built-in debug and verbose mode: `Nd4j.getEnvironment().setDebug(true); Nd4j.getEnvironment().setVerbose(true);` — this already prints all shapes and sample values from all ops that execute without rebuilding or adding diagnostics.
+- **Do NOT write one-off `syncToDevice()` or similar calls for different ops.** Assume that basic infrastructure like device syncing for CUDA works. If you suspect an issue with underlying infra, it is almost certainly NOT a bug in the infrastructure — focus on simpler causes first (wrong shapes, wrong types, wrong data flow, wrong graph construction).
 
 ---
 

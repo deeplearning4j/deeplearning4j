@@ -391,10 +391,16 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             if (normFactorHasOnlyConsumer) {
                 m.opsToRemove.add(normFactorOp.getName());
             }
-            m.opsToRemove.add(addOp.getName());
-            m.opsToRemove.add(meanOp.getName());
-            if (squareOp != null) {
-                m.opsToRemove.add(squareOp.getName());
+            // When normFactor (sqrt/rsqrt) has other consumers (e.g., reciprocal),
+            // the entire subchain feeding it must be preserved:
+            //   squareOp -> squareVar -> meanOp -> meanVar -> addOp -> addVar -> normFactorOp
+            // Only remove these ops/vars when normFactor is being removed too.
+            if (normFactorHasOnlyConsumer) {
+                m.opsToRemove.add(addOp.getName());
+                m.opsToRemove.add(meanOp.getName());
+                if (squareOp != null) {
+                    m.opsToRemove.add(squareOp.getName());
+                }
             }
             m.opsToRemove.addAll(shapeOpsToRemove);
 
@@ -403,11 +409,11 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             m.varsToRemove.add(normalizedVar);
             if (normFactorHasOnlyConsumer) {
                 m.varsToRemove.add(normFactorVar);
-            }
-            m.varsToRemove.add(addVar);
-            m.varsToRemove.add(meanVar);
-            if (squareVar != null) {
-                m.varsToRemove.add(squareVar);
+                m.varsToRemove.add(addVar);
+                m.varsToRemove.add(meanVar);
+                if (squareVar != null) {
+                    m.varsToRemove.add(squareVar);
+                }
             }
             m.varsToRemove.addAll(shapeVarsToRemove);
 

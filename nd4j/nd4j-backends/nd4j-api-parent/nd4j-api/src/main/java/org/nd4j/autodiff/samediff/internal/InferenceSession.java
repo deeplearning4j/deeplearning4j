@@ -931,8 +931,26 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // Lightweight type casting: cast mismatched placeholder dtypes without
                     // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
                     Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholderValues);
+                    // When listeners are active, augment allRequired with all op output variables
+                    // so that DSP returns intermediate arrays. This enables activationAvailable
+                    // callbacks for every executed op, matching the standard execution path.
+                    // Gated on listeners being present to avoid performance cost in production.
+                    Set<String> dspAllRequired = allRequired;
+                    if (listeners != null && !listeners.isEmpty()) {
+                        dspAllRequired = new LinkedHashSet<>(allRequired);
+                        List<ExecutionNode> dagExecOrder = dag.getExecutionOrder();
+                        for (ExecutionNode node : dagExecOrder) {
+                            if (node.getNodeType() == ExecutionNode.ExecutionNodeType.STANDARD_OP
+                                    || node.getNodeType() == ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
+                                List<String> nodeOutputs = node.getOutputVariables();
+                                if (nodeOutputs != null) {
+                                    dspAllRequired.addAll(nodeOutputs);
+                                }
+                            }
+                        }
+                    }
                     Map<String, SDValue> dynamicPlanResults = executeDynamicShapePlanBased(
-                            dag, dspPlaceholders, allRequired, variables);
+                            dag, dspPlaceholders, dspAllRequired, variables);
                     if (dynamicPlanResults == null) {
                         // DSP not available — close any cast copies to prevent GPU memory leak.
                         // castPlaceholderTypes returns a NEW map with cast arrays when types mismatch.
@@ -997,6 +1015,56 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // on ARRAY-type output variables can find the computed values.
                         // Without this, sd.outputAll() succeeds but variable.getArr() returns null.
                         latestRequestedOutputsTl.get().putAll(filteredResults);
+
+                        // Fire listener callbacks after DSP execution.
+                        // DSP executes the entire plan natively as a single unit. We iterate
+                        // all STANDARD_OP nodes in the DAG (in topological order) and fire
+                        // preOpExecution, opExecution, and activationAvailable for each op.
+                        // This mirrors the per-op callback sequence from the standard path so
+                        // that listeners such as ProfilingListener see every executed op.
+                        if (listeners != null && !listeners.isEmpty() && at != null && at.operation() != null) {
+                            List<ExecutionNode> execOrder = dag.getExecutionOrder();
+                            for (ExecutionNode node : execOrder) {
+                                if (node.getNodeType() != ExecutionNode.ExecutionNodeType.STANDARD_OP
+                                        && node.getNodeType() != ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP
+                                        && node.getNodeType() != ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
+                                    continue;
+                                }
+                                SameDiffOp sdOp = sameDiff.getOps().get(node.getOperationName());
+                                if (sdOp == null) {
+                                    continue;
+                                }
+                                // Collect output arrays for this op from filteredResults.
+                                // Intermediate ops whose outputs are not in filteredResults will
+                                // have null entries — this is acceptable per the Listener contract.
+                                List<String> outVars = node.getOutputVariables();
+                                INDArray[] outputArrays = new INDArray[outVars != null ? outVars.size() : 0];
+                                if (outVars != null) {
+                                    for (int oi = 0; oi < outVars.size(); oi++) {
+                                        SDValue val = filteredResults.get(outVars.get(oi));
+                                        if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
+                                            outputArrays[oi] = val.getTensorValue();
+                                        }
+                                    }
+                                }
+                                for (Listener l : listeners) {
+                                    if (l.isActive(at.operation())) {
+                                        l.preOpExecution(sameDiff, at, sdOp, null);
+                                        l.opExecution(sameDiff, at, batch, sdOp, null, outputArrays);
+                                        // Fire activationAvailable for each output variable that
+                                        // has a result array (requested outputs and allRequired vars).
+                                        if (outVars != null) {
+                                            for (int oi = 0; oi < outVars.size(); oi++) {
+                                                if (outputArrays[oi] != null) {
+                                                    l.activationAvailable(sameDiff, at, batch, sdOp, outVars.get(oi), outputArrays[oi]);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
                 } catch (Exception e) {
@@ -1307,15 +1375,35 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             ArrayCacheMemoryMgr.setEnableCache(true);
         }
 
+        // Build the effective plan output list: merge allRequired + requestedOutputs so that
+        // evaluation variables (e.g. "notRequiredForLoss") are included in the plan's
+        // computation even when they are not in the caller's requestedOutputs.
+        // allRequired is built by TrainingSession to include trainEvaluation variable names,
+        // but requestedOutputs (finalEffectiveOutputVars) only contains grad vars + losses.
+        // Without this merge, eval vars are never computed by the plan and their results
+        // are absent from rawResults, so activationAvailable callbacks can't fire for them.
+        List<String> planOutputs;
+        if (allRequired != null && !allRequired.isEmpty()) {
+            Set<String> planOutputSet = new LinkedHashSet<>(allRequired);
+            if (requestedOutputs != null) {
+                planOutputSet.addAll(requestedOutputs);
+            }
+            planOutputs = new ArrayList<>(planOutputSet);
+        } else {
+            planOutputs = requestedOutputs;
+        }
+
         DynamicShapePlan plan = getOrCompileDynamicShapePlan(
-                dag, requestedOutputs, sameDiff.isDspAutoCompileEnabled());
+                dag, planOutputs, sameDiff.isDspAutoCompileEnabled());
         if (plan == null) {
             log.debug("DynamicShapePlan not available (auto-compile disabled or compilation unsupported), using standard path");
-            // Undo the cache enable — standard executeOperations() must NOT cache arrays
-            // because nothing drains the cache between operations in the standard path.
-            if (mmgr instanceof ArrayCacheMemoryMgr) {
-                ArrayCacheMemoryMgr.setEnableCache(false);
-            }
+            // Do NOT disable the cache here. The caller's executeOperations() path depends on
+            // the cache being enabled to prevent premature DataBuffer close of intermediate
+            // variables. The no-cache cleanup path (cacheEnabled=false) aggressively calls
+            // arr.close() on intermediate DataBuffers mid-execution and in postProcessOutputValues(),
+            // which causes double-close corruption and wrong results in graphs with many
+            // intermediate arrays (e.g. multi-head attention, BGE encoder).
+            // The cache was enabled above and must remain enabled for executeOperations().
             return null;
         }
 
@@ -1341,6 +1429,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // no amortization cost. A >1.0 growth factor creates a gap between logical length
         // and allocated bytes that nullify() (which zeros logical bytes only) cannot cover,
         // leaving stale tail data visible to any op that writes fewer bytes than allocated.
+        // Sync VARIABLE-type inputs to device before execution. When GradCheckUtil (or any
+        // caller) modifies a VARIABLE's array in-place via putScalar, only the host buffer
+        // is updated. The DSP executor skips H2D sync for non-placeholder inputs with the
+        // same array identity, so the device copy stays stale. Force-sync here.
+        for (SDVariable var : sameDiff.variables()) {
+            if (var.getVariableType() == VariableType.VARIABLE) {
+                INDArray arr = var.getArr();
+                if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                    arr.syncToDevice();
+                }
+            }
+        }
+
         Map<String, INDArray> rawResults;
         try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.0)) {
             rawResults = executor.execute(plan, placeholderArrays);
@@ -1350,12 +1451,26 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             throw new RuntimeException("DSP execution failed", e);
         }
 
-        // Wrap results as SDValues
+        // Wrap results as SDValues.
+        // Include ALL allRequired variables (not just requestedOutputs) so that
+        // listener activationAvailable callbacks can fire for evaluation variables
+        // that are required but not in requestedOutputs (e.g. trainEvaluation variables).
         Map<String, SDValue> sdResults = new LinkedHashMap<>();
         for (String outputName : requestedOutputs) {
             INDArray arr = rawResults.get(outputName);
             if (arr != null) {
                 sdResults.put(outputName, SDValue.create(arr));
+            }
+        }
+        // Also include allRequired variables that are not already in requestedOutputs
+        if (allRequired != null) {
+            for (String requiredName : allRequired) {
+                if (!sdResults.containsKey(requiredName)) {
+                    INDArray arr = rawResults.get(requiredName);
+                    if (arr != null) {
+                        sdResults.put(requiredName, SDValue.create(arr));
+                    }
+                }
             }
         }
 
@@ -3496,19 +3611,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             opContext.setInputArrays(inputArrays);
-            // DIAGNOSTIC: check if inputs are closed right after setting them
-            if ("gather".equals(op.opName())) {
-                for (int di = 0; di < inputArrays.length; di++) {
-                    if (inputArrays[di] != null) {
-                        log.info("DIAG-SET-INPUT: gather op '{}' input[{}] '{}': closed={} id={} identityHash={}",
-                                op.getOwnName(), di, argNames[di],
-                                inputArrays[di].wasClosed(), inputArrays[di].getId(),
-                                System.identityHashCode(inputArrays[di]));
-                    }
+        }
+        if (TIMING_ENABLED) timingInputResolveNs += System.nanoTime() - tInput0;
+
+        // Fire preOpExecution listener callback before executing the operation.
+        // This matches the behavior of the old opPair-based execution path.
+        if (listeners != null && !listeners.isEmpty()) {
+            for (Listener l : listeners) {
+                if (l.isActive(at.operation())) {
+                    l.preOpExecution(sameDiff, at, sameDiffOp, opContext);
                 }
             }
         }
-        if (TIMING_ENABLED) timingInputResolveNs += System.nanoTime() - tInput0;
 
         // Handle different operation types
         // NOTE: Do NOT call clearOpaqueNDArraysFromOpContext here!

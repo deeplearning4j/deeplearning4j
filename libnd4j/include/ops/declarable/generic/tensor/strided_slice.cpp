@@ -481,7 +481,9 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   }
 
   // validation of begin and start - use inline bit testing to avoid heap allocations
-  if (shrink_axis_mask == 0)
+  // Skip validation when ellipsis_mask is set — begin/end arrays are shorter than rank
+  // and don't correspond 1:1 to input dimensions until _preprocess_strided_slice expands them.
+  if (shrink_axis_mask == 0 && ellipsis_mask == 0)
     for (size_t dim = 0, b = 0, e = 0; dim < static_cast<size_t>(x->rankOf()); ++dim) {
       if (shrink_axis_mask & (1 << dim)) continue;
 
@@ -647,31 +649,29 @@ DECLARE_SHAPE_FN(strided_slice) {
       _preprocess_strided_slice(&indices, &outputShape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask,
                                 new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
 
-  if (indices.size()) {
-    auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inShape);
-    bool hasZeroDim = false;
-    for (const auto dim : outputShape) {
-      if (dim == 0) {
-        hasZeroDim = true;
-        break;
-      }
-    }
+  auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inShape);
 
-    if (hasZeroDim) {
-      auto emptyShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(retDtype, outputShape);
-      return SHAPELIST(emptyShape);
+  // Check outputShape for zero dims — if any dim is 0, result is empty with that shape
+  bool hasZeroDim = false;
+  for (const auto dim : outputShape) {
+    if (dim == 0) {
+      hasZeroDim = true;
+      break;
     }
+  }
 
+  if (hasZeroDim) {
+    auto emptyShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(retDtype, outputShape);
+    return SHAPELIST(emptyShape);
+  }
+
+  if (!outputShape.empty()) {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(retDtype, 'c', outputShape);
     return SHAPELIST(newShape);
   }
 
-  // indices is empty - result is a scalar (rank 0)
-  // Preserve input dtype for the output shape
-  auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inputShape->at(0));
-  std::vector<LongType> retShape;  // Empty vector for rank 0 scalar
-  auto result2 = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(retDtype, retShape);
-  return SHAPELIST(result2);
+  // All axes shrunk — result is a scalar (rank 0, exactly 1 element)
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(retDtype));
 }
 
 CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
@@ -749,6 +749,9 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   }
 
   // validation of begin and start - use inline bit testing to avoid heap allocations
+  // Skip validation when ellipsis_mask is set — begin/end arrays are shorter than rank
+  // and don't correspond 1:1 to input dimensions until _preprocess_strided_slice expands them.
+  if (ellipsis_mask == 0)
   for (size_t dim = 0, b = 0, e = 0; dim < static_cast<size_t>(x->rankOf()); ++dim) {
     if (shrink_axis_mask & (1 << dim)) continue;
 

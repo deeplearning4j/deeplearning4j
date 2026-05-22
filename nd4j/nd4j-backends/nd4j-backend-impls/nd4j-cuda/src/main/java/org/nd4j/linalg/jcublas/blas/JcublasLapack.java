@@ -114,12 +114,11 @@ public class JcublasLapack extends BaseLapack {
                     new CudaPointer(allocator.getPointer(IPIV, ctx)).asIntPointer(),
                     new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
 
-            // we do sync to make sure getrf is finished
-            //ctx.syncOldStream();
-
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnSgetrf failed", stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
@@ -182,8 +181,10 @@ public class JcublasLapack extends BaseLapack {
                     new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new BlasException("cusolverDnSgetrf failed", stat);
+                throw new BlasException("cusolverDnDgetrf failed", stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
@@ -261,6 +262,8 @@ public class JcublasLapack extends BaseLapack {
                 throw new BlasException("cusolverDnSgeqrf failed", stat);
             }
 
+            ctx.syncOldStream();
+
             allocator.registerAction(ctx, a);
             //allocator.registerAction(ctx, tau);
             allocator.registerAction(ctx, INFO);
@@ -268,15 +271,17 @@ public class JcublasLapack extends BaseLapack {
                 throw new BlasException("cusolverDnSgeqrf failed on INFO", INFO.getInt(0));
             }
 
-            // Copy R ( upper part of Q ) into result
+            // Copy R ( upper part of factored A ) into result
             if (r != null) {
                 r.assign(a.get(NDArrayIndex.interval(0, a.columns()), NDArrayIndex.all()));
 
-                INDArrayIndex ix[] = new INDArrayIndex[2];
-                for (int i = 1; i < Math.min(a.rows(), a.columns()); i++) {
-                    ix[0] = NDArrayIndex.point(i);
-                    ix[1] = NDArrayIndex.interval(0, i);
-                    r.put(ix, 0);
+                // Zero below diagonal to extract upper triangular R
+                int rRows = (int) r.rows();
+                int rCols = (int) r.columns();
+                for (int i = 1; i < rRows; i++) {
+                    for (int j = 0; j < Math.min(i, rCols); j++) {
+                        r.putScalar(i, j, 0.0);
+                    }
                 }
             }
 
@@ -298,6 +303,8 @@ public class JcublasLapack extends BaseLapack {
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnSorgqr failed", stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
@@ -376,6 +383,8 @@ public class JcublasLapack extends BaseLapack {
                 throw new BlasException("cusolverDnDgeqrf failed", stat);
             }
 
+            ctx.syncOldStream();
+
             allocator.registerAction(ctx, a);
             allocator.registerAction(ctx, tau);
             allocator.registerAction(ctx, INFO);
@@ -383,15 +392,17 @@ public class JcublasLapack extends BaseLapack {
                 throw new BlasException("cusolverDnDgeqrf failed with info", INFO.getInt(0));
             }
 
-            // Copy R ( upper part of Q ) into result
+            // Copy R ( upper part of factored A ) into result
             if (r != null) {
                 r.assign(a.get(NDArrayIndex.interval(0, a.columns()), NDArrayIndex.all()));
 
-                INDArrayIndex ix[] = new INDArrayIndex[2];
-                for (int i = 1; i < Math.min(a.rows(), a.columns()); i++) {
-                    ix[0] = NDArrayIndex.point(i);
-                    ix[1] = NDArrayIndex.interval(0, i);
-                    r.put(ix, 0);
+                // Zero below diagonal to extract upper triangular R
+                int rRows = (int) r.rows();
+                int rCols = (int) r.columns();
+                for (int i = 1; i < rRows; i++) {
+                    for (int j = 0; j < Math.min(i, rCols); j++) {
+                        r.putScalar(i, j, 0.0);
+                    }
                 }
             }
             stat = cusolverDnDorgqr_bufferSize(solverDn, M, N, N,
@@ -412,6 +423,8 @@ public class JcublasLapack extends BaseLapack {
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnDorgqr failed", stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
@@ -486,6 +499,8 @@ public class JcublasLapack extends BaseLapack {
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnSpotrf failed", stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
@@ -493,24 +508,24 @@ public class JcublasLapack extends BaseLapack {
         if (a != A)
             A.assign(a);
 
-        if (uplo == CUBLAS_FILL_MODE_UPPER ) {
-            A.assign(A.transpose());
-            INDArrayIndex ix[] = new INDArrayIndex[2];
-            for (int i = 1; i < Math.min(A.rows(), A.columns()); i++) {
-                ix[0] = NDArrayIndex.point(i);
-                ix[1] = NDArrayIndex.interval(0, i);
-                A.put(ix, 0);
+        // Zero the appropriate triangle using direct element access
+        int rows = (int) A.rows();
+        int cols = (int) A.columns();
+        if (uplo == CUBLAS_FILL_MODE_UPPER) {
+            // cuSOLVER filled upper triangle — zero below diagonal
+            for (int i = 1; i < rows; i++) {
+                for (int j = 0; j < Math.min(i, cols); j++) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         } else {
-            INDArrayIndex ix[] = new INDArrayIndex[2];
-            for (int i = 0; i < Math.min(A.rows(), A.columns() - 1); i++) {
-                ix[0] = NDArrayIndex.point(i);
-                ix[1] = NDArrayIndex.interval(i + 1, A.columns());
-                A.put(ix, 0);
+            // cuSOLVER filled lower triangle — zero above diagonal
+            for (int i = 0; i < rows; i++) {
+                for (int j = i + 1; j < cols; j++) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         }
-
-        log.debug("A: {}", A);
     }
 
     @Override
@@ -572,6 +587,8 @@ public class JcublasLapack extends BaseLapack {
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnDpotrf failed", stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
@@ -579,24 +596,24 @@ public class JcublasLapack extends BaseLapack {
         if (a != A)
             A.assign(a);
 
-        if (uplo == CUBLAS_FILL_MODE_UPPER ) {
-            A.assign(A.transpose());
-            INDArrayIndex ix[] = new INDArrayIndex[2];
-            for (int i = 1; i < Math.min(A.rows(), A.columns()); i++) {
-                ix[0] = NDArrayIndex.point(i);
-                ix[1] = NDArrayIndex.interval(0, i);
-                A.put(ix, 0);
+        // Zero the appropriate triangle using direct element access
+        int rows = (int) A.rows();
+        int cols = (int) A.columns();
+        if (uplo == CUBLAS_FILL_MODE_UPPER) {
+            // cuSOLVER filled upper triangle — zero below diagonal
+            for (int i = 1; i < rows; i++) {
+                for (int j = 0; j < Math.min(i, cols); j++) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         } else {
-            INDArrayIndex ix[] = new INDArrayIndex[2];
-            for (int i = 0; i < Math.min(A.rows(), A.columns() - 1); i++) {
-                ix[0] = NDArrayIndex.point(i);
-                ix[1] = NDArrayIndex.interval(i + 1, A.columns());
-                A.put(ix, 0);
+            // cuSOLVER filled lower triangle — zero above diagonal
+            for (int i = 0; i < rows; i++) {
+                for (int j = i + 1; j < cols; j++) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         }
-
-        log.debug("A: {}", A);
     }
 
 
@@ -702,6 +719,8 @@ public class JcublasLapack extends BaseLapack {
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnSgesvd failed", stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, S);
@@ -815,6 +834,8 @@ public class JcublasLapack extends BaseLapack {
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnDgesvd failed" + stat);
             }
+
+            ctx.syncOldStream();
         }
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, S);
@@ -906,6 +927,8 @@ public class JcublasLapack extends BaseLapack {
                     if (status == 0) status = INFO.getInt(0);
                 }
             }
+
+            ctx.syncOldStream();
         }
         if (status == 0) {
             allocator.registerAction(ctx, R);
@@ -984,6 +1007,8 @@ public class JcublasLapack extends BaseLapack {
                     if (status == 0) status = INFO.getInt(0);
                 }
             }
+
+            ctx.syncOldStream();
         }
         if (status == 0) {
             allocator.registerAction(ctx, R);

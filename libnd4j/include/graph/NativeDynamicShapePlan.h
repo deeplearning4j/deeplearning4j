@@ -1823,7 +1823,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   long long getLastExternalInputAddress(int extIdx) const {
     NDArray* arr = getLastExternalInput(extIdx);
     if (arr == nullptr) return 0;
-    return reinterpret_cast<long long>(arr->specialBuffer());
+    // On CUDA, specialBuffer() holds the device pointer. On CPU,
+    // specialBuffer() is nullptr — fall back to buffer() (primary).
+    void* ptr = arr->specialBuffer();
+    if (ptr == nullptr) ptr = arr->buffer();
+    return reinterpret_cast<long long>(ptr);
   }
 
   /** Get the output NDArray* at a specific slot index, or nullptr. */
@@ -2183,6 +2187,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<int> variableExternalInputIndices_;  // cached indices where externalInputIsVariable_[i]=true (replay optimization)
   bool variableIndicesCached_ = false;             // true once variableExternalInputIndices_ is populated
 
+  // Per-slot transitive variable dependency: true if slot transitively depends on any
+  // variable ext input (PLACEHOLDER). Computed via forward propagation through wiring graph.
+  // Used by the frozen fast-path gate to prevent reusing stale cached outputs for slots
+  // that indirectly depend on changing placeholder inputs.
+  std::vector<bool> slotDependsOnVariableExtInput_;
+
   // External input ranks captured during the first execute() call.
   // -1 = not yet observed. Used by FusionPass at freeze transition to
   // disambiguate 1D bias vectors from N-D residual operands.
@@ -2402,6 +2412,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSlotGapFast(int slotIdx, NDArray** externalArrays, int numExt);
   LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
   void detectFrozenConstants();
+  void computeSlotVariableDependency();
 
   /**
    * Check if the given NDArray pointer is referenced by any OTHER output slot

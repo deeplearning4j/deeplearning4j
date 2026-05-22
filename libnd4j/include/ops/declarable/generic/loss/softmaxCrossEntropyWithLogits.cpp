@@ -52,9 +52,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
   // maxAlongDim: heap (reduceAlongDimension)
   NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
 
-  // shiftedLogits = logits - maxAlongDim  (stack)
+  // shiftedLogits = logits - maxAlongDim  (broadcast subtract for keepDims shape)
   NDArray shiftedLogits(logits->shapeInfo(), false, ctx);
-  logits->applyPairwiseTransform(pairwise::Subtract, maxAlongDim, &shiftedLogits);
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxAlongDim, &shiftedLogits, false);
 
   // logExp = exp(shiftedLogits)  (stack)
   NDArray logExp(shiftedLogits.shapeInfo(), false, ctx);
@@ -63,9 +63,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
   // sumLogExp: heap (reduceAlongDimension)
   NDArray* sumLogExp = logExp.reduceAlongDimension(reduce::Sum, &dimension, true);
 
-  // softmaxRatio = logExp / sumLogExp  (stack)
+  // softmaxRatio = logExp / sumLogExp  (broadcast divide for keepDims shape)
   NDArray softmaxRatio(logExp.shapeInfo(), false, ctx);
-  logExp.applyPairwiseTransform(pairwise::Divide, sumLogExp, &softmaxRatio);
+  logExp.applyTrueBroadcast(BroadcastOpsTuple::Divide(), sumLogExp, &softmaxRatio, false);
 
   // logSoftMax = log(softmaxRatio)  (stack)
   NDArray logSoftMax(softmaxRatio.shapeInfo(), false, ctx);
@@ -141,9 +141,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   // maxAlongDim: heap
   NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
 
-  // shiftedLogits = logits - maxAlongDim  (stack)
+  // shiftedLogits = logits - maxAlongDim  (broadcast subtract for keepDims shape)
   NDArray shiftedLogits(logits->shapeInfo(), false, ctx);
-  logits->applyPairwiseTransform(pairwise::Subtract, maxAlongDim, &shiftedLogits);
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxAlongDim, &shiftedLogits, false);
 
   // softmax = exp(shiftedLogits)  (stack, then divide in-place)
   NDArray softmax(shiftedLogits.shapeInfo(), false, ctx);
@@ -152,8 +152,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   // sumSoftmax: heap
   NDArray* sumSoftmax = softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
 
-  // Normalise: softmax /= sumSoftmax  (safe in-place pairwise divide)
-  softmax.applyPairwiseTransform(pairwise::Divide, sumSoftmax, &softmax);
+  // Normalise: softmax /= sumSoftmax  (broadcast divide for keepDims shape)
+  softmax.applyTrueBroadcast(BroadcastOpsTuple::Divide(), sumSoftmax, &softmax, false);
 
   // dEdp = softmax * sum_i(labels_i) - labels
   // labelsPlusEps = labels + 1e-6  (stack)
@@ -163,9 +163,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   // labelSum: heap
   NDArray* labelSum = labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true);
 
-  // softmaxTimesLabelSum = softmax * labelSum  (stack)
+  // softmaxTimesLabelSum = softmax * labelSum  (broadcast multiply for keepDims shape)
   NDArray softmaxTimesLabelSum(softmax.shapeInfo(), false, ctx);
-  softmax.applyPairwiseTransform(pairwise::Multiply, labelSum, &softmaxTimesLabelSum);
+  softmax.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), labelSum, &softmaxTimesLabelSum, false);
 
   // dLdp = softmaxTimesLabelSum - labels  (write directly to output)
   softmaxTimesLabelSum.applyPairwiseTransform(pairwise::Subtract, labels, dLdp);

@@ -1955,11 +1955,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .build();
 
 
-            mgrEven.setCurrentWorkspace(ArrayType.INPUT);
             if(epsilon == null) {
+                mgrEven.setCurrentWorkspace(ArrayType.INPUT);
                 //If epsilon is non-null: external errors use case -> inputs are already detached
                 mgrEven.assertCurrentWorkspace(ArrayType.INPUT, "calcBackPropGradients workspace must be the INPUT type");
                 mgrOdd.assertCurrentWorkspace(ArrayType.INPUT, "calcBackPropGradients workspace must be the INPUT type");
+            } else {
+                //External backprop: inputs are already detached, no need for WS_ALL_LAYERS_ACT
+                mgrEven.setScopedOutFor(ArrayType.INPUT);
+                mgrOdd.setScopedOutFor(ArrayType.INPUT);
             }
         }
 

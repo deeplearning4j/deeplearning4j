@@ -168,6 +168,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"image_resize_neighbor", {dim3(GRID_SIZE_IMAGE_RESIZE_NEIGHBOR, BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR, SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR)}},
     {"swap_unsafe", {dim3(GRID_SIZE_SWAP_UNSAFE, BLOCK_SIZE_SWAP_UNSAFE, SHARED_MEM_SIZE_SWAP_UNSAFE)}},
     {"digamma", {dim3(GRID_SIZE_DIGAMMA, BLOCK_SIZE_DIGAMMA, SHARED_MEM_SIZE_DIGAMMA)}},
+    {"lgamma", {dim3(GRID_SIZE_LGAMMA, BLOCK_SIZE_LGAMMA, SHARED_MEM_SIZE_LGAMMA)}},
     {"fill_tri", {dim3(GRID_SIZE_FILL_TRI, BLOCK_SIZE_FILL_TRI, SHARED_MEM_SIZE_FILL_TRI)}},
     {"identity", {dim3(GRID_SIZE_IDENTITY, BLOCK_SIZE_IDENTITY, SHARED_MEM_SIZE_IDENTITY)}},
     {"dynamic_stitch_tad", {dim3(GRID_SIZE_DYNAMIC_STITCH_TAD, BLOCK_SIZE_DYNAMIC_STITCH_TAD, SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD)}},
@@ -347,6 +348,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"image_resize_neighbor", {"GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", "BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", "SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR"}},
     {"swap_unsafe", {"GRID_SIZE_SWAP_UNSAFE", "BLOCK_SIZE_SWAP_UNSAFE", "SHARED_MEM_SIZE_SWAP_UNSAFE"}},
     {"digamma", {"GRID_SIZE_DIGAMMA", "BLOCK_SIZE_DIGAMMA", "SHARED_MEM_SIZE_DIGAMMA"}},
+    {"lgamma", {"GRID_SIZE_LGAMMA", "BLOCK_SIZE_LGAMMA", "SHARED_MEM_SIZE_LGAMMA"}},
     {"fill_tri", {"GRID_SIZE_FILL_TRI", "BLOCK_SIZE_FILL_TRI", "SHARED_MEM_SIZE_FILL_TRI"}},
     {"repeat", {"GRID_SIZE_FILL_REPEAT", "BLOCK_SIZE_FILL_REPEAT", "SHARED_MEM_SIZE_FILL_REPEAT"}},
     {"identity", {"GRID_SIZE_FILL_IDENTITY", "BLOCK_SIZE_FILL_IDENTITY", "SHARED_MEM_SIZE_FILL_IDENTITY"}},
@@ -1146,7 +1148,7 @@ dim3 topKIndices(int scanWidth,int xDTypeSize,int yDTypeSize) {
 }
 
 dim3 invertPermutationDims(int length) {
-  int threadsPerBlock = SD_MAX_NUM_THREADS;
+  int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
   int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
   int sharedMemory = 1024;
   threadsPerBlock = getEnvVariable("GRID_SIZE_INVERT_PERMUTATION", threadsPerBlock);

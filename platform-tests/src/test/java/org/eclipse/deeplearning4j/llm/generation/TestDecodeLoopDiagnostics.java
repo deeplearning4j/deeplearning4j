@@ -575,9 +575,13 @@ public class TestDecodeLoopDiagnostics {
         // Log the padded mask
         INDArray paddedMask = paddedInputMap.get(ioConfig.getAttentionMaskName());
         INDArray paddedCausal = paddedInputMap.get(ioConfig.getCausalMaskName());
-        log.info("D2 PADDED attention mask shape: {} nonZeroCount={}",
-                Arrays.toString(paddedMask.shape()), paddedMask.neq(0).sumNumber().intValue());
-        log.info("D2 PADDED causal mask shape: {}", Arrays.toString(paddedCausal.shape()));
+        if (paddedMask != null) {
+            log.info("D2 PADDED attention mask shape: {} nonZeroCount={}",
+                    Arrays.toString(paddedMask.shape()), paddedMask.neq(0).castTo(DataType.INT32).sumNumber().intValue());
+        }
+        if (paddedCausal != null) {
+            log.info("D2 PADDED causal mask shape: {}", Arrays.toString(paddedCausal.shape()));
+        }
 
         // --- CONTIGUOUS layout (GenerationPipeline style) ---
         long maskLen = maxKvLen + 1;
@@ -614,7 +618,7 @@ public class TestDecodeLoopDiagnostics {
                 new ArrayList<>(contiguousInputMap.keySet()), decoder, contiguousInputMap);
 
         log.info("D2 CONTIGUOUS attention mask shape: {} nonZeroCount={}",
-                Arrays.toString(contAttentionMask.shape()), contAttentionMask.neq(0).sumNumber().intValue());
+                Arrays.toString(contAttentionMask.shape()), contAttentionMask.neq(0).castTo(DataType.INT32).sumNumber().intValue());
         log.info("D2 CONTIGUOUS causal mask shape: {}", Arrays.toString(contCausalMask.shape()));
 
         // --- Run both and compare logits ---
@@ -741,15 +745,21 @@ public class TestDecodeLoopDiagnostics {
                 true, hiddenSize,
                 reusableInputsPadded, true);
 
-        INDArray step1Mask = step1InputMap.get(ioConfig.getAttentionMaskName()).dup();
-        INDArray step1Causal = step1InputMap.get(ioConfig.getCausalMaskName()).dup();
-        log.info("D3 STEP 1 PADDED attentionMask shape={} values(first 20): {}",
-                Arrays.toString(step1Mask.shape()),
-                step1Mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, Math.min(20, (int) step1Mask.size(1)))));
-        log.info("D3 STEP 1 PADDED causalMask shape={} values: {}",
-                Arrays.toString(step1Causal.shape()),
-                step1Causal.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(0),
-                        NDArrayIndex.interval(0, Math.min(20, (int) step1Causal.size(3)))));
+        INDArray step1MaskRaw = step1InputMap.get(ioConfig.getAttentionMaskName());
+        INDArray step1Mask = step1MaskRaw != null ? step1MaskRaw.dup() : null;
+        INDArray step1CausalRaw = step1InputMap.get(ioConfig.getCausalMaskName());
+        INDArray step1Causal = step1CausalRaw != null ? step1CausalRaw.dup() : null;
+        if (step1Mask != null) {
+            log.info("D3 STEP 1 PADDED attentionMask shape={} values(first 20): {}",
+                    Arrays.toString(step1Mask.shape()),
+                    step1Mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, Math.min(20, (int) step1Mask.size(1)))));
+        }
+        if (step1Causal != null) {
+            log.info("D3 STEP 1 PADDED causalMask shape={} values: {}",
+                    Arrays.toString(step1Causal.shape()),
+                    step1Causal.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(0),
+                            NDArrayIndex.interval(0, Math.min(20, (int) step1Causal.size(3)))));
+        }
 
         Map<String, INDArray> step1Outputs = decoder.output(
                 step1InputMap, allOutputNames.toArray(new String[0]));
@@ -778,19 +788,23 @@ public class TestDecodeLoopDiagnostics {
                 true, hiddenSize,
                 reusableInputsPadded, true);
 
-        INDArray step2Mask = step2InputMap.get(ioConfig.getAttentionMaskName()).dup();
-        INDArray step2Causal = step2InputMap.get(ioConfig.getCausalMaskName()).dup();
-        log.info("D3 STEP 2 PADDED attentionMask shape={} nonZero={}",
-                Arrays.toString(step2Mask.shape()), step2Mask.neq(0).sumNumber().intValue());
-        log.info("D3 STEP 2 PADDED causalMask shape={}", Arrays.toString(step2Causal.shape()));
-
-        // Print first 30 values of each mask
-        long maskLen = step2Mask.size(1);
-        log.info("D3 STEP 2 PADDED attentionMask[0:30]: {}",
-                step2Mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, Math.min(30, (int) maskLen))));
-        log.info("D3 STEP 2 PADDED causalMask[0:30]: {}",
-                step2Causal.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(0),
-                        NDArrayIndex.interval(0, Math.min(30, (int) step2Causal.size(3)))));
+        INDArray step2MaskRaw = step2InputMap.get(ioConfig.getAttentionMaskName());
+        INDArray step2Mask = step2MaskRaw != null ? step2MaskRaw.dup() : null;
+        INDArray step2CausalRaw = step2InputMap.get(ioConfig.getCausalMaskName());
+        INDArray step2Causal = step2CausalRaw != null ? step2CausalRaw.dup() : null;
+        if (step2Mask != null) {
+            log.info("D3 STEP 2 PADDED attentionMask shape={} nonZero={}",
+                    Arrays.toString(step2Mask.shape()), step2Mask.neq(0).castTo(DataType.INT32).sumNumber().intValue());
+            long maskLen = step2Mask.size(1);
+            log.info("D3 STEP 2 PADDED attentionMask[0:30]: {}",
+                    step2Mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, Math.min(30, (int) maskLen))));
+        }
+        if (step2Causal != null) {
+            log.info("D3 STEP 2 PADDED causalMask shape={}", Arrays.toString(step2Causal.shape()));
+            log.info("D3 STEP 2 PADDED causalMask[0:30]: {}",
+                    step2Causal.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(0),
+                            NDArrayIndex.interval(0, Math.min(30, (int) step2Causal.size(3)))));
+        }
 
         // Also show what contiguous layout would look like at step 2
         INDArray contMask = Nd4j.zeros(DataType.LONG, 1, maxKvLen + 1);
@@ -802,10 +816,10 @@ public class TestDecodeLoopDiagnostics {
 
         // Cleanup
         for (INDArray arr : staticKvBuffers.values()) arr.close();
-        step1Mask.close();
-        step1Causal.close();
-        step2Mask.close();
-        step2Causal.close();
+        if (step1Mask != null) step1Mask.close();
+        if (step1Causal != null) step1Causal.close();
+        if (step2Mask != null) step2Mask.close();
+        if (step2Causal != null) step2Causal.close();
         contMask.close();
     }
 

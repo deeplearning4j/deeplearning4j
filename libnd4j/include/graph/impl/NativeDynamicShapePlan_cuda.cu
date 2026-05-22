@@ -388,6 +388,21 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       if (replayStatus != Status::OK) {
         DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: composite replay FAILED seg[%d-%d] status=%d",
                  seg.def.startSlot, seg.def.endSlot, (int)replayStatus);
+        // KERNEL_FAILURE from compositeReplay due to merged graph addr drift:
+        // invalidateForRebuild() was called inside compositeReplay, clearing all
+        // handles and resetting state for re-capture. Return MAYBE so the caller
+        // falls back to full execute() which handles re-warmup and re-capture.
+        // Without this, KERNEL_FAILURE propagates to autoregressive_decode which
+        // treats it as a fatal non-recoverable error.
+        if (replayStatus == Status::KERNEL_FAILURE &&
+            seg.exec.replayHandle == nullptr &&
+            seg.exec.compositeReplaySchedule.units.empty()) {
+          DSP_DIAG(EXECUTE,
+                   "FROZEN_FAST_PATH: composite replay invalidated seg[%d-%d] "
+                   "(merged_graph_addr_drift) — returning MAYBE for full execute() fallback",
+                   seg.def.startSlot, seg.def.endSlot);
+          return Status::MAYBE;
+        }
         return replayStatus;
       }
       totalGraphReplays_++;
@@ -1069,11 +1084,17 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
     }
   }
   seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
-  // Clear merged group tags on schedule units
+  // Clear merged group tags on schedule units, then discard the units entirely so
+  // that buildCompositeReplaySchedule() is forced to rebuild them after the next
+  // recompile.  Without this, the lazy guard
+  //   if (seg.exec.compositeReplaySchedule.units.empty() && ctx.tritonBackend != nullptr)
+  // never fires when a plan is invalidated+recompiled with different Triton settings,
+  // leaving stale island/gap boundaries that cause COMPOSITE_CAPTURE_FAILED.
   for (auto& u : seg.exec.compositeReplaySchedule.units) {
     u.mergedGroupId = -1;
     u.isMergedLeader = false;
   }
+  seg.exec.compositeReplaySchedule.units.clear();
   // Clear composite (per-island) replay handles
   for (auto& h : seg.exec.compositeReplaySchedule.compositeReplayHandles) {
     if (h) {
@@ -1085,6 +1106,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
       h.reset();
     }
   }
+  seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
   seg.exec.gapOpsCapturedInGraph = false;
   seg.exec.bumpArgGeneration();
   seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
@@ -1991,13 +2013,12 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed intermediate NDArrays");
   logGpuMemState("STEP-2-AFTER-INTERMEDIATES");
 
-  // Free untracked output cache
-  if (untrackedOutputCache_) {
-    for (int i = 0; i < untrackedOutputCacheSize_; i++) {
-      delete untrackedOutputCache_[i];
-      untrackedOutputCache_[i] = nullptr;
-    }
-  }
+  // NOTE: untrackedOutputCache_ cleanup is handled by step 4e in
+  // releaseGpuIntermediates() (NativeDynamicShapePlan.cpp) which uses the
+  // safe pattern (deleteBuffers + setShapeInfo(nullptr) before delete).
+  // Raw delete here corrupts the heap: ~NDArray() tries to free() GPU
+  // device pointers and ConstantShapeBuffer* interiors that were never
+  // standalone malloc'd blocks.
 
   // Clear MmulHelper cast cache
   MmulHelper::clearCastCache();

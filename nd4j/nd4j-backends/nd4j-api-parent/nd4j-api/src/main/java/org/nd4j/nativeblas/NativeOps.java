@@ -1654,12 +1654,24 @@ public interface NativeOps {
  /**
   * Compile a loaded model into a native execution plan.
   * @param modelHandle handle from loadModelFromFile()
-  * @param requestedOutputNames array of output variable name strings
+  * @param requestedOutputNames pointer to array of C strings (const char**)
   * @param numOutputs number of requested outputs
   * @return opaque plan handle, or null on failure
   */
- default Pointer compileModelPlan(Pointer modelHandle, String[] requestedOutputNames, int numOutputs) {
+ default Pointer compileModelPlan(Pointer modelHandle, Pointer requestedOutputNames, int numOutputs) {
      throw new UnsupportedOperationException("compileModelPlan not implemented in this backend");
+ }
+
+ /**
+  * Convenience overload that converts String[] to native pointer array.
+  */
+ default Pointer compileModelPlan(Pointer modelHandle, String[] requestedOutputNames, int numOutputs) {
+     org.bytedeco.javacpp.PointerPointer<org.bytedeco.javacpp.BytePointer> pp =
+         new org.bytedeco.javacpp.PointerPointer<>(numOutputs);
+     for (int i = 0; i < numOutputs; i++) {
+         pp.put(i, new org.bytedeco.javacpp.BytePointer(requestedOutputNames[i]));
+     }
+     return compileModelPlan(modelHandle, (Pointer) pp, numOutputs);
  }
 
  /**

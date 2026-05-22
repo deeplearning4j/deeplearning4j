@@ -142,7 +142,16 @@ public class DistributionStats implements NormalizerStats {
 
                 // Update running mean
                 INDArray xMinusMean = data.subRowVector(runningMean);
-                runningMean.addi(xMinusMean.sum(0).divi(runningCount));
+                INDArray sumResult = xMinusMean.sum(0);
+                double sumBefore = sumResult.getDouble(0);
+                INDArray increment = sumResult.divi(runningCount);
+                System.out.println("DISTSTATS: xMinusMean.shape=" + java.util.Arrays.toString(xMinusMean.shape())
+                    + " xMinusMean=" + xMinusMean.toStringFull()
+                    + " SUM_BEFORE_DIV=" + sumBefore
+                    + " runningCount=" + runningCount
+                    + " increment=" + increment.getDouble(0));
+                runningMean.addi(increment);
+                System.out.println("DISTSTATS: runningMean(after)=" + runningMean.toStringFull());
             }
 
             return this;

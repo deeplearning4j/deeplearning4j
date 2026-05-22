@@ -152,9 +152,10 @@ PLATFORM_CHECK(transpose, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   // OneDNN supports f32, bf16, f16, and integer types for reorder
+  // Note: DOUBLE (f64) is NOT supported by oneDNN reorder primitives
   auto xType = x->dataType();
   bool isSupportedType = (xType == DataType::FLOAT32 || xType == DataType::BFLOAT16 ||
-                          xType == DataType::HALF || xType == DataType::DOUBLE ||
+                          xType == DataType::HALF ||
                           xType == DataType::INT8 || xType == DataType::UINT8 ||
                           xType == DataType::INT32);
 
@@ -208,9 +209,10 @@ PLATFORM_CHECK(permute, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   // OneDNN supports f32, bf16, f16, and integer types for reorder
+  // Note: DOUBLE (f64) is NOT supported by oneDNN reorder primitives
   auto xType = x->dataType();
   bool isSupportedType = (xType == DataType::FLOAT32 || xType == DataType::BFLOAT16 ||
-                          xType == DataType::HALF || xType == DataType::DOUBLE ||
+                          xType == DataType::HALF ||
                           xType == DataType::INT8 || xType == DataType::UINT8 ||
                           xType == DataType::INT32);
   bool typesMatch = (x->dataType() == z->dataType());

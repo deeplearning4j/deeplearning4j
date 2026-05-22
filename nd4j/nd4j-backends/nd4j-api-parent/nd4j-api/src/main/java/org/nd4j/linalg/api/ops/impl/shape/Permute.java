@@ -121,6 +121,14 @@ public class Permute extends Transpose {
 
     @Override
     public boolean initializeOutputs(OpContext ctx) {
+        // DSP allocates its own output buffers. The view created below has permuted
+        // (non-standard) strides which DynamicShapePlanCompiler captures via
+        // getShapeInfoForVar(), corrupting the native plan's buffer layout.
+        // Only skip for SameDiff graph execution (sameDiff != null), not direct imperative ops.
+        if (sameDiff != null && org.nd4j.autodiff.samediff.internal.InferenceSession.isDynamicShapePlanEnabled()) {
+            return super.initializeOutputs(ctx);
+        }
+
         configureFromArguments();
 
         List<INDArray> inputs = inputArguments();

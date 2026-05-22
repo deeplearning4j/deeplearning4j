@@ -289,7 +289,7 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
   delete hIMulWr;
 
   // add biases if they are given
-  if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
+  if (b != nullptr) z->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), b, z, false);  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
   auto zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});                // input gate it, [bS, nOut](or[nOut])
   auto zf = x->rankOf() == 1 ? (*z)({nOut, 2 * nOut}) : (*z)({0, 0, nOut, 2 * nOut});  // forget gate ft, [bS, nOut](or[nOut])
@@ -363,7 +363,7 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
   delete zAssign;
   
   // add biases if they are given
-  if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
+  if (b != nullptr) z->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), b, z, false);  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
   auto zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});  // input gate it, [bS, nOut](or[nOut])
   auto zf =

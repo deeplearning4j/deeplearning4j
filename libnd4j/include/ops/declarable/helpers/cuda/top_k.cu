@@ -457,7 +457,7 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
 
   // Device memory for zero offset (needed for async kernel execution)
   LongType* deviceZeroOffset = nullptr;
-  int topkDevId = 0; cudaGetDevice(&topkDevId);
+  int topkDevId = context->getDeviceID();
 
   std::shared_ptr<TadPack> packX, packI, packZ;
 
@@ -473,7 +473,7 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
     zTadShapeInfo = values->specialShapeInfo();
 
     // Allocate device memory for the zero offset
-    deviceZeroOffset = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), topkDevId, nullptr));
+    deviceZeroOffset = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), topkDevId, *context->getCudaStream()));
     if (deviceZeroOffset == nullptr) THROW_EXCEPTION("Cannot allocate memory for top_k zero offset");
     cudaMemsetAsync(deviceZeroOffset, 0, sizeof(LongType), *context->getCudaStream());
 
@@ -499,7 +499,10 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
   }
 
   // we get top K values first
-  if (k == 1) {
+  if (k == 1 && input->rankOf() > 1) {
+    // k==1 optimization using IndexMax — only for multi-dimensional input.
+    // For 1D input, applyIndexReduce with dims={0} produces a scalar result
+    // which doesn't match the [1]-shaped indices output, causing memory errors.
     std::vector<LongType> dims = {input->rankOf() - 1};
     input->applyIndexReduce(indexreduce::IndexMax, indices, &dims);
 
@@ -527,7 +530,7 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
     // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
     if (!tl_graphExecutionActive && !tl_dspReplayActive) {
       cudaStreamSynchronize(*context->getCudaStream());
-      sd::memory::CudaMemoryPool::getInstance().free(deviceZeroOffset, topkDevId, nullptr);
+      sd::memory::CudaMemoryPool::getInstance().free(deviceZeroOffset, topkDevId, *context->getCudaStream());
     }
   }
 

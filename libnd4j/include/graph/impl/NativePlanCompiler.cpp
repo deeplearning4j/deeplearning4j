@@ -504,6 +504,66 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
   }
 
+  // ── Step 5b: Buffer aliasing — mark unary elementwise ops for in-place execution.
+  // When an op is UNARY_ELEMENTWISE | FULLY_WRITING and its single op-output input
+  // has only one consumer (this op), the op can write directly into its input buffer
+  // instead of allocating a separate output buffer. This reduces peak memory.
+  {
+    // Compute consumer count per output slot
+    std::vector<int> slotConsumerCount(totalOutputSlots, 0);
+    for (int s = 0; s < numSteps; s++) {
+      auto& sl = plan->slots_[s];
+      for (int i = 0; i < sl.wiring.numInputs; i++) {
+        int srcIdx = sl.wiring.inputSourceIndices[i];
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
+          slotConsumerCount[srcIdx]++;
+        }
+      }
+    }
+
+    int aliasCount = 0;
+    for (int s = 0; s < numSteps; s++) {
+      auto& sl = plan->slots_[s];
+      // Must be unary elementwise and fully writing
+      if (!sl.hasOpTrait(sd::ops::OP_TRAIT_UNARY_ELEMENTWISE) ||
+          !sl.hasOpTrait(sd::ops::OP_TRAIT_FULLY_WRITING)) continue;
+      // Must have exactly 1 input
+      if (sl.wiring.numInputs != 1) continue;
+      // Input must come from another op's output (not external)
+      int srcSlot = sl.wiring.inputSourceIndices[0];
+      if (srcSlot < 0 || srcSlot >= totalOutputSlots) continue;
+      // Input slot must have only this op as consumer (safe to overwrite)
+      if (slotConsumerCount[srcSlot] != 1) continue;
+      // Skip if this slot is already marked (e.g., from fusion pass)
+      if (sl.flags.inPlaceFused) continue;
+      // Skip ops that change dtype. The runtime in-place path validates dtype
+      // match (line ~4130), but skipping at compile time avoids wasted attempts.
+      // CAST, COMPARISON, and LOGICAL ops all produce a different dtype than input.
+      if (sl.hasOpTrait(sd::ops::OP_TRAIT_CAST) ||
+          sl.hasOpTrait(sd::ops::OP_TRAIT_COMPARISON) ||
+          sl.hasOpTrait(sd::ops::OP_TRAIT_LOGICAL)) continue;
+
+      // The input buffer will be reused as the output. Extend the input slot's
+      // lifetime to match the output slot's lifetime so the release schedule
+      // doesn't free the shared buffer while the output is still live.
+      int outSlot = (sl.wiring.numOutputs > 0) ? sl.wiring.outputSlotIndices[0] : -1;
+      if (outSlot >= 0 && outSlot < totalOutputSlots) {
+        int outLastConsumer = slotLastConsumerStep[outSlot];
+        if (outLastConsumer > slotLastConsumerStep[srcSlot]) {
+          slotLastConsumerStep[srcSlot] = outLastConsumer;
+        }
+      }
+
+      sl.flags.inPlaceFused = true;
+      sl.flags.inPlaceFusedInputIdx = 0;
+      aliasCount++;
+    }
+
+    if (aliasCount > 0) {
+      DSP_DIAG(COMPILE, "Buffer aliasing: marked %d unary elementwise ops for in-place execution", aliasCount);
+    }
+  }
+
   // ── Step 6: Build release schedule ────────────────────────────────────────
   // Identify requested output slots
   std::unordered_set<int> finalOutputSlots;
@@ -537,6 +597,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
     }
   }
+
+  // Compute transitive variable dependency for the frozen fast-path gate.
+  plan->computeSlotVariableDependency();
 
   plan->releaseAtStep_ = new int*[numSteps];
   plan->releaseAtStepCounts_ = new int[numSteps];

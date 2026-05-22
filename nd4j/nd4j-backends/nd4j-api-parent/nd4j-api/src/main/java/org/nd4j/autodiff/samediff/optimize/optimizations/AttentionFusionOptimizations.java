@@ -98,6 +98,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
+            System.out.println("[ATTN-DIAG-FUSE] FuseManualAttentionPattern checking: " + op.getName());
             log.debug("Checking matmul op: {}", op.getName());
 
             List<String> mmulInputs = op.getInputsToOp();
@@ -245,6 +246,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             String attentionOutputVar = attentionOutputs.get(0);
 
             log.debug("[ATTN] *** FUSING *** Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " (causalMask=" + components.useCausalMask + ")");
+            System.out.println("[ATTN-DIAG] FUSING Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " causalMask=" + components.useCausalMask);
 
             try {
                 SDVariable qSDVar = sd.getVariable(components.queryVar);
@@ -272,8 +274,10 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 log.debug("[ATTN-DIAG] Rank check (after inference): Q={}, K={}, V={}", qRank, kRank, vRank);
 
                 // Reject unknown ranks (-1) and rank 5+.
+                System.out.println("[ATTN-DIAG-RANK] Q=" + qRank + " K=" + kRank + " V=" + vRank + " for op: " + op.getName());
                 if (qRank < 2 || kRank < 2 || vRank < 2 || qRank > 4 || kRank > 4 || vRank > 4) {
                     log.debug("[ATTN-DIAG] Skipping: ranks not supported (Q={}, K={}, V={})", qRank, kRank, vRank);
+                    System.out.println("[ATTN-DIAG-RANK] SKIPPING due to bad ranks Q=" + qRank + " K=" + kRank + " V=" + vRank);
                     return false;
                 }
 
@@ -298,8 +302,23 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         qSDVar = sd.getVariable(components.queryVar);
                     }
 
-                    // Absorb upstream permute([0,2,1,3]) on K
+                    // Absorb upstream permute on K.
+                    // Two patterns are handled:
+                    //   permute(0,2,1,3): BSHD→BHSD (standard multi-head layout swap)
+                    //   permute(0,2,3,1): BSHD→BHDS (K transposed for Q@K^T matmul)
+                    // In both cases absorbing recovers the original BSHD variable, which is
+                    // what dot_product_attention_v2 expects (it handles K transposition internally).
                     String[] kAbsorbed = absorbUpstreamPermute0213(sd, helper, components.keyVar);
+                    if (kAbsorbed == null) {
+                        // Try the K-transposed pattern: permute(BSHD, 0,2,3,1) → BHDS
+                        kAbsorbed = absorbPermute0231(sd, helper, components.keyVar);
+                        if (kAbsorbed != null) {
+                            log.debug("[ATTN-R4] Absorbing K transpose-permute (0,2,3,1): {} -> {}", components.keyVar, kAbsorbed[0]);
+                            System.out.println("[ATTN-DIAG] Absorbed K 0231 permute: " + components.keyVar + " -> " + kAbsorbed[0]);
+                        } else {
+                            System.out.println("[ATTN-DIAG] K 0231 absorption FAILED for: " + components.keyVar);
+                        }
+                    }
                     if (kAbsorbed != null) {
                         log.debug("[ATTN-R4] Absorbing K permute: {} -> {}", components.keyVar, kAbsorbed[0]);
                         permuteOpsToRemove.add(kAbsorbed[1]);
@@ -1401,6 +1420,62 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
     }
 
     /**
+     * Checks if an op is a permute([0,2,3,1]) — the K-transposed pattern used in multi-head
+     * attention where K is reshaped to BSHD and then transposed to BHDS for the Q@K^T matmul.
+     * permute(BSHD, 0,2,3,1) → BHDS  (K^T for attention scores matmul)
+     * Absorbing this permute recovers the original BSHD variable, which is what
+     * dot_product_attention_v2 expects as its key input.
+     */
+    static boolean checkPermute0231(SameDiffOp op) {
+        if (op == null || !(op.getOp() instanceof Permute)) {
+            return false;
+        }
+        DynamicCustomOp permOp = (DynamicCustomOp) op.getOp();
+        long[] iArgs = permOp.iArgs();
+        if (iArgs != null && iArgs.length == 4) {
+            return iArgs[0] == 0 && iArgs[1] == 2 && iArgs[2] == 3 && iArgs[3] == 1;
+        }
+        // Also check second input (constant permutation array)
+        List<String> inputs = op.getInputsToOp();
+        if (inputs != null && inputs.size() >= 2) {
+            SameDiff sd2 = permOp.getSameDiff();
+            if (sd2 != null) {
+                SDVariable permVar = sd2.getVariable(inputs.get(1));
+                if (permVar != null && permVar.getVariableType() == VariableType.CONSTANT) {
+                    INDArray permArr = sd2.getConstantArrays().getArray(permVar.name());
+                    if (permArr != null && permArr.length() == 4) {
+                        return permArr.getLong(0) == 0 && permArr.getLong(1) == 2 &&
+                               permArr.getLong(2) == 3 && permArr.getLong(3) == 1;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * If the given variable is the output of a permute([0,2,3,1]) (the K-transposed BHDS pattern),
+     * returns the pre-permute variable name and the permute op name as [varName, opName].
+     * Otherwise returns null. Used to absorb the K transposition in rank-4 attention fusion,
+     * recovering the original BSHD key variable for dot_product_attention_v2.
+     */
+    static String[] absorbPermute0231(SameDiff sd, OptimizationHelper helper, String varName) {
+        Variable v = getVariableWithFallback(helper, sd, varName);
+        if (v == null) return null;
+        String producerOpName = v.getOutputOfOp();
+        if (producerOpName == null) return null;
+        SameDiffOp producerOp = sd.getOps().get(producerOpName);
+        if (producerOp == null) return null;
+        if (checkPermute0231(producerOp)) {
+            List<String> inputs = producerOp.getInputsToOp();
+            if (inputs != null && !inputs.isEmpty()) {
+                return new String[] { inputs.get(0), producerOpName };
+            }
+        }
+        return null;
+    }
+
+    /**
      * Helper class to hold attention pattern components.
      */
     private static class AttentionComponents {
@@ -1584,6 +1659,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
             log.debug("[ATTN-DEBUG] Fusing causal masked attention: Q=" +
                     components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " into dot_product_attention_v2");
+            System.out.println("[ATTN-DIAG-CAUSAL] FuseAttentionWithCausalMask: Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar);
 
             try {
                 SDVariable qSDVar = sd.getVariable(components.queryVar);
@@ -1611,9 +1687,12 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 String downstreamPermuteOpName = null;
                 String downstreamPermuteOutputVar = null;
 
+                System.out.println("[ATTN-DIAG-CAUSAL-RANK] qRank=" + qRank + " kRank=" + kRank + " vRank=" + vRank);
                 if (qRank == 4 || kRank == 4 || vRank == 4) {
+                    System.out.println("[ATTN-DIAG-CAUSAL-R4] Entered rank-4 block");
                     // Absorb upstream permute([0,2,1,3]) on Q
                     String[] qAbsorbed = absorbPermute0213(sd, helper, components.queryVar);
+                    System.out.println("[ATTN-DIAG-CAUSAL-R4] qAbsorbed=" + (qAbsorbed != null ? qAbsorbed[0] + "/" + qAbsorbed[1] : "null"));
                     if (qAbsorbed != null) {
                         permuteOpsToRemove.add(qAbsorbed[1]);
                         permuteVarsToRemove.add(components.queryVar);
@@ -1621,8 +1700,19 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         qSDVar = sd.getVariable(components.queryVar);
                     }
 
-                    // Absorb upstream permute([0,2,1,3]) on K
+                    // Absorb upstream permute on K.
+                    // Two patterns are handled:
+                    //   permute(0,2,1,3): BSHD→BHSD (standard multi-head layout swap)
+                    //   permute(0,2,3,1): BSHD→BHDS (K transposed for Q@K^T matmul)
+                    // In both cases absorbing recovers the original BSHD variable.
                     String[] kAbsorbed = absorbPermute0213(sd, helper, components.keyVar);
+                    if (kAbsorbed == null) {
+                        kAbsorbed = absorbPermute0231(sd, helper, components.keyVar);
+                        if (kAbsorbed != null) {
+                            log.debug("[ATTN-R4-CAUSAL] Absorbing K transpose-permute (0,2,3,1): {} -> {}", components.keyVar, kAbsorbed[0]);
+                        }
+                    }
+                    System.out.println("[ATTN-DIAG-CAUSAL-R4] kAbsorbed=" + (kAbsorbed != null ? kAbsorbed[0] + "/" + kAbsorbed[1] : "null"));
                     if (kAbsorbed != null) {
                         permuteOpsToRemove.add(kAbsorbed[1]);
                         permuteVarsToRemove.add(components.keyVar);
@@ -1632,6 +1722,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
                     // Absorb upstream permute([0,2,1,3]) on V
                     String[] vAbsorbed = absorbPermute0213(sd, helper, vVar);
+                    System.out.println("[ATTN-DIAG-CAUSAL-R4] vAbsorbed=" + (vAbsorbed != null ? vAbsorbed[0] + "/" + vAbsorbed[1] : "null"));
                     if (vAbsorbed != null) {
                         permuteOpsToRemove.add(vAbsorbed[1]);
                         permuteVarsToRemove.add(vVar);
@@ -1656,6 +1747,11 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         }
                     }
                 }
+
+                System.out.println("[ATTN-DIAG-CAUSAL-FINAL] Final Q=" + components.queryVar + " K=" + components.keyVar + " V=" + vVar + " downPerm=" + downstreamPermuteOutputVar + " scale=" + components.scaleFactor);
+                if (qSDVar != null) System.out.println("[ATTN-DIAG-CAUSAL-FINAL] qShape=" + java.util.Arrays.toString(qSDVar.getShape()));
+                if (kSDVar != null) System.out.println("[ATTN-DIAG-CAUSAL-FINAL] kShape=" + java.util.Arrays.toString(kSDVar.getShape()));
+                if (vSDVar != null) System.out.println("[ATTN-DIAG-CAUSAL-FINAL] vShape=" + java.util.Arrays.toString(vSDVar.getShape()));
 
                 // Create dot_product_attention_v2 with causal mask enabled
                 SDVariable emptyQueryMask = sd.constant("attn_causal_empty_qmask_" + op.getName(), Nd4j.empty(DataType.FLOAT));
@@ -1761,7 +1857,19 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             double scaleFactor = 1.0;
 
             for (String input : scaleInputs) {
-                Variable inputVar = helper.getVariable(input);
+                // Always check for scalar scale value first — constants may not be in the helper
+                // and would be silently skipped if we gated this check behind inputVar != null.
+                SDVariable sdVar = sd.getVariable(input);
+                if (sdVar != null && sdVar.getArr() != null) {
+                    INDArray arr = sdVar.getArr();
+                    if (arr.isScalar()) {
+                        double val = arr.getDouble(0);
+                        scaleFactor = isMul ? val : (1.0 / val);
+                    }
+                }
+
+                // For matmul identification we need the Variable metadata (producer op).
+                Variable inputVar = getVariableWithFallback(helper, sd, input);
                 if (inputVar == null) continue;
 
                 String inputOpName = inputVar.getOutputOfOp();
@@ -1771,22 +1879,13 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         matmulOutputVar = input;
                     }
                 }
-
-                SDVariable sdVar = sd.getVariable(input);
-                if (sdVar != null && sdVar.getArr() != null) {
-                    INDArray arr = sdVar.getArr();
-                    if (arr.isScalar()) {
-                        double val = arr.getDouble(0);
-                        scaleFactor = isMul ? val : (1.0 / val);
-                    }
-                }
             }
 
             if (matmulOutputVar == null) {
                 return null;
             }
 
-            Variable mmOutVar = helper.getVariable(matmulOutputVar);
+            Variable mmOutVar = getVariableWithFallback(helper, sd, matmulOutputVar);
             if (mmOutVar == null) return null;
 
             String mmOpName = mmOutVar.getOutputOfOp();
@@ -2016,6 +2115,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
             log.debug("[ATTN-DEBUG] Fusing masked attention: Q=" +
                     components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + ", mask=" + maskVar + " into dot_product_attention_v2");
+            System.out.println("[ATTN-DIAG-MASK] FuseAttentionWithMask: Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + ", mask=" + maskVar);
 
             try {
                 SDVariable qSDVar = sd.getVariable(components.queryVar);
@@ -2049,7 +2149,17 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         qSDVar = sd.getVariable(components.queryVar);
                     }
 
+                    // Absorb upstream permute on K.
+                    // Two patterns are handled:
+                    //   permute(0,2,1,3): BSHD→BHSD (standard multi-head layout swap)
+                    //   permute(0,2,3,1): BSHD→BHDS (K transposed for Q@K^T matmul)
                     String[] kAbsorbed = absorbPermute0213(sd, helper, components.keyVar);
+                    if (kAbsorbed == null) {
+                        kAbsorbed = absorbPermute0231(sd, helper, components.keyVar);
+                        if (kAbsorbed != null) {
+                            log.debug("[ATTN-R4-MASK] Absorbing K transpose-permute (0,2,3,1): {} -> {}", components.keyVar, kAbsorbed[0]);
+                        }
+                    }
                     if (kAbsorbed != null) {
                         permuteOpsToRemove.add(kAbsorbed[1]);
                         permuteVarsToRemove.add(components.keyVar);
@@ -2176,7 +2286,19 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             double scaleFactor = 1.0;
 
             for (String input : scaleInputs) {
-                Variable inputVar = helper.getVariable(input);
+                // Always check for scalar scale value first — constants may not be in the helper
+                // and would be silently skipped if we gated this check behind inputVar != null.
+                SDVariable sdVar = sd.getVariable(input);
+                if (sdVar != null && sdVar.getArr() != null) {
+                    INDArray arr = sdVar.getArr();
+                    if (arr.isScalar()) {
+                        double val = arr.getDouble(0);
+                        scaleFactor = isMul ? val : (1.0 / val);
+                    }
+                }
+
+                // For matmul identification we need the Variable metadata (producer op).
+                Variable inputVar = getVariableWithFallback(helper, sd, input);
                 if (inputVar == null) continue;
 
                 String inputOpName = inputVar.getOutputOfOp();
@@ -2186,22 +2308,13 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         matmulOutputVar = input;
                     }
                 }
-
-                SDVariable sdVar = sd.getVariable(input);
-                if (sdVar != null && sdVar.getArr() != null) {
-                    INDArray arr = sdVar.getArr();
-                    if (arr.isScalar()) {
-                        double val = arr.getDouble(0);
-                        scaleFactor = isMul ? val : (1.0 / val);
-                    }
-                }
             }
 
             if (matmulOutputVar == null) {
                 return null;
             }
 
-            Variable mmOutVar = helper.getVariable(matmulOutputVar);
+            Variable mmOutVar = getVariableWithFallback(helper, sd, matmulOutputVar);
             if (mmOutVar == null) return null;
 
             String mmOpName = mmOutVar.getOutputOfOp();
@@ -2390,58 +2503,96 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             }
             String vVar = attnMatmulInputs.get(1);
 
-            // Trace Q, K, V back to their projections
-            String qProjOutput = traceBackToProjection(sd, helper, components.queryVar, "q_proj");
-            String kProjOutput = traceBackToProjection(sd, helper, components.keyVar, "k_proj");
-            String vProjOutput = traceBackToProjection(sd, helper, vVar, "v_proj");
-
-            if (qProjOutput == null || kProjOutput == null || vProjOutput == null) {
-                log.debug("[LLaMA-ATTN] Could not trace back to all projections for {}", op.getName());
-                return false;
-            }
-
-            log.debug("[LLaMA-ATTN] Traced to projections: Q={}, K={}, V={}", 
-                     qProjOutput, kProjOutput, vProjOutput);
-
-            // Verify all projections come from the same layernorm source
-            if (!verifyCommonSource(sd, helper, qProjOutput, kProjOutput, vProjOutput)) {
-                log.debug("[LLaMA-ATTN] Projections do not share common source for {}", op.getName());
-                return false;
-            }
-
-            // Get the Q, K, V variables at projection outputs
-            SDVariable qSDVar = sd.getVariable(qProjOutput);
-            SDVariable kSDVar = sd.getVariable(kProjOutput);
-            SDVariable vSDVar = sd.getVariable(vProjOutput);
+            // Use Q, K, V variables at the attention compute stage (post-reshape/permute).
+            // These are in BHSD format (after permute(0,2,1,3)) which is what the attention
+            // core operates on. We absorb permutes to get BSHD for the fused op.
+            // The projection matmuls and reshape ops remain in the graph.
+            SDVariable qSDVar = sd.getVariable(components.queryVar);
+            SDVariable kSDVar = sd.getVariable(components.keyVar);
+            SDVariable vSDVar = sd.getVariable(vVar);
 
             if (qSDVar == null || kSDVar == null || vSDVar == null) {
-                log.debug("[LLaMA-ATTN] Could not get SDVariables for Q/K/V");
+                log.debug("[LLaMA-ATTN] Could not get SDVariables for Q/K/V at attention stage");
                 return false;
             }
 
-            // Get o_proj output for replacement
-            List<String> oProjOutputs = op.getOutputsOfOp();
-            if (oProjOutputs == null || oProjOutputs.isEmpty()) {
-                log.debug("[LLaMA-ATTN] o_proj {} has no outputs", op.getName());
-                return false;
-            }
-            String oProjOutputVar = oProjOutputs.get(0);
+            // Absorb upstream permute(0,2,1,3) on Q/K/V to recover BSHD format
+            // dot_product_attention_v2 expects BSHD, not BHSD
+            List<String> permuteOpsToRemove = new ArrayList<>();
+            List<String> permuteVarsToRemove = new ArrayList<>();
 
-            log.info("[LLaMA-ATTN] *** FUSING *** {}: Q={}, K={}, V={}, causal=true", 
-                    op.getName(), qProjOutput, kProjOutput, vProjOutput);
+            String qVarName = components.queryVar;
+            String kVarName = components.keyVar;
+            String vVarName = vVar;
+
+            int qRank = inferVariableRank(sd, qSDVar);
+            if (qRank == 4 || inferVariableRank(sd, kSDVar) == 4 || inferVariableRank(sd, vSDVar) == 4) {
+                String[] qAbsorbed = absorbPermute0213(sd, helper, qVarName);
+                if (qAbsorbed != null) {
+                    permuteOpsToRemove.add(qAbsorbed[1]);
+                    permuteVarsToRemove.add(qVarName);
+                    qVarName = qAbsorbed[0];
+                    qSDVar = sd.getVariable(qVarName);
+                }
+
+                String[] kAbsorbed = absorbPermute0213(sd, helper, kVarName);
+                if (kAbsorbed == null) {
+                    kAbsorbed = absorbPermute0231(sd, helper, kVarName);
+                }
+                if (kAbsorbed != null) {
+                    permuteOpsToRemove.add(kAbsorbed[1]);
+                    permuteVarsToRemove.add(kVarName);
+                    kVarName = kAbsorbed[0];
+                    kSDVar = sd.getVariable(kVarName);
+                }
+
+                String[] vAbsorbed = absorbPermute0213(sd, helper, vVarName);
+                if (vAbsorbed != null) {
+                    permuteOpsToRemove.add(vAbsorbed[1]);
+                    permuteVarsToRemove.add(vVarName);
+                    vVarName = vAbsorbed[0];
+                    vSDVar = sd.getVariable(vVarName);
+                }
+            }
+
+            // Get the attention output variable — this is what feeds into the
+            // downstream permute/reshape → o_proj chain
+            String attOutVar = attentionOutputVar;
+
+            // Detect downstream permute(0,2,1,3) on attention output (BHSD→BSHD)
+            String downstreamPermuteOpName = null;
+            String downstreamPermuteOutputVar = null;
+            Variable attOutVarInfo = getVariableWithFallback(helper, sd, attOutVar);
+            if (attOutVarInfo != null) {
+                List<String> attUsers = attOutVarInfo.getInputsForOp();
+                if (attUsers != null && attUsers.size() == 1) {
+                    SameDiffOp userOp = sd.getOps().get(attUsers.get(0));
+                    if (userOp != null && checkPermute0213(userOp)) {
+                        List<String> userOutputs = userOp.getOutputsOfOp();
+                        if (userOutputs != null && !userOutputs.isEmpty()) {
+                            downstreamPermuteOpName = userOp.getName();
+                            downstreamPermuteOutputVar = userOutputs.get(0);
+                        }
+                    }
+                }
+            }
+
+            log.info("[LLaMA-ATTN] *** FUSING *** {}: Q={}, K={}, V={}, causal=true",
+                    op.getName(), qVarName, kVarName, vVarName);
 
             try {
                 // Create empty masks
-                SDVariable emptyQueryMask = sd.constant("llama_attn_empty_qmask_" + op.getName(), 
+                SDVariable emptyQueryMask = sd.constant("llama_attn_empty_qmask_" + op.getName(),
                                                        Nd4j.empty(qSDVar.dataType()));
-                SDVariable emptyValueMask = sd.constant("llama_attn_empty_vmask_" + op.getName(), 
+                SDVariable emptyValueMask = sd.constant("llama_attn_empty_vmask_" + op.getName(),
                                                        Nd4j.empty(vSDVar.dataType()));
 
                 // Create fused attention op with causal masking
+                // Q/K/V are in BSHD format (after absorbing upstream permutes)
                 SDVariable fusedOutput = new DotProductAttentionV2(sd,
-                        qSDVar,              // queries (after q_proj)
-                        vSDVar,              // values (after v_proj)
-                        kSDVar,              // keys (after k_proj)
+                        qSDVar,              // queries (BSHD)
+                        vSDVar,              // values (BSHD)
+                        kSDVar,              // keys (BSHD)
                         emptyQueryMask,      // queryMask (empty)
                         emptyValueMask,      // valueMask (empty)
                         null, null, null, null,  // no KV cache, no attention bias
@@ -2451,14 +2602,14 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         false                // not training
                 ).outputVariable();
 
-                // Replace o_proj output with fused output
-                OptimizationUtils.replaceOpInputsWith(sd, helper, oProjOutputVar, fusedOutput.name());
+                // The fused op outputs BSHD. Replace the appropriate downstream variable:
+                // - If there was a downstream permute (BHSD→BSHD), replace its output
+                // - Otherwise, replace the attention output
+                String replaceVar = (downstreamPermuteOutputVar != null) ?
+                        downstreamPermuteOutputVar : attOutVar;
+                OptimizationUtils.replaceOpInputsWith(sd, helper, replaceVar, fusedOutput.name());
 
-                // Remove old operations in reverse dependency order
-                // 1. Remove o_proj matmul
-                OptimizationUtils.removeOp(sd, helper, op.getName());
-
-                // 2. Remove attention computation ops
+                // Remove attention computation ops (but NOT projection matmuls or o_proj)
                 OptimizationUtils.removeOp(sd, helper, attnMatmulOp.getName());
                 OptimizationUtils.removeOp(sd, helper, softmaxOp.getName());
                 if (components.scaleOpName != null) {
@@ -2466,18 +2617,19 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 }
                 OptimizationUtils.removeOp(sd, helper, components.qkMatmulOpName);
 
-                // 3. Remove projection matmuls (trace back to find them)
-                removeProjectionOps(sd, helper, qProjOutput, kProjOutput, vProjOutput);
+                // Remove absorbed permute ops
+                if (downstreamPermuteOpName != null) {
+                    OptimizationUtils.removeOp(sd, helper, downstreamPermuteOpName);
+                }
+                for (String permuteOp : permuteOpsToRemove) {
+                    OptimizationUtils.removeOp(sd, helper, permuteOp);
+                }
 
-                // 4. Remove intermediate variables
-                cleanupIntermediateVars(sd, helper, op, attnMatmulOp, softmaxOp, components, 
-                                       attentionOutputVar, oProjOutputVar);
-
-                log.info("[LLaMA-ATTN] Successfully fused attention block for {}", op.getName());
+                log.info("[LLaMA-ATTN] Successfully fused attention core for {}", op.getName());
                 return true;
 
             } catch (Exception e) {
-                log.warn("[LLaMA-ATTN] Failed to fuse attention block for {}: {}", 
+                log.warn("[LLaMA-ATTN] Failed to fuse attention block for {}: {}",
                         op.getName(), e.getMessage());
                 return false;
             }
@@ -2666,24 +2818,14 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             List<String> scaleInputs = scaleOp.getInputsToOp();
             if (scaleInputs == null || scaleInputs.size() < 2) return null;
 
-            boolean isMul = scaleOp.getOp() instanceof MulOp || 
+            boolean isMul = scaleOp.getOp() instanceof MulOp ||
                            scaleOp.getOp() instanceof ScalarMultiplication;
             String matmulOutputVar = null;
             double scaleFactor = 1.0;
 
             for (String input : scaleInputs) {
-                Variable inputVar = helper.getVariable(input);
-                if (inputVar == null) continue;
-
-                String inputOpName = inputVar.getOutputOfOp();
-                if (inputOpName != null) {
-                    SameDiffOp inputOp = sd.getOps().get(inputOpName);
-                    if (inputOp != null && (inputOp.getOp() instanceof Mmul || 
-                                           inputOp.getOp() instanceof TensorMmul)) {
-                        matmulOutputVar = input;
-                    }
-                }
-
+                // Always check for scalar scale value first — constants may not be in the helper
+                // and would be silently skipped if we gated this check behind inputVar != null.
                 SDVariable sdVar = sd.getVariable(input);
                 if (sdVar != null && sdVar.getArr() != null) {
                     INDArray arr = sdVar.getArr();
@@ -2692,11 +2834,24 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         scaleFactor = isMul ? val : (1.0 / val);
                     }
                 }
+
+                // For matmul identification we need the Variable metadata (producer op).
+                Variable inputVar = getVariableWithFallback(helper, sd, input);
+                if (inputVar == null) continue;
+
+                String inputOpName = inputVar.getOutputOfOp();
+                if (inputOpName != null) {
+                    SameDiffOp inputOp = sd.getOps().get(inputOpName);
+                    if (inputOp != null && (inputOp.getOp() instanceof Mmul ||
+                                           inputOp.getOp() instanceof TensorMmul)) {
+                        matmulOutputVar = input;
+                    }
+                }
             }
 
             if (matmulOutputVar == null) return null;
 
-            Variable mmOutVar = helper.getVariable(matmulOutputVar);
+            Variable mmOutVar = getVariableWithFallback(helper, sd, matmulOutputVar);
             if (mmOutVar == null) return null;
 
             String mmOpName = mmOutVar.getOutputOfOp();

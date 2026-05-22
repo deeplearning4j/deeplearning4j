@@ -92,20 +92,6 @@ public class GradCheckUtil {
             sd.enableDebugMode();
         }
 
-        // Disable DSP (DynamicShapePlan) during gradient checking.
-        // DSP is designed for repeated inference with fixed VARIABLE inputs (model weights) and
-        // dynamic PLACEHOLDER inputs (e.g. token ids). After the first execution, C++ DSP
-        // auto-seals to SHAPES_FROZEN and marks all VARIABLE inputs as non-syncing "weights",
-        // skipping H2D transfer for VARIABLE arrays even when their host data changes.
-        // Gradient checking MODIFIES VARIABLE arrays via putScalar() between sd.output() calls,
-        // so skipping the sync causes stale GPU data and near-zero numerical gradients.
-        // DSP must be disabled for the duration of gradient checking to ensure each sd.output()
-        // call sees the current (perturbed) variable values.
-        boolean dspAutoCompileBefore = sd.isDspAutoCompileEnabled();
-        boolean dspNativeAutoCompileBefore = sd.isDspNativeAutoCompileEnabled();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
-
         //Validation sanity checks:
         if(!skipValidation) {
             validateInternalState(sd, true);
@@ -182,6 +168,12 @@ public class GradCheckUtil {
             }
             grad.put(v.name(), ga.dup());
         }
+
+        // Close the gradient map arrays — we've dup'd what we need into `grad`
+        for(INDArray arr : gm.values()) {
+            if(arr != null) arr.close();
+        }
+        gm.clear();
 
         //Validate gradients for each variable:
         int totalNFailures = 0;
@@ -269,16 +261,25 @@ public class GradCheckUtil {
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig + eps);
                 double scorePlus = 0.0;
-                Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
+                Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);
                 for(INDArray arr : m.values()) {
                     scorePlus += arr.sumNumber().doubleValue();
                 }
+                // Explicitly close output arrays to release GPU memory immediately
+                for(INDArray arr : m.values()) {
+                    if(arr != null) arr.close();
+                }
+
                 a.putScalar(idx, orig-eps);
                 m = sd.output(placeholderValues, lossFnVariables);
                 double scoreMinus = 0.0;
                 for(INDArray arr : m.values()) {
                     scoreMinus += arr.sumNumber().doubleValue();
                 }
+                for(INDArray arr : m.values()) {
+                    if(arr != null) arr.close();
+                }
+
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
@@ -322,9 +323,9 @@ public class GradCheckUtil {
                                 + ", numericalGrad= " + numericalGrad + ", relError= " + relError
                                 + ", absError=" + absError
                                 + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
-                        if (exitOnFirstFailure)
-                            return false;
                         totalNFailures++;
+                        if (exitOnFirstFailure)
+                            break;
                     }
                 } else if (print) {
                     log.info("Param " + i + " (" + name + strIdx + ") passed: grad= " + analyticGrad + ", numericalGrad= "
@@ -338,13 +339,26 @@ public class GradCheckUtil {
         log.info("GradCheckUtil.checkGradients(): " + totalCount + " params checked, " + nPass + " passed, "
                 + totalNFailures + " failed. Largest relative error = " + maxError);
 
+        // Close gradient arrays to release GPU memory
+        for(INDArray arr : grad.values()) {
+            if(arr != null) arr.close();
+        }
+        grad.clear();
+
+        // Trim GPU memory pool to release freed memory back to the driver
+        try {
+            Nd4j.getExecutioner().commit();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                Nd4j.getNativeOps().trimMemoryPool(d);
+            }
+        } catch (Exception e) {
+            // ignore — may fail on CPU backend
+        }
+
         if(debugMode && !debugBefore){
             sd.disableDebugging();
         }
-
-        // Restore DSP state
-        sd.setDspAutoCompileEnabled(dspAutoCompileBefore);
-        sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileBefore);
 
         return totalNFailures == 0;
     }
@@ -382,12 +396,6 @@ public class GradCheckUtil {
         if(config.isDebugMode()){
             sd.enableDebugMode();
         }
-
-        // Disable DSP during gradient checking — see checkGradients() for rationale.
-        boolean dspAutoCompileBefore = sd.isDspAutoCompileEnabled();
-        boolean dspNativeAutoCompileBefore = sd.isDspNativeAutoCompileEnabled();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         //Validation sanity checks:
         if(!config.isSkipValidation()){
@@ -551,10 +559,6 @@ public class GradCheckUtil {
 
             }
         }
-
-        // Restore DSP state
-        sd.setDspAutoCompileEnabled(dspAutoCompileBefore);
-        sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileBefore);
 
         return totalNFailures == 0;
     }

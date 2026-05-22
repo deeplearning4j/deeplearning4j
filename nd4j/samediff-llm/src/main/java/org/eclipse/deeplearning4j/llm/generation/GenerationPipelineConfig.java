@@ -77,6 +77,21 @@ public class GenerationPipelineConfig {
     @Builder.Default
     private final int maxNewTokens = 256;
 
+    /**
+     * Fixed maximum prefill (prompt) length for pre-allocated buffers.
+     * When &gt; 0, all KV cache buffers, causal masks, and attention masks are
+     * allocated at this fixed size so the DSP plan is compiled once and
+     * reused across generations with different prompt lengths — no plan
+     * reset or recompilation needed. Prompts shorter than this are
+     * right-padded; prompts longer are truncated with a warning.
+     *
+     * <p>When 0 (default), buffers are sized per-call to
+     * {@code promptLen + maxNewTokens}, which requires DSP reset between
+     * calls with different prompt lengths.</p>
+     */
+    @Builder.Default
+    private final int maxPrefillLength = 0;
+
     /** Model hidden size. Auto-detected from embeddings if 0. */
     @Builder.Default
     private final long hiddenSize = 0;

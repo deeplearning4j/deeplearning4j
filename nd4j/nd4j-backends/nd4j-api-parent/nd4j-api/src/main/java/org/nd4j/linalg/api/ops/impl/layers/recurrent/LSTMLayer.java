@@ -97,10 +97,10 @@ public class LSTMLayer extends DynamicCustomOp {
             list.add(dt);
         }
 
-        if (configuration.isRetLastC()) {
+        if (configuration.isRetLastH()) {
             list.add(dt);
         }
-        if (configuration.isRetLastH()) {
+        if (configuration.isRetLastC()) {
             list.add(dt);
         }
 

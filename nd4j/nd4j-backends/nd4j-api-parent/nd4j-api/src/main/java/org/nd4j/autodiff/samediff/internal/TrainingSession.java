@@ -182,10 +182,10 @@ public class TrainingSession extends InferenceSession {
         List<String> outputVars = new ArrayList<>(gradVarToVarMap.keySet());    //TODO this should be empty, and grads calculated in requiredActivations
         outputVars.addAll(lossVariables);
 
-        // Try DSP fast path first — bypasses the listener-gated check in output()
+        // Try DSP fast path first — DSP fires listener callbacks post-execution.
         boolean dspHandled = false;
         if (isDynamicShapePlanEnabled()) {
-            dspHandled = tryDspTrainingIteration(placeholders, outputVars, requiredActivations, at);
+            dspHandled = tryDspTrainingIteration(placeholders, outputVars, requiredActivations, batch, at);
         }
 
         if (!dspHandled) {
@@ -258,6 +258,7 @@ public class TrainingSession extends InferenceSession {
     private boolean tryDspTrainingIteration(Map<String, INDArray> placeholders,
                                             List<String> outputVars,
                                             Set<String> requiredActivations,
+                                            MultiDataSet batch,
                                             At at) {
         // Updater fusion is disabled for now. The fused updater ops (adam_updater,
         // sgd_updater, nesterovs_updater) are misclassified as BINARY_EW in OpTraitTable.cpp,
@@ -302,6 +303,24 @@ public class TrainingSession extends InferenceSession {
                     log.debug("DSP loss '{}' = {}", entry.getKey(), l);
                 } else {
                     log.warn("DSP loss variable '{}' not found in results (val={})", entry.getKey(), val);
+                }
+            }
+
+            // Fire activationAvailable for train evaluation variables so that listeners
+            // (e.g. HistoryListener via BaseEvaluationListener) can call Evaluation.eval().
+            // The standard slot-by-slot path fires these callbacks per-op, but DSP executes
+            // the entire plan natively and never enters the per-op callback loop.
+            if (this.listeners != null && config.getTrainEvaluations() != null && !config.getTrainEvaluations().isEmpty()) {
+                for (String varName : config.getTrainEvaluations().keySet()) {
+                    SDValue val = results.get(varName);
+                    if (val != null && val.getTensorValue() != null) {
+                        INDArray activation = val.getTensorValue();
+                        for (Listener l : this.listeners) {
+                            if (l.isActive(at.operation())) {
+                                l.activationAvailable(sameDiff, at, batch, null, varName, activation);
+                            }
+                        }
+                    }
                 }
             }
 

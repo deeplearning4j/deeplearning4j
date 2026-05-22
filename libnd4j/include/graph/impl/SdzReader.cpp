@@ -47,6 +47,15 @@ bool endsWithIgnoreCase(const std::string& value, const char* suffix) {
   return true;
 }
 
+// The SDNB binary format starts with the 4-byte magic "SDNB".
+// Java's SDZSerializer may write entries without the .sdnb extension (e.g. "model")
+// for single-shard saves. This helper checks raw data for the magic prefix.
+static constexpr uint8_t kSdnbMagic[4] = {'S', 'D', 'N', 'B'};
+
+bool hasSdnbMagic(const uint8_t* data, size_t size) {
+  return size >= 4 && std::memcmp(data, kSdnbMagic, 4) == 0;
+}
+
 template <typename T>
 bool readPod(const std::vector<uint8_t>& data, size_t offset, T* out) {
   if (offset + sizeof(T) > data.size()) return false;
@@ -215,20 +224,34 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
     std::string filename(reinterpret_cast<const char*>(fileData.data() + filenameOffset),
                          entry.filenameLen);
 
-    if (endsWithIgnoreCase(filename, ".sdnb")) {
-      if ((entry.flags & 0x1) != 0) {
+    // Accept entries with .sdnb extension OR entries whose raw data starts with "SDNB" magic.
+    // Java's SDZSerializer writes single-shard models with entry name "model" (no extension)
+    // but the binary content still has the SDNB format header.
+    bool nameMatchesSdnb = endsWithIgnoreCase(filename, ".sdnb");
+    // Skip directory entries and encrypted entries early
+    if ((entry.flags & 0x1) != 0) {
+      if (nameMatchesSdnb) {
         DSP_DIAG(COMPILE, "SdzReader: encrypted entry '%s' is not supported", filename.c_str());
-      } else {
-        const size_t localOffset = entry.localHeaderOffset;
-        ZipLocalFileHeader local{};
+      }
+    } else {
+      const size_t localOffset = entry.localHeaderOffset;
+      ZipLocalFileHeader local{};
 
-        if (readPod(fileData, localOffset, &local) && local.signature == 0x04034b50) {
-          const size_t dataOffset =
-              localOffset + sizeof(ZipLocalFileHeader) + local.filenameLen + local.extraLen;
-          const size_t compressedSize = entry.compressedSize;
-          const size_t uncompressedSize = entry.uncompressedSize;
+      if (readPod(fileData, localOffset, &local) && local.signature == 0x04034b50) {
+        const size_t dataOffset =
+            localOffset + sizeof(ZipLocalFileHeader) + local.filenameLen + local.extraLen;
+        const size_t compressedSize = entry.compressedSize;
+        const size_t uncompressedSize = entry.uncompressedSize;
 
-          if (dataOffset <= fileSize && compressedSize <= (fileSize - dataOffset)) {
+        if (dataOffset <= fileSize && compressedSize <= (fileSize - dataOffset)) {
+          // For STORED entries, check the SDNB magic in-place without extraction.
+          // For DEFLATE entries, we must decompress first before checking magic.
+          bool magicMatchesSdnb = false;
+          if (!nameMatchesSdnb && entry.compression == 0 && compressedSize >= 4) {
+            magicMatchesSdnb = hasSdnbMagic(fileData.data() + dataOffset, compressedSize);
+          }
+
+          if (nameMatchesSdnb || magicMatchesSdnb || (!nameMatchesSdnb && entry.compression != 0)) {
             std::vector<uint8_t> entryData;
             bool extracted = false;
 
@@ -256,7 +279,10 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
             }
 
             if (extracted) {
-              reader->sdnbEntries_.emplace_back(filename, std::move(entryData));
+              // Final check: verify SDNB magic if we weren't sure by filename
+              if (nameMatchesSdnb || hasSdnbMagic(entryData.data(), entryData.size())) {
+                reader->sdnbEntries_.emplace_back(filename, std::move(entryData));
+              }
             }
           }
         }

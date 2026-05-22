@@ -1503,6 +1503,114 @@ public class ND4JSystemProperties {
      */
     public static final String DEVICE_POINTER_STABILITY_CHECK = "nd4j.device.pointerStability.check";
 
+    // ========================================================================
+    // Environment forwarding properties (orchestrator → subprocess pattern).
+    // These are set as system properties by an orchestrator process that reads
+    // persisted ND4J config JSON but does NOT initialize the ND4J backend.
+    // Subprocesses read these on startup to apply environment settings.
+    // ========================================================================
+
+    // --- BLAS / Threading ---
+    public static final String ENV_ENABLE_BLAS = "nd4j.environment.enableBlas";
+    public static final String ENV_HELPERS_ALLOWED = "nd4j.environment.helpersAllowed";
+    public static final String ENV_MAX_THREADS = "nd4j.environment.maxThreads";
+    public static final String ENV_MAX_MASTER_THREADS = "nd4j.environment.maxMasterThreads";
+    public static final String ENV_OMP_NUM_THREADS = "nd4j.environment.ompNumThreads";
+
+    // --- Debug / Profiling ---
+    public static final String ENV_DEBUG = "nd4j.environment.debug";
+    public static final String ENV_VERBOSE = "nd4j.environment.verbose";
+    public static final String ENV_PROFILING = "nd4j.environment.profiling";
+    public static final String ENV_DETECTING_LEAKS = "nd4j.environment.detectingLeaks";
+
+    // --- Parallelism thresholds ---
+    public static final String ENV_TAD_THRESHOLD = "nd4j.environment.tadThreshold";
+    public static final String ENV_ELEMENTWISE_THRESHOLD = "nd4j.environment.elementwiseThreshold";
+
+    // --- Memory limits ---
+    public static final String ENV_MAX_PRIMARY_MEMORY = "nd4j.environment.maxPrimaryMemory";
+    public static final String ENV_MAX_SPECIAL_MEMORY = "nd4j.environment.maxSpecialMemory";
+    public static final String ENV_MAX_DEVICE_MEMORY = "nd4j.environment.maxDeviceMemory";
+
+    // --- Lifecycle tracking ---
+    public static final String ENV_LIFECYCLE_TRACKING = "nd4j.environment.lifecycleTracking";
+    public static final String ENV_TRACK_VIEWS = "nd4j.environment.trackViews";
+    public static final String ENV_TRACK_DELETIONS = "nd4j.environment.trackDeletions";
+    public static final String ENV_SNAPSHOT_FILES = "nd4j.environment.snapshotFiles";
+    public static final String ENV_TRACK_OPERATIONS = "nd4j.environment.trackOperations";
+    public static final String ENV_STACK_DEPTH = "nd4j.environment.stackDepth";
+    public static final String ENV_REPORT_INTERVAL = "nd4j.environment.reportInterval";
+    public static final String ENV_MAX_DELETION_HISTORY = "nd4j.environment.maxDeletionHistory";
+
+    // --- Subsystem tracking ---
+    public static final String ENV_NDARRAY_TRACKING = "nd4j.environment.ndArrayTracking";
+    public static final String ENV_DATA_BUFFER_TRACKING = "nd4j.environment.dataBufferTracking";
+    public static final String ENV_TAD_CACHE_TRACKING = "nd4j.environment.tadCacheTracking";
+    public static final String ENV_SHAPE_CACHE_TRACKING = "nd4j.environment.shapeCacheTracking";
+    public static final String ENV_OP_CONTEXT_TRACKING = "nd4j.environment.opContextTracking";
+
+    // --- Function trace ---
+    public static final String ENV_FUNC_TRACE_PRINT_ALLOCATE = "nd4j.environment.funcTracePrintAllocate";
+    public static final String ENV_FUNC_TRACE_PRINT_DEALLOCATE = "nd4j.environment.funcTracePrintDeallocate";
+    public static final String ENV_FUNC_TRACE_PRINT_JAVA_ONLY = "nd4j.environment.funcTracePrintJavaOnly";
+
+    // --- Logging ---
+    public static final String ENV_LOG_NATIVE_NDARRAY_CREATION = "nd4j.environment.logNativeNDArrayCreation";
+    public static final String ENV_LOG_NDARRAY_EVENTS = "nd4j.environment.logNDArrayEvents";
+    public static final String ENV_TRUNCATE_NDARRAY_LOG_STRINGS = "nd4j.environment.truncateNDArrayLogStrings";
+    public static final String ENV_CHECK_INPUT_CHANGE = "nd4j.environment.checkInputChange";
+    public static final String ENV_CHECK_OUTPUT_CHANGE = "nd4j.environment.checkOutputChange";
+    public static final String ENV_TRACK_WORKSPACE_OPEN_CLOSE = "nd4j.environment.trackWorkspaceOpenClose";
+    public static final String ENV_DELETE_SHAPE_INFO = "nd4j.environment.deleteShapeInfo";
+    public static final String ENV_DELETE_PRIMARY = "nd4j.environment.deletePrimary";
+    public static final String ENV_DELETE_SPECIAL = "nd4j.environment.deleteSpecial";
+    public static final String ENV_VARIABLE_TRACING_ENABLED = "nd4j.environment.variableTracingEnabled";
+
+    // --- BLAS serialization ---
+    public static final String ENV_BLAS_SERIALIZATION_ENABLED = "nd4j.environment.blasSerializationEnabled";
+    public static final String ENV_OPENBLAS_THREADS = "nd4j.environment.openBlasThreads";
+
+    // --- CUDA device settings ---
+    public static final String ENV_CUDA_CURRENT_DEVICE = "nd4j.environment.cudaCurrentDevice";
+    public static final String ENV_CUDA_MEMORY_PINNED = "nd4j.environment.cudaMemoryPinned";
+    public static final String ENV_CUDA_USE_MANAGED_MEMORY = "nd4j.environment.cudaUseManagedMemory";
+    public static final String ENV_CUDA_MEMORY_POOL_SIZE = "nd4j.environment.cudaMemoryPoolSize";
+    public static final String ENV_CUDA_FORCE_P2P = "nd4j.environment.cudaForceP2P";
+    public static final String ENV_CUDA_ALLOCATOR_ENABLED = "nd4j.environment.cudaAllocatorEnabled";
+    public static final String ENV_CUDA_MAX_BLOCKS = "nd4j.environment.cudaMaxBlocks";
+    public static final String ENV_CUDA_MAX_THREADS_PER_BLOCK = "nd4j.environment.cudaMaxThreadsPerBlock";
+    public static final String ENV_CUDA_ASYNC_EXECUTION = "nd4j.environment.cudaAsyncExecution";
+    public static final String ENV_CUDA_STREAM_LIMIT = "nd4j.environment.cudaStreamLimit";
+    public static final String ENV_CUDA_USE_DEVICE_HOST = "nd4j.environment.cudaUseDeviceHost";
+    public static final String ENV_CUDA_EVENT_LIMIT = "nd4j.environment.cudaEventLimit";
+    public static final String ENV_CUDA_CACHING_ALLOCATOR_LIMIT = "nd4j.environment.cudaCachingAllocatorLimit";
+    public static final String ENV_CUDA_USE_UNIFIED_MEMORY = "nd4j.environment.cudaUseUnifiedMemory";
+    public static final String ENV_CUDA_PREFETCH_SIZE = "nd4j.environment.cudaPrefetchSize";
+    public static final String ENV_CUDA_GRAPH_OPTIMIZATION = "nd4j.environment.cudaGraphOptimization";
+    public static final String ENV_CUDA_TENSOR_CORE_ENABLED = "nd4j.environment.cudaTensorCoreEnabled";
+    public static final String ENV_CUDA_BLOCKING_SYNC = "nd4j.environment.cudaBlockingSync";
+    public static final String ENV_CUDA_DEVICE_SCHEDULE = "nd4j.environment.cudaDeviceSchedule";
+    public static final String ENV_CUDA_STACK_SIZE = "nd4j.environment.cudaStackSize";
+    public static final String ENV_CUDA_MALLOC_HEAP_SIZE = "nd4j.environment.cudaMallocHeapSize";
+    public static final String ENV_CUDA_PRINTF_FIFO_SIZE = "nd4j.environment.cudaPrintfFifoSize";
+    public static final String ENV_CUDA_DEV_RUNTIME_SYNC_DEPTH = "nd4j.environment.cudaDevRuntimeSyncDepth";
+    public static final String ENV_CUDA_DEV_RUNTIME_PENDING_LAUNCH_COUNT = "nd4j.environment.cudaDevRuntimePendingLaunchCount";
+    public static final String ENV_CUDA_MAX_L2_FETCH_GRANULARITY = "nd4j.environment.cudaMaxL2FetchGranularity";
+    public static final String ENV_CUDA_PERSISTING_L2_CACHE_SIZE = "nd4j.environment.cudaPersistingL2CacheSize";
+
+    // --- Triton environment ---
+    public static final String ENV_TRITON_BUILD_THREADS = "nd4j.environment.tritonBuildThreads";
+    public static final String ENV_TRITON_CACHE_ENABLED = "nd4j.environment.tritonCacheEnabled";
+    public static final String ENV_TRITON_VERBOSE = "nd4j.environment.tritonVerbose";
+    public static final String ENV_TRITON_ALWAYS_COMPILE = "nd4j.environment.tritonAlwaysCompile";
+    public static final String ENV_TRITON_NUM_WARPS = "nd4j.environment.tritonNumWarps";
+    public static final String ENV_TRITON_NUM_STAGES = "nd4j.environment.tritonNumStages";
+    public static final String ENV_TRITON_NUM_CTAS = "nd4j.environment.tritonNumCTAs";
+    public static final String ENV_TRITON_ENABLE_FP_FUSION = "nd4j.environment.tritonEnableFpFusion";
+    public static final String ENV_TRITON_CACHE_DIR = "nd4j.environment.tritonCacheDir";
+    public static final String ENV_TRITON_DUMP_DIR = "nd4j.environment.tritonDumpDir";
+    public static final String ENV_TRITON_OVERRIDE_ARCH = "nd4j.environment.tritonOverrideArch";
+
     private ND4JSystemProperties() {
     }
 }

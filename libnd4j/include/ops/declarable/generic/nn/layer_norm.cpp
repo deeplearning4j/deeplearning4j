@@ -289,44 +289,57 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
     delete vec;
   }
 
+  const double epsilon = 1e-5;
+
+  // Compute mean and inverse standard deviation with epsilon (matching forward pass)
+  auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo('c', &longAxis, input->shapeInfo(), true, false, block.getWorkspace());
+  NDArray means(reducedShapeInfo, true, block.launchContext());
+  NDArray invStd(reducedShapeInfo, true, block.launchContext());
+
+  input->reduceAlongDimension(reduce::Mean, &means, &longAxis, true, false);
+  input->varianceAlongDimension(variance::SummaryStatsVariance, invStd, false, &longAxis);
+  invStd.applyScalar(scalar::Add, epsilon, &invStd);
+  invStd.applyTransform(transform::Sqrt, &invStd);
+
+  // standardized = (input - mean) / sqrt(var + eps), matching forward exactly
   NDArray standardized(input->shapeInfo(), false, block.launchContext());
+  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, &standardized, false);
+  standardized.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &invStd, &standardized, false);
 
-  sd::ops::standardize standardizeOp;
-  std::vector<NDArray *> inputs = {input};
-  std::vector<NDArray *> outputs = {&standardized};
-  std::vector<double> targs = {};
-  std::vector<bool> bargs = {};
-
-  auto status = standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
-  if (status != sd::Status::OK) {
-    std::string errorMessage;
-    errorMessage += "LAYER_NORM_BP OP: standardize operation failed with status ";
-    errorMessage += std::to_string(static_cast<int>(status));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  standardized.applyPairwiseTransform(sd::pairwise::Multiply, eps, &standardized);
+  // dLdg = sum(eps * standardized, excluding dimC)
+  NDArray epsTimesStd(input->shapeInfo(), false, block.launchContext());
+  standardized.applyPairwiseTransform(sd::pairwise::Multiply, eps, &epsTimesStd);
   std::vector<sd::LongType> dimCVector = {dimC};
-  auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
-  standardized.reduceAlongDimension(sd::reduce::Sum, dLdg, vec);
+  auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, dimCVector.data());
+  epsTimesStd.reduceAlongDimension(sd::reduce::Sum, dLdg, vec);
   delete vec;
 
-  sd::ops::standardize_bp standardizeBp;
+  // dLdx: backprop through layer_norm with epsilon
+  // dLdx_hat = eps * gain (broadcast gain along dimC)
   std::vector<sd::LongType> dimvC = {dimC};
   eps->applyBroadcast(sd::broadcast::Multiply, &dimvC, gain, dLdx);
 
-  auto dLdx_tmp = dLdx->dup();
-  std::vector<NDArray *> standardizeBpArgs = {input, dLdx_tmp};
-  std::vector<NDArray *> standardizeBpOut = {dLdx};
-  status = standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
-  if (status != sd::Status::OK) {
-    delete dLdx_tmp;
-    std::string errorMessage;
-    errorMessage += "LAYER_NORM_BP OP: standardize_bp operation failed with status ";
-    errorMessage += std::to_string(static_cast<int>(status));
-    THROW_EXCEPTION(errorMessage.c_str());
+  // N = number of elements per normalization group
+  sd::LongType N = 1;
+  for (auto d : longAxis) {
+    N *= input->sizeAt(d);
   }
 
-  delete dLdx_tmp;
+  // standardize_bp with epsilon: dLdx = (1/sqrt(var+eps)) * (dLdx_hat - mean(dLdx_hat) - standardized * mean(dLdx_hat * standardized))
+  NDArray dLdxHatMean(reducedShapeInfo, true, block.launchContext());
+  dLdx->reduceAlongDimension(reduce::Mean, &dLdxHatMean, &longAxis, true, false);
+
+  NDArray dLdxHatTimesStd(input->shapeInfo(), false, block.launchContext());
+  dLdx->applyPairwiseTransform(sd::pairwise::Multiply, &standardized, &dLdxHatTimesStd);
+  NDArray dLdxHatTimesStdMean(reducedShapeInfo, true, block.launchContext());
+  dLdxHatTimesStd.reduceAlongDimension(reduce::Mean, &dLdxHatTimesStdMean, &longAxis, true, false);
+
+  // dLdx = (dLdx_hat - mean(dLdx_hat) - standardized * mean(dLdx_hat * standardized)) / sqrt(var + eps)
+  NDArray term(input->shapeInfo(), false, block.launchContext());
+  standardized.applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), &dLdxHatTimesStdMean, &term, false);
+  dLdx->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &dLdxHatMean, dLdx, false);
+  dLdx->applyPairwiseTransform(sd::pairwise::Subtract, &term, dLdx);
+  dLdx->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &invStd, dLdx, false);
 
   return sd::Status::OK;
 }

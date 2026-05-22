@@ -39,7 +39,23 @@ CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
 
   auto c = OUTPUT_VARIABLE(0);
 
-  REQUIRE_TRUE(a->dataType() == b->dataType(), 0, "tensormmul: A, B and C data types must be the same");
+  // Auto-cast to matching dtype if inputs differ (same as matmul behavior).
+  // MmulHelper::tensorDot -> mmulMxM handles mixed types via pickPairwiseResultType,
+  // but the output buffer 'c' is already allocated with A's dtype from DECLARE_SHAPE_FN.
+  // Cast the lower-precision input up so the computation uses the output dtype.
+  NDArray* aCast = nullptr;
+  NDArray* bCast = nullptr;
+  if (a->dataType() != b->dataType()) {
+    auto higherType = DataTypeUtils::pickPairwiseResultType(a->dataType(), b->dataType());
+    if (a->dataType() != higherType) {
+      aCast = a->cast(higherType);
+      a = aCast;
+    }
+    if (b->dataType() != higherType) {
+      bCast = b->cast(higherType);
+      b = bCast;
+    }
+  }
 
   // building axes
   LongType axe0_size = INT_ARG(0);
@@ -51,6 +67,10 @@ CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
 
   std::vector<sd::LongType> permuteC = {};
   MmulHelper::tensorDot(a, b, c, axes_0, axes_1,permuteC);
+
+  delete aCast;
+  delete bCast;
+
   return Status::OK;
 }
 DECLARE_SYN(tensordot, tensormmul);
@@ -59,9 +79,6 @@ DECLARE_SYN(tensordot, tensormmul);
 DECLARE_SHAPE_FN(tensormmul) {
   auto aShapeInfo = inputShape->at(0);
   auto bShapeInfo = inputShape->at(1);
-
-  REQUIRE_TRUE(ArrayOptions::dataType(aShapeInfo) == ArrayOptions::dataType(bShapeInfo), 0,
-               "tensormmul: A and B data types must be the same");
 
   // building axes
   LongType axe0_size = INT_ARG(0);
@@ -79,10 +96,9 @@ DECLARE_SHAPE_FN(tensormmul) {
       ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt,
                                                         shapeAt, shapeBt);
 
-  auto desc = new  ShapeDescriptor(ArrayOptions::dataType(aShapeInfo), 'c', outShape);
-  auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
-  return result;
+  auto outType = DataTypeUtils::pickPairwiseResultType(ArrayOptions::dataType(aShapeInfo),
+                                                       ArrayOptions::dataType(bShapeInfo));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(outType, 'c', outShape));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -241,10 +257,6 @@ DECLARE_SHAPE_FN(tensormmul_bp) {
   auto bShapeInfo = inputShape->at(1);
   auto cShapeInfo = inputShape->at(2);
   auto dLShapeInfo = inputShape->at(3);
-
-  REQUIRE_TRUE((ArrayOptions::dataType(aShapeInfo) == ArrayOptions::dataType(bShapeInfo) &&
-                (ArrayOptions::dataType(dLShapeInfo) == ArrayOptions::dataType(aShapeInfo))),
-               0, "tensormmul_bp: A, B and dLdC data types must be the same");
 
   return SHAPELIST(CONSTANT(aShapeInfo), CONSTANT(bShapeInfo));
 }

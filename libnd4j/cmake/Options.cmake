@@ -267,6 +267,12 @@ option(SD_CUDA_TIME_TRACE "Generate CUDA compilation time trace for build profil
 set(SD_CUDA_THREADS "0" CACHE STRING "NVCC --threads count (0=auto, max parallel arch compilation)")
 set(SD_CUDA_SPLIT_COMPILE "0" CACHE STRING "NVCC --split-compile threads (0=auto, parallel optimization phase)")
 
+# --- SDX Standalone Runtime ---
+option(SD_BUILD_SDX_STANDALONE "Build standalone libsdx_cpu/libsdx_cuda (no JVM dependency)" OFF)
+# Kernel backend toggles for SDX (all default ON when the parent build has them):
+#   SDX_INCLUDE_TRITON, SDX_INCLUDE_ONEDNN, SDX_INCLUDE_MLIR, SDX_INCLUDE_OPENVINO
+# Override any to OFF for a smaller deployment binary.  See BuildSDX.cmake.
+
 # --- Build Target Options ---
 option(SD_BUILD_TESTS "Build tests" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)

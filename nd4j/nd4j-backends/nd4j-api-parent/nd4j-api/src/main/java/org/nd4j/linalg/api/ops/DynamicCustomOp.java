@@ -40,6 +40,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.collect.Lists;
@@ -732,22 +734,31 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public long[] iArgs() {
+        if (iArguments == null) return new long[0];
+        // Guard against null elements that cause NPE in Longs.toArray unboxing
+        for (int i = 0; i < iArguments.size(); i++) {
+            if (iArguments.get(i) == null) iArguments.set(i, 0L);
+        }
         return Longs.toArray(iArguments);
     }
 
     @Override
     public double[] tArgs() {
+        if (tArguments == null) return new double[0];
+        for (int i = 0; i < tArguments.size(); i++) {
+            if (tArguments.get(i) == null) tArguments.set(i, 0.0);
+        }
         return Doubles.toArray(tArguments);
     }
 
     @Override
     public DataType[] dArgs() {
-        return dArguments.toArray(new DataType[dArguments.size()]);
+        return dArguments == null ? new DataType[0] : dArguments.toArray(new DataType[dArguments.size()]);
     }
 
     @Override
     public String[] sArgs() {
-        return sArguments.toArray(new String[sArguments.size()]);
+        return sArguments == null ? new String[0] : sArguments.toArray(new String[sArguments.size()]);
     }
 
     @Override
@@ -770,6 +781,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void removeIArgument(Integer arg) {
         iArguments.remove(arg);
+    }
+
+    /**
+     * Remove all integer arguments.
+     */
+    public void clearIArguments() {
+        if (iArguments != null) {
+            iArguments.clear();
+        }
     }
 
     @Override

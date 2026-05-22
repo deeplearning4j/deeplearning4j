@@ -283,14 +283,11 @@ public class TimeSeriesUtils {
         for (int i = idxs.length - 1; i >= 0; i--) {
             idxs[j++] = i;
         }
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(arrayType)) {
-            INDArray inReshape = in.reshape('f', in.size(0) * in.size(1), in.size(2));
+        INDArray inReshape = in.reshape('f', in.size(0) * in.size(1), in.size(2));
 
-            INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
-            Nd4j.pullRows(inReshape, outReshape, 0, idxs);
-            INDArray ret =  outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
-            return ret;
-        }
+        INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
+        Nd4j.pullRows(inReshape, outReshape, 0, idxs);
+        return outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
 
 
 

@@ -26,6 +26,7 @@ import lombok.Setter;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.autodiff.samediff.serde.SameDiffSerializer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
@@ -4703,7 +4704,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray getColumn(long c) {
-        return getColumn(c, true);
+        return getColumn(c, false);
     }
 
     @Override
@@ -6302,6 +6303,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(isView()) {
             return dup(this.ordering()).toFlatArray(builder);
         }
+        // Ensure data is on host before serializing. On CUDA, the device buffer may
+        // contain the authoritative data while the host buffer is stale (zeros).
+        // Without this sync, serialization reads stale host data and deserializes
+        // an all-zero array.
+        DeviceMemoryManager.getInstance().ensureHostAccess(this);
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
         int buffer = this.isEmpty() ? 0 : this.dataType() == DataType.UTF8 ? stringBuffer(builder, this.data()) : FlatArray.createBufferVector(builder, this.data().asBytes());
         val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(this.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());

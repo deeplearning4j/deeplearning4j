@@ -95,6 +95,14 @@ public class ReshapeNoCopy extends DynamicCustomOp {
 
     @Override
     public boolean initializeOutputs(OpContext ctx) {
+        // DSP allocates its own output buffers. The views created below share the
+        // input's data buffer with potentially non-standard strides, which corrupt
+        // DynamicShapePlanCompiler's shape capture for the native plan.
+        // Only skip for SameDiff graph execution (sameDiff != null), not direct imperative ops.
+        if (sameDiff != null && org.nd4j.autodiff.samediff.internal.InferenceSession.isDynamicShapePlanEnabled()) {
+            return super.initializeOutputs(ctx);
+        }
+
         boolean shapeOverride = false;
         if (numOutputArguments() == 0 && !isInplaceCall()) {
             try {

@@ -91,6 +91,8 @@
         <libnd4j.helpers></libnd4j.helpers>
         <!-- Triton toggle (independent of helper selection) -->
         <libnd4j.triton>OFF</libnd4j.triton>
+        <libnd4j.sdx.standalone>OFF</libnd4j.sdx.standalone>
+        <libnd4j.sdx.include.triton></libnd4j.sdx.include.triton>
         <libnd4j.unity.build>OFF</libnd4j.unity.build>
 
         <!-- Dynamic Kernel Selection Configuration -->
@@ -964,6 +966,10 @@
                                         <argument>${libnd4j.mlir.gpu}</argument>
                                         <argument>--triton</argument>
                                         <argument>${libnd4j.triton}</argument>
+                                        <argument>--build-sdx-standalone</argument>
+                                        <argument>${libnd4j.sdx.standalone}</argument>
+                                        <argument>--sdx-include-triton</argument>
+                                        <argument>${libnd4j.sdx.include.triton}</argument>
                                         <argument>--unity-build</argument>
                                         <argument>${libnd4j.unity.build}</argument>
                                         <argument>--oom-killer</argument>
@@ -1123,6 +1129,10 @@
                                         <argument>${libnd4j.mlir.gpu}</argument>
                                         <argument>--triton</argument>
                                         <argument>${libnd4j.triton}</argument>
+                                        <argument>--build-sdx-standalone</argument>
+                                        <argument>${libnd4j.sdx.standalone}</argument>
+                                        <argument>--sdx-include-triton</argument>
+                                        <argument>${libnd4j.sdx.include.triton}</argument>
                                         <argument>--unity-build</argument>
                                         <argument>${libnd4j.unity.build}</argument>
                                         <argument>--oom-killer</argument>
@@ -1332,6 +1342,10 @@
                                         <argument>${libnd4j.mlir.gpu}</argument>
                                         <argument>--triton</argument>
                                         <argument>${libnd4j.triton}</argument>
+                                        <argument>--build-sdx-standalone</argument>
+                                        <argument>${libnd4j.sdx.standalone}</argument>
+                                        <argument>--sdx-include-triton</argument>
+                                        <argument>${libnd4j.sdx.include.triton}</argument>
                                         <argument>--unity-build</argument>
                                         <argument>${libnd4j.unity.build}</argument>
                                         <argument>--oom-killer</argument>

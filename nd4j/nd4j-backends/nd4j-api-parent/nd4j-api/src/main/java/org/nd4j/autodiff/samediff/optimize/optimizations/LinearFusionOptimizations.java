@@ -190,17 +190,10 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 // Replace all uses of the add output with the fused output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, addOutputVar, fusedOutput.name());
 
-                // If the add output was a registered graph output, update the output list
-                // to point to the fused output variable. Otherwise outputSingle() returns
-                // null because the orphaned variable has no producing op.
+                // Temporarily remove addOutputVar from graph outputs so removeOp/
+                // removeVariable aren't refused by the output guard.
                 List<String> graphOutputs = sd.outputs();
-                if (graphOutputs != null) {
-                    for (int idx = 0; idx < graphOutputs.size(); idx++) {
-                        if (graphOutputs.get(idx).equals(addOutputVar)) {
-                            graphOutputs.set(idx, fusedOutput.name());
-                        }
-                    }
-                }
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(addOutputVar);
 
                 // Remove the old add and matmul operations
                 OptimizationUtils.removeOp(sd, helper, op.getName());
@@ -211,6 +204,14 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
 
                 // Remove the old add output variable (replaced by fusedOutput)
                 OptimizationUtils.removeVariable(sd, helper, addOutputVar);
+
+                // Rename fused variable back to the original name so that downstream
+                // name-based lookups (DSP plan compilation, outputSingle(), decode loop
+                // state resolution) continue to work correctly.
+                sd.renameVariable(fusedOutput.name(), addOutputVar);
+                if (wasOutput) {
+                    graphOutputs.add(addOutputVar);
+                }
 
                 return true;
             } catch (Exception e) {
@@ -341,15 +342,10 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 // Replace all uses of the add output with the fused output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, addOutputVar, fusedOutput.name());
 
-                // If the add output was a registered graph output, update the output list
+                // Temporarily remove addOutputVar from graph outputs so removeOp/
+                // removeVariable aren't refused by the output guard.
                 List<String> graphOutputs = sd.outputs();
-                if (graphOutputs != null) {
-                    for (int idx = 0; idx < graphOutputs.size(); idx++) {
-                        if (graphOutputs.get(idx).equals(addOutputVar)) {
-                            graphOutputs.set(idx, fusedOutput.name());
-                        }
-                    }
-                }
+                boolean wasOutput = graphOutputs != null && graphOutputs.remove(addOutputVar);
 
                 // Remove the old add and tensormmul operations
                 OptimizationUtils.removeOp(sd, helper, op.getName());
@@ -358,6 +354,14 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 // Remove old variables
                 OptimizationUtils.removeVariable(sd, helper, tensorMmulOutputVar);
                 OptimizationUtils.removeVariable(sd, helper, addOutputVar);
+
+                // Rename fused variable back to the original name so that downstream
+                // name-based lookups (DSP plan compilation, outputSingle(), decode loop
+                // state resolution) continue to work correctly.
+                sd.renameVariable(fusedOutput.name(), addOutputVar);
+                if (wasOutput) {
+                    graphOutputs.add(addOutputVar);
+                }
 
                 return true;
             } catch (Exception e) {

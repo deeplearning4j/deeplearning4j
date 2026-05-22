@@ -85,6 +85,7 @@ Status leastSquaresSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDA
       regularizer->nullify();
       fillRegularizer<T>(context, regularizer, (T)l2Regularizer);
       leftOutput += *regularizer;
+      delete regularizer;
     }
 
     // 4. Cholesky decomposition -- output matrix is square and lower triangular
@@ -95,8 +96,14 @@ Status leastSquaresSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDA
 
     triangularSolveFunctor(context, &leftOutput, rightOutput, true, false, rightB);
 
-    adjointMatrix(context, &leftOutput, true, &leftOutput);
-    triangularSolveFunctor(context, &leftOutput, rightB, false, false, output);
+    // adjointMatrix cannot work in-place (race condition on transpose),
+    // so use a temporary for the transposed result
+    auto leftTransposed = leftOutput.ulike();
+    adjointMatrix(context, &leftOutput, true, leftTransposed);
+    triangularSolveFunctor(context, leftTransposed, rightB, false, false, output);
+    delete leftTransposed;
+    delete rightB;
+    delete rightOutput;
     // All done
   } else {  // QR decomposition approach
     // Equation for solve Rx = Q^T * b, where A = Q * R, where Q - orthogonal matrix, and R - upper triangular
@@ -117,6 +124,7 @@ Status leastSquaresSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDA
     MmulHelper::matmul(&Q, rightInput, rightOutput, true, false,1.0,0.0,rightOutput);
     // 3. Solve triangular system
     triangularSolveFunctor(context, &R, rightOutput, false, false, output);
+    delete rightOutput;
   }
   return Status::OK;
 }

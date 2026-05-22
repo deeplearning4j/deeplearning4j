@@ -131,6 +131,13 @@ public class ArchitectureConfig {
     private int fullAttentionInterval;
 
     /**
+     * Per-layer KV head counts. Some architectures (e.g., LFM-2) store head_count_kv
+     * as a per-layer array where 0 means the layer has no attention.
+     * Null means all layers use the global numKVHeads.
+     */
+    private List<Integer> kvHeadsPerLayer;
+
+    /**
      * RoPE type: 0 = standard/LLaMA (split-half pairing), 1 = NeoX/interleaved (adjacent pairing).
      * Qwen models use interleaved (type 1). LLaMA/Mistral use standard (type 0).
      */
@@ -196,6 +203,18 @@ public class ArchitectureConfig {
         if (headDim > 0) return headDim;
         if (numAttentionHeads == 0) return 0;
         return hiddenSize / numAttentionHeads;
+    }
+
+    /**
+     * Get the number of KV heads for a specific layer.
+     * Uses per-layer array if available, otherwise the global numKVHeads.
+     */
+    public int getNumKVHeadsForLayer(int layerIdx) {
+        if (kvHeadsPerLayer != null && layerIdx < kvHeadsPerLayer.size()) {
+            int perLayer = kvHeadsPerLayer.get(layerIdx);
+            if (perLayer > 0) return perLayer;
+        }
+        return numKVHeads;
     }
 
     /**

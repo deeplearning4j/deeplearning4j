@@ -437,11 +437,15 @@ void skipRmsNorm(
 // Phase 2: write normalized x * gamma into shared memory
 // Phase 3: each block computes dot products for its assigned output columns
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T>
+// WT = weight type (may differ from T when graph optimizer strips casts).
+// The kernel reads weight as WT and casts to float in-register, eliminating
+// the need for a temporary ->cast() allocation that is unsafe during CUDA
+// graph capture (baked-in addresses from the temporary become stale on replay).
+template <typename T, typename WT = T>
 SD_KERNEL void rmsNormLinearFusedKernel(
     const T* __restrict__ x,       // [K]
     const T* __restrict__ gamma,   // [K] or nullptr
-    const T* __restrict__ W,       // [K, N] with arbitrary strides
+    const WT* __restrict__ W,      // [K, N] with arbitrary strides
     T* __restrict__ output,        // [N]
     const LongType K,
     const LongType N,
@@ -498,6 +502,9 @@ SD_KERNEL void rmsNormLinearFusedKernel(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Typed launcher for fused M=1 path
+// wDtype: the actual DataType of vW (may differ from T when the graph
+// optimizer strips casts). The kernel reads W in its native dtype and
+// casts to float in-register, avoiding a temporary ->cast() allocation.
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T>
 void rmsNormLinearFusedLauncher(
@@ -510,11 +517,11 @@ void rmsNormLinearFusedLauncher(
     LongType N,
     LongType wStride0,
     LongType wStride1,
-    float epsilon) {
+    float epsilon,
+    DataType wDtype) {
 
   auto x = reinterpret_cast<const T*>(vX);
   auto gamma = (vGamma != nullptr) ? reinterpret_cast<const T*>(vGamma) : nullptr;
-  auto W = reinterpret_cast<const T*>(vW);
   auto output = reinterpret_cast<T*>(vOutput);
 
   dim3 launchDims = getLaunchDims("rms_norm_linear");
@@ -530,8 +537,21 @@ void rmsNormLinearFusedLauncher(
     gridSize = launchDims.x;
   if (gridSize < 1) gridSize = 1;
 
-  rmsNormLinearFusedKernel<T><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
-      x, gamma, W, output, K, N, wStride0, wStride1, epsilon);
+  // Dispatch kernel with correct weight type WT — avoids cast() allocation
+  if (wDtype == DataType::FLOAT32) {
+    rmsNormLinearFusedKernel<T, float><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
+        x, gamma, reinterpret_cast<const float*>(vW), output, K, N, wStride0, wStride1, epsilon);
+  } else if (wDtype == DataType::HALF) {
+    rmsNormLinearFusedKernel<T, float16><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
+        x, gamma, reinterpret_cast<const float16*>(vW), output, K, N, wStride0, wStride1, epsilon);
+  } else if (wDtype == DataType::DOUBLE) {
+    rmsNormLinearFusedKernel<T, double><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
+        x, gamma, reinterpret_cast<const double*>(vW), output, K, N, wStride0, wStride1, epsilon);
+  } else {
+    // Fallback: assume same type as input (original behavior)
+    rmsNormLinearFusedKernel<T, T><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
+        x, gamma, reinterpret_cast<const T*>(vW), output, K, N, wStride0, wStride1, epsilon);
+  }
 
   DebugHelper::checkGlobalErrorCode("rmsNormLinearFusedKernel failed");
 }
@@ -542,7 +562,7 @@ BUILD_SINGLE_TEMPLATE(void rmsNormLinearFusedLauncher,
                         const void* vW, void* vOutput,
                         LongType K, LongType N,
                         LongType wStride0, LongType wStride1,
-                        float epsilon),
+                        float epsilon, DataType wDtype),
                        SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -591,47 +611,37 @@ void rmsNormLinear(
   const LongType M = input->lengthOf() / K;
   const LongType N = weight->sizeAt(1);
 
-  // Handle type mismatch: graph optimizer may strip casts between rms_norm and matmul,
-  // leaving weight in a different dtype (e.g., FLOAT32 weight with HALF input).
-  // Cast weight to match input so all paths get uniform types.
-  NDArray* effWeight = const_cast<NDArray*>(weight);
-  NDArray* castWeight = nullptr;
-  if (weight->dataType() != input->dataType()) {
-    castWeight = weight->cast(input->dataType());
-    effWeight = castWeight;
-  }
-
-  // For M=1 (decode hot path): use fused single-kernel path
-  // Requires K fits in shared memory (48KB = 12288 floats)
-  // The fused kernel uses stride-based weight indexing, so it handles both
-  // C-contiguous [K,N] (strides [N,1]) and transposed views (strides [1,K])
-  // without needing a per-step dup('c') copy.
+  // For M=1 (decode hot path): use fused single-kernel path with in-kernel type casting.
+  // The kernel accepts weight in its native dtype (WT template parameter) and casts to
+  // float in-register, eliminating the temporary ->cast() allocation that is unsafe during
+  // CUDA graph capture (allocates device memory + transform kernel, then deletes the
+  // temporary — on replay the baked-in addresses from the cast become stale → error 700).
   if (M == 1 && K <= 8192) {
-    NDArray::prepareSpecialUse({output}, {input, gamma, effWeight});
+    NDArray::prepareSpecialUse({output}, {input, gamma, weight});
 
     auto stream = context->getCudaStream();
-    LongType wStride0 = effWeight->strideAt(0);  // stride along K dimension
-    LongType wStride1 = effWeight->strideAt(1);  // stride along N dimension
+    LongType wStride0 = weight->strideAt(0);
+    LongType wStride1 = weight->strideAt(1);
 
     BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearFusedLauncher,
                            (stream,
                             input->specialBuffer(),
                             gamma != nullptr ? gamma->specialBuffer() : nullptr,
-                            effWeight->specialBuffer(),
+                            weight->specialBuffer(),
                             output->specialBuffer(),
-                            K, N, wStride0, wStride1, epsilon),
+                            K, N, wStride0, wStride1, epsilon,
+                            weight->dataType()),
                            SD_FLOAT_TYPES);
 
-    NDArray::registerSpecialUse({output}, {input, gamma, effWeight});
-    delete castWeight;
+    NDArray::registerSpecialUse({output}, {input, gamma, weight});
     return;
   }
 
   // General M>1 path: fused rmsNorm + cuBLAS GEMM (2 kernel launches)
+  // MmulHelper::mmul handles mixed types internally (cast cache during capture).
   BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearGeneralLauncher,
-                         (context, input, gamma, effWeight, output, epsilon),
+                         (context, input, gamma, weight, output, epsilon),
                          SD_FLOAT_TYPES);
-  delete castWeight;
 }
 
 }  // namespace helpers

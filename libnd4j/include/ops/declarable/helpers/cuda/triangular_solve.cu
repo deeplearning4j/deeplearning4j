@@ -346,13 +346,20 @@ static SD_KERNEL void upperAdjointKernel(T const* input, T* output, LongType bat
     auto inputPart = input + inputOffsets[b];
     auto outputPart = output + outputOffsets[b];
     for (auto r = threadIdx.x; r < rows; r += blockDim.x) {
-      for (auto c = threadIdx.y; c <= r; c += blockDim.y) {
+      for (auto c = threadIdx.y; c < columns; c += blockDim.y) {
         LongType zPos[] = {r, c};
-        LongType xPos[] = {c, r};
-        LongType zIndex, xIndex;
+        LongType zIndex;
         COORDS2INDEX(2, shape::stride(outputTads), zPos, zIndex);
-        COORDS2INDEX(2, shape::stride(inputTads), xPos, xIndex);
-        outputPart[zIndex] = inputPart[xIndex];
+        if (c <= r) {
+          // Lower triangle + diagonal: transpose from input's upper triangle
+          LongType xPos[] = {c, r};
+          LongType xIndex;
+          COORDS2INDEX(2, shape::stride(inputTads), xPos, xIndex);
+          outputPart[zIndex] = inputPart[xIndex];
+        } else {
+          // Above diagonal: zero
+          outputPart[zIndex] = static_cast<T>(0);
+        }
       }
     }
   }
@@ -366,13 +373,20 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, LongType bat
     auto inputPart = input + inputOffsets[b];
     auto outputPart = output + outputOffsets[b];
     for (auto r = threadIdx.x; r < rows; r += blockDim.x) {
-      for (auto c = r + threadIdx.y; c < columns; c += blockDim.y) {
+      for (auto c = threadIdx.y; c < columns; c += blockDim.y) {
         LongType zPos[] = {r, c};
-        LongType xPos[] = {c, r};
-        LongType zIndex, xIndex;
+        LongType zIndex;
         COORDS2INDEX(2, shape::stride(outputTads), zPos, zIndex);
-        COORDS2INDEX(2, shape::stride(inputTads), xPos, xIndex);
-        outputPart[zIndex] = inputPart[xIndex];
+        if (c >= r) {
+          // Upper triangle + diagonal: transpose from input's lower triangle
+          LongType xPos[] = {c, r};
+          LongType xIndex;
+          COORDS2INDEX(2, shape::stride(inputTads), xPos, xIndex);
+          outputPart[zIndex] = inputPart[xIndex];
+        } else {
+          // Below diagonal: zero
+          outputPart[zIndex] = static_cast<T>(0);
+        }
       }
     }
   }
@@ -381,27 +395,50 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, LongType bat
 template <typename T>
 static void adjointTriangularMatrix_(LaunchContext* context, NDArray * input, bool const lower, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input});
-  std::vector<LongType> dims = {-2, -1};
-  auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &dims);
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
   auto stream = context->getCudaStream();
   auto inputBuf = reinterpret_cast<T const*>(input->specialBuffer());
   auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   auto rows = input->sizeAt(-2);
   auto columns = input->sizeAt(-1);
   dim3 launchDims = getLaunchDims("triangular_solve");
-  if (lower) {
-    lowerAdjointKernel<T><<<launchDims.y, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
-                                                                                 inputTads->specialShapeInfo(), inputTads->specialOffsets(),
-                                                                                 outputTads->specialShapeInfo(), outputTads->specialOffsets());
-    sd::DebugHelper::checkErrorCode(stream, "lowerAdjointKernel failed");
 
+  if (input->rankOf() == 2) {
+    // Unbatched: use the array's own shapeInfo directly (TAD for all dims on rank-2 gives wrong strides)
+    int deviceId = sd::AffinityManager::currentDeviceId();
+    LongType zeroOffset = 0;
+    LongType* dOffset = reinterpret_cast<LongType*>(
+        sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), deviceId, *stream));
+    cudaMemcpyAsync(dOffset, &zeroOffset, sizeof(LongType), cudaMemcpyHostToDevice, *stream);
+
+    if (lower) {
+      lowerAdjointKernel<T><<<launchDims.y, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, 1, rows, columns,
+                                                                                   input->specialShapeInfo(), dOffset,
+                                                                                   output->specialShapeInfo(), dOffset);
+      sd::DebugHelper::checkErrorCode(stream, "lowerAdjointKernel failed");
+    } else {
+      upperAdjointKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(inputBuf, outputBuf, 1, rows, columns,
+                                                                                   input->specialShapeInfo(), dOffset,
+                                                                                   output->specialShapeInfo(), dOffset);
+      sd::DebugHelper::checkErrorCode(stream, "upperAdjointKernel failed");
+    }
+    sd::memory::CudaMemoryPool::getInstance().free(dOffset, deviceId, *stream);
   } else {
-    upperAdjointKernel<T><<<launchDims.y, launchDims.x,launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
-                                                                                inputTads->specialShapeInfo(), inputTads->specialOffsets(),
-                                                                                outputTads->specialShapeInfo(), outputTads->specialOffsets());
-    sd::DebugHelper::checkErrorCode(stream, "upperAdjointKernel failed");
+    // Batched: use TADs
+    std::vector<LongType> dims = {-2, -1};
+    auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &dims);
+    auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dims);
 
+    if (lower) {
+      lowerAdjointKernel<T><<<launchDims.y, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+                                                                                   inputTads->specialShapeInfo(), inputTads->specialOffsets(),
+                                                                                   outputTads->specialShapeInfo(), outputTads->specialOffsets());
+      sd::DebugHelper::checkErrorCode(stream, "lowerAdjointKernel failed");
+    } else {
+      upperAdjointKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+                                                                                   inputTads->specialShapeInfo(), inputTads->specialOffsets(),
+                                                                                   outputTads->specialShapeInfo(), outputTads->specialOffsets());
+      sd::DebugHelper::checkErrorCode(stream, "upperAdjointKernel failed");
+    }
   }
 
   NDArray::registerSpecialUse({output}, {input});

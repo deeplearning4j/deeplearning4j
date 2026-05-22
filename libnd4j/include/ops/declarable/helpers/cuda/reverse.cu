@@ -273,18 +273,29 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
         outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
       } else {
-        auto inInnerSet = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
-        auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
-        for (int j = 0; j < inInnerSet.size(); ++j) {
-          // Use specialBuffer directly - parent arrays are already prepared
-          auto inArr = inInnerSet.at(j);
-          auto outArr = outInnerSet.at(j);
+        auto inSub = inSubArrsSet.at(i);
+        auto outSub = outSubArrsSet.at(i);
+        if (inSub->rankOf() <= 1) {
+          // 1D sub-array: reverse directly, no inner TAD decomposition needed
+          // (allTensorsAlongDimension on a 1D array produces scalar TADs which breaks reversal)
           LongType numOfReverse = numOfElemsToReverse;
-          if (numOfReverse == 0) numOfReverse = inArr->lengthOf();
-
+          if (numOfReverse == 0) numOfReverse = inSub->lengthOf();
           reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
-              inArr->specialBuffer(), inArr->specialShapeInfo(),
-              outArr->specialBuffer(), outArr->specialShapeInfo(), numOfReverse);
+              inSub->specialBuffer(), inSub->specialShapeInfo(),
+              outSub->specialBuffer(), outSub->specialShapeInfo(), numOfReverse);
+        } else {
+          auto inInnerSet = inSub->allTensorsAlongDimension({seqDim});
+          auto outInnerSet = outSub->allTensorsAlongDimension({seqDim});
+          for (int j = 0; j < inInnerSet.size(); ++j) {
+            auto inArr = inInnerSet.at(j);
+            auto outArr = outInnerSet.at(j);
+            LongType numOfReverse = numOfElemsToReverse;
+            if (numOfReverse == 0) numOfReverse = inArr->lengthOf();
+
+            reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+                inArr->specialBuffer(), inArr->specialShapeInfo(),
+                outArr->specialBuffer(), outArr->specialShapeInfo(), numOfReverse);
+          }
         }
       }
     }
@@ -315,19 +326,23 @@ void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths
 
 //////////////////////////////////////////////////////////////////////////
 void reverse(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), reinterpret_cast<LongType*>(*intArgs->data()),static_cast<sd::LongType>(intArgs->size()));
-  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), reinterpret_cast<LongType*>(*intArgs->data()),static_cast<sd::LongType>(intArgs->size()));
-
   NDArray::prepareSpecialUse({output}, {input});
 
-  if (packX->numberOfTads() == 1) {
+  auto listIn = input->allTensorsAlongDimension(*intArgs);
+  auto listOut = output->allTensorsAlongDimension(*intArgs);
+
+  auto stream = context->getCudaStream();
+  dim3 launchDims = getLaunchDims("reverse");
+
+  if (listIn.size() == 1) {
     BUILD_SINGLE_SELECTOR(input->dataType(), reverseArray, (context, input, output, 0), SD_COMMON_TYPES);
   } else {
-    BUILD_SINGLE_SELECTOR(
-        input->dataType(), reverseTad,
-        (context, input, output, packX->platformShapeInfo(), packX->platformOffsets(), packZ->platformShapeInfo(),
-            packZ->platformOffsets(), (uint64_t)(input->lengthOf() / packX->numberOfTads())),
-        SD_COMMON_TYPES);
+    for (int i = 0; i < listIn.size(); ++i) {
+      auto inArr = listIn.at(i);
+      auto outArr = listOut.at(i);
+      BUILD_SINGLE_SELECTOR(input->dataType(), reverseArray,
+          (context, inArr, outArr, 0), SD_COMMON_TYPES);
+    }
   }
 
   NDArray::registerSpecialUse({output}, {input});

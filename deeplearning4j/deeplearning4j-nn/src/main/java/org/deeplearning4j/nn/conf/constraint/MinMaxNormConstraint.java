@@ -110,6 +110,22 @@ public class MinMaxNormConstraint extends BaseConstraint {
         }
 
         Broadcast.mul(param, clipped, param, getBroadcastDims(dimensions, param.rank()) );
+
+        // Second pass to correct float precision drift
+        INDArray norm2 = param.norm2(dimensions);
+        INDArray clipped2 = norm2.unsafeDuplication();
+        CustomOp op2 = DynamicCustomOp.builder("clipbyvalue")
+                .addInputs(clipped2)
+                .callInplace(true)
+                .addFloatingPointArguments(min, max)
+                .build();
+        Nd4j.getExecutioner().exec(op2);
+        norm2.addi(epsilon);
+        clipped2.divi(norm2);
+        if(rate != 1.0){
+            clipped2.muli(rate).addi(norm2.muli(1.0-rate));
+        }
+        Broadcast.mul(param, clipped2, param, getBroadcastDims(dimensions, param.rank()) );
     }
 
     @Override

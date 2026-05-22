@@ -809,8 +809,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 // normalizeAxis() would convert -1 to rank-1, causing reduce ops
                 // to only reduce along the last axis instead of all dimensions.
                 this.dimensionz = null;
+                this.dimensions = null;
                 return;
             } else {
+                this.dimensions = dimensions;
                 this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
             }
 

@@ -99,6 +99,16 @@ public class MistralArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "llama2"; // Mistral/Mixtral use [INST] format
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "mistral.gguf.path";
+    }
+
+    @Override
     public ArchitectureConfig getConfig(GGMLMetadata metadata) {
         int headDim = metadata.getAttentionKeyLength();
         return ArchitectureConfig.builder()
@@ -332,6 +342,11 @@ public class MistralArchitecture implements ModelArchitecture {
             k = new FusedRoPE(sd, k, config.getRopeType(), 0,
                     config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+        }
+
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
         }
 
         // Dot-product attention with causal masking

@@ -100,6 +100,16 @@ public class GemmaArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "gemma"; // Gemma uses <start_of_turn>user\n...<end_of_turn> format
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "gemma.gguf.path";
+    }
+
+    @Override
     public SameDiff buildGraph(GGMLMetadata metadata, Map<String, INDArray> weights, ConversionOptions options) {
         SameDiff sd = SameDiff.create();
         ArchitectureConfig config = getConfig(metadata);
@@ -323,6 +333,11 @@ public class GemmaArchitecture implements ModelArchitecture {
                                       boolean isGlobalAttention, int slidingWindow) {
         int numHeads = config.getNumAttentionHeads();
         int headDim = config.getHeadDimension();
+
+        // DualRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
+        }
 
         // Dot-product attention (causal)
         SDVariable attnOut = sd.nn.dotProductAttentionV2(

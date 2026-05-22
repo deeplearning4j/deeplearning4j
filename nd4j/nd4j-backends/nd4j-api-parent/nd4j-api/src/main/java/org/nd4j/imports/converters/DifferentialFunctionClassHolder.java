@@ -964,6 +964,13 @@ public class DifferentialFunctionClassHolder {
             add("opName");
             add("sameDiff");
             add("ownName");
+            // dimensions/dimensionz are handled explicitly during FlatBuffers
+            // serialization/deserialization for REDUCE and INDEXREDUCE op types.
+            // Including them as generic properties causes double-restoration where
+            // setPropertiesForFunction overwrites values already set by the explicit
+            // INDEXREDUCE/REDUCE handler, potentially with corrupted values.
+            add("dimensions");
+            add("dimensionz");
         }};
         System.out.println("Initialized field names ops ignore");
 

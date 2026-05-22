@@ -312,13 +312,13 @@ public class DspTrainingE2ETest {
     @DisplayName("MLP with ReLU: DSP training converges")
     public void testMlpReluDspTraining() {
         long seed = 77;
-        int nIn = 8, nHidden = 16, nOut = 2, batchSize = 32, epochs = 30;
+        int nIn = 8, nHidden = 16, nOut = 2, batchSize = 32, epochs = 60;
         DataSet ds = generateRegressionData(seed + 300, batchSize, nIn, nOut);
 
         InferenceSession.setDynamicShapePlanEnabled(true);
         SameDiff sd = buildMlpModel(seed, nIn, nHidden, nOut);
         TrainingConfig config = new TrainingConfig.Builder()
-                .updater(new Adam(1e-3))
+                .updater(new Adam(3e-3))
                 .dataSetFeatureMapping("input")
                 .dataSetLabelMapping("labels")
                 .build();

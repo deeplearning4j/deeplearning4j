@@ -72,6 +72,16 @@ public class OLMoArchitecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "chatml";
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "olmo.gguf.path";
+    }
+
+    @Override
     public boolean canHandle(GGMLMetadata metadata) {
         String arch = metadata.getArchitecture();
         if (arch == null) return false;
@@ -284,6 +294,11 @@ public class OLMoArchitecture implements ModelArchitecture {
             k = new FusedRoPE(sd, k, config.getRopeType(), 0,
                     config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
             sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+        }
+
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
         }
 
         SDVariable attnOut = sd.nn.dotProductAttentionV2(

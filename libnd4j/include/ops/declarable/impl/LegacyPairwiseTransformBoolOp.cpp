@@ -59,7 +59,7 @@ Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
   ExtraArguments extras(*block.getTArguments());
   PointersManager manager(block.launchContext(), "LegacyPairwiseTransformBoolOp");
 
-  NativeOpExecutioner::execPairwiseTransform(
+  NativeOpExecutioner::execPairwiseBoolTransform(
       block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), y->buffer(),
       y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
       z->specialShapeInfo(), extras.argumentsAsT(x->dataType()));

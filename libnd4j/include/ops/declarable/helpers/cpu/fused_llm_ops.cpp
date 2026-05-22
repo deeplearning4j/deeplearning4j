@@ -1074,15 +1074,15 @@ void fusedAttentionProjection(NDArray* attentionOutput, NDArray* Wo, NDArray* bi
   }
 
   // Step 1: reshape attention output to 2D [B*S, hidden_dim]
-  // reshape() returns a new NDArray view; it does not copy data if the layout allows it.
+  // copyToNewBuff=false: create a view sharing the same buffer when possible.
   std::vector<LongType> flatShape = {batch * seqLen, hiddenDim};
-  NDArray* attnFlat  = attentionOutput->reshape('c', flatShape);
+  NDArray* attnFlat  = attentionOutput->reshape('c', flatShape, false);
 
   // Step 2: mmul [B*S, hidden_dim] x [hidden_dim, out_dim] -> [B*S, out_dim]
   // Output is [batch, seq_len, out_dim] so we need a 2D view of it as well.
   const LongType outDim = Wo->sizeAt(1);
   std::vector<LongType> outFlat2D = {batch * seqLen, outDim};
-  NDArray* outFlat = output->reshape('c', outFlat2D);
+  NDArray* outFlat = output->reshape('c', outFlat2D, false);
 
   MmulHelper::mmul(attnFlat, woToUse, outFlat, 1.0, 0.0);
 

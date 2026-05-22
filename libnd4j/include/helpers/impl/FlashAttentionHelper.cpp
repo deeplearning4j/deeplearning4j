@@ -227,9 +227,11 @@ void FlashAttentionHelper::forward3D(
     // Get mask from workspace
     NDArray* causalMask = workspace->getBuffer("forward3d_mask", maskShape, query->dataType(), context);
     causalMask->nullify();
-    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+    // Fill strict upper triangle (row < col - causalLower) with -1e9
+    // to prevent attending to future tokens.
     BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
-                          (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
+                          (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
     workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, workBuffer, false);
   }
   if (logitsBuffer != nullptr) {
@@ -531,9 +533,13 @@ void FlashAttentionHelper::forward4D(
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
     NDArray causalMask('c', maskShape, softmaxBuffer->dataType(), context);
     causalMask.nullify();
-    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    // For standard causal attention (seqQ == seqKV): causalOffset = 0.
+    // For cross-attention decode (seqKV > seqQ): offset the mask to align positions.
+    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+    // Fill strict upper triangle (row < col - causalLower) with -1e9
+    // to prevent attending to future tokens.
     BUILD_SINGLE_SELECTOR(softmaxBuffer->dataType(), causalMask.fillAsTriangular,
-                          (-1.0e9f, 1, causalOffset, causalMask, 'u', false), SD_COMMON_TYPES);
+                          (-1.0e9f, causalLower, 0, causalMask, 'u', false), SD_COMMON_TYPES);
     softmaxBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &causalMask, softmaxBuffer, false);
   }
   if (logitsBuffer != nullptr) {
@@ -794,9 +800,11 @@ void FlashAttentionHelper::backward3D(
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
     NDArray* causalMask = workspace->getBuffer("backward3d_mask", maskShape, query->dataType(), context);
     causalMask->nullify();
-    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+    // Fill strict upper triangle (row < col - causalLower) with -1e9
+    // to prevent attending to future tokens.
     BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
-                          (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
+                          (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
     scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
 #endif
   }
@@ -935,9 +943,11 @@ void FlashAttentionHelper::backward4D(
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
     NDArray* causalMask = workspace->getBuffer("backward4d_mask", maskShape, query->dataType(), context);
     causalMask->nullify();
-    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+    // Fill strict upper triangle (row < col - causalLower) with -1e9
+    // to prevent attending to future tokens.
     BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
-                          (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
+                          (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
     scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
 #endif
   }

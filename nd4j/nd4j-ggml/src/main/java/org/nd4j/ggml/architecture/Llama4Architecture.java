@@ -95,6 +95,16 @@ public class Llama4Architecture implements ModelArchitecture {
     }
 
     @Override
+    public String getDefaultChatTemplateType() {
+        return "chatml";
+    }
+
+    @Override
+    public String getModelSystemProperty() {
+        return "llama4.gguf.path";
+    }
+
+    @Override
     public boolean canHandle(GGMLMetadata metadata) {
         String arch = metadata.getArchitecture();
         if (arch == null) return false;
@@ -365,6 +375,11 @@ public class Llama4Architecture implements ModelArchitecture {
                 q = sd.concat("q_rope_" + layerIdx, -1, qRopePart, qNopePart);
                 k = sd.concat("k_rope_" + layerIdx, -1, kRopePart, kNopePart);
             }
+        }
+
+        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        if (v.dataType() != q.dataType()) {
+            v = v.castTo("v_cast_" + layerIdx, q.dataType());
         }
 
         // Causal dot-product attention with local chunking (chunked attention)

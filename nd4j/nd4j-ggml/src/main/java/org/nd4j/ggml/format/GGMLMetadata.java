@@ -137,6 +137,13 @@ public class GGMLMetadata {
     private int fullAttentionInterval;
 
     /**
+     * Per-layer KV head counts. Some architectures (e.g., LFM-2) store head_count_kv
+     * as a per-layer array where 0 means the layer has no attention.
+     * Null means all layers use the same numKVHeads.
+     */
+    private List<Integer> kvHeadsPerLayer;
+
+    /**
      * RoPE type: 0 = standard/LLaMA (split-half pairing), 1 = NeoX/interleaved (adjacent pairing).
      * Determined by architecture: Qwen, Mistral, Phi use interleaved (1). LLaMA, Gemma use standard (0).
      */
@@ -184,6 +191,7 @@ public class GGMLMetadata {
                 .expertUsedCount(header.getExpertUsedCount())
                 .layerTypes(header.getLayerTypes())
                 .fullAttentionInterval(header.getFullAttentionInterval())
+                .kvHeadsPerLayer(header.getAttentionHeadCountKVPerLayer())
                 .tensors(tensors != null ? tensors : new ArrayList<>())
                 .rawMetadata(header.getMetadata())
                 .tokenizerInfo(TokenizerInfo.fromGGUFHeader(header))

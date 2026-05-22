@@ -57,6 +57,25 @@ DataType SdnbReader::convertDType(::graph::DType fbDtype) {
   }
 }
 
+// Helper: verify + parse FlatGraph at a given offset within a buffer.
+// Returns the FlatGraph pointer on success, nullptr on failure.
+static const ::graph::FlatGraph* tryParseFlatGraphAt(const uint8_t* buf, size_t totalSize, size_t offset) {
+  if (offset + 4 > totalSize) return nullptr;  // need at least root offset (4 bytes)
+  const size_t remaining = totalSize - offset;
+
+  // Use FlatBuffers verifier to prevent out-of-bounds reads / SIGSEGV
+  flatbuffers::Verifier verifier(buf + offset, remaining);
+  if (!verifier.VerifyBuffer<::graph::FlatGraph>(nullptr)) {
+    return nullptr;
+  }
+
+  auto* graph = GetFlatGraph(buf + offset);
+  if (graph && graph->nodes()) {
+    return graph;
+  }
+  return nullptr;
+}
+
 SdnbReader* SdnbReader::open(const void* data, size_t size) {
   if (!data || size < 4) return nullptr;
 
@@ -65,26 +84,60 @@ SdnbReader* SdnbReader::open(const void* data, size_t size) {
   reader->size_ = size;
   reader->ownsData_ = false;
 
-  // Try to parse as FlatBuffer directly first
-  // The SDNB format may have a header before the FlatBuffer, or the data
-  // may be a raw FlatBuffer (FlatGraph).
-  // Try direct FlatBuffer parse at offset 0
-  reader->flatGraph_ = GetFlatGraph(data);
-  if (reader->flatGraph_ && reader->flatGraph_->nodes()) {
-    reader->flatBufferOffset_ = 0;
-    return reader;
-  }
+  // ── SDNB header-aware parsing ──
+  // Java's SameDiffSerializer writes SDNB files with a 32-byte header:
+  //   MAGIC "SDNB" (4) + VERSION int32 (4) + ManifestOffset int64 (8)
+  //   + ManifestLength int64 (8) + MetadataOffset int64 (8) = 32 bytes
+  // The FlatBuffer (FlatGraph) starts at MetadataOffset (always 32 for v1).
+  //
+  // Check for the SDNB magic first and parse the header to find the
+  // FlatBuffer offset. Fall back to raw FlatBuffer parse if no magic.
+  static constexpr uint8_t kMagic[4] = {'S', 'D', 'N', 'B'};
+  static constexpr size_t kHeaderSize = 32;
 
-  // Try scanning for FlatBuffer start
-  // SDNB header format varies — try common offsets
-  // The Java serializer writes the FlatBuffer at a known offset stored in the file
-  for (size_t offset = 0; offset < std::min(size, (size_t)4096); offset += 4) {
-    auto* candidate = GetFlatGraph(reader->data_ + offset);
-    if (candidate && candidate->nodes() && candidate->nodes()->size() > 0) {
-      reader->flatGraph_ = candidate;
-      reader->flatBufferOffset_ = static_cast<long>(offset);
+  if (size >= kHeaderSize && std::memcmp(data, kMagic, 4) == 0) {
+    // SDNB format — read header fields (big-endian, matching Java's DataOutputStream)
+    const uint8_t* hdr = reader->data_;
+
+    // Version at offset 4 (4 bytes, big-endian int32)
+    // ManifestOffset at offset 8 (8 bytes, big-endian int64) — unused here
+    // ManifestLength at offset 16 (8 bytes, big-endian int64) — unused here
+    // MetadataOffset at offset 24 (8 bytes, big-endian int64) = FlatBuffer start
+    auto readBigEndianInt64 = [](const uint8_t* p) -> int64_t {
+      return (static_cast<int64_t>(p[0]) << 56) | (static_cast<int64_t>(p[1]) << 48) |
+             (static_cast<int64_t>(p[2]) << 40) | (static_cast<int64_t>(p[3]) << 32) |
+             (static_cast<int64_t>(p[4]) << 24) | (static_cast<int64_t>(p[5]) << 16) |
+             (static_cast<int64_t>(p[6]) << 8)  |  static_cast<int64_t>(p[7]);
+    };
+
+    int64_t metadataOffset = readBigEndianInt64(hdr + 24);
+    if (metadataOffset < 0 || static_cast<size_t>(metadataOffset) >= size) {
+      DSP_DIAG(COMPILE, "SdnbReader::open: invalid metadataOffset %lld in SDNB header",
+               static_cast<long long>(metadataOffset));
+      delete reader;
+      return nullptr;
+    }
+
+    size_t fbOffset = static_cast<size_t>(metadataOffset);
+    auto* graph = tryParseFlatGraphAt(reader->data_, size, fbOffset);
+    if (graph) {
+      reader->flatGraph_ = graph;
+      reader->flatBufferOffset_ = static_cast<long>(fbOffset);
       return reader;
     }
+
+    DSP_DIAG(COMPILE, "SdnbReader::open: SDNB header found but FlatGraph at offset %zu is invalid",
+             fbOffset);
+    delete reader;
+    return nullptr;
+  }
+
+  // No SDNB magic — try as raw FlatBuffer at offset 0
+  auto* graph = tryParseFlatGraphAt(reader->data_, size, 0);
+  if (graph) {
+    reader->flatGraph_ = graph;
+    reader->flatBufferOffset_ = 0;
+    return reader;
   }
 
   DSP_DIAG(COMPILE, "SdnbReader::open: could not find valid FlatGraph in data");

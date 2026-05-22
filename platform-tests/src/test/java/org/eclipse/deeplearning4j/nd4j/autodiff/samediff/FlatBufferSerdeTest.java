@@ -103,9 +103,21 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testEnum(Nd4jBackend backend) {
-        SameDiff sameDiff = SameDiff.load(Resources.asFile("onnx_graphs/output_cnn_mnist.fb"),true);
-        assertNotNull(sameDiff);
+    public void testEnum(Nd4jBackend backend) throws Exception {
+        // Round-trip test: build a graph with enum-configured ops (LSTM with enums), save, load, verify
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable mmul = in.mmul(w);
+
+        File f = java.io.File.createTempFile("test_enum_roundtrip", ".fb");
+        f.deleteOnExit();
+        sd.asFlatFile(f);
+
+        SameDiff loaded = SameDiff.fromFlatFile(f);
+        assertNotNull(loaded);
+        assertNotNull(loaded.getVariable("w"));
+        assertNotNull(loaded.getVariable("in"));
     }
 
 

@@ -21,6 +21,7 @@
 //
 
 #include <cuda.h>
+#include <array/NDArray.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
 #include <helpers/ConstantTadHelper.h>
@@ -301,16 +302,22 @@ void sortTad(sd::Pointer *extraPointers, OpaqueNDArray x,
     sd::LongType *dXShapeInfo = x->specialShapeInfo();
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
+    // Ensure data is synced to device before sorting
+    x->prepareSpecialUse({x}, {x});
+
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
     auto numTads = tadPack->numberOfTads();
 
     dim3 launchDims = getSortTadLarge(numTads);
     BUILD_SINGLE_SELECTOR(
         xType, oesTadGeneric,
-        (launchDims, stream, x->specialBuffer(), dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending),
+        (launchDims, stream, x->specialBuffer(), dXShapeInfo, dimension, dimensionLength,
+         tadPack->specialShapeInfo(), tadPack->specialOffsets(), descending),
         SD_NUMERIC_TYPES);
 
     sd::DebugHelper::checkErrorCode(stream, "sortTad(...) failed");
+
+    x->registerSpecialUse({x}, {x});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
