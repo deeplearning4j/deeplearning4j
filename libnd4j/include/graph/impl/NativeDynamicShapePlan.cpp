@@ -203,6 +203,8 @@ bool segmentHasReadyCompositeHandles(const GraphSegment& seg) {
   return false;
 }
 
+}  // anonymous namespace
+
 bool NativeDynamicShapePlan::allSegmentsReplayReady() const {
   bool hasReplayableSegment = false;
   for (auto& seg : segments_) {
@@ -231,6 +233,8 @@ bool NativeDynamicShapePlan::allSegmentsReplayReady() const {
   // there's nothing to replay — fall through to normal execution.
   return hasReplayableSegment;
 }
+
+namespace {
 
 bool segmentIsCompiledSteadyState(const GraphSegment& seg, int minExecutionCountExclusive) {
   if (!seg.exec.segPhase.needsCapture()) return false;
