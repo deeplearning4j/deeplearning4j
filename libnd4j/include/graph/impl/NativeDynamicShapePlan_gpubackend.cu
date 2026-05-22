@@ -2669,6 +2669,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
        });
    tritonOrderedRangeGuard.active = true;
  }
+#endif  // HAVE_TRITON (ordered-range guard + callback setup)
 
   // ── CAPTURE + DIRECT EXECUTION ─────────────────────────────────────────────
   // This block handles CUDA graph capture and direct (non-capture) Triton
@@ -4191,8 +4192,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             restoreCublasWorkspaceAfterCapture(stream);
             cleanupCaptureTlsState(true, prevCaptureStream);
             restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotStateTriton, savedSlotPhasesTriton);
+#if HAVE_TRITON
             tritonOrderedRangeGuard.active = false;
             TritonGraphBackend::clearOrderedRangeExecutor();
+#endif
             return Status::OK;
           }
 
@@ -4267,7 +4270,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           fflush(stdout); fflush(stderr);
           // Ensure no sticky errors before instantiation
           cudaGetLastError();
-#endif
         }
 
         bool instantiateOk = endOk && allKernelsValid && handle->instantiate();
