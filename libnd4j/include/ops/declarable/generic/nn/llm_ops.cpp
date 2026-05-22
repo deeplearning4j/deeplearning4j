@@ -258,8 +258,9 @@ CUSTOM_OP_IMPL(rope, 1, 1, false, 0, 0) {
 
     // fusedRoPE expects an NDArray* for position — wrap the scalar offset
     auto posArr = NDArrayFactory::create<LongType>(positionOffset, block.launchContext());
-    helpers::fusedRoPE(input, output, &posArr, freqBase, freqScale, ropeType,
+    helpers::fusedRoPE(input, output, posArr, freqBase, freqScale, ropeType,
                        block.launchContext(), rotaryDims);
+    delete posArr;
 
     return Status::OK;
 }
