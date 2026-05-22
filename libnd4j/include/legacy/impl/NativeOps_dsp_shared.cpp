@@ -26,6 +26,7 @@
 // ./include/legacy/impl/*.cpp into the source list).
 //
 
+#include <dsp/NativeOpsDsp.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
 

@@ -28,6 +28,7 @@
  */
 
 #include <cuda.h>
+#include <dsp/NativeOpsDsp.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
 #include <helpers/ShapeUtils.h>

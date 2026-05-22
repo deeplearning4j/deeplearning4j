@@ -27,6 +27,7 @@
  *   - getPlanNumExternalInputs / getPlanNumRequestedOutputs / getPlanNumSlots
  */
 
+#include <dsp/NativeOpsDsp.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
 #include <legacy/NativeOps.h>
