@@ -256,7 +256,9 @@ CUSTOM_OP_IMPL(rope, 1, 1, false, 0, 0) {
     float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
     float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
-    helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
+    // fusedRoPE expects an NDArray* for position — wrap the scalar offset
+    auto posArr = NDArrayFactory::create<LongType>(positionOffset, block.launchContext());
+    helpers::fusedRoPE(input, output, &posArr, freqBase, freqScale, ropeType,
                        block.launchContext(), rotaryDims);
 
     return Status::OK;
@@ -1074,11 +1076,11 @@ DECLARE_SHAPE_FN(fused_gemm_swiglu_bp) {
     auto wUpShape = inputShape->at(2);
 
     auto dXShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(xShape), 'c', shape::shapeOf(xShape), shape::rank(xShape));
+        ArrayOptions::dataType(xShape), 'c', shape::rank(xShape), shape::shapeOf(xShape));
     auto dWGateShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(wGateShape), 'c', shape::shapeOf(wGateShape), shape::rank(wGateShape));
+        ArrayOptions::dataType(wGateShape), 'c', shape::rank(wGateShape), shape::shapeOf(wGateShape));
     auto dWUpShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(wUpShape), 'c', shape::shapeOf(wUpShape), shape::rank(wUpShape));
+        ArrayOptions::dataType(wUpShape), 'c', shape::rank(wUpShape), shape::shapeOf(wUpShape));
 
     return SHAPELIST(dXShape, dWGateShape, dWUpShape);
 }
@@ -1250,11 +1252,11 @@ DECLARE_SHAPE_FN(rms_norm_linear_bp) {
     auto wShape = inputShape->at(2);
 
     auto dXShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(xShape), 'c', shape::shapeOf(xShape), shape::rank(xShape));
+        ArrayOptions::dataType(xShape), 'c', shape::rank(xShape), shape::shapeOf(xShape));
     auto dGammaShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(gammaShape), 'c', shape::shapeOf(gammaShape), shape::rank(gammaShape));
+        ArrayOptions::dataType(gammaShape), 'c', shape::rank(gammaShape), shape::shapeOf(gammaShape));
     auto dWShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(wShape), 'c', shape::shapeOf(wShape), shape::rank(wShape));
+        ArrayOptions::dataType(wShape), 'c', shape::rank(wShape), shape::shapeOf(wShape));
 
     return SHAPELIST(dXShape, dGammaShape, dWShape);
 }
