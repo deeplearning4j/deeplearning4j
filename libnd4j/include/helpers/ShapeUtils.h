@@ -81,7 +81,7 @@ class SD_LIB_EXPORT ShapeUtils {
   // Handles rank mismatch (e.g. expand_dims added leading size-1 dims beyond
   // the permutation length). Returns a ConstantShapeHelper-managed buffer.
   // Returns nullptr if permutation cannot be constructed (invalid indices, newAxis).
-  static const LongType* evalPermutedViewShapeInfo(const NDArray* input,
+  static const LongType* evalPermutedViewShapeInfo(NDArray* input,
                                                     const int* perm, int permLen);
 
 

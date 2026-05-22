@@ -684,15 +684,15 @@ LongType* ShapeUtils::evalPermShapeInfo(LongType* dimensions, LongType rank, NDA
 // Handles rank mismatch (e.g. expand_dims added leading size-1 dims beyond
 // the permutation length). Returns a ConstantShapeHelper-managed buffer.
 // Returns nullptr if permutation cannot be constructed.
-const LongType* ShapeUtils::evalPermutedViewShapeInfo(const NDArray* input,
+const LongType* ShapeUtils::evalPermutedViewShapeInfo(NDArray* input,
                                                        const int* perm, int permLen) {
   if (input == nullptr || perm == nullptr || permLen <= 0) return nullptr;
 
   int rank = shape::rank(input->shapeInfo());
   if (rank <= 0) return nullptr;
 
-  const LongType* inShape = shape::shapeOf(const_cast<LongType*>(input->shapeInfo()));
-  const LongType* inStrides = shape::stride(const_cast<LongType*>(input->shapeInfo()));
+  const LongType* inShape = shape::shapeOf(input->shapeInfo());
+  const LongType* inStrides = shape::stride(input->shapeInfo());
 
   // Build effective permutation, adapting if rank > permLen
   // (e.g., expand_dims added leading size-1 dims: rank-5 input with rank-4 permutation)
