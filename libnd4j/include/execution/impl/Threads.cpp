@@ -404,7 +404,7 @@ int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType sto
   if (tryAcquire(numThreads)) {
 
 			auto span = delta / numThreads;
-#pragma omp parallel for  schedule(guided) proc_bind(close) default(shared)
+#pragma omp parallel for  schedule(guided) default(shared)
 			for (sd::LongType e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = start_ + span;
@@ -535,7 +535,7 @@ int Threads::parallel_for(FUNC_2D function, int64_t startX, int64_t stopX, int64
 
     if (tryAcquire(numThreads)) {
 #pragma omp parallel for
-				for (uint64_t e = 0; e < numThreads; e++) {
+				for (sd::LongType e = 0; e < numThreads; e++) {
 					auto span = Span2::build(splitLoop, e, numThreads, startX, stopX, incX, startY, stopY, incY);
 					function(e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY());
 				}
@@ -613,7 +613,7 @@ int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64
 
 			auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, itersX, itersY, itersZ);
 #pragma omp parallel for
-			for (uint64_t e = 0; e < numThreads; e++) {
+			for (sd::LongType e = 0; e < numThreads; e++) {
 				auto thread_id = numThreads - e - 1;
 				auto span = Span3::build(splitLoop, thread_id, numThreads, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
 				function(e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY(), span.startZ(), span.stopZ(), span.incZ());
@@ -807,7 +807,7 @@ double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t st
 
   if (tryAcquire(numThreads)) {
 #pragma omp parallel for
-			for (uint64_t e = 0; e < numThreads; e++) {
+			for (sd::LongType e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = span * (e + 1) + start;
 
