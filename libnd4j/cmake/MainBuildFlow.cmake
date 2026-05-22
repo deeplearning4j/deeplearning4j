@@ -641,13 +641,24 @@ function(create_and_link_library)
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
 
-        # OpenMP: add -fopenmp compile flag to the OBJECT target.
+        # OpenMP: add compile flags to the OBJECT target.
         # find_package(OpenMP) runs inside setup_cpu_environment() which has function
         # scope — OpenMP_CXX_FOUND isn't visible here. Re-find at this scope.
         find_package(OpenMP QUIET)
         if(OpenMP_CXX_FOUND)
-            target_compile_options(${OBJECT_LIB_NAME} PUBLIC -fopenmp)
-            message(STATUS "✅ OpenMP -fopenmp added to OBJECT target ${OBJECT_LIB_NAME}")
+            # Use generator expressions so -fopenmp only applies to C/CXX, not CUDA.
+            # nvcc does not understand -fopenmp and fatals on Windows CUDA builds.
+            # MSVC uses /openmp; GCC/Clang use -fopenmp.
+            if(MSVC)
+                target_compile_options(${OBJECT_LIB_NAME} PUBLIC
+                    $<$<COMPILE_LANGUAGE:CXX>:/openmp>
+                    $<$<COMPILE_LANGUAGE:C>:/openmp>)
+            else()
+                target_compile_options(${OBJECT_LIB_NAME} PUBLIC
+                    $<$<COMPILE_LANGUAGE:CXX>:-fopenmp>
+                    $<$<COMPILE_LANGUAGE:C>:-fopenmp>)
+            endif()
+            message(STATUS "✅ OpenMP added to OBJECT target ${OBJECT_LIB_NAME} (language-guarded)")
         else()
             message(STATUS "⚠️ OpenMP NOT found — ${OBJECT_LIB_NAME} will be single-threaded")
         endif()
