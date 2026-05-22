@@ -923,6 +923,7 @@ static ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
  schedule.compositeReplayHandles.resize(schedule.units.size());
  return schedule;
 }
+#endif  // HAVE_TRITON
 
 Status NativeDynamicShapePlan::compositeReplay(
     GraphSegment& seg, ReplaySchedule& sched,
@@ -1004,7 +1005,6 @@ Status NativeDynamicShapePlan::compositeReplay(
       tl_cublasWorkspaceSize = prevSize;
     }
   } cublasWsGuard(this, hasMergedHandles);
-#endif
 
   // Per-step deduplication: access the active PlanExecutionContext to avoid
   // repeating plan-level operations (ext input sync, cross-stream ordering,
