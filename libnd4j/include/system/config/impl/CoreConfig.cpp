@@ -22,10 +22,23 @@
 
 #include <cstdlib>
 #include <stdexcept>
+#include <string>
 #include <thread>
 
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+
+// Portable setenv: MinGW/MSVC lack POSIX setenv(); use _putenv instead.
+#ifdef _WIN32
+static inline void sd_setenv(const char* name, const char* value, int /*overwrite*/) {
+  std::string s = std::string(name) + "=" + value;
+  _putenv(s.c_str());
+}
+#else
+static inline void sd_setenv(const char* name, const char* value, int overwrite) {
+  setenv(name, value, overwrite);
+}
 #endif
 
 namespace sd {
@@ -127,7 +140,7 @@ void CoreConfig::initFromEnvironment() {
   // and reduces power/heat on high-core-count systems.
   // Only set if user hasn't explicitly configured it.
   if (!std::getenv("KMP_BLOCKTIME")) {
-    setenv("KMP_BLOCKTIME", "0", 0);
+    sd_setenv("KMP_BLOCKTIME", "0", 0);
   }
 
   // KMP_AFFINITY: Thread-to-core binding (Intel OpenMP).
@@ -136,13 +149,13 @@ void CoreConfig::initFromEnvironment() {
   // memory-bound matmul/attention ops.
   // Only set if user hasn't explicitly configured it.
   if (!std::getenv("KMP_AFFINITY")) {
-    setenv("KMP_AFFINITY", "compact,1,0,granularity=fine", 0);
+    sd_setenv("KMP_AFFINITY", "compact,1,0,granularity=fine", 0);
   }
 
   // GOMP_SPINCOUNT: GCC OpenMP spin-wait count (equivalent to KMP_BLOCKTIME).
   // 0 = sleep immediately after parallel region.
   if (!std::getenv("GOMP_SPINCOUNT")) {
-    setenv("GOMP_SPINCOUNT", "0", 0);
+    sd_setenv("GOMP_SPINCOUNT", "0", 0);
   }
 #endif
 
