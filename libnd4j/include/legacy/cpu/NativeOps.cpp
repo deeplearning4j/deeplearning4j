@@ -44,6 +44,7 @@
 
 #include <helpers/logger.h>
 #include <legacy/NativeOps.h>
+#include <dsp/NativeOpsDsp.h>
 #include <loops/type_conversions.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/transforms.h>
