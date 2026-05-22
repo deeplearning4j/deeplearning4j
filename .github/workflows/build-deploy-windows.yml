@@ -223,11 +223,11 @@ jobs:
           install: >-
             base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg
             mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool
-            mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran
-            mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git
-            mingw-w64-x86_64-SDL2 mingw-w64-i686-SDL2 mingw-w64-x86_64-ragel
-            mingw-w64-x86_64-vulkan-headers mingw-w64-i686-vulkan-headers
-            mingw-w64-x86_64-vulkan-loader mingw-w64-i686-vulkan-loader
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-libwinpthread-git
+            mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel
+            mingw-w64-x86_64-vulkan-headers
+            mingw-w64-x86_64-vulkan-loader
 
       - name: Install build tools
         shell: cmd
