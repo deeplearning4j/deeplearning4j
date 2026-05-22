@@ -69,8 +69,10 @@ static constexpr auto AUTO = sd::DataType::AUTO;
 
 // DOUBLE, HALF conflict with Windows SDK typedefs in wtypesbase.h
 // (typedef double DOUBLE; etc.) — typedefs, not macros, so #undef doesn't help.
-// Only exclude when windows.h has been included (detected via _WINDOWS_ guard).
-#if !defined(_WINDOWS_) && !defined(_INC_WINDOWS)
+// Exclude on all Windows builds (_WIN32) because include order is unpredictable:
+// if types.h is included before windows.h, the constexpr aliases are declared first
+// and then windows.h's "typedef double DOUBLE" triggers a redeclaration error.
+#if !defined(_WIN32)
 static constexpr auto DOUBLE = sd::DataType::DOUBLE;
 static constexpr auto HALF = sd::DataType::HALF;
 #endif
