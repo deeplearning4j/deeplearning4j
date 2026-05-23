@@ -387,6 +387,13 @@ function(setup_flatbuffers)
     set(FLATBUFFERS_URL "https://github.com/google/flatbuffers/archive/v${FLATBUFFERS_VERSION}.tar.gz")
     set(FLATBUFFERS_URL_HASH "SHA256=b9c2df49707c57a48fc0923d52b8c73beb72d675f9d44b2211e4569be40a7421")
 
+    # MSVC produces flatbuffers.lib; GCC/MinGW/Clang produce libflatbuffers.a
+    if(MSVC)
+        set(FLATBUFFERS_LIB_NAME "flatbuffers.lib")
+    else()
+        set(FLATBUFFERS_LIB_NAME "libflatbuffers.a")
+    endif()
+
     # --- Dependency cache check ---
     if(SD_DEP_CACHE AND NOT CMAKE_CROSSCOMPILING)
         set(_fb_flatc_flag "FLATC=OFF")
@@ -400,7 +407,7 @@ function(setup_flatbuffers)
             set(_fb_restore_dir "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-cached")
             sd_dep_cache_restore("flatbuffers" "${_fb_cache_path}" "${_fb_restore_dir}")
             # Set up the same interface as a normal build
-            set(FLATBUFFERS_LIBRARY "${_fb_restore_dir}/lib/libflatbuffers.a")
+            set(FLATBUFFERS_LIBRARY "${_fb_restore_dir}/lib/${FLATBUFFERS_LIB_NAME}")
             set(FLATBUFFERS_SOURCE_DIR "${_fb_restore_dir}")
             if(NOT TARGET flatbuffers_external)
                 add_custom_target(flatbuffers_external)
@@ -639,7 +646,7 @@ function(setup_flatbuffers)
                 INSTALL_COMMAND   ""
                 BUILD_BYPRODUCTS
                 "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
-                "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
+                "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/${FLATBUFFERS_LIB_NAME}"
                 DOWNLOAD_EXTRACT_TIMESTAMP TRUE
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
@@ -649,7 +656,7 @@ function(setup_flatbuffers)
 
         # DO NOT use include_directories() - use target_include_directories on flatbuffers_interface instead
         # include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
-        set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a")
+        set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/${FLATBUFFERS_LIB_NAME}")
         set(FLATBUFFERS_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src")
 
         # Check if flatbuffers.h already exists
@@ -717,8 +724,8 @@ function(setup_flatbuffers)
                     \"${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include\"
                     \"\${_cache_install}/include\")
                 execute_process(COMMAND \${CMAKE_COMMAND} -E copy_if_different
-                    \"${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a\"
-                    \"\${_cache_install}/lib/libflatbuffers.a\")
+                    \"${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/${FLATBUFFERS_LIB_NAME}\"
+                    \"\${_cache_install}/lib/${FLATBUFFERS_LIB_NAME}\")
                 file(WRITE \"\${_marker}\" \"cached\")
                 message(STATUS \"DEP-CACHE [flatbuffers] Cache stored successfully\")
             endif()
