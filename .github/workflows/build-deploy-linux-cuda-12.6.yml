@@ -104,6 +104,7 @@ jobs:
             name: The number of threads to build libnd4j with
 
     runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 720
     env:
       CUDA_PATH: /usr/local/cuda-12.6
       CUDNN_ROOT_DIR: /usr/local/cuda-12.6

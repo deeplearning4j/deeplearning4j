@@ -86,6 +86,7 @@ jobs:
             name: The number of threads to build libnd4j with
 
     runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 720
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
