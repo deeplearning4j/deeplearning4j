@@ -210,8 +210,6 @@ DECLARE_PLATFORM(layer_norm, ENGINE_CUDA);
 DECLARE_PLATFORM(layer_norm_bp, ENGINE_CUDA);
 
 // Attention operations
-DECLARE_PLATFORM(dot_product_attention, ENGINE_CUDA);
-DECLARE_PLATFORM(multi_head_attention, ENGINE_CUDA);
 DECLARE_PLATFORM(flash_attention, ENGINE_CUDA);
 
 // Spatial transformer operations
@@ -220,27 +218,8 @@ DECLARE_PLATFORM(affine_grid_bp, ENGINE_CUDA);
 DECLARE_PLATFORM(grid_sample, ENGINE_CUDA);
 DECLARE_PLATFORM(grid_sample_bp, ENGINE_CUDA);
 
-// Scale and power operations
-DECLARE_PLATFORM(scale, ENGINE_CUDA);
-DECLARE_PLATFORM(scalar_add, ENGINE_CUDA);
-DECLARE_PLATFORM(affine_transform, ENGINE_CUDA);
-DECLARE_PLATFORM(square, ENGINE_CUDA);
-DECLARE_PLATFORM(reciprocal, ENGINE_CUDA);
-DECLARE_PLATFORM(rsqrt, ENGINE_CUDA);
-
-// Upsampling operations
-DECLARE_PLATFORM(upsampling2d, ENGINE_CUDA);
-DECLARE_PLATFORM(upsampling2d_bp, ENGINE_CUDA);
-DECLARE_PLATFORM(upsampling3d, ENGINE_CUDA);
-DECLARE_PLATFORM(resize_bilinear, ENGINE_CUDA);
-
-// Leaky ReLU and PReLU
+// Leaky ReLU
 DECLARE_PLATFORM(leakyrelu, ENGINE_CUDA);
-DECLARE_PLATFORM(leakyrelu_bp, ENGINE_CUDA);
-DECLARE_PLATFORM(prelu, ENGINE_CUDA);
-DECLARE_PLATFORM(prelu_bp, ENGINE_CUDA);
-DECLARE_PLATFORM(thresholdedrelu, ENGINE_CUDA);
-DECLARE_PLATFORM(thresholdedrelu_bp, ENGINE_CUDA);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns the CUDA graph capture stream when graph capture is active,
