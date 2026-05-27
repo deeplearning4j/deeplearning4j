@@ -277,6 +277,10 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"skip_rms_norm",  NORM},
         {"normalize_moments", NORM},
         {"fused_rope",     NORM},
+        {"fused_mrope",    NORM},
+
+        // ── Embedding merge ───────────────────────────────────────────────
+        {"vision_embedding_merge", DATA_MOVE},
 
         // ── Attention ops ──────────────────────────────────────────────────
         {"onnx_multi_head_attention",       ATTN},
