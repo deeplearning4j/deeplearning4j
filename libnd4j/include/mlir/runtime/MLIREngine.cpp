@@ -16,6 +16,7 @@
  ******************************************************************************/
 
 #include "MLIREngine.h"
+#include <mutex>
 
 #ifdef HAVE_MLIR
 
@@ -382,8 +383,12 @@ bool CompiledKernel::execute(const std::vector<NDArray*>& inputs,
 //===----------------------------------------------------------------------===//
 
 MLIREngine& MLIREngine::getInstance() {
-    static MLIREngine instance;
-    return instance;
+    static MLIREngine* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new MLIREngine();
+    });
+    return *instance;
 }
 
 MLIREngine::MLIREngine() {
@@ -2577,8 +2582,12 @@ bool CompiledKernel::execute(const std::vector<NDArray*>&,
 }
 
 MLIREngine& MLIREngine::getInstance() {
-    static MLIREngine instance;
-    return instance;
+    static MLIREngine* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new MLIREngine();
+    });
+    return *instance;
 }
 
 MLIREngine::MLIREngine() = default;

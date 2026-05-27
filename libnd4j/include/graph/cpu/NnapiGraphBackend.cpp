@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -265,8 +266,12 @@ NnapiGraphBackend::~NnapiGraphBackend() {
 }
 
 NnapiGraphBackend& NnapiGraphBackend::getInstance() {
-  static NnapiGraphBackend instance;
-  return instance;
+  static NnapiGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new NnapiGraphBackend();
+  });
+  return *instance;
 }
 
 bool NnapiGraphBackend::isAvailable() const {

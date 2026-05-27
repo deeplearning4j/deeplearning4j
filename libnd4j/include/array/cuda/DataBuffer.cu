@@ -106,39 +106,137 @@ SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   return (streamPtr != nullptr) ? *streamPtr : nullptr;
 }
 
+SD_INLINE cudaStream_t asyncTransferStream(bool switchedDevice) {
+  if (tl_graphExecutionActive) {
+    cudaStream_t captureStream = captureSafeStreamOrDefault();
+    return captureStream != nullptr ? captureStream : cudaStreamPerThread;
+  }
+
+  if (!switchedDevice) {
+    if (tl_dspExecutionStream != nullptr) {
+      return tl_dspExecutionStream;
+    }
+    auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+    if (streamPtr != nullptr && *streamPtr != nullptr) {
+      return *streamPtr;
+    }
+  }
+
+  return cudaStreamPerThread;
+}
+
+SD_INLINE void throwCudaStatus(const char* caller, cudaError_t err) {
+  std::string msg = std::string(caller) + ": " +
+                    cudaGetErrorString(err) + " (" +
+                    std::to_string(static_cast<int>(err)) + ")";
+  THROW_EXCEPTION(msg.c_str());
+}
+
+struct ThreadDspCompletionEvent {
+  cudaEvent_t event = nullptr;
+  bool recorded = false;
+  int deviceId = -1;
+
+  ~ThreadDspCompletionEvent() {
+    if (event == nullptr) return;
+    int currentDevice = -1;
+    bool switched = false;
+    if (cudaGetDevice(&currentDevice) == cudaSuccess && deviceId >= 0 && currentDevice != deviceId) {
+      if (cudaSetDevice(deviceId) == cudaSuccess) {
+        switched = true;
+      }
+    }
+    cudaEventDestroy(event);
+    if (switched && currentDevice >= 0) {
+      cudaSetDevice(currentDevice);
+    }
+    event = nullptr;
+    recorded = false;
+    deviceId = -1;
+  }
+
+  void ensureForCurrentDevice() {
+    int currentDevice = -1;
+    auto devErr = cudaGetDevice(&currentDevice);
+    if (devErr != cudaSuccess) {
+      throwCudaStatus("ThreadDspCompletionEvent: cudaGetDevice failed", devErr);
+    }
+    if (event != nullptr && deviceId != currentDevice) {
+      cudaEventDestroy(event);
+      event = nullptr;
+      recorded = false;
+      deviceId = -1;
+    }
+    if (event == nullptr) {
+      auto eventErr = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
+      if (eventErr != cudaSuccess) {
+        throwCudaStatus("ThreadDspCompletionEvent: cudaEventCreateWithFlags failed", eventErr);
+      }
+      deviceId = currentDevice;
+    }
+  }
+};
+
+thread_local ThreadDspCompletionEvent tl_dspCompletionEvent;
+
+SD_INLINE void waitForLastDspCompletionIfNeeded(cudaStream_t stream) {
+  if (tl_graphExecutionActive || tl_dspExecutionStream != nullptr) return;
+  if (!tl_dspCompletionEvent.recorded || tl_dspCompletionEvent.event == nullptr) return;
+  auto waitErr = cudaStreamWaitEvent(stream, tl_dspCompletionEvent.event, 0);
+  if (waitErr != cudaSuccess) {
+    throwCudaStatus("DataBuffer: cudaStreamWaitEvent(last DSP completion) failed", waitErr);
+  }
+}
+
 /**
  * Check if an allocation that failed over to a different device landed on a non-peer device.
- * If so, free the non-peer buffer and replace it with pinned host memory (UVA-accessible
- * from all devices). Returns the effective device ID for the buffer.
+ * Returns the effective device ID for the buffer.
  *
- * Non-peer device memory cannot be accessed by kernels on requestedDevice (CUDA error 700).
- * Pinned host memory is slower (PCIe bandwidth) but universally accessible via UVA.
+ * cudaMallocManaged memory (used by CudaMemoryPool for non-peer failover) is accessible
+ * from ALL devices via UVA page migration — no replacement needed. Regular cudaMalloc
+ * on a non-peer device would cause CUDA error 700, but the pool's non-peer path always
+ * uses cudaMallocManaged so this case should not arise.
  *
- * @param buffer        Pointer to the allocated buffer (may be replaced)
+ * @param buffer        Pointer to the allocated buffer (unchanged for managed/peer memory)
  * @param allocSize     Size of the allocation in bytes
  * @param requestedDevice  The device the caller wanted the allocation on
  * @param actualDevice     The device the allocation actually landed on
  * @param caller        Name of the calling function for diagnostics
- * @return The effective device ID (requestedDevice if pinned host was used, actualDevice if peer)
+ * @return The effective device ID (actualDevice — managed memory is accessible from requestedDevice via UVA)
  */
 int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, int actualDevice, const char* caller) {
   if (actualDevice == requestedDevice) return actualDevice;
   if (memory::CudaMemoryPool::getInstance().isPeerAccessEnabled(requestedDevice, actualDevice)) return actualDevice;
 
-  sd_printf("%s: Non-peer failover (device %d → %d) — switching to pinned host for kernel accessibility\n",
+  // Non-peer cross-device allocation. Check if the pointer is managed memory
+  // (cudaMallocManaged) — if so, it's accessible from all devices via UVA page migration.
+  cudaPointerAttributes attrs;
+  cudaError_t queryErr = cudaPointerGetAttributes(&attrs, buffer);
+  if (queryErr == cudaSuccess && attrs.type == cudaMemoryTypeManaged) {
+    // Managed memory — accessible from all devices. Advise prefetch to requesting device
+    // for better first-access latency (driver will migrate pages on demand regardless).
+    cudaMemPrefetchAsync(buffer, allocSize, requestedDevice, nullptr);
+    sd_printf("%s: Non-peer failover (device %d → %d) — managed memory, accessible via UVA (no pinned replacement needed)\n",
+              caller, requestedDevice, actualDevice);
+    return actualDevice;
+  }
+  if (queryErr != cudaSuccess) {
+    cudaGetLastError();  // Clear the error
+  }
+
+  // Non-managed, non-peer device memory — would cause CUDA error 700 on requestedDevice.
+  // This path should not be hit with the current pool implementation (which uses
+  // cudaMallocManaged for non-peer failover), but handle it defensively with pinned host.
+  sd_printf("%s: Non-peer failover (device %d → %d) — non-managed memory, switching to pinned host\n",
             caller, requestedDevice, actualDevice);
 
-  // Allocate pinned host memory BEFORE freeing the old buffer.
-  // If pinned allocation fails, the old non-peer buffer is still valid for the caller.
   void* pinnedPtr = nullptr;
   cudaError_t err = cudaMallocHost(&pinnedPtr, allocSize);
   if (err != cudaSuccess || pinnedPtr == nullptr) {
-    // Old buffer on actualDevice still valid — caller can attempt recovery
     std::string msg = std::string(caller) + ": pinned host allocation also failed for " + std::to_string(allocSize) + " bytes";
     THROW_EXCEPTION(msg.c_str());
   }
 
-  // Pinned allocation succeeded — now safe to free the non-peer device buffer
   void* oldBuffer = buffer;
   cudaSetDevice(actualDevice);
   memory::CudaMemoryPool::getInstance().free(oldBuffer, actualDevice, nullptr);
@@ -149,6 +247,17 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
   return requestedDevice;
 }
 }  // namespace
+
+void dspPublishThreadCompletionEvent(void* streamPtr) {
+  if (streamPtr == nullptr) return;
+  cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
+  tl_dspCompletionEvent.ensureForCurrentDevice();
+  auto err = cudaEventRecord(tl_dspCompletionEvent.event, stream);
+  if (err != cudaSuccess) {
+    throwCudaStatus("dspPublishThreadCompletionEvent: cudaEventRecord failed", err);
+  }
+  tl_dspCompletionEvent.recorded = true;
+}
 
 void DataBuffer::expand(const uint64_t size) {
   throwIfFrozen("expand");
@@ -211,8 +320,10 @@ void DataBuffer::expand(const uint64_t size) {
 #endif
     }
 
-    // Cross-device copy
-    cudaMemcpy(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
+    // Cross-device copy — use cudaStreamPerThread to avoid error 906 when
+    // another thread is mid-CUDA-graph-capture on the same device.
+    cudaMemcpyAsync(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice, cudaStreamPerThread);
+    cudaStreamSynchronize(cudaStreamPerThread);
 
     if (_isOwnerSpecial && _specialBuffer != nullptr) {
       // Switch to old device to release memory
@@ -714,6 +825,68 @@ alloc_done:  // Target for capture-workspace goto (skips pool alloc + counters a
   }
 }
 
+void DataBuffer::waitForSpecialWriteEvent(void* streamPtr) const {
+  if (!_writeEventRecorded.load(std::memory_order_acquire) || _writeEvent == nullptr) return;
+  cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
+  auto err = cudaStreamWaitEvent(stream, reinterpret_cast<cudaEvent_t>(_writeEvent), 0);
+  if (err != cudaSuccess) {
+    throwCudaStatus("DataBuffer::waitForSpecialWriteEvent: cudaStreamWaitEvent failed", err);
+  }
+}
+
+void DataBuffer::recordSpecialWriteEvent(void* streamPtr) const {
+  cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
+  int currentDevice = -1;
+  auto devErr = cudaGetDevice(&currentDevice);
+  if (devErr != cudaSuccess) {
+    throwCudaStatus("DataBuffer::recordSpecialWriteEvent: cudaGetDevice failed", devErr);
+  }
+
+  int eventDevice = _writeEventDeviceId.load(std::memory_order_acquire);
+  if (_writeEvent != nullptr && eventDevice != currentDevice) {
+    cudaEventDestroy(reinterpret_cast<cudaEvent_t>(_writeEvent));
+    _writeEvent = nullptr;
+    _writeEventRecorded.store(false, std::memory_order_release);
+    _writeEventDeviceId.store(-1, std::memory_order_release);
+  }
+
+  if (_writeEvent == nullptr) {
+    cudaEvent_t evt = nullptr;
+    auto createErr = cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+    if (createErr != cudaSuccess) {
+      throwCudaStatus("DataBuffer::recordSpecialWriteEvent: cudaEventCreateWithFlags failed", createErr);
+    }
+    _writeEvent = reinterpret_cast<void*>(evt);
+    _writeEventDeviceId.store(currentDevice, std::memory_order_release);
+  }
+
+  auto recordErr = cudaEventRecord(reinterpret_cast<cudaEvent_t>(_writeEvent), stream);
+  if (recordErr != cudaSuccess) {
+    throwCudaStatus("DataBuffer::recordSpecialWriteEvent: cudaEventRecord failed", recordErr);
+  }
+  _writeEventRecorded.store(true, std::memory_order_release);
+}
+
+void DataBuffer::clearSpecialWriteEvent() const {
+  if (_writeEvent == nullptr) return;
+
+  int currentDevice = -1;
+  bool switchedDevice = false;
+  int eventDevice = _writeEventDeviceId.load(std::memory_order_acquire);
+  if (cudaGetDevice(&currentDevice) == cudaSuccess && eventDevice >= 0 && currentDevice != eventDevice) {
+    if (cudaSetDevice(eventDevice) == cudaSuccess) {
+      switchedDevice = true;
+    }
+  }
+  cudaEventDestroy(reinterpret_cast<cudaEvent_t>(_writeEvent));
+  if (switchedDevice && currentDevice >= 0) {
+    cudaSetDevice(currentDevice);
+  }
+  _writeEvent = nullptr;
+  _writeEventRecorded.store(false, std::memory_order_release);
+  _writeEventDeviceId.store(-1, std::memory_order_release);
+}
+
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
   if (_specialBuffer == nullptr || _lenInBytes == 0 || closed) {
@@ -818,17 +991,9 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   // after the memcpy, making it a blocking call regardless of which stream is used.
   cudaStream_t stream = 0;
 
-  // Event-based synchronization is SKIPPED when using stream 0 (the legacy default
-  // stream). Stream 0 already implicitly synchronizes with ALL other streams on the
-  // device — it waits for all prior work on all streams before starting its own work.
-  // This makes cudaStreamWaitEvent redundant, and more importantly, avoids a SIGSEGV
-  // crash when the _writeEvent handle has been corrupted by a buffer overrun from a
-  // native op (known issue pattern — see MEMORY.md).
-  //
-  // If we ever switch to a non-zero stream for D2H transfers, event synchronization
-  // would need to be re-enabled with proper event handle validation.
   cudaError_t res;
   if (_writeEventRecorded.load()) {
+    waitForSpecialWriteEvent(stream);
     _writeEventRecorded.store(false);  // Reset for next write
   }
 
@@ -1077,14 +1242,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // Track H2D transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
-  // Use DSP execution stream when available (set by DSP replay path).
-  // This allows H2D copies to be async on the same stream as graph launch,
-  // with stream ordering guaranteeing completion before the graph reads the data.
-  // Falls back to stream 0 when no DSP stream is set (standalone syncToDevice calls).
-  // IMPORTANT: Only use DSP stream if we're on the SAME device. DSP streams are
-  // device-specific — using a device 1 stream for a device 0 memcpy is invalid.
-  bool useDspStream = (tl_dspExecutionStream != nullptr && !switchedDevice);
-  cudaStream_t stream = useDspStream ? tl_dspExecutionStream : 0;
+  cudaStream_t stream = asyncTransferStream(switchedDevice);
 
   // Validate stream and check for latent CUDA errors before cudaMemcpyAsync.
   // Catches: stale/destroyed streams, latent errors from prior ops.
@@ -1098,15 +1256,31 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
       cudaGetLastError();  // clear so cudaMemcpyAsync doesn't inherit it
     }
     if (stream != 0) {
-      cudaError_t streamErr = cudaStreamQuery(stream);
-      // cudaSuccess or cudaErrorNotReady both mean stream is valid
-      if (streamErr != cudaSuccess && streamErr != cudaErrorNotReady) {
-        DSP_DIAG(TRANSFER, "syncToSpecial: INVALID stream=%p err=%d (%s) — falling back to stream 0. "
-                 "dst=%p src=%p len=%zu device=%d",
-                 (void*)stream, (int)streamErr, cudaGetErrorString(streamErr),
-                 _specialBuffer, _primaryBuffer, getLenInBytes(), bufferDeviceId);
-        cudaGetLastError();  // clear
-        stream = 0;  // fall back to default stream
+      // Skip cudaStreamQuery when the stream is being captured.
+      // cudaStreamQuery is ILLEGAL during CUDA graph capture — it returns
+      // cudaErrorStreamCaptureUnsupported (900) which permanently invalidates
+      // the capture stream, causing all subsequent operations (cuLaunchKernel,
+      // cudaMemcpyAsync, etc.) to fail with error 901 ("operation failed due
+      // to a previous error during capture").
+      bool skipStreamQuery = false;
+      {
+        cudaStreamCaptureStatus capStatus = cudaStreamCaptureStatusNone;
+        cudaError_t capErr = cudaStreamIsCapturing(stream, &capStatus);
+        if (capErr == cudaSuccess && capStatus != cudaStreamCaptureStatusNone) {
+          skipStreamQuery = true;
+        }
+      }
+      if (!skipStreamQuery) {
+        cudaError_t streamErr = cudaStreamQuery(stream);
+        // cudaSuccess or cudaErrorNotReady both mean stream is valid
+        if (streamErr != cudaSuccess && streamErr != cudaErrorNotReady) {
+          DSP_DIAG(TRANSFER, "syncToSpecial: INVALID stream=%p err=%d (%s) — falling back to per-thread stream. "
+                   "dst=%p src=%p len=%zu device=%d",
+                   (void*)stream, (int)streamErr, cudaGetErrorString(streamErr),
+                   _specialBuffer, _primaryBuffer, getLenInBytes(), bufferDeviceId);
+          cudaGetLastError();  // clear
+          stream = cudaStreamPerThread;
+        }
       }
     }
   }
@@ -1128,21 +1302,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  // When using DSP execution stream, skip per-call sync — the caller guarantees
-  // ordering (graph launch on same stream, or explicit sync after the batch).
-  // For standalone calls (stream 0), sync to ensure data is on device before returning.
-  if (!useDspStream) {
-    res = cudaStreamSynchronize(stream);
-    if (res != cudaSuccess) {
-      if (switchedDevice) {
-        cudaSetDevice(currentDeviceId);
-      }
-      std::string errorMessage;
-      errorMessage += "DataBuffer::syncToSpecial: stream sync failed: ";
-      errorMessage += cudaGetErrorString(res);
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-  }
+  recordSpecialWriteEvent(stream);
 
   auto endTime = std::chrono::high_resolution_clock::now();
   auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
@@ -1163,6 +1323,8 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
+  clearSpecialWriteEvent();
+
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
     // During CUDA graph capture, skip ALL GPU memory frees for non-workspace buffers.
     // Recording cudaFreeAsync for graph-external memory creates MemFree graph nodes
@@ -1324,9 +1486,10 @@ void DataBuffer::setCountersToZero() {
   _readPrimary.store(0L);
   _readSpecial.store(0L);
 
-  // Event creation intentionally removed — syncToPrimary() uses stream 0 which
-  // provides implicit synchronization with all other streams on the device.
+  // Write events are created lazily by async copy paths. Constructor/reset does
+  // not allocate CUDA objects.
   _writeEventRecorded.store(false);
+  _writeEventDeviceId.store(-1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1367,6 +1530,7 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
   }
 
   int res = 0;
+  cudaStream_t copyStream = asyncTransferStream(switchedDevice);
   if (other.isPrimaryActual()) {
     // Always use cudaMemcpyAsync with a specific stream instead of synchronous cudaMemcpy.
     // Synchronous cudaMemcpy uses the legacy default stream (stream 0) which implicitly
@@ -1374,39 +1538,23 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
     // recently-invalidated CUDA graph capture, cudaMemcpy fails with error 906
     // (cudaErrorStreamCaptureImplicit). Using cudaMemcpyAsync on a per-thread stream
     // avoids this because cudaStreamPerThread doesn't implicitly sync with named streams.
-    if (tl_graphExecutionActive) {
-      cudaStream_t capturedStream = captureSafeStreamOrDefault();
-      res = cudaMemcpyAsync(
-          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-          static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
-          sizeToCopyinBytes, cudaMemcpyHostToDevice, capturedStream);
-    } else {
-      res = cudaMemcpyAsync(
-          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-          static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
-          sizeToCopyinBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
-      if (res == cudaSuccess) {
-        res = cudaStreamSynchronize(cudaStreamPerThread);
-      }
-    }
+    res = cudaMemcpyAsync(
+        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+        static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
+        sizeToCopyinBytes, cudaMemcpyHostToDevice, copyStream);
     other.readPrimary();
   } else {
-    if (tl_graphExecutionActive) {
-      cudaStream_t capturedStream = captureSafeStreamOrDefault();
-      res = cudaMemcpyAsync(
-          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-          static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
-          sizeToCopyinBytes, cudaMemcpyDeviceToDevice, capturedStream);
-    } else {
-      res = cudaMemcpyAsync(
-          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-          static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
-          sizeToCopyinBytes, cudaMemcpyDeviceToDevice, cudaStreamPerThread);
-      if (res == cudaSuccess) {
-        res = cudaStreamSynchronize(cudaStreamPerThread);
-      }
-    }
+    waitForLastDspCompletionIfNeeded(copyStream);
+    other.waitForSpecialWriteEvent(copyStream);
+    res = cudaMemcpyAsync(
+        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+        static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
+        sizeToCopyinBytes, cudaMemcpyDeviceToDevice, copyStream);
     other.readSpecial();
+  }
+
+  if (res == 0) {
+    recordSpecialWriteEvent(copyStream);
   }
 
   // Restore original device if we switched
@@ -1416,9 +1564,9 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
 
   if (res != 0) {
     if (other.isPrimaryActual()) {
-      throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+      throwCudaStatus("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyHostToDevice failed", static_cast<cudaError_t>(res));
     } else {
-      throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
+      throwCudaStatus("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyDeviceToDevice failed", static_cast<cudaError_t>(res));
     }
   }
 
@@ -1447,20 +1595,14 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
     switchedDevice = true;
   }
 
-  int res = 0;
-  // During CUDA graph capture, synchronous cudaMemcpy breaks capture (error 906).
-  // Use cudaMemcpyAsync on the captured stream instead.
-  if (tl_graphExecutionActive) {
-    cudaStream_t capturedStream = captureSafeStreamOrDefault();
-    res = cudaMemcpyAsync(
-        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-        static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
-        sizeToCopyinBytes, cudaMemcpyHostToDevice, capturedStream);
-  } else {
-    res = cudaMemcpy(
-        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-        static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
-        sizeToCopyinBytes, cudaMemcpyHostToDevice);
+  cudaStream_t copyStream = asyncTransferStream(switchedDevice);
+  int res = cudaMemcpyAsync(
+      static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+      static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
+      sizeToCopyinBytes, cudaMemcpyHostToDevice, copyStream);
+
+  if (res == 0) {
+    recordSpecialWriteEvent(copyStream);
   }
 
   // Restore original device if we switched
@@ -1469,7 +1611,7 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
   }
 
   if (res != 0)
-    throw cuda_exception::build("DataBuffer::copyBufferFromHost: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+    throwCudaStatus("DataBuffer::copyBufferFromHost: cudaMemcpy_cudaMemcpyHostToDevice failed", static_cast<cudaError_t>(res));
 
   writeSpecial();
 }
@@ -1503,6 +1645,7 @@ void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
   // Replace _specialBuffer WITHOUT calling deleteSpecial() — caller handles old pointer.
   // This is used for weight migration: old pool pointer already freed via cudaFreeAsync,
   // new direct pointer allocated via cudaMalloc.
+  clearSpecialWriteEvent();
   _specialBuffer = newPtr;
   _isOwnerSpecial = isOwner;
   if (newPtr != nullptr) {
@@ -1615,8 +1758,12 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
       if (switchedDevice) {
         cudaSetDevice(currentDeviceId);
       }
-      throw cuda_exception::build("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed!", res);
+      throwCudaStatus("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed", res);
     }
+  }
+
+  if (res == cudaSuccess && !(tl_graphExecutionActive && tl_graphCaptureStream != nullptr)) {
+    recordSpecialWriteEvent(stream);
   }
 
   // Restore original device if we switched
@@ -1665,10 +1812,12 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   }
 
   // Cache the stream reference - must obtain AFTER device switch
-  cudaStream_t stream = captureSafeStreamOrDefault();
+  cudaStream_t stream = asyncTransferStream(switchedDevice);
 
   cudaError_t res = cudaSuccess;
   if (src->isSpecialActual()) {
+    waitForLastDspCompletionIfNeeded(stream);
+    src->waitForSpecialWriteEvent(stream);
     res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), copyBytes, cudaMemcpyDeviceToDevice,
                           stream);
   } else if (src->isPrimaryActual()) {
@@ -1680,12 +1829,13 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
     }
-    throw cuda_exception::build("DataBuffer::memcpy: cudaMemcpyAsync failed!", res);
+    throwCudaStatus("DataBuffer::memcpy: cudaMemcpyAsync failed", res);
   }
 
   // No stream sync needed here - subsequent GPU operations on same stream will
   // automatically wait for memcpy to complete. This eliminates unnecessary CPU-GPU sync.
   // The writeSpecial() below will track the write event for cross-thread sync if needed.
+  dst->recordSpecialWriteEvent(stream);
 
   // Restore original device if we switched
   if (switchedDevice) {

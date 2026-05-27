@@ -148,7 +148,9 @@ public class OpTraitTableEnumerationTest {
         for (String op : new String[]{
                 "add", "subtract", "multiply", "divide", "floormod", "floordiv",
                 "reversedivide", "reversesubtract", "squaredsubtract",
-                "add_scalar", "subtract_scalar", "multiply_scalar", "divide_scalar",
+                "add_scalar", "subtract_scalar", "sub_scalar",
+                "multiply_scalar", "mul_scalar", "divide_scalar", "div_scalar",
+                "rsub_scalar", "rdiv_scalar",
                 "pow", "min_pairwise", "max_pairwise", "atan2", "maximum", "minimum",
                 "mod", "multiply_no_nan", "swish_mul"}) {
             m.put(op, BINARY_EW);

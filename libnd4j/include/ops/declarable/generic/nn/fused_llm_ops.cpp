@@ -28,7 +28,8 @@
 
 #if NOT_EXCLUDED(OP_fused_gelu) || NOT_EXCLUDED(OP_fused_layer_norm) || \
     NOT_EXCLUDED(OP_fused_rope) || NOT_EXCLUDED(OP_fused_bias_dropout_residual) || \
-    NOT_EXCLUDED(OP_fused_rms_norm_swiglu) || NOT_EXCLUDED(OP_fused_attention_projection)
+    NOT_EXCLUDED(OP_fused_rms_norm_swiglu) || NOT_EXCLUDED(OP_fused_attention_projection) || \
+    NOT_EXCLUDED(OP_fused_mrope)
 
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/fused_llm_ops.h>
@@ -366,6 +367,95 @@ DECLARE_SHAPE_FN(fused_attention_projection) {
 
 DECLARE_TYPES(fused_attention_projection) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// fused_mrope - Multimodal Rotary Position Embedding (M-RoPE)
+//////////////////////////////////////////////////////////////////////////
+#if NOT_EXCLUDED(OP_fused_mrope)
+CUSTOM_OP_IMPL(fused_mrope, 4, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto posT = INPUT_VARIABLE(1);
+    auto posH = INPUT_VARIABLE(2);
+    auto posW = INPUT_VARIABLE(3);
+    auto output = OUTPUT_VARIABLE(0);
+
+    REQUIRE_TRUE(input->rankOf() == 4, 0,
+        "fused_mrope: input must be rank-4 [batch, seq, heads, head_dim], got rank %i", input->rankOf());
+    REQUIRE_TRUE(posT->rankOf() == 2, 0,
+        "fused_mrope: position_t must be rank-2 [batch, seq], got rank %i", posT->rankOf());
+
+    int sectionT = block.getIArguments()->size() > 0 ? INT_ARG(0) : 24;
+    int sectionH = block.getIArguments()->size() > 1 ? INT_ARG(1) : 20;
+    int sectionW = block.getIArguments()->size() > 2 ? INT_ARG(2) : 20;
+    bool interleaved = block.getIArguments()->size() > 3 ? INT_ARG(3) != 0 : false;
+    float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
+
+    int headDim = (int) input->sizeAt(3);
+    REQUIRE_TRUE(sectionT + sectionH + sectionW == headDim, 0,
+        "fused_mrope: sections (%d + %d + %d = %d) must sum to head_dim (%d)",
+        sectionT, sectionH, sectionW, sectionT + sectionH + sectionW, headDim);
+
+    helpers::fusedMRoPE(input, posT, posH, posW, output,
+                         sectionT, sectionH, sectionW, interleaved, freqBase,
+                         block.launchContext());
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(fused_mrope) {
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+}
+
+DECLARE_TYPES(fused_mrope) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// vision_embedding_merge - scatter vision embeddings into text at target token positions
+//////////////////////////////////////////////////////////////////////////
+#if NOT_EXCLUDED(OP_vision_embedding_merge)
+CUSTOM_OP_IMPL(vision_embedding_merge, 3, 1, false, 0, 1) {
+    auto textEmbeddings = INPUT_VARIABLE(0);    // [batch, seqLen, hidden]
+    auto visionEmbeddings = INPUT_VARIABLE(1);  // [batch, visionTokens, hidden]
+    auto tokenIds = INPUT_VARIABLE(2);          // [batch, seqLen]
+    auto output = OUTPUT_VARIABLE(0);           // [batch, seqLen, hidden]
+
+    sd::LongType targetTokenId = INT_ARG(0);
+
+    REQUIRE_TRUE(textEmbeddings->rankOf() == 3, 0,
+        "vision_embedding_merge: textEmbeddings must be rank 3, got %i", textEmbeddings->rankOf());
+    REQUIRE_TRUE(visionEmbeddings->rankOf() == 3, 0,
+        "vision_embedding_merge: visionEmbeddings must be rank 3, got %i", visionEmbeddings->rankOf());
+    REQUIRE_TRUE(tokenIds->rankOf() == 2, 0,
+        "vision_embedding_merge: tokenIds must be rank 2, got %i", tokenIds->rankOf());
+    REQUIRE_TRUE(textEmbeddings->sizeAt(2) == visionEmbeddings->sizeAt(2), 0,
+        "vision_embedding_merge: hidden dim mismatch: text=%lld vs vision=%lld",
+        textEmbeddings->sizeAt(2), visionEmbeddings->sizeAt(2));
+
+    helpers::visionEmbeddingMerge(textEmbeddings, visionEmbeddings, tokenIds,
+                                  output, targetTokenId, block.launchContext());
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(vision_embedding_merge) {
+    // Output shape is the same as textEmbeddings: [batch, seqLen, hidden]
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+}
+
+DECLARE_TYPES(vision_embedding_merge) {
+    getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+    getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS});
+    getOpDescriptor()->setAllowedInputTypes(2, {ALL_INTS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }

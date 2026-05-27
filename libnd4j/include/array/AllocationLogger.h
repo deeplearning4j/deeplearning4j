@@ -46,8 +46,12 @@ public:
      * Get singleton instance
      */
     static AllocationLogger& getInstance() {
-        static AllocationLogger instance;
-        return instance;
+        static AllocationLogger* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new AllocationLogger();
+        });
+        return *instance;
     }
 
     /**

@@ -26,6 +26,7 @@
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
+#include <mutex>
 #include <system/Environment.h>
 
 #include "../cublasHelper.h"
@@ -112,17 +113,22 @@ CublasHelper::~CublasHelper() {
 }
 
 CublasHelper& CublasHelper::getInstance() {
-  static CublasHelper instance;
-  return instance;
+  static CublasHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new CublasHelper();
+  });
+  return *instance;
 }
 
 void CublasHelper::applyTf32Mode(bool enable) {
+  // Thread-local handles get TF32 applied lazily in handle() via tl_tf32Applied.
+  // This method is kept for any code that still references the legacy _cache handles.
   for (int e = 0; e < _cache.size(); e++) {
     auto handle = _cache[e];
     if (handle == nullptr) continue;
     auto ch = reinterpret_cast<cublasHandle_t*>(handle);
 
-    // Check if device supports TF32 (sm_80+)
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, e);
     if (prop.major >= 8) {
@@ -164,18 +170,36 @@ void* CublasHelper::handle(int deviceId) {
   if (deviceId < 0 || deviceId >= _cache.size())
     throw cuda_exception::build("requested deviceId doesn't look valid for cuBLAS", deviceId);
 
-  auto handle = _cache[deviceId];
-  if (handle == nullptr) {
-    throw cuda_exception::build("cuBLAS handle is null for device - initialization may have failed", deviceId);
+  // Thread-local cuBLAS handle per (thread, device) pair.
+  // cuBLAS handles carry mutable state (stream, math mode, workspace) and are
+  // explicitly NOT thread-safe (NVIDIA docs). Sharing a single handle across
+  // concurrent sd.output() threads causes races: thread A sets stream/workspace,
+  // thread B overwrites them, thread A launches GEMM on the wrong stream →
+  // CUDA error 906 (cudaErrorLaunchFailure).
+  thread_local cublasHandle_t* tl_handle = nullptr;
+  thread_local int tl_deviceId = -1;
+
+  if (tl_deviceId != deviceId || tl_handle == nullptr) {
+    // Device changed or first call on this thread — create a new handle.
+    if (tl_handle != nullptr) {
+      cublasDestroy_v2(*tl_handle);
+      delete tl_handle;
+      tl_handle = nullptr;
+    }
+
+    tl_handle = new cublasHandle_t();
+    auto status = cublasCreate_v2(tl_handle);
+    if (status != CUBLAS_STATUS_SUCCESS) {
+      delete tl_handle;
+      tl_handle = nullptr;
+      throw cuda_exception::build("thread-local cuBLAS handle creation failed", status);
+    }
+    tl_deviceId = deviceId;
   }
 
   // Lazily apply/remove TF32 mode when the flag changes.
-  // Only check the atomic bool (cheap), and only call cublasSetMathMode on transitions.
   // CRITICAL: When DSP has set deterministic cuBLAS (PEDANTIC_MATH via
   // tl_cublasLtDisabled=true), skip the lazy TF32 application entirely.
-  // Otherwise this overwrites PEDANTIC_MATH with TF32/DEFAULT between
-  // DSP's own cublasSetMathMode calls and the GEMM kernel dispatch,
-  // causing self-consistency failures (two plans with identical inputs diverge).
   extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
   static thread_local bool tl_tf32Applied = false;
   static thread_local int tl_smMajor = -1;
@@ -187,13 +211,12 @@ void* CublasHelper::handle(int deviceId) {
       tl_smMajor = prop.major;
     }
     if (tl_smMajor >= 8) {
-      auto ch = reinterpret_cast<cublasHandle_t*>(handle);
-      cublasSetMathMode(*ch, wantTf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
+      cublasSetMathMode(*tl_handle, wantTf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
     }
     tl_tf32Applied = wantTf32;
   }
 
-  return handle;
+  return reinterpret_cast<void*>(tl_handle);
 }
 
 // cuBLAS Lt handle: created on-demand per thread/device

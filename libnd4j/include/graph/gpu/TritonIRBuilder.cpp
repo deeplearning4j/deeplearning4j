@@ -53,6 +53,7 @@
 #include <system/common.h>
 
 #include <cstdint>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -201,6 +202,8 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["divide_scalar"]   = {"divide_scalar",   TritonOpCategory::UNARY_ELEMENTWISE, "custom.divide_scalar",   true};
   table["div_scalar"]      = {"div_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.divide_scalar",   true};
   table["sub_scalar"]      = {"sub_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.subtract_scalar", true};
+  table["rsub_scalar"]     = {"rsub_scalar",     TritonOpCategory::UNARY_ELEMENTWISE, "custom.rsub_scalar",     true};
+  table["rdiv_scalar"]     = {"rdiv_scalar",     TritonOpCategory::UNARY_ELEMENTWISE, "custom.rdiv_scalar",     true};
 
   // Comparison ops
   table["greater"]      = {"greater",      TritonOpCategory::COMPARISON,  "arith.cmpf OGT", false};
@@ -420,7 +423,11 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
 }
 
 const std::unordered_map<std::string, TritonOpMapping>& TritonIRBuilder::getOpTable() {
-  static auto table = buildOpTable();
+  // -fno-threadsafe-statics is set in CompilerFlags.cmake, so C++11 magic statics
+  // are NOT thread-safe. Use std::call_once to protect concurrent initialization.
+  static std::once_flag flag;
+  static std::unordered_map<std::string, TritonOpMapping> table;
+  std::call_once(flag, [&]() { table = buildOpTable(); });
   return table;
 }
 

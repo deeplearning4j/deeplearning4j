@@ -141,7 +141,7 @@ int SegmentExecutor::replay(NDArray** inputs, int numInputs, SlotArray* slots, v
   if (phase_ != Phase::SEALED) return -1;
   if (replayHandle_ == nullptr) return -2;
 
-  // Address-key comparison: replaces argTableStable boolean.
+  // Address-key comparison: uses needsArgRefresh() / generation counter pattern.
   // Zero-cost when stable (single comparison). Self-healing when not.
   LongType currentKey = computeInputAddrKey(inputs, numInputs);
   if (currentKey != lastInputAddrKey_) {

@@ -6211,7 +6211,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcurrentBgeModelLoadingAndInference(Nd4jBackend backend) throws Exception {
         // Path to the BGE model - skip if not available
-        File modelFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/bge-base-en-v1.5.sdz");
+        File modelFile = new File(System.getProperty("bge.model.path",
+                System.getProperty("user.dir") + "/bge-base-en-v1.5.sdz"));
         org.junit.jupiter.api.Assumptions.assumeTrue(modelFile.exists(),
                 "BGE model not found at: " + modelFile.getAbsolutePath());
 
@@ -6358,7 +6359,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcurrentBgeModelFreshLoads(Nd4jBackend backend) throws Exception {
-        File modelFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/bge-base-en-v1.5.sdz");
+        File modelFile = new File(System.getProperty("bge.model.path",
+                System.getProperty("user.dir") + "/bge-base-en-v1.5.sdz"));
         org.junit.jupiter.api.Assumptions.assumeTrue(modelFile.exists(),
                 "BGE model not found at: " + modelFile.getAbsolutePath());
 

@@ -25,6 +25,7 @@
 #include <helpers/DynamicKernelLoader.h>
 #include <ops/declarable/OpRegistrator.h>
 
+#include <mutex>
 #include <sstream>
 #include <unordered_set>
 
@@ -63,8 +64,12 @@ void SimpleKernelPlugin::registerKernel(const KernelInfo& info, PlatformHelperFa
 // DynamicKernelLoader implementation
 
 DynamicKernelLoader& DynamicKernelLoader::getInstance() {
-  static DynamicKernelLoader instance;
-  return instance;
+  static DynamicKernelLoader* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new DynamicKernelLoader();
+  });
+  return *instance;
 }
 
 void* DynamicKernelLoader::loadLibrary(const std::string& path) {

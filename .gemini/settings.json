@@ -1,0 +1,20 @@
+{
+  "hooks" : {
+    "BeforeTool" : [ {
+      "matcher" : "mcp_kompile_.*",
+      "hooks" : [ {
+        "name" : "kompile-progress",
+        "type" : "command",
+        "command" : "bash -c 'INPUT=$(cat); TN=$(echo \"$INPUT\" | jq -r \".tool_name // \\\"unknown\\\"\"); SHORT=${TN#mcp_kompile_}; PARAMS=$(echo \"$INPUT\" | jq -rc \".tool_input // {}\" | head -c 120); echo \"$(($(date +%s%N)/1000000))\" > /tmp/.kompile_hook_ts_5fbbee77; echo >&2 \"[kompile] $SHORT | $PARAMS\"'"
+      } ]
+    } ],
+    "AfterTool" : [ {
+      "matcher" : "mcp_kompile_.*",
+      "hooks" : [ {
+        "name" : "kompile-timing",
+        "type" : "command",
+        "command" : "bash -c 'INPUT=$(cat); TN=$(echo \"$INPUT\" | jq -r \".tool_name // \\\"unknown\\\"\"); SHORT=${TN#mcp_kompile_}; END=$(($(date +%s%N)/1000000)); START=$(cat /tmp/.kompile_hook_ts_5fbbee77 2>/dev/null || echo $END); MS=$((END - START)); if [ $MS -gt 1000 ]; then FMT=\"$((MS/1000)).$((MS%1000/100))s\"; else FMT=\"${MS}ms\"; fi; echo >&2 \"[kompile] $SHORT done ($FMT)\"'"
+      } ]
+    } ]
+  }
+}

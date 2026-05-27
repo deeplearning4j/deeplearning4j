@@ -89,7 +89,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
-      if (slotIsViewProducer_ != nullptr && slotIsViewProducer_[outIdx]) continue;
+      if (slots_[outIdx].slotPhase.isViewProducer) continue;
       NDArray* arr = outputSlots_[outIdx];
       if (arr == nullptr) continue;
       if (arr->isView()) continue;
@@ -197,10 +197,12 @@ void NativeDynamicShapePlan::platformReconcileOutputActuality(
 
   if (primaryActual && !specialActual) {
     if (needsDeviceVisibleControl) {
-      output->syncToDevice();
+      std::vector<NDArray*> reads{output};
+      NDArray::prepareSpecialUse({}, reads);
+      NDArray::registerSpecialUse({}, reads);
       DSP_DIAG(SHAPE,
                "CONTROL_OUTPUT_SYNC: stage=%s slot=%d (%s) "
-               "synced host-current output to device after native execution",
+               "prepared host-current output for device after native execution",
                stage, stepIdx, slot.ident.opName.c_str());
     }
   }
@@ -241,9 +243,12 @@ bool NativeDynamicShapePlan::platformValidateReusableSlotBuffer(NDArray* cached)
 // ── Platform set/clear cublasLt epilogue ──────────────────────────────────────
 void NativeDynamicShapePlan::platformSetLtEpilogue(const NativeSlot& slot, NDArray* biasArray) {
   if (biasArray == nullptr) return;
-  biasArray->syncToDevice();
-  MmulHelper::setLtEpilogue(slot.flags.ltEpilogueType, biasArray->specialBuffer(),
+  std::vector<NDArray*> reads{biasArray};
+  NDArray::prepareSpecialUse({}, reads);
+  MmulHelper::setLtEpilogue(slot.flags.ltEpilogueType,
+                             biasArray->dataBuffer() != nullptr ? biasArray->dataBuffer()->special() : nullptr,
                              biasArray->lengthOf() * biasArray->sizeOfT());
+  NDArray::registerSpecialUse({}, reads);
 }
 
 void NativeDynamicShapePlan::platformClearLtEpilogue() {

@@ -1,0 +1,16 @@
+{
+  "id" : "3a2cbc85",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 448,
+  "passed" : 445,
+  "failed" : 3,
+  "notes" : "Full DspSlotLifecycleAuditTest after initial frozen-output-ref tracking still failed 3 cases. Diagnostics showed AUTO_SEAL path never called phaseWarmup, so frozen output/protected refs were not tracked for teardown; continuing with production lifecycle fix.",
+  "tags" : "dsp,cuda,triton,lifecycle,frozen-refs",
+  "timestamp" : "2026-05-27T05:50:41.439061Z"
+}

@@ -61,6 +61,7 @@ template <typename T>
 static SD_KERNEL __launch_bounds__(256, 2) void applyPenaltiesKernel(void* vLogits,
                                             const LongType logitsRowStride,
                                             const LongType logitsElemStride,
+                                            const LongType logitsRowOffset,
                                             const void* vInputIds,
                                             const LongType idsRowStride,
                                             const LongType idsElemStride,
@@ -110,8 +111,9 @@ static SD_KERNEL __launch_bounds__(256, 2) void applyPenaltiesKernel(void* vLogi
     }
     __syncthreads();
 
-    // All threads cooperate to apply penalties from the hash table
-    LongType logitsBase = b * logitsRowStride;
+    // All threads cooperate to apply penalties from the hash table.
+    // logitsRowOffset offsets into the last sequence position for rank-3 logits.
+    LongType logitsBase = b * logitsRowStride + logitsRowOffset;
     for (int i = threadIdx.x; i < PENALTY_HASH_SIZE; i += blockDim.x) {
         if (sKeys[i] == -1) continue;
 
@@ -151,12 +153,18 @@ static void applyPenaltiesLauncher(NDArray* logits, NDArray* inputIds,
     LongType batch = 1;
     LongType vocabSize;
     LongType seqLen;
+    LongType logitsSeqLen = 1;
 
     if (logitsRank == 1) {
         vocabSize = logits->sizeAt(0);
-    } else {
+    } else if (logitsRank == 2) {
         batch = logits->sizeAt(0);
         vocabSize = logits->sizeAt(1);
+    } else {
+        // Rank 3: [batch, seqLen, vocabSize] — typical plan output shape
+        batch = logits->sizeAt(0);
+        logitsSeqLen = logits->sizeAt(1);
+        vocabSize = logits->sizeAt(2);
     }
 
     if (idsRank == 1) {
@@ -166,8 +174,23 @@ static void applyPenaltiesLauncher(NDArray* logits, NDArray* inputIds,
     }
 
     auto logitsStrides = logits->stridesOf();
-    LongType logitsRowStride = (logitsRank == 1) ? 0 : logitsStrides[0];
-    LongType logitsElemStride = (logitsRank == 1) ? logitsStrides[0] : logitsStrides[1];
+    LongType logitsRowStride, logitsElemStride, logitsRowOffset;
+    if (logitsRank == 1) {
+        logitsRowStride = 0;
+        logitsElemStride = logitsStrides[0];
+        logitsRowOffset = 0;
+    } else if (logitsRank == 2) {
+        logitsRowStride = logitsStrides[0];
+        logitsElemStride = logitsStrides[1];
+        logitsRowOffset = 0;
+    } else {
+        // Rank 3: [batch, seqLen, vocabSize]. Row stride is batch stride,
+        // element stride is vocab stride (strides[2]).
+        // Offset to last sequence position so penalties apply to the last-position logits.
+        logitsRowStride = logitsStrides[0];
+        logitsElemStride = logitsStrides[2];
+        logitsRowOffset = (logitsSeqLen - 1) * logitsStrides[1];
+    }
 
     auto idsStrides = inputIds->stridesOf();
     LongType idsRowStride = (idsRank == 1) ? 0 : idsStrides[0];
@@ -178,7 +201,7 @@ static void applyPenaltiesLauncher(NDArray* logits, NDArray* inputIds,
 
     applyPenaltiesKernel<T><<<batch, blockSize, sharedSize, *stream>>>(
         logits->specialBuffer(),
-        logitsRowStride, logitsElemStride,
+        logitsRowStride, logitsElemStride, logitsRowOffset,
         inputIds->specialBuffer(),
         idsRowStride, idsElemStride,
         seqLen, vocabSize,
@@ -282,23 +305,48 @@ static void minPFilterLauncher(NDArray* logits, double minP, LaunchContext* cont
 
     LongType batch = 1;
     LongType vocabSize;
+    LongType logitsSeqLen = 1;
 
     if (rank == 1) {
         vocabSize = logits->sizeAt(0);
-    } else {
+    } else if (rank == 2) {
         batch = logits->sizeAt(0);
         vocabSize = logits->sizeAt(1);
+    } else {
+        // Rank 3: [batch, seqLen, vocabSize]
+        batch = logits->sizeAt(0);
+        logitsSeqLen = logits->sizeAt(1);
+        vocabSize = logits->sizeAt(2);
     }
 
     auto strides = logits->stridesOf();
-    LongType rowStride = (rank == 1) ? 0 : strides[0];
-    LongType elemStride = (rank == 1) ? strides[0] : strides[1];
+    LongType rowStride, elemStride;
+    if (rank == 1) {
+        rowStride = 0;
+        elemStride = strides[0];
+    } else if (rank == 2) {
+        rowStride = strides[0];
+        elemStride = strides[1];
+    } else {
+        // Rank 3: batch stride for row, vocab stride for element.
+        // Offset the buffer pointer to the last sequence position so
+        // the kernel operates on the correct logits row.
+        rowStride = strides[0];
+        elemStride = strides[2];
+    }
+
+    // For rank 3, offset the buffer to the last sequence position
+    void* bufferPtr = logits->specialBuffer();
+    if (rank >= 3 && logitsSeqLen > 1) {
+        bufferPtr = static_cast<char*>(bufferPtr) +
+                    (logitsSeqLen - 1) * strides[1] * logits->sizeOfT();
+    }
 
     dim3 launchDims = getLaunchDims("token_sample");
     size_t sharedSize = launchDims.y * sizeof(float);
 
     minPFilterKernel<T><<<batch, launchDims.y, sharedSize, *stream>>>(
-        logits->specialBuffer(),
+        bufferPtr,
         vocabSize, rowStride, elemStride,
         static_cast<float>(minP));
     DebugHelper::checkGlobalErrorCode("minPFilterKernel failed");

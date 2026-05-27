@@ -24,10 +24,11 @@
 #include <execution/AffinityManager.h>
 #include <system/Environment.h>
 
-#include <thread>
 #include <algorithm>
-#include <sstream>
 #include <iostream>
+#include <mutex>
+#include <sstream>
+#include <thread>
 
 namespace sd {
 namespace modelparallel {
@@ -39,8 +40,12 @@ int& DeviceManager::currentDeviceRef() {
 }
 
 DeviceManager& DeviceManager::getInstance() {
-    static DeviceManager instance;
-    return instance;
+    static DeviceManager* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new DeviceManager();
+    });
+    return *instance;
 }
 
 DeviceManager::DeviceManager() {

@@ -5,7 +5,7 @@
 Implemented and actively maintained.
 
 Proposed by: Adam Gibson (January 2025)
-Updated by: Runtime maintainers (March 31, 2026; shape-keyed plan cache April 16, 2026; training support April 17, 2026)
+Updated by: Runtime maintainers (March 31, 2026; shape-keyed plan cache April 16, 2026; training support April 17, 2026; disk plan persistence May 24, 2026)
 
 ## Context
 
@@ -1285,7 +1285,7 @@ Control flow metadata (controlFlowType, loopBackTarget, loopRegionIndex) is incl
 
 `DynamicShapePlan.serialize()` emits a compact binary payload consumed by `compileDynamicShapePlan(...)` in native code.
 
-Format: `DSP1` magic, versioned (currently version 4).
+Format: `DSP1` magic, versioned (currently version 5). V5 adds string args (`sArgs`).
 
 Serialized data includes:
 
@@ -2127,6 +2127,101 @@ Both are plumbed through `DspConfig::initFromEnvironment()` and read by `NativeP
 
 `TestDspLifecycleMultiExecuteShapeDrift#testGatherMatmulShapeDriftAcrossExecutions` runs `gather → mmul` across `seqLens = {4, 6, 4, 9, 6, 4}` on CUDA 12.9 — each distinct length allocates one cache entry (3 for {4, 6, 9}), repeat lengths hit the cache. All six executions produce correct results.
 
+## Disk Plan Persistence (May 2026)
+
+### Motivation
+
+Serialized DSP plan bytes (`DynamicShapePlan.serialize()`) are deterministic for a given graph structure — same ops, wiring, iArgs/tArgs/bArgs/dArgs/sArgs, control flow, and output set. For GGML models, graph topology is fully determined by GGUF metadata, so plan bytes are byte-for-byte identical across model reloads. Yet every JVM start recompiles the plan from scratch: Java DAG builder → compiler → serializer → JNI → C++ deserializer.
+
+Disk plan persistence eliminates this recompilation by caching the serialized plan bytes on disk, modeled directly after the Triton kernel disk cache (`TritonGraphBackend_cache.cpp`).
+
+### Architecture
+
+The disk cache operates at the **graph structure** level, above the shape-keyed `NativePlanCache`. It stores one file per unique graph topology. Per-thread plan instances and per-shape-signature dispatch are unaffected.
+
+```
+SameDiff graph → DynamicShapePlanCompiler.compile() → DynamicShapePlan
+                                                         ↓ serialize()
+                                                     byte[] (DSP1 v5)
+                                                         ↓
+                            DspPlanDiskCache ←→ ~/.kompile/cache/dsp/dsp_plan_cache/
+                              (FNV-1a hash)        dsp_<16-hex>.bin + .meta
+                                                   dsp_model_<16-hex>.idx
+                                                         ↓
+                            cachedSerializedPlan (Java DynamicShapePlanExecutor)
+                                                         ↓ JNI dispatchNativePlan()
+                            NativePlanCache (C++, per shape+thread)
+                                                         ↓ fromSerializedPlan()
+                            NativeDynamicShapePlan* (per thread instance)
+```
+
+### Disk Cache Key
+
+FNV-1a 64-bit hash of the `DynamicShapePlan.serialize()` output bytes. Computed by `DynamicShapePlan.computeStructureHash(byte[])`, matching the `DspHashUtils.h` FNV-1a implementation used by Triton.
+
+File naming: `dsp_<16-hex-lowercase>.bin` + `dsp_<16-hex-lowercase>.meta` (mirrors `ttir_<16-hex>.ptx` + `.meta`).
+
+A model identity index (`dsp_model_<16-hex>.idx`) maps a hash of `(sorted output names + external input names)` to the structure hash, enabling cross-JVM plan lookup without recompiling the plan.
+
+### File Format
+
+- **`.bin`** — raw `DynamicShapePlan.serialize()` output (DSP1 v5 binary). `fromSerializedPlan()` reads this format directly.
+- **`.meta`** — key=value text sidecar for fast staleness check:
+  - `dspVersion` — must match runtime `DSP_VERSION` (currently 5); mismatch = stale entry
+  - `numSlots`, `numExternalInputs`, `numRequestedOutputs` — human inspection
+  - `outputSet` — comma-separated sorted output names
+  - `planBytes` — byte count of `.bin` file
+  - `structureHash` — 16-hex hash
+  - `createdAt` — ISO-8601 timestamp
+
+### Cache Directory
+
+Default: `~/.kompile/cache/dsp/dsp_plan_cache/`. Override directory (highest priority, never written to): `~/.kompile/cache/dsp/dsp_plan_override/`.
+
+Resolution priority (mirrors `configuredOrDefaultTritonDir()`):
+1. Java system property (`-Dnd4j.dsp.planCache.diskDir`)
+2. Environment variable (`ND4J_DSP_PLAN_CACHE_DIR`)
+3. Default path
+
+### Write Path
+
+In `DynamicShapePlanExecutor.compileNativePlan()`, immediately after `cachedSerializedPlan = serialized`. Atomic write: temp file + `Files.move()` rename (mirrors `TritonGraphBackend_cache.cpp::writeBinaryToDiskCache()`). Thread-safe: each writer uses `<file>.tmp.<pid>.<tid>` naming. IOException → log WARN, continue — disk cache is a pure optimization.
+
+### Read Path
+
+In `DynamicShapePlanExecutor.compileNativePlan()`, before `plan.serialize()`. First attempts model-identity lookup (`DspPlanDiskCache.tryLoadByModelIdentity()`), then falls back to structure-hash lookup. Override directory checked before regular cache directory.
+
+### Cache Invalidation
+
+- **Version-based**: `dspVersion` in `.meta` vs runtime `DSP_VERSION`. Mismatch → entry ignored, recompiled, overwritten.
+- **Content-based**: graph structure change → different hash → new file. Old files become orphans (same as Triton).
+- **Force recompile**: `-Dnd4j.dsp.planCache.forceRecompile=true` — bypasses read, still writes.
+- **Manual**: delete cache directory.
+
+### Per-Thread Handling
+
+Disk stores one `.bin` per graph structure — no thread dimension. `NativePlanCache` creates per-thread `NativeDynamicShapePlan*` instances from the same `cachedSerializedPlan` bytes via `fromSerializedPlan()`. Whether those bytes came from disk or from `plan.serialize()` is transparent to the C++ layer.
+
+### Configuration Surface
+
+| Property | Environment Variable | Default | Purpose |
+|----------|---------------------|---------|---------|
+| `nd4j.dsp.planCache.diskEnabled` | `ND4J_DSP_PLAN_CACHE_DISK_ENABLED` | `true` | Enable/disable disk cache |
+| `nd4j.dsp.planCache.diskDir` | `ND4J_DSP_PLAN_CACHE_DIR` | `~/.kompile/cache/dsp/dsp_plan_cache/` | Cache directory |
+| `nd4j.dsp.planCache.overrideDir` | `ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR` | `~/.kompile/cache/dsp/dsp_plan_override/` | Pre-seeded override directory |
+| `nd4j.dsp.planCache.forceRecompile` | `ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE` | `false` | Bypass read, still write |
+
+All four are wired through `DspConfig.h`/`DspConfig.cpp::initFromEnvironment()` on the C++ side and `ND4JSystemProperties` on the Java side.
+
+### Key Files
+
+- `nd4j/.../samediff/execution/DspPlanDiskCache.java` — disk cache manager (read/write/model-identity index)
+- `nd4j/.../samediff/execution/DynamicShapePlan.java` — `computeStructureHash(byte[])` (FNV-1a)
+- `nd4j/.../samediff/execution/DynamicShapePlanExecutor.java` — disk cache integration in `compileNativePlan()`
+- `nd4j/.../common/config/ND4JSystemProperties.java` — 4 new property constants
+- `libnd4j/include/system/config/DspConfig.h` — 4 new fields + accessors
+- `libnd4j/include/system/config/impl/DspConfig.cpp` — env var reading
+
 ## Consequences
 
 ### Benefits
@@ -2181,6 +2276,7 @@ The current test surface includes:
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/DynamicShapeSlot.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/GraphExecutionMode.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/PlanIntrospection.java`
+- `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/DspPlanDiskCache.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/internal/InferenceSession.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/internal/TrainingSession.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/UpdaterOpsAppender.java`

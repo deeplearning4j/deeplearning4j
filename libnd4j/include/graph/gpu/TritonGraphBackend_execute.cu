@@ -47,17 +47,17 @@ using namespace triton_internal;
 // ─── Diagnostic helpers ─────────────────────────────────────────────────────
 
 
-// Compute FNV-1a hash of GPU buffer contents (D2H + hash on host).
-// Only runs when VERIFY category is enabled. Returns 0 on failure.
+// Compute a host-side metadata fingerprint without reading device contents.
+// VERIFY diagnostics must not introduce blocking D2H reads in DSP execution.
 static uint64_t hashSlotGpuContent(NDArray* arr, cudaStream_t stream) {
   if (!arr || !arr->specialBuffer() || !arr->dataBuffer()) return 0;
   size_t bytes = arr->lengthOf() * arr->sizeOfT();
-  if (bytes == 0 || bytes > 64 * 1024 * 1024) return 0;
-  std::vector<uint8_t> buf(bytes);
-  auto err = cudaMemcpy(buf.data(), arr->specialBuffer(), bytes, cudaMemcpyDeviceToHost);
-  if (err != cudaSuccess) return 0;
   uint64_t hash = FNV1A64_OFFSET_BASIS;
-  mixFNV1a(hash, buf.data(), bytes);
+  void* sbuf = arr->specialBuffer();
+  mixFNV1a(hash, &sbuf, sizeof(sbuf));
+  mixFNV1a(hash, &bytes, sizeof(bytes));
+  auto dt = static_cast<int>(arr->dataType());
+  mixFNV1a(hash, &dt, sizeof(dt));
   return hash;
 }
 
@@ -339,10 +339,26 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
       return Status::KERNEL_FAILURE;
     }
-    compiledSeg = &it->second;
-  }
+	    compiledSeg = &it->second;
+	  }
 
-  if (streamCaptureActive && !compiledSeg->orderedRanges.empty()) {
+#ifdef SD_CUDA
+  if (compiledSeg->preallocReadyEvent != nullptr && !streamCaptureActive) {
+    auto waitErr = cudaStreamWaitEvent(static_cast<cudaStream_t>(actualStream),
+                                       static_cast<cudaEvent_t>(compiledSeg->preallocReadyEvent), 0);
+    if (waitErr != cudaSuccess) {
+      DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: pre-allocation event wait failed for [%d-%d]: %s",
+                seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(waitErr));
+      cudaGetLastError();
+      return Status::KERNEL_FAILURE;
+    }
+  } else if (compiledSeg->preallocReadyEvent != nullptr) {
+    DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: pre-allocation event already ordered before capture for [%d-%d]",
+              seg.def.startSlot, seg.def.endSlot);
+  }
+#endif
+
+	  if (streamCaptureActive && !compiledSeg->orderedRanges.empty()) {
     DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: capturing ordered native ranges during CUDA graph capture for [%d-%d] (%d ranges)",
              seg.def.startSlot, seg.def.endSlot, static_cast<int>(compiledSeg->orderedRanges.size()));
   }
@@ -351,6 +367,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   bool tritonVerifyKernels = Environment::getInstance().tritonVerifyKernels();
   int tritonMaxSubKernelIndex = Environment::getInstance().tritonMaxSubKernelIndex();
   bool tritonVerifyFullSnapshot = Environment::getInstance().tritonVerifyFullSnapshot();
+  if (tritonVerifyKernels || tritonVerifyFullSnapshot) {
+    DSP_DIAG(VERIFY, "TRITON VERIFY: host snapshot compare disabled in async-only DSP execution");
+    tritonVerifyKernels = false;
+    tritonVerifyFullSnapshot = false;
+  }
 
   DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "TritonGraphBackend::executeSegment: segment [%d-%d] launching %d sub-kernels "
                "(orderedRanges=%d, targetDeviceId=%d, activeDevice=%d, skipKernels=%d, verifyKernels=%d, "
@@ -399,6 +420,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           if (seg.slotArrayCache) {
             seg.slotArrayCache[argMapping.slotIndex] = newArr;
           }
+          void* rawSpecial = newArr->dataBuffer() != nullptr ? newArr->dataBuffer()->special() : nullptr;
           DSP_DIAG(MEMORY, "CONSOL PRE-ALLOC: subK[%zu] slot %d shape=[%s] dtype=%d specialBuf=%p",
                    ki, argMapping.slotIndex,
                    [&]() -> std::string {
@@ -409,17 +431,12 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                      }
                      return s;
                    }().c_str(),
-                   static_cast<int>(argMapping.dtype), newArr->specialBuffer());
+                   static_cast<int>(argMapping.dtype), rawSpecial);
         }
 
-        // Sync all INPUT arrays to device.
-        // External inputs (slotIndex < 0) use conditional logic matching executeSingleKernel
-        // (TritonGraphBackend_kernel.cu:198-213): only force H2D when host is actual and
-        // device is stale (pAct && !sAct). If device is already actual (e.g. written by a
-        // native gap op or writeDeviceBufferOnDefaultStream), do NOT force H2D — that would
-        // overwrite valid device data with stale host data.
+        std::vector<NDArray*> prepareReads;
+        std::vector<NDArray*> prepareWrites;
         for (auto& argMapping : sk.argSlotMapping) {
-          if (argMapping.isOutput) continue;
           NDArray* arr = nullptr;
           bool isExternal = (argMapping.slotIndex < 0);
           if (isExternal) {
@@ -429,37 +446,22 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
           }
           if (arr && arr->lengthOf() > 0) {
-            if (isExternal && arr->dataBuffer()) {
-              bool pAct = arr->dataBuffer()->isPrimaryActual();
-              bool sAct = arr->dataBuffer()->isSpecialActual();
-              if (pAct && !sAct) {
-                // Host was updated by Java, device is stale — force H2D
-                arr->dataBuffer()->syncToSpecial(true);
-              } else {
-                // Device already actual — do not overwrite valid GPU data with stale host
-                arr->syncToDevice();
-              }
+            if (argMapping.isOutput) {
+              prepareWrites.push_back(arr);
             } else {
-              arr->syncToDevice();
+              prepareReads.push_back(arr);
             }
           }
+        }
+        if (!prepareReads.empty() || !prepareWrites.empty()) {
+          NDArray::prepareSpecialUse(prepareWrites, prepareReads);
         }
       }
     }
 
-    // Synchronize the execution stream to ensure all prior allocations
-    // (via CudaMemoryPool / cudaMallocAsync) and data transfers are
-    // complete before reading specialBuffer() pointers.
-    //  cudaStreamSynchronize is ILLEGAL during stream capture —
-    // it returns cudaErrorStreamCaptureUnsupported and invalidates the capture,
-    // causing all subsequent CUDA operations to fail with "operation failed
-    // due to a previous error during capture". During capture, output arrays
-    // are already pre-allocated from the warmup execution and input syncs
-    // are complete (the pre-capture warmup + cudaStreamSynchronize before
-    // beginCapture handles this). Skip the sync during capture.
-    if (!streamCaptureActive) {
-      cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
-    }
+    // Same-stream ordering is sufficient here: input syncs and allocation
+    // work were enqueued before the arg-table H2D, so no host stream drain is
+    // needed before reading the stable device pointer values.
 
     // ── Phase 2: Populate consolidated arg table with post-sync pointers ──
     for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
@@ -828,25 +830,14 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                       static_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
       }
 
-      // Debug: dump external input 1331 after gap completes, before Triton kernel launch
+      // Debug: log external input 1331 metadata after gap completes, before Triton kernel launch.
       if (sd::Environment::getInstance().isDebug() && numExternalInputs > 1331
           && subKernel.startSlot_ == 347) {
         NDArray* ext = externalInputs[1331];
         if (ext && ext->specialBuffer() && ext->lengthOf() > 0 && ext->dataType() == FLOAT32) {
-          cudaDeviceSynchronize();
-          int dc = std::min((int)ext->lengthOf(), 8);
-          std::vector<float> hb(dc);
-          cudaMemcpy(hb.data(), ext->specialBuffer(), dc * 4, cudaMemcpyDeviceToHost);
-          std::string vs;
-          for (int v = 0; v < dc; v++) {
-            if (v > 0) vs += ",";
-            char b[32]; snprintf(b, sizeof(b), "%.6f", hb[v]); vs += b;
-          }
-          float v322 = 0;
-          if (ext->lengthOf() > 322)
-            cudaMemcpy(&v322, static_cast<char*>(ext->specialBuffer()) + 322*4, 4, cudaMemcpyDeviceToHost);
-          DSP_DIAG(VERIFY, "POST_GAP_EXT1331: exec=%d addr=%p len=%lld values: %s [322]=%.6f",
-                   seg.exec.executionCount, ext->specialBuffer(), (long long)ext->lengthOf(), vs.c_str(), v322);
+          DSP_DIAG(VERIFY, "POST_GAP_EXT1331: exec=%d addr=%p len=%lld dtype=%d",
+                   seg.exec.executionCount, ext->specialBuffer(),
+                   (long long)ext->lengthOf(), static_cast<int>(ext->dataType()));
         }
       }
     }
@@ -899,13 +890,13 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
 
       if (i > 0 && !streamCaptureActive) {
-        cudaError_t syncErr = cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
-        if (syncErr != cudaSuccess) {
-          DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: stream sync before sub-kernel %d/%d [%d-%d] "
-                    "detected prior async error: %s",
+        cudaError_t launchErr = cudaPeekAtLastError();
+        if (launchErr != cudaSuccess) {
+          DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: pre sub-kernel %d/%d [%d-%d] "
+                    "observed CUDA launch error without blocking sync: %s",
                     i + 1, (int)compiledSeg->subKernels.size(),
                     subKernel.startSlot_, subKernel.endSlot_,
-                    cudaGetErrorString(syncErr));
+                    cudaGetErrorString(launchErr));
           cudaGetLastError();
         }
       }
@@ -928,8 +919,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         DSP_DIAG(VERIFY, "TRITON VERIFY ENTRY: subK[%d] [%d-%d] execCount=%d ops: %s",
                  i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount, opNames.c_str());
 
-        cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
-
         // Full snapshot: save ALL slot GPU contents
         if (tritonVerifyFullSnapshot) {
           for (int si = 0; si < totalOutputSlots; si++) {
@@ -937,8 +926,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
               size_t bytes = outputSlots[si]->lengthOf() * outputSlots[si]->sizeOfT();
               if (bytes > 0 && bytes <= 64 * 1024 * 1024) {
                 fullSnapshotBefore[si].resize(bytes);
-                cudaMemcpy(fullSnapshotBefore[si].data(), outputSlots[si]->specialBuffer(),
-                           bytes, cudaMemcpyDeviceToHost);
+                cudaMemcpyAsync(fullSnapshotBefore[si].data(), outputSlots[si]->specialBuffer(),
+                                bytes, cudaMemcpyDeviceToHost,
+                                static_cast<cudaStream_t>(actualStream));
               }
             }
           }
@@ -948,8 +938,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
               if (bytes > 0 && bytes <= 64 * 1024 * 1024) {
                 int snapKey = -(ei + 1);
                 fullSnapshotBefore[snapKey].resize(bytes);
-                cudaMemcpy(fullSnapshotBefore[snapKey].data(), externalInputs[ei]->specialBuffer(),
-                           bytes, cudaMemcpyDeviceToHost);
+                cudaMemcpyAsync(fullSnapshotBefore[snapKey].data(), externalInputs[ei]->specialBuffer(),
+                                bytes, cudaMemcpyDeviceToHost,
+                                static_cast<cudaStream_t>(actualStream));
               }
             }
           }
@@ -1014,7 +1005,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
       // Hash Triton outputs
       if (!streamCaptureActive) {
-        cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
         logSlotHashes("TRITON", subKernel.startSlot_, subKernel.endSlot_, slots,
                       outputSlots, totalOutputSlots,
                       static_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
@@ -1023,8 +1013,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       // ── Verify mode: run native and compare ──
       do {
       if (tritonVerifyKernels && !streamCaptureActive && orderedRangeExecutor_) {
-        cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
-
         // Save Triton outputs (raw bytes).
         // IMPORTANT: Only save slots that are actual kernel outputs (in argSlotMapping
         // with isOutput=true). Fused kernels compute intermediate slots in registers
@@ -1048,7 +1036,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
               rb.data.resize(byteLen);
               rb.dtype = arr->dataType();
               rb.len = arr->lengthOf();
-              cudaMemcpy(rb.data.data(), sbuf, byteLen, cudaMemcpyDeviceToHost);
+              cudaMemcpyAsync(rb.data.data(), sbuf, byteLen, cudaMemcpyDeviceToHost,
+                              static_cast<cudaStream_t>(actualStream));
               tritonRawOutputs[outIdx] = std::move(rb);
             }
           }
@@ -1105,7 +1094,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             if (!currentBuf || currentLen != beforeBytes.size()) continue;
 
             std::vector<uint8_t> afterBytes(currentLen);
-            cudaMemcpy(afterBytes.data(), currentBuf, currentLen, cudaMemcpyDeviceToHost);
+            cudaMemcpyAsync(afterBytes.data(), currentBuf, currentLen, cudaMemcpyDeviceToHost,
+                            static_cast<cudaStream_t>(actualStream));
 
             bool differs = (memcmp(beforeBytes.data(), afterBytes.data(), currentLen) != 0);
             bool isExpected = (slotIdx >= 0 && expectedOutputs.count(slotIdx) > 0);
@@ -1182,8 +1172,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             }
           }
         }
-        cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
-
         // Run native slot-by-slot
         auto nativeStatus = orderedRangeExecutor_(subKernel.startSlot_, subKernel.endSlot_);
         if (nativeStatus != Status::OK) {
@@ -1202,11 +1190,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
               }
             }
           }
-          cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
           for (auto& kv : savedOutputs) delete kv.second;
           break;  // Skip comparison, exit verify block
         }
-        cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
 
         markOrderedRangeDeviceCurrent(subKernel.startSlot_, subKernel.endSlot_, slots,
                                       externalInputs, numExternalInputs,
@@ -1234,8 +1220,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
           size_t nativeByteLen = nativeArr->lengthOf() * nativeArr->sizeOfT();
           std::vector<uint8_t> nativeRaw(nativeByteLen);
-          cudaMemcpy(nativeRaw.data(), nativeArr->specialBuffer(), nativeByteLen,
-                     cudaMemcpyDeviceToHost);
+          cudaMemcpyAsync(nativeRaw.data(), nativeArr->specialBuffer(), nativeByteLen,
+                          cudaMemcpyDeviceToHost,
+                          static_cast<cudaStream_t>(actualStream));
 
           LongType len = std::min(rb.len, nativeArr->lengthOf());
 
@@ -1288,7 +1275,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
               }
             }
           }
-          cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
         } else {
           DSP_DIAG(VERIFY, "TRITON VERIFY: keeping NATIVE outputs subK[%d] [%d-%d] execCount=%d",
                   i, subKernel.startSlot_, subKernel.endSlot_, seg.exec.executionCount);
@@ -1303,28 +1289,27 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     totalKernelLaunches_++;
 
     if (!streamCaptureActive) {
-      cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
+      cudaError_t launchErr = cudaPeekAtLastError();
+      if (launchErr != cudaSuccess) {
+        DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: CUDA launch error after sub-kernel [%d-%d]: %s",
+                  subKernel.startSlot_, subKernel.endSlot_, cudaGetErrorString(launchErr));
+        cudaGetLastError();
+        return Status::KERNEL_FAILURE;
+      }
     }
 
-    // Mark Triton-written outputs as device-current so downstream gap ops
-    // don't overwrite fresh GPU data with stale host values via syncToDevice().
-    // IMPORTANT: Only mark ACTUAL kernel output slots (from argSlotMapping with
-    // isOutput=true), NOT all slots in the range. Fused kernels compute intermediate
-    // slots in registers and never write their output buffers. Marking intermediate
-    // slots as device-current causes downstream ops to read stale device data
-    // (zeros from nullify) instead of correct host-side data from warmup.
     if (!tritonSkipKernels) {
-      // Mark inputs as device-read
+      std::vector<NDArray*> registerReads;
+      std::vector<NDArray*> registerWrites;
       std::unordered_set<DataBuffer*> seenInputs;
       for (auto& argMap : subKernel.argSlotMapping) {
         if (argMap.isOutput) continue;
         NDArray* arr = resolveRangeArray(argMap.slotIndex, externalInputs, numExternalInputs,
                                           outputSlots, totalOutputSlots);
         if (arr && arr->dataBuffer() && seenInputs.insert(arr->dataBuffer()).second) {
-          arr->dataBuffer()->readSpecial();
+          registerReads.push_back(arr);
         }
       }
-      // Mark only actual kernel outputs as device-written
       std::unordered_set<DataBuffer*> seenOutputs;
       for (auto& argMap : subKernel.argSlotMapping) {
         if (!argMap.isOutput) continue;
@@ -1332,13 +1317,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
           auto* db = outputSlots[outIdx]->dataBuffer();
           if (db && seenOutputs.insert(db).second) {
-            db->writeSpecial();
+            registerWrites.push_back(outputSlots[outIdx]);
           }
         }
       }
+      if (!registerReads.empty() || !registerWrites.empty()) {
+        NDArray::registerSpecialUse(registerWrites, registerReads);
+      }
     }
 
-    // Per-slot fingerprint for Triton sub-kernel outputs (debug+verbose only)
     if (!streamCaptureActive && !skipThisKernel &&
         sd::Environment::getInstance().isDebugAndVerbose()) {
       for (auto& argMap : subKernel.argSlotMapping) {
@@ -1347,20 +1334,13 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
           auto* arr = outputSlots[outIdx];
           if (!arr->isEmpty() && arr->lengthOf() > 0) {
-            arr->syncToHost();
-            double sum = 0.0;
-            double firstVal = arr->e<double>(0);
-            sd::LongType len = arr->lengthOf();
-            sd::LongType fpLen = sd::math::sd_min(64LL, len);
-            for (sd::LongType fi = 0; fi < fpLen; fi++) {
-              sum += arr->e<double>(fi);
-            }
-            sd_printf("DSP_FINGERPRINT_TRITON subkernel=%d-%d slot=%d op=%s shape=%s dtype=%s len=%lld first=%.8g sum64=%.8g\n",
-                      subKernel.startSlot_, subKernel.endSlot_, outIdx,
-                      slots[outIdx].ident.opName.c_str(),
-                      ShapeUtils::shapeAsString(arr).c_str(),
-                      DataTypeUtils::asString(arr->dataType()).c_str(),
-                      (long long)len, firstVal, sum);
+            DSP_DIAG(VERIFY, "DSP_FINGERPRINT_TRITON subkernel=%d-%d slot=%d op=%s "
+                     "shape=%s dtype=%s len=%lld asyncValues=true",
+                     subKernel.startSlot_, subKernel.endSlot_, outIdx,
+                     slots[outIdx].ident.opName.c_str(),
+                     ShapeUtils::shapeAsString(arr).c_str(),
+                     DataTypeUtils::asString(arr->dataType()).c_str(),
+                     (long long)arr->lengthOf());
           }
         }
       }
@@ -1466,10 +1446,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   if (!streamCaptureActive) {
-    auto syncErr = cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
-    if (syncErr != cudaSuccess) {
-      DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: stream sync failed for [%d-%d]: %s",
-                seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(syncErr));
+    auto launchErr = cudaPeekAtLastError();
+    if (launchErr != cudaSuccess) {
+      DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: CUDA launch error for [%d-%d]: %s",
+                seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(launchErr));
       cudaGetLastError();
       return Status::KERNEL_FAILURE;
     }
@@ -1561,10 +1541,16 @@ void TritonGraphBackend::invalidateCache() {
       unregisterLoadedKernel(&kernel);
     }
   }
-  for (auto& entry : cache_) {
-    auto& seg = entry.second;
-    // Determine device for memory tracking
-    int segDeviceId = 0;
+	  for (auto& entry : cache_) {
+	    auto& seg = entry.second;
+#ifdef SD_CUDA
+    if (seg.preallocReadyEvent != nullptr) {
+      cudaEventDestroy(static_cast<cudaEvent_t>(seg.preallocReadyEvent));
+      seg.preallocReadyEvent = nullptr;
+    }
+#endif
+	    // Determine device for memory tracking
+	    int segDeviceId = 0;
     if (!seg.subKernels.empty() && seg.subKernels[0].cachedArgTableDeviceId >= 0)
       segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
 
@@ -1639,7 +1625,8 @@ void TritonGraphBackend::invalidateCache() {
         kernel.cachedGlobalScratchDeviceId = -1;
       }
       if (kernel.gpuModule) {
-        recordModuleFree(kDevId, kernel.estimatedModuleBytes);
+        const int moduleDevId = kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : segDeviceId;
+        recordModuleFree(moduleDevId, kernel.estimatedModuleBytes);
         TritonTargetDispatch::unloadModule(kernel.gpuModule);
       }
     }
@@ -1668,9 +1655,15 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       continue;
     }
 
-    auto& seg = it->second;
-    // Determine device for memory tracking (use first kernel's cached device, or 0)
-    int segDeviceId = 0;
+	    auto& seg = it->second;
+#ifdef SD_CUDA
+    if (seg.preallocReadyEvent != nullptr) {
+      cudaEventDestroy(static_cast<cudaEvent_t>(seg.preallocReadyEvent));
+      seg.preallocReadyEvent = nullptr;
+    }
+#endif
+	    // Determine device for memory tracking (use first kernel's cached device, or 0)
+	    int segDeviceId = 0;
     if (!seg.subKernels.empty() && seg.subKernels[0].cachedArgTableDeviceId >= 0)
       segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
 
@@ -1735,7 +1728,8 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
         }
       }
       if (kernel.gpuModule) {
-        recordModuleFree(kDevId, kernel.estimatedModuleBytes);
+        const int moduleDevId = kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : segDeviceId;
+        recordModuleFree(moduleDevId, kernel.estimatedModuleBytes);
         TritonTargetDispatch::unloadModule(kernel.gpuModule);
         freedModules++;
       }

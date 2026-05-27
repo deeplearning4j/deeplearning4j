@@ -27,6 +27,7 @@
 #include <cuda_runtime.h>
 
 #include <algorithm>
+#include <mutex>
 #include <sstream>
 #include <unordered_set>
 
@@ -36,8 +37,12 @@ namespace graph {
 // ---- Singleton ----
 
 PtxGraphBackend& PtxGraphBackend::getInstance() {
-  static PtxGraphBackend instance;
-  return instance;
+  static PtxGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new PtxGraphBackend();
+  });
+  return *instance;
 }
 
 PtxGraphBackend::PtxGraphBackend() = default;

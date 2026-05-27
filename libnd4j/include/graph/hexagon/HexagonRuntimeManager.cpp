@@ -23,6 +23,7 @@
 
 #include <cstring>
 #include <dlfcn.h>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -42,8 +43,12 @@ namespace graph {
 // ---- Singleton ----
 
 HexagonRuntimeManager& HexagonRuntimeManager::getInstance() {
-  static HexagonRuntimeManager instance;
-  return instance;
+  static HexagonRuntimeManager* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new HexagonRuntimeManager();
+  });
+  return *instance;
 }
 
 // ---- Constructor / Destructor ----

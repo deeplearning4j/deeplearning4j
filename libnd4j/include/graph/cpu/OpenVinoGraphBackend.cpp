@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <mutex>
 #include <thread>
 #include <unordered_set>
 #include <openvino/runtime/properties.hpp>
@@ -74,8 +75,12 @@ void OpenVinoGraphBackend::clearNativeSlotExecutor() {
 // ─── Singleton ──────────────────────────────────────────────────────────────
 
 OpenVinoGraphBackend& OpenVinoGraphBackend::getInstance() {
-  static OpenVinoGraphBackend instance;
-  return instance;
+  static OpenVinoGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new OpenVinoGraphBackend();
+  });
+  return *instance;
 }
 
 OpenVinoGraphBackend::OpenVinoGraphBackend() {

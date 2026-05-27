@@ -124,8 +124,12 @@ public:
      * Get singleton instance
      */
     static OpContextLifecycleTracker& getInstance() {
-        static OpContextLifecycleTracker instance;
-        return instance;
+        static OpContextLifecycleTracker* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new OpContextLifecycleTracker();
+        });
+        return *instance;
     }
 
     /**

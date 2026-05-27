@@ -1219,6 +1219,50 @@ public class NDNN {
   }
 
   /**
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
+   * <br>
+   * Applies rotary embeddings with separate temporal/height/width position<br>
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
+   * dimension is split into 3 frequency band sections, each rotated using<br>
+   * its own position vector.<br>
+   * <br>
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
+   *   Temporal band: dims [0..24) rotated by temporal positions<br>
+   *   Height band: dims [24..44) rotated by spatial height positions<br>
+   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param posT Temporal position IDs [batch, seq_len] (INT type)
+   * @param posH Height position IDs [batch, seq_len] (INT type)
+   * @param posW Width position IDs [batch, seq_len] (INT type)
+   * @param sectionT Temporal frequency band size
+   * @param sectionH Height frequency band size
+   * @param sectionW Width frequency band size
+   * @param interleaved Whether to interleave frequency bands (true for Qwen3-VL)
+   * @param freqBase Base frequency for RoPE computation
+   * @return output Input with M-RoPE applied [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   */
+  public INDArray fusedMRoPE(INDArray input, INDArray posT, INDArray posH, INDArray posW,
+      int sectionT, int sectionH, int sectionW, boolean interleaved, double freqBase) {
+    NDValidation.validateNumerical("fusedMRoPE", "input", input);
+    NDValidation.validateInteger("fusedMRoPE", "posT", posT);
+    NDValidation.validateInteger("fusedMRoPE", "posH", posH);
+    NDValidation.validateInteger("fusedMRoPE", "posW", posW);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE(input, posT, posH, posW, sectionT, sectionH, sectionW, interleaved, freqBase));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Fused normalization + quantization in a single kernel.<br>
    *
    * @param input Input tensor (NUMERIC type)
@@ -4133,6 +4177,42 @@ public class NDNN {
     NDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
     NDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0));
+  }
+
+  /**
+   * Scatter vision embeddings into text embeddings at target token positions.<br>
+   * <br>
+   * Replaces positions in the text embedding sequence where the token ID<br>
+   * matches targetTokenId with sequential vision embeddings. Uses a two-pass<br>
+   * approach on CUDA (prefix sum + scatter) that runs entirely on device<br>
+   * with no host round-trips.<br>
+   * <br>
+   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision<br>
+   * encoder output into the language model's input embedding sequence.<br>
+   *
+   * @param textEmbeddings Text token embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param visionEmbeddings Vision token embeddings [batch, visionTokens, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token ID array [batch, seqLen] (INT type)
+   * @param targetTokenId The token ID to replace with vision embeddings
+   * @return output Merged embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public INDArray visionEmbeddingMerge(INDArray textEmbeddings, INDArray visionEmbeddings,
+      INDArray tokenIds, long targetTokenId) {
+    NDValidation.validateNumerical("visionEmbeddingMerge", "textEmbeddings", textEmbeddings);
+    NDValidation.validateNumerical("visionEmbeddingMerge", "visionEmbeddings", visionEmbeddings);
+    NDValidation.validateInteger("visionEmbeddingMerge", "tokenIds", tokenIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge(textEmbeddings, visionEmbeddings, tokenIds, targetTokenId));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**

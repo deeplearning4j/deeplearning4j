@@ -26,6 +26,7 @@
 #if HAVE_VLM
 
 #include <ggml-backend.h>
+#include <mutex>
 #include <system/env_functions.h>
 
 #ifdef GGML_USE_CUDA
@@ -60,8 +61,12 @@ VlmBackendManager::~VlmBackendManager() {
 }
 
 VlmBackendManager& VlmBackendManager::getInstance() {
-    static VlmBackendManager instance;
-    return instance;
+    static VlmBackendManager* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new VlmBackendManager();
+    });
+    return *instance;
 }
 
 bool VlmBackendManager::initialize(const VlmBackendConfig& config) {

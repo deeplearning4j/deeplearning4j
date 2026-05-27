@@ -51,6 +51,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Slf4j
 public class TestGenerationPipelinePromptOrderIsolation {
@@ -336,10 +337,10 @@ public class TestGenerationPipelinePromptOrderIsolation {
     }
 
     private static BufferedImage loadBenchmarkPageImage() throws IOException {
-        File pdfFile = new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
-        if (!pdfFile.exists()) {
-            pdfFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
-        }
+        String pdfPath = System.getProperty("vlm.test.pdf.path");
+        File pdfFile = pdfPath != null ? new File(pdfPath) : new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
+        assumeTrue(pdfFile.exists(), "PDF not found at " + pdfFile.getAbsolutePath()
+                + ". Place pathfinder-mythic.pdf in platform-tests/ or set -Dvlm.test.pdf.path");
 
         int pdfPage = Integer.getInteger("vlm.test.pdf.page", 10);
         int renderDpi = Integer.getInteger("vlm.test.pdf.dpi", 150);

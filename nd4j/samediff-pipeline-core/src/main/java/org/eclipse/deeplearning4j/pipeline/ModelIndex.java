@@ -80,6 +80,15 @@ public class ModelIndex {
                 List<String> arr = new ArrayList<>();
                 for (JsonElement el : value.getAsJsonArray()) arr.add(el.getAsString());
                 components.put(key, ComponentDefinition.fromJsonArray(arr, key));
+            } else if (value.isJsonObject()) {
+                JsonObject obj = value.getAsJsonObject();
+                String compClass = obj.has("class_name") ? obj.get("class_name").getAsString() : "unknown";
+                String compLib = obj.has("library") ? obj.get("library").getAsString() : "unknown";
+                components.put(key, ComponentDefinition.builder()
+                        .library(compLib)
+                        .className(compClass)
+                        .subfolder(key)
+                        .build());
             } else if (value.isJsonNull()) {
                 components.put(key, null);
             }

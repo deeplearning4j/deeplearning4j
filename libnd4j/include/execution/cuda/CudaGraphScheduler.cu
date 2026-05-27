@@ -29,8 +29,9 @@
 #include <helpers/logger.h>
 #include <exceptions/cuda_exception.h>
 
-#include <chrono>
 #include <algorithm>
+#include <chrono>
+#include <mutex>
 #include <sstream>
 
 namespace sd {
@@ -50,8 +51,12 @@ int& CudaGraphScheduler::currentDeviceRef() {
 // ============================================================================
 
 CudaGraphScheduler& CudaGraphScheduler::getInstance() {
-    static CudaGraphScheduler instance;
-    return instance;
+    static CudaGraphScheduler* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new CudaGraphScheduler();
+    });
+    return *instance;
 }
 
 CudaGraphScheduler::CudaGraphScheduler() {
@@ -538,7 +543,7 @@ void CudaGraphScheduler::syncPipeline(int pipelineId) {
     if (it == _pipelines.end()) return;
 
     for (auto& event : it->second.events) {
-        cudaEventSynchronize(event);
+        cudaStreamWaitEvent(nullptr, event, 0);
     }
 }
 

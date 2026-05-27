@@ -23,6 +23,7 @@
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
+#include <mutex>
 #include <stdexcept>
 
 
@@ -135,8 +136,12 @@ ThreadPool::~ThreadPool() {
 }
 
 ThreadPool &ThreadPool::getInstance() {
-  static ThreadPool instance;
-  return instance;
+  static ThreadPool* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ThreadPool();
+  });
+  return *instance;
 }
 
 void ThreadPool::release(int numThreads) { _available += numThreads; }

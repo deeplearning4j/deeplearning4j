@@ -225,6 +225,24 @@ void DspConfig::initFromEnvironment() {
     int v = readIntEnv("ND4J_DSP_PLAN_CACHE_MAX_PLANS_CPU", -1);
     if (v > 0) setPlanCacheMaxPlansCpu(v);
   }
+
+  // Disk plan cache
+  {
+    std::string v = readStringEnv("ND4J_DSP_PLAN_CACHE_DIR");
+    if (!v.empty()) setPlanCacheDiskDir(v);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_PLAN_CACHE_DISK_ENABLED");
+    if (v >= 0) setPlanCacheDiskEnabled(v == 1);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE");
+    if (v >= 0) setPlanCacheDiskForceRecompile(v == 1);
+  }
+  {
+    std::string v = readStringEnv("ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR");
+    if (!v.empty()) setPlanCacheOverrideDir(v);
+  }
 }
 
 }  // namespace config

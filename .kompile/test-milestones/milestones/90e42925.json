@@ -1,0 +1,17 @@
+{
+  "id" : "90e42925",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 49,
+  "passed" : 49,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Isolation run passed; the full-class attnSingleLayer/PTX_JIT all-zero failure is order-dependent and does not reproduce when this method runs alone. Log: /tmp/dsp-slot-fresh-close-nosync.log",
+  "tags" : "dsp,cuda,slot-lifecycle,isolation",
+  "timestamp" : "2026-05-26T23:58:31.510926Z"
+}

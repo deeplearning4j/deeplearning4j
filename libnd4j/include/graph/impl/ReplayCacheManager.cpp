@@ -3,12 +3,13 @@
 #include <graph/DspConstants.h>
 #include <system/env_functions.h>
 
-#include <fstream>
-#include <sstream>
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <ctime>
-#include <algorithm>
+#include <fstream>
+#include <mutex>
+#include <sstream>
 
 // std::filesystem requires: C++17, __has_include(<filesystem>), and on macOS
 // the deployment target must be >= 10.15. GCC < 9 has <filesystem> but requires
@@ -122,8 +123,12 @@ ReplayCacheManager::ReplayCacheManager() {
 }
 
 ReplayCacheManager& ReplayCacheManager::getInstance() {
-  static ReplayCacheManager instance;
-  return instance;
+  static ReplayCacheManager* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ReplayCacheManager();
+  });
+  return *instance;
 }
 
 bool ReplayCacheManager::isEnabled() const {

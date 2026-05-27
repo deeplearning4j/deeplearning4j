@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -33,8 +34,12 @@ MlirCpuGraphBackend::MlirCpuGraphBackend() = default;
 MlirCpuGraphBackend::~MlirCpuGraphBackend() = default;
 
 MlirCpuGraphBackend& MlirCpuGraphBackend::getInstance() {
-  static MlirCpuGraphBackend instance;
-  return instance;
+  static MlirCpuGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new MlirCpuGraphBackend();
+  });
+  return *instance;
 }
 
 bool MlirCpuGraphBackend::isAvailable() const {

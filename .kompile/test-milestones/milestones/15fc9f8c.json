@@ -1,0 +1,16 @@
+{
+  "id" : "15fc9f8c",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 51,
+  "passed" : 51,
+  "failed" : 0,
+  "notes" : "Multi-threaded DSP plan sharing suite passed after lifecycle fixes. Strict tee-log scan found no FALLBACK category, native execution failure, lifecycle/closed-buffer errors, DataBuffer lifecycle violation, or CUDA/native error markers.",
+  "tags" : "dsp,cuda,triton,multithread,plan-sharing",
+  "timestamp" : "2026-05-27T02:08:51.979069Z"
+}

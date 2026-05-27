@@ -1321,6 +1321,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         switch (variable.getVariableType()) {
             case VARIABLE:
+                // associateArrayWithVariable is a rebind API. DeviceLocalNDArray.update()
+                // preserves the old same-shape buffer for assign-style updates; remove first
+                // so callers can safely release the previously associated INDArray.
+                variablesArrays.removeArray(variable.name());
                 variablesArrays.setArray(variable.name(), arr);
                 break;
             case CONSTANT:

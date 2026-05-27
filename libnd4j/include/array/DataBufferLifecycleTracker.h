@@ -151,8 +151,12 @@ class DataBufferLifecycleTracker {
    * Get singleton instance
    */
   static DataBufferLifecycleTracker& getInstance() {
-    static DataBufferLifecycleTracker instance;
-    return instance;
+    static DataBufferLifecycleTracker* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+      instance = new DataBufferLifecycleTracker();
+    });
+    return *instance;
   }
 
   /**

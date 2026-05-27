@@ -104,6 +104,12 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<int> _planCacheMaxPlans{64};             // hard cap on cached plan count (GPU default)
   std::atomic<int> _planCacheMaxPlansCpu{4};           // hard cap for CPU builds (need prefill + decode plans)
 
+  // Disk plan cache (persists serialized plan bytes across JVM restarts)
+  std::string _planCacheDiskDir;
+  std::atomic<bool> _planCacheDiskEnabled{true};
+  std::atomic<bool> _planCacheDiskForceRecompile{false};
+  std::string _planCacheOverrideDir;
+
  public:
   DspConfig();
 
@@ -223,6 +229,16 @@ class SD_LIB_EXPORT DspConfig {
   void setPlanCacheMaxPlans(int v) { _planCacheMaxPlans.store(v); }
   int planCacheMaxPlansCpu() { return _planCacheMaxPlansCpu.load(); }
   void setPlanCacheMaxPlansCpu(int v) { _planCacheMaxPlansCpu.store(v); }
+
+  // --- Disk plan cache ---
+  const std::string& planCacheDiskDir() const { return _planCacheDiskDir; }
+  void setPlanCacheDiskDir(const std::string& v) { _planCacheDiskDir = v; }
+  bool planCacheDiskEnabled() { return _planCacheDiskEnabled.load(); }
+  void setPlanCacheDiskEnabled(bool v) { _planCacheDiskEnabled.store(v); }
+  bool planCacheDiskForceRecompile() { return _planCacheDiskForceRecompile.load(); }
+  void setPlanCacheDiskForceRecompile(bool v) { _planCacheDiskForceRecompile.store(v); }
+  const std::string& planCacheOverrideDir() const { return _planCacheOverrideDir; }
+  void setPlanCacheOverrideDir(const std::string& v) { _planCacheOverrideDir = v; }
 
   /**
    * Initialize from environment variables.

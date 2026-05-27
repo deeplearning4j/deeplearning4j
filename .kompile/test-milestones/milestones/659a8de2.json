@@ -1,0 +1,15 @@
+{
+  "id" : "659a8de2",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 49,
+  "passed" : 49,
+  "notes" : "CUDA backend targeted method passed, but /tmp/dsp-slot-close-weight-between.log contains LIFECYCLE_ERROR for closed variable DataBuffer after SameDiff rebind; treating diagnostic as an open production error to fix.",
+  "tags" : "dsp,cuda,lifecycle,external-input,rebind",
+  "timestamp" : "2026-05-27T00:42:26.986862Z"
+}

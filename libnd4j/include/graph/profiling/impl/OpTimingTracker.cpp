@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -31,8 +32,12 @@ IndirectHelperTracker& getIndirectHelperTracker() {
 }
 
 OpTimingTracker& OpTimingTracker::getInstance() {
-  static OpTimingTracker instance;
-  return instance;
+  static OpTimingTracker* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new OpTimingTracker();
+  });
+  return *instance;
 }
 
 void OpTimingTracker::enable(bool detailed) {

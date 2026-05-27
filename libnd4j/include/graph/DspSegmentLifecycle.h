@@ -126,11 +126,12 @@ static inline void markCaptured(GraphSegmentExec& exec,
                                 LongType slotAddrHash, const char* backendName) {
   SLS_ASSERT_FROM(exec, SLS::CAPTURE_PENDING, "markCaptured");
   DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> SEALED (backend=%s inputAddrKey=%lld "
-           "createValueKey=%lld slotAddrHash=%lld execCount=%d argTableStable=%d)",
+           "createValueKey=%lld slotAddrHash=%lld execCount=%d needsArgRefresh=%d)",
            exec.segPhase.displayName(), backendName,
            (long long)inputAddrKey, (long long)createValueKey,
-           (long long)slotAddrHash, exec.executionCount, (int)exec.argTableStable);
+           (long long)slotAddrHash, exec.executionCount, (int)exec.needsArgRefresh());
   exec.segPhase.seal();  // PRIMARY: BUILDING:CAPTURING → SEALED
+  exec.outcome = SegmentExecOutcome::GRAPH_REPLAY;
   exec.capturedInputAddrKey = inputAddrKey;
   exec.capturedCreateValueKey = createValueKey;
   exec.capturedSlotAddrHash = slotAddrHash;
@@ -153,6 +154,7 @@ static inline void markFailed(GraphSegmentExec& exec, const char* reason) {
            exec.compiledByBackend.c_str());
   exec.segPhase.fail();  // PRIMARY
   exec.compilationFailed = true;
+  exec.outcome = SegmentExecOutcome::COMPILE_FAILED;
   exec.lifecycleState = SLS::FAILED;  // Legacy sync
 }
 
@@ -164,6 +166,7 @@ static inline void markOomDeferred(GraphSegmentExec& exec, int retryAfterExec) {
   exec.segPhase.markOomRetry(retryAfterExec);  // PRIMARY
   exec.captureOomRetries++;
   exec.captureRetryAfterExec = retryAfterExec;
+  exec.outcome = SegmentExecOutcome::OOM_DEFERRED;
   exec.lifecycleState = SLS::OOM_DEFERRED;  // Legacy sync
 }
 
@@ -174,21 +177,33 @@ static inline void invalidateSegmentCaptures(NativeDynamicShapePlan* plan, Graph
                                               const char* reason) {
   auto& exec = seg.exec;
   DSP_DIAG(EXECUTE, "invalidateSegmentCaptures: seg[%d-%d] from=%s reason=%s "
-           "execCount=%d argTableStable=%d compiledBy=%s",
+           "execCount=%d needsArgRefresh=%d compiledBy=%s",
            seg.def.startSlot, seg.def.endSlot, exec.segPhase.displayName(), reason,
-           exec.executionCount, (int)exec.argTableStable, exec.compiledByBackend.c_str());
+           exec.executionCount, (int)exec.needsArgRefresh(), exec.compiledByBackend.c_str());
   DSP_SEG_EVENT(seg, INVALIDATE, "capturesOnly reason=%s", reason);
   DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:WARMUP (invalidateCaptures: %s)",
            exec.segPhase.displayName(), reason);
   plan->cleanupSegmentForRebuild(seg, reason);
   plan->clearNativeRangeSegmentsForSlotRange(seg.def.startSlot, seg.def.endSlot);
+
+  // Reset per-slot slotPhase for all slots in this segment.
+  // Without this, slots remain SEALED after invalidation and executeSlot
+  // enters the frozen context path with stale cached inputs/outputs —
+  // causing the first post-invalidation execution to produce the same
+  // result as the last pre-invalidation execution (step 0 = step 1 bug).
+  plan->resetSlotStatesForSegment(seg.def.startSlot, seg.def.endSlot);
+  DSP_DIAG(EXECUTE, "invalidateSegmentCaptures: reset slotPhase for slots [%d-%d] "
+           "back to BUILDING (reason=%s)",
+           seg.def.startSlot, seg.def.endSlot, reason);
+
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
+  exec.outcome = SegmentExecOutcome::PENDING;
   exec.cachedShapeKey = 0;
   exec.capturedInputAddrKey = 0;
   exec.capturedCreateValueKey = 0;
   exec.capturedSlotAddrHash = 0;
   exec.compilationFailed = false;
-  exec.argTableStable = false;
+  exec.bumpArgGeneration();
   exec.addrKeyStableCount = 0;
   exec.slotAddrStableCount = 0;
   exec.compiledByBackend.clear();
@@ -206,9 +221,9 @@ static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegme
                                         const char* reason) {
   auto& exec = seg.exec;
   DSP_DIAG(EXECUTE, "invalidateForRebuild: seg[%d-%d] from=%s reason=%s "
-           "execCount=%d argTableStable=%d compiledBy=%s — will resetExecuteCount+resetFrozenConstant",
+           "execCount=%d needsArgRefresh=%d compiledBy=%s — will resetExecuteCount+resetFrozenConstant",
            seg.def.startSlot, seg.def.endSlot, exec.segPhase.displayName(), reason,
-           exec.executionCount, (int)exec.argTableStable, exec.compiledByBackend.c_str());
+           exec.executionCount, (int)exec.needsArgRefresh(), exec.compiledByBackend.c_str());
   DSP_SEG_EVENT(seg, INVALIDATE, "reason=%s", reason);
   DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:WARMUP (invalidate: %s)",
            exec.segPhase.displayName(), reason);
@@ -218,13 +233,26 @@ static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegme
   // state. If they persist, the NativeSlotExecutor lambda replays stale data on
   // the next token instead of re-capturing against the rebuilt slot state.
   plan->clearNativeRangeSegmentsForSlotRange(seg.def.startSlot, seg.def.endSlot);
+
+  // Reset per-slot slotPhase for all slots in this segment.
+  // Without this, slots remain SEALED after invalidation and executeSlot
+  // enters the frozen context path with stale cached inputs/outputs —
+  // same stale-frozen bug as invalidateSegmentCaptures. Full rebuild must
+  // reset slot states too, otherwise the post-invalidation warmup executes
+  // stale contexts for the first step.
+  plan->resetSlotStatesForSegment(seg.def.startSlot, seg.def.endSlot);
+  DSP_DIAG(EXECUTE, "invalidateForRebuild: reset slotPhase for slots [%d-%d] "
+           "back to BUILDING (reason=%s)",
+           seg.def.startSlot, seg.def.endSlot, reason);
+
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
+  exec.outcome = SegmentExecOutcome::PENDING;
   exec.cachedShapeKey = 0;
   exec.capturedInputAddrKey = 0;
   exec.capturedCreateValueKey = 0;
   exec.capturedSlotAddrHash = 0;
   exec.compilationFailed = false;
-  exec.argTableStable = false;
+  exec.bumpArgGeneration();
   exec.addrKeyStableCount = 0;
   exec.slotAddrStableCount = 0;
   exec.compiledByBackend.clear();

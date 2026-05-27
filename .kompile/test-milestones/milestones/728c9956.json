@@ -1,0 +1,17 @@
+{
+  "id" : "728c9956",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 1590,
+  "passed" : 1589,
+  "failed" : 1,
+  "skipped" : 0,
+  "notes" : "FAIL: frozen DataBuffer identity-mutation errors are gone, but DspConcurrentPlanSharingTest.testOutputBufferIsolation(GraphExecutionMode)[1] AUTO produced one value mismatch: thread 1 step 1 got 0.0 expected 20.0. Log: /tmp/dsp-core-batch-after-frozen-buffer-guard.log",
+  "tags" : "dsp,cuda,triton,multithread,plan-sharing,graph-replay",
+  "timestamp" : "2026-05-27T08:25:50.530531Z"
+}

@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests for LFM2Architecture: registration, per-layer KV head counts,
@@ -990,11 +991,11 @@ class TestLFM2Architecture {
     @Test
     @DisplayName("LFM2 DSP compilation check — verify plan compiles for the real model")
     void testDspCompilationOnRealModel() throws Exception {
-        File ggufFile = new File("/home/agibsonccc/.kompile/models/llm-ggmls/lfm2.5-1.2b-instruct/LFM2.5-1.2B-Instruct-Q4_K_M.gguf");
-        if (!ggufFile.exists()) {
-            System.out.println("Skipping: GGUF file not found");
-            return;
-        }
+        String ggufPath = System.getProperty("lfm2.gguf.path",
+                System.getProperty("user.home") + "/.kompile/models/llm-ggmls/lfm2.5-1.2b-instruct/LFM2.5-1.2B-Instruct-Q4_K_M.gguf");
+        File ggufFile = new File(ggufPath);
+        assumeTrue(ggufFile.exists(), "GGUF file not found at " + ggufPath
+                + ". Set -Dlfm2.gguf.path to provide the model.");
 
         ConversionOptions options = ConversionOptions.builder()
                 .quantizationMode(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16)
@@ -1087,11 +1088,11 @@ class TestLFM2Architecture {
     @Test
     @DisplayName("LFM2 GGUF import + save/load + generate coherent text")
     void testLFM2GGUFImportAndGenerate() throws Exception {
-        File ggufFile = new File("/home/agibsonccc/.kompile/models/llm-ggmls/lfm2.5-1.2b-instruct/LFM2.5-1.2B-Instruct-Q4_K_M.gguf");
-        if (!ggufFile.exists()) {
-            System.out.println("Skipping testLFM2GGUFImportAndGenerate: GGUF file not found at " + ggufFile);
-            return;
-        }
+        String ggufPath = System.getProperty("lfm2.gguf.path",
+                System.getProperty("user.home") + "/.kompile/models/llm-ggmls/lfm2.5-1.2b-instruct/LFM2.5-1.2B-Instruct-Q4_K_M.gguf");
+        File ggufFile = new File(ggufPath);
+        assumeTrue(ggufFile.exists(), "GGUF file not found at " + ggufPath
+                + ". Set -Dlfm2.gguf.path to provide the model.");
 
         // 1. Import GGUF → SameDiff
         ConversionOptions options = ConversionOptions.builder()
@@ -1129,8 +1130,11 @@ class TestLFM2Architecture {
                 "Should have at least 10 conv_state_out outputs, got: " + convStateOutCount);
 
         // 3. Load tokenizer
-        File tokenizerFile = new File("/home/agibsonccc/.kompile/models/llm-ggmls/lfm2.5-1.2b-instruct/tokenizer.json");
-        assertTrue(tokenizerFile.exists(), "tokenizer.json must exist");
+        String tokenizerPath = System.getProperty("lfm2.tokenizer.path",
+                new File(ggufFile.getParentFile(), "tokenizer.json").getAbsolutePath());
+        File tokenizerFile = new File(tokenizerPath);
+        assumeTrue(tokenizerFile.exists(), "Tokenizer not found at " + tokenizerPath
+                + ". Set -Dlfm2.tokenizer.path to provide it.");
         Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.getAbsolutePath());
 
         // 4. Generate with a factual prompt — enough tokens to detect garbage

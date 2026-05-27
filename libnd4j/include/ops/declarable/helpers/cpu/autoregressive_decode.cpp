@@ -130,6 +130,7 @@ void autoregressiveDecodeCpu(
     double temperature,
     int topK,
     double topP,
+    double repPenalty,
     LaunchContext* context,
     AutoregressiveDecodeConfig* config) {
 
@@ -464,8 +465,26 @@ void autoregressiveDecodeCpu(
 
         // ── Step 3: Token sampling ──
         NDArray* logitsOutput = planOutputs[config->logitsOutputIdx];
-        LongType logitsSeqLen = logitsOutput->sizeAt(1);
-        LongType logitsVocab = logitsOutput->sizeAt(2);
+
+        // Validate logits rank before accessing shape dimensions.
+        auto logitsRank = logitsOutput->rankOf();
+        REQUIRE_TRUE(logitsRank >= 2 && logitsRank <= 3, 0,
+                     "autoregressive_decode: logitsOutput rank is %lld (expected 2 or 3) at step %d. "
+                     "lengthOf=%lld, logitsOutputIdx=%d, numPlanOutputs=%d. "
+                     "The plan output at this index is not logits — check logitsOutputIdx mapping.",
+                     (long long)logitsRank, step,
+                     (long long)logitsOutput->lengthOf(),
+                     config->logitsOutputIdx, numPlanOutputs);
+
+        LongType logitsSeqLen;
+        LongType logitsVocab;
+        if (logitsRank == 3) {
+            logitsSeqLen = logitsOutput->sizeAt(1);
+            logitsVocab = logitsOutput->sizeAt(2);
+        } else {
+            logitsSeqLen = 1;
+            logitsVocab = logitsOutput->sizeAt(1);
+        }
 
         if (temperature <= 0.0 || (topK <= 1 && topP <= 0.0)) {
             // Greedy: argmax over last-position logits
@@ -481,9 +500,19 @@ void autoregressiveDecodeCpu(
                                   (logitsPtr, sampledToken->buffer(), logitsVocab),
                                   SD_COMMON_TYPES);
         } else {
-            // Sampling: use tokenSampleCpu
-            tokenSampleCpu(logitsOutput, sampledToken, temperature, topK, topP,
-                           static_cast<LongType>(step), context);
+            // Sampling with repetition penalty.
+            // generatedTokenIds is [maxNewTokens] but only 0..step-1 are valid.
+            if (step > 0) {
+                NDArray* tokensSoFar = (*generatedTokenIds)({0, step});
+                tokenSampleWithPenaltiesCpu(logitsOutput, sampledToken, tokensSoFar,
+                                            temperature, topK, topP, 0.0 /*minP*/,
+                                            repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,
+                                            static_cast<LongType>(step), context);
+                delete tokensSoFar;
+            } else {
+                tokenSampleCpu(logitsOutput, sampledToken, temperature, topK, topP,
+                               static_cast<LongType>(step), context);
+            }
         }
 
         LongType nextTokenId = sampledToken->e<LongType>(0);

@@ -20,6 +20,7 @@
 #include <helpers/KernelPerformanceRegistry.h>
 
 #include <algorithm>
+#include <mutex>
 #include <regex>
 #include <sstream>
 
@@ -531,14 +532,15 @@ int kmGetOperationCount() {
 }
 
 static std::vector<std::string> _opNames;
+static std::once_flag _opNamesFlag;
 
 const char* kmGetOperationNameAt(int index) {
-  if (_opNames.empty()) {
+  std::call_once(_opNamesFlag, []() {
     auto ops = KernelManager::getInstance().getAllOperations();
     for (const auto& op : ops) {
       _opNames.push_back(op.opName);
     }
-  }
+  });
   if (index < 0 || index >= static_cast<int>(_opNames.size())) {
     return nullptr;
   }

@@ -1,0 +1,16 @@
+{
+  "id" : "935ab856",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 63,
+  "passed" : 61,
+  "failed" : 2,
+  "notes" : "DspBufferAliasAccuracyTest#testBufferAliasVaryingInput still fails for tripleViewChain/AUTO and tripleViewChain/TRITON at varying#3/final. All other fixture/mode combinations passed. Failure is output divergence after view-chain producer changes, likely stale view alias or replay input freshness issue.",
+  "tags" : "dsp,cuda,triton,buffer-alias,view-chain,failing",
+  "timestamp" : "2026-05-27T03:00:44.257468Z"
+}

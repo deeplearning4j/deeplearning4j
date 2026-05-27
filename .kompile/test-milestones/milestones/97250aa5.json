@@ -1,0 +1,16 @@
+{
+  "id" : "97250aa5",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 181,
+  "passed" : 181,
+  "failed" : 0,
+  "notes" : "Composite replay suite passed with CUDA/Triton diagnostics. Strict scan found no lifecycle/closed-buffer/native failure markers; only expected missing-placeholder negative-path errors were present and asserted by the test. Composite replay exits and CUDA graph replay successes were observed.",
+  "tags" : "dsp,cuda,triton,composite-replay,cuda-graphs",
+  "timestamp" : "2026-05-27T02:11:08.329127Z"
+}

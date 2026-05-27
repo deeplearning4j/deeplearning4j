@@ -49,8 +49,8 @@ CUSTOM_OP_IMPL(sampling_penalties, 2, 1, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     auto logitsRank = logits->rankOf();
-    REQUIRE_TRUE(logitsRank == 1 || logitsRank == 2, 0,
-                 "sampling_penalties: logits must be rank 1 or 2, got %lld",
+    REQUIRE_TRUE(logitsRank >= 1 && logitsRank <= 3, 0,
+                 "sampling_penalties: logits must be rank 1, 2, or 3, got %lld",
                  (long long)logitsRank);
 
     auto idsRank = inputIds->rankOf();

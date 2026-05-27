@@ -38,7 +38,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -52,18 +51,13 @@ namespace graph {
 
 #ifdef SD_CUDA
 
-// ─── Templated D2H copy: read first N elements as float ──────────────────
+// ─── Device value reads are disabled for async-only DSP diagnostics ───────
 template <typename T>
 inline int dspVerifyCopyValuesT(void* devicePtr, LongType length, float* hostOut, int maxVals) {
-  int n = std::min(static_cast<int>(length), maxVals);
-  // std::vector<bool> is bit-packed (no .data()), so use raw buffer for all types
-  std::unique_ptr<T[]> tmp(new T[n]);
-  cudaMemcpy(tmp.get(), devicePtr, n * sizeof(T), cudaMemcpyDeviceToHost);
-  for (int i = 0; i < n; i++) hostOut[i] = static_cast<float>(tmp[i]);
-  return n;
+  return 0;
 }
 
-// Dispatch D2H copy by runtime DataType.
+// Dispatch metadata-only device value read by runtime DataType.
 inline int dspVerifyCopyValues(void* devicePtr, DataType dtype, LongType length,
                                float* hostOut, int maxVals) {
   if (devicePtr == nullptr || length <= 0) return 0;
@@ -119,16 +113,10 @@ inline std::string dspFormatValues(const float* vals, int count) {
   return s;
 }
 
-// ─── D2H copy + format as string (convenience) ──────────────────────────
-// IMPORTANT: D2H copies are ILLEGAL during CUDA graph capture.
-// Returns "[capture]" when called during capture to avoid invalidating the graph.
+// ─── Device value dump placeholder (async-only CUDA path) ────────────────
 inline std::string dspDumpSlotValues(void* devicePtr, DataType dtype, LongType length, int maxVals = 4) {
   if (devicePtr == nullptr || length <= 0) return "[]";
-  // Guard: D2H transfers during graph capture create illegal dependencies
-  if (sd::tl_graphExecutionActive) return "[capture]";
-  float vals[16];
-  int n = dspVerifyCopyValues(devicePtr, dtype, length, vals, std::min(maxVals, 16));
-  return dspFormatValues(vals, n);
+  return "[device-values-disabled]";
 }
 
 // ─── Shape string for an NDArray ─────────────────────────────────────────
@@ -145,20 +133,9 @@ inline std::string dspShapeStr(NDArray* arr) {
 }
 
 // ─── Compute argmax from device buffer ───────────────────────────────────
-// D2H copies the full buffer and finds the index of the maximum value.
-// Returns -1 if the buffer is null/empty or during graph capture.
+// Disabled on CUDA because async-only DSP diagnostics cannot block on D2H.
 inline int dspArgmax(void* devicePtr, DataType dtype, LongType length) {
-  if (devicePtr == nullptr || length <= 0) return -1;
-  if (sd::tl_graphExecutionActive) return -1;
-  int n = static_cast<int>(length);
-  std::unique_ptr<float[]> vals(new float[n]);
-  dspVerifyCopyValues(devicePtr, dtype, length, vals.get(), n);
-  int bestIdx = 0;
-  float bestVal = vals[0];
-  for (int i = 1; i < n; i++) {
-    if (vals[i] > bestVal) { bestVal = vals[i]; bestIdx = i; }
-  }
-  return bestIdx;
+  return -1;
 }
 
 // ─── Read host buffer values as float (no CUDA, no D2H) ─────────────────
@@ -172,9 +149,7 @@ inline int dspReadHostValues(DataBuffer* db, DataType dtype, LongType length,
   return n;
 }
 
-// ─── Dump NDArray host + device buffer values to diagnostic string ────────
-// Reads host buffer directly and device buffer via D2H copy.
-// Returns a formatted string: "dtype=FLOAT32 len=5 pAct=1 sAct=1 host=[...] dev=[...]"
+// ─── Dump NDArray host values and device metadata to diagnostic string ────
 inline std::string dspDumpHostDeviceValues(NDArray* arr, int maxVals = 8) {
   if (arr == nullptr) return "null";
   auto* db = arr->dataBuffer();
@@ -182,18 +157,13 @@ inline std::string dspDumpHostDeviceValues(NDArray* arr, int maxVals = 8) {
   auto len = arr->lengthOf();
   int n = std::min(static_cast<int>(len), std::min(maxVals, 16));
 
-  std::string hostStr = "null", devStr = "null";
+  std::string hostStr = "null", devStr = "device-values-disabled";
   float vals[16];
 
   if (db && db->primary() != nullptr && n > 0) {
     int hn = dspReadHostValues(db, dtype, len, vals, n);
     hostStr = dspFormatValues(vals, hn);
   }
-  if (db && db->special() != nullptr && n > 0 && !sd::tl_graphExecutionActive) {
-    int dn = dspVerifyCopyValues(db->special(), dtype, len, vals, n);
-    devStr = dspFormatValues(vals, dn);
-  }
-
   char header[256];
   snprintf(header, sizeof(header), "dtype=%s len=%lld pAct=%d sAct=%d hostAddr=%p devAddr=%p",
             DataTypeUtils::asString(dtype).c_str(), (long long)len,
@@ -301,10 +271,7 @@ inline void dspDumpAllExternals(NDArray** externalArrays, int numExt,
 }
 
 // ─── Compare host vs device buffer values for any NDArray ────────────────
-// Returns the max absolute difference between host and device buffer values.
-// This is the key function for detecting stale buffers (host or device out of date).
-// Returns -1.0 if comparison is impossible (null arr, null buffers, during capture).
-// Optionally returns per-element details via diffReport string pointer.
+// Disabled on CUDA because async-only DSP diagnostics cannot block on D2H.
 inline float dspCompareHostDevice(NDArray* arr, int maxVals = 16, std::string* diffReport = nullptr) {
   if (arr == nullptr) {
     if (diffReport) *diffReport = "null array";
@@ -323,53 +290,10 @@ inline float dspCompareHostDevice(NDArray* arr, int maxVals = 16, std::string* d
     if (diffReport) *diffReport = "null device buffer";
     return -1.0f;
   }
-  // D2H copies are illegal during CUDA graph capture
-  if (sd::tl_graphExecutionActive) {
-    if (diffReport) *diffReport = "capture active — cannot compare";
-    return -1.0f;
-  }
-
-  auto dtype = arr->dataType();
-  auto len = arr->lengthOf();
-  int n = std::min(static_cast<int>(len), std::min(maxVals, 1024));
-
-  // Read host values
-  std::unique_ptr<float[]> hostVals(new float[n]);
-  int hn = dspReadHostValues(db, dtype, len, hostVals.get(), n);
-
-  // Read device values via D2H copy
-  std::unique_ptr<float[]> devVals(new float[n]);
-  int dn = dspVerifyCopyValues(db->special(), dtype, len, devVals.get(), n);
-
-  int count = std::min(hn, dn);
-  if (count <= 0) {
-    if (diffReport) *diffReport = "no values to compare";
-    return -1.0f;
-  }
-
-  float maxDiff = 0.0f;
-  int maxDiffIdx = 0;
-  int numDiffs = 0;
-  for (int i = 0; i < count; i++) {
-    float diff = std::abs(hostVals[i] - devVals[i]);
-    if (diff > 0.0f) numDiffs++;
-    if (diff > maxDiff) {
-      maxDiff = diff;
-      maxDiffIdx = i;
-    }
-  }
-
   if (diffReport) {
-    char buf[512];
-    snprintf(buf, sizeof(buf),
-             "compared=%d diffs=%d maxDiff=%.6g@[%d] (host=%.6g dev=%.6g) pAct=%d sAct=%d",
-             count, numDiffs, maxDiff, maxDiffIdx,
-             hostVals[maxDiffIdx], devVals[maxDiffIdx],
-             db->isPrimaryActual() ? 1 : 0,
-             db->isSpecialActual() ? 1 : 0);
-    *diffReport = std::string(buf);
+    *diffReport = "device comparison disabled in async-only CUDA DSP diagnostics";
   }
-  return maxDiff;
+  return -1.0f;
 }
 
 // ─── Dump all inputs for a given slot (step) ─────────────────────────────
@@ -694,9 +618,22 @@ SD_INLINE int dspDetectStaleOutputs(NDArray** outputs, int numOutputs,
       prevNorms[i] = 0.0f;
       continue;
     }
-    auto norm = outputs[i]->reduceNumber(reduce::Norm2);
+    NDArray* normInput = outputs[i];
+    NDArray* normInputCopy = nullptr;
+    auto* db = normInput->dataBuffer();
+    if (db != nullptr && db->isFrozenPlanRegistered() && db->primary() == nullptr) {
+      // Some replay outputs are intentionally device-only after freeze. The
+      // diagnostic reduction path may materialize a host mirror on its input;
+      // do that on a temporary array, never on the frozen slot buffer itself.
+      normInputCopy = normInput->dup(normInput->ordering(), false);
+      normInput = normInputCopy;
+    }
+    auto norm = normInput->reduceNumber(reduce::Norm2);
     float normVal = norm->e<float>(0);
     delete norm;
+    if (normInputCopy != nullptr) {
+      delete normInputCopy;
+    }
     float diff = std::abs(normVal - prevNorms[i]);
     if (diff < epsilon && prevNorms[i] != 0.0f) {
       staleOut[i] = true;

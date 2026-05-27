@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Slf4j
 public class TestPage10Generation {
@@ -50,11 +51,10 @@ public class TestPage10Generation {
         SameDiff embedTokens = models[2];
 
         int targetSize = 512;
-        File pdfFile = new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
-        if (!pdfFile.exists()) {
-            pdfFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
-        }
-        assertTrue(pdfFile.exists(), "PDF must exist at " + pdfFile.getAbsolutePath());
+        String pdfPath = System.getProperty("vlm.test.pdf.path");
+        File pdfFile = pdfPath != null ? new File(pdfPath) : new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
+        assumeTrue(pdfFile.exists(), "PDF not found at " + pdfFile.getAbsolutePath()
+                + ". Place pathfinder-mythic.pdf in platform-tests/ or set -Dvlm.test.pdf.path");
 
         try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.pdmodel.PDDocument.load(pdfFile)) {
             org.apache.pdfbox.rendering.PDFRenderer renderer = new org.apache.pdfbox.rendering.PDFRenderer(doc);

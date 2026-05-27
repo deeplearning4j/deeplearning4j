@@ -53,6 +53,7 @@
 #include <cstring>
 #include <string>
 #include <fstream>
+#include <thread>
 #include <algorithm>
 #include <sstream>
 #include <map>
@@ -292,7 +293,7 @@ int executeDynamicShapePlan(
                  "numInputs=%d numOutputs=%d",
                  static_cast<int>(peekErr), cudaGetErrorString(peekErr),
                  numInputs, numOutputs);
-        sd_printf("%s\n", buf);
+        DSP_DIAG(EXECUTE, "%s", buf);
         cudaGetLastError(); // clear sticky error
         setError(static_cast<int>(peekErr), buf);
         return static_cast<int>(peekErr);
@@ -305,23 +306,14 @@ int executeDynamicShapePlan(
         opContext->setOutputArray(i, outputPtrs[i], false);
         auto* arr = outputPtrs[i];
         if (Environment::getInstance().isDebugAndVerbose()) {
-          arr->syncToHost();
           auto shape = ShapeUtils::shapeAsString(arr);
           auto type = DataTypeUtils::asString(arr->dataType());
-          sd::LongType previewLen = sd::math::sd_min(8LL, arr->isEmpty() || arr->lengthOf() == 0 ? 0 : arr->lengthOf());
-          std::string valStr;
-          if (previewLen > 0) {
-            auto* s = arr->asString(previewLen);
-            if (s) { valStr = *s; delete s; } else { valStr = "<null>"; }
-          } else {
-            valStr = arr->isEmpty() ? "Empty" : "len=0";
-          }
           auto shapeInfoStr = ShapeUtils::shapeInfoAsString(arr->shapeInfo());
           DSP_DIAG(EXECUTE, "PLAN_OUTPUT[%d] shapeInfo=%s dtype=%s len=%lld isView=%d "
-                   "ptr=%p specialPtr=%p values=%s",
+                   "ptr=%p specialPtr=%p asyncValues=true",
                    i, shapeInfoStr.c_str(), type.c_str(),
                    (long long)arr->lengthOf(), arr->isView() ? 1 : 0,
-                   (void*)arr, arr->specialBuffer(), valStr.c_str());
+                   (void*)arr, arr->dataBuffer() != nullptr ? arr->dataBuffer()->special() : nullptr);
         }
       }
     }
@@ -331,11 +323,6 @@ int executeDynamicShapePlan(
     DSP_DIAG(EXECUTE, "executeDynamicShapePlan: exception: %s", e.what());
     // Clear any sticky CUDA errors and ensure stream is not in capture mode
     cudaGetLastError();
-    if (stream != nullptr) {
-      cudaStream_t cudaStr = *reinterpret_cast<cudaStream_t*>(stream);
-      cudaStreamSynchronize(cudaStr);
-      cudaGetLastError();
-    }
     // Set error message for Java side
     setError(-1, e.what());
     return -1;
@@ -406,6 +393,9 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     key.phShapeContentHash = sd::graph::NativePlanCache::hashShapeInfoContents(ptrs, numPlaceholders);
     key.phCount = numPlaceholders;
     key.graphExecutionMode = graphExecutionMode;
+    // Thread isolation: hash std::this_thread::get_id() into a uint64_t so each
+    // thread gets its own plan instance with independent execution state.
+    key.threadId = std::hash<std::thread::id>{}(std::this_thread::get_id());
 
     // Factory: deserialize and build the plan on cold miss.
     // Mode is passed to fromSerializedPlan so it's set BEFORE buildSegments() —
@@ -418,12 +408,6 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
 
     auto* plan = cache->getOrInsert(key, factory);
     if (plan) {
-      if (sd::Environment::getInstance().isVerbose()) {
-        sd_printf("dispatchNativePlan: plan=%p contentHash=0x%016llx outputHash=0x%016llx phCount=%lld mode=%d cacheSize=%zu\n",
-                  (void*)plan, (unsigned long long)key.phShapeContentHash,
-                  (unsigned long long)key.outputSetHash, (long long)key.phCount,
-                  key.graphExecutionMode, cache->size());
-      }
       DSP_DIAG(COMPILE, "dispatchNativePlan: plan=%p slots=%d contentHash=0x%016llx cacheSize=%zu",
                (void*)plan, plan->getNumSlots(),
                (unsigned long long)key.phShapeContentHash, cache->size());
@@ -473,12 +457,9 @@ int releaseGpuIntermediates(sd::Pointer planHandle) {
   int freed = plan->releaseGpuIntermediates();
 
   // Trim the CUDA memory pool after freeing intermediates.
-  // releaseGpuIntermediates uses cudaFreeAsync which defers frees to pool sync.
-  // Without trimming, reserved pool memory is never returned to the device,
-  // causing OOM on subsequent configs that reuse the same GPU.
+  // releaseGpuIntermediates routes frees through stream-ordered CUDA APIs.
   int deviceId = 0;
   cudaGetDevice(&deviceId);
-  cudaDeviceSynchronize();
   memory::CudaMemoryPool::getInstance().trimPool(deviceId);
 
   return freed;
@@ -1263,6 +1244,7 @@ void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
   auto& seg = segs[segIdx];
   seg.exec.replayHandle.reset();
+  seg.exec.outcome = SegmentExecOutcome::PENDING;
   seg.exec.cachedShapeKey = 0;
   seg.exec.executionCount = 0;
   seg.exec.compilationFailed = false;
@@ -1276,6 +1258,7 @@ void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName
   for (auto& seg : plan->getSegmentsMutable()) {
     if (seg.exec.compiledByBackend == name || name.empty()) {
       seg.exec.replayHandle.reset();
+      seg.exec.outcome = SegmentExecOutcome::PENDING;
       seg.exec.cachedShapeKey = 0;
       seg.exec.executionCount = 0;
       seg.exec.compiledByBackend.clear();
@@ -1770,8 +1753,6 @@ void invalidateTritonCache() {
 #endif
     // Clear any sticky CUDA errors left by failed kernel launches
     cudaGetLastError();
-    // Synchronize to ensure all async work is complete before next test
-    cudaDeviceSynchronize();
     cudaGetLastError();
 }
 
@@ -2296,12 +2277,23 @@ int dspWriteDeviceBufferOnExplicitStream(sd::Pointer planHandle, int extIdx, sd:
 }
 
 int dspSyncStream(sd::Pointer streamPtr) {
-  if (streamPtr == nullptr) {
-    auto err = cudaStreamSynchronize(nullptr);
-    return (err == cudaSuccess) ? 0 : -1;
+  cudaStream_t src = streamPtr == nullptr ? nullptr : reinterpret_cast<cudaStream_t>(streamPtr);
+  cudaEvent_t event = nullptr;
+  auto err = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
+  if (err != cudaSuccess) {
+    cudaGetLastError();
+    return -1;
   }
-  auto err = cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(streamPtr));
-  return (err == cudaSuccess) ? 0 : -1;
+  err = cudaEventRecord(event, src);
+  if (err == cudaSuccess) {
+    err = cudaStreamWaitEvent(nullptr, event, 0);
+  }
+  cudaEventDestroy(event);
+  if (err != cudaSuccess) {
+    cudaGetLastError();
+    return -1;
+  }
+  return 0;
 }
 
 int dspIsExtInputDeviceAuthoritative(sd::Pointer planHandle, int extIdx) {

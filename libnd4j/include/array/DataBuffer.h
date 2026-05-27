@@ -180,11 +180,11 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<LongType> _readSpecial;
 
   // CUDA event to track the last write to special (device) buffer.
-  // This enables proper cross-thread synchronization: when syncToPrimary() is called
-  // from a different thread than the one that executed the kernel, we wait on this
-  // event instead of synchronizing on the (wrong) caller's stream.
-  // Mutable because it's created/updated in const writeSpecial() method.
-  mutable void* _writeEvent = nullptr;  // cudaEvent_t*, void* to avoid cuda_runtime.h in header
+  // This enables stream-ordered consumers to wait on async D2D/H2D writes without
+  // draining the device. The event is created lazily and stores the cudaEvent_t
+  // value directly (no heap allocation in the hot path).
+  mutable void* _writeEvent = nullptr;  // cudaEvent_t handle, void* to avoid cuda_runtime.h in header
+  mutable std::atomic<int> _writeEventDeviceId{-1};
   mutable std::atomic<bool> _writeEventRecorded{false};
 #endif
 
@@ -332,9 +332,15 @@ class SD_LIB_EXPORT DataBuffer {
 #if defined(SD_CUDA)
   void* writeEvent() const { return _writeEvent; }
   bool writeEventRecorded() const { return _writeEventRecorded.load(std::memory_order_acquire); }
+  void waitForSpecialWriteEvent(void* stream) const;
+  void recordSpecialWriteEvent(void* stream) const;
+  void clearSpecialWriteEvent() const;
 #else
   void* writeEvent() const { return nullptr; }
   bool writeEventRecorded() const { return false; }
+  void waitForSpecialWriteEvent(void* stream) const {}
+  void recordSpecialWriteEvent(void* stream) const {}
+  void clearSpecialWriteEvent() const {}
 #endif
 
   void allocatePrimary();

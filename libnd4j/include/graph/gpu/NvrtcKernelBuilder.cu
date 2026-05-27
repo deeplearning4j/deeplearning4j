@@ -61,7 +61,10 @@ bool canJitSegment(const NativeSlot* slots, int startSlot, int endSlot) {
 // Check if this op is a scalar op (second operand from tArgs[0])
 static bool isScalarOp(const std::string& opName) {
   return opName == "add_scalar" || opName == "subtract_scalar" ||
-         opName == "multiply_scalar" || opName == "divide_scalar";
+         opName == "sub_scalar" || opName == "multiply_scalar" ||
+         opName == "mul_scalar" || opName == "divide_scalar" ||
+         opName == "div_scalar" || opName == "rsub_scalar" ||
+         opName == "rdiv_scalar";
 }
 
 static std::string generateBinaryExpr(const std::string& opName,
@@ -177,17 +180,25 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return val + " + " + scalar;
   }
-  if (opName == "subtract_scalar") {
+  if (opName == "subtract_scalar" || opName == "sub_scalar") {
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return val + " - " + scalar;
   }
-  if (opName == "multiply_scalar") {
+  if (opName == "multiply_scalar" || opName == "mul_scalar") {
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return val + " * " + scalar;
   }
-  if (opName == "divide_scalar") {
+  if (opName == "divide_scalar" || opName == "div_scalar") {
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " / " + scalar + ")";
+  }
+  if (opName == "rsub_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
+    return scalar + " - " + val;
+  }
+  if (opName == "rdiv_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
+    return "(" + scalar + " / " + val + ")";
   }
   // Fallback
   return val;
@@ -548,4 +559,3 @@ JitKernelSource buildKernelSource(const NativeSlot* slots, int startSlot, int en
 
 }  // namespace graph
 }  // namespace sd
-

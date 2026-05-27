@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cctype>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -104,7 +105,11 @@ static constexpr uint32_t SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER
 static constexpr uint32_t BP = OP_TRAIT_BACKWARD;
 
 static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
-    static const std::unordered_map<std::string, uint32_t> TABLE = {
+    // -fno-threadsafe-statics is set in CompilerFlags.cmake, so C++11 magic statics
+    // are NOT thread-safe. Use std::call_once to protect concurrent initialization.
+    static std::once_flag traitTableFlag;
+    static std::unordered_map<std::string, uint32_t> TABLE;
+    std::call_once(traitTableFlag, []() { TABLE = {
         // ── Unary elementwise math ─────────────────────────────────────────
         {"abs",            UNARY_EW},
         {"neg",            UNARY_EW},
@@ -180,8 +185,13 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"squaredsubtract", BINARY_EW},
         {"add_scalar",     BINARY_EW},
         {"subtract_scalar", BINARY_EW},
+        {"sub_scalar",     BINARY_EW},
         {"multiply_scalar", BINARY_EW},
+        {"mul_scalar",     BINARY_EW},
         {"divide_scalar",  BINARY_EW},
+        {"div_scalar",     BINARY_EW},
+        {"rsub_scalar",    BINARY_EW},
+        {"rdiv_scalar",    BINARY_EW},
         {"pow",            BINARY_EW},
         {"min_pairwise",   BINARY_EW},
         {"max_pairwise",   BINARY_EW},
@@ -1071,20 +1081,23 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"triu",                DATA_MOVE},                         // upper triangular
         {"triu_bp",             DATA_MOVE | BP},                    // upper triangular backward
         {"where_np",            DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},  // numpy-style where, variable-length output
-    };
+    }; });
     return TABLE;
 }
 
 // ─── Structural iArg table ─────────────────────────────────────────────────
 static const std::unordered_map<std::string, int>& getStructuralIArgTable() {
-    static const std::unordered_map<std::string, int> TABLE = {
+    // -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
+    static std::once_flag iargTableFlag;
+    static std::unordered_map<std::string, int> TABLE;
+    std::call_once(iargTableFlag, []() { TABLE = {
         {"strided_slice", 5},   // 5 mask bits (begin/end/shrink/new_axis/ellipsis)
         {"concat", 1},          // axis
         {"split", 1},           // num_splits
         {"split_v", 1},         // axis
         {"one_hot", 2},         // axis, depth
         {"top_k", 1},           // k
-    };
+    }; });
     return TABLE;
 }
 
@@ -1097,32 +1110,29 @@ static std::string normalizeOpName(const std::string& opName) {
 
 // ─── Init function ─────────────────────────────────────────────────────────
 
-static std::atomic<bool> traitsInitialized{false};
-
 void initOpTraits() {
-    // Idempotent: safe to call multiple times
-    if (traitsInitialized.load(std::memory_order_acquire)) return;
+    // -fno-threadsafe-statics: use std::call_once for thread-safe one-time initialization.
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        auto& table = getTraitTable();
+        auto& registrator = OpRegistrator::getInstance();
 
-    auto& table = getTraitTable();
-    auto& registrator = OpRegistrator::getInstance();
-
-    // Iterate all registered op names and apply traits by normalized (lowercase) name lookup.
-    // This is necessary because ops can be registered with mixed case (e.g., "Where" capital W)
-    // while the trait table uses lowercase keys (e.g., "where").  A direct lookup by the
-    // table key would miss ops whose registered name has a different case.
-    for (const auto& opName : registrator.getAllRegisteredOpNames()) {
-        std::string normalized = normalizeOpName(opName);
-        auto it = table.find(normalized);
-        if (it != table.end()) {
-            auto* op = registrator.getOperation(opName.c_str());
-            if (op != nullptr) {
-                // addTraits preserves any traits already set by the class hierarchy
-                op->getOpDescriptor()->addTraits(it->second);
+        // Iterate all registered op names and apply traits by normalized (lowercase) name lookup.
+        // This is necessary because ops can be registered with mixed case (e.g., "Where" capital W)
+        // while the trait table uses lowercase keys (e.g., "where").  A direct lookup by the
+        // table key would miss ops whose registered name has a different case.
+        for (const auto& opName : registrator.getAllRegisteredOpNames()) {
+            std::string normalized = normalizeOpName(opName);
+            auto it = table.find(normalized);
+            if (it != table.end()) {
+                auto* op = registrator.getOperation(opName.c_str());
+                if (op != nullptr) {
+                    // addTraits preserves any traits already set by the class hierarchy
+                    op->getOpDescriptor()->addTraits(it->second);
+                }
             }
         }
-    }
-
-    traitsInitialized.store(true, std::memory_order_release);
+    });
 }
 
 uint32_t getOpTraitsByName(const std::string& opName) {

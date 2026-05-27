@@ -23,6 +23,7 @@
 
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
+#include <mutex>
 #include <system/Environment.h>
 
 namespace sd {
@@ -47,8 +48,12 @@ MemoryCounter::MemoryCounter() {
 }
 
 MemoryCounter& MemoryCounter::getInstance() {
-  static MemoryCounter instance;
-  return instance;
+  static MemoryCounter* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new MemoryCounter();
+  });
+  return *instance;
 }
 
 void MemoryCounter::countIn(int deviceId, LongType numBytes) {

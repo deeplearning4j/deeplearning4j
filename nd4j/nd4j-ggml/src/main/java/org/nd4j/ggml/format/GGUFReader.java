@@ -219,6 +219,40 @@ public class GGUFReader implements Closeable {
     }
 
     /**
+     * Read tensor data directly into a direct ByteBuffer, avoiding a heap byte[] copy.
+     * The returned buffer is ready for reading (position=0, limit=dataSize) in little-endian order.
+     * This is faster for non-quantized tensors where the data can be used directly.
+     */
+    public ByteBuffer readTensorDataDirect(GGMLTensorInfo tensorInfo) throws IOException {
+        long absoluteOffset = dataOffset + tensorInfo.getDataOffset();
+        long dataSize = tensorInfo.getDataSize();
+
+        if (dataSize > Integer.MAX_VALUE) {
+            throw new IOException("Tensor data too large: " + dataSize);
+        }
+
+        ByteBuffer direct = ByteBuffer.allocateDirect((int) dataSize).order(ByteOrder.LITTLE_ENDIAN);
+
+        if (absoluteOffset + dataSize > buffer.capacity()) {
+            // Beyond mmap window — read via channel
+            channel.position(absoluteOffset);
+            while (direct.hasRemaining()) {
+                if (channel.read(direct) == -1) {
+                    throw new IOException("Unexpected EOF reading tensor data at offset " + absoluteOffset);
+                }
+            }
+        } else {
+            // Within mmap window — bulk copy from mmap buffer
+            ByteBuffer slice = buffer.duplicate();
+            slice.position((int) absoluteOffset);
+            slice.limit((int) (absoluteOffset + dataSize));
+            direct.put(slice);
+        }
+        direct.flip();
+        return direct;
+    }
+
+    /**
      * Get the metadata from the header
      */
     public GGMLMetadata getMetadata() throws IOException, GGMLImportException {

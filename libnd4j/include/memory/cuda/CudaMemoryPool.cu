@@ -26,9 +26,10 @@
 #include <helpers/DebugHelper.h>
 #include <execution/LaunchContext.h>
 #include <graph/DspDiagnostics.h>
-#include <cstring>
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
+#include <cstring>
+#include <mutex>
 #include <vector>
 
 namespace sd {
@@ -63,8 +64,12 @@ SD_INLINE cudaStream_t resolveNullStream(cudaStream_t stream) {
 }
 
 CudaMemoryPool& CudaMemoryPool::getInstance() {
-  static CudaMemoryPool instance;
-  return instance;
+  static CudaMemoryPool* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new CudaMemoryPool();
+  });
+  return *instance;
 }
 
 void CudaMemoryPool::setMemoryPressureCallback(MemoryPressureCallback callback) {
@@ -558,6 +563,10 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     err = cudaMalloc(&ptr, size);
     if (err == cudaSuccess && ptr != nullptr) {
       sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc after trim on device %d\n", currentDeviceId);
+      // Track as direct allocation so free() uses cudaFree instead of cudaFreeAsync.
+      // Without this, cudaFreeAsync feeds non-pool memory into the pool, corrupting
+      // pool state and causing the pool to stagnate (stuck at fixed used/reserved).
+      registerDirectAllocation(ptr, size);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
       if (retryNeedRestore) cudaSetDevice(retryPrevDev);
       return ptr;
@@ -615,13 +624,23 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   });
 
   // MEMORY PRESSURE EVENT: Build and report to callback
+  // Check for non-peer devices with free memory (for managed memory fallback)
+  bool hasNonPeerCandidate = false;
+  for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
+    if (d == currentDeviceId) continue;
+    if (peerAccessEnabled_[currentDeviceId][d]) continue;
+    // Quick check — don't switch devices just to build the event
+    hasNonPeerCandidate = true;
+    break;
+  }
+
   MemoryPressureEvent event;
   event.requestedDeviceId = currentDeviceId;
   event.requestedSize = size;
   event.availableMemory = currentFreeMem;
   event.alternativeDeviceId = candidates.empty() ? -1 : candidates[0].id;
-  event.isPeerAccessible = !candidates.empty();  // all candidates are peer-accessible
-  event.recommendedAction = candidates.empty() ?
+  event.isPeerAccessible = !candidates.empty();  // peer candidates available
+  event.recommendedAction = (candidates.empty() && !hasNonPeerCandidate) ?
     MemoryPressureEvent::Action::USE_PINNED_HOST :
     MemoryPressureEvent::Action::FAILOVER;
 
@@ -672,6 +691,49 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (err == cudaSuccess && ptr != nullptr) {
       sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on peer device %d for %zu bytes\n",
                 d, size);
+      registerDirectAllocation(ptr, size);
+      if (actualDeviceId) *actualDeviceId = d;
+      cudaSetDevice(prevDev);
+      return ptr;
+    }
+    cudaGetLastError();  // clear error
+  }
+
+  // Step 2b: Try non-peer devices using managed memory (cudaMallocManaged).
+  // Managed memory uses Unified Virtual Addressing (UVA) — the CUDA driver
+  // migrates pages between devices transparently, even without P2P/NVLink.
+  // This is slower than P2P (PCIe staging) but far better than pinned host memory
+  // which forces ALL accesses through PCIe. Managed memory migrates on first touch
+  // and caches on the accessing device, so repeated access is at full GPU bandwidth.
+  for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
+    if (d == currentDeviceId) continue;
+    if (peerAccessEnabled_[currentDeviceId][d]) continue;  // already tried as peer above
+
+    // Check if this device has enough free memory
+    cudaSetDevice(d);
+    if (supported_ && poolInitialized_[d]) {
+      trimPool(d);
+    }
+    size_t freeMem = 0, totalMem = 0;
+    cudaMemGetInfo(&freeMem, &totalMem);
+    if (freeMem <= size * 1.1) {
+      cudaGetLastError();
+      continue;  // Not enough memory on this device
+    }
+
+    // Use cudaMallocManaged — accessible from any device via page migration
+    void* ptr = nullptr;
+    cudaError_t err = cudaMallocManaged(&ptr, size, cudaMemAttachGlobal);
+    if (err == cudaSuccess && ptr != nullptr) {
+      // Advise the driver to place the memory on the target device initially.
+      // Without this hint, pages start on the allocating device (which we just
+      // switched to) and migrate on first GPU access, adding latency.
+      cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, d);
+      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged on non-peer device %d "
+                "for %zu bytes (accessible from device %d via UVA page migration)\n",
+                d, size, currentDeviceId);
+      // Track as managed allocation so free() uses cudaFree (not cudaFreeAsync)
+      registerDirectAllocation(ptr, size);
       if (actualDeviceId) *actualDeviceId = d;
       cudaSetDevice(prevDev);
       return ptr;

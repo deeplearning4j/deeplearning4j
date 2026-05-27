@@ -1598,6 +1598,46 @@ public class ND4JSystemProperties {
     public static final String ENV_CUDA_MAX_L2_FETCH_GRANULARITY = "nd4j.environment.cudaMaxL2FetchGranularity";
     public static final String ENV_CUDA_PERSISTING_L2_CACHE_SIZE = "nd4j.environment.cudaPersistingL2CacheSize";
 
+    // --- DSP plan disk cache ---
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Enable or disable the DSP plan disk cache. When enabled,
+     * serialized plan bytes are persisted to disk and reloaded on subsequent
+     * JVM starts, avoiding recompilation for unchanged graph structures.
+     * Environment variable: ND4J_DSP_PLAN_CACHE_DISK_ENABLED
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_PLAN_CACHE_DISK_ENABLED = "nd4j.dsp.planCache.diskEnabled";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Override directory for the DSP plan disk cache.
+     * When not set, defaults to ~/.kompile/cache/dsp/dsp_plan_cache/.
+     * Environment variable: ND4J_DSP_PLAN_CACHE_DIR
+     */
+    public static final String DSP_PLAN_CACHE_DISK_DIR = "nd4j.dsp.planCache.diskDir";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Override directory for pre-seeded DSP plans (highest priority lookup).
+     * Plans placed here are never overwritten by the cache writer.
+     * Environment variable: ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR
+     */
+    public static final String DSP_PLAN_CACHE_OVERRIDE_DIR = "nd4j.dsp.planCache.overrideDir";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, ignore existing cached plans and force recompilation.
+     * New plans are still written to the cache. Useful for rebuilding after
+     * a suspected cache corruption.
+     * Environment variable: ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_PLAN_CACHE_FORCE_RECOMPILE = "nd4j.dsp.planCache.forceRecompile";
+
     // --- Triton environment ---
     public static final String ENV_TRITON_BUILD_THREADS = "nd4j.environment.tritonBuildThreads";
     public static final String ENV_TRITON_CACHE_ENABLED = "nd4j.environment.tritonCacheEnabled";

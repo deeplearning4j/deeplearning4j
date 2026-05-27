@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -397,29 +398,68 @@ public class SDZSerializer {
         InferenceSession.setDynamicShapePlanEnabled(false);
         System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
 
-        Path tempDir = Files.createTempDirectory("sdz-serializer-load-");
-        log.debug("Using temporary directory for ZIP extraction: {}", tempDir);
+        long loadStart = System.currentTimeMillis();
         SameDiff loadedSameDiff;
 
+        // Use ZipFile for random access to entries. With STORED compression, getInputStream()
+        // reads directly from the underlying file without decompression — much faster than
+        // ZipInputStream which must decompress sequentially.
+        Path tempDir = null;
         try {
-            log.info("Extracting ZIP archive '{}' to temporary directory...", modelZipFile.getName());
-            extractZip(modelZipFile, tempDir.toFile());
+            // Extract SDNB entries to temp files using ZipFile (random access, large buffer)
+            tempDir = Files.createTempDirectory("sdz-serializer-load-");
+            File tempDirFile = tempDir.toFile();
 
-            File loadPath = determineLoadPath(tempDir.toFile());
-            if (loadPath == null) {
-                throw new IOException("Could not determine the internal model file path after extracting ZIP archive to: " + tempDir);
+            try (java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(modelZipFile)) {
+                java.util.Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                byte[] extractBuffer = new byte[1024 * 1024]; // 1MB buffer for extraction
+                int entryCount = 0;
+
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    entryCount++;
+                    if (entryCount > maxZipEntries) {
+                        throw new IOException("Too many ZIP entries: " + entryCount + ", max: " + maxZipEntries);
+                    }
+                    if (entry.isDirectory()) continue;
+
+                    // Zip Slip protection
+                    File entryFile = new File(tempDirFile, entry.getName());
+                    if (!entryFile.getCanonicalPath().startsWith(tempDirFile.getCanonicalPath() + File.separator)) {
+                        throw new IOException("Zip Slip: " + entry.getName());
+                    }
+
+                    // Extract using ZipFile.getInputStream (random access, no sequential decompression)
+                    try (InputStream zis = zipFile.getInputStream(entry);
+                         FileOutputStream fos = new FileOutputStream(entryFile);
+                         BufferedOutputStream bos = new BufferedOutputStream(fos, 1024 * 1024)) {
+                        long totalWritten = 0;
+                        int len;
+                        while ((len = zis.read(extractBuffer)) > 0) {
+                            totalWritten += len;
+                            if (totalWritten > maxTotalUncompressedSize) {
+                                throw new IOException("Uncompressed size exceeds limit: " + maxTotalUncompressedSize);
+                            }
+                            bos.write(extractBuffer, 0, len);
+                        }
+                    }
+                }
             }
-            log.info("Determined internal load path: {}", loadPath.getAbsolutePath());
 
-            log.info("Loading model using SameDiffSerializer from extracted files...");
+            File loadPath = determineLoadPath(tempDirFile);
+            if (loadPath == null) {
+                throw new IOException("No valid SDNB files found in ZIP: " + modelZipFile.getAbsolutePath());
+            }
+
             loadedSameDiff = SameDiffSerializer.load(loadPath, loadUpdaterState);
 
         } finally {
-            try {
-                FileUtils.deleteDirectory(tempDir.toFile());
-                log.debug("Cleaned up temporary load directory: {}", tempDir);
-            } catch (IOException e) {
-                log.warn("Failed to delete temporary load directory: {}", tempDir, e);
+            if (tempDir != null) {
+                try {
+                    FileUtils.deleteDirectory(tempDir.toFile());
+                } catch (IOException e) {
+                    log.warn("Failed to delete temporary load directory: {}", tempDir, e);
+                }
             }
             // Restore DSP and CUDA graph settings
             InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
@@ -433,7 +473,8 @@ public class SDZSerializer {
         if (loadedSameDiff == null) {
             throw new IOException("SameDiffSerializer.load returned null after loading from extracted files.");
         }
-        log.info("Successfully loaded SameDiff model from ZIP archive: {}", modelZipFile.getAbsolutePath());
+        long loadMs = System.currentTimeMillis() - loadStart;
+        log.info("Loaded SameDiff model from SDZ in {}ms: {}", loadMs, modelZipFile.getName());
         return loadedSameDiff;
     }
 
@@ -475,29 +516,63 @@ public class SDZSerializer {
                 context.getTargetDevice().getDeviceId(),
                 context.getSizeInfo().toSummaryString());
 
-        Path tempDir = Files.createTempDirectory("sdz-serializer-load-");
-        log.debug("Using temporary directory for ZIP extraction: {}", tempDir);
+        long loadStart = System.currentTimeMillis();
+        Path tempDir = null;
         SameDiff loadedSameDiff;
 
         try {
-            log.info("Extracting ZIP archive '{}' to temporary directory...", modelZipFile.getName());
-            extractZip(modelZipFile, tempDir.toFile());
+            // Extract using ZipFile for random access (same as non-context load)
+            tempDir = Files.createTempDirectory("sdz-serializer-load-");
+            File tempDirFile = tempDir.toFile();
 
-            File loadPath = determineLoadPath(tempDir.toFile());
-            if (loadPath == null) {
-                throw new IOException("Could not determine the internal model file path after extracting ZIP archive to: " + tempDir);
+            try (java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(modelZipFile)) {
+                java.util.Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                byte[] extractBuffer = new byte[1024 * 1024];
+                int entryCount = 0;
+
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    entryCount++;
+                    if (entryCount > maxZipEntries) {
+                        throw new IOException("Too many ZIP entries: " + entryCount);
+                    }
+                    if (entry.isDirectory()) continue;
+
+                    File entryFile = new File(tempDirFile, entry.getName());
+                    if (!entryFile.getCanonicalPath().startsWith(tempDirFile.getCanonicalPath() + File.separator)) {
+                        throw new IOException("Zip Slip: " + entry.getName());
+                    }
+
+                    try (InputStream zis = zipFile.getInputStream(entry);
+                         FileOutputStream fos = new FileOutputStream(entryFile);
+                         BufferedOutputStream bos = new BufferedOutputStream(fos, 1024 * 1024)) {
+                        long totalWritten = 0;
+                        int len;
+                        while ((len = zis.read(extractBuffer)) > 0) {
+                            totalWritten += len;
+                            if (totalWritten > maxTotalUncompressedSize) {
+                                throw new IOException("Uncompressed size exceeds limit");
+                            }
+                            bos.write(extractBuffer, 0, len);
+                        }
+                    }
+                }
             }
-            log.info("Determined internal load path: {}", loadPath.getAbsolutePath());
 
-            log.info("Loading model using SameDiffSerializer with context from extracted files...");
+            File loadPath = determineLoadPath(tempDirFile);
+            if (loadPath == null) {
+                throw new IOException("No valid SDNB files found in ZIP: " + modelZipFile.getAbsolutePath());
+            }
+
             loadedSameDiff = SameDiffSerializer.load(loadPath, loadUpdaterState, context);
 
         } finally {
-            try {
-                FileUtils.deleteDirectory(tempDir.toFile());
-                log.debug("Cleaned up temporary load directory: {}", tempDir);
-            } catch (IOException e) {
-                log.warn("Failed to delete temporary load directory: {}", tempDir, e);
+            if (tempDir != null) {
+                try {
+                    FileUtils.deleteDirectory(tempDir.toFile());
+                } catch (IOException e) {
+                    log.warn("Failed to delete temporary load directory: {}", tempDir, e);
+                }
             }
             // Restore DSP and CUDA graph settings
             InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
@@ -511,7 +586,8 @@ public class SDZSerializer {
         if (loadedSameDiff == null) {
             throw new IOException("SameDiffSerializer.load returned null after loading from extracted files.");
         }
-        log.info("Successfully loaded SameDiff model from ZIP archive with context: {}", modelZipFile.getAbsolutePath());
+        long loadMs = System.currentTimeMillis() - loadStart;
+        log.info("Loaded SameDiff model from SDZ with context in {}ms: {}", loadMs, modelZipFile.getName());
         return loadedSameDiff;
     }
 
@@ -643,6 +719,12 @@ public class SDZSerializer {
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              ZipOutputStream zos = new ZipOutputStream(bos)) {
 
+            // Use STORED (no compression) for SDNB files. Neural network weights are
+            // high-entropy binary data that compresses poorly (~1% reduction). Skipping
+            // compression eliminates CPU overhead on both save and load.
+            zos.setMethod(ZipOutputStream.STORED);
+
+            byte[] buffer = new byte[65536];
             for (File file : existingFiles) {
                 if (!file.exists() || !file.isFile()) {
                     log.warn("File disappeared between initial check and ZIP addition: {}", file.getAbsolutePath());
@@ -650,13 +732,32 @@ public class SDZSerializer {
                 }
 
                 String entryName = file.getName();
-                log.debug("Adding ZIP entry: {} from {}", entryName, file.getAbsolutePath());
+                log.debug("Adding ZIP entry (STORED): {} from {}", entryName, file.getAbsolutePath());
+
+                // STORED entries require size and CRC32 upfront
+                long fileSize = file.length();
+                CRC32 crc = new CRC32();
+                try (FileInputStream crcFis = new FileInputStream(file);
+                     BufferedInputStream crcBis = new BufferedInputStream(crcFis, 65536)) {
+                    int len;
+                    while ((len = crcBis.read(buffer)) > 0) {
+                        crc.update(buffer, 0, len);
+                    }
+                }
+
                 ZipEntry zipEntry = new ZipEntry(entryName);
+                zipEntry.setMethod(ZipEntry.STORED);
+                zipEntry.setSize(fileSize);
+                zipEntry.setCompressedSize(fileSize);
+                zipEntry.setCrc(crc.getValue());
                 zos.putNextEntry(zipEntry);
 
                 try (FileInputStream fis = new FileInputStream(file);
-                     BufferedInputStream bis = new BufferedInputStream(fis)) {
-                    IOUtils.copy(bis, zos);
+                     BufferedInputStream bis = new BufferedInputStream(fis, 65536)) {
+                    int len;
+                    while ((len = bis.read(buffer)) > 0) {
+                        zos.write(buffer, 0, len);
+                    }
                 }
                 zos.closeEntry();
             }

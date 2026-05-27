@@ -35,6 +35,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Loader for multi-part VLM models in SDZ (SameDiff ZIP) format.
@@ -96,17 +98,51 @@ public class MultiPartModelLoader {
             throw new IOException("Model directory does not exist: " + modelDir.getAbsolutePath());
         }
 
-        // Load SDZ components
-        SameDiff visionEncoder = loadSdzIfExists(modelDir, VISION_ENCODER_NAMES);
-        SameDiff embedTokens = loadSdzIfExists(modelDir, EMBED_TOKENS_NAMES);
-        SameDiff decoder = loadSdzIfExists(modelDir, DECODER_NAMES);
+        // Resolve which SDZ files exist (fast filesystem check, no I/O)
+        File visionEncoderFile = findSdzFile(modelDir, VISION_ENCODER_NAMES);
+        File embedTokensFile = findSdzFile(modelDir, EMBED_TOKENS_NAMES);
+        File decoderFile = findSdzFile(modelDir, DECODER_NAMES);
 
-        if (decoder == null) {
+        if (decoderFile == null) {
             throw new IOException("No decoder model found in: " + modelDir.getAbsolutePath() +
                 ". Expected one of: " + String.join(", ", DECODER_NAMES) + SDZ_EXTENSION);
         }
 
-        // Load configurations
+        // Load SDZ components in parallel — each file is independent
+        long loadStart = System.currentTimeMillis();
+        CompletableFuture<SameDiff> visionFuture = visionEncoderFile != null
+                ? CompletableFuture.supplyAsync(() -> loadSdzQuiet(visionEncoderFile))
+                : CompletableFuture.completedFuture(null);
+        CompletableFuture<SameDiff> embedFuture = embedTokensFile != null
+                ? CompletableFuture.supplyAsync(() -> loadSdzQuiet(embedTokensFile))
+                : CompletableFuture.completedFuture(null);
+        CompletableFuture<SameDiff> decoderFuture =
+                CompletableFuture.supplyAsync(() -> loadSdzQuiet(decoderFile));
+
+        // Wait for all loads to complete
+        SameDiff visionEncoder;
+        SameDiff embedTokens;
+        SameDiff decoder;
+        try {
+            CompletableFuture.allOf(visionFuture, embedFuture, decoderFuture).join();
+            visionEncoder = visionFuture.get();
+            embedTokens = embedFuture.get();
+            decoder = decoderFuture.get();
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            throw cause instanceof IOException ? (IOException) cause
+                    : new IOException("Parallel model loading failed", cause);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Model loading interrupted", e);
+        }
+        log.info("Parallel model loading completed in {}ms", System.currentTimeMillis() - loadStart);
+
+        if (decoder == null) {
+            throw new IOException("Failed to load decoder from: " + decoderFile.getAbsolutePath());
+        }
+
+        // Load configurations (lightweight, no need to parallelize)
         ModelConfig config = loadConfig(modelDir);
         Tokenizer tokenizer = loadTokenizer(modelDir);
         VLMImagePreprocessor preprocessor = loadPreprocessor(modelDir);
@@ -197,17 +233,37 @@ public class MultiPartModelLoader {
         }
     }
 
-    private static SameDiff loadSdzIfExists(File dir, String[] names) {
+    /**
+     * Find the first existing SDZ file matching any of the given names.
+     * Does not load the file — just resolves the path.
+     */
+    private static File findSdzFile(File dir, String[] names) {
         for (String name : names) {
             File file = new File(dir, name + SDZ_EXTENSION);
             if (file.exists() && isSdzFile(file)) {
-                try {
-                    log.info("Loading SDZ: {}", file.getName());
-                    return SDZSerializer.load(file, false);
-                } catch (Exception e) {
-                    log.warn("Failed to load {}: {}", file.getName(), e.getMessage());
-                }
+                return file;
             }
+        }
+        return null;
+    }
+
+    /**
+     * Load an SDZ file, wrapping checked exceptions for use in CompletableFuture.
+     */
+    private static SameDiff loadSdzQuiet(File file) {
+        try {
+            log.info("Loading SDZ: {}", file.getName());
+            return SDZSerializer.load(file, false);
+        } catch (Exception e) {
+            log.warn("Failed to load {}: {}", file.getName(), e.getMessage());
+            throw new RuntimeException("Failed to load " + file.getName(), e);
+        }
+    }
+
+    private static SameDiff loadSdzIfExists(File dir, String[] names) {
+        File file = findSdzFile(dir, names);
+        if (file != null) {
+            return loadSdzQuiet(file);
         }
         return null;
     }

@@ -87,6 +87,7 @@ public class TestVLMModelImportPipeline {
     private static final String PDF_PAGE_PROPERTY = "vlm.test.pdf.page";       // Single page (0-based)
     private static final String PDF_MAX_PAGES_PROPERTY = "vlm.test.pdf.maxPages"; // Max pages to process
     private static final String PDF_DPI_PROPERTY = "vlm.test.pdf.dpi";         // Render DPI (default 150)
+    private static final String PYTHON_REF_DIR = System.getProperty("vlm.python.ref.dir", "/tmp");
 
     private static String pdfPath;
     private static int specificPage = -1;   // -1 means process all/range
@@ -1245,9 +1246,9 @@ public class TestVLMModelImportPipeline {
         log.info("Python normalized [511,511]: R=0.333333, G=0.176471, B=-0.317647");
 
         // Step 3: Check if the source images even match
-        // The Python reference uses /tmp/page10-010.png which was rendered at 150 DPI
+        // The Python reference uses page10-010.png which was rendered at 150 DPI
         // If that file exists, load it in Java and compare
-        File pythonImageFile = new File("/tmp/page10-010.png");
+        File pythonImageFile = new File(PYTHON_REF_DIR, "page10-010.png");
         if (pythonImageFile.exists()) {
             BufferedImage pythonImage = ImageIO.read(pythonImageFile);
             log.info("Python source image: {}x{}", pythonImage.getWidth(), pythonImage.getHeight());
@@ -1292,7 +1293,7 @@ public class TestVLMModelImportPipeline {
         log.info("Python: min=-1.000000, max=1.000000, mean=0.174427");
 
         // Step 5: Also load the Python reference binary and compare element-wise
-        File refBin = new File("/tmp/python_vision_input_3x512x512.bin");
+        File refBin = new File(PYTHON_REF_DIR, "python_vision_input_3x512x512.bin");
         if (refBin.exists()) {
             log.info("Loading Python reference tensor from {}", refBin.getAbsolutePath());
             java.io.DataInputStream dis = new java.io.DataInputStream(

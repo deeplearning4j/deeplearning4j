@@ -1,0 +1,15 @@
+{
+  "id" : "21584c87",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "libnd4j,nd4j-cuda-12.9,nd4j-api",
+  "totalTests" : 1,
+  "passed" : 1,
+  "notes" : "Java nd4j-api install passed, then required CUDA/Triton native build passed. Logs: java-nd4j-api-build-output.log and cuda-build-output.log. Native reactor: libnd4j SUCCESS, nd4j-cuda-12.9 SUCCESS.",
+  "tags" : "build,cuda,triton,dsp",
+  "timestamp" : "2026-05-27T00:56:33.192106Z"
+}

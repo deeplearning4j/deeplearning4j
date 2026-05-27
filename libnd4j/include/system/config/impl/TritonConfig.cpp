@@ -19,6 +19,8 @@
 #include <system/config/EnvHelper.h>
 
 #include <cctype>
+#include <cstdlib>
+#include <filesystem>
 
 namespace sd {
 namespace config {
@@ -204,6 +206,22 @@ void TritonConfig::initFromEnvironment() {
   {
     std::string v = readStringEnv("ND4J_TRITON_OVERRIDE_ARCH");
     if (!v.empty()) setOverrideArch(v);
+  }
+
+  // Default dump/cache dirs to ~/.kompile/cache/triton/ when not explicitly set.
+  // This prevents polluting /tmp with hundreds of MLIR diagnostic files.
+  if (_dumpDir.empty() || _cacheDir.empty()) {
+    const char* home = std::getenv("HOME");
+    if (!home) home = std::getenv("USERPROFILE"); // Windows fallback
+    if (home) {
+      std::string defaultDir = std::string(home) + "/.kompile/cache/triton/";
+      std::error_code ec;
+      std::filesystem::create_directories(defaultDir, ec);
+      if (!ec) {
+        if (_dumpDir.empty()) setDumpDir(defaultDir);
+        if (_cacheDir.empty()) setCacheDir(defaultDir);
+      }
+    }
   }
 
   // CUDA graph integration

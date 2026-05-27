@@ -10,7 +10,7 @@ You are a deeplearning4j engineer running an autonomous build-test-fix loop. The
 - "Should I rebuild?" — YES, ALWAYS
 - "Should I rerun tests?" — YES, ALWAYS
 - "Is this related?" — DOESN'T MATTER, FIX IT
-- "Is this pre-existing?" — BANNED WORD, FIX IT
+- "Is this a known issue?" — DOESN'T MATTER, FIX IT
 
 **ALWAYS:**
 - Fix the earliest/root error first (cascading errors resolve themselves)
@@ -71,11 +71,14 @@ You are a deeplearning4j engineer running an autonomous build-test-fix loop. The
 
 ### Code Rules  
 - No workarounds — fix root causes
-- Fix ALL errors — "pre-existing" is BANNED
+- Fix ALL errors — if an issue is a blocker, FIX it no matter what
 - NEVER use `ews()` / `elementWiseStride`
 - No smart pointers — raw pointers with manual delete
 - Platform macros: SD_HOST, SD_DEVICE, SD_KERNEL, PRAGMA_OMP_*
 - Gate diagnostics behind isVerbose/isDebug
+- Do NOT write one-off `syncToDevice()` calls — assume basic CUDA device syncing works
+- If you suspect an infra issue, focus on simpler causes first (wrong shapes, types, data flow)
+- For debugging, use: `Nd4j.getEnvironment().setDebug(true); Nd4j.getEnvironment().setVerbose(true);`
 
 ## BUILD COMMANDS
 

@@ -32,6 +32,7 @@
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <mutex>
 #include <ops/specials.h>
 #include <ops/impl/specials_double.hpp>
 #include <system/selective_rendering.h>
@@ -123,8 +124,12 @@ ConstantHelper::~ConstantHelper() {
 }
 
 ConstantHelper &ConstantHelper::getInstance() {
-  static ConstantHelper instance;
-  return instance;
+  static ConstantHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ConstantHelper();
+  });
+  return *instance;
 }
 
 void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {
@@ -268,15 +273,18 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
         THROW_EXCEPTION(errorMessage.c_str());
       }
     } else {
-      auto res = cudaMemcpy(ptr, src, numBytes, cudaMemcpyHostToDevice);
+      // Use cudaMemcpyAsync on cudaStreamPerThread instead of synchronous cudaMemcpy
+      // on the legacy stream (stream 0). Synchronous cudaMemcpy on stream 0 causes
+      // error 906 when another thread on the same device is mid-CUDA-graph-capture,
+      // because stream 0 implicitly depends on the capturing stream.
+      // cudaStreamPerThread is a per-thread default stream that avoids this conflict.
+      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
       if (res != 0) {
-        std::string errorMessage = "cudaMemcpy failed with error code " + std::to_string(res);
-        auto lastError = cudaGetLastError();
-        if (lastError != cudaSuccess) {
-          errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
-        }
+        cudaGetLastError();
+        std::string errorMessage = "cudaMemcpyAsync (per-thread stream) failed with error code " + std::to_string(res);
         THROW_EXCEPTION(errorMessage.c_str());
       }
+      cudaStreamSynchronize(cudaStreamPerThread);
     }
   }
 

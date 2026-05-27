@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Compare SameDiff ONNX execution vs Python ONNX Runtime reference outputs.
@@ -38,15 +39,17 @@ public class TestVLMOnnxReference {
     private static final String MODEL_DIR = System.getProperty("vlm.model.cache.dir",
             System.getProperty("user.home") + "/.cache/dl4j-vlm-models");
 
+    private static final String REF_DIR = System.getProperty("vlm.ref.dir", "/tmp");
+
     @Test
     @DisplayName("embed_tokens: SameDiff vs ONNX Runtime")
     public void testEmbedTokens() throws Exception {
         log.info("=== embed_tokens comparison ===");
 
-        File refInput = new File("/tmp/ref_embed_input.npy");
-        File refOutput = new File("/tmp/ref_embed_output.npy");
-        assertTrue(refInput.exists(), "Run Python reference script first");
-        assertTrue(refOutput.exists(), "Run Python reference script first");
+        File refInput = new File(REF_DIR, "ref_embed_input.npy");
+        File refOutput = new File(REF_DIR, "ref_embed_output.npy");
+        assumeTrue(refInput.exists(), "Run Python reference script first to generate " + refInput.getAbsolutePath());
+        assumeTrue(refOutput.exists(), "Run Python reference script first to generate " + refOutput.getAbsolutePath());
 
         INDArray inputIds = Nd4j.createFromNpyFile(refInput);
         INDArray expectedOutput = Nd4j.createFromNpyFile(refOutput);
@@ -83,10 +86,10 @@ public class TestVLMOnnxReference {
     public void testVisionEncoder() throws Exception {
         log.info("=== vision encoder comparison ===");
 
-        File refPixels = new File("/tmp/ref_vision_input_pixels.npy");
-        File refMask = new File("/tmp/ref_vision_input_mask.npy");
-        File refOutput = new File("/tmp/ref_vision_output.npy");
-        assertTrue(refPixels.exists(), "Run Python reference script first");
+        File refPixels = new File(REF_DIR, "ref_vision_input_pixels.npy");
+        File refMask = new File(REF_DIR, "ref_vision_input_mask.npy");
+        File refOutput = new File(REF_DIR, "ref_vision_output.npy");
+        assumeTrue(refPixels.exists(), "Run Python reference script first to generate " + refPixels.getAbsolutePath());
 
         INDArray pixelValues = Nd4j.createFromNpyFile(refPixels);
         INDArray mask = Nd4j.createFromNpyFile(refMask);
@@ -176,12 +179,12 @@ public class TestVLMOnnxReference {
             if (sdOut == null) continue;
             String safeName = node.replace('/', '_').replace('.', '_');
             // Try ref_intermediate_, ref_early_, and ref_emb_ prefixes
-            File refFile = new File("/tmp/ref_intermediate_" + safeName + ".npy");
+            File refFile = new File(REF_DIR, "ref_intermediate_" + safeName + ".npy");
             if (!refFile.exists()) {
-                refFile = new File("/tmp/ref_early_" + safeName + ".npy");
+                refFile = new File(REF_DIR, "ref_early_" + safeName + ".npy");
             }
             if (!refFile.exists()) {
-                refFile = new File("/tmp/ref_emb_" + safeName + ".npy");
+                refFile = new File(REF_DIR, "ref_emb_" + safeName + ".npy");
             }
             if (refFile.exists()) {
                 INDArray pyOut = Nd4j.createFromNpyFile(refFile);
@@ -212,9 +215,9 @@ public class TestVLMOnnxReference {
     public void testDecoder() throws Exception {
         log.info("=== decoder comparison ===");
 
-        File refEmbeds = new File("/tmp/ref_decoder_input_embeds.npy");
-        File refLogits = new File("/tmp/ref_decoder_output_logits.npy");
-        assertTrue(refEmbeds.exists(), "Run Python reference script first");
+        File refEmbeds = new File(REF_DIR, "ref_decoder_input_embeds.npy");
+        File refLogits = new File(REF_DIR, "ref_decoder_output_logits.npy");
+        assumeTrue(refEmbeds.exists(), "Run Python reference script first to generate " + refEmbeds.getAbsolutePath());
 
         INDArray inputEmbeds = Nd4j.createFromNpyFile(refEmbeds).castTo(DataType.FLOAT);
         INDArray expectedLogits = Nd4j.createFromNpyFile(refLogits);
@@ -279,10 +282,18 @@ public class TestVLMOnnxReference {
     public void testDirectConv() throws Exception {
         log.info("=== direct conv2d via nd4j op ===");
 
-        INDArray input = Nd4j.createFromNpyFile(new File("/tmp/ref_intermediate__GatherND_output_0.npy")); // [1,3,512,512] NCHW
-        INDArray weight = Nd4j.createFromNpyFile(new File("/tmp/ref_conv_weight.npy")); // [768,3,16,16] OIHW
-        INDArray bias = Nd4j.createFromNpyFile(new File("/tmp/ref_conv_bias.npy"));     // [768]
-        INDArray expected = Nd4j.createFromNpyFile(new File("/tmp/ref_conv_output.npy")); // [1,768,32,32] NCHW
+        File refIntermediateConv = new File(REF_DIR, "ref_intermediate__GatherND_output_0.npy");
+        File refConvWeight = new File(REF_DIR, "ref_conv_weight.npy");
+        File refConvBias = new File(REF_DIR, "ref_conv_bias.npy");
+        File refConvOutput = new File(REF_DIR, "ref_conv_output.npy");
+        assumeTrue(refIntermediateConv.exists(), "Run Python reference script first to generate " + refIntermediateConv.getAbsolutePath());
+        assumeTrue(refConvWeight.exists(), "Run Python reference script first to generate " + refConvWeight.getAbsolutePath());
+        assumeTrue(refConvBias.exists(), "Run Python reference script first to generate " + refConvBias.getAbsolutePath());
+        assumeTrue(refConvOutput.exists(), "Run Python reference script first to generate " + refConvOutput.getAbsolutePath());
+        INDArray input = Nd4j.createFromNpyFile(refIntermediateConv); // [1,3,512,512] NCHW
+        INDArray weight = Nd4j.createFromNpyFile(refConvWeight); // [768,3,16,16] OIHW
+        INDArray bias = Nd4j.createFromNpyFile(refConvBias);     // [768]
+        INDArray expected = Nd4j.createFromNpyFile(refConvOutput); // [1,768,32,32] NCHW
 
         log.info("Input NCHW: {}", Arrays.toString(input.shape()));
         log.info("Weight OIHW: {}", Arrays.toString(weight.shape()));
@@ -353,12 +364,12 @@ public class TestVLMOnnxReference {
     public void testIsolatedConv() throws Exception {
         log.info("=== isolated conv2d comparison ===");
 
-        File refInput = new File("/tmp/ref_intermediate__GatherND_output_0.npy");
-        File refOutput = new File("/tmp/ref_conv_output.npy");
-        File convModel = new File("/tmp/test_conv_only.onnx");
-        assertTrue(refInput.exists(), "Run Python reference script first");
-        assertTrue(refOutput.exists(), "Run Python reference script first");
-        assertTrue(convModel.exists(), "Run Python reference script first");
+        File refInput = new File(REF_DIR, "ref_intermediate__GatherND_output_0.npy");
+        File refOutput = new File(REF_DIR, "ref_conv_output.npy");
+        File convModel = new File(REF_DIR, "test_conv_only.onnx");
+        assumeTrue(refInput.exists(), "Run Python reference script first to generate " + refInput.getAbsolutePath());
+        assumeTrue(refOutput.exists(), "Run Python reference script first to generate " + refOutput.getAbsolutePath());
+        assumeTrue(convModel.exists(), "Run Python reference script first to generate " + convModel.getAbsolutePath());
 
         INDArray input = Nd4j.createFromNpyFile(refInput);
         INDArray expected = Nd4j.createFromNpyFile(refOutput);
@@ -372,8 +383,8 @@ public class TestVLMOnnxReference {
         log.info("Conv model inputs: {}, outputs: {}", model.inputs(), model.outputs());
 
         // Check loaded weights
-        INDArray refWeight = Nd4j.createFromNpyFile(new File("/tmp/ref_conv_weight.npy"));
-        INDArray refBias = Nd4j.createFromNpyFile(new File("/tmp/ref_conv_bias.npy"));
+        INDArray refWeight = Nd4j.createFromNpyFile(new File(REF_DIR, "ref_conv_weight.npy"));
+        INDArray refBias = Nd4j.createFromNpyFile(new File(REF_DIR, "ref_conv_bias.npy"));
         for (String varName : model.getVariables().keySet()) {
             var sdVar = model.getVariable(varName);
             if (sdVar.getArr() != null && sdVar.getArr().length() > 1) {

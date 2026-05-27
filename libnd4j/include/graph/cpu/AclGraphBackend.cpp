@@ -24,6 +24,7 @@
 #include <graph/DspDiagnostics.h>
 #include <ops/declarable/platform/armcompute/ArmComputeVersionProvider.h>
 #include <ops/declarable/platform/armcompute/armcomputeUtils.h>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -31,8 +32,12 @@ namespace graph {
 // ─── Singleton ──────────────────────────────────────────────────────────────
 
 AclGraphBackend& AclGraphBackend::getInstance() {
-  static AclGraphBackend instance;
-  return instance;
+  static AclGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new AclGraphBackend();
+  });
+  return *instance;
 }
 
 AclGraphBackend::AclGraphBackend() = default;

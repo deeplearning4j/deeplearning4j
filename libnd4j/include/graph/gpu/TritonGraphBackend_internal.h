@@ -82,13 +82,24 @@ inline bool ptxUsesExternSharedMemory(const std::string& ptxText) {
 inline std::string configuredOrDefaultTritonDir(const std::string& configured,
                                                 const std::string& home,
                                                 const char* defaultLeaf) {
+  // Priority 1: explicit caller-supplied path (from ND4J_TRITON_CACHE_DIR /
+  // ND4J_TRITON_DUMP_DIR env vars read by TritonConfig).
   if (!configured.empty()) {
     return configured;
   }
-  if (!home.empty()) {
-    return home + "/.nd4j/" + defaultLeaf;
+  // Priority 2: env var ND4J_TRITON_CACHE_DIR checked directly so callers
+  // that pass an empty `configured` still honour the env var.
+  const char* envDir = std::getenv("ND4J_TRITON_CACHE_DIR");
+  if (envDir && envDir[0] != '\0') {
+    std::string d(envDir);
+    if (d.back() != '/' && d.back() != '\\') d += '/';
+    return d + defaultLeaf;
   }
-  return std::string(".nd4j/") + defaultLeaf;
+  // Priority 3: default to ~/.kompile/cache/triton/<leaf>.
+  if (!home.empty()) {
+    return home + "/.kompile/cache/triton/" + defaultLeaf;
+  }
+  return std::string(".kompile/cache/triton/") + defaultLeaf;
 }
 
 // ─── Slot resolution helpers ─────────────────────────────────────────────────

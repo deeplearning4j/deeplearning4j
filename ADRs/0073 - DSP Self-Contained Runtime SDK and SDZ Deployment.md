@@ -147,6 +147,17 @@ Platform packaging goals remain:
 - fallback marker (reserved for richer telemetry),
 - execution duration.
 
+### 9. Disk Plan Cache Integration
+
+Serialized DSP plan bytes are now persisted to `~/.kompile/cache/dsp/dsp_plan_cache/` (see ADR 0061, *Disk Plan Persistence* section). For SDK deployment:
+
+- SDZ/SDNB models produce deterministic plan bytes on every load — the disk cache eliminates recompilation on process restart.
+- Pre-compiled plans can be distributed via the override directory (`dsp_plan_override/`), analogous to the existing Triton override mechanism.
+- The C runtime (`sdxLoadBundle` → `compileModelPlan`) benefits automatically when the Java plan cache populates the disk cache on first run.
+- Future: SDZ archives can optionally embed plan `.bin`/`.meta` files alongside the model, enabling single-artifact deployment with pre-warmed plan cache.
+
+Configuration: `ND4J_DSP_PLAN_CACHE_DIR`, `ND4J_DSP_PLAN_CACHE_DISK_ENABLED`, `ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE`, `ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR`.
+
 ## Consequences
 
 ### Advantages
@@ -156,6 +167,7 @@ Platform packaging goals remain:
 - Reuse of native plan compiler/executor preserves behavioral parity.
 - Backend policy is explicit per platform and debuggable via execution reports.
 - CUDA and AMD execution policies are represented in the public ABI.
+- Disk plan persistence eliminates multi-second plan recompilation on process restart.
 
 ### Disadvantages
 
@@ -178,3 +190,4 @@ Platform packaging goals remain:
 - `libnd4j/include/legacy/impl/DspRuntimeC.cpp`
 - `libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp`
 - `libnd4j/include/graph/impl/SdzReader.cpp`
+- `nd4j/.../samediff/execution/DspPlanDiskCache.java`

@@ -473,7 +473,7 @@ public class DynamicShapePlan implements Closeable {
 
     /** Magic bytes identifying a serialized DSP plan. */
     private static final int DSP_MAGIC = 0x44535031;  // "DSP1" in big-endian
-    /** Serialization format version. V2 adds legacyOpType + legacyOpNum. V3 adds control flow. V4 adds external input names. V5 adds string args. */
+    /** Serialization format version. V2 adds legacyOpType + legacyOpNum. V3 adds control flow. V4 adds external input names. V5 adds string args. V6 invalidates stale disk cache (bArgs fix). */
     private static final int DSP_VERSION = 5;
 
     /**
@@ -664,6 +664,38 @@ public class DynamicShapePlan implements Closeable {
         byte[] result = new byte[buf.remaining()];
         buf.get(result);
         return result;
+    }
+
+    // ─── Structure Hash for Disk Cache ────────────────────────────────────────
+
+    /**
+     * Compute the FNV-1a 64-bit hash of serialized plan bytes.
+     * This hash serves as the disk cache key — it uniquely identifies the
+     * graph structure (ops, wiring, args, control flow, outputs).
+     *
+     * <p>Matches the FNV-1a implementation in {@code DspHashUtils.h} (C++ side)
+     * and {@code TritonGraphBackend_cache.cpp::computeDiskCacheHash()}.</p>
+     *
+     * @param serializedPlanBytes output of {@link #serialize()}
+     * @return FNV-1a 64-bit hash, or 0 if input is null/empty
+     */
+    public static long computeStructureHash(byte[] serializedPlanBytes) {
+        if (serializedPlanBytes == null || serializedPlanBytes.length == 0) return 0L;
+        long hash = 0xcbf29ce484222325L;  // FNV-1a offset basis
+        for (byte b : serializedPlanBytes) {
+            hash ^= (b & 0xFFL);
+            hash *= 0x100000001b3L;       // FNV-1a prime
+        }
+        return hash;
+    }
+
+    /**
+     * Compute the structure hash of this plan by serializing it first.
+     *
+     * @return FNV-1a 64-bit hash of the serialized plan bytes
+     */
+    public long computeStructureHash() {
+        return computeStructureHash(serialize());
     }
 
     /**

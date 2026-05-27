@@ -264,6 +264,7 @@ void autoregressiveDecodeCuda(
     double temperature,
     int topK,
     double topP,
+    double repPenalty,
     LaunchContext* context,
     AutoregressiveDecodeConfig* config) {
 
@@ -558,7 +559,7 @@ void autoregressiveDecodeCuda(
         //
         // GDN/conv state ext inputs are marked variable (NOT placeholder) via
         // markExternalInputVariable(). Placeholder inputs (input_ids etc.) are
-        // marked via markExternalInputPlaceholder(). syncExternalInputs() only
+        // marked via markExternalInputPlaceholder(). performPreReplaySync() only
         // forces H2D for placeholders; device-written variables (GDN/conv state)
         // use isPrimaryActual() — the D2D copy above left device authoritative,
         // so H2D is correctly skipped (would clobber with stale host data).
@@ -669,11 +670,31 @@ void autoregressiveDecodeCuda(
         // Get logits from plan output at config->logitsOutputIdx
         NDArray* logitsOutput = planOutputs[config->logitsOutputIdx];
 
-        // logitsOutput shape: [1, seqLen, vocabSize]
-        // For decode steps (seqLen=1), it's [1, 1, vocabSize] — take [0, 0, :]
-        // For prefill (seqLen=N), take [0, N-1, :] (last position)
-        LongType logitsSeqLen = logitsOutput->sizeAt(1);
-        LongType logitsVocab = logitsOutput->sizeAt(2);
+        // Validate logits rank before accessing shape dimensions.
+        // Expected: rank 2 [batch, vocabSize] or rank 3 [batch, seqLen, vocabSize].
+        // A rank-0 (scalar) output means the plan returned a wrong/stale output slot.
+        auto logitsRank = logitsOutput->rankOf();
+        REQUIRE_TRUE(logitsRank >= 2 && logitsRank <= 3, 0,
+                     "autoregressive_decode: logitsOutput rank is %lld (expected 2 or 3) at step %d. "
+                     "lengthOf=%lld, logitsOutputIdx=%d, numPlanOutputs=%d. "
+                     "The plan output at this index is not logits — check logitsOutputIdx mapping.",
+                     (long long)logitsRank, step,
+                     (long long)logitsOutput->lengthOf(),
+                     config->logitsOutputIdx, numPlanOutputs);
+
+        // logitsOutput shape: [batch, seqLen, vocabSize] (rank 3) or [batch, vocabSize] (rank 2)
+        // For rank 3: decode steps have seqLen=1 → [1, 1, vocabSize], prefill → [1, N, vocabSize]
+        // For rank 2: always [batch, vocabSize] — treat as seqLen=1
+        LongType logitsSeqLen;
+        LongType logitsVocab;
+        if (logitsRank == 3) {
+            logitsSeqLen = logitsOutput->sizeAt(1);
+            logitsVocab = logitsOutput->sizeAt(2);
+        } else {
+            // rank 2: [batch, vocabSize]
+            logitsSeqLen = 1;
+            logitsVocab = logitsOutput->sizeAt(1);
+        }
 
         // Diagnostic: print logits pointer, buffer identity, and first few values
         if (step < 10 && env_isVerbose()) {
@@ -731,10 +752,23 @@ void autoregressiveDecodeCuda(
                                   (stream, logitsPtr, sampledToken->specialBuffer(), logitsVocab),
                                   SD_COMMON_TYPES);
         } else {
-            // Sampling: use tokenSampleCuda with greedy fallback on logits pointer
-            // For sampling, we pass the full logits output (tokenSampleCuda handles last-pos extraction)
-            tokenSampleCuda(logitsOutput, sampledToken, temperature, topK, topP,
-                            static_cast<LongType>(step), context);
+            // Sampling with repetition penalty: use tokenSampleWithPenaltiesCuda
+            // Build a view of generated tokens so far for repetition penalty.
+            // generatedTokenIds is [maxNewTokens] but only indices 0..step-1 are valid.
+            // Pass a view so the penalty kernel only reads valid tokens.
+            if (step > 0) {
+                std::vector<LongType> range = {0, static_cast<LongType>(step)};
+                NDArray* tokensSoFar = (*generatedTokenIds)(range);
+                tokenSampleWithPenaltiesCuda(logitsOutput, sampledToken, tokensSoFar,
+                                             temperature, topK, topP, 0.0 /*minP*/,
+                                             repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,
+                                             static_cast<LongType>(step), context);
+                delete tokensSoFar;
+            } else {
+                // No tokens generated yet — sample without penalty
+                tokenSampleCuda(logitsOutput, sampledToken, temperature, topK, topP,
+                                static_cast<LongType>(step), context);
+            }
         }
 
         NDArray::registerSpecialUse({sampledToken}, {logitsOutput});

@@ -26,7 +26,10 @@ class TestOnnxFrameworkImporter {
     fun testOther2() {
         Nd4j.getEnvironment().isFuncTracePrintJavaOnly = true
         val importer = OnnxFrameworkImporter()
-        val filePath = "/home/agibsonccc/Documents/GitHub/deeplearning4j/bge-base-en-v1.5-optimized.onnx";
+        val filePath = System.getProperty("bge.onnx.model.path",
+                System.getProperty("user.dir") + "/bge-base-en-v1.5-optimized.onnx")
+        org.junit.jupiter.api.Assumptions.assumeTrue(File(filePath).exists(),
+                "ONNX model not found at $filePath. Set -Dbge.onnx.model.path to provide the model.")
         val runner = OnnxRuntimeRunner(filePath)
         val imported = importer.runImport(filePath);
 

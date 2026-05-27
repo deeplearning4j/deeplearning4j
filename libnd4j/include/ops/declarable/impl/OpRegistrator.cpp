@@ -22,6 +22,7 @@
 
 #include <ops/declarable/OpRegistrator.h>
 
+#include <mutex>
 #include <sstream>
 
 namespace sd {
@@ -51,8 +52,12 @@ __registratorSynonym<OpName>::__registratorSynonym(const char* name, const char*
 ///////////////////////////////
 
 OpRegistrator& OpRegistrator::getInstance() {
-  static OpRegistrator instance;
-  return instance;
+  static OpRegistrator* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new OpRegistrator();
+  });
+  return *instance;
 }
 
 void OpRegistrator::updateMSVC(LongType newHash, std::string& oldName) {
@@ -205,25 +210,34 @@ DeclarableOp* OpRegistrator::getOperation(const char* name) {
  * @return
  */
 DeclarableOp* OpRegistrator::getOperation(LongType hash) {
-  if (!_declarablesLD.count(hash)) {
-    if (!_msvc.count(hash)) {
-      sd_printf("Unknown D operation requested by hash: [%lld]\n", hash);
-      return nullptr;
-    } else {
-      _locker.lock();
+  // All accesses to _declarablesLD must be under the lock because concurrent
+  // insert() can trigger a rehash, invalidating iterators/buckets that a
+  // lockless count()/at() is traversing → heap corruption.
+  _locker.lock();
 
-      auto str = _msvc.at(hash);
-      auto op = _declarablesD.at(str);
-      auto oHash = op->getOpDescriptor()->getHash();
-
-      std::pair<LongType, DeclarableOp*> pair(oHash, op);
-      _declarablesLD.insert(pair);
-
-      _locker.unlock();
-    }
+  auto it = _declarablesLD.find(hash);
+  if (it != _declarablesLD.end()) {
+    auto* op = it->second;
+    _locker.unlock();
+    return op;
   }
 
-  return _declarablesLD.at(hash);
+  // Not in the fast-lookup map — check the string-keyed map
+  if (!_msvc.count(hash)) {
+    _locker.unlock();
+    sd_printf("Unknown D operation requested by hash: [%lld]\n", hash);
+    return nullptr;
+  }
+
+  auto str = _msvc.at(hash);
+  auto op = _declarablesD.at(str);
+  auto oHash = op->getOpDescriptor()->getHash();
+
+  std::pair<LongType, DeclarableOp*> pair(oHash, op);
+  _declarablesLD.insert(pair);
+
+  _locker.unlock();
+  return op;
 }
 
 DeclarableOp* OpRegistrator::getOperation(std::string& name) {

@@ -780,6 +780,18 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
     return builder.create<mlir::arith::DivFOp>(loc, input, scalarSplat);
   }
 
+  if (opLower == "rsub_scalar") {
+    float scalar = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 0.0f;
+    auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
+    return builder.create<mlir::arith::SubFOp>(loc, scalarSplat, input);
+  }
+
+  if (opLower == "rdiv_scalar") {
+    float scalar = (slot.args.numTArgs > 0 && slot.args.tArgs) ? static_cast<float>(slot.args.tArgs[0]) : 1.0f;
+    auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
+    return builder.create<mlir::arith::DivFOp>(loc, scalarSplat, input);
+  }
+
   std::string msg = "TritonIRBuilder::emitUnaryElementwise: unknown op '" + opName +
                     "' — categorized as UNARY_ELEMENTWISE but has no emitter. "
                     "Either add an emitter or recategorize this op.";

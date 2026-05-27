@@ -25,6 +25,7 @@
 #include <graph/DspDiagnostics.h>
 
 #include <cstring>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -44,8 +45,12 @@ HexagonGraphBackend::~HexagonGraphBackend() {
 }
 
 HexagonGraphBackend* HexagonGraphBackend::getInstance() {
-  static HexagonGraphBackend instance;
-  return &instance;
+  static HexagonGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new HexagonGraphBackend();
+  });
+  return instance;
 }
 
 // ── NPU Context ─────────────────────────────────────────────────────────────

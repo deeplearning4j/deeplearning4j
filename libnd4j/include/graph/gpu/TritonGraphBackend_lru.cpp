@@ -125,7 +125,7 @@ void TritonGraphBackend::registerLoadedKernel(CompiledKernel* k, int deviceId) {
 // during a later eviction sweep.
 void TritonGraphBackend::unregisterLoadedKernel(CompiledKernel* k) {
   if (k == nullptr) return;
-  std::lock_guard<std::mutex> lock(loadedKernelsMtx_);
+  std::unique_lock<std::mutex> lock(loadedKernelsMtx_);
   for (int dev = 0; dev < kMaxTritonDevices; ++dev) {
     auto& list = loadedKernels_[dev];
     auto it = std::find(list.begin(), list.end(), k);
@@ -146,7 +146,7 @@ void TritonGraphBackend::evictIfOverBudget(int deviceId, CompiledKernel* dontEvi
       sd::Environment::getInstance().triton().moduleResidencyBudgetBytes();
   if (budget <= 0) return;
 
-  std::lock_guard<std::mutex> lock(loadedKernelsMtx_);
+  std::unique_lock<std::mutex> lock(loadedKernelsMtx_);
 
   int evicted = 0;
   size_t bytesFreed = 0;
@@ -188,9 +188,9 @@ void TritonGraphBackend::evictIfOverBudget(int deviceId, CompiledKernel* dontEvi
     // Drop the lock briefly so the actual cuModuleUnload (which serializes on
     // the CUDA driver loadModuleMtx inside TritonTargetDispatch) does not
     // hold our LRU mutex.  Re-acquire after.
-    loadedKernelsMtx_.unlock();
+    lock.unlock();
     TritonTargetDispatch::unloadModule(victimModule);
-    loadedKernelsMtx_.lock();
+    lock.lock();
 
     ++evicted;
     bytesFreed += victimBytes;

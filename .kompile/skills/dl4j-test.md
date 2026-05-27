@@ -16,7 +16,10 @@ You are a deeplearning4j test runner expert. The user wants: {{args}}
 - NEVER use `git checkout`, `git stash`, `git reset --hard`, `git clean` — BANNED
 - Environment vars do NOT propagate through surefire — use `-D` Maven properties
 - Maven: `/home/agibsonccc/dev-apps/mvn/bin/mvn`
-- Fix ALL errors — "pre-existing" is BANNED
+- Fix ALL errors — if an issue is a blocker, FIX it no matter what
+- Do NOT write one-off `syncToDevice()` calls — assume basic CUDA device syncing works
+- If you suspect an infra issue, focus on simpler causes first (wrong shapes, types, data flow)
+- For debugging, use: `Nd4j.getEnvironment().setDebug(true); Nd4j.getEnvironment().setVerbose(true);` — prints all shapes and sample values from all ops without rebuilding
 
 ## RUNNING TESTS
 

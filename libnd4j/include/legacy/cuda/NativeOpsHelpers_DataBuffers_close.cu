@@ -20,6 +20,7 @@
 #include <system/env_functions.h>
 #include <cuda_runtime.h>
 #include <atomic>
+#include <cstdio>
 #include <legacy/NativeOps.h>
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -178,8 +179,15 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
   if (db != nullptr) {
     auto evt = db->writeEvent();
     if (evt != nullptr && db->writeEventRecorded()) {
-      cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(evt);
-      cudaEventSynchronize(*event);
+      auto syncErr = cudaEventSynchronize(reinterpret_cast<cudaEvent_t>(evt));
+      if (syncErr != cudaSuccess) {
+        g_dbClose_deviceError.fetch_add(1, std::memory_order_relaxed);
+        char errMsg[256];
+        std::snprintf(errMsg, sizeof(errMsg),
+                      "dbClose: cudaEventSynchronize failed for write event on buffer %p: %s",
+                      dataBuffer, cudaGetErrorString(syncErr));
+        THROW_EXCEPTION(errMsg);
+      }
     }
   }
 

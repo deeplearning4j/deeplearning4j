@@ -54,14 +54,14 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @Slf4j
 public class BgeModelLoadingTest extends BaseND4JTest {
 
-    // Hardcoded paths - adjust these for your environment
-    private static final String MODEL_PATH = "/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/bge-base-en-v1.5.sdz";
+    private static final String MODEL_PATH = System.getProperty("bge.model.path",
+            System.getProperty("user.dir") + "/bge-base-en-v1.5.sdz");
 
     // ONNX model path for fresh import
-    private static final String ONNX_MODEL_PATH = "/home/agibsonccc/Documents/GitHub/kompile/anserini-models/bge-base-en-v1.5/bge-base-en-v1.5.onnx";
+    private static final String ONNX_MODEL_PATH = System.getProperty("bge.onnx.model.path");
 
-    private static final String VOCAB_PATH = System.getProperty("user.home")
-            + "/.kompile/models/anserini/encoders/bge-base-en-v1.5/vocab.txt";
+    private static final String VOCAB_PATH = System.getProperty("bge.vocab.path",
+            System.getProperty("user.home") + "/.kompile/models/anserini/encoders/bge-base-en-v1.5/vocab.txt");
 
     @Override
     public long getTimeoutMilliseconds() {

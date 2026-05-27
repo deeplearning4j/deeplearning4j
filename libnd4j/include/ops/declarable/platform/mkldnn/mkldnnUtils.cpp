@@ -23,6 +23,7 @@
 #include "mkldnnUtils.h"
 
 #include <dnnl_types.h>
+#include <mutex>
 #include <ops/declarable/helpers/convolutions.h>
 
 using namespace dnnl;
@@ -363,14 +364,13 @@ void getONEDNNMemoryDescLrn(NDArray* src, NDArray* diff_src, NDArray* dst,
 
 //////////////////////////////////////////////////////////////////////////
 dnnl::engine& getEngine(void* ptr) {
-  // Initialize primitive cache with larger capacity (one-time)
-  static bool cacheInitialized = false;
-  if (!cacheInitialized) {
+  // -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
+  static std::once_flag cacheInitFlag;
+  std::call_once(cacheInitFlag, []() {
     // Set primitive cache capacity to 2048 (default is typically 1024)
     // This helps when running inference with repeating tensor shapes
     dnnl::set_primitive_cache_capacity(2048);
-    cacheInitialized = true;
-  }
+  });
   auto eng = reinterpret_cast<dnnl::engine*>(ptr);
   return *eng;
 }

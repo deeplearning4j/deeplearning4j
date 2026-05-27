@@ -27,6 +27,7 @@
 
 #include <cstring>
 #include <memory>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -38,8 +39,12 @@ TpuGraphBackend::TpuGraphBackend() {
 }
 
 TpuGraphBackend* TpuGraphBackend::getInstance() {
-  static TpuGraphBackend instance;
-  return &instance;
+  static TpuGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new TpuGraphBackend();
+  });
+  return instance;
 }
 
 // ── Availability ────────────────────────────────────────────────────────────

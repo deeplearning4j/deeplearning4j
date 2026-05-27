@@ -1,0 +1,15 @@
+{
+  "id" : "214874d5",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 1,
+  "passed" : 1,
+  "notes" : "DynamicShapePlanPoolingTest#testGrowingShapesWithPoolEviction passed after fused-chain tail CUDA graph/fixup handling. Verifies growing-shape pool eviction still returns final fused output x*2+1 rather than intermediate x*2.",
+  "tags" : "dsp,cuda,triton,pooling,fused-chain,shape-pool",
+  "timestamp" : "2026-05-27T02:59:00.644487Z"
+}

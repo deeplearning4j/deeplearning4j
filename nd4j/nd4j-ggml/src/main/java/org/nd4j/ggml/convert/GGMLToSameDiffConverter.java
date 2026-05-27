@@ -278,8 +278,16 @@ public class GGMLToSameDiffConverter {
                 totalTensors, context != null ? "enabled" : "disabled");
 
         for (GGMLTensorInfo info : tensorInfos) {
-            byte[] data = reader.readTensorData(info);
-            INDArray array = convertTensorData(data, info);
+            INDArray array;
+            if (info.getDataType().isQuantized()) {
+                // Quantized tensors need dequantization — use byte[] path
+                byte[] data = reader.readTensorData(info);
+                array = convertTensorData(data, info);
+            } else {
+                // Non-quantized tensors: use direct ByteBuffer to avoid heap copies
+                ByteBuffer directData = reader.readTensorDataDirect(info);
+                array = convertTensorDataDirect(directData, info);
+            }
             weights.put(info.getName(), array);
 
             // Register with loading context for batch GPU transfer
@@ -393,6 +401,41 @@ public class GGMLToSameDiffConverter {
                     return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
                 }
         }
+    }
+
+    /**
+     * Convert tensor data from a direct ByteBuffer, avoiding the intermediate byte[] heap copy.
+     * Used for non-quantized tensors where the raw bytes can be used directly.
+     */
+    private INDArray convertTensorDataDirect(ByteBuffer directData, GGMLTensorInfo info) {
+        long[] shape = reverseShape(info.getShape());
+        GGMLDataType dataType = info.getDataType();
+        DataType nd4jType = dataType.getNd4jType();
+        if (nd4jType == null) {
+            throw new IllegalStateException("No ND4J type mapping for: " + dataType);
+        }
+
+        long numElements = 1;
+        for (long dim : shape) numElements *= dim;
+        if (numElements < 1) numElements = 1;
+
+        DataType targetType = getTargetDataType();
+
+        // directData is already a direct ByteBuffer in little-endian order.
+        // Create ND4J DataBuffer directly from it — no heap copy needed.
+        org.nd4j.linalg.api.buffer.DataBuffer buf = Nd4j.createBuffer(directData, nd4jType, (int) numElements);
+        INDArray array = Nd4j.create(buf, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
+
+        // Ensure host has correct data for later transfers
+        Nd4j.getAffinityManager().ensureLocation(array,
+                org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+
+        // Cast to target dtype if needed (e.g. F16 norm weights → F32)
+        if (targetType != null && targetType != nd4jType) {
+            array = array.castTo(targetType);
+        }
+
+        return array;
     }
 
     private INDArray handleNonQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape) {

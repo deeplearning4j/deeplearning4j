@@ -2077,4 +2077,61 @@ fun NN() = Namespace("NN") {
             """.trimIndent()
         }
     }
+
+    Op("fusedMRoPE") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedMRoPE"
+        Input(NUMERIC, "input") { description = "Input tensor [batch, seq_len, num_heads, head_dim]" }
+        Input(INT, "posT") { description = "Temporal position IDs [batch, seq_len]" }
+        Input(INT, "posH") { description = "Height position IDs [batch, seq_len]" }
+        Input(INT, "posW") { description = "Width position IDs [batch, seq_len]" }
+        Arg(INT, "sectionT") { description = "Temporal frequency band size" }
+        Arg(INT, "sectionH") { description = "Height frequency band size" }
+        Arg(INT, "sectionW") { description = "Width frequency band size" }
+        Arg(BOOL, "interleaved") { description = "Whether to interleave frequency bands (true for Qwen3-VL)" }
+        Arg(NUMERIC, "freqBase") { description = "Base frequency for RoPE computation" }
+
+        Output(NUMERIC, "output") { description = "Input with M-RoPE applied [batch, seq_len, num_heads, head_dim]" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Fused Multimodal Rotary Position Embedding (M-RoPE).
+
+             Applies rotary embeddings with separate temporal/height/width position
+             encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head
+             dimension is split into 3 frequency band sections, each rotated using
+             its own position vector.
+
+             For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:
+               Temporal band: dims [0..24) rotated by temporal positions
+               Height band: dims [24..44) rotated by spatial height positions
+               Width band: dims [44..64) rotated by spatial width positions
+            """.trimIndent()
+        }
+    }
+
+    Op("visionEmbeddingMerge") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "VisionEmbeddingMerge"
+        Input(NUMERIC, "textEmbeddings") { description = "Text token embeddings [batch, seqLen, hiddenDim]" }
+        Input(NUMERIC, "visionEmbeddings") { description = "Vision token embeddings [batch, visionTokens, hiddenDim]" }
+        Input(INT, "tokenIds") { description = "Token ID array [batch, seqLen]" }
+        Arg(LONG, "targetTokenId") { description = "The token ID to replace with vision embeddings" }
+
+        Output(NUMERIC, "output") { description = "Merged embeddings [batch, seqLen, hiddenDim]" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Scatter vision embeddings into text embeddings at target token positions.
+
+             Replaces positions in the text embedding sequence where the token ID
+             matches targetTokenId with sequential vision embeddings. Uses a two-pass
+             approach on CUDA (prefix sum + scatter) that runs entirely on device
+             with no host round-trips.
+
+             Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision
+             encoder output into the language model's input embedding sequence.
+            """.trimIndent()
+        }
+    }
 }

@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <mutex>
 
 namespace sd {
 namespace ops {
@@ -42,8 +43,12 @@ std::string NativeOpExecutor::getName() const {
 }
 
 KernelAutoTuner& KernelAutoTuner::getInstance() {
-  static KernelAutoTuner instance;
-  return instance;
+  static KernelAutoTuner* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new KernelAutoTuner();
+  });
+  return *instance;
 }
 
 BenchmarkResult KernelAutoTuner::benchmark(graph::Context& context, KernelExecutor* executor) {

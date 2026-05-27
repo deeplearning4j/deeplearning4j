@@ -1,0 +1,17 @@
+{
+  "id" : "c74a69de",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 448,
+  "passed" : 445,
+  "failed" : 3,
+  "skipped" : 0,
+  "notes" : "DspSlotLifecycleAuditTest failed 3/448 after async DSP changes. Failures: testFreshInputCloseBetween attnSingleLayer/PTX_JIT#1/L0_ln2 actual all zeros; testCloseWeightBetweenReplays attnSingleLayer/AUTO warmup#0 small ln2 mismatch; testReplayAccuracy reshapeOverConstant/EMULATED_REPLAY actual missing +0.1 offset. Need root-cause fix in DSP execution/lifecycle, not test relaxation.",
+  "tags" : "cuda,triton,dsp,slot-lifecycle,regression",
+  "timestamp" : "2026-05-26T23:52:14.907723Z"
+}

@@ -31,6 +31,7 @@
 #include <types/types.h>
 
 #include <cstring>
+#include <mutex>
 #include <system/selective_rendering.h>
 namespace sd {
 
@@ -55,8 +56,12 @@ ConstantHelper::~ConstantHelper() {
 }
 
 ConstantHelper &ConstantHelper::getInstance() {
-  static ConstantHelper instance;
-  return instance;
+  static ConstantHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ConstantHelper();
+  });
+  return *instance;
 }
 
 void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {

@@ -1,0 +1,17 @@
+{
+  "id" : "0ea5ddcf",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 181,
+  "passed" : 181,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Composite mixed native/Triton replay coverage passed. Diagnostics clean: rawFallback=0, lifecycle=0, missingOrdered=0, capturePreallocWaitFail=0, ZERO_KERNEL_SBS=0, captureProducedNoKernels=0, COMPOSITE_CAPTURE_FAIL=0; replaySuccess=1798, COMPOSITE_REPLAY_EXIT=1336; no named CUDA device/stream/event sync calls in log.",
+  "tags" : "cuda,triton,dsp,composite-replay,async-no-sync",
+  "timestamp" : "2026-05-26T23:48:23.137647Z"
+}

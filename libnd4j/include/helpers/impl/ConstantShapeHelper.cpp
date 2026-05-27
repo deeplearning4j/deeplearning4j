@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/shape.h>
 #include <system/Environment.h>
+#include <mutex>
 #include <string>
 
 #ifdef SD_CUDA
@@ -40,8 +41,12 @@ ConstantShapeHelper::ConstantShapeHelper() {
 }
 
 ConstantShapeHelper& ConstantShapeHelper::getInstance() {
- static ConstantShapeHelper instance;
- return instance;
+ static ConstantShapeHelper* instance = nullptr;
+ static std::once_flag initFlag;
+ std::call_once(initFlag, []() {
+   instance = new ConstantShapeHelper();
+ });
+ return *instance;
 }
 
 void ConstantShapeHelper::initializeEarly() {

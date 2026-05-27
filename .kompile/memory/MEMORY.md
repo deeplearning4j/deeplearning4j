@@ -89,3 +89,7 @@
 - [qwen-cuda-decode-root-cause-rms-norm-linear-stride](qwen_cuda_decode_root_cause_rms_norm_linear_stride.md) — [project] [project] ROOT CAUSE FOUND: CUDA Qwen second token garbage — rmsNormLinearFusedKernel assumes C-contiguous weight but...
 - [Fixes applied May 4 batch](fixes_applied_may_4_batch.md) — [project] 6 fixes applied: optimizer orphan var, attention perf (nullify+syncToDevice), diagnostic, test workarounds
 - [CUDA Qwen stream ordering fix](cuda_qwen_stream_ordering_fix_may4.md) — [project] GDN state feedback assign() uses wrong stream; fixed with explicit cudaMemcpyAsync on decode loop stream
+- [DSP native-only all-gap CUDA graph capture fix](dsp_native_only_all_gap_cuda_graph_capture_fix.md) — [project] All-gap DSP segments in AUTO/TRITON must be captured as native-only monolithic CUDA graphs, not zero-node/slot-by-slo...
+- [dsp-concurrent-plan-sharing-async-nosync-clean](dsp_concurrent_plan_sharing_async_nosync_clean.md) — [project] Full DspConcurrentPlanSharingTest passes with clean async DSP diagnostics after prealloc event capture fix
+- [dsp-composite-replay-async-nosync-clean](dsp_composite_replay_async_nosync_clean.md) — [project] DspCompositeReplayTest passes cleanly with async-only DSP composite replay diagnostics
+- [fix-dsp-buffer-alias-external-staging-views](fix_dsp_buffer_alias_external_staging_views.md) — [project] Fixed DSP CUDA graph coverage for transparent view aliases of staged external inputs

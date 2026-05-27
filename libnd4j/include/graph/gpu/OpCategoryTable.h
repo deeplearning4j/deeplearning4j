@@ -178,6 +178,8 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"divide_scalar",     TritonOpCategory::UNARY_ELEMENTWISE},
     {"div_scalar",        TritonOpCategory::UNARY_ELEMENTWISE},
     {"sub_scalar",        TritonOpCategory::UNARY_ELEMENTWISE},
+    {"rsub_scalar",       TritonOpCategory::UNARY_ELEMENTWISE},
+    {"rdiv_scalar",       TritonOpCategory::UNARY_ELEMENTWISE},
 
     // ── Comparison ──
     {"greater",           TritonOpCategory::COMPARISON},

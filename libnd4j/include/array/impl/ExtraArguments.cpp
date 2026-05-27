@@ -31,6 +31,14 @@
 #include <cuda_runtime.h>
 #include <execution/AffinityManager.h>
 #include <memory/cuda/CudaMemoryPool.h>
+
+// Capture-safe helpers defined in ExtraArgumentsCuda.cu (compiled by NVCC).
+// GCC and NVCC have incompatible TLS models, so we access tl_graphExecutionActive
+// indirectly through these wrapper functions.
+namespace sd {
+bool extraArgsCaptureActive();
+void extraArgsCaptureH2D(void* dst, const void* src, size_t bytes);
+}  // namespace sd
 #endif
 
 namespace sd {
@@ -80,7 +88,18 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   }
 
 #ifdef SD_CUDA
-  cudaMemcpy(pointer, target, length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), cudaMemcpyHostToDevice);
+  auto bytes = length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>());
+  if (extraArgsCaptureActive()) {
+    // During CUDA graph capture, synchronous cudaMemcpy on the legacy stream
+    // poisons the capture stream with error 901. Use the async capture path.
+    extraArgsCaptureH2D(pointer, target, bytes);
+  } else {
+    // Outside capture: use cudaMemcpyAsync on cudaStreamPerThread instead of
+    // synchronous cudaMemcpy on the legacy stream (stream 0). Stream 0 causes
+    // error 906 when another thread on the same device is mid-capture.
+    cudaMemcpyAsync(pointer, target, bytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+    cudaStreamSynchronize(cudaStreamPerThread);
+  }
   delete[] target;
 #endif
 }

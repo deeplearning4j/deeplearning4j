@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Benchmark-equivalent page-10 accuracy tests for GenerationPipeline.
@@ -344,12 +345,10 @@ public class TestGenerationPipelineBenchmarkAccuracy {
             pdfFile = new File(configuredPath);
         } else {
             pdfFile = new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
-            if (!pdfFile.exists()) {
-                pdfFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
-            }
         }
 
-        assertTrue(pdfFile.exists(), "Benchmark PDF must exist: " + pdfFile.getAbsolutePath());
+        assumeTrue(pdfFile.exists(), "PDF not found at " + pdfFile.getAbsolutePath()
+                + ". Place pathfinder-mythic.pdf in platform-tests/ or set -Dvlm.test.pdf.path");
         int pdfPage = Integer.getInteger("vlm.test.pdf.page", 10);
         int renderDpi = Integer.getInteger("vlm.test.pdf.dpi", 150);
 

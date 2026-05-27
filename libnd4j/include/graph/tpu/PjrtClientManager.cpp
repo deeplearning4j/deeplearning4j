@@ -23,6 +23,7 @@
 
 #include <cstring>
 #include <dlfcn.h>
+#include <mutex>
 
 namespace sd {
 namespace graph {
@@ -37,8 +38,12 @@ using GetPjrtApiFn = void* (*)();
 // ── Singleton ───────────────────────────────────────────────────────────────
 
 PjrtClientManager& PjrtClientManager::getInstance() {
-  static PjrtClientManager instance;
-  return instance;
+  static PjrtClientManager* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new PjrtClientManager();
+  });
+  return *instance;
 }
 
 // ── Constructor / Destructor ────────────────────────────────────────────────

@@ -108,6 +108,15 @@ class SD_LIB_EXPORT CudaGraphReplayHandle : public GraphReplayHandle {
     return handle_ && handle_->wasLastInstantiateOom();
   }
 
+  /**
+   * Returns the CUDA error code from the last instantiate() call.
+   * 0 = success or not yet attempted.
+   * Delegates to CudaGraphHandle::getLastInstantiateError().
+   */
+  int getLastInstantiateError() const {
+    return handle_ ? handle_->getLastInstantiateError() : 0;
+  }
+
  private:
   std::shared_ptr<sd::cuda::CudaGraphHandle> handle_;
   int deviceId_;

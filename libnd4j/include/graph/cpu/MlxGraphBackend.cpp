@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <mutex>
 
 // MLX C++ API
 #include <mlx/mlx.h>
@@ -40,8 +41,12 @@ MlxGraphBackend::MlxGraphBackend() = default;
 MlxGraphBackend::~MlxGraphBackend() = default;
 
 MlxGraphBackend& MlxGraphBackend::getInstance() {
-  static MlxGraphBackend instance;
-  return instance;
+  static MlxGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new MlxGraphBackend();
+  });
+  return *instance;
 }
 
 bool MlxGraphBackend::isAvailable() const {

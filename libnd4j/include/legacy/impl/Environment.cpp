@@ -25,6 +25,7 @@
 
 #include <system/Environment.h>
 #include <memory/MemoryCounter.h>
+#include <mutex>
 
 // Lifecycle tracker includes for enabling/disabling via Environment setters
 #include <array/NDArrayLifecycleTracker.h>
@@ -67,8 +68,12 @@ Environment::~Environment() {
 }
 
 Environment &Environment::getInstance() {
-  static Environment instance;
-  return instance;
+  static Environment* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new Environment();
+  });
+  return *instance;
 }
 
 bool Environment::isCPU() {

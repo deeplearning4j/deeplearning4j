@@ -463,9 +463,14 @@ void deleteTadPack(sd::TadPack *ptr) {
       g_tadPackRegistry.erase(it);
       // DON'T delete ptr manually - shared_ptr destructor will handle it when refcount reaches 0
     } else {
-      // Not in registry - this might be a TadPack created without going through tadOnlyShapeInfo
-      // Or it's already been removed from registry. Safe to delete directly.
-      delete ptr;
+      // Not in registry — either:
+      // (a) Another thread already called deleteTadPack for the same pointer
+      //     (multiple threads can get the same TadPack* from the shared cache),
+      //     so the shared_ptr was already erased and handled cleanup.
+      // (b) clearCache() removed the trie's reference and the registry entry
+      //     was already erased by a prior deleteTadPack call.
+      // In both cases the TadPack is already freed. Do NOT delete again —
+      // that would be a double-free (SIGSEGV in ConstantOffsetsBuffer destructor).
     }
   }
 }

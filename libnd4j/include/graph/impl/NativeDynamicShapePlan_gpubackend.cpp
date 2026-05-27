@@ -336,7 +336,6 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
       auto& sl = slots_[s];
       if (sl.slotPhase.shapeCacheValid || sl.slotPhase.isSealed()) {
         sl.slotPhase.reset();  // PRIMARY: demote to BUILDING
-        sl.state_ = NativeSlot::SlotState::WARMUP;  // legacy sync
         demoted++;
       }
     }

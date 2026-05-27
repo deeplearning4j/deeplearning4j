@@ -46,6 +46,7 @@
 #include <cctype>
 #include <string>
 #include <sstream>
+#include <thread>
 
 using namespace sd;
 using namespace sd::graph;
@@ -317,6 +318,9 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     key.phShapeContentHash = sd::graph::NativePlanCache::hashShapeInfoContents(ptrs, numPlaceholders);
     key.phCount = numPlaceholders;
     key.graphExecutionMode = graphExecutionMode;
+    // Thread isolation: hash std::this_thread::get_id() into a uint64_t so each
+    // thread gets its own plan instance with independent execution state.
+    key.threadId = std::hash<std::thread::id>{}(std::this_thread::get_id());
 
     // Factory: deserialize and build the plan on cold miss.
     // Mode is passed to fromSerializedPlan so it's set BEFORE buildSegments() —
@@ -1047,6 +1051,7 @@ void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
   auto& seg = segs[segIdx];
   seg.exec.replayHandle.reset();
+  seg.exec.outcome = SegmentExecOutcome::PENDING;
   seg.exec.cachedShapeKey = 0;
   seg.exec.executionCount = 0;
   seg.exec.compilationFailed = false;
@@ -1060,6 +1065,7 @@ void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName
   for (auto& seg : plan->getSegmentsMutable()) {
     if (seg.exec.compiledByBackend == name || name.empty()) {
       seg.exec.replayHandle.reset();
+      seg.exec.outcome = SegmentExecOutcome::PENDING;
       seg.exec.cachedShapeKey = 0;
       seg.exec.executionCount = 0;
       seg.exec.compiledByBackend.clear();

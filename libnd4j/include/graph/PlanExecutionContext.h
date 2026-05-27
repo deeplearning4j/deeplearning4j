@@ -64,7 +64,7 @@ namespace sd {
 namespace graph {
 
 /**
- * SyncLevel — what level of GPU synchronization has been performed.
+ * SyncLevel - what level of GPU ordering has been performed.
  *
  * Used to determine whether GPU memory is safe to read from the host.
  * Higher values subsume lower: FULL_DEVICE implies STREAM implies EVENT.
@@ -73,9 +73,63 @@ enum class SyncLevel : uint8_t {
   NONE = 0,          // No sync — GPU data may be in-flight
   EVENT = 1,         // Event-based ordering — other CUDA streams will wait,
                      //   but HOST reads are NOT safe
-  STREAM = 2,        // cudaStreamSynchronize — DSP stream drained,
-                     //   host reads on DSP output are safe
-  FULL_DEVICE = 3,   // cudaDeviceSynchronize — all GPU work complete
+  STREAM = 2,        // Legacy blocking stream-drain state.
+                     // Host reads on DSP output are safe only for legacy callers.
+  FULL_DEVICE = 3,   // Legacy blocking device-drain state.
+};
+
+/**
+ * PreReplaySyncPhase — ordered state machine for per-step sync deduplication.
+ *
+ * Replaces the scattered booleans (crossStreamSynced, extInputsSynced,
+ * stagingBuffersSynced) with a single enum that enforces ordering:
+ *
+ *   UNSYNCED ──► CROSS_STREAM_DONE ──► EXT_INPUTS_DONE ──► STAGING_DONE
+ *
+ * Each phase subsumes all prior phases. STAGING_DONE implies cross-stream
+ * ordering and H2D sync are both complete. The ordering is NOT arbitrary —
+ * D2D staging reads from device buffers that were just H2D-synced, and H2D
+ * relies on cross-stream ordering to see Java-side .assign() writes.
+ *
+ * Invalid transitions (e.g., jumping from UNSYNCED to STAGING_DONE) are
+ * caught by assertions. This is the single source of truth for "what sync
+ * work has been done this execute() step."
+ *
+ * Lifetime: reset to UNSYNCED at the start of each execute() call (when
+ * PlanExecutionContext is created fresh or reset for reuse).
+ */
+enum class PreReplaySyncPhase : uint8_t {
+  UNSYNCED          = 0,  // Nothing synced yet this step
+  CROSS_STREAM_DONE = 1,  // Event: default stream → DSP stream ordering complete
+  EXT_INPUTS_DONE   = 2,  // H2D sync of variable external inputs complete
+  STAGING_DONE      = 3,  // D2D copy into plan-owned staging buffers complete
+};
+
+/**
+ * ExecTarget — what execution mode this step's sync/staging should prepare for.
+ *
+ * Set ONCE per segment dispatch, read by performPreReplaySync to decide
+ * which sync steps to run and what to return:
+ *
+ *   SBS_ON_LC_STREAM — Slot-by-slot on LaunchContext stream.
+ *     Needs: H2D for variable inputs (isPrimaryActual guard).
+ *     No staging (ops read raw ext arrays on LC stream).
+ *     No cross-stream ordering needed (assign + ops = same stream).
+ *     Returns: raw external arrays.
+ *
+ *   GRAPH_CAPTURE — Pre-capture setup on DSP stream.
+ *     Needs: H2D, cross-stream LC->DSP, D2D staging, same-stream ordering.
+ *     Returns: staged arrays (graph bakes in staging addresses).
+ *
+ *   GRAPH_REPLAY — Graph replay on DSP stream.
+ *     Needs: H2D, cross-stream LC→DSP, D2D staging.
+ *     Async replay reads from staging after event/same-stream ordering.
+ *     Returns: staged arrays.
+ */
+enum class ExecTarget : uint8_t {
+  SBS_ON_LC_STREAM = 0,  // Slot-by-slot: H2D only, no staging, raw ext arrays
+  GRAPH_CAPTURE    = 1,  // Pre-capture: H2D + cross-stream + staging + stream sync
+  GRAPH_REPLAY     = 2,  // Graph replay: H2D + cross-stream + staging (async)
 };
 
 struct PlanExecutionContext {
@@ -92,10 +146,9 @@ struct PlanExecutionContext {
   /**
    * Cross-stream sync event for this execution.
    * Created by platformBeginExecution(), destroyed by platformEndExecution().
-   * Replaces the file-scope thread_local tl_crossStreamEvent in _gpubackend.cpp
-   * and _cuda.cu so the event lifetime is tied to the execution context rather
-   * than the thread. Passed explicitly to syncCrossStream() and used inline in
-   * platformTryFrozenFastPath() and platformBeginExecution().
+   * Used by performPreReplaySync() to record on the default stream and wait
+   * on the DSP stream, establishing ordering between Java-side .assign()
+   * ops and DSP graph replay. Lifetime tied to execution context, not thread.
    */
   cudaEvent_t crossStreamEvent = nullptr;
 
@@ -116,7 +169,7 @@ struct PlanExecutionContext {
   // rather than the live plan fields which may advance mid-execution.
   // ══════════════════════════════════════════════════════════════════════
   int execCount = 0;          // executeCount_ at start of this execute()
-  bool frozen = false;        // shapesFrozen_ at start of this execute()
+  bool frozen = false;        // planLifecycle_.isShapesFrozen() at start of this execute()
 
   // ══════════════════════════════════════════════════════════════════════
   // Precomputed derived state (computed once at execute() entry)
@@ -129,7 +182,7 @@ struct PlanExecutionContext {
   /**
    * Frozen steady-state: frozen && execCount > 1.
    * Controls: event-based sync (vs full sync), stale-buffer scan skip,
-   *           shape key reuse, weight skip in syncExternalInputs.
+   *           shape key reuse, weight skip in performPreReplaySync H2D.
    */
   bool isFrozenSteadyState = false;
 
@@ -141,7 +194,7 @@ struct PlanExecutionContext {
 
   /**
    * Warmup or capture: !frozen || execCount <= 1.
-   * Controls: full cudaStreamSynchronize (vs event-based) in begin/end.
+   * Controls: warmup/capture event ordering in begin/end.
    * Inverse of isFrozenSteadyState when frozen=true, but also true when !frozen.
    */
   bool needsFullSync = true;
@@ -156,7 +209,7 @@ struct PlanExecutionContext {
   /**
    * Whether external input variable/weight classification is available.
    * Derived from: frozen && !externalInputIsVariable_.empty().
-   * Controls syncExternalInputs behavior and frozen fast path.
+   * Controls performPreReplaySync H2D behavior and frozen fast path.
    */
   bool useVariableFilter = false;
 
@@ -212,30 +265,101 @@ struct PlanExecutionContext {
   /** Current sync level — set by platform begin/end and segment dispatch. */
   SyncLevel currentSyncLevel = SyncLevel::NONE;
 
-  /** Number of cudaStreamSynchronize calls during this execute(). */
+  /** Legacy blocking stream-drain counter during this execute(). */
   int streamSyncCount = 0;
 
   /** Number of event-based sync orderings recorded. */
   int eventSyncCount = 0;
 
   // ══════════════════════════════════════════════════════════════════════
-  // Per-step deduplication
+  // Per-step sync state machine
   //
-  // Plan-level operations (external input sync, cross-stream ordering,
-  // input address hashing) only need to run once per step, not per segment.
-  // compositeReplay checks these before running redundant work.
-  // No manual reset needed — PlanExecutionContext is heap-allocated fresh
-  // each execute() call, so all fields start at zero/false.
+  // Plan-level sync operations (cross-stream ordering, H2D ext input sync,
+  // D2D staging copy) only need to run once per step, not per segment.
+  // The sync phase tracks what has been done this step. Each transition
+  // subsumes all prior phases. Enforced ordering prevents bugs where D2D
+  // staging reads stale data because cross-stream ordering was skipped.
+  //
+  // No manual reset needed for fresh contexts (default = UNSYNCED).
+  // For reused contexts, resetSyncPhase() resets to UNSYNCED.
   // ══════════════════════════════════════════════════════════════════════
 
-  /** syncExternalInputs + fingerprint + KV stale check already completed this step. */
-  bool extInputsSynced = false;
+  /** Current sync phase — single source of truth for per-step sync dedup. */
+  PreReplaySyncPhase syncPhase = PreReplaySyncPhase::UNSYNCED;
 
-  /** syncCrossStream already completed this step. */
-  bool crossStreamSynced = false;
+  /**
+   * Execution target for the current segment dispatch.
+   * Set by dispatchSegment / platformTryFrozenFastPath / executeSegmentWithGraph
+   * BEFORE calling performPreReplaySync. Read by performPreReplaySync to decide
+   * which sync steps to run (H2D only vs H2D+staging) and what to return.
+   *
+   * Default: SBS_ON_LC_STREAM (safest — H2D only, no staging).
+   */
+  ExecTarget execTarget = ExecTarget::SBS_ON_LC_STREAM;
 
-  /** Placeholder staging buffers D2D-synced this step. */
-  bool stagingBuffersSynced = false;
+  // ── Sync phase queries ────────────────────────────────────────────────
+  /** Cross-stream event ordering has been recorded this step. */
+  SD_INLINE bool isCrossStreamSynced() const {
+    return syncPhase >= PreReplaySyncPhase::CROSS_STREAM_DONE;
+  }
+
+  /** Variable external inputs have been H2D-synced this step. */
+  SD_INLINE bool isExtInputsSynced() const {
+    return syncPhase >= PreReplaySyncPhase::EXT_INPUTS_DONE;
+  }
+
+  /** D2D staging copy into plan-owned buffers is complete this step. */
+  SD_INLINE bool isStagingBuffersSynced() const {
+    return syncPhase >= PreReplaySyncPhase::STAGING_DONE;
+  }
+
+  // ── Sync phase transitions (validated) ────────────────────────────────
+  /** Record cross-stream sync done. Must be called from UNSYNCED. */
+  SD_INLINE void markCrossStreamSynced() {
+    assert(syncPhase == PreReplaySyncPhase::UNSYNCED &&
+           "markCrossStreamSynced: expected UNSYNCED");
+    syncPhase = PreReplaySyncPhase::CROSS_STREAM_DONE;
+  }
+
+  /** Record ext inputs H2D sync done. Must be at CROSS_STREAM_DONE. */
+  SD_INLINE void markExtInputsSynced() {
+    assert(syncPhase == PreReplaySyncPhase::CROSS_STREAM_DONE &&
+           "markExtInputsSynced: expected CROSS_STREAM_DONE");
+    syncPhase = PreReplaySyncPhase::EXT_INPUTS_DONE;
+  }
+
+  /** Record staging D2D copy done. Must be at EXT_INPUTS_DONE. */
+  SD_INLINE void markStagingBuffersSynced() {
+    assert(syncPhase == PreReplaySyncPhase::EXT_INPUTS_DONE &&
+           "markStagingBuffersSynced: expected EXT_INPUTS_DONE");
+    syncPhase = PreReplaySyncPhase::STAGING_DONE;
+  }
+
+  /** Reset sync phase to UNSYNCED (for reused contexts at step start). */
+  SD_INLINE void resetSyncPhase() {
+    syncPhase = PreReplaySyncPhase::UNSYNCED;
+  }
+
+  /** Display name for the current exec target. */
+  SD_INLINE const char* execTargetName() const {
+    switch (execTarget) {
+      case ExecTarget::SBS_ON_LC_STREAM: return "SBS_ON_LC_STREAM";
+      case ExecTarget::GRAPH_CAPTURE:    return "GRAPH_CAPTURE";
+      case ExecTarget::GRAPH_REPLAY:     return "GRAPH_REPLAY";
+      default:                           return "UNKNOWN";
+    }
+  }
+
+  /** Display name for the current sync phase. */
+  SD_INLINE const char* syncPhaseName() const {
+    switch (syncPhase) {
+      case PreReplaySyncPhase::UNSYNCED:          return "UNSYNCED";
+      case PreReplaySyncPhase::CROSS_STREAM_DONE: return "CROSS_STREAM_DONE";
+      case PreReplaySyncPhase::EXT_INPUTS_DONE:   return "EXT_INPUTS_DONE";
+      case PreReplaySyncPhase::STAGING_DONE:      return "STAGING_DONE";
+      default:                                    return "UNKNOWN";
+    }
+  }
 
   // ══════════════════════════════════════════════════════════════════════
   // Execution flow tracking
@@ -251,7 +375,7 @@ struct PlanExecutionContext {
 
   enum class FlowEventType : uint8_t {
     EXECUTE_ENTRY = 0,          // execute() entered; detail1=execCount, detail2=frozen
-    AUTO_SEAL_FIRED = 1,        // auto-seal set shapesFrozen_=true; detail1=old_execCount, detail2=new_execCount
+    AUTO_SEAL_FIRED = 1,        // auto-seal set planLifecycle_.isShapesFrozen()=true; detail1=old_execCount, detail2=new_execCount
     RESEGMENT = 2,              // resegmentForFreeze(); detail1=old_seg_count, detail2=new_seg_count
     FROZEN_CONST_DETECT = 3,    // detectFrozenConstants(); detail1=frozen_count, detail2=total_slots
     PHASE_COMPILE = 4,          // phaseCompile(); detail1=num_segments_compiled
@@ -456,16 +580,20 @@ struct PlanExecutionContext {
       bool shapesFrozen, int executeCount, int gemMode,
       bool tritonSkipKernels, bool tritonGraphCapture,
       bool tritonVerify, bool hasVariableList,
-      bool execTimingEnabled) {
+      bool execTimingEnabled,
+      bool anySegmentInWarmup) {
 
     // Snapshot execution identity
     execCount = executeCount;
     frozen = shapesFrozen;
 
-    // Derived booleans — computed once, read everywhere
+    // Derived booleans — computed once, read everywhere.
+    // anySegmentInWarmup comes from NativeDynamicShapePlan::anySegmentNeedsWarmup()
+    // which is the SINGLE source of truth. After invalidateSegmentCaptures,
+    // plan-level executeCount stays high but per-segment executionCount resets to 0.
     isFirstFrozenWarmup = shapesFrozen && executeCount == 0;
-    isFrozenSteadyState = shapesFrozen && executeCount > 1;
-    needsFullSync = !shapesFrozen || executeCount <= 1;
+    isFrozenSteadyState = shapesFrozen && executeCount > 1 && !anySegmentInWarmup;
+    needsFullSync = !shapesFrozen || executeCount <= 1 || anySegmentInWarmup;
 
     // tritonSkipKernels override
     forcedSlotBySlot = tritonSkipKernels && !ModeContract::forMode(gemMode).isSlotBySlot;
@@ -475,7 +603,7 @@ struct PlanExecutionContext {
     // Graph capture/replay gate
     allowGraphCaptureReplay = tritonGraphCapture && shapesFrozen && !tritonSkipKernels;
 
-    // Variable/weight filter for syncExternalInputs
+    // Variable/weight filter for performPreReplaySync H2D
     useVariableFilter = shapesFrozen && hasVariableList;
 
     // Triton verify flag
@@ -530,12 +658,12 @@ struct PlanExecutionContext {
   SD_INLINE void logExecutionSummary(int execCount) {
     if (!diagAnyEnabled) return;
     DSP_DIAG(EXECUTE,
-        "EXEC_SUMMARY exec=%d mode=%s sync=%s(stream=%d event=%d) "
+        "EXEC_SUMMARY exec=%d mode=%s execTarget=%s sync=%s(stream=%d event=%d) syncPhase=%s "
         "segs(total=%d warmup=%d captured=%d replayed=%d sbs=%d direct=%d fail=%d invalidated=%d) "
         "frozen(const=%d shapeOnly=%d valueIndep=%d viewUnfrozen=%d javaManaged=%d) "
         "flow(%d events)",
-        execCount, dispatchModeName(), syncLevelName(),
-        streamSyncCount, eventSyncCount,
+        execCount, dispatchModeName(), execTargetName(), syncLevelName(),
+        streamSyncCount, eventSyncCount, syncPhaseName(),
         segmentsTotal, segmentsWarmup, segmentsCaptured, segmentsReplayed,
         segmentsSlotBySlot, segmentsDirect, segmentsFailed, segmentsInvalidated,
         frozenConstCount, shapeOnlyTraitCount, valueIndepCount, viewAliasUnfrozen,

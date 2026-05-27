@@ -36,7 +36,7 @@ namespace helpers {
  *   - Frequency penalty:  logit -= count(tokenId) * freqPenalty
  *   - Presence penalty:   logit -= (count(tokenId) > 0 ? 1 : 0) * presPenalty
  *
- * @param logits       [batch, vocabSize] or [vocabSize] — modified in-place
+ * @param logits       [batch, seqLen, vocabSize] or [batch, vocabSize] or [vocabSize] — modified in-place (last seq position)
  * @param inputIds     [batch, seqLen] or [seqLen] INT64 — previously generated token IDs
  * @param repPenalty   Repetition penalty factor (1.0 = no penalty, >1.0 penalizes repetition)
  * @param freqPenalty  Frequency penalty (0.0 = off, positive penalizes by count)
@@ -53,7 +53,7 @@ SD_LIB_HIDDEN void applyLogitPenaltiesCpu(NDArray* logits, NDArray* inputIds,
  * has its logit set to -infinity. This is an adaptive threshold that scales with the
  * model's confidence — keeps more tokens when uncertain, fewer when confident.
  *
- * @param logits  [batch, vocabSize] or [vocabSize] — modified in-place
+ * @param logits  [batch, seqLen, vocabSize] or [batch, vocabSize] or [vocabSize] — modified in-place (last seq position)
  * @param minP    Minimum probability threshold relative to the top token (0.0 = off, 0.1 typical)
  */
 SD_LIB_HIDDEN void applyMinPFilterCpu(NDArray* logits, double minP, LaunchContext* context);

@@ -1831,6 +1831,75 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
+   * <br>
+   * Applies rotary embeddings with separate temporal/height/width position<br>
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
+   * dimension is split into 3 frequency band sections, each rotated using<br>
+   * its own position vector.<br>
+   * <br>
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
+   *   Temporal band: dims [0..24) rotated by temporal positions<br>
+   *   Height band: dims [24..44) rotated by spatial height positions<br>
+   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param posT Temporal position IDs [batch, seq_len] (INT type)
+   * @param posH Height position IDs [batch, seq_len] (INT type)
+   * @param posW Width position IDs [batch, seq_len] (INT type)
+   * @param sectionT Temporal frequency band size
+   * @param sectionH Height frequency band size
+   * @param sectionW Width frequency band size
+   * @param interleaved Whether to interleave frequency bands (true for Qwen3-VL)
+   * @param freqBase Base frequency for RoPE computation
+   * @return output Input with M-RoPE applied [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   */
+  public SDVariable fusedMRoPE(SDVariable input, SDVariable posT, SDVariable posH, SDVariable posW,
+      int sectionT, int sectionH, int sectionW, boolean interleaved, double freqBase) {
+    SDValidation.validateNumerical("fusedMRoPE", "input", input);
+    SDValidation.validateInteger("fusedMRoPE", "posT", posT);
+    SDValidation.validateInteger("fusedMRoPE", "posH", posH);
+    SDValidation.validateInteger("fusedMRoPE", "posW", posW);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE(sd,input, posT, posH, posW, sectionT, sectionH, sectionW, interleaved, freqBase).outputVariable();
+  }
+
+  /**
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
+   * <br>
+   * Applies rotary embeddings with separate temporal/height/width position<br>
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
+   * dimension is split into 3 frequency band sections, each rotated using<br>
+   * its own position vector.<br>
+   * <br>
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
+   *   Temporal band: dims [0..24) rotated by temporal positions<br>
+   *   Height band: dims [24..44) rotated by spatial height positions<br>
+   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param posT Temporal position IDs [batch, seq_len] (INT type)
+   * @param posH Height position IDs [batch, seq_len] (INT type)
+   * @param posW Width position IDs [batch, seq_len] (INT type)
+   * @param sectionT Temporal frequency band size
+   * @param sectionH Height frequency band size
+   * @param sectionW Width frequency band size
+   * @param interleaved Whether to interleave frequency bands (true for Qwen3-VL)
+   * @param freqBase Base frequency for RoPE computation
+   * @return output Input with M-RoPE applied [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   */
+  public SDVariable fusedMRoPE(String name, SDVariable input, SDVariable posT, SDVariable posH,
+      SDVariable posW, int sectionT, int sectionH, int sectionW, boolean interleaved,
+      double freqBase) {
+    SDValidation.validateNumerical("fusedMRoPE", "input", input);
+    SDValidation.validateInteger("fusedMRoPE", "posT", posT);
+    SDValidation.validateInteger("fusedMRoPE", "posH", posH);
+    SDValidation.validateInteger("fusedMRoPE", "posW", posW);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE(sd,input, posT, posH, posW, sectionT, sectionH, sectionW, interleaved, freqBase).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Fused normalization + quantization in a single kernel.<br>
    *
    * @param input Input tensor (NUMERIC type)
@@ -6443,6 +6512,58 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(sd,tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Scatter vision embeddings into text embeddings at target token positions.<br>
+   * <br>
+   * Replaces positions in the text embedding sequence where the token ID<br>
+   * matches targetTokenId with sequential vision embeddings. Uses a two-pass<br>
+   * approach on CUDA (prefix sum + scatter) that runs entirely on device<br>
+   * with no host round-trips.<br>
+   * <br>
+   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision<br>
+   * encoder output into the language model's input embedding sequence.<br>
+   *
+   * @param textEmbeddings Text token embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param visionEmbeddings Vision token embeddings [batch, visionTokens, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token ID array [batch, seqLen] (INT type)
+   * @param targetTokenId The token ID to replace with vision embeddings
+   * @return output Merged embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public SDVariable visionEmbeddingMerge(SDVariable textEmbeddings, SDVariable visionEmbeddings,
+      SDVariable tokenIds, long targetTokenId) {
+    SDValidation.validateNumerical("visionEmbeddingMerge", "textEmbeddings", textEmbeddings);
+    SDValidation.validateNumerical("visionEmbeddingMerge", "visionEmbeddings", visionEmbeddings);
+    SDValidation.validateInteger("visionEmbeddingMerge", "tokenIds", tokenIds);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge(sd,textEmbeddings, visionEmbeddings, tokenIds, targetTokenId).outputVariable();
+  }
+
+  /**
+   * Scatter vision embeddings into text embeddings at target token positions.<br>
+   * <br>
+   * Replaces positions in the text embedding sequence where the token ID<br>
+   * matches targetTokenId with sequential vision embeddings. Uses a two-pass<br>
+   * approach on CUDA (prefix sum + scatter) that runs entirely on device<br>
+   * with no host round-trips.<br>
+   * <br>
+   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision<br>
+   * encoder output into the language model's input embedding sequence.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param textEmbeddings Text token embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param visionEmbeddings Vision token embeddings [batch, visionTokens, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token ID array [batch, seqLen] (INT type)
+   * @param targetTokenId The token ID to replace with vision embeddings
+   * @return output Merged embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public SDVariable visionEmbeddingMerge(String name, SDVariable textEmbeddings,
+      SDVariable visionEmbeddings, SDVariable tokenIds, long targetTokenId) {
+    SDValidation.validateNumerical("visionEmbeddingMerge", "textEmbeddings", textEmbeddings);
+    SDValidation.validateNumerical("visionEmbeddingMerge", "visionEmbeddings", visionEmbeddings);
+    SDValidation.validateInteger("visionEmbeddingMerge", "tokenIds", tokenIds);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge(sd,textEmbeddings, visionEmbeddings, tokenIds, targetTokenId).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
   }
 
   /**

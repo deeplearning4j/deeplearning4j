@@ -59,6 +59,11 @@ class SD_LIB_EXPORT TadPack {
   TadPack() = default;
   ~TadPack();
 
+  // Non-copyable: destructor deletes raw pointer members (_tadOffsets, _tadShape, _dimensions).
+  // Compiler-generated copy would shallow-copy, causing double-free on destruction.
+  TadPack(const TadPack&) = delete;
+  TadPack& operator=(const TadPack&) = delete;
+
   LongType* primaryShapeInfo();
   LongType* primaryOffsets();
 

@@ -126,6 +126,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   double temperature = T_ARG(0);
   double topP = T_ARG(1);
   int topK = static_cast<int>(T_ARG(2));
+  double repPenalty = block.getTArguments()->size() > 3 ? T_ARG(3) : 1.0;
 
   // Validate inputs
   REQUIRE_TRUE(prefillEmbeddings->rankOf() == 3, 0,
@@ -317,7 +318,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       staticKvBuffers.empty() ? nullptr : staticKvBuffers.data(), numKvPairs,
       generatedTokenIds, tokenCount, timingInfo,
       maxNewTokens, prefillSeqLen, stopTokenIds,
-      temperature, topK, topP,
+      temperature, topK, topP, repPenalty,
       block.launchContext(), configPtr);
 #else
   helpers::autoregressiveDecodeCpu(
@@ -325,7 +326,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       staticKvBuffers.empty() ? nullptr : staticKvBuffers.data(), numKvPairs,
       generatedTokenIds, tokenCount, timingInfo,
       maxNewTokens, prefillSeqLen, stopTokenIds,
-      temperature, topK, topP,
+      temperature, topK, topP, repPenalty,
       block.launchContext(), configPtr);
 #endif
 

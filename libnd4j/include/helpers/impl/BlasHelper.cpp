@@ -22,6 +22,7 @@
 #include <helpers/BlasHelper.h>
 #include <system/env_functions.h>
 #include <cstdlib>
+#include <mutex>
 #include <string>
 
 // MKL VML detection - only include VML functions, not full MKL (to avoid CBLAS conflicts with OpenBLAS)
@@ -115,8 +116,12 @@ BlasHelper::BlasHelper() {
 }
 
 BlasHelper &BlasHelper::getInstance() {
-  static BlasHelper instance;
-  return instance;
+  static BlasHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new BlasHelper();
+  });
+  return *instance;
 }
 
 void BlasHelper::initializeFunctions(Pointer *functions) {

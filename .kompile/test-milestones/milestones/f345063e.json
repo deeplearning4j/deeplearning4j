@@ -1,0 +1,16 @@
+{
+  "id" : "f345063e",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "libnd4j,nd4j-cuda-12.9",
+  "totalTests" : 2,
+  "passed" : 2,
+  "failed" : 0,
+  "notes" : "Standard CUDA/Triton native rebuild passed after tracking per-output-slot frozen refs in NativeDynamicShapePlan.",
+  "tags" : "build,cuda,triton,dsp",
+  "timestamp" : "2026-05-27T05:46:09.511328Z"
+}

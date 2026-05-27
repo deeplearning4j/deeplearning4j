@@ -32,6 +32,10 @@ namespace ops {
  */
 class SD_LIB_EXPORT LegacyScalarBoolOp : public LegacyOp {
  protected:
+  bool _cachedScalarValid = false;
+  double _cachedScalarValue = 0.0;
+  DataType _cachedScalarType = DataType::UNKNOWN;
+
   Status validateAndExecute(sd::graph::Context& block) override;
 
  public:

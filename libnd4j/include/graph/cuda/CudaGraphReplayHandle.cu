@@ -59,7 +59,7 @@ bool CudaGraphReplayHandle::beginCapture(void* stream) {
   DSP_DIAG_DEV(EXECUTE, deviceId_,
                "CudaGraphReplayHandle::beginCapture stream=%p device=%d hostPtrs=%d",
                (void*)cudaStr, deviceId_, (int)capturedHostPtrs_.size());
-  bool ok = handle_->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed);
+  bool ok = handle_->beginCapture(cudaStr, cudaStreamCaptureModeThreadLocal);
   if (!ok) {
     DSP_DIAG_DEV(FALLBACK, deviceId_, "CudaGraphReplayHandle::beginCapture FAILED device=%d", deviceId_);
   }

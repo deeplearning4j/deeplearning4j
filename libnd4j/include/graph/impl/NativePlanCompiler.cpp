@@ -580,10 +580,12 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
   }
 
-  // Build externalInputIsVariable_: only PLACEHOLDER inputs need forced H2D
-  // before graph replay (dynamic inputs that Java updates each step).
-  // SOURCE_VARIABLE (model weights) are device-authoritative after initial load.
+  // Build external input classification. externalInputIsVariable_ is the
+  // replay/staging class (PLACEHOLDER inputs need refresh before graph replay).
+  // externalInputIsPlaceholder_ is the lifecycle class (placeholders are not
+  // protected model weights).
   plan->externalInputIsVariable_.resize(plan->numExternalInputs_, false);
+  plan->externalInputIsPlaceholder_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < numSteps; s++) {
     auto& slot = plan->slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
@@ -593,6 +595,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         if (extIdx < plan->numExternalInputs_ &&
             slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
           plan->externalInputIsVariable_[extIdx] = true;
+          plan->externalInputIsPlaceholder_[extIdx] = true;
         }
       }
     }
@@ -624,8 +627,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->outputSlots_ = new NDArray*[totalOutputSlots];
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * totalOutputSlots);
 
-  plan->slotIsViewProducer_ = new bool[totalOutputSlots];
-  std::memset(plan->slotIsViewProducer_, 0, sizeof(bool) * totalOutputSlots);
+  // slotIsViewProducer_ replaced by slots_[i].slotPhase.isViewProducer (value-initialized with slots_)
 
   plan->slotOwnership_ = new SlotBufferInfo[totalOutputSlots]();  // value-initialized to UNSET
 

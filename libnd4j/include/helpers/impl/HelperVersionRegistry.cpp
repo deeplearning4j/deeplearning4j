@@ -24,6 +24,7 @@
 #include <helpers/logger.h>
 
 #include <cstdlib>
+#include <mutex>
 #include <sstream>
 
 namespace sd {
@@ -33,8 +34,12 @@ namespace platforms {
 HelperVersionRegistry::HelperVersionRegistry() { initializeFromEnvironment(); }
 
 HelperVersionRegistry& HelperVersionRegistry::getInstance() {
-  static HelperVersionRegistry instance;
-  return instance;
+  static HelperVersionRegistry* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new HelperVersionRegistry();
+  });
+  return *instance;
 }
 
 void HelperVersionRegistry::initializeFromEnvironment() {

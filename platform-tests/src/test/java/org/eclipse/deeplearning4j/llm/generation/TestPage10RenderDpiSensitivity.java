@@ -51,6 +51,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Slf4j
 public class TestPage10RenderDpiSensitivity {
@@ -142,10 +143,10 @@ public class TestPage10RenderDpiSensitivity {
             return;
         }
 
-        pdfFile = new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
-        if (!pdfFile.exists()) {
-            pdfFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
-        }
+        String pdfPath = System.getProperty("vlm.test.pdf.path");
+        pdfFile = pdfPath != null ? new File(pdfPath) : new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
+        assumeTrue(pdfFile.exists(), "PDF not found at " + pdfFile.getAbsolutePath()
+                + ". Place pathfinder-mythic.pdf in platform-tests/ or set -Dvlm.test.pdf.path");
 
         VLMModelDownloader.DownloadResult visionDl =
                 VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);

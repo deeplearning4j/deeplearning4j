@@ -20,6 +20,7 @@
 
 #include <helpers/cpu/CpuShapeBufferCreator.h>
 #include <array/PrimaryPointerDeallocator.h>
+#include <mutex>
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <array/ShapeCacheLifecycleTracker.h>
@@ -92,8 +93,12 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
 }
 
 CpuShapeBufferCreator& CpuShapeBufferCreator::getInstance() {
-    static CpuShapeBufferCreator instance;
-    return instance;
+    static CpuShapeBufferCreator* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new CpuShapeBufferCreator();
+    });
+    return *instance;
 }
 
 } // namespace sd

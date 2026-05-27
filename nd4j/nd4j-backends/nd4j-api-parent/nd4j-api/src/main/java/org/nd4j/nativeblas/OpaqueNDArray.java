@@ -434,6 +434,22 @@ public class OpaqueNDArray extends Pointer {
      * @return The corresponding OpaqueNDArray (may be cached).
      */
     public static OpaqueNDArray fromINDArray(INDArray array) {
+        return fromINDArray(array, true);
+    }
+
+    /**
+     * Converts an INDArray to an OpaqueNDArray without forcing host-to-device
+     * synchronization. Callers that use this path must prepare inputs through
+     * native execution ownership, for example NDArray::prepareSpecialUse.
+     *
+     * @param array The INDArray to convert.
+     * @return The corresponding OpaqueNDArray (may be cached).
+     */
+    public static OpaqueNDArray fromINDArrayNoSync(INDArray array) {
+        return fromINDArray(array, false);
+    }
+
+    private static OpaqueNDArray fromINDArray(INDArray array, boolean syncHostToDevice) {
         if(array == null) {
             return null;
         }
@@ -476,7 +492,7 @@ public class OpaqueNDArray extends Pointer {
         // the device buffer may contain stale data, causing operations like maxNumber()
         // to return incorrect results after putScalar() or put() modifications.
         // On CPU backend, dbSyncToSpecial is a no-op.
-        if (!array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
+        if (syncHostToDevice && !array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
             OpaqueDataBuffer opaqueBuffer = array.data().opaqueBuffer();
             if (opaqueBuffer != null && !opaqueBuffer.isNull()) {
                 // Sync host→device for arrays where Java-side writes may have modified host data.

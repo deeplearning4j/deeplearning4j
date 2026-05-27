@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include <graph/NativePlanCache.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <memory/MemoryUtils.h>
@@ -105,13 +106,43 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
     lru_.splice(lru_.begin(), lru_, it->second);
     NativeDynamicShapePlan* plan = it->second->second;
     pinnedPlans_.insert(plan);
+    DSP_DIAG(EXECUTE, "PLAN_CACHE HIT thread=0x%llx plan=%p shapeHash=0x%llx",
+             (unsigned long long)key.threadId, (void*)plan,
+             (unsigned long long)key.phShapeContentHash);
     return plan;
   }
 
-  // Cache miss: build a new plan.
+  // Cache miss: build a new plan for this thread.
+  // Check if another thread already has a plan with the same structure
+  // (same outputs + shapes + mode, different threadId).  Log lineage
+  // so operators can trace which thread's plan was the "donor" structure.
+  NativeDynamicShapePlan* donorPlan = nullptr;
+  for (auto& entry : lru_) {
+    const Key& existing = entry.first;
+    if (existing.outputSetHash == key.outputSetHash
+        && existing.phShapeContentHash == key.phShapeContentHash
+        && existing.phCount == key.phCount
+        && existing.graphExecutionMode == key.graphExecutionMode
+        && existing.threadId != key.threadId) {
+      donorPlan = entry.second;
+      break;
+    }
+  }
+
   NativeDynamicShapePlan* plan = factory();
   if (!plan) {
     return nullptr;
+  }
+
+  if (donorPlan != nullptr) {
+    DSP_DIAG(EXECUTE, "PLAN_CACHE THREAD_DUP thread=0x%llx newPlan=%p donorPlan=%p "
+             "structure re-deserialized, exec state fresh",
+             (unsigned long long)key.threadId, (void*)plan, (void*)donorPlan);
+  } else {
+    DSP_DIAG(EXECUTE, "PLAN_CACHE NEW_PLAN thread=0x%llx plan=%p shapeHash=0x%llx "
+             "(first plan for this structure)",
+             (unsigned long long)key.threadId, (void*)plan,
+             (unsigned long long)key.phShapeContentHash);
   }
 
   // Insert at MRU (front) and pin.
@@ -176,11 +207,11 @@ void NativePlanCache::evictIfOverBudgetLocked() {
   while (static_cast<int>(lru_.size()) > maxPlans) {
     auto victim = findVictim();
     if (victim == lru_.end()) break;  // all pinned
-    sd_printf("[NativePlanCache] evict LRU plan (count cap %d): outputSetHash=%llu phCount=%lld contentHash=0x%016llx\n",
-              maxPlans,
-              (unsigned long long)victim->first.outputSetHash,
-              (long long)victim->first.phCount,
-              (unsigned long long)victim->first.phShapeContentHash);
+    DSP_DIAG(MEMORY, "PLAN_CACHE evict LRU (count cap %d): outputSetHash=%llu phCount=%lld contentHash=0x%016llx",
+             maxPlans,
+             (unsigned long long)victim->first.outputSetHash,
+             (long long)victim->first.phCount,
+             (unsigned long long)victim->first.phShapeContentHash);
     map_.erase(victim->first);
     delete victim->second;
     lru_.erase(victim);
@@ -215,15 +246,15 @@ void NativePlanCache::evictIfOverBudgetLocked() {
         size_t victimBytes = victim->second->estimatedOwnedBytes();
         size_t victimCost = (victimBytes > 0) ? victimBytes : kBytesPerPlanEstimate;
 
-        sd_printf("[NativePlanCache] evict LRU plan (memory budget %.1f%% of %zuMB free, cache=%zuMB): "
-                  "outputSetHash=%llu phCount=%lld contentHash=0x%016llx planBytes=%zuMB\n",
-                  fraction * 100.0f,
-                  freeMem / (1024 * 1024),
-                  totalCacheBytes / (1024 * 1024),
-                  (unsigned long long)victim->first.outputSetHash,
-                  (long long)victim->first.phCount,
-                  (unsigned long long)victim->first.phShapeContentHash,
-                  victimCost / (1024 * 1024));
+        DSP_DIAG(MEMORY, "PLAN_CACHE evict LRU (memory budget %.1f%% of %zuMB free, cache=%zuMB): "
+                 "outputSetHash=%llu phCount=%lld contentHash=0x%016llx planBytes=%zuMB",
+                 fraction * 100.0f,
+                 freeMem / (1024 * 1024),
+                 totalCacheBytes / (1024 * 1024),
+                 (unsigned long long)victim->first.outputSetHash,
+                 (long long)victim->first.phCount,
+                 (unsigned long long)victim->first.phShapeContentHash,
+                 victimCost / (1024 * 1024));
         totalCacheBytes -= victimCost;
         map_.erase(victim->first);
         delete victim->second;

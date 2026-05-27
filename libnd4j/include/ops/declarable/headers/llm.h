@@ -1342,6 +1342,55 @@ DECLARE_CUSTOM_OP(linear_attention_decode, 5, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(cascade_attention, 3, 1, false, 0, 0);
 #endif
 
+/**
+ * fused_mrope - Multimodal Rotary Position Embedding (M-RoPE)
+ *
+ * Applies RoPE with separate temporal/height/width position encodings
+ * for multimodal models (Qwen3-VL, Qwen2.5-VL).
+ *
+ * Input:
+ *   0: input tensor [batch, seq_len, num_heads, head_dim]
+ *   1: position_t [batch, seq_len] - temporal positions
+ *   2: position_h [batch, seq_len] - height positions
+ *   3: position_w [batch, seq_len] - width positions
+ *
+ * Output:
+ *   0: tensor with M-RoPE applied [batch, seq_len, num_heads, head_dim]
+ *
+ * Integer arguments:
+ *   0: section_t - size of temporal frequency band
+ *   1: section_h - size of height frequency band
+ *   2: section_w - size of width frequency band
+ *   3: interleaved (0 or 1, default 0)
+ *
+ * Float arguments:
+ *   0: freq_base (default: 10000.0)
+ */
+#if NOT_EXCLUDED(OP_fused_mrope)
+DECLARE_CUSTOM_OP(fused_mrope, 4, 1, false, 0, 0);
+#endif
+
+/**
+ * vision_embedding_merge - Scatter vision embeddings into text embeddings at target token positions.
+ *
+ * Replaces positions in text embeddings where tokenIds == targetTokenId with sequential
+ * vision embeddings. Runs entirely on device (no host round-trips on CUDA).
+ *
+ * Input:
+ *   0: textEmbeddings  [batch, seqLen, hiddenDim] - text token embeddings
+ *   1: visionEmbeddings [batch, visionTokens, hiddenDim] - vision token embeddings
+ *   2: tokenIds [batch, seqLen] - token ID array (INT32 or INT64)
+ *
+ * Output:
+ *   0: merged embeddings [batch, seqLen, hiddenDim] - text with vision scattered in
+ *
+ * Integer arguments:
+ *   0: targetTokenId - the token ID to replace with vision embeddings
+ */
+#if NOT_EXCLUDED(OP_vision_embedding_merge)
+DECLARE_CUSTOM_OP(vision_embedding_merge, 3, 1, false, 0, 1);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

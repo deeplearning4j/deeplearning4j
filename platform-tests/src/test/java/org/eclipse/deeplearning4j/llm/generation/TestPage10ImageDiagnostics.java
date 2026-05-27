@@ -30,6 +30,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -58,10 +60,10 @@ public class TestPage10ImageDiagnostics {
             return;
         }
 
-        pdfFile = new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
-        if (!pdfFile.exists()) {
-            pdfFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
-        }
+        String pdfPath = System.getProperty("vlm.test.pdf.path");
+        pdfFile = pdfPath != null ? new File(pdfPath) : new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
+        assumeTrue(pdfFile.exists(), "PDF not found at " + pdfFile.getAbsolutePath()
+                + ". Place pathfinder-mythic.pdf in platform-tests/ or set -Dvlm.test.pdf.path");
 
         outputDir = new File("/tmp/vlm-diagnostics");
         if (!outputDir.exists()) {

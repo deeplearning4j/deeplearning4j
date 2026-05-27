@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.optimization;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
@@ -37,15 +38,14 @@ import java.util.*;
  */
 public class TestBGEModelAnalysis {
 
-    private static final String MODEL_PATH = "/home/agibsonccc/.kompile/models/encoders/bge-base-en-v1.5/model-unoptimized.sdz";
+    private static final String MODEL_PATH = System.getProperty("bge.model.path",
+            System.getProperty("user.home") + "/.kompile/models/encoders/bge-base-en-v1.5/model-unoptimized.sdz");
 
     @Test
     public void analyzeModelStructure() throws Exception {
         File modelFile = new File(MODEL_PATH);
-        if (!modelFile.exists()) {
-            System.out.println("Model file not found: " + MODEL_PATH);
-            return;
-        }
+        assumeTrue(modelFile.exists(), "BGE model not found at " + MODEL_PATH
+                + ". Set -Dbge.model.path to provide the model.");
 
         System.out.println("Loading model from: " + MODEL_PATH);
         SameDiff sd = SameDiff.loadSharded(modelFile);
@@ -256,10 +256,8 @@ public class TestBGEModelAnalysis {
     @Test
     public void testManualAttentionFusion() throws Exception {
         File modelFile = new File(MODEL_PATH);
-        if (!modelFile.exists()) {
-            System.out.println("Model file not found: " + MODEL_PATH);
-            return;
-        }
+        assumeTrue(modelFile.exists(), "BGE model not found at " + MODEL_PATH
+                + ". Set -Dbge.model.path to provide the model.");
 
         System.out.println("Loading unoptimized model...");
         SameDiff sd = SameDiff.loadSharded(modelFile);
@@ -391,10 +389,8 @@ public class TestBGEModelAnalysis {
     @Test
     public void testOptimizerOnBGE() throws Exception {
         File modelFile = new File(MODEL_PATH);
-        if (!modelFile.exists()) {
-            System.out.println("Model file not found: " + MODEL_PATH);
-            return;
-        }
+        assumeTrue(modelFile.exists(), "BGE model not found at " + MODEL_PATH
+                + ". Set -Dbge.model.path to provide the model.");
 
         System.out.println("Loading unoptimized model...");
         SameDiff sd = SameDiff.loadSharded(modelFile);

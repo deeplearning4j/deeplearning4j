@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstdlib>
+#include <mutex>
 #include <thread>
 
 namespace sd {
@@ -50,8 +51,12 @@ dnnl::stream& OneDnnGraphBackend::getThreadStream() {
 // ─── Singleton ──────────────────────────────────────────────────────────────
 
 OneDnnGraphBackend& OneDnnGraphBackend::getInstance() {
-  static OneDnnGraphBackend instance;
-  return instance;
+  static OneDnnGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new OneDnnGraphBackend();
+  });
+  return *instance;
 }
 
 OneDnnGraphBackend::OneDnnGraphBackend()
@@ -73,9 +78,9 @@ OneDnnGraphBackend::~OneDnnGraphBackend() = default;
 // ─── Availability ───────────────────────────────────────────────────────────
 
 bool OneDnnGraphBackend::isAvailable() const {
-  static bool selfTestDone = false;
-  if (!selfTestDone) {
-    selfTestDone = true;
+  // -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
+  static std::once_flag selfTestFlag;
+  std::call_once(selfTestFlag, []() {
     try {
       dg::graph selfTest(dnnl::engine::kind::cpu);
       auto st_in0 = dg::logical_tensor(90000, dg::logical_tensor::data_type::f32,
@@ -98,7 +103,7 @@ bool OneDnnGraphBackend::isAvailable() const {
     } catch (const std::exception& e) {
       DSP_DIAG(COMPILE, "OneDNN SELF-TEST: EXCEPTION: %s", e.what());
     }
-  }
+  });
   return sd::ops::platforms::onednn::OnednnVersionProvider::hasGraphApi();
 }
 
@@ -766,9 +771,9 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
       // Build a completely independent graph with the same ops to determine
       // whether the issue is in our construction or the oneDNN library state.
       if (!partitions.empty() && !partitions[0].is_supported()) {
-        static bool cloneDiagDone = false;
-        if (!cloneDiagDone) {
-          cloneDiagDone = true;
+        // -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
+        static std::once_flag cloneDiagFlag;
+        std::call_once(cloneDiagFlag, [&]() {
           try {
             // Rebuild same graph from scratch using local IDs
             dg::graph cloneG(dnnl::engine::kind::cpu);
@@ -855,7 +860,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
           } catch (const std::exception& e) {
             DSP_DIAG(COMPILE, "OneDNN CLONE-DIAGNOSTIC: EXCEPTION: %s", e.what());
           }
-        }
+        });
       }
 
       // ── Process partitions: compile supported, convert unsupported to native ─

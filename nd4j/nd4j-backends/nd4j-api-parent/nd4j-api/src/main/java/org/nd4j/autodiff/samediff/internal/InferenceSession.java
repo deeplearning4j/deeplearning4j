@@ -314,6 +314,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected int dspStepCount = 0;
     protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
 
+    // ---- Variable sync tracking ----
+    // The variable sync loop in executeDynamicShapePlanBased iterates ALL model weights
+    // and calls syncToDevice() on each. For large models (thousands of weights), even
+    // the JNI overhead of no-op syncs adds measurable latency (~5-15ms per call).
+    // After the first sync, weights are on-device and never modified during inference.
+    // This flag skips the loop on subsequent calls. Reset on session reset.
+    protected volatile boolean variablesSyncedToDevice = false;
+
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
     }
@@ -619,6 +627,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Reset DSP step counter so the next session starts with immediate trim
         dspStepCount = 0;
+        // Reset variable sync flag — weights may have changed between sessions
+        variablesSyncedToDevice = false;
 
         // Session-local caches do not survive resetSession(): a new session instance will be
         // created on the next output() call and can retrieve any reusable DynamicShapePlan
@@ -1433,13 +1443,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // caller) modifies a VARIABLE's array in-place via putScalar, only the host buffer
         // is updated. The DSP executor skips H2D sync for non-placeholder inputs with the
         // same array identity, so the device copy stays stale. Force-sync here.
-        for (SDVariable var : sameDiff.variables()) {
-            if (var.getVariableType() == VariableType.VARIABLE) {
-                INDArray arr = var.getArr();
-                if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
-                    arr.syncToDevice();
+        //
+        // Skip on subsequent calls: after the first sync, model weights are on-device and
+        // never modified during inference. For large models (thousands of weights), even
+        // no-op syncToDevice() calls add ~5-15ms of JNI overhead per decoder.output() call.
+        if (!variablesSyncedToDevice) {
+            for (SDVariable var : sameDiff.variables()) {
+                if (var.getVariableType() == VariableType.VARIABLE) {
+                    INDArray arr = var.getArr();
+                    if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                        arr.syncToDevice();
+                    }
                 }
             }
+            variablesSyncedToDevice = true;
         }
 
         Map<String, INDArray> rawResults;

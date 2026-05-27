@@ -86,8 +86,12 @@ void TritonGraphBackend::setMaxParallelCompilations(int maxThreads) {
 // ─── Singleton ──────────────────────────────────────────────────────────────
 
 TritonGraphBackend& TritonGraphBackend::getInstance() {
-  static TritonGraphBackend instance;
-  return instance;
+  static TritonGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new TritonGraphBackend();
+  });
+  return *instance;
 }
 
 void TritonGraphBackend::setOrderedRangeExecutor(OrderedRangeExecutor executor) {

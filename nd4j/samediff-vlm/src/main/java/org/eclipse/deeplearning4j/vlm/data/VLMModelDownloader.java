@@ -196,6 +196,57 @@ public class VLMModelDownloader {
                 ModelFormat.JSON,
                 0, 0,
                 "SmolDocling Preprocessor Config - image preprocessing parameters"
+        ),
+
+        // Video VLM Models - SmolVLM2 (Apache 2.0, smallest video VLM)
+        SMOLVLM2_256M_VIDEO_GGUF(
+                "smolvlm2-256m-video-instruct",
+                "https://huggingface.co/ggml-org/SmolVLM2-256M-Video-Instruct-GGUF/resolve/main/SmolVLM2-256M-Video-Instruct-Q8_0.gguf",
+                ModelFormat.GGUF,
+                384, 384,
+                "SmolVLM2-256M Video Instruct Q8_0 - smallest video VLM (~175MB)"
+        ),
+
+        SMOLVLM2_2_2B_VIDEO_GGUF(
+                "smolvlm2-2.2b-video-instruct",
+                "https://huggingface.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF/resolve/main/SmolVLM2-2.2B-Instruct-Q4_K_M.gguf",
+                ModelFormat.GGUF,
+                384, 384,
+                "SmolVLM2-2.2B Video Instruct Q4_K_M - mid-size video VLM (~1.4GB)"
+        ),
+
+        // Video VLM Models - Qwen3-VL (Apache 2.0, best video quality)
+        QWEN3_VL_2B_GGUF(
+                "qwen3-vl-2b-instruct",
+                "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/qwen3-vl-2b-instruct-q4_k_m.gguf",
+                ModelFormat.GGUF,
+                0, 0,
+                "Qwen3-VL-2B LLM decoder Q4_K_M - dynamic resolution video VLM (~1.5GB)"
+        ),
+
+        QWEN3_VL_2B_MMPROJ_GGUF(
+                "qwen3-vl-2b-mmproj",
+                "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/qwen3-vl-2b-instruct-vision-q8_0.gguf",
+                ModelFormat.GGUF,
+                0, 0,
+                "Qwen3-VL-2B vision encoder mmproj Q8_0 - paired with LLM GGUF"
+        ),
+
+        // Video VLM Models - MiniCPM-V 4.5 (Apache 2.0, best video token efficiency)
+        MINICPM_V_4_5_GGUF(
+                "minicpm-v-4.5",
+                "https://huggingface.co/openbmb/MiniCPM-V-4_5-gguf/resolve/main/ggml-model-Q4_K_M.gguf",
+                ModelFormat.GGUF,
+                0, 0,
+                "MiniCPM-V 4.5 Q4_K_M - 3D-Resampler 96x video compression (~5GB)"
+        ),
+
+        MINICPM_V_4_5_MMPROJ_GGUF(
+                "minicpm-v-4.5-mmproj",
+                "https://huggingface.co/openbmb/MiniCPM-V-4_5-gguf/resolve/main/mmproj-model-f16.gguf",
+                ModelFormat.GGUF,
+                0, 0,
+                "MiniCPM-V 4.5 vision mmproj F16 - paired with LLM GGUF"
         );
 
         private final String name;

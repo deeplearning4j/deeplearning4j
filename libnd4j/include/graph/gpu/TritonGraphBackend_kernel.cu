@@ -78,9 +78,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       }
     }
     if (earlyStreamIsCapturing) {
-      sd_printf("TritonGraphBackend::executeSingleKernel: cannot reload evicted kernel "
-                "[%d-%d] hash=%s while stream is capturing — would risk invalidating "
-                "the in-flight CUDA graph.\n",
+      DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: cannot reload evicted kernel "
+                "[%d-%d] hash=%s while stream is capturing",
                 compiled.startSlot_, compiled.endSlot_, compiled.diskCacheHash.c_str());
       return Status::KERNEL_FAILURE;
     }
@@ -168,20 +167,12 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
              static_cast<int>(argMapping.dtype), newArr->specialBuffer());
   }
 
-  // Sync all INPUT arrays to device before resolving buffer pointers.
-  // Without this, internal slot arrays whose host buffer was updated (e.g., by
-  // shape ops, constant generation, or Java-side modifications during warmup/gap
-  // ops) would still have stale GPU buffers.  The native SBS path calls
-  // prepareSpecialUse() per-op which handles this implicitly; the Triton path
-  // skips that, so we must sync explicitly here.
-  //
-  // We use syncToDevice() (NOT forceSync) because force-syncing would also
-  // overwrite correct GPU data written by prior Triton sub-kernels with stale
-  // host data.  The real fix for stale cross-segment arrays is handled by
-  // invalidating device actuality after native gap ops (see executeSegment).
-  int syncForcedCount = 0, syncNormalCount = 0, syncSkippedCount = 0;
+  // Prepare all Triton inputs/outputs through the standard NDArray ownership
+  // contract before resolving device pointers.
+  std::vector<NDArray*> tritonReadList;
+  std::vector<NDArray*> tritonWriteList;
+  int prepareReadCount = 0, prepareWriteCount = 0, prepareSkippedCount = 0;
   for (auto& argMapping : compiled.argSlotMapping) {
-    if (argMapping.isOutput) continue;  // outputs will be written, not read
     NDArray* arr = nullptr;
     if (argMapping.slotIndex < 0) {
       int extIdx = -(argMapping.slotIndex + 1);
@@ -190,38 +181,23 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
     }
     if (arr && arr->lengthOf() > 0) {
-      // For external inputs (negative slot indices), only force H2D sync when the
-      // host buffer was actually updated (pAct=1) and device is stale (sAct=0).
-      // Previously this always forced H2D, which overwrote valid GPU data (written
-      // by native gap ops) with stale/zero host buffers — causing all-zero inputs
-      // for ops like pow(inputs_embeds, 2) in the first Triton section.
-      if (argMapping.slotIndex < 0 && arr->dataBuffer() != nullptr) {
-        bool wasPrimaryActual = arr->dataBuffer()->isPrimaryActual();
-        bool wasSpecialActual = arr->dataBuffer()->isSpecialActual();
-        if (wasPrimaryActual && !wasSpecialActual) {
-          // Host was updated by Java, device is stale — force H2D
-          arr->dataBuffer()->syncToSpecial(true);
-          syncForcedCount++;
-          DSP_DIAG(EXECUTE, "INPUT SYNC FORCED: [%d-%d] ext slot %d (HOST_WAS_PRIMARY, DEVICE_WAS_STALE) "
-                   "len=%lld buf=%p",
-                   compiled.startSlot_, compiled.endSlot_, argMapping.slotIndex,
-                   (long long)arr->lengthOf(), arr->specialBuffer());
-        } else {
-          // Device already actual — do not overwrite valid GPU data with stale host
-          arr->syncToDevice();  // respects actuality flags
-          syncNormalCount++;
-        }
+      if (argMapping.isOutput) {
+        tritonWriteList.push_back(arr);
+        prepareWriteCount++;
       } else {
-        arr->syncToDevice();
-        syncNormalCount++;
+        tritonReadList.push_back(arr);
+        prepareReadCount++;
       }
     } else {
-      syncSkippedCount++;
+      prepareSkippedCount++;
     }
   }
-  DSP_DIAG(EXECUTE, "INPUT SYNC: [%d-%d] forced=%d normal=%d skipped=%d (of %d input args)",
-           compiled.startSlot_, compiled.endSlot_, syncForcedCount, syncNormalCount, syncSkippedCount,
-           numBufferArgs);
+  if (!tritonReadList.empty() || !tritonWriteList.empty()) {
+    NDArray::prepareSpecialUse(tritonWriteList, tritonReadList);
+  }
+  DSP_DIAG(EXECUTE, "TRITON_PREPARE: [%d-%d] reads=%d writes=%d skipped=%d (of %d args)",
+           compiled.startSlot_, compiled.endSlot_,
+           prepareReadCount, prepareWriteCount, prepareSkippedCount, numBufferArgs);
 
   // Resolve all buffer pointers from the arg slot mapping
   std::vector<void*> bufferPtrs;
@@ -429,10 +405,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
   }
 
-  // ── INT64 input buffer dump diagnostic ──
-  // When verify mode is active, dump the actual device contents of INT64 inputs
-  // so we can detect whether the Triton kernel reads stale or wrong data.
-  // SKIP during stream capture: synchronous cudaMemcpy is not permitted inside capture.
+  // ── INT64 input buffer metadata diagnostic ──
   if (DSP_DIAG_ENABLED(VERIFY) && !streamIsCapturing) {
     for (int i = 0; i < numBufferArgs; i++) {
       auto& am = compiled.argSlotMapping[i];
@@ -449,19 +422,9 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (dbgArr->dataType() != INT64 || dbgArr->lengthOf() > 64) continue;
 
       LongType len = dbgArr->lengthOf();
-      std::vector<int64_t> hostBuf(len);
-      auto syncErr = cudaMemcpy(hostBuf.data(), bufferPtrs[i], len * sizeof(int64_t), cudaMemcpyDeviceToHost);
-      if (syncErr == cudaSuccess) {
-        std::string vals;
-        for (LongType e = 0; e < len && vals.size() < 256; e++) {
-          if (e) vals += ",";
-          vals += std::to_string(hostBuf[e]);
-        }
-        DSP_DIAG(VERIFY, "INT64_INPUT_DUMP: subK[%d-%d] ARG[%d] slot=%d len=%lld ptr=%p "
-                 "deviceValues=[%s]",
-                 compiled.startSlot_, compiled.endSlot_, i, am.slotIndex,
-                 (long long)len, bufferPtrs[i], vals.c_str());
-      }
+      DSP_DIAG(VERIFY, "INT64_INPUT_META: subK[%d-%d] ARG[%d] slot=%d len=%lld ptr=%p bytes=%zu",
+               compiled.startSlot_, compiled.endSlot_, i, am.slotIndex,
+               (long long)len, bufferPtrs[i], static_cast<size_t>(len) * sizeof(int64_t));
     }
   }
 
@@ -590,9 +553,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
   }
 
-  // Debug: dump input values and slot info for the first Triton section
+  // Debug: log input metadata and slot info for the first Triton section.
   if (sd::Environment::getInstance().isDebug() && compiled.startSlot_ == 347) {
-    cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
     for (int ai = 0; ai < numBufferArgs; ai++) {
       auto& am = compiled.argSlotMapping[ai];
       if (am.isOutput) continue;
@@ -606,32 +568,10 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (!arr || !arr->specialBuffer()) continue;
       size_t len = arr->lengthOf();
       if (len == 0) continue;
-      int dumpCount = std::min((int)len, 8);
-      int dumpBytes = dumpCount * arr->sizeOfT();
-      std::vector<uint8_t> hostBuf(dumpBytes);
-      auto cpyErr = cudaMemcpy(hostBuf.data(), arr->specialBuffer(), dumpBytes, cudaMemcpyDeviceToHost);
-      std::string valStr;
-      if (cpyErr != cudaSuccess) {
-        char errBuf[128]; snprintf(errBuf, sizeof(errBuf), "(cudaMemcpy FAILED: %s)", cudaGetErrorString(cpyErr));
-        valStr = errBuf;
-      } else if (arr->dataType() == FLOAT32) {
-        float* fp = reinterpret_cast<float*>(hostBuf.data());
-        for (int e = 0; e < dumpCount; e++) {
-          if (e > 0) valStr += ",";
-          char buf[32]; snprintf(buf, sizeof(buf), "%.6f", fp[e]); valStr += buf;
-        }
-      } else if (arr->dataType() == INT64) {
-        int64_t* ip = reinterpret_cast<int64_t*>(hostBuf.data());
-        for (int e = 0; e < dumpCount; e++) {
-          if (e > 0) valStr += ",";
-          char buf[32]; snprintf(buf, sizeof(buf), "%lld", (long long)ip[e]); valStr += buf;
-        }
-      } else {
-        valStr = "(non-f32/i64 dtype)";
-      }
-      DSP_DIAG(VERIFY, "INPUT DUMP: [%d-%d] arg[%d] slot=%d dtype=%d len=%lld addr=%p: %s",
+      DSP_DIAG(VERIFY, "INPUT META: [%d-%d] arg[%d] slot=%d dtype=%d len=%lld addr=%p bytes=%zu",
                compiled.startSlot_, compiled.endSlot_,
-               ai, am.slotIndex, (int)arr->dataType(), (long long)len, arr->specialBuffer(), valStr.c_str());
+               ai, am.slotIndex, (int)arr->dataType(), (long long)len,
+               arr->specialBuffer(), len * arr->sizeOfT());
     }
     for (int si = compiled.startSlot_; si <= compiled.endSlot_; si++) {
       auto& slot = slots[si];
@@ -1033,43 +973,12 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
   }
 
-  // ─── Update ND4J actuality tracking after successful Triton kernel launch ───
-  //
-  // The Triton kernel writes directly to GPU buffers via cuLaunchKernel, bypassing
-  // ND4J's DataBuffer actuality tracking system.  Without this, ND4J doesn't know
-  // that the GPU (special) buffer was written and may:
-  //  1. Return stale host-side data when subsequent ops call syncToPrimary() or dup()
-  //  2. Skip D2H sync because isPrimaryActual() returns true (stale host = "current")
-  //  3. Overwrite correct GPU results with stale host data on next syncToSpecial()
-  //
-  // Native ops handle this via registerSpecialUse() / prepareSpecialUse() which call
-  // writeSpecial()/readSpecial() internally.  The Triton path must do the equivalent.
-  int writeSpecialCount = 0, readSpecialCount = 0;
-  for (auto& argMapping : compiled.argSlotMapping) {
-    NDArray* arr = nullptr;
-    if (argMapping.slotIndex < 0) {
-      int extIdx = -(argMapping.slotIndex + 1);
-      if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
-    } else {
-      if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
-    }
-    if (arr && arr->dataBuffer() != nullptr) {
-      if (argMapping.isOutput) {
-        // Mark GPU buffer as authoritative — the Triton kernel just wrote to it
-        arr->dataBuffer()->writeSpecial();
-        writeSpecialCount++;
-      } else {
-        // Mark GPU buffer as read — prevents stale host→device sync from overwriting
-        // input data that was consumed by this kernel
-        arr->dataBuffer()->readSpecial();
-        readSpecialCount++;
-      }
-    }
+  if (!tritonReadList.empty() || !tritonWriteList.empty()) {
+    NDArray::registerSpecialUse(tritonWriteList, tritonReadList);
   }
-
-  DSP_DIAG(EXECUTE, "ACTUALITY MARK: [%d-%d] argMap: %d writeSpecial, %d readSpecial",
+  DSP_DIAG(EXECUTE, "TRITON_REGISTER: [%d-%d] argMap: %d writes, %d reads",
            compiled.startSlot_, compiled.endSlot_,
-           writeSpecialCount, readSpecialCount);
+           prepareWriteCount, prepareReadCount);
 
   return Status::OK;
 }
@@ -1082,11 +991,11 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     NDArray** outputSlots, int totalOutputSlots,
     void* execStream) {
 
-  // Phase diagnostic: detect when refresh is called despite argTableStable being true.
+  // Phase diagnostic: detect when refresh is called despite arg table being stable.
   // This indicates the caller skipped the fast-replay gate, which is a performance bug.
   // Not a hard assert because verify mode intentionally bypasses the gate.
-  if (seg.exec.argTableStable) {
-    DSP_DIAG(EXECUTE, "PHASE_WARN: refreshArgTablesForReplay called while argTableStable=true "
+  if (!seg.exec.needsArgRefresh()) {
+    DSP_DIAG(EXECUTE, "PHASE_WARN: refreshArgTablesForReplay called while needsArgRefresh()=false "
              "for seg[%d-%d] execCount=%d — caller should have used fast-replay path",
              seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
   }
@@ -1106,11 +1015,11 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     auto it = cache_.find(key);
     if (it == cache_.end()) {
       DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
-                "(shapeKey=%lld, device=%d) → marking argTableStable (no arg tables to refresh)",
+                "(shapeKey=%lld, device=%d) → marking args current (no arg tables to refresh)",
                 seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice);
       // No Triton sub-kernels = no arg tables to refresh. Mark stable so fast replay
       // path can be used (skip iterating over all external inputs for sync checks).
-      seg.exec.argTableStable = true;
+      seg.exec.markArgsCurrent();
       return Status::KERNEL_FAILURE;
     }
     compiledSeg = &it->second;
@@ -1169,7 +1078,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
         } else {
           // arr exists but specialBuffer is null — zero the slot rather than
           // leaving a stale pointer baked in from a prior plan instance.
-          // Count it as changed so argTableStable cannot go true while
+          // Count it as changed so arg table cannot be marked stable while
           // the slot still holds a freed/foreign pointer.
           if (argTableHostPinned[i] != 0) {
             changedPtrs++;
@@ -1252,19 +1161,19 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
 
   // Mark arg table stable ONLY when ALL pointers (internal AND external) are unchanged.
   // The fast replay path in compositeReplay skips refreshArgTablesForReplay entirely
-  // when argTableStable=true. If external pointers changed but we mark stable, the
+  // when needsArgRefresh()=false. If external pointers changed but we mark stable, the
   // CUDA graph reads stale external pointers → reads freed GPU memory → heap corruption.
   // Previously this only checked internal pointers, assuming external changes were
   // "handled by the arg table refresh + D2D copy." But the fast replay path SKIPS
   // that refresh — so ALL pointer changes must prevent fast replay.
   if (totalChangedPtrs == 0 && refreshedCount > 0) {
-    seg.exec.argTableStable = true;
+    seg.exec.markArgsCurrent();
     DSP_DIAG(EXECUTE, "ARG_TABLE_STABLE: seg[%d-%d] %d sub-kernels, fast-replay enabled "
              "(extChanges=%d internalChanges=%d)",
              seg.def.startSlot, seg.def.endSlot, refreshedCount,
              totalChangedPtrs - totalChangedInternalPtrs, totalChangedInternalPtrs);
   } else {
-    seg.exec.argTableStable = false;
+    seg.exec.bumpArgGeneration();
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
     if (totalChangedPtrs > 0) {

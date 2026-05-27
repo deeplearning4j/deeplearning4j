@@ -55,8 +55,12 @@ public:
      * Get singleton instance
      */
     static OpExecutionLogger& getInstance() {
-        static OpExecutionLogger instance;
-        return instance;
+        static OpExecutionLogger* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new OpExecutionLogger();
+        });
+        return *instance;
     }
 
     /**

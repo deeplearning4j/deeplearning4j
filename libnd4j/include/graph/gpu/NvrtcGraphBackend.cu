@@ -27,6 +27,7 @@
 #include <cuda_runtime.h>
 #include <nvrtc.h>
 
+#include <mutex>
 #include <sstream>
 #include <unordered_set>
 
@@ -36,8 +37,12 @@ namespace graph {
 // ---- Singleton ----
 
 NvrtcGraphBackend& NvrtcGraphBackend::getInstance() {
-  static NvrtcGraphBackend instance;
-  return instance;
+  static NvrtcGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new NvrtcGraphBackend();
+  });
+  return *instance;
 }
 
 NvrtcGraphBackend::NvrtcGraphBackend() = default;
@@ -182,17 +187,25 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " + " + scalar + ")";
   }
-  if (opName == "subtract_scalar") {
+  if (opName == "subtract_scalar" || opName == "sub_scalar") {
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " - " + scalar + ")";
   }
-  if (opName == "multiply_scalar") {
+  if (opName == "multiply_scalar" || opName == "mul_scalar") {
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " * " + scalar + ")";
   }
-  if (opName == "divide_scalar") {
+  if (opName == "divide_scalar" || opName == "div_scalar") {
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + val + " / " + scalar + ")";
+  }
+  if (opName == "rsub_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
+    return "(" + scalar + " - " + val + ")";
+  }
+  if (opName == "rdiv_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
+    return "(" + scalar + " / " + val + ")";
   }
   // Fallback: identity
   return val;
@@ -561,4 +574,3 @@ std::vector<CompilationAuditEntry> NvrtcGraphBackend::getLastCompilationAudit() 
 
 }  // namespace graph
 }  // namespace sd
-

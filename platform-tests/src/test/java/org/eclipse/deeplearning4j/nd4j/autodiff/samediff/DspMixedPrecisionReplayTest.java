@@ -174,26 +174,34 @@ public class DspMixedPrecisionReplayTest {
         sd.setGraphExecutionMode(mode);
 
         Map<String, INDArray> ph = new LinkedHashMap<>();
+        // Reuse the same INDArray object — DSP pointer stability requires stable buffer
+        // addresses between executions. Creating new INDArray objects each step means
+        // argTableStable can never become true, blocking CUDA graph capture/replay.
+        INDArray inputArr = Nd4j.randn(DataType.FLOAT, 1, 32);
+        ph.put("input", inputArr);
 
-        // Run 20 "decode steps" with varying input values (simulates token embeddings changing)
-        INDArray[] outputs = new INDArray[20];
-        for (int step = 0; step < 20; step++) {
-            ph.put("input", Nd4j.randn(DataType.FLOAT, 1, 32));
+        // Run 30 "decode steps" with varying input values (simulates token embeddings changing).
+        // norm2/div/max ops need extra warmup steps for pointer stability compared to
+        // simple matmul-only graphs (the reduction ops cause intermediate buffer reallocation).
+        int totalSteps = 30;
+        INDArray[] outputs = new INDArray[totalSteps];
+        for (int step = 0; step < totalSteps; step++) {
+            inputArr.assign(Nd4j.randn(DataType.FLOAT, 1, 32));
             Map<String, INDArray> result = sd.output(ph, "output");
             outputs[step] = result.get("output").dup();
         }
 
-        // After 20 executions, DSP should have reached at least SHAPES_FROZEN
+        // After sufficient executions, DSP should have reached at least SHAPES_FROZEN
         DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
-                mode + " after 20 steps");
+                mode + " after " + totalSteps + " steps");
 
         // Pointers should be stable
         DspPlanAssertions.assertPointersStable(sd,
-                mode + " after 20 steps");
+                mode + " after " + totalSteps + " steps");
 
         // Frozen execution count should be well past warmup
         DspPlanAssertions.assertFrozenExecCountAtLeast(sd, 5,
-                mode + " after 20 steps");
+                mode + " after " + totalSteps + " steps");
 
         // No capture failures
         DspPlanAssertions.assertNoCaptureFailures(sd,

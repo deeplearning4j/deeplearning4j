@@ -73,8 +73,12 @@ public:
      * Get singleton instance
      */
     static TADCacheLifecycleTracker& getInstance() {
-        static TADCacheLifecycleTracker instance;
-        return instance;
+        static TADCacheLifecycleTracker* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new TADCacheLifecycleTracker();
+        });
+        return *instance;
     }
 
     /**

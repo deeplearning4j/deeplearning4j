@@ -40,6 +40,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -84,10 +85,22 @@ static void reportMLIRVerificationFailure(mlir::ModuleOp mod, int startSlot, int
   std::string irDump;
   llvm::raw_string_ostream os(irDump);
   mod->print(os, mlir::OpPrintingFlags().enableDebugInfo());
-  
-  // Build platform-independent temp file path
-  std::string tempDir = getTempDir();
-  std::string failPath = tempDir + "triton_ir_verify_fail_" + 
+
+  // Use configurable dump dir to avoid /tmp pollution
+  std::string dumpDir = sd::Environment::getInstance().tritonDumpDir();
+  if (dumpDir.empty()) {
+    const char* envDir = std::getenv("ND4J_TRITON_CACHE_DIR");
+    if (envDir && envDir[0] != '\0') {
+      dumpDir = envDir;
+    } else {
+      std::string home = sd::Environment::getInstance().homeDirectory();
+      dumpDir = home.empty() ? getTempDir() : home + "/.kompile/cache/triton";
+    }
+  }
+  if (!dumpDir.empty() && dumpDir.back() != '/' && dumpDir.back() != '\\') dumpDir += '/';
+  // Ensure directory exists
+  std::filesystem::create_directories(dumpDir);
+  std::string failPath = dumpDir + "triton_ir_verify_fail_" +
                          std::to_string(startSlot) + "_" + std::to_string(endSlot) + ".mlir";
   
   FILE* f = fopen(failPath.c_str(), "w");
@@ -191,10 +204,15 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       std::string irDump;
       llvm::raw_string_ostream os(irDump);
       mod->print(os);
-      char fname[256];
+      char fname[512];
       int dumpIdx = irDumpCount.fetch_add(1, std::memory_order_relaxed);
-      snprintf(fname, sizeof(fname), "/tmp/triton_ir_dump_%03d_slots_%d_%d.mlir",
-               dumpIdx, startSlot, endSlot);
+      {
+        std::string dumpDir = sd::Environment::getInstance().tritonDumpDir();
+        if (dumpDir.empty()) dumpDir = getTempDir();
+        if (!dumpDir.empty() && dumpDir.back() != '/' && dumpDir.back() != '\\') dumpDir += '/';
+        snprintf(fname, sizeof(fname), "%striton_ir_dump_%03d_slots_%d_%d.mlir",
+                 dumpDir.c_str(), dumpIdx, startSlot, endSlot);
+      }
       FILE* f = fopen(fname, "w");
       if (f) {
         fprintf(f, "// Kernel: %s\n", irModule.kernelName.c_str());
@@ -490,7 +508,10 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 
   // Debug: dump PTX for problematic sub-kernels
   if (binary.data && startSlot == 347) {
-    std::string ptxPath = "/tmp/triton_ptx_" + std::to_string(startSlot) + "_" + std::to_string(endSlot) + ".ptx";
+    std::string ptxDir = sd::Environment::getInstance().tritonDumpDir();
+    if (ptxDir.empty()) ptxDir = getTempDir();
+    if (!ptxDir.empty() && ptxDir.back() != '/' && ptxDir.back() != '\\') ptxDir += '/';
+    std::string ptxPath = ptxDir + "triton_ptx_" + std::to_string(startSlot) + "_" + std::to_string(endSlot) + ".ptx";
     std::ofstream ptxFile(ptxPath, std::ios::binary | std::ios::trunc);
     if (ptxFile.good()) {
       ptxFile.write(static_cast<const char*>(binary.data), static_cast<std::streamsize>(binary.size));
@@ -538,6 +559,16 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     result.loadedDeviceId = currentDevice;
   }
 
+  auto unloadTrackedModule = [&]() {
+    if (result.gpuModule == nullptr) return;
+    recordModuleFree(result.loadedDeviceId >= 0 ? result.loadedDeviceId : 0,
+                     result.estimatedModuleBytes);
+    TritonTargetDispatch::unloadModule(result.gpuModule);
+    result.gpuModule = nullptr;
+    result.kernelFunction = nullptr;
+    result.loadedDeviceId = -1;
+  };
+
   // Get kernel function
   result.kernelFunction = TritonTargetDispatch::getKernelFunction(result.gpuModule, irModule.kernelName);
   if (!result.kernelFunction) {
@@ -545,8 +576,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     cudaGetLastError();  // Clear sticky CUDA errors
 #endif
     DSP_DIAG(COMPILE, "TritonGraphBackend: kernel function '%s' not found in module", irModule.kernelName.c_str());
-    TritonTargetDispatch::unloadModule(result.gpuModule);
-    result.gpuModule = nullptr;
+    unloadTrackedModule();
     delete[] static_cast<char*>(binary.data);
     cleanupModule();
     return result;
@@ -561,9 +591,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       DSP_DIAG(COMPILE, "TritonGraphBackend: shared memory setup failed for segment [%d-%d] "
                 "(requested=%u bytes)",
                 startSlot, endSlot, requestedSharedMem);
-      TritonTargetDispatch::unloadModule(result.gpuModule);
-      result.gpuModule = nullptr;
-      result.kernelFunction = nullptr;
+      unloadTrackedModule();
       delete[] static_cast<char*>(binary.data);
       cleanupModule();
       return result;
@@ -600,9 +628,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch required for [%d-%d], "
                "but current CUDA device does not support cooperative launch",
                startSlot, endSlot);
-      TritonTargetDispatch::unloadModule(result.gpuModule);
-      result.gpuModule = nullptr;
-      result.kernelFunction = nullptr;
+      unloadTrackedModule();
       delete[] static_cast<char*>(binary.data);
       cleanupModule();
       return result;
@@ -618,9 +644,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
                irModule.gridX, irModule.gridY, irModule.gridZ,
                launchBlockX, launchBlockY, launchBlockZ,
                requestedSharedMem);
-      TritonTargetDispatch::unloadModule(result.gpuModule);
-      result.gpuModule = nullptr;
-      result.kernelFunction = nullptr;
+      unloadTrackedModule();
       delete[] static_cast<char*>(binary.data);
       cleanupModule();
       return result;

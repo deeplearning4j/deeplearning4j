@@ -478,30 +478,31 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
     return createFallbackBuffer(shapeInfo, rank);
   }
 
-  // Try to set the buffer atomically - setBuffer uses compare-and-swap
-  // If another thread already set a buffer, our setBuffer will fail
+  // Try to set the buffer atomically - setBuffer uses compare-and-swap.
+  // Under the exclusive write lock, no other thread can be in this section
+  // for the same stripe, so the CAS should always succeed (node was just
+  // created by findOrCreateChild above with _buffer == nullptr).
   current->setBuffer(buffer);
 
-  // Get the actual buffer from the node - this may be ours or another thread's
+  // Read back the buffer from the node.
   ConstantShapeBuffer* resultBuffer = current->buffer();
 
-  if (resultBuffer == nullptr) {
-    // Rare edge case: setBuffer failed AND buffer() returns null
-    // This could happen if clearCache() ran between setBuffer and buffer()
-    // Return the buffer we created - caller owns it with refCount=1
+  if (resultBuffer == buffer) {
+    // We won the CAS — buffer is now stored in the trie (implicit ref via
+    // the initial refCount=1 from construction). Bump refCount for the
+    // caller so the buffer survives even if the trie is cleared.
+    buffer->addRef();
     return buffer;
   }
 
-  // Check if we won or lost the race
-  if (resultBuffer != buffer) {
-    // Another thread won the race and set a different buffer.
-    // We must delete the buffer we created since it's not being used.
-    delete buffer;
-  }
+  // CAS failed — another buffer was already there (shouldn't happen under
+  // the exclusive lock, but handle defensively). Delete our unused buffer
+  // and return the existing one with a caller ref.
+  delete buffer;
 
-  // Increment refcount for the caller (whether we won or lost the race,
-  // we're returning the cached buffer)
-  resultBuffer->addRef();
+  if (resultBuffer != nullptr) {
+    resultBuffer->addRef();
+  }
   return resultBuffer;
 }
 

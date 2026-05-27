@@ -51,6 +51,9 @@ public class ArchitectureRegistry {
         register(new WhisperArchitecture());
         register(new GLMArchitecture());
         register(new Llama4Architecture());
+        register(new SmolVLM2Architecture());
+        register(new Qwen3VLArchitecture());
+        register(new MiniCPMVArchitecture());
         register(new GenericArchitecture());
     }
 

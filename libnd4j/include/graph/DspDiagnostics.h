@@ -316,6 +316,102 @@ class SD_LIB_EXPORT DspDiagnostics {
   mutable std::mutex addrMutex_;
 };
 
+// ─── Array lifecycle event tracker ──────────────────────────────────────────
+// Thread-local ring buffer that records chronological events on DataBuffer
+// objects during DSP execution.  NO sync calls, NO D2H copies — only
+// pointer/flag snapshots.  Gated behind DSP_DIAG_LIFECYCLE category.
+//
+// Usage:
+//   DSP_LIFECYCLE_EVENT(exec, step, "H2D_SKIP", arr, db);
+//   DSP_LIFECYCLE_EVENT(exec, step, "STAGING_D2D_SRC", arr, db);
+//   DSP_LIFECYCLE_DUMP("anomaly context");  // dumps recent events
+//
+// Each event records: exec count, step index, event tag, array pointer,
+// DataBuffer pointer, specialBuffer pointer, pAct, sAct flags.
+// No heap allocation — fixed ring buffer on the stack.
+
+struct DspLifecycleEvent {
+  int         execCount;
+  int         stepIdx;
+  const char* tag;          // static string, NOT owned
+  const void* arrayPtr;     // NDArray*
+  const void* dbPtr;        // DataBuffer*
+  const void* specialPtr;   // specialBuffer() value
+  const void* primaryPtr;   // buffer() value
+  int8_t      pAct;         // isPrimaryActual()
+  int8_t      sAct;         // isSpecialActual()
+  int64_t     lenBytes;     // DataBuffer::getLenInBytes()
+};
+
+class DspLifecycleTracker {
+ public:
+  static constexpr int RING_SIZE = 512;
+  static constexpr int RING_MASK = RING_SIZE - 1;
+
+  DspLifecycleTracker() : pos_(0) {
+    std::memset(events_, 0, sizeof(events_));
+  }
+
+  void record(int exec, int step, const char* tag,
+              const void* arr, const void* db, const void* special,
+              const void* primary, bool pAct, bool sAct, int64_t lenBytes) {
+    int idx = pos_++ & RING_MASK;
+    events_[idx] = {exec, step, tag, arr, db, special, primary,
+                    static_cast<int8_t>(pAct ? 1 : 0),
+                    static_cast<int8_t>(sAct ? 1 : 0), lenBytes};
+  }
+
+  // Record event from NDArray + DataBuffer directly
+  void recordFromArray(int exec, int step, const char* tag,
+                       NDArray* arr) {
+    if (arr == nullptr) {
+      record(exec, step, tag, nullptr, nullptr, nullptr, nullptr, false, false, 0);
+      return;
+    }
+    auto* db = arr->dataBuffer();
+    if (db == nullptr || db->isClosed()) {
+      record(exec, step, tag, (void*)arr, nullptr, nullptr, nullptr, false, false, 0);
+      return;
+    }
+    record(exec, step, tag, (void*)arr, (void*)db,
+           db->special(), db->primary(),
+           db->isPrimaryActual(), db->isSpecialActual(),
+           db->getLenInBytes());
+  }
+
+  void dump(const char* context, int lastN = 64) const {
+    int total = pos_;
+    int start = (total > lastN) ? (total - lastN) : 0;
+    DspDiagnostics::getInstance().recordEvent(
+        DSP_DIAG_LIFECYCLE, -1, -1, -1, nullptr, 0,
+        "=== LIFECYCLE DUMP: %s (last %d of %d events) ===",
+        context, std::min(lastN, total), total);
+    for (int i = start; i < total; i++) {
+      const auto& e = events_[i & RING_MASK];
+      DspDiagnostics::getInstance().recordEvent(
+          DSP_DIAG_LIFECYCLE, e.stepIdx, -1, -1, nullptr, 0,
+          "  [%d] exec=%d step=%d %s arr=%p db=%p special=%p primary=%p "
+          "pAct=%d sAct=%d len=%lld",
+          i, e.execCount, e.stepIdx, e.tag ? e.tag : "?",
+          e.arrayPtr, e.dbPtr, e.specialPtr, e.primaryPtr,
+          (int)e.pAct, (int)e.sAct, (long long)e.lenBytes);
+    }
+  }
+
+  void clear() { pos_ = 0; }
+  int count() const { return pos_; }
+
+ private:
+  DspLifecycleEvent events_[RING_SIZE];
+  int pos_;
+};
+
+// Thread-local accessor — one tracker per thread, zero init cost.
+inline DspLifecycleTracker& tl_lifecycleTracker() {
+  static thread_local DspLifecycleTracker tracker;
+  return tracker;
+}
+
 }  // namespace graph
 }  // namespace sd
 
@@ -498,6 +594,41 @@ class SD_LIB_EXPORT DspDiagnostics {
 // Emit a titled summary banner as a single ring-buffer event.
 // Fuses a section title and formatted body into one recordEvent call,
 // replacing multi-call blocks like "=== TITLE === \n details \n ===".
+// ── Array lifecycle event tracking ──────────────────────────────────────────
+// Record a lifecycle event for an NDArray. NO sync, NO D2H — only captures
+// pointer values and actuality flags at the call site.
+// TAG must be a static string literal (not heap-allocated).
+// Gated on DSP_DIAG_LIFECYCLE category.
+#define DSP_LIFECYCLE_EVENT(EXEC, STEP, TAG, ARR) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_LIFECYCLE)) { \
+      sd::graph::tl_lifecycleTracker().recordFromArray((EXEC), (STEP), (TAG), (ARR)); \
+    } \
+  } while (0)
+
+// Record a raw lifecycle event (when you have the components, not an NDArray).
+#define DSP_LIFECYCLE_RAW(EXEC, STEP, TAG, ARR_PTR, DB_PTR, SPECIAL, PRIMARY, PACT, SACT, LEN) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_LIFECYCLE)) { \
+      sd::graph::tl_lifecycleTracker().record((EXEC), (STEP), (TAG), \
+          (ARR_PTR), (DB_PTR), (SPECIAL), (PRIMARY), (PACT), (SACT), (LEN)); \
+    } \
+  } while (0)
+
+// Dump recent lifecycle events (call on anomaly detection).
+#define DSP_LIFECYCLE_DUMP(CONTEXT) \
+  do { \
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_LIFECYCLE)) { \
+      sd::graph::tl_lifecycleTracker().dump((CONTEXT)); \
+    } \
+  } while (0)
+
+// Clear the lifecycle ring buffer (call at execute() start).
+#define DSP_LIFECYCLE_CLEAR() \
+  do { \
+    sd::graph::tl_lifecycleTracker().clear(); \
+  } while (0)
+
 #define DSP_DIAG_BANNER(CAT, TITLE, FMT, ...) \
   do { \
     if (sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_##CAT)) { \
@@ -591,6 +722,10 @@ class SD_LIB_EXPORT DspDiagnostics {
 #define DSP_DIAG_SLOT_WRITE(SLOT_IDX, OP, BYTES, STREAM, PHASE) ((void)0)
 #define DSP_DIAG_SLOT_ZERO(SLOT_IDX, REASON, STREAM, PHASE) ((void)0)
 #define DSP_CAPTURE_PROBE(STREAM, SLOT, TAG, OP, OUT_INVALID) do { (OUT_INVALID) = false; } while (0)
+#define DSP_LIFECYCLE_EVENT(EXEC, STEP, TAG, ARR) ((void)0)
+#define DSP_LIFECYCLE_RAW(EXEC, STEP, TAG, ARR_PTR, DB_PTR, SPECIAL, PRIMARY, PACT, SACT, LEN) ((void)0)
+#define DSP_LIFECYCLE_DUMP(CONTEXT) ((void)0)
+#define DSP_LIFECYCLE_CLEAR() ((void)0)
 #define DSP_DIAG_BANNER(CAT, TITLE, FMT, ...) ((void)0)
 #define DSP_DIAG_STATE_TRANSITION(STATE_NAME_FN, OLD_STATE, NEW_STATE_STR, FMT, ...) ((void)0)
 #define DSP_DIAG_LIFECYCLE_TRANSITION DSP_DIAG_STATE_TRANSITION

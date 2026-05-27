@@ -18,12 +18,17 @@
 #include <array/TadPack.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <mutex>
 
 namespace sd {
 
 ConstantTadHelper& ConstantTadHelper::getInstance() {
-  static ConstantTadHelper instance;
-  return instance;
+  static ConstantTadHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ConstantTadHelper();
+  });
+  return *instance;
 }
 
 std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType dimension) {

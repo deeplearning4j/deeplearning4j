@@ -240,19 +240,6 @@ Context::~Context() {
     }
     _intermediateResults.clear();
 
-#ifdef SD_CUDA
-    // Sync the stream after deleting intermediate results to ensure all async frees complete.
-    // When DataBuffer::deleteSpecial() is called during NDArray destruction, it uses
-    // cudaFreeAsync which schedules the free on a stream. We must ensure these complete
-    // before the Context destructor finishes to prevent use-after-free issues.
-    if (contextToDelete != nullptr) {
-      auto stream = contextToDelete->getCudaStream();
-      if (stream != nullptr) {
-        cudaStreamSynchronize(*stream);
-      }
-    }
-#endif
-
 #ifdef __cpp_exceptions
   } catch (...) {
     fprintf(stderr, "WARNING: Exception clearing vectors in Context destructor\n");
@@ -986,15 +973,6 @@ void Context::setDArguments(const std::vector<DataType> &dArgs) {
 void Context::clearFastPath() {
   _fastpath_in.clear();
   _fastpath_out.clear();
-
-#ifdef SD_CUDA
-  if (_context != nullptr) {
-    auto stream = _context->getCudaStream();
-    if (stream != nullptr) {
-      cudaStreamSynchronize(*stream);
-    }
-  }
-#endif
 
   // IMPORTANT: Do NOT delete or clear _handles here.
   //

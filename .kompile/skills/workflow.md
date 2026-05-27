@@ -314,7 +314,10 @@ When in doubt: **dispatch subagents, gather evidence, make the right call.** The
 - NEVER use `ews()` / `elementWiseStride` — use `strideDescendingCAscendingF()`
 - NEVER use `unique_ptr` / `shared_ptr` — raw pointers with manual delete
 - NEVER use workarounds — fix root causes
-- NEVER dismiss errors as "pre-existing" — fix everything
+- NEVER dismiss errors — if an issue is a blocker, FIX it no matter what
+- Do NOT write one-off `syncToDevice()` calls — assume basic CUDA device syncing works
+- If you suspect an infra issue, focus on simpler causes first (wrong shapes, types, data flow)
+- For debugging, use: `Nd4j.getEnvironment().setDebug(true); Nd4j.getEnvironment().setVerbose(true);`
 - Use platform macros: `SD_HOST`, `SD_DEVICE`, `PRAGMA_OMP_*`, `BUILD_SINGLE_TEMPLATE`
 
 ### Autonomy

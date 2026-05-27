@@ -36,6 +36,12 @@
 
 #include <cassert>
 #include <cstdint>
+// DspDiagnostics.h is included here so that the inline transition methods on
+// SegmentPhase, SlotPhase, and PlanLifecycle can emit DSP_DIAG lifecycle events.
+// The include guard on DspDiagnostics.h prevents double-inclusion when
+// NativeDynamicShapePlan.h (which also includes DspDiagnostics.h) is the
+// primary includer.
+#include <graph/DspDiagnostics.h>
 
 namespace sd {
 namespace graph {
@@ -151,24 +157,28 @@ struct SegmentPhase {
   /** WARMUP → COMPILING (warmup passes complete) */
   void advanceToCompiling() {
     assert(isBuilding() && subPhase == BuildSubPhase::WARMUP);
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: BUILDING:WARMUP -> BUILDING:COMPILING");
     subPhase = BuildSubPhase::COMPILING;
   }
 
   /** COMPILING → CAPTURING (compilation succeeded) */
   void advanceToCapturing() {
     assert(isBuilding() && subPhase == BuildSubPhase::COMPILING);
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: BUILDING:COMPILING -> BUILDING:CAPTURING");
     subPhase = BuildSubPhase::CAPTURING;
   }
 
   /** WARMUP → CAPTURING (skip compile step — for CUDA_GRAPHS which capture inline) */
   void skipCompileToCapturing() {
     assert(isBuilding() && subPhase == BuildSubPhase::WARMUP);
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: BUILDING:WARMUP -> BUILDING:CAPTURING (skipped compile)");
     subPhase = BuildSubPhase::CAPTURING;
   }
 
   /** CAPTURING → SEALED (capture succeeded — steady-state replay) */
   void seal() {
     assert(isBuilding() && subPhase == BuildSubPhase::CAPTURING);
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: BUILDING:CAPTURING -> SEALED (oomRetries=%d)", oomRetryCount);
     phase = GraphNodePhase::SEALED;
     oomRetryPending = false;
     oomRetryCount = 0;
@@ -176,6 +186,7 @@ struct SegmentPhase {
 
   /** Any → FAILED (terminal, never recovers without full invalidation) */
   void fail() {
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: %s -> FAILED", displayName());
     phase = GraphNodePhase::FAILED;
     oomRetryPending = false;
   }
@@ -183,6 +194,8 @@ struct SegmentPhase {
   /** Mark OOM retry (stays in CAPTURING sub-phase, sets retry flag) */
   void markOomRetry(int retryAfterExec) {
     assert(isBuilding() && subPhase == BuildSubPhase::CAPTURING);
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: BUILDING:CAPTURING -> BUILDING:OOM_RETRY "
+             "(retryAfter=%d retryCount=%d)", retryAfterExec, oomRetryCount + 1);
     oomRetryPending = true;
     oomRetryCount++;
     oomRetryAfterExec = retryAfterExec;
@@ -190,11 +203,13 @@ struct SegmentPhase {
 
   /** Clear OOM flag when retry fires (still in CAPTURING) */
   void clearOomRetry() {
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: BUILDING:OOM_RETRY -> BUILDING:CAPTURING (retry firing)");
     oomRetryPending = false;
   }
 
   /** Full reset — back to initial BUILDING/WARMUP state */
   void reset() {
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: %s -> BUILDING:WARMUP (full reset)", displayName());
     phase = GraphNodePhase::BUILDING;
     subPhase = BuildSubPhase::WARMUP;
     oomRetryPending = false;
@@ -232,6 +247,47 @@ struct SegmentPhase {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// SegmentExecOutcome — WHY a segment executes the way it does
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Replaces the scattered boolean flags (captureProducedNoKernels, noFusibleOps,
+// compilationFailed, oomRetryPending) with a single mutually-exclusive enum.
+// SegmentPhase tracks WHERE in the lifecycle (BUILDING/SEALED/FAILED).
+// SegmentExecOutcome tracks the RESULT that determines dispatch.
+//
+// dispatchSegment() uses (SelectedBackend, SegmentPhase, SegmentExecOutcome)
+// to pick exactly one execution action.
+
+enum class SegmentExecOutcome : uint8_t {
+  PENDING          = 0,  // Still building (warmup/compile/capture in progress)
+  GRAPH_REPLAY     = 1,  // Valid replay handle — steady-state graph replay
+  ZERO_KERNEL_SBS  = 2,  // Capture produced 0 GPU nodes — permanent slot-by-slot
+  NOT_FUSIBLE      = 3,  // Backend cannot fuse ops — permanent slot-by-slot (expected)
+  COMPILE_FAILED   = 4,  // Compilation failed — permanent slot-by-slot (error)
+  OOM_DEFERRED     = 5,  // OOM during capture — deferred retry scheduled
+};
+
+inline const char* segmentExecOutcomeName(SegmentExecOutcome o) {
+  switch (o) {
+    case SegmentExecOutcome::PENDING:         return "PENDING";
+    case SegmentExecOutcome::GRAPH_REPLAY:    return "GRAPH_REPLAY";
+    case SegmentExecOutcome::ZERO_KERNEL_SBS: return "ZERO_KERNEL_SBS";
+    case SegmentExecOutcome::NOT_FUSIBLE:     return "NOT_FUSIBLE";
+    case SegmentExecOutcome::COMPILE_FAILED:  return "COMPILE_FAILED";
+    case SegmentExecOutcome::OOM_DEFERRED:    return "OOM_DEFERRED";
+    default:                                  return "UNKNOWN";
+  }
+}
+
+// Returns true if the outcome is terminal — segment will always execute
+// slot-by-slot and never attempt graph capture again.
+inline bool isTerminalOutcome(SegmentExecOutcome o) {
+  return o == SegmentExecOutcome::ZERO_KERNEL_SBS ||
+         o == SegmentExecOutcome::NOT_FUSIBLE ||
+         o == SegmentExecOutcome::COMPILE_FAILED;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SlotPhase — Complete slot state in a single struct
 // ═══════════════════════════════════════════════════════════════════════════════
 //
@@ -265,11 +321,14 @@ struct SlotPhase {
 
   /** Mark shape as observed (stays BUILDING but caches shape info) */
   void markShapeCached() {
+    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> BUILDING:SHAPE_CACHED", displayName());
     shapeCacheValid = true;
   }
 
   /** Freeze slot (shape + buffer stable → SEALED) */
   void seal(bool constant = false, bool viewProducer = false) {
+    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> SEALED (constant=%d viewProducer=%d)",
+             displayName(), (int)constant, (int)viewProducer);
     phase = GraphNodePhase::SEALED;
     isConstant = constant;
     isViewProducer = viewProducer;
@@ -277,6 +336,8 @@ struct SlotPhase {
 
   /** Unfreeze (back to BUILDING — e.g., shape change detected) */
   void unseal() {
+    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> BUILDING:WARMUP (unsealed — shape change)",
+             displayName());
     phase = GraphNodePhase::BUILDING;
     isConstant = false;
     isViewProducer = false;
@@ -285,6 +346,7 @@ struct SlotPhase {
 
   /** Full reset */
   void reset() {
+    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> BUILDING:WARMUP (full reset)", displayName());
     phase = GraphNodePhase::BUILDING;
     isConstant = false;
     isViewProducer = false;
@@ -350,6 +412,13 @@ struct PlanLifecycle {
   bool isShapesFrozen()  const { return isBuilding() && buildStage == BuildStage::SHAPES_FROZEN; }
   bool isReplaying()     const { return isSealed(); }
 
+  /** True when shapes are stable — either SHAPES_FROZEN (building) or REPLAYING (sealed).
+   *  This is the correct check for "should we use frozen/replay code paths?" because
+   *  isShapesFrozen() returns FALSE once the plan transitions to REPLAYING (SEALED).
+   *  Using isShapesFrozen() alone causes the plan to fall back to slot-by-slot after
+   *  the SHAPES_FROZEN → REPLAYING transition, breaking CUDA_GRAPHS replay. */
+  bool isInFrozenOrReplayState() const { return isShapesFrozen() || isReplaying(); }
+
   bool pointersStable()  const { return isSealed() || pointersStableCount >= 2; }
 
   // ── Transitions ─────────────────────────────────────────────────────────
@@ -357,6 +426,7 @@ struct PlanLifecycle {
   /** SLOT_BY_SLOT → SHAPES_FROZEN (shapes observed constant) */
   void freezeShapes() {
     assert(isBuilding() && buildStage == BuildStage::SLOT_BY_SLOT);
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: SLOT_BY_SLOT -> SHAPES_FROZEN");
     buildStage = BuildStage::SHAPES_FROZEN;
     postFreezeExecCount = 0;
     pointersStableCount = 0;
@@ -366,11 +436,15 @@ struct PlanLifecycle {
   void seal() {
     assert(isBuilding() && buildStage == BuildStage::SHAPES_FROZEN);
     assert(pointersStableCount >= 2);
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: SHAPES_FROZEN -> REPLAYING "
+             "(pointersStableCount=%d postFreezeExec=%d)",
+             pointersStableCount, postFreezeExecCount);
     phase = GraphNodePhase::SEALED;
   }
 
   /** Unfreeze — back to SLOT_BY_SLOT (shape change detected) */
   void unfreeze() {
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: %s -> SLOT_BY_SLOT (shape change detected)", displayName());
     phase = GraphNodePhase::BUILDING;
     buildStage = BuildStage::SLOT_BY_SLOT;
     pointersStableCount = 0;
@@ -379,6 +453,7 @@ struct PlanLifecycle {
 
   /** REPLAYING → SHAPES_FROZEN (pointer drift detected — need re-capture) */
   void unseal() {
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: REPLAYING -> SHAPES_FROZEN (pointer drift — need re-capture)");
     phase = GraphNodePhase::BUILDING;
     buildStage = BuildStage::SHAPES_FROZEN;
     pointersStableCount = 0;
@@ -386,11 +461,13 @@ struct PlanLifecycle {
 
   /** Any → FAILED */
   void fail() {
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: %s -> FAILED", displayName());
     phase = GraphNodePhase::FAILED;
   }
 
   /** Full reset */
   void reset() {
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: %s -> SLOT_BY_SLOT (full reset)", displayName());
     phase = GraphNodePhase::BUILDING;
     buildStage = BuildStage::SLOT_BY_SLOT;
     pointersStableCount = 0;
@@ -400,11 +477,15 @@ struct PlanLifecycle {
 
   /** Record one stable-pointers observation */
   void recordPointersStable() {
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: pointersStableCount %d -> %d (stable observation)",
+             pointersStableCount, pointersStableCount + 1);
     pointersStableCount++;
   }
 
   /** Record one unstable-pointers observation (resets counter) */
   void recordPointersUnstable() {
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: pointersStableCount %d -> 0 (unstable — pointers drifted)",
+             pointersStableCount);
     pointersStableCount = 0;
   }
 

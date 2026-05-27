@@ -82,6 +82,7 @@ import java.util.Set;
  *   0: temperature
  *   1: topP
  *   2: topK (as double)
+ *   3: repetitionPenalty (1.0 = disabled)
  */
 @NoArgsConstructor
 public class AutoregressiveDecode extends DynamicCustomOp {
@@ -93,6 +94,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     @Getter private double temperature;
     @Getter private double topP;
     @Getter private int topK;
+    @Getter private double repetitionPenalty;
     @Getter private int optionalInputMask;
 
     /**
@@ -129,6 +131,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
      * @param temperature        sampling temperature (0 = greedy)
      * @param topK               top-K sampling (0 = disabled)
      * @param topP               nucleus sampling threshold (0 = disabled)
+     * @param repetitionPenalty  repetition penalty (1.0 = disabled)
      * @param additionalStopIds  additional stop token IDs (may be null)
      */
     public AutoregressiveDecode(INDArray prefillEmbeddings,
@@ -158,6 +161,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
                                  double temperature,
                                  int topK,
                                  double topP,
+                                 double repetitionPenalty,
                                  Set<Integer> additionalStopIds) {
         // Build input array
         int optionalMask = 0;
@@ -202,6 +206,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         this.temperature = temperature;
         this.topK = topK;
         this.topP = topP;
+        this.repetitionPenalty = repetitionPenalty;
 
         // Encode plan handle as two 32-bit integers
         long planAddr = planHandle != null ? planHandle.address() : 0L;
@@ -275,8 +280,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
 
         addIArgument(iArgs.stream().mapToLong(Long::longValue).toArray());
 
-        // Float args: temperature, topP, topK (as float)
-        addTArgument(temperature, topP, (double) topK);
+        // Float args: temperature, topP, topK (as float), repetitionPenalty
+        addTArgument(temperature, topP, (double) topK, repetitionPenalty);
     }
 
     /**
@@ -321,6 +326,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
                                  double temperature,
                                  int topK,
                                  double topP,
+                                 double repetitionPenalty,
                                  Set<Integer> additionalStopIds) {
         // Build input array
         int optionalMask = 0;
@@ -364,6 +370,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         this.temperature = temperature;
         this.topK = topK;
         this.topP = topP;
+        this.repetitionPenalty = repetitionPenalty;
 
         long planAddr = planHandle != null ? planHandle.address() : 0L;
         long planLow = planAddr & 0xFFFFFFFFL;
@@ -437,7 +444,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         }
 
         addIArgument(iArgs.stream().mapToLong(Long::longValue).toArray());
-        addTArgument(temperature, topP, (double) topK);
+        addTArgument(temperature, topP, (double) topK, repetitionPenalty);
     }
 
     /**
@@ -498,8 +505,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             }
         }
 
-        // Float args: temperature, topP, topK (as float)
-        addTArgument(temperature, topP, (double) topK);
+        // Float args: temperature, topP, topK (as float), repetitionPenalty
+        addTArgument(temperature, topP, (double) topK, 1.0);
     }
 
     @Override
@@ -512,6 +519,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         if (tArguments.size() > 0) this.temperature = tArguments.get(0);
         if (tArguments.size() > 1) this.topP = tArguments.get(1);
         if (tArguments.size() > 2) this.topK = tArguments.get(2).intValue();
+        if (tArguments.size() > 3) this.repetitionPenalty = tArguments.get(3);
     }
 
     @Override

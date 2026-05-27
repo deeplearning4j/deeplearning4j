@@ -423,8 +423,9 @@ public final class DspHandle {
 
         INDArray result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
 
-        Pointer nativePrimary = ops.getOpaqueNDArrayBuffer(opaqueOut);
         Pointer nativeSpecial = ops.getOpaqueNDArraySpecialBuffer(opaqueOut);
+        Pointer nativePrimary = (nativeSpecial == null || nativeSpecial.isNull())
+                ? ops.getOpaqueNDArrayBuffer(opaqueOut) : null;
 
         OpaqueDataBuffer srcOdb = ops.dbCreateExternalDataBuffer(
                 length, dtype.toInt(), nativePrimary, nativeSpecial);

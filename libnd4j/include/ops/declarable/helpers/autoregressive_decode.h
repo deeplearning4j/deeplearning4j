@@ -109,6 +109,7 @@ SD_LIB_HIDDEN void autoregressiveDecodeCpu(
     double temperature,
     int topK,
     double topP,
+    double repPenalty,
     LaunchContext* context,
     AutoregressiveDecodeConfig* config = nullptr);
 
@@ -139,6 +140,7 @@ SD_LIB_HIDDEN void autoregressiveDecodeCuda(
     double temperature,
     int topK,
     double topP,
+    double repPenalty,
     LaunchContext* context,
     AutoregressiveDecodeConfig* config = nullptr);
 #endif

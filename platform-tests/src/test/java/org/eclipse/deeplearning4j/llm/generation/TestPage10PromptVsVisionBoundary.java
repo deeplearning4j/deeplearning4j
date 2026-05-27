@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Boundary ablation for the remaining page-10 benchmark failure.
@@ -1728,11 +1729,9 @@ public class TestPage10PromptVsVisionBoundary {
             pdfFile = new File(configuredPath);
         } else {
             pdfFile = new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
-            if (!pdfFile.exists()) {
-                pdfFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
-            }
         }
-        assertTrue(pdfFile.exists(), "Benchmark PDF must exist: " + pdfFile.getAbsolutePath());
+        assumeTrue(pdfFile.exists(), "PDF not found at " + pdfFile.getAbsolutePath()
+                + ". Place pathfinder-mythic.pdf in platform-tests/ or set -Dvlm.test.pdf.path");
         int renderDpi = Integer.getInteger("vlm.test.pdf.dpi", 150);
 
         try (PDDocument document = PDDocument.load(pdfFile)) {

@@ -25,8 +25,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <iomanip>
 #include <functional>
+#include <iomanip>
+#include <mutex>
 #include <sstream>
 #include <vector>
 
@@ -51,8 +52,12 @@ static const char* const sCategoryNames[DSP_DIAG_NUM_CATEGORIES] = {
 // ─── Singleton ───────────────────────────────────────────────────────────────
 
 DspDiagnostics& DspDiagnostics::getInstance() {
-  static DspDiagnostics instance;
-  return instance;
+  static DspDiagnostics* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new DspDiagnostics();
+  });
+  return *instance;
 }
 
 DspDiagnostics::DspDiagnostics()
@@ -601,48 +606,15 @@ void DspDiagnostics::clearAddressSnapshots() {
   addrSnapshots_.clear();
 }
 
-// ─── Helper: safe D2H copy on a specific stream (capture-safe) ───────────────
-#ifdef SD_CUDA
-static bool safeDtoH(void* dst, const void* src, size_t bytes, cudaStream_t stream) {
-  // Never copy during graph capture — would bake a memcpy node into the graph
-  if (stream != nullptr) {
-    cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
-    cudaStreamIsCapturing(stream, &capStat);
-    if (capStat != cudaStreamCaptureStatusNone) return false;
-  }
-  cudaMemcpyAsync(dst, src, bytes, cudaMemcpyDeviceToHost, stream);
-  cudaStreamSynchronize(stream);
-  return true;
-}
-#endif
-
-// ─── Slot buffer dump (debug-gated, D2H via stream-async copy) ───────────────
+// ─── Slot buffer dump (debug-gated metadata only) ────────────────────────────
 void DspDiagnostics::dumpSlotBuffer(const char* tag, int slotIdx,
                                      const void* devicePtr,
                                      int64_t numElements, int sampleCount) {
   if (devicePtr == nullptr || numElements <= 0) return;
 
-  int n = std::min(sampleCount, static_cast<int>(numElements));
-  std::vector<float> host(n);
-
-#ifdef SD_CUDA
-  auto* lc = LaunchContext::defaultContext();
-  cudaStream_t stream = lc && lc->getCudaStream() ? *lc->getCudaStream() : nullptr;
-  if (!safeDtoH(host.data(), devicePtr, n * sizeof(float), stream)) return;
-#else
-  std::memcpy(host.data(), devicePtr, n * sizeof(float));
-#endif
-
-  // Build value string
-  char buf[512];
-  int off = 0;
-  for (int i = 0; i < n && off < static_cast<int>(sizeof(buf)) - 16; i++) {
-    off += snprintf(buf + off, sizeof(buf) - off, "%s%.4f", i > 0 ? "," : "", host[i]);
-  }
-
   recordEvent(DSP_DIAG_EXECUTE, slotIdx, -1, -1, tag, 0,
-              "slot[%d] len=%lld first%d=[%s]",
-              slotIdx, static_cast<long long>(numElements), n, buf);
+              "slot[%d] len=%lld addr=%p sampleCount=%d",
+              slotIdx, static_cast<long long>(numElements), devicePtr, sampleCount);
 }
 
 // ─── Segment output dump (replaces copy-pasted topVal+first-N blocks) ────────
@@ -652,28 +624,10 @@ void DspDiagnostics::dumpSegmentOutput(const char* tag, int endSlot,
                                         void* stream, int sampleCount) {
   if (devicePtr == nullptr || numElements <= 0) return;
 
-  int n = std::min(sampleCount, static_cast<int>(numElements));
-  std::vector<float> host(n, 0.0f);
-
-#ifdef SD_CUDA
-  cudaStream_t cudaStr = (stream != nullptr)
-      ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  if (!safeDtoH(host.data(), devicePtr, n * sizeof(float), cudaStr)) return;
-#else
-  std::memcpy(host.data(), devicePtr, n * sizeof(float));
-#endif
-
-  // Build value string
-  char valBuf[256];
-  int off = 0;
-  for (int i = 0; i < n && off < static_cast<int>(sizeof(valBuf)) - 16; i++) {
-    off += snprintf(valBuf + off, sizeof(valBuf) - off, "%s%.5f", i > 0 ? ", " : "", host[i]);
-  }
-
   recordEvent(DSP_DIAG_EXECUTE, endSlot, -1, -1, tag, 0,
-              "%s topVal[0]=%.5f addr=%p [%s] (endSlot=%d len=%lld execCount=%d)",
-              tag, host[0], devicePtr, valBuf, endSlot,
-              static_cast<long long>(numElements), execCount);
+              "%s addr=%p (endSlot=%d len=%lld execCount=%d sampleCount=%d)",
+              tag, devicePtr, endSlot,
+              static_cast<long long>(numElements), execCount, sampleCount);
 }
 
 // ─── External input actuality state dump ─────────────────────────────────────
@@ -681,11 +635,6 @@ DspDiagnostics::ExtInputSyncResult DspDiagnostics::dumpExternalInputState(
     NDArray** externalArrays, int numExt, int execCount, int maxToDump) {
   ExtInputSyncResult result = {0, 0, 0};
   if (externalArrays == nullptr || numExt <= 0) return result;
-
-#ifdef SD_CUDA
-  auto* lc = LaunchContext::defaultContext();
-  cudaStream_t diagStream = lc && lc->getCudaStream() ? *lc->getCudaStream() : nullptr;
-#endif
 
   result.total = numExt;
   for (int ei = 0; ei < numExt; ei++) {
@@ -702,18 +651,6 @@ DspDiagnostics::ExtInputSyncResult DspDiagnostics::dumpExternalInputState(
 
     if (ei < maxToDump) {
       char valBuf[128] = {0};
-#ifdef SD_CUDA
-      if (db && db->special() && db->getLenInBytes() >= static_cast<int64_t>(sizeof(float))) {
-        float vals[4] = {0};
-        int nCopy = std::min(4, static_cast<int>(db->getLenInBytes() / sizeof(float)));
-        if (safeDtoH(vals, db->special(), nCopy * sizeof(float), diagStream)) {
-          int off = 0;
-          for (int i = 0; i < nCopy && off < static_cast<int>(sizeof(valBuf)) - 16; i++) {
-            off += snprintf(valBuf + off, sizeof(valBuf) - off, "%s%.5f", i > 0 ? ", " : "", vals[i]);
-          }
-        }
-      }
-#endif
       recordEvent(DSP_DIAG_EXECUTE, -(ei + 1), -1, -1, nullptr, 0,
                   "EXT_INPUT[%d] pAct=%d sAct=%d bytes=%lld addr=%p device=[%s] execCount=%d",
                   ei, pAct ? 1 : 0, sAct ? 1 : 0,
@@ -729,28 +666,25 @@ DspDiagnostics::ExtInputSyncResult DspDiagnostics::dumpExternalInputState(
   return result;
 }
 
-// ─── Array content fingerprint (FNV-1a) ──────────────────────────────────────
-// 64-bit hash over the host-side payload. Detects stuck inputs that never change
-// between execution steps (repeated fingerprint across execCounts).
-// Must be invoked outside CUDA graph capture — syncToHost() would poison capture.
+// ─── Array metadata fingerprint (FNV-1a) ─────────────────────────────────────
 void DspDiagnostics::fingerprintArray(const char* tag, int idx, const char* name,
                                        NDArray* arr, int execCount) {
   if (arr == nullptr) return;
-  arr->syncToHost();
   auto* db = arr->dataBuffer();
-  if (db == nullptr || db->primary() == nullptr) return;
+  if (db == nullptr) return;
 
   size_t elemBytes = arr->sizeOfT();
   if (elemBytes == 0) elemBytes = 1;
   size_t totalBytes = static_cast<size_t>(arr->lengthOf()) * elemBytes;
-  const uint8_t* base = static_cast<const uint8_t*>(db->primary()) + arr->offset() * elemBytes;
 
-  // FNV-1a 64-bit over every byte of the payload.
   uint64_t h = 0xcbf29ce484222325ULL;
-  for (size_t i = 0; i < totalBytes; i++) {
-    h ^= base[i];
-    h *= 0x100000001b3ULL;
-  }
+  uintptr_t primaryPtr = reinterpret_cast<uintptr_t>(db->primary());
+  uintptr_t specialPtr = reinterpret_cast<uintptr_t>(db->special());
+  h ^= primaryPtr; h *= 0x100000001b3ULL;
+  h ^= specialPtr; h *= 0x100000001b3ULL;
+  h ^= totalBytes; h *= 0x100000001b3ULL;
+  auto offset = static_cast<uint64_t>(arr->offset());
+  h ^= offset; h *= 0x100000001b3ULL;
 
   recordEvent(DSP_DIAG_EXECUTE, -1, -1, -1, tag, 0,
               "ARRAY_FINGERPRINT tag=%s idx=%d name='%s' dtype=%d len=%lld bytes=%zu "

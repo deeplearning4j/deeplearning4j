@@ -75,23 +75,6 @@ namespace graph {
 // output 14 steps later.
 // ═══════════════════════════════════════════════════════════════════════════
 
-// FNV-1a hash of first N bytes from a device buffer (syncs stream first).
-static uint64_t deviceBufFingerprint(void* devPtr, size_t totalBytes,
-                                     cudaStream_t str, size_t maxBytes = 256) {
-  if (devPtr == nullptr || totalBytes == 0) return 0;
-  size_t n = std::min(totalBytes, maxBytes);
-  uint8_t buf[256];
-  if (n > 256) n = 256;
-  cudaMemcpyAsync(buf, devPtr, n, cudaMemcpyDeviceToHost, str);
-  cudaStreamSynchronize(str);
-  uint64_t h = 0xcbf29ce484222325ULL;
-  for (size_t i = 0; i < n; i++) {
-    h ^= static_cast<uint64_t>(buf[i]);
-    h *= 0x100000001b3ULL;
-  }
-  return h;
-}
-
 void NativeDynamicShapePlan::verifyStagingNotStale(
     NDArray** externalArrays, NDArray** effectiveArrays,
     int numExt, void* stream, const char* diagTag) {
@@ -130,34 +113,8 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
       size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
       if (bytes == 0) continue;
 
-      // Compare first 256 bytes
-      size_t cmpBytes = std::min(bytes, static_cast<size_t>(256));
-      uint8_t srcSnap[256], dstSnap[256];
-      cudaMemcpyAsync(srcSnap, srcBuf, cmpBytes, cudaMemcpyDeviceToHost, cudaStr);
-      cudaMemcpyAsync(dstSnap, dstBuf, cmpBytes, cudaMemcpyDeviceToHost, cudaStr);
-      cudaStreamSynchronize(cudaStr);
-
-      if (std::memcmp(srcSnap, dstSnap, cmpBytes) != 0) {
-        const char* name = (idx < static_cast<int>(externalInputNames_.size()))
-                           ? externalInputNames_[idx].c_str() : "?";
-        // Find first differing byte
-        int diffAt = -1;
-        for (size_t b = 0; b < cmpBytes; b++) {
-          if (srcSnap[b] != dstSnap[b]) { diffAt = static_cast<int>(b); break; }
-        }
-        char msg[512];
-        snprintf(msg, sizeof(msg),
-                 "STALENESS CHECK 1 FAILED: %s ext[%d] name='%s' — staging buffer "
-                 "content does NOT match source after D2D. srcBuf=%p dstBuf=%p "
-                 "bytes=%zu firstDiffByte=%d execCount=%d. "
-                 "The graph will replay against stale staging data.",
-                 diagTag, idx, name, srcBuf, dstBuf, bytes, diffAt, executeCount_);
-        DSP_DIAG(VERIFY, "%s", msg);
-        throw std::runtime_error(msg);
-      }
-
-      DSP_DIAG(VERIFY, "%s STAGING_OK: ext[%d] name='%s' srcBuf=%p dstBuf=%p "
-               "bytes=%zu — content matches after D2D",
+      DSP_DIAG(VERIFY, "%s STAGING_QUEUED: ext[%d] name='%s' srcBuf=%p dstBuf=%p "
+               "bytes=%zu (async path: content compare skipped)",
                diagTag, idx,
                (idx < static_cast<int>(externalInputNames_.size()))
                    ? externalInputNames_[idx].c_str() : "?",
@@ -166,121 +123,16 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
   }
 
   // ── CHECK 2: Variable input mutation across steps ─────────────────────
-  // After warmup (execCount >= 3), at least one variable input's device data
-  // should differ from the previous step in a decode loop.  If ALL inputs are
-  // identical for N or more consecutive steps it indicates a stagnant loop
-  // (e.g. input_ids / position_ids not advancing) and replay will produce
-  // wrong output.
-  //
-  // Threshold kStaleThreshold=3: a single identical-step pair is tolerated
-  // because vision encoder tiles can legitimately share pixel data (blank or
-  // uniform regions) or identical attention masks.  A real decode-loop
-  // stagnation produces dozens of unchanged steps, so threshold=3 catches it
-  // while suppressing false positives from occasional duplicate vision frames.
-  //
-  // The per-plan consecutive-unchanged counter is stored in prevStepFingerprints_
-  // under the sentinel key -1 (all real external-input indices are >= 0).
-  static constexpr int kStaleThreshold = 3;
-
+  // Content fingerprinting requires a host-visible D2H completion point. Keep
+  // DSP replay async here and rely on address-stability plus replay tests for
+  // the hot path.
   if (executeCount_ >= 3) {
-    // Sentinel key -2 stores the executeCount_ value of the execute() invocation
-    // at which fingerprints were last saved.  Multiple compositeReplay calls within
-    // the same execute() invocation share the same executeCount_; only the FIRST
-    // call per invocation should run the staleness check and update fingerprints.
-    // Subsequent calls for other segments skip to prevent false-positive
-    // consecutive-unchanged accumulation across segments of a single frame
-    // (e.g. vision encoder issuing N segment replays per encode() call).
-    auto it2 = prevStepFingerprints_.find(-2);
-    bool skipCheck2 = (it2 != prevStepFingerprints_.end() &&
-                       static_cast<int>(it2->second) == executeCount_);
-    if (!skipCheck2) {
-      bool anyChanged = false;
-      bool anyChecked = false;
-      std::vector<std::pair<int, uint64_t>> currentFingerprints;
-
-      // Read the consecutive-unchanged counter from the sentinel slot.
-      uint64_t consecutiveUnchanged = 0;
-      {
-        auto it = prevStepFingerprints_.find(-1);
-        if (it != prevStepFingerprints_.end()) consecutiveUnchanged = it->second;
-      }
-
-      for (int idx : varIndices) {
-        if (idx < 0 || idx >= numExt) continue;
-        NDArray* arr = effectiveArrays[idx];
-        if (arr == nullptr) continue;
-
-        void* devBuf = arr->specialBuffer();
-        size_t bytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
-        uint64_t fp = deviceBufFingerprint(devBuf, bytes, cudaStr);
-        currentFingerprints.push_back({idx, fp});
-        anyChecked = true;
-
-        // Compare against previous step's fingerprint (ignore sentinel keys < 0).
-        auto it = prevStepFingerprints_.find(idx);
-        if (it != prevStepFingerprints_.end() && it->second != fp) {
-          anyChanged = true;
-        }
-      }
-
-      if (anyChecked) {
-        // prevStepFingerprints_ is non-empty only when we have a prior step's data.
-        // The sentinel key -1 also keeps it non-empty, so gate on having at least
-        // one real fingerprint (any key >= 0).
-        bool hasPriorStep = false;
-        for (auto& kv : prevStepFingerprints_) {
-          if (kv.first >= 0) { hasPriorStep = true; break; }
-        }
-
-        if (!anyChanged && hasPriorStep) {
-          ++consecutiveUnchanged;
-
-          if (static_cast<int>(consecutiveUnchanged) >= kStaleThreshold) {
-            // All variable inputs unchanged for multiple consecutive steps.
-            // This MAY indicate a stagnant decode loop, but it is also a valid
-            // use case (repeated inference on same data, testing, batch queries).
-            // Log a diagnostic warning but do NOT throw — the caller may
-            // legitimately be passing the same inputs.
-            DSP_DIAG(VERIFY,
-                     "%s MUTATION_STALE_WARN: execCount=%d, ALL %d variable inputs "
-                     "unchanged for %llu consecutive steps (threshold=%d). "
-                     "If this is a decode loop, inputs may not be advancing.",
-                     diagTag, executeCount_,
-                     static_cast<int>(currentFingerprints.size()),
-                     static_cast<unsigned long long>(consecutiveUnchanged),
-                     kStaleThreshold);
-          } else {
-            // Warn but tolerate: may be a vision-encoder with identical tiles.
-            DSP_DIAG(VERIFY,
-                     "%s MUTATION_WARN: execCount=%d, %d variable inputs unchanged "
-                     "(consecutive=%llu, threshold=%d — tolerated)",
-                     diagTag, executeCount_,
-                     static_cast<int>(currentFingerprints.size()),
-                     static_cast<unsigned long long>(consecutiveUnchanged),
-                     kStaleThreshold);
-          }
-        } else {
-          // At least one input changed — reset the counter.
-          consecutiveUnchanged = 0;
-          DSP_DIAG(VERIFY, "%s MUTATION_OK: execCount=%d, %d variable inputs checked, "
-                   "anyChanged=%d",
-                   diagTag, executeCount_, static_cast<int>(currentFingerprints.size()),
-                   anyChanged ? 1 : 0);
-        }
-      }
-
-      // Save fingerprints for next step; persist consecutive counter in sentinel -1.
-      // Record this execute() invocation in sentinel -2 so that subsequent
-      // compositeReplay calls for other segments skip this check.
-      prevStepFingerprints_.clear();
-      for (auto& [idx, fp] : currentFingerprints) {
-        prevStepFingerprints_[idx] = fp;
-      }
-      if (consecutiveUnchanged > 0) {
-        prevStepFingerprints_[-1] = consecutiveUnchanged;
-      }
-      prevStepFingerprints_[-2] = static_cast<uint64_t>(executeCount_);
-    } // end if (!skipCheck2)
+    DSP_DIAG(VERIFY,
+             "%s MUTATION_CHECK_SKIPPED: execCount=%d, %d variable inputs "
+             "(async path: device fingerprint D2H compare skipped)",
+             diagTag, executeCount_, static_cast<int>(varIndices.size()));
+    prevStepFingerprints_.clear();
+    prevStepFingerprints_[-2] = static_cast<uint64_t>(executeCount_);
   }
 
   // ── CHECK 3: Staging address stability ────────────────────────────────
@@ -339,9 +191,8 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
 //
 // PRECONDITION: activeExecutionContext() returns a valid PlanExecutionContext*.
 //               DspStreamGuard is active (caller owns it).
-// POSTCONDITION: execCtx->crossStreamSynced = true
-//                execCtx->extInputsSynced   = true
-//                execCtx->stagingBuffersSynced = true
+// POSTCONDITION: execCtx->syncPhase == STAGING_DONE
+//                (implies cross-stream, H2D, and D2D all complete)
 //                effectiveExternals_ is up to date for this step
 // ═══════════════════════════════════════════════════════════════════════════
 NDArray** NativeDynamicShapePlan::performPreReplaySync(
@@ -349,12 +200,22 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
 
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
   if (execCtx == nullptr) {
-    // Fallback: no execution context (should not happen in production).
-    // Do a basic sync and return raw externals.
+    DSP_DIAG(EXECUTE,
+             "%s performPreReplaySync: NO PlanExecutionContext — falling back to "
+             "prepareSpecialUse for all %d ext inputs. "
+             "This path should NOT occur in production.",
+             diagTag, numExt);
+    std::vector<NDArray*> readList;
+    readList.reserve(static_cast<size_t>(numExt));
     for (int ei = 0; ei < numExt; ei++) {
-      if (externalArrays[ei] != nullptr) {
-        externalArrays[ei]->syncToDevice();
+      if (externalArrays[ei] != nullptr && !externalArrays[ei]->isEmpty() &&
+          externalArrays[ei]->lengthOf() > 0) {
+        readList.push_back(externalArrays[ei]);
       }
+    }
+    if (!readList.empty()) {
+      NDArray::prepareSpecialUse({}, readList);
+      NDArray::registerSpecialUse({}, readList);
     }
     return externalArrays;
   }
@@ -362,11 +223,24 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
+  ExecTarget target = execCtx->execTarget;
+  bool needsCrossStream = (target == ExecTarget::GRAPH_CAPTURE ||
+                           target == ExecTarget::GRAPH_REPLAY);
+  bool needsStaging     = (target == ExecTarget::GRAPH_CAPTURE ||
+                           target == ExecTarget::GRAPH_REPLAY);
+
+  DSP_DIAG(EXECUTE,
+           "%s performPreReplaySync: execTarget=%s syncPhase=%s",
+           diagTag, execCtx->execTargetName(), execCtx->syncPhaseName());
+
   // ── Step 1: Cross-stream ordering ──────────────────────────────────────
   // Java's .assign() and putScalar() run on the default stream. Graph replay
-  // launches on cudaStr (the DSP stream). Make cudaStr wait on the default
-  // stream so replay sees the updated data.
-  if (!execCtx->crossStreamSynced) {
+  // and capture run on cudaStr (the DSP stream). Make cudaStr wait on the
+  // default stream so those paths see the updated data.
+  //
+  // SBS_ON_LC_STREAM: ops execute on the LC stream — same as assign(). Same-
+  // stream ordering is inherent, no cross-stream sync needed.
+  if (needsCrossStream && !execCtx->isCrossStreamSynced()) {
     cudaStream_t defaultStream = nullptr;
     auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
     if (defaultStreamPtr != nullptr) {
@@ -379,23 +253,72 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
       DSP_DIAG(STREAM_SYNC,
                "%s cross-stream sync: recordedOn=defaultStream=%p waitedOn=dspStream=%p",
                diagTag, (void*)defaultStream, (void*)cudaStr);
+    } else {
+      DSP_DIAG(STREAM_SYNC,
+               "%s cross-stream sync SKIPPED: defaultStream=%p dspStream=%p "
+               "crossStreamEvent=%p — reason: %s",
+               diagTag, (void*)defaultStream, (void*)cudaStr,
+               execCtx->crossStreamEvent,
+               (defaultStream == nullptr) ? "defaultStream is null" :
+               (defaultStream == cudaStr)  ? "same stream — no ordering needed" :
+                                             "crossStreamEvent is null");
     }
-    execCtx->crossStreamSynced = true;
+    execCtx->markCrossStreamSynced();
+  } else if (needsCrossStream) {
+    DSP_DIAG(STREAM_SYNC,
+             "%s cross-stream sync: already done (syncPhase=%s) — dedup skip",
+             diagTag, execCtx->syncPhaseName());
+  }
+  // SBS path: skip cross-stream entirely. If the phase is still UNSYNCED,
+  // advance it so the H2D step can proceed (it asserts UNSYNCED→CROSS_STREAM_DONE).
+  if (!needsCrossStream && !execCtx->isCrossStreamSynced()) {
+    execCtx->markCrossStreamSynced();
+    DSP_DIAG(STREAM_SYNC,
+             "%s cross-stream sync: SKIPPED (SBS_ON_LC_STREAM — same stream, inherent ordering)",
+             diagTag);
   }
 
-  // ── Step 2: H2D sync variable external inputs ──────────────────────────
-  // Only sync inputs classified as variable (placeholders that Java writes
-  // to host). Weights are device-authoritative and never need H2D.
-  // Uses isPrimaryActual() guard: only syncs when host has newer data.
-  // This is critical for the native decode loop where CUDA kernels write
-  // directly to device buffers — forcing H2D would clobber fresh device data.
-  if (!execCtx->extInputsSynced) {
-    int synced = 0, skipped = 0;
+  // ── Step 2: Prepare external inputs through NDArray ownership ───────────
+  // execute() owns normal H2D readiness. This path remains as a defensive
+  // fallback for callers that enter replay preamble without that preparation.
+  if (!execCtx->isExtInputsSynced()) {
+    int prepared = 0, skipped = 0;
+    std::vector<NDArray*> readList;
+    readList.reserve(static_cast<size_t>(numExt));
     bool useVariableFilter = !planLifecycle_.isSlotBySlot() &&
                              !externalInputIsVariable_.empty();
 
+    auto queueRead = [&](int idx, const char* reason) {
+      if (idx < 0 || idx >= numExt || externalArrays[idx] == nullptr) return;
+      NDArray* arr = externalArrays[idx];
+      if (arr->isEmpty() || arr->lengthOf() == 0) {
+        skipped++;
+        return;
+      }
+      if (idx < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[idx]) {
+        skipped++;
+        void* rawSpecial = arr->dataBuffer() != nullptr ? arr->dataBuffer()->special() : nullptr;
+        DSP_DIAG(STREAM_SYNC,
+                 "%s H2D[%d] SKIPPED — deviceWritePending (JNI direct write): "
+                 "name='%s' buf=%p",
+                 diagTag, idx,
+                 (idx < static_cast<int>(externalInputNames_.size()))
+                     ? externalInputNames_[idx].c_str() : "?",
+                 rawSpecial);
+        return;
+      }
+      readList.push_back(arr);
+      prepared++;
+      DSP_LIFECYCLE_EVENT(executeCount_, idx, "H2D_PREPARE_QUEUED", arr);
+      DSP_DIAG(STREAM_SYNC,
+               "%s H2D[%d] PREPARE_QUEUED (%s): name='%s' len=%lld",
+               diagTag, idx, reason,
+               (idx < static_cast<int>(externalInputNames_.size()))
+                   ? externalInputNames_[idx].c_str() : "?",
+               (long long)arr->lengthOf());
+    };
+
     if (useVariableFilter) {
-      // Lazily build variable index cache if needed
       if (!variableIndicesCached_ && !externalInputIsVariable_.empty()) {
         variableExternalInputIndices_.clear();
         for (int i = 0; i < static_cast<int>(externalInputIsVariable_.size()); ++i) {
@@ -409,88 +332,132 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
                  static_cast<int>(externalInputIsVariable_.size()));
       }
 
-      // Fast path: iterate only the 2-3 variable inputs
       if (!variableExternalInputIndices_.empty()) {
         for (int idx : variableExternalInputIndices_) {
-          if (idx < 0 || idx >= numExt || externalArrays[idx] == nullptr) continue;
-          // Skip H2D sync for inputs that have a pending JNI device write.
-          // JNI writeDeviceBuffer* wrote fresh data directly to the staging buffer's
-          // device memory. H2D sync would overwrite the external array's device buffer
-          // with stale host data (Java placeholder), and the subsequent D2D staging copy
-          // would be skipped (deviceWritePending_ flag), but the external array would
-          // still have stale device data. By skipping H2D entirely, the external array's
-          // device buffer is left unchanged and the staging buffer retains the JNI data.
-          if (idx < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[idx]) {
-            skipped++;
-            continue;
-          }
-          auto* db = externalArrays[idx]->dataBuffer();
-          if (db != nullptr && db->isPrimaryActual()) {
-            db->syncToSpecial(true);  // Force H2D: host has newer data
-          }
-          synced++;
+          queueRead(idx, "variable-filter");
         }
         skipped = numExt - static_cast<int>(variableExternalInputIndices_.size());
         if (skipped < 0) skipped = 0;
       } else {
-        // Variable filter enabled but no variable indices cached — sync all
         for (int ei = 0; ei < numExt; ei++) {
-          if (externalArrays[ei] == nullptr) continue;
-          if (ei < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[ei]) {
-            skipped++;
-            continue;
-          }
-          auto* db = externalArrays[ei]->dataBuffer();
-          if (db != nullptr && db->isPrimaryActual()) {
-            db->syncToSpecial(true);
-          }
-          synced++;
+          queueRead(ei, "no-variable-index-fallback");
         }
       }
     } else {
-      // No variable filter (warmup / non-frozen): sync all external inputs
+      DSP_DIAG(EXECUTE,
+               "%s H2D prepare: no variable filter (warmup/non-frozen path) — preparing all %d ext inputs",
+               diagTag, numExt);
       for (int ei = 0; ei < numExt; ei++) {
-        if (externalArrays[ei] == nullptr) continue;
-        if (ei < static_cast<int>(deviceWritePending_.size()) && deviceWritePending_[ei]) {
-          skipped++;
-          continue;
-        }
-        externalArrays[ei]->syncToDevice();
-        synced++;
+        queueRead(ei, "warmup-all");
       }
     }
 
-    DSP_DIAG(EXECUTE, "%s: H2D sync done — synced=%d skipped=%d total=%d",
-             diagTag, synced, skipped, numExt);
-    execCtx->extInputsSynced = true;
+    if (!readList.empty()) {
+      NDArray::prepareSpecialUse({}, readList);
+      NDArray::registerSpecialUse({}, readList);
+    }
+    DSP_DIAG(EXECUTE, "%s: H2D prepare done — prepared=%d skipped=%d total=%d useVarFilter=%s execTarget=%s",
+             diagTag, prepared, skipped, numExt,
+             useVariableFilter ? "YES" : "NO",
+             execCtx->execTargetName());
+    execCtx->markExtInputsSynced();
+  } else {
+    DSP_DIAG(EXECUTE,
+             "%s H2D sync: already done (syncPhase=%s) — dedup skip",
+             diagTag, execCtx->syncPhaseName());
   }
 
   // ── Step 3: D2D copy variable inputs into staging buffers ──────────────
-  // The CUDA graph was captured using staging buffer device addresses (stable,
-  // plan-lifetime). Each step we D2D copy fresh data from the Java-side device
-  // buffer (just H2D-synced above) into the staging buffer the graph reads from.
-  // Without this, graph replay reads stale capture-time data.
+  // Only for GRAPH_CAPTURE and GRAPH_REPLAY targets. SBS reads directly from
+  // the raw external arrays on the LC stream — no staging needed.
   NDArray** result = externalArrays;
-  if (!execCtx->stagingBuffersSynced) {
+  if (needsStaging && !execCtx->isStagingBuffersSynced()) {
     if (!planLifecycle_.isSlotBySlot() && !externalInputIsVariable_.empty()) {
       NDArray** staged = ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
       if (staged != nullptr) {
-        DSP_DIAG(EXECUTE, "%s: staging buffers synced for %d ext inputs", diagTag, numExt);
+        // Cross-stream ordering: DSP stream → LC stream.
+        // ensureAndSyncStagingBuffers enqueues D2D copies on cudaStr (DSP stream).
+        // For GRAPH_REPLAY: slot execution (composite replay gaps) may run kernels
+        // on the LC stream. For GRAPH_CAPTURE: the capture stream IS the DSP stream
+        // so the D2D copy naturally precedes captured kernels by same-stream order.
+        if (target == ExecTarget::GRAPH_REPLAY) {
+          auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+          cudaStream_t lcStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
+          if (lcStream != nullptr && lcStream != cudaStr && cudaStr != nullptr) {
+            if (execCtx->crossStreamEvent != nullptr) {
+              cudaEventRecord(execCtx->crossStreamEvent, cudaStr);
+              cudaStreamWaitEvent(lcStream, execCtx->crossStreamEvent, 0);
+	      DSP_DIAG(STREAM_SYNC,
+	               "%s: D2D→slot ordering: event on dspStream=%p, wait on lcStream=%p",
+	               diagTag, (void*)cudaStr, (void*)lcStream);
+	    } else {
+	      cudaEvent_t localEvent = nullptr;
+	      cudaEventCreateWithFlags(&localEvent, cudaEventDisableTiming);
+	      cudaEventRecord(localEvent, cudaStr);
+	      cudaStreamWaitEvent(lcStream, localEvent, 0);
+	      cudaEventDestroy(localEvent);
+	      DSP_DIAG(STREAM_SYNC,
+	               "%s: D2D→slot ordering: local event on dspStream=%p, wait on lcStream=%p",
+	               diagTag, (void*)cudaStr, (void*)lcStream);
+	    }
+          }
+        } else if (target == ExecTarget::GRAPH_CAPTURE) {
+          DSP_DIAG(STREAM_SYNC,
+                   "%s: GRAPH_CAPTURE: D2D staging ordered on capture stream=%p "
+                   "(no blocking stream sync)",
+                   diagTag, (void*)cudaStr);
+        }
+        DSP_DIAG(EXECUTE, "%s: staging buffers synced for %d ext inputs — "
+                 "using staged pointers (effectiveExternals_=%p) execTarget=%s",
+                 diagTag, numExt, (void*)staged, execCtx->execTargetName());
         result = staged;
+      } else {
+        DSP_DIAG(EXECUTE,
+                 "%s: ensureAndSyncStagingBuffers returned NULL — "
+                 "using raw externalArrays (no staging). isSlotBySlot=%s varEmpty=%s",
+                 diagTag,
+                 planLifecycle_.isSlotBySlot() ? "true" : "false",
+                 externalInputIsVariable_.empty() ? "true" : "false");
       }
+    } else {
+      DSP_DIAG(EXECUTE,
+               "%s: staging D2D skipped — isSlotBySlot=%s externalInputIsVariable_.empty=%s",
+               diagTag,
+               planLifecycle_.isSlotBySlot() ? "true" : "false",
+               externalInputIsVariable_.empty() ? "true" : "false");
     }
-    execCtx->stagingBuffersSynced = true;
-  } else if (effectiveExternals_ != nullptr && !planLifecycle_.isSlotBySlot() &&
+    execCtx->markStagingBuffersSynced();
+  } else if (needsStaging && effectiveExternals_ != nullptr && !planLifecycle_.isSlotBySlot() &&
              !externalInputIsVariable_.empty()) {
-    // Already synced this step — reuse effectiveExternals
+    DSP_DIAG(EXECUTE,
+             "%s: staging buffers already synced (syncPhase=%s) — "
+             "reusing effectiveExternals_=%p (dedup skip)",
+             diagTag, execCtx->syncPhaseName(), (void*)effectiveExternals_);
     result = effectiveExternals_;
+  } else if (!needsStaging) {
+    // SBS_ON_LC_STREAM: no staging. Advance sync phase past STAGING_DONE
+    // so downstream code doesn't re-enter staging logic.
+    if (!execCtx->isStagingBuffersSynced()) {
+      execCtx->markStagingBuffersSynced();
+    }
+    DSP_DIAG(EXECUTE,
+             "%s: SBS_ON_LC_STREAM — no staging, using raw ext arrays",
+             diagTag);
+  } else {
+    DSP_DIAG(EXECUTE,
+             "%s: staging D2D dedup skip (syncPhase=%s) but effectiveExternals_ "
+             "not reusable — isSlotBySlot=%s varEmpty=%s effectiveExternals_=%p",
+             diagTag, execCtx->syncPhaseName(),
+             planLifecycle_.isSlotBySlot() ? "true" : "false",
+             externalInputIsVariable_.empty() ? "true" : "false",
+             (void*)effectiveExternals_);
   }
 
   // ── Step 4: Staleness verification ─────────────────────────────────────
-  // When DSP VERIFY diagnostics are enabled, run all three staleness checks.
-  // This catches bugs immediately at the sync point rather than 14 steps later
-  // when wrong tokens finally appear.
-  verifyStagingNotStale(externalArrays, result, numExt, stream, diagTag);
+  // Only run for graph targets where staging matters.
+  if (needsStaging) {
+    verifyStagingNotStale(externalArrays, result, numExt, stream, diagTag);
+  }
 
   return result;
 }

@@ -37,13 +37,15 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Slf4j
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
 public class KerasVGG16ImportTest extends BaseDL4JTest {
 
-    private static final String MODEL_PATH = "/home/agibsonccc/Documents/GitHub/keras-vgg16-import-reproducer/VGG16Model.h5";
+    private static final String MODEL_PATH = System.getProperty("keras.vgg16.model.path",
+            System.getProperty("user.home") + "/Documents/GitHub/keras-vgg16-import-reproducer/VGG16Model.h5");
 
     // VGG16 ImageNet mean values in BGR order
     private static final double MEAN_B = 103.939;
@@ -58,10 +60,8 @@ public class KerasVGG16ImportTest extends BaseDL4JTest {
     @Test
     public void testVGG16KerasImportForwardPass() throws Exception {
         File modelFile = new File(MODEL_PATH);
-        if (!modelFile.exists()) {
-            log.warn("VGG16 model not found at {}, skipping test", MODEL_PATH);
-            return;
-        }
+        assumeTrue(modelFile.exists(), "VGG16 model not found at " + MODEL_PATH
+                + ". Set -Dkeras.vgg16.model.path to provide the model.");
 
         // Nd4j.getEnvironment().setDebug(true);
         // Nd4j.getEnvironment().setVerbose(true);

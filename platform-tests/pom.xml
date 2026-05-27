@@ -1649,6 +1649,10 @@
                         <ND4J_DSP_DIAGNOSTICS>${nd4j.dsp.diagnostics}</ND4J_DSP_DIAGNOSTICS>
                         <ND4J_DSP_DIAGNOSTICS_LEVEL>${nd4j.dsp.diagnostics.level}</ND4J_DSP_DIAGNOSTICS_LEVEL>
                         <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
+                        <ND4J_DSP_PLAN_CACHE_DIR>${nd4j.dsp.planCache.diskDir}</ND4J_DSP_PLAN_CACHE_DIR>
+                        <ND4J_DSP_PLAN_CACHE_DISK_ENABLED>${nd4j.dsp.planCache.diskEnabled}</ND4J_DSP_PLAN_CACHE_DISK_ENABLED>
+                        <ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>${nd4j.dsp.planCache.forceRecompile}</ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>
+                        <ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR>${nd4j.dsp.planCache.overrideDir}</ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR>
                         <ND4J_TRITON_VERIFY_KERNELS>${nd4j.triton.verifyKernels}</ND4J_TRITON_VERIFY_KERNELS>
                         <ND4J_TRITON_VERIFY_KEEP_NATIVE>${nd4j.triton.verifyKeepNative}</ND4J_TRITON_VERIFY_KEEP_NATIVE>
                         <ND4J_TRITON_FORCE_RECAPTURE>${nd4j.triton.forceRecapture}</ND4J_TRITON_FORCE_RECAPTURE>

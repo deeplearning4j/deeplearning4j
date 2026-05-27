@@ -111,8 +111,8 @@ class TritonGraphBackend : public GraphBackend {
   // Refresh all indirect arg table pinned host buffers with current NDArray
   // specialBuffer() addresses. Must be called before CUDA graph replay so the
   // graph's H2D memcpy nodes transfer up-to-date buffer pointers to device.
-  // @param execStream  The execution stream (from LaunchContext) — used for
-  //                    cudaStreamSynchronize to ensure prior async work is visible.
+  // @param execStream  The execution stream (from LaunchContext), used for
+  //                    event ordering so prior async work is visible.
   Status refreshArgTablesForReplay(GraphSegment& seg,
                                    NDArray** externalInputs, int numExternalInputs,
                                    NDArray** outputSlots, int totalOutputSlots,
@@ -258,6 +258,9 @@ class TritonGraphBackend : public GraphBackend {
     std::vector<size_t> consolidatedArgTableOffsets;
     // Per-kernel: whether this kernel has any dynamic (non-constant) args
     std::vector<bool> hasDynamicArgs;
+    // cudaEvent_t recorded after async preallocation; stored as void* to keep
+    // CUDA types out of this header's non-CUDA translation units.
+    void* preallocReadyEvent = nullptr;
 #endif
 
     bool isValid() const {

@@ -110,8 +110,8 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
 
       // Skip view-producer output slots — they share the input's DataBuffer.
-      // slotIsViewProducer_ is indexed by OUTPUT SLOT INDEX, not op slot index.
-      if (slotIsViewProducer_[outIdx]) {
+      // slots_[outIdx].slotPhase.isViewProducer is indexed by OUTPUT SLOT INDEX.
+      if (slots_[outIdx].slotPhase.isViewProducer) {
         skippedView++;
         DSP_DIAG_SEG(SEGMENT, s, "batchZero EXCLUDE slot=%d outIdx=%d op=%s reason=view-producer",
                      s, outIdx, slot.ident.opName.c_str());

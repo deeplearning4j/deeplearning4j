@@ -1,0 +1,15 @@
+{
+  "id" : "f70cd7b1",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "libnd4j,nd4j-cuda-12.9",
+  "totalTests" : 2,
+  "passed" : 2,
+  "notes" : "CUDA+Triton native build after external transparent-alias graph coverage fix succeeded: libnd4j and nd4j-cuda-12.9 installed.",
+  "tags" : "build,cuda,triton,dsp",
+  "timestamp" : "2026-05-27T03:44:35.236284Z"
+}

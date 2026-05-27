@@ -423,14 +423,20 @@ mlir::Value CpuIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir::L
   if (lower == "add_scalar") {
     return builder.create<mlir::arith::AddFOp>(loc, input, constF(numTArgs > 0 ? tArgs[0] : 0.0));
   }
-  if (lower == "subtract_scalar") {
+  if (lower == "subtract_scalar" || lower == "sub_scalar") {
     return builder.create<mlir::arith::SubFOp>(loc, input, constF(numTArgs > 0 ? tArgs[0] : 0.0));
   }
-  if (lower == "multiply_scalar") {
+  if (lower == "multiply_scalar" || lower == "mul_scalar") {
     return builder.create<mlir::arith::MulFOp>(loc, input, constF(numTArgs > 0 ? tArgs[0] : 1.0));
   }
-  if (lower == "divide_scalar") {
+  if (lower == "divide_scalar" || lower == "div_scalar") {
     return builder.create<mlir::arith::DivFOp>(loc, input, constF(numTArgs > 0 ? tArgs[0] : 1.0));
+  }
+  if (lower == "rsub_scalar") {
+    return builder.create<mlir::arith::SubFOp>(loc, constF(numTArgs > 0 ? tArgs[0] : 0.0), input);
+  }
+  if (lower == "rdiv_scalar") {
+    return builder.create<mlir::arith::DivFOp>(loc, constF(numTArgs > 0 ? tArgs[0] : 1.0), input);
   }
   // Identity
   if (lower == "identity" || lower == "assign") return input;

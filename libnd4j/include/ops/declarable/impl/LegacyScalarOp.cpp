@@ -55,7 +55,6 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
   int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
   ExtraArguments extras(*block.getTArguments());
-  PointersManager manager(block.launchContext(), "LegacyScalarOp");
 
   if (block.width() > 1) {
     auto y = INPUT_VARIABLE(1);
@@ -77,14 +76,24 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
     // both capture and all subsequent replays.
     double scalarVal = T_ARG(0);
     auto xDt = x->dataType();
-    if (_scalar == nullptr || _scalar->dataType() != xDt ||
-        _scalar->e<double>(0) != scalarVal) {
+    if (_scalar == nullptr || !_cachedScalarValid ||
+        _cachedScalarType != xDt || _cachedScalarValue != scalarVal) {
       delete _scalar;
       _scalar = NDArrayFactory::create(xDt, scalarVal, block.launchContext());
+      _cachedScalarValid = true;
+      _cachedScalarValue = scalarVal;
+      _cachedScalarType = xDt;
     }
 
-    x->applyScalarArr(static_cast<scalar::Ops>(opNum), _scalar, z);
-    manager.synchronize();
+    NDArray::prepareSpecialUse({z}, {x, _scalar});
+
+    NativeOpExecutioner::execScalar(
+        block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(),
+        _scalar->specialBuffer(), _scalar->specialShapeInfo(),
+        extras.length() > 1 ? extras.argumentsAsT(z->dataType(), 1) : nullptr);
+
+    NDArray::registerSpecialUse({z}, {x, _scalar});
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});
 

@@ -767,6 +767,10 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.RoPEBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPEBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE.class,
+                // Vision-language model ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PixelShuffle.class,
                 // Activation ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELUBp.class,

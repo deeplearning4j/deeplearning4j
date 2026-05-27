@@ -72,6 +72,27 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
+        <!-- JavaCV for video frame extraction (optional at runtime) -->
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacv</artifactId>
+            <version>1.5.11</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>7.1-1.5.11</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>7.1-1.5.11</version>
+            <classifier>${javacpp.platform}</classifier>
+            <optional>true</optional>
+        </dependency>
+
     </dependencies>
 
     <build>

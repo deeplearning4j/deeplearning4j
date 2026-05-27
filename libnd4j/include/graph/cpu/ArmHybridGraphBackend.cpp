@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <mutex>
 
 // Vulkan availability probe (platform-specific)
 #if defined(__ANDROID__)
@@ -50,8 +51,12 @@ ArmHybridGraphBackend::ArmHybridGraphBackend() {
 ArmHybridGraphBackend::~ArmHybridGraphBackend() = default;
 
 ArmHybridGraphBackend& ArmHybridGraphBackend::getInstance() {
-  static ArmHybridGraphBackend instance;
-  return instance;
+  static ArmHybridGraphBackend* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ArmHybridGraphBackend();
+  });
+  return *instance;
 }
 
 bool ArmHybridGraphBackend::isAvailable() const {

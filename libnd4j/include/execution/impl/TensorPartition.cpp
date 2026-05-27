@@ -25,14 +25,19 @@
 #include <array/NDArrayFactory.h>
 
 #include <algorithm>
+#include <mutex>
 #include <numeric>
 
 namespace sd {
 namespace modelparallel {
 
 TensorPartitioner& TensorPartitioner::getInstance() {
-    static TensorPartitioner instance;
-    return instance;
+    static TensorPartitioner* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new TensorPartitioner();
+    });
+    return *instance;
 }
 
 PartitionResult TensorPartitioner::partition(

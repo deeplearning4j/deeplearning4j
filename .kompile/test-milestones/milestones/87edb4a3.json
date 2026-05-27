@@ -1,0 +1,16 @@
+{
+  "id" : "87edb4a3",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 976,
+  "passed" : 958,
+  "failed" : 18,
+  "notes" : "High-risk DSP core batch after stream/scalar fixes failed with DataBuffer lifecycle guard violations: replaceSpecialBuffer/allocatePrimary called on frozen buffers during DspConcurrentPlanSharingTest, DspExtInputStalenessTest, and DspLifecycleExhaustiveTest. Next step is root-cause fix in production lifecycle/transfer ownership, not test changes.",
+  "tags" : "cuda,dsp,concurrent,plan-sharing,lifecycle,failed",
+  "timestamp" : "2026-05-27T07:16:34.781939Z"
+}

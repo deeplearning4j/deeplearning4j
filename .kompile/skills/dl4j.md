@@ -52,11 +52,14 @@ Your job is to manage the DL4J codebase across three core domains: **performance
 
 ### Code Rules
 - No workarounds — EVER. Fix root causes directly
-- Fix ALL errors — "pre-existing" is BANNED
+- Fix ALL errors — if an issue is a blocker, FIX it no matter what
 - NEVER use `ews()` / `elementWiseStride` — use stride-based contiguity checks
 - No smart pointers — raw pointers with manual delete
 - Gate diagnostics behind isVerbose/isDebug — no unconditional syncToHost
 - Use platform macros: SD_HOST, SD_DEVICE, SD_KERNEL, PRAGMA_OMP_*, BUILD_SINGLE_TEMPLATE
+- Do NOT write one-off `syncToDevice()` or similar calls for different ops — assume basic CUDA device syncing infrastructure works
+- If you suspect an infra issue, it's almost certainly NOT a bug — focus on simpler causes (wrong shapes, types, data flow)
+- For debugging, use: `Nd4j.getEnvironment().setDebug(true); Nd4j.getEnvironment().setVerbose(true);` — prints all shapes and sample values from all ops without rebuilding
 
 ---
 

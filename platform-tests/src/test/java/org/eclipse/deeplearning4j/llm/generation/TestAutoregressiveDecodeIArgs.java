@@ -77,6 +77,7 @@ public class TestAutoregressiveDecodeIArgs {
                 0.0,
                 0,
                 0.0,
+                1.0,  // repetitionPenalty (1.0 = disabled)
                 stopIds);
     }
 

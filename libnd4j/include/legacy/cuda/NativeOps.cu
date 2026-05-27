@@ -782,8 +782,15 @@ int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, s
     }
   }
 
-  auto dZ = cudaMemcpy(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
-                       static_cast<size_t>(size), kind);
+  // Use cudaMemcpyAsync on cudaStreamPerThread instead of synchronous cudaMemcpy
+  // on the legacy stream (stream 0). Synchronous cudaMemcpy on stream 0 causes
+  // error 906 when another thread on the same device is mid-CUDA-graph-capture,
+  // because stream 0 implicitly depends on the capturing stream.
+  auto dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
+                            static_cast<size_t>(size), kind, cudaStreamPerThread);
+  if (dZ == 0) {
+    cudaStreamSynchronize(cudaStreamPerThread);
+  }
 
   // Restore original device if we switched
   if (switchedDevice) {
@@ -856,10 +863,11 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
   cudaError_t dZ;
   if (targetDevice >= 0 && targetDevice != currentDevice) {
     // Cross-device: caller's stream belongs to wrong device.
-    // Switch to correct device and use synchronous copy.
+    // Switch to correct device and use cudaStreamPerThread (avoids error 906).
     cudaSetDevice(targetDevice);
-    dZ = cudaMemcpy(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
-                    static_cast<size_t>(size), kind);
+    dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
+                         static_cast<size_t>(size), kind, cudaStreamPerThread);
+    if (dZ == 0) cudaStreamSynchronize(cudaStreamPerThread);
     cudaSetDevice(currentDevice);
   } else {
     // Same device: use async copy with caller's stream
@@ -899,7 +907,11 @@ int memsetSync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Poi
     cudaGetLastError();
   }
 
-  auto dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
+  // Use cudaMemsetAsync on cudaStreamPerThread instead of synchronous cudaMemset.
+  // Synchronous cudaMemset on the legacy stream causes error 906 when another
+  // thread is mid-CUDA-graph-capture.
+  auto dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), cudaStreamPerThread);
+  if (dZ == 0) cudaStreamSynchronize(cudaStreamPerThread);
 
   if (switchedDevice) {
     cudaSetDevice(savedDevice);
@@ -930,10 +942,10 @@ int memsetAsync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Po
 
   cudaError_t dZ;
   if (targetDevice >= 0 && targetDevice != currentDevice) {
-    // Cross-device: caller's stream belongs to wrong device.
-    // Switch to correct device and use synchronous memset.
+    // Cross-device: use cudaStreamPerThread instead of synchronous cudaMemset (avoids error 906).
     cudaSetDevice(targetDevice);
-    dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
+    dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), cudaStreamPerThread);
+    if (dZ == 0) cudaStreamSynchronize(cudaStreamPerThread);
     cudaSetDevice(currentDevice);
   } else {
     dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), *pStream);

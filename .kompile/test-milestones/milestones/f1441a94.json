@@ -1,0 +1,16 @@
+{
+  "id" : "f1441a94",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "783328155147a049c621b13fe560e18923d0b65c",
+  "commitShort" : "7833281",
+  "commitMessage" : "fix: remove 17 unimplemented cudnn DECLARE_PLATFORM entries causing LNK1120",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 49,
+  "passed" : 45,
+  "failed" : 4,
+  "notes" : "After SameDiff variable rebind fix, method no longer short-circuits via lifecycle diagnostics but 4 graph replay/Triton mode correctness failures remain after weight close/rebind. Log: /tmp/dsp-slot-close-weight-between-rebind-fix.log. Failures: attnSingleLayer/CUDA_GRAPHS, reshapeOverConstant/TRITON, sliceOverIntermediate/CUDA_GRAPHS, multipleViewsSharedSource/CUDA_GRAPHS.",
+  "tags" : "dsp,cuda,triton,lifecycle,rebind,failed",
+  "timestamp" : "2026-05-27T00:58:03.675411Z"
+}

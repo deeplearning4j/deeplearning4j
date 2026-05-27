@@ -505,7 +505,10 @@ public class Configuration implements Serializable {
         if (!availableDevices.isEmpty())
             return;
 
-        List<Integer> detectedDevices = detectAvailableDevices(false);
+        // Include ALL devices — never permanently ban a GPU just because it had low
+        // free memory at JVM startup. Memory pressure is transient; the runtime device
+        // selection (selectBestGpu / DeviceMemoryManager) handles routing dynamically.
+        List<Integer> detectedDevices = detectAvailableDevices(true);
         if (detectedDevices.isEmpty())
             throw new RuntimeException("No usable CUDA devices were found in system");
 

@@ -22,100 +22,82 @@ package org.eclipse.deeplearning4j.vlm.model;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.List;
+
 /**
- * Merges text and vision embeddings by replacing &lt;image&gt; token positions
- * with vision embeddings.
+ * Merges text and vision embeddings by replacing target token positions
+ * with vision embeddings using a native device-side scatter kernel.
  *
- * Uses host-side float[] copy for CUDA safety - Nd4j.concat() and .put()
- * have known CUDA sync issues where the device buffer doesn't match the host buffer.
+ * <p>All operations run entirely on device (CUDA) — no host round-trips.
+ * Uses the {@code vision_embedding_merge} native op which builds a prefix-sum
+ * mapping of target token positions, then scatters vision embeddings in a
+ * single parallel pass.</p>
  */
 @Slf4j
 public class EmbeddingMerger {
 
     /**
-     * Replace &lt;image&gt; token embeddings with vision embeddings (ONNX reference behavior).
-     *
-     * Builds the merged embedding array via host-side float[] to guarantee proper CUDA
-     * host-&gt;device sync.
+     * Replace image token embeddings with vision embeddings via native scatter.
      *
      * @param textEmbeddings text embeddings [1, seqLen, hiddenDim]
      * @param visionEmbeddings vision embeddings [1, visionSeqLen, hiddenDim]
      * @param tokenIds the prompt token IDs
-     * @param imageTokenId the &lt;image&gt; token ID
-     * @return merged embeddings [1, seqLen, hiddenDim] with vision tokens replacing image positions
+     * @param imageTokenId the image token ID to replace
+     * @return merged embeddings [1, seqLen, hiddenDim] with vision tokens at image positions
      */
     public static INDArray mergeEmbeddings(INDArray textEmbeddings, INDArray visionEmbeddings,
                                            int[] tokenIds, int imageTokenId) {
-        long visionSeqLen = visionEmbeddings.shape()[1];
-        long visionHiddenSize = visionEmbeddings.shape()[2];
+        INDArray tokenIdArray = Nd4j.createFromArray(tokenIds).reshape(1, tokenIds.length);
+        return mergeNative(textEmbeddings, visionEmbeddings, tokenIdArray, imageTokenId);
+    }
 
-        int imageSlots = 0;
-        for (int id : tokenIds) {
-            if (id == imageTokenId) imageSlots++;
+    /**
+     * Replace video/image token embeddings with concatenated frame vision embeddings
+     * via native scatter.
+     *
+     * <p>For video VLMs, each frame produces a set of vision tokens. All frame tokens
+     * are concatenated along the sequence dimension and scattered into the target
+     * token positions in a single native kernel call.</p>
+     *
+     * @param textEmbeddings text embeddings [1, seqLen, hiddenDim]
+     * @param frameEmbeddings list of per-frame vision embeddings, each [1, tokensPerFrame, hiddenDim]
+     * @param tokenIds the prompt token IDs
+     * @param videoTokenId the video/image token ID to replace
+     * @return merged embeddings [1, seqLen, hiddenDim]
+     */
+    public static INDArray mergeVideoEmbeddings(INDArray textEmbeddings,
+                                                List<INDArray> frameEmbeddings,
+                                                int[] tokenIds, int videoTokenId) {
+        if (frameEmbeddings == null || frameEmbeddings.isEmpty()) {
+            log.warn("No frame embeddings provided, returning text embeddings unchanged");
+            return textEmbeddings;
         }
 
-        if (imageSlots != visionSeqLen) {
-            log.warn("Image token slots ({}) != vision tokens ({}). Will fill {} slots.",
-                    imageSlots, visionSeqLen, Math.min(imageSlots, (int) visionSeqLen));
+        // Concatenate all frame embeddings along sequence dimension -> [1, totalVisionTokens, hidden]
+        INDArray[] frameArrays = frameEmbeddings.toArray(new INDArray[0]);
+        INDArray allVision = Nd4j.concat(1, frameArrays);
+
+        INDArray tokenIdArray = Nd4j.createFromArray(tokenIds).reshape(1, tokenIds.length);
+        return mergeNative(textEmbeddings, allVision, tokenIdArray, videoTokenId);
+    }
+
+    /**
+     * Execute the native vision_embedding_merge op.
+     */
+    private static INDArray mergeNative(INDArray textEmbeddings, INDArray visionEmbeddings,
+                                        INDArray tokenIds, long targetTokenId) {
+        // Cast vision to match text dtype if needed
+        INDArray visionToUse = visionEmbeddings;
+        if (visionEmbeddings.dataType() != textEmbeddings.dataType()) {
+            log.info("Casting vision embeddings from {} to {}", visionEmbeddings.dataType(), textEmbeddings.dataType());
+            visionToUse = visionEmbeddings.castTo(textEmbeddings.dataType());
         }
 
-        // Cast vision embeddings to match text embedding dtype
-        INDArray visionFlat = visionEmbeddings.reshape((int) visionSeqLen, (int) visionHiddenSize);
-        INDArray visionCast = null;  // Track castTo() result for cleanup
-        if (visionFlat.dataType() != textEmbeddings.dataType()) {
-            log.info("Casting vision embeddings from {} to {} to match text embeddings",
-                    visionFlat.dataType(), textEmbeddings.dataType());
-            visionCast = visionFlat.castTo(textEmbeddings.dataType());
-            visionFlat = visionCast;
-        }
-
-        int seqLen = tokenIds.length;
-        int hiddenDim = (int) visionHiddenSize;
-
-        // Extract raw float data from both embedding sources via host buffers
-        float[] textData = textEmbeddings.data().asFloat();
-        float[] visionData = visionFlat.data().asFloat();
-
-        // Close the castTo() result now that we've extracted the float data
-        if (visionCast != null && !visionCast.wasClosed()) {
-            visionCast.setCloseable(true);
-            visionCast.close();
-        }
-
-        // Build merged float array on the host
-        float[] mergedData = new float[seqLen * hiddenDim];
-        int fillIdx = 0;
-        int fillCount = Math.min(imageSlots, (int) visionSeqLen);
-        for (int pos = 0; pos < seqLen; pos++) {
-            int destOffset = pos * hiddenDim;
-            if (tokenIds[pos] == imageTokenId && fillIdx < fillCount) {
-                int srcOffset = fillIdx * hiddenDim;
-                System.arraycopy(visionData, srcOffset, mergedData, destOffset, hiddenDim);
-                if (fillIdx == 0) {
-                    float vMin = Float.MAX_VALUE, vMax = -Float.MAX_VALUE;
-                    for (int k = 0; k < hiddenDim; k++) {
-                        vMin = Math.min(vMin, mergedData[destOffset + k]);
-                        vMax = Math.max(vMax, mergedData[destOffset + k]);
-                    }
-                    log.info("Vision slice [0] host data: min={}, max={}", vMin, vMax);
-                }
-                fillIdx++;
-            } else {
-                int srcOffset = pos * hiddenDim;
-                System.arraycopy(textData, srcOffset, mergedData, destOffset, hiddenDim);
-            }
-        }
-
-        // Create fresh INDArray from host float[] - guarantees proper CUDA device sync
-        INDArray inputsEmbeds = Nd4j.create(mergedData, new long[]{1, seqLen, hiddenDim}, 'c');
-        log.info("Built inputsEmbeds via host float[]: shape={}", java.util.Arrays.toString(inputsEmbeds.shape()));
-        log.info("Filled {} of {} image token positions", fillIdx, imageSlots);
-        if (fillIdx < (int) visionSeqLen) {
-            log.warn("Only filled {} of {} vision tokens", fillIdx, visionSeqLen);
-        }
-
-        return inputsEmbeds;
+        VisionEmbeddingMerge op = new VisionEmbeddingMerge(textEmbeddings, visionToUse, tokenIds, targetTokenId);
+        INDArray[] result = Nd4j.exec(op);
+        return result[0];
     }
 }

@@ -80,7 +80,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   }
   // The frozen fast path requires shapes to be frozen and all segments to have
   // ready replay handles. Without this, early executions with no handles fail.
-  if (!shapesFrozen_ || !allSegmentsReplayReady()) {
+  if (!planLifecycle_.isInFrozenOrReplayState() || !allSegmentsReplayReady()) {
     return Status::MAYBE;
   }
   if (!ModeContract::forMode(graphExecutionMode_).allowsFrozenFastPath) {
@@ -258,6 +258,23 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // No-op on CPU
 }
 
+// ── performPreReplaySync: passthrough on CPU ──────────────────────────────────
+// On CPU there are no CUDA streams, no cross-stream ordering, no D2D staging.
+// Return externalArrays unchanged.
+
+NDArray** NativeDynamicShapePlan::performPreReplaySync(
+    NDArray** externalArrays, int numExt, void* stream, const char* diagTag) {
+  (void)numExt; (void)stream; (void)diagTag;
+  return externalArrays;
+}
+
+void NativeDynamicShapePlan::verifyStagingNotStale(
+    NDArray** externalArrays, NDArray** effectiveArrays,
+    int numExt, void* stream, const char* diagTag) {
+  // No-op on CPU
+  (void)externalArrays; (void)effectiveArrays; (void)numExt; (void)stream; (void)diagTag;
+}
+
 // ── Graph eligibility: check CPU/GPU graph backends ─────────────────────────
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
@@ -329,7 +346,8 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
             DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "functional_capture_end_ok");
           } else {
             segment.exec.replayHandle.reset();
-            segment.exec.argTableStable = false;  // Invalidate fast-replay on capture failure
+            segment.exec.outcome = SegmentExecOutcome::PENDING;
+            segment.exec.bumpArgGeneration();
             segment.exec.addrKeyStableCount = 0;
             segment.exec.slotAddrStableCount = 0;
             DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "functional_capture_failed");
@@ -353,16 +371,32 @@ Status NativeDynamicShapePlan::platformCheckPostSegment(GraphSegment& segment) {
   return Status::OK;
 }
 
+// ── Post-graph-replay fixup: no-op on CPU (no CUDA graphs) ──────────────────
+
+Status NativeDynamicShapePlan::postGraphReplayFixup(
+    GraphSegment& seg, NDArray** externalArrays, int numExt,
+    void* stream, const char* diagTag) {
+  return Status::OK;
+}
+
+// ── Monolithic graph replay: no-op on CPU (no CUDA graphs) ──────────────────
+
+Status NativeDynamicShapePlan::replayMonolithicGraph(
+    GraphSegment& seg, NDArray** externalArrays, int numExt,
+    void* stream, const char* diagTag) {
+  return Status::OK;
+}
+
 // ── Segment cleanup for rebuild: reset replayHandle on CPU ──────────────────
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   seg.exec.replayHandle.reset();
+  seg.exec.outcome = SegmentExecOutcome::PENDING;
   // Also reset composite replay handles
   seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
   seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
   seg.exec.compositeReplaySchedule.units.clear();
   seg.exec.bumpArgGeneration();
-  seg.exec.argTableStable = false;  // Invalidate fast-replay when handles are cleared
   seg.exec.addrKeyStableCount = 0;
   seg.exec.slotAddrStableCount = 0;
   seg.exec.gapOpsCapturedInGraph = false;
@@ -374,12 +408,12 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     seg.exec.replayHandle.reset();
+    seg.exec.outcome = SegmentExecOutcome::PENDING;
     // Also reset composite replay handles
     seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
     seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
     seg.exec.compositeReplaySchedule.units.clear();
     seg.exec.bumpArgGeneration();
-    seg.exec.argTableStable = false;  // Invalidate fast-replay on plan teardown
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
     seg.exec.gapOpsCapturedInGraph = false;
@@ -419,10 +453,8 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   PlanExecutionContext* ctx;
   if (frozen && execCount > 2 && steadyStateExecCtx_ != nullptr) {
     ctx = static_cast<PlanExecutionContext*>(steadyStateExecCtx_);
-    // Reset per-step dedup flags
-    ctx->extInputsSynced = false;
-    ctx->crossStreamSynced = false;
-    ctx->stagingBuffersSynced = false;
+    // Reset per-step sync state machine
+    ctx->resetSyncPhase();
     ctx->flowEventCount = 0;
     ctx->streamSyncCount = 0;
     ctx->eventSyncCount = 0;
@@ -434,10 +466,10 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   }
   ctx->execCount = execCount;
   ctx->frozen = frozen;
-  // Compute early derived state — used by this method's sync decisions.
-  // Full populateDerivedState() is called later in execute().
-  ctx->needsFullSync = !frozen || execCount <= 1;
-  ctx->isFrozenSteadyState = frozen && execCount > 1;
+  // Sync decisions use anySegmentNeedsWarmup() — the SINGLE source of truth.
+  bool segWarmup = anySegmentNeedsWarmup();
+  ctx->needsFullSync = !frozen || execCount <= 1 || segWarmup;
+  ctx->isFrozenSteadyState = frozen && execCount > 1 && !segWarmup;
   return static_cast<void*>(ctx);
 }
 
@@ -531,10 +563,10 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
   for (auto& seg : segments_) {
     if (seg.exec.replayHandle) {
       seg.exec.replayHandle.reset();
+      seg.exec.outcome = SegmentExecOutcome::PENDING;
     }
     seg.exec.gapOpsCapturedInGraph = false;
     seg.exec.bumpArgGeneration();
-    seg.exec.argTableStable = false;
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
     seg.exec.capturedInputAddrKey = 0;
@@ -569,7 +601,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
-      if (slotIsViewProducer_ != nullptr && slotIsViewProducer_[outIdx]) continue;
+      if (slots_[outIdx].slotPhase.isViewProducer) continue;
       NDArray* arr = outputSlots_[outIdx];
       if (arr == nullptr) continue;
       if (arr->isView()) continue;

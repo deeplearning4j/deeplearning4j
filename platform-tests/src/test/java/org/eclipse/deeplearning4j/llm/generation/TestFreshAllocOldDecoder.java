@@ -100,7 +100,7 @@ public class TestFreshAllocOldDecoder {
 
         int targetSize = 512;
         String pdfPath = System.getProperty("vlm.test.pdf.path",
-                "/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
+                System.getProperty("user.dir") + "/pathfinder-mythic.pdf");
         int pdfPage = Integer.getInteger("vlm.test.pdf.page", 10);
         File pdfFile = new File(pdfPath);
         BufferedImage image;

@@ -60,8 +60,10 @@
 
 // Standard MLIR dialects
 #include <mlir/Dialect/Arith/IR/Arith.h>
+#include <mlir/Dialect/ControlFlow/IR/ControlFlow.h>
 #include <mlir/Dialect/Math/IR/Math.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
+#include <mlir/Dialect/UB/IR/UBOps.h>
 
 namespace sd {
 namespace graph {
@@ -83,11 +85,29 @@ static std::mutex& getMlirContextMutex() {
 
 static mlir::MLIRContext* createMlirContextWithDialects() {
   std::lock_guard<std::mutex> lock(getMlirContextMutex());
-  auto* ctx = new mlir::MLIRContext();
+  // THREADING::DISABLED is required here.  When hundreds of sub-segments are
+  // compiled in parallel each creates its own MLIRContext.  With the default
+  // Threading::ENABLED, every context spawns its own thread pool and those
+  // pools share MLIR's global verification state (the op-verifier hook tables
+  // are stored in a context-global side table that is lazily populated under
+  // Threading::ENABLED).  Concurrent lazy population across contexts races and
+  // can leave a context's hook table in a half-initialised state.  The verifier
+  // then walks the ModuleOp, cannot locate the SymbolTable trait verifier for
+  // tt.func, and emits "'tt.func' op symbol's parent must have the SymbolTable
+  // trait".  Threading::DISABLED makes each context single-threaded and self-
+  // contained, eliminating the race.  The parallelism we need is at the
+  // segment level (worker thread pool in compileSegment), not inside MLIR.
+  auto* ctx = new mlir::MLIRContext(mlir::MLIRContext::Threading::DISABLED);
+  // Load all dialects that Triton 3.6's TritonDialect depends on.
+  // TritonDialect.td declares dependentDialects: arith, math, scf, cf, ub.
+  // Explicit registration ensures the context is fully initialized before
+  // mlir::verify() is called.
   ctx->loadDialect<mlir::triton::TritonDialect>();
   ctx->loadDialect<mlir::arith::ArithDialect>();
+  ctx->loadDialect<mlir::cf::ControlFlowDialect>();
   ctx->loadDialect<mlir::math::MathDialect>();
   ctx->loadDialect<mlir::scf::SCFDialect>();
+  ctx->loadDialect<mlir::ub::UBDialect>();
   return ctx;
 }
 
@@ -4012,8 +4032,20 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               blockSize);
     // Write TTIR to file per sub-kernel range
     {
-      char fname[256];
-      snprintf(fname, sizeof(fname), "/tmp/triton_ttir_%d_%d.mlir", startSlot, endSlot);
+      char fname[512];
+      // Use configurable dump dir (ND4J_TRITON_DUMP_DIR), falling back to the
+      // platform temp directory.  Never hardcode /tmp/ — it is not portable and
+      // breaks on Windows, Android, and containerised Linux environments.
+      std::string dumpDir = sd::Environment::getInstance().tritonDumpDir();
+      if (dumpDir.empty()) {
+        const char* tmpEnv = std::getenv("TMPDIR");
+        if (!tmpEnv) tmpEnv = std::getenv("TMP");
+        if (!tmpEnv) tmpEnv = std::getenv("TEMP");
+        dumpDir = tmpEnv ? tmpEnv : "/tmp";
+      }
+      if (!dumpDir.empty() && dumpDir.back() != '/' && dumpDir.back() != '\\') dumpDir += '/';
+      snprintf(fname, sizeof(fname), "%striton_ttir_%d_%d.mlir",
+               dumpDir.c_str(), startSlot, endSlot);
       FILE* df = fopen(fname, "w");
       if (df) {
         fprintf(df, "%s\n", ttirDump.c_str());
@@ -7740,7 +7772,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               static_cast<int>(launchPhases.size()), ttirDump.c_str());
     // Write TTIR to file for indirect-args kernels
     if (useIndirectArgs) {
-      FILE* df = fopen("/tmp/triton_ttir_indirect.mlir", "w");
+      std::string dumpDir = sd::Environment::getInstance().tritonDumpDir();
+      if (dumpDir.empty()) {
+        const char* tmpEnv = std::getenv("TMPDIR");
+        if (!tmpEnv) tmpEnv = std::getenv("TMP");
+        if (!tmpEnv) tmpEnv = std::getenv("TEMP");
+        dumpDir = tmpEnv ? tmpEnv : "/tmp";
+      }
+      if (!dumpDir.empty() && dumpDir.back() != '/' && dumpDir.back() != '\\') dumpDir += '/';
+      std::string indirectPath = dumpDir + "triton_ttir_indirect.mlir";
+      FILE* df = fopen(indirectPath.c_str(), "w");
       if (df) {
         fprintf(df, "// Sectioned module: %s\n// Sections: %d, Ops: %d, Args: %d (indirect)\n%s\n",
                 result.kernelName.c_str(), static_cast<int>(sections.size()),

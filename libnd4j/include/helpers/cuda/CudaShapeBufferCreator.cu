@@ -24,6 +24,7 @@
 #include "array/CudaPointerDeallocator.h"
 #include "array/PrimaryPointerDeallocator.h"
 
+#include <mutex>
 #include <string>
 
 namespace sd {
@@ -107,8 +108,12 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
 }
 
 CudaShapeBufferCreator& CudaShapeBufferCreator::getInstance() {
-    static CudaShapeBufferCreator instance;
-    return instance;
+    static CudaShapeBufferCreator* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new CudaShapeBufferCreator();
+    });
+    return *instance;
 }
 
 } // namespace sd

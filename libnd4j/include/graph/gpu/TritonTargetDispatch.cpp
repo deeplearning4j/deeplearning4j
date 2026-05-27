@@ -161,6 +161,22 @@ namespace graph {
 
 namespace {
 
+// Return the directory to use for Triton diagnostic files (TTIR dumps, error
+// logs, etc.).  Prefers TritonConfig::dumpDir() (set by ND4J_TRITON_DUMP_DIR),
+// then the OS temp directory, then "/tmp/" as last resort.
+// All diagnostic paths in this file must use this helper — never hardcode /tmp/.
+static std::string getTritonDiagDir() {
+  std::string dir = sd::Environment::getInstance().tritonDumpDir();
+  if (dir.empty()) {
+    const char* tmpEnv = std::getenv("TMPDIR");
+    if (!tmpEnv) tmpEnv = std::getenv("TMP");
+    if (!tmpEnv) tmpEnv = std::getenv("TEMP");
+    dir = tmpEnv ? tmpEnv : "/tmp";
+  }
+  if (!dir.empty() && dir.back() != '/' && dir.back() != '\\') dir += '/';
+  return dir;
+}
+
 std::string canonicalizeAmdArch(const std::string& arch) {
   if (arch.empty()) return arch;
   size_t suffixPos = arch.find(':');
@@ -768,11 +784,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
           DSP_DIAG(COMPILE, "SPLAT TYPE MISMATCH: scalar=%s, tensor_elem=%s  op: %s",
                     scalarStr.c_str(), elemStr.c_str(), opStr.c_str());
           // Also dump to file for full diagnostics
-          FILE* f = fopen("/tmp/triton_splat_mismatch.txt", "a");
-          if (f) {
-            fprintf(f, "MISMATCH: scalar=%s tensor_elem=%s\n  %s\n",
-                    scalarStr.c_str(), elemStr.c_str(), opStr.c_str());
-            fclose(f);
+          {
+            std::string diagFile = getTritonDiagDir() + "triton_splat_mismatch.txt";
+            FILE* f = fopen(diagFile.c_str(), "a");
+            if (f) {
+              fprintf(f, "MISMATCH: scalar=%s tensor_elem=%s\n  %s\n",
+                      scalarStr.c_str(), elemStr.c_str(), opStr.c_str());
+              fclose(f);
+            }
           }
           splatTypeError = true;
         }
@@ -780,13 +799,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     });
     if (splatTypeError) {
       // Dump full TTIR for diagnosis
-      FILE* diagFile = fopen("/tmp/triton_ttir_splat_error.txt", "w");
+      std::string splatErrPath = getTritonDiagDir() + "triton_ttir_splat_error.txt";
+      FILE* diagFile = fopen(splatErrPath.c_str(), "w");
       if (diagFile) {
         fprintf(diagFile, "%s", preDump.c_str());
         fclose(diagFile);
       }
       DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: SplatOp type mismatch detected! "
-                "Full TTIR dumped to /tmp/triton_ttir_splat_error.txt", compileId);
+                "Full TTIR dumped to %s", compileId, splatErrPath.c_str());
     }
   }
 
@@ -817,11 +837,38 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       pm.addPass(mlir::triton::createConvertTritonToTritonGPU(ttirOpts));
     }
 
+    // Count operations in the module to decide whether to include passes that
+    // use MLIR's getBackwardSliceImpl/getForwardSliceImpl. Those functions
+    // recurse to the full depth of the SSA def-use chain. For large fused
+    // modules (hundreds of ops forming a linear chain), the recursion hangs
+    // the compilation indefinitely. CoalescePass is the primary offender.
+    // Threshold: 128 ops. Below this, the slice computation is fast.
+    // Above this, skip CoalescePass and related layout passes that trigger
+    // the same pathology. The kernel still compiles correctly — just with
+    // potentially suboptimal memory access patterns.
+    int moduleOpCount = 0;
+    moduleOp->walk([&](mlir::Operation*) { moduleOpCount++; });
+    // Subtract 1 for the module op itself
+    if (moduleOpCount > 0) moduleOpCount--;
+    const int coalesceThreshold = 128;
+    const bool skipCoalesce = (moduleOpCount > coalesceThreshold);
+    if (skipCoalesce) {
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: module has %d ops (threshold=%d), "
+                "SKIPPING CoalescePass and slice-heavy passes to avoid recursive hang",
+                compileId, moduleOpCount, coalesceThreshold);
+    }
+
     // Phase 3: Full TTGIR optimization pipeline (Triton NVIDIA backend)
-    pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
+    // CoalescePass: optimizes memory access coalescing but uses recursive
+    // getBackwardSliceImpl that hangs on large modules.
+    if (!skipCoalesce) {
+      pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
+    }
     pm.addPass(mlir::triton::gpu::createTritonGPUF32DotTC());
     pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
-    pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeThreadLocality());
+    if (!skipCoalesce) {
+      pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeThreadLocality());
+    }
     pm.addPass(mlir::triton::gpu::createTritonGPUAccelerateMatmul());
     pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
     {
@@ -843,7 +890,9 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeDotOperands(dotOpts2));
     }
     pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
-    pm.addPass(mlir::triton::gpu::createTritonGPUReduceDataDuplication());
+    if (!skipCoalesce) {
+      pm.addPass(mlir::triton::gpu::createTritonGPUReduceDataDuplication());
+    }
     pm.addPass(mlir::triton::gpu::createTritonGPUReorderInstructions());
     pm.addPass(mlir::createCSEPass());
     pm.addPass(mlir::createSymbolDCEPass());
@@ -855,14 +904,15 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       cudaGetLastError();  // Clear sticky CUDA errors from failed pass pipeline
 #endif
       // Dump full TTIR to file for diagnosis
-      FILE* diagFile = fopen("/tmp/triton_ttir_dump.txt", "w");
+      std::string ttirDumpPath = getTritonDiagDir() + "triton_ttir_dump.txt";
+      FILE* diagFile = fopen(ttirDumpPath.c_str(), "w");
       if (diagFile) {
         fprintf(diagFile, "%s", preDump.c_str());
         fclose(diagFile);
       }
       DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
-                "TTIR dumped to /tmp/triton_ttir_dump.txt (%d bytes)",
-                static_cast<int>(preDump.size()));
+                "TTIR dumped to %s (%d bytes)",
+                ttirDumpPath.c_str(), static_cast<int>(preDump.size()));
       return result;
     }
 
@@ -999,13 +1049,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       std::string mlirDump;
       llvm::raw_string_ostream mlirOS(mlirDump);
       moduleOp->print(mlirOS);
-      FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
+      std::string mlirDumpPath = getTritonDiagDir() + "triton_mlir_dump.txt";
+      FILE* diagFile = fopen(mlirDumpPath.c_str(), "a");
       if (diagFile) {
         fprintf(diagFile, "=== PHASE 4 FAILED ===\n%s\n=== END ===\n", mlirDump.c_str());
         fclose(diagFile);
       }
       fprintf(stderr, "TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed. "
-              "Module dumped to /tmp/triton_mlir_dump.txt\n");
+              "Module dumped to %s\n", mlirDumpPath.c_str());
       return result;
     }
     } // closes inner brace from line 876
@@ -1054,13 +1105,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       llvm::raw_string_ostream postOS(postLowerDump);
       moduleOp->print(postOS);
       // Write to file since sd_printf may be swallowed by surefire
-      FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
+      std::string mlirTransDumpPath = getTritonDiagDir() + "triton_mlir_dump.txt";
+      FILE* diagFile = fopen(mlirTransDumpPath.c_str(), "a");
       if (diagFile) {
         fprintf(diagFile, "=== TRANSLATION FAILED ===\n%s\n=== END ===\n", postLowerDump.c_str());
         fclose(diagFile);
       }
       fprintf(stderr, "TritonTargetDispatch::compile: MLIR -> LLVM IR translation failed. "
-              "Post-lowering module dumped to /tmp/triton_mlir_dump.txt\n");
+              "Post-lowering module dumped to %s\n", mlirTransDumpPath.c_str());
       return result;
     }
   } // phase5Guard destructor fires here, emitting MLIR_TO_LLVM_IR DONE
@@ -1303,18 +1355,21 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
                   "  JIT error: %s\n  JIT info: %s\n  PTX (first 2000 chars): %.2000s\n",
                   errStr ? errStr : "unknown", jitErrorLog, jitInfoLog,
                   static_cast<const char*>(binary.data));
-        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
-        if (df) {
-          fprintf(df, "cuModuleLoadDataEx_FAIL: res=%d err=%s jitErr=%s jitInfo=%s binarySize=%zu\n",
-                  (int)res, errStr ? errStr : "unknown", jitErrorLog, jitInfoLog, binary.size);
-          fflush(df);
-          fclose(df);
-        }
-        // Dump full PTX for debugging
-        FILE* ptxDump = fopen("/tmp/triton_ptx_dump.ptx", "w");
-        if (ptxDump) {
-          fwrite(binary.data, 1, binary.size, ptxDump);
-          fclose(ptxDump);
+        {
+          std::string diagDir = getTritonDiagDir();
+          FILE* df = fopen((diagDir + "triton_launch_diag.txt").c_str(), "a");
+          if (df) {
+            fprintf(df, "cuModuleLoadDataEx_FAIL: res=%d err=%s jitErr=%s jitInfo=%s binarySize=%zu\n",
+                    (int)res, errStr ? errStr : "unknown", jitErrorLog, jitInfoLog, binary.size);
+            fflush(df);
+            fclose(df);
+          }
+          // Dump full PTX for debugging
+          FILE* ptxDump = fopen((diagDir + "triton_ptx_dump.ptx").c_str(), "w");
+          if (ptxDump) {
+            fwrite(binary.data, 1, binary.size, ptxDump);
+            fclose(ptxDump);
+          }
         }
         if (didPushCtx) { CUcontext dummy; cuCtxPopCurrent(&dummy); }
         return nullptr;
@@ -1498,12 +1553,15 @@ bool TritonTargetDispatch::launchKernel(void* kernelFunc,
                   "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
                   errStr ? errStr : "unknown", (int)res,
                   gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
-        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
-        if (df) {
-          fprintf(df, "STD_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
-                  errStr ? errStr : "unknown", (int)res,
-                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
-          fflush(df); fclose(df);
+        {
+          std::string launchDiagPath = getTritonDiagDir() + "triton_launch_diag.txt";
+          FILE* df = fopen(launchDiagPath.c_str(), "a");
+          if (df) {
+            fprintf(df, "STD_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                    errStr ? errStr : "unknown", (int)res,
+                    gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+            fflush(df); fclose(df);
+          }
         }
         return false;
       }
@@ -1601,12 +1659,15 @@ bool TritonTargetDispatch::launchCooperativeKernel(void* kernelFunc,
                   "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
                   errStr ? errStr : "unknown", (int)res,
                   gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
-        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
-        if (df) {
-          fprintf(df, "COOP_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
-                  errStr ? errStr : "unknown", (int)res,
-                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
-          fflush(df); fclose(df);
+        {
+          std::string coopDiagPath = getTritonDiagDir() + "triton_launch_diag.txt";
+          FILE* df = fopen(coopDiagPath.c_str(), "a");
+          if (df) {
+            fprintf(df, "COOP_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                    errStr ? errStr : "unknown", (int)res,
+                    gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+            fflush(df); fclose(df);
+          }
         }
         return false;
       }

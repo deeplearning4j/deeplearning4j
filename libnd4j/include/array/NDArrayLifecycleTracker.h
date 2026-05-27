@@ -141,8 +141,12 @@ public:
      * Get singleton instance
      */
     static NDArrayLifecycleTracker& getInstance() {
-        static NDArrayLifecycleTracker instance;
-        return instance;
+        static NDArrayLifecycleTracker* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new NDArrayLifecycleTracker();
+        });
+        return *instance;
     }
 
     /**

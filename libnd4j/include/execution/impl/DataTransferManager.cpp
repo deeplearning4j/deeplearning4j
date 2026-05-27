@@ -23,9 +23,10 @@
 #include <execution/DataTransferManager.h>
 #include <execution/DeviceManager.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstring>
-#include <algorithm>
+#include <mutex>
 
 namespace sd {
 namespace modelparallel {
@@ -63,8 +64,12 @@ void* RingBuffer::getBuffer(int rank) {
 
 // DataTransferManager implementation
 DataTransferManager& DataTransferManager::getInstance() {
-    static DataTransferManager instance;
-    return instance;
+    static DataTransferManager* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new DataTransferManager();
+    });
+    return *instance;
 }
 
 DataTransferManager::DataTransferManager() {

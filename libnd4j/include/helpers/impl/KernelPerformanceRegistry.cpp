@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <unordered_set>
 
@@ -27,8 +28,12 @@ namespace sd {
 namespace ops {
 
 KernelPerformanceRegistry& KernelPerformanceRegistry::getInstance() {
-  static KernelPerformanceRegistry instance;
-  return instance;
+  static KernelPerformanceRegistry* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new KernelPerformanceRegistry();
+  });
+  return *instance;
 }
 
 KernelPerformanceRegistry::~KernelPerformanceRegistry() {

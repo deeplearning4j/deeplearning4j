@@ -70,12 +70,19 @@ class SD_LIB_EXPORT NativePlanCache {
     sd::LongType phCount;
     // GraphExecutionMode — each mode gets its own plan (one flow, no reclassification).
     int graphExecutionMode;
+    // Thread isolation: each thread gets its own plan instance so that mutable
+    // execution state (outputSlots_, staging buffers, segment lifecycle) is never
+    // shared across concurrent sd.output() calls.  The plan structure (slots,
+    // segment definitions) is re-deserialized from the cached bytes — this is
+    // cheap (~µs) and avoids adding synchronization to the hot execution path.
+    uint64_t threadId = 0;
 
     bool operator==(const Key& o) const {
       return outputSetHash == o.outputSetHash
           && phShapeContentHash == o.phShapeContentHash
           && phCount == o.phCount
-          && graphExecutionMode == o.graphExecutionMode;
+          && graphExecutionMode == o.graphExecutionMode
+          && threadId == o.threadId;
     }
   };
 
@@ -85,6 +92,7 @@ class SD_LIB_EXPORT NativePlanCache {
       h ^= std::hash<uint64_t>{}(k.phShapeContentHash) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
       h ^= std::hash<sd::LongType>{}(k.phCount) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
       h ^= std::hash<int>{}(k.graphExecutionMode) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+      h ^= std::hash<uint64_t>{}(k.threadId) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
       return h;
     }
   };

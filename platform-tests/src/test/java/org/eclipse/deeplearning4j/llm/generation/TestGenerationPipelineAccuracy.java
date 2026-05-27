@@ -168,11 +168,7 @@ public class TestGenerationPipelineAccuracy {
         if (configuredPath != null && !configuredPath.isBlank()) {
             return new File(configuredPath);
         }
-        File f = new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
-        if (f.exists()) {
-            return f;
-        }
-        return new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/pathfinder-mythic.pdf");
+        return new File(System.getProperty("user.dir"), "pathfinder-mythic.pdf");
     }
 
     private static BufferedImage loadPageImage(File pdfFile, int page, int dpi) throws IOException {

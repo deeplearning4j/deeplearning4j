@@ -312,6 +312,16 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
+#if defined(SD_CUDA)
+  _writeEvent = other._writeEvent;
+  _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  _writeEventDeviceId.store(other._writeEventDeviceId.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  other._writeEvent = nullptr;
+  other._writeEventRecorded.store(false, std::memory_order_release);
+  other._writeEventDeviceId.store(-1, std::memory_order_release);
+#endif
 #if defined(SD_GCC_FUNCTRACE)
   allocationStackTracePrimary = other.allocationStackTracePrimary;
   allocationStackTraceSpecial = other.allocationStackTraceSpecial;
@@ -404,6 +414,16 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
+#if defined(SD_CUDA)
+  _writeEvent = other._writeEvent;
+  _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  _writeEventDeviceId.store(other._writeEventDeviceId.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  other._writeEvent = nullptr;
+  other._writeEventRecorded.store(false, std::memory_order_release);
+  other._writeEventDeviceId.store(-1, std::memory_order_release);
+#endif
 
 #if defined(SD_GCC_FUNCTRACE)
   allocationStackTracePrimary = other.allocationStackTracePrimary;

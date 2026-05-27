@@ -87,8 +87,12 @@ void NDArray::syncShape() {
                     shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice, stream);
     return;
   }
-  cudaMemcpy(const_cast<LongType*>(specialShapeInfo()), shapeInfo(), shape::shapeInfoByteLength(shapeInfo()),
-             cudaMemcpyHostToDevice);
+  // Use cudaStreamPerThread instead of synchronous cudaMemcpy on the legacy
+  // stream (stream 0). Stream 0 causes error 906 when another thread on the
+  // same device is mid-CUDA-graph-capture.
+  cudaMemcpyAsync(const_cast<LongType*>(specialShapeInfo()), shapeInfo(),
+                  shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice, cudaStreamPerThread);
+  cudaStreamSynchronize(cudaStreamPerThread);
 }
 
 void* NDArray::specialBuffer() {

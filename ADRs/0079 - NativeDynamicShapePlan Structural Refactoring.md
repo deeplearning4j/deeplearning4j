@@ -101,6 +101,16 @@ The follow-on work implements a shape-keyed `NativePlanCache` (C++-owned) that t
 
 This work is the lifecycle counterpart to the structural refactor: step 2 made slots struct-typed so their identity was crisp; step 9 enforces that the identity, once established, is immutable for the plan's lifetime.
 
+### 10. Disk Plan Persistence (May 2026)
+
+Building on the shape-keyed plan cache (step 9), serialized plan bytes are now persisted to disk at `~/.kompile/cache/dsp/dsp_plan_cache/`, keyed by FNV-1a hash of the `DynamicShapePlan.serialize()` output. This eliminates plan recompilation across JVM restarts — the exact serialized bytes that `fromSerializedPlan()` consumes are loaded from disk instead of recomputed from the Java DAG.
+
+The disk cache mirrors the Triton kernel cache architecture: atomic writes (temp file + rename), override directory for pre-seeded deployments, `.meta` sidecar for version-based invalidation, and model identity index files for cross-JVM lookup without plan recompilation.
+
+New `DspConfig` fields (`planCacheDiskEnabled`, `planCacheDiskDir`, `planCacheDiskForceRecompile`, `planCacheOverrideDir`) follow the same `initFromEnvironment()` pattern established in step 9 for the in-memory plan cache. Full design in ADR 0061's *Disk Plan Persistence* section.
+
+Key file: `nd4j/.../samediff/execution/DspPlanDiskCache.java`.
+
 ## Consequences
 
 - **Grep-ability restored.** Removing macro indirection and ghost aliases means `grep writeOutputSlot` / `grep outputSlots_` now return authoritative call-site lists. The acceptance gate for each refactor step was "zero remaining old-style field references," enforced by grep.

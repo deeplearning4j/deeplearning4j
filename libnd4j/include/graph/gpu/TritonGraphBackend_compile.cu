@@ -41,9 +41,18 @@
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <pthread.h>
 #include <sstream>
 #include <thread>
 #include <vector>
+
+// Stack size for Triton compile worker threads (64 MB).
+// MLIR's CoalescePass uses recursive getBackwardSliceImpl/getForwardSliceImpl
+// that recurse to the full depth of the SSA def-use chain. For large fused
+// segments (768 ops), this can exceed 1000 recursive frames, each consuming
+// several KB of stack. The default std::thread stack (8 MB on Linux) is
+// insufficient. 64 MB accommodates chains up to ~8000 ops with margin.
+static constexpr size_t TRITON_COMPILE_WORKER_STACK_SIZE = 64 * 1024 * 1024;
 
 namespace sd {
 namespace graph {
@@ -985,50 +994,117 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   };
 
   if (maxParallelCompiles > 1 && pendingRanges.size() > 1) {
-    // Launch worker threads
+    // Launch worker threads with enlarged stack for MLIR pass recursion.
+    // MLIR's CoalescePass recurses through getBackwardSliceImpl/getForwardSliceImpl
+    // to the full SSA def-use chain depth. The default 8MB std::thread stack is
+    // insufficient for large fused segments (768+ ops → 1000+ recursive frames).
+    // Use pthread_create with explicit 64MB stack size.
     const int numWorkers = std::min(maxParallelCompiles,
                                     static_cast<int>(pendingRanges.size()));
-    std::vector<std::thread> workers;
-    workers.reserve(numWorkers);
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, TRITON_COMPILE_WORKER_STACK_SIZE);
+
+    struct PthreadWorkerArg {
+      std::function<void()>* fn;
+    };
+
+    std::vector<pthread_t> threads(numWorkers);
+    std::vector<PthreadWorkerArg> args(numWorkers);
+    std::vector<std::thread> fallbackThreads;
+    // workerLoop is captured by reference, wrap it for pthread
+    auto workerFn = std::function<void()>(workerLoop);
+
     for (int i = 0; i < numWorkers; i++) {
-      workers.emplace_back(workerLoop);
+      args[i].fn = &workerFn;
+      int rc = pthread_create(&threads[i], &attr,
+          [](void* arg) -> void* {
+            auto* wa = static_cast<PthreadWorkerArg*>(arg);
+            (*wa->fn)();
+            return nullptr;
+          }, &args[i]);
+      if (rc != 0) {
+        DSP_DIAG(COMPILE, "TritonGraphBackend: pthread_create failed for worker %d (rc=%d), "
+                 "falling back to std::thread", i, rc);
+        fallbackThreads.emplace_back(workerLoop);
+        threads[i] = 0;
+      }
     }
-    for (auto& w : workers) {
-      w.join();
+    pthread_attr_destroy(&attr);
+
+    for (int i = 0; i < numWorkers; i++) {
+      if (threads[i] != 0) {
+        pthread_join(threads[i], nullptr);
+      }
+    }
+    for (auto& ft : fallbackThreads) {
+      ft.join();
     }
   } else {
-    // Single-threaded: drain queue directly (no thread overhead)
-    while (!pendingRanges.empty()) {
-      SubSegmentRange range = pendingRanges.front();
-      pendingRanges.pop_front();
+    // Single-threaded path: still needs enlarged stack because MLIR's
+    // CoalescePass recursion can blow the calling thread's stack (JVM threads
+    // default to 1MB on Linux). Spawn a single worker with 64MB stack.
+    auto singleThreadWork = [&]() {
+      while (!pendingRanges.empty()) {
+        SubSegmentRange range = pendingRanges.front();
+        pendingRanges.pop_front();
 
-      auto result = compileRange(range);
-      const bool success = (result.compiled.gpuModule && result.compiled.kernelFunction);
-      if (success) {
-        allResults.push_back(std::move(result));
-      } else {
-        cudaGetLastError();
-        const int sectionCount = range.endSectionIdx - range.startSectionIdx + 1;
-        const bool canSplit = (sectionCount > 1) || (range.opsCount > 1);
-        if (canSplit) {
-          DSP_DIAG(COMPILE, "TritonGraphBackend: adaptive range [%d-%d] compile failed; "
-                   "splitting by section graph",
-                   range.startSlot, range.endSlot);
-          splitRetryCount++;
-          splitRange(range);
+        auto result = compileRange(range);
+        const bool success = (result.compiled.gpuModule && result.compiled.kernelFunction);
+        if (success) {
+          allResults.push_back(std::move(result));
         } else {
-          // Leaf range failed — keep it as a native ordered range instead of aborting
-          std::string opNames;
-          for (int s = range.startSlot; s <= range.endSlot; s++) {
-            if (!opNames.empty()) opNames += ",";
-            opNames += slots[s].ident.opName;
+          cudaGetLastError();
+          const int sectionCount = range.endSectionIdx - range.startSectionIdx + 1;
+          const bool canSplit = (sectionCount > 1) || (range.opsCount > 1);
+          if (canSplit) {
+            DSP_DIAG(COMPILE, "TritonGraphBackend: adaptive range [%d-%d] compile failed; "
+                     "splitting by section graph",
+                     range.startSlot, range.endSlot);
+            splitRetryCount++;
+            splitRange(range);
+          } else {
+            // Leaf range failed — keep it as a native ordered range instead of aborting
+            std::string opNames;
+            for (int s = range.startSlot; s <= range.endSlot; s++) {
+              if (!opNames.empty()) opNames += ",";
+              opNames += slots[s].ident.opName;
+            }
+            DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
+                     "keeping as native ordered range (ops: %s)",
+                     range.startSlot, range.endSlot, opNames.c_str());
+            leafOrderedRanges.push_back({range.startSlot, range.endSlot});
           }
-          DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
-                   "keeping as native ordered range (ops: %s)",
-                   range.startSlot, range.endSlot, opNames.c_str());
-          leafOrderedRanges.push_back({range.startSlot, range.endSlot});
         }
       }
+    };
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, TRITON_COMPILE_WORKER_STACK_SIZE);
+
+    struct SingleWorkerArg {
+      std::function<void()>* fn;
+    };
+    auto workFn = std::function<void()>(singleThreadWork);
+    SingleWorkerArg swa{&workFn};
+    pthread_t singleThread;
+    int rc = pthread_create(&singleThread, &attr,
+        [](void* arg) -> void* {
+          auto* wa = static_cast<SingleWorkerArg*>(arg);
+          (*wa->fn)();
+          return nullptr;
+        }, &swa);
+    pthread_attr_destroy(&attr);
+
+    if (rc == 0) {
+      pthread_join(singleThread, nullptr);
+    } else {
+      // Fall back to direct execution if pthread_create fails
+      DSP_DIAG(COMPILE, "TritonGraphBackend: pthread_create failed for single-threaded compile "
+               "(rc=%d), running on calling thread (risk of stack overflow)", rc);
+      singleThreadWork();
     }
   }
 
@@ -1110,7 +1186,14 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                 compileDevice, cudaGetErrorString(setDevErr));
       cudaGetLastError();
       for (auto& kernel : compiledSeg.subKernels) {
-        if (kernel.gpuModule) TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        if (kernel.gpuModule) {
+          recordModuleFree(kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : compileDevice,
+                           kernel.estimatedModuleBytes);
+          TritonTargetDispatch::unloadModule(kernel.gpuModule);
+          kernel.gpuModule = nullptr;
+          kernel.kernelFunction = nullptr;
+          kernel.loadedDeviceId = -1;
+        }
       }
       return false;
     }
@@ -1141,14 +1224,39 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     ownPreallocStream = true;
   }
 
+  const bool useConsolidatedArgTable = Environment::getInstance().tritonConsolidatedArgTable();
+
   auto cleanupCompiledWorkspace = [&]() {
+    if (compiledSeg.consolidatedArgTableDevice != nullptr) {
+      auto freeErr = freeDeviceBufferAsync(compiledSeg.consolidatedArgTableDevice, preallocStream);
+      if (freeErr != cudaSuccess) {
+        DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing consolidated arg table for [%d-%d]: %s",
+                  seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(freeErr));
+        cudaGetLastError();
+      } else {
+        recordModuleFree(compiledSeg.consolidatedArgTableDeviceId >= 0 ? compiledSeg.consolidatedArgTableDeviceId : compileDevice,
+                         compiledSeg.consolidatedArgTableBytes);
+      }
+      compiledSeg.consolidatedArgTableDevice = nullptr;
+      compiledSeg.consolidatedArgTableBytes = 0;
+      compiledSeg.consolidatedArgTableDeviceId = -1;
+      compiledSeg.useConsolidatedArgTable = false;
+    }
+    if (compiledSeg.consolidatedArgTableHostPinned != nullptr) {
+      auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+      memPool.freePinnedHost(compiledSeg.consolidatedArgTableHostPinned);
+      compiledSeg.consolidatedArgTableHostPinned = nullptr;
+    }
     for (auto& k : compiledSeg.subKernels) {
-      if (k.cachedArgTableDevice) {
+      if (!useConsolidatedArgTable && k.cachedArgTableDevice) {
         auto freeErr = freeDeviceBufferAsync(k.cachedArgTableDevice, preallocStream);
         if (freeErr != cudaSuccess) {
           DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing pre-allocated arg table for [%d-%d]: %s",
                     k.startSlot_, k.endSlot_, cudaGetErrorString(freeErr));
           cudaGetLastError();
+        } else {
+          recordModuleFree(k.cachedArgTableDeviceId >= 0 ? k.cachedArgTableDeviceId : compileDevice,
+                           k.cachedArgTableBytes);
         }
       }
       if (k.cachedSyncCounterDevice) {
@@ -1157,6 +1265,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing pre-allocated sync counter for [%d-%d]: %s",
                     k.startSlot_, k.endSlot_, cudaGetErrorString(freeErr));
           cudaGetLastError();
+        } else {
+          recordModuleFree(k.cachedSyncCounterDeviceId >= 0 ? k.cachedSyncCounterDeviceId : compileDevice,
+                           sizeof(int));
         }
       }
       if (k.cachedGlobalScratchDevice) {
@@ -1165,6 +1276,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing pre-allocated global scratch for [%d-%d]: %s",
                     k.startSlot_, k.endSlot_, cudaGetErrorString(freeErr));
           cudaGetLastError();
+        } else {
+          recordModuleFree(k.cachedGlobalScratchDeviceId >= 0 ? k.cachedGlobalScratchDeviceId : compileDevice,
+                           k.cachedGlobalScratchBytes);
         }
       }
       k.cachedArgTableDevice = nullptr;
@@ -1175,9 +1289,15 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       k.cachedGlobalScratchDevice = nullptr;
       k.cachedGlobalScratchBytes = 0;
       k.cachedGlobalScratchDeviceId = -1;
-      if (k.gpuModule) TritonTargetDispatch::unloadModule(k.gpuModule);
+      if (k.gpuModule) {
+        recordModuleFree(k.loadedDeviceId >= 0 ? k.loadedDeviceId : compileDevice,
+                         k.estimatedModuleBytes);
+        TritonTargetDispatch::unloadModule(k.gpuModule);
+        k.gpuModule = nullptr;
+        k.kernelFunction = nullptr;
+        k.loadedDeviceId = -1;
+      }
     }
-    cudaStreamSynchronize(preallocStream);
     if (ownPreallocStream && preallocStream != nullptr) {
       cudaStreamDestroy(preallocStream);
     }
@@ -1185,7 +1305,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   };
 
   for (auto& kernel : compiledSeg.subKernels) {
-    if (kernel.useIndirectArgs) {
+    if (kernel.useIndirectArgs && !useConsolidatedArgTable) {
       size_t tableBytes = kernel.argSlotMapping.size() * sizeof(int64_t);
       if (tableBytes == 0) tableBytes = sizeof(int64_t);
       if (kernel.cachedArgTableDevice == nullptr ||
@@ -1204,6 +1324,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             cleanupCompiledWorkspace();
             return false;
           }
+          recordModuleFree(kernel.cachedArgTableDeviceId >= 0 ? kernel.cachedArgTableDeviceId : compileDevice,
+                           kernel.cachedArgTableBytes);
           kernel.cachedArgTableDevice = nullptr;
           kernel.cachedArgTableBytes = 0;
           kernel.cachedArgTableDeviceId = -1;
@@ -1218,6 +1340,29 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         }
         kernel.cachedArgTableBytes = tableBytes;
         kernel.cachedArgTableDeviceId = compileDevice;
+        recordModuleAlloc(compileDevice, tableBytes);
+      }
+
+      // Pre-allocate the pinned host buffer alongside the device buffer.
+      // CUDA graph capture requires both to be pre-allocated — cudaMallocHost
+      // is a synchronous API that poisons the capture stream if called during
+      // graph capture, causing endCapture to fail with "previous error."
+      if (kernel.cachedArgTableHostPinned == nullptr ||
+          kernel.cachedArgTableHostPinnedBytes < tableBytes) {
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        if (kernel.cachedArgTableHostPinned != nullptr) {
+          memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
+          kernel.cachedArgTableHostPinned = nullptr;
+          kernel.cachedArgTableHostPinnedBytes = 0;
+        }
+        kernel.cachedArgTableHostPinned = static_cast<char*>(memPool.allocatePinnedHost(tableBytes));
+        if (kernel.cachedArgTableHostPinned == nullptr) {
+          DSP_DIAG(MEMORY, "TritonGraphBackend: failed pre-allocating pinned arg table host (%zu bytes) for sub-kernel [%d-%d]",
+                    tableBytes, kernel.startSlot_, kernel.endSlot_);
+          cleanupCompiledWorkspace();
+          return false;
+        }
+        kernel.cachedArgTableHostPinnedBytes = tableBytes;
       }
     }
 
@@ -1234,6 +1379,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             cleanupCompiledWorkspace();
             return false;
           }
+          recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : compileDevice,
+                           sizeof(int));
           kernel.cachedSyncCounterDevice = nullptr;
           kernel.cachedSyncCounterDeviceId = -1;
         }
@@ -1246,6 +1393,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           return false;
         }
         kernel.cachedSyncCounterDeviceId = compileDevice;
+        recordModuleAlloc(compileDevice, sizeof(int));
       }
     }
 
@@ -1271,6 +1419,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             cleanupCompiledWorkspace();
             return false;
           }
+          recordModuleFree(kernel.cachedGlobalScratchDeviceId >= 0 ? kernel.cachedGlobalScratchDeviceId : compileDevice,
+                           kernel.cachedGlobalScratchBytes);
           kernel.cachedGlobalScratchDevice = nullptr;
           kernel.cachedGlobalScratchBytes = 0;
           kernel.cachedGlobalScratchDeviceId = -1;
@@ -1286,6 +1436,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         }
         kernel.cachedGlobalScratchBytes = totalScratchBytes;
         kernel.cachedGlobalScratchDeviceId = compileDevice;
+        recordModuleAlloc(compileDevice, totalScratchBytes);
       }
     }
   }
@@ -1293,7 +1444,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Consolidated arg table: allocate one large buffer for all indirect-args sub-kernels.
   // Each kernel gets an offset into this single buffer, replacing N individual H2D copies
   // with one copy during graph capture (N fewer graph nodes).
-  if (Environment::getInstance().tritonConsolidatedArgTable()) {
+  if (useConsolidatedArgTable) {
     size_t totalArgTableBytes = 0;
     compiledSeg.consolidatedArgTableOffsets.resize(compiledSeg.subKernels.size(), 0);
     for (size_t ki = 0; ki < compiledSeg.subKernels.size(); ki++) {
@@ -1320,6 +1471,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         cleanupCompiledWorkspace();
         return false;
       }
+      compiledSeg.consolidatedArgTableBytes = totalArgTableBytes;
+      compiledSeg.consolidatedArgTableDeviceId = compileDevice;
+      recordModuleAlloc(compileDevice, totalArgTableBytes);
       // Allocate consolidated pinned host buffer via pool tracking
       auto& memPool = sd::memory::CudaMemoryPool::getInstance();
       compiledSeg.consolidatedArgTableHostPinned = static_cast<char*>(memPool.allocatePinnedHost(totalArgTableBytes));
@@ -1330,8 +1484,6 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         cleanupCompiledWorkspace();
         return false;
       }
-      compiledSeg.consolidatedArgTableBytes = totalArgTableBytes;
-      compiledSeg.consolidatedArgTableDeviceId = compileDevice;
       compiledSeg.useConsolidatedArgTable = true;
 
       // Point each sub-kernel's cachedArgTableDevice to its offset in the consolidated buffer
@@ -1379,23 +1531,36 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
               staticCount, static_cast<int>(compiledSeg.subKernels.size()));
   }
 
-  auto preallocSyncErr = cudaStreamSynchronize(preallocStream);
-  if (preallocSyncErr != cudaSuccess) {
-    DSP_DIAG(COMPILE, "TritonGraphBackend: pre-allocation stream sync failed for segment [%d-%d]: %s",
-              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(preallocSyncErr));
+  cudaEvent_t preallocReadyEvent = nullptr;
+  auto preallocEventCreateErr = cudaEventCreateWithFlags(&preallocReadyEvent, cudaEventDisableTiming);
+  if (preallocEventCreateErr != cudaSuccess) {
+    DSP_DIAG(COMPILE, "TritonGraphBackend: pre-allocation ready event create failed for segment [%d-%d]: %s",
+              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(preallocEventCreateErr));
     cudaGetLastError();
     cleanupCompiledWorkspace();
     return false;
   }
+  auto preallocEventRecordErr = cudaEventRecord(preallocReadyEvent, preallocStream);
+  if (preallocEventRecordErr != cudaSuccess) {
+    DSP_DIAG(COMPILE, "TritonGraphBackend: pre-allocation ready event record failed for segment [%d-%d]: %s",
+              seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(preallocEventRecordErr));
+    cudaGetLastError();
+    cudaEventDestroy(preallocReadyEvent);
+    cleanupCompiledWorkspace();
+    return false;
+  }
+  compiledSeg.preallocReadyEvent = preallocReadyEvent;
   if (ownPreallocStream && preallocStream != nullptr) {
     auto preallocDestroyErr = cudaStreamDestroy(preallocStream);
-    if (preallocDestroyErr != cudaSuccess) {
-      DSP_DIAG(COMPILE, "TritonGraphBackend: failed destroying pre-allocation stream for segment [%d-%d]: %s",
-                seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(preallocDestroyErr));
-      cudaGetLastError();
-      cleanupCompiledWorkspace();
-      return false;
-    }
+	    if (preallocDestroyErr != cudaSuccess) {
+	      DSP_DIAG(COMPILE, "TritonGraphBackend: failed destroying pre-allocation stream for segment [%d-%d]: %s",
+	                seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(preallocDestroyErr));
+	      cudaGetLastError();
+	      cudaEventDestroy(preallocReadyEvent);
+	      compiledSeg.preallocReadyEvent = nullptr;
+	      cleanupCompiledWorkspace();
+	      return false;
+	    }
   }
 
   lastCompilationAudit_ = compiledSeg.audit;

@@ -23,6 +23,7 @@
 #include <graph/DspDiagnostics.h>
 
 #include <cstring>
+#include <mutex>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
@@ -78,14 +79,14 @@ static const HloOpMapping g_hloOpMappings[] = {
 
 // Build a lookup set for fast O(1) checking
 static std::unordered_map<std::string, const char*>& getOpLookup() {
+  // -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
+  static std::once_flag opLookupFlag;
   static std::unordered_map<std::string, const char*> lookup;
-  static bool initialized = false;
-  if (!initialized) {
+  std::call_once(opLookupFlag, []() {
     for (int i = 0; g_hloOpMappings[i].nd4jName != nullptr; ++i) {
       lookup[g_hloOpMappings[i].nd4jName] = g_hloOpMappings[i].hloOpcode;
     }
-    initialized = true;
-  }
+  });
   return lookup;
 }
 

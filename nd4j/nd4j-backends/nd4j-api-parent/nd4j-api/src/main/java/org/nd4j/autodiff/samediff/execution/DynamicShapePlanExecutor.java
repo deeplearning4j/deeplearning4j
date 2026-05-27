@@ -145,6 +145,14 @@ public class DynamicShapePlanExecutor implements Closeable {
     private int totalFlushedCount;
     private long totalFlushedBytes;
 
+    /** Lock for synchronizing native plan execute+readback across threads.
+     *  The C++ plan shares output slots (outputSlots_) across all executions.
+     *  If thread A's readback (getOutputArrayNative + copyBuffer) races with
+     *  thread B's execute (which overwrites the same output slots), A gets
+     *  B's results (stale output). This lock spans the execute+readback window. */
+    private final java.util.concurrent.locks.ReentrantLock nativeExecLock =
+            new java.util.concurrent.locks.ReentrantLock();
+
     /** Native C++ plan handle. Compiled once from the serialized plan on first native
      *  execution attempt. Freed on close(). null means not yet compiled or compilation failed.
      *  Can be swapped across executeNative() calls by redispatchForCurrentShapes() when
@@ -1194,11 +1202,47 @@ public class DynamicShapePlanExecutor implements Closeable {
             freeNativePlanHandle("PLAN_RECOMPILATION");
             configuredHandleAddresses.clear();
 
-            byte[] serialized = plan.serialize();
-            if (serialized == null || serialized.length == 0) {
-                nativeExecutorFailed = true;
-                throw new RuntimeException("Native executor: plan serialization returned empty. " +
-                        "Cannot compile native plan. No fallback permitted.");
+            // --- Disk cache: try loading serialized plan bytes from disk ---
+            byte[] serialized = null;
+            long structureHash = 0;
+            boolean loadedFromDiskCache = false;
+
+            if (DspPlanDiskCache.isEnabled() && !DspPlanDiskCache.isForceRecompile()) {
+                // Try model-identity lookup first (works without serializing the plan)
+                byte[] diskBytes = DspPlanDiskCache.tryLoadByModelIdentity(
+                        plan.getRequestedOutputs(), plan.getExternalInputKeys(),
+                        plan.getSlots().length);
+                if (diskBytes != null && DynamicShapePlan.isValidSerializedPlan(diskBytes)) {
+                    // Validate the cached plan matches the current graph structure.
+                    // The model identity hash only covers variable names and slot count,
+                    // so graphs with different iArgs (e.g. different reshape dimensions)
+                    // can collide. Serialize the current plan and compare structure hashes
+                    // to catch stale cache entries.
+                    byte[] freshSerialized = plan.serialize();
+                    long freshHash = DynamicShapePlan.computeStructureHash(freshSerialized);
+                    long diskHash = DynamicShapePlan.computeStructureHash(diskBytes);
+                    if (freshHash == diskHash) {
+                        serialized = diskBytes;
+                        structureHash = diskHash;
+                        loadedFromDiskCache = true;
+                        log.info("Native executor: loaded plan from disk cache (model identity hit, validated, {} bytes)", diskBytes.length);
+                    } else {
+                        log.info("Native executor: disk cache plan STALE (hash mismatch: disk=0x{} fresh=0x{}), recompiling",
+                                Long.toHexString(diskHash), Long.toHexString(freshHash));
+                        serialized = freshSerialized;
+                        structureHash = freshHash;
+                    }
+                }
+            }
+
+            if (serialized == null) {
+                serialized = plan.serialize();
+                if (serialized == null || serialized.length == 0) {
+                    nativeExecutorFailed = true;
+                    throw new RuntimeException("Native executor: plan serialization returned empty. " +
+                            "Cannot compile native plan. No fallback permitted.");
+                }
+                structureHash = DynamicShapePlan.computeStructureHash(serialized);
             }
 
             // Cache inputs for shape-keyed dispatch. The actual native plan handle is
@@ -1220,6 +1264,17 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedSerializedPlan = serialized;
             cachedSortedOutputs = sortedOutputs.toArray(new String[0]);
             cachedPhKeys = phKeys.toArray(new String[0]);
+
+            // --- Disk cache: store serialized plan bytes to disk ---
+            if (DspPlanDiskCache.isEnabled() && !loadedFromDiskCache && !DspPlanDiskCache.exists(structureHash)) {
+                String outputSetStr = String.join(",", cachedSortedOutputs);
+                DspPlanDiskCache.store(structureHash, serialized,
+                        plan.getSlots().length, extKeys.length,
+                        plan.getRequestedOutputs().size(), outputSetStr);
+                // Also store the model identity → structure hash mapping for cross-JVM lookup
+                DspPlanDiskCache.storeModelIdentityIndex(
+                        plan.getRequestedOutputs(), extKeys, plan.getSlots().length, structureHash);
+            }
 
             cachedCudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
                     System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
@@ -1689,7 +1744,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (staticBuf.rank() != 4) continue;
 
             presentSlotIndices.add(slotIdx);
-            staticBufList.add(OpaqueNDArray.fromINDArray(staticBuf));
+            staticBufList.add(OpaqueNDArray.fromINDArrayNoSync(staticBuf));
 
             // Extract shape info from first pair (all pairs are assumed uniform)
             if (heads < 0) {
@@ -2031,10 +2086,13 @@ public class DynamicShapePlanExecutor implements Closeable {
         System.out.flush(); System.err.flush();
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        Pointer stream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
-
-        // Sync execution stream so all GPU kernels using these buffers have completed.
-        Nd4j.getExecutioner().commit();
+        Pointer stream = null;
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            stream = nativeOps.dspGetExecutionStream(nativePlanHandle);
+        }
+        if (stream == null) {
+            stream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+        }
 
         // Free with full dedup. liveGpuAddresses=null because no slots are live during close().
         int[] stats = freePendingBuffers(nativeOps, stream, null);
@@ -2392,15 +2450,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
 
-        // Debug: dump external input 1331 value info for H2D sync diagnostics
+        // Debug metadata only; value reductions would force host reads on CUDA.
         if (Nd4j.getEnvironment().isDebug() && extInputs.length > 1331 && extInputs[1331] != null) {
             INDArray ext1331 = extInputs[1331];
-            log.info("EXT_INPUT_1331_VALUE: shape={} dtype={} sum={} max={} min={} isAttached={}",
+            log.info("EXT_INPUT_1331_METADATA: shape={} dtype={} length={} isAttached={}",
                     java.util.Arrays.toString(ext1331.shape()),
                     ext1331.dataType(),
-                    ext1331.length() <= 1000 ? ext1331.sumNumber() : "SKIPPED",
-                    ext1331.length() <= 1000 ? ext1331.maxNumber() : "SKIPPED",
-                    ext1331.length() <= 1000 ? ext1331.minNumber() : "SKIPPED",
+                    ext1331.length(),
                     ext1331.isAttached());
         }
 
@@ -2830,15 +2886,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                         placeholderIndices.length + " placeholders");
                     for (int pi : placeholderIndices) {
                         INDArray arr = extInputs[pi];
-                        // Sync placeholder inputs to device. Java putScalar/assign writes to
-                        // host and marks host as dirty (tickHostWrite), but the C++ NDArray
-                        // wrapper created by OpaqueNDArray.fromINDArray doesn't inherit the
-                        // Java-side actuality tracking. Without this sync, the C++ side sees
-                        // sAct=true (device up-to-date) and skips the H2D copy, causing stale
-                        // data to be used during CUDA graph replay.
                         if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
-                            arr.syncToDevice();
-                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
                             nativeOps.setGraphContextInputArray(opContext, pi, opaqueIn);
                             cachedInputOpaques[pi] = opaqueIn;
                             cachedInputArrays[pi] = arr;
@@ -2851,10 +2900,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     + extKeys[di] + "' is not live during frozen execution");
                         }
                         extInputs[di] = arr;
-                        if (isSmallIntegralControlArray(arr)) {
-                            arr.syncToDevice();
-                        }
-                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
                         nativeOps.setGraphContextInputArray(opContext, di, opaqueIn);
                         cachedInputOpaques[di] = opaqueIn;
                         cachedInputArrays[di] = arr;
@@ -2866,8 +2912,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         }
                         if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
                             extInputs[ci] = arr;
-                            arr.syncToDevice();
-                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
                             nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
                             cachedInputOpaques[ci] = opaqueIn;
                             cachedInputArrays[ci] = arr;
@@ -2882,29 +2927,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                             int ci = staleNonPlaceholderIndices[sc];
                             INDArray arr = extInputs[ci];
                             if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
-                                OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                                OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
                                 nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
                                 cachedInputOpaques[ci] = opaqueIn;
                                 DspDiagnostics.record(DspDiagnostics.MEMORY,
                                     "Java: FROZEN_FAST_PATH re-set stale constant ext[" + ci + "] '" + extKeys[ci] + "'");
-                            }
-                        }
-                    }
-
-                    // Sync same-identity placeholder inputs whose host buffer may have
-                    // been modified via assign() since the last step. Without this,
-                    // the frozen fast-path skips these inputs entirely (identity matches)
-                    // and the C++ side reads stale device data.
-                    if (inputIsPlaceholder != null) {
-                        for (int i = 0; i < extInputs.length; i++) {
-                            INDArray arr = extInputs[i];
-                            if (arr != null && arr == cachedInputArrays[i] && inputIsPlaceholder[i]) {
-                                if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
-                                    OpaqueDataBuffer odb = arr.data().opaqueBuffer();
-                                    if (odb != null && !odb.isNull()) {
-                                        odb.syncToSpecial();
-                                    }
-                                }
                             }
                         }
                     }
@@ -2926,8 +2953,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                             + "' changed identity but is not live");
                         }
 
-                        arr.syncToDevice();
-                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
                         nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                         cachedInputOpaques[i] = opaqueIn;
                         cachedInputArrays[i] = arr;
@@ -2965,20 +2991,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 }
                                 extInputs[i] = arrToSet;
                             }
-                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arrToSet);
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arrToSet);
                             nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                             cachedInputOpaques[i] = opaqueIn;
                             cachedInputArrays[i] = extInputs[i];
-                        } else if (inputIsPlaceholder != null && inputIsPlaceholder[i]) {
-                            // All placeholders — including decode input_ids / position_ids /
-                            // attention_mask — are plain Java-managed NDArrays; sync host to device.
-                            INDArray arr = extInputs[i];
-                            if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
-                                OpaqueDataBuffer odb = arr.data().opaqueBuffer();
-                                if (odb != null && !odb.isNull()) {
-                                    odb.syncToSpecial();
-                                }
-                            }
                         }
                     }
                 }
@@ -3035,7 +3051,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         arr = Nd4j.scalar(DataType.FLOAT, 0.0f);
                         extInputs[i] = arr;
                     }
-                    OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                    OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
                     nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                     newRefs[i] = opaqueIn;
                 }
@@ -3051,7 +3067,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     int derivedCount = 0;
                     int controlCount = 0;
                     for (int i = 0; i < extInputs.length; i++) {
-                        cachedInputOpaques[i] = OpaqueNDArray.fromINDArray(extInputs[i]);
+                        cachedInputOpaques[i] = OpaqueNDArray.fromINDArrayNoSync(extInputs[i]);
                         // Mark as placeholder if it came from the placeholderArrays map
                         inputIsPlaceholder[i] = placeholderArrays != null
                                 && placeholderArrays.containsKey(extKeys[i]);
@@ -3100,22 +3116,32 @@ public class DynamicShapePlanExecutor implements Closeable {
             // multi-output graphs to return wrong outputs after shape freezing.
             for (int i = 0; i < numOutputs; i++) {
                 INDArray dummy = Nd4j.empty(DataType.FLOAT);
-                OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
+                OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArrayNoSync(dummy);
                 nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
             }
 
-            // Get execution stream — cache to avoid 2 JNI calls per step
+            // Get execution stream — use the plan's own CUDA stream to avoid
+            // cross-thread capture poisoning (each plan creates its own stream
+            // in platformBeginExecution so captures don't conflict with other
+            // threads' syncToDevice on the shared default stream).
             Pointer execStream;
             if (execStreamCached) {
                 execStream = cachedExecStream;
             } else {
                 execStream = null;
                 try {
-                    OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-                    if (lc != null) {
-                        execStream = nativeOps.lcExecutionStream(lc);
-                        if (execStream != null) execStream.retainReference();
+                    // Prefer plan-owned stream (created after first execution)
+                    if (nativePlanHandle != null) {
+                        execStream = nativeOps.dspGetExecutionStream(nativePlanHandle);
                     }
+                    // Fallback to LaunchContext default before plan has executed
+                    if (execStream == null) {
+                        OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+                        if (lc != null) {
+                            execStream = nativeOps.lcExecutionStream(lc);
+                        }
+                    }
+                    if (execStream != null) execStream.retainReference();
                 } catch (Exception e) {
                     // CPU backend
                 }
@@ -3205,7 +3231,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
-            // Execute the plan in C++
+            // Execute the plan in C++ + readback outputs atomically.
+            // The native plan shares output slots across all executions. If another
+            // thread calls execute() before this thread finishes readback (copyBuffer),
+            // it overwrites the output slots — causing stale/wrong results. The lock
+            // spans execute + readback to prevent this race.
+            nativeExecLock.lock();
+            try {
             log.info("DSP_EXEC_PRE: handle={} executionCount={} numInputs={} numOutputs={} frozen={}",
                     nativePlanHandle != null ? "0x" + Long.toHexString(nativePlanHandle.address()) : "null",
                     executionCount, numInputs, numOutputs, shapesFrozen);
@@ -3309,6 +3341,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             if (directOutputMode && shapesFrozen && zeroCopyOutputCache != null) {
                 int copiedOutputs = 0;
+                boolean cacheDtypeMismatch = false;
                 for (int i = 0; i < numOutputs; i++) {
                     String outputName = requestedOutputs.get(i);
 
@@ -3319,7 +3352,31 @@ public class DynamicShapePlanExecutor implements Closeable {
                     if (cached == null) continue;
 
                     long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
-                    DataType dtype = cached.dataType();
+
+                    // CRITICAL: Use the dtype reported by C++ for the actual output array, NOT
+                    // the cached array's dtype.  When Triton compilation fails and the native
+                    // CUDA fallback runs, the C++ output dtype may change relative to the dtype
+                    // that was cached on the first execution (e.g. DOUBLE from warmup →  FLOAT
+                    // after model-variable normalization).  Using the cached DOUBLE dtype to wrap
+                    // a FLOAT device buffer causes dbCreateExternalDataBuffer to interpret the
+                    // buffer as having 8-byte elements when it only has 4-byte elements, reading
+                    // twice as many bytes as exist — the upper half is uninitialized GPU memory,
+                    // which reads back as NaN when the DOUBLE-typed destination array is synced.
+                    long[] nativeShapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueOut);
+                    DataType nativeDtype = ArrayOptionsHelper.dataType(nativeShapeInfo);
+
+                    if (nativeDtype != cached.dataType()) {
+                        // C++ output dtype changed since cache was built (e.g. Triton fallback
+                        // path changed dtype from DOUBLE warmup to FLOAT native execution).
+                        // The cache is no longer valid — drop it and rebuild below.
+                        log.info("Native executor: zeroCopyOutputCache dtype mismatch for '{}' " +
+                                 "(cached={}, native={}) — invalidating cache and rebuilding",
+                                 outputName, cached.dataType(), nativeDtype);
+                        cacheDtypeMismatch = true;
+                        break;
+                    }
+
+                    DataType dtype = nativeDtype;  // guaranteed == cached.dataType() here
 
                     Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
                     // On CUDA, prefer D2D copy from the device buffer. Calling
@@ -3347,8 +3404,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                     copiedOutputs++;
                 }
 
-                // Sync stream to ensure async D2D copies complete before returning
-                Nd4j.getExecutioner().commit();
+                if (cacheDtypeMismatch) {
+                    closeZeroCopyOutputCache();
+                    // Fall through to the fresh-allocation path below which rebuilds
+                    // zeroCopyOutputCache with the correct dtype.
+                } else {
 
                 // Update outputSlots from zeroCopyOutputCache for introspection access
                 if (outputSlots != null) {
@@ -3370,6 +3430,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             execMs, copyMs, copiedOutputs, numOutputs);
                 }
                 return zeroCopyOutputCache;
+                }  // end else (no dtype mismatch)
             }
 
             Map<String, INDArray> results = new LinkedHashMap<>();
@@ -3461,27 +3522,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
 
-                // Verify copy correctness: print first values immediately after copyBuffer
                 if (Nd4j.getEnvironment().isDebugAndVerbose() && result.rank() >= 2 && result.length() > 0) {
-                    result.syncToHost();
-                    long lastPos = result.rank() == 3 ? result.size(1) - 1 : 0;
-                    StringBuilder sb = new StringBuilder("DSP_COPY_VERIFY[" + outputName + "] shape=");
-                    sb.append(java.util.Arrays.toString(result.shape()));
-                    sb.append(" first5=[");
-                    for (int v = 0; v < Math.min(5, (int)result.length()); v++) {
-                        if (v > 0) sb.append(",");
-                        sb.append(String.format("%.4f", result.getFloat(v)));
-                    }
-                    sb.append("] lastPos5=[");
-                    if (result.rank() == 3) {
-                        long vocabSize = result.size(2);
-                        for (int v = 0; v < Math.min(5, (int)vocabSize); v++) {
-                            if (v > 0) sb.append(",");
-                            sb.append(String.format("%.4f", result.getFloat(0, lastPos, v)));
-                        }
-                    }
-                    sb.append("]");
-                    log.info(sb.toString());
+                    log.info("DSP_COPY_VERIFY[{}] shape={} dtype={} len={} asyncCopy=true",
+                            outputName, java.util.Arrays.toString(result.shape()),
+                            result.dataType(), result.length());
                 }
                 results.put(outputName, result);
             }
@@ -3502,14 +3546,6 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
             }
-
-            // Synchronize the CUDA stream to ensure all async D2D copies (copyBuffer)
-            // have completed before returning. Without this, the caller may destroy the
-            // native plan (freeing source output buffers) while the async copies are still
-            // in flight — causing the destination arrays to contain garbage or zeros.
-            // This is critical for the prefill path where the plan is destroyed and
-            // recompiled for static KV shapes immediately after this method returns.
-            Nd4j.getExecutioner().commit();
 
             // Cache allocated arrays for reuse on subsequent frozen direct-mode executions.
             // Only cache when directOutputMode=true: when called from SameDiff.output() the
@@ -3560,7 +3596,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
 
             return results;
+        } finally {
+            nativeExecLock.unlock();
         }
+        }  // end bare block from input-setting
         } finally {
             // DO NOT restore to previousDevice. Stay on the plan's execution device
             // (nativeExecutionDevice) so that arrays created between decode steps

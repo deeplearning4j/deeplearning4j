@@ -225,6 +225,58 @@ SD_LIB_HIDDEN void fusedRoPEBackward(
     int rotaryDims = 0);
 
 /**
+ * Fused Multimodal RoPE (M-RoPE)
+ * Splits head_dim into temporal/height/width sections and applies RoPE
+ * with separate position vectors for each section.
+ *
+ * @param input Input tensor [batch, seq, heads, head_dim]
+ * @param posT Temporal positions [batch, seq]
+ * @param posH Height positions [batch, seq]
+ * @param posW Width positions [batch, seq]
+ * @param output Output tensor [batch, seq, heads, head_dim]
+ * @param sectionT Temporal section size
+ * @param sectionH Height section size
+ * @param sectionW Width section size
+ * @param interleaved Whether to interleave frequency bands
+ * @param freqBase Base frequency
+ * @param context Launch context
+ */
+SD_LIB_HIDDEN void fusedMRoPE(
+    NDArray* input,
+    NDArray* posT,
+    NDArray* posH,
+    NDArray* posW,
+    NDArray* output,
+    int sectionT,
+    int sectionH,
+    int sectionW,
+    bool interleaved,
+    float freqBase,
+    LaunchContext* context);
+
+/**
+ * Scatter vision embeddings into text embeddings at target token positions.
+ *
+ * For each position where tokenIds[b][s] == targetTokenId, the corresponding
+ * text embedding is replaced with the next sequential vision embedding.
+ * Runs entirely on device — no host round-trips on CUDA.
+ *
+ * @param textEmbeddings [batch, seqLen, hiddenDim]
+ * @param visionEmbeddings [batch, visionTokens, hiddenDim]
+ * @param tokenIds [batch, seqLen] INT32 or INT64
+ * @param output [batch, seqLen, hiddenDim]
+ * @param targetTokenId the token ID value to match for replacement
+ * @param context Launch context
+ */
+SD_LIB_HIDDEN void visionEmbeddingMerge(
+    NDArray* textEmbeddings,
+    NDArray* visionEmbeddings,
+    NDArray* tokenIds,
+    NDArray* output,
+    sd::LongType targetTokenId,
+    LaunchContext* context);
+
+/**
  * Fused Layer Norm backward
  * Computes gradients for layer normalization.
  *

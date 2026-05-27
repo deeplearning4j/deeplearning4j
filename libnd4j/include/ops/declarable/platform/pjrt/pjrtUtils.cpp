@@ -18,6 +18,7 @@
 
 #include "pjrtUtils.h"
 
+#include <mutex>
 #include <sstream>
 
 namespace sd {
@@ -435,8 +436,12 @@ void PjrtLoadedExecutable::execute(const std::vector<PjrtBuffer*>& inputs,
 //////////////////////////////////////////////////////////////////////////
 
 HLOExecutableCache& HLOExecutableCache::getInstance() {
-  static HLOExecutableCache instance;
-  return instance;
+  static HLOExecutableCache* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new HLOExecutableCache();
+  });
+  return *instance;
 }
 
 std::shared_ptr<PjrtLoadedExecutable> HLOExecutableCache::getOrCompile(

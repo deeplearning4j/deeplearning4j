@@ -70,7 +70,8 @@ public class BgeKompileReproTest extends BaseND4JTest {
      * Included for comparison if the kompile model is not available.
      */
     private static final String PLATFORM_TESTS_MODEL_PATH =
-            "/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/bge-base-en-v1.5.sdz";
+            System.getProperty("bge.model.path",
+                    System.getProperty("user.dir") + "/bge-base-en-v1.5.sdz");
 
     @Override
     public long getTimeoutMilliseconds() {

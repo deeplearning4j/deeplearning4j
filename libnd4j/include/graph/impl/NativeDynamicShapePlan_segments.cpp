@@ -29,6 +29,7 @@
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
 #include <graph/PlanExecutionContext.h>
+#include <graph/DspThreadState.h>
 
 // Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
 #ifdef SD_CUDA
@@ -87,12 +88,12 @@ static void scanAllSlotsForCorruption(
     if (sib == nullptr) continue;
     uintptr_t sibAddr = reinterpret_cast<uintptr_t>(sib);
     if (sibAddr % alignof(ConstantShapeBuffer) != 0) {
-      sd_printf("CORRUPTION_SCAN_HIT: checkpoint=%s slot=%d arr=%p "
-                "_shapeInfoBuffer=%p alignOffset=%zu execCount=%d\n",
-                checkpoint, i, (void*)outputSlots[i], (void*)sib,
-                static_cast<size_t>(sibAddr % alignof(ConstantShapeBuffer)),
-                execCount);
-      fflush(stdout);
+      DSP_DIAG(MEMORY,
+               "CORRUPTION_SCAN_HIT: checkpoint=%s slot=%d arr=%p "
+               "_shapeInfoBuffer=%p alignOffset=%zu execCount=%d",
+               checkpoint, i, (void*)outputSlots[i], (void*)sib,
+               static_cast<size_t>(sibAddr % alignof(ConstantShapeBuffer)),
+               execCount);
       return;
     }
   }
@@ -222,7 +223,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
 
     // Record observations during warmup.
-    // When shapesFrozen_, shapes are constant — force warmup complete immediately
+    // When planLifecycle_.isShapesFrozen(), shapes are constant — force warmup complete immediately
     // by recording one observation (sufficient for frozen shapes) and skip waiting
     // for the normal 2-observation warmup cycle.
     if (!isWarmupComplete(profile)) {
@@ -588,6 +589,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     // every step, but also doesn't hard-throw — these segments execute slot-by-slot
     // gracefully because there's nothing to compile.
     seg.exec.noFusibleOps = true;
+    seg.exec.outcome = SegmentExecOutcome::NOT_FUSIBLE;
     DSP_DIAG(BACKEND, "cascade: NO backend can fuse seg[%d-%d] (no fusible ops) — "
               "demoting to slot-by-slot native execution",
               seg.def.startSlot, seg.def.endSlot);
@@ -988,6 +990,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     cudaStreamIsCapturing(*static_cast<cudaStream_t*>(stream), &capStat);
     streamIsCapturing = (capStat != cudaStreamCaptureStatusNone);
   }
+  cudaStream_t segmentStream =
+      (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  DspThreadState segmentThreadState(
+      segmentStream != nullptr ? segmentStream : tl_dspExecutionStream,
+      segmentStream != nullptr ? segmentStream : tl_dspGapStream,
+      tl_graphExecutionActive,
+      tl_dspReplayActive);
 #endif
 
   // Dead-slot flags are reset once per plan execution (in the main execute loop),
@@ -1301,18 +1310,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                                    msg.find("out of memory") != std::string::npos ||
                                    msg.find("Error code: [2]") != std::string::npos)) {
           retriedAfterTrim = true;
-          shouldRetry = true;
-          DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
-                    stepIdx, slots_[stepIdx].ident.opName.c_str());
-          cudaGetLastError();
-          if (stream) {
-            cudaStream_t execStr = *static_cast<cudaStream_t*>(stream);
-            cudaStreamSynchronize(execStr);
-          }
-          cudaStreamSynchronize(static_cast<cudaStream_t>(nullptr));
-          {
-            cudaMemPool_t pool = nullptr;
-            int dev = 0;
+	          shouldRetry = true;
+	          DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
+	                    stepIdx, slots_[stepIdx].ident.opName.c_str());
+	          cudaGetLastError();
+	          {
+	            cudaMemPool_t pool = nullptr;
+	            int dev = 0;
             cudaGetDevice(&dev);
             if (cudaDeviceGetMemPool(&pool, dev) == cudaSuccess && pool != nullptr) {
               cudaMemPoolTrimTo(pool, 0);
@@ -1359,26 +1363,16 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 
-    // ── Diagnostic: per-slot CUDA error check on warmup execution ──────
-    // On the first execution of each segment (warmup), synchronize the device
-    // after every slot to catch latent CUDA kernel errors (error 700) at the
-    // exact slot that caused them, rather than discovering them hundreds of
-    // slots later during an unrelated cudaMallocAsync call.
-    // This is expensive (blocks GPU pipeline) but essential for diagnosing
-    // stale-pointer bugs in restored cached plan handles.
-    //
-    // SKIP when tl_graphCaptureStream is set: indicates another stream on this
-    // thread is being captured. cudaDeviceSynchronize is device-wide and fails
-    // with error 900 if ANY stream is capturing. Gap ops execute on a dedicated
-    // non-capturing stream during Triton graph capture, but cudaDeviceSynchronize
-    // would still try to sync the capturing stream.
+	    // ── Diagnostic: per-slot CUDA launch error check on warmup execution ─
+	    // This is intentionally non-blocking. It catches immediate launch/setup
+	    // errors without draining the device or stream.
 #ifdef SD_CUDA
-    if (DSP_DIAG_ENABLED(EXECUTE) && status == Status::OK && seg.exec.executionCount == 0
-        && !streamIsCapturing && tl_graphCaptureStream == nullptr) {
-      cudaError_t syncErr = cudaDeviceSynchronize();
-      if (syncErr != cudaSuccess) {
-        // Log all inputs to the failing slot
-        auto& faultSlot = slots_[stepIdx];
+	    if (DSP_DIAG_ENABLED(EXECUTE) && status == Status::OK && seg.exec.executionCount == 0
+	        && !streamIsCapturing && tl_graphCaptureStream == nullptr) {
+	      cudaError_t launchErr = cudaPeekAtLastError();
+	      if (launchErr != cudaSuccess) {
+	        // Log all inputs to the failing slot
+	        auto& faultSlot = slots_[stepIdx];
         for (int i = 0; i < faultSlot.wiring.numInputs; i++) {
           int srcIdx = faultSlot.wiring.inputSourceIndices[i];
           NDArray* inp = nullptr;
@@ -1416,15 +1410,15 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                      i, si, out ? "db=null" : "null");
           }
         }
-        DSP_THROW_CUDA(EXECUTE, syncErr,
-                       "CUDA ERROR 700 DIAGNOSTIC: cudaDeviceSynchronize after slot %d (%s) "
-                       "returned error %d. This kernel accessed invalid GPU memory. "
-                       "seg=[%d-%d] execCount=%d shapesFrozen=%d",
-                       stepIdx, slots_[stepIdx].ident.opName.c_str(),
-                       static_cast<int>(syncErr),
-                       seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(shapesFrozen_));
-      }
-    }
+	        DSP_THROW_CUDA(EXECUTE, launchErr,
+	                       "CUDA LAUNCH DIAGNOSTIC: cudaPeekAtLastError after slot %d (%s) "
+	                       "returned error %d. "
+	                       "seg=[%d-%d] execCount=%d shapesFrozen=%d",
+	                       stepIdx, slots_[stepIdx].ident.opName.c_str(),
+	                       static_cast<int>(launchErr),
+	                       seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(planLifecycle_.isShapesFrozen()));
+	      }
+	    }
 #endif
 
     if (status != Status::OK) {
@@ -1557,7 +1551,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     viewProducerDetectionDone_ = true;
     int viewCount = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
-      if (slotIsViewProducer_[i]) viewCount++;
+      if (slots_[i].slotPhase.isViewProducer) viewCount++;
     }
     DSP_DIAG(SHAPE, "view producer detection done: %d/%d output slots are view producers",
               viewCount, totalOutputSlots_);
@@ -1632,7 +1626,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
   // externalInputIsVariable_ is populated at plan-load time, not at
   // shape-freeze time — in explicit graphExecutionMode (CUDA_GRAPHS,
   // TRITON, NVRTC_JIT, PTX_JIT) the plan never goes through AUTO_SEAL so
-  // shapesFrozen_ stays false even once graph replay is active. Gate on
+  // planLifecycle_.isShapesFrozen() stays false even once graph replay is active. Gate on
   // the vector being non-empty only.
   const bool canClassifyExternals = !externalInputIsVariable_.empty();
 
@@ -1647,7 +1641,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
         if (extIdx >= static_cast<int>(externalInputIsVariable_.size())) continue;
         // Skip ALL variable inputs — their addresses churn every step as Java
         // recreates NDArray wrappers, preventing addr key stabilization.
-        // Variable data sync is handled by syncExternalInputs + staging buffers.
+        // Variable data sync is handled by performPreReplaySync + staging buffers.
         if (externalInputIsVariable_[extIdx]) continue;
         NDArray* extArr = externalInputs[extIdx];
         if (extArr == nullptr) continue;
@@ -1711,7 +1705,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   DSP_DIAG(EMULATED_REPLAY,
            "EMULATED seg[%d-%d] phase=%s execCount=%d slots=%d capturable=%d frozen=%d",
            seg.def.startSlot, seg.def.endSlot, phaseName, execCount, segSize,
-           seg.def.isCapturable ? 1 : 0, shapesFrozen_ ? 1 : 0);
+           seg.def.isCapturable ? 1 : 0, planLifecycle_.isShapesFrozen() ? 1 : 0);
 
   // ── External input dtype validation ────────────────────────────────────
   // Fresh placeholder arrays passed from Java must have valid dtypes (FLOAT32,
@@ -1766,11 +1760,10 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   bool hasPopulatedSlots = (outputSlots_ != nullptr &&
       seg.def.startSlot < totalOutputSlots_ &&
       outputSlots_[seg.def.startSlot] != nullptr);
-  if (slotIsViewProducer_ != nullptr && hasPopulatedSlots) {
+  if (hasPopulatedSlots) {
     int viewRefreshResult = refreshStaleViewWrappersInSegment(seg, externalArrays, numExt);
     if (viewRefreshResult > 0) {
       seg.exec.bumpArgGeneration();
-      seg.exec.argTableStable = false;
       seg.exec.addrKeyStableCount = 0;
       seg.exec.slotAddrStableCount = 0;
     }
@@ -1805,7 +1798,6 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     seg.exec.cachedShapeKey = currentShapeKey;
     seg.exec.capturedInputAddrKey = currentAddrKey;
     seg.exec.bumpArgGeneration();
-    seg.exec.argTableStable = false;
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
 
@@ -2070,13 +2062,11 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
     // Replay readiness assessment
     if (shapeStable && addrStable) {
-      seg.exec.argTableStable = true;  // Legacy flag
       seg.exec.markArgsCurrent();      // Generation counter: no refresh needed
       DSP_DIAG(EMULATED_REPLAY,
                "  REPLAY READY: shapes and addresses stable — "
                "CUDA graph replay would succeed without re-capture. (fast path enabled)");
     } else {
-      seg.exec.argTableStable = false;  // Legacy flag
       seg.exec.bumpArgGeneration();     // Generation counter: force refresh
       seg.exec.addrKeyStableCount = 0;
       seg.exec.slotAddrStableCount = 0;
@@ -2124,7 +2114,6 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
 
   if (status != Status::OK) {
     seg.exec.bumpArgGeneration();
-    seg.exec.argTableStable = false;  // Force stability re-check on next step
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
     DSP_DIAG(EMULATED_REPLAY,

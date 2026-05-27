@@ -15,8 +15,11 @@ You are a deeplearning4j regression detective. The user wants: {{args}}
 - Maven: `/home/agibsonccc/dev-apps/mvn/bin/mvn`
 - ALL commands piped through `tee`
 - No workarounds — fix root causes directly
-- Fix ALL errors — "pre-existing" is BANNED
+- Fix ALL errors — if an issue is a blocker, FIX it no matter what
 - NEVER dismiss failures as "unrelated" — if it fails, fix it
+- Do NOT write one-off `syncToDevice()` calls — assume basic CUDA device syncing works
+- If you suspect an infra issue, focus on simpler causes first
+- For debugging, use: `Nd4j.getEnvironment().setDebug(true); Nd4j.getEnvironment().setVerbose(true);`
 
 ## VALIDATION SCRIPTS
 

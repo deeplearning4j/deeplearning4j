@@ -145,6 +145,29 @@ public class ImagePromptBuilder {
     }
 
     /**
+     * Resolve the &lt;video&gt; token ID from the tokenizer.
+     *
+     * <p>Tries &lt;video&gt; first, then falls back to &lt;image&gt; since some
+     * video VLMs (e.g., SmolVLM2) reuse the image token for video frames.</p>
+     *
+     * @param tokenizer the tokenizer to query
+     * @return the token ID for &lt;video&gt; or &lt;image&gt; as fallback
+     */
+    public static int resolveVideoTokenId(Tokenizer tokenizer) {
+        Integer id = tokenizer.getTokenId("<video>");
+        if (id != null && id >= 0) {
+            return id;
+        }
+        int[] encoded = tokenizer.encode("<video>", false).getIds();
+        if (encoded.length == 1) {
+            return encoded[0];
+        }
+        // Fall back to <image> token since many video VLMs reuse it
+        log.info("No <video> token found, falling back to <image> token for video frames");
+        return resolveImageTokenId(tokenizer);
+    }
+
+    /**
      * Count occurrences of a target ID in an array.
      *
      * @param ids the array to search
