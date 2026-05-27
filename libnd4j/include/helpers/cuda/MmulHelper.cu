@@ -49,6 +49,10 @@
 extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 // Declared in DataBuffer.h / DataBuffer.cu — true during DSP composite replay gap execution
 extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
+// Declared in NativeDynamicShapePlan_batchgemm.cu — true when cuBLAS stream+workspace
+// already configured for DSP gap loop. When true, skip cublasSetStream +
+// reapplyCublasWorkspace + prepareSpecialUse/registerSpecialUse (arrays device-resident).
+extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;
 
 // cuBLAS workspace buffer+size set by NativeDynamicShapePlan.
 // cublasSetStream() resets the user-provided workspace (cuBLAS docs), so we must
@@ -977,26 +981,26 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
  auto stream = A->getContext()->getCudaStream();
 
-  // Skip cublasSetStream_v2 only during CUDA graph replay — calling it on a
-  // capturing/replaying stream injects host-callback nodes that serialize on CPU.
-  // For live execution (including SLOT_BY_SLOT with deterministic cuBLAS), the
-  // stream MUST be set so the matmul actually executes on the correct stream.
+  // N107: Skip cublasSetStream + workspace when DSP gap stream already configured.
+  // The gap loop's CublasGapStreamGuard sets the cuBLAS handle stream+workspace once
+  // at gap-loop start. Skipping here eliminates 2 cuBLAS host-API calls × 91 matmuls/step.
+  // Also skip during CUDA graph replay (existing optimization).
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
-  if (!tl_graphExecutionActive) {
+  if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
     status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+    reapplyCublasWorkspace(*handle);
   }
-  reapplyCublasWorkspace(*handle);
 
  if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
-   NDArray::prepareSpecialUse({C}, {effA, effB});
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({C}, {effA, effB});
    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
                                 (dims.x, dims.y, dims.z, stream, effA->specialBuffer(),
                                  effA->specialShapeInfo(), effB->specialBuffer(), effB->specialShapeInfo(), C->specialBuffer(),
                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                 SD_NUMERIC_TYPES)
-   NDArray::registerSpecialUse({C}, {effA, effB});
+   if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({C}, {effA, effB});
 
  } else {
    std::vector<NDArray*> toDelete;
@@ -1036,7 +1040,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
    const cublasOperation_t transBblas = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-   NDArray::prepareSpecialUse({pC}, {pA, pB});
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({pC}, {pA, pB});
 
    // cuBLAS Lt fast path for decoder logits projection [1,K] x [K,N] -> [1,N]
    // Mixed precision: FLOAT32 x HALF -> FLOAT32 with large N (vocab)
@@ -1046,7 +1050,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
    if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType,
                    tl_ltEpilogueType, tl_ltEpilogueBiasPtr, tl_ltEpilogueBiasSize)) {
-     NDArray::registerSpecialUse({pC}, {pA, pB});
+     if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({pC}, {pA, pB});
      if (C != pC) C->assign(pC);
      for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
      delete castA;
@@ -1168,7 +1172,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
-   NDArray::registerSpecialUse({pC}, {pA, pB});
+   if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({pC}, {pA, pB});
 
    if (C != pC) C->assign(pC);
 
@@ -1266,17 +1270,17 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
  auto stream = A->getContext()->getCudaStream();
 
-  // Skip cublasSetStream_v2 during CUDA graph capture (see mmulMxM comment above).
+  // N107: Skip cublasSetStream + workspace when DSP gap stream already configured (same as mmulMxM).
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
-  if (!tl_graphExecutionActive) {
+  if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
     status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
+    reapplyCublasWorkspace(*handle);
   }
-  reapplyCublasWorkspace(*handle);
 
  if (!typeDouble && !typeFloat && !typeHalfFloat) {
    dim3 dims = getGemVDims(M);
-   NDArray::prepareSpecialUse({Y}, {A, X});
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({Y}, {A, X});
 
    const int blocksPerGrid = dims.x;
    const int threadsPerBlock = dims.y;
@@ -1285,7 +1289,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
        (blocksPerGrid,threadsPerBlock,stream, A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(),
         X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
        SD_NUMERIC_TYPES)
-   NDArray::registerSpecialUse({Y}, {A, X});
+   if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({Y}, {A, X});
 
  } else {
    NDArray* pA(const_cast<NDArray*>(effA));
@@ -1304,7 +1308,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
    const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-   NDArray::prepareSpecialUse({Y}, {pA, effX});
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({Y}, {pA, effX});
 
    if (typeDouble) {
      getCublasScalars()->alphaD = alpha;
@@ -1336,7 +1340,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
-   NDArray::registerSpecialUse({Y}, {pA, effX});
+   if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({Y}, {pA, effX});
 
    if (pA != effA) delete pA;
  }
