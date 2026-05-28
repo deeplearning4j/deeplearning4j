@@ -32,14 +32,12 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.BlockQuantizationUtils;
 import org.nd4j.linalg.learning.config.Adam8bit;
 import org.nd4j.linalg.schedule.FixedSchedule;
 import org.nd4j.linalg.schedule.ISchedule;
-
-import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -141,6 +139,7 @@ public class TestAdam8bit {
         // Minimize f(x) = x^2 starting from x=5.0
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.var("x", Nd4j.scalar(DataType.FLOAT, 5.0));
+        sd.placeHolder("input", DataType.FLOAT);
         SDVariable loss = x.mul(x);
         loss.rename("loss");
 
@@ -152,15 +151,16 @@ public class TestAdam8bit {
 
         TrainingConfig config = TrainingConfig.builder()
                 .updater(adam)
-                .dataSetFeatureMapping("x")
+                .dataSetFeatureMapping("input")
                 .markLabelsUnused()
                 .build();
         sd.setTrainingConfig(config);
 
-        // Run 100 optimization steps
+        // Run 100 optimization steps; no labels are needed for minimizing x^2.
         INDArray dummyInput = Nd4j.scalar(DataType.FLOAT, 0.0);
+        MultiDataSet noLabels = new MultiDataSet(new INDArray[]{dummyInput}, new INDArray[0]);
         for (int i = 0; i < 100; i++) {
-            sd.fit(new DataSet(dummyInput, dummyInput));
+            sd.fit(noLabels);
         }
 
         double finalX = sd.getVariable("x").getArr().getDouble(0);

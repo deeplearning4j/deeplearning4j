@@ -29,8 +29,8 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_poisson, 2, 1, false, 0, 0) {
-  // gamma distribution
-  auto rng = block.randomGenerator();
+  // poisson distribution
+  auto& rng = block.randomGenerator();
   auto shape = INPUT_VARIABLE(0);
   auto lambda = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);

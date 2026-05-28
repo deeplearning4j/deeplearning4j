@@ -2672,17 +2672,28 @@ Status NativeDynamicShapePlan::execute(
         DSP_DIAG_SLOT(VERIFY, slotIdx,
             "reqOut[%d] len=%lld dt=%d rank=%d",
             i, (long long)arr->lengthOf(), (int)arr->dataType(), arr->rankOf());
-        // Dump first 4 values and min to verify relu correctness at output extraction
-        if (arr->dataType() == FLOAT32 && arr->buffer() != nullptr && arr->lengthOf() > 0) {
-          auto buf = arr->bufferAsT<float>();
-          auto len = arr->lengthOf();
-          float vMin = buf[0];
-          for (sd::LongType vi = 1; vi < len; vi++) { if (buf[vi] < vMin) vMin = buf[vi]; }
-          DSP_DIAG_SLOT(VERIFY, slotIdx,
-              "reqOut[%d] VALUES min=%.6f first4=[%.4f,%.4f,%.4f,%.4f]",
-              i, vMin,
-              len > 0 ? buf[0] : 0.f, len > 1 ? buf[1] : 0.f,
-              len > 2 ? buf[2] : 0.f, len > 3 ? buf[3] : 0.f);
+        // Only inspect an existing host mirror; VERIFY diagnostics must not
+        // materialize primary storage on frozen replay buffers.
+        if (arr->dataType() == FLOAT32 && arr->lengthOf() > 0) {
+          auto* db = arr->dataBuffer();
+          auto* primary = db != nullptr ? db->primary() : nullptr;
+          if (primary != nullptr) {
+            auto* buf = reinterpret_cast<float*>(primary);
+            auto len = arr->lengthOf();
+            float vMin = buf[0];
+            for (sd::LongType vi = 1; vi < len; vi++) { if (buf[vi] < vMin) vMin = buf[vi]; }
+            DSP_DIAG_SLOT(VERIFY, slotIdx,
+                "reqOut[%d] VALUES min=%.6f first4=[%.4f,%.4f,%.4f,%.4f]",
+                i, vMin,
+                len > 0 ? buf[0] : 0.f, len > 1 ? buf[1] : 0.f,
+                len > 2 ? buf[2] : 0.f, len > 3 ? buf[3] : 0.f);
+          } else {
+            DSP_DIAG_SLOT(VERIFY, slotIdx,
+                "reqOut[%d] VALUES skipped (no host primary; special=%p frozen=%d)",
+                i,
+                db != nullptr ? db->special() : nullptr,
+                db != nullptr && db->isFrozenPlanRegistered() ? 1 : 0);
+          }
         }
         platformDumpLogitsArgmax(executeCount_, stream);
       } else {

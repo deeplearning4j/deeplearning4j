@@ -23,7 +23,6 @@ package org.eclipse.deeplearning4j.vlm.preprocessing;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,26 +36,27 @@ import java.util.List;
 /**
  * Preprocesses video frames for Vision-Language Models.
  *
- * <p>Takes a list of extracted video frames ({@link BufferedImage}) and produces
- * a 5D tensor suitable for video VLM input. Supports model-specific configurations
- * for different video VLMs:</p>
- * <ul>
- *   <li>SmolVLM2: 384x384, SigLIP normalization, frames as image sequence</li>
- *   <li>Qwen3-VL: dynamic resolution, ViT normalization, temporal patch pairs</li>
- *   <li>MiniCPM-V 4.5: 384x384, SigLIP2 normalization, 6-frame groups</li>
- * </ul>
+ * <p>Takes a list of extracted video frames and produces a 5D tensor
+ * [1, numFrames, 3, H, W] suitable for video VLM input.</p>
+ *
+ * <p>All configuration is via the builder — resolution, sampler, temporal
+ * patch size, and thread count are all parameters, not model-specific
+ * factory methods.</p>
  *
  * <p>Example usage:</p>
  * <pre>{@code
- * VideoPreprocessor preprocessor = VideoPreprocessor.forSmolVLM2();
+ * VideoPreprocessor preprocessor = VideoPreprocessor.builder()
+ *     .imagePreprocessor(VLMImagePreprocessor.fromConfig(myConfig))
+ *     .sampler(VideoFrameSampler.builder()
+ *         .strategy(VideoFrameSampler.Strategy.UNIFORM)
+ *         .maxFrames(16)
+ *         .build())
+ *     .targetHeight(384)
+ *     .targetWidth(384)
+ *     .temporalPatchSize(2)
+ *     .build();
  *
- * // From a video file
- * INDArray frames = preprocessor.preprocessVideo(new File("video.mp4"));
- *
- * // From pre-extracted frames
- * List<BufferedImage> frameList = sampler.sample(videoFile);
- * INDArray tensor = preprocessor.preprocessFrames(frameList);
- * // tensor shape: [1, numFrames, 3, H, W]
+ * INDArray tensor = preprocessor.preprocessVideo(new File("video.mp4"));
  * }</pre>
  *
  * @see VideoFrameExtractor
@@ -128,9 +128,9 @@ public class VideoPreprocessor {
     /**
      * Preprocess a video file and pad frames to be divisible by temporalPatchSize.
      *
-     * <p>Some models (e.g., Qwen3-VL with temporal_patch_size=2) require the number
-     * of frames to be divisible by a temporal patch factor. This method pads by
-     * duplicating the last frame if needed.</p>
+     * <p>Models with temporal patching (e.g., temporal_patch_size=2) require
+     * the frame count to be divisible by the temporal factor. This method pads
+     * by duplicating the last frame if needed.</p>
      *
      * @param videoFile the video file
      * @return preprocessed tensor with frame count divisible by temporalPatchSize
@@ -168,17 +168,10 @@ public class VideoPreprocessor {
     }
 
     /**
-     * Get the number of vision tokens that will be produced for a given number of frames.
-     *
-     * <p>This is model-dependent:</p>
-     * <ul>
-     *   <li>SmolVLM2: (H/14)*(W/14) / 9 tokens per frame (14px patches, 3x3 pixel shuffle)</li>
-     *   <li>Qwen3-VL: (H/16)*(W/16) * (T/2) tokens (16px patches, temporal_patch_size=2)</li>
-     *   <li>MiniCPM-V: 64 tokens per 6-frame group (3D-Resampler)</li>
-     * </ul>
+     * Estimate the number of vision tokens for a given number of frames.
      *
      * @param numFrames the number of input frames
-     * @param patchSize the vision encoder patch size
+     * @param patchSize the vision encoder patch size (e.g., 14 for SigLIP, 16 for Qwen-VL)
      * @param pixelShuffleFactor the pixel shuffle compression factor (1 = no shuffle)
      * @return estimated number of vision tokens
      */
@@ -191,100 +184,5 @@ public class VideoPreprocessor {
 
     private VLMImagePreprocessor createThreadLocalPreprocessor() {
         return VLMImagePreprocessor.fromConfig(imagePreprocessor.getConfig());
-    }
-
-    // =========================================================================
-    // Model-specific factory methods
-    // =========================================================================
-
-    /**
-     * Create a preprocessor for SmolVLM2 video models.
-     *
-     * <p>SmolVLM2 uses SigLIP-so400m-patch14-384 as the vision encoder.
-     * Frames are processed independently at 384x384, then compressed via 3x3 pixel shuffle.</p>
-     *
-     * @return SmolVLM2 video preprocessor
-     */
-    public static VideoPreprocessor forSmolVLM2() {
-        PreprocessorConfig sigLipConfig = PreprocessorConfig.forViT();
-        sigLipConfig.setSize(new PreprocessorConfig.ImageSize(384, 384));
-
-        return VideoPreprocessor.builder()
-                .imagePreprocessor(VLMImagePreprocessor.fromConfig(sigLipConfig))
-                .sampler(VideoFrameSampler.forSmolVLM2())
-                .targetHeight(384)
-                .targetWidth(384)
-                .temporalPatchSize(1)
-                .numPreprocessThreads(4)
-                .build();
-    }
-
-    /**
-     * Create a preprocessor for Qwen3-VL video models.
-     *
-     * <p>Qwen3-VL uses SigLIP-2 with temporal_patch_size=2 (pairs of frames merged).
-     * Frames are processed at 384x384 and the temporal dimension must be even.</p>
-     *
-     * @return Qwen3-VL video preprocessor
-     */
-    public static VideoPreprocessor forQwen3VL() {
-        PreprocessorConfig sigLip2Config = PreprocessorConfig.forViT();
-        sigLip2Config.setSize(new PreprocessorConfig.ImageSize(384, 384));
-
-        return VideoPreprocessor.builder()
-                .imagePreprocessor(VLMImagePreprocessor.fromConfig(sigLip2Config))
-                .sampler(VideoFrameSampler.forQwen3VL())
-                .targetHeight(384)
-                .targetWidth(384)
-                .temporalPatchSize(2)
-                .numPreprocessThreads(4)
-                .build();
-    }
-
-    /**
-     * Create a preprocessor for MiniCPM-V 4.5 video models.
-     *
-     * <p>MiniCPM-V 4.5 uses SigLIP2-400M with a 3D-Resampler that groups
-     * 6 consecutive frames into 64 tokens. Frame count should be divisible by 6.</p>
-     *
-     * @return MiniCPM-V 4.5 video preprocessor
-     */
-    public static VideoPreprocessor forMiniCPMV() {
-        PreprocessorConfig sigLip2Config = PreprocessorConfig.forViT();
-        sigLip2Config.setSize(new PreprocessorConfig.ImageSize(384, 384));
-
-        return VideoPreprocessor.builder()
-                .imagePreprocessor(VLMImagePreprocessor.fromConfig(sigLip2Config))
-                .sampler(VideoFrameSampler.forMiniCPMV())
-                .targetHeight(384)
-                .targetWidth(384)
-                .temporalPatchSize(6)
-                .numPreprocessThreads(4)
-                .build();
-    }
-
-    /**
-     * Create a preprocessor for Qwen2.5-VL video models.
-     *
-     * <p>Similar to Qwen3-VL but using the older SigLIP vision encoder.</p>
-     *
-     * @return Qwen2.5-VL video preprocessor
-     */
-    public static VideoPreprocessor forQwen25VL() {
-        PreprocessorConfig sigLipConfig = PreprocessorConfig.forViT();
-        sigLipConfig.setSize(new PreprocessorConfig.ImageSize(384, 384));
-
-        return VideoPreprocessor.builder()
-                .imagePreprocessor(VLMImagePreprocessor.fromConfig(sigLipConfig))
-                .sampler(VideoFrameSampler.builder()
-                        .strategy(VideoFrameSampler.Strategy.FIXED_FPS)
-                        .targetFPS(2.0)
-                        .maxFrames(64)
-                        .build())
-                .targetHeight(384)
-                .targetWidth(384)
-                .temporalPatchSize(2)
-                .numPreprocessThreads(4)
-                .build();
     }
 }

@@ -58,9 +58,28 @@ std::shared_ptr<TadPack> DirectTadTrie::enhancedSearch(const std::vector<LongTyp
     if (!current) return nullptr;
   }
 
+  // Navigate through original strides and layout metadata. The stripe hash is
+  // stride-aware, but hashes are not keys; the trie path itself must separate
+  // same-shaped views with different strides to avoid reusing wrong offsets.
+  int strideLevel = shapeLevel + rank;
+  LongType* strides = shape::stride(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = findChild(current, strides[i], strideLevel + i, false, rank);
+    if (!current) return nullptr;
+  }
+
+  int metadataLevel = strideLevel + rank;
+  current = findChild(current, shape::elementWiseStride(originalShape),
+                       metadataLevel, false, rank);
+  if (!current) return nullptr;
+
+  current = findChild(current, static_cast<LongType>(shape::order(originalShape)),
+                       metadataLevel + 1, false, rank);
+  if (!current) return nullptr;
+
   // Navigate to dtype node
   current = findChild(current, static_cast<LongType>(ArrayOptions::dataType(originalShape)),
-                       shapeLevel + rank, false, rank);
+                       metadataLevel + 2, false, rank);
   if (!current) return nullptr;
 
   // Found a matching node, now verify TadPack exists
@@ -120,7 +139,7 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
 bool DirectTadTrie::exists(const std::vector<LongType>& dimensions, LongType* originalShape)  {
   if (!originalShape) return false;
 
-  const size_t stripeIdx = computeStripeIndex(dimensions, originalShape);
+  const size_t stripeIdx = computeStrideAwareHash(dimensions, originalShape);
   SHARED_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
   // Using the enhanced search method which verifies TadPack compatibility
@@ -231,11 +250,36 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
     }
   }
 
-  // Fifth level: data type to prevent collisions between same-shaped arrays
+  // Fifth level: original strides and layout metadata. These are part of the
+  // logical TAD identity because offsets and TAD shape strides are derived from
+  // the original strides. Do not rely on the stripe hash alone for this.
+  int strideLevel = shapeLevel + rank;
+  LongType* strides = shape::stride(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = current->findOrCreateChild(strides[i], strideLevel + i, false, rank);
+    if (!current) {
+      THROW_EXCEPTION("Failed to create stride node");
+    }
+  }
+
+  int metadataLevel = strideLevel + rank;
+  current = current->findOrCreateChild(shape::elementWiseStride(originalShape),
+                                       metadataLevel, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create element-wise stride node");
+  }
+
+  current = current->findOrCreateChild(static_cast<LongType>(shape::order(originalShape)),
+                                       metadataLevel + 1, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create order node");
+  }
+
+  // Sixth level: data type to prevent collisions between same-shaped arrays
   // with different dtypes (e.g., FLOAT32 vs FLOAT16)
   current = current->findOrCreateChild(
       static_cast<LongType>(ArrayOptions::dataType(originalShape)),
-      shapeLevel + rank, false, rank);
+      metadataLevel + 2, false, rank);
   if (!current) {
     THROW_EXCEPTION("Failed to create dtype node");
   }

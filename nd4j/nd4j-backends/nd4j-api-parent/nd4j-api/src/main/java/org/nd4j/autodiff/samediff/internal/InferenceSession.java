@@ -113,6 +113,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return (cached & OP_TRAIT_DATA_DEPENDENT) != 0;
     }
 
+    protected Collection<String> dspMutableExternalInputNames() {
+        return Collections.emptySet();
+    }
+
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
     //we track the ids to avoid double frees
@@ -1430,6 +1434,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // is used — only safe when the caller uses the returned references directly (outputDirect),
         // not when the caller dups them (output), which would leave the cache stale.
         executor.setDirectOutputMode(directOutputMode);
+        executor.addMutableExternalInputs(dspMutableExternalInputNames());
 
         if (!executor.isNativePlanCompiled(plan)) {
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());

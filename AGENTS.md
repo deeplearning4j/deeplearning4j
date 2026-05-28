@@ -536,6 +536,44 @@ Models: qwen (0.8B), gemma (1B), phi, mistral, lfm2-extract (350M).
 7. **Full diagnostic dump**: `--diag-all --diag-json /tmp/perf-diag.json`
 8. **Nsight profiling**: `--nsys`
 
+### Required DSP Performance Benchmarking
+
+When changing DSP execution, graph replay, Triton/NVRTC/PTX dispatch, CUDA streams, DataBuffer synchronization, SameDiff model execution, or any model path that runs through DSP, run correctness first, then benchmark. Performance work is not valid until the required DSP regression gate below passes.
+
+Always capture benchmark output with `tee` and record the commit, backend, config, token count, `lateSteady tok/s`, `steady tok/s`, `decode tok/s`, graph replay status, sync diagnostics, and any op timing files.
+
+Minimum CUDA model benchmark sweep:
+
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests
+
+./run-benchmark.sh --backend cuda --tokens 250 --config SLOT_BY_SLOT --op-timing \
+  2>&1 | tee /tmp/dsp-bench-slot-by-slot.log
+
+./run-benchmark.sh --backend cuda --tokens 250 --config OPTIMAL --op-timing \
+  --diag-replay --diag-stream --diag-json /tmp/dsp-bench-optimal.json \
+  2>&1 | tee /tmp/dsp-bench-optimal.log
+
+./run-benchmark.sh --backend cuda --tokens 250 --config TRITON --op-timing \
+  --diag-replay --diag-stream --diag-json /tmp/dsp-bench-triton.json \
+  2>&1 | tee /tmp/dsp-bench-triton.log
+
+./run-benchmark.sh --backend cuda --tokens 250 --config CUDA_GRAPHS --op-timing \
+  --diag-replay --diag-stream --diag-json /tmp/dsp-bench-cuda-graphs.json \
+  2>&1 | tee /tmp/dsp-bench-cuda-graphs.log
+```
+
+For LLM/VLM-facing DSP changes, also run the relevant model matrix:
+
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests
+./run-llm-benchmarks.sh --backend cuda --test matrix --models qwen,gemma,lfm2-extract \
+  --tokens 20 --op-timing --debug \
+  2>&1 | tee /tmp/dsp-llm-matrix.log
+```
+
+Use `--tokens 250` for performance claims. Fewer tokens are acceptable only for debugging a crash or correctness issue and must not be reported as throughput evidence.
+
 ### Key Metrics
 
 | Metric | Description |
@@ -578,6 +616,57 @@ Sweeps 8 configs against golden SLOT_BY_SLOT baseline:
 | `CUDA_GRAPHS_frozen` | CUDA graph capture + replay |
 
 Flags: `--config NAME`, `--list`, `--cpu`, `--no-triton`, `--diag-replay`/`--diag-segment`/`--diag-phase`/`--diag-all`, `--diag-json FILE`
+
+### Required DSP Regression Gate
+
+When updating DSP internals, optimizing DSP, changing CUDA/Triton graph execution, touching DataBuffer/device transfer behavior, or running DSP with models, run the full gate below. Do not rely on a narrow reproducer after the fix; the broader batch catches cross-test contamination and multi-threaded plan sharing regressions.
+
+First rebuild CUDA with Triton and bindings:
+
+```bash
+/home/agibsonccc/dev-apps/mvn/bin/mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda \
+  -Dlibnd4j.buildthreads=12 -Dlibnd4j.log=libnd4j-build.log \
+  -pl libnd4j,:nd4j-cuda-12.9 \
+  clean install -DskipTests 2>&1 | tee cuda-build-output.log
+```
+
+Then run the focused multi-threaded output isolation check:
+
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+  /home/agibsonccc/dev-apps/mvn/bin/mvn test -Dbackend.artifactId=nd4j-cuda-12.9 \
+  -Dtest=DspConcurrentPlanSharingTest#testOutputBufferIsolation \
+  -Dnd4j.dsp.diagnostics=ALL \
+  -Dnd4j.dsp.diagnostics.level=full \
+  -Dnd4j.dsp.diagnostics.file=/tmp/dsp-output-buffer-isolation.json \
+  2>&1 | tee /tmp/dsp-output-buffer-isolation.log
+```
+
+Then run the full concurrent plan sharing class:
+
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+  /home/agibsonccc/dev-apps/mvn/bin/mvn test -Dbackend.artifactId=nd4j-cuda-12.9 \
+  -Dtest=DspConcurrentPlanSharingTest \
+  -Dnd4j.dsp.diagnostics=ALL \
+  -Dnd4j.dsp.diagnostics.level=full \
+  -Dnd4j.dsp.diagnostics.file=/tmp/dsp-concurrent-plan-sharing.json \
+  2>&1 | tee /tmp/dsp-concurrent-plan-sharing.log
+```
+
+Then run the broader DSP core batch. This is mandatory for DSP/model changes because it exercises handle data models, aliasing, lifecycle transitions, frozen constants, external input staleness, slot lifecycle, concurrent plan sharing, composite replay, and shape pre-pass together in one JVM:
+
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+  /home/agibsonccc/dev-apps/mvn/bin/mvn test -Dbackend.artifactId=nd4j-cuda-12.9 \
+  -Dtest=DspHandleDataModelTest,DspBufferAliasAccuracyTest,DspHandleTest,DspLifecycleExhaustiveTest,DspLifecycleValidationTest,DspFrozenConstantInvariantTest,DspExtInputStalenessTest,DspSlotLifecycleAuditTest,DspConcurrentPlanSharingTest,DspCompositeReplayTest,TestDspShapePrePass \
+  -Dnd4j.dsp.diagnostics=ALL \
+  -Dnd4j.dsp.diagnostics.level=full \
+  -Dnd4j.dsp.diagnostics.file=/tmp/dsp-core-batch.json \
+  2>&1 | tee /tmp/dsp-core-batch.log
+```
+
+Last known working milestone for this gate: `1590` tests, `0` failures, `0` errors, `0` skipped.
 
 ### Domain Test Suites (in `platform-tests/`)
 

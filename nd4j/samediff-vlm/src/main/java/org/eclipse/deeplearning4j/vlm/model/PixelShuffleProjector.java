@@ -144,17 +144,4 @@ public class PixelShuffleProjector {
         return sd.reshape(name, permuted, -1, newH * newW, 0);
     }
 
-    /**
-     * Create a projector for SmolVLM2 (3x3 pixel shuffle = 9x compression).
-     */
-    public static PixelShuffleProjector forSmolVLM2() {
-        return PixelShuffleProjector.builder().shuffleFactor(3).build();
-    }
-
-    /**
-     * Create a projector for Qwen-VL (2x2 pixel shuffle = 4x compression).
-     */
-    public static PixelShuffleProjector forQwenVL() {
-        return PixelShuffleProjector.builder().shuffleFactor(2).build();
-    }
 }

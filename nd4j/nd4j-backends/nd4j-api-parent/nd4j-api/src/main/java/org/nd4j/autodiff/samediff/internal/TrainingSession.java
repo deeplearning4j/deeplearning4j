@@ -90,6 +90,14 @@ public class TrainingSession extends InferenceSession {
         super(sameDiff);
     }
 
+    @Override
+    protected Collection<String> dspMutableExternalInputNames() {
+        if (gradVarToVarMap == null || gradVarToVarMap.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return gradVarToVarMap.values();
+    }
+
     /**
      * Perform one iteration of training - i.e., do forward and backward passes, and update the parameters
      *
@@ -283,6 +291,7 @@ public class TrainingSession extends InferenceSession {
         try {
             // Lightweight placeholder type casting
             Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholders);
+            preparePlanForTrainingShapes(dspPlaceholders);
 
             // Execute via DSP — returns null if DSP is unavailable (not compiled, control flow, etc.)
             Map<String, SDValue> results = executeDynamicShapePlanBased(
@@ -886,19 +895,11 @@ public class TrainingSession extends InferenceSession {
     }
 
     /**
-     * Manage shape freezing for training iterations.
-     * Training batches within an epoch have consistent shapes, so we freeze eagerly
-     * after the first successful DSP execution to enable CUDA graph replay from
-     * iteration 1 onward. If a shape change occurs (incomplete last batch, new epoch
-     * with different data), the current native plan is destroyed and a fresh one is
-     * compiled for the new shape on the next iteration.
-     * <p>
-     * Plan phases are strictly linear: SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING.
-     * Backward transitions (unfreezing) are illegal. When shapes change, the only correct
-     * action is to destroy the existing plan and let the cache produce a fresh entry for
-     * the new shape.
+     * Detect batch shape changes between training iterations and reset the plan
+     * when shapes change, allowing the plan cache to dispatch a fresh entry.
+     * Training does NOT freeze shapes — see manageShapeFreezing comment.
      */
-    private void manageShapeFreezing(Map<String, INDArray> placeholders) {
+    private void preparePlanForTrainingShapes(Map<String, INDArray> placeholders) {
         if (placeholders == null || placeholders.isEmpty()) {
             return;
         }
@@ -908,52 +909,43 @@ public class TrainingSession extends InferenceSession {
             return;
         }
 
-        // Build current shape map
-        Map<String, long[]> currentShapes = new HashMap<>();
-        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
-            if (e.getValue() != null) {
-                currentShapes.put(e.getKey(), e.getValue().shape());
-            }
-        }
-
-        // Training MUST NOT freeze shapes. Frozen replay (CUDA graph) captures a fixed
-        // computation graph. Training changes weights every step via the Java-side updater
-        // (subi/addi). While the weight device pointers stay the same, the frozen native
-        // plan's output slots become stale because the CUDA graph replay reads from captured
-        // intermediate buffers that don't reflect the weight updates. This causes loss=0.0
-        // and zero gradients after the first replay step.
-        //
-        // Slot-by-slot execution re-executes each op fresh each step, reading the updated
-        // weight values from their device buffers, which is correct for training.
-        if (previousPlaceholderShapes == null) {
-            // First iteration: do NOT freeze. Let DSP run slot-by-slot for training.
-            log.info("DSP training: keeping slot-by-slot execution (no shape freeze for training)");
-        } else if (!shapesMatch(previousPlaceholderShapes, currentShapes)) {
-            // Shape changed. Destroy the current plan (releasing GPU intermediates and
-            // unpinning the handle back to the cache). Reset previousPlaceholderShapes
-            // to null so the next call treats it as a "first iteration" and freezes after
-            // the new plan executes successfully.
-            log.info("DSP training: shape change detected — destroying plan for new shape");
-            executor.resetForNextPage();
-            previousPlaceholderShapes = null;
-            dspStepCount++;
+        Map<String, long[]> currentShapes = snapshotPlaceholderShapes(placeholders);
+        if (currentShapes.isEmpty()) {
             return;
         }
-        // If shapes match previous and already frozen: nothing to do (graph replay)
 
-        previousPlaceholderShapes = currentShapes;
-        dspStepCount++;
+        if (previousPlaceholderShapes != null && !shapesMatch(previousPlaceholderShapes, currentShapes)) {
+            log.info("DSP training: shape change detected — resetting plan for batch shape");
+            executor.resetForNextPage();
+            previousPlaceholderShapes = null;
+        }
+    }
 
-        // Replay profile management for warm restarts
-        if (replayProfiles_ != null && executor.isShapesFrozen()) {
-            org.bytedeco.javacpp.Pointer planHandle = executor.getNativePlanHandle();
-            if (planHandle != null && dspStepCount > 3) {
-                // Wait for capture to stabilize before snapshotting profile
-                ReplayProfileManager.ReplayProfile profile =
-                    ReplayProfileManager.captureProfile(planHandle, currentShapes);
-                replayProfiles_.put(profile);
+    private void manageShapeFreezing(Map<String, INDArray> placeholders) {
+        // Training MUST NOT freeze shapes. Frozen shapes trigger CUDA graph capture,
+        // which records the forward+backward computation with specific weight values.
+        // Replaying the captured graph on subsequent iterations produces gradients
+        // derived from the CAPTURED weight values, not the updated ones — causing
+        // weight updates to have no effect (zero effective learning).
+        // The markExternalInputVariable mechanism handles pointer stability for
+        // external inputs, but cannot fix stale intermediates computed during capture.
+        if (placeholders == null || placeholders.isEmpty()) {
+            return;
+        }
+
+        // Only track shapes for change detection (preparePlanForTrainingShapes)
+        previousPlaceholderShapes = snapshotPlaceholderShapes(placeholders);
+    }
+
+    private static Map<String, long[]> snapshotPlaceholderShapes(Map<String, INDArray> placeholders) {
+        Map<String, long[]> currentShapes = new HashMap<>();
+        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
+            INDArray arr = e.getValue();
+            if (arr != null) {
+                currentShapes.put(e.getKey(), Arrays.copyOf(arr.shape(), arr.shape().length));
             }
         }
+        return currentShapes;
     }
 
     private static boolean shapesMatch(Map<String, long[]> a, Map<String, long[]> b) {

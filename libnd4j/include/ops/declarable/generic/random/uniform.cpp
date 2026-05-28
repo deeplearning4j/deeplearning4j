@@ -43,7 +43,7 @@ namespace ops {
  */
 CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   // uniform distribution
-  auto rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
   auto dtype = FLOAT32;
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
 

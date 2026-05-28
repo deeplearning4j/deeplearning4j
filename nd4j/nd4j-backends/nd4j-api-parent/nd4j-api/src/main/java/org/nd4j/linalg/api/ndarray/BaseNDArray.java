@@ -161,13 +161,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
     @Getter
     // NOTE: Custom setCloseable method is defined below - do NOT add @Setter here!
-    // When setCloseable(false) is called, we must propagate to the DataBuffer to prevent
-    // DeallocatorService from freeing the underlying OpaqueDataBuffer.
     protected transient boolean closeable = true;
-    // Tracks whether setCloseable(false) actually changed the data buffer's constant state.
-    // When true, setCloseable(true) should undo the change. When false, the buffer was
-    // already constant before setCloseable(false) and should NOT be un-constant-ified.
-    protected transient boolean constantSetByCloseable = false;
     protected transient boolean released = false;
 
 
@@ -6620,48 +6614,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.closeable = closeable;
 
         if (!closeable) {
-            // Mark the data buffer as constant to protect it from deallocation
-            // during SameDiff execution (batchOutputHelper brackets execution with
-            // setCloseable(false) / setCloseable(true)).
-            // EXCEPTION: Sub-views (length < data.length) share their DataBuffer with
-            // the parent array. Marking the shared buffer constant poisons D2H sync
-            // for the parent and all other views — syncToPrimary returns early when
-            // isConstant is true, causing getLong/toFloatVector to see stale host zeros
-            // even though the device has correct data. For sub-views, we only set the
-            // closeable flag (preventing close()) without touching the DataBuffer.
-            boolean isSubView = data != null && length() < data.length();
-            if (!isSubView) {
-                DataBuffer dataBuffer = data();
-                if (dataBuffer != null && !dataBuffer.wasClosed()) {
-                    // Only change constant state if the buffer wasn't already constant.
-                    // Tracking this prevents setCloseable(true) from destroying the
-                    // constant protection on buffers that were constant before we touched them
-                    // (e.g., empty/zero-length buffers, shared constant buffers).
-                    if (!dataBuffer.isConstant()) {
-                        dataBuffer.setConstant(true);
-                        constantSetByCloseable = true;
-                    }
-                }
-            }
-
+            // Shape info buffers are truly constant — always safe to mark.
             DataBuffer shapeBuffer = shapeInfoDataBuffer();
             if (shapeBuffer != null && !shapeBuffer.wasClosed()) {
                 shapeBuffer.setConstant(true);
-            }
-        } else {
-            // Restore closeable state: undo the constant marking set by setCloseable(false).
-            // Without this, data buffers remain marked as constant even after setCloseable(true),
-            // causing close() to silently skip deallocation (BaseDataBuffer.closeable() returns false
-            // for constant buffers). This leads to massive GPU memory leaks in decode loops where
-            // KV cache arrays are passed as SameDiff placeholders (which sets closeable=false)
-            // and then need to be freed when replaced by new values.
-            // ONLY undo if WE set it constant — don't destroy pre-existing constant protection.
-            if (constantSetByCloseable) {
-                DataBuffer dataBuffer = data();
-                if (dataBuffer != null && !dataBuffer.wasClosed()) {
-                    dataBuffer.setConstant(false);
-                }
-                constantSetByCloseable = false;
             }
         }
     }

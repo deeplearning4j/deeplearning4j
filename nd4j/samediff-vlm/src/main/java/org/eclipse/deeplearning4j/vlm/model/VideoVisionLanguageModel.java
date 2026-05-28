@@ -388,57 +388,6 @@ public class VideoVisionLanguageModel implements AutoCloseable {
                 .build();
     }
 
-    /**
-     * Create a SmolVLM2 video model from a directory.
-     *
-     * @param modelDir the SmolVLM2 model directory
-     * @return configured video VLM for SmolVLM2
-     * @throws IOException if loading fails
-     */
-    public static VideoVisionLanguageModel forSmolVLM2(File modelDir) throws IOException {
-        VisionLanguageModel vlm = VisionLanguageModel.fromDirectory(modelDir);
-        return VideoVisionLanguageModel.builder()
-                .vlm(vlm)
-                .videoPreprocessor(VideoPreprocessor.forSmolVLM2())
-                .maxFrames(16)
-                .maxNewTokens(512)
-                .build();
-    }
-
-    /**
-     * Create a Qwen3-VL video model from a directory.
-     *
-     * @param modelDir the Qwen3-VL model directory
-     * @return configured video VLM for Qwen3-VL
-     * @throws IOException if loading fails
-     */
-    public static VideoVisionLanguageModel forQwen3VL(File modelDir) throws IOException {
-        VisionLanguageModel vlm = VisionLanguageModel.fromDirectory(modelDir);
-        return VideoVisionLanguageModel.builder()
-                .vlm(vlm)
-                .videoPreprocessor(VideoPreprocessor.forQwen3VL())
-                .maxFrames(64)
-                .maxNewTokens(1024)
-                .build();
-    }
-
-    /**
-     * Create a MiniCPM-V 4.5 video model from a directory.
-     *
-     * @param modelDir the MiniCPM-V model directory
-     * @return configured video VLM for MiniCPM-V
-     * @throws IOException if loading fails
-     */
-    public static VideoVisionLanguageModel forMiniCPMV(File modelDir) throws IOException {
-        VisionLanguageModel vlm = VisionLanguageModel.fromDirectory(modelDir);
-        return VideoVisionLanguageModel.builder()
-                .vlm(vlm)
-                .videoPreprocessor(VideoPreprocessor.forMiniCPMV())
-                .maxFrames(180)
-                .maxNewTokens(1024)
-                .build();
-    }
-
     @Override
     public void close() {
         if (vlm != null) {

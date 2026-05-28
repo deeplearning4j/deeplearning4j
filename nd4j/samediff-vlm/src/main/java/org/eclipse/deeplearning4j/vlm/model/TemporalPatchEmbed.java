@@ -53,7 +53,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  *
  * <p>Example usage:</p>
  * <pre>{@code
- * TemporalPatchEmbed tpe = TemporalPatchEmbed.forQwen3VL();
+ * TemporalPatchEmbed tpe = TemporalPatchEmbed.builder()
+ *     .temporalPatchSize(2).spatialPatchSize(16).channels(3).build();
  *
  * // frames: [1, 16, 3, 384, 384]
  * INDArray patches = tpe.extractPatches(frames);
@@ -192,25 +193,4 @@ public class TemporalPatchEmbed {
         return channels * temporalPatchSize * spatialPatchSize * spatialPatchSize;
     }
 
-    /**
-     * Create for Qwen3-VL (temporal_patch=2, spatial_patch=16).
-     */
-    public static TemporalPatchEmbed forQwen3VL() {
-        return TemporalPatchEmbed.builder()
-                .temporalPatchSize(2)
-                .spatialPatchSize(16)
-                .channels(3)
-                .build();
-    }
-
-    /**
-     * Create for Qwen2.5-VL (temporal_patch=2, spatial_patch=14).
-     */
-    public static TemporalPatchEmbed forQwen25VL() {
-        return TemporalPatchEmbed.builder()
-                .temporalPatchSize(2)
-                .spatialPatchSize(14)
-                .channels(3)
-                .build();
-    }
 }

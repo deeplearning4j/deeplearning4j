@@ -33,18 +33,18 @@ import java.util.List;
 /**
  * Configurable frame sampling strategies for video VLMs.
  *
- * <p>Different video VLMs require different frame sampling approaches:</p>
+ * <p>Sampling strategies:</p>
  * <ul>
- *   <li>{@link Strategy#UNIFORM} - Evenly spaced frames (SmolVLM2 default)</li>
- *   <li>{@link Strategy#FIXED_FPS} - Extract at a specific frame rate (Qwen-VL dynamic FPS)</li>
- *   <li>{@link Strategy#KEYFRAME} - Only I-frames/keyframes (efficient for long videos)</li>
+ *   <li>{@link Strategy#UNIFORM} - Evenly spaced frames up to maxFrames</li>
+ *   <li>{@link Strategy#FIXED_FPS} - Extract at a target frame rate</li>
+ *   <li>{@link Strategy#KEYFRAME} - Only I-frames/keyframes</li>
  * </ul>
  *
  * <p>Example usage:</p>
  * <pre>{@code
  * VideoFrameSampler sampler = VideoFrameSampler.builder()
  *     .strategy(VideoFrameSampler.Strategy.UNIFORM)
- *     .maxFrames(32)
+ *     .maxFrames(16)
  *     .build();
  *
  * List<BufferedImage> frames = sampler.sample(new File("video.mp4"));
@@ -122,7 +122,7 @@ public class VideoFrameSampler {
      * Sample frames from a pre-extracted frame list (e.g., for re-sampling).
      *
      * @param allFrames all available frames
-     * @return sampled subset
+     * @return sampled subset of at most maxFrames
      */
     public List<BufferedImage> sampleFromFrames(List<BufferedImage> allFrames) {
         if (allFrames.size() <= maxFrames) {
@@ -138,37 +138,5 @@ public class VideoFrameSampler {
         }
 
         return sampled;
-    }
-
-    /**
-     * Create a sampler for SmolVLM2 (uniform, moderate frame count).
-     */
-    public static VideoFrameSampler forSmolVLM2() {
-        return VideoFrameSampler.builder()
-                .strategy(Strategy.UNIFORM)
-                .maxFrames(16)
-                .build();
-    }
-
-    /**
-     * Create a sampler for Qwen3-VL (dynamic FPS with more frames).
-     */
-    public static VideoFrameSampler forQwen3VL() {
-        return VideoFrameSampler.builder()
-                .strategy(Strategy.FIXED_FPS)
-                .targetFPS(2.0)
-                .maxFrames(64)
-                .build();
-    }
-
-    /**
-     * Create a sampler for MiniCPM-V 4.5 (groups of 6 frames).
-     */
-    public static VideoFrameSampler forMiniCPMV() {
-        return VideoFrameSampler.builder()
-                .strategy(Strategy.FIXED_FPS)
-                .targetFPS(10.0)
-                .maxFrames(180)
-                .build();
     }
 }

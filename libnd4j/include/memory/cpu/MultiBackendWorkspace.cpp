@@ -135,9 +135,23 @@ void MultiBackendWorkspace::initDeviceWorkspace(const DeviceDescriptor& device, 
     auto it = _deviceAllocations.find(device);
     if (it != _deviceAllocations.end() && it->second.workspace != nullptr) {
         // Already exists, expand if needed
-        if (it->second.workspace->getCurrentSize() < size) {
-            sd::LongType secondaryExpand = (device.deviceType == DeviceType::CUDA_GPU) ? size : 0;
-            it->second.workspace->expandTo(size, secondaryExpand);
+        sd::LongType currentSize =
+#if defined(__CUDACC__) || defined(SD_CUDA)
+            (device.deviceType == DeviceType::CPU)
+                ? it->second.workspace->getCurrentSecondarySize()
+                : it->second.workspace->getCurrentSize();
+#else
+            it->second.workspace->getCurrentSize();
+#endif
+        if (currentSize < size) {
+#if defined(__CUDACC__) || defined(SD_CUDA)
+            sd::LongType primaryExpand = (device.deviceType == DeviceType::CPU) ? 0 : size;
+            sd::LongType secondaryExpand = size;
+#else
+            sd::LongType primaryExpand = size;
+            sd::LongType secondaryExpand = 0;
+#endif
+            it->second.workspace->expandTo(primaryExpand, secondaryExpand);
         }
         return;
     }
@@ -148,8 +162,14 @@ void MultiBackendWorkspace::initDeviceWorkspace(const DeviceDescriptor& device, 
     //   primary = device memory, secondary = host (pinned) memory.
     // Host memory is needed for CPU↔GPU transfers and for ops that read results on host.
     DeviceAllocation allocation;
-    sd::LongType secondarySize = (device.deviceType == DeviceType::CUDA_GPU) ? size : 0;
-    allocation.workspace = new Workspace(size, secondarySize);
+#if defined(__CUDACC__) || defined(SD_CUDA)
+    sd::LongType primarySize = (device.deviceType == DeviceType::CPU) ? 0 : size;
+    sd::LongType secondarySize = size;
+#else
+    sd::LongType primarySize = size;
+    sd::LongType secondarySize = 0;
+#endif
+    allocation.workspace = new Workspace(primarySize, secondarySize);
     allocation.coherenceState = CoherenceState::EXCLUSIVE;
     allocation.version = _globalVersion.load();
     allocation.isOwned = true;
@@ -553,6 +573,7 @@ sd::LongType MultiBackendWorkspace::getTotalAllocatedSize() const {
     for (const auto& pair : _deviceAllocations) {
         if (pair.second.workspace != nullptr) {
             total += pair.second.workspace->getAllocatedSize();
+            total += pair.second.workspace->getAllocatedSecondarySize();
         }
     }
     return total;
@@ -562,7 +583,9 @@ sd::LongType MultiBackendWorkspace::getAllocatedSizeOnDevice(const DeviceDescrip
     std::lock_guard<std::mutex> lock(_mutex);
     auto it = _deviceAllocations.find(device);
     if (it != _deviceAllocations.end() && it->second.workspace != nullptr) {
-        return it->second.workspace->getAllocatedSize();
+        sd::LongType total = it->second.workspace->getAllocatedSize();
+        total += it->second.workspace->getAllocatedSecondarySize();
+        return total;
     }
     return 0;
 }
@@ -575,6 +598,11 @@ sd::LongType MultiBackendWorkspace::getCurrentOffsetOnDevice(const DeviceDescrip
     std::lock_guard<std::mutex> lock(_mutex);
     auto it = _deviceAllocations.find(device);
     if (it != _deviceAllocations.end() && it->second.workspace != nullptr) {
+#if defined(__CUDACC__) || defined(SD_CUDA)
+        if (device.deviceType == DeviceType::CPU) {
+            return it->second.workspace->getCurrentSecondaryOffset();
+        }
+#endif
         return it->second.workspace->getCurrentOffset();
     }
     return 0;
@@ -584,7 +612,8 @@ sd::LongType MultiBackendWorkspace::getSpilledSize() const {
     std::lock_guard<std::mutex> lock(_mutex);
     auto it = _deviceAllocations.find(_primaryDevice);
     if (it != _deviceAllocations.end() && it->second.workspace != nullptr) {
-        return it->second.workspace->getSpilledSize();
+        return it->second.workspace->getSpilledSize()
+            + it->second.workspace->getSpilledSecondarySize();
     }
     return 0;
 }

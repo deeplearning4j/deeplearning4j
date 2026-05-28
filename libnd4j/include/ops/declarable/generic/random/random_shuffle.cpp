@@ -32,10 +32,10 @@ namespace ops {
 OP_IMPL(random_shuffle, 1, 1, true) {
   auto input = INPUT_VARIABLE(0);
   const bool isInplace = block.isInplace();
-  auto output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
+  auto output = isInplace ? input : OUTPUT_VARIABLE(0);
 
   //    sd::random::RandomBuffer* rng = block.getRNG();
-  RandomGenerator rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
   //    REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
 
   helpers::randomShuffle(block.launchContext(), *input, *output, rng, isInplace);

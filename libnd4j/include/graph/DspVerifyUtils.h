@@ -575,8 +575,16 @@ SD_INLINE int dspValidateOutputs(NDArray** outputs, int numOutputs, int* flagsOu
     auto len = arr->lengthOf();
     if (len == 0) continue;
 
+    NDArray* validationInput = arr;
+    NDArray* validationInputCopy = nullptr;
+    auto* db = validationInput->dataBuffer();
+    if (db != nullptr && db->isFrozenPlanRegistered() && db->primary() == nullptr) {
+      validationInputCopy = validationInput->dup(validationInput->ordering(), false);
+      validationInput = validationInputCopy;
+    }
+
     // Sum-based NaN/Inf detection (works for both CPU and CUDA)
-    auto sum = arr->sumNumber();
+    auto sum = validationInput->sumNumber();
     float sumVal = sum.e<float>(0);
     if (std::isnan(sumVal)) {
       flagsOut[i] |= DSP_VALIDATE_NAN;
@@ -586,9 +594,12 @@ SD_INLINE int dspValidateOutputs(NDArray** outputs, int numOutputs, int* flagsOu
     }
 
     // All-zeros detection via norm2
-    auto norm = arr->reduceNumber(reduce::Norm2);
+    auto norm = validationInput->reduceNumber(reduce::Norm2);
     float normVal = norm->e<float>(0);
     delete norm;
+    if (validationInputCopy != nullptr) {
+      delete validationInputCopy;
+    }
     if (normVal == 0.0f && len > 0) {
       flagsOut[i] |= DSP_VALIDATE_ALL_ZERO;
     }

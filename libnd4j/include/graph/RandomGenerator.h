@@ -31,59 +31,9 @@
 namespace sd {
 namespace graph {
 
-#if defined(__CUDACC__)
-#ifndef __JAVACPP_HACK__
-
-class SD_LIB_EXPORT CudaManagedRandomGenerator {
- private:
- protected:
-  void *devHolder;
-
- public:
-  void *operator new(size_t len) {
-    void *ptr;
-    auto res = cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
-    if (res != 0) THROW_EXCEPTION("CudaManagedRandomGenerator: failed to allocate memory");
-    return ptr;
-  }
-
-  void operator delete(void *ptr) { cudaFreeHost(ptr); }
-};
-
-class SD_LIB_EXPORT RandomGenerator : public CudaManagedRandomGenerator {
- private:
-  u64 _rootState;
-  u64 _nodeState;
-
-  static SD_INLINE LongType currentMilliseconds();
-
- public:
-  SD_INLINE RandomGenerator(LongType rootSeed = 0, LongType nodeSeed = 0);
-  SD_INLINE SD_HOST void setStates(LongType rootSeed, LongType nodeState = 0);
-
-  template <typename T>
-  SD_INLINE SD_HOST_DEVICE T relativeT(LongType index, T from, T to);
-
-  template <typename T>
-  SD_INLINE SD_HOST_DEVICE T relativeT(LongType index);
-
-  SD_INLINE SD_HOST_DEVICE int relativeInt(LongType index);
-  SD_INLINE SD_HOST_DEVICE LongType relativeLong(LongType index);
-  SD_INLINE SD_HOST_DEVICE void rewindH(uint64_t steps);
-
-  SD_INLINE SD_HOST void setSeed(int seed) { _nodeState._ulong = static_cast<uint64_t>(seed); }
-  SD_INLINE SD_HOST void setSeed(uint64_t seed) { _nodeState._ulong = seed; }
-
-  SD_INLINE SD_HOST_DEVICE LongType rootState() { return _rootState._long; }
-  SD_INLINE SD_HOST_DEVICE LongType nodeState() { return _nodeState._long; }
-
-  SD_INLINE SD_HOST_DEVICE uint32_t xoroshiro32(uint64_t index);
-  SD_INLINE SD_HOST_DEVICE uint64_t xoroshiro64(uint64_t index);
-};
-#endif
-
-#else
-
+// RandomGenerator instances are passed between host C++ and CUDA translation
+// units. Keep the layout identical in both modes; CUDA random execution copies
+// and rewinds caller-owned host instances by pointer.
 class SD_LIB_EXPORT RandomGenerator {
  private:
   u64 _rootState;
@@ -115,7 +65,8 @@ class SD_LIB_EXPORT RandomGenerator {
   SD_INLINE SD_HOST_DEVICE uint64_t xoroshiro64(uint64_t index);
 };
 
-#endif
+static_assert(sizeof(RandomGenerator) == 2 * sizeof(u64),
+              "RandomGenerator layout must match between host and CUDA translation units");
 
 // Implementation of member functions (common for both CUDA and non-CUDA versions)
 

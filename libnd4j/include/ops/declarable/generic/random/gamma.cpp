@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_gamma, 2, 1, false, 0, 0) {
   // gamma distribution
-  auto rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
   auto shape = INPUT_VARIABLE(0);
   auto alpha = INPUT_VARIABLE(1);
   NDArray* beta = nullptr;

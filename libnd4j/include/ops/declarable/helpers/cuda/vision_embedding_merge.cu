@@ -141,7 +141,7 @@ static void visionEmbeddingMerge_(
         int blockSize = static_cast<int>(dims.y);
         int gridSize = ((int)batch + blockSize - 1) / blockSize;
         buildPrefixSumKernel<I><<<gridSize, blockSize, 0, *stream>>>(
-            tokenIds->bufferAsT<I>(),
+            reinterpret_cast<const I*>(tokenIds->specialBuffer()),
             prefixSumDev,
             batch, seqLen,
             tokenIds->stridesOf()[0], tokenIds->stridesOf()[1],
@@ -161,11 +161,11 @@ static void visionEmbeddingMerge_(
         const auto outStrides = output->stridesOf();
 
         visionEmbeddingMergeKernel<T, V, I><<<gridSize, blockSize, 0, *stream>>>(
-            textEmbeddings->bufferAsT<T>(),
-            visionEmbeddings->bufferAsT<V>(),
-            tokenIds->bufferAsT<I>(),
+            reinterpret_cast<const T*>(textEmbeddings->specialBuffer()),
+            reinterpret_cast<const V*>(visionEmbeddings->specialBuffer()),
+            reinterpret_cast<const I*>(tokenIds->specialBuffer()),
             prefixSumDev,
-            output->bufferAsT<T>(),
+            reinterpret_cast<T*>(output->specialBuffer()),
             batch, seqLen, hiddenDim, visionTokens, targetTokenId,
             textStrides[0], textStrides[1], textStrides[2],
             visStrides[0], visStrides[1], visStrides[2],

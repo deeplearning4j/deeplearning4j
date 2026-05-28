@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(random_multinomial, 2, 1, false, 0, 0) {
     return Status::OK;
   }
 
-  auto rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
   helpers::fillRandomMultiNomial(block.launchContext(), rng, *input, *output, numOfSamples, dimC);
   return Status::OK;
 }

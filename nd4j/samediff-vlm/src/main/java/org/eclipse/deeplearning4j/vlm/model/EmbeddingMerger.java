@@ -50,7 +50,8 @@ public class EmbeddingMerger {
      */
     public static INDArray mergeEmbeddings(INDArray textEmbeddings, INDArray visionEmbeddings,
                                            int[] tokenIds, int imageTokenId) {
-        INDArray tokenIdArray = Nd4j.createFromArray(tokenIds).reshape(1, tokenIds.length);
+        // dup() ensures contiguous device buffer after reshape (views may have stale device data on CUDA)
+        INDArray tokenIdArray = Nd4j.createFromArray(tokenIds).reshape(1, tokenIds.length).dup();
         return mergeNative(textEmbeddings, visionEmbeddings, tokenIdArray, imageTokenId);
     }
 
@@ -80,7 +81,7 @@ public class EmbeddingMerger {
         INDArray[] frameArrays = frameEmbeddings.toArray(new INDArray[0]);
         INDArray allVision = Nd4j.concat(1, frameArrays);
 
-        INDArray tokenIdArray = Nd4j.createFromArray(tokenIds).reshape(1, tokenIds.length);
+        INDArray tokenIdArray = Nd4j.createFromArray(tokenIds).reshape(1, tokenIds.length).dup();
         return mergeNative(textEmbeddings, allVision, tokenIdArray, videoTokenId);
     }
 

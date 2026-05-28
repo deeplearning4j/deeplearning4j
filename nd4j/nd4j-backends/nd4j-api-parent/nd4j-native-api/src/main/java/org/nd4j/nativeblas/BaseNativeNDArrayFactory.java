@@ -97,6 +97,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray createFromNpyPointer(Pointer pointer) {
+        nativeOps.clearLastError();
         Pointer dataPointer = nativeOps.dataPointForNumpy(pointer);
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);

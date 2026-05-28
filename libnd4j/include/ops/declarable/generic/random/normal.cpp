@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
   // normal distribution
-  auto rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
 
   RandomLauncher::fillGaussian(block.launchContext(), rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
 

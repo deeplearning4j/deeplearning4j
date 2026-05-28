@@ -57,7 +57,8 @@ import java.util.List;
  *
  * <p>Example usage:</p>
  * <pre>{@code
- * ThreeDResampler resampler = ThreeDResampler.forMiniCPMV();
+ * ThreeDResampler resampler = ThreeDResampler.builder()
+ *     .frameGroupSize(6).outputTokensPerGroup(64).hiddenSize(1152).numHeads(16).build();
  *
  * // frameEmbeddings: list of [1, tokens, hidden] per frame
  * INDArray compressed = resampler.resample(frameEmbeddings, queryWeights, kWeight, vWeight, oWeight);
@@ -241,15 +242,4 @@ public class ThreeDResampler {
         return (double) inputTokens / outputTokens;
     }
 
-    /**
-     * Create for MiniCPM-V 4.5 (6-frame groups, 64 output tokens, hidden=1152).
-     */
-    public static ThreeDResampler forMiniCPMV() {
-        return ThreeDResampler.builder()
-                .frameGroupSize(6)
-                .outputTokensPerGroup(64)
-                .hiddenSize(1152)
-                .numHeads(16)
-                .build();
-    }
 }

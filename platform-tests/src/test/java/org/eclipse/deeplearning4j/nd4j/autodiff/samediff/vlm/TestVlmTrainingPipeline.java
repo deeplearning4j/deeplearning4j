@@ -50,6 +50,11 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("VLM Training Pipeline Tests")
 public class TestVlmTrainingPipeline extends BaseNd4jTestWithBackends {
 
+    private static final int TEST_IMAGE_SIZE = 224;
+    private static final int TEST_PATCH_SIZE = 14;
+    private static final int TEST_PATCHES_PER_SIDE = TEST_IMAGE_SIZE / TEST_PATCH_SIZE;
+    private static final int TEST_IMAGE_TOKENS = TEST_PATCHES_PER_SIDE * TEST_PATCHES_PER_SIDE;
+
     @Override
     public char ordering() {
         return 'c';
@@ -236,7 +241,8 @@ public class TestVlmTrainingPipeline extends BaseNd4jTestWithBackends {
                 .count();
         assertTrue(variablesBefore > 0, "encoder must have VARIABLE-type weights before freezing");
 
-        VlmFineTuneConfig vlmConfig = VlmFineTuneConfig.loraOnly(); // freezeVisionEncoder=true
+        VlmFineTuneConfig vlmConfig = withTestImageGeometry(
+                VlmFineTuneConfig.loraOnly()); // freezeVisionEncoder=true
         VlmTrainingConfig trainingConfig = VlmTrainingConfig.builder().build();
 
         VlmTrainingPipeline pipeline = VlmTrainingPipeline.create(
@@ -266,7 +272,8 @@ public class TestVlmTrainingPipeline extends BaseNd4jTestWithBackends {
         SameDiff encoder = buildMinimalEncoder();
         SameDiff decoder = buildMinimalDecoder();
 
-        VlmFineTuneConfig vlmConfig = VlmFineTuneConfig.projectorOnly(); // no LoRA, frozen encoder
+        VlmFineTuneConfig vlmConfig = withTestImageGeometry(
+                VlmFineTuneConfig.projectorOnly()); // no LoRA, frozen encoder
         VlmTrainingConfig trainingConfig = VlmTrainingConfig.projectorOnly();
 
         VlmTrainingPipeline pipeline = VlmTrainingPipeline.create(
@@ -293,7 +300,8 @@ public class TestVlmTrainingPipeline extends BaseNd4jTestWithBackends {
         SameDiff encoder = buildMinimalEncoder();
         SameDiff decoder = buildMinimalDecoder();
 
-        VlmFineTuneConfig vlmConfig = VlmFineTuneConfig.loraOnly(); // LoRA on LLM
+        VlmFineTuneConfig vlmConfig = withTestImageGeometry(
+                VlmFineTuneConfig.loraOnly()); // LoRA on LLM
         VlmTrainingConfig trainingConfig = VlmTrainingConfig.loraTraining();
 
         VlmTrainingPipeline pipeline = VlmTrainingPipeline.create(
@@ -321,7 +329,7 @@ public class TestVlmTrainingPipeline extends BaseNd4jTestWithBackends {
         SameDiff encoder = buildMinimalEncoder();
         SameDiff decoder = buildMinimalDecoder();
 
-        VlmFineTuneConfig vlmConfig = VlmFineTuneConfig.loraOnly();
+        VlmFineTuneConfig vlmConfig = withTestImageGeometry(VlmFineTuneConfig.loraOnly());
         VlmTrainingConfig trainingConfig = VlmTrainingConfig.loraTraining();
 
         VlmTrainingPipeline pipeline = VlmTrainingPipeline.create(
@@ -343,7 +351,8 @@ public class TestVlmTrainingPipeline extends BaseNd4jTestWithBackends {
         SameDiff encoder = buildMinimalEncoder();
         SameDiff decoder = buildMinimalDecoder();
 
-        VlmFineTuneConfig vlmConfig = VlmFineTuneConfig.fullFinetune(); // not frozen, no LoRA
+        VlmFineTuneConfig vlmConfig = withTestImageGeometry(
+                VlmFineTuneConfig.fullFinetune()); // not frozen, no LoRA
         VlmTrainingConfig trainingConfig = VlmTrainingConfig.fullFineTune();
 
         VlmTrainingPipeline pipeline = VlmTrainingPipeline.create(
@@ -388,12 +397,27 @@ public class TestVlmTrainingPipeline extends BaseNd4jTestWithBackends {
      */
     private static SameDiff buildMinimalEncoder() {
         SameDiff encoder = SameDiff.create();
-        encoder.placeHolder("pixel_values", DataType.FLOAT, -1, 3, 224, 224);
+        encoder.placeHolder("pixel_values", DataType.FLOAT, -1, 3, TEST_IMAGE_SIZE, TEST_IMAGE_SIZE);
         encoder.var("vision_encoder/patch_embed/weight",
-                Nd4j.randn(DataType.FLOAT, 64, 3, 14, 14));
+                Nd4j.randn(DataType.FLOAT, 64, 3, TEST_PATCH_SIZE, TEST_PATCH_SIZE));
         encoder.var("vision_encoder/patch_embed/bias",
                 Nd4j.zeros(DataType.FLOAT, 64));
         return encoder;
+    }
+
+    private static VlmFineTuneConfig withTestImageGeometry(VlmFineTuneConfig config) {
+        return VlmFineTuneConfig.builder()
+                .freezeVisionEncoder(config.isFreezeVisionEncoder())
+                .trainProjector(config.isTrainProjector())
+                .shareWeights(config.isShareWeights())
+                .llmLoraConfig(config.getLlmLoraConfig())
+                .visionLoraConfig(config.getVisionLoraConfig())
+                .imageResolution(TEST_IMAGE_SIZE)
+                .patchSize(TEST_PATCH_SIZE)
+                .maxImageTokens(TEST_IMAGE_TOKENS)
+                .visionOutputVariable(config.getVisionOutputVariable())
+                .projectorOutputVariable(config.getProjectorOutputVariable())
+                .build();
     }
 
     /**

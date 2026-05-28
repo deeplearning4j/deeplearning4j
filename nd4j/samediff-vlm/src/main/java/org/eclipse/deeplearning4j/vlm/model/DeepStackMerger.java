@@ -52,7 +52,8 @@ import java.util.Map;
  *
  * <p>Example usage:</p>
  * <pre>{@code
- * DeepStackMerger merger = DeepStackMerger.forQwen3VL();
+ * DeepStackMerger merger = DeepStackMerger.builder()
+ *     .visualIndexes(new int[]{8, 16, 24}).visionHiddenSize(1152).llmHiddenSize(4096).build();
  *
  * // Collect intermediate ViT outputs during encoding
  * Map<Integer, INDArray> vitFeatures = new HashMap<>();
@@ -185,26 +186,4 @@ public class DeepStackMerger {
         return visualIndexes.length;
     }
 
-    /**
-     * Create a DeepStack merger for Qwen3-VL.
-     * Extracts features at ViT layers [8, 16, 24] with vision_hidden=1152, llm_hidden=4096.
-     */
-    public static DeepStackMerger forQwen3VL() {
-        return DeepStackMerger.builder()
-                .visualIndexes(new int[]{8, 16, 24})
-                .visionHiddenSize(1152)
-                .llmHiddenSize(4096)
-                .build();
-    }
-
-    /**
-     * Create a DeepStack merger for Qwen3-VL-2B (smaller model).
-     */
-    public static DeepStackMerger forQwen3VL2B() {
-        return DeepStackMerger.builder()
-                .visualIndexes(new int[]{8, 16, 24})
-                .visionHiddenSize(1152)
-                .llmHiddenSize(1536)
-                .build();
-    }
 }

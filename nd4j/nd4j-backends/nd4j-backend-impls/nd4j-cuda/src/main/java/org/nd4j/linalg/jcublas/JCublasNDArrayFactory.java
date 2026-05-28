@@ -52,6 +52,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.*;
 
+import java.lang.ref.Reference;
 import java.util.*;
 
 /**
@@ -577,9 +578,19 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         // Create OpaqueNDArrayArr from the array of OpaqueNDArray
         OpaqueNDArrayArr xArr = new OpaqueNDArrayArr(xOpaqueArray);
+        INDArray mapArray = Nd4j.createFromArray(map);
+        OpaqueNDArray shuffleMap = OpaqueNDArray.fromINDArray(mapArray);
 
         // Pass xArr for both input and output arrays (in-place shuffle), matching CPU implementation
-        nativeOps.shuffle(extras, xArr, xArr, arrays.size(), dimensionArr, OpaqueNDArray.fromINDArray(Nd4j.createFromArray(map)));
+        nativeOps.shuffle(extras, xArr, xArr, arrays.size(), dimensionArr, shuffleMap);
+
+        Reference.reachabilityFence(dimINDArray);
+        Reference.reachabilityFence(dimensionArr);
+        Reference.reachabilityFence(mapArray);
+        Reference.reachabilityFence(shuffleMap);
+        Reference.reachabilityFence(xOpaqueArray);
+        Reference.reachabilityFence(xArr);
+        Reference.reachabilityFence(arrays);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

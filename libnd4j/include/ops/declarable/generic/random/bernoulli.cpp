@@ -29,7 +29,7 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
-  auto rng = block.getRng();
+  auto& rng = block.randomGenerator();
   auto z = OUTPUT_VARIABLE(0);
   auto f = T_ARG(0);
 

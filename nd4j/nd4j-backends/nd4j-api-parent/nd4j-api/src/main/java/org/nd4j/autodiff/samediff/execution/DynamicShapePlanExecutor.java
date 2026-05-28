@@ -176,7 +176,16 @@ public class DynamicShapePlanExecutor implements Closeable {
     private boolean cachedExecTiming;
     private boolean cachedTraceEnabled;
     private int cachedEffectiveGraphModeCode = -1;   // -1 = leave default
-    private final java.util.Set<Long> configuredHandleAddresses = new java.util.HashSet<>();
+    private final Set<Long> configuredHandleAddresses = new HashSet<>();
+
+    /**
+     * External inputs that are mutable at runtime even though their SameDiff
+     * variable type is VARIABLE rather than PLACEHOLDER. Training parameters use
+     * this path: their shapes are stable, but Java-side updaters change contents
+     * between DSP replay calls.
+     */
+    private final Set<String> mutableExternalInputNames = new LinkedHashSet<>();
+    private final Set<Long> mutableExternalInputsConfiguredHandleAddresses = new HashSet<>();
 
     /** Graph execution mode currently configured on the native plan handle. */
     private GraphExecutionMode configuredGraphExecutionMode = GraphExecutionMode.AUTO;
@@ -1201,6 +1210,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             freeNativePlanHandle("PLAN_RECOMPILATION");
             configuredHandleAddresses.clear();
+            mutableExternalInputsConfiguredHandleAddresses.clear();
 
             // --- Disk cache: try loading serialized plan bytes from disk ---
             byte[] serialized = null;
@@ -1357,6 +1367,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Invalidate any previously-configured handles so the new mode is re-applied
         // to every handle the NativePlanCache returns on the next redispatch.
         configuredHandleAddresses.clear();
+        mutableExternalInputsConfiguredHandleAddresses.clear();
         log.info("Native executor: mode resolution requested={} resolved={} effective={} tritonAvailable={} fallbackToAuto={}",
                 requestedMode, resolvedMode, effectiveMode, tritonAvailable, fallbackToAutoIfTritonUnavailable);
         DspDiagnostics.record(DspDiagnostics.BACKEND,
@@ -1560,7 +1571,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     private void applySettingsIfNewHandle(NativeOps nativeOps, Pointer handle) {
         if (handle == null || handle.isNull()) return;
         long addr = handle.address();
-        if (!configuredHandleAddresses.add(addr)) return;
+        if (!configuredHandleAddresses.add(addr)) {
+            applyMutableExternalInputsIfNeeded(nativeOps, handle);
+            return;
+        }
 
         if (cachedCudaGraphsEnabled) {
             try {
@@ -1612,6 +1626,59 @@ public class DynamicShapePlanExecutor implements Closeable {
         // for subsequent phaseSlotBySlot steps, producing wrong output tokens.
         // The Java shapesFrozen flag is used only to gate zeroCopyOutputCache and
         // directOutputMode fast paths on the Java side.
+        applyMutableExternalInputsIfNeeded(nativeOps, handle);
+    }
+
+    /**
+     * Monotonically add external inputs that native replay must treat as mutable.
+     * Native plans can safely add variable externals, but cannot unmark an input
+     * after freeze/capture analysis has seen it.
+     */
+    public void addMutableExternalInputs(Collection<String> names) {
+        if (names == null || names.isEmpty()) {
+            return;
+        }
+
+        boolean changed = false;
+        for (String name : names) {
+            if (name != null && mutableExternalInputNames.add(name)) {
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            mutableExternalInputsConfiguredHandleAddresses.clear();
+            if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                applyMutableExternalInputsIfNeeded(
+                        NativeOpsHolder.getInstance().getDeviceNativeOps(), nativePlanHandle);
+            }
+        }
+    }
+
+    private void applyMutableExternalInputsIfNeeded(NativeOps nativeOps, Pointer handle) {
+        if (handle == null || handle.isNull() || currentPlan == null || mutableExternalInputNames.isEmpty()) {
+            return;
+        }
+
+        long addr = handle.address();
+        if (!mutableExternalInputsConfiguredHandleAddresses.add(addr)) {
+            return;
+        }
+
+        String[] extKeys = currentPlan.getExternalInputKeys();
+        int marked = 0;
+        for (int i = 0; i < extKeys.length; i++) {
+            if (mutableExternalInputNames.contains(extKeys[i])) {
+                nativeOps.markPlanExternalInputVariable(handle, i);
+                marked++;
+            }
+        }
+
+        if (marked > 0) {
+            DspDiagnostics.record(DspDiagnostics.EXECUTE,
+                    "Java: marked " + marked + " mutable VARIABLE external inputs on native plan addr="
+                            + Long.toHexString(addr));
+        }
     }
 
     /**
@@ -1822,11 +1889,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         // or constants). Return them directly without native plan compilation.
         DynamicShapeSlot[] slots = plan.getSlots();
         if (slots == null || slots.length == 0) {
-            Map<String, INDArray> result = new java.util.LinkedHashMap<>();
+            Map<String, INDArray> result = new LinkedHashMap<>();
             Set<String> requested = plan.getRequestedOutputs();
             String[] extKeys = plan.getExternalInputKeys();
             byte[] extTypes = plan.getExternalInputSourceTypes();
-            java.util.Set<String> extPlaceholders = new java.util.HashSet<>();
+            Set<String> extPlaceholders = new HashSet<>();
             for (int i = 0; i < extKeys.length; i++) {
                 if (extTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
                     extPlaceholders.add(extKeys[i]);
@@ -2231,6 +2298,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (needsRedispatch) {
             redispatchForCurrentShapes(placeholderArrays);
         }
+        applyMutableExternalInputsIfNeeded(nativeOps, nativePlanHandle);
 
         DspDiagnostics.record(DspDiagnostics.EXECUTE,
                 "Java: executeNative ENTER executionCount=" + executionCount +
@@ -3666,6 +3734,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         cachedExecTiming = false;
         cachedTraceEnabled = false;
         configuredHandleAddresses.clear();
+        mutableExternalInputsConfiguredHandleAddresses.clear();
         cachedInputOpaques = null;
         cachedInputArrays = null;
         contextInputRefs = null;

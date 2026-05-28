@@ -242,7 +242,6 @@ public class TestPipelineE2ETraining {
             INDArray aArr = after.get(name);
             if (aArr != null && !bArr.equals(aArr)) {
                 anyChanged = true;
-                break;
             }
         }
         assertTrue(anyChanged, context + ": at least one weight must change during training");

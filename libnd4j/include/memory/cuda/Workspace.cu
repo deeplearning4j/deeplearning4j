@@ -219,8 +219,9 @@ LongType Workspace::getAllocatedSize() { return getCurrentSize() + getSpilledSiz
 
 void Workspace::scopeIn() {
   freeSpills();
-  init(_cycleAllocations.load());
+  init(_cycleAllocations.load(), _cycleAllocationsSecondary.load());
   _cycleAllocations = 0;
+  _cycleAllocationsSecondary = 0;
 }
 
 void Workspace::scopeOut() {

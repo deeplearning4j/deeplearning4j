@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_exponential, 1, 1, true, 1, 0) {
   // random generator for distribution
-  auto rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
   auto z = OUTPUT_VARIABLE(0);
   auto lambda = T_ARG(0);
 
