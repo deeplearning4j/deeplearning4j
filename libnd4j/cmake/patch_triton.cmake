@@ -297,6 +297,7 @@ endmacro()
 
 patch_add_tablegen_deps("${SOURCE_DIR}/third_party/nvidia/lib/NVGPUToLLVM/CMakeLists.txt" "NVGPUToLLVM")
 patch_add_tablegen_deps("${SOURCE_DIR}/third_party/nvidia/lib/TritonNVIDIAGPUToLLVM/CMakeLists.txt" "TritonNVIDIAGPUToLLVM")
+patch_add_tablegen_deps("${SOURCE_DIR}/third_party/nvidia/hopper/lib/Transforms/CMakeLists.txt" "NVHopperTransforms")
 
 # === Part 7: Disable test and bin subdirectory builds (Triton 3.6.0) ===
 # Even with TRITON_BUILD_TESTING=OFF, the test/ subdir may still be added.
