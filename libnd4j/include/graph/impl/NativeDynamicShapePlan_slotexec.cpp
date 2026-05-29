@@ -2062,15 +2062,12 @@ Status NativeDynamicShapePlan::executeSlot(
         !slot.flags.isDynamicShape)) {
       // Diagnostic: log why the frozen fast-path was not taken on first eligible execution
       if (DSP_DIAG_ENABLED(EXECUTE) && executeCount_ >= 4 && executeCount_ <= 5) {
+#ifdef SD_CUDA
         DSP_DIAG_SLOT(EXECUTE, stepIdx,
             "FF_FAST_PATH_SKIP: slot=%d op=%s frozenContextReady=%d "
             "frozenConst=%d isDynamic=%d isSlotBySlot=%d frozenSlotBySlot=%d "
             "isFusedHead=%d isFusedTail=%d isIdentity=%d executeCount=%d "
-            "syncOverrideDepth=%d"
-#ifdef SD_CUDA
-            " replayActive=%d"
-#endif
-            ,
+            "syncOverrideDepth=%d replayActive=%d",
             stepIdx, slot.ident.opName.c_str(),
             slot.frozenContextReady() ? 1 : 0,
             slot.frozenConstantSlot() ? 1 : 0,
@@ -2080,11 +2077,25 @@ Status NativeDynamicShapePlan::executeSlot(
             slot.fusedChain.isFusedChainHead ? 1 : 0,
             slot.fusedChain.isFusedChainTail ? 1 : 0,
             slot.isIdentityOp() ? 1 : 0,
-            executeCount_, syncOverrideDepth_
-#ifdef SD_CUDA
-            , tl_dspReplayActive ? 1 : 0
+            executeCount_, syncOverrideDepth_,
+            tl_dspReplayActive ? 1 : 0);
+#else
+        DSP_DIAG_SLOT(EXECUTE, stepIdx,
+            "FF_FAST_PATH_SKIP: slot=%d op=%s frozenContextReady=%d "
+            "frozenConst=%d isDynamic=%d isSlotBySlot=%d frozenSlotBySlot=%d "
+            "isFusedHead=%d isFusedTail=%d isIdentity=%d executeCount=%d "
+            "syncOverrideDepth=%d",
+            stepIdx, slot.ident.opName.c_str(),
+            slot.frozenContextReady() ? 1 : 0,
+            slot.frozenConstantSlot() ? 1 : 0,
+            slot.flags.isDynamicShape ? 1 : 0,
+            planLifecycle_.isSlotBySlot() ? 1 : 0,
+            frozenSlotBySlot ? 1 : 0,
+            slot.fusedChain.isFusedChainHead ? 1 : 0,
+            slot.fusedChain.isFusedChainTail ? 1 : 0,
+            slot.isIdentityOp() ? 1 : 0,
+            executeCount_, syncOverrideDepth_);
 #endif
-            );
       }
       break;
     }
