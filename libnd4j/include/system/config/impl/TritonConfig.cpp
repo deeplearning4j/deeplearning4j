@@ -17,11 +17,16 @@
 
 #include <system/config/TritonConfig.h>
 #include <system/config/EnvHelper.h>
-#include <sys/stat.h>
-
 #include <cctype>
 #include <cstdlib>
 #include <cerrno>
+#ifdef _WIN32
+#include <direct.h>
+#define sd_mkdir(path) _mkdir(path)
+#else
+#include <sys/stat.h>
+#define sd_mkdir(path) mkdir(path, 0755)
+#endif
 
 namespace sd {
 namespace config {
@@ -220,9 +225,9 @@ void TritonConfig::initFromEnvironment() {
       std::string kompileDir = std::string(home) + "/.kompile";
       std::string cacheDir = kompileDir + "/cache";
       std::string tritonDir = cacheDir + "/triton";
-      mkdir(kompileDir.c_str(), 0755);
-      mkdir(cacheDir.c_str(), 0755);
-      int mkResult = mkdir(tritonDir.c_str(), 0755);
+      sd_mkdir(kompileDir.c_str());
+      sd_mkdir(cacheDir.c_str());
+      int mkResult = sd_mkdir(tritonDir.c_str());
       if (mkResult == 0 || errno == EEXIST) {
         if (_dumpDir.empty()) setDumpDir(defaultDir);
         if (_cacheDir.empty()) setCacheDir(defaultDir);
