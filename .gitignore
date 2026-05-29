@@ -134,3 +134,7 @@ native-executor-kv-cache-investigation.md
 native-executor-not-equals-type-mismatch.md
 cpp-dispatch-rewrite.md
 model-loading-optimization.md
+
+# Large model shard files (too big for GitHub)
+platform-tests/large-samediff-model.shard*.sdnb
+platform-tests/tmp-bert-input.fb
