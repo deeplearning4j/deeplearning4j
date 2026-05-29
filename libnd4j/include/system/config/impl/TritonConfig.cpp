@@ -17,10 +17,11 @@
 
 #include <system/config/TritonConfig.h>
 #include <system/config/EnvHelper.h>
+#include <sys/stat.h>
 
 #include <cctype>
 #include <cstdlib>
-#include <filesystem>
+#include <cerrno>
 
 namespace sd {
 namespace config {
@@ -215,9 +216,14 @@ void TritonConfig::initFromEnvironment() {
     if (!home) home = std::getenv("USERPROFILE"); // Windows fallback
     if (home) {
       std::string defaultDir = std::string(home) + "/.kompile/cache/triton/";
-      std::error_code ec;
-      std::filesystem::create_directories(defaultDir, ec);
-      if (!ec) {
+      // Use mkdir() instead of std::filesystem (unavailable on macOS <10.15)
+      std::string kompileDir = std::string(home) + "/.kompile";
+      std::string cacheDir = kompileDir + "/cache";
+      std::string tritonDir = cacheDir + "/triton";
+      mkdir(kompileDir.c_str(), 0755);
+      mkdir(cacheDir.c_str(), 0755);
+      int mkResult = mkdir(tritonDir.c_str(), 0755);
+      if (mkResult == 0 || errno == EEXIST) {
         if (_dumpDir.empty()) setDumpDir(defaultDir);
         if (_cacheDir.empty()) setCacheDir(defaultDir);
       }
