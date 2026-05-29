@@ -210,7 +210,6 @@ jobs:
         env:
           cuda: 12.9.0
           GCC:  11
-        if: steps.cache-cuda-129.outputs.cache-hit != 'true'
 
       # Set up CUDA environment paths
       - name: Setup CUDA PATH

@@ -281,10 +281,12 @@ if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT CCACHE_SKIP_REASON
         message(STATUS "Windows CUDA ccache: configured via nvcc_filter.py chain")
     endif()
 
-    # Configure ccache settings for optimal CUDA caching (both platforms)
-    execute_process(COMMAND ${CCACHE_PROGRAM} --max-size=30G ERROR_QUIET)
+    # NOTE: Do NOT override max_size or compression_level here.
+    # CI actions (setup-ccache-linux/windows/macos) configure these before CMake runs.
+    # Previously this set max_size=30G (conflicting with CI's 8G) and compression_level=6
+    # (conflicting with CI's level 1). GitHub Actions cache storage is limited, and the
+    # CI action settings are tuned for that environment.
     execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compression=true ERROR_QUIET)
-    execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compression_level=6 ERROR_QUIET)
 
     # Show ccache statistics
     execute_process(
