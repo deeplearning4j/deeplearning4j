@@ -255,7 +255,7 @@ jobs:
           
           $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
           if ( "${{ matrix.helper }}" -eq "compile" ) {
-             $mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+             $mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
           } elseif ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
           } elseif ( "${{ matrix.helper }}" -ne "" ) {

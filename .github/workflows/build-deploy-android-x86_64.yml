@@ -259,7 +259,7 @@ jobs:
 
           # Updated conditional flags for the helper library
           if [ "${{ matrix.helper }}" == "compile" ]; then
-             mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+             mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
           elif [ "${{ matrix.helper }}" == "onednn" ]; then
              mvn_ext=" -Dlibnd4j.helper=onednn -Djavacpp.platform.extension=-onednn -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-onednn"
           elif [ "${{ matrix.helper }}" != '' ]; then

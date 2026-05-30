@@ -304,7 +304,8 @@ jobs:
             -DskipTests"
           
           if [ "${{ matrix.helper }}" == "compile" ]; then
-             HELPER_FLAGS="-Djavacpp.platform.extension=-compile \
+             HELPER_FLAGS="-Dlibnd4j.triton=ON \
+               -Djavacpp.platform.extension=-compile \
                -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile \
                -Dlibnd4j.helpers=mlir \
                -Dlibnd4j.mlir=ON"
