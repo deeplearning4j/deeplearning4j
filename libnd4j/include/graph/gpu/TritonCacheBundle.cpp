@@ -230,7 +230,11 @@ static bool ensureDir(const std::string& path) {
 
     struct stat st;
     if (stat(currentPath.c_str(), &st) == 0) {
+#ifdef _WIN32
+      if (!(st.st_mode & _S_IFDIR)) return false;
+#else
       if (!S_ISDIR(st.st_mode)) return false;
+#endif
       continue;
     }
     if (errno != ENOENT) return false;
@@ -514,7 +518,7 @@ static bool readZipEntries(const char* bundlePath, std::vector<ReadZipEntry>& en
 
   // Find EOCD (scan from end, handle up to 65535 byte comment)
   int64_t eocdPos = -1;
-  int64_t scanStart = std::max(static_cast<int64_t>(0), static_cast<int64_t>(fileSize) - 65557);
+  int64_t scanStart = (std::max)(static_cast<int64_t>(0), static_cast<int64_t>(fileSize) - 65557);
   for (int64_t pos = static_cast<int64_t>(fileSize) - 22; pos >= scanStart; pos--) {
     if (readU32(fileData.data() + pos) == ZIP_EOCD_SIG) {
       eocdPos = pos;
