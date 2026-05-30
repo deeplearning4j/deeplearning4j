@@ -41,7 +41,11 @@
 #include <deque>
 #include <functional>
 #include <mutex>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <pthread.h>
+#endif
 #include <sstream>
 #include <thread>
 #include <vector>
@@ -1002,6 +1006,43 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     const int numWorkers = std::min(maxParallelCompiles,
                                     static_cast<int>(pendingRanges.size()));
 
+#ifdef _WIN32
+    struct WinWorkerArg {
+      std::function<void()>* fn;
+    };
+
+    std::vector<HANDLE> threadHandles(numWorkers);
+    std::vector<WinWorkerArg> args(numWorkers);
+    std::vector<std::thread> fallbackThreads;
+    auto workerFn = std::function<void()>(workerLoop);
+
+    for (int i = 0; i < numWorkers; i++) {
+      args[i].fn = &workerFn;
+      threadHandles[i] = CreateThread(
+          nullptr,
+          TRITON_COMPILE_WORKER_STACK_SIZE,
+          [](LPVOID arg) -> DWORD {
+            auto* wa = static_cast<WinWorkerArg*>(arg);
+            (*wa->fn)();
+            return 0;
+          }, &args[i], STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
+      if (threadHandles[i] == nullptr) {
+        DSP_DIAG(COMPILE, "TritonGraphBackend: CreateThread failed for worker %d (err=%lu), "
+                 "falling back to std::thread", i, GetLastError());
+        fallbackThreads.emplace_back(workerLoop);
+      }
+    }
+
+    for (int i = 0; i < numWorkers; i++) {
+      if (threadHandles[i] != nullptr) {
+        WaitForSingleObject(threadHandles[i], INFINITE);
+        CloseHandle(threadHandles[i]);
+      }
+    }
+    for (auto& ft : fallbackThreads) {
+      ft.join();
+    }
+#else
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, TRITON_COMPILE_WORKER_STACK_SIZE);
@@ -1013,7 +1054,6 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     std::vector<pthread_t> threads(numWorkers);
     std::vector<PthreadWorkerArg> args(numWorkers);
     std::vector<std::thread> fallbackThreads;
-    // workerLoop is captured by reference, wrap it for pthread
     auto workerFn = std::function<void()>(workerLoop);
 
     for (int i = 0; i < numWorkers; i++) {
@@ -1041,6 +1081,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     for (auto& ft : fallbackThreads) {
       ft.join();
     }
+#endif
   } else {
     // Single-threaded path: still needs enlarged stack because MLIR's
     // CoalescePass recursion can blow the calling thread's stack (JVM threads
@@ -1080,6 +1121,30 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       }
     };
 
+#ifdef _WIN32
+    struct SingleWinArg {
+      std::function<void()>* fn;
+    };
+    auto workFn = std::function<void()>(singleThreadWork);
+    SingleWinArg swa{&workFn};
+    HANDLE singleThread = CreateThread(
+        nullptr,
+        TRITON_COMPILE_WORKER_STACK_SIZE,
+        [](LPVOID arg) -> DWORD {
+          auto* wa = static_cast<SingleWinArg*>(arg);
+          (*wa->fn)();
+          return 0;
+        }, &swa, STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
+
+    if (singleThread != nullptr) {
+      WaitForSingleObject(singleThread, INFINITE);
+      CloseHandle(singleThread);
+    } else {
+      DSP_DIAG(COMPILE, "TritonGraphBackend: CreateThread failed for single-threaded compile "
+               "(err=%lu), running on calling thread (risk of stack overflow)", GetLastError());
+      singleThreadWork();
+    }
+#else
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, TRITON_COMPILE_WORKER_STACK_SIZE);
@@ -1101,11 +1166,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     if (rc == 0) {
       pthread_join(singleThread, nullptr);
     } else {
-      // Fall back to direct execution if pthread_create fails
       DSP_DIAG(COMPILE, "TritonGraphBackend: pthread_create failed for single-threaded compile "
                "(rc=%d), running on calling thread (risk of stack overflow)", rc);
       singleThreadWork();
     }
+#endif
   }
 
   // Merge leaf native ordered ranges into compiledSeg

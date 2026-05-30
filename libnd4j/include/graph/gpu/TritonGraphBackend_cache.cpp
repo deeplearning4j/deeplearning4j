@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #ifdef _WIN32
 #include <process.h>
+#include <direct.h>
 #define getpid _getpid
 #else
 #include <unistd.h>
@@ -75,7 +76,11 @@ bool TritonGraphBackend::ensureDiskCacheDir(const std::string& cacheDir) const {
 
     struct stat st;
     if (stat(currentPath.c_str(), &st) == 0) {
+#ifdef _WIN32
+      if (!(st.st_mode & _S_IFDIR)) {
+#else
       if (!S_ISDIR(st.st_mode)) {
+#endif
         DSP_DIAG(JIT, "TritonGraphBackend: cache path exists but is not a directory: %s",
                   currentPath.c_str());
         return false;
@@ -89,7 +94,11 @@ bool TritonGraphBackend::ensureDiskCacheDir(const std::string& cacheDir) const {
       return false;
     }
 
+#ifdef _WIN32
+    if (_mkdir(currentPath.c_str()) != 0 && errno != EEXIST) {
+#else
     if (mkdir(currentPath.c_str(), 0755) != 0 && errno != EEXIST) {
+#endif
       DSP_DIAG(JIT, "TritonGraphBackend: mkdir failed for cache path %s (errno=%d)",
                 currentPath.c_str(), errno);
       return false;

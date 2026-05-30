@@ -171,7 +171,11 @@ static std::string getTritonDiagDir() {
     const char* tmpEnv = std::getenv("TMPDIR");
     if (!tmpEnv) tmpEnv = std::getenv("TMP");
     if (!tmpEnv) tmpEnv = std::getenv("TEMP");
+#ifdef _WIN32
+    dir = tmpEnv ? tmpEnv : "C:\\Temp";
+#else
     dir = tmpEnv ? tmpEnv : "/tmp";
+#endif
   }
   if (!dir.empty() && dir.back() != '/' && dir.back() != '\\') dir += '/';
   return dir;
@@ -395,6 +399,40 @@ int& tritonSigabrtRefCount() {
   return refCount;
 }
 
+#ifdef _WIN32
+// Windows: use signal() instead of POSIX sigaction()
+typedef void (*SignalHandlerFunc)(int);
+
+SignalHandlerFunc& tritonSigabrtPreviousHandler() {
+  static SignalHandlerFunc handler = SIG_DFL;
+  return handler;
+}
+
+class TritonSigabrtInstallGuard {
+ public:
+  TritonSigabrtInstallGuard() {
+    std::lock_guard<std::mutex> lock(tritonSigabrtMutex());
+    int& refCount = tritonSigabrtRefCount();
+    if (refCount == 0) {
+      tritonSigabrtPreviousHandler() = signal(SIGABRT, tritonSigabrtHandler);
+    }
+    refCount++;
+  }
+
+  ~TritonSigabrtInstallGuard() {
+    std::lock_guard<std::mutex> lock(tritonSigabrtMutex());
+    int& refCount = tritonSigabrtRefCount();
+    if (refCount <= 0) return;
+    refCount--;
+    if (refCount == 0) {
+      signal(SIGABRT, tritonSigabrtPreviousHandler());
+    }
+  }
+
+  TritonSigabrtInstallGuard(const TritonSigabrtInstallGuard&) = delete;
+  TritonSigabrtInstallGuard& operator=(const TritonSigabrtInstallGuard&) = delete;
+};
+#else
 struct sigaction& tritonSigabrtPreviousAction() {
   static struct sigaction action {};
   return action;
@@ -429,6 +467,7 @@ class TritonSigabrtInstallGuard {
   TritonSigabrtInstallGuard(const TritonSigabrtInstallGuard&) = delete;
   TritonSigabrtInstallGuard& operator=(const TritonSigabrtInstallGuard&) = delete;
 };
+#endif
 
 }  // namespace
 
