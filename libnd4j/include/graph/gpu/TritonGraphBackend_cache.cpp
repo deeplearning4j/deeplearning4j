@@ -110,7 +110,7 @@ bool TritonGraphBackend::ensureDiskCacheDir(const std::string& cacheDir) const {
 
 std::string TritonGraphBackend::computeDiskCacheHash(const std::string& ttirText,
                                                      int numWarps, int numStages) const {
-  const auto& env = sd::Environment::getInstance();
+  auto& env = sd::Environment::getInstance();
   uint64_t hash = FNV1A64_OFFSET_BASIS;
   // NOTE: startSlot/endSlot and segmentShapeKey are intentionally EXCLUDED from
   // the disk cache hash.  Slot numbers are plan-lifetime-specific; the same
