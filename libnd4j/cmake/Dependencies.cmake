@@ -1388,6 +1388,15 @@ function(setup_triton)
         set(TRITON "" PARENT_SCOPE)
         return()
     endif()
+    # Triton JIT compilation requires LLVM headers that are incompatible with
+    # MSVC's STL (constexpr string_view::substr in TypeName.h).  The Triton
+    # runtime also needs a Linux-only PTX/NVRTC toolchain, so skip on Windows.
+    if(WIN32)
+        message(STATUS "Triton disabled on Windows (LLVM headers incompatible with MSVC)")
+        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+        set(TRITON "" PARENT_SCOPE)
+        return()
+    endif()
     # Triton supports both GPU (CUDA/HIP/Level-Zero) and CPU backends.
     # On CPU builds, triton-cpu provides LLVM-based CPU codegen.
     # SD_TRITON=ON is valid for all build types.
